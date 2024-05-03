@@ -1,0 +1,57 @@
+name: automatic-release-ubuntu-gnu
+
+on:
+  push:
+    branches:
+      - main
+      - feature/automatic-releases
+     
+
+jobs:
+  
+  builds-and-test:
+    runs-on: ubuntu-latest
+
+    steps:       
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        submodules: 'recursive'
+
+    - name: Setup ninja
+      uses: seanmiddleditch/gha-setup-ninja@master
+      
+    - name: Build application
+      run: |       
+        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        cmake --build build -j
+      
+    - name: Run fdtd unit tests 
+      run: |
+        build/bin/fdtd_tests
+
+    - name: Install python wrapper requirements
+      run: |
+        python -m pip install -r requirements.txt
+
+    - name: Run wrapper tests
+      run: |
+        python -m pytest test
+
+    - name: Get current date
+      id: date
+      run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
+    - name: Creating archive
+      run: |
+        tar -czvf semba-fdtd-ubuntu-gnu.tar.gz build/bin/* LICENSE
+
+    - name: Generating release
+      uses: "marvinpinto/action-automatic-releases@latest"
+      with:
+        repo_token: "${{ secrets.GITHUB_TOKEN }}"
+        automatic_release_tag: "latest-ubuntu-gnu"
+        prerelease: false
+        title: "${{ steps.date.outputs.date }} Ubuntu GNU  dev. build"
+        files: |
+          semba-fdtd-ubuntu-gnu.tar.gz

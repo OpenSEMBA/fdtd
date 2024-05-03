@@ -191,47 +191,81 @@ contains
         real, dimension(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors) :: F1, F2, IF1
         integer :: i
 
-        ! do i = 1, this%number_of_divisions
-        !     F1(i,:,:) = matmul(this%duNorm(i,:,:), &
-        !                        this%lpul(i,:,:)/this%dt + 0.5*this%transfer_impedance%d(i,:,:) + this%transfer_impedance%e(i,:,:)/this%dt + 0.5*this%rpul(i,:,:) + this%transfer_impedance%q1_sum(i,:,:))
-        !     F2(i,:,:) = matmul(this%duNorm(i,:,:), &
-        !                        this%lpul(i,:,:)/this%dt - 0.5*this%transfer_impedance%d(i,:,:) + this%transfer_impedance%e(i,:,:)/this%dt - 0.5*this%rpul(i,:,:) - this%transfer_impedance%q1_sum(i,:,:))
-        !     IF1(i,:,:) = inv(F1(i,:,:))
-        !     this%i_term(i,:,:) = matmul(IF1(i,:,:),F2(i,:,:))
-        !     this%v_diff(i,:,:) = IF1(i,:,:)
-        ! enddo
+        do i = 1, this%number_of_divisions
+            F1(i,:,:) = matmul(this%du(i,:,:), &
+                               this%lpul(i,:,:)/this%dt + 0.5*this%transfer_impedance%d(i,:,:) + this%transfer_impedance%e(i,:,:)/this%dt + 0.5*this%rpul(i,:,:) + this%transfer_impedance%q1_sum(i,:,:))
+            F2(i,:,:) = matmul(this%du(i,:,:), &
+                               this%lpul(i,:,:)/this%dt - 0.5*this%transfer_impedance%d(i,:,:) + this%transfer_impedance%e(i,:,:)/this%dt - 0.5*this%rpul(i,:,:) - this%transfer_impedance%q1_sum(i,:,:))
+            IF1(i,:,:) = inv(F1(i,:,:))
+            ! this%i_term(i,:,:) = matmul(IF1(i,:,:),F2(i,:,:))
+            ! this%v_diff(i,:,:) = IF1(i,:,:)
+        enddo
+        F1 = reshape(source=F1, shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors],order=[2,3,1])
+        F2 = reshape(source=F2, shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors],order=[2,3,1])
+        IF1 = reshape(source=IF1,shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors])
+        do i = 1, this%number_of_divisions
+            this%i_term(i,:,:) = matmul(IF1(i,:,:),F2(i,:,:))
+            this%v_diff(i,:,:) = IF1(i,:,:)
+        enddo
+        this%i_term = reshape(source=this%i_term, shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors],order=[2,3,1])
+        this%v_diff = reshape(source=this%v_diff, shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors],order=[2,3,1])
+        write(*,*) size(F1,1), ' ',size(F1,2), ' ', size(F1,3)
+        write(*,*) F1(1,1,1)
+        write(*,*) size(F2,1), ' ',size(F2,2), ' ', size(F2,3)
+        write(*,*) F2(1,1,1)
+        write(*,*) size(IF1,1), ' ',size(IF1,2), ' ', size(IF1,3)
+        write(*,*) IF1(1,1,1)
+        write(*,*) size(this%i_term,1), ' ',size(this%i_term,2), ' ', size(this%i_term,3)
+        write(*,*) this%i_term(1,1,1)
+        write(*,*) size(this%v_diff,1), ' ',size(this%v_diff,2), ' ', size(this%v_diff,3)
+        write(*,*) this%v_diff(1,1,1)
 
-        F1 = reshape(source=[(matmul( &
-            this%du(i,:,:), &
-            this%lpul(i,:,:)/this%dt + &
-                0.5*this%transfer_impedance%d(i,:,:) + &
-                this%transfer_impedance%e(i,:,:)/this%dt + &
-                0.5*this%rpul(i,:,:) + &
-                this%transfer_impedance%q1_sum(i,:,:)), &
-            i = 1,this%number_of_divisions)], & 
-            shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
-            order=[2,3,1])
-        F2 = reshape(source=[(matmul( &
-            this%du(i,:,:), &
-            this%lpul(i,:,:)/this%dt - &
-            0.5*this%transfer_impedance%d(i,:,:) + &
-            this%transfer_impedance%e(i,:,:)/this%dt - &
-            0.5*this%rpul(i,:,:) - &
-            this%transfer_impedance%q1_sum(i,:,:)), &
-            i = 1,this%number_of_divisions)], & 
-            shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
-            order=[2,3,1])
+        ! ! IF1 = reshape(source=[(inv(F1(i,:,:)), i = 1, this%number_of_divisions)], &
+        ! !         shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
+        ! !         order=[2,3,1])
+        ! this%i_term = reshape(&
+        !     source=[(matmul(IF1(i,:,:), F2(i,:,:)), i = 1, this%number_of_divisions)], &
+        !     shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
+        !     order=[2,3,1])
+        ! this%v_diff = IF1
 
-        IF1 = reshape(source=[(inv(F1(i,:,:)), i = 1, this%number_of_divisions)], &
-                      shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
-                      order=[2,3,1])
-        this%i_term = reshape(&
-            source=[(matmul(IF1(i,:,:), F2(i,:,:)), i = 1, this%number_of_divisions)], &
-            shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
-            order=[2,3,1])
-        this%v_diff = IF1
+        ! F1 = reshape(source=[(matmul( &
+        !     this%du(i,:,:), &
+        !     this%lpul(i,:,:)/this%dt + &
+        !         0.5*this%transfer_impedance%d(i,:,:) + &
+        !         this%transfer_impedance%e(i,:,:)/this%dt + &
+        !         0.5*this%rpul(i,:,:) + &
+        !         this%transfer_impedance%q1_sum(i,:,:)), &
+        !     i = 1,this%number_of_divisions)], & 
+        !     shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
+        !     order=[2,3,1])
+        ! write(*,*) F1(1,1,1)
+        ! F2 = reshape(source=[(matmul( &
+        !     this%du(i,:,:), &
+        !     this%lpul(i,:,:)/this%dt - &
+        !     0.5*this%transfer_impedance%d(i,:,:) + &
+        !     this%transfer_impedance%e(i,:,:)/this%dt - &
+        !     0.5*this%rpul(i,:,:) - &
+        !     this%transfer_impedance%q1_sum(i,:,:)), &
+        !     i = 1,this%number_of_divisions)], & 
+        !     shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
+        !     order=[2,3,1])
+        ! write(*,*) F2(1,1,1)
+        ! IF1 = reshape(source=[(inv(F1(i,:,:)), i = 1, 100)], &
+        !             shape=[100,1, 1], &
+        !             order=[2,3,1])
+        ! ! IF1 = reshape(source=[(inv(F1(i,:,:)), i = 1, this%number_of_divisions)], &
+        ! !             shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
+        ! !             order=[2,3,1])
+        ! this%i_term = reshape(&
+        !     source=[(matmul(IF1(i,:,:), F2(i,:,:)), i = 1, this%number_of_divisions)], &
+        !     shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
+        !     order=[2,3,1])
+        ! this%v_diff = IF1
 
     end subroutine
+
+
 
     subroutine updateCGTerms(this)
         class(mtl_bundle_t) ::this

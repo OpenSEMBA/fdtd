@@ -1,6 +1,6 @@
 * dual rc ladder
 R1_initial 1_initial 0 10
 I1_initial 0 1_initial dc 0
-.tran 50u 200u
+.tran 50u 200u 0 50u
 .save V(1_initial)
 .end

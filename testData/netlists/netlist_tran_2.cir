@@ -4,6 +4,6 @@ V1 in 0 dc 0 PULSE (0 5 1u 1u 1u 1 1)
 R2 out int 2.5k
 C1 int 0 50u
 C2 out 0 200n
-.tran 50u 200u
+.tran 50u 200u 0 50u
 .save v(in) v(int) v(out)
 .end

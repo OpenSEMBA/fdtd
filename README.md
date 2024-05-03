@@ -32,7 +32,31 @@ In a nutshell, semba-fdtd capabilities are
 + Time, frequency and transfer function probes .
 + Near-to-far field transformation.
 
-Most of these capabilities are explained in further detail in the references below
+# Usage
+
+## Running from release
+
+### Windows
+
+Install intel runtime libraries: https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html
+
+
+### Linux
+
+
+## Compilation and testing
+
+Tests must be run from the root folder. `python` wrapper test assumes that `semba-fdtd` has been compiled successfully and is located in folder `build/bin/`. For intel compilation it also assumes that the intel runtime libraries are accessible.
+
+## Running cases
+
+`semba-fdtd` uses the following [format](doc/smbjson.md) as input files.
+
+# License
+
+This code is licensed under the terms of the [MIT License](LICENSE). All rights reserved by the University of Granada (Spain)
+
+# References 
 
 - Miguel Ruiz Cabello, Maksims Abalenkovs, Luis Diaz Angulo, Clemente Cobos Sanchez, Franco Moglie, Salvador Gonzalez Garcia, *Performance of parallel FDTD method for shared- and distributed-memory architectures: Application to bioelectromagnetics*. PLOS ONE. 2020. https://doi.org/10.1371/journal.pone.0238115
 
@@ -46,27 +70,3 @@ https://doi.org/10.1109/NEMO.2017.7964255.
 - Guadalupe Gutierrez Gutierrez, Daniel Mateos Romero, Miguel Ruiz Cabello, Enrique Pascual-Gil, Luis Diaz Angulo, David Garcia Gomez, Salvador Gonzalez Garcia, 
 *On the Design of Aircraft Electrical Structure Networks*, 
 IEEE Transactions on Electromagnetic Compatibility. 2016. https://doi.org/10.1109/TEMC.2016.2514379.
-
-# Usage
-
-## Compilation and testing
-
-Tests must be run from the root folder. `python` wrapper test assumes that `semba-fdtd` has been compiled successfully and is located in folder `build/bin/`. For intel compilation it also assumes that the intel runtime libraries are accessible.
-
-## Running cases
-
-`semba-fdtd` uses the following [format](doc/smbjson.md) as input files.
-
-# License
-
-This code is licensed under the terms of the [MIT License](LICENSE). All rights reserved by the University of Granada (Spain)
-_______________________________________________________________
-Authors:
-
-- Salvador Gonzalez Garcia <salva@ugr.es>
-- Miguel Ruiz Cabello <mcabello@ugr.es>
-- Luis Diaz Angulo <lmdiazangulo@ugr.es>
-- Amelia Rubio Bretones <arubio@ugr.es>
-- Rafael Gomez Martin <rgomez@ugr.es>
-_______________________________________________________________
-

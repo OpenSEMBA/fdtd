@@ -1,6 +1,6 @@
 integer function test_mesh_add_get() bind(C) result(error_cnt)
    use mesh_mod
-   use testingTools
+   use smbjson_testingTools
 
    implicit none
 
@@ -42,7 +42,7 @@ end function
 
 integer function test_mesh_add_get_long_list() bind(C) result(error_cnt)
    use mesh_mod
-   use testingTools
+   use smbjson_testingTools
 
    implicit none
 
@@ -109,7 +109,7 @@ end function
 integer function test_mesh_node_to_pixel() bind(C) result(err)
    use mesh_mod
    use cells_mod
-   use testingTools
+   use smbjson_testingTools
 
    implicit none
 
@@ -121,25 +121,16 @@ integer function test_mesh_node_to_pixel() bind(C) result(err)
 
    block
       ! Valid pixel conversion.
-      type(pixel_t), dimension(:), allocatable :: pix
-      pix = mesh%convertNodeToPixels(node_t([1]))
-      if (.not. size(pix) == 1) err = err + 1
-      if (.not. pixel_t(cell=[0, 0, 0], tag=1) == pix(1)) err = err + 1
+      type(pixel_t) :: pix
+      pix = mesh%convertNodeToPixel(node_t([1]))
+      if (.not. pixel_t(cell=[0, 0, 0], tag=1) == pix) err = err + 1
    end block
-
-   block
-      ! Invalid pixel conversion (Coordinate not present).
-      type(pixel_t), dimension(:), allocatable :: pix
-      pix = mesh%convertNodeToPixels(node_t([4]))
-      if (size(pix) /= 0) err = err + 1
-   end block
-
 end function
 
 integer function test_mesh_polyline_to_linel() bind(C) result(err)
    use mesh_mod
    use cells_mod
-   use testingTools
+   use smbjson_testingTools
 
    implicit none
 

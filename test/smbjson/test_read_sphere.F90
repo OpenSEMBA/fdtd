@@ -1,6 +1,6 @@
 integer function test_read_sphere() bind (C) result(err)
    use smbjson
-   use testingTools
+   use smbjson_testingTools
 
    implicit none
 
@@ -38,9 +38,9 @@ contains
       ex%despl%nY = 80
       ex%despl%nZ = 80
 
-      allocate(ex%despl%desX(1))
-      allocate(ex%despl%desY(1))
-      allocate(ex%despl%desZ(1))
+      allocate(ex%despl%desX(80))
+      allocate(ex%despl%desY(80))
+      allocate(ex%despl%desZ(80))
       ex%despl%desX = 0.025
       ex%despl%desY = 0.025
       ex%despl%desZ = 0.025

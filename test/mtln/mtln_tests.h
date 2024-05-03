@@ -6,8 +6,7 @@ extern "C" int test_mtl_time_step();
 extern "C" int test_mtl_wrong_dt();
 extern "C" int test_mtl_bundle_init();
 extern "C" int test_mtln_types();
-extern "C" int test_fhash_arrays();
-extern "C" int test_fhash_cables();
+extern "C" int test_derived_type_submodule();
 extern "C" int test_fhash();
 extern "C" int test_math_eigvals();
 extern "C" int test_math_matmul_broadcast();
@@ -45,9 +44,8 @@ TEST(mtln, mtl_wrong_dt) { EXPECT_EQ(0, test_mtl_wrong_dt()); }
 TEST(mtln, mtl_bundle_init) { EXPECT_EQ(0, test_mtl_bundle_init()); }
 
 TEST(mtln, mtln_types) {EXPECT_EQ(0, test_mtln_types()); }
+TEST(mtln, mtln_derived_types) {EXPECT_EQ(0, test_derived_type_submodule()); }
 
-TEST(mtln, fhash_arrays) { EXPECT_EQ(0, test_fhash_arrays()); }
-TEST(mtln, fhash_cables) { EXPECT_EQ(0, test_fhash_cables()); }
 TEST(mtln, fhash) { EXPECT_EQ(0, test_fhash()); }
 
 TEST(mtln, preprocess_conductors_before_cable) { EXPECT_EQ(0, test_preprocess_conductors_before_cable()); }
@@ -69,8 +67,8 @@ TEST(mtln, spice_multiple) { EXPECT_EQ(0, test_spice_multiple()); }
 TEST(mtln, spice_current_source) { EXPECT_EQ(0, test_spice_current_source()); }
 TEST(mtln, spice_dc) { EXPECT_EQ(0, test_spice_dc()); }
 TEST(mtln, spice_read_message) { EXPECT_EQ(0, test_spice_read_message()); }
-// TEST(mtln, system_coaxial_line_paul_8_6_square) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_square()); }
-// TEST(mtln, system_coaxial_line_paul_8_6_triangle) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_triangle()); }
+TEST(mtln, system_coaxial_line_paul_8_6_square) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_square()); }
+TEST(mtln, system_coaxial_line_paul_8_6_triangle) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_triangle()); }
 // TEST(mtln, system_2_conductor_line_paul_9_6) { EXPECT_EQ(0, test_2_conductor_line_paul_9_6()); }
 // TEST(mtln, system_2_conductor_line_paul_9_11_20ns) { EXPECT_EQ(0, test_2_conductor_line_paul_9_11_20ns()); }
 // TEST(mtln, system_2_conductor_line_paul_9_11_1ns) { EXPECT_EQ(0, test_2_conductor_line_paul_9_11_1ns()); }

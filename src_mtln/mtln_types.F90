@@ -38,30 +38,32 @@ module mtln_types_mod
       generic, public :: operator(==) => external_field_segments_eq
    end type
 
-   type :: termination_t
+   type, public :: termination_t
       integer :: termination_type = TERMINATION_UNDEFINED
       real :: resistance = 0.0
       real :: inductance = 0.0
       real :: capacitance = 1e22
+      character(len=256) :: path_to_excitation = ""
    contains
       private
       procedure :: termination_eq
       generic, public :: operator(==) => termination_eq
    end type
 
-   type, extends(termination_t) :: termination_with_source_t
-      character(len=:), allocatable :: path_to_excitation
-   contains
-      private
-      procedure :: termination_with_source_eq
-      generic, public :: operator(==) => termination_with_source_eq
-   end type
+   ! type, public, extends(termination_t) :: termination_with_source_t
+   !    character(len=:), allocatable :: path_to_excitation
+   ! contains
+   !    private
+   !    procedure :: termination_with_source_eq
+   !    generic, public :: operator(==) => termination_with_source_eq
+   ! end type
 
    type :: terminal_node_t
       type(cable_t), pointer :: belongs_to_cable => null()
       integer :: conductor_in_cable
       integer :: side = TERMINAL_NODE_SIDE_UNDEFINED
-      class(termination_t), allocatable :: termination
+      type(termination_t) :: termination
+      ! class(termination_t), allocatable :: termination
    contains
       private
       procedure :: terminal_node_eq
@@ -154,13 +156,44 @@ module mtln_types_mod
 
 contains
 
-   elemental logical function mtln_eq(a,b)
+   logical function mtln_eq(a,b)
       class(mtln_t), intent(in) :: a,b
-      mtln_eq = &
-         all(a%cables == b%cables) .and. &
-         all(a%probes == b%probes) .and. &
-         all(a%networks == b%networks)
+      integer :: i
+         
+      if (size(a%cables) /= size(b%cables)) then
+         mtln_eq = .false.
+         return
+      end if
+      do i = 1, size(a%cables)
+         if (.not. a%cables(i) == b%cables(i)) then
+            mtln_eq = .false.
+            return
+         end if
+      end do
 
+      if (size(a%probes) /= size(b%probes)) then
+         mtln_eq = .false.
+         return
+      end if
+      do i = 1, size(a%probes)
+         if (.not. a%probes(i) == b%probes(i)) then
+            mtln_eq = .false.
+            return
+         end if
+      end do
+
+      if (size(a%networks) /= size(b%networks)) then
+         mtln_eq = .false.
+         return
+      end if
+      do i = 1, size(a%networks)
+         if (.not. a%networks(i) == b%networks(i)) then
+            mtln_eq = .false.
+            return
+         end if
+      end do
+
+      mtln_eq = .true.
    end function
 
    elemental logical function transfer_impedance_per_meter_eq(a,b)
@@ -173,7 +206,7 @@ contains
          (a%direction == b%direction)
    end function
 
-   recursive elemental logical function cable_eq(a,b)
+   recursive logical function cable_eq(a,b)
       class(cable_t), intent(in) :: a, b
       cable_eq = .true.
       cable_eq = cable_eq .and.  (a%name == b%name) 
@@ -246,18 +279,19 @@ contains
          (a%termination_type == b%termination_type) .and. &
          (a%resistance == b%resistance) .and. &
          (a%inductance == b%inductance) .and. &
-         (a%capacitance == b%capacitance)
-   end function
-
-   elemental logical function termination_with_source_eq(a, b)
-      class(termination_with_source_t), intent(in) :: a
-      type(termination_with_source_t), intent(in) :: b
-      termination_with_source_eq = &
-         a%termination_t == b%termination_t .and. &
+         (a%capacitance == b%capacitance) .and. &
          a%path_to_excitation == b%path_to_excitation
    end function
 
-   elemental logical function probe_eq(a,b)
+   ! elemental logical function termination_with_source_eq(a, b)
+   !    class(termination_with_source_t), intent(in) :: a
+   !    type(termination_with_source_t), intent(in) :: b
+   !    termination_with_source_eq = &
+   !       a%termination_t == b%termination_t .and. &
+   !       a%path_to_excitation == b%path_to_excitation
+   ! end function
+
+   logical function probe_eq(a,b)
       class(probe_t), intent(in) :: a,b
       probe_eq = &
          (a%index == b%index) .and. &
@@ -276,7 +310,7 @@ contains
       end if
    end function
 
-   elemental logical function terminal_node_eq(a, b)
+   logical function terminal_node_eq(a, b)
       class(terminal_node_t), intent(in) :: a, b
 
       terminal_node_eq = &
@@ -295,16 +329,36 @@ contains
 
    end function
 
-   elemental logical function terminal_connection_eq(a,b)
+   logical function terminal_connection_eq(a,b)
       class(terminal_connection_t), intent(in) :: a,b
-      terminal_connection_eq = &
-         all(a%nodes == b%nodes)
+      integer :: i
+      if (size(a%nodes) /= size(b%nodes)) then
+         terminal_connection_eq = .false.
+         return
+      end if
+      do i = 1, size(a%nodes)
+         if (.not. (a%nodes(i) == b%nodes(i))) then
+            terminal_connection_eq = .false.
+            return
+         end if
+      end do
+      terminal_connection_eq = .true.
    end function
 
-   elemental logical function terminal_network_eq(a,b)
+   logical function terminal_network_eq(a,b)
       class(terminal_network_t), intent(in) :: a,b
-      terminal_network_eq = &
-         all(a%connections == b%connections)
+      integer :: i
+      if (size(a%connections) /= size(b%connections)) then
+         terminal_network_eq = .false.
+         return
+      end if
+      do i = 1, size(a%connections)
+         if (.not. (a%connections(i) == b%connections(i))) then
+            terminal_network_eq = .false.
+            return
+         end if
+      end do
+      terminal_network_eq = .true.
    end function
 
    elemental logical function external_field_segments_eq(a,b)
@@ -337,8 +391,17 @@ contains
    subroutine terminal_connection_add_node(this, node)
       class(terminal_connection_t) :: this
       type(terminal_node_t) :: node
+      type(terminal_node_t), dimension(:), allocatable :: newNodes
+      integer :: newNodesSize
+
       if (.not. allocated(this%nodes))  allocate(this%nodes(0))
-      this%nodes = [this%nodes, node]
+
+      allocate(newNodes( size(this%nodes) + 1 ) )
+      newNodesSize = size(newNodes)
+      newNodes(1:newNodesSize-1) = this%nodes
+      newNodes(newNodesSize) = node
+      call MOVE_ALLOC(from=newNodes, to=this%nodes)
+
    end subroutine
 
    subroutine terminal_network_add_connection(this, connection)
@@ -346,6 +409,7 @@ contains
       type(terminal_connection_t) :: connection
       type(terminal_connection_t), dimension(:), allocatable :: newConnections
       integer :: newConnectionsSize
+      
       if (.not. allocated(this%connections))  allocate(this%connections(0))
       
       allocate(newConnections( size(this%connections) + 1 ) )

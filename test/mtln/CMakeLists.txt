@@ -8,7 +8,7 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
 add_library(
     mtln_solver_tests_fortran
-    "testingTools.F90"
+    "mtln_testingTools.F90"
     "test_mtln_types.F90"
     "test_preprocess.F90"
     "test_spice.F90"
@@ -23,6 +23,7 @@ target_link_libraries(mtln_solver_tests_fortran
     mtlnsolver 
     fhash
     ngspice_interface
+    ${NGSPICE_LIB}
 )
 
 add_library(mtln_tests "mtln_tests.cpp")

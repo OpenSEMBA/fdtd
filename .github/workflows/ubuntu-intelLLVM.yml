@@ -2,25 +2,27 @@ name: ubuntu-intelLLVM
 
 env:
   LINUX_CPP_COMPONENTS: intel-oneapi-compiler-dpcpp-cpp
-  LINUX_FORTRAN_COMPONENTS: intel-oneapi-compiler-fortran
+  LINUX_FORTRAN_COMPONENTS: intel-oneapi-compiler-fortran intel-oneapi-mpi-2021.3.0 intel-oneapi-mpi-devel-2021.3.0
 # https://github.com/oneapi-src/oneapi-ci/blob/master/.github/workflows/build_all.yml
-  CTEST_NO_TESTS_ACTION: error
 
 on:
   push:
     branches:
-      - main
       - dev
       
   pull_request:
     branches:
       - main
-      - dev
+      - dev 
 
 jobs:
 
   builds-and-tests:
     runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        optimization-type: ["Debug", "Release"]
+        mpi-build: ["No", "Yes"]
 
     steps:
 
@@ -47,27 +49,24 @@ jobs:
       run: |
         LATEST_VERSION=$(ls -1 /opt/intel/oneapi/compiler/ | grep -v latest | sort | tail -1)
         source /opt/intel/oneapi/compiler/"$LATEST_VERSION"/env/vars.sh
+        source /opt/intel/oneapi/mpi/2021.3.0/env/vars.sh
+        # source /opt/intel/oneapi/setvars.sh
         printenv >> $GITHUB_ENV
-
-    - name: Setup ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
 
     - name: print config log
       if: ${{ failure() }}
       run: cat build/CMakeFiles/CMakeConfigureLog.yaml
-
-    # - name: Setup upterm session
-    #   uses: lhotari/action-upterm@v1
 
     - name: CMake build
       run: |
         export FC=ifx
         export CC=icx
         export CXX=icpx
-        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DCompileWithMPI=${{matrix.mpi-build}} -DCompileWithHDF=YES
         cmake --build build -j
         
-    - name: Run fdtd unit tests 
+    - name: Run fdtd unit tests
+      timeout-minutes: 10
       run: |
         build/bin/fdtd_tests
 
@@ -76,6 +75,7 @@ jobs:
         python -m pip install -r requirements.txt
 
     - name: Run wrapper tests
+      timeout-minutes: 10
       run: |
         python -m pytest test    
         

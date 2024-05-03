@@ -6,7 +6,6 @@ permissions:
 on:
   push:
     branches:
-      - main
       - dev
   pull_request:
     branches:
@@ -14,20 +13,30 @@ on:
       - dev
 
 jobs:
+  
   builds-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        build-type: ["Debug", "Release"]
+        mpi-build: ["No", "Yes"]
     steps:       
     - name: Checkout
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
 
+    
+    - name: Install required packages
+      run: |
+        sudo apt install libhdf5-dev libopenmpi-dev
+
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
       
     - name: Build application
       run: |       
-        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DCompileWithMPI=${{matrix.mpi-build}} -DCompileWithHDF=YES
         cmake --build build -j
       
     - name: Run fdtd unit tests 

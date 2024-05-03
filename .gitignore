@@ -59,3 +59,4 @@ __pycache__/
 */__pycache__/
 src_pyWrapper/__pycache__/*
 tmp/
+testData/outputs/paul/paul_8.6_square.txt

@@ -63,7 +63,7 @@ end function
 integer function test_networks_simple_manager() bind(C) result(error_cnt)
 
     use network_manager_mod
-    use testingTools_mod, only: buildNetwork, checkNear
+    use mtln_testingTools_mod, only: buildNetwork, checkNear
     implicit none
 
     type(network_manager_t) :: manager

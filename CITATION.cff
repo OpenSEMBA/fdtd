@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: García
+    given-names: Salvador G.
+    orcid: https://orcid.org/0000-0001-7317-1423
+  - family-names: Angulo
+    given-names: Luis D.
+    orcid: https://orcid.org/0000-0002-1690-7892
+  - family-names: Gascón
+    given-names: Alberto 
+    orcid: https://orcid.org/0000-0003-1190-2248
+url: "https://github.com/opensemba/fdtd"
+title: "semba-fdtd"
+date-released: 2024-01-01

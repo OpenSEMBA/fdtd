@@ -139,31 +139,22 @@ contains
       end subroutine
    end function
 
-   function getPixelsFromElementIds(mesh, ids) result(res)
-      type(pixel_t), dimension(:), allocatable :: res
+   function getPixelFromElementId(mesh, id) result(res)
+      type(pixel_t) :: res
       type(mesh_t), intent(in) :: mesh
-      integer, dimension(:), allocatable, intent(in) :: ids
+      integer, intent(in) :: id
 
       type(node_t) :: node
-      type(cell_region_t) :: cellRegion
-      type(pixel_t), dimension(:), allocatable :: pixels
       logical :: nodeFound
       logical :: cellRegionFound
       integer :: i
 
-      allocate(res(size(ids)))
-      do i = 1, size(ids)
-         node = mesh%getNode(ids(i), nodeFound)
-         if (nodeFound) then
-            pixels = mesh%convertNodeToPixels(node)
-         else
-            stop "Error converting pixels."
-         end if
-         if (size(pixels) /= 1) then
-            stop "Each element id must contain a single pixel"
-         end if
-         res(i) = pixels(1)
-      end do
+      node = mesh%getNode(id, nodeFound)
+      if (nodeFound) then
+         res = mesh%convertNodeToPixel(node)
+      else
+         stop "Error converting pixel. Node not found."
+      end if
 
    end function
 

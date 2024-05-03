@@ -1,6 +1,6 @@
 integer function test_dispersive_init_1_pole() bind(C) result(error_cnt)    
     use dispersive_mod
-    use testingTools_mod
+    use mtln_testingTools_mod
     use mtl_bundle_mod
 
     implicit none
@@ -93,7 +93,7 @@ end function
 
 integer function test_dispersive_init_1_pole_lines_with_lumped() bind(C) result(error_cnt)    
     use dispersive_mod
-    use testingTools_mod
+    use mtln_testingTools_mod
     use mtl_bundle_mod
 
     implicit none
@@ -209,7 +209,7 @@ end function
 
 integer function test_dispersive_init_2_poles() bind(C) result(error_cnt)    
     use dispersive_mod
-    use testingTools_mod
+    use mtln_testingTools_mod
     use mtl_bundle_mod
 
     implicit none
@@ -302,7 +302,7 @@ end function
 
 integer function test_dispersive_init_1_pole_3_levels() bind(C) result(error_cnt)    
     use dispersive_mod
-    use testingTools_mod
+    use mtln_testingTools_mod
     use mtl_bundle_mod
 
     implicit none

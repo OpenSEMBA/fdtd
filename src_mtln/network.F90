@@ -5,9 +5,11 @@ module network_mod
     use circuit_mod, only: string_t
     implicit none
 
-    type node_t
+    type nw_node_t
         character(len=:), allocatable :: name
         character(len=:), allocatable :: source
+        ! character(len=:), allocatable :: name
+        ! character(len=:), allocatable :: source
         real :: line_c_per_meter
         real :: step
         real :: v
@@ -19,7 +21,7 @@ module network_mod
 
     type, public :: network_t
         integer :: number_of_nodes = 0
-        type(node_t), dimension(:), allocatable :: nodes
+        type(nw_node_t), dimension(:), allocatable :: nodes
         character(256), dimension(:), allocatable :: description
     contains
 
@@ -42,7 +44,7 @@ contains
     end function
 
     function networkCtor(nodes, description) result(res)
-        type(node_t), dimension(:), intent(in) :: nodes
+        type(nw_node_t), dimension(:), intent(in) :: nodes
         character(*), dimension(:), intent(in) :: description
         type(string_t), dimension(:), allocatable :: names
         integer :: i

@@ -8,6 +8,16 @@ message(STATUS "Creating build system for mtlnsolver")
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
+add_library(ngspice_interface
+    "ngspice_interface.c"
+)
+
+target_link_libraries(ngspice_interface PRIVATE	${NGSPICE_LIB})
+
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+	target_link_libraries(ngspice_interface PRIVATE	stdc++)
+endif ()
+
 add_library(mtlnsolver
 	"mtl.F90"
 	"mtl_bundle.F90"
@@ -20,23 +30,13 @@ add_library(mtlnsolver
 	"rational_approximation.F90"
 	"circuit.F90"
 	"ngspice_interface.F90"
-	"mtln_types.F90"
 	"preprocess.F90"
 )
-add_library(ngspice_interface
-    "ngspice_interface.c"
-)
-
-target_link_libraries(ngspice_interface PRIVATE	${NGSPICE_LIB})
-
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-	target_link_libraries(ngspice_interface PRIVATE	stdc++)
-endif ()
 
 target_link_libraries(mtlnsolver PRIVATE
 	${LAPACK_LIB} 
 	${BLAS_LIB} 
-	${NGSPICE_LIB}
 	fhash
 	ngspice_interface
+	semba-types
 )

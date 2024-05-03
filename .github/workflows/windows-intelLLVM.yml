@@ -22,9 +22,6 @@ jobs:
 
   builds-and-tests:
     runs-on: windows-latest
-    # defaults:
-    #   run:
-    #     shell: bash
 
     steps:
 
@@ -61,6 +58,7 @@ jobs:
 
     - name: Run all tests 
       shell: bash
+      timeout-minutes: 30
       run: |
         .github/workflows/run_tests_windows.bat
          

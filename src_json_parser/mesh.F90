@@ -1,4 +1,7 @@
 module mesh_mod
+   
+   use, intrinsic :: iso_fortran_env , only: error_unit
+   
    use fhash, only: fhash_tbl_t, key=>fhash_key
    use cells_mod
 
@@ -45,7 +48,7 @@ module mesh_mod
 
       procedure :: arePolylineSegmentsStructured => mesh_arePolylineSegmentsStructured
       procedure :: convertPolylineToLinels => mesh_convertPolylineToLinels
-      procedure :: convertNodeToPixels => mesh_convertNodeToPixels
+      procedure :: convertNodeToPixel => mesh_convertNodeToPixel
 
       procedure :: printCoordHashInfo => mesh_printCoordHashInfo
       procedure :: allocateCoordinates => mesh_allocateCoordinates
@@ -286,8 +289,8 @@ contains
       end function
    end function
 
-   function mesh_convertNodeToPixels(this, node) result(res)
-      type(pixel_t), dimension(:), allocatable :: res
+   function mesh_convertNodeToPixel(this, node) result(res)
+      type(pixel_t) :: res
       class(mesh_t), intent(in) :: this
       type(node_t), intent(in) :: node
 
@@ -296,12 +299,11 @@ contains
 
       c = this%getCoordinate(node%coordIds(1), found=coordFound)
       if (.not. coordFound) then
-         allocate(res(0))
+         write(error_unit, *) "ERROR: converting node to pixel. Coordinate not found."
          return
       end if
-      allocate(res(1))
-      res(1)%cell = c%position
-      res(1)%tag = node%coordIds(1)
+      res%cell = c%position
+      res%tag = node%coordIds(1)
    end function
 
    function coordinate_diff(a, b) result(res)

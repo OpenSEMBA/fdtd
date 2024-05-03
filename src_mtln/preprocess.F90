@@ -35,7 +35,6 @@ module preprocess_mod
 
     type, public :: cable_array_t
         type(cable_ptr_t), dimension(:), allocatable :: cables
-        ! type(cable_t), dimension(:), pointer :: cables
     end type
 
     type, public :: cable_bundle_t
@@ -55,6 +54,7 @@ contains
         type(fhash_tbl_t) :: cable_name_to_bundle_id
         type(line_bundle_t), dimension(:), allocatable :: line_bundles
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
+
 
         res%final_time = parsed%time_step * parsed%number_of_steps
         res%dt = parsed%time_step
@@ -364,10 +364,11 @@ contains
     end function
 
     function writeSeriesRLCnode(node, termination, end_node) result(res)
-        type(node_t), intent(in) :: node
-        class(termination_t), intent(in) :: termination
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
         character(20) :: termination_r, termination_l, termination_c, line_c
 
         write(termination_c, *) termination%capacitance
@@ -377,25 +378,32 @@ contains
         
         allocate(res(0))
 
-        res = [res, trim("R" // node%name // " " // node%name // " "   // node%name //"_R " // termination_r)]
-        res = [res, trim("L" // node%name // " " // node%name // "_R " // node%name //"_L " // termination_l)]
-        select type(termination)
-        type is(termination_with_source_t)
-            res = [res, trim("C" // node%name // " " // node%name // "_L " // node%name //"_V "// termination_c)]
-            res = [res, trim("V" // node%name // " " // node%name // "_V " // end_node //" dc 0" )]
-        type is(termination_t)
-            res = [res, trim("C" // node%name // " " // node%name // "_L " // end_node //" "// termination_c)]
-        end select
-        res = [res, trim("I" // node%name // " " // node%name// " 0 " // " dc 0")]
-        res = [res, trim("CL" // node%name // " " // node%name // " 0 " // line_c)]
+        buff = trim("R" // node%name // " " // node%name // " "   // node%name //"_R " // termination_r)
+        call appendToStringArray(res, buff)
+        buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_L " // termination_l)
+        call appendToStringArray(res, buff)
+        if (termination%path_to_excitation /= "") then
+            buff = trim("C" // node%name // " " // node%name // "_L " // node%name //"_V "// termination_c)
+            call appendToStringArray(res, buff)
+            buff = trim("V" // node%name // " " // node%name // "_V " // end_node //" dc 0" )
+            call appendToStringArray(res, buff)
+        else
+            buff = trim("C" // node%name // " " // node%name // "_L " // end_node //" "// termination_c)
+            call appendToStringArray(res, buff)
+        end if
+        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
 
     end function
 
     function writeSeriesRLnode(node, termination, end_node) result(res)
-        type(node_t), intent(in) :: node
-        class(termination_t), intent(in) :: termination
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
         character(20) :: termination_r, termination_l, line_c
 
         write(termination_r, *) termination%resistance
@@ -404,24 +412,29 @@ contains
 
         allocate(res(0))
 
-        res = [res, trim("R" // node%name // " " // node%name // "_R "   // node%name //" ")//" "//trim(termination_r)]
-        select type(termination)
-        type is(termination_with_source_t)
-            res = [res, trim("L" // node%name // " " // node%name // "_R " // node%name //"_L")//" "//trim(termination_l)]
-            res = [res, trim("V" // node%name // " " // node%name // "_L " // end_node //" dc 0" )]
-        type is(termination_t)
-            res = [res, trim("L" // node%name // " " // node%name // "_R " // end_node)//" "//trim(termination_l)]
-        end select
-        res = [res, trim("I" // node%name // " " // node%name// " 0 " // " dc 0")]
-        res = [res, trim("CL" // node%name // " " // node%name // " 0 " // line_c)]
+        res = [trim("R" // node%name // " " // node%name // "_R "   // node%name //" ")//" "//trim(termination_r)]
+        if (termination%path_to_excitation /= "") then
+            buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_L")//" "//trim(termination_l)
+            call appendToStringArray(res, buff)
+            buff = trim("V" // node%name // " " // node%name // "_L " // end_node //" dc 0" )
+            call appendToStringArray(res, buff)
+        else
+            buff = trim("L" // node%name // " " // node%name // "_R " // end_node)//" "//trim(termination_l)
+            call appendToStringArray(res, buff)
+        end if
+        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
         
     end function
 
     function writeRLsCpnode(node, termination, end_node) result(res)
-        type(node_t), intent(in) :: node
-        class(termination_t), intent(in) :: termination
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
         character(20) :: termination_r, termination_l, termination_c, line_c
 
         write(termination_r, *) termination%resistance
@@ -431,25 +444,32 @@ contains
 
         allocate(res(0))
 
-        res = [res, trim("R" // node%name // " " // node%name // " "   // node%name //"_R " // termination_r)]
-        select type(termination)
-        type is(termination_with_source_t)
-            res = [res, trim("L" // node%name // " " // node%name // "_R " // node%name //"_V " // termination_l)]
-            res = [res, trim("C" // node%name // " " // node%name // " " // node%name //"_V " // termination_c)]
-            res = [res, trim("V" // node%name // " " // node%name // "_V " // end_node //" dc 0" )]
-        type is(termination_t)
-            res = [res, trim("L" // node%name // " " // node%name // "_R " // end_node //" "// termination_l)]
-            res = [res, trim("C" // node%name // " " // node%name // " " // end_node //" "// termination_c)]
-        end select
-        res = [res, trim("I" // node%name // " " // node%name// " 0 " // " dc 0")]
-        res = [res, trim("CL" // node%name // " " // node%name // " 0 " // line_c)]
+        buff = trim("R" // node%name // " " // node%name // " "   // node%name //"_R " // termination_r)
+        call appendToStringArray(res, buff)
+        if (termination%path_to_excitation /= "") then
+            buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_V " // termination_l)
+            call appendToStringArray(res, buff)
+            buff = trim("C" // node%name // " " // node%name // " " // node%name //"_V " // termination_c)
+            call appendToStringArray(res, buff)
+            buff = trim("V" // node%name // " " // node%name // "_V " // end_node //" dc 0" )
+            call appendToStringArray(res, buff)
+        else 
+            buff = trim("L" // node%name // " " // node%name // "_R " // end_node //" "// termination_l)
+            call appendToStringArray(res, buff)
+            buff = trim("C" // node%name // " " // node%name // " " // end_node //" "// termination_c)
+            call appendToStringArray(res, buff)
+        end if
+        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
 
 
     end function
 
     function writeSeriesNode(node, termination, end_node) result(res)
-        type(node_t), intent(in) :: node
-        class(termination_t), intent(in) :: termination
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
 
@@ -461,49 +481,73 @@ contains
 
     end function
 
+    subroutine appendToStringArray(arr, str)
+        ! This has been implemented because there seems to be a bug in gfortran: 
+        ! https://fortran-lang.discourse.group/t/read-data-and-append-it-to-array-best-practice/1915
+        ! and arr = [ arr, str ] can't be used.
+        character(len=256), allocatable, intent(inout) :: arr(:)
+        character(len=256), intent(in) :: str
+        character(len=256), allocatable :: old_arr(:)
+        
+        old_arr = arr
+        deallocate(arr)
+        allocate(arr(size(old_arr)+1))
+        arr(1:size(old_arr)) = old_arr 
+        arr(size(old_arr)+1) = str
+    end subroutine
+
     function writeShortNode(node, termination, end_node) result(res)
-        type(node_t), intent(in) :: node
-        class(termination_t), intent(in) :: termination
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
         character(20) :: short_R, line_c
 
         write(short_r, *) 1e-10
         write(line_c, *) node%line_c_per_meter*node%step/2
 
         allocate(res(0))
-        select type(termination)
-        type is(termination_with_source_t)
-            res = [res, trim("R" // node%name // " " // node%name // " " // node%name //"_R")//" "//trim(short_R)]
-            res = [res, trim("V" // node%name // " " // node%name // "_R " // end_node//" dc 0")]
-        type is(termination_t)
-            res = [res, trim("R" // node%name // " " // node%name // " " // end_node)//" "//trim(short_R)]
-        end select
-        res = [res, trim("I" // node%name // " " // node%name// " 0 " // " dc 0")]
-        res = [res, trim("CL" // node%name // " " // node%name // " 0 " // line_c)]
+        if (termination%path_to_excitation /= "") then
+            buff = trim("R" // node%name // " " // node%name // " " // node%name //"_R")//" "//trim(short_R)
+            call appendToStringArray(res, buff)
+            buff = trim("V" // node%name // " " // node%name // "_R " // end_node//" dc 0")
+            call appendToStringArray(res, buff)
+        else
+            buff = trim("R" // node%name // " " // node%name // " " // end_node)//" "//trim(short_R)
+            call appendToStringArray(res, buff)
+        end if
+        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
         
     end function
 
     function writeOpenNode(node, termination, end_node) result(res)
-        type(node_t), intent(in) :: node
-        class(termination_t), intent(in) :: termination
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
         character(20) :: line_c
 
         write(line_c, *) node%line_c_per_meter*node%step/2
 
         allocate(res(0))
-        res = [res, trim("I" // node%name // " " // node%name// " 0 " // " dc 0")]
-        res = [res, trim("CL" // node%name // " " // node%name // " 0 " // line_c)]
+        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
         
     end function
 
     function writeLCpRsNode(node, termination, end_node) result(res)
-        type(node_t), intent(in) :: node
-        class(termination_t), intent(in) :: termination
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
         character(len=:), allocatable :: node_name
         character(20) :: termination_r, termination_l, termination_c, line_c
         
@@ -513,24 +557,30 @@ contains
         write(line_c, *) node%line_c_per_meter * node%step/2
        
         allocate(res(0))
-        res = [res, trim("R" // node%name // " " // node%name // " "   // node%name //"_p " // termination_r)]
-        select type(termination)
-        type is(termination_with_source_t)
-            res = [res, trim("L" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_l)]
-            res = [res, trim("C" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_c)]
-            res = [res, trim("V" // node%name // " " // node%name // "_V " // end_node //" dc 0" )]
-        type is(termination_t)
-            res = [res, trim("L" // node%name // " " // node%name // "_p " // end_node //" "// termination_l)]
-            res = [res, trim("C" // node%name // " " // node%name // "_p " // end_node //" "// termination_c)]
-        end select
-        res = [res, trim("I" // node%name // " " // node%name// " 0 " // " dc 0")]
-        res = [res, trim("CL" // node%name // " " // node%name // " 0 " // line_c)]
+        res = [trim("R" // node%name // " " // node%name // " "   // node%name //"_p " // termination_r)]
+        if (termination%path_to_excitation /= "") then
+            buff = trim("L" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_l)
+            call appendToStringArray(res, buff)
+            buff = trim("C" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_c)
+            call appendToStringArray(res, buff)
+            buff = trim("V" // node%name // " " // node%name // "_V " // end_node //" dc 0" )
+            call appendToStringArray(res, buff)
+        else
+            buff =  trim("L" // node%name // " " // node%name // "_p " // end_node //" "// termination_l)
+            call appendToStringArray(res, buff)
+            buff =  trim("C" // node%name // " " // node%name // "_p " // end_node //" "// termination_c)
+            call appendToStringArray(res, buff)
+        end if
+        buff =  trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
 
     end function
 
     function writeNodeDescription(node, termination, end_node) result(res)
-        type(node_t), intent(in) :: node
-        class(termination_t), intent(in) :: termination
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
         character(len=256), allocatable :: res(:)
         character(len=*), intent(in) :: end_node
 
@@ -554,10 +604,9 @@ contains
         integer :: stat
         type(mtl_bundle_t), target :: tbundle
         integer :: d
-        type(node_t) :: res
+        type(nw_node_t) :: res
         character(len=4) :: sConductor
         integer :: conductor_number
-        class(termination_t), allocatable :: termination
 
         call this%conductors_before_cable%get(key(node%belongs_to_cable%name), conductor_number)
         conductor_number = conductor_number + node%conductor_in_cable
@@ -567,7 +616,7 @@ contains
         tbundle = this%bundles(d)
         write(sConductor,'(I0)') node%conductor_in_cable
         res%name = trim(node%belongs_to_cable%name)//"_"//trim(sConductor)//"_"//nodeSideToString(node%side)
-
+        write(*,*) res%name
         res%v = 0.0
         res%i = 0.0
         res%bundle_number = d
@@ -587,12 +636,9 @@ contains
             res%step = tbundle%du(ubound(tbundle%du,1), conductor_number, conductor_number)
             res%side = TERMINAL_NODE_SIDE_END
         end if
+        
+        res%source = node%termination%path_to_excitation
 
-        res%source = ""
-        select type(termination => node%termination)
-        type is(termination_with_source_t)
-            res%source = termination%path_to_excitation
-        end select
     contains
         function nodeSideToString(side) result(cSide)
             character (len=:), allocatable :: cSide
@@ -610,24 +656,30 @@ contains
     subroutine connectNodeToGround(this, terminal_nodes, nodes, description)
         class(preprocess_t) :: this
         type(terminal_node_t), dimension(:), allocatable :: terminal_nodes
-        type(node_t),  dimension(:), allocatable, intent(inout) :: nodes
+        type(nw_node_t),  dimension(:), allocatable, intent(inout) :: nodes
         character(256), dimension(:), allocatable, intent(inout) :: description
+        character(256), dimension(:), allocatable :: node_description, old_description
 
-        type(node_t) :: new_node
+        type(nw_node_t) :: new_node
         integer :: stat
-        
+
         new_node = this%addNodeWithId(terminal_nodes(1))
-        
         nodes = [nodes, new_node]
-        description = [description, writeNodeDescription(new_node, terminal_nodes(1)%termination, "0")]
+
+        node_description = writeNodeDescription(new_node, terminal_nodes(1)%termination, "0")
+        old_description = description
+        deallocate(description)
+        allocate(description(size(old_description) + size(node_description)))
+        description(1:size(old_description)) = old_description
+        description((size(old_description)+1):size(description)) = node_description(:)
     end subroutine
 
     subroutine connectNodes(this, terminal_nodes, nodes, description)
         class(preprocess_t) :: this
         type(terminal_node_t), dimension(:), allocatable :: terminal_nodes
-        type(node_t),  dimension(:), intent(inout) :: nodes
+        type(nw_node_t),  dimension(:), intent(inout) :: nodes
         character(256), dimension(:), intent(inout) :: description
-        type(node_t) :: new_node
+        type(nw_node_t) :: new_node
         integer :: i, stat
         character(len=:), allocatable :: interior_node
 
@@ -644,7 +696,7 @@ contains
     function buildNetwork(this,terminal_network) result(res)
         class(preprocess_t) :: this
         type(terminal_network_t), intent(in) :: terminal_network
-        type(node_t), dimension(:), allocatable :: nodes
+        type(nw_node_t), dimension(:), allocatable :: nodes
         character(256), dimension(:), allocatable :: description
         type(network_t) :: res
         integer :: i
@@ -664,8 +716,14 @@ contains
 
     subroutine endDescription(description)
         character(256), dimension(:), allocatable, intent(inout) :: description
-        description = [description, ".end"]
-        description = [description, "NULL"]
+        character(256) :: buff
+
+        buff = ".end"
+        call appendToStringArray(description, buff)
+        
+        buff = "NULL"
+        call appendToStringArray(description, buff)
+        
     end subroutine
 
     subroutine addNetworksDescription(description, networks)
@@ -679,16 +737,21 @@ contains
 
     subroutine addAnalysis(description, final_time, dt)
         character(256), dimension(:), allocatable, intent(inout) :: description
+        character(256) :: buff
         real, intent(in) :: final_time, dt
         character(20) :: sTime, sdt
+        
         write(sTime, '(E10.2)') final_time
         write(sdt, '(E10.2)') dt
-        description = [description, trim(".tran "//sdt//" "//sTime)]
+
+        buff = trim(".tran "//sdt//" "//sTime//" 0 "//sdt)
+        call appendToStringArray(description, buff)       
 
     end subroutine
 
     subroutine addSavedNodes(description, networks)
         character(256), dimension(:), allocatable, intent(inout) :: description
+        character(256) :: buff
         type(network_t), dimension(:), intent(in) :: networks
         character(len=:), allocatable :: saved_nodes
         integer :: i,j
@@ -699,7 +762,9 @@ contains
                 saved_nodes = saved_nodes // trim(networks(j)%nodes(i)%name) // " "
             end do
         end do
-        description = [description, trim(saved_nodes)]
+        
+        buff = trim(saved_nodes)
+        call appendToStringArray(description, buff)
 
     end subroutine
 
@@ -718,7 +783,7 @@ contains
         end do
         
         allocate(description(0))
-        description = [description, "* network description message"]
+        description = ["* network description message"]
         call addNetworksDescription(description, networks)
         call addAnalysis(description, this%final_time, this%dt)
         call addSavedNodes(description, networks)

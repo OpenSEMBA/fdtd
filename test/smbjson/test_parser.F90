@@ -1,6 +1,6 @@
 integer function test_parser_ctor() bind(C) result(err)
    use smbjson
-   use testingTools
+   use smbjson_testingTools
 
    implicit none
 
@@ -14,7 +14,7 @@ end function
 
 integer function test_parser_tools_interval_to_coords() result(err)
    use parser_tools_mod
-   use testingTools
+   use smbjson_testingTools
 
    implicit none
 
@@ -69,7 +69,7 @@ end function
 integer function test_parser_read_mesh() bind(C) result(err)
 
    use smbjson
-   use testingTools
+   use smbjson_testingTools
 
    implicit none
 
