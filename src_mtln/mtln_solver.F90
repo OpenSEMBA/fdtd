@@ -7,7 +7,7 @@ module mtln_solver_mod
 
 
     type, public :: mtln_t
-        real :: time, dt
+        real :: time, dt, final_time
         type(mtl_bundle_t), allocatable, dimension(:) :: bundles
         type(network_manager_t) :: network_manager
         type(probe_t), allocatable, dimension(:) :: probes
@@ -25,10 +25,10 @@ module mtln_solver_mod
         procedure :: advanceTime
         procedure :: step => mtln_step
         procedure :: step_alone
-        procedure :: setExternalVoltage
-        procedure :: updateExternalCurrent
+        procedure :: setExternalLongitudinalField
         
         procedure :: runUntil
+        procedure :: run => mtln_run
 
     end type mtln_t
 
@@ -54,13 +54,13 @@ contains
 
         res%dt = pre%dt
         res%time  = 0.0
-        
+        res%final_time = pre%final_time
+
         res%bundles = pre%bundles
         res%network_manager = pre%network_manager
         res%number_of_bundles = size(res%bundles)
         res%probes = pre%probes
         call res%updateBundlesTimeStep(res%dt)
-        call res%updatePULTerms(res%getTimeRange(pre%final_time))
         call res%initNodes()
     end function
 
@@ -79,16 +79,15 @@ contains
         class(mtln_t) :: this
         integer :: i 
 
-        call this%setExternalVoltage()
+        call this%setExternalLongitudinalField()
 
         call this%advanceBundlesVoltage()
         call this%advanceNWVoltage()
         call this%advanceBundlesCurrent()
 
         call this%advanceTime()
-        call this%updateProbes()
+        ! call this%updateProbes()
 
-        ! call this%updateExternalCurrent()
     end subroutine
 
     subroutine step_alone(this)
@@ -105,25 +104,12 @@ contains
 
     end subroutine
 
-    subroutine setExternalVoltage(this)
+    subroutine setExternalLongitudinalField(this)
         class(mtln_t) :: this
         integer :: i
         do i = 1, this%number_of_bundles
-            call this%bundles(i)%setExternalVoltage()
+            call this%bundles(i)%setExternalLongitudinalField()
         end do
-
-    end subroutine
-
-    subroutine updateExternalCurrent(this, currents)
-        class(mtln_t) :: this
-        ! real, dimension(:,:), intent(inout) :: currents
-        real, dimension(:,:,:), intent(inout) :: currents
-        integer :: i
-        do i = 1, this%number_of_bundles
-            call this%bundles(i)%updateExternalCurrent(currents)
-            ! call this%bundles(i)%updateExternalCurrent(currents(i,:))
-        end do
-
 
     end subroutine
 
@@ -192,11 +178,15 @@ contains
         end do
     end subroutine
 
-    function getTimeRange(this, final_time) result(res)
+    function getTimeRange(this, time) result(res)
         class(mtln_t) :: this
-        real, intent(in) :: final_time
+        real, intent(in), optional :: time
         integer :: res
-        res =  floor(final_time / this%dt)
+        if (present(time)) then 
+            res =  floor(time / this%dt)
+        else
+            res =  floor(this%final_time / this%dt)
+        end if
     end function
 
     subroutine updateBundlesTimeStep(this, dt)
@@ -208,15 +198,15 @@ contains
         end do
     end subroutine
 
-    subroutine updatePULTerms(this, n_time_steps)
+    subroutine updatePULTerms(this)
         class(mtln_t) :: this
-        integer, intent(in) :: n_time_steps
         integer :: i, j 
         do i = 1, this%number_of_bundles
             call this%bundles(i)%updateLRTerms()
             call this%bundles(i)%updateCGTerms()
             do j = 1, size(this%bundles(i)%probes)
-                call this%bundles(i)%probes(j)%resizeFrames(n_time_steps, this%bundles(i)%number_of_conductors)
+                call this%bundles(i)%probes(j)%resizeFrames(this%getTimeRange(this%final_time), & 
+                                                            this%bundles(i)%number_of_conductors)
             end do
         end do
    
@@ -225,10 +215,27 @@ contains
 
     subroutine runUntil(this, final_time)
         class(mtln_t) :: this
-        real, intent(in) :: final_time
+        real, intent(in):: final_time
+        real :: time
         integer :: i
 
         do i = 1, this%getTimeRange(final_time)
+            call this%advanceBundlesVoltage()
+            call this%advanceNWVoltage()
+            call this%advanceBundlesCurrent()
+            call this%advanceTime()
+            call this%updateProbes()
+        end do
+
+    end subroutine
+
+    subroutine mtln_run(this)
+        class(mtln_t) :: this
+        real :: time
+        integer :: i
+
+        call this%updatePULTerms()
+        do i = 1, this%getTimeRange(this%final_time)
             call this%advanceBundlesVoltage()
             call this%advanceNWVoltage()
             call this%advanceBundlesCurrent()

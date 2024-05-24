@@ -14,6 +14,12 @@ class Probe():
     def __init__(self, probe_filename):
         self.filename = probe_filename
         
+        # with open(probe_filename, 'r') as file:
+        #     data = file.read()             
+        #     data = data.replace('/', '-') 
+        # with open(probe_filename, 'w') as file:
+        #     file.write(data) 
+
         current_probe_tags = ['_Wx_', '_Wy_', '_Wz_']
         far_field_tag = ['_FF_']
         movie_tags = ['_ExC_', '_EyC_', '_EzC_', '_HxC_', '_HyC_', '_HzC_']
@@ -36,7 +42,8 @@ class Probe():
                     self.cell = positionStrToCell(position_str)
                     self.segment_tag = int(position_str.split('_s')[1])
                     self.df = pd.read_csv(self.filename, sep='\s+')
-                    self.df = self.df.rename(columns={'t': 'time', basename: 'current'})
+                    self.df = self.df.rename(columns={'t': 'time', self.df.columns[1]: 'current'})
+                    # self.df = self.df.rename(columns={'t': 'time', basename: 'current'})
                 elif tag in far_field_tag:
                     self.type = 'farField'
                     self.name, positions_str = basename_with_no_case_name.split(tag)

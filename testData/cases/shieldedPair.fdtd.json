@@ -32,9 +32,8 @@
 			"name": "Shield",
 			"id": 2,
 			"type": "wire",
-			"radius": 0.0001,
-			"__referenceInductancePerMeter": 5.362505362505362e-07,
-			"__referenceCapacitancePerMeter": 20.72e-12,
+			"radius": 0.02,
+            "inductancePerMeter": 0.0,
 			"resistancePerMeter": 22.9e-3
 		},
 		{
@@ -58,25 +57,43 @@
 
 	"mesh": {
 		"grid": {
-			"numberOfCells": [2, 2, 20],
+			"numberOfCells": [4, 4, 20],
 			"steps": {"x": [1.0], "y": [1.0], "z": [0.03]}
 		},
 		"coordinates": [
-			{"id": 1, "relativePosition": [1, 1,  1] },
-			{"id": 2, "relativePosition": [1, 1, 19] },
-			{"id": 3, "relativePosition": [1, 1,  1] },
-			{"id": 4, "relativePosition": [1, 1,  1] },
-			{"id": 5, "relativePosition": [1, 1, 19] },
-			{"id": 6, "relativePosition": [1, 1, 19] }
+			{"id": 1, "relativePosition": [2, 2,  1] },
+			{"id": 2, "relativePosition": [2, 2, 19] },
+			{"id": 3, "relativePosition": [2, 2,  1] },
+			{"id": 4, "relativePosition": [2, 2,  1] },
+			{"id": 5, "relativePosition": [2, 2, 19] },
+			{"id": 6, "relativePosition": [2, 2, 19] }
 		],
 		"elements": [
 			{ "id": 1, "type": "polyline", "coordinateIds": [1, 2]},
 			{ "id": 2, "type": "polyline", "coordinateIds": [3, 5]},
 			{ "id": 3, "type": "polyline", "coordinateIds": [4, 6]},
-			{ "id": 4, "type": "node",     "coordinateIds": [2] }
+			{ "id": 4, "type": "node",     "coordinateIds": [2] },
+            { "id": 5, "type": "cell", "intervals": [[[1,1,1], [3, 3, 19]]] }
 		]
 	},
 	
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "shielded_pair.exc",
+            "elementIds": [5],
+            "direction": {
+                "theta": 1.5708,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 0.0,
+                "phi": 0.0
+            }
+        }
+    ],
+
+
 	"probes": [
 		{
 			"name": "voltage_at_wire_end",

@@ -8,18 +8,23 @@ module Wire_bundles_mtln_mod
    use report
    use fdetypes
    use mtln_solver_mod , mtln_solver_t => mtln_t 
-
+   use mtln_types_mod, only: mtln_t
+   use HollandWires
+   use wiresHolland_constants
+   use ilumina
    implicit none
    
    REAL (KIND=RKIND_wires)           ::  eps0,mu0
    private   
-   public InitWires_mtln,AdvanceWiresE_mtln
-     
+
+   public InitWires_mtln, AdvanceWiresE_mtln
+   type(mtln_solver_t) :: mtln_solver
+   integer, dimension(:,:), allocatable :: indexMap
 
 contains
 
 
-   subroutine InitWires_mtln(sgg,Ex,Ey,Ez,mtln_solver,thereAreMTLNbundles)         
+   subroutine InitWires_mtln(sgg,Ex,Ey,Ez, eps00, mu00, mtln_parsed,thereAreMTLNbundles)
       type (SGGFDTDINFO), intent(IN), target    :: sgg 
       REAL (KIND=RKIND), intent(inout), target :: &
          Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,  &
@@ -30,74 +35,164 @@ contains
             sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
          Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,  &
             sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,  &
-            sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)   
-      class(mtln_solver_t) :: mtln_solver  
-        logical :: thereAreMTLNbundles
-      
+            sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
+      real(KIND=RKIND) :: eps00,mu00
+   
+      type(mtln_t) :: mtln_parsed
+      logical :: thereAreMTLNbundles
+      type(Thinwires_t), pointer  ::  hwires
+
+      eps0 = eps00
+      mu0 = mu00
+
+      mtln_solver = mtlnCtor(mtln_parsed)
+
       if (mtln_solver%number_of_bundles>=1) then 
            thereAreMTLNbundles=.true.
         else    
            thereAreMTLNbundles=.false.
            return
-        endif
-      
-      block
-         integer (kind=4) :: i, j, k, m, n
-         do m = 1, mtln_solver%NUMBER_OF_BUNDLES
-            do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
-               call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))                          
-               select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))  
-                case(1)                                
-                  mtln_solver%bundles(m)%external_field_segments(n)%Efield_wire2main => Ex(i, j, k) 
-                  mtln_solver%bundles(m)%external_field_segments(n)%Efield_main2wire => Ex(i, j, k) 
-                case(2)     
-                  mtln_solver%bundles(m)%external_field_segments(n)%Efield_wire2main => Ey(i, j, k)
-                  mtln_solver%bundles(m)%external_field_segments(n)%Efield_main2wire => Ey(i, j, k)  
-                case(3)     
-                  mtln_solver%bundles(m)%external_field_segments(n)%Efield_wire2main => Ez(i, j, k)
-                  mtln_solver%bundles(m)%external_field_segments(n)%Efield_main2wire => Ez(i, j, k)  
-                end select
-                 
-            end do
-        end do
-      end block
+      endif
 
+      hwires => GetHwires()
+      indexMap = mapFieldToCurrentSegments(hwires, mtln_solver%bundles)
+
+      call pointSegmentsToFields()
+      call assignLCToExternalConductor()
+      call updateNetworksLineCapacitors()
+      call mtln_solver%updatePULTerms()
+
+   contains
+
+      subroutine pointSegmentsToFields()
+         integer (kind=4) :: i, j, k, m, n, direction
+         do m = 1, mtln_solver%number_of_bundles
+            do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
+               call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
+               direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
+               select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))
+                  case(1)                                
+                  mtln_solver%bundles(m)%external_field_segments(n)%field => Ex(i, j, k) 
+                  case(2)     
+                  mtln_solver%bundles(m)%external_field_segments(n)%field => Ey(i, j, k) 
+                  case(3)     
+                  mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k) 
+                  end select
+            end do
+         end do
+      end subroutine
+
+      subroutine assignLCToExternalConductor()
+         integer(kind=4) :: m, n
+         real (kind=rkind) :: l,c
+         do m = 1, mtln_solver%number_of_bundles
+            do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
+               l = hwires%CurrentSegment(indexMap(m,n))%Lind
+               c = mu0*eps0/l
+               mtln_solver%bundles(m)%lpul(n,1,1) = l
+               mtln_solver%bundles(m)%cpul(n,1,1) = c
+            end do
+            mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1,1) = &
+               mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1,1)
+         end do
+      end subroutine
+
+      subroutine updateNetworksLineCapacitors()
+         integer(kind=4) :: m,init, end, sep
+         do m = 1, mtln_solver%number_of_bundles
+            init = lbound(mtln_solver%bundles(m)%cpul,1)
+            end = ubound(mtln_solver%bundles(m)%cpul,1)
+            sep = index(mtln_solver%bundles(m)%name,"_")
+            call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
+               trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_initial",&
+               mtln_solver%bundles(m)%cpul(init,1,1)*mtln_solver%bundles(m)%step_size(init)*0.5)
+
+            call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
+               trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_end",&
+               mtln_solver%bundles(m)%cpul(end,1,1)*mtln_solver%bundles(m)%step_size(end-1)*0.5)
+
+         end do   
+      end subroutine
+
+      function mapFieldToCurrentSegments(wires, bundles) result (res)
+         type(Thinwires_t), pointer  ::  wires
+         type(mtl_bundle_t), allocatable, dimension(:) :: bundles
+         integer, dimension(:,:), allocatable :: res
+         integer :: m, n, nmax, iw
+         integer :: i, j, k
+         nmax = 0
+         do m = 1, mtln_solver%number_of_bundles
+            if (ubound(mtln_solver%bundles(m)%lpul,1) > nmax) then 
+               nmax = ubound(mtln_solver%bundles(m)%lpul,1)
+            end if 
+         end do
+         allocate(res(m,nmax))
+         do m = 1, mtln_solver%number_of_bundles
+            do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
+               call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))                          
+               do iw = 1, wires%NumCurrentSegments
+                  if ((i == wires%CurrentSegment(iw)%i) .and. &
+                     (j == wires%CurrentSegment(iw)%j) .and. &
+                     (k == wires%CurrentSegment(iw)%k)) then
+                        res(m,n) = iw
+                  end if
+               end do
+            end do
+         end do
+      end function
    endsubroutine InitWires_mtln
 
-   subroutine AdvanceWiresE_mtln(sgg,Idxh, Idyh, Idzh, eps00,mu00,mtln_solver)  
-      class(mtln_solver_t) :: mtln_solver  
+   subroutine AdvanceWiresE_mtln(sgg,Idxh, Idyh, Idzh, eps00,mu00)  
       type (SGGFDTDINFO), intent(IN), target    :: sgg      
-       real (kind=RKIND), dimension (:), intent(in) :: &
+      real (kind=RKIND), dimension (:), intent(in) :: &
          Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
          Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
          Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
-        real(KIND=RKIND) :: cte,eps00,mu00
-      integer (kind=4) :: i, j, k, direction, m, n
-      real (kind= rkind) :: current
-        REAL (KIND=RKIND),pointer:: punt
-        
+      real(KIND=RKIND) :: cte,eps00,mu00
+      integer (kind=4) :: m, n
+      REAL (KIND=RKIND),pointer:: punt
+      type(Thinwires_t), pointer  ::  hwires
+
       eps0 = eps00 
       mu0 = mu00
       
-      call mtln_solver%step()
-        
+      hwires => GetHwires()
       do m = 1, mtln_solver%number_of_bundles
          do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
-            call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))                          
-            direction = mtln_solver%bundles(m)%external_field_segments(n)%direction    
-            punt => mtln_solver%bundles(m)%external_field_segments(n)%Efield_wire2main
-            current = mtln_solver%bundles(m)%i(1, n)
-                select case (abs(direction))  
-                case(1)   
-                    cte=sgg%dt /eps0 *Idyh(j)*idzh(k)
-                case(2)     
-                    cte=sgg%dt /eps0 *Idzh(k)*idxh(i)
-                case(3)   
-                    cte=sgg%dt /eps0 *Idxh(i)*idyh(j)
-                end select
-            punt = punt - sign(cte,real(direction,kind=rkind)) * current
-            end do
-        end do
+            punt => mtln_solver%bundles(m)%external_field_segments(n)%field
+            punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent()
+            hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent()
+         end do
+      end do
+      call mtln_solver%step()
+
+      contains
+
+      function getOrientedCurrent() result(res)
+         real(kind=rkind) :: res
+         integer (kind=4) :: i, j, k, direction
+         direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
+         call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
+         res = mtln_solver%bundles(m)%i(1, n) * sign(1.0, real(direction))
+      end function
+
+      function computeFieldFromCurrent() result(res)
+         real(kind=rkind) :: dS_inverse, factor
+         real(kind=rkind) :: res
+         integer (kind=4) :: i, j, k, direction
+         direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
+         call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
+         select case (abs(direction))  
+         case(1)   
+            dS_inverse = (idyh(j)*idzh(k))
+         case(2)     
+            dS_inverse = (idxh(i)*idzh(k))
+         case(3)   
+            dS_inverse = (idxh(i)*idyh(j))
+         end select
+         factor = (sgg%dt / eps0) * dS_inverse
+         res = factor * getOrientedCurrent()
+      end function
 
    end subroutine AdvanceWiresE_mtln
 

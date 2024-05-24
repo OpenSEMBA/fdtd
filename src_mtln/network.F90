@@ -8,8 +8,6 @@ module network_mod
     type nw_node_t
         character(len=:), allocatable :: name
         character(len=:), allocatable :: source
-        ! character(len=:), allocatable :: name
-        ! character(len=:), allocatable :: source
         real :: line_c_per_meter
         real :: step
         real :: v

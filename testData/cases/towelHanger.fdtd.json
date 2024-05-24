@@ -4,7 +4,7 @@
 
     "general": {
         "timeStep": 1e-12,
-        "numberOfSteps": 1000
+        "numberOfSteps": 2000
     },
   
     "boundary": {
@@ -27,12 +27,15 @@
         {
             "id": 2,
             "type": "terminal",
-            "terminations": [{"type": "series", "resistance": 50}]
+            "terminations": [{
+                "type": "series", 
+                "resistance" : 50.0}]
         },
         {
             "id": 3,
             "type": "terminal",
-            "terminations": [{"type": "short"}]
+            "terminations": [{
+                "type": "short"}]
         },
         {
             "id": 4,
@@ -55,9 +58,10 @@
         ],
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [1]},
-            {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3, 4] },
+            {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 5, 3, 4] },
             {"id": 3, "type": "cell", "intervals": [[[25, 20, 30], [45, 30, 30]]] },
             {"id": 4, "type": "node", "coordinateIds": [4]},
+            {"id": 5, "type": "cell", "intervals": [[[1, 1, 1], [59, 59, 59]]] },
             {"id": 6, "type": "node", "coordinateIds": [5]}
         ]
     },
@@ -65,25 +69,25 @@
     "materialAssociations": [
         { 
             "type": "cable",
+            "name": "wire",
             "materialId": 1,
             "initialTerminalId": 2,
             "endTerminalId": 3,
             "elementIds": [2]
         },
-        {
-            "type": "bulk", 
-            "materialId": 4, 
+        { 
+            "type": "bulk",
+            "materialId" : 4,
             "elementIds": [3]
         }
     ],
-
     "sources": [
         {
-            "name": "terminal_generator",
-            "type": "generator",
-            "magnitudeFile": "ramp.exc",
-            "elementIds": [1],
-            "field": "voltage"
+            "name" : "terminal_source",
+            "type" : "generator",
+            "magnitudeFile" : "towelHanger.exc",
+            "elementIds" : [1],
+            "field" : "voltage"
         }
     ],
 
@@ -101,8 +105,14 @@
             "field": "current",
             "elementIds": [4],
             "domain": { "type": "time" }
+        },
+        {
+            "name": "wire_mid",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [6],
+            "domain": { "type": "time" }
         }
-
 
     ]
 }

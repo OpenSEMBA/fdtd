@@ -50,6 +50,7 @@ module circuit_mod
         procedure :: updateNodeCurrent
         procedure :: updateNodeVoltage
         procedure :: updateVoltageSources
+        procedure :: modifyLineCapacitorValue
 
     end type circuit_t
 
@@ -221,6 +222,16 @@ contains
         end do
     end subroutine
 
+    subroutine modifyLineCapacitorValue(this, name, c)
+        class(circuit_t) :: this
+        character(*), intent(in) :: name
+        real, intent(in) :: c
+        character(20) :: sC
+
+        write(sC, *) c
+        call command("alter @CL"//trim(name)//" = "//trim(sC) // c_null_char)
+
+    end subroutine
 
     subroutine updateNodeCurrent(this, node_name, current)
         class(circuit_t) :: this

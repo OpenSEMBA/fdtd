@@ -27,25 +27,25 @@ contains
       expected%general%nmax = 1000
 
       ! Excected media matrix.
-      expected%matriz%totalX = 2
-      expected%matriz%totalY = 2
+      expected%matriz%totalX = 4
+      expected%matriz%totalY = 4
       expected%matriz%totalZ = 20
 
       ! Expected grid.
-      expected%despl%nX = 2
-      expected%despl%nY = 2
+      expected%despl%nX = 4
+      expected%despl%nY = 4
       expected%despl%nZ = 20
 
-      allocate(expected%despl%desX(2))
-      allocate(expected%despl%desY(2))
+      allocate(expected%despl%desX(4))
+      allocate(expected%despl%desY(4))
       allocate(expected%despl%desZ(20))
       expected%despl%desX = 1.0
       expected%despl%desY = 1.0
       expected%despl%desZ = 0.03
       expected%despl%mx1 = 0
-      expected%despl%mx2 = 2
+      expected%despl%mx2 = 4
       expected%despl%my1 = 0
-      expected%despl%my2 = 2
+      expected%despl%my2 = 4
       expected%despl%mz1 = 0
       expected%despl%mz2 = 20
 
@@ -53,6 +53,20 @@ contains
       expected%front%tipoFrontera(:) = F_MUR
 
       ! Expected sources.
+      allocate(expected%plnSrc%collection(1))
+      expected%plnSrc%collection(1)%nombre_fichero = "double_exp.exc"
+      expected%plnSrc%collection(1)%atributo = ""
+      expected%plnSrc%collection(1)%coor1 = [1, 1, 1]
+      expected%plnSrc%collection(1)%coor2 = [2, 2, 18]
+      expected%plnSrc%collection(1)%theta = 3.1416
+      expected%plnSrc%collection(1)%phi = 1.5708
+      expected%plnSrc%collection(1)%alpha = 1.5708
+      expected%plnSrc%collection(1)%beta = 0.0
+      expected%plnSrc%collection(1)%isRC=.false.
+      expected%plnSrc%collection(1)%nummodes=1
+      expected%plnSrc%collection(1)%INCERTMAX=0.0
+      expected%plnSrc%nc = 1
+      expected%plnSrc%nC_max = 1
 
       ! Expected probes
       ! oldSonda
@@ -113,8 +127,8 @@ contains
       allocate(expected%tWires%tw(1)%twc(18))
       expected%tWires%tw(1)%twc(1:18)%srcfile = 'None'
       expected%tWires%tw(1)%twc(1:18)%srctype = 'None'
-      expected%tWires%tw(1)%twc(1:18)%i = 1
-      expected%tWires%tw(1)%twc(1:18)%j = 1
+      expected%tWires%tw(1)%twc(1:18)%i = 2
+      expected%tWires%tw(1)%twc(1:18)%j = 2
       expected%tWires%tw(1)%twc(1:18)%k = [(i, i=1, 18)]
       expected%tWires%tw(1)%twc(1:18)%d = DIR_Z
       expected%tWires%tw(1)%twc(1)%nd  = 1
@@ -149,10 +163,9 @@ contains
       expected%mtln%cables(2)%step_size =  [(0.03, i = 1, 18)]
       allocate(expected%mtln%cables(2)%external_field_segments(18))
       do i = 1, 18
-         expected%mtln%cables(2)%external_field_segments(i)%position = (/1,1,i/)
+         expected%mtln%cables(2)%external_field_segments(i)%position = (/2,2,i/)
          expected%mtln%cables(2)%external_field_segments(i)%direction = DIRECTION_Z_POS
-         expected%mtln%cables(2)%external_field_segments(i)%Efield_wire2main => null()
-         expected%mtln%cables(2)%external_field_segments(i)%Efield_main2wire => null()
+         expected%mtln%cables(2)%external_field_segments(i)%field => null()
 
       end do
 
@@ -182,10 +195,9 @@ contains
       expected%mtln%cables(1)%step_size = [(0.03, i = 1, 18)]
       allocate(expected%mtln%cables(1)%external_field_segments(18))
       do i = 1, 18
-         expected%mtln%cables(1)%external_field_segments(i)%position = (/1,1,i/)
+         expected%mtln%cables(1)%external_field_segments(i)%position = (/2,2,i/)
          expected%mtln%cables(1)%external_field_segments(i)%direction = DIRECTION_Z_POS
-         expected%mtln%cables(1)%external_field_segments(i)%Efield_wire2main => null()
-         expected%mtln%cables(1)%external_field_segments(i)%Efield_main2wire => null()
+         expected%mtln%cables(1)%external_field_segments(i)%field => null()
       end do
       expected%mtln%cables(1)%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
       expected%mtln%cables(1)%transfer_impedance%resistive_term = 0.0

@@ -3,7 +3,7 @@
     "__comments": "1m linear antenna illuminated by a pulse : Holland, R. Finite-Difference Analysis of EMP Coupling to Thin Struts and Wires. 2000. IEEE-TEMC.",
 
     "general": {
-        "timeStep": 1e-12,
+        "timeStep": 30e-12,
         "numberOfSteps": 1000
     },
   
@@ -39,18 +39,21 @@
         "coordinates": [
             {"id": 1, "relativePosition": [11, 11,  7]},
             {"id": 2, "relativePosition": [11, 11, 12]},
-            {"id": 3, "relativePosition": [11, 11, 17]}
+            {"id": 3, "relativePosition": [11, 11, 17]},
+            {"id": 4, "relativePosition": [12, 11, 17]}
         ],
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [2]},
             {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
-            {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [19, 19, 21]]] }
+            {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [19, 19, 21]]] },
+            {"id": 4, "type": "node", "coordinateIds": [4]}
         ]
     },
 
     "materialAssociations": [
         { 
             "type": "cable",
+            "name" : "single_wire",
             "materialId": 1,
             "initialTerminalId": 2,
             "endTerminalId": 2,
@@ -61,7 +64,7 @@
     "sources": [
         {
             "type": "planewave",
-            "magnitudeFile": "gauss.exc",
+            "magnitudeFile": "holland.exc",
             "elementIds": [3],
             "direction": {
                 "theta": 1.5708,

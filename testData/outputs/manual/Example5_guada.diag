@@ -1,0 +1,93 @@
+ 
+ Release: MHarness v3.2 (Sept 2003)      
+ Revision: MHarness 3.2.3 (Oct 2008)     
+ 
+ Date of execution: 2023-11-02   14:15:11
+ Inputfile is: 
+     
+ C:\Users\c82202\Desktop\Job\PC\Tecnologias\Hecate\MHarness_UGR\Example5\Example
+ 5_guada.inp
+ diagnostic file will be: 
+     
+ C:\Users\c82202\Desktop\Job\PC\Tecnologias\Hecate\MHarness_UGR\Example5\Example
+ 5_guada.diag
+ 
+  the incident propagation unit vector is :
+  0.000E+00  0.000E+00 -1.000E+00
+ 
+  the incident E field unit vector is :
+  1.000E+00  0.000E+00  0.000E+00
+ 
+  the reflected propagation unit vector is :
+  0.000E+00  0.000E+00  1.000E+00
+ 
+  the reflected E field unit vector is :
+ -1.000E+00  0.000E+00  0.000E+00
+
+
+           -------------- segments --------------- 
+     seg            #cond  #cell  end1                 end2                length
+1    2     18   0  0    5.400E-01
+
+
+  !capacitance  
+ 
+ 1                                                               
+   8.5000014E-11 -2.0500004E-11
+  -2.0500004E-11  8.5000014E-11
+
+
+  !inductance  
+ 
+ 1                                                               
+   3.0918224E-07  7.4567495E-08
+   7.4567495E-08  3.0918227E-07
+
+
+  resistance
+seg                  cond                  cell# 1     body       last cell
+ 
+1 1    0.000E+00  0.000E+00  0.000E+00
+1 2    0.000E+00  0.000E+00  0.000E+00
+
+
+  !shield one to cable
+ seg                  seg                  cond                 paral sfact    tzl 1      tzl 2      tzl 3   
+1  sh1  1 1     1      4.000E-09  4.000E-09  4.000E-09
+
+
+boundary condition
+  seg                  cond                 end#     type         r          l          c          r
+  1  1  1    resistive   5.000E+01
+  1  1  2    resistive   5.000E+01
+  1  2  1    resistive   5.000E+01
+  1  2  2    resistive   5.000E+01
+
+
+           ---------- shield one segments ---------
+     seg            #cond  #cell  end1                 end2                length
+sh1    1     18   0  0    5.400E-01
+
+
+  !shield one capacitance  
+ 
+ sh1                                                             
+   2.0270004E-11
+
+
+  !shield one inductance  
+ 
+ sh1                                                             
+   5.4815536E-07
+
+
+  shield one resistance
+seg                  cond                  cell# 1     body       last cell
+ 
+sh1 1    2.290E-02  2.290E-02  2.290E-02
+
+
+boundary condition
+  seg                  cond                 end#     type         r          l          c          r
+  sh1  1  1    resistive   5.000E+01
+  sh1  1  2    resistive   5.000E+01

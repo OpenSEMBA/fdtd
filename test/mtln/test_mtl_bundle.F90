@@ -22,8 +22,7 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
         do i = 1, 5
             external_field_segments(i)%position = (/i, 1, 1/)
             external_field_segments(i)%direction = 1
-            external_field_segments(i)%Efield_main2wire => null()
-            external_field_segments(i)%Efield_wire2main => null()
+            external_field_segments(i)%field => null()
         end do
     end block
 

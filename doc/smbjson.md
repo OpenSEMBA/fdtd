@@ -8,7 +8,7 @@ This module allows to read the [FDTD-JSON format](#the-fdtd-json-format) and par
 
 Assuming `gfortran` and `cmake` are accessible from path, this module can be compiled from the project main directory run
 
-    cmake -S . -B <BUILD_DIR> -G Ninja -DCompileWithJSON=YES
+    cmake -S . -B <BUILD_DIR> -G Ninja
     cmake --build <BUILD_DIR> -j
 
 ### Compilation with Intel compilers (Windows)

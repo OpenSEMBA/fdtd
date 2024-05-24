@@ -30,8 +30,8 @@ module mtln_types_mod
 
    type :: external_field_segment_t
       integer, dimension(3) ::position
-      integer :: direction     
-      real (kind=rkind) , pointer  ::  Efield_wire2main, Efield_main2wire
+      integer :: direction
+      real (kind=rkind) , pointer  ::  field => null()
    contains
       private
       procedure :: external_field_segments_eq 
@@ -50,20 +50,11 @@ module mtln_types_mod
       generic, public :: operator(==) => termination_eq
    end type
 
-   ! type, public, extends(termination_t) :: termination_with_source_t
-   !    character(len=:), allocatable :: path_to_excitation
-   ! contains
-   !    private
-   !    procedure :: termination_with_source_eq
-   !    generic, public :: operator(==) => termination_with_source_eq
-   ! end type
-
    type :: terminal_node_t
       type(cable_t), pointer :: belongs_to_cable => null()
       integer :: conductor_in_cable
       integer :: side = TERMINAL_NODE_SIDE_UNDEFINED
       type(termination_t) :: termination
-      ! class(termination_t), allocatable :: termination
    contains
       private
       procedure :: terminal_node_eq
@@ -283,19 +274,11 @@ contains
          a%path_to_excitation == b%path_to_excitation
    end function
 
-   ! elemental logical function termination_with_source_eq(a, b)
-   !    class(termination_with_source_t), intent(in) :: a
-   !    type(termination_with_source_t), intent(in) :: b
-   !    termination_with_source_eq = &
-   !       a%termination_t == b%termination_t .and. &
-   !       a%path_to_excitation == b%path_to_excitation
-   ! end function
-
    logical function probe_eq(a,b)
       class(probe_t), intent(in) :: a,b
       probe_eq = &
          (a%index == b%index) .and. &
-         (a%probe_type == b%probe_type)! .and. &
+         (a%probe_type == b%probe_type)
 
       if (.not. associated(a%attached_to_cable) .and. .not. associated(b%attached_to_cable)) then
          probe_eq = probe_eq .and. .true.
@@ -367,22 +350,13 @@ contains
          all(a%position == b%position) .and. &
          a%direction == b%direction
 
-      if (.not. associated(a%Efield_main2wire) .and. .not. associated(b%Efield_main2wire)) then
+      if (.not. associated(a%field) .and. .not. associated(b%field)) then
          external_field_segments_eq = external_field_segments_eq .and. .true.
-      else if ((associated(a%Efield_main2wire) .and. .not. associated(b%Efield_main2wire)) .or. &
-         (.not. associated(a%Efield_main2wire) .and. associated(b%Efield_main2wire))) then
+      else if ((associated(a%field) .and. .not. associated(b%field)) .or. &
+         (.not. associated(a%field) .and. associated(b%field))) then
             external_field_segments_eq = external_field_segments_eq .and. .false.
       else
-         external_field_segments_eq = external_field_segments_eq .and. (a%Efield_main2wire == b%Efield_main2wire)
-      end if
-
-      if (.not. associated(a%Efield_wire2main) .and. .not. associated(b%Efield_wire2main)) then
-         external_field_segments_eq = external_field_segments_eq .and. .true.
-      else if ((associated(a%Efield_wire2main) .and. .not. associated(b%Efield_wire2main)) .or. &
-         (.not. associated(a%Efield_wire2main) .and. associated(b%Efield_wire2main))) then
-            external_field_segments_eq = external_field_segments_eq .and. .false.
-      else
-         external_field_segments_eq = external_field_segments_eq .and. (a%Efield_wire2main == b%Efield_wire2main)
+         external_field_segments_eq = external_field_segments_eq .and. (a%field == b%field)
       end if
 
 

@@ -244,9 +244,6 @@ contains
             ev = getEigenValues(dble(matmul(this%lpul(k,:,:), this%cpul(k+1,:,:))))
             res(k,:) = 1.0/sqrt(ev(1:this%number_of_conductors))
         enddo
-        ! test = reshape(source = [(1.0/sqrt(getEigenValues(dble(matmul(this%lpul(k,:,:), &
-        ! this%cpul(k+1,:,:)))))(1:this%number_of_conductors) , k = 1, size(this%u, 1) -1)],&
-        ! shape = [size(this%u,1) - 1, this%number_of_conductors])
 
     end function
 

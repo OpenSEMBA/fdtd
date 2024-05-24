@@ -48,7 +48,6 @@ contains
             do j = 1, size(networks(i)%nodes)
                 temp = string_t(trim(networks(i)%nodes(j)%source), len(trim(networks(i)%nodes(j)%source)))
                 call appendToString_tArray(res, temp)
-                ! res = [res, string_t(networks(i)%nodes(j)%source, len(networks(i)%nodes(j)%source))]
             end do
         end do
     end function
@@ -63,11 +62,9 @@ contains
             do j = 1, size(networks(i)%nodes)
                 temp = string_t(trim(networks(i)%nodes(j)%name), len(trim(networks(i)%nodes(j)%name)))
                 call appendToString_tArray(res, temp)
-                ! res = [res, string_t(networks(i)%nodes(j)%name, len(networks(i)%nodes(j)%name))]
             end do
         end do
         call appendToString_tArray(res, string_t("time",4))
-        ! res = [res, string_t("time",4)]
     end function
 
 

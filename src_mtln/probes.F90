@@ -47,8 +47,8 @@ contains
         class(probe_t) :: this
         integer, intent(in) :: num_frames, number_of_conductors
 
-        allocate(this%t(num_frames))
-        allocate(this%val(num_frames, number_of_conductors))
+        allocate(this%t(num_frames + 1))
+        allocate(this%val(num_frames + 1, number_of_conductors))
         this%t = 0.0
         this%val = 0.0
 

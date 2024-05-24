@@ -15,3 +15,4 @@ add_library(smbjson
 )
 
 target_link_libraries(smbjson PRIVATE ${JSONFORTRAN_LIB} semba-types fhash)
+set(SMBJSON_INCLUDES "${JSONFORTRAN_DIR}/include" CACHE INTERNAL "")

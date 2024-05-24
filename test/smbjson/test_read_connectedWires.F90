@@ -202,6 +202,122 @@ contains
 
       expected%tWires%n_tw = 2
       expected%tWires%n_tw_max = 2
+
+
+      ! expected mtln bundles
+      allocate(expected%mtln%cables(2))
+
+      expected%mtln%cables(1)%name = ""
+      allocate(expected%mtln%cables(1)%inductance_per_meter(1,1))
+      allocate(expected%mtln%cables(1)%capacitance_per_meter(1,1))
+      allocate(expected%mtln%cables(1)%resistance_per_meter(1,1))
+      allocate(expected%mtln%cables(1)%conductance_per_meter(1,1))
+      expected%mtln%cables(1)%inductance_per_meter  = 0.0
+      expected%mtln%cables(1)%capacitance_per_meter = 0.0
+      expected%mtln%cables(1)%resistance_per_meter  = 0.0
+      expected%mtln%cables(1)%conductance_per_meter = 0.0
+      allocate(expected%mtln%cables(1)%step_size(10))
+      expected%mtln%cables(1)%step_size =  [(0.01, i = 1, 10)]
+      allocate(expected%mtln%cables(1)%external_field_segments(10))
+      
+      do i = 1,2
+         expected%mtln%cables(1)%external_field_segments(i)%position = (/27,25,29+i/)
+         expected%mtln%cables(1)%external_field_segments(i)%direction = DIRECTION_Z_POS
+         expected%mtln%cables(1)%external_field_segments(i)%field => null()
+      end do
+
+      do i = 3, 10
+         expected%mtln%cables(1)%external_field_segments(i)%position = (/24+i,25,32/)
+         expected%mtln%cables(1)%external_field_segments(i)%direction = DIRECTION_X_POS
+         expected%mtln%cables(1)%external_field_segments(i)%field => null()
+      end do
+
+      allocate(expected%mtln%cables(1)%transfer_impedance%poles(0))
+      allocate(expected%mtln%cables(1)%transfer_impedance%residues(0))
+
+      expected%mtln%cables(1)%parent_cable => null()
+      expected%mtln%cables(1)%conductor_in_parent = 0
+      expected%mtln%cables(1)%initial_connector => null()
+      expected%mtln%cables(1)%end_connector => null()
+
+      expected%mtln%cables(2)%name = ""
+      allocate(expected%mtln%cables(2)%inductance_per_meter(1,1))
+      allocate(expected%mtln%cables(2)%capacitance_per_meter(1,1))
+      allocate(expected%mtln%cables(2)%resistance_per_meter(1,1))
+      allocate(expected%mtln%cables(2)%conductance_per_meter(1,1))
+      expected%mtln%cables(2)%inductance_per_meter  = 0.0
+      expected%mtln%cables(2)%capacitance_per_meter = 0.0
+      expected%mtln%cables(2)%resistance_per_meter  = 0.0
+      expected%mtln%cables(2)%conductance_per_meter = 0.0
+      allocate(expected%mtln%cables(2)%step_size(10))
+      expected%mtln%cables(2)%step_size =  [(0.01, i = 1, 10)]
+      allocate(expected%mtln%cables(2)%external_field_segments(10))
+      
+      do i = 1,8
+         expected%mtln%cables(2)%external_field_segments(i)%position = (/34+i,25,32/)
+         expected%mtln%cables(2)%external_field_segments(i)%direction = DIRECTION_X_POS
+         expected%mtln%cables(2)%external_field_segments(i)%field => null()
+      end do
+
+      do i = 9,10
+         expected%mtln%cables(2)%external_field_segments(i)%position = (/43,25,40-i/)
+         expected%mtln%cables(2)%external_field_segments(i)%direction = DIRECTION_Z_NEG
+         expected%mtln%cables(2)%external_field_segments(i)%field => null()
+      end do
+
+      allocate(expected%mtln%cables(2)%transfer_impedance%poles(0))
+      allocate(expected%mtln%cables(2)%transfer_impedance%residues(0))
+
+      expected%mtln%cables(2)%parent_cable => null()
+      expected%mtln%cables(2)%conductor_in_parent = 0
+      expected%mtln%cables(2)%initial_connector => null()
+      expected%mtln%cables(2)%end_connector => null()
+
+
+      ! probes
+      deallocate(expected%mtln%probes)
+      allocate(expected%mtln%probes(2))
+      expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)
+      expected%mtln%probes(1)%index = 1
+      expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
+
+      expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(2)
+      expected%mtln%probes(2)%index = 11
+      expected%mtln%probes(2)%probe_type = PROBE_TYPE_CURRENT
+
+      ! networks
+      deallocate(expected%mtln%networks)
+      allocate(expected%mtln%networks(3))
+
+      allocate(expected%mtln%networks(1)%connections(1))
+      allocate(expected%mtln%networks(1)%connections(1)%nodes(1))
+      expected%mtln%networks(1)%connections(1)%nodes(1)%conductor_in_cable = 1
+      expected%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
+      expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SHORT
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%path_to_excitation = "ramp.exc"
+
+      allocate(expected%mtln%networks(2)%connections(1))
+      allocate(expected%mtln%networks(2)%connections(1)%nodes(2))
+      expected%mtln%networks(2)%connections(1)%nodes(1)%conductor_in_cable = 1
+      expected%mtln%networks(2)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
+      expected%mtln%networks(2)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)
+      expected%mtln%networks(2)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
+      expected%mtln%networks(2)%connections(1)%nodes(1)%termination%resistance = 50
+
+      expected%mtln%networks(2)%connections(1)%nodes(2)%conductor_in_cable = 1
+      expected%mtln%networks(2)%connections(1)%nodes(2)%side = TERMINAL_NODE_SIDE_INI
+      expected%mtln%networks(2)%connections(1)%nodes(2)%belongs_to_cable =>  expected%mtln%cables(2)
+      expected%mtln%networks(2)%connections(1)%nodes(2)%termination%termination_type = TERMINATION_SHORT
+
+      allocate(expected%mtln%networks(3)%connections(1))
+      allocate(expected%mtln%networks(3)%connections(1)%nodes(1))
+      expected%mtln%networks(3)%connections(1)%nodes(1)%conductor_in_cable = 1
+      expected%mtln%networks(3)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
+      expected%mtln%networks(3)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(2)
+      expected%mtln%networks(3)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SHORT
+
+
    end function
 end function
 

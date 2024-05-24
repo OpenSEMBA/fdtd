@@ -25,7 +25,7 @@ contains
 
       ! Expected general info.
       expected%general%dt = 1e-12
-      expected%general%nmax = 1000
+      expected%general%nmax = 2000
 
       ! Excected media matrix.
       expected%matriz%totalX = 60
@@ -78,9 +78,9 @@ contains
 
       ! Expected probes
       ! sonda
-      expected%Sonda%length = 2
-      expected%Sonda%length_max = 2
-      allocate(expected%Sonda%collection(2))
+      expected%Sonda%length = 3
+      expected%Sonda%length_max = 3
+      allocate(expected%Sonda%collection(3))
       expected%Sonda%collection(1)%outputrequest = "wire_start"
       expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(1)%type2 = NP_T2_TIME
@@ -98,7 +98,7 @@ contains
       expected%Sonda%collection(1)%cordinates(1)%Yi = 0
       expected%Sonda%collection(1)%cordinates(1)%Zi = 0
       expected%Sonda%collection(1)%cordinates(1)%Or = NP_COR_WIRECURRENT
-      
+
       expected%Sonda%collection(2)%outputrequest = "wire_end"
       expected%Sonda%collection(2)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(2)%type2 = NP_T2_TIME
@@ -117,6 +117,24 @@ contains
       expected%Sonda%collection(2)%cordinates(1)%Zi = 0
       expected%Sonda%collection(2)%cordinates(1)%Or = NP_COR_WIRECURRENT
       
+      expected%Sonda%collection(3)%outputrequest = "wire_mid"
+      expected%Sonda%collection(3)%type1 = NP_T1_PLAIN
+      expected%Sonda%collection(3)%type2 = NP_T2_TIME
+      expected%Sonda%collection(3)%filename = ' '
+      expected%Sonda%collection(3)%tstart = 0.0
+      expected%Sonda%collection(3)%tstop = 0.0
+      expected%Sonda%collection(3)%tstep = 0.0
+      expected%Sonda%collection(3)%fstart = 0.0
+      expected%Sonda%collection(3)%fstop = 0.0
+      expected%Sonda%collection(3)%fstep = 0.0
+      allocate(expected%Sonda%collection(3)%cordinates(1))
+      expected%Sonda%collection(3)%len_cor = 1
+      expected%Sonda%collection(3)%cordinates(1)%tag = "wire_mid"
+      expected%Sonda%collection(3)%cordinates(1)%Xi = 5 ! Coord id as tag.
+      expected%Sonda%collection(3)%cordinates(1)%Yi = 0
+      expected%Sonda%collection(3)%cordinates(1)%Zi = 0
+      expected%Sonda%collection(3)%cordinates(1)%Or = NP_COR_WIRECURRENT
+      
       
       ! Expected thin wires
       allocate(expected%tWires%tw(1))
@@ -127,7 +145,7 @@ contains
       expected%tWires%tw(1)%n_twc=20
       expected%tWires%tw(1)%n_twc_max=20
       allocate(expected%tWires%tw(1)%twc(20))
-      expected%tWires%tw(1)%twc(1)%srcfile = 'ramp.exc'
+      expected%tWires%tw(1)%twc(1)%srcfile = 'towelHanger.exc'
       expected%tWires%tw(1)%twc(1)%srctype = 'VOLT'
       expected%tWires%tw(1)%twc(1)%m = 1.0
       expected%tWires%tw(1)%twc(2)%srcfile = 'None'
@@ -160,6 +178,7 @@ contains
 
       expected%tWires%tw(1)%twc(1)%nd  = 1
       expected%tWires%tw(1)%twc(3)%nd  = 2
+      expected%tWires%tw(1)%twc(11)%nd  = 5
       expected%tWires%tw(1)%twc(19)%nd  = 3
       expected%tWires%tw(1)%twc(20)%nd = 4
       
@@ -173,6 +192,96 @@ contains
       
       expected%tWires%n_tw = 1
       expected%tWires%n_tw_max = 1
+
+      ! expected mtln bundles
+      expected%mtln%time_step = 1e-12
+      expected%mtln%number_of_steps = 2000
+      allocate(expected%mtln%cables(1))
+
+      expected%mtln%cables(1)%name = "wire"
+      allocate(expected%mtln%cables(1)%inductance_per_meter(1,1))
+      allocate(expected%mtln%cables(1)%capacitance_per_meter(1,1))
+      allocate(expected%mtln%cables(1)%resistance_per_meter(1,1))
+      allocate(expected%mtln%cables(1)%conductance_per_meter(1,1))
+      expected%mtln%cables(1)%inductance_per_meter  = 0.0
+      expected%mtln%cables(1)%capacitance_per_meter = 0.0
+      expected%mtln%cables(1)%resistance_per_meter  = 0.0
+      expected%mtln%cables(1)%conductance_per_meter = 0.0
+      allocate(expected%mtln%cables(1)%step_size(20))
+      expected%mtln%cables(1)%step_size =  [(0.01, i = 1, 20)]
+      allocate(expected%mtln%cables(1)%external_field_segments(20))
+      
+      do i = 1,2
+         expected%mtln%cables(1)%external_field_segments(i)%position = (/27,25,29+i/)
+         expected%mtln%cables(1)%external_field_segments(i)%direction = DIRECTION_Z_POS
+         expected%mtln%cables(1)%external_field_segments(i)%field => null()
+      end do
+
+      do i = 3, 10
+         expected%mtln%cables(1)%external_field_segments(i)%position = (/24+i,25,32/)
+         expected%mtln%cables(1)%external_field_segments(i)%direction = DIRECTION_X_POS
+         expected%mtln%cables(1)%external_field_segments(i)%field => null()
+      end do
+
+      do i = 1,8
+         expected%mtln%cables(1)%external_field_segments(10+i)%position = (/34+i,25,32/)
+         expected%mtln%cables(1)%external_field_segments(10+i)%direction = DIRECTION_X_POS
+         expected%mtln%cables(1)%external_field_segments(10+i)%field => null()
+      end do
+
+      do i = 9,10
+         expected%mtln%cables(1)%external_field_segments(10+i)%position = (/43,25,40-i/)
+         expected%mtln%cables(1)%external_field_segments(10+i)%direction = DIRECTION_Z_NEG
+         expected%mtln%cables(1)%external_field_segments(10+i)%field => null()
+      end do
+
+
+      allocate(expected%mtln%cables(1)%transfer_impedance%poles(0))
+      allocate(expected%mtln%cables(1)%transfer_impedance%residues(0))
+
+      expected%mtln%cables(1)%parent_cable => null()
+      expected%mtln%cables(1)%conductor_in_parent = 0
+      expected%mtln%cables(1)%initial_connector => null()
+      expected%mtln%cables(1)%end_connector => null()
+
+
+
+      ! probes
+      deallocate(expected%mtln%probes)
+      allocate(expected%mtln%probes(3))
+      expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)
+      expected%mtln%probes(1)%index = 1
+      expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
+
+      expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)
+      expected%mtln%probes(2)%index = 21
+      expected%mtln%probes(2)%probe_type = PROBE_TYPE_CURRENT
+
+      expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)
+      expected%mtln%probes(3)%index = 11
+      expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
+
+      ! networks
+      deallocate(expected%mtln%networks)
+      allocate(expected%mtln%networks(2))
+
+      allocate(expected%mtln%networks(1)%connections(1))
+      allocate(expected%mtln%networks(1)%connections(1)%nodes(1))
+      expected%mtln%networks(1)%connections(1)%nodes(1)%conductor_in_cable = 1
+      expected%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
+      expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 50.0
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%path_to_excitation = "towelHanger.exc"
+
+      allocate(expected%mtln%networks(2)%connections(1))
+      allocate(expected%mtln%networks(2)%connections(1)%nodes(1))
+      expected%mtln%networks(2)%connections(1)%nodes(1)%conductor_in_cable = 1
+      expected%mtln%networks(2)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
+      expected%mtln%networks(2)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)
+      expected%mtln%networks(2)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SHORT
+
+
    end function
 end function
 

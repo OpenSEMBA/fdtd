@@ -71,8 +71,7 @@ contains
         do i = 1, 5
             external_field_segments(i)%position =(/i,1,1/)            
             external_field_segments(i)%direction = DIRECTION_X_POS  
-            external_field_segments(i)%Efield_main2wire => null()
-            external_field_segments(i)%Efield_wire2main => null()
+            external_field_segments(i)%field => null()
         end do
 
         do i = 1, n

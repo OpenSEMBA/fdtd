@@ -11,11 +11,11 @@ def test_read_wire_probe():
     
     assert len(p['time']) == 1001
     assert p['time'][0] == 0.0
-    assert p['time'].iat[-1] == 0.99999999600419720E-009
+    assert p['time'].iat[-1] == 0.2999999901276417E-007
     
     assert len(p['current']) == 1001
     assert p['current'][0] == 0.0
-    assert p['current'].iat[-1] == -0.228888888E-021
+    assert p['current'].iat[-1] == -0.513576742E-004
   
 
 def test_probes_output_exists(tmp_path):
@@ -26,7 +26,7 @@ def test_probes_output_exists(tmp_path):
     with open(fn, 'w') as modified_json:
         json.dump(input_json, modified_json) 
 
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'gauss.exc')
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
 
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
     solver.run()
@@ -47,7 +47,7 @@ def test_probes_output_number_of_steps(tmp_path):
     with open(fn, 'w') as modified_json:
         json.dump(input_json, modified_json) 
 
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'gauss.exc')
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
 
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
     solver.run()
@@ -60,7 +60,7 @@ def test_probes_output_number_of_steps(tmp_path):
 
 def test_holland(tmp_path):
     case = 'holland1981'
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'gauss.exc')
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
     makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
     fn = tmp_path._str + '/' + case + '.fdtd.json'
 
@@ -72,8 +72,6 @@ def test_holland(tmp_path):
     assert len(probe_files) == 1
     assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
     assert countLinesInFile(probe_files[0]) == 1002
-    # assert compareFiles(OUTPUT_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat',\
-    #                     probe_files[0])
 
 
     
@@ -81,29 +79,30 @@ def test_towel_hanger(tmp_path):
     case = 'towelHanger'
     input_json = getCase(case)
     input_json['general']['numberOfSteps'] = 1
-    # input_json['general']['timeStep'] = 3.0E-013
     
     fn = tmp_path._str + '/' + case + '.fdtd.json'
     with open(fn, 'w') as modified_json:
         json.dump(input_json, modified_json) 
 
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'ramp.exc')
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'towelHanger.exc')
 
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
     solver.run()
     probe_start = solver.getSolvedProbeFilenames("wire_start")
+    probe_mid = solver.getSolvedProbeFilenames("wire_mid")
     probe_end = solver.getSolvedProbeFilenames("wire_end")
     
     assert solver.hasFinishedSuccessfully() == True
     assert len(probe_start) == 1
+    assert len(probe_mid) == 1
     assert len(probe_end) == 1
     
     assert 'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat' == probe_start[0]
+    assert 'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat' == probe_mid[0]
     assert 'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat' == probe_end[0]
     assert countLinesInFile(probe_start[0]) == 3
+    assert countLinesInFile(probe_mid[0]) == 3
     assert countLinesInFile(probe_end[0]) == 3
-    # assert compareFiles(solver.wd+OUTPUT_FOLDER+'towelHanger.fdtd_wire_end_Wz_100_100_80_s4.dat',\
-    #                     probe_files[0])
 
     
 def test_read_far_field_probe(tmp_path):    

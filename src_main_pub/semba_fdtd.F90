@@ -81,7 +81,7 @@ PROGRAM SEMBA_FDTD_launcher
    !*************************************************
    !
 !!!   
-   use mtln_solver_mod, mtln_solver_t => mtln_t
+   ! use mtln_solvermtln_solver_mod, mtln_solver_t => mtln_t
 !!!   
    use interpreta_switches_m
    IMPLICIT NONE
@@ -141,7 +141,8 @@ PROGRAM SEMBA_FDTD_launcher
 
    type (entrada_t) :: l
 !!!
-   type (mtln_solver_t) :: mtln_solver
+   ! type (mtln_solver_t) :: mtln_solver
+   type(mtln_t) :: mtln_parsed
 !!!
    logical :: lexis
    integer (kind=4) :: my_iostat
@@ -865,7 +866,7 @@ PROGRAM SEMBA_FDTD_launcher
            l%EpsMuTimeScale_input_parameters, &
            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
-           mtln_solver)
+           mtln_parsed)
 
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else
@@ -1314,7 +1315,8 @@ subroutine NFDE2sgg
          l%groundwires,l%attfactorc,l%mibc,l%sgbc,l%sgbcDispersive,l%MEDIOEXTRA,maxSourceValue,l%skindepthpre,l%createmapvtk,l%input_conformal_flag,l%CLIPREGION,l%boundwireradius,l%maxwireradius,l%updateshared,l%run_with_dmma, &
          eps0,mu0,.false.,l%hay_slanted_wires,l%verbose,l%ignoresamplingerrors,tagtype,l%wiresflavor)
 !!!!mtln constructor 100424       
-         if (trim(adjustl(l%extension))=='.json')  mtln_solver = mtlnCtor(parser%mtln)   
+         if (trim(adjustl(l%extension))=='.json')  mtln_parsed = parser%mtln
+         ! if (trim(adjustl(l%extension))=='.json')  mtln_solver = mtlnCtor(parser%mtln)   
 !!!!         
          WRITE (dubuf,*) '[OK] ENDED NFDE --------> GEOM'
          CALL print11 (l%layoutnumber, dubuf)

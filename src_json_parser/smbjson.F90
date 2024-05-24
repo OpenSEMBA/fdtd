@@ -1440,31 +1440,17 @@ contains
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
       type(json_value_ptr), dimension(:), allocatable :: cables
-      integer :: nWs
 
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
       cables = readCables()
 
-      block
-         integer :: nW, nMW
-         nMW = countNumberOfMultiwires(cables)
-         if (nMW == 0) then 
-            allocate(mtln_res%cables(0))
-            allocate(mtln_res%probes(0))
-            allocate(mtln_res%networks(0))
-            return
-         end if
-         nW =  countNumberOfWires(cables)
-         nWs = nW + nMW
-      end block
-
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
 
 
-      allocate (mtln_res%cables(nWs))
+      allocate (mtln_res%cables(countNumberOfWires(cables) + countNumberOfMultiwires(cables)))
       block
          logical :: is_read
          integer :: i, j, ncc
@@ -1475,12 +1461,10 @@ contains
                if (isWire(cables(i)%p) .or. isMultiwire(cables(i)%p)) then
                   is_read = .true.
                   read_cable = readMTLNCable(cables(i)%p, is_read)
-                  if (is_read) then
-                     ncc = ncc + 1
-                     mtln_res%cables(ncc) = read_cable
-                     call addElemIdToCableMap(elemIdToCable, getCableElemIds(cables(i)%p), ncc)
-                     call addElemIdToPositionMap(elemIdToPosition, cables(i)%p)
-                  end if
+                  ncc = ncc + 1
+                  mtln_res%cables(ncc) = read_cable
+                  call addElemIdToCableMap(elemIdToCable, getCableElemIds(cables(i)%p), ncc)
+                  call addElemIdToPositionMap(elemIdToPosition, cables(i)%p)
                end if
             end do
          end if
@@ -1566,9 +1550,7 @@ contains
             do i = 1, size(cables)
                if (isWire(cables(i)%p)) then
                   material = this%matTable%getId(this%getIntAt(cables(i)%p, J_MATERIAL_ID))
-                  if(this%existsAt(material%p, J_MAT_WIRE_REF_CAPACITANCE)) then
-                     res = res + 1
-                  end if
+                  res = res + 1
                end if
             end do
          end if
@@ -1783,8 +1765,8 @@ contains
          res%node%termination%capacitance = readTerminationRLC(termination,J_MAT_TERM_CAPACITANCE, default = 1e22)
          res%node%termination%resistance = readTerminationRLC(termination, J_MAT_TERM_RESISTANCE, default = 0.0)
          res%node%termination%inductance = readTerminationRLC(termination, J_MAT_TERM_INDUCTANCE, default=0.0)
-         res%node%termination%path_to_excitation = readPathToExcitation(termination, default = "")
-         
+         res%node%termination%path_to_excitation = readGeneratorOnTermination(id,label, default = "")
+        
          res%node%conductor_in_cable = index
 
          call elemIdToCable%get(key(id), value=cable_index)
@@ -1801,16 +1783,67 @@ contains
          end if
       end function
 
-      function readPathToExcitation(termination, default) result(res)
-         type(json_value), pointer :: termination
+      function readGeneratorOnTermination(id, label, default) result(res)
+         integer, intent(in) :: id, label
+         type(json_value), pointer :: sources
+         type(json_value_ptr), dimension(:), allocatable :: genSrcs
+         logical :: found
          character(len=*), intent(in) :: default
          character(len=256) :: res
-         if (this%existsAt(termination, J_SRC_MAGNITUDE_FILE)) then
-            res = trim(this%getStrAt(termination, J_SRC_MAGNITUDE_FILE))
-         else
+         
+         call this%core%get(this%root, J_SOURCES, sources, found)
+         if (.not. found) then
             res = trim(default)
+            return
+         end if
+         
+         genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, [J_SRC_TYPE_GEN])
+         if (size(genSrcs) == 0) then
+            res = trim(default)
+            return
          end if
 
+
+         block
+            type(node_t) :: srcCoord
+            integer, dimension(:), allocatable :: sourceElemIds
+            type(polyline_t) :: poly
+            integer :: i
+   
+            poly = this%mesh%getPolyline(id)
+            do i = 1, size(genSrcs)
+               if (.not. this%existsAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)) then
+                  write(error_unit, *) 'magnitudeFile of source missing'
+                  res = trim(default)
+                  return
+               end if
+               if (.not. this%existsAt(genSrcs(i)%p, J_FIELD)) then
+                  write(error_unit, *) 'Type of generator is ambigous'
+                  res = trim(default)
+                  return
+               end if
+               if (this%getStrAt(genSrcs(i)%p, J_FIELD) /= "voltage") then 
+                  write(error_unit, *) 'Only voltage generators are supported'
+                  res = trim(default)
+                  return
+               end if
+
+               call this%core%get(genSrcs(i)%p, J_ELEMENTIDS, sourceElemIds)
+               srcCoord = this%mesh%getNode(sourceElemIds(1))
+               if (label == TERMINAL_NODE_SIDE_INI) then
+                  if ((srcCoord%coordIds(1) == poly%coordIds(1))) then 
+                     res = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
+                     return
+                  end if
+               else if (label == TERMINAL_NODE_SIDE_END) then
+                  if ((srcCoord%coordIds(1) == poly%coordIds(ubound(poly%coordIds,1)))) then 
+                     res = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
+                     return
+                  end if
+               end if
+            end do
+            res = trim(default)
+         end block 
       end function
 
       function readTerminationType(termination) result(res)
@@ -2075,21 +2108,15 @@ contains
 
          if (this%existsAt(j_cable,J_NAME)) then
             res%name = trim(adjustl(this%getStrAt(j_cable,J_NAME)))
-            ! write(*,*) 'name: ', res%name
+         else
+            res%name  = ""
          end if
 
          res%step_size = buildStepSize(j_cable)
          res%external_field_segments = mapSegmentsToGridCoordinates(j_cable)
-         ! write(*,*) 'id: ', this%getIntAt(j_cable, J_MATERIAL_ID, found)
          material = this%matTable%getId(this%getIntAt(j_cable, J_MATERIAL_ID, found))
          if (.not. found) &
             write(error_unit, *) "Error reading material region: materialId label not found."
-         if (isWire(j_cable)) then
-            if(.not. this%existsAt(material%p, J_MAT_WIRE_REF_CAPACITANCE)) then
-               is_read = .false.
-               return
-            end if
-         end if
 
          if (isWire(j_cable)) then
             call assignReferenceProperties(res, material)
@@ -2168,20 +2195,21 @@ contains
          if (this%existsAt(mat%p, J_MAT_WIRE_REF_CAPACITANCE)) then
             res%capacitance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_REF_CAPACITANCE)
          else
-            write(error_unit, *) "Error reading material region: __referenceCapacitancePerMeter label not found."
+            write(error_unit, *) "Capacitance per meter will be assigned in module Wire_bundles_mtln"
+            res%capacitance_per_meter(1,1) = 0.0
          end if
-
+         
          if (this%existsAt(mat%p, J_MAT_WIRE_REF_INDUCTANCE)) then
             res%inductance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_REF_INDUCTANCE)
          else
-            write(error_unit, *) "Error reading material region: __referenceInductancePerMeter label not found."
+            write(error_unit, *) "Inductance per meter will be assigned in module Wire_bundles_mtln"
+            res%inductance_per_meter(1,1) = 0.0
          end if
 
          if (this%existsAt(mat%p, J_MAT_WIRE_RESISTANCE)) then
             res%resistance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_RESISTANCE)
          else
             res%resistance_per_meter(1,1) = 0.0
-            ! write(error_unit, *) "Error reading material region: resistancePerMeter label not found."
          end if
 
       end subroutine
@@ -2222,7 +2250,6 @@ contains
                res%resistance_per_meter = scalarToMatrix(this%getRealAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
             end if
          else
-            ! write(error_unit, *) "Error reading material region: resistancePerMeter label not found."
             res%resistance_per_meter = null_matrix
          end if
 
@@ -2233,7 +2260,6 @@ contains
                res%conductance_per_meter = scalarToMatrix(this%getRealAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
             end if
          else
-            ! write(error_unit, *) "Error reading material region: conductancePerMeter label not found."
             res%conductance_per_meter = null_matrix
          end if
 
@@ -2279,8 +2305,7 @@ contains
          n_segments = abs(ceiling(c2%position(axis)) - floor(c1%position(axis)))
          allocate(res(n_segments))
          curr_pos%position = [(c1%position(i), i = 1, 3)]
-         curr_pos%Efield_main2wire => null()
-         curr_pos%Efield_wire2main => null()
+         curr_pos%field => null()
 
          res = [(curr_pos, i = 1, n_segments)]
          res(:)%position(axis) = [(res(i)%position(axis) - i, i = 1, n_segments)]
@@ -2298,8 +2323,7 @@ contains
          n_segments = abs(floor(c2%position(axis)) - ceiling(c1%position(axis)))
          allocate(res(n_segments))
          curr_pos%position = [(c1%position(i), i = 1, 3)]
-         curr_pos%Efield_main2wire => null()
-         curr_pos%Efield_wire2main => null()
+         curr_pos%field => null()
 
          res = [(curr_pos, i = 1, n_segments)]
          res(:)%position(axis) = [(res(i)%position(axis) + (i-1), i = 1, n_segments)]
@@ -2439,7 +2463,6 @@ contains
          ! materialId is multiwire
          mat = this%matTable%getId(this%getIntAt(cable, J_MATERIAL_ID, found=found))
          if (.not. found) return
-         ! write(*,*) 'type: ', this%getStrAt(mat%p, J_TYPE)
          if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_MULTIWIRE) return
 
          ! has terminal on initial side

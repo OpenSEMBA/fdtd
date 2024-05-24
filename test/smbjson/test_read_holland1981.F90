@@ -24,7 +24,7 @@ contains
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 1e-12
+      expected%general%dt = 30e-12
       expected%general%nmax = 1000
 
       ! Excected media matrix.
@@ -58,7 +58,7 @@ contains
 
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))
-      expected%plnSrc%collection(1)%nombre_fichero = "gauss.exc"
+      expected%plnSrc%collection(1)%nombre_fichero = "holland.exc"
       expected%plnSrc%collection(1)%atributo = ""
       expected%plnSrc%collection(1)%coor1 = [1, 1, 1]
       expected%plnSrc%collection(1)%coor2 = [18, 18, 20]
@@ -123,6 +123,66 @@ contains
       
       expected%tWires%n_tw = 1
       expected%tWires%n_tw_max = 1
+
+      ! expected mtln bundles
+      expected%mtln%time_step = 30e-12
+      expected%mtln%number_of_steps = 1000
+
+      allocate(expected%mtln%cables(1))
+
+      expected%mtln%cables(1)%name = "single_wire"
+      allocate(expected%mtln%cables(1)%inductance_per_meter(1,1))
+      allocate(expected%mtln%cables(1)%capacitance_per_meter(1,1))
+      allocate(expected%mtln%cables(1)%resistance_per_meter(1,1))
+      allocate(expected%mtln%cables(1)%conductance_per_meter(1,1))
+      expected%mtln%cables(1)%inductance_per_meter  = 0.0
+      expected%mtln%cables(1)%capacitance_per_meter = 0.0
+      expected%mtln%cables(1)%resistance_per_meter  = 0.0
+      expected%mtln%cables(1)%conductance_per_meter = 0.0
+      allocate(expected%mtln%cables(1)%step_size(10))
+      expected%mtln%cables(1)%step_size =  [(0.1, i = 1, 10)]
+      allocate(expected%mtln%cables(1)%external_field_segments(10))
+      do i = 1, 10
+         expected%mtln%cables(1)%external_field_segments(i)%position = (/11,11,i+6/)
+         expected%mtln%cables(1)%external_field_segments(i)%direction = DIRECTION_Z_POS
+         expected%mtln%cables(1)%external_field_segments(i)%field => null()
+
+      end do
+
+      allocate(expected%mtln%cables(1)%transfer_impedance%poles(0))
+      allocate(expected%mtln%cables(1)%transfer_impedance%residues(0))
+
+      expected%mtln%cables(1)%parent_cable => null()
+      expected%mtln%cables(1)%conductor_in_parent = 0
+      expected%mtln%cables(1)%initial_connector => null()
+      expected%mtln%cables(1)%end_connector => null()
+
+      ! probes
+      deallocate(expected%mtln%probes)
+      allocate(expected%mtln%probes(1))
+      expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)
+      expected%mtln%probes(1)%index = 6
+      expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
+
+      ! networks
+      deallocate(expected%mtln%networks)
+      allocate(expected%mtln%networks(2))
+
+      allocate(expected%mtln%networks(1)%connections(1))
+      allocate(expected%mtln%networks(1)%connections(1)%nodes(1))
+      expected%mtln%networks(1)%connections(1)%nodes(1)%conductor_in_cable = 1
+      expected%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
+      expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_OPEN
+
+      allocate(expected%mtln%networks(2)%connections(1))
+      allocate(expected%mtln%networks(2)%connections(1)%nodes(1))
+      expected%mtln%networks(2)%connections(1)%nodes(1)%conductor_in_cable = 1
+      expected%mtln%networks(2)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
+      expected%mtln%networks(2)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)
+      expected%mtln%networks(2)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_OPEN
+
+
    end function
 end function
 
