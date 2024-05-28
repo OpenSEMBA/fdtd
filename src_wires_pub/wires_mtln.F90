@@ -87,8 +87,10 @@ contains
          real (kind=rkind) :: l,c
          do m = 1, mtln_solver%number_of_bundles
             do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
-               l = hwires%CurrentSegment(indexMap(m,n))%Lind
-               c = mu0*eps0/l
+               ! l = hwires%CurrentSegment(indexMap(m,n))%Lind
+               ! c = mu0*eps0/l
+               l = 0.548e-6
+               c = 20.27e-12
                mtln_solver%bundles(m)%lpul(n,1,1) = l
                mtln_solver%bundles(m)%cpul(n,1,1) = c
             end do
