@@ -17,8 +17,8 @@ module Wire_bundles_mtln_mod
    REAL (KIND=RKIND_wires)           ::  eps0,mu0
    private   
 
-   public InitWires_mtln, AdvanceWiresE_mtln
-   type(mtln_solver_t) :: mtln_solver
+   public InitWires_mtln, AdvanceWiresE_mtln, GetSolverPtr
+   type(mtln_solver_t), target :: mtln_solver
    integer, dimension(:,:), allocatable :: indexMap
 
 contains
@@ -87,10 +87,8 @@ contains
          real (kind=rkind) :: l,c
          do m = 1, mtln_solver%number_of_bundles
             do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
-               ! l = hwires%CurrentSegment(indexMap(m,n))%Lind
-               ! c = mu0*eps0/l
-               l = 0.548e-6
-               c = 20.27e-12
+               l = hwires%CurrentSegment(indexMap(m,n))%Lind
+               c = mu0*eps0/l
                mtln_solver%bundles(m)%lpul(n,1,1) = l
                mtln_solver%bundles(m)%cpul(n,1,1) = c
             end do
@@ -206,6 +204,11 @@ contains
       j = field_segment%position(2)
       k = field_segment%position(3)
    end subroutine
+
+   function GetSolverPtr() result(res)
+      type(mtln_solver_t), pointer :: res
+      res => mtln_solver
+   end function
 
 
 end module Wire_bundles_mtln_mod

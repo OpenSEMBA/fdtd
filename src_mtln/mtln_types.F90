@@ -125,6 +125,8 @@ module mtln_types_mod
       type(cable_t), pointer :: attached_to_cable => null()
       integer :: index
       integer :: probe_type = PROBE_TYPE_UNDEFINED
+      character (len=:), allocatable :: probe_name
+      real, dimension(3) :: probe_position
    contains
       private
       procedure :: probe_eq
@@ -278,7 +280,10 @@ contains
       class(probe_t), intent(in) :: a,b
       probe_eq = &
          (a%index == b%index) .and. &
-         (a%probe_type == b%probe_type)
+         (a%probe_type == b%probe_type) .and. &
+         (a%probe_name == b%probe_name) .and. &
+         all(a%probe_position == b%probe_position)
+
 
       if (.not. associated(a%attached_to_cable) .and. .not. associated(b%attached_to_cable)) then
          probe_eq = probe_eq .and. .true.

@@ -660,11 +660,15 @@ contains
       class(parser_t) :: this
       type(MasSondas) :: res
       type(json_value), pointer :: allProbes
-      type(json_value_ptr), dimension(:), allocatable :: ps
+      type(json_value_ptr), dimension(:), allocatable :: ps, ps_filtered
       integer :: i
       character (len=*), dimension(2), parameter :: validTypes = &
          [J_PR_TYPE_POINT, J_PR_TYPE_WIRE]
+      character (len=*), dimension(1), parameter :: validFields = &
+         [J_FIELD_CURRENT]
       logical :: found
+      character (len=:), allocatable :: fieldLbl
+      integer :: filtered_size = 0
 
       call this%core%get(this%root, J_PROBES, allProbes, found)
       if (.not. found) then
@@ -676,10 +680,31 @@ contains
       end if
 
       ps = this%jsonValueFilterByKeyValues(allProbes, J_TYPE, validTypes)
-      allocate(res%collection(size(ps)))
+      
       do i=1, size(ps)
-         res%collection(i) = readProbe(ps(i)%p)
+         call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
+         if (fieldLbl /= J_FIELD_VOLTAGE) then 
+            filtered_size = filtered_size + 1
+         end if
       end do
+      allocate(ps_filtered(filtered_size))
+      filtered_size = 0
+      do i=1, size(ps)
+         call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
+         if (fieldLbl /= J_FIELD_VOLTAGE) then 
+            filtered_size = filtered_size + 1
+            ps_filtered(filtered_size) = ps(i)
+         end if
+      end do
+
+      allocate(res%collection(size(ps_filtered)))
+      do i=1, size(ps_filtered)
+         res%collection(i) = readProbe(ps_filtered(i)%p)
+      end do
+      ! allocate(res%collection(size(ps)))
+      ! do i=1, size(ps)
+      !    res%collection(i) = readProbe(ps(i)%p)
+      ! end do
 
       res%length = size(res%collection)
       res%length_max = size(res%collection)
@@ -1476,11 +1501,15 @@ contains
          if (size(cables) /= 0) then
             do i = 1, size(cables)
                if (isMultiwire(cables(i)%p)) then
-                  parentId = this%getIntAt(cables(i)%p, J_MAT_ASS_CAB_CONTAINED_WITHIN_ID)
-                  call elemIdToCable%get(key(parentId), value=index)
-                  mtln_res%cables(j)%parent_cable => mtln_res%cables(index)
-
-                  mtln_res%cables(j)%conductor_in_parent = getParentPositionInMultiwire(parentId)
+                  parentId = this%getIntAt(cables(i)%p, J_MAT_ASS_CAB_CONTAINED_WITHIN_ID, default=0)
+                  if (parentId == 0) then
+                     mtln_res%cables(j)%parent_cable => null()
+                     mtln_res%cables(j)%conductor_in_parent = 0
+                  else 
+                     call elemIdToCable%get(key(parentId), value=index)
+                     mtln_res%cables(j)%parent_cable => mtln_res%cables(index)
+                     mtln_res%cables(j)%conductor_in_parent = getParentPositionInMultiwire(parentId)
+                  end if
                else if (isWire(cables(i)%p)) then
                   mtln_res%cables(j)%parent_cable => null()
                   mtln_res%cables(j)%conductor_in_parent = 0
@@ -1888,6 +1917,7 @@ contains
          type(node_t) :: node
          type(cable_t), pointer :: cable_ptr
          integer :: index
+         type(coordinate_t) :: node_coord
          if (this%existsAt(this%root, J_PROBES)) then
             call this%core%get(this%root, J_PROBES, probes)
          else
@@ -1907,12 +1937,14 @@ contains
             do i = 1, size(wire_probes)
                elemIds = this%getIntsAt(wire_probes(i)%p, J_ELEMENTIDS)
                node = this%mesh%getNode(elemIds(1))
+               node_coord = this%mesh%getCoordinate(node%coordIds(1))
                do j = 1, size(polylines)
                   polylinecIds = this%getIntsAt(polylines(j)%p, J_COORDINATE_IDS)
                   position = findloc(polylinecIds, node%coordIds(1), dim=1)
                   if (position /= 0) then ! polyline found
                      res(k)%probe_type = readProbeType(wire_probes(i)%p)
-
+                     res(k)%probe_name = readProbeName(wire_probes(i)%p)
+                     res(k)%probe_position = node_coord%position
                      call elemIdToCable%get(key(this%getIntAt(polylines(j)%p, J_ID)), value=index)
                      cable_ptr => mtln_res%cables(index)
                      do while (associated(cable_ptr%parent_cable))
@@ -1963,6 +1995,16 @@ contains
          else
             write(error_unit,*) 'probe type '//probe_type//' not supported'
             res = PROBE_TYPE_UNDEFINED
+         end if
+      end function
+
+      function readProbeName(probe) result(res)
+         type(json_value), pointer :: probe
+         character(:), allocatable :: res
+         if (this%existsAt(probe, J_NAME)) then 
+            res = this%getStrAt(probe, J_NAME)
+         else 
+            res = ""
          end if
       end function
 
@@ -2518,13 +2560,15 @@ contains
 
 
 
-   function getIntAt(this, place, path, found) result(res)
+   function getIntAt(this, place, path, found, default) result(res)
       integer :: res
       class(parser_t) :: this
       type(json_value), pointer :: place
       character(len=*) :: path
       logical, intent(out), optional :: found
-      call this%core%get(place, path, res, found)
+      integer, optional :: default
+
+      call this%core%get(place, path, res, found, default)
    end function
 
    function getIntsAt(this, place, path, found) result(res)

@@ -841,7 +841,11 @@ contains
                                                stat=stat)
 
             if (stat /= 0) return
-            res(i) =  this%bundles(d)%addProbe(index = parsed_probes(i)%index, probe_type = parsed_probes(i)%probe_type)
+            res(i) =  this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
+                                               probe_type = parsed_probes(i)%probe_type,&
+                                               name = parsed_probes(i)%probe_name,&
+                                               position =parsed_probes(i)%probe_position)
+
         end do
     end function
 

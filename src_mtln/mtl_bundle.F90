@@ -169,11 +169,21 @@ contains
 
     end subroutine
 
-    type(probe_t) function addProbe(this, index, probe_type) result(res)
+    type(probe_t) function addProbe(this, index, probe_type, name, position) result(res)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        res = probeCtor(index, probe_type, this%dt)
+        real, dimension(3), optional :: position
+        character (len=:), allocatable, optional :: name
+        if (present(position) .and. present(name)) then
+            res = probeCtor(index, probe_type, this%dt, name, position)
+        else if (present(name) .and. .not. present(position)) then 
+            res = probeCtor(index, probe_type, this%dt, name=name)
+        else if (.not. present(name) .and. present(position)) then 
+            res = probeCtor(index, probe_type, this%dt, position=position)
+        else
+            res = probeCtor(index, probe_type, this%dt)
+        end if
         this%probes = [this%probes, res]
     end function
 
