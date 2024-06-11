@@ -198,7 +198,8 @@ contains
       REAL (KIND=RKIND_tiempo)     :: at,rdummydt
       REAL (KIND=8)     ::time_desdelanzamiento
       logical :: hayattmedia = .false.,attinformado = .false., vtkindex,createh5bin,wirecrank,fatalerror,somethingdone,newsomethingdone,call_timing,l_auxoutput,l_auxinput
-      character(len=BUFSIZE) :: buff
+      character(len=BUFSIZE) :: buff   
+      integer (kind=4)      :: group_conformalprobes_dummy
       !
       !!!!!!!PML params!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -1246,6 +1247,26 @@ contains
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle N")
 #endif
+!240424 sgg creo el comunicador mpi de las sondas conformal aqui. debe irse con el nuevo conformal
+#ifdef CompileWithConformal                
+#ifdef CompileWithMPI
+        !!!!sgg250424 niapa para que funcionen sondas conformal mpi
+!todos deben crear el subcomunicador mpi una sola vez   
+        if (input_conformal_flag) then
+            SUBCOMM_MPI_conformal_probes=1   
+            MPI_conformal_probes_root=layoutnumber
+        else  
+            SUBCOMM_MPI_conformal_probes=0 
+            MPI_conformal_probes_root=-1
+        endif
+        call MPIinitSubcomm(layoutnumber,size,SUBCOMM_MPI_conformal_probes,&
+                                MPI_conformal_probes_root,group_conformalprobes_dummy)
+        print *,'-----creating--->',layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
+        call MPI_BARRIER(SUBCOMM_MPI, ierr)
+    !!!no lo hago pero al salir deberia luego destruir el grupo call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)                   
+#endif  
+#endif
+
       ciclo_temporal :  DO while (N <= finaltimestep)
       
       !!Flush the plane-wave logical switching off variable (saves CPU!)
@@ -1649,8 +1670,8 @@ contains
          !**************************************************************************************************
          !conformal advance electric fields  ref: ##timeStepps_advance_H##
 
-#ifdef CompileWithConformal
-         if(input_conformal_flag)then
+#ifdef CompileWithConformal                      
+         if(input_conformal_flag)then     
             call conformal_advance_H()
          endif
 #endif
