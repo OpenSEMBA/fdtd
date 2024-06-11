@@ -20,6 +20,38 @@ from utils import *
 #     assert np.allclose(p_v_expected.df.to_numpy(), p_v_solved.df.to_numpy())
 #     # assert np.allclose(p_i_expected.df.to_numpy(), p_i_solved.df.to_numpy())
 
+def test_shielded_pair(tmp_path):
+    case = 'shieldedPair'
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'shielded_pair.exc')
+    makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
+    fn = tmp_path._str + '/' + case + '.fdtd.json'
+
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+    solver.run()
+    
+    p_start = solver.getSolvedProbeFilenames("wire_start")
+    p_end = solver.getSolvedProbeFilenames("wire_end")
+    
+    probe_files = [p_start[0], p_start[1], p_start[2], p_end[0], p_end[1], p_end[2]]
+
+    
+    assert solver.hasFinishedSuccessfully() == True
+
+    p_expected = [Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_start_bundle_line_0_V_75_74_74.dat'),
+                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat'),
+                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat'),
+                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_end_Wz_75_71_74_s1.dat'),
+                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_end_bundle_line_0_I_75_71_74.dat'),
+                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_end_bundle_line_0_V_75_71_74.dat')]
+    
+    
+    for i in [2,3]:
+        p_solved = Probe(probe_files[i])
+        assert np.allclose(p_expected[i].df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 5e-2, atol=5e-2)
+    for i in [0,1,4,5]:
+        p_solved = Probe(probe_files[i])
+        assert np.allclose(p_expected[i].df.to_numpy()[:,0:4], p_solved.df.to_numpy()[:,0:4], rtol = 5e-2, atol=5e-2)
+
 def test_holland(tmp_path):
     case = 'holland1981'
     makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')

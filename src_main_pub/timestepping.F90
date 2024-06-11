@@ -2035,7 +2035,7 @@ contains
          !dump the remaining to disk
          call FlushObservationFiles(sgg,ini_save, n,layoutnumber, size, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.TRUE.)
          call CloseObservationFiles(sgg,layoutnumber,size,singlefilewrite,initialtimestep,lastexecutedtime,resume) !dump the remaining to disk
-         call FlushMTLNObservationFiles()
+         call FlushMTLNObservationFiles(nEntradaRoot)
       endif
       
       if (Thereare%FarFields) then

@@ -42,23 +42,23 @@ contains
         res%dt = dt
         res%current_frame = 1
         ! allocate(res%val(0), res%t(0,0))
-        res%name = "_"
+        ! res%name = "_"
         if (present(name)) then
             res%name = res%name//name//"_"
         end if
         if (probe_type == PROBE_TYPE_VOLTAGE) then
-            res%name = res%name//"voltage"
+            res%name = res%name//"V"
         else if (probe_type == PROBE_TYPE_CURRENT) then
-            res%name = res%name//"current"
+            res%name = res%name//"I"
         else
             error stop 'Undefined probe'
         end if  
         if (present(position)) then
             block
                 character(20) :: a,b,c
-                write(a, *) position(1)
-                write(b, *) position(2)
-                write(c, *) position(3)
+                write(a, *) int(position(1))
+                write(b, *) int(position(2))
+                write(c, *) int(position(3))
                 res%name = res%name//"_"//trim(adjustl(a))//"_"//trim(adjustl(b))//"_"//trim(adjustl(c))
             end block
         end if

@@ -4126,7 +4126,8 @@ contains
       return
    end subroutine FlushObservationFiles
 
-   subroutine FlushMTLNObservationFiles()
+   subroutine FlushMTLNObservationFiles(nEntradaRoot)
+      character (len=*), intent(in)  ::  nEntradaRoot
       type(mtln_solver_t), pointer :: mtln_solver
       integer :: i,j,k,n
       integer :: unit 
@@ -4137,7 +4138,7 @@ contains
       unit = 2000
       do i = 1, size(mtln_solver%bundles)
          do j = 1, size(mtln_solver%bundles(i)%probes)
-            path = trim(mtln_solver%bundles(i)%name)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat"
+            path = trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat"
             open(unit = unit , file = trim(path))
 
             buffer = "time"
@@ -4156,8 +4157,6 @@ contains
                   buffer = buffer//" "//trim(temp)
                end do
                write(unit,*) trim(buffer)
-               ! write(unit,*) mtln_solver%bundles(i)%probes(j)%t(k)," ", &
-               !               mtln_solver%bundles(i)%probes(j)%val(k,1)
             end do
             close(unit)
             unit = unit + 1

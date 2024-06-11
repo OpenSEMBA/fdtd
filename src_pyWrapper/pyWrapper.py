@@ -20,10 +20,11 @@ class Probe():
         # with open(probe_filename, 'w') as file:
         #     file.write(data) 
 
+        mtln_probe_tags = ['_V_','_I_']
         current_probe_tags = ['_Wx_', '_Wy_', '_Wz_']
         far_field_tag = ['_FF_']
         movie_tags = ['_ExC_', '_EyC_', '_EzC_', '_HxC_', '_HyC_', '_HzC_']
-        all_tags = current_probe_tags + far_field_tag + movie_tags
+        all_tags = current_probe_tags + far_field_tag + movie_tags + mtln_probe_tags
       
         
         basename = os.path.basename(self.filename)
@@ -57,6 +58,11 @@ class Probe():
                     init_str, end_str = pos = positions_str.split('__')
                     self.cell_init = positionStrToCell(init_str)
                     self.cell_end = positionStrToCell(end_str)
+                elif tag in mtln_probe_tags:
+                    self.type ='mtln'
+                    self.name, position_str = basename_with_no_case_name.split(tag)
+                    self.cell = positionStrToCell(position_str)
+                    self.df = pd.read_csv(self.filename, sep='\s+')
             else:
                 raise ValueError("Unable to determine probe name or type for a probe with name:" + basename)
         try:

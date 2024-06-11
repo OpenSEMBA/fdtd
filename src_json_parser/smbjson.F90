@@ -2418,7 +2418,6 @@ contains
          type(json_value), pointer :: z
          type(transfer_impedance_per_meter_t) :: res
          character(len=:), allocatable :: direction
-
          if (this%existsAt(z, J_MAT_TRANSFER_IMPEDANCE_RESISTANCE)) then
             res%resistive_term = this%getRealAt(z,J_MAT_TRANSFER_IMPEDANCE_RESISTANCE)
          end if
@@ -2440,10 +2439,29 @@ contains
          else if (direction == "both") then
             res%direction = TRANSFER_IMPEDANCE_DIRECTION_BOTH
          end if
-         allocate(res%poles(0),res%residues(0))
-         !ToDo
-         ! res%poles = this%getRealsAt(z,J_MAT_TRANSFER_IMPEDANCE_POLES)
-         ! res%residues = this%getRealsAt(z,J_MAT_TRANSFER_IMPEDANCE_RESIDUES)
+         
+         block
+            type(json_value), pointer :: poles, residues, p, r
+            integer :: i, n
+            if (this%existsAt(z, J_MAT_TRANSFER_IMPEDANCE_POLES)) then 
+               n = this%getIntAt(z, J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES)
+               allocate(res%poles(n),res%residues(n))
+               call this%core%get(z, J_MAT_TRANSFER_IMPEDANCE_POLES, poles)
+               call this%core%get(z, J_MAT_TRANSFER_IMPEDANCE_RESIDUES, residues)
+               do i = 1, n 
+                  call this%core%get_child(poles, i, p)
+                  call this%core%get(p, '(1)', res%poles(i)%re)
+                  call this%core%get(p, '(2)', res%poles(i)%im)
+
+                  call this%core%get_child(residues, i, r)
+                  call this%core%get(r, '(1)', res%residues(i)%re)
+                  call this%core%get(r, '(2)', res%residues(i)%im)
+               end do
+            else 
+               allocate(res%poles(0),res%residues(0))
+            end if
+               
+         end block
       end function
 
       function noTransferImpedance() result(res)
