@@ -55,7 +55,6 @@ contains
         type(line_bundle_t), dimension(:), allocatable :: line_bundles
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
 
-
         res%final_time = parsed%time_step * parsed%number_of_steps
         res%dt = parsed%time_step
 

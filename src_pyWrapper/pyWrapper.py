@@ -76,9 +76,11 @@ class Probe():
         return self.df[key]
 
 class FDTD():
-    def __init__(self, input_filename, path_to_exe):
+    def __init__(self, input_filename, path_to_exe, flags = []):
         self.filename = input_filename
         self.path_to_exe = path_to_exe
+
+        self.flags = flags
 
         self.folder = os.path.dirname(self.filename)
         self.case = os.path.basename(self.filename).split('.json')[0]
@@ -86,7 +88,7 @@ class FDTD():
     
     def run(self):
         os.chdir(self.folder)
-        self.output = subprocess.run([self.path_to_exe, "-i",self.filename])
+        self.output = subprocess.run([self.path_to_exe, "-i",self.filename]+self.flags)
         self.hasRun = True
     
     def readJsonDict(self):
@@ -105,6 +107,7 @@ class FDTD():
             probeFiles.extend(newProbes)
             
         return probeFiles
+    
     
     def hasFinishedSuccessfully(self):
         if self.hasRun:

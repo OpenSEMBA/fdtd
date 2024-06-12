@@ -1474,6 +1474,7 @@ contains
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
 
+      if (countNumberOfMultiwires(cables) /= 0) mtln_res%has_multiwires = .true.
 
       allocate (mtln_res%cables(countNumberOfWires(cables) + countNumberOfMultiwires(cables)))
       block

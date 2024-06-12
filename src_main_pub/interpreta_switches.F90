@@ -90,8 +90,9 @@ module interpreta_switches_m
             simu_devia                      , &  
             noconformalmapvtk               , &
             createh5filefromsinglebin       , &
-            creditosyaprinteados            
-      
+            creditosyaprinteados            , &
+            use_mtln_wires
+                  
         integer (kind=4) ::                   &
             wirethickness                    ,&
             inductance_order                 ,&
@@ -746,9 +747,9 @@ CONTAINS
           CASE ('-stableradholland')
             l%stableradholland = .true.
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
-          CASE ('-mtln')
-              buff='-mtln option deprecated and ignored. Check -nomtlnberenger or -l%stableradholland'
-              call WarnErrReport(Trim(buff),.false.)
+         !  CASE ('-mtln')
+         !      buff='-mtln option deprecated and ignored. Check -nomtlnberenger or -l%stableradholland'
+         !      call WarnErrReport(Trim(buff),.false.)
           CASE ('-intrawiresimplify')
             l%strictOLD = .false.
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
@@ -761,10 +762,13 @@ CONTAINS
           !!case ('-experimentalVideal')
           !!    l%experimentalVideal=.true.
           !!    l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
+
           case ('-forceresampled') !a menos que se pida explicitamente, no se resamplea 120123
               l%forceresampled=.true.
               l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))   
-              
+          
+          case ('-mtlnwires')
+            l%use_mtln_wires = .true.
           CASE ('-wirethickness')
             i = i + 1
             CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
@@ -2083,6 +2087,7 @@ CONTAINS
       l%facesNF2FF%ab=.true.
       l%facesNF2FF%ar=.true.
       !defaults
+      l%use_mtln_wires = .false.
       l%hay_slanted_wires=.false.
       l%forcing = .FALSE.
       l%resume_fromold = .FALSE.

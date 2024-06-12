@@ -140,6 +140,7 @@ module mtln_types_mod
       type(connector_t), dimension(:), pointer :: connectors
       real :: time_step
       integer :: number_of_steps
+      logical :: has_multiwires
    contains
       private
       procedure :: mtln_eq
