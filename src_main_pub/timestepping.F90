@@ -1370,8 +1370,12 @@ contains
             IF (Thereare%Wires) then
                if (wirecrank) then
                   call AdvanceWiresEcrank(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic)
-               else
-                  ! call AdvanceWiresE(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)                 
+               else  
+!                  if (thereAre%MTLNbundles) then
+!                     call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
+!                  else  
+                     call AdvanceWiresE(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)                 
+!                  endif
                endif
             endif
          endif
@@ -1388,10 +1392,6 @@ contains
             call AdvanceWiresE_Slanted(sgg,n) 
          endif
 #endif
-#ifdef CompileWithWires
-         if (thereAre%MTLNbundles) call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
-
-#endif 
          If (Thereare%PMLbodies) then !waveport absorbers
             call AdvancePMLbodyE
          endif
