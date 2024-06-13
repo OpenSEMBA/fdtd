@@ -169,11 +169,21 @@ contains
 
     end subroutine
 
-    type(probe_t) function addProbe(this, index, probe_type) result(res)
+    type(probe_t) function addProbe(this, index, probe_type, name, position) result(res)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        res = probeCtor(index, probe_type, this%dt)
+        real, dimension(3), optional :: position
+        character (len=:), allocatable, optional :: name
+        if (present(position) .and. present(name)) then
+            res = probeCtor(index, probe_type, this%dt, name, position)
+        else if (present(name) .and. .not. present(position)) then 
+            res = probeCtor(index, probe_type, this%dt, name=name)
+        else if (.not. present(name) .and. present(position)) then 
+            res = probeCtor(index, probe_type, this%dt, position=position)
+        else
+            res = probeCtor(index, probe_type, this%dt)
+        end if
         this%probes = [this%probes, res]
     end function
 
@@ -282,18 +292,18 @@ contains
         class(mtl_bundle_t) ::this
         real, dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
-        ! call this%transfer_impedance%updateQ3Phi()
-        ! i_prev = this%i
+        call this%transfer_impedance%updateQ3Phi()
+        i_prev = this%i
         do i = 1, this%number_of_divisions 
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
-                          matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - this%e_L(:,i) * this%step_size(i))
+                          matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - this%e_L(:,i) * this%step_size(i)) - &
                           !- &
                                 !  matmul(0.5*this%du_length(i,:,:), this%el))
-                        !   matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
+                          matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
         !TODO - revisar
-        ! i_now = this%i
-        ! call this%transfer_impedance%updatePhi(i_prev, i_now)
+        i_now = this%i
+        call this%transfer_impedance%updatePhi(i_prev, i_now)
     end subroutine
 
     subroutine bundle_setExternalLongitudinalField(this)

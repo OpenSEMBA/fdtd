@@ -2056,7 +2056,9 @@ contains
          !dump the remaining to disk
          call FlushObservationFiles(sgg,ini_save, n,layoutnumber, size, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.TRUE.)
          call CloseObservationFiles(sgg,layoutnumber,size,singlefilewrite,initialtimestep,lastexecutedtime,resume) !dump the remaining to disk
+         call FlushMTLNObservationFiles(nEntradaRoot)
       endif
+      
       if (Thereare%FarFields) then
           write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',n
       else

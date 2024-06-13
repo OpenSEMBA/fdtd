@@ -10,7 +10,7 @@ module probes_mod
         real, allocatable, dimension(:,:) :: val
         real :: dt
         integer :: index, current_frame
-
+        character (len=:), allocatable :: name
 
     contains
         procedure :: resizeFrames
@@ -29,19 +29,40 @@ module probes_mod
 
 contains
 
-    function probeCtor(index, probe_type, dt) result(res)
+    function probeCtor(index, probe_type, dt, name, position) result(res)
         type(probe_t) :: res
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
         real, intent(in) :: dt
-        
+        real, dimension(3), optional :: position
+        character (len=:), allocatable, optional :: name
+
         res%type = probe_type
         res%index = index
         res%dt = dt
         res%current_frame = 1
         ! allocate(res%val(0), res%t(0,0))
-
-    end function
+        ! res%name = "_"
+        if (present(name)) then
+            res%name = res%name//name//"_"
+        end if
+        if (probe_type == PROBE_TYPE_VOLTAGE) then
+            res%name = res%name//"V"
+        else if (probe_type == PROBE_TYPE_CURRENT) then
+            res%name = res%name//"I"
+        else
+            error stop 'Undefined probe'
+        end if  
+        if (present(position)) then
+            block
+                character(20) :: a,b,c
+                write(a, *) int(position(1))
+                write(b, *) int(position(2))
+                write(c, *) int(position(3))
+                res%name = res%name//"_"//trim(adjustl(a))//"_"//trim(adjustl(b))//"_"//trim(adjustl(c))
+            end block
+        end if
+        end function
 
     subroutine resizeFrames(this, num_frames, number_of_conductors)
         class(probe_t) :: this
@@ -68,8 +89,6 @@ contains
             else 
                 call this%saveFrame( t+ 0.5*this%dt, i(:,this%index))
             endif
-        else 
-            error stop 'Undefined probe'
         end if  
 
     end subroutine
