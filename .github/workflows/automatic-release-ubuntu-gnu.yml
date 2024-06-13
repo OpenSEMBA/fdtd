@@ -21,6 +21,10 @@ jobs:
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
       
+    - name: Install required packages
+      run: |
+        sudo apt install libhdf5-dev libopenmpi-dev
+        
     - name: Build application
       run: |       
         cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release

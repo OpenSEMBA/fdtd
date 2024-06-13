@@ -1169,7 +1169,7 @@ subroutine cargaNFDE(local_nfde,local_parser)
    l%mpidir=NFDE_FILE%mpidir !bug 100419
 !!!!!!!!!!!                             
   ! write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
-   write(dubuf,*) '[OK] '//trim(adjustl(whoami))//' newparser (NFDE_FILE)';  call print11(0,dubuf)       
+   write(dubuf,*) '[OK] '//trim(adjustl(whoami))//' newparser (NFDE_FILE)';  call print11(l%layoutnumber,dubuf)       
 #ifdef CompileWithMPI            
        CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
