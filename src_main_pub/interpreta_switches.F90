@@ -90,7 +90,8 @@ module interpreta_switches_m
             simu_devia                      , &  
             noconformalmapvtk               , &
             createh5filefromsinglebin       , &
-            creditosyaprinteados            
+            creditosyaprinteados            , &
+            use_mtln_wires
       
         integer (kind=4) ::                   &
             wirethickness                    ,&
@@ -748,7 +749,7 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
           CASE ('-mtln')
               buff='-mtln option deprecated and ignored. Check -nomtlnberenger or -l%stableradholland'
-              call WarnErrReport(Trim(buff),.false.)
+              call WarnErrReport(Trim(buff),.true.)
           CASE ('-intrawiresimplify')
             l%strictOLD = .false.
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
@@ -765,6 +766,8 @@ CONTAINS
               l%forceresampled=.true.
               l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))   
               
+          case ('-mtlnwires')
+            l%use_mtln_wires = .true.
           CASE ('-wirethickness')
             i = i + 1
             CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
@@ -2083,6 +2086,7 @@ CONTAINS
       l%facesNF2FF%ab=.true.
       l%facesNF2FF%ar=.true.
       !defaults
+      l%use_mtln_wires = .false.
       l%hay_slanted_wires=.false.
       l%forcing = .FALSE.
       l%resume_fromold = .FALSE.

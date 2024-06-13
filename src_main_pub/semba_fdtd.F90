@@ -866,7 +866,7 @@ PROGRAM SEMBA_FDTD_launcher
            l%EpsMuTimeScale_input_parameters, &
            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
-           mtln_parsed)
+           mtln_parsed, l%use_mtln_wires)
 
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else

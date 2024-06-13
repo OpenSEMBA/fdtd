@@ -26,7 +26,7 @@ def test_shielded_pair(tmp_path):
     makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
     fn = tmp_path._str + '/' + case + '.fdtd.json'
 
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags = ['-mtlnwires'])
     solver.run()
     
     p_start = solver.getSolvedProbeFilenames("wire_start")
@@ -58,7 +58,25 @@ def test_holland(tmp_path):
     makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
     fn = tmp_path._str + '/' + case + '.fdtd.json'
 
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags = [])
+    solver.run()
+    probe_current = solver.getSolvedProbeFilenames("mid_point")[0]
+    probe_files = [probe_current]
+    
+    assert solver.hasFinishedSuccessfully() == True
+
+    p_expected = Probe(OUTPUT_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+    
+    p_solved = Probe(probe_files[0])
+    assert np.allclose(p_expected.df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 1e-5, atol=1e-6)
+
+def test_holland_mtln(tmp_path):
+    case = 'holland1981'
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
+    makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
+    fn = tmp_path._str + '/' + case + '.fdtd.json'
+
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags = ['-mtlnwires'])
     solver.run()
     probe_current = solver.getSolvedProbeFilenames("mid_point")[0]
     probe_files = [probe_current]

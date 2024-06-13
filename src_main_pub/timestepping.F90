@@ -144,7 +144,7 @@ contains
    EpsMuTimeScale_input_parameters, &
    stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess,planewavecorr, &
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
-   mtln_parsed)
+   mtln_parsed, use_mtln_wires)
 
    !!!           
       type (mtln_t) :: mtln_parsed
@@ -197,9 +197,8 @@ contains
       real (kind=RKIND_wires) :: factorradius,factordelta
       REAL (KIND=RKIND_tiempo)     :: at,rdummydt
       REAL (KIND=8)     ::time_desdelanzamiento
-      logical :: hayattmedia = .false.,attinformado = .false., vtkindex,createh5bin,wirecrank,fatalerror,somethingdone,newsomethingdone,call_timing,l_auxoutput,l_auxinput
+      logical :: hayattmedia = .false.,attinformado = .false., vtkindex,createh5bin,wirecrank,fatalerror,somethingdone,newsomethingdone,call_timing,l_auxoutput,l_auxinput, use_mtln_wires
       character(len=BUFSIZE) :: buff   
-      integer (kind=4)      :: group_conformalprobes_dummy
       !
       !!!!!!!PML params!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -594,6 +593,7 @@ contains
          call WarnErrReport(buff)
          write(buff,*) 'TAPARRABOS=',TAPARRABOS,', wiresflavor=',wiresflavor,', mindistwires=',mindistwires,', wirecrank=',wirecrank , 'makeholes=',makeholes
          call WarnErrReport(buff)
+         write(buff,*) 'use_mtln_wires=', use_mtln_wires
          write(buff,*) 'connectendings=',connectendings,', isolategroupgroups=',isolategroupgroups
          call WarnErrReport(buff)
          write(buff,*) 'wirethickness ', wirethickness, 'stableradholland=',stableradholland,'mtlnberenger=',mtlnberenger,' inductance_model=',inductance_model,', inductance_order=',inductance_order,', groundwires=',groundwires,' ,fieldtotl=',fieldtotl,' noSlantedcrecepelo =',noSlantedcrecepelo 
@@ -813,7 +813,9 @@ contains
 
 
 #ifdef CompileWithWires
+      if (use_mtln_wires) then
          call InitWires_mtln(sgg,Ex,Ey,Ez,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
+      endif
 #endif
 
 
@@ -1365,17 +1367,17 @@ contains
 !!!lamo aquí los hilos por coherencia con las PML que deben absorber los campos creados por los hilos
 #ifdef CompileWithWires
          !Wires (only updated here. No need to update in the H-field part)
-         if ((trim(adjustl(wiresflavor))=='holland') .or. &
-             (trim(adjustl(wiresflavor))=='transition')) then
+         if (( (trim(adjustl(wiresflavor))=='holland') .or. &
+               (trim(adjustl(wiresflavor))=='transition')) .and. .not. use_mtln_wires) then
             IF (Thereare%Wires) then
                if (wirecrank) then
                   call AdvanceWiresEcrank(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic)
                else  
-!                  if (thereAre%MTLNbundles) then
-!                     call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
-!                  else  
+                  if (mtln_parsed%has_multiwires) then
+                     write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
+                     call WarnErrReport(buff)
+                  end if
                      call AdvanceWiresE(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)                 
-!                  endif
                endif
             endif
          endif
@@ -1392,6 +1394,12 @@ contains
             call AdvanceWiresE_Slanted(sgg,n) 
          endif
 #endif
+#ifdef CompileWithWires
+         if (use_mtln_wires) then
+            call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
+         end if
+
+#endif 
          If (Thereare%PMLbodies) then !waveport absorbers
             call AdvancePMLbodyE
          endif
@@ -2056,7 +2064,9 @@ contains
          !dump the remaining to disk
          call FlushObservationFiles(sgg,ini_save, n,layoutnumber, size, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.TRUE.)
          call CloseObservationFiles(sgg,layoutnumber,size,singlefilewrite,initialtimestep,lastexecutedtime,resume) !dump the remaining to disk
+         if (use_mtln_wires) then
          call FlushMTLNObservationFiles(nEntradaRoot)
+         end if
       endif
       
       if (Thereare%FarFields) then
