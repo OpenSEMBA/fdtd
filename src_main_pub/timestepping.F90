@@ -124,9 +124,19 @@ module Solver
    implicit none
    private
 
-   public launch_simulation
+   public launch_simulation, launch_mtln_simulation
  
 contains
+
+   subroutine launch_mtln_simulation(mtln_parsed, nEntradaRoot, layoutnumber)
+      type (mtln_t) :: mtln_parsed
+      character (len=*), intent(in)  ::  nEntradaRoot
+      integer (kind=4), intent(in) ::  layoutnumber
+
+      call solveMTLNProblem(mtln_parsed)
+      call reportSimulationEnd(layoutnumber)
+      call FlushMTLNObservationFiles(nEntradaRoot)
+   end subroutine
 
    subroutine launch_simulation(sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
    SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
@@ -146,9 +156,7 @@ contains
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
    mtln_parsed, use_mtln_wires)
 
-   !!!           
       type (mtln_t) :: mtln_parsed
-   !!!
       logical :: noconformalmapvtk
       logical :: hopf,experimentalVideal,forceresampled
       character (LEN=BUFSIZE) :: ficherohopf

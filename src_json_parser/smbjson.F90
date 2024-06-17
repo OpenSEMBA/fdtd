@@ -50,6 +50,7 @@ module smbjson
       !
       procedure :: readMTLN
       !
+      procedure :: getLogicalAt
       procedure :: getIntAt
       procedure :: getIntsAt
       procedure :: getRealAt
@@ -269,6 +270,7 @@ contains
       type(NFDEGeneral) :: res
       res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
+      res%mtlnProblem = this%GetLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
 
    function readMediaMatrix(this) result(res)
@@ -660,7 +662,8 @@ contains
       class(parser_t) :: this
       type(MasSondas) :: res
       type(json_value), pointer :: allProbes
-      type(json_value_ptr), dimension(:), allocatable :: ps, ps_filtered
+      type(json_value_ptr), dimension(:), allocatable :: ps
+
       integer :: i
       character (len=*), dimension(2), parameter :: validTypes = &
          [J_PR_TYPE_POINT, J_PR_TYPE_WIRE]
@@ -668,7 +671,7 @@ contains
          [J_FIELD_CURRENT]
       logical :: found
       character (len=:), allocatable :: fieldLbl
-      integer :: filtered_size = 0
+      integer :: filtered_size, n
 
       call this%core%get(this%root, J_PROBES, allProbes, found)
       if (.not. found) then
@@ -681,30 +684,23 @@ contains
 
       ps = this%jsonValueFilterByKeyValues(allProbes, J_TYPE, validTypes)
       
-      do i=1, size(ps)
-         call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
-         if (fieldLbl /= J_FIELD_VOLTAGE) then 
-            filtered_size = filtered_size + 1
-         end if
-      end do
-      allocate(ps_filtered(filtered_size))
       filtered_size = 0
       do i=1, size(ps)
          call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
             filtered_size = filtered_size + 1
-            ps_filtered(filtered_size) = ps(i)
          end if
       end do
 
-      allocate(res%collection(size(ps_filtered)))
-      do i=1, size(ps_filtered)
-         res%collection(i) = readProbe(ps_filtered(i)%p)
+      n = 1
+      allocate(res%collection(filtered_size))
+      do i=1, size(ps)
+         call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
+         if (fieldLbl /= J_FIELD_VOLTAGE) then 
+            res%collection(n) = readProbe(ps(i)%p)
+            n = n + 1
+         end if
       end do
-      ! allocate(res%collection(size(ps)))
-      ! do i=1, size(ps)
-      !    res%collection(i) = readProbe(ps(i)%p)
-      ! end do
 
       res%length = size(res%collection)
       res%length_max = size(res%collection)
@@ -718,11 +714,19 @@ contains
          type(pixel_t) :: pixel
 
          integer, dimension(:), allocatable :: elemIds
-         logical :: elementIdsFound, typeLabelFound, dirLabelsFound, fieldLabelFound
+         logical :: elementIdsFound, typeLabelFound, dirLabelsFound, fieldLabelFound, nameFound
 
-         call this%core%get(p, J_NAME, outputName)
+         call this%core%get(p, J_NAME, outputName, found = nameFound)
+         if (.not. nameFound) then 
+            write(error_unit, *) "ERROR: name entry not found for probe."
+         end if
          res%outputrequest = trim(adjustl(outputName))
          call setDomain(res, this%getDomain(p, J_PR_DOMAIN))
+
+         if (this%existsAt(p, J_ELEMENTIDS)) then
+            write(*,*) 'here'
+         end if
+         ! elemIds = this%getIntsAt(p, J_ELEMENTIDS,elementIdsFound)
 
          call this%core%get(p, J_ELEMENTIDS, elemIds, found=elementIdsFound)
          if (.not. elementIdsFound) then
@@ -2577,6 +2581,16 @@ contains
    end function
 
 
+   function getLogicalAt(this, place, path, found, default) result(res)
+      logical :: res
+      class(parser_t) :: this
+      type(json_value), pointer :: place
+      character(len=*) :: path
+      logical, intent(out), optional :: found
+      logical, optional :: default
+
+      call this%core%get(place, path, res, found, default)
+   end function
 
 
    function getIntAt(this, place, path, found, default) result(res)

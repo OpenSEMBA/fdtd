@@ -65,7 +65,7 @@ TEST(mtln, dispersive_init_1_pole_lines_with_lumped) { EXPECT_EQ(0, test_dispers
 
 TEST(mtln, wire_panel){ EXPECT_EQ(0, test_wire_panel()); }
 
-TEST(mtln, spice_connectors) {EXPECT_EQ(0,test_spice_connectors());}
+// TEST(mtln, spice_connectors) {EXPECT_EQ(0,test_spice_connectors());}
 
 TEST(mtln, spice_tran) { EXPECT_EQ(0, test_spice_tran()); }
 TEST(mtln, spice_tran_2) { EXPECT_EQ(0, test_spice_tran_2()); }

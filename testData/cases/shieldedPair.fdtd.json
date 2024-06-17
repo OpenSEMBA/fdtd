@@ -4,7 +4,8 @@
 	
     "general": {
         "timeStep": 0.43e-10,
-        "numberOfSteps": 700
+        "numberOfSteps": 700,
+		"mtlnProblem": false
     },
   
     "boundary": {

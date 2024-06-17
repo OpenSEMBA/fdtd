@@ -280,10 +280,15 @@ contains
       expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)
       expected%mtln%probes(1)%index = 1
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
+      expected%mtln%probes(1)%probe_name = "wire_start"
+      expected%mtln%probes(1)%probe_position = [27,25,30]
 
       expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(2)
       expected%mtln%probes(2)%index = 11
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_CURRENT
+      expected%mtln%probes(2)%probe_name = "wire_end"
+      expected%mtln%probes(2)%probe_position = [43,25,30]
+
 
       ! networks
       deallocate(expected%mtln%networks)

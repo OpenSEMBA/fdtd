@@ -1573,6 +1573,7 @@ CONTAINS
 #endif
 #ifdef CompileWithWires
       CALL print11 (l%layoutnumber, '&                        (default '//trim(adjustl(l%wiresflavor))//')   ')
+      CALL print11 (l%layoutnumber, '-mtlnwires             : Use mtln solver to advance wires currents ')
       CALL print11 (l%layoutnumber, '-notaparrabos          : Do not remove extra double tails at the end of the wires ')
       CALL print11 (l%layoutnumber, '&                        only available for the native format.             ')
       CALL print11 (l%layoutnumber, '-intrawiresimplify     : Disable strict interpretation of .NFDE topology.  ')

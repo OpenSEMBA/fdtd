@@ -215,7 +215,7 @@ contains
         do i = 1, size(this%nodes%sources)
             if (this%nodes%sources(i)%has_source) then
                 interp = this%nodes%sources(i)%interpolate(time, this%dt) 
-                write(*,*) 'source: ', interp
+                ! write(*,*) 'source: ', interp
                 write(sVoltage, *) interp
                 call command("alter @V"//trim(this%nodes%names(i)%name)//"[dc] = "//trim(sVoltage) // c_null_char)
             end if

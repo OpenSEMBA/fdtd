@@ -612,7 +612,7 @@ contains
         if (stat /= 0) return
         write(sConductor,'(I0)') node%conductor_in_cable
         res%name = trim(node%belongs_to_cable%name)//"_"//trim(sConductor)//"_"//nodeSideToString(node%side)
-        write(*,*) res%name
+        ! write(*,*) res%name
         res%v = 0.0
         res%i = 0.0
         res%bundle_number = d
@@ -767,15 +767,18 @@ contains
         end do
     end subroutine
 
-    subroutine addAnalysis(description, final_time, dt)
+    subroutine addAnalysis(description, final_time, dt, print_step)
         character(256), dimension(:), allocatable, intent(inout) :: description
         character(256) :: buff
         real, intent(in) :: final_time, dt
-        character(20) :: sTime, sdt
-        
+        character(20) :: sTime, sdt, sPrint
+        integer, intent(in) :: print_step        
+
         write(sTime, '(E10.2)') final_time
         write(sdt, '(E10.2)') dt
+        write(sPrint, '(E10.2)') final_time/print_step
 
+        ! buff = trim(".tran "//sPrint//" "//sTime//" 0 "//sdt)
         buff = trim(".tran "//sdt//" "//sTime//" 0 "//sdt)
         call appendToStringArray(description, buff)       
 
@@ -816,13 +819,13 @@ contains
         allocate(description(0))
         description = ["* network description message"]
         call addNetworksDescription(description, networks)
-        call addAnalysis(description, this%final_time, this%dt)
+        call addAnalysis(description, this%final_time, this%dt, 100)
         call addSavedNodes(description, networks)
         call endDescription(description)        
 
-        do i = 1, size(description)
-            write(*,'(A)') trim(description(i))
-        end do  
+        ! do i = 1, size(description)
+        !     write(*,'(A)') trim(description(i))
+        ! end do  
         res = network_managerCtor(networks, description, this%final_time, this%dt)
 
     end function
