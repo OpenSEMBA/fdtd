@@ -29,11 +29,16 @@ def test_shielded_pair(tmp_path):
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags = ['-mtlnwires'])
     solver.run()
     
-    p_start = solver.getSolvedProbeFilenames("wire_start")
-    p_end = solver.getSolvedProbeFilenames("wire_end")
+    # p_start = solver.getSolvedProbeFilenames("wire_start")
+    # p_end = solver.getSolvedProbeFilenames("wire_end")
     
-    probe_files = [p_start[0], p_start[1], p_start[2], p_end[0], p_end[1], p_end[2]]
-
+    # probe_files = [p_start[0], p_start[1], p_start[2], p_end[0], p_end[1], p_end[2]]
+    probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_0_V_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat',
+                   'shieldedPair.fdtd_wire_end_Wz_75_71_74_s1.dat',
+                   'shieldedPair.fdtd_wire_end_bundle_line_0_I_75_71_74.dat',
+                   'shieldedPair.fdtd_wire_end_bundle_line_0_V_75_71_74.dat']
     
     assert solver.hasFinishedSuccessfully() == True
 

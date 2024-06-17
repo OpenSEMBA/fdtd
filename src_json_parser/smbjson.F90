@@ -723,11 +723,6 @@ contains
          res%outputrequest = trim(adjustl(outputName))
          call setDomain(res, this%getDomain(p, J_PR_DOMAIN))
 
-         if (this%existsAt(p, J_ELEMENTIDS)) then
-            write(*,*) 'here'
-         end if
-         ! elemIds = this%getIntsAt(p, J_ELEMENTIDS,elementIdsFound)
-
          call this%core%get(p, J_ELEMENTIDS, elemIds, found=elementIdsFound)
          if (.not. elementIdsFound) then
             write(error_unit, *) "ERROR: element ids entry not found for probe."
@@ -2448,6 +2443,7 @@ contains
          block
             type(json_value), pointer :: poles, residues, p, r
             integer :: i, n
+            real :: read_value
             if (this%existsAt(z, J_MAT_TRANSFER_IMPEDANCE_POLES)) then 
                n = this%getIntAt(z, J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES)
                allocate(res%poles(n),res%residues(n))
@@ -2455,12 +2451,16 @@ contains
                call this%core%get(z, J_MAT_TRANSFER_IMPEDANCE_RESIDUES, residues)
                do i = 1, n 
                   call this%core%get_child(poles, i, p)
-                  call this%core%get(p, '(1)', res%poles(i)%re)
-                  call this%core%get(p, '(2)', res%poles(i)%im)
+                  call this%core%get(p, '(1)', read_value)
+                  res%poles(i)%re = read_value
+                  call this%core%get(p, '(2)', read_value)
+                  res%poles(i)%im = read_value
 
                   call this%core%get_child(residues, i, r)
-                  call this%core%get(r, '(1)', res%residues(i)%re)
-                  call this%core%get(r, '(2)', res%residues(i)%im)
+                  call this%core%get(r, '(1)', read_value)
+                  res%residues(i)%re = read_value
+                  call this%core%get(r, '(2)', read_value)
+                  res%residues(i)%im = read_value
                end do
             else 
                allocate(res%poles(0),res%residues(0))

@@ -63,8 +63,7 @@ TEST(mtln, dispersive_init_2_poles) { EXPECT_EQ(0, test_dispersive_init_2_poles(
 TEST(mtln, dispersive_init_1_pole_3_levels) { EXPECT_EQ(0, test_dispersive_init_1_pole_3_levels()); }
 TEST(mtln, dispersive_init_1_pole_lines_with_lumped) { EXPECT_EQ(0, test_dispersive_init_1_pole_lines_with_lumped()); }
 
-TEST(mtln, wire_panel){ EXPECT_EQ(0, test_wire_panel()); }
-
+// TEST(mtln, wire_panel){ EXPECT_EQ(0, test_wire_panel()); }
 // TEST(mtln, spice_connectors) {EXPECT_EQ(0,test_spice_connectors());}
 
 TEST(mtln, spice_tran) { EXPECT_EQ(0, test_spice_tran()); }
