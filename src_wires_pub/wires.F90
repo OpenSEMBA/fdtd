@@ -1304,13 +1304,6 @@ contains
                      select case (HWires%CurrentSegment(conta)%tipofield)
                      case (iEx)
                         ! default
-                        medio1  =sggMiEx(i1  ,j1  ,k1  )
-                        if (sgg%med(medio1)%is%already_YEEadvanced_byconformal) then
-                            continue
-                        endif
-                        if (sgg%med(medio1 )%is%split_and_useless) then
-                            continue
-                        endif
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ex(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ex(i1,j1,k1) 
 !!al final se reapuntan los del thickness
@@ -1331,13 +1324,6 @@ contains
                         sggmiE = sggmiEx(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEx(i1,j1,k1)= sggmiE !por si se ha modificado !ojo agresivo 180220 !ojo cambiado aqui 170323 de sitio pq no se habian puesto los deltatrans y salia division por cero
                         !fin dama
                       case (iEy)    
-                        medio1  =sggMiEy(i1  ,j1  ,k1  )
-                        if (sgg%med(medio1)%is%already_YEEadvanced_byconformal) then
-                            continue
-                        endif
-                        if (sgg%med(medio1 )%is%split_and_useless) then
-                            continue
-                        endif
                         ! default
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ey(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ey(i1,j1,k1)      
@@ -1359,13 +1345,6 @@ contains
                         sggmiE = sggmiEy(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEy(i1,j1,k1)= sggmiE !por si se ha modificado !ojo agresivo 180220 !ojo cambiado aqui 170323 de sitio pq no se habian puesto los deltatrans y salia division por cero
                         !fin dama
                       case (iEz)  
-                        medio1  =sggMiEz(i1  ,j1  ,k1  )
-                        if (sgg%med(medio1)%is%already_YEEadvanced_byconformal) then
-                            continue
-                        endif
-                        if (sgg%med(medio1 )%is%split_and_useless) then
-                            continue
-                        endif
                         ! default
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ez(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ez(i1,j1,k1)  
@@ -5632,7 +5611,7 @@ subroutine resume_casuistics
       !!!! deprecado en pscale  110219 
 
       
-
+!!!mal a 0624 !comentado en todos los sabores de wires
 !!!#ifdef CompileWithOpenMP
 !!!!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
 !!!#endif

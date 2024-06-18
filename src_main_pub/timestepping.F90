@@ -1268,55 +1268,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !a mano solo para debugeo  para TC_Conformal_Struc_truncado   !ojooo deshacer 0624
-      !m pone a pec los que el luego trata como estructurados con el medio correcto SGBC o PEC ?? no estoy seguro??
-      do i=sgg%Alloc(iEx)%XI,sgg%Alloc(iEx)%XE 
-      do k=sgg%Alloc(iEx)%ZI,sgg%Alloc(iEx)%ZE  
-          if (sgg%med(sggMiEx(i,10,k))%is%pec) then 
-              continue
-          endif
-      enddo 
-      enddo                                    
-      do i=sgg%Alloc(iEy)%xI,sgg%Alloc(iEy)%xE 
-      do K=sgg%Alloc(iEy)%ZI,sgg%Alloc(iEy)%ZE 
-          if (sgg%med(sggMiEy(i,10,k))%is%pec) then  
-              continue
-          endif
-      enddo 
-      enddo               
-      do i=sgg%Alloc(iEz)%xI,sgg%Alloc(iEz)%xE  
-      do k=sgg%Alloc(iEz)%ZI,sgg%Alloc(iEz)%ZE  
-          if (sgg%med(sggMiEz(i,10,k))%is%already_YEEadvanced_byconformal) then
-              continue
-          endif
-          if (sgg%med(sggMiEz(i,10,k))%is%pec) then   
-              continue 
-          endif
-      enddo 
-      enddo               
-      
-      do i=sgg%Alloc(iHx)%XI,sgg%Alloc(iHx)%XE  
-      do k=sgg%Alloc(ihX)%ZI,sgg%Alloc(ihx)%ZE  
-          if (sgg%med(sggMiHx(i,10,k))%is%pec) then  
-              continue
-          endif 
-      enddo 
-      enddo               
-      do i=sgg%Alloc(ihy)%xI,sgg%Alloc(ihy)%xE  
-      do k=sgg%Alloc(iHy)%zI,sgg%Alloc(iHy)%zE  
-          if (sgg%med(sggMiHy(i,10,k))%is%pec) then   
-              continue
-          endif
-      enddo  
-      enddo                   
-      do i=sgg%Alloc(iHz)%XI,sgg%Alloc(iHz)%XE 
-      do k=sgg%Alloc(iHz)%ZI,sgg%Alloc(iHz)%ZE   
-          if (sgg%med(sggMiHz(i,10,k))%is%pec) then    
-              continue
-          endif
-      enddo  
-      enddo               
+      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!              
       !
       ciclo_temporal :  DO while (N <= finaltimestep)
       
