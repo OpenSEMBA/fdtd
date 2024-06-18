@@ -60,8 +60,9 @@ contains
                 write(b, *) int(position(2))
                 write(c, *) int(position(3))
                 res%name = res%name//"_"//trim(adjustl(a))//"_"//trim(adjustl(b))//"_"//trim(adjustl(c))
-            end block
+                end block
         end if
+        write(*,*) 'probe name: ', res%name
         end function
 
     subroutine resizeFrames(this, num_frames, number_of_conductors)
