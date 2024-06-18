@@ -10,10 +10,6 @@ def test_shielded_pair(tmp_path):
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags = ['-mtlnwires'])
     solver.run()
     
-    # p_start = solver.getSolvedProbeFilenames("wire_start")
-    # p_end = solver.getSolvedProbeFilenames("wire_end")
-    
-    # probe_files = [p_start[0], p_start[1], p_start[2], p_end[0], p_end[1], p_end[2]]
     probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_0_V_75_74_74.dat',
                    'shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat',
                    'shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat',
@@ -46,7 +42,7 @@ def test_holland(tmp_path):
 
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags = [])
     solver.run()
-    probe_current = solver.getSolvedProbeFilenames("mid_point")[0]
+    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
     probe_files = [probe_current]
     
     assert solver.hasFinishedSuccessfully() == True
@@ -64,7 +60,7 @@ def test_holland_mtln(tmp_path):
 
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags = ['-mtlnwires'])
     solver.run()
-    probe_current = solver.getSolvedProbeFilenames("mid_point")[0]
+    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
     probe_files = [probe_current]
     
     assert solver.hasFinishedSuccessfully() == True
