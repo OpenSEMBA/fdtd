@@ -1304,6 +1304,13 @@ contains
                      select case (HWires%CurrentSegment(conta)%tipofield)
                      case (iEx)
                         ! default
+                        medio1  =sggMiEx(i1  ,j1  ,k1  )
+                        if (sgg%med(medio1)%is%already_YEEadvanced_byconformal) then
+                            continue
+                        endif
+                        if (sgg%med(medio1 )%is%split_and_useless) then
+                            continue
+                        endif
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ex(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ex(i1,j1,k1) 
 !!al final se reapuntan los del thickness
@@ -1323,7 +1330,14 @@ contains
                         HWires%CurrentSegment(conta)%y      = k1+0.25_RKIND_wires 
                         sggmiE = sggmiEx(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEx(i1,j1,k1)= sggmiE !por si se ha modificado !ojo agresivo 180220 !ojo cambiado aqui 170323 de sitio pq no se habian puesto los deltatrans y salia division por cero
                         !fin dama
-                      case (iEy)
+                      case (iEy)    
+                        medio1  =sggMiEy(i1  ,j1  ,k1  )
+                        if (sgg%med(medio1)%is%already_YEEadvanced_byconformal) then
+                            continue
+                        endif
+                        if (sgg%med(medio1 )%is%split_and_useless) then
+                            continue
+                        endif
                         ! default
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ey(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ey(i1,j1,k1)      
@@ -1344,7 +1358,14 @@ contains
                         HWires%CurrentSegment(conta)%y      = i1+0.25_RKIND_wires
                         sggmiE = sggmiEy(i1,j1,k1); call deembed_peclossyconformal_segments(sggmiE); sggmiEy(i1,j1,k1)= sggmiE !por si se ha modificado !ojo agresivo 180220 !ojo cambiado aqui 170323 de sitio pq no se habian puesto los deltatrans y salia division por cero
                         !fin dama
-                      case (iEz)
+                      case (iEz)  
+                        medio1  =sggMiEz(i1  ,j1  ,k1  )
+                        if (sgg%med(medio1)%is%already_YEEadvanced_byconformal) then
+                            continue
+                        endif
+                        if (sgg%med(medio1 )%is%split_and_useless) then
+                            continue
+                        endif
                         ! default
                         HWires%CurrentSegment(conta)%Efield_wire2main => Ez(i1,j1,k1) 
                         HWires%CurrentSegment(conta)%Efield_main2wire => Ez(i1,j1,k1)  
@@ -5612,35 +5633,35 @@ subroutine resume_casuistics
 
       
 
-#ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
-#endif
-      do n=1,HWires%NumChargeNodes
-         Nodo => HWires%ChargeNode(n)
-!!!!140220 pon a PEC los viejos notouch=already_YEEadvanced_byconformal_changedtoPECfield que tenga conectado un nodo
-         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield2)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield2=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield3)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield3=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield4)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield4=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield5)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield5=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield6)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield6=0.0_RKIND
-         endif
-      end do
-#ifdef CompileWithOpenMP
-!$OMP END PARALLEL DO
-#endif
+!!!#ifdef CompileWithOpenMP
+!!!!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
+!!!#endif
+!!!      do n=1,HWires%NumChargeNodes
+!!!         Nodo => HWires%ChargeNode(n)
+!!!!!!!140220 pon a PEC los viejos notouch=already_YEEadvanced_byconformal_changedtoPECfield que tenga conectado un nodo
+!!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield2)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield2=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield3)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield3=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield4)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield4=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield5)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield5=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield6)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield6=0.0_RKIND
+!!!         endif
+!!!      end do
+!!!#ifdef CompileWithOpenMP
+!!!!$OMP END PARALLEL DO
+!!!#endif
 !
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

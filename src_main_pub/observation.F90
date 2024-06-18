@@ -3309,6 +3309,9 @@ contains
                                           elseif (sgg%Med(jJz)%is%thinslot) then
                                              jz=4.5
                                           elseif ((sgg%Med(jJz)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
+                                              if (jjj==10.and.iii==16) then
+                                                  continue !solo para debugeo 0624 ojoo deshacer
+                                              endif
                                              jz=5.5
                                           elseif ((sgg%Med(jJz)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
                                              jz=6.5
