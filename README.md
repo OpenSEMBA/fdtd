@@ -36,6 +36,8 @@ In a nutshell, semba-fdtd capabilities are
 
 ## Running from release
 
+It is important to point out the repository has dependencies which are available as submodules. It is necessary to run `git submodule init` and `git submodule update` from the root folder before running any `cmake` or `build` commands.
+
 ### Windows
 
 Install intel runtime libraries: https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html

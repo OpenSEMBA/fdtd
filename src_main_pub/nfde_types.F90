@@ -724,6 +724,7 @@ MODULE NFDETypes
    TYPE NFDEGeneral
       REAL (KIND=RK) :: dt
       INTEGER (KIND=4) :: nmax
+      LOGICAL :: mtlnProblem
    END TYPE NFDEGeneral
    !------------------------------------------------------------------------------
    ! Definition of the type. Three vectors are defined, for each axis X,Y,Z. If

@@ -5470,7 +5470,7 @@ subroutine resume_casuistics
           endif
       endif
       
-!!!230323 comento lo que sigue porque ya manejo fuentes duras y blandas antes, pero esto funcion� con jag rayos junio'15
+!!!230323 comento lo que sigue porque ya manejo fuentes duras y blandas antes, pero esto funciono con jag rayos junio'15
       !!!!!!080615  uso una fuente dura de corriente correos jag simulacion rayos Junio'15
       !!!if (.not.simu_devia) then             
       !!!    if (thereAreIsources) then
@@ -6975,7 +6975,7 @@ subroutine resume_casuistics
           
           logical, intent(in) :: fieldtotl
           type (CurrentSegments), pointer  ::  dummy
-!!!ojooooo ����110517 acumulo en %lind toda la autoinduccion para que los calculos de capacidad la tengan en cuenta completa    
+!!!ojooooo 110517 acumulo en %lind toda la autoinduccion para que los calculos de capacidad la tengan en cuenta completa    
          if (.not.fieldtotl) then
              dummy%cte5 = G2(dummy%indexmed)/(dummy%deltaTransv1*dummy%deltaTransv2)
          else

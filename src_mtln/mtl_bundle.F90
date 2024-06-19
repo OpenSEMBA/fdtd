@@ -175,6 +175,12 @@ contains
         integer, intent(in) :: probe_type
         real, dimension(3), optional :: position
         character (len=:), allocatable, optional :: name
+        type(probe_t), allocatable, dimension(:) :: aux_probes
+
+        aux_probes = this%probes
+        deallocate(this%probes)
+        allocate(this%probes(size(aux_probes)+1))
+
         if (present(position) .and. present(name)) then
             res = probeCtor(index, probe_type, this%dt, name, position)
         else if (present(name) .and. .not. present(position)) then 
@@ -184,7 +190,9 @@ contains
         else
             res = probeCtor(index, probe_type, this%dt)
         end if
-        this%probes = [this%probes, res]
+
+        this%probes(1:size(this%probes)-1) = aux_probes
+        this%probes(size(aux_probes)+1) = res
     end function
 
     subroutine bundle_addTransferImpedance(this, conductor_out, range_in, transfer_impedance)

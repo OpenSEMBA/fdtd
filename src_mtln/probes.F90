@@ -17,9 +17,6 @@ module probes_mod
         procedure :: update
         procedure :: saveFrame
 
-        ! ! private
-        ! procedure :: probe_eq
-        ! generic, public :: operator(==) => probe_eq
 
     end type probe_t
 
@@ -41,8 +38,7 @@ contains
         res%index = index
         res%dt = dt
         res%current_frame = 1
-        ! allocate(res%val(0), res%t(0,0))
-        ! res%name = "_"
+
         if (present(name)) then
             res%name = res%name//name//"_"
         end if
@@ -60,8 +56,9 @@ contains
                 write(b, *) int(position(2))
                 write(c, *) int(position(3))
                 res%name = res%name//"_"//trim(adjustl(a))//"_"//trim(adjustl(b))//"_"//trim(adjustl(c))
-            end block
+                end block
         end if
+        write(*,*) 'probe name: ', res%name
         end function
 
     subroutine resizeFrames(this, num_frames, number_of_conductors)
@@ -98,21 +95,11 @@ contains
         real, intent(in) :: time
         real, intent(in), dimension(:) :: values
 
-        ! if (this%current_frame < size(this%t)) then
         this%t(this%current_frame) = time
         this%val(this%current_frame,:) = values
-        ! else
-        !     this%t = [this%t, time]
-        ! end if  
         this%current_frame = this%current_frame + 1
+
     end subroutine
 
-    ! elemental logical function probe_eq(a, b)
-    !     class(probe_t), intent(in) :: a, b
-    !     probe_eq = &
-    !         a%index == b%index .and. &
-    !         a%type == b%type .and. &
-    !         a%dt == b%dt
-    ! end function
 
 end module probes_mod

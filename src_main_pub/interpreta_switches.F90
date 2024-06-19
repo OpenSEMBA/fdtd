@@ -747,9 +747,9 @@ CONTAINS
           CASE ('-stableradholland')
             l%stableradholland = .true.
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
-          CASE ('-mtln')
-              buff='-mtln option deprecated and ignored. Check -nomtlnberenger or -l%stableradholland'
-              call WarnErrReport(Trim(buff),.true.)
+         !  CASE ('-mtln')
+         !      buff='-mtln option deprecated and ignored. Check -nomtlnberenger or -l%stableradholland'
+         !      call WarnErrReport(Trim(buff),.false.)
           CASE ('-intrawiresimplify')
             l%strictOLD = .false.
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
@@ -762,6 +762,7 @@ CONTAINS
           !!case ('-experimentalVideal')
           !!    l%experimentalVideal=.true.
           !!    l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
+
           case ('-forceresampled') !a menos que se pida explicitamente, no se resamplea 120123
               l%forceresampled=.true.
               l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))   
@@ -1572,6 +1573,7 @@ CONTAINS
 #endif
 #ifdef CompileWithWires
       CALL print11 (l%layoutnumber, '&                        (default '//trim(adjustl(l%wiresflavor))//')   ')
+      CALL print11 (l%layoutnumber, '-mtlnwires             : Use mtln solver to advance wires currents ')
       CALL print11 (l%layoutnumber, '-notaparrabos          : Do not remove extra double tails at the end of the wires ')
       CALL print11 (l%layoutnumber, '&                        only available for the native format.             ')
       CALL print11 (l%layoutnumber, '-intrawiresimplify     : Disable strict interpretation of .NFDE topology.  ')

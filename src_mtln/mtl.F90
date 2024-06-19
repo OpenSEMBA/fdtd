@@ -109,6 +109,7 @@ contains
 
         max_dt = res%getMaxTimeStep()
         if (present(dt)) then
+            write(*,*) 'dt present: ',dt
             if (dt > max_dt) then
                 res%dt = max_dt
                 write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
@@ -118,8 +119,7 @@ contains
         else
             res%dt = max_dt
         end if
-        !         res%dt = dt
-        
+     
         res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)
         if (present(parent_name)) then
             res%parent_name = parent_name

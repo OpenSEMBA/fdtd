@@ -4131,14 +4131,16 @@ contains
       type(mtln_solver_t), pointer :: mtln_solver
       integer :: i,j,k,n
       integer :: unit 
-      character (len=bufsize)  ::  path, temp
+      character (len=bufsize)  ::  temp
+      character (len=bufsize)  ::  path
       character (len=:), allocatable :: buffer
 
       mtln_solver => GetSolverPtr()
       unit = 2000
       do i = 1, size(mtln_solver%bundles)
          do j = 1, size(mtln_solver%bundles(i)%probes)
-            path = trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat"
+            write(*,*) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)
+            path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
             open(unit = unit , file = trim(path))
 
             buffer = "time"
