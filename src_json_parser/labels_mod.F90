@@ -77,6 +77,7 @@ module labels_mod
    character (len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_DIRECTION = "direction"
    character (len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_POLES = "poles"
    character (len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESIDUES = "residues"
+   character (len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES = "numberOfPoles"
 
    ! -- Mesh and geometry.
    character (len=*), parameter :: J_MESH = "mesh"
