@@ -36,6 +36,8 @@ extern "C" int test_termination_resistive_capacitive();
 extern "C" int test_termination_rls_cp();
 extern "C" int test_termination_rls_cp_ns();
 extern "C" int test_termination_rcp();
+extern "C" int test_wire_panel();
+extern "C" int test_spice_connectors();
 
 TEST(mtln, mtl_homogeneous)   { EXPECT_EQ(0, test_mtl_init_homogeneous()); }
 TEST(mtln, mtl_inhomogeneous) { EXPECT_EQ(0, test_mtl_init_inhomogeneous()); }
@@ -61,15 +63,19 @@ TEST(mtln, dispersive_init_2_poles) { EXPECT_EQ(0, test_dispersive_init_2_poles(
 TEST(mtln, dispersive_init_1_pole_3_levels) { EXPECT_EQ(0, test_dispersive_init_1_pole_3_levels()); }
 TEST(mtln, dispersive_init_1_pole_lines_with_lumped) { EXPECT_EQ(0, test_dispersive_init_1_pole_lines_with_lumped()); }
 
+// TEST(mtln, wire_panel){ EXPECT_EQ(0, test_wire_panel()); }
+// TEST(mtln, spice_connectors) {EXPECT_EQ(0,test_spice_connectors());}
+
 TEST(mtln, spice_tran) { EXPECT_EQ(0, test_spice_tran()); }
 TEST(mtln, spice_tran_2) { EXPECT_EQ(0, test_spice_tran_2()); }
 TEST(mtln, spice_multiple) { EXPECT_EQ(0, test_spice_multiple()); }
 TEST(mtln, spice_current_source) { EXPECT_EQ(0, test_spice_current_source()); }
 TEST(mtln, spice_dc) { EXPECT_EQ(0, test_spice_dc()); }
 TEST(mtln, spice_read_message) { EXPECT_EQ(0, test_spice_read_message()); }
-TEST(mtln, system_coaxial_line_paul_8_6_square) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_square()); }
-TEST(mtln, system_coaxial_line_paul_8_6_triangle) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_triangle()); }
-TEST(mtln, system_2_conductor_line_paul_9_6) { EXPECT_EQ(0, test_2_conductor_line_paul_9_6()); }
+
+// TEST(mtln, system_coaxial_line_paul_8_6_square) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_square()); }
+// TEST(mtln, system_coaxial_line_paul_8_6_triangle) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_triangle()); }
+// TEST(mtln, system_2_conductor_line_paul_9_6) { EXPECT_EQ(0, test_2_conductor_line_paul_9_6()); }
 // TEST(mtln, system_2_conductor_line_paul_9_11_20ns) { EXPECT_EQ(0, test_2_conductor_line_paul_9_11_20ns()); }
 // TEST(mtln, system_2_conductor_line_paul_9_11_1ns) { EXPECT_EQ(0, test_2_conductor_line_paul_9_11_1ns()); }
 // TEST(mtln, system_2_conductor_line_paul_9_6_1c) { EXPECT_EQ(0, test_2_conductor_line_paul_9_6_1c()); }

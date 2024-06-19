@@ -12,6 +12,7 @@ module mtln_solver_mod
         type(network_manager_t) :: network_manager
         type(probe_t), allocatable, dimension(:) :: probes
         integer :: number_of_bundles
+        logical :: has_multiwires
     contains
 
         procedure :: updateBundlesTimeStep
@@ -52,6 +53,8 @@ contains
             return
         end if
 
+        res%has_multiwires = parsed%has_multiwires
+
         res%dt = pre%dt
         res%time  = 0.0
         res%final_time = pre%final_time
@@ -86,7 +89,7 @@ contains
         call this%advanceBundlesCurrent()
 
         call this%advanceTime()
-        ! call this%updateProbes()
+        call this%updateProbes()
 
     end subroutine
 

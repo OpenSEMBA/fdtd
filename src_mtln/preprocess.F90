@@ -55,12 +55,11 @@ contains
         type(line_bundle_t), dimension(:), allocatable :: line_bundles
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
 
-
         res%final_time = parsed%time_step * parsed%number_of_steps
         res%dt = parsed%time_step
 
         cable_bundles = buildCableBundles(parsed%cables)
-        line_bundles = buildLineBundles(cable_bundles)
+        line_bundles = buildLineBundles(cable_bundles, res%dt)
         res%bundles = res%buildMTLBundles(line_bundles)
         res%cable_name_to_bundle_id = mapCablesToBundlesId(line_bundles, res%bundles)
         if (size(parsed%probes) /= 0) then
@@ -192,8 +191,9 @@ contains
         this%conductors_before_cable = conductors_before_cable
     end function    
 
-    function buildLineFromCable(cable) result(res)
+    function buildLineFromCable(cable, dt) result(res)
         type(cable_t), intent(in) :: cable
+        real, intent(in) :: dt
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
@@ -208,6 +208,7 @@ contains
                              gpul = cable%conductance_per_meter, &
                              step_size = cable%step_size, &
                              name = cable%name, &
+                             dt = dt, &
                              parent_name = parent_name, &
                              conductor_in_parent = conductor_in_parent, & 
                              transfer_impedance = cable%transfer_impedance, &
@@ -219,9 +220,10 @@ contains
 
     end function
 
-    function buildLineBundles(cable_bundles) result(res)
+    function buildLineBundles(cable_bundles, dt) result(res)
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
         type(line_bundle_t), dimension(:), allocatable :: res
+        real, intent(in) :: dt
         integer :: i, j, k
         integer :: nb, nl, nc
         nb = size(cable_bundles)
@@ -234,7 +236,7 @@ contains
                 nc = size(cable_bundles(i)%levels(j)%cables)
                 allocate(res(i)%levels(j)%lines(nc))
                 do k = 1, nc
-                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p)
+                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt)
                 end do
             end do
         end do
@@ -610,7 +612,7 @@ contains
         if (stat /= 0) return
         write(sConductor,'(I0)') node%conductor_in_cable
         res%name = trim(node%belongs_to_cable%name)//"_"//trim(sConductor)//"_"//nodeSideToString(node%side)
-        write(*,*) res%name
+        ! write(*,*) res%name
         res%v = 0.0
         res%i = 0.0
         res%bundle_number = d
@@ -765,15 +767,18 @@ contains
         end do
     end subroutine
 
-    subroutine addAnalysis(description, final_time, dt)
+    subroutine addAnalysis(description, final_time, dt, print_step)
         character(256), dimension(:), allocatable, intent(inout) :: description
         character(256) :: buff
         real, intent(in) :: final_time, dt
-        character(20) :: sTime, sdt
-        
+        character(20) :: sTime, sdt, sPrint
+        integer, intent(in) :: print_step        
+
         write(sTime, '(E10.2)') final_time
         write(sdt, '(E10.2)') dt
+        write(sPrint, '(E10.2)') final_time/print_step
 
+        ! buff = trim(".tran "//sPrint//" "//sTime//" 0 "//sdt)
         buff = trim(".tran "//sdt//" "//sTime//" 0 "//sdt)
         call appendToStringArray(description, buff)       
 
@@ -814,13 +819,13 @@ contains
         allocate(description(0))
         description = ["* network description message"]
         call addNetworksDescription(description, networks)
-        call addAnalysis(description, this%final_time, this%dt)
+        call addAnalysis(description, this%final_time, this%dt, 100)
         call addSavedNodes(description, networks)
         call endDescription(description)        
 
-        do i = 1, size(description)
-            write(*,'(A)') trim(description(i))
-        end do  
+        ! do i = 1, size(description)
+        !     write(*,'(A)') trim(description(i))
+        ! end do  
         res = network_managerCtor(networks, description, this%final_time, this%dt)
 
     end function
@@ -833,6 +838,7 @@ contains
         integer :: i, d
         integer :: stat
         type(mtl_bundle_t), target :: tbundle
+        character (len=:), allocatable :: probe_name
 
         allocate(res(size(parsed_probes)))
         do i = 1, size(parsed_probes)
@@ -841,7 +847,12 @@ contains
                                                stat=stat)
 
             if (stat /= 0) return
-            res(i) =  this%bundles(d)%addProbe(index = parsed_probes(i)%index, probe_type = parsed_probes(i)%probe_type)
+            probe_name = parsed_probes(i)%probe_name//"_"//this%bundles(d)%name
+            res(i) =  this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
+                                               probe_type = parsed_probes(i)%probe_type,&
+                                               name = probe_name,&
+                                               position =parsed_probes(i)%probe_position)
+
         end do
     end function
 

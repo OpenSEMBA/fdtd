@@ -60,6 +60,10 @@ This object must always be present and contains general information regarding th
 + `<timeStep>`: A real number indicating the time step used by the solver, in seconds. 
 + `<numberOfSteps>`: An integer for the number of steps which the solver will iterate.
 
+Addtionally, it may contain the following optional entry:
+
++ `<mtlnProblem>` : A bool indicating whether the problem is a pure MTLN problem and will solved using only the MTLN solver. If it is not present, its default value is `false`
+
 **Example:**
 
 ```json

@@ -124,9 +124,19 @@ module Solver
    implicit none
    private
 
-   public launch_simulation
+   public launch_simulation, launch_mtln_simulation
  
 contains
+
+   subroutine launch_mtln_simulation(mtln_parsed, nEntradaRoot, layoutnumber)
+      type (mtln_t) :: mtln_parsed
+      character (len=*), intent(in)  ::  nEntradaRoot
+      integer (kind=4), intent(in) ::  layoutnumber
+
+      call solveMTLNProblem(mtln_parsed)
+      call reportSimulationEnd(layoutnumber)
+      call FlushMTLNObservationFiles(nEntradaRoot)
+   end subroutine
 
    subroutine launch_simulation(sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
    SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
@@ -144,11 +154,9 @@ contains
    EpsMuTimeScale_input_parameters, &
    stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess,planewavecorr, &
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
-   mtln_parsed)
+   mtln_parsed, use_mtln_wires)
 
-   !!!           
       type (mtln_t) :: mtln_parsed
-   !!!
       logical :: noconformalmapvtk
       logical :: hopf,experimentalVideal,forceresampled
       character (LEN=BUFSIZE) :: ficherohopf
@@ -197,9 +205,8 @@ contains
       real (kind=RKIND_wires) :: factorradius,factordelta
       REAL (KIND=RKIND_tiempo)     :: at,rdummydt
       REAL (KIND=8)     ::time_desdelanzamiento
-      logical :: hayattmedia = .false.,attinformado = .false., vtkindex,createh5bin,wirecrank,fatalerror,somethingdone,newsomethingdone,call_timing,l_auxoutput,l_auxinput
-      character(len=BUFSIZE) :: buff   
-      integer (kind=4)      :: group_conformalprobes_dummy
+      logical :: hayattmedia = .false.,attinformado = .false., vtkindex,createh5bin,wirecrank,fatalerror,somethingdone,newsomethingdone,call_timing,l_auxoutput,l_auxinput, use_mtln_wires
+      character(len=BUFSIZE) :: buff
       !
       !!!!!!!PML params!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -594,6 +601,7 @@ contains
          call WarnErrReport(buff)
          write(buff,*) 'TAPARRABOS=',TAPARRABOS,', wiresflavor=',wiresflavor,', mindistwires=',mindistwires,', wirecrank=',wirecrank , 'makeholes=',makeholes
          call WarnErrReport(buff)
+         write(buff,*) 'use_mtln_wires=', use_mtln_wires
          write(buff,*) 'connectendings=',connectendings,', isolategroupgroups=',isolategroupgroups
          call WarnErrReport(buff)
          write(buff,*) 'wirethickness ', wirethickness, 'stableradholland=',stableradholland,'mtlnberenger=',mtlnberenger,' inductance_model=',inductance_model,', inductance_order=',inductance_order,', groundwires=',groundwires,' ,fieldtotl=',fieldtotl,' noSlantedcrecepelo =',noSlantedcrecepelo 
@@ -723,6 +731,7 @@ contains
               write(dubuf,*) '----> no Holland/transition wires found';  call print11(layoutnumber,dubuf)
         endif
       endif
+
 #endif
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
@@ -813,7 +822,9 @@ contains
 
 
 #ifdef CompileWithWires
+      if (use_mtln_wires) then
          call InitWires_mtln(sgg,Ex,Ey,Ez,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
+      endif
 #endif
 
 
@@ -1247,26 +1258,6 @@ contains
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle N")
 #endif
-!240424 sgg creo el comunicador mpi de las sondas conformal aqui. debe irse con el nuevo conformal
-#ifdef CompileWithConformal                
-#ifdef CompileWithMPI
-        !!!!sgg250424 niapa para que funcionen sondas conformal mpi
-!todos deben crear el subcomunicador mpi una sola vez   
-        if (input_conformal_flag) then
-            SUBCOMM_MPI_conformal_probes=1   
-            MPI_conformal_probes_root=layoutnumber
-        else  
-            SUBCOMM_MPI_conformal_probes=0 
-            MPI_conformal_probes_root=-1
-        endif
-        call MPIinitSubcomm(layoutnumber,size,SUBCOMM_MPI_conformal_probes,&
-                                MPI_conformal_probes_root,group_conformalprobes_dummy)
-        print *,'-----creating--->',layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
-        call MPI_BARRIER(SUBCOMM_MPI, ierr)
-    !!!no lo hago pero al salir deberia luego destruir el grupo call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)                   
-#endif  
-#endif
-
       ciclo_temporal :  DO while (N <= finaltimestep)
       
       !!Flush the plane-wave logical switching off variable (saves CPU!)
@@ -1365,13 +1356,17 @@ contains
 !!!lamo aquí los hilos por coherencia con las PML que deben absorber los campos creados por los hilos
 #ifdef CompileWithWires
          !Wires (only updated here. No need to update in the H-field part)
-         if ((trim(adjustl(wiresflavor))=='holland') .or. &
-             (trim(adjustl(wiresflavor))=='transition')) then
+         if (( (trim(adjustl(wiresflavor))=='holland') .or. &
+               (trim(adjustl(wiresflavor))=='transition')) .and. .not. use_mtln_wires) then
             IF (Thereare%Wires) then
                if (wirecrank) then
                   call AdvanceWiresEcrank(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic)
                else
-                  ! call AdvanceWiresE(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)                 
+                  if (mtln_parsed%has_multiwires) then
+                     write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
+                     call WarnErrReport(buff)
+                  end if
+                  call AdvanceWiresE(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)                 
                endif
             endif
          endif
@@ -1389,7 +1384,9 @@ contains
          endif
 #endif
 #ifdef CompileWithWires
-         if (thereAre%MTLNbundles) call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
+         if (use_mtln_wires) then
+            call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
+         end if
 
 #endif 
          If (Thereare%PMLbodies) then !waveport absorbers
@@ -1670,8 +1667,8 @@ contains
          !**************************************************************************************************
          !conformal advance electric fields  ref: ##timeStepps_advance_H##
 
-#ifdef CompileWithConformal                      
-         if(input_conformal_flag)then     
+#ifdef CompileWithConformal
+         if(input_conformal_flag)then
             call conformal_advance_H()
          endif
 #endif
@@ -2056,7 +2053,11 @@ contains
          !dump the remaining to disk
          call FlushObservationFiles(sgg,ini_save, n,layoutnumber, size, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.TRUE.)
          call CloseObservationFiles(sgg,layoutnumber,size,singlefilewrite,initialtimestep,lastexecutedtime,resume) !dump the remaining to disk
+         if (use_mtln_wires) then
+            call FlushMTLNObservationFiles(nEntradaRoot)
+         end if
       endif
+      
       if (Thereare%FarFields) then
           write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',n
       else

@@ -34,7 +34,7 @@ contains
             type(complex), dimension(:), allocatable :: alpha, beta
             alpha = model%residues / model%poles
             beta =  model%poles * dt
-            res%q1 = - (alpha/beta)*(exp(beta-beta-1))
+            res%q1 = - (alpha/beta)*(exp(beta)-beta-1)
             res%q2 = - (alpha/beta)*(1+exp(beta)*(beta-1))
             res%q3 = - exp(beta)
         end block

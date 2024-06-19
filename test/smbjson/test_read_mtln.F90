@@ -90,11 +90,11 @@ contains
       allocate(expected%oldSONDA%probes(0))
 
       ! sonda
-      expected%Sonda%length = 5
-      expected%Sonda%length_max = 5
-      allocate(expected%Sonda%collection(5))
-      
-      expected%Sonda%collection(1)%outputrequest = "b1_terminal_voltage"
+      expected%Sonda%length = 4
+      expected%Sonda%length_max = 4
+      allocate(expected%Sonda%collection(4))
+            
+      expected%Sonda%collection(1)%outputrequest = "b1_terminal_current"
       expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(1)%type2 = NP_T2_TIME
       expected%Sonda%collection(1)%filename = ' '
@@ -106,13 +106,13 @@ contains
       expected%Sonda%collection(1)%fstep = 0.0
       allocate(expected%Sonda%collection(1)%cordinates(1))
       expected%Sonda%collection(1)%len_cor = 1
-      expected%Sonda%collection(1)%cordinates(1)%tag = "b1_terminal_voltage"
+      expected%Sonda%collection(1)%cordinates(1)%tag = "b1_terminal_current"
       expected%Sonda%collection(1)%cordinates(1)%Xi = 11 ! Coord id as tag.
       expected%Sonda%collection(1)%cordinates(1)%Yi = 0
       expected%Sonda%collection(1)%cordinates(1)%Zi = 0
-      expected%Sonda%collection(1)%cordinates(1)%Or = NP_COR_DDP
-      
-      expected%Sonda%collection(2)%outputrequest = "b1_terminal_current"
+      expected%Sonda%collection(1)%cordinates(1)%Or = NP_COR_WIRECURRENT
+            
+      expected%Sonda%collection(2)%outputrequest = "junction_current"
       expected%Sonda%collection(2)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(2)%type2 = NP_T2_TIME
       expected%Sonda%collection(2)%filename = ' '
@@ -124,13 +124,14 @@ contains
       expected%Sonda%collection(2)%fstep = 0.0
       allocate(expected%Sonda%collection(2)%cordinates(1))
       expected%Sonda%collection(2)%len_cor = 1
-      expected%Sonda%collection(2)%cordinates(1)%tag = "b1_terminal_current"
-      expected%Sonda%collection(2)%cordinates(1)%Xi = 11 ! Coord id as tag.
+      expected%Sonda%collection(2)%cordinates(1)%tag = "junction_current"
+      expected%Sonda%collection(2)%cordinates(1)%Xi = 15 ! Coord id as tag.
       expected%Sonda%collection(2)%cordinates(1)%Yi = 0
       expected%Sonda%collection(2)%cordinates(1)%Zi = 0
       expected%Sonda%collection(2)%cordinates(1)%Or = NP_COR_WIRECURRENT
             
-      expected%Sonda%collection(3)%outputrequest = "junction_current"
+            
+      expected%Sonda%collection(3)%outputrequest = "b2_terminal_current"
       expected%Sonda%collection(3)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(3)%type2 = NP_T2_TIME
       expected%Sonda%collection(3)%filename = ' '
@@ -142,14 +143,14 @@ contains
       expected%Sonda%collection(3)%fstep = 0.0
       allocate(expected%Sonda%collection(3)%cordinates(1))
       expected%Sonda%collection(3)%len_cor = 1
-      expected%Sonda%collection(3)%cordinates(1)%tag = "junction_current"
-      expected%Sonda%collection(3)%cordinates(1)%Xi = 15 ! Coord id as tag.
+      expected%Sonda%collection(3)%cordinates(1)%tag = "b2_terminal_current"
+      expected%Sonda%collection(3)%cordinates(1)%Xi = 23 ! Coord id as tag.
       expected%Sonda%collection(3)%cordinates(1)%Yi = 0
       expected%Sonda%collection(3)%cordinates(1)%Zi = 0
       expected%Sonda%collection(3)%cordinates(1)%Or = NP_COR_WIRECURRENT
             
-            
-      expected%Sonda%collection(4)%outputrequest = "b2_terminal_current"
+           
+      expected%Sonda%collection(4)%outputrequest = "b3_terminal_current"
       expected%Sonda%collection(4)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(4)%type2 = NP_T2_TIME
       expected%Sonda%collection(4)%filename = ' '
@@ -161,30 +162,11 @@ contains
       expected%Sonda%collection(4)%fstep = 0.0
       allocate(expected%Sonda%collection(4)%cordinates(1))
       expected%Sonda%collection(4)%len_cor = 1
-      expected%Sonda%collection(4)%cordinates(1)%tag = "b2_terminal_current"
-      expected%Sonda%collection(4)%cordinates(1)%Xi = 23 ! Coord id as tag.
+      expected%Sonda%collection(4)%cordinates(1)%tag = "b3_terminal_current"
+      expected%Sonda%collection(4)%cordinates(1)%Xi = 24 ! Coord id as tag.
       expected%Sonda%collection(4)%cordinates(1)%Yi = 0
       expected%Sonda%collection(4)%cordinates(1)%Zi = 0
       expected%Sonda%collection(4)%cordinates(1)%Or = NP_COR_WIRECURRENT
-            
-           
-      expected%Sonda%collection(5)%outputrequest = "b3_terminal_current"
-      expected%Sonda%collection(5)%type1 = NP_T1_PLAIN
-      expected%Sonda%collection(5)%type2 = NP_T2_TIME
-      expected%Sonda%collection(5)%filename = ' '
-      expected%Sonda%collection(5)%tstart = 0.0
-      expected%Sonda%collection(5)%tstop = 0.0
-      expected%Sonda%collection(5)%tstep = 0.0
-      expected%Sonda%collection(5)%fstart = 0.0
-      expected%Sonda%collection(5)%fstop = 0.0
-      expected%Sonda%collection(5)%fstep = 0.0
-      allocate(expected%Sonda%collection(5)%cordinates(1))
-      expected%Sonda%collection(5)%len_cor = 1
-      expected%Sonda%collection(5)%cordinates(1)%tag = "b3_terminal_current"
-      expected%Sonda%collection(5)%cordinates(1)%Xi = 24 ! Coord id as tag.
-      expected%Sonda%collection(5)%cordinates(1)%Yi = 0
-      expected%Sonda%collection(5)%cordinates(1)%Zi = 0
-      expected%Sonda%collection(5)%cordinates(1)%Or = NP_COR_WIRECURRENT
             
       ! Expected thin wires
       allocate(expected%tWires%tw(3))
@@ -646,30 +628,44 @@ contains
       expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1) ! to which cable is the probe attached in mtln?
       expected%mtln%probes(1)%index = 1
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_VOLTAGE
+      expected%mtln%probes(1)%probe_name = "b1_terminal_voltage"
+      expected%mtln%probes(1)%probe_position = [1,9,1]
 
       expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)
       expected%mtln%probes(2)%index = 1
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_CURRENT
+      expected%mtln%probes(2)%probe_name = "b1_terminal_current"
+      expected%mtln%probes(2)%probe_position = [1,9,1]
 
       expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)
       expected%mtln%probes(3)%index = 10
       expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
+      expected%mtln%probes(3)%probe_name = "junction_current"
+      expected%mtln%probes(3)%probe_position = [10, 9, 1]
 
       expected%mtln%probes(4)%attached_to_cable => expected%mtln%cables(4)
       expected%mtln%probes(4)%index = 1
       expected%mtln%probes(4)%probe_type = PROBE_TYPE_CURRENT
+      expected%mtln%probes(4)%probe_name = "junction_current"
+      expected%mtln%probes(4)%probe_position = [10, 9, 1]
 
       expected%mtln%probes(5)%attached_to_cable => expected%mtln%cables(7)
       expected%mtln%probes(5)%index = 1
       expected%mtln%probes(5)%probe_type = PROBE_TYPE_CURRENT
+      expected%mtln%probes(5)%probe_name = "junction_current"
+      expected%mtln%probes(5)%probe_position = [10, 9, 1]
 
       expected%mtln%probes(6)%attached_to_cable => expected%mtln%cables(4)
       expected%mtln%probes(6)%index = 9
       expected%mtln%probes(6)%probe_type = PROBE_TYPE_CURRENT
+      expected%mtln%probes(6)%probe_name = "b2_terminal_current"
+      expected%mtln%probes(6)%probe_position = [ 18, 9, 1]
 
       expected%mtln%probes(7)%attached_to_cable => expected%mtln%cables(7)
       expected%mtln%probes(7)%index = 8
       expected%mtln%probes(7)%probe_type = PROBE_TYPE_CURRENT
+      expected%mtln%probes(7)%probe_name = "b3_terminal_current"
+      expected%mtln%probes(7)%probe_position = [10, 2, 1]
 
 
 
