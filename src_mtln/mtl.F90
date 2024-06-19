@@ -119,7 +119,7 @@ contains
         else
             res%dt = max_dt
         end if
-        
+     
         res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)
         if (present(parent_name)) then
             res%parent_name = parent_name
