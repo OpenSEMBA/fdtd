@@ -81,7 +81,7 @@ contains
         if (this%type == PROBE_TYPE_VOLTAGE) then
             call this%saveFrame(t, v(:,this%index))
         else if (this%type == PROBE_TYPE_CURRENT) then
-            if (this%index == size(i,2)) then
+            if (this%index == size(i,2) + 1) then
                 call this%saveFrame(t + 0.5*this%dt, i(:,this%index - 1))
             else 
                 call this%saveFrame( t+ 0.5*this%dt, i(:,this%index))
