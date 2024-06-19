@@ -93,25 +93,7 @@ contains
       expected%Sonda%length = 4
       expected%Sonda%length_max = 4
       allocate(expected%Sonda%collection(4))
-      
-      ! expected%Sonda%collection(1)%outputrequest = "b1_terminal_voltage"
-      ! expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
-      ! expected%Sonda%collection(1)%type2 = NP_T2_TIME
-      ! expected%Sonda%collection(1)%filename = ' '
-      ! expected%Sonda%collection(1)%tstart = 0.0
-      ! expected%Sonda%collection(1)%tstop = 0.0
-      ! expected%Sonda%collection(1)%tstep = 0.0
-      ! expected%Sonda%collection(1)%fstart = 0.0
-      ! expected%Sonda%collection(1)%fstop = 0.0
-      ! expected%Sonda%collection(1)%fstep = 0.0
-      ! allocate(expected%Sonda%collection(1)%cordinates(1))
-      ! expected%Sonda%collection(1)%len_cor = 1
-      ! expected%Sonda%collection(1)%cordinates(1)%tag = "b1_terminal_voltage"
-      ! expected%Sonda%collection(1)%cordinates(1)%Xi = 11 ! Coord id as tag.
-      ! expected%Sonda%collection(1)%cordinates(1)%Yi = 0
-      ! expected%Sonda%collection(1)%cordinates(1)%Zi = 0
-      ! expected%Sonda%collection(1)%cordinates(1)%Or = NP_COR_DDP
-      
+            
       expected%Sonda%collection(1)%outputrequest = "b1_terminal_current"
       expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(1)%type2 = NP_T2_TIME

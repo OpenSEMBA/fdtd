@@ -74,7 +74,6 @@ preceded by token stdout, same with stderr.*/
 int
 ng_getchar(char* outputreturn, int ident, void* userdata)
 {
-    // printf("%s\n", outputreturn);
     /* setting a flag if an error message occurred */
     return 0;
 }
@@ -82,7 +81,6 @@ ng_getchar(char* outputreturn, int ident, void* userdata)
 int
 ng_getstat(char* outputreturn, int ident, void* userdata)
 {
-    // printf("%s\n", outputreturn);
     return 0;
 }
 
@@ -90,11 +88,6 @@ int
 ng_thread_runs(bool noruns, int ident, void* userdata)
 {
     no_bg = noruns;
-    // if (noruns)
-    //     printf("bg not running\n");
-    // else
-    //     printf("bg running\n");
-
     return 0;
 }
 
@@ -109,11 +102,6 @@ ng_data(pvecvaluesall vdata, int numvecs, int ident, void* userdata)
 int
 ng_initdata(pvecinfoall intdata, int ident, void* userdata)
 {
-    // int i;
-    // int vn = intdata->veccount;
-    // for (i = 0; i < vn; i++) {
-    //     printf("Vector: %s\n", intdata->vecs[i]->vecname);
-    // }
     return 0;
 }
 
