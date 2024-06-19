@@ -270,6 +270,7 @@ contains
       type(NFDEGeneral) :: res
       res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
+      res%mtlnProblem = this%GetLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
 
    function readMediaMatrix(this) result(res)
