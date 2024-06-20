@@ -20,10 +20,11 @@ class Probe():
         # with open(probe_filename, 'w') as file:
         #     file.write(data) 
 
+        mtln_probe_tags = ['_V_','_I_']
         current_probe_tags = ['_Wx_', '_Wy_', '_Wz_']
         far_field_tag = ['_FF_']
         movie_tags = ['_ExC_', '_EyC_', '_EzC_', '_HxC_', '_HyC_', '_HzC_']
-        all_tags = current_probe_tags + far_field_tag + movie_tags
+        all_tags = current_probe_tags + far_field_tag + movie_tags + mtln_probe_tags
       
         
         basename = os.path.basename(self.filename)
@@ -57,6 +58,11 @@ class Probe():
                     init_str, end_str = pos = positions_str.split('__')
                     self.cell_init = positionStrToCell(init_str)
                     self.cell_end = positionStrToCell(end_str)
+                elif tag in mtln_probe_tags:
+                    self.type ='mtln'
+                    self.name, position_str = basename_with_no_case_name.split(tag)
+                    self.cell = positionStrToCell(position_str)
+                    self.df = pd.read_csv(self.filename, sep='\s+')
             else:
                 raise ValueError("Unable to determine probe name or type for a probe with name:" + basename)
         try:
@@ -70,9 +76,11 @@ class Probe():
         return self.df[key]
 
 class FDTD():
-    def __init__(self, input_filename, path_to_exe):
+    def __init__(self, input_filename, path_to_exe, flags = []):
         self.filename = input_filename
         self.path_to_exe = path_to_exe
+
+        self.flags = flags
 
         self.folder = os.path.dirname(self.filename)
         self.case = os.path.basename(self.filename).split('.json')[0]
@@ -80,7 +88,7 @@ class FDTD():
     
     def run(self):
         os.chdir(self.folder)
-        self.output = subprocess.run([self.path_to_exe, "-i",self.filename])
+        self.output = subprocess.run([self.path_to_exe, "-i",self.filename]+self.flags)
         self.hasRun = True
     
     def readJsonDict(self):
@@ -99,6 +107,7 @@ class FDTD():
             probeFiles.extend(newProbes)
             
         return probeFiles
+    
     
     def hasFinishedSuccessfully(self):
         if self.hasRun:

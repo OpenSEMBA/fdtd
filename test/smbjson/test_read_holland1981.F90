@@ -163,6 +163,8 @@ contains
       expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)
       expected%mtln%probes(1)%index = 6
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
+      expected%mtln%probes(1)%probe_name = "mid_point"
+      expected%mtln%probes(1)%probe_position = [11,11,12]
 
       ! networks
       deallocate(expected%mtln%networks)

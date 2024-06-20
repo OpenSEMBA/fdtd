@@ -1,0 +1,102 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "wire panel",
+	
+    "general": {
+        "timeStep": 2e-8,
+        "numberOfSteps": 1000,
+		"mtlnProblem" : true
+    },
+	  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6, 
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+
+	"materials": [
+		{
+			"id": 1,
+			"name": "coaxial_single_wire",
+			"type": "multiwire",
+			"resistancePerMeter" : 0.0,
+			"inductancePerMeter": 0.25e-6,
+			"capacitancePerMeter": 100.0e-12
+		},
+		{
+			"id": 2,
+			"name": "terminal_left",
+			"type": "terminal",
+			"terminations" : [
+				{"type": "series", "resistance": 150, "capacitance": 1e22, "inductance" : 0.0 }
+			]
+		},
+		{
+			"id": 3,
+			"name": "terminal_right",
+			"type": "terminal",
+			"terminations" : [
+				{"type": "short"}
+			]
+		}
+	],
+	"mesh": {
+		"grid": {
+			"numberOfCells": [10, 10, 100],
+			"steps": {"x": [0.1], "y": [0.1], "z": [4]}
+		},
+		"coordinates": [
+			{"id": 1 , "relativePosition": [ 5, 5, 1]},
+			{"id": 2 , "relativePosition": [ 5, 5, 100]}
+			
+		],
+		"elements": [
+			{"id": 1,  "type": "polyline", "coordinateIds": [ 1,  2]},
+			{"id": 2, "type": "node", "coordinateIds": [1]},
+			{"id": 3, "type": "node", "coordinateIds": [2]}
+		]
+	
+	},
+	
+	"probes": [
+		{
+			"name": "start_voltage",
+			"type": "wire",
+			"field": "voltage",
+			"elementIds": [2],
+            "domain": { "type": "time" }
+		},
+		{
+			"name": "end_current",
+			"type": "wire",
+			"field": "current",
+			"elementIds": [3],
+            "domain": { "type": "time" }
+		}
+	],
+
+	
+	"sources": [
+		{
+			"name": "external_source",
+			"type": "generator",
+			"field": "voltage",
+			"magnitudeFile": "coaxial_line_paul_8_6_0.25_square.exc",
+			"elementIds": [2]
+		}
+	],
+
+	"materialAssociations": [
+		{
+			"name": "wire",
+			"type": "cable",
+			"elementIds": [ 1 ],
+			"materialId": 1,
+			"initialTerminalId": 2,
+			"endTerminalId": 3
+		}
+	]
+}

@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 
 # Use of absolute path to avoid conflicts when changing directory.
 SEMBA_EXE = os.getcwd() + '/build/bin/semba-fdtd'
+SEMBA_EXE_INTEL_LLVM_RELEASE = os.getcwd() + '/build-ubuntu-intelLLVM-release/bin/semba-fdtd'
+SEMBA_EXE_INTEL_LLVM_DEBUG   = os.getcwd() + '/build-ubuntu-intelLLVM-debug/bin/semba-fdtd'
 TEST_DATA_FOLDER = os.getcwd() + '/testData/' 
 
 CASE_FOLDER = TEST_DATA_FOLDER + 'cases/'
@@ -45,5 +47,11 @@ def compareFiles(expected_name, result_name):
     return f_expected == f_result            
 
 
-        
+def readSpiceFile(spice_file):
+    t, val = np.array([]), np.array([])
+    with open(spice_file) as f:
+        for l in f:
+            t = np.append(t, float(l.split()[0]))
+            val = np.append(val, float(l.split()[1]))
+    return t, val
 

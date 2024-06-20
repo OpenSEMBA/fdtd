@@ -449,7 +449,7 @@ contains
       logical, pointer, dimension( : )  ::  newallranks ,allranks
       integer (kind=4), pointer, dimension( : )   ::  NGroup
       allocate (allranks(0 : size-1),newallranks(0 : size-1))
-      !
+      !         
       allranks=.false.
       !print *,'---layoutnumber, subcomm',layoutnumber,subcomm
       if (Subcomm == 1) allranks(layoutnumber)=.true.

@@ -84,7 +84,10 @@ module  FDETYPES
 
    integer(kind=4)  :: quienmpi,tamaniompi
    integer(kind=4)  :: SUBCOMM_MPI
-
+!240424 para que funcionen las sondas slice de conformal lo pongo como general. niapaa. algun dia hay que reahacer el conformal 
+   !y esto debe desaparecer
+   integer(kind=4)  :: SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
+!!!
 
 #if (defined MaxCores)
    integer(kind=4), parameter  :: maxcores = MaxCores

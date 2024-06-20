@@ -80,9 +80,6 @@ PROGRAM SEMBA_FDTD_launcher
    !*************************************************
    !*************************************************
    !
-!!!   
-   ! use mtln_solvermtln_solver_mod, mtln_solver_t => mtln_t
-!!!   
    use interpreta_switches_m
    IMPLICIT NONE
    !
@@ -140,10 +137,9 @@ PROGRAM SEMBA_FDTD_launcher
    !****************************************************************************
 
    type (entrada_t) :: l
-!!!
-   ! type (mtln_solver_t) :: mtln_solver
+
    type(mtln_t) :: mtln_parsed
-!!!
+
    logical :: lexis
    integer (kind=4) :: my_iostat
    
@@ -369,6 +365,7 @@ PROGRAM SEMBA_FDTD_launcher
    endif
    
 
+
 !!!!!!!!!!!!!!!!!!!!!!!
    sgg%extraswitches=parser%switches
 !!!da preferencia a los switches por linea de comando
@@ -384,6 +381,11 @@ PROGRAM SEMBA_FDTD_launcher
 
    call interpreta(l,status )      
    sgg%nEntradaRoot=trim (adjustl(l%nEntradaRoot))
+
+   if (parser%general%mtlnProblem) then 
+      call launch_mtln_simulation(parser%mtln, l%nEntradaRoot, l%layoutnumber) 
+      STOP
+   end if
 
 #ifdef CompileWithXDMF   
 #ifdef CompileWithHDF
@@ -866,7 +868,7 @@ PROGRAM SEMBA_FDTD_launcher
            l%EpsMuTimeScale_input_parameters, &
            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
-           mtln_parsed)
+           mtln_parsed, l%use_mtln_wires)
 
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else
@@ -1169,7 +1171,7 @@ subroutine cargaNFDE(local_nfde,local_parser)
    l%mpidir=NFDE_FILE%mpidir !bug 100419
 !!!!!!!!!!!                             
   ! write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
-   write(dubuf,*) '[OK] '//trim(adjustl(whoami))//' newparser (NFDE_FILE)';  call print11(0,dubuf)       
+   write(dubuf,*) '[OK] '//trim(adjustl(whoami))//' newparser (NFDE_FILE)';  call print11(l%layoutnumber,dubuf)       
 #ifdef CompileWithMPI            
        CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
