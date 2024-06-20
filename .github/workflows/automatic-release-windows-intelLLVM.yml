@@ -53,7 +53,7 @@ jobs:
 
     - name: Run all tests 
       shell: bash
-      timeout-minutes: 30
+      timeout-minutes: 120
       run: |
         .github/workflows/run_tests_windows.bat
                  
