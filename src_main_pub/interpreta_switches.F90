@@ -92,7 +92,7 @@ module interpreta_switches_m
             createh5filefromsinglebin       , &
             creditosyaprinteados            , &
             use_mtln_wires
-                  
+      
         integer (kind=4) ::                   &
             wirethickness                    ,&
             inductance_order                 ,&
@@ -766,7 +766,7 @@ CONTAINS
           case ('-forceresampled') !a menos que se pida explicitamente, no se resamplea 120123
               l%forceresampled=.true.
               l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))   
-          
+              
           case ('-mtlnwires')
             l%use_mtln_wires = .true.
           CASE ('-wirethickness')
