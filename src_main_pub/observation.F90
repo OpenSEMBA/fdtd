@@ -4139,7 +4139,6 @@ contains
       unit = 2000
       do i = 1, size(mtln_solver%bundles)
          do j = 1, size(mtln_solver%bundles(i)%probes)
-            write(*,*) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)
             path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
             open(unit = unit , file = trim(path))
 

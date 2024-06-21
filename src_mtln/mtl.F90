@@ -109,7 +109,6 @@ contains
 
         max_dt = res%getMaxTimeStep()
         if (present(dt)) then
-            write(*,*) 'dt present: ',dt
             if (dt > max_dt) then
                 res%dt = max_dt
                 write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 

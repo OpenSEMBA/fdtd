@@ -246,11 +246,6 @@ contains
             call this%advanceBundlesCurrent()
             call this%advanceTime()
             call this%updateProbes()
-
-            if (mod(i, 100) == 0) then 
-                write(*,*) 'step ', i
-            end if
-
         end do
 
     end subroutine
