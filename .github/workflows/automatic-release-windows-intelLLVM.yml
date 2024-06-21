@@ -53,7 +53,7 @@ jobs:
 
     - name: Run all tests 
       shell: bash
-      timeout-minutes: 30
+      timeout-minutes: 120
       run: |
         .github/workflows/run_tests_windows.bat
                  
@@ -74,7 +74,7 @@ jobs:
       uses: "marvinpinto/action-automatic-releases@latest"
       with:
         repo_token: "${{ secrets.GITHUB_TOKEN }}"
-        automatic_release_tag: "latest-windows-intelLLVM"
+        automatic_release_tag: "${{ steps.date.outputs.date }}-windows-intelLLVM"
         prerelease: false
         title: "${{ steps.date.outputs.date }} Windows Intel LLVM dev. build"
         files: |
