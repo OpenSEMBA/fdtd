@@ -64,6 +64,8 @@ contains
         res%cable_name_to_bundle_id = mapCablesToBundlesId(line_bundles, res%bundles)
         if (size(parsed%probes) /= 0) then
             res%probes = res%addProbesWithId(parsed%probes)
+        else 
+            allocate(res%probes(0))
         end if
         res%network_manager = res%buildNetworkManager(parsed%networks)
         
@@ -185,6 +187,9 @@ contains
         allocate(res(size(lines)))
         do i = 1, size(lines)
             res(i) = mtldCtor(lines(i)%levels, "bundle_"//lines(i)%levels(1)%lines(1)%name)
+            if (res(i)%dt < this%dt) then 
+                this%dt = res(i)%dt
+            end if
             call setBundleTransferImpedance(res(i), lines(i))
             call mapConductorsBeforeCable(conductors_before_cable, lines(i))
         end do  
@@ -394,6 +399,33 @@ contains
 
     end function
 
+    function writeModelNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        character(len=:), allocatable :: model_name, model_file
+        character(20) :: line_c
+        write(line_c, *) node%line_c_per_meter * node%step/2
+        allocate(res(0))
+
+        model_name = trim(termination%model%model_name)
+        model_file = trim(termination%model%model_file)
+        
+        buff = trim(".include "//model_file)
+        call appendToStringArray(res, buff)
+        buff = trim("x" // node%name // " " // node%name // " " // end_node //" ")//" "//trim(model_name)
+
+        call appendToStringArray(res, buff)
+
+        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
+
+    end function
+
     function writeSeriesRLnode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
@@ -592,6 +624,10 @@ contains
             res = writeShortNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_OPEN) then 
             res = writeOpenNode(node, termination , end_node)
+        else if (termination%termination_type == TERMINATION_MODEL) then 
+            res = writeModelNode(node, termination , end_node)
+        else if (termination%termination_type == TERMINATION_UNDEFINED) then 
+            error stop 'writeNodeDescription: undefined termination at '// node%name
         end if
 
     end function    

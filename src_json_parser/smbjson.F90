@@ -1795,6 +1795,7 @@ contains
          res%node%termination%resistance = readTerminationRLC(termination, J_MAT_TERM_RESISTANCE, default = 0.0)
          res%node%termination%inductance = readTerminationRLC(termination, J_MAT_TERM_INDUCTANCE, default=0.0)
          res%node%termination%path_to_excitation = readGeneratorOnTermination(id,label, default = "")
+         res%node%termination%model = readTerminationModel(termination)
         
          res%node%conductor_in_cable = index
 
@@ -1890,9 +1891,28 @@ contains
             res = TERMINATION_LCpRs
          else if (type == J_MAT_TERM_TYPE_RLsCp) then
             res = TERMINATION_RLsCp
+         else if (type == J_MAT_TERM_TYPE_MODEL) then 
+            res = TERMINATION_MODEL
          else
             res = TERMINATION_UNDEFINED
          end if
+      end function
+
+      function readTerminationModel(termination) result(res)
+         type(json_value), pointer :: termination
+         type(terminal_model_t) :: res
+         if (this%existsAt(termination, J_MAT_TERM_MODEL_FILE)) then
+            res%model_file = this%getStrAt(termination, J_MAT_TERM_MODEL_FILE)
+         else
+            res%model_file = ""
+         end if
+
+         if (this%existsAt(termination, J_MAT_TERM_MODEL_NAME)) then
+            res%model_name = this%getStrAt(termination, J_MAT_TERM_MODEL_NAME)
+         else
+            res%model_name = ""
+         end if
+
       end function
 
       function readTerminationRLC(termination, label, default) result(res)

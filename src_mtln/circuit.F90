@@ -99,11 +99,13 @@ contains
         do i = 1, size(names)
             this%nodes%names(i) = names(i)
         end do
+        write(*,*) 'setSource - begin'
         if (present(sources)) then 
             do i = 1, size(sources)
                 this%nodes%sources(i) = setSource(sources(i))
             end do
         end if
+        write(*,*) 'setSource - end'
 
     end subroutine
 

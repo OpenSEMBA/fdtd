@@ -62,8 +62,29 @@ def test_paul_9_6(tmp_path):
         assert np.allclose(p_expected[i].df.to_numpy()[:,:], p_solved[i].df.to_numpy()[:,:], rtol = 0.01, atol=0.05e-3)
 
 
-    
-    
+def test_spice_connector_diode(tmp_path):
+    case = 'spice_connectors'
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'spice_sine_500k.exc')
+    makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
+    makeCopy(tmp_path, MODELS_FOLDER + 'BZX85C3V9.model')
+    fn = tmp_path._str + '/' + case + '.fdtd.json'
+
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+    solver.run()
+    assert solver.hasFinishedSuccessfully() == True
+
+    p_expected = [Probe(OUTPUT_FOLDER+'spice_connectors.fdtd_start_voltage_bundle_wire_V_10_10_8.dat'),
+                  Probe(OUTPUT_FOLDER+'spice_connectors.fdtd_end_voltage_bundle_wire_V_10_10_12.dat')]
+
+    probe_voltage_left  = solver.getSolvedProbeFilenames("start_voltage_bundle_wire")[0]
+    probe_voltage_right = solver.getSolvedProbeFilenames("end_voltage_bundle_wire")[0]
+    probe_files = [probe_voltage_left, probe_voltage_right]
+
+    p_solved = [Probe(probe_files[0]),Probe(probe_files[1])]
+
+    for i in range(2):
+        assert np.allclose(p_expected[i].df.to_numpy()[:-20,:], p_solved[i].df.to_numpy()[:-20,:], rtol = 0.01, atol=0.05e-3)
+
     
     
 

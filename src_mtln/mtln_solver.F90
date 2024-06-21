@@ -175,9 +175,11 @@ contains
         class(mtln_t) :: this
         integer :: i, j
         do i = 1, this%number_of_bundles
-            do j = 1, size(this%bundles(i)%probes)
-                call this%bundles(i)%probes(j)%update(this%time, this%bundles(i)%v, this%bundles(i)%i)
-            end do 
+            if (size(this%bundles(i)%probes) /= 0) then 
+                do j = 1, size(this%bundles(i)%probes)
+                    call this%bundles(i)%probes(j)%update(this%time, this%bundles(i)%v, this%bundles(i)%i)
+                end do 
+            end if
         end do
     end subroutine
 
@@ -244,6 +246,11 @@ contains
             call this%advanceBundlesCurrent()
             call this%advanceTime()
             call this%updateProbes()
+
+            if (mod(i, 100) == 0) then 
+                write(*,*) 'step ', i
+            end if
+
         end do
 
     end subroutine
