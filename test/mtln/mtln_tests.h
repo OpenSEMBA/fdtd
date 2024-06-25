@@ -20,6 +20,7 @@ extern "C" int test_spice_multiple();
 extern "C" int test_spice_current_source();
 extern "C" int test_spice_dc();
 extern "C" int test_spice_read_message();
+extern "C" int test_spice_stop_mod_times();
 extern "C" int test_preprocess_conductors_before_cable();
 extern "C" int test_preprocess_conductors_in_level();
 extern "C" int test_preprocess_zt_conductor_ranges_2();
@@ -70,6 +71,7 @@ TEST(mtln, spice_multiple) { EXPECT_EQ(0, test_spice_multiple()); }
 TEST(mtln, spice_current_source) { EXPECT_EQ(0, test_spice_current_source()); }
 TEST(mtln, spice_dc) { EXPECT_EQ(0, test_spice_dc()); }
 TEST(mtln, spice_read_message) { EXPECT_EQ(0, test_spice_read_message()); }
+TEST(mtln, spice_mod_times) { EXPECT_EQ(0, test_spice_stop_mod_times()); }
 
 // TEST(mtln, system_coaxial_line_paul_8_6_square) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_square()); }
 // TEST(mtln, system_coaxial_line_paul_8_6_triangle) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_triangle()); }

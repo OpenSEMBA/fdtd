@@ -6,6 +6,6 @@ C1 int 0 1u
 C2 out 0 100n
 * .option trtol=1 klu method=gear reltol=1m
 * .option sparse
-.tran 50u 200u 0 10u
+.tran 50u 200u 0 0.1u
 .save v(in) v(int) v(out)
 .end
