@@ -2022,6 +2022,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!  Increase time step
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+         ! write(*,*) 'timestepping: ', n
          n=n+1 !sube de iteracion
       end do ciclo_temporal ! End of the time-stepping loop
       

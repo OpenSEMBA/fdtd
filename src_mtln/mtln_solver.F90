@@ -13,6 +13,7 @@ module mtln_solver_mod
         type(probe_t), allocatable, dimension(:) :: probes
         integer :: number_of_bundles
         logical :: has_multiwires
+        integer :: step_i
     contains
 
         procedure :: updateBundlesTimeStep
@@ -65,6 +66,9 @@ contains
         res%probes = pre%probes
         call res%updateBundlesTimeStep(res%dt)
         call res%initNodes()
+
+        res%step_i = 0
+
     end function
 
     subroutine initNodes(this)
@@ -80,7 +84,6 @@ contains
 
     subroutine mtln_step(this)
         class(mtln_t) :: this
-        integer :: i 
 
         call this%setExternalLongitudinalField()
 
@@ -90,6 +93,7 @@ contains
 
         call this%advanceTime()
         call this%updateProbes()
+
 
     end subroutine
 
@@ -246,6 +250,11 @@ contains
             call this%advanceBundlesCurrent()
             call this%advanceTime()
             call this%updateProbes()
+
+            if (mod(i, 100) == 0) then 
+                write(*,*) 'step ', i
+            end if
+
         end do
 
     end subroutine
