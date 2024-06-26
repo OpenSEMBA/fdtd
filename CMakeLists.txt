@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.18)
+cmake_minimum_required (VERSION 2.8)
 
 enable_language (CXX Fortran)
 project(semba-fdtd Fortran)
@@ -19,6 +19,7 @@ if (SEMBA_FDTD_EXECUTABLE)
 else()
 	set(SEMBA_FDTD_MAIN_LIB OFF)
 endif()
+option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
@@ -39,15 +40,30 @@ add_library(semba-types
 	"src_wires_pub/wires_types.F90"
 	"src_main_pub/lumped_types.F90"
 )
-add_subdirectory(external/fhash/)
-set(FHASH_INCLUDES  ${CMAKE_BINARY_DIR}/external/fhash/include/fortran_modules/${CMAKE_Fortran_COMPILER_ID}/${CMAKE_Fortran_COMPILER_VERSION})
 
-add_subdirectory(external/googletest/)
+set (FHASH_SOURCES_FOLDER "external/fhash/src/")
+add_library(fhash 
+	${FHASH_SOURCES_FOLDER}/fhash.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_sll.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_data_container.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_tbl.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_tbl_iter.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_fnv.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_key/base.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_key/int32.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_key/int64.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_key/char.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_key/int32_1d.f90 
+	${FHASH_SOURCES_FOLDER}/fhash_key/int64_1d.f90
+)
 
 add_subdirectory(src_json_parser)
 add_subdirectory(src_mtln)
 
-add_subdirectory(test)
+if (SEMBA_FDTD_ENABLE_TEST)
+	add_subdirectory(external/googletest/)
+	add_subdirectory(test)
+endif()
 
 if (SEMBA_FDTD_MAIN_LIB)
 	add_library(semba-main
