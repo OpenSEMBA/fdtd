@@ -29,7 +29,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 	add_definitions(-DCompileWithIncludeMpifh)
 endif()
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
-	set(CMAKE_Fortran_FLAGS "-fpp -check all,nouninit -debug full -traceback -diag-disable=10441")
+	set(CMAKE_Fortran_FLAGS "-fpp -check all,nouninit -debug full -traceback -static-intel -diag-disable=10441")
 	set(CMAKE_CXX_FLAGS "-diag-disable=10448")
 endif()
 
