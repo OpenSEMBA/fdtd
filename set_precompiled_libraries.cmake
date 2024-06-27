@@ -22,7 +22,7 @@ else()
 	message(FATAL_ERROR "json-fortran precompiled libraries for this platform and/or compiler have not been found.")
 endif()
 include_directories(${JSONFORTRAN_DIR}/include/)
-MESSAGE(STATUS "Using json-fortran precompiled libraries at: " ${JSONFORTRAN_DIR})
+MESSAGE(STATUS "Using json-fortran libraries at: " ${JSONFORTRAN_DIR})
 
 if (${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	set(LAPACK_DIR "${PRECOMPILED_DIR}/linux-gcc-rls/lapack/")
@@ -49,9 +49,9 @@ elseif(${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM" AND ${CMAKE_SYSTEM_NAME
 	set(LAPACK_LIB ${LAPACK_DIR}liblapack.lib)
 	set(BLAS_LIB ${LAPACK_DIR}libblas.lib)
 else()
-	message(FATAL_ERROR "lapack precompiled libraries for this platform and/or compiler have not been found.")
+	message(FATAL_ERROR "lapack libraries for this platform and/or compiler have not been found.")
 endif()
-MESSAGE(STATUS "Using lapack precompiled libraries at: " ${LAPACK_DIR})
+MESSAGE(STATUS "Using lapack libraries at: " ${LAPACK_DIR})
 
 if (${CMAKE_Fortran_COMPILER_ID} STREQUAL "GNU" AND ${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	set(NGSPICE_DIR "${PRECOMPILED_DIR}/linux-gcc-rls/ngspice/")
@@ -78,10 +78,10 @@ elseif ((${CMAKE_Fortran_COMPILER_ID} STREQUAL "Intel" OR ${CMAKE_Fortran_COMPIL
 		IMPORTED_IMPLIB "${NGSPICE_DIR}ngspice.lib"
 	)
 else()
-	message(FATAL_ERROR "ngspice precompiled libraries for this platform and/or compiler have not been found.")
+	message(FATAL_ERROR "ngspice libraries for this platform and/or compiler have not been found.")
 endif()
 
-MESSAGE(STATUS "Using ngspice precompiled libraries at: " ${NGSPICE_DIR})
+MESSAGE(STATUS "Using ngspice libraries at: " ${NGSPICE_DIR})
 
 if (CompileWithHDF AND NOT HDF5_FOUND)
 	add_definitions(-DCompileWithHDF)
@@ -96,12 +96,12 @@ if (CompileWithHDF AND NOT HDF5_FOUND)
 			set(HDF5_DIR ${PRECOMPILED_DIR}/windows-intel-rls/hdf5/cmake/)
 		endif()
 	endif()
-	
+	set(HDF5_USE_STATIC_LIBRARIES TRUE)
 	find_package(HDF5 REQUIRED COMPONENTS Fortran HL)
 	if (HDF5_FOUND)
 		message(STATUS "hdf5 found at: ${HDF5_Fortran_INCLUDE_DIRS}")
 	else()
-		message(FATAL_ERROR "hdf5 precompiled libraries for this platform and/or compiler have not been found.")
+		message(FATAL_ERROR "hdf5 libraries for this platform and/or compiler have not been found.")
 	endif()
 endif()
 
