@@ -11,6 +11,7 @@ SEMBA_EXE_INTEL_LLVM_DEBUG   = os.getcwd() + '/build-ubuntu-intelLLVM-debug/bin/
 TEST_DATA_FOLDER = os.getcwd() + '/testData/' 
 
 CASE_FOLDER = TEST_DATA_FOLDER + 'cases/'
+MODELS_FOLDER = TEST_DATA_FOLDER + 'models/'
 EXCITATIONS_FOLDER = TEST_DATA_FOLDER + 'excitations/'
 OUTPUT_FOLDER = TEST_DATA_FOLDER + 'outputs/'
 

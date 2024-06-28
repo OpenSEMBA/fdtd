@@ -8,6 +8,7 @@ module mtln_types_mod
    integer, parameter :: TERMINATION_SERIES     =  3
    integer, parameter :: TERMINATION_LCpRs      =  4
    integer, parameter :: TERMINATION_RLsCp      =  5
+   integer, parameter :: TERMINATION_MODEL      =  6
 
    integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
@@ -38,17 +39,24 @@ module mtln_types_mod
       generic, public :: operator(==) => external_field_segments_eq
    end type
 
+   type terminal_model_t
+      character(len=256) :: model_file = ""
+      character(len=256) :: model_name = ""
+   end type
+
    type, public :: termination_t
       integer :: termination_type = TERMINATION_UNDEFINED
       real :: resistance = 0.0
       real :: inductance = 0.0
       real :: capacitance = 1e22
       character(len=256) :: path_to_excitation = ""
+      type(terminal_model_t) :: model
    contains
       private
       procedure :: termination_eq
       generic, public :: operator(==) => termination_eq
    end type
+
 
    type :: terminal_node_t
       type(cable_t), pointer :: belongs_to_cable => null()

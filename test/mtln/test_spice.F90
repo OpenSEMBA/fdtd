@@ -248,3 +248,49 @@ integer function test_spice_multiple() bind(C) result(error_cnt)
 
 
 end function
+
+integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
+    use circuit_mod
+    use mtln_testingTools_mod
+    implicit none
+
+    type(circuit_t) :: circuit
+    character(len=*, kind=c_char), parameter :: netlist= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran.cir'
+    real :: finalTime
+    real :: result(3)
+    integer :: i
+    type(string_t), dimension(4) :: names
+    names(1) = string_t("in", 2)
+    names(2) = string_t("int", 3)
+    names(3) = string_t("out", 3)
+    names(4) = string_t("time", 4)
+
+    result = [5.0,0.092995181699999999,0.053166680000000001]
+
+    circuit%time = 0.0
+    circuit%dt = 50e-6
+    finalTime = 200e-6
+
+    error_cnt = 0
+    call circuit%init(names=names,netlist=netlist)
+    call circuit%setModStopTimes(circuit%dt)
+    do while (circuit%time < finalTime)
+        call circuit%step()
+        circuit%time = circuit%time + circuit%dt
+        if (checkNear(circuit%getTime(), circuit%time, 0.01) .eqv. .false. ) then 
+            error_cnt = error_cnt + 1
+        end if
+    end do
+    if (checkNear(circuit%getNodeVoltage("in"), result(1), 0.01) .eqv. .false. ) then 
+        error_cnt = error_cnt + 1
+    end if
+    if (checkNear(circuit%getNodeVoltage("int"), result(2), 0.01) .eqv. .false. ) then 
+        error_cnt = error_cnt + 1
+    end if
+    if (checkNear(circuit%getNodeVoltage("out"), result(3), 0.01) .eqv. .false. ) then 
+        error_cnt = error_cnt + 1
+    end if
+
+    ! call circuit%quit()
+
+end function

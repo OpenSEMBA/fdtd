@@ -80,7 +80,7 @@ contains
         call res%circuit%init(copy_node_names(networks), copy_sources_names(networks))
         res%circuit%dt = dt
         call res%circuit%readInput(description)
-        call res%circuit%setStopTimes(final_time, dt)
+        call res%circuit%setModStopTimes(dt)
 
     end function
 

@@ -398,6 +398,9 @@ Each entry in `terminations` is specified by a `type`
   + `[resistance]` which defaults to `0.0`,
   + `[inductance]` which defaults to `0.0`,
   + `[capacitance]` which defaults to `1e22`.
++ SPICE models can used in a termination. In this case the `type` is `model`, and is defined with:
+  + `[file]` which is the name of the file where the SPICE model is defined 
+  + `[name]` which is the name of the subcircuit as defined inside `file`
 
 **Example:**
 
@@ -409,6 +412,22 @@ Each entry in `terminations` is specified by a `type`
     "termination": [ {"type": "series", "resistance": 50.0} ]
 }
 ```
+##### `SPICE terminations`
+
+At this point, SPICE terminations have to be equivalents to 2-port networks, i.e, they can be composed of an arbitrary number of SPICE models and components, but they must have only two external nodes. 
+
+**Example:**
+
+```json
+{
+    "name": "SpiceTerminal",
+    "id": 5,
+    "type": "terminal",
+    "termination": [ {"type": "model", "file": "ListOfComponents.lib", "name": "Component_1"} ]
+}
+```
+
+`ListOfComponents.lib` is a file where one or more SPICE subcircuits are defined. The file does not need to contain only the subcircuit that is going to be used in the termination. The particular subcircuit among those defined in the file is selected using the key `name`.
 
 #### `connector`
 

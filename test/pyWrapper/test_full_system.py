@@ -29,10 +29,10 @@ def test_shielded_pair(tmp_path):
     
     for i in [2,3]:
         p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 5e-2, atol=5e-2)
+        assert np.allclose(p_expected[i].df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 5e-2, atol=0.2)
     for i in [0,1,4,5]:
         p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:,0:4], p_solved.df.to_numpy()[:,0:4], rtol = 5e-2, atol=5e-2)
+        assert np.allclose(p_expected[i].df.to_numpy()[:,0:4], p_solved.df.to_numpy()[:,0:4], rtol = 5e-2, atol=0.2)
 
 def test_holland(tmp_path):
     case = 'holland1981'

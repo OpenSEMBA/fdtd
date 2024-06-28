@@ -43,6 +43,7 @@ module circuit_mod
         procedure, private :: loadNetlist
         procedure :: readInput
         procedure :: setStopTimes
+        procedure :: setModStopTimes
         procedure :: getNodeVoltage
         procedure :: getNodeCurrent
         procedure :: updateNodes
@@ -148,6 +149,7 @@ contains
     end subroutine
 
 
+
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
         real, intent(in) :: finalTime, dt
@@ -160,6 +162,15 @@ contains
             write(charTime, *) time
             call command('stop when time = '//charTime // c_null_char)
         end do
+    end subroutine
+
+    subroutine setModStopTimes(this, dt)
+        class(circuit_t) :: this
+        real, intent(in) :: dt
+        character(20) :: charTime
+        real :: time
+        write(charTime, *) dt
+        call command('stop when time mod '//charTime // c_null_char)
     end subroutine
 
     subroutine resume(this)

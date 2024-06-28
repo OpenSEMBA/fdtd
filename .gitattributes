@@ -1,1 +1,4 @@
 precompiled_libraries/** linguist-vendored
+*.sh     -crlf
+*.ac     -crlf
+*.am     -crlf

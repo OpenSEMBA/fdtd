@@ -58,7 +58,6 @@ contains
                 res%name = res%name//"_"//trim(adjustl(a))//"_"//trim(adjustl(b))//"_"//trim(adjustl(c))
                 end block
         end if
-        write(*,*) 'probe name: ', res%name
         end function
 
     subroutine resizeFrames(this, num_frames, number_of_conductors)
@@ -81,7 +80,7 @@ contains
         if (this%type == PROBE_TYPE_VOLTAGE) then
             call this%saveFrame(t, v(:,this%index))
         else if (this%type == PROBE_TYPE_CURRENT) then
-            if (this%index == size(i,2)) then
+            if (this%index == size(i,2) + 1) then
                 call this%saveFrame(t + 0.5*this%dt, i(:,this%index - 1))
             else 
                 call this%saveFrame( t+ 0.5*this%dt, i(:,this%index))
