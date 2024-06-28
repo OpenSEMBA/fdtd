@@ -96,6 +96,7 @@ contains
         integer, intent(in), optional :: conductor_in_parent
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
+        integer :: j 
 
         res%name = name
         res%step_size =  step_size
@@ -105,20 +106,25 @@ contains
         call res%initDirections()
         call res%initLCHomogeneous(lpul, cpul)
         call res%initRGHomogeneous(rpul, gpul)
+        
+        if (present(dt)) then 
+            if (lpul(1,1) /= 0.0) then 
+                max_dt = res%getMaxTimeStep() 
+                if (dt > max_dt) then
+                    res%dt = max_dt
+                    write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
+                else 
+                    res%dt = dt
+                end if
+            else 
+                res%dt = dt
+            end if
+        else
+            if (lpul(1,1) /= 0.0) then 
+                res%dt = res%getMaxTimeStep() 
+            end if
+        end if
 
-
-        ! max_dt = res%getMaxTimeStep()
-        ! if (present(dt)) then
-        !     if (dt > max_dt) then
-        !         res%dt = max_dt
-        !         write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
-        !     else 
-        !         res%dt = dt
-        !     end if
-        ! else
-        !     res%dt = max_dt
-        ! end if
-        res%dt = dt
      
         res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)
         if (present(parent_name)) then
@@ -161,16 +167,22 @@ contains
         call res%initLCInhomogeneous(lpul, cpul)
         call res%initRGInhomogeneous(rpul, gpul)
 
-        max_dt = res%getMaxTimeStep()
-        if (present(dt)) then
-            if (dt > max_dt) then
-                res%dt = max_dt
-                write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
+        if (present(dt)) then 
+            if (lpul(1,1,1) /= 0.0) then 
+                max_dt = res%getMaxTimeStep() 
+                if (dt > max_dt) then
+                    res%dt = max_dt
+                    write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
+                else 
+                    res%dt = dt
+                end if
             else 
                 res%dt = dt
             end if
         else
-            res%dt = max_dt
+            if (lpul(1,1,1) /= 0.0) then 
+                res%dt = res%getMaxTimeStep() 
+            end if
         end if
 
         res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)

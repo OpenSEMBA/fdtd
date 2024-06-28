@@ -806,15 +806,16 @@ contains
         character(256), dimension(:), allocatable, intent(inout) :: description
         character(256) :: buff
         real, intent(in) :: final_time, dt
-        character(20) :: sTime, sdt, sPrint
+        character(20) :: sTime, sdt, sDelta, sPrint
         integer, intent(in) :: print_step        
 
         write(sTime, '(E10.2)') final_time
         write(sdt, '(E10.2)') dt
+        write(sDelta, '(E10.2)') dt/200
         write(sPrint, '(E10.2)') final_time/print_step
 
         ! buff = trim(".tran "//sPrint//" "//sTime//" 0 "//sdt)
-        buff = trim(".tran "//sdt//" "//sTime//" 0 "//sdt)
+        buff = trim(".tran "//sdt//" "//sTime//" 0 "//sDelta)
         call appendToStringArray(description, buff)       
 
     end subroutine
