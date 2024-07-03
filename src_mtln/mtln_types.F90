@@ -58,7 +58,6 @@ module mtln_types_mod
       real :: resistance = 0.0
       real :: inductance = 0.0
       real :: capacitance = 1e22
-      ! character(len=256) :: path_to_excitation = ""
       type(node_source_t) :: source
       type(terminal_model_t) :: model
    contains

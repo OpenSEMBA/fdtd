@@ -61,19 +61,6 @@ contains
             end do
         end do
     end function
-    ! function copy_sources_names(networks) result(res)
-    !     type(network_t), dimension(:), intent(in) :: networks
-    !     type(string_t), dimension(:), allocatable :: res
-    !     integer :: i,j
-    !     type(string_t) :: temp
-    !     allocate(res(0))
-    !     do i = 1, size(networks)
-    !         do j = 1, size(networks(i)%nodes)
-    !             temp = string_t(trim(networks(i)%nodes(j)%source), len(trim(networks(i)%nodes(j)%source)))
-    !             call appendToString_tArray(res, temp)
-    !         end do
-    !     end do
-    ! end function
 
     function copy_node_names(networks) result(res)
         type(network_t), dimension(:), intent(in) :: networks
@@ -101,7 +88,6 @@ contains
         res%time = 0.0
         res%networks = networks
         call res%circuit%init(copy_node_names(networks), copy_sources(networks))
-        ! call res%circuit%init(copy_node_names(networks), copy_sources_names(networks))
         res%circuit%dt = dt
         call res%circuit%readInput(description)
         call res%circuit%setModStopTimes(dt)

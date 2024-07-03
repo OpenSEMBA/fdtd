@@ -85,7 +85,7 @@ module labels_mod
    ! --  SPICE subcircuits
    character (len=*), parameter :: J_SUBCIRCUITS  = "subcircuits"
    character (len=*), parameter :: J_SUBCKT_NAME  = "name"
-   character (len=*), parameter :: J_SUBCKT_PORTS = "ports"
+   character (len=*), parameter :: J_SUBCKT_PORTS = "numberOfPorts"
    character (len=*), parameter :: J_SUBCKT_FILE  = "file"
    
    ! -- Mesh and geometry.

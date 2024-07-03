@@ -1686,7 +1686,7 @@ contains
                   write(error_unit, *) "Error reading material region: materialId label not found."
                res_ckt(i)%model_file = this%getStrAt(m%p, J_SUBCKT_FILE)
                res_ckt(i)%model_name = this%getStrAt(m%p, J_SUBCKT_NAME)
-               if (size(res_ckt(i)%ports) /= size(this%getIntsAt(m%p, J_SUBCKT_PORTS))) &
+               if (size(res_ckt(i)%ports) /= this%getIntAt(m%p, J_SUBCKT_PORTS)) &
                   write(error_unit, *) "Number of ports in circuit definition and material Id do not match"
             end do
             
@@ -1874,7 +1874,6 @@ contains
          res%node%termination%resistance = readTerminationRLC(termination, J_MAT_TERM_RESISTANCE, default = 0.0)
          res%node%termination%inductance = readTerminationRLC(termination, J_MAT_TERM_INDUCTANCE, default=0.0)
          res%node%termination%source = readGeneratorOnTermination(id,label)
-         ! res%node%termination%path_to_excitation = readGeneratorOnTermination(id,label, default = "")
          res%node%termination%model = readTerminationModel(termination)
          
          res%node%side = label
@@ -1899,14 +1898,12 @@ contains
          type(json_value), pointer :: sources
          type(json_value_ptr), dimension(:), allocatable :: genSrcs
          logical :: found
-         ! character(len=256) :: res
          type(node_source_t) :: res
          
          call this%core%get(this%root, J_SOURCES, sources, found)
          if (.not. found) then
             res%path_to_excitation = trim("")
             res%source_type = SOURCE_TYPE_UNDEFINED
-            ! res = trim(default)
             return
          end if
          
@@ -1914,7 +1911,6 @@ contains
          if (size(genSrcs) == 0) then
             res%path_to_excitation = trim("")
             res%source_type = SOURCE_TYPE_UNDEFINED
-            ! res = trim(default)
             return
          end if
 
@@ -1931,14 +1927,12 @@ contains
                   write(error_unit, *) 'magnitudeFile of source missing'
                   res%path_to_excitation = trim("")
                   res%source_type = SOURCE_TYPE_UNDEFINED
-                        ! res = trim(default)
                   return
                end if
                if (.not. this%existsAt(genSrcs(i)%p, J_FIELD)) then
                   write(error_unit, *) 'Type of generator is ambigous'
                   res%path_to_excitation = trim("")
                   res%source_type = SOURCE_TYPE_UNDEFINED
-                        ! res = trim(default)
                   return
                end if
                if (this%getStrAt(genSrcs(i)%p, J_FIELD) /= J_FIELD_VOLTAGE .and. &
@@ -1946,7 +1940,6 @@ contains
                   write(error_unit, *) 'Only voltage and current generators are supported'
                   res%path_to_excitation = trim("")
                   res%source_type = SOURCE_TYPE_UNDEFINED
-                        ! res = trim(default)
                   return
                end if
 

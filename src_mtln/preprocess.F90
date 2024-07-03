@@ -705,8 +705,6 @@ contains
         end block
 
         res%source = node%termination%source
-        ! res%source = node%termination%source%path_to_excitation
-        ! res%source = node%termination%path_to_excitation
 
     contains
         function nodeSideToString(side) result(cSide)
@@ -838,19 +836,15 @@ contains
         allocate(description(0))
         allocate(nodes(0))
         do i = 1, size(node2node_connections)
-        ! do i = 1, size(terminal_network%connections)
             if (size(node2node_connections(i)%nodes) == 1) then 
                 call this%connectNodeToGround(node2node_connections(i)%nodes, nodes, description)
             else if (size(node2node_connections(i)%nodes) > 1) then 
                 call this%connectNodes(node2node_connections(i)%nodes, nodes, description)
-            ! else if (size(terminal_network%connections(i)%nodes) > 2) then 
-            !     call this%connectNodeToSubcircuit(terminal_network%connections(i)%nodes, nodes, description)
             end if
         end do
         if (terminal_network%subcircuit%has_subcircuit .eqv. .true.) then 
             call addModel(description, terminal_network%subcircuit)
             do i = 1, size(subcircuit_connections) 
-            ! do i = 1, size(terminal_network%circuit_connections) 
                 call this%connectNodeToSubcircuit(terminal_network%subcircuit, subcircuit_connections(i)%nodes, nodes, description)
             end do
         end if

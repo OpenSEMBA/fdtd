@@ -51,7 +51,6 @@ module circuit_mod
         procedure :: updateNodes
         procedure :: getTime
         procedure :: updateNodeCurrent
-        ! procedure :: updateNodeVoltage
         procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
@@ -84,7 +83,6 @@ contains
         class(circuit_t) :: this
         type(string_t), intent(in), dimension(:), optional :: names
         type(node_source_t), intent(in), dimension(:), optional :: sources
-        ! type(string_t), intent(in), dimension(:), optional :: sources
         character(len=*), intent(in), optional :: netlist
         integer :: i
 
@@ -115,15 +113,12 @@ contains
 
     type(source_t) function setSource(source_path) result(res)
         character(*), intent(in) :: source_path
-        ! type(string_t), intent(in) :: source_path
         real :: time, value
         integer :: io
         allocate(res%time(0), res%value(0))
         if (source_path /= "" ) then 
-        ! if (source_path%length /= 0 ) then 
             res%has_source = .true.
             open(unit = 1, file = source_path)
-            ! open(unit = 1, file = source_path%name)
             do
                 read(1, *, iostat = io) time, value
                 if (io /= 0) exit
@@ -272,27 +267,12 @@ contains
         call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
     end subroutine
 
-    ! subroutine updateNodeVoltage(this, node_name, voltage)
-    !     class(circuit_t) :: this
-    !     real, intent(in) :: voltage
-    !     character(20) :: sVoltage
-    !     character(*) :: node_name
-    !     if (index(node_name, "initial") /= 0) then
-    !         write(sVoltage, *) voltage
-    !         call command("alter @V1"//trim(node_name)//"[dc] = "//trim(sVoltage) // c_null_char)
-    !     else
-    !         write(sVoltage, *) voltage
-    !         call command("alter @V1"//trim(node_name)//"[dc] = "//trim(sVoltage) // c_null_char)
-    !     end if
-    ! end subroutine
-
     subroutine updateNodes(this) 
         class(circuit_t) :: this
         integer :: i
         type(vectorInfo), pointer :: info
         real(kind=c_double), pointer :: values(:)
         do i = 1, size(this%nodes%names)
-            ! call c_f_pointer(get_vector_info(trim(this%nodes%names(i)%name)), info)
             call c_f_pointer(get_vector_info(trim(this%nodes%names(i)%name)//c_null_char), info)
             call c_f_pointer(info%vRealData, values,shape=[info%vLength])
             if (this%nodes%names(i)%name /= "time") then 
