@@ -25,6 +25,7 @@ module preprocess_mod
         procedure :: buildNetwork
         procedure :: connectNodeToGround
         procedure :: connectNodes
+        procedure :: connectNodeToSubcircuit
         procedure :: addNodeWithId
         procedure :: addProbesWithId
     end type
@@ -379,22 +380,27 @@ contains
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
-        buff = trim("R" // node%name // " " // node%name // " "   // node%name //"_R " // termination_r)
+        buff = trim(trim("R" // node%name) // " " // trim(node%name) // " "   // trim(node%name) //"_R " // trim(termination_r))
         call appendToStringArray(res, buff)
-        buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_L " // termination_l)
+        buff = trim(trim("L" // node%name) // " " // trim(node%name) // "_R " // trim(node%name) //"_L " // trim(termination_l))
         call appendToStringArray(res, buff)
-        if (termination%path_to_excitation /= "") then
-            buff = trim("C" // node%name // " " // node%name // "_L " // node%name //"_V "// termination_c)
+        if (termination%source%path_to_excitation /= "") then
+            buff = trim(trim("C" // node%name) // " " // trim(node%name) // "_L " // trim(node%name) //"_S "// trim(termination_c))
             call appendToStringArray(res, buff)
-            buff = trim("V" // node%name // " " // node%name // "_V " // end_node //" dc 0" )
-            call appendToStringArray(res, buff)
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim(trim("V" // node%name) // "_s " // trim(node%name) // "_S " // trim(end_node) //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim(trim("I" // node%name) // "_s " // trim(end_node) // " " //trim(node%name) // "_S  dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
         else
-            buff = trim("C" // node%name // " " // node%name // "_L " // end_node //" "// termination_c)
+            buff = trim("C" // trim(node%name) // " " // trim(node%name) // "_L " // trim(end_node) //" "// termination_c)
             call appendToStringArray(res, buff)
         end if
-        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        buff = trim(trim("I" // node%name) // " " // trim(node%name)// " 0 " // " dc 0")
         call appendToStringArray(res, buff)
-        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        buff = trim(trim("CL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_c))
         call appendToStringArray(res, buff)
 
     end function
@@ -439,13 +445,19 @@ contains
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
+
         buff = trim("R" // node%name // " " // node%name // "_R "   // node%name //" ")//" "//trim(termination_r)
         call appendToStringArray(res, buff)
-        if (termination%path_to_excitation /= "") then
-            buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_L")//" "//trim(termination_l)
+        if (termination%source%path_to_excitation /= "") then
+            buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_S")//" "//trim(termination_l)
             call appendToStringArray(res, buff)
-            buff = trim("V" // node%name // " " // node%name // "_L " // end_node //" dc 0" )
-            call appendToStringArray(res, buff)
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_s " // node%name // "_S " // end_node //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_s " // end_node // " " //node%name // "_S  dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
         else
             buff = trim("L" // node%name // " " // node%name // "_R " // end_node)//" "//trim(termination_l)
             call appendToStringArray(res, buff)
@@ -474,13 +486,18 @@ contains
 
         buff = trim("R" // node%name // " " // node%name // " "   // node%name //"_R " // termination_r)
         call appendToStringArray(res, buff)
-        if (termination%path_to_excitation /= "") then
-            buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_V " // termination_l)
+        if (termination%source%path_to_excitation /= "") then
+            buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_S " // termination_l)
             call appendToStringArray(res, buff)
-            buff = trim("C" // node%name // " " // node%name // " " // node%name //"_V " // termination_c)
+            buff = trim("C" // node%name // " " // node%name // " " // node%name //"_S " // termination_c)
             call appendToStringArray(res, buff)
-            buff = trim("V" // node%name // " " // node%name // "_V " // end_node //" dc 0" )
-            call appendToStringArray(res, buff)
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_s " // node%name // "_S " // end_node //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_s " // end_node // " " //node%name // "_S  dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
         else 
             buff = trim("L" // node%name // " " // node%name // "_R " // end_node //" "// termination_l)
             call appendToStringArray(res, buff)
@@ -536,11 +553,16 @@ contains
         write(line_c, *) node%line_c_per_meter*node%step/2
 
         allocate(res(0))
-        if (termination%path_to_excitation /= "") then
-            buff = trim("R" // node%name // " " // node%name // " " // node%name //"_R")//" "//trim(short_R)
+        if (termination%source%path_to_excitation /= "") then
+            buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             call appendToStringArray(res, buff)
-            buff = trim("V" // node%name // " " // node%name // "_R " // end_node//" dc 0")
-            call appendToStringArray(res, buff)
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_s " // node%name // "_S " // end_node //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_s " // end_node // " " // node%name // "_S  dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
         else
             buff = trim("R" // node%name // " " // node%name // " " // end_node)//" "//trim(short_R)
             call appendToStringArray(res, buff)
@@ -588,13 +610,19 @@ contains
        
         allocate(res(0))
         res = [trim("R" // node%name // " " // node%name // " "   // node%name //"_p " // termination_r)]
-        if (termination%path_to_excitation /= "") then
+        if (termination%source%path_to_excitation /= "") then
             buff = trim("L" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_l)
             call appendToStringArray(res, buff)
             buff = trim("C" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_c)
             call appendToStringArray(res, buff)
-            buff = trim("V" // node%name // " " // node%name // "_V " // end_node //" dc 0" )
-            call appendToStringArray(res, buff)
+
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_s " // node%name // "_L " // end_node //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_s " //end_node // " "// node%name // "_L dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
         else
             buff =  trim("L" // node%name // " " // node%name // "_p " // end_node //" "// termination_l)
             call appendToStringArray(res, buff)
@@ -652,7 +680,7 @@ contains
         res%i = 0.0
         res%bundle_number = d
         res%conductor_number = conductor_number
-
+        
         block
             integer :: v_index, i_index
             real :: line_c_per_meter, step
@@ -676,7 +704,9 @@ contains
             res%step = step
         end block
 
-        res%source = node%termination%path_to_excitation
+        res%source = node%termination%source
+        ! res%source = node%termination%source%path_to_excitation
+        ! res%source = node%termination%path_to_excitation
 
     contains
         function nodeSideToString(side) result(cSide)
@@ -719,6 +749,38 @@ contains
         description((size(old_description)+1):size(description)) = node_description(:)
     end subroutine
 
+    subroutine connectNodeToSubcircuit(this, subcircuit, terminal_nodes, nodes, description)
+        class(preprocess_t) :: this
+        type(subcircuit_t), intent(in) :: subcircuit
+        type(terminal_node_t), dimension(:), allocatable :: terminal_nodes
+        type(nw_node_t),  dimension(:), allocatable, intent(inout) :: nodes
+        type(nw_node_t),  dimension(:), allocatable :: aux_nodes
+        character(256), dimension(:), allocatable, intent(inout) :: description
+        character(256), dimension(:), allocatable :: node_description, old_description
+        character(len=256) :: subcircuit_node, str_port
+        
+        type(nw_node_t) :: new_node
+        integer :: stat
+
+        aux_nodes = nodes
+        deallocate(nodes)
+        allocate(nodes(size(aux_nodes) + 1))
+
+        new_node = this%addNodeWithId(terminal_nodes(1))
+        nodes(size(aux_nodes) + 1) = new_node
+        nodes(1:size(nodes) - 1) = aux_nodes
+
+        write(str_port, '(I0)') terminal_nodes(1)%port_number
+        subcircuit_node = trim(subcircuit%subcircuit_name)//"_"//trim(str_port)
+        
+        node_description = writeNodeDescription(new_node, terminal_nodes(1)%termination, trim(subcircuit_node))
+        old_description = description
+        deallocate(description)
+        allocate(description(size(old_description) + size(node_description)))
+        description(1:size(old_description)) = old_description
+        description((size(old_description)+1):size(description)) = node_description(:)
+    end subroutine
+
     subroutine connectNodes(this, terminal_nodes, nodes, description)
         class(preprocess_t) :: this
         type(terminal_node_t), dimension(:), allocatable :: terminal_nodes
@@ -736,9 +798,11 @@ contains
                         trim(terminal_nodes(2)%belongs_to_cable%name)//"_inter"
         aux_nodes = nodes
         deallocate(nodes)
-        allocate(nodes(size(aux_nodes) + 2))
+        allocate(nodes(size(aux_nodes) + size(terminal_nodes,1)))
+        ! allocate(nodes(size(aux_nodes) + 2))
 
-        do i = 1, 2
+        do i = 1, size(terminal_nodes,1)
+        ! do i = 1, 2
 
             new_node =this%addNodeWithId(terminal_nodes(i))
             nodes(size(aux_nodes) + i ) = new_node
@@ -767,19 +831,81 @@ contains
         character(256), dimension(:), allocatable :: description
         type(network_t) :: res
         integer :: i
+        type(terminal_connection_t), dimension(:), allocatable :: subcircuit_connections, node2node_connections
+
+        call filterConnections(terminal_network%connections, subcircuit_connections, node2node_connections)
 
         allocate(description(0))
         allocate(nodes(0))
-        do i = 1, size(terminal_network%connections)
-            if (size(terminal_network%connections(i)%nodes) == 1) then 
-                call this%connectNodeToGround(terminal_network%connections(i)%nodes, nodes, description)
-            else
-                call this%connectNodes(terminal_network%connections(i)%nodes, nodes, description)
+        do i = 1, size(node2node_connections)
+        ! do i = 1, size(terminal_network%connections)
+            if (size(node2node_connections(i)%nodes) == 1) then 
+                call this%connectNodeToGround(node2node_connections(i)%nodes, nodes, description)
+            else if (size(node2node_connections(i)%nodes) > 1) then 
+                call this%connectNodes(node2node_connections(i)%nodes, nodes, description)
+            ! else if (size(terminal_network%connections(i)%nodes) > 2) then 
+            !     call this%connectNodeToSubcircuit(terminal_network%connections(i)%nodes, nodes, description)
             end if
         end do
+        if (terminal_network%subcircuit%has_subcircuit .eqv. .true.) then 
+            call addModel(description, terminal_network%subcircuit)
+            do i = 1, size(subcircuit_connections) 
+            ! do i = 1, size(terminal_network%circuit_connections) 
+                call this%connectNodeToSubcircuit(terminal_network%subcircuit, subcircuit_connections(i)%nodes, nodes, description)
+            end do
+        end if
 
         res = networkCtor(nodes, description)
     end function
+
+    subroutine filterConnections(all_conn, subckt_conn, node_conn)
+        type(terminal_connection_t), dimension(:), intent(in) :: all_conn
+        type(terminal_connection_t), dimension(:), allocatable, intent(inout) :: subckt_conn, node_conn
+        integer :: i, subckt_size, node_size
+        subckt_size = 0
+        node_size = 0
+        do i = 1, size(all_conn)
+            if (size(all_conn(i)%nodes) == 1 .and. all_conn(i)%nodes(1)%port_number /= -1) then 
+                subckt_size = subckt_size + 1
+            else
+                node_size = node_size + 1
+            end if
+        end do
+        allocate(subckt_conn(subckt_size))
+        allocate(node_conn(node_size))
+        subckt_size = 1
+        node_size = 1
+        do i = 1, size(all_conn)
+            if (size(all_conn(i)%nodes) == 1 .and. all_conn(i)%nodes(1)%port_number /= -1) then 
+                subckt_conn(subckt_size) = all_conn(i)
+                subckt_size = subckt_size + 1
+            else 
+                node_conn(node_size) = all_conn(i)
+                node_size = node_size + 1
+            end if
+        end do
+    end subroutine
+
+    subroutine addModel(description, subcircuit)
+        character(256), dimension(:), allocatable, intent(inout) :: description
+        type(subcircuit_t), intent(in) :: subcircuit
+        character(256) :: buff
+
+        character(:), allocatable :: ports
+        character(10) :: str_port
+        integer :: i
+        ports = " "
+        do i = 1, size(subcircuit%ports)
+            write(str_port, '(I0)') subcircuit%ports(i)
+            ports = ports//trim(subcircuit%subcircuit_name)//"_"//trim(str_port)//" "
+        end do
+
+        buff = trim(".include "//subcircuit%model_file)
+        call appendToStringArray(description, buff)    
+        buff = trim("x"//trim(subcircuit%subcircuit_name)//" "//trim(ports)//" "//trim(subcircuit%model_name))
+        call appendToStringArray(description, buff)    
+    end subroutine
+
 
     subroutine endDescription(description)
         character(256), dimension(:), allocatable, intent(inout) :: description

@@ -7,7 +7,9 @@ module network_mod
 
     type nw_node_t
         character(len=:), allocatable :: name
-        character(len=:), allocatable :: source
+        type(node_source_t) :: source
+        ! character(len=:), allocatable :: source
+        integer :: source_type
         real :: line_c_per_meter
         real :: step
         real :: v

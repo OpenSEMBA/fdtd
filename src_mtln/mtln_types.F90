@@ -22,6 +22,10 @@ module mtln_types_mod
    integer, parameter :: PROBE_TYPE_VOLTAGE   =  1
    integer, parameter :: PROBE_TYPE_CURRENT   =  2
 
+   integer, parameter :: SOURCE_TYPE_UNDEFINED = -1
+   integer, parameter :: SOURCE_TYPE_VOLTAGE   =  1
+   integer, parameter :: SOURCE_TYPE_CURRENT   =  2
+
    integer, parameter :: DIRECTION_X_POS   =  1
    integer, parameter :: DIRECTION_X_NEG   =  -1
    integer, parameter :: DIRECTION_Y_POS   =  2
@@ -39,6 +43,11 @@ module mtln_types_mod
       generic, public :: operator(==) => external_field_segments_eq
    end type
 
+   type node_source_t
+      character(len=256) :: path_to_excitation = ""
+      integer :: source_type = SOURCE_TYPE_UNDEFINED
+   end type
+
    type terminal_model_t
       character(len=256) :: model_file = ""
       character(len=256) :: model_name = ""
@@ -49,7 +58,8 @@ module mtln_types_mod
       real :: resistance = 0.0
       real :: inductance = 0.0
       real :: capacitance = 1e22
-      character(len=256) :: path_to_excitation = ""
+      ! character(len=256) :: path_to_excitation = ""
+      type(node_source_t) :: source
       type(terminal_model_t) :: model
    contains
       private
@@ -63,6 +73,7 @@ module mtln_types_mod
       integer :: conductor_in_cable
       integer :: side = TERMINAL_NODE_SIDE_UNDEFINED
       type(termination_t) :: termination
+      integer :: port_number = -1
    contains
       private
       procedure :: terminal_node_eq
@@ -78,8 +89,17 @@ module mtln_types_mod
       procedure, public :: add_node => terminal_connection_add_node
    end type
 
+   type :: subcircuit_t
+      character(len=256) :: model_file = ""
+      character(len=256) :: model_name = ""
+      character(len=256) :: subcircuit_name = ""
+      integer, dimension(:), allocatable :: ports
+      logical :: has_subcircuit = .false.
+   end type
+
    type :: terminal_network_t
       type(terminal_connection_t), dimension(:), allocatable :: connections
+      type(subcircuit_t) :: subcircuit
    contains
       private
       procedure :: terminal_network_eq
@@ -282,7 +302,8 @@ contains
          (a%resistance == b%resistance) .and. &
          (a%inductance == b%inductance) .and. &
          (a%capacitance == b%capacitance) .and. &
-         a%path_to_excitation == b%path_to_excitation
+         a%source%path_to_excitation == b%source%path_to_excitation .and. &
+         a%source%source_type == b%source%source_type
    end function
 
    logical function probe_eq(a,b)
@@ -376,9 +397,10 @@ contains
 
    end function
 
-   subroutine terminal_connection_add_node(this, node)
+   subroutine terminal_connection_add_node(this, node, port_number)
       class(terminal_connection_t) :: this
       type(terminal_node_t) :: node
+      integer, optional :: port_number
       type(terminal_node_t), dimension(:), allocatable :: newNodes
       integer :: newNodesSize
 
@@ -388,6 +410,7 @@ contains
       newNodesSize = size(newNodes)
       newNodes(1:newNodesSize-1) = this%nodes
       newNodes(newNodesSize) = node
+      if (present(port_number)) newNodes(newNodesSize)%port_number = port_number
       call MOVE_ALLOC(from=newNodes, to=this%nodes)
 
    end subroutine

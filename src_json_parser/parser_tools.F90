@@ -20,6 +20,7 @@ module parser_tools_mod
       type(terminal_node_t) :: node
       integer :: cId
       type(coordinate_t) :: relPos
+      ! integer :: port
    end type
 
    type :: cable_ptr_t

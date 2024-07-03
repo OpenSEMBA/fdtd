@@ -82,6 +82,12 @@ module labels_mod
    character (len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESIDUES = "residues"
    character (len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_NUMBER_POLES = "numberOfPoles"
 
+   ! --  SPICE subcircuits
+   character (len=*), parameter :: J_SUBCIRCUITS  = "subcircuits"
+   character (len=*), parameter :: J_SUBCKT_NAME  = "name"
+   character (len=*), parameter :: J_SUBCKT_PORTS = "ports"
+   character (len=*), parameter :: J_SUBCKT_FILE  = "file"
+   
    ! -- Mesh and geometry.
    character (len=*), parameter :: J_MESH = "mesh"
    
