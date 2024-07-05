@@ -41,7 +41,7 @@ module labels_mod
    character (len=*), parameter :: J_MAT_TERM_TYPE_SERIES = "series"
    character (len=*), parameter :: J_MAT_TERM_TYPE_LCpRs = "LCpRs"
    character (len=*), parameter :: J_MAT_TERM_TYPE_RLsCp = "RLsCp"
-   character (len=*), parameter :: J_MAT_TERM_TYPE_MODEL = "model"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_CIRCUIT = "circuit"
 
    character (len=*), parameter :: J_MAT_TERM_RESISTANCE = "resistance"
    character (len=*), parameter :: J_MAT_TERM_INDUCTANCE = "inductance"
@@ -49,6 +49,7 @@ module labels_mod
    character (len=*), parameter :: J_MAT_TERM_EXCITATION = "path_to_excitation"
    character (len=*), parameter :: J_MAT_TERM_MODEL_FILE = "file"
    character (len=*), parameter :: J_MAT_TERM_MODEL_NAME = "name"
+   character (len=*), parameter :: J_MAT_TERM_MODEL_PORT = "subcircuitPort"
 
    character (len=*), parameter :: J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE = "transferImpedancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_CAPACITANCE = "capacitancePerMeter"

@@ -1,0 +1,8 @@
+.SUBCKT opamp IN INV- OUT INV+
+V1 IN 0 1V
+R1 INV- IN 1k
+R2 OUT INV- 10k
+E1 OUT 0 INV- 0 -1e6
+R3 INV+ 0 50
+.ENDS opamp
+

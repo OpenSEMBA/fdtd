@@ -8,7 +8,7 @@ module mtln_types_mod
    integer, parameter :: TERMINATION_SERIES     =  3
    integer, parameter :: TERMINATION_LCpRs      =  4
    integer, parameter :: TERMINATION_RLsCp      =  5
-   integer, parameter :: TERMINATION_MODEL      =  6
+   integer, parameter :: TERMINATION_CIRCUIT      =  6
 
    integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
@@ -48,8 +48,8 @@ module mtln_types_mod
       integer :: source_type = SOURCE_TYPE_UNDEFINED
    end type
 
-   type terminal_model_t
-      character(len=256) :: model_file = ""
+   type terminal_circuit_t
+      character(len=256) :: file = ""
       character(len=256) :: model_name = ""
    end type
 
@@ -59,7 +59,8 @@ module mtln_types_mod
       real :: inductance = 0.0
       real :: capacitance = 1e22
       type(node_source_t) :: source
-      type(terminal_model_t) :: model
+      type(terminal_circuit_t) :: model
+      integer :: subcircuitPort = -1
    contains
       private
       procedure :: termination_eq
@@ -72,38 +73,43 @@ module mtln_types_mod
       integer :: conductor_in_cable
       integer :: side = TERMINAL_NODE_SIDE_UNDEFINED
       type(termination_t) :: termination
-      integer :: port_number = -1
+      ! type(subcircuit_t), pointer :: connected_to_subcircuit => null()
+      ! integer :: port_number = -1
    contains
       private
       procedure :: terminal_node_eq
       generic, public :: operator(==) => terminal_node_eq
    end type
 
-   type :: terminal_connection_t
-      type(terminal_node_t), dimension(:), allocatable :: nodes
-   contains
-      private
-      procedure :: terminal_connection_eq
-      generic, public :: operator(==) => terminal_connection_eq
-      procedure, public :: add_node => terminal_connection_add_node
-   end type
 
    type :: subcircuit_t
       character(len=256) :: model_file = ""
       character(len=256) :: model_name = ""
       character(len=256) :: subcircuit_name = ""
-      integer, dimension(:), allocatable :: ports
-      logical :: has_subcircuit = .false.
-   end type
-
-   type :: terminal_network_t
+      integer :: numberOfPorts
+      integer :: nodeId
+      end type
+      
+      type :: terminal_network_t
       type(terminal_connection_t), dimension(:), allocatable :: connections
-      type(subcircuit_t) :: subcircuit
+      ! type(subcircuit_t), dimension(:), allocatable :: subcircuits
+      ! logical :: has_subcircuits = .false.
    contains
       private
       procedure :: terminal_network_eq
       generic, public :: operator(==) => terminal_network_eq
       procedure, public :: add_connection => terminal_network_add_connection
+   end type
+   
+   type :: terminal_connection_t
+      type(terminal_node_t), dimension(:), allocatable :: nodes
+      type(subcircuit_t) :: subcircuit
+      logical :: has_subcircuit = .false.
+   contains
+      private
+      procedure :: terminal_connection_eq
+      generic, public :: operator(==) => terminal_connection_eq
+      procedure, public :: add_node => terminal_connection_add_node
    end type
 
    type, public :: transfer_impedance_per_meter_t
@@ -396,10 +402,9 @@ contains
 
    end function
 
-   subroutine terminal_connection_add_node(this, node, port_number)
+   subroutine terminal_connection_add_node(this, node)
       class(terminal_connection_t) :: this
       type(terminal_node_t) :: node
-      integer, optional :: port_number
       type(terminal_node_t), dimension(:), allocatable :: newNodes
       integer :: newNodesSize
 
@@ -409,7 +414,6 @@ contains
       newNodesSize = size(newNodes)
       newNodes(1:newNodesSize-1) = this%nodes
       newNodes(newNodesSize) = node
-      if (present(port_number)) newNodes(newNodesSize)%port_number = port_number
       call MOVE_ALLOC(from=newNodes, to=this%nodes)
 
    end subroutine

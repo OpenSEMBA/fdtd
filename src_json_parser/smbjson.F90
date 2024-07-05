@@ -1662,22 +1662,28 @@ contains
          logical :: found
          type(coordinate_t) :: ports_coordinate
          type(node_t) :: node
+         integer, dimension(:), allocatable :: elemIds
+
          if (this%existsAt(this%root,  J_SUBCIRCUITS)) then
             call this%core%get(this%root, J_SUBCIRCUITS, subCkt)
             allocate(res_ckt(this%core%count(subCkt)))
             do i = 1, this%core%count(subCkt)
                call this%core%get_child(subCkt, i, ckt)
                res_ckt(i)%subcircuit_name = trim(adjustl(this%getStrAt(ckt,J_SUBCKT_NAME)))
-               res_ckt(i)%ports = this%getIntsAt(ckt, J_ELEMENTIDS)
+               
+               elemIds = this%getIntsAt(ckt, J_ELEMENTIDS)
+               node = this%mesh%getNode(elemIds(1))
+               res_ckt(i)%nodeId = node%coordIds(1)
+               ! res_ckt(i)%ports = this%getIntsAt(ckt, J_ELEMENTIDS)
 
-               node = this%mesh%getNode(res_ckt(i)%ports(1))
-               ports_coordinate = this%mesh%getCoordinate(node%coordIds(1))
+               ! node = this%mesh%getNode(res_ckt(i)%ports(1))
+               ! ports_coordinate = this%mesh%getCoordinate(node%coordIds(1))
 
-               do j = 2, size(res_ckt(i)%ports)
-                  node = this%mesh%getNode(res_ckt(i)%ports(j))
-                  if (.not. (ports_coordinate == this%mesh%getCoordinate(node%coordIds(1)))) & 
-                     write(error_unit, *) "ElementIds of all ports must correspond to the same relative position"
-               end do
+               ! do j = 2, size(res_ckt(i)%ports)
+               !    node = this%mesh%getNode(res_ckt(i)%ports(j))
+               !    if (.not. (ports_coordinate == this%mesh%getCoordinate(node%coordIds(1)))) & 
+               !       write(error_unit, *) "ElementIds of all ports must correspond to the same relative position"
+               ! end do
 
 
                id = this%getIntAt(ckt,J_MATERIAL_ID)
@@ -1686,8 +1692,9 @@ contains
                   write(error_unit, *) "Error reading material region: materialId label not found."
                res_ckt(i)%model_file = this%getStrAt(m%p, J_SUBCKT_FILE)
                res_ckt(i)%model_name = this%getStrAt(m%p, J_SUBCKT_NAME)
-               if (size(res_ckt(i)%ports) /= this%getIntAt(m%p, J_SUBCKT_PORTS)) &
-                  write(error_unit, *) "Number of ports in circuit definition and material Id do not match"
+               res_ckt(i)%numberOfPorts = this%getIntAt(m%p, J_SUBCKT_PORTS)
+               ! if (size(res_ckt(i)%ports) /= this%getIntAt(m%p, J_SUBCKT_PORTS)) &
+               !    write(error_unit, *) "Number of ports in circuit definition and material Id do not match"
             end do
             
          else
@@ -1707,6 +1714,18 @@ contains
          end do
       end function
 
+      function countSubcircuitsInNetwork(network_coordinate,subcircuits) result (res)
+         type(coordinate_t) :: network_coordinate
+         type(subcircuit_t), dimension(:), intent(in) :: subcircuits
+         integer :: i, res
+         res = 0
+         do i = 1, size(subcircuits)
+            if (network_coordinate == this%mesh%getCoordinate(subcircuits(i)%nodeId)) then 
+               res = res + 1
+            end if
+         end do
+      end function
+
       function buildNetwork(network_coordinate, aux_nodes, subcircuits) result(res)
          type(coordinate_t) :: network_coordinate
          type(aux_node_t), dimension(:), intent(in) :: aux_nodes
@@ -1714,23 +1733,30 @@ contains
 
          type(aux_node_t), dimension(:), allocatable :: network_nodes
          integer, dimension(:), allocatable :: node_ids
-         integer :: i
+         integer :: i, j
          type(terminal_network_t) :: res
          type(node_t) :: node
-         do i = 1, size(subcircuits)
-            node = this%mesh%getNode(subcircuits(i)%ports(1))
-            if (network_coordinate == this%mesh%getCoordinate(node%coordIds(1))) then 
-               res%subcircuit = subcircuits(i)
-               res%subcircuit%has_subcircuit = .true.
-               exit
-            end if
-         end do
+         
+         ! allocate(res%subcircuits(countSubcircuitsInNetwork(network_coordinate, subcircuits)))
+         ! if (size(res%subcircuits) /= 0) res%has_subcircuits = .true.
+         ! j = 1
+         ! do i = 1, size(subcircuits)
+         !    ! node = this%mesh%getNode(subcircuits(i)%ports(1))
+         !    ! if (network_coordinate == this%mesh%getCoordinate(node%coordIds(1))) then 
+         !    if (network_coordinate == this%mesh%getCoordinate(subcircuits(i)%nodeId)) then 
+         !       res%subcircuits(j) = subcircuits(i)
+         !       j = j + 1
+         !       ! exit
+         !    end if
+         ! end do
 
          network_nodes = filterNetworkNodes(network_coordinate, aux_nodes)
          node_ids = buildListOfNodeIds(network_nodes)
 
          do i = 1, size(node_ids)
-            call res%add_connection(buildConnection(node_ids(i), network_nodes, res%subcircuit))
+            call res%add_connection(buildConnection(node_ids(i), network_nodes, subcircuits))
+            ! call res%add_connection(buildConnection(node_ids(i), network_nodes))
+            ! call res%add_connection(buildConnection(node_ids(i), network_nodes, res%subcircuit))
          end do
 
 
@@ -1759,38 +1785,60 @@ contains
          end do
       end function
 
-      function buildConnection(node_id, network_nodes, subckt) result (res)
+      function buildConnection(node_id, network_nodes, subcircuits) result (res)
          integer, intent(in) :: node_id
          type(aux_node_t), dimension(:), intent(in) :: network_nodes
-         type(subcircuit_t), intent(in) :: subckt
-         integer, dimension(:), allocatable :: port_cIds
-
+         type(subcircuit_t), dimension(:), intent(in) :: subcircuits
          type(terminal_connection_t) :: res
-         integer :: i, idx
-         type(node_t) :: node
-
-         if (subckt%has_subcircuit) then
-            allocate(port_cIds(size(subckt%ports)))
-            do i = 1, size(port_cIds)
-               node = this%mesh%getNode(subckt%ports(i))
-               port_cIds(i) = node%coordIds(1)
-            end do
-         else 
-            allocate(port_cIds(0))
-         end if
-
+         integer :: i
          do i = 1, size(network_nodes)
             if (network_nodes(i)%cId == node_id) then
-
-               idx = findloc(port_cIds, node_id, dim = 1)
-               if (idx /= 0) then 
-                  call res%add_node(network_nodes(i)%node,subckt%ports(idx))
-               else
-                  call res%add_node(network_nodes(i)%node)
-               end if
+               call res%add_node(network_nodes(i)%node)
             end if
          end do
+         do i = 1, size(subcircuits)
+            if (subcircuits(i)%nodeId == node_id) then
+               res%subcircuit = subcircuits(i)
+               res%has_subcircuit = .true.
+            end if
+         end do
+
+
       end function
+
+
+      ! function buildConnection(node_id, network_nodes, subckt) result (res)
+      !    integer, intent(in) :: node_id
+      !    type(aux_node_t), dimension(:), intent(in) :: network_nodes
+      !    type(subcircuit_t), intent(in) :: subckt
+      !    integer, dimension(:), allocatable :: port_cIds
+
+      !    type(terminal_connection_t) :: res
+      !    integer :: i, idx
+      !    type(node_t) :: node
+
+      !    if (subckt%has_subcircuit) then
+      !       allocate(port_cIds(size(subckt%ports)))
+      !       do i = 1, size(port_cIds)
+      !          node = this%mesh%getNode(subckt%ports(i))
+      !          port_cIds(i) = node%coordIds(1)
+      !       end do
+      !    else 
+      !       allocate(port_cIds(0))
+      !    end if
+
+      !    do i = 1, size(network_nodes)
+      !       if (network_nodes(i)%cId == node_id) then
+
+      !          idx = findloc(port_cIds, node_id, dim = 1)
+      !          if (idx /= 0) then 
+      !             call res%add_node(network_nodes(i)%node,subckt%ports(idx))
+      !          else
+      !             call res%add_node(network_nodes(i)%node)
+      !          end if
+      !       end if
+      !    end do
+      ! end function
 
       subroutine updateListOfConnectionIds(ids, id)
          integer, dimension(:), intent(inout) :: ids
@@ -1875,6 +1923,7 @@ contains
          res%node%termination%inductance = readTerminationRLC(termination, J_MAT_TERM_INDUCTANCE, default=0.0)
          res%node%termination%source = readGeneratorOnTermination(id,label)
          res%node%termination%model = readTerminationModel(termination)
+         res%node%termination%subcircuitPort = readTerminationSubcircuitPort(termination, default = -1)
          
          res%node%side = label
          res%node%conductor_in_cable = index
@@ -1988,8 +2037,8 @@ contains
             res = TERMINATION_LCpRs
          else if (type == J_MAT_TERM_TYPE_RLsCp) then
             res = TERMINATION_RLsCp
-         else if (type == J_MAT_TERM_TYPE_MODEL) then 
-            res = TERMINATION_MODEL
+         else if (type == J_MAT_TERM_TYPE_CIRCUIT) then 
+            res = TERMINATION_CIRCUIT
          else
             res = TERMINATION_UNDEFINED
          end if
@@ -1997,17 +2046,29 @@ contains
 
       function readTerminationModel(termination) result(res)
          type(json_value), pointer :: termination
-         type(terminal_model_t) :: res
+         type(terminal_circuit_t) :: res
          if (this%existsAt(termination, J_MAT_TERM_MODEL_FILE)) then
-            res%model_file = this%getStrAt(termination, J_MAT_TERM_MODEL_FILE)
+            res%file = this%getStrAt(termination, J_MAT_TERM_MODEL_FILE)
          else
-            res%model_file = ""
+            res%file = ""
          end if
 
          if (this%existsAt(termination, J_MAT_TERM_MODEL_NAME)) then
             res%model_name = this%getStrAt(termination, J_MAT_TERM_MODEL_NAME)
          else
             res%model_name = ""
+         end if
+
+      end function
+
+      function readTerminationSubcircuitPort(termination, default) result(res)
+         type(json_value), pointer :: termination
+         integer, intent(in) :: default
+         integer :: res
+         if (this%existsAt(termination, J_MAT_TERM_MODEL_PORT)) then
+            res = this%getIntAt(termination, J_MAT_TERM_MODEL_PORT)
+         else
+            res = default
          end if
 
       end function
