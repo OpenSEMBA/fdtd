@@ -75,8 +75,8 @@
         {
             "id" : 7,
             "type" : "circuit",
-            "name" : "box4",
-            "file" : "box.model",
+            "name" : "balun",
+            "file" : "balun.model",
             "numberOfPorts" : 4
         }
 
@@ -107,7 +107,7 @@
             {"id": 7,  "type": "node", "coordinateIds" : [5]},
             {"id": 8,  "type": "node", "coordinateIds" : [7]},
             {"id": 9,  "type": "node", "coordinateIds" : [1]},
-            {"id": 10,  "type": "node", "coordinateIds" : [6]}
+            {"id": 10,  "type": "node", "coordinateIds": [6]}
 		]
 	
 	},
@@ -115,7 +115,7 @@
 
 	"probes": [
 		{
-			"name": "line_end_with_V",
+			"name": "line_end",
 			"type": "wire",
 			"field": "voltage",
 			"elementIds": [8],
@@ -129,7 +129,7 @@
 			"name": "external_source",
 			"type": "generator",
 			"field": "voltage",
-			"magnitudeFile": "4port_gaussian_voltage.exc",
+			"magnitudeFile": "spice_4port_pulse.exc",
 			"elementIds": [9]
 		}
 	],
@@ -152,11 +152,12 @@
 			"endTerminalId": 2
 		}
 	],  
-    "subCircuits" : [
+    "subcircuits" : [
         {
-            "name" : "box_A",
+            "name" : "balun",
             "materialId" : 7,
             "elementIds" : [5]
+
         }
     ]
 

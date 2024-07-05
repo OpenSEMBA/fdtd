@@ -398,9 +398,11 @@ Each entry in `terminations` is specified by a `type`
   + `[resistance]` which defaults to `0.0`,
   + `[inductance]` which defaults to `0.0`,
   + `[capacitance]` which defaults to `1e22`.
-+ SPICE models can used in a termination. In this case the `type` is `model`, and is defined with:
++ SPICE models can used in a termination. In this case the `type` is `circuit`, and is defined with:
   + `[file]` which is the name of the file where the SPICE model is defined 
   + `[name]` which is the name of the subcircuit as defined inside `file`
+
+There is an optional key which is needed in case the termination is attached to a N-port circuit, `circuitPort`. This must be an integer which indicates to which port in the circuit defined in the [subcircuits](#subcircuits) is attached.
 
 **Example:**
 
@@ -414,7 +416,7 @@ Each entry in `terminations` is specified by a `type`
 ```
 ##### `SPICE terminations`
 
-At this point, SPICE terminations have to be equivalents to 2-port networks, i.e, they can be composed of an arbitrary number of SPICE models and components, but they must have only two external nodes. 
+As with the rest of terminations, SPICE terminations have to be equivalents to 2-port networks, i.e, the model in `file` can be composed of an arbitrary number of components, but it must have only two external nodes. 
 
 **Example:**
 
@@ -423,7 +425,7 @@ At this point, SPICE terminations have to be equivalents to 2-port networks, i.e
     "name": "SpiceTerminal",
     "id": 5,
     "type": "terminal",
-    "termination": [ {"type": "model", "file": "ListOfComponents.lib", "name": "Component_1"} ]
+    "termination": [ {"type": "circuit", "file": "ListOfComponents.lib", "name": "Component_1"} ]
 }
 ```
 
@@ -502,6 +504,17 @@ This object establishes the relationship between the physical models described i
     "initialConnectorId": 24
 }
 ```
+
+## `[subCircuits]`
+
+A series of terminals connected together (belonging to the same junction) can be connected to a N-port SPICE circuit. In that case, each of these *junction circuits* have to described separately in the `subCircuits` section.
+This section stores associations between `materials` of type `circuit` and `elements` using their respective `id`s as follows:
+
++ `<materialId>`: A single integer indicating the `id` of a material of type `circuit` which must be present in the `materials` list.
++ `<elementIds>`: A list of with a single `id`. This id must correspond to an element of type `node`, associated to the `coordinateId` shared by all the polylines connected to the subcircuit.
++ `<name>`: A **unique** name that will be used to identify the ports of the subcircuit.
+
+If a terminal represents a connection to a subcircuit described in this sections, the key `circuitPort` has to be present in the description of the terminal.
 
 ## `[probes]`
 

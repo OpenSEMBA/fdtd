@@ -560,8 +560,6 @@ contains
                 buff = trim("V" // node%name // "_s " // node%name // "_S " // end_node //" dc 0" )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                ! buff = trim("R" // node%name // "_s " // end_node // " " // node%name // "_S  150" )
-                ! call appendToStringArray(res, buff) 
                 buff = trim("I" // node%name // "_s " // end_node // " " // node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
             end if
@@ -725,7 +723,6 @@ contains
     subroutine connectNodeToGround(this, terminal_connection, nodes, description)
         class(preprocess_t) :: this
         type(terminal_connection_t), intent(in) :: terminal_connection
-        ! type(terminal_node_t), dimension(:), allocatable :: terminal_nodes
         type(nw_node_t),  dimension(:), allocatable, intent(inout) :: nodes
         type(nw_node_t),  dimension(:), allocatable :: aux_nodes
         character(256), dimension(:), allocatable, intent(inout) :: description
@@ -738,12 +735,10 @@ contains
         allocate(nodes(size(aux_nodes) + 1))
 
         new_node = this%addNodeWithId(terminal_connection%nodes(1))
-        ! new_node = this%addNodeWithId(terminal_nodes(1))
         nodes(size(aux_nodes) + 1) = new_node
         nodes(1:size(nodes) - 1) = aux_nodes
 
         node_description = writeNodeDescription(new_node, terminal_connection%nodes(1)%termination, "0")
-        ! node_description = writeNodeDescription(new_node, terminal_nodes(1)%termination, "0")
         old_description = description
         deallocate(description)
         allocate(description(size(old_description) + size(node_description)))
@@ -753,9 +748,7 @@ contains
 
     subroutine connectNodesToSubcircuit(this, terminal_connection, nodes, description)
         class(preprocess_t) :: this
-        ! type(subcircuit_t), intent(in) :: subcircuit
         type(terminal_connection_t), intent(in) :: terminal_connection
-        ! type(terminal_node_t), dimension(:), allocatable :: terminal_nodes
         type(nw_node_t),  dimension(:), allocatable, intent(inout) :: nodes
         type(nw_node_t),  dimension(:), allocatable :: aux_nodes
         character(256), dimension(:), allocatable, intent(inout) :: description
@@ -768,8 +761,6 @@ contains
         aux_nodes = nodes
         deallocate(nodes)
         allocate(nodes(size(aux_nodes) + size(terminal_connection%nodes)))
-        ! allocate(nodes(size(aux_nodes) + 1))
-
 
         do i = 1, size(terminal_connection%nodes)
             new_node = this%addNodeWithId(terminal_connection%nodes(i))
@@ -794,25 +785,11 @@ contains
         end do
         nodes(1:size(aux_nodes)) = aux_nodes
 
-        ! new_node = this%addNodeWithId(terminal_nodes(1))
-        ! nodes(size(aux_nodes) + 1) = new_node
-        ! nodes(1:size(nodes) - 1) = aux_nodes
-
-        ! write(str_port, '(I0)') terminal_nodes(1)%port_number
-        ! subcircuit_node = trim(subcircuit%subcircuit_name)//"_"//trim(str_port)
-        
-        ! node_description = writeNodeDescription(new_node, terminal_nodes(1)%termination, trim(subcircuit_node))
-        ! old_description = description
-        ! deallocate(description)
-        ! allocate(description(size(old_description) + size(node_description)))
-        ! description(1:size(old_description)) = old_description
-        ! description((size(old_description)+1):size(description)) = node_description(:)
     end subroutine
 
     subroutine connectNodes(this, terminal_connection, nodes, description)
         class(preprocess_t) :: this
         type(terminal_connection_t), intent(in) :: terminal_connection
-        ! type(terminal_node_t), dimension(:), allocatable :: terminal_nodes
         type(nw_node_t),  dimension(:), allocatable, intent(inout) :: nodes
         type(nw_node_t),  dimension(:), allocatable :: aux_nodes
         character(256), dimension(:), allocatable, intent(inout) :: description
@@ -829,11 +806,8 @@ contains
         aux_nodes = nodes
         deallocate(nodes)
         allocate(nodes(size(aux_nodes) + size(terminal_connection%nodes,1)))
-        ! allocate(nodes(size(aux_nodes) + 2))
 
         do i = 1, size(terminal_connection%nodes,1)
-        ! do i = 1, 2
-
             new_node =this%addNodeWithId(terminal_connection%nodes(i))
             nodes(size(aux_nodes) + i ) = new_node
             node_description = writeNodeDescription(new_node, terminal_connection%nodes(i)%termination, interior_node)
@@ -863,11 +837,11 @@ contains
         type(network_t) :: res
         integer :: i
         type(terminal_connection_t), dimension(:), allocatable :: subcircuit_connections, node2node_connections
-        ! integer, dimension(:), allocatable :: port_ids
         
         call filterConnections(terminal_network%connections, subcircuit_connections, node2node_connections)
 
         allocate(listOfModels(0))
+        allocate(description(0))
         do i = 1, size(subcircuit_connections) 
             if (subcircuit_connections(i)%has_subcircuit) then 
                 call addCircuitModel(description, subcircuit_connections(i)%subcircuit, listOfModels)
@@ -875,32 +849,18 @@ contains
             end if
         end do
 
-        ! allocate(port_ids(size(subcircuit_connections)))
-        ! if (size(port_ids))
-
-
-        allocate(description(0))
         allocate(nodes(0))
         do i = 1, size(node2node_connections)
             if (size(node2node_connections(i)%nodes) == 1) then 
                 call this%connectNodeToGround(node2node_connections(i), nodes, description)
-                ! call this%connectNodeToGround(node2node_connections(i)%nodes, nodes, description)
             else if (size(node2node_connections(i)%nodes) > 1) then 
                 call this%connectNodes(node2node_connections(i), nodes, description)
-                ! call this%connectNodes(node2node_connections(i)%nodes, nodes, description)
             end if
         end do
         
         do i = 1, size(subcircuit_connections) 
             call this%connectNodesToSubcircuit(subcircuit_connections(i), nodes, description)
-            ! call this%connectNodesToSubcircuit(terminal_network%subcircuit, subcircuit_connections(i)%nodes, nodes, description)
         end do
-
-        ! if (terminal_network%subcircuit%has_subcircuit .eqv. .true.) then 
-        !     ! call addModel(description, terminal_network%subcircuit)
-        !     do i = 1, size(subcircuit_connections) 
-        !     end do
-        ! end if
 
         res = networkCtor(nodes, description)
     end function
@@ -959,18 +919,7 @@ contains
         call appendToStringArray(listOfModels, buff)    
 
         buff = trim(".include "//subcircuit%model_file)
-        call appendToStringArray(listOfModels, buff)    
-
-        ! ports = " "
-        ! do i = 1, size(subcircuit%ports)
-        !     write(str_port, '(I0)') subcircuit%ports(i)
-        !     ports = ports//trim(subcircuit%subcircuit_name)//"_"//trim(str_port)//" "
-        ! end do
-
-        ! buff = trim(".include "//subcircuit%model_file)
-        ! call appendToStringArray(description, buff)    
-        ! buff = trim("x"//trim(subcircuit%subcircuit_name)//" "//trim(ports)//" "//trim(subcircuit%model_name))
-        ! call appendToStringArray(description, buff)    
+        call appendToStringArray(description, buff)    
 
     end subroutine
 
@@ -992,28 +941,6 @@ contains
         end do
 
 
-        ! numberOfCktNodes = 0
-
-        ! do i = 1, size(all_conn)
-        !     is_ckt = .true.
-        !     do j = 1, size(all_conn(i)%nodes)
-        !         if (all_conn(i)%nodes(1)%port_number /= -1) then 
-        !             is_ckt = is_ckt .and. .true.
-        !             numberOfCktNodes = numberOfCktNodes + 1
-        !         else
-        !             is_ckt = is_ckt .and. .false.
-        !         end if
-        !     end do
-        !     if (.not. is_ckt .and. numberOfCktNodes /= 0) &
-        !         write(error_unit,*) 'Not all nodes are connected to subcircuit'
-
-        !     if (is_ckt) then 
-        !     ! if (size(all_conn(i)%nodes) == 1 .and. all_conn(i)%nodes(1)%port_number /= -1) then 
-        !         subckt_size = subckt_size + 1
-        !     else
-        !         node_size = node_size + 1
-        !     end if
-        ! end do
         allocate(subckt_conn(subckt_size))
         allocate(node_conn(node_size))
         subckt_size = 1
@@ -1022,17 +949,7 @@ contains
         is_ckt = .true.
 
         do i = 1, size(all_conn)
-            ! is_ckt = .true.
-            ! do j = 1, size(all_conn(i)%nodes)
-            !     if (all_conn(i)%nodes(1)%port_number /= -1) then 
-            !         is_ckt = is_ckt .and. .true.
-            !     else
-            !         is_ckt = is_ckt .and. .false.
-            !     end if
-            ! end do
-            ! if (is_ckt) then 
             if (all_conn(i)%has_subcircuit) then 
-            ! if (size(all_conn(i)%nodes) == 1 .and. all_conn(i)%nodes(1)%port_number /= -1) then 
                 subckt_conn(subckt_size) = all_conn(i)
                 subckt_size = subckt_size + 1
             else 
@@ -1041,27 +958,6 @@ contains
             end if
         end do
     end subroutine
-
-    ! subroutine addModel(description, subcircuit)
-    !     character(256), dimension(:), allocatable, intent(inout) :: description
-    !     type(subcircuit_t), intent(in) :: subcircuit
-    !     character(256) :: buff
-
-    !     character(:), allocatable :: ports
-    !     character(10) :: str_port
-    !     integer :: i
-    !     ports = " "
-    !     do i = 1, size(subcircuit%ports)
-    !         write(str_port, '(I0)') subcircuit%ports(i)
-    !         ports = ports//trim(subcircuit%subcircuit_name)//"_"//trim(str_port)//" "
-    !     end do
-
-    !     buff = trim(".include "//subcircuit%model_file)
-    !     call appendToStringArray(description, buff)    
-    !     buff = trim("x"//trim(subcircuit%subcircuit_name)//" "//trim(ports)//" "//trim(subcircuit%model_name))
-    !     call appendToStringArray(description, buff)    
-    ! end subroutine
-
 
     subroutine endDescription(description)
         character(256), dimension(:), allocatable, intent(inout) :: description
@@ -1096,7 +992,6 @@ contains
         write(sDelta, '(E10.2)') dt/200
         write(sPrint, '(E10.2)') final_time/print_step
 
-        ! buff = trim(".tran "//sPrint//" "//sTime//" 0 "//sdt)
         buff = trim(".tran "//sdt//" "//sTime//" 0 "//sDelta)
         call appendToStringArray(description, buff)       
 
@@ -1141,9 +1036,6 @@ contains
         call addSavedNodes(description, networks)
         call endDescription(description)        
 
-        ! do i = 1, size(description)
-        !     write(*,'(A)') trim(description(i))
-        ! end do  
         res = network_managerCtor(networks, description, this%final_time, this%dt)
 
     end function

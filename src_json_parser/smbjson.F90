@@ -1674,17 +1674,6 @@ contains
                elemIds = this%getIntsAt(ckt, J_ELEMENTIDS)
                node = this%mesh%getNode(elemIds(1))
                res_ckt(i)%nodeId = node%coordIds(1)
-               ! res_ckt(i)%ports = this%getIntsAt(ckt, J_ELEMENTIDS)
-
-               ! node = this%mesh%getNode(res_ckt(i)%ports(1))
-               ! ports_coordinate = this%mesh%getCoordinate(node%coordIds(1))
-
-               ! do j = 2, size(res_ckt(i)%ports)
-               !    node = this%mesh%getNode(res_ckt(i)%ports(j))
-               !    if (.not. (ports_coordinate == this%mesh%getCoordinate(node%coordIds(1)))) & 
-               !       write(error_unit, *) "ElementIds of all ports must correspond to the same relative position"
-               ! end do
-
 
                id = this%getIntAt(ckt,J_MATERIAL_ID)
                m = this%matTable%getId(this%getIntAt(ckt, J_MATERIAL_ID, found))
@@ -1693,8 +1682,6 @@ contains
                res_ckt(i)%model_file = this%getStrAt(m%p, J_SUBCKT_FILE)
                res_ckt(i)%model_name = this%getStrAt(m%p, J_SUBCKT_NAME)
                res_ckt(i)%numberOfPorts = this%getIntAt(m%p, J_SUBCKT_PORTS)
-               ! if (size(res_ckt(i)%ports) /= this%getIntAt(m%p, J_SUBCKT_PORTS)) &
-               !    write(error_unit, *) "Number of ports in circuit definition and material Id do not match"
             end do
             
          else
@@ -1737,26 +1724,11 @@ contains
          type(terminal_network_t) :: res
          type(node_t) :: node
          
-         ! allocate(res%subcircuits(countSubcircuitsInNetwork(network_coordinate, subcircuits)))
-         ! if (size(res%subcircuits) /= 0) res%has_subcircuits = .true.
-         ! j = 1
-         ! do i = 1, size(subcircuits)
-         !    ! node = this%mesh%getNode(subcircuits(i)%ports(1))
-         !    ! if (network_coordinate == this%mesh%getCoordinate(node%coordIds(1))) then 
-         !    if (network_coordinate == this%mesh%getCoordinate(subcircuits(i)%nodeId)) then 
-         !       res%subcircuits(j) = subcircuits(i)
-         !       j = j + 1
-         !       ! exit
-         !    end if
-         ! end do
-
          network_nodes = filterNetworkNodes(network_coordinate, aux_nodes)
          node_ids = buildListOfNodeIds(network_nodes)
 
          do i = 1, size(node_ids)
             call res%add_connection(buildConnection(node_ids(i), network_nodes, subcircuits))
-            ! call res%add_connection(buildConnection(node_ids(i), network_nodes))
-            ! call res%add_connection(buildConnection(node_ids(i), network_nodes, res%subcircuit))
          end do
 
 
@@ -1805,40 +1777,6 @@ contains
 
 
       end function
-
-
-      ! function buildConnection(node_id, network_nodes, subckt) result (res)
-      !    integer, intent(in) :: node_id
-      !    type(aux_node_t), dimension(:), intent(in) :: network_nodes
-      !    type(subcircuit_t), intent(in) :: subckt
-      !    integer, dimension(:), allocatable :: port_cIds
-
-      !    type(terminal_connection_t) :: res
-      !    integer :: i, idx
-      !    type(node_t) :: node
-
-      !    if (subckt%has_subcircuit) then
-      !       allocate(port_cIds(size(subckt%ports)))
-      !       do i = 1, size(port_cIds)
-      !          node = this%mesh%getNode(subckt%ports(i))
-      !          port_cIds(i) = node%coordIds(1)
-      !       end do
-      !    else 
-      !       allocate(port_cIds(0))
-      !    end if
-
-      !    do i = 1, size(network_nodes)
-      !       if (network_nodes(i)%cId == node_id) then
-
-      !          idx = findloc(port_cIds, node_id, dim = 1)
-      !          if (idx /= 0) then 
-      !             call res%add_node(network_nodes(i)%node,subckt%ports(idx))
-      !          else
-      !             call res%add_node(network_nodes(i)%node)
-      !          end if
-      !       end if
-      !    end do
-      ! end function
 
       subroutine updateListOfConnectionIds(ids, id)
          integer, dimension(:), intent(inout) :: ids

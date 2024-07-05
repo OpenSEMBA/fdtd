@@ -73,8 +73,6 @@ module mtln_types_mod
       integer :: conductor_in_cable
       integer :: side = TERMINAL_NODE_SIDE_UNDEFINED
       type(termination_t) :: termination
-      ! type(subcircuit_t), pointer :: connected_to_subcircuit => null()
-      ! integer :: port_number = -1
    contains
       private
       procedure :: terminal_node_eq
@@ -92,15 +90,13 @@ module mtln_types_mod
       
       type :: terminal_network_t
       type(terminal_connection_t), dimension(:), allocatable :: connections
-      ! type(subcircuit_t), dimension(:), allocatable :: subcircuits
-      ! logical :: has_subcircuits = .false.
    contains
       private
       procedure :: terminal_network_eq
       generic, public :: operator(==) => terminal_network_eq
       procedure, public :: add_connection => terminal_network_add_connection
    end type
-   
+
    type :: terminal_connection_t
       type(terminal_node_t), dimension(:), allocatable :: nodes
       type(subcircuit_t) :: subcircuit
