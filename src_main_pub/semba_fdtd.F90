@@ -382,10 +382,12 @@ PROGRAM SEMBA_FDTD_launcher
    call interpreta(l,status )      
    sgg%nEntradaRoot=trim (adjustl(l%nEntradaRoot))
 
+#ifdef CompileWithMTLN   
    if (parser%general%mtlnProblem) then 
       call launch_mtln_simulation(parser%mtln, l%nEntradaRoot, l%layoutnumber) 
       STOP
    end if
+#endif
 
 #ifdef CompileWithXDMF   
 #ifdef CompileWithHDF
@@ -852,6 +854,7 @@ PROGRAM SEMBA_FDTD_launcher
 #endif
       finishedwithsuccess=.false.
       if ((l%finaltimestep >= 0).and.(.not.l%skindepthpre)) then
+#ifdef CompileWIthMTLN
          CALL launch_simulation (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
 !los del tipo l%             
@@ -869,7 +872,24 @@ PROGRAM SEMBA_FDTD_launcher
            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
            mtln_parsed, l%use_mtln_wires)
-
+#else
+            CALL launch_simulation (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
+         !los del tipo l%             
+            l%simu_devia,l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
+            l%connectendings, l%isolategroupgroups,l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
+            l%flushsecondsData, l%layoutnumber, l%size, l%createmap, &
+            l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
+            l%nresumeable2, l%resume_fromold,l%groundwires,l%noSlantedcrecepelo,l%sgbc,l%sgbcDispersive,l%mibc,l%attfactorc,l%attfactorw,&
+            l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%mur_second,l%MurAfterPML,l%MEDIOEXTRA,&
+            l%singlefilewrite,maxSourceValue,l%NOcompomur,l%ade, &
+            l%conformalskin,l%strictOLD,l%TAPARRABOS,l%wiresflavor,l%mindistwires,l%facesNF2FF,l%NF2FFDecim,l%vtkindex,&
+            l%createh5bin,l%wirecrank, &
+            l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbccrank,l%sgbcdepth,l%fatalerror,l%fieldtotl,l%permitscaling, &
+            l%EpsMuTimeScale_input_parameters, &
+            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
+            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk)
+#endif
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else
 #ifdef CompileWithMPI

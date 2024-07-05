@@ -130,7 +130,9 @@ module Observa
    public InitObservation,FlushObservationFiles,UpdateObservation,DestroyObservation,CloseObservationFiles,unpacksinglefiles, &
    GetOutput
    public output_t,item_t,Serialized_t,dtft
+#ifdef CompileWithMTLN
    public FlushMTLNObservationFiles
+#endif 
 contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4126,6 +4128,7 @@ contains
       return
    end subroutine FlushObservationFiles
 
+#ifdef CompileWithMTLN
    subroutine FlushMTLNObservationFiles(nEntradaRoot)
       character (len=*), intent(in)  ::  nEntradaRoot
       type(mtln_solver_t), pointer :: mtln_solver
@@ -4166,7 +4169,7 @@ contains
       end do
       
    end subroutine
-
+#endif
 
 
 

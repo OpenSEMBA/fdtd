@@ -7,18 +7,23 @@ enable_testing ()
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
-add_subdirectory(mtln)
+if (CompileWithMTLN)
+    add_subdirectory(mtln)
+    add_subdirectory(system)
+    set(MTLN_TESTS_LIBRARY mtln_tests)
+    set(SYSTEM_TESTS_LIBRARY system_tests)
+endif()
+
 add_subdirectory(smbjson)
-add_subdirectory(system)
 
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"
 )
 
 target_link_libraries(fdtd_tests
-    mtln_tests
+    ${MTLN_TESTS_LIBRARY}
     smbjson_tests
-    system_tests
+    ${SYSTEM_TESTS_LIBRARY}
     GTest::gtest_main
 )
 

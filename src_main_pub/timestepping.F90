@@ -114,9 +114,11 @@ module Solver
 #ifdef CompileWithPrescale
    USE P_rescale
 #endif              
+#ifdef CompileWithMTLN
    ! use mtln_solver_mod, mtln_solver_t => mtln_t
    use mtln_types_mod, only: mtln_t
    use Wire_bundles_mtln_mod
+#endif
 !!
 #ifdef CompileWithProfiling
    use nvtx
@@ -124,10 +126,13 @@ module Solver
    implicit none
    private
 
-   public launch_simulation, launch_mtln_simulation
- 
+   public launch_simulation
+#ifdef CompileWithMTLN
+   public launch_mtln_simulation
+#endif
 contains
 
+#ifdef CompileWithMTLN
    subroutine launch_mtln_simulation(mtln_parsed, nEntradaRoot, layoutnumber)
       type (mtln_t) :: mtln_parsed
       character (len=*), intent(in)  ::  nEntradaRoot
@@ -137,7 +142,9 @@ contains
       call reportSimulationEnd(layoutnumber)
       call FlushMTLNObservationFiles(nEntradaRoot)
    end subroutine
+#endif
 
+#ifdef CompileWithMTLN
    subroutine launch_simulation(sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
    SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
 !!!los del tipo l%
@@ -154,10 +161,30 @@ contains
    EpsMuTimeScale_input_parameters, &
    stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess,planewavecorr, &
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
-   mtln_parsed, use_mtln_wires)
+   , mtln_parsed, use_mtln_wires)
+#else
+   subroutine launch_simulation(sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
+      SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
+   !!!los del tipo l%
+      simu_devia,cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
+      connectendings,isolategroupgroups,stableradholland,flushsecondsFields,mtlnberenger, &
+      flushsecondsData,layoutnumber,size,createmap, &
+      inductance_model, inductance_order, wirethickness, maxCPUtime,time_desdelanzamiento, &
+      nresumeable2,resume_fromold,groundwires,noSlantedcrecepelo, sgbc,sgbcDispersive,mibc,attfactorc,attfactorw, &
+      alphamaxpar,alphaOrden,kappamaxpar,mur_second,murafterpml,MEDIOEXTRA, &
+      singlefilewrite,maxSourceValue,NOcompomur,ADE,&
+      conformalskin,strictOLD,TAPARRABOS,wiresflavor,mindistwires,facesNF2FF,NF2FFDecim,vtkindex, &
+      createh5bin,wirecrank, &
+      opcionestotales,sgbcFreq,sgbcresol,sgbccrank,sgbcDepth,fatalerror,fieldtotl,permitscaling, &
+      EpsMuTimeScale_input_parameters, &
+      stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess,planewavecorr, &
+      dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk)
+#endif
 
    !!!           
+#ifdef CompileWithMTLN
       type (mtln_t) :: mtln_parsed
+#endif
    !!!
       logical :: noconformalmapvtk
       logical :: hopf,experimentalVideal,forceresampled
@@ -826,7 +853,11 @@ contains
 
 #ifdef CompileWithWires
       if (use_mtln_wires) then
+#ifdef CompileWithMTLN
          call InitWires_mtln(sgg,Ex,Ey,Ez,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
+#else
+         write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
+#endif
       endif
 #endif
 
@@ -1385,10 +1416,12 @@ contains
                if (wirecrank) then
                   call AdvanceWiresEcrank(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic)
                else
+#ifdef CompileWithMTLN
                   if (mtln_parsed%has_multiwires) then
                      write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
                      call WarnErrReport(buff)
                   end if
+#endif
                   call AdvanceWiresE(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)                 
                endif
             endif
@@ -1408,9 +1441,12 @@ contains
 #endif
 #ifdef CompileWithWires
          if (use_mtln_wires) then
+#ifdef CompileWithMTLN
             call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
+#else
+            write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
+#endif   
          end if
-
 #endif 
          If (Thereare%PMLbodies) then !waveport absorbers
             call AdvancePMLbodyE
@@ -2076,9 +2112,11 @@ contains
          !dump the remaining to disk
          call FlushObservationFiles(sgg,ini_save, n,layoutnumber, size, dxe, dye, dze, dxh, dyh, dzh,b,singlefilewrite,facesNF2FF,.TRUE.)
          call CloseObservationFiles(sgg,layoutnumber,size,singlefilewrite,initialtimestep,lastexecutedtime,resume) !dump the remaining to disk
+#ifdef CompileWithMTLN      
          if (use_mtln_wires) then
-         call FlushMTLNObservationFiles(nEntradaRoot)
+            call FlushMTLNObservationFiles(nEntradaRoot)
          end if
+#endif
       endif
       
       if (Thereare%FarFields) then
