@@ -560,6 +560,8 @@ contains
                 buff = trim("V" // node%name // "_s " // node%name // "_S " // end_node //" dc 0" )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                ! buff = trim("R" // node%name // "_s " // end_node // " " // node%name // "_S  150" )
+                ! call appendToStringArray(res, buff) 
                 buff = trim("I" // node%name // "_s " // end_node // " " // node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
             end if
