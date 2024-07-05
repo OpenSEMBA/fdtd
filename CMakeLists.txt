@@ -12,6 +12,8 @@ message(STATUS ${CMAKE_Fortran_COMPILER_ID})
 
 option(CompileWithMPI "Use MPI" OFF)
 option(CompileWithHDF "Use HDF" ON)
+
+option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_MAIN_LIB   "Compiles main library" ON)
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 if (SEMBA_FDTD_EXECUTABLE)
@@ -58,7 +60,10 @@ add_library(fhash
 )
 
 add_subdirectory(src_json_parser)
-add_subdirectory(src_mtln)
+if (SEMBA_FDTD_ENABLE_MTLN)
+	add_subdirectory(src_mtln)
+	set(MTLN_LIBRARIES mtlnsolver ngspice_interface)
+endif()
 
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
@@ -99,7 +104,7 @@ if (SEMBA_FDTD_MAIN_LIB)
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
 	)
-	target_link_libraries(semba-main semba-types smbjson mtlnsolver ngspice_interface)
+	target_link_libraries(semba-main semba-types smbjson ${MTLN_LIBRARIES})
 	target_link_libraries(semba-main ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 endif()
 
