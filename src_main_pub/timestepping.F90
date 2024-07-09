@@ -89,10 +89,11 @@ module Solver
 #endif
 #ifdef CompileWithWires  
    use HollandWires        
-#endif       
-#ifdef CompileWithWires  
+#ifdef CompileWithMTLN  
    use Wire_bundles_mtln_mod             
 #endif       
+#endif       
+
 #ifdef CompileWithBerengerWires
    use WiresBerenger
 #ifdef CompileWithMPI
@@ -161,7 +162,7 @@ contains
    EpsMuTimeScale_input_parameters, &
    stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess,planewavecorr, &
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
-   , mtln_parsed, use_mtln_wires)
+   mtln_parsed, use_mtln_wires)
 #else
    subroutine launch_simulation(sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
       SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &

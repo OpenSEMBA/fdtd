@@ -854,7 +854,7 @@ PROGRAM SEMBA_FDTD_launcher
 #endif
       finishedwithsuccess=.false.
       if ((l%finaltimestep >= 0).and.(.not.l%skindepthpre)) then
-#ifdef CompileWIthMTLN
+#ifdef CompileWithMTLN
          CALL launch_simulation (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
 !los del tipo l%             

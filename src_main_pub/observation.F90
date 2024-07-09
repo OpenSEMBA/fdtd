@@ -36,8 +36,10 @@ module Observa
 #ifdef CompileWithWires
    use wiresHolland_constants
    use HollandWires
+#ifdef CompileWithMTLN   
    use Wire_bundles_mtln_mod
    use mtln_solver_mod , mtln_solver_t => mtln_t 
+#endif
 #endif
 #ifdef CompileWithBerengerWires
    use WiresBerenger

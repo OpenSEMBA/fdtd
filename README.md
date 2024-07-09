@@ -47,6 +47,10 @@ Install intel runtime libraries: https://www.intel.com/content/www/us/en/develop
 
 ### Linux
 
+HDF5 library is used by default. A specific HDF5 library can be set with the option `-DHDF5_ROOT=<path-to-library>`
+
+`cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DHDF5_ROOT=/usr/local/HDF_Group/HDF5/1.14.4/`
+
 
 ## Compilation and testing
 
