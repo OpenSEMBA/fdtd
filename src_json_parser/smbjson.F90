@@ -2272,6 +2272,7 @@ contains
 
          res%step_size = buildStepSize(j_cable)
          res%external_field_segments = mapSegmentsToGridCoordinates(j_cable)
+
          material = this%matTable%getId(this%getIntAt(j_cable, J_MATERIAL_ID, found))
          if (.not. found) &
             write(error_unit, *) "Error reading material region: materialId label not found."
@@ -2284,12 +2285,26 @@ contains
             write(error_unit, *) "Error reading cable: is neither wire nor multiwire"
          end if
 
+         if (this%existsAt(material%p,J_MAT_WIRE_REL_PERMITTIVITY)) then
+            call assignRelativePermittivity(res, this%getRealAt(material%p, J_MAT_WIRE_REL_PERMITTIVITY))
+         end if
+
+
          res%initial_connector => findConnectorWithId(j_cable, J_MAT_ASS_CAB_INI_CONN_ID)
          res%end_connector => findConnectorWithId(j_cable, J_MAT_ASS_CAB_END_CONN_ID)
          res%transfer_impedance = buildTransferImpedance(material)
 
 
       end function
+
+      subroutine assignRelativePermittivity(res, relativePermittivity)
+         type(cable_t), intent(inout) :: res
+         real, intent(in) :: relativePermittivity
+         integer :: i
+         do i = 1, size(res%external_field_segments(:))
+            res%external_field_segments(i)%relativePermittivity = relativePermittivity
+         end do
+      end subroutine
 
 
       function buildTransferImpedance(mat) result(res)

@@ -183,7 +183,6 @@ contains
 
 
       adj%YESsegment(1:2) = -1 !default
-
       allocate (InvEps(0 : sgg%NumMedia),InvMu(0 : sgg%NumMedia))
       InvEps(0 : sgg%NumMedia)=1.0_RKIND_wires/(Eps0*sgg%Med(0 : sgg%NumMedia)%Epr) 
       InvMu(0 : sgg%NumMedia)=1.0_RKIND_wires/(Mu0*sgg%Med(0 : sgg%NumMedia)%Mur) 

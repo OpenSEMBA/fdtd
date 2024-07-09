@@ -89,8 +89,10 @@ contains
             do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
                l = hwires%CurrentSegment(indexMap(m,n))%Lind
                c = mu0*eps0/l
-               mtln_solver%bundles(m)%lpul(n,1,1) = l
-               mtln_solver%bundles(m)%cpul(n,1,1) = c
+               if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
+                  mtln_solver%bundles(m)%lpul(n,1,1) = l
+                  mtln_solver%bundles(m)%cpul(n,1,1) = c
+               end if
             end do
             mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1,1) = &
                mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1,1)
@@ -180,7 +182,9 @@ contains
          real(kind=rkind) :: dS_inverse, factor
          real(kind=rkind) :: res
          integer (kind=4) :: i, j, k, direction
+         real :: epsr
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
+         epsr = mtln_solver%bundles(m)%external_field_segments(n)%relativePermittivity
          call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
          select case (abs(direction))  
          case(1)   
@@ -190,7 +194,8 @@ contains
          case(3)   
             dS_inverse = (idxh(i)*idyh(j))
          end select
-         factor = (sgg%dt / eps0) * dS_inverse
+         factor = (sgg%dt / (eps0)) * dS_inverse
+         ! factor = (sgg%dt / (eps0*epsr)) * dS_inverse
          res = factor * getOrientedCurrent()
       end function
 
