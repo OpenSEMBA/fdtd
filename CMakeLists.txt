@@ -25,7 +25,6 @@ option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
-
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 	set(CMAKE_Fortran_FLAGS "-ffree-form -ffree-line-length-none -fdec -fcheck=bounds -fopenmp -fallow-argument-mismatch")
 	add_definitions(-DCompileWithIncludeMpifh)
