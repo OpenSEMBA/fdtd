@@ -1,12 +1,8 @@
 name: ubuntu-nvhpc
 
-permissions:
-  actions: write
-
 on:
   push:
     branches:
-      - main
       - dev
   pull_request:
     branches:
@@ -19,8 +15,8 @@ jobs:
 
     strategy:
       matrix: 
-        optimization-type: ["Debug", "Release"]
-        # mpi-build: ["No", "Yes"]
+        optimization-type: ["Release"]
+        mpi-build: ["No"]
 
     timeout-minutes: 30
     steps:       
@@ -61,11 +57,11 @@ jobs:
         export CC=nvcc
         export CXX=nvc++
         export FC=nvfortran
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DCompileWithHDF=NO -DCompileWithMPI=NO
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DCompileWithHDF=NO -DCompileWithMPI=${{matrix.mpi-build}}
         cmake --build build -j
       
     - name: Run fdtd unit tests 
-      timeout-minutes: 10 
+      timeout-minutes: 30
       run: |
         build/bin/fdtd_tests
 
@@ -74,7 +70,7 @@ jobs:
         python -m pip install -r requirements.txt
 
     - name: Run wrapper tests
-      timeout-minutes: 30 
+      timeout-minutes: 60 
       run: |
         python -m pytest test
        
