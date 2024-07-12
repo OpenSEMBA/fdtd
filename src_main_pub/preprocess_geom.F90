@@ -498,7 +498,7 @@ CONTAINS
                         !realmente en el borderscpml
                         !sig_max(sig_max,-((log( 0.99999d0                 )*(sgg%PML%orden(o,p)+1))/ &
                         !    (2.0_RKIND *sqrt(Mu0/eps0)*sgg%PML%NumLayers(o,p)*del)))
-                        !trampa para que entonces tome la conductividad autentica que se especifique y poder anular las PML y solo dejar capa fisica !çç
+                        !trampa para que entonces tome la conductividad autentica que se especifique y poder anular las PML y solo dejar capa fisica !ï¿½ï¿½
                         sig_max = 1.0_RKIND
                      else
                         sig_max = max(sig_max,-((log( sgg%PML%CoeffReflPML(o,p) )*(sgg%PML%orden(o,p)+1))/ &
@@ -2566,7 +2566,7 @@ endif
       ENDIF
       !FIN WIRES
       
-      !ççç
+      !ï¿½ï¿½ï¿½
       !
 #ifdef CompileWithDMMA
       if (run_with_dmma) then
@@ -4482,7 +4482,7 @@ endif
       END IF
       !las lineas goto 8 que sigue la comento a 27/10/14 porque "creo" que la informacion de shared es necesaria actualizarse
       !este bug aparece en bug_OLD221014_a400m_skindepth en Modelo.nfde
-      !!!goto 8 !!!ç
+      !!!goto 8 !!!ï¿½
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !Update the number of the shared fields
     if (updateshared) then !!aqui se pierde mucho tiempo aniadido flag -noshared para evitarlo 040717  
@@ -4769,7 +4769,7 @@ endif
                   ! while (.not.eof(15))
                   DO
                      READ (15,*, end=79) tiempo1, field1
-                     if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !ç repensar
+                     if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !ï¿½ repensar
                      nsurfs = nsurfs + 1
                   END DO
 79                CONTINUE
@@ -4872,7 +4872,7 @@ endif
                   ! while (.not.eof(15))
                   DO
                      READ (15,*, end=279) tiempo1, field1
-                     if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !ç repensar
+                     if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !ï¿½ repensar
                      nsurfs = nsurfs + 1
                   END DO
 279               CONTINUE

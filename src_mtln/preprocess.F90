@@ -218,7 +218,8 @@ contains
                              parent_name = parent_name, &
                              conductor_in_parent = conductor_in_parent, & 
                              transfer_impedance = cable%transfer_impedance, &
-                             external_field_segments = cable%external_field_segments)
+                             external_field_segments = cable%external_field_segments, &
+                             isPassthrough = cable%isPassthrough)
 
         if (associated(cable%initial_connector)) call addConnector(res, cable%initial_connector, 0)
         if (associated(cable%end_connector))     call addConnector(res, cable%initial_connector, size(res%rpul,1))

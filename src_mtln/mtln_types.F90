@@ -144,6 +144,7 @@ module mtln_types_mod
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
       type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
+      logical :: isPassthrough = .false.
 
    contains
       private

@@ -22,7 +22,7 @@ module mtl_bundle_mod
         real, dimension(:,:,:), allocatable :: v_diff, i_diff
 
         type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
-
+        logical :: isPassthrough = .false.
 
     contains
         procedure :: mergePULMatrices
@@ -63,6 +63,7 @@ contains
         res%step_size = levels(1)%lines(1)%step_size
         res%number_of_divisions = size(res%step_size,1)
         res%external_field_segments = levels(1)%lines(1)%external_field_segments
+        res%isPassthrough = levels(1)%lines(1)%isPassthrough
         call res%initialAllocation()
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
@@ -316,11 +317,21 @@ contains
 
     subroutine bundle_setExternalLongitudinalField(this)
         class(mtl_bundle_t) :: this
-        integer :: i
-        do i = 1, size(this%e_L,2)
-            this%e_L(1,i) = this%external_field_segments(i)%field * &
-                            this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
-        end do
+        integer :: i, j
+
+        if (this%isPassthrough) then 
+            do j = 2, 1 + this%conductors_in_level(2)
+                do i = 1, size(this%e_L,2)
+                    this%e_L(j,i) = this%external_field_segments(i)%field * &
+                                    this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+                end do
+            end do
+        else
+            do i = 1, size(this%e_L,2)
+                this%e_L(1,i) = this%external_field_segments(i)%field * &
+                                this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+            end do
+        end if
     end subroutine
 
 end module mtl_bundle_mod

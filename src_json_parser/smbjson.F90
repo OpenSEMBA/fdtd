@@ -2279,6 +2279,9 @@ contains
 
          if (isWire(j_cable)) then
             call assignReferenceProperties(res, material)
+            if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
+               res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
+            end if
          else if (isMultiwire(j_cable)) then
             call assignPULProperties(res, material, size(getCableElemIds(j_cable)))
          else

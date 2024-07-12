@@ -90,6 +90,7 @@ contains
                l = hwires%CurrentSegment(indexMap(m,n))%Lind
                c = mu0*eps0/l
                if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
+               ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0 .and. mtln_solver%bundles(m)%isPassthrough .eqv. .false.) then 
                   mtln_solver%bundles(m)%lpul(n,1,1) = l
                   mtln_solver%bundles(m)%cpul(n,1,1) = c
                end if
@@ -172,9 +173,17 @@ contains
 
       function getOrientedCurrent() result(res)
          real(kind=rkind) :: res
-         integer (kind=4) :: i, j, k, direction
+         real(kind=rkind) :: curr
+         integer (kind=4) :: direction, i
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-         call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
+         ! call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
+         if (mtln_solver%bundles(m)%isPassthrough) then 
+            curr = 0
+            do i = 2, 1 + mtln_solver%bundles(m)%conductors_in_level(2)
+               curr = curr + mtln_solver%bundles(m)%i(i, n)
+            end do
+            mtln_solver%bundles(m)%i(1, n) = curr
+         end if
          res = mtln_solver%bundles(m)%i(1, n) * sign(1.0, real(direction))
       end function
 

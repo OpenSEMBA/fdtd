@@ -21,7 +21,7 @@ module mtl_mod
 
         type(transfer_impedance_per_meter_t) :: transfer_impedance
         type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
-
+        logical :: isPassthrough = .false.
     contains
         procedure :: setTimeStep
         procedure :: initLCHomogeneous
@@ -84,7 +84,8 @@ contains
                             step_size, name, &
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
-                            external_field_segments) result(res)
+                            external_field_segments, &
+                            isPassthrough) result(res)
         type(mtl_t) :: res
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -96,6 +97,7 @@ contains
         integer, intent(in), optional :: conductor_in_parent
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
+        logical, optional :: isPassthrough
         integer :: j 
 
         res%name = name
@@ -140,13 +142,21 @@ contains
         if (present(external_field_segments)) then 
             res%external_field_segments = external_field_segments
         end if
+
+        if (present(isPassthrough)) then 
+            res%isPassthrough = isPassthrough
+        else
+            res%isPassthrough = .false.
+        end if
+
     end function
 
     function mtlInhomogeneous(lpul, cpul, rpul, gpul, &
                             step_size, name, &
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
-                            external_field_segments) result(res)
+                            external_field_segments, &
+                            isPassthrough) result(res)
         type(mtl_t) :: res
         real, intent(in), dimension(:,:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -157,6 +167,7 @@ contains
         integer, intent(in), optional :: conductor_in_parent
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
+        logical, optional :: isPassthrough
 
         res%name = name
         res%step_size = step_size
@@ -198,6 +209,12 @@ contains
 
         if (present(external_field_segments)) then 
             res%external_field_segments = external_field_segments
+        end if
+
+        if (present(isPassthrough)) then 
+            res%isPassthrough = isPassthrough
+        else
+            res%isPassthrough = .false.
         end if
 
     end function

@@ -35,6 +35,7 @@ module labels_mod
    character (len=*), parameter :: J_MAT_WIRE_REF_CAPACITANCE = "__referenceCapacitancePerMeter"
    character (len=*), parameter :: J_MAT_WIRE_REF_INDUCTANCE = "__referenceInductancePerMeter"
    character (len=*), parameter :: J_MAT_WIRE_REL_PERMITTIVITY = "dielectricRelativePermittivity"
+   character (len=*), parameter :: J_MAT_WIRE_PASS = "isPassthrough"
    
    character (len=*), parameter :: J_MAT_TERM_TERMINATIONS = "terminations"
    character (len=*), parameter :: J_MAT_TERM_TYPE_OPEN = "open"
@@ -61,6 +62,7 @@ module labels_mod
    ! -- materialAssociations
    character (len=*), parameter :: J_MATERIAL_ASSOCIATIONS = "materialAssociations"
    character (len=*), parameter :: J_MATERIAL_ID = "materialId"
+   character (len=*), parameter :: J_MATERIAL_PASS = "materialId"
 
    character (len=*), parameter :: J_MAT_ASS_TYPE_BULK = "bulk"
    character (len=*), parameter :: J_MAT_ASS_TYPE_SURFACE = "surface"

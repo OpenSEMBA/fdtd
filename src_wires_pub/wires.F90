@@ -3797,6 +3797,7 @@ contains
                 .not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then   !NO NO NO ES UN TERMINAL                    
                 if (.not.fieldtotl) then
                          HWires%CurrentSegment(conta)%cte5 = sgg%dt /eps0 /(HWires%CurrentSegment(conta)%deltaTransv1*HWires%CurrentSegment(conta)%deltaTransv2)
+                        !  HWires%CurrentSegment(conta)%cte5 = HWires%CurrentSegment(conta)%cte5/3.5
                 else
                          HWires%CurrentSegment(conta)%cte5 = 0.0_RKIND_wires
                 endif
@@ -3808,6 +3809,7 @@ contains
                 (IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then  !SI SI SI ES UN TERMINAL                    
                 if (.not.fieldtotl) then
                          HWires%CurrentSegment(conta)%cte5 = sgg%dt /eps0 /(HWires%CurrentSegment(conta)%deltaTransv1*HWires%CurrentSegment(conta)%deltaTransv2)
+                        !  HWires%CurrentSegment(conta)%cte5 = HWires%CurrentSegment(conta)%cte5/3.5
                 else
                          HWires%CurrentSegment(conta)%cte5=0.0_RKIND_wires
                 endif
@@ -3866,6 +3868,7 @@ contains
                     
                 if (.not.fieldtotl) then
                          HWires%CurrentSegment(conta)%cte5=sgg%dt /eps0 /(HWires%CurrentSegment(conta)%deltaTransv1*HWires%CurrentSegment(conta)%deltaTransv2)
+                        !  HWires%CurrentSegment(conta)%cte5=HWires%CurrentSegment(conta)%cte5/3.5
                 else
                          HWires%CurrentSegment(conta)%cte5=0.0_RKIND_wires
                 endif
@@ -6977,6 +6980,7 @@ subroutine resume_casuistics
 !!!ojooooo 110517 acumulo en %lind toda la autoinduccion para que los calculos de capacidad la tengan en cuenta completa    
          if (.not.fieldtotl) then
              dummy%cte5 = G2(dummy%indexmed)/(dummy%deltaTransv1*dummy%deltaTransv2)
+            !  dummy%cte5 = dummy%cte5/3.5
          else
              dummy%cte5 = 0.0_RKIND_wires !esta es la cte de acoplo wire2main 
          endif !para el fieldtotl no tento en cuenta mas que la autoin y no devuelvo nada !100517
@@ -6987,6 +6991,7 @@ subroutine resume_casuistics
                     /((dummy%Lind )/sgg%dt+dummy%Resist/2.0_RKIND_wires)
          dummy%cte3= InvMu(dummy%indexmed) * InvEps(dummy%indexmed) / (dummy%delta) * (dummy%Lind) &
                     /((dummy%Lind )/sgg%dt+dummy%Resist/2.0_RKIND_wires)
+         ! dummy%cte3 = dummy%cte3/3.5
          dummy%cte2= 1.0_RKIND_wires  &
                     /((dummy%Lind )/sgg%dt+dummy%Resist/2.0_RKIND_wires)
 !!!stochastic
