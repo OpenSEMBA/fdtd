@@ -36,7 +36,7 @@ jobs:
       
     - name: Build application
       run: |       
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DCompileWithMPI=${{matrix.mpi-build}} -DCompileWithHDF=YES
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi-build}} -DCompileWithHDF=YES
         cmake --build build -j
       
     - name: Run fdtd unit tests 

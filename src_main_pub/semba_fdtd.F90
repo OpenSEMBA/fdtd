@@ -49,7 +49,10 @@ PROGRAM SEMBA_FDTD_launcher
    USE ParseadorClass
 #endif
 
+#ifdef CompileWithSMBJSON
    USE smbjson, only: fdtdjson_parser_t => parser_t
+#endif
+
    USE Preprocess_m
    USE storeData
 
@@ -356,9 +359,11 @@ PROGRAM SEMBA_FDTD_launcher
 #else
        print *,'Not compiled with cargaNFDEINDEX'
        stop
-#endif   
+#endif
+#ifdef CompileWithSMBJSON
    elseif (trim(adjustl(l%extension))=='.json') then
         call cargaFDTDJSON(l%fichin, parser)
+#endif
    else
        print *, 'Neither .nfde nor .json files used as input after -i'
        stop
@@ -1200,6 +1205,7 @@ subroutine cargaNFDE(local_nfde,local_parser)
 end subroutine cargaNFDE
 #endif
 
+#ifdef CompileWithSMBJSON
    subroutine cargaFDTDJSON(filename, parsed)
       character(len=1024), intent(in) :: filename
       type(Parseador), pointer :: parsed
@@ -1213,6 +1219,7 @@ end subroutine cargaNFDE
       allocate(parsed)
       parsed = parser%readProblemDescription()
    end subroutine cargaFDTDJSON
+#endif
 
 !!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
