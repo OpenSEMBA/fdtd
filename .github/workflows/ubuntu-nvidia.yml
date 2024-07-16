@@ -57,7 +57,7 @@ jobs:
         export CC=nvcc
         export CXX=nvc++
         export FC=nvfortran
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DCompileWithHDF=NO -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi-build}}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DSEMBA_FDTD_ENABLE_HDF=NO -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi-build}}
         cmake --build build -j
       
     - name: Run fdtd unit tests 
