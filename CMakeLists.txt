@@ -10,8 +10,12 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
 message(STATUS ${CMAKE_Fortran_COMPILER_ID})
 
-option(CompileWithMPI "Use MPI" OFF)
-option(CompileWithHDF "Use HDF" ON)
+option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
+option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
+option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
+option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
+option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
+
 option(SEMBA_FDTD_MAIN_LIB   "Compiles main library" ON)
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 if (SEMBA_FDTD_EXECUTABLE)
@@ -19,10 +23,8 @@ if (SEMBA_FDTD_EXECUTABLE)
 else()
 	set(SEMBA_FDTD_MAIN_LIB OFF)
 endif()
-option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
-
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 	set(CMAKE_Fortran_FLAGS "-ffree-form -ffree-line-length-none -fdec -fcheck=bounds -fopenmp -fallow-argument-mismatch")
@@ -34,14 +36,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
 	set(CMAKE_CXX_FLAGS "-diag-disable=10448")
 endif()
 
-add_library(semba-types 
-	"src_main_pub/nfde_types.F90"
-	"src_main_pub/fdetypes.F90"
-	"src_mtln/mtln_types.F90"
-	"src_wires_pub/wires_types.F90"
-	"src_main_pub/lumped_types.F90"
-)
-
+if (SEMBA_FDTD_ENABLE_MTLN OR SEMBA_FDTD_ENABLE_SMBJSON)
 set (FHASH_SOURCES_FOLDER "external/fhash/src/")
 add_library(fhash 
 	${FHASH_SOURCES_FOLDER}/fhash.f90 
@@ -57,9 +52,26 @@ add_library(fhash
 	${FHASH_SOURCES_FOLDER}/fhash_key/int32_1d.f90 
 	${FHASH_SOURCES_FOLDER}/fhash_key/int64_1d.f90
 )
+endif()
 
-add_subdirectory(src_json_parser)
-add_subdirectory(src_mtln)
+add_library(semba-types 
+	"src_main_pub/nfde_types.F90"
+	"src_main_pub/fdetypes.F90"
+	"src_mtln/mtln_types.F90"
+	"src_wires_pub/wires_types.F90"
+	"src_main_pub/lumped_types.F90"
+)
+
+if(SEMBA_FDTD_ENABLE_SMBJSON)
+	add_definitions(-DCompileWithSMBJSON)
+	add_subdirectory(src_json_parser)
+	set(SMBJSON_LIBRARIES smbjson)
+endif()
+if (SEMBA_FDTD_ENABLE_MTLN)
+	add_definitions(-DCompileWithMTLN)
+	add_subdirectory(src_mtln)
+	set(MTLN_LIBRARIES mtlnsolver ngspice_interface)
+endif()
 
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
@@ -100,7 +112,7 @@ if (SEMBA_FDTD_MAIN_LIB)
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
 	)
-	target_link_libraries(semba-main semba-types smbjson mtlnsolver ngspice_interface)
+	target_link_libraries(semba-main semba-types ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
 	target_link_libraries(semba-main ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 endif()
 

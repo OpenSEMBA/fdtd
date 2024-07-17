@@ -4,6 +4,16 @@ message(STATUS "Creating build system for smbjson")
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
+set (JSONFORTRAN_SOURCES_FOLDER "${PROJECT_SOURCE_DIR}/external/json-fortran/src/")
+add_library (jsonfortran  
+	${JSONFORTRAN_SOURCES_FOLDER}/json_kinds.F90
+    ${JSONFORTRAN_SOURCES_FOLDER}/json_parameters.F90
+    ${JSONFORTRAN_SOURCES_FOLDER}/json_string_utilities.F90
+    ${JSONFORTRAN_SOURCES_FOLDER}/json_value_module.F90
+    ${JSONFORTRAN_SOURCES_FOLDER}/json_file_module.F90
+    ${JSONFORTRAN_SOURCES_FOLDER}/json_module.F90
+)
+
 add_library(smbjson 
 	"labels_mod.F90"
 	"cells.F90"
@@ -14,5 +24,4 @@ add_library(smbjson
 	"nfdetypes_extension.F90" 
 )
 
-target_link_libraries(smbjson PRIVATE ${JSONFORTRAN_LIB} semba-types fhash)
-set(SMBJSON_INCLUDES "${JSONFORTRAN_DIR}/include" CACHE INTERNAL "")
+target_link_libraries(smbjson PRIVATE jsonfortran semba-types fhash)
