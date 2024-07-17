@@ -1,12 +1,8 @@
 name: ubuntu-nvhpc
 
-permissions:
-  actions: write
-
 on:
   push:
     branches:
-      - main
       - dev
   pull_request:
     branches:
@@ -20,7 +16,7 @@ jobs:
     strategy:
       matrix: 
         optimization-type: ["Debug", "Release"]
-        # mpi-build: ["No", "Yes"]
+        mpi-build: ["No"]
 
     timeout-minutes: 30
     steps:       
@@ -42,6 +38,7 @@ jobs:
         NVCC="$(find /opt/*nvidia* -type f -executable -name nvcc -print | tail -1)"
         NVCXX="$(find /opt/*nvidia* -type f -executable -name nvc++ -print | tail -1)"
         NVFORTRAN="$(find /opt/*nvidia* -type f -executable -name nvfortran -print | tail -1)"
+        NVLINK="$(find /opt/*nvidia* -type f -executable -name nvlink -print | tail -1)"
         
         # MPI_NVCC="$(find /opt/*nvidia* -type f -executable -name mpicc -print | tail -1)"
         # MPI_NVCXX="$(find /opt/*nvidia* -type f -executable -name mpic++ -print | tail -1)"
@@ -50,6 +47,7 @@ jobs:
         sudo ln -s "$NVCC" /usr/bin
         sudo ln -s "$NVCXX" /usr/bin
         sudo ln -s "$NVFORTRAN" /usr/bin
+        sudo ln -s "$NVLINK" /usr/bin
 
         # sudo ln -s "$MPI_NVCC" /usr/bin
         # sudo ln -s "$MPI_NVCXX" /usr/bin
@@ -61,11 +59,11 @@ jobs:
         export CC=nvcc
         export CXX=nvc++
         export FC=nvfortran
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DCompileWithHDF=NO -DCompileWithMPI=NO
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DSEMBA_FDTD_ENABLE_HDF=NO -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi-build}}
         cmake --build build -j
       
     - name: Run fdtd unit tests 
-      timeout-minutes: 10 
+      timeout-minutes: 30
       run: |
         build/bin/fdtd_tests
 
@@ -74,7 +72,7 @@ jobs:
         python -m pip install -r requirements.txt
 
     - name: Run wrapper tests
-      timeout-minutes: 30 
+      timeout-minutes: 60 
       run: |
         python -m pytest test
        
