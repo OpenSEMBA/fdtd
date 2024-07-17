@@ -38,6 +38,7 @@ jobs:
         NVCC="$(find /opt/*nvidia* -type f -executable -name nvcc -print | tail -1)"
         NVCXX="$(find /opt/*nvidia* -type f -executable -name nvc++ -print | tail -1)"
         NVFORTRAN="$(find /opt/*nvidia* -type f -executable -name nvfortran -print | tail -1)"
+        NVLINK="$(find /opt/*nvidia* -type f -executable -name nvlink -print | tail -1)"
         
         # MPI_NVCC="$(find /opt/*nvidia* -type f -executable -name mpicc -print | tail -1)"
         # MPI_NVCXX="$(find /opt/*nvidia* -type f -executable -name mpic++ -print | tail -1)"
@@ -46,6 +47,7 @@ jobs:
         sudo ln -s "$NVCC" /usr/bin
         sudo ln -s "$NVCXX" /usr/bin
         sudo ln -s "$NVFORTRAN" /usr/bin
+        sudo ln -s "$NVLINK" /usr/bin
 
         # sudo ln -s "$MPI_NVCC" /usr/bin
         # sudo ln -s "$MPI_NVCXX" /usr/bin
