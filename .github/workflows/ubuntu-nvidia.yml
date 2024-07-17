@@ -25,37 +25,41 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: Install nvhpc compilers.
-      run: |       
-        echo "deb [trusted=yes] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /" | sudo tee /etc/apt/sources.list.d/nvhpc.list
-        sudo apt update
-        sudo apt install -y nvhpc
-        sudo apt clean
+    # - name: Install nvhpc compilers.
+    #   run: |       
+    #     echo "deb [trusted=yes] https://developer.download.nvidia.com/hpc-sdk/ubuntu/amd64 /" | sudo tee /etc/apt/sources.list.d/nvhpc.list
+    #     sudo apt update
+    #     sudo apt install -y nvhpc
+    #     sudo apt clean
         
-        NVCC="$(find /opt/*nvidia* -type f -executable -name nvcc -print | tail -1)"
-        NVCXX="$(find /opt/*nvidia* -type f -executable -name nvc++ -print | tail -1)"
-        NVFORTRAN="$(find /opt/*nvidia* -type f -executable -name nvfortran -print | tail -1)"
-        NVLINK="$(find /opt/*nvidia* -type f -executable -name nvlink -print | tail -1)"
+    #     NVCC="$(find /opt/*nvidia* -type f -executable -name nvcc -print | tail -1)"
+    #     NVCXX="$(find /opt/*nvidia* -type f -executable -name nvc++ -print | tail -1)"
+    #     NVFORTRAN="$(find /opt/*nvidia* -type f -executable -name nvfortran -print | tail -1)"
+    #     NVLINK="$(find /opt/*nvidia* -type f -executable -name nvlink -print | tail -1)"
         
-        # MPI_NVCC="$(find /opt/*nvidia* -type f -executable -name mpicc -print | tail -1)"
-        # MPI_NVCXX="$(find /opt/*nvidia* -type f -executable -name mpic++ -print | tail -1)"
-        # MPI_NVFORTRAN="$(find /opt/*nvidia* -type f -executable -name mpifort -print | tail -1)"
+    #     # MPI_NVCC="$(find /opt/*nvidia* -type f -executable -name mpicc -print | tail -1)"
+    #     # MPI_NVCXX="$(find /opt/*nvidia* -type f -executable -name mpic++ -print | tail -1)"
+    #     # MPI_NVFORTRAN="$(find /opt/*nvidia* -type f -executable -name mpifort -print | tail -1)"
         
-        sudo ln -s "$NVCC" /usr/bin
-        sudo ln -s "$NVCXX" /usr/bin
-        sudo ln -s "$NVFORTRAN" /usr/bin
-        sudo ln -s "$NVLINK" /usr/bin
+    #     sudo ln -s "$NVCC" /usr/bin
+    #     sudo ln -s "$NVCXX" /usr/bin
+    #     sudo ln -s "$NVFORTRAN" /usr/bin
+    #     sudo ln -s "$NVLINK" /usr/bin
 
-        # sudo ln -s "$MPI_NVCC" /usr/bin
-        # sudo ln -s "$MPI_NVCXX" /usr/bin
-        # sudo ln -s "$MPI_NVFORTRAN" /usr/bin
-
+    #     # sudo ln -s "$MPI_NVCC" /usr/bin
+    #     # sudo ln -s "$MPI_NVCXX" /usr/bin
+    #     # sudo ln -s "$MPI_NVFORTRAN" /usr/bin
+    - uses: fortran-lang/setup-fortran@v1
+      id: setup-fortran
+      with:
+        compiler: nvidia-hpc
+        version: '23.11'
       
     - name: Build application
       run: |
-        export CC=nvcc
-        export CXX=nvc++
-        export FC=nvfortran
+        # export CC=nvcc
+        # export CXX=nvc++
+        # export FC=nvfortran
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DSEMBA_FDTD_ENABLE_HDF=NO -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi-build}}
         cmake --build build -j
       
