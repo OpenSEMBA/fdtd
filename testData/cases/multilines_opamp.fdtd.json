@@ -3,8 +3,8 @@
     "__comments": "wire panel",
 	
     "general": {
-        "timeStep": 5e-11,
-        "numberOfSteps": 4000,
+        "timeStep": 4e-11,
+        "numberOfSteps": 6000,
 		"mtlnProblem" : true
     },
 	  

@@ -186,9 +186,10 @@ contains
         call command('quit 0' // c_null_char)
     end subroutine
 
-    subroutine readInput(this, input) 
+    subroutine readInput(this, input, printInput) 
         class(circuit_t) :: this
         character(*), intent(in) :: input(:)
+        logical, optional :: printInput
         type(c_ptr) :: argv_c(size(input))
         integer :: i   
 
@@ -196,9 +197,15 @@ contains
             character(len=:,kind=c_char), allocatable :: item
         end type string
         type(string), target :: tmp(size(input))
-        do i = 1 , size(input)
-            write(*,*) input(i)
-        end do
+
+        if (present(printInput)) then
+            if (printInput .eqv. .true.) then 
+                do i = 1 , size(input)
+                    write(*,*) input(i)
+                end do
+            end if
+        end if
+
         do i = 1, size(input)
             tmp(i)%item = trim(input(i)) // c_null_char
             argv_c(i) = c_loc(tmp(i)%item)
