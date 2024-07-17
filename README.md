@@ -81,8 +81,29 @@ A specific HDF5 library can be set with the option `-DHDF5_ROOT=<path-to-library
 
 #### MTLN and ngspice
 
-MTLN needs `lapack` and `ngspice`. Precompiled versions are included for windows (intelLLVM) and ubuntu (intelLLVM and GNU).
+MTLN depends on `lapack` and `ngspice`. Precompiled versions are included for windows (intelLLVM) and ubuntu (intelLLVM and GNU).
 For other platform/compilers these will need to be compiled.
+
+##### Compiling ngspice
+
+In linux, when using some of the provided scripts you may find problems with carriage returns. These can be fixed with:
+
+```shell
+sed -i -e 's/\r$//' compile_linux.sh
+sed -i -e 's/\r$//' autogen.sh
+find . -name \*.m4|xargs dos2unix\nfind . -name \*.ac|xargs dos2unix\nfind . -name \*.am|xargs dos2unix
+```
+
+the `ngspice` static library can be compiled doing the following:
+
+1. Edit `configure.ac`, to `AC_SUBST([STATIC], [-static])`
+2. Edit `compile_linux_shared.sh`, to 
+```
+libngspice_la_CFLAGS = -static
+
+libngspice_la_LDFLAGS = -static -version-info @LIB_VERSION@
+```
+
 
 #### MPI
 
