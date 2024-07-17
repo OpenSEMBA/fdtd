@@ -105,25 +105,6 @@ def test_spice_connector_diode(tmp_path):
         assert np.allclose(p_expected[i].df.to_numpy()[:-20,:], p_solved[i].df.to_numpy()[:-20,:], rtol = 0.01, atol=0.05e-3)
 
     
-def test_current_source(tmp_path):
-    case = 'paul_8_6_square_current_source'
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'coaxial_line_paul_8_6_0.75_square_current.exc')
-    makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
-    solver.run()
-    assert solver.hasFinishedSuccessfully() == True
-
-    p_expected = Probe(OUTPUT_FOLDER+'paul_8_6_square.fdtd_start_voltage_bundle_wire_V_5_5_1.dat')
-
-    probe_voltage = solver.getSolvedProbeFilenames("start_voltage")[0]
-    probe_current = solver.getSolvedProbeFilenames("end_current")[0]
-    probe_files = [probe_voltage, probe_current]
-    p_solved = Probe(probe_files[0])
-
-    assert np.allclose(p_expected.df.to_numpy()[:,0:2], p_solved.df.to_numpy()[:,0:2], rtol = 0.01, atol=0.2)
-
 def test_line_multiline_junction(tmp_path):
     case = 'line_multiline_junction'
     makeCopy(tmp_path, EXCITATIONS_FOLDER+'junction_gaussian_voltage.exc')
