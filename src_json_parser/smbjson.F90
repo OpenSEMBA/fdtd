@@ -165,8 +165,6 @@ contains
 
       ! Thin elements
       res%tWires = this%readThinWires()
-
-      ! mtln
       res%mtln = this%readMTLN(res%despl)
 
       ! Cleanup
