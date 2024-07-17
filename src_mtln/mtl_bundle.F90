@@ -12,6 +12,7 @@ module mtl_bundle_mod
         integer  :: number_of_conductors = 0, number_of_divisions = 0
         real, dimension(:), allocatable :: step_size
         real, allocatable, dimension(:,:) :: v, i, e_L
+        real, allocatable, dimension(:,:) :: v_eps
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         real :: time = 0.0, dt = 1e10
         type(probe_t), allocatable, dimension(:) :: probes
@@ -82,6 +83,8 @@ contains
         allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
         allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0)
+        
+        allocate(this%v_eps(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
 
         allocate(this%i_term(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
         allocate(this%v_diff(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
@@ -291,25 +294,59 @@ contains
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
         integer :: i
-        do i = 2, this%number_of_divisions
-            this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
-                           matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
-        end do
+        real :: eps_r
+        eps_r = this%external_field_segments(1)%relativePermittivity
+        if (eps_r == 1.0) then 
+            do i = 2, this%number_of_divisions
+                this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
+                            matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
+            end do
+
+        else 
+            ! do i = 2, this%number_of_divisions
+
+            !     this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
+            !                    matmul(this%i_diff(i,:,:)*0.05, this%i(:,i) - this%i(:,i-1)  )
+
+
+            !     this%v_eps(:, i) = matmul(this%v_term(i,:,:), this%v_eps(:,i)) - &
+            !                        matmul(this%i_diff(i,:,:)*(0.95/eps_r), this%i(:,i) - this%i(:,i-1)  )
+            ! end do
+        end if
+
     end subroutine
+
 
     subroutine bundle_advanceCurrent(this)
         class(mtl_bundle_t) ::this
         real, dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
+        real :: eps_r
         call this%transfer_impedance%updateQ3Phi()
         i_prev = this%i
+        ! eps_r = this%external_field_segments(1)%relativePermittivity
+        ! if (eps_r == 1.0) then 
+
         do i = 1, this%number_of_divisions 
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
-                          matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - this%e_L(:,i) * this%step_size(i)) - &
-                          !- &
-                                !  matmul(0.5*this%du_length(i,:,:), this%el))
-                          matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
+                        matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i) + this%v_eps(:,i+1) - this%v_eps(:,i)) - &
+                                                    this%e_L(:,i) * this%step_size(i)) - &
+                        matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
+        ! else 
+
+        !     do i = 1, this%number_of_divisions 
+        !         this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
+        !                     matmul(1.0*this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i))) +  &
+        !                     matmul(1.0*this%v_diff(i,:,:), (this%v_eps(:,i+1) - this%v_eps(:,i))) -  &
+        !                     matmul(this%v_diff(i,:,:), this%e_L(:,i) * this%step_size(i)) - &
+        !                     !- &
+        !                             !  matmul(0.5*this%du_length(i,:,:), this%el))
+        !                     matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
+        !     enddo
+
+        ! end if 
+
         !TODO - revisar
         i_now = this%i
         call this%transfer_impedance%updatePhi(i_prev, i_now)

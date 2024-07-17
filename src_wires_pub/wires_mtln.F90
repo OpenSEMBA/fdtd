@@ -91,8 +91,8 @@ contains
                c = mu0*eps0/l
                if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
                ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0 .and. mtln_solver%bundles(m)%isPassthrough .eqv. .false.) then 
-                  mtln_solver%bundles(m)%lpul(n,1,1) = l
-                  mtln_solver%bundles(m)%cpul(n,1,1) = c
+                  mtln_solver%bundles(m)%lpul(n,1,1) = l !/3.2
+                  mtln_solver%bundles(m)%cpul(n,1,1) = c !*3.2
                end if
             end do
             mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1,1) = &
@@ -184,6 +184,7 @@ contains
             end do
             mtln_solver%bundles(m)%i(1, n) = curr
          end if
+         
          res = mtln_solver%bundles(m)%i(1, n) * sign(1.0, real(direction))
       end function
 
@@ -193,7 +194,7 @@ contains
          integer (kind=4) :: i, j, k, direction
          real :: epsr
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-         epsr = mtln_solver%bundles(m)%external_field_segments(n)%relativePermittivity
+         ! epsr = mtln_solver%bundles(m)%external_field_segments(n)%relativePermittivity
          call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
          select case (abs(direction))  
          case(1)   

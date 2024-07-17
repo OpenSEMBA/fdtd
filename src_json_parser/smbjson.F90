@@ -1886,7 +1886,8 @@ contains
          type(json_value_ptr), dimension(:), allocatable :: genSrcs
          logical :: found
          type(node_source_t) :: res
-         
+         integer :: polylineId
+
          call this%core%get(this%root, J_SOURCES, sources, found)
          if (.not. found) then
             res%path_to_excitation = trim("")
@@ -1930,11 +1931,12 @@ contains
                   return
                end if
 
+               polylineId = this%getIntAt(genSrcs(i)%p, "polylineId")
 
                call this%core%get(genSrcs(i)%p, J_ELEMENTIDS, sourceElemIds)
                srcCoord = this%mesh%getNode(sourceElemIds(1))
                if (label == TERMINAL_NODE_SIDE_INI) then
-                  if ((srcCoord%coordIds(1) == poly%coordIds(1))) then 
+                  if ((srcCoord%coordIds(1) == poly%coordIds(1)) .and. polylineId == id) then 
                      if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
                         res%source_type = SOURCE_TYPE_VOLTAGE 
                      else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
@@ -1944,7 +1946,7 @@ contains
                      return
                   end if
                else if (label == TERMINAL_NODE_SIDE_END) then
-                  if ((srcCoord%coordIds(1) == poly%coordIds(ubound(poly%coordIds,1)))) then 
+                  if ((srcCoord%coordIds(1) == poly%coordIds(ubound(poly%coordIds,1))) .and. polylineId == id) then 
                      if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
                         res%source_type = SOURCE_TYPE_VOLTAGE 
                      else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 

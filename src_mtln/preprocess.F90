@@ -558,14 +558,14 @@ contains
             buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_s " // node%name // "_S " // end_node //" dc 0" )
+                buff = trim("V" // node%name // "_s " // node%name // "_S " // trim(end_node) //" dc 0" )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                buff = trim("I" // node%name // "_s " // end_node // " " // node%name // "_S  dc 0" )
+                buff = trim("I" // node%name // "_s " // trim(end_node) // " " // node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
             end if
         else
-            buff = trim("R" // node%name // " " // node%name // " " // end_node)//" "//trim(short_R)
+            buff = trim("R" // node%name // " " // node%name // " " // trim(end_node))//" "//trim(short_R)
             call appendToStringArray(res, buff)
         end if
         buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
