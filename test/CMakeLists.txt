@@ -15,7 +15,7 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 endif()
 if (SEMBA_FDTD_ENABLE_SMBJSON)
     add_subdirectory(smbjson)
-    add_subdirectory(SMBJSON_TESTS_LIBRARY smbjson_tests)
+    set(SMBJSON_TESTS_LIBRARY smbjson_tests)
 endif()
 
 add_executable(fdtd_tests 

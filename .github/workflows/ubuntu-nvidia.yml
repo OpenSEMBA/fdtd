@@ -15,7 +15,7 @@ jobs:
 
     strategy:
       matrix: 
-        optimization-type: ["Release"]
+        optimization-type: ["Debug", "Release"]
         mpi-build: ["No"]
 
     timeout-minutes: 30
