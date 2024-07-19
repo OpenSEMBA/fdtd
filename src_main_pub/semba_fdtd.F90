@@ -49,7 +49,10 @@ PROGRAM SEMBA_FDTD_launcher
    USE ParseadorClass
 #endif
 
+#ifdef CompileWithSMBJSON
    USE smbjson, only: fdtdjson_parser_t => parser_t
+#endif
+
    USE Preprocess_m
    USE storeData
 
@@ -137,7 +140,6 @@ PROGRAM SEMBA_FDTD_launcher
    !****************************************************************************
 
    type (entrada_t) :: l
-
    type(mtln_t) :: mtln_parsed
 
    logical :: lexis
@@ -356,9 +358,11 @@ PROGRAM SEMBA_FDTD_launcher
 #else
        print *,'Not compiled with cargaNFDEINDEX'
        stop
-#endif   
+#endif
+#ifdef CompileWithSMBJSON
    elseif (trim(adjustl(l%extension))=='.json') then
         call cargaFDTDJSON(l%fichin, parser)
+#endif
    else
        print *, 'Neither .nfde nor .json files used as input after -i'
        stop
@@ -382,10 +386,12 @@ PROGRAM SEMBA_FDTD_launcher
    call interpreta(l,status )      
    sgg%nEntradaRoot=trim (adjustl(l%nEntradaRoot))
 
+#ifdef CompileWithMTLN   
    if (parser%general%mtlnProblem) then 
       call launch_mtln_simulation(parser%mtln, l%nEntradaRoot, l%layoutnumber) 
       STOP
    end if
+#endif
 
 #ifdef CompileWithXDMF   
 #ifdef CompileWithHDF
@@ -852,6 +858,7 @@ PROGRAM SEMBA_FDTD_launcher
 #endif
       finishedwithsuccess=.false.
       if ((l%finaltimestep >= 0).and.(.not.l%skindepthpre)) then
+#ifdef CompileWithMTLN
          CALL launch_simulation (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
 !los del tipo l%             
@@ -869,7 +876,24 @@ PROGRAM SEMBA_FDTD_launcher
            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
            mtln_parsed, l%use_mtln_wires)
-
+#else
+            CALL launch_simulation (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
+         !los del tipo l%             
+            l%simu_devia,l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
+            l%connectendings, l%isolategroupgroups,l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
+            l%flushsecondsData, l%layoutnumber, l%size, l%createmap, &
+            l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
+            l%nresumeable2, l%resume_fromold,l%groundwires,l%noSlantedcrecepelo,l%sgbc,l%sgbcDispersive,l%mibc,l%attfactorc,l%attfactorw,&
+            l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%mur_second,l%MurAfterPML,l%MEDIOEXTRA,&
+            l%singlefilewrite,maxSourceValue,l%NOcompomur,l%ade, &
+            l%conformalskin,l%strictOLD,l%TAPARRABOS,l%wiresflavor,l%mindistwires,l%facesNF2FF,l%NF2FFDecim,l%vtkindex,&
+            l%createh5bin,l%wirecrank, &
+            l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbccrank,l%sgbcdepth,l%fatalerror,l%fieldtotl,l%permitscaling, &
+            l%EpsMuTimeScale_input_parameters, &
+            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
+            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk)
+#endif
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else
 #ifdef CompileWithMPI
@@ -1180,6 +1204,7 @@ subroutine cargaNFDE(local_nfde,local_parser)
 end subroutine cargaNFDE
 #endif
 
+#ifdef CompileWithSMBJSON
    subroutine cargaFDTDJSON(filename, parsed)
       character(len=1024), intent(in) :: filename
       type(Parseador), pointer :: parsed
@@ -1193,6 +1218,7 @@ end subroutine cargaNFDE
       allocate(parsed)
       parsed = parser%readProblemDescription()
    end subroutine cargaFDTDJSON
+#endif
 
 !!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1316,10 +1342,10 @@ subroutine NFDE2sgg
          CALL read_geomData (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, l%fichin, l%layoutnumber, l%size, SINPML_fullsize, fullsize, parser, &
          l%groundwires,l%attfactorc,l%mibc,l%sgbc,l%sgbcDispersive,l%MEDIOEXTRA,maxSourceValue,l%skindepthpre,l%createmapvtk,l%input_conformal_flag,l%CLIPREGION,l%boundwireradius,l%maxwireradius,l%updateshared,l%run_with_dmma, &
          eps0,mu0,.false.,l%hay_slanted_wires,l%verbose,l%ignoresamplingerrors,tagtype,l%wiresflavor)
-!!!!mtln constructor 100424       
+#ifdef CompileWithMTLN
          if (trim(adjustl(l%extension))=='.json')  mtln_parsed = parser%mtln
          ! if (trim(adjustl(l%extension))=='.json')  mtln_solver = mtlnCtor(parser%mtln)   
-!!!!         
+#endif
          WRITE (dubuf,*) '[OK] ENDED NFDE --------> GEOM'
          CALL print11 (l%layoutnumber, dubuf)
          !writing

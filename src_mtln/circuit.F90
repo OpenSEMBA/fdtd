@@ -1,6 +1,7 @@
 module circuit_mod
 
     use ngspice_interface_mod
+    use mtln_types_mod, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     implicit none
 
     type string_t
@@ -11,7 +12,8 @@ module circuit_mod
     type source_t
         logical :: has_source = .false.
         real, dimension(:), allocatable :: time
-        real, dimension(:), allocatable :: voltage
+        real, dimension(:), allocatable :: value
+        integer :: source_type
     contains 
         procedure :: interpolate
     end type
@@ -43,13 +45,13 @@ module circuit_mod
         procedure, private :: loadNetlist
         procedure :: readInput
         procedure :: setStopTimes
+        procedure :: setModStopTimes
         procedure :: getNodeVoltage
         procedure :: getNodeCurrent
         procedure :: updateNodes
         procedure :: getTime
         procedure :: updateNodeCurrent
-        procedure :: updateNodeVoltage
-        procedure :: updateVoltageSources
+        procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
     end type circuit_t
@@ -61,16 +63,17 @@ contains
         real :: time, dt, x1,x2, y1, y2
         integer :: index
         real, dimension(:), allocatable :: timediff
-        timediff = this%time - time
+        timediff = this%time - time + dt
         index = maxloc(timediff, 1, (timediff) <= 0)
+        if (index == 0) index = 1
         x1 = this%time(index)
-        y1 = this%voltage(index)
+        y1 = this%value(index)
         if (index+1 > size(this%time)) then
             x2 = x1
             y2 = y1
         else 
             x2 = this%time(index+1)
-            y2 = this%voltage(index+1)
+            y2 = this%value(index+1)
         end if
                 
         res = (time*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
@@ -79,7 +82,7 @@ contains
     subroutine init(this, names, sources, netlist)
         class(circuit_t) :: this
         type(string_t), intent(in), dimension(:), optional :: names
-        type(string_t), intent(in), dimension(:), optional :: sources
+        type(node_source_t), intent(in), dimension(:), optional :: sources
         character(len=*), intent(in), optional :: netlist
         integer :: i
 
@@ -101,25 +104,26 @@ contains
         end do
         if (present(sources)) then 
             do i = 1, size(sources)
-                this%nodes%sources(i) = setSource(sources(i))
+                this%nodes%sources(i) = setSource(sources(i)%path_to_excitation)
+                this%nodes%sources(i)%source_type = sources(i)%source_type
             end do
         end if
 
     end subroutine
 
     type(source_t) function setSource(source_path) result(res)
-        type(string_t), intent(in) :: source_path
-        real :: time, v
+        character(*), intent(in) :: source_path
+        real :: time, value
         integer :: io
-        allocate(res%time(0), res%voltage(0))
-        if (source_path%length /= 0 ) then 
+        allocate(res%time(0), res%value(0))
+        if (source_path /= "" ) then 
             res%has_source = .true.
-            open(unit = 1, file = source_path%name)
+            open(unit = 1, file = source_path)
             do
-                read(1, *, iostat = io) time, v
+                read(1, *, iostat = io) time, value
                 if (io /= 0) exit
                 res%time = [res%time, time]
-                res%voltage = [res%voltage, v]
+                res%value = [res%value, value]
             end do
         end if
     end function    
@@ -132,7 +136,7 @@ contains
 
     subroutine step(this)
         class(circuit_t) :: this
-        call this%updateVoltageSources(this%time)
+        call this%updateCircuitSources(this%time)
         if (this%time == 0) then
             call this%run()
         else
@@ -146,6 +150,7 @@ contains
         class(circuit_t) :: this
         call command('run ' // c_null_char)
     end subroutine
+
 
 
     subroutine setStopTimes(this, finalTime, dt)
@@ -162,6 +167,15 @@ contains
         end do
     end subroutine
 
+    subroutine setModStopTimes(this, dt)
+        class(circuit_t) :: this
+        real, intent(in) :: dt
+        character(20) :: charTime
+        real :: time
+        write(charTime, *) dt
+        call command('stop when time mod '//charTime // c_null_char)
+    end subroutine
+
     subroutine resume(this)
         class(circuit_t) :: this
         call command('resume ' // c_null_char)
@@ -172,9 +186,10 @@ contains
         call command('quit 0' // c_null_char)
     end subroutine
 
-    subroutine readInput(this, input) 
+    subroutine readInput(this, input, printInput) 
         class(circuit_t) :: this
         character(*), intent(in) :: input(:)
+        logical, optional :: printInput
         type(c_ptr) :: argv_c(size(input))
         integer :: i   
 
@@ -182,6 +197,14 @@ contains
             character(len=:,kind=c_char), allocatable :: item
         end type string
         type(string), target :: tmp(size(input))
+
+        if (present(printInput)) then
+            if (printInput .eqv. .true.) then 
+                do i = 1 , size(input)
+                    write(*,*) input(i)
+                end do
+            end if
+        end if
 
         do i = 1, size(input)
             tmp(i)%item = trim(input(i)) // c_null_char
@@ -206,17 +229,23 @@ contains
 
     end function
 
-    subroutine updateVoltageSources(this, time)
+    subroutine updateCircuitSources(this, time)
         class(circuit_t) :: this
         real, intent(in) :: time
         real :: interp
-        character(20) :: sVoltage
+        character(20) :: source_value
         integer :: i, index
         do i = 1, size(this%nodes%sources)
             if (this%nodes%sources(i)%has_source) then
-                interp = this%nodes%sources(i)%interpolate(time, this%dt) 
-                write(sVoltage, *) interp
-                call command("alter @V"//trim(this%nodes%names(i)%name)//"[dc] = "//trim(sVoltage) // c_null_char)
+                if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    write(source_value, *) interp
+                    call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
+                else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    write(source_value, *) interp
+                    call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
+                end if
             end if
         end do
     end subroutine
@@ -243,20 +272,6 @@ contains
             write(sCurrent, *) -current
         end if
         call command("alter @I"//trim(node_name)//"[dc] = "//trim(sCurrent) // c_null_char)
-    end subroutine
-
-    subroutine updateNodeVoltage(this, node_name, voltage)
-        class(circuit_t) :: this
-        real, intent(in) :: voltage
-        character(20) :: sVoltage
-        character(*) :: node_name
-        if (index(node_name, "initial") /= 0) then
-            write(sVoltage, *) voltage
-            call command("alter @V1"//trim(node_name)//"[dc] = "//trim(sVoltage) // c_null_char)
-        else
-            write(sVoltage, *) voltage
-            call command("alter @V1"//trim(node_name)//"[dc] = "//trim(sVoltage) // c_null_char)
-        end if
     end subroutine
 
     subroutine updateNodes(this) 

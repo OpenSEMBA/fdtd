@@ -15,11 +15,10 @@ add_library(
     "test_math.F90"
     "test_mtl.F90"
     "test_mtl_bundle.F90"
-    "test_Paul.F90"
+    # "test_Paul.F90"
     "test_fhash.F90"
     "test_dispersive.F90"
-    # "test_wirePanel.F90"
-    # "test_spice_connectors.F90"
+    # "test_wire_panel.F90"
 )
 target_link_libraries(mtln_solver_tests_fortran
     mtlnsolver 

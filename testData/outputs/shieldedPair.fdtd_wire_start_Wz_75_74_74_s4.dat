@@ -1,4 +1,4 @@
-t              shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat       -E*dl Vplus Vminus Vplus-Vminus
+t              /tmp/pytest-of-agascon/pytest-326/test_shielded_pair0/shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat       -E*dl Vplus Vminus Vplus-Vminus
    0.00000000000000000E+000   0.000000000E+000  -0.000000000E+000  -0.000000000E+000  -0.000000000E+000   0.000000000E+000
    0.42999999394499611E-010   0.000000000E+000  -0.000000000E+000  -0.000000000E+000  -0.000000000E+000   0.000000000E+000
    0.85999998788999221E-010   0.000000000E+000  -0.000000000E+000  -0.000000000E+000  -0.000000000E+000   0.000000000E+000

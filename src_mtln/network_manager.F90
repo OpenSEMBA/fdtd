@@ -2,6 +2,8 @@ module network_manager_mod
 
     use network_mod
     use circuit_mod
+    use mtln_types_mod, only: node_source_t
+
     implicit none 
 
     type network_manager_t
@@ -38,16 +40,24 @@ contains
     end subroutine
 
 
-    function copy_sources_names(networks) result(res)
+    function copy_sources(networks) result(res)
         type(network_t), dimension(:), intent(in) :: networks
-        type(string_t), dimension(:), allocatable :: res
-        integer :: i,j
+        type(node_source_t), dimension(:), allocatable :: res
+        integer :: i,j,n
         type(string_t) :: temp
-        allocate(res(0))
+        n = 0
         do i = 1, size(networks)
             do j = 1, size(networks(i)%nodes)
-                temp = string_t(trim(networks(i)%nodes(j)%source), len(trim(networks(i)%nodes(j)%source)))
-                call appendToString_tArray(res, temp)
+                n = n + 1
+            end do
+        end do
+        allocate(res(n))
+        n = 1
+        do i = 1, size(networks)
+            do j = 1, size(networks(i)%nodes)
+                res(n)%path_to_excitation = trim(networks(i)%nodes(j)%source%path_to_excitation)
+                res(n)%source_type = networks(i)%nodes(j)%source%source_type
+                n = n + 1
             end do
         end do
     end function
@@ -77,10 +87,10 @@ contains
         res%dt = dt
         res%time = 0.0
         res%networks = networks
-        call res%circuit%init(copy_node_names(networks), copy_sources_names(networks))
+        call res%circuit%init(copy_node_names(networks), copy_sources(networks))
         res%circuit%dt = dt
         call res%circuit%readInput(description)
-        call res%circuit%setStopTimes(final_time, dt)
+        call res%circuit%setModStopTimes(dt)
 
     end function
 

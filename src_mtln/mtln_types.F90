@@ -8,6 +8,7 @@ module mtln_types_mod
    integer, parameter :: TERMINATION_SERIES     =  3
    integer, parameter :: TERMINATION_LCpRs      =  4
    integer, parameter :: TERMINATION_RLsCp      =  5
+   integer, parameter :: TERMINATION_CIRCUIT      =  6
 
    integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
@@ -20,6 +21,10 @@ module mtln_types_mod
    integer, parameter :: PROBE_TYPE_UNDEFINED = -1
    integer, parameter :: PROBE_TYPE_VOLTAGE   =  1
    integer, parameter :: PROBE_TYPE_CURRENT   =  2
+
+   integer, parameter :: SOURCE_TYPE_UNDEFINED = -1
+   integer, parameter :: SOURCE_TYPE_VOLTAGE   =  1
+   integer, parameter :: SOURCE_TYPE_CURRENT   =  2
 
    integer, parameter :: DIRECTION_X_POS   =  1
    integer, parameter :: DIRECTION_X_NEG   =  -1
@@ -38,17 +43,30 @@ module mtln_types_mod
       generic, public :: operator(==) => external_field_segments_eq
    end type
 
+   type node_source_t
+      character(len=256) :: path_to_excitation = ""
+      integer :: source_type = SOURCE_TYPE_UNDEFINED
+   end type
+
+   type terminal_circuit_t
+      character(len=256) :: file = ""
+      character(len=256) :: model_name = ""
+   end type
+
    type, public :: termination_t
       integer :: termination_type = TERMINATION_UNDEFINED
       real :: resistance = 0.0
       real :: inductance = 0.0
       real :: capacitance = 1e22
-      character(len=256) :: path_to_excitation = ""
+      type(node_source_t) :: source
+      type(terminal_circuit_t) :: model
+      integer :: subcircuitPort = -1
    contains
       private
       procedure :: termination_eq
       generic, public :: operator(==) => termination_eq
    end type
+
 
    type :: terminal_node_t
       type(cable_t), pointer :: belongs_to_cable => null()
@@ -61,8 +79,19 @@ module mtln_types_mod
       generic, public :: operator(==) => terminal_node_eq
    end type
 
+
+   type :: subcircuit_t
+      character(len=256) :: model_file = ""
+      character(len=256) :: model_name = ""
+      character(len=256) :: subcircuit_name = ""
+      integer :: numberOfPorts
+      integer :: nodeId
+   end type
+      
    type :: terminal_connection_t
       type(terminal_node_t), dimension(:), allocatable :: nodes
+      type(subcircuit_t) :: subcircuit
+      logical :: has_subcircuit = .false.
    contains
       private
       procedure :: terminal_connection_eq
@@ -274,7 +303,8 @@ contains
          (a%resistance == b%resistance) .and. &
          (a%inductance == b%inductance) .and. &
          (a%capacitance == b%capacitance) .and. &
-         a%path_to_excitation == b%path_to_excitation
+         a%source%path_to_excitation == b%source%path_to_excitation .and. &
+         a%source%source_type == b%source%source_type
    end function
 
    logical function probe_eq(a,b)

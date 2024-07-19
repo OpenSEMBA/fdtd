@@ -2,6 +2,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Module thin wires from Wires paper
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+#ifdef CompileWithMTLN
 
 module Wire_bundles_mtln_mod
 
@@ -227,3 +228,5 @@ contains
 
 
 end module Wire_bundles_mtln_mod
+
+#endif

@@ -15,8 +15,8 @@ add_library(
 )
 
 target_link_libraries(system_test_fortran
-    mtlnsolver
     fhash
+    mtlnsolver
     ngspice_interface
     smbjson
     ${JSONFORTRAN_LIB}
