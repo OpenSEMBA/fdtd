@@ -1,0 +1,123 @@
+* AD8029 SPICE Macro-model        
+* Description: Amplifier
+* Generic Desc: Low-Power High-Speed R/R I/O Amp
+* Developed by:
+* Revision History: 08/10/2012 - Updated to new header style
+*
+* Copyright 2012 by Analog Devices, Inc.
+*
+* Refer to http://www.analog.com/Analog_Root/static/techSupport/designTools/spiceModels/license/spice_general.html for License Statement. Use of this model 
+* indicates your acceptance of the terms and provisions in the License Statement.
+* 
+* BEGIN Notes:
+*
+* Not Modeled:
+*    
+* Parameters modeled include: 
+*
+* END Notes
+*
+* Node assignments
+.subckt AD8029S 1 2 3
+Vcc 99 0 dc 1
+Vee 100 0 dc 1
+xop-amp 1 2 3 99 100 AD8029
+.ends
+
+.SUBCKT AD8029 INV NINV OUT VCC VEE
+***************************************
+* Analog Devices AD8029
+* 2005.01.04 v1.1
+* OP AMP modeling services provided by:
+* Interface Technologies
+* www.i-t.com
+***************************************
+*  Features included in model
+* 1. Open loop gain and phase
+* 2. Output voltage and current
+* 3. Input Commom mode range
+* 4. CMRR vs. Frequency
+* 5. Input Bias current
+* 6. Input voltage and current noise
+* 7. Slew rate
+* 8. Ouput current reflected in Vs supplies
+* 9. Transient Response
+* 10. Frequency Response
+***************************************
+Q_Q1         V5 92 7 NPN 
+D_DN5         96 97 DIN 
+I_I1         4 VEE_INT DC 1e-2  
+V_VN2         37 0 2Vdc
+E_E5         VEE_INT 0 VEE 0 1
+G_G7         100 CMRRP2 CMRRP1 100 .01
+R_RP1         10 100 RCOLD 1e2
+C_CP2         100 MAINP2  2.2105e-11  
+G_G1         100 10 15 100 .1
+D_DN6         97 98 DIN 
+D_D8         VCC ISUPP1 DNOM 
+Q_Q2         V6 INV 8 NPN 
+G_GV         100 15 V6 V5 .001
+V_VP         VCC_INT VCCVPBAT .58
+R_RCM2a         CMRRP1 100 RCOLD 100
+G_G2         100 MAINP2 10 100 1e-2
+V_VN3         0 93 2
+D_D9         ISUPP2 VEE DNOM 
+C_CP1         100 10  1.8e-7  
+E_E4         VCC_INT 0 VCC 0 1
+R_RCM3         CMRRP2 100 RCOLD 100
+R_RC1         VCC_INT V5 RCOLD 105.17
+V_VN4         95 0 2
+G_GN1         0 NINV 94 0 7e-12
+V_VN         VEEVNBAT VEE_INT .58
+G_G5         100 30 VINMID 100 3.162e-7
+R_RCM         31 100 RCOLD 1E2
+V_VN5         0 96 2
+C_CCM2a         100 CMRRP1  7.9577e-11  
+R_RC2         VCC_INT V6 RCOLD 105.17
+D_DZ2         100 16 DLIM 
+R_RCM1         NINV VINMID RCOLD 1000MEG
+E_EBUF         80 100 MAINP2 100 1
+V_VN6         98 0 2
+G_G10         0 INV 97 0 7e-12
+C_CCM3         100 CMRRP2  7.9577e-11  
+L_LCM         31 30  7.958e-4  
+E_ENIN         92 9 36 0 5e-7
+R_RE1         7 4 RCOLD 100
+D_DN1         35 36 DEN 
+G_G3         ISUPP1 0 80 81 .02
+R_RCM4         CMRR_V 100 RCOLD 100
+D_DZ1         15 16 DLIM 
+D_DN2         36 37 DEN 
+D_D_VCCclamp         10 VCCVPBAT DP 
+E_EOS         NINV 9 POLY(1) CMRR_V 100 0.0 1
+R_RE2         8 4 RCOLD 100
+R_RCM2         VINMID INV RCOLD 1000MEG
+G_G4         0 ISUPP2 80 81 -.02
+L_Lout         OUT 81  80nH  
+E_E1         100 0 103 0 1
+D_D6         0 ISUPP1 DZ 
+G_G8         100 CMRR_V CMRRP2 100 .01
+D_DN3         93 94 DIN 
+E_E6         103 0 VALUE { (V(VCC_INT)-V(VEE_INT))/2 }
+G_G6         100 CMRRP1 30 100 .01
+D_D_VEEclamp         VEEVNBAT 10 DN 
+D_D7         ISUPP2 0 DZ 
+R_RP2         MAINP2 100 RCOLD 100
+R_Rout         80 81 RCOLD 50
+D_DN4         94 95 DIN 
+C_CCM4         100 CMRR_V  1.9894e-11  
+R_RV         15 100 RCOLD 5.102e5
+V_VN1         0 35 2Vdc
+.MODEL DLIM D(IS=1E-15 BV=122.1)
+.MODEL DEN  D(IS=1E-8 RS=100 KF=1E-16 AF=1)
+.MODEL DIN  D(IS=.75E-12 RS=10 KF=0.56e-11 AF=.9)
+.MODEL	DNOM	D(IS=1E-15 T_ABS=-100)
+.MODEL	DZ	D(IS=1E-15 BV=50 T_ABS=-100)
+.MODEL  RCOLD	RES T_ABS=-273
+.MODEL 	DILIM	D(IS=1E-15)
+.MODEL NPN  NPN(BF=7.14e3)
+.MODEL	DP	D(IS=5E-10 BV=700 )
+.MODEL	DN	D(IS=5E-10 BV=700 )
+.ENDS
+
+

@@ -277,7 +277,8 @@ contains
       expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 50.0
-      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%path_to_excitation = "towelHanger.exc"
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%source%path_to_excitation = "towelHanger.exc"
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%source%source_type = SOURCE_TYPE_VOLTAGE
 
       allocate(expected%mtln%networks(2)%connections(1))
       allocate(expected%mtln%networks(2)%connections(1)%nodes(1))

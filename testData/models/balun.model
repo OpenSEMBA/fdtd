@@ -1,0 +1,14 @@
+.subckt balun p n d c
+*.iopin p
+*.iopin n
+*.iopin d
+*.iopin c
+E1 net1 c d 0 0.5
+V1 p net1 0
+F1 d 0 V1 -0.5
+R1 d 0 1T m=1
+E2 net2 n d 0 0.5
+V2 c net3 0
+F2 d 0 V2 -0.5
+R2 net3 net2 1u m=1
+.ends
