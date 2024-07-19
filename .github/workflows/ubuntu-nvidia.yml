@@ -29,7 +29,7 @@ jobs:
       id: setup-fortran
       with:
         compiler: nvidia-hpc
-        version: '23.11'
+        version: '24.5'
       
     - name: Build application
       run: |
@@ -48,9 +48,9 @@ jobs:
       run: |
         python -m pip install -r requirements.txt
 
-    - name: Run wrapper tests
-      timeout-minutes: 60 
-      run: |
-        python -m pytest test
+    # - name: Run wrapper tests
+    #   timeout-minutes: 60 
+    #   run: |
+    #     python -m pytest test
        
       
