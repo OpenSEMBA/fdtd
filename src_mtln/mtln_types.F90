@@ -36,7 +36,7 @@ module mtln_types_mod
    type :: external_field_segment_t
       integer, dimension(3) ::position
       integer :: direction
-      real :: relativePermittivity = 1.0
+      real :: effectiveRelativePermittivity = 1.0
       real (kind=rkind) , pointer  ::  field => null()
    contains
       private
@@ -137,6 +137,7 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: capacitance_per_meter
       real, allocatable, dimension(:,:) :: inductance_per_meter
       real, allocatable, dimension(:,:) :: conductance_per_meter
+      ! real, allocatable, dimension(:,:) :: effective_relative_permittivity
       real, allocatable, dimension(:) :: step_size
       type(transfer_impedance_per_meter_t) :: transfer_impedance
       type(cable_t), pointer :: parent_cable => null()

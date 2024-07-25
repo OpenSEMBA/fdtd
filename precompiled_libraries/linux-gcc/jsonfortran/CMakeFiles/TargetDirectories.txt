@@ -1,0 +1,9 @@
+/mnt/c/users/alberto/Work/ugr-fdtd/fdtd/precompiled_libraries/linux-gcc-rls/jsonfortran/CMakeFiles/jsonfortran.dir
+/mnt/c/users/alberto/Work/ugr-fdtd/fdtd/precompiled_libraries/linux-gcc-rls/jsonfortran/CMakeFiles/jsonfortran-static.dir
+/mnt/c/users/alberto/Work/ugr-fdtd/fdtd/precompiled_libraries/linux-gcc-rls/jsonfortran/CMakeFiles/uninstall.dir
+/mnt/c/users/alberto/Work/ugr-fdtd/fdtd/precompiled_libraries/linux-gcc-rls/jsonfortran/CMakeFiles/edit_cache.dir
+/mnt/c/users/alberto/Work/ugr-fdtd/fdtd/precompiled_libraries/linux-gcc-rls/jsonfortran/CMakeFiles/rebuild_cache.dir
+/mnt/c/users/alberto/Work/ugr-fdtd/fdtd/precompiled_libraries/linux-gcc-rls/jsonfortran/CMakeFiles/list_install_components.dir
+/mnt/c/users/alberto/Work/ugr-fdtd/fdtd/precompiled_libraries/linux-gcc-rls/jsonfortran/CMakeFiles/install.dir
+/mnt/c/users/alberto/Work/ugr-fdtd/fdtd/precompiled_libraries/linux-gcc-rls/jsonfortran/CMakeFiles/install/local.dir
+/mnt/c/users/alberto/Work/ugr-fdtd/fdtd/precompiled_libraries/linux-gcc-rls/jsonfortran/CMakeFiles/install/strip.dir

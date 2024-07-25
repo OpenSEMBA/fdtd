@@ -2302,12 +2302,12 @@ contains
 
       end function
 
-      subroutine assignRelativePermittivity(res, relativePermittivity)
+      subroutine assignRelativePermittivity(res, effectiveRelativePermittivity)
          type(cable_t), intent(inout) :: res
-         real, intent(in) :: relativePermittivity
+         real, intent(in) :: effectiveRelativePermittivity
          integer :: i
          do i = 1, size(res%external_field_segments(:))
-            res%external_field_segments(i)%relativePermittivity = relativePermittivity
+            res%external_field_segments(i)%effectiveRelativePermittivity = effectiveRelativePermittivity
          end do
       end subroutine
 

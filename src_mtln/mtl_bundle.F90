@@ -295,24 +295,24 @@ contains
         class(mtl_bundle_t) ::this
         integer :: i
         real :: eps_r
-        eps_r = this%external_field_segments(1)%relativePermittivity
-        if (eps_r == 1.0) then 
-            do i = 2, this%number_of_divisions
-                this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
-                            matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
-            end do
+        eps_r = this%external_field_segments(1)%effectiveRelativePermittivity
+        ! if (eps_r == 1.0) then 
+        do i = 2, this%number_of_divisions
+            this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
+                           matmul(this%i_diff(i,:,:)/eps_r, this%i(:,i) - this%i(:,i-1)  )
+        end do
 
-        else 
-            ! do i = 2, this%number_of_divisions
+        ! else 
+        !     do i = 2, this%number_of_divisions
 
-            !     this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
-            !                    matmul(this%i_diff(i,:,:)*0.05, this%i(:,i) - this%i(:,i-1)  )
+        !         this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
+        !                        matmul(this%i_diff(i,:,:)*0.11, this%i(:,i) - this%i(:,i-1)  )
 
 
-            !     this%v_eps(:, i) = matmul(this%v_term(i,:,:), this%v_eps(:,i)) - &
-            !                        matmul(this%i_diff(i,:,:)*(0.95/eps_r), this%i(:,i) - this%i(:,i-1)  )
-            ! end do
-        end if
+        !         this%v_eps(:, i) = matmul(this%v_term(i,:,:), this%v_eps(:,i)) - &
+        !                            matmul(this%i_diff(i,:,:)*(0.89/eps_r), this%i(:,i) - this%i(:,i-1)  )
+        !     end do
+        ! end if
 
     end subroutine
 
