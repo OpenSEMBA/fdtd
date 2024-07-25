@@ -36,8 +36,10 @@ module Observa
 #ifdef CompileWithWires
    use wiresHolland_constants
    use HollandWires
+#ifdef CompileWithMTLN   
    use Wire_bundles_mtln_mod
    use mtln_solver_mod , mtln_solver_t => mtln_t 
+#endif
 #endif
 #ifdef CompileWithBerengerWires
    use WiresBerenger
@@ -130,7 +132,9 @@ module Observa
    public InitObservation,FlushObservationFiles,UpdateObservation,DestroyObservation,CloseObservationFiles,unpacksinglefiles, &
    GetOutput
    public output_t,item_t,Serialized_t,dtft
+#ifdef CompileWithMTLN
    public FlushMTLNObservationFiles
+#endif 
 contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -4126,6 +4130,7 @@ contains
       return
    end subroutine FlushObservationFiles
 
+#ifdef CompileWithMTLN
    subroutine FlushMTLNObservationFiles(nEntradaRoot)
       character (len=*), intent(in)  ::  nEntradaRoot
       type(mtln_solver_t), pointer :: mtln_solver
@@ -4165,7 +4170,7 @@ contains
       end do
       
    end subroutine
-
+#endif
 
 
 

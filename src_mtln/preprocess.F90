@@ -265,39 +265,51 @@ contains
         res%levels(1) = level
 
         do while (findNextLevel(level, cables) /= 0)
-            res%levels = [res%levels, level]
+            call appendLevel(res%levels, level)
         end do
 
-        contains
-            integer function findNextLevel(curr_level, c)
-                type(cable_array_t), intent(inout) :: curr_level
-                type(cable_t), dimension(:), intent(in), target :: c
-                type(cable_t), target :: tgt
-                type(cable_array_t) :: next_level
-                integer :: i,j, next_level_size
-                integer :: n
-                next_level_size = 0
-                do i = 1, size(curr_level%cables) 
-                    do j = 1, size(c)
-                        if (associated(c(j)%parent_cable, curr_level%cables(i)%p)) then 
-                            next_level_size = next_level_size + 1
-                        end if
-                    end do
+    contains
+        subroutine appendLevel(levels, newLevel)
+            type(cable_array_t), dimension(:), allocatable, intent(inout) :: levels
+            type(cable_array_t), intent(in) :: newLevel
+            
+            type(cable_array_t), dimension(:), allocatable :: oldLevels
+            
+            call move_alloc(levels, oldLevels)
+            allocate( levels(size(oldLevels) + 1)) 
+            levels(1:size(oldLevels)) = oldLevels(:)
+            levels(size(oldLevels) + 1) = newLevel            
+        end subroutine
+        
+        integer function findNextLevel(curr_level, c)
+            type(cable_array_t), intent(inout) :: curr_level
+            type(cable_t), dimension(:), intent(in), target :: c
+            type(cable_t), target :: tgt
+            type(cable_array_t) :: next_level
+            integer :: i,j, next_level_size
+            integer :: n
+            next_level_size = 0
+            do i = 1, size(curr_level%cables) 
+                do j = 1, size(c)
+                    if (associated(c(j)%parent_cable, curr_level%cables(i)%p)) then 
+                        next_level_size = next_level_size + 1
+                    end if
                 end do
+            end do
                 
-                allocate(next_level%cables(next_level_size))
-                n = 0
-                do i = 1, size(curr_level%cables) 
-                    do j = 1, size(c)
-                        if (associated(c(j)%parent_cable, curr_level%cables(i)%p)) then 
-                            n = n + 1
-                            next_level%cables(n)%p => c(j)
-                        end if
-                    end do
+            allocate(next_level%cables(next_level_size))
+            n = 0
+            do i = 1, size(curr_level%cables) 
+                do j = 1, size(c)
+                    if (associated(c(j)%parent_cable, curr_level%cables(i)%p)) then 
+                        n = n + 1
+                        next_level%cables(n)%p => c(j)
+                    end if
                 end do
-                curr_level = next_level
-                findNextLevel = size(curr_level%cables)
-            end function
+            end do
+            curr_level = next_level
+            findNextLevel = size(curr_level%cables)
+        end function
 
     end function
 
@@ -655,8 +667,9 @@ contains
             res = writeOpenNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_CIRCUIT) then 
             res = writeModelNode(node, termination , end_node)
-        else if (termination%termination_type == TERMINATION_UNDEFINED) then 
-            error stop 'writeNodeDescription: undefined termination at '// node%name
+        else if (termination%termination_type == TERMINATION_UNDEFINED) then            
+            error stop 'writeNodeDescription: undefined termination at '!// node%name 
+            ! node%name has been commented out for compatibility with NVHPC
         end if
 
     end function    

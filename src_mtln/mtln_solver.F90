@@ -251,10 +251,6 @@ contains
             call this%advanceTime()
             call this%updateProbes()
 
-            if (mod(i, 1000) == 0) then 
-                write(*,*) 'step ', i
-            end if
-
         end do
 
     end subroutine

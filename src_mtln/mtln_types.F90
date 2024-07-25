@@ -87,17 +87,8 @@ module mtln_types_mod
       character(len=256) :: subcircuit_name = ""
       integer :: numberOfPorts
       integer :: nodeId
-      end type
-      
-      type :: terminal_network_t
-      type(terminal_connection_t), dimension(:), allocatable :: connections
-   contains
-      private
-      procedure :: terminal_network_eq
-      generic, public :: operator(==) => terminal_network_eq
-      procedure, public :: add_connection => terminal_network_add_connection
    end type
-
+      
    type :: terminal_connection_t
       type(terminal_node_t), dimension(:), allocatable :: nodes
       type(subcircuit_t) :: subcircuit
@@ -107,6 +98,15 @@ module mtln_types_mod
       procedure :: terminal_connection_eq
       generic, public :: operator(==) => terminal_connection_eq
       procedure, public :: add_node => terminal_connection_add_node
+   end type
+
+   type :: terminal_network_t
+      type(terminal_connection_t), dimension(:), allocatable :: connections
+   contains
+      private
+      procedure :: terminal_network_eq
+      generic, public :: operator(==) => terminal_network_eq
+      procedure, public :: add_connection => terminal_network_add_connection
    end type
 
    type, public :: transfer_impedance_per_meter_t

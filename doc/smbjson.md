@@ -398,7 +398,7 @@ Each entry in `terminations` is specified by a `type`
   + `[resistance]` which defaults to `0.0`,
   + `[inductance]` which defaults to `0.0`,
   + `[capacitance]` which defaults to `1e22`.
-+ SPICE models can used in a termination. In this case the `type` is `circuit`, and is defined with:
++ 2-port SPICE models can used in a termination. In this case the `type` is `circuit`, and is defined with:
   + `[file]` which is the name of the file where the SPICE model is defined 
   + `[name]` which is the name of the subcircuit as defined inside `file`
 
