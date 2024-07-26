@@ -732,3 +732,20 @@ A `generator` source must be located on a single `node` whose `coordinateId` is 
     "elementIds": [1]
 }
 ```
+
+### `junctionGenerator`
+
+A `junctionGenerator` source must be located on a single `node` whose `coordinateId` is used by more than one `polyline`, i.e. This generator is located at the junction (connection point) of two of more lines. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elemId` of the `polyline` the source is connected to. 
+
+**Example:**
+
+```json
+{
+    "name": "voltage_source",
+    "type": "junctionGenerator",
+    "field": "current",
+    "magnitudeFile": "gauss.exc", 
+    "elementIds": [1], 
+    "attachedToLineId" : 2
+}
+```

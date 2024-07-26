@@ -88,8 +88,7 @@
 			"type": "generator",
 			"field": "voltage",
 			"magnitudeFile": "spice_sine_250k_2.exc",
-			"elementIds": [3],
-            "attachedToLineId": 1
+			"elementIds": [3]
 		}
 	],
 

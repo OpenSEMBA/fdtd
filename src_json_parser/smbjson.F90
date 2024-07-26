@@ -1893,7 +1893,7 @@ contains
             return
          end if
          
-         genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, [J_SRC_TYPE_GEN])
+         genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, [J_SRC_TYPE_GEN, J_SRC_TYPE_JGEN])
          if (size(genSrcs) == 0) then
             res%path_to_excitation = trim("")
             res%source_type = SOURCE_TYPE_UNDEFINED
