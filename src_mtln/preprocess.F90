@@ -1006,9 +1006,10 @@ contains
         write(sDelta, '(E10.2)') dt/200
         write(sPrint, '(E10.2)') final_time/print_step
 
+        buff = trim(".option reltol = 0.005")
+        call appendToStringArray(description, buff)       
         buff = trim(".tran "//sdt//" "//sTime//" 0 "//sDelta)
         call appendToStringArray(description, buff)       
-
     end subroutine
 
     subroutine addSavedNodes(description, networks)

@@ -83,7 +83,7 @@ def test_spice_multilines_opamp(tmp_path):
 
 def test_spice_connector_diode(tmp_path):
     case = 'spice_connectors'
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'spice_sine_500k.exc')
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'spice_sine_500k_3.exc')
     makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
     makeCopy(tmp_path, MODELS_FOLDER + 'BZX85C3V9.model')
     fn = tmp_path._str + '/' + case + '.fdtd.json'
@@ -126,4 +126,20 @@ def test_line_multiline_junction(tmp_path):
     
     for i in range(3):
         assert np.allclose(p_expected[i].df.to_numpy()[:-20,:], Probe(probe_files[i]).df.to_numpy()[:-20,:], rtol = 0.01, atol=5e-3)
+
+def test_spice_opamp_saturation(tmp_path):
+    case = 'opamp_saturation'
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'spice_sine_250k_2.exc')
+    makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
+    makeCopy(tmp_path, MODELS_FOLDER + 'TL071.301')
+    fn = tmp_path._str + '/' + case + '.fdtd.json'
+
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+    solver.run()
+    assert solver.hasFinishedSuccessfully() == True
+            
+    p_expected = Probe(OUTPUT_FOLDER+'opamp_saturation.fdtd_opamp_voltage_bundle_wire1_V_10_10_7.dat')
+    p_solved = Probe(solver.getSolvedProbeFilenames("opamp_voltage_bundle_wire1")[0])
+
+    assert np.allclose(p_expected.df.to_numpy()[:-5,:], p_solved.df.to_numpy()[:-5,:], rtol = 0.01, atol=0.05e-3)
 

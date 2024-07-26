@@ -1929,35 +1929,49 @@ contains
                   return
                end if
 
-               polylineId = this%getIntAt(genSrcs(i)%p, "polylineId")
-
-               call this%core%get(genSrcs(i)%p, J_ELEMENTIDS, sourceElemIds)
-               srcCoord = this%mesh%getNode(sourceElemIds(1))
-               if (label == TERMINAL_NODE_SIDE_INI) then
-                  if ((srcCoord%coordIds(1) == poly%coordIds(1)) .and. polylineId == id) then 
-                     if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
-                        res%source_type = SOURCE_TYPE_VOLTAGE 
-                     else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
-                        res%source_type = SOURCE_TYPE_CURRENT
-                     end if
-                     res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
-                     return
+               if (isSourceAttachedToLine(genSrcs(i)%p, poly, id, label)) then 
+                  if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
+                     res%source_type = SOURCE_TYPE_VOLTAGE 
+                  else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
+                     res%source_type = SOURCE_TYPE_CURRENT
                   end if
-               else if (label == TERMINAL_NODE_SIDE_END) then
-                  if ((srcCoord%coordIds(1) == poly%coordIds(ubound(poly%coordIds,1))) .and. polylineId == id) then 
-                     if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
-                        res%source_type = SOURCE_TYPE_VOLTAGE 
-                     else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
-                        res%source_type = SOURCE_TYPE_CURRENT
-                     end if
-                     res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
-                     return
-                  end if
+                  res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
+                  return
                end if
+
             end do
             res%path_to_excitation = trim("")
             res%source_type = SOURCE_TYPE_UNDEFINED
          end block 
+      end function
+
+      function isSourceAttachedToLine(src, polyline, id, label) result(res)
+         logical :: hasAttachedInfo
+         type(json_value), pointer, intent(in)  :: src
+         type(polyline_t), intent(in) :: polyline
+         integer, intent(in) :: id, label
+         integer :: polylineId, index
+         integer, dimension(:), allocatable :: sourceElemIds
+         type(node_t) :: srcCoord
+         logical :: res
+
+         call this%core%get(src, J_ELEMENTIDS, sourceElemIds)
+         srcCoord = this%mesh%getNode(sourceElemIds(1))
+
+         hasAttachedInfo = this%existsAt(src, J_SRC_ATTACHED_ID)
+         if (label == TERMINAL_NODE_SIDE_INI) then
+            index = 1
+         else if (label == TERMINAL_NODE_SIDE_END) then 
+            index = ubound(polyline%coordIds,1)
+         end if
+
+         if (hasAttachedInfo) then 
+            polylineId = this%getIntAt(src, J_SRC_ATTACHED_ID)
+            res = (srcCoord%coordIds(1) == polyline%coordIds(index)) .and. (polylineId == id)
+         else
+            res = (srcCoord%coordIds(1) == polyline%coordIds(index))
+         end if
+      
       end function
 
       function readTerminationType(termination) result(res)
