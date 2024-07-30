@@ -165,8 +165,6 @@ contains
 
       ! Thin elements
       res%tWires = this%readThinWires()
-
-      ! mtln
       res%mtln = this%readMTLN(res%despl)
 
       ! Cleanup
@@ -1519,10 +1517,12 @@ contains
          end if
       end block
 
+
       mtln_res%probes = readWireProbes()
       mtln_res%networks = buildNetworks()
 
    contains
+
 
       function readConnectors() result(res)
          type(connector_t), dimension(:), pointer :: res
@@ -1625,7 +1625,10 @@ contains
          integer, dimension(:), allocatable :: elemIds
          type(json_value), pointer :: terminations_ini, terminations_end
          type(coordinate_t), dimension(:), allocatable :: networks_coordinates
+         type(subcircuit_t), dimension(:), allocatable :: subcircuits
 
+         subcircuits = readSubcircuits()
+         
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
          cables = readCables()
@@ -1644,8 +1647,45 @@ contains
 
 
          do i = 1, size(networks_coordinates)
-            res(i) = buildNetwork(networks_coordinates(i), aux_nodes)
+            res(i) = buildNetwork(networks_coordinates(i), aux_nodes, subcircuits)
          end do
+
+      end function
+
+      function readSubcircuits() result(res_ckt)
+         type(subcircuit_t), dimension(:), allocatable :: res_ckt
+         type(json_value), pointer :: subCkt, ckt
+         type(json_value_ptr) :: m
+         integer :: i, j, id
+         logical :: found
+         type(coordinate_t) :: ports_coordinate
+         type(node_t) :: node
+         integer, dimension(:), allocatable :: elemIds
+
+         if (this%existsAt(this%root,  J_SUBCIRCUITS)) then
+            call this%core%get(this%root, J_SUBCIRCUITS, subCkt)
+            allocate(res_ckt(this%core%count(subCkt)))
+            do i = 1, this%core%count(subCkt)
+               call this%core%get_child(subCkt, i, ckt)
+               res_ckt(i)%subcircuit_name = trim(adjustl(this%getStrAt(ckt,J_SUBCKT_NAME)))
+               
+               elemIds = this%getIntsAt(ckt, J_ELEMENTIDS)
+               node = this%mesh%getNode(elemIds(1))
+               res_ckt(i)%nodeId = node%coordIds(1)
+
+               id = this%getIntAt(ckt,J_MATERIAL_ID)
+               m = this%matTable%getId(this%getIntAt(ckt, J_MATERIAL_ID, found))
+               if (.not. found) &
+                  write(error_unit, *) "Error reading material region: materialId label not found."
+               res_ckt(i)%model_file = this%getStrAt(m%p, J_SUBCKT_FILE)
+               res_ckt(i)%model_name = this%getStrAt(m%p, J_SUBCKT_NAME)
+               res_ckt(i)%numberOfPorts = this%getIntAt(m%p, J_SUBCKT_PORTS)
+            end do
+            
+         else
+            allocate(res_ckt(0))
+         end if
+
 
       end function
 
@@ -1659,19 +1699,34 @@ contains
          end do
       end function
 
-      function buildNetwork(network_coordinate, aux_nodes) result(res)
+      function countSubcircuitsInNetwork(network_coordinate,subcircuits) result (res)
+         type(coordinate_t) :: network_coordinate
+         type(subcircuit_t), dimension(:), intent(in) :: subcircuits
+         integer :: i, res
+         res = 0
+         do i = 1, size(subcircuits)
+            if (network_coordinate == this%mesh%getCoordinate(subcircuits(i)%nodeId)) then 
+               res = res + 1
+            end if
+         end do
+      end function
+
+      function buildNetwork(network_coordinate, aux_nodes, subcircuits) result(res)
          type(coordinate_t) :: network_coordinate
          type(aux_node_t), dimension(:), intent(in) :: aux_nodes
+         type(subcircuit_t), dimension(:), intent(in) :: subcircuits
+
          type(aux_node_t), dimension(:), allocatable :: network_nodes
          integer, dimension(:), allocatable :: node_ids
-         integer :: i
+         integer :: i, j
          type(terminal_network_t) :: res
-
+         type(node_t) :: node
+         
          network_nodes = filterNetworkNodes(network_coordinate, aux_nodes)
          node_ids = buildListOfNodeIds(network_nodes)
 
          do i = 1, size(node_ids)
-            call res%add_connection(buildConnection(node_ids(i), network_nodes))
+            call res%add_connection(buildConnection(node_ids(i), network_nodes, subcircuits))
          end do
 
 
@@ -1700,9 +1755,10 @@ contains
          end do
       end function
 
-      function buildConnection(node_id, network_nodes) result (res)
+      function buildConnection(node_id, network_nodes, subcircuits) result (res)
          integer, intent(in) :: node_id
          type(aux_node_t), dimension(:), intent(in) :: network_nodes
+         type(subcircuit_t), dimension(:), intent(in) :: subcircuits
          type(terminal_connection_t) :: res
          integer :: i
          do i = 1, size(network_nodes)
@@ -1710,6 +1766,14 @@ contains
                call res%add_node(network_nodes(i)%node)
             end if
          end do
+         do i = 1, size(subcircuits)
+            if (subcircuits(i)%nodeId == node_id) then
+               res%subcircuit = subcircuits(i)
+               res%has_subcircuit = .true.
+            end if
+         end do
+
+
       end function
 
       subroutine updateListOfConnectionIds(ids, id)
@@ -1788,14 +1852,16 @@ contains
          type(aux_node_t) :: res
          integer :: cable_index
          call this%core%get_child(termination_list, index, termination)
-         res%node%side = label
          
          res%node%termination%termination_type = readTerminationType(termination)
          res%node%termination%capacitance = readTerminationRLC(termination,J_MAT_TERM_CAPACITANCE, default = 1e22)
          res%node%termination%resistance = readTerminationRLC(termination, J_MAT_TERM_RESISTANCE, default = 0.0)
          res%node%termination%inductance = readTerminationRLC(termination, J_MAT_TERM_INDUCTANCE, default=0.0)
-         res%node%termination%path_to_excitation = readGeneratorOnTermination(id,label, default = "")
-        
+         res%node%termination%source = readGeneratorOnTermination(id,label)
+         res%node%termination%model = readTerminationModel(termination)
+         res%node%termination%subcircuitPort = readTerminationSubcircuitPort(termination, default = -1)
+         
+         res%node%side = label
          res%node%conductor_in_cable = index
 
          call elemIdToCable%get(key(id), value=cable_index)
@@ -1812,23 +1878,24 @@ contains
          end if
       end function
 
-      function readGeneratorOnTermination(id, label, default) result(res)
+      function readGeneratorOnTermination(id, label) result(res)
          integer, intent(in) :: id, label
          type(json_value), pointer :: sources
          type(json_value_ptr), dimension(:), allocatable :: genSrcs
          logical :: found
-         character(len=*), intent(in) :: default
-         character(len=256) :: res
+         type(node_source_t) :: res
          
          call this%core%get(this%root, J_SOURCES, sources, found)
          if (.not. found) then
-            res = trim(default)
+            res%path_to_excitation = trim("")
+            res%source_type = SOURCE_TYPE_UNDEFINED
             return
          end if
          
          genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, [J_SRC_TYPE_GEN])
          if (size(genSrcs) == 0) then
-            res = trim(default)
+            res%path_to_excitation = trim("")
+            res%source_type = SOURCE_TYPE_UNDEFINED
             return
          end if
 
@@ -1843,35 +1910,51 @@ contains
             do i = 1, size(genSrcs)
                if (.not. this%existsAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)) then
                   write(error_unit, *) 'magnitudeFile of source missing'
-                  res = trim(default)
+                  res%path_to_excitation = trim("")
+                  res%source_type = SOURCE_TYPE_UNDEFINED
                   return
                end if
                if (.not. this%existsAt(genSrcs(i)%p, J_FIELD)) then
                   write(error_unit, *) 'Type of generator is ambigous'
-                  res = trim(default)
+                  res%path_to_excitation = trim("")
+                  res%source_type = SOURCE_TYPE_UNDEFINED
                   return
                end if
-               if (this%getStrAt(genSrcs(i)%p, J_FIELD) /= "voltage") then 
-                  write(error_unit, *) 'Only voltage generators are supported'
-                  res = trim(default)
+               if (this%getStrAt(genSrcs(i)%p, J_FIELD) /= J_FIELD_VOLTAGE .and. &
+                   this%getStrAt(genSrcs(i)%p, J_FIELD) /= J_FIELD_CURRENT) then 
+                  write(error_unit, *) 'Only voltage and current generators are supported'
+                  res%path_to_excitation = trim("")
+                  res%source_type = SOURCE_TYPE_UNDEFINED
                   return
                end if
+
 
                call this%core%get(genSrcs(i)%p, J_ELEMENTIDS, sourceElemIds)
                srcCoord = this%mesh%getNode(sourceElemIds(1))
                if (label == TERMINAL_NODE_SIDE_INI) then
                   if ((srcCoord%coordIds(1) == poly%coordIds(1))) then 
-                     res = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
+                     if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
+                        res%source_type = SOURCE_TYPE_VOLTAGE 
+                     else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
+                        res%source_type = SOURCE_TYPE_CURRENT
+                     end if
+                     res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
                      return
                   end if
                else if (label == TERMINAL_NODE_SIDE_END) then
                   if ((srcCoord%coordIds(1) == poly%coordIds(ubound(poly%coordIds,1)))) then 
-                     res = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
+                     if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
+                        res%source_type = SOURCE_TYPE_VOLTAGE 
+                     else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
+                        res%source_type = SOURCE_TYPE_CURRENT
+                     end if
+                     res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
                      return
                   end if
                end if
             end do
-            res = trim(default)
+            res%path_to_excitation = trim("")
+            res%source_type = SOURCE_TYPE_UNDEFINED
          end block 
       end function
 
@@ -1890,9 +1973,40 @@ contains
             res = TERMINATION_LCpRs
          else if (type == J_MAT_TERM_TYPE_RLsCp) then
             res = TERMINATION_RLsCp
+         else if (type == J_MAT_TERM_TYPE_CIRCUIT) then 
+            res = TERMINATION_CIRCUIT
          else
             res = TERMINATION_UNDEFINED
          end if
+      end function
+
+      function readTerminationModel(termination) result(res)
+         type(json_value), pointer :: termination
+         type(terminal_circuit_t) :: res
+         if (this%existsAt(termination, J_MAT_TERM_MODEL_FILE)) then
+            res%file = this%getStrAt(termination, J_MAT_TERM_MODEL_FILE)
+         else
+            res%file = ""
+         end if
+
+         if (this%existsAt(termination, J_MAT_TERM_MODEL_NAME)) then
+            res%model_name = this%getStrAt(termination, J_MAT_TERM_MODEL_NAME)
+         else
+            res%model_name = ""
+         end if
+
+      end function
+
+      function readTerminationSubcircuitPort(termination, default) result(res)
+         type(json_value), pointer :: termination
+         integer, intent(in) :: default
+         integer :: res
+         if (this%existsAt(termination, J_MAT_TERM_MODEL_PORT)) then
+            res = this%getIntAt(termination, J_MAT_TERM_MODEL_PORT)
+         else
+            res = default
+         end if
+
       end function
 
       function readTerminationRLC(termination, label, default) result(res)
