@@ -179,7 +179,7 @@ contains
       opcionestotales,sgbcFreq,sgbcresol,sgbccrank,sgbcDepth,fatalerror,fieldtotl,permitscaling, &
       EpsMuTimeScale_input_parameters, &
       stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess,planewavecorr, &
-      dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk)
+      dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk,use_mtln_wires)
 #endif
 
    !!!           
