@@ -1,4 +1,5 @@
-module NFDETypes_extension
+module NFDETypes_extension      
+#ifdef CompileWithSMBJSON
    use NFDETypes
 
    implicit none
@@ -951,5 +952,5 @@ contains
          all(a%collection == b%collection)
    end function volprobes_eq
 
-
+#endif
 end module

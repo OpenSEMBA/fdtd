@@ -1,4 +1,6 @@
 module parser_tools_mod
+    
+#ifdef CompileWithSMBJSON
    use labels_mod
    use mesh_mod
    use cells_mod
@@ -175,5 +177,5 @@ contains
       allocate(res(1,1), source = 0.0)
       res(1,1) = scalar
    end function
-
+#endif
 end module

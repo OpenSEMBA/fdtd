@@ -1,5 +1,6 @@
 module mesh_mod
-   
+
+#ifdef CompileWithSMBJSON   
    use, intrinsic :: iso_fortran_env , only: error_unit
    
    use fhash, only: fhash_tbl_t, key=>fhash_key
@@ -316,5 +317,5 @@ contains
       class(coordinate_t), intent(in) :: a, b
       coordinate_eq = all(a%position == b%position)
    end function
-
+#endif
 end module

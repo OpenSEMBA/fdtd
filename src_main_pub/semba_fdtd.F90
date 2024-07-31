@@ -139,9 +139,10 @@ PROGRAM SEMBA_FDTD_launcher
    !****************************************************************************
    !****************************************************************************
 
-   type (entrada_t) :: l
+   type (entrada_t) :: l    
+#ifdef CompileWithMTLN
    type(mtln_t) :: mtln_parsed
-
+#endif
    logical :: lexis
    integer (kind=4) :: my_iostat
    

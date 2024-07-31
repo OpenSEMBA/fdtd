@@ -210,7 +210,7 @@ contains
       newvalores => null()  !auxiliary for Bloque currents sync
 #endif
 
-      unitmaster=-1000 !!!no se bien. Lo pongo absurdo ����
+      unitmaster=-1000 !!!no se bien. Lo pongo absurdo
       unit=1000 !initial
       if (unit >= 2.0_RKIND**31.0_RKIND-1.0_RKIND) then
          call stoponerror(layoutnumber,size,'Excesive number of probes')
@@ -1144,7 +1144,7 @@ contains
                         call stoponerror(layoutnumber,size,'ERROR! More than a volumic probe per group')
                      endif
                      !readjut correctly the calculation region
-                     !de momento sere conservador 20/2/14 por lo que truene el MPI luego quitare el -1 si acaso !!!!����� !a priori puedo necesitar el HZ(alloc+1) para calcular las Bloque currents pero de momento me estoy quieto
+                     !de momento sere conservador 20/2/14 por lo que truene el MPI luego quitare el -1 si acaso !!!! !a priori puedo necesitar el HZ(alloc+1) para calcular las Bloque currents pero de momento me estoy quieto
                      sgg%observation(ii)%P(i)%ZI=max(sgg%Sweep(iEx)%ZI  ,sgg%observation(ii)%P(i)%ZI) !ojo estaba sweep(iEz) para ser conservador...puede dar problemas!! 03/07/15
                      sgg%observation(ii)%P(i)%ZE=min(sgg%Sweep(iEx)%ZE  ,sgg%observation(ii)%P(i)%ZE) !ojo estaba sweep(iEz) para ser conservador...puede dar problemas!! 03/07/15
                      !solo acepto que P(1:1) !!!
@@ -1683,7 +1683,7 @@ contains
                            close (output(ii)%item(i)%unit,status='DELETE')
                            my_iostat=0
 9240                       if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a,2x,i5)',9240,'.',layoutnumber,trim(adjustl(output(ii)%item(i)%path)),output(ii)%item(i)%unit         
-                           open ( output(ii)%item(i)%unit,file= trim(adjustl(output(ii)%item(i)%path)),form='unformatted',err=9240,iostat=my_iostat,status='new',action='write') !����
+                           open ( output(ii)%item(i)%unit,file= trim(adjustl(output(ii)%item(i)%path)),form='unformatted',err=9240,iostat=my_iostat,status='new',action='write') !
                                
                            write(output(ii)%item(i)%unit) output(ii)%item(i)%columnas
                            do conta=1,output(ii)%item(i)%columnas
@@ -3557,7 +3557,7 @@ contains
                            i1t=int(iii/output(ii)%item(i)%Xtrancos)
                               III_m = III - b%Ex%XI
                               do if1=1,output( ii)%NumFreqs
-                                 !!!������
+                                 !!!
                                  output( ii)%item( i)%valor3DComplex(if1,1,i1t,j1t,k1t) = output( ii)%item( i)%valor3DComplex(if1,1,i1t,j1t,k1t)+  &
                                                        output( ii)%auxExp_E(if1) * Ex( III_m, JJJ_m, KKK_m)
                                  output( ii)%item( i)%valor3DComplex(if1,2,i1t,j1t,k1t) = output( ii)%item( i)%valor3DComplex(if1,2,i1t,j1t,k1t)+  &
@@ -3587,7 +3587,7 @@ contains
                            i1t=int(iii/output(ii)%item(i)%Xtrancos)
                               III_m = III - b%Hx%XI
                               do if1=1,output( ii)%NumFreqs
-                                 !!!������
+                                 !!!
                                  output( ii)%item( i)%valor3DComplex(if1,1,i1t,j1t,k1t) = output( ii)%item( i)%valor3DComplex(if1,1,i1t,j1t,k1t)+  &
                                                     output( ii)%auxExp_H(if1) * Hx( III_m, JJJ_m, KKK_m)
                                  output( ii)%item( i)%valor3DComplex(if1,2,i1t,j1t,k1t) = output( ii)%item( i)%valor3DComplex(if1,2,i1t,j1t,k1t)+  &
@@ -3858,30 +3858,30 @@ contains
                               if (singlefilewrite) then
                                  unidad=output(ii)%item(i)%unitmaster
                                  if (incident) then
-                                    WRITE (unidad) output(ii)%item(i)%unit,at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 �
+                                    WRITE (unidad) output(ii)%item(i)%unit,at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 
                                     Incid(sgg,dummy_jjj,field,real(at+0.0_RKIND * sgg%dt,RKIND),i1,j1,k1,dummy_logical,called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
                                     !by hand para clavarlo
                                  else
-                                    WRITE (unidad) output(ii)%item(i)%unit,at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 �
+                                    WRITE (unidad) output(ii)%item(i)%unit,at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 
                                  endif
                               else
                                  unidad=output(ii)%item(i)%unit
                                  if (incident) then
 #ifdef CompileWithReal16
-                                    WRITE (unidad,*) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 �
+                                    WRITE (unidad,*) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 
                                     Incid(sgg,dummy_jjj,field,real(at+0.0_RKIND * sgg%dt,RKIND),i1,j1,k1,dummy_logical,called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
 #else
 #ifdef CompileWithmMiguelStandaloneObservation
-                                    WRITE (unidad,*) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 �
+                                    WRITE (unidad,*) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 
                                     Incid(sgg,dummy_jjj,field,real(at+0.0_RKIND * sgg%dt,RKIND),i1,j1,k1,dummy_logical,called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
 #else
-                                    WRITE (unidad,fmt) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 �
+                                    WRITE (unidad,fmt) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit), &  !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 
                                     Incid(sgg,dummy_jjj,field,real(at+0.0_RKIND * sgg%dt,RKIND),i1,j1,k1,dummy_logical,called_fromobservation) !quitado el 3 de ORIGINAL sync para pscale bien sincronizado
                                     !by hand para clavarlo
 #endif
 #endif
                                  else
-                                    WRITE (unidad,fmt) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 �
+                                    WRITE (unidad,fmt) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 
                                  endif
                               endif
                               !
@@ -3947,16 +3947,16 @@ contains
                         select case(field)
                          case (iBloqueMx,iBloqueMz,iBloqueMy)
 #ifdef CompileWithReal16
-                           WRITE (output(ii)%item(i)%unit,*) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 �
+                           WRITE (output(ii)%item(i)%unit,*) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 
                          case (iBloqueJx,iBloqueJz,iBloqueJy)
                            WRITE (output(ii)%item(i)%unit,*) at, output(ii)%item(i)%valor(n-nInit)
 #else
 #ifdef CompileWithmMiguelStandaloneObservation
-                           WRITE (output(ii)%item(i)%unit,*) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 �
+                           WRITE (output(ii)%item(i)%unit,*) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 
                          case (iBloqueJx,iBloqueJz,iBloqueJy)
                            WRITE (output(ii)%item(i)%unit,*) at, output(ii)%item(i)%valor(n-nInit)
 #else
-                           WRITE (output(ii)%item(i)%unit,fmt) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 �
+                           WRITE (output(ii)%item(i)%unit,fmt) at-sgg%dt/2.0_RKIND_tiempo, output(ii)%item(i)%valor(n-nInit) !SOLO A EFECTOS DE SALIDA EN FICHERO CHAPUZ SGG MAIL OLD 070916 
                          case (iBloqueJx,iBloqueJz,iBloqueJy)
                            WRITE (output(ii)%item(i)%unit,fmt) at, output(ii)%item(i)%valor(n-nInit)
 #endif
@@ -4051,7 +4051,7 @@ contains
                      end do
                   end do
                   close (output(ii)%item(i)%unit)
-                case(icur,iCurX,iCurY,iCurZ)  !!!quitadp de aqui el mapvtk porque nunca puede estar en frecuencia!!!! 050216���
+                case(icur,iCurX,iCurY,iCurZ)  !!!quitadp de aqui el mapvtk porque nunca puede estar en frecuencia!!!! 050216
                   at=sgg%tiempo(FinalInstant)
                   output(ii)%TimesWritten=output(ii)%NumFreqs  !util para leer el numero exacto de freq points
                   INQUIRE(file= trim(adjustl(output(ii)%item(i)%path)),OPENED = ISyaopen)
@@ -4146,7 +4146,7 @@ contains
          do j = 1, size(mtln_solver%bundles(i)%probes)
             path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
             open(unit = unit , file = trim(path))
-
+            write(*,*) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)
             buffer = "time"
 
             do k = 1, size(mtln_solver%bundles(i)%probes(j)%val,2)
@@ -4215,7 +4215,7 @@ contains
 #endif
                if (SGG%Observation(ii)%TimeDomain) deallocate (output(ii)%item(i)%valor3D)
                if (SGG%Observation(ii)%FreqDomain) deallocate (output(ii)%item(i)%valor3DComplex)
-             case (iCur,iCurX,iCurY,iCurZ,mapvtk) !!!���
+             case (iCur,iCurX,iCurY,iCurZ,mapvtk) !!!
 #ifdef CompileWithMPI
                if (output(ii)%item(i)%MPISubComm /= -1) then
                   call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)
@@ -4541,7 +4541,7 @@ contains
          if ((imed4==1).and.(imed1==1).and.(imed2==1).and.(imed3/=1)) esborde=.true. !un borde con vacion
          if (contaborde > 0) esborde=.true.
          if ((imed1==1).and.(imed2==1).and.(imed3==1).and.(imed4==1)) esborde=.true. !un segmento aislado
-         !!!!!! Fin de la alternativa para que considere bordes tambi�n ejes internos
+         !!!!!! Fin de la alternativa para que considere bordes tambien ejes internos
          !!!!!!!!!!!!!!
          !!!!!!!!!!!!!
          if ((iii > SINPML_fullsize(campo)%XE).or.(jjj > SINPML_fullsize(campo)%YE).or.(kkk > SINPML_fullsize(campo)%ZE)) then

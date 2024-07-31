@@ -1,4 +1,6 @@
 module labels_mod
+
+#ifdef CompileWithSMBJSON    
    ! LABELS
    ! -- common labels
    character (len=*), parameter :: J_NAME = "name"
@@ -181,5 +183,5 @@ module labels_mod
    character (len=*), parameter :: J_PR_DOMAIN_FREQ_SPACING  = "frequencySpacing"
    character (len=*), parameter :: J_PR_DOMAIN_FREQ_SPACING_LINEAR  = "linear"
    character (len=*), parameter :: J_PR_DOMAIN_FREQ_SPACING_LOGARITHMIC  = "logarithmic"
-
+#endif
 end module

@@ -88,7 +88,9 @@ module Solver
    use Anisotropic
 #endif
 #ifdef CompileWithWires  
-   use HollandWires        
+   use HollandWires     
+#endif       
+#ifdef CompileWithWires    
 #ifdef CompileWithMTLN  
    use Wire_bundles_mtln_mod             
 #endif       
