@@ -412,7 +412,7 @@ contains
       Idxe=1.0_RKIND/dxe ; Idye=1.0_RKIND/dye; Idze=1.0_RKIND/dze; Idxh=1.0_RKIND/dxh; Idyh=1.0_RKIND/dyh; Idzh=1.0_RKIND/dzh;
 
 
-!!!lo cambio aqui permit scaling a 211118 por problemas con resuming: debe leer el eps0, mu0, antes de hacer números
+!!!lo cambio aqui permit scaling a 211118 por problemas con resuming: debe leer el eps0, mu0, antes de hacer numeros
 
       allocate (G1(0 : sgg%NumMedia),G2(0 : sgg%NumMedia),GM1(0 : sgg%NumMedia),GM2(0 : sgg%NumMedia))
      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -457,8 +457,8 @@ contains
             Excor=0.0_RKIND; Eycor=0.0_RKIND; Ezcor=0.0_RKIND; Hxcor=0.0_RKIND; Hycor=0.0_RKIND; Hzcor=0.0_RKIND
          !!!endif
       !!!!
-  !!!!!!!!!!!!!!!ççççççç        Ex=1.0_RKIND; Ey=2.0_RKIND; Ez=3.0_RKIND; Hx=4.0_RKIND; Hy=5.0_RKIND; Hz=6.0_RKIND
-         initialtimestep=0 !vamos a empezar en 0 para escribir el tiempo 0 !sgg sept'16 ç
+  !!!!!!!!!!!!!!!!?!?!?!?!?!?!?        Ex=1.0_RKIND; Ey=2.0_RKIND; Ez=3.0_RKIND; Hx=4.0_RKIND; Hy=5.0_RKIND; Hz=6.0_RKIND
+         initialtimestep=0 !vamos a empezar en 0 para escribir el tiempo 0 !sgg sept'16 !?
          tiempoinicial = 0.0_RKIND_tiempo
          lastexecutedtimestep=0
          lastexecutedtime=0.0_RKIND_tiempo
@@ -960,7 +960,7 @@ contains
 
          !!!!!!!sgg 051214 !rellena correctamente los campos magneticos. Necesario para construir los surfaces a partir del wireframe 
          !        call fillMagnetic(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, b)
-         !!!!!!!ojo solo es valido para PEC!!!! cambiar luego !ççççç
+         !!!!!!!ojo solo es valido para PEC!!!! cambiar luego !!?!?!?!?!?
          if (l_auxoutput ) then
              write (dubuf,*) '----> there are conformal elements';  call print11(layoutnumber,dubuf)
          else
@@ -1075,7 +1075,7 @@ contains
         endif
       !observation must be the last one to initialize
       
-!!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aquí
+!!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aqui
 #ifdef CompileWithMPI
       !MPI initialization
       if (size>1) then
@@ -1379,7 +1379,7 @@ contains
 
          
 !vuelta la burra al trigo a 140220. En consenso  traido aqui de donde estaba al final de toda la parte electrica, etc, para poder corregir lo already_YEEadvanced_byconformal=dont_yeeadvance
-!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) ççç. Discutido a 140220 y no pasa nada
+!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) !?!?!?. Discutido a 140220 y no pasa nada
          !**************************************************************************************************
          !***[conformal]  *******************************************************************
          !**************************************************************************************************
@@ -1391,7 +1391,7 @@ contains
          endif
 #endif
          
-!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) ççç
+!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) !?!?!?
          !**************************************************************************************************
          !***[conformal]  *******************************************************************
          !**************************************************************************************************
@@ -1405,12 +1405,12 @@ contains
          !**************************************************************************************************
          !**************************************************************************************************
          !**************************************************************************************************
-!!!finmovido antes de hilos por coherencia. 171216 discutir si esto afecta a algo (MPI, etc) ççç
+!!!finmovido antes de hilos por coherencia. 171216 discutir si esto afecta a algo (MPI, etc) !?!?!?
 
          !*******************************************************************************
          !*******************************************************************************
          !*******************************************************************************
-!!!lamo aquí los hilos por coherencia con las PML que deben absorber los campos creados por los hilos
+!!!lamo aqui los hilos por coherencia con las PML que deben absorber los campos creados por los hilos
 #ifdef CompileWithWires
          !Wires (only updated here. No need to update in the H-field part)
          if (( (trim(adjustl(wiresflavor))=='holland') .or. &
@@ -1555,7 +1555,7 @@ contains
          !***[conformal]  *******************************************************************
          !**************************************************************************************************
 !vuelta la burra al trigo a 140220. En consenso, llevado a despues de call Advance_Ex, etc, para poder corregir lo already_YEEadvanced_byconformal=dont_yeeadvance
-!!!!!!!!me lo he llevado antes de hilos 171216. confirmar  que no hay problemas ni con MPI ni con PML ni con nada ççç
+!!!!!!!!me lo he llevado antes de hilos 171216. confirmar  que no hay problemas ni con MPI ni con PML ni con nada !?!?!?
 !!!          !NOTE: ene-2019 lo vuelvo a poner aqui
 !!!#ifdef CompileWithConformal
 !!!         if(input_conformal_flag)then

@@ -1219,16 +1219,20 @@ contains
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
-                                 if ((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
+                                 if ((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%ThinWire).and. &
+                                     (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                     conta=conta+1
                                  endif
-                                 if ((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
+                                 if ((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%ThinWire).and. &
+                                     (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                     conta=conta+1
                                  endif
-                                 if ((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
+                                 if ((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%ThinWire).and. &
+                                     (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                     conta=conta+1
                                  endif
-                                 if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.AND.sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%PEC)).and.(iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
+                                 if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.and. &
+                                     (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                     if ((.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
@@ -1236,7 +1240,8 @@ contains
                                        conta=conta+1
                                     endif
                                  endif
-                                 if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.AND.sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%PEC)).and.(iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
+                                 if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.and. &
+                                     (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                     if ((.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHz(III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
@@ -1244,7 +1249,8 @@ contains
                                        conta=conta+1
                                     endif
                                  endif
-                                 if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.AND.sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%PEC)).and.(iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
+                                 if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.and. &
+                                     (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                     if ((.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
@@ -1461,7 +1467,8 @@ contains
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJz
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  endif
-                                 if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.AND.sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%PEC)).and.(iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
+                                 if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.AND.  &
+                                     (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                     if ((.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
@@ -1474,7 +1481,8 @@ contains
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                     endif
                                  endif
-                                 if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.AND.sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%PEC)).and.(iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
+                                 if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.AND.  &
+                                     (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                     if ((.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHz(III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
@@ -1487,7 +1495,8 @@ contains
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                     endif
                                  endif
-                                 if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.AND.sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%PEC)).and.(iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
+                                 if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.AND.  &
+                                     (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                     if ((.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
@@ -3149,7 +3158,7 @@ contains
                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz
                                        endif
-                                       if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.AND.sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%PEC)).and.&
+                                       if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.AND. &
                                            (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                           if ((.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
                                           (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))%Is%PEC).and. &
@@ -3163,7 +3172,7 @@ contains
                                            output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND
                                           endif
                                        endif
-                                       if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.AND.sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%PEC)).and. &
+                                       if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.AND.  &
                                            (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                           if ((.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                           (.not.sgg%med(sggMiHz(III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
@@ -3177,7 +3186,7 @@ contains
                                            output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND
                                           endif
                                        endif
-                                       if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.AND.sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%PEC)).and. &
+                                       if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.AND.  &
                                            (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                           if ((.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                           (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ))%Is%PEC).and. &
@@ -3637,7 +3646,8 @@ contains
                                                        output( ii)%auxExp_H(if1) * Jz
                                  end do
                               endif
-                              if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.and.sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%PEC)).and.(iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
+                              if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.and.  &
+                                     (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                  if ((.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
@@ -3651,7 +3661,8 @@ contains
                                     end do
                                  endif
                               endif
-                              if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.and.sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%PEC)).and.(iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
+                              if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.and.  &
+                                     (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                  if ((.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHz(III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
@@ -3666,7 +3677,8 @@ contains
                                     end do
                                  endif
                               endif
-                              if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.and.sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%PEC)).and.(iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
+                              if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.and.  &
+                                     .and.(iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                  if ((.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &

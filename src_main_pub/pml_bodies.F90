@@ -27,7 +27,7 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!17/08/15 update!!!!!!!!!!!
 !!!Elimino el tratamiento de los campos magneticos de PMLbody para programar un multiPMLbody 
-!!!solo teniendo en cuenta los parámetros efectivos y sin actualizar los magneticos.
+!!!solo teniendo en cuenta los parametros efectivos y sin actualizar los magneticos.
 !!!Mangento en el fichero PMLbody_pre170815_noupdateababienH.F90 la version antigua
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
