@@ -596,10 +596,10 @@ CONTAINS
       !el medio 1 se reserva para sustrato  y saltamos
       contamedia = 1
 
-      !para el conformal !debe ser tipicamente contamedia=1+1=2 pq el 0 es pec y el 1 es vacio. Ojo cambiado de sitio el PMC porque podia hacer que fuesen 3 y 4. 130220!!! y puede haber error pq por ahi se comprueba el 2 y el 3
+      !para el conformal !debe ser tipicamente contamedia =1+1=2 pq el 0 es pec y el 1 es vacio. Ojo cambiado de sitio el PMC porque podia hacer que fuesen 3 y 4. 130220!!! y puede haber error pq por ahi se comprueba el 2 y el 3
       contamedia = contamedia + 1
       sgg%Med(contamedia)%Is%already_YEEadvanced_byconformal = .TRUE.
-      !debe ser contamedia=2+1=3
+      !debe ser contamedia =2+1=3
       contamedia = contamedia + 1
       sgg%Med(contamedia)%Is%split_and_useless = .TRUE.
       
@@ -609,7 +609,7 @@ CONTAINS
       !regiones PMC
       IF ((this%pmcregs%nvols)+(this%pmcregs%nsurfs)+(this%pmcregs%nLINS) /= 0) THEN
          !los PMC de existir tienen todos indice 2
-         contamedia=contamedia+1      !!!!contamedia = 2 !!!ufff. cambiado a 130220 por posible bug con conformal si algun dia habia regiones PMC
+         contamedia =contamedia+1      !!!!contamedia = 2 !!!ufff. cambiado a 130220 por posible bug con conformal si algun dia habia regiones PMC
          sgg%Med(contamedia)%Epr = sgg%Med(1)%Epr
          sgg%Med(contamedia)%Mur = sgg%Med(1)%Mur
          sgg%Med(contamedia)%Sigma = 0.0_RKIND
@@ -2880,6 +2880,7 @@ endif
       END DO
       sgg%NumNodalSources = conta1
       ALLOCATE (sgg%NodalSource(conta1))
+      if (sgg%NumNodalSources /=0) contamedia =contamedia+1          
       !
       conta1 = 0
       DO i = 1, tama
@@ -3053,7 +3054,6 @@ endif
                sgg%NodalSource(conta1)%punto(conta2)%ZI = punto_s%ZI
                sgg%NodalSource(conta1)%punto(conta2)%ZE = punto_s%ZE
                !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824
-               contamedia=contamedia+1          
                sgg%Med(contamedia)%Is%Dielectric = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
                sgg%Med(contamedia)%Priority = prior_IL
@@ -3061,6 +3061,23 @@ endif
                sgg%Med(contamedia)%Sigma = 0.
                sgg%Med(contamedia)%Mur =  Mu0
                sgg%Med(contamedia)%SigmaM = 0.
+               punto%XI = punto_s%XI
+               punto%XE = punto_s%XE
+               punto%YI = punto_s%YI
+               punto%YE = punto_s%YE
+               punto%ZI = punto_s%ZI
+               punto%ZE = punto_s%ZE
+               orientacion = punto_s%or
+               isathinwire = .FALSE.
+               numertag = 37
+               CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+                                  sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+                                  Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
+                                  Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
+                                  Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
+                                  Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
+                                  Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, &
+                                  contamedia, isathinwire,verbose,numeroasignaciones)
             END IF
             sgg%NodalSource(conta1)%numpuntos = conta2 !update with the correct value
          END DO
@@ -3211,8 +3228,7 @@ endif
                sgg%NodalSource(conta1)%punto(conta2)%YE = punto_s%YE
                sgg%NodalSource(conta1)%punto(conta2)%ZI = punto_s%ZI
                sgg%NodalSource(conta1)%punto(conta2)%ZE = punto_s%ZE      
-               !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824
-               contamedia=contamedia+1          
+               !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824         
                sgg%Med(contamedia)%Is%Dielectric = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
                sgg%Med(contamedia)%Priority = prior_IL
@@ -3220,6 +3236,23 @@ endif
                sgg%Med(contamedia)%Sigma = 0.
                sgg%Med(contamedia)%Mur =  Mu0
                sgg%Med(contamedia)%SigmaM = 0.
+               punto%XI = punto_s%XI
+               punto%XE = punto_s%XE
+               punto%YI = punto_s%YI
+               punto%YE = punto_s%YE
+               punto%ZI = punto_s%ZI
+               punto%ZE = punto_s%ZE
+               orientacion = punto_s%or
+               isathinwire = .FALSE.
+               numertag = 37
+               CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+                                  sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+                                  Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
+                                  Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
+                                  Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
+                                  Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
+                                  Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, &
+                                  contamedia, isathinwire,verbose,numeroasignaciones)
             END IF
             sgg%NodalSource(conta1)%numpuntos = conta2 !update with the correct value
          END DO

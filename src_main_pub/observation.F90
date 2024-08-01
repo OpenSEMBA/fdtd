@@ -61,10 +61,14 @@ module Observa
    IMPLICIT NONE
    private
 
-   type Serialized_t
-      REAL (KIND=RKIND), pointer, dimension(:,:)   ::  valor,valor_x,valor_y,valor_z ! (step, valor)
-      INTEGER (kind=4), POINTER, DIMENSION(:) :: eI,eJ,eK,currentType,sggmtag
-      complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_x,valorComplex_y,valorComplex_z
+   type Serialized_t                                                          
+      REAL (KIND=RKIND), pointer, dimension(:,:)   ::  valor,valor_x,valor_y,valor_z ! (step, valor)        
+      REAL (KIND=RKIND), pointer, dimension(:,:)   ::  valorE,valor_Ex,valor_Ey,valor_Ez ! (step, valor)
+      REAL (KIND=RKIND), pointer, dimension(:,:)   ::  valorH,valor_Hx,valor_Hy,valor_Hz ! (step, valor)
+      INTEGER (kind=4), POINTER, DIMENSION(:) :: eI,eJ,eK,currentType,sggmtag       
+      complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_x,valorComplex_y,valorComplex_z        
+      complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_Ex,valorComplex_Ey,valorComplex_Ez
+      complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_Hx,valorComplex_Hy,valorComplex_Hz
    end type Serialized_t
    type item_t
 #ifdef CompileWithWires
@@ -1231,7 +1235,7 @@ contains
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                     conta=conta+1
                                  endif
-                                 if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.and. &
+                                 if ((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line).and.  &
                                      (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                     if ((.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))%Is%PEC).and. &
@@ -1240,7 +1244,7 @@ contains
                                        conta=conta+1
                                     endif
                                  endif
-                                 if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.and. &
+                                 if ((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line).and.  &
                                      (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                     if ((.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHz(III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
@@ -1249,7 +1253,7 @@ contains
                                        conta=conta+1
                                     endif
                                  endif
-                                 if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.and. &
+                                 if ((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line).and.  &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                     if ((.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ))%Is%PEC).and. &
@@ -1415,6 +1419,28 @@ contains
                         output(ii)%item(i)%Serialized%Valor_x=0.0_RKIND
                         output(ii)%item(i)%Serialized%Valor_y=0.0_RKIND
                         output(ii)%item(i)%Serialized%Valor_z=0.0_RKIND
+                        !electric
+                                                                                                             
+                        allocate (output(ii)%item(i)%Serialized%valorE(ntinI : ntfin , 1:output(ii)%item(i)%columnas))      
+                        !almaceno tambien los vectores
+                        allocate (output(ii)%item(i)%Serialized%valor_Ex(ntinI : ntfin , 1:output(ii)%item(i)%columnas))
+                        allocate (output(ii)%item(i)%Serialized%valor_Ey(ntinI : ntfin , 1:output(ii)%item(i)%columnas))
+                        allocate (output(ii)%item(i)%Serialized%valor_Ez(ntinI : ntfin , 1:output(ii)%item(i)%columnas))   
+                        output(ii)%item(i)%Serialized%ValorE=0.0_RKIND
+                        output(ii)%item(i)%Serialized%Valor_Ex=0.0_RKIND
+                        output(ii)%item(i)%Serialized%Valor_Ey=0.0_RKIND
+                        output(ii)%item(i)%Serialized%Valor_Ez=0.0_RKIND
+                        !magnetic
+                                                                                                             
+                        allocate (output(ii)%item(i)%Serialized%valorH(ntinI : ntfin , 1:output(ii)%item(i)%columnas))      
+                        !almaceno tambien los vectores
+                        allocate (output(ii)%item(i)%Serialized%valor_Hx(ntinI : ntfin , 1:output(ii)%item(i)%columnas))
+                        allocate (output(ii)%item(i)%Serialized%valor_Hy(ntinI : ntfin , 1:output(ii)%item(i)%columnas))
+                        allocate (output(ii)%item(i)%Serialized%valor_Hz(ntinI : ntfin , 1:output(ii)%item(i)%columnas))   
+                        output(ii)%item(i)%Serialized%ValorH=0.0_RKIND
+                        output(ii)%item(i)%Serialized%Valor_Hx=0.0_RKIND
+                        output(ii)%item(i)%Serialized%Valor_Hy=0.0_RKIND
+                        output(ii)%item(i)%Serialized%Valor_Hz=0.0_RKIND
                      ELSEIF (SGG%Observation(ii)%FreqDomain) THEN
                         memo=memo+RKIND*output(ii)%NumFreqs*output(ii)%item(i)%columnas + 16 * output(ii)%item(i)%columnas ! 4 integers de 4 bytes
                         if (memo > MaxMemoryProbes) then
@@ -1429,6 +1455,26 @@ contains
                         output(ii)%item(i)%Serialized%ValorComplex_x=(0.0_RKIND,0.0_RKIND)
                         output(ii)%item(i)%Serialized%ValorComplex_y=(0.0_RKIND,0.0_RKIND)
                         output(ii)%item(i)%Serialized%ValorComplex_z=(0.0_RKIND,0.0_RKIND)
+                        !ELECTRIC
+                        
+                        !almaceno tambien los vectores          
+                        allocate (output(ii)%item(i)%Serialized%valorComplex_Ex(1 : output(ii)%NumFreqs , 1:output(ii)%item(i)%columnas)) !dos posibles componentes
+                        allocate (output(ii)%item(i)%Serialized%valorComplex_Ey(1 : output(ii)%NumFreqs , 1:output(ii)%item(i)%columnas)) !dos posibles componentes
+                        allocate (output(ii)%item(i)%Serialized%valorComplex_Ez(1 : output(ii)%NumFreqs , 1:output(ii)%item(i)%columnas)) !dos posibles componentes
+                               
+                        output(ii)%item(i)%Serialized%ValorComplex_Ex=(0.0_RKIND,0.0_RKIND)
+                        output(ii)%item(i)%Serialized%ValorComplex_Ey=(0.0_RKIND,0.0_RKIND)
+                        output(ii)%item(i)%Serialized%ValorComplex_Ez=(0.0_RKIND,0.0_RKIND)
+                        !MAGNETIC
+                        
+                        !almaceno tambien los vectores          
+                        allocate (output(ii)%item(i)%Serialized%valorComplex_Hx(1 : output(ii)%NumFreqs , 1:output(ii)%item(i)%columnas)) !dos posibles componentes
+                        allocate (output(ii)%item(i)%Serialized%valorComplex_Hy(1 : output(ii)%NumFreqs , 1:output(ii)%item(i)%columnas)) !dos posibles componentes
+                        allocate (output(ii)%item(i)%Serialized%valorComplex_Hz(1 : output(ii)%NumFreqs , 1:output(ii)%item(i)%columnas)) !dos posibles componentes
+                               
+                        output(ii)%item(i)%Serialized%ValorComplex_Hx=(0.0_RKIND,0.0_RKIND)
+                        output(ii)%item(i)%Serialized%ValorComplex_Hy=(0.0_RKIND,0.0_RKIND)
+                        output(ii)%item(i)%Serialized%ValorComplex_Hz=(0.0_RKIND,0.0_RKIND)
                      endif
 
                      allocate (output(ii)%item(i)%Serialized%eI(1:output(ii)%item(i)%columnas)) !he aprovechado la variable columnas!!jeje...comentario hecho el 120120 por bug vtk OLD
@@ -1467,7 +1513,7 @@ contains
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJz
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  endif
-                                 if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.AND.  &
+                                 if ((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line).and.  &
                                      (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                     if ((.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))%Is%PEC).and. &
@@ -1481,7 +1527,7 @@ contains
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                     endif
                                  endif
-                                 if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.AND.  &
+                                 if ((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line).and.  &
                                      (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                     if ((.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHz(III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
@@ -1495,7 +1541,7 @@ contains
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                     endif
                                  endif
-                                 if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.AND.  &
+                                 if ((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line).and.  &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                     if ((.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                     (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ))%Is%PEC).and. &
@@ -1754,17 +1800,33 @@ contains
                            do N=1,output(ii)%NumFreqs
                               read(output(ii)%item(i)%unit,end=6919) rdum
                               if (output(ii)%item(i)%columnas/=0) then
-                                     do conta=1,output(ii)%item(i)%columnas
-                                         read(output(ii)%item(i)%unit,end=6919) &   
+                                     do conta=1,output(ii)%item(i)%columnas    
+                                         read(output(ii)%item(i)%unit,end=6917) &   
                                            output(ii)%item(i)%Serialized%ValorComplex_x(N,conta),&
                                            output(ii)%item(i)%Serialized%ValorComplex_y(N,conta),&
                                            output(ii)%item(i)%Serialized%ValorComplex_z(N,conta) 
+6917                                       read(output(ii)%item(i)%unit,end=6918) &   
+                                           output(ii)%item(i)%Serialized%ValorComplex_Ex(N,conta),&
+                                           output(ii)%item(i)%Serialized%ValorComplex_Ey(N,conta),&
+                                           output(ii)%item(i)%Serialized%ValorComplex_Ez(N,conta) 
+6918                                       read(output(ii)%item(i)%unit,end=6919) &   
+                                           output(ii)%item(i)%Serialized%ValorComplex_Hx(N,conta),&
+                                           output(ii)%item(i)%Serialized%ValorComplex_Hy(N,conta),&
+                                           output(ii)%item(i)%Serialized%ValorComplex_Hz(N,conta) 
                                      end do
                               endif
                               if (SGG%Observation(ii)%transfer)then   
                                   output(ii)%item(i)%Serialized%ValorComplex_x = output(ii)%item(i)%Serialized%ValorComplex_x * output(ii)%dftEntrada(N) !desnormaliza
                                   output(ii)%item(i)%Serialized%ValorComplex_y = output(ii)%item(i)%Serialized%ValorComplex_y * output(ii)%dftEntrada(N) !desnormaliza
                                   output(ii)%item(i)%Serialized%ValorComplex_z = output(ii)%item(i)%Serialized%ValorComplex_z * output(ii)%dftEntrada(N) !desnormaliza
+                                  
+                                  output(ii)%item(i)%Serialized%ValorComplex_Ex = output(ii)%item(i)%Serialized%ValorComplex_Ex * output(ii)%dftEntrada(N) !desnormaliza
+                                  output(ii)%item(i)%Serialized%ValorComplex_Ey = output(ii)%item(i)%Serialized%ValorComplex_Ey * output(ii)%dftEntrada(N) !desnormaliza
+                                  output(ii)%item(i)%Serialized%ValorComplex_Ez = output(ii)%item(i)%Serialized%ValorComplex_Ez * output(ii)%dftEntrada(N) !desnormaliza
+                                  
+                                  output(ii)%item(i)%Serialized%ValorComplex_Hx = output(ii)%item(i)%Serialized%ValorComplex_Hx * output(ii)%dftEntrada(N) !desnormaliza
+                                  output(ii)%item(i)%Serialized%ValorComplex_Hy = output(ii)%item(i)%Serialized%ValorComplex_Hy * output(ii)%dftEntrada(N) !desnormaliza
+                                  output(ii)%item(i)%Serialized%ValorComplex_Hz = output(ii)%item(i)%Serialized%ValorComplex_Hz * output(ii)%dftEntrada(N) !desnormaliza
                               endif
                            end do
 6919                       continue
@@ -3136,11 +3198,19 @@ contains
                                     if (field/=mapvtk) then
                                        if ((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                           conta=conta+1
-                                          Jx= dyh(JJJ - b%Hy%YI) * (- Hy( III - b%Hy%XI, JJJ - b%Hy%YI, KKK - b%Ex%ZI)+Hy( III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))  + &  
+                                          Jx= dyh(JJJ - b%Hy%YI) * (- Hy( III - b%Hy%XI, JJJ - b%Hy%YI, KKK - b%Hy%ZI)+Hy( III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))  + &  
                                               dzh(KKK - b%Hz%ZI) * (  Hz( III - b%Hz%XI, JJJ - b%Hz%YI, KKK - b%Hz%ZI)-Hz( III - b%Hz%XI  , JJJ - b%Hz%YI-1, KKK - b%Hz%ZI  ))  
                                            output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
                                            output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
                                            output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           !ELECTRIC                                           
+                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = Ex( III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI)
+                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           !MAGNETIC                                            
+                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = Hx( III - b%Hx%XI, JJJ - b%Hx%YI, KKK - b%Hx%ZI)
+                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = 0.0_RKIND
                                        endif                                                                
                                        if ((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                           conta=conta+1
@@ -3149,6 +3219,14 @@ contains
                                            output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND  
                                            output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy 
                                            output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           !electric    
+                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = 0.0_RKIND  
+                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = Ey( III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI) 
+                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           !magnetic    
+                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = 0.0_RKIND  
+                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = Hy( III - b%Hy%XI, JJJ - b%Hy%YI, KKK - b%Hy%ZI)
+                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = 0.0_RKIND
                                        endif
                                        if ((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                           conta=conta+1
@@ -3157,8 +3235,16 @@ contains
                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND 
                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz
+                                          !ELECTRIC      
+                                          output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = 0.0_RKIND 
+                                          output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = 0.0_RKIND
+                                          output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = Ez( III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI)
+                                          !MAGNETIC
+                                          output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = 0.0_RKIND 
+                                          output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = 0.0_RKIND
+                                          output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = Hz( III - b%Hz%XI, JJJ - b%Hz%YI, KKK - b%Hz%ZI)
                                        endif
-                                       if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.AND. &
+                                       if ((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line).and.  &
                                            (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                           if ((.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
                                           (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))%Is%PEC).and. &
@@ -3169,10 +3255,18 @@ contains
                                                dzh(KKK - b%Hz%ZI) * (  Hz( III - b%Hz%XI, JJJ - b%Hz%YI, KKK - b%Hz%ZI)-Hz( III - b%Hz%XI  , JJJ - b%Hz%YI-1, KKK - b%Hz%ZI  ))  
                                            output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
                                            output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
-                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND    
+                                          !ELECTRIC  
+                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = Ex( III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI)
+                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = 0.0_RKIND    
+                                          !MAGNETIC  
+                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = Hx( III - b%Hx%XI, JJJ - b%Hx%YI, KKK - b%Hx%ZI)
+                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = 0.0_RKIND   
                                           endif
                                        endif
-                                       if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.AND.  &
+                                       if ((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line).and.  &
                                            (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                           if ((.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                           (.not.sgg%med(sggMiHz(III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
@@ -3183,10 +3277,18 @@ contains
                                                 dzh(KKK - b%Hz%ZI) * ( -Hz( III - b%Hz%XI, JJJ - b%Hz%YI, KKK - b%Hz%ZI)+Hz( III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))   
                                            output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND  
                                            output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy 
-                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND   
+                                          !ELECTRIC  
+                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) =  0.0_RKIND  
+                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) =  Ey( III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI)
+                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) =  0.0_RKIND
+                                          !MAGNETIC 
+                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) =  0.0_RKIND  
+                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) =  Hy( III - b%Hy%XI, JJJ - b%Hy%YI, KKK - b%Hy%ZI)
+                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) =  0.0_RKIND
                                           endif
                                        endif
-                                       if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.AND.  &
+                                       if ((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line).and.  &
                                            (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                           if ((.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                           (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ))%Is%PEC).and. &
@@ -3198,7 +3300,15 @@ contains
                                              output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta)  = Jz
                                              output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND
                                              output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
-                                             output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz
+                                             output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz     
+                                          !ELECTRIC   
+                                             output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = 0.0_RKIND 
+                                             output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = 0.0_RKIND
+                                             output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = Ez( III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI)
+                                          !MAGNETIC    
+                                             output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = 0.0_RKIND 
+                                             output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = 0.0_RKIND
+                                             output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = Hz( III - b%Hz%XI, JJJ - b%Hz%YI, KKK - b%Hz%ZI)
                                           endif
                                        endif
                                     else !si es mapvtk
@@ -3368,6 +3478,20 @@ contains
                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND
                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy
                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz
+                                          !ELECTRIC    
+                                          output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = 0.0_RKIND
+                                          output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = Ey( III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI)
+                                          output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = Ez( III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI)
+                                          !MAGNETIC  
+                                          output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = 0.0_RKIND
+                                          output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = (Hy( III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI) + &
+                                                                                                             Hy( III - b%Hy%XI  , JJJ - b%Hy%YI+1, KKK - b%Hy%ZI) + &
+                                                                                                             Hy( III - b%Hy%XI-1, JJJ - b%Hy%YI  , KKK - b%Hy%ZI) + &
+                                                                                                             Hy( III - b%Hy%XI-1, JJJ - b%Hy%YI+1, KKK - b%Hy%ZI) )/4.0_RKIND    
+                                          output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = (Hz( III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ) + &
+                                                                                                             Hz( III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI+1) + &
+                                                                                                             Hz( III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ) + &
+                                                                                                             Hz( III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI+1) )/4.0_RKINd  
                                        endif
                                        if (((sgg%med(sggMiHy(III- b%Hy%XI, JJJ- b%Hy%YI, KKK- b%Hy%ZI))%Is%PEC).or. &
                                        (sgg%med(sggMiHy(III- b%Hy%XI, JJJ- b%Hy%YI, KKK- b%Hy%ZI))%Is%Surface).or. &
@@ -3383,7 +3507,21 @@ contains
                                           !
                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
-                                          output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz
+                                          output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz     
+                                          !ELECTRIC   
+                                          output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = Ex( III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI)
+                                          output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = 0.0_RKIND
+                                          output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = Ez( III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI)     
+                                          !MAGNETIC   
+                                          output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = (Hx( III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ) + &
+                                                                                                             Hx( III - b%Hx%XI+1, JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ) + &
+                                                                                                             Hx( III - b%Hx%XI  , JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ) + &
+                                                                                                             Hx( III - b%Hx%XI+1, JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ) )/4.0_RKIND
+                                          output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = 0.0_RKIND
+                                          output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = (Hz( III - b%Hz%XI, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ) + &
+                                                                                                             Hz( III - b%Hz%XI, JJJ - b%Hz%YI  , KKK - b%Hz%ZI+1) + &
+                                                                                                             Hz( III - b%Hz%XI, JJJ - b%Hz%YI-1, KKK - b%Hz%ZI  ) + &
+                                                                                                             Hz( III - b%Hz%XI, JJJ - b%Hz%YI-1, KKK - b%Hz%ZI+1) )/4.0_RKIND
                                        endif
                                        if (((sgg%med(sggMiHz(III- b%Hz%XI, JJJ- b%Hz%YI, KKK- b%Hz%ZI))%Is%PEC).or. &
                                        (sgg%med(sggMiHz(III- b%Hz%XI, JJJ- b%Hz%YI, KKK- b%Hz%ZI))%Is%Surface).or. &
@@ -3399,7 +3537,21 @@ contains
                                           !
                                            output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
                                            output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy
-                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND
+                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND   
+                                          !ELECTRIC 
+                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = Ex( III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI)
+                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = Ey( III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI)
+                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = 0.0_RKIND   
+                                          !MAGNETIC  
+                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = (Hx( III - b%Hx%XI  , JJJ - b%Hx%YI, KKK - b%Hx%ZI) + &
+                                                                                                              Hx( III - b%Hx%XI+1, JJJ - b%Hx%YI, KKK - b%Hx%ZI) + &
+                                                                                                              Hx( III - b%Hx%XI+1, JJJ - b%Hx%YI, KKK - b%Hx%ZI-1) + &
+                                                                                                              Hx( III - b%Hx%XI  , JJJ - b%Hx%YI, KKK - b%Hx%ZI-1) )/4.0_RKIND
+                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = (Hy( III - b%Hy%XI, JJJ - b%Hy%YI  , KKK - b%Hy%ZI) + &
+                                                                                                              Hy( III - b%Hy%XI, JJJ - b%Hy%YI+1, KKK - b%Hy%ZI) + &
+                                                                                                              Hy( III - b%Hy%XI, JJJ - b%Hy%YI+1, KKK - b%Hy%ZI-1) + &
+                                                                                                              Hy( III - b%Hy%XI, JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1) )/4.0_RKIND
+                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = 0.0_RKIND   
                                        endif
                                     else                                       !si es mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
                                        if ((sggMiHx(III -b%Hx%XI, JJJ- b%Hx%YI, KKK- b%Hx%ZI)/=1).and. &
@@ -3646,7 +3798,7 @@ contains
                                                        output( ii)%auxExp_H(if1) * Jz
                                  end do
                               endif
-                              if (((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line.and.  &
+                              if ((sgg%med(sggMiEx(III - b%Ex%XI, JJJ - b%Ex%YI, KKK - b%Ex%ZI))%Is%Line).and.  &
                                      (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                  if ((.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI-1))%Is%PEC).and. &
@@ -3661,7 +3813,7 @@ contains
                                     end do
                                  endif
                               endif
-                              if (((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line.and.  &
+                              if ((sgg%med(sggMiEy(III - b%Ey%XI, JJJ - b%Ey%YI, KKK - b%Ey%ZI))%Is%Line).and.  &
                                      (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                  if ((.not.sgg%med(sggMiHz(III - b%Hz%XI  , JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHz(III - b%Hz%XI-1, JJJ - b%Hz%YI  , KKK - b%Hz%ZI  ))%Is%PEC).and. &
@@ -3677,8 +3829,8 @@ contains
                                     end do
                                  endif
                               endif
-                              if (((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line.and.  &
-                                     .and.(iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
+                              if ((sgg%med(sggMiEz(III - b%Ez%XI, JJJ - b%Ez%YI, KKK - b%Ez%ZI))%Is%Line).and.  &
+                                     (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                  if ((.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI  , KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHx(III - b%Hx%XI  , JJJ - b%Hx%YI-1, KKK - b%Hx%ZI  ))%Is%PEC).and. &
                                  (.not.sgg%med(sggMiHy(III - b%Hy%XI  , JJJ - b%Hy%YI  , KKK - b%Hy%ZI  ))%Is%PEC).and. &
@@ -4010,11 +4162,19 @@ contains
                             case(icur,iCurX,iCurY,iCurZ,mapvtk)
                               write(output(ii)%item(i)%unit) at
                               if (output(ii)%item(i)%columnas /=0) then
-                                  do i1=1,output(ii)%item(i)%columnas
+                                  do i1=1,output(ii)%item(i)%columnas     
                                     write(output(ii)%item(i)%unit) output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,i1), &
                                                                    output(ii)%item(i)%Serialized%valor_x(Ntimeforvolumic,i1), &
                                                                    output(ii)%item(i)%Serialized%valor_y(Ntimeforvolumic,i1), &
                                                                    output(ii)%item(i)%Serialized%valor_z(Ntimeforvolumic,i1)
+                                    write(output(ii)%item(i)%unit) output(ii)%item(i)%Serialized%valorE(Ntimeforvolumic,i1), &
+                                                                   output(ii)%item(i)%Serialized%valor_Ex(Ntimeforvolumic,i1), &
+                                                                   output(ii)%item(i)%Serialized%valor_Ey(Ntimeforvolumic,i1), &
+                                                                   output(ii)%item(i)%Serialized%valor_Ez(Ntimeforvolumic,i1)
+                                    write(output(ii)%item(i)%unit) output(ii)%item(i)%Serialized%valorH(Ntimeforvolumic,i1), &
+                                                                   output(ii)%item(i)%Serialized%valor_Hx(Ntimeforvolumic,i1), &
+                                                                   output(ii)%item(i)%Serialized%valor_Hy(Ntimeforvolumic,i1), &
+                                                                   output(ii)%item(i)%Serialized%valor_Hz(Ntimeforvolumic,i1)
                                   end do  
                               endif
                            end select

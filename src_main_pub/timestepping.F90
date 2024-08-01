@@ -1309,7 +1309,7 @@ contains
         endif
         call MPIinitSubcomm(layoutnumber,size,SUBCOMM_MPI_conformal_probes,&
                                 MPI_conformal_probes_root,group_conformalprobes_dummy)
-        print *,'-----creating--->',layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
+       ! print *,'-----creating--->',layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
         call MPI_BARRIER(SUBCOMM_MPI, ierr)
     !!!no lo hago pero al salir deberia luego destruir el grupo call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)                   
 #endif  
