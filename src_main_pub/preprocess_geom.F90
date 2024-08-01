@@ -3057,9 +3057,9 @@ endif
                sgg%Med(contamedia)%Is%Dielectric = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
                sgg%Med(contamedia)%Priority = prior_IL
-               sgg%Med(contamedia)%Epr =  Eps0
+               sgg%Med(contamedia)%Epr =  1.0
                sgg%Med(contamedia)%Sigma = 0.
-               sgg%Med(contamedia)%Mur =  Mu0
+               sgg%Med(contamedia)%Mur =  1.0
                sgg%Med(contamedia)%SigmaM = 0.
                punto%XI = punto_s%XI
                punto%XE = punto_s%XE
@@ -3232,9 +3232,9 @@ endif
                sgg%Med(contamedia)%Is%Dielectric = .TRUE.
                sgg%Med(contamedia)%Is%LINE = .TRUE.
                sgg%Med(contamedia)%Priority = prior_IL
-               sgg%Med(contamedia)%Epr =  Eps0
+               sgg%Med(contamedia)%Epr =  1.0
                sgg%Med(contamedia)%Sigma = 0.
-               sgg%Med(contamedia)%Mur =  Mu0
+               sgg%Med(contamedia)%Mur =  1.0
                sgg%Med(contamedia)%SigmaM = 0.
                punto%XI = punto_s%XI
                punto%XE = punto_s%XE
