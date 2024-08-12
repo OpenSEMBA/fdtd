@@ -3466,14 +3466,28 @@ contains
                                        (sgg%med(sggMiHx(III , JJJ, KKK))%Is%Surface).or.  &
                                        (field==icurX)).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
                                           conta=conta+1
-                                          Jy=(dzh(KKK ) * Hz( III -1, JJJ   , KKK   ) + dzh(KKK +1) *Hz( III -1, JJJ   , KKK +1) )/2.0_RKIND -  &
-                                             (dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/2.0_RKIND +  &
-                                              dxh(III )*( Hx( III   , JJJ   , KKK +1) -                       Hx( III   , JJJ   , KKK -1) )/2.0_RKIND
+                                          Jy=(dzh(KKK ) * Hz( III -1, JJJ   , KKK   ) + dzh(KKK +1) *Hz( III -1, JJJ   , KKK +1) )/1.0_RKIND -  &
+                                             (dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/1.0_RKIND +  &
+                                              dxh(III )*( Hx( III   , JJJ   , KKK +1) -              Hx( III   , JJJ   , KKK -1) )/1.0_RKIND
                                           !el Hx al promediarlo con el suyo (i,j,k) a ambos lados pierde su componente y solo quedan las adyancentes     !a pesar de ser lógico tengo dudas de esa division por 2 caso tiras guada 0824 !?!?
                                           !otro tema sería la resta de la corriente de desplazamiento ahora que tambien calculamos campo electrico es posible 020824
-                                          Jz=(dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/2.0_RKIND -  &
-                                             (dyh(JJJ ) * Hy( III -1, JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III -1, JJJ +1, KKK   ) )/2.0_RKIND +  &
-                                              dxh(III )*( Hx( III   , JJJ -1, KKK   ) -              Hx( III   , JJJ +1, KKK   ) )/2.0_RKIND 
+                                          Jz=(dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/1.0_RKIND -  &
+                                             (dyh(JJJ ) * Hy( III -1, JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III -1, JJJ +1, KKK   ) )/1.0_RKIND +  &
+                                              dxh(III )*( Hx( III   , JJJ -1, KKK   ) -              Hx( III   , JJJ +1, KKK   ) )/1.0_RKIND 
+                                          !second intento
+                                          !!!!!!Jy=dxh(III ) * (  Hx( III , JJJ , KKK )-Hx( III   , JJJ   , KKK -1)) + &
+                                          !!!!!!   dzh(KKK ) * ( -Hz( III , JJJ , KKK )+Hz( III -1, JJJ   , KKK   )) + &
+                                          !!!!!!   dxh(III ) * (  Hx( III , JJJ , KKK+1 )-Hx( III   , JJJ   , KKK -1+1)) + &
+                                          !!!!!!   dzh(KKK+1 ) * ( -Hz( III , JJJ , KKK+1 )+Hz( III -1, JJJ   , KKK+1   ))     
+                                          !!!!!!Jz=dyh(JJJ ) * (  Hy( III , JJJ , KKK ) - Hy( III -1, JJJ   , KKK   )) + &
+                                          !!!!!!   dxh(III ) * ( -Hx( III , JJJ , KKK ) + Hx( III   , JJJ -1, KKK   )) + &    
+                                          !!!!!!   dyh(JJJ+1 ) * (  Hy( III , JJJ+1 , KKK ) - Hy( III -1, JJJ+1   , KKK   )) + &
+                                          !!!!!!   dxh(III ) * ( -Hx( III , JJJ+1 , KKK ) + Hx( III   , JJJ -1+1, KKK   ))  
+                                          !third intento      
+                                      !!!!!!!!!!!!! Jy= ( dzh(kkk  )*( Hz( III , JJJ  , KKK   ) - Hz( III-1  , JJJ  , KKK  )))  /2.0 + &
+                                      !!!!!!!!!!!!!     ( dzh(kkk+1)*( Hz( III , JJJ  , KKK+1 ) - Hz( III-1  , JJJ  , KKK+1))) /2.0
+                                      !!!!!!!!!!!!! Jz= (-dyh(jjj  )*( Hy( III , JJJ  , KKK   ) - Hy( III-1  , JJJ  , KKK  ))) /2.0 + &
+                                      !!!!!!!!!!!!!     (-dyh(jjj+1)*( Hy( III , JJJ  , KKK   ) - Hy( III-1  , JJJ+1, KKK  ))) /2.0    
                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND
                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy
                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz
@@ -3490,13 +3504,29 @@ contains
                                        (sgg%med(sggMiHy(III, JJJ, KKK))%Is%Surface).or. &
                                        (field==icurY)).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
                                           conta=conta+1
-                                          Jz=(dxh(III ) * Hx( III   , JJJ -1, KKK   ) + dxh(III +1) *Hx( III +1, JJJ -1, KKK   ) )/2.0_RKIND -  &
-                                             (dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/2.0_RKIND +  &
-                                              dyh(JJJ )*( Hy( III +1, JJJ   , KKK   ) -                       Hy( III -1, JJJ   , KKK   ) )/2.0_RKIND
+                                          Jz=(dxh(III ) * Hx( III   , JJJ -1, KKK   ) + dxh(III +1) *Hx( III +1, JJJ -1, KKK   ) )/1.0_RKIND -  &
+                                             (dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/1.0_RKIND +  &
+                                              dyh(JJJ )*( Hy( III +1, JJJ   , KKK   ) -              Hy( III -1, JJJ   , KKK   ) )/1.0_RKIND
                                           !
-                                          Jx=(dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/2.0_RKIND -  &
-                                             (dzh(KKK ) * Hz( III   , JJJ -1, KKK   ) + dzh(KKK +1) *Hz( III   , JJJ -1, KKK +1) )/2.0_RKIND +  &
-                                              dyh(JJJ )*( Hy( III   , JJJ   , KKK -1) -                       Hy( III   , JJJ   , KKK +1) )/2.0_RKIND
+                                          Jx=(dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/1.0_RKIND -  &
+                                             (dzh(KKK ) * Hz( III   , JJJ -1, KKK   ) + dzh(KKK +1) *Hz( III   , JJJ -1, KKK +1) )/1.0_RKIND +  &
+                                              dyh(JJJ )*( Hy( III   , JJJ   , KKK -1) -              Hy( III   , JJJ   , KKK +1) )/1.0_RKIND
+                                          !second intento
+                                          !!!!!!
+                                          !!!!!!Jz=dyh(JJJ ) * (  Hy( III , JJJ , KKK ) - Hy( III -1, JJJ   , KKK   ))  + &
+                                          !!!!!!   dxh(III ) * ( -Hx( III , JJJ , KKK ) + Hx( III   , JJJ -1, KKK   ))     + &
+                                          !!!!!!   dyh(JJJ ) * (  Hy( III+1 , JJJ , KKK ) - Hy( III -1+1, JJJ   , KKK   ))  + &
+                                          !!!!!!   dxh(III+1 ) * ( -Hx( III+1 , JJJ , KKK ) + Hx( III+1   , JJJ -1, KKK   ))
+                                          !!!!!!
+                                          !!!!!!Jx= dyh(JJJ ) * (- Hy( III , JJJ , KKK )+Hy( III   , JJJ   , KKK -1))  + &  
+                                          !!!!!!    dzh(KKK ) * (  Hz( III , JJJ , KKK )-Hz( III   , JJJ -1, KKK   ))  + &
+                                          !!!!!!    dyh(JJJ ) * (- Hy( III , JJJ , KKK+1 )+Hy( III   , JJJ   , KKK -1+1))  + &  
+                                          !!!!!!    dzh(KKK+1 ) * (  Hz( III , JJJ , KKK+1 )-Hz( III   , JJJ -1, KKK+1   ))       
+                                          !third intento      
+                                  !!!!!!!!!!   Jz= (-dxh(iii  ))*(( Hx( III   , JJJ  , KKK   ) - Hx( III  , JJJ-1 , KKK  ))) /2.0 + &
+                                  !!!!!!!!!!       (-dxh(iii+1))*(( Hx( III+1 , JJJ  , KKK   ) - Hx( III+1, JJJ-1 , KKK  ))) /2.0
+                                  !!!!!!!!!!   Jx= (+dzh(kkk  ))*(( Hz( III   , JJJ  , KKK   ) - Hz( III  , JJJ-1 , KKK  ))) /2.0 + &
+                                  !!!!!!!!!!       (+dzh(kkk+1))*(( Hz( III   , JJJ  , KKK   ) - Hz( III  , JJJ-1 , KKK+1))) /2.0 
                                           !
                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
@@ -3514,14 +3544,29 @@ contains
                                        (sgg%med(sggMiHz(III, JJJ, KKK))%Is%Surface).or. &
                                        (field==icurZ)).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
                                           conta=conta+1
-                                          Jx=(dyh(JJJ ) * Hy( III   , JJJ   , KKK -1) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK -1) )/2.0_RKIND -  &
-                                             (dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/2.0_RKIND +  &
-                                              dzh(KKK )*( Hz( III   , JJJ +1, KKK   ) -                       Hz( III   , JJJ -1, KKK   ) )/2.0_RKIND
+                                          Jx=(dyh(JJJ ) * Hy( III   , JJJ   , KKK -1) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK -1) )/1.0_RKIND -  &
+                                             (dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/1.0_RKIND +  &
+                                              dzh(KKK )*( Hz( III   , JJJ +1, KKK   ) -              Hz( III   , JJJ -1, KKK   ) )/1.0_RKIND
                                           !
-                                          Jy=(dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/2.0_RKIND -  &
-                                             (dxh(III ) * Hx( III   , JJJ   , KKK -1) + dxh(III +1) *Hx( III +1, JJJ   , KKK -1) )/2.0_RKIND +  &
-                                              dzh(KKK )*( Hz( III -1, JJJ   , KKK   ) -                       Hz( III +1, JJJ   , KKK   ) )/2.0_RKIND
-                                          !
+                                          Jy=(dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/1.0_RKIND -  &
+                                             (dxh(III ) * Hx( III   , JJJ   , KKK -1) + dxh(III +1) *Hx( III +1, JJJ   , KKK -1) )/1.0_RKIND +  &
+                                              dzh(KKK )*( Hz( III -1, JJJ   , KKK   ) -              Hz( III +1, JJJ   , KKK   ) )/1.0_RKIND
+                                             
+                                          !!!!!!!Jx= dyh(JJJ ) * (- Hy( III , JJJ , KKK )+Hy( III   , JJJ   , KKK -1))  + &  
+                                          !!!!!!!    dzh(KKK ) * (  Hz( III , JJJ , KKK )-Hz( III   , JJJ -1, KKK   ))  + &
+                                          !!!!!!!    dyh(JJJ+1 ) * (- Hy( III , JJJ+1 , KKK )+Hy( III   , JJJ+1   , KKK -1))  + &  
+                                          !!!!!!!    dzh(KKK ) * (  Hz( III , JJJ+1 , KKK )-Hz( III   , JJJ -1+1, KKK   ))  
+                                          !!!!!!!                                                                             
+                                          !!!!!!!Jy=dxh(III ) * (  Hx( III , JJJ , KKK )-Hx( III   , JJJ   , KKK -1))  + &
+                                          !!!!!!!   dzh(KKK ) * ( -Hz( III , JJJ , KKK )+Hz( III -1, JJJ   , KKK   )) + &
+                                          !!!!!!!   dxh(III+1 ) * (  Hx( III+1 , JJJ , KKK )-Hx( III+1   , JJJ   , KKK -1))  + &
+                                          !!!!!!!   dzh(KKK ) * ( -Hz( III+1 , JJJ , KKK )+Hz( III -1+1, JJJ   , KKK   ))     
+                                          !third intento
+                                  !!!!!!!!!!!!!!!!!  Jy= (+dxh(iii  ))*(( Hx( III   , JJJ   , KKK   ) - Hx( III   , JJJ   , KKK-1 ))) /2.0 + &
+                                  !!!!!!!!!!!!!!!!!      (+dxh(iii+1))*(( Hx( III+1 , JJJ   , KKK   ) - Hx( III+1 , JJJ   , KKK-1 ))) /2.0
+                                  !!!!!!!!!!!!!!!!!  Jx= (-dyh(jjj  ))*(( Hy( III   , JJJ   , KKK   ) - Hy( III   , JJJ   , KKK-1 ))) /2.0 + &
+                                  !!!!!!!!!!!!!!!!!      (-dyh(jjj+1))*(( Hy( III   , JJJ+1 , KKK   ) - Hy( III   , JJJ+1 , KKK-1 ))) /2.0  
+
                                            output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
                                            output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy
                                            output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND   
@@ -5448,55 +5493,74 @@ contains
  !electric  atwhere  
         if (atwhere == iEx) tHEn         
             if (field==iEx) interp =  Ex(i, j, k)     
-            if (field==iEy) interp = (Ey(i, j, k) + Ey(ip1, j, k) + Ey(i, jm1, k) + Ey(ip1, jm1, k)) / 4.0    
-            if (field==iEz) interp = (Ez(i, j, k) + Ez(ip1, j, k) + Ez(i, j, km1) + Ez(ip1, j  , km1)) / 4.0           
-            if (field==iHx) interp = (Hx(i, j  , k) + Hx(i  , j  , km1) + Hx(ip1, j  , k) + Hx(ip1, j  , km1) + &
-                                      Hx(i, jm1, k) + Hx(i  , jm1, km1) + Hx(ip1, jm1, k) + Hx(ip1, jm1, km1)) / 8.0    
+            if (field==iEy) interp = (Ey(i, j, k) + Ey(i, jm1, k) + Ey(ip1, jm1, k) + Ey(ip1, jm1, k)) / 4.0    
+            if (field==iEz) interp = (Ez(i, j, k) + Ez(i, j, km1) + Ez(ip1, j  , k) + Ez(ip1, j  , km1)) / 4.0 
+            
+            if (field==iHx) interp = (Hx(i  , j  , k) + Hx(i  , j  , km1) + Hx(i  , jm1, k) + Hx(i  , jm1, km1) + &
+                                      Hx(ip1, j  , k) + Hx(ip1, j  , km1) + Hx(ip1, jm1, k) + Hx(ip1, jm1, km1)) / 8.0    
             if (field==iHy) interp = (Hy(i, j, k) + Hy(i, j, km1)) / 2.0     
             if (field==iHz) interp = (Hz(i, j, k) + Hz(i, jm1, k)) / 2.0  
-         elseif (atwhere == iEy) tHEn         
+         elseif (atwhere == iEy) tHEn       
+            if (field==iEx) interp = (Ex(i, j, k) + Ex(im1, j, k  ) + Ex(i, jp1, k) + Ex(im1, jp1, k  )) / 4.0   
             if (field==iEy) interp =  Ey(i, j, k)     
-            if (field==iEz) interp = (Ez(i, j, k) + Ez(i, jp1, k) + Ez(i, j, km1) + Ez(i, jp1, km1)) / 4.0    
-            if (field==iEx) interp = (Ex(i, j, k) + Ex(i, jp1, k) + Ex(im1, j, k) + Ex(im1, jp1  , k)) / 4.0           
-            if (field==iHy) interp = (Hy(i, j  , k) + Hy(im1  , j  , k) + Hy(i, jp1  , k) + Hy(im1, jp1  , k) + &
-                                      Hy(i, j, km1) + Hy(im1  , j, km1) + Hy(i, jp1, km1) + Hy(im1, jp1, km1)) / 8.0    
-            if (field==iHz) interp = (Hz(i, j, k) + Hz(im1, j, k)) / 2.0     
-            if (field==iHx) interp = (Hx(i, j, k) + Hx(i, j, km1)) / 2.0 
-         elseif (atwhere == iEz) tHEn         
+            if (field==iEz) interp = (Ez(i, j, k) + Ez(i  , j, km1) + Ez(i, jp1, k) + Ez(i  , jp1, km1)) / 4.0    
+              
+            if (field==iHx) interp = (Hx(i, j, k)     + Hx(i, j, km1)) / 2.0       
+            if (field==iHy) interp = (Hy(i  , j  , k) + Hy(im1  , j  , k) + Hy(i  , j, km1) + Hy(im1  , j, km1) + &
+                                      Hy(i, jp1  , k) + Hy(im1, jp1  , k) + Hy(i, jp1, km1) + Hy(im1, jp1, km1)) / 8.0    
+            if (field==iHz) interp = (Hz(i, j, k)     + Hz(im1, j, k)) / 2.0   
+         elseif (atwhere == iEz) tHEn                                  
+            if (field==iEx) interp = (Ex(i, j, k) + Ex(im1, j  , k) + Ex(i, j, kp1) + Ex(im1, j, kp1)) / 4.0  
+            if (field==iEy) interp = (Ey(i, j, k) + Ey(i  , jm1, k) + Ey(i, j, kp1) + Ey(i, jm1, kp1)) / 4.0
             if (field==iEz) interp =  Ez(i, j, k)     
-            if (field==iEx) interp = (Ex(i, j, k) + Ex(i, j, kp1) + Ex(im1, j, k) + Ex(im1, j, kp1)) / 4.0    
-            if (field==iEy) interp = (Ey(i, j, k) + Ey(i, j, kp1) + Ey(i, jm1, k) + Ey(i, jm1  , kp1)) / 4.0           
-            if (field==iHz) interp = (Hz(i, j  , k) + Hz(i  , jm1, k) + Hz(i  , j, kp1) + Hz(i  , jm1, kp1) + &
-                                      Hz(im1, j, k) + Hz(im1, jm1, k) + Hz(im1, j, kp1) + Hz(im1, jm1, kp1)) / 8.0    
+            
             if (field==iHx) interp = (Hx(i, j, k) + Hx(i, jm1, k)) / 2.0     
-            if (field==iHy) interp = (Hy(i, j, k) + Hy(im1, j, k)) / 2.0 
+            if (field==iHy) interp = (Hy(i, j, k) + Hy(im1, j, k)) / 2.0      
+            if (field==iHz) interp = (Hz(i, j  , k  )  + Hz(i  , jm1, k  ) + Hz(im1, j, k)  + Hz(im1, jm1, k  )  + &
+                                      Hz(i, j  , kp1)  + Hz(i  , jm1, kp1) + Hz(im1, j, kp1)+ Hz(im1, jm1, kp1)) / 8.0    
          endif
         
 !magnetic atwhere
         if (atwhere == iHx) then                    
-            if (field==iEx) interp = (Ex(i, j  , k) + Ex(i  , j  , kp1) + Ex(im1, j  , k) + Ex(im1, j  , kp1) + &
-                                      Ex(i, jp1, k) + Ex(i  , jp1, kp1) + Ex(im1, jp1, k) + Ex(im1, jp1, kp1)) / 8.0    
+            if (field==iEx) interp = (Ex(i  , j  , k)   + Ex(im1, j  , k  ) + Ex(i  , jp1, k  )   + Ex(im1, jp1, k  ) + &
+                                      Ex(i  , j  , kp1) + Ex(im1, j  , kp1) + Ex(i  , jp1, kp1)   + Ex(im1, jp1, kp1) ) / 8.0
+            
             if (field==iEy) interp = (Ey(i, j, k) + Ey(i, j, kp1)) / 2.0     
             if (field==iEz) interp = (Ez(i, j, k) + Ez(i, jp1, k)) / 2.0 
+            
             if (field==iHx) interp =  Hx(i, j, k)     
-            if (field==iHy) interp = (Hy(i, j, k) + Hy(im1, j, k) + Hy(i, jp1, k) + Hy(im1, jp1, k)) / 4.0    
-            if (field==iHz) interp = (Hz(i, j, k) + Hz(im1, j, k) + Hz(i, j, kp1) + Hz(im1, j  , kp1)) / 4.0
-        elseif (atwhere == iHy) then                    
-            if (field==iEy) interp = (Ey(i  , j  , k  ) + Ey(ip1, j  , k ) + Ey(i, jm1  , k) + Ey(ip1, jm1, k) + &
-                                      Ey(i  , j  , kp1) + Ey(ip1, j  , kp1) + Ey(i, jm1, kp1) + Ey(ip1, jm1, k)) / 8.0    
-            if (field==iEz) interp = (Ez(i, j, k) + Ez(ip1, j, k)) / 2.0     
-            if (field==iEx) interp = (Ex(i, j, k) + Ex(i , j, kp1)) / 2.0 
+            if (field==iHy) interp = (Hy(i, j  , k) +  Hy(ip1, j  , k)+  &
+                                      Hy(i, jm1, k) +  Hy(ip1, jm1, k)) / 4.0 
+            if (field==iHz) interp = (Hz(i, j, k) + Hz(i, j, kp1) +  &
+                                      Hz(im1, j, k) + Hz(im1, j  , kp1)) / 4.0
+            
+            
+        elseif (atwhere == iHy) then          
+              
+            if (field==iEx) interp = (Ex(i, j, k) + Ex(i, j, kp1)) / 2.0                  
+            if (field==iEy) interp = (Ey(i  , j  , k)   + Ey(ip1,  j  , k) + Ey(i, jm1, k)   + Ey(im1,jm1, k) &
+                                    + Ey(i  , j  , kp1) + Ey(ip1,  j, kp1)+  Ey(i, jm1, kp1) + Ey(im1,jm1, kp1)) / 8.0   
+            if (field==iEz) interp = (Ez(ip1, j, k) + Ez(i, j, k)) / 2.0   
+            
             if (field==iHy) interp =  Hy(i, j, k)     
-            if (field==iHz) interp = (Hz(i, j, k) + Hz(i  , jm1, k) + Hz(i, j, kp1) + Hz(i  , jm1, kp1)) / 4.0    
-            if (field==iHx) interp = (Hx(i, j, k) + Hx(i, jm1  , k) + Hx(ip1, j, k) + Hx(ip1, jm1, k  )) / 4.0
-        elseif (atwhere == iHz) then                    
-            if (field==iEz) interp = (Ez(i  , j  , k) + Ez(i  , jp1  , k) + Ez(i  , j, km1) + Ez(i, jp1, km1) + &
-                                      Ez(ip1, j  , k) + Ez(ip1, jp1  , k) + Ez(ip1, j, km1) + Ez(i, jp1, km1)) / 8.0    
+            if (field==iHx) interp = (Hx(i, j, k) + Hx(i, jm1, k)+  + &
+                                      Hx(ip1 , j, k) + Hx(ip1, jm1, k  )) / 4.0 
+            
+            if (field==iHz) interp = (Hz(i, j  , k) + Hz(im1, j  , k)  + &
+                                      Hz(i, jp1, k) + Hz(im1, jp1, k)) / 4.0   
+            
+        elseif (atwhere == iHz) then     
+            
             if (field==iEx) interp = (Ex(i, j, k) + Ex(i, jp1, k)) / 2.0     
-            if (field==iEy) interp = (Ey(i, j, k) + Ey(ip1 , j, k)) / 2.0 
+            if (field==iEy) interp = (Ey(i, j, k) + Ey(ip1 , j, k)) / 2.0                  
+            if (field==iEz) interp = (Ez(i  , j  , k)   + Ez(i  , jp1, k)   + Ez(i  , j, km1)   + Ez(i  , jp1, km1) + &
+                                      Ez(ip1, j  , k)   + Ez(ip1, jp1, k)   + Ez(ip1, j, km1)   + Ez(ip1, jp1, km1)) / 8.0
+            
             if (field==iHz) interp =  Hz(i, j, k)     
-            if (field==iHx) interp = (Hx(i, j, k) + Hx(i, j  , km1) + Hx(ip1, j, k) + Hx(ip1, j  , km1)) / 4.0    
-            if (field==iHy) interp = (Hy(i, j, k) + Hy(i, j  , km1) + Hy(i, jp1, k) + Hy(i, jp1, km1  )) / 4.0                  
+            if (field==iHx) interp = (Hx(i, j, k)   + Hx(i, jp1, k  ) + &
+                                      Hx(i, j, km1) + Hx(i, jp1  , km1)) / 4.0    
+            if (field==iHy) interp = (Hy(i, j, k)   + Hy(ip1,j, k) + + &
+                                      Hy(i, j, km1) + Hy(ip1,j, km1  )) / 4.0                  
         endif
 
         
