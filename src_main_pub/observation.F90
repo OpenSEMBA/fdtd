@@ -3895,13 +3895,14 @@ contains
                               (sgg%med(sggMiHx(III , JJJ, KKK))%Is%Surface).or.  &
                               (field==icurX)).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
                                  conta=conta+1
-                                 Jy=(dzh(KKK ) * Hz( III -1, JJJ   , KKK   ) + dzh(KKK +1) *Hz( III -1, JJJ   , KKK +1) )/2.0_RKIND -  &
-                                    (dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/2.0_RKIND +  &
-                                     dxh(III )*( Hx( III   , JJJ   , KKK +1) -                       Hx( III   , JJJ   , KKK -1) )/2.0_RKIND
+                                 Jy=(dzh(KKK ) * Hz( III -1, JJJ   , KKK   ) + dzh(KKK +1) *Hz( III -1, JJJ   , KKK +1) )/1.0_RKIND -  &
+                                    (dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/1.0_RKIND +  &
+                                     dxh(III )*( Hx( III   , JJJ   , KKK +1) -              Hx( III   , JJJ   , KKK -1) )/1.0_RKIND
                                  !el Hx al promediarlo con el suyo (i,j,k) a ambos lados pierde su componente y solo quedan las adyancentes
-                                 Jz=(dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/2.0_RKIND -  &
-                                    (dyh(JJJ ) * Hy( III -1, JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III -1, JJJ +1, KKK   ) )/2.0_RKIND +  &
-                                     dxh(III )*( Hx( III   , JJJ -1, KKK   ) -                       Hx( III   , JJJ +1, KKK   ) )/2.0_RKIND
+                                 !no hay que aplicar el promedio porque no se excluyen los edges bug ggg 3 tiras 0824
+                                 Jz=(dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/1.0_RKIND -  &
+                                    (dyh(JJJ ) * Hy( III -1, JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III -1, JJJ +1, KKK   ) )/1.0_RKIND +  &
+                                     dxh(III )*( Hx( III   , JJJ -1, KKK   ) -              Hx( III   , JJJ +1, KKK   ) )/1.0_RKIND
                                  do if1=1,output( ii)%NumFreqs   
                                     output( ii)%item( i)%Serialized%valorComplex_x(if1,conta) = 0.
                                     output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) +   output( ii)%auxExp_H(if1) * Jy
@@ -3920,13 +3921,13 @@ contains
                               (sgg%med(sggMiHy(III, JJJ, KKK))%Is%Surface).or. &
                               (field==icurY)).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
                                  conta=conta+1
-                                 Jz=(dxh(III ) * Hx( III   , JJJ -1, KKK   ) + dxh(III +1) *Hx( III +1, JJJ -1, KKK   ) )/2.0_RKIND -  &
-                                    (dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/2.0_RKIND +  &
-                                     dyh(JJJ )*( Hy( III +1, JJJ   , KKK   ) -              Hy( III -1, JJJ   , KKK   ) )/2.0_RKIND
-                                 !
-                                 Jx=(dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/2.0_RKIND -  &
-                                    (dzh(KKK ) * Hz( III   , JJJ -1, KKK   ) + dzh(KKK +1) *Hz( III   , JJJ -1, KKK +1) )/2.0_RKIND +  &
-                                     dyh(JJJ )*( Hy( III   , JJJ   , KKK -1) -              Hy( III   , JJJ   , KKK +1) )/2.0_RKIND
+                                 Jz=(dxh(III ) * Hx( III   , JJJ -1, KKK   ) + dxh(III +1) *Hx( III +1, JJJ -1, KKK   ) )/1.0_RKIND -  &
+                                    (dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/1.0_RKIND +  &
+                                     dyh(JJJ )*( Hy( III +1, JJJ   , KKK   ) -              Hy( III -1, JJJ   , KKK   ) )/1.0_RKIND
+                                 !                                                                                        
+                                 Jx=(dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/1.0_RKIND -  &
+                                    (dzh(KKK ) * Hz( III   , JJJ -1, KKK   ) + dzh(KKK +1) *Hz( III   , JJJ -1, KKK +1) )/1.0_RKIND +  &
+                                     dyh(JJJ )*( Hy( III   , JJJ   , KKK -1) -              Hy( III   , JJJ   , KKK +1) )/1.0_RKIND
                                  !   
                                  do if1=1,output( ii)%NumFreqs  
                                     output( ii)%item( i)%Serialized%valorComplex_x(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_x(if1,conta) + output( ii)%auxExp_H(if1) * Jx     
@@ -3947,13 +3948,13 @@ contains
                               (sgg%med(sggMiHz(III, JJJ, KKK))%Is%Surface).or. &
                               (field==icurZ)).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
                                  conta=conta+1
-                                 Jx=(dyh(JJJ ) * Hy( III   , JJJ   , KKK -1) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK -1) )/2.0_RKIND -  &
-                                    (dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/2.0_RKIND +  &
-                                     dzh(KKK )*( Hz( III   , JJJ +1, KKK   ) -              Hz( III   , JJJ -1, KKK   ) )/2.0_RKIND
-                                 !
-                                 Jy=(dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/2.0_RKIND -  &
-                                    (dxh(III ) * Hx( III   , JJJ   , KKK -1) + dxh(III +1) *Hx( III +1, JJJ   , KKK -1) )/2.0_RKIND +  &
-                                     dzh(KKK )*( Hz( III -1, JJJ   , KKK   ) -              Hz( III +1, JJJ   , KKK   ) )/2.0_RKIND
+                                 Jx=(dyh(JJJ ) * Hy( III   , JJJ   , KKK -1) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK -1) )/1.0_RKIND -  &
+                                    (dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/1.0_RKIND +  &
+                                     dzh(KKK )*( Hz( III   , JJJ +1, KKK   ) -              Hz( III   , JJJ -1, KKK   ) )/1.0_RKIND
+                                 !                                                                                        1
+                                 Jy=(dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/1.0_RKIND -  &
+                                    (dxh(III ) * Hx( III   , JJJ   , KKK -1) + dxh(III +1) *Hx( III +1, JJJ   , KKK -1) )/1.0_RKIND +  &
+                                     dzh(KKK )*( Hz( III -1, JJJ   , KKK   ) -              Hz( III +1, JJJ   , KKK   ) )/1.0_RKIND
                                  do if1=1,output( ii)%NumFreqs  
                                     output( ii)%item( i)%Serialized%valorComplex_x(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_x(if1,conta) +  output(ii)%auxExp_H(if1) * Jx
                                     output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) +  output(ii)%auxExp_H(if1) * Jy
