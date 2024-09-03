@@ -1886,6 +1886,9 @@ contains
          type(node_source_t) :: res
          integer :: polylineId
 
+         character (len=*), dimension(2), parameter :: validTypes = &
+         [J_SRC_TYPE_JGEN, J_SRC_TYPE_GEN]
+
          call this%core%get(this%root, J_SOURCES, sources, found)
          if (.not. found) then
             res%path_to_excitation = trim("")
@@ -1893,7 +1896,7 @@ contains
             return
          end if
          
-         genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, [J_SRC_TYPE_GEN, J_SRC_TYPE_JGEN])
+         genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, validTypes)
          if (size(genSrcs) == 0) then
             res%path_to_excitation = trim("")
             res%source_type = SOURCE_TYPE_UNDEFINED
@@ -2889,7 +2892,7 @@ contains
       do i = 1, this%core%count(place)
          call this%core%get_child(place, i, src)
          call this%core%get(src, key, type, found)
-         if(found .and. type == value) then
+         if(found .and. type == trim(value)) then
             n = n + 1
          end if
       end do

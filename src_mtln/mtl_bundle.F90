@@ -283,6 +283,13 @@ contains
             order=[2,3,1])
         this%i_diff = IF1
 
+        do i = 2, this%number_of_divisions
+            this%i_diff(i,1,1) = this%i_diff(i,1,1)/1.39747448
+            this%i_diff(i,1,2) = this%i_diff(i,1,2)/1.45943295
+            this%i_diff(i,2,1) = this%i_diff(i,2,1)/1.46943083
+            this%i_diff(i,2,2) = this%i_diff(i,2,2)/1.20919624
+        end do
+         
     end subroutine
 
     subroutine bundle_updateSources(this, time, dt)
@@ -295,9 +302,14 @@ contains
         class(mtl_bundle_t) ::this
         integer :: i
         real :: eps_r
-        eps_r = this%external_field_segments(1)%effectiveRelativePermittivity
+        real, dimension(:,:,:), allocatable :: i_diff_eps
+        i_diff_eps = this%i_diff
+
+        ! eps_r = this%external_field_segments(1)%effectiveRelativePermittivity
+        eps_r = 1.00
         ! if (eps_r == 1.0) then 
         do i = 2, this%number_of_divisions
+            ! i_diff_eps(i,2,2) = i_diff_eps(i,2,2)/eps_r
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:)/eps_r, this%i(:,i) - this%i(:,i-1)  )
         end do

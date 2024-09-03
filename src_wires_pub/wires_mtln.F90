@@ -109,7 +109,7 @@ contains
             sep = index(mtln_solver%bundles(m)%name,"_")
             call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
                trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_initial",&
-               mtln_solver%bundles(m)%cpul(init,1,1)*mtln_solver%bundles(m)%step_size(init)*0.5)
+               mtln_solver%bundles(m)%cpul(init,1,1)*mtln_solver%bundles(m)%step_size(init)*0.5 )
 
             call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
                trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_end",&

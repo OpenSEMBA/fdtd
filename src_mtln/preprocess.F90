@@ -595,6 +595,8 @@ contains
         character(len=256) :: buff
         character(20) :: line_c
 
+        ! write(line_c, *) 0.0
+        ! write(line_c, *) node%line_c_per_meter*node%step/(2*2.57)
         write(line_c, *) node%line_c_per_meter*node%step/2
 
         allocate(res(0))
@@ -698,20 +700,20 @@ contains
         block
             integer :: v_index, i_index
             real :: line_c_per_meter, step
-        if (node%side == TERMINAL_NODE_SIDE_INI) then 
-            v_index = lbound(this%bundles(d)%v,2)
-            i_index = lbound(this%bundles(d)%i,2)
-            line_c_per_meter = this%bundles(d)%cpul(lbound(this%bundles(d)%cpul,1), conductor_number, conductor_number)
-            step = this%bundles(d)%du(lbound(this%bundles(d)%du,1), conductor_number, conductor_number)
-            res%side = TERMINAL_NODE_SIDE_INI
+            if (node%side == TERMINAL_NODE_SIDE_INI) then 
+                v_index = lbound(this%bundles(d)%v,2)
+                i_index = lbound(this%bundles(d)%i,2)
+                line_c_per_meter = this%bundles(d)%cpul(lbound(this%bundles(d)%cpul,1), conductor_number, conductor_number)
+                step = this%bundles(d)%du(lbound(this%bundles(d)%du,1), conductor_number, conductor_number)
+                res%side = TERMINAL_NODE_SIDE_INI
 
-        else if (node%side == TERMINAL_NODE_SIDE_END) then 
-            v_index = ubound(this%bundles(d)%v,2)
-            i_index = ubound(this%bundles(d)%i,2)
-            line_c_per_meter = this%bundles(d)%cpul(ubound(this%bundles(d)%cpul,1), conductor_number, conductor_number)
-            step = this%bundles(d)%du(ubound(this%bundles(d)%du,1), conductor_number, conductor_number)
-            res%side = TERMINAL_NODE_SIDE_END
-        end if
+            else if (node%side == TERMINAL_NODE_SIDE_END) then 
+                v_index = ubound(this%bundles(d)%v,2)
+                i_index = ubound(this%bundles(d)%i,2)
+                line_c_per_meter = this%bundles(d)%cpul(ubound(this%bundles(d)%cpul,1), conductor_number, conductor_number)
+                step = this%bundles(d)%du(ubound(this%bundles(d)%du,1), conductor_number, conductor_number)
+                res%side = TERMINAL_NODE_SIDE_END
+            end if
             res%v_index = v_index
             res%i_index = i_index
             res%line_c_per_meter = line_c_per_meter
