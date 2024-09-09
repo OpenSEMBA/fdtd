@@ -41,9 +41,9 @@
 			"name": "Bundle_1_level_1",
 			"id": 2,
 			"type": "multiwire",
-			"resistancePerMeter": 3.9e-3,
-			"inductancePerMeter": 8.802075200000001e-08,
-			"capacitancePerMeter": 5.5840010E-10,
+			"resistancePerMeter": [3.9e-3],
+			"inductancePerMeter":  [[8.802075200000001e-08]],
+			"capacitancePerMeter": [[5.5840010E-10]],
 			"transferImpedancePerMeter" : {
 				"inductiveTerm" : 8.9e-9,
 				"direction" : "inwards"
@@ -53,9 +53,9 @@
 			"name": "Bundle_2_level_1",
 			"id": 3,
 			"type": "multiwire",
-			"resistancePerMeter": 12.2e-3,
-			"inductancePerMeter": 1.37228e-07,
-			"capacitancePerMeter":3.2310005E-10,
+			"resistancePerMeter": [12.2e-3],
+			"inductancePerMeter": [[1.37228e-07]],
+			"capacitancePerMeter":[[3.2310005E-10]],
 			"transferImpedancePerMeter" : {
 				"inductiveTerm" : 7.4e-9,
 				"direction" : "inwards"
@@ -65,9 +65,9 @@
 			"name": "Bundle_3_level_1",
 			"id": 4,
 			"type": "multiwire",
-			"resistancePerMeter": 6.5e-3,
-			"inductancePerMeter": 9.1890502e-08,
-			"capacitancePerMeter": 4.7190007E-10,
+			"resistancePerMeter": [6.5e-3],
+			"inductancePerMeter":  [[9.1890502e-08]],
+			"capacitancePerMeter": [[4.7190007E-10]],
 			"transferImpedancePerMeter" : {
 				"inductiveTerm" : 3.0e-9,
 				"direction" : "inwards"
