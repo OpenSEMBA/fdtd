@@ -2378,43 +2378,27 @@ contains
          logical :: found
          allocate(null_matrix(n,n), source = 0.0)
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
-            if (n /= 1) then
-               res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
-            else
-               res%inductance_per_meter = scalarToMatrix(this%getRealAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found))
-            end if
+            res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
          else
             write(error_unit, *) "Error reading material region: inductancePerMeter label not found."
             res%inductance_per_meter = null_matrix
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)) then
-            if (n /= 1) then
-               res%capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
-            else
-               res%capacitance_per_meter = scalarToMatrix(this%getRealAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found))
-            end if
+            res%capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
          else
             write(error_unit, *) "Error reading material region: capacitancePerMeter label not found."
             res%capacitance_per_meter = null_matrix
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
-            if (n /= 1) then
-               res%resistance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
-            else
-               res%resistance_per_meter = scalarToMatrix(this%getRealAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
-            end if
+            res%resistance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
          else
             res%resistance_per_meter = null_matrix
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)) then
-            if (n /=1 ) then
-               res%conductance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
-            else
-               res%conductance_per_meter = scalarToMatrix(this%getRealAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
-            end if
+            res%conductance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
          else
             res%conductance_per_meter = null_matrix
          end if

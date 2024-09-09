@@ -22,8 +22,8 @@
             "id": 1,
             "type": "multiwire",
             "name" : "single_wire",
-            "capacitancePerMeter": 1.915e-10,
-            "inductancePerMeter": 4.8187e-7
+            "capacitancePerMeter": [[1.915e-10]],
+            "inductancePerMeter":  [[4.8187e-7]]
         },
         {
             "id": 2,
