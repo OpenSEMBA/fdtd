@@ -280,7 +280,7 @@ contains
       res%totalZ = this%getIntAt(this%root, P//'(3)')
    end function
 
-   function readGrid(this) result (res)
+   function readGrid(this) result (res)s
       class(parser_t) :: this
       type(Desplazamiento) :: res
       real, dimension(:), allocatable :: vec
@@ -305,9 +305,9 @@ contains
    contains
       subroutine assignDes(path, dest, numberOfCells)
          character(kind=CK, len=*) :: path
-         real, dimension(:), pointer :: dest
+         real (kind=rkind), dimension(:), pointer :: dest
          real, dimension(:), allocatable :: vec
-         integer, intent(in) :: numberOfCells
+         integer (kind=4), intent(in) :: numberOfCells
          logical :: found = .false.
 
          call this%core%get(this%root, path, vec, found)
@@ -334,7 +334,7 @@ contains
       type(Frontera) :: res
       character(kind=json_CK,len=:), allocatable :: boundaryTypeLabel
       logical(LK) :: allLabelFound = .false.
-
+      real :: orden, refl
       call this%core%get(this%root, J_BOUNDARY//'.'//J_BND_ALL//'.'//J_TYPE,  boundaryTypeLabel, allLabelFound)
       if (allLabelFound) then
          res%tipoFrontera(:) = labelToBoundaryType(boundaryTypeLabel)
@@ -351,8 +351,10 @@ contains
          type(FronteraPML) :: res
          character(len=*), intent(in) :: p
          call this%core%get(this%root, p//'.'//J_BND_PML_LAYERS,     res%numCapas, default=8)
-         call this%core%get(this%root, p//'.'//J_BND_PML_ORDER,      res%orden,    default=2.0)
-         call this%core%get(this%root, p//'.'//J_BND_PML_REFLECTION, res%refl,     default=0.001)
+         call this%core%get(this%root, p//'.'//J_BND_PML_ORDER,      orden,    default=2.0)
+         call this%core%get(this%root, p//'.'//J_BND_PML_REFLECTION, refl,     default=0.001)
+         res%orden = orden
+         res%refl = refl
       end function
 
       function labelToBoundaryType(str) result (type)
@@ -645,7 +647,7 @@ contains
          type(json_value), pointer :: dir
          character (len=*), intent(in) :: label
          logical :: found
-         real, intent(inout) :: initial, final, step
+         real (kind=rkind), intent(inout) :: initial, final, step
 
          call this%core%get(p, label, dir, found=found)
          if (.not. found) &
@@ -1124,14 +1126,17 @@ contains
          type(json_value), pointer :: je, je2
          integer :: i
          logical :: found
-
+         real :: radius, resistance, inductance
          block
             type(json_value_ptr) :: m
             m = this%matTable%getId(this%getIntAt(cable, J_MATERIAL_ID, found))
             if (.not. found) write(error_unit, *) "ERROR: material id not found in mat. association."
-            call this%core%get(m%p, J_MAT_WIRE_RADIUS,     res%rad, default = 0.0)
-            call this%core%get(m%p, J_MAT_WIRE_RESISTANCE, res%res, default = 0.0)
-            call this%core%get(m%p, J_MAT_WIRE_INDUCTANCE, res%ind, default = 0.0)
+            call this%core%get(m%p, J_MAT_WIRE_RADIUS,     rad, default = 0.0)
+            call this%core%get(m%p, J_MAT_WIRE_RESISTANCE, res, default = 0.0)
+            call this%core%get(m%p, J_MAT_WIRE_INDUCTANCE, ind, default = 0.0)
+            res%rad = radius 
+            res%res = resistance
+            res%ind = inductance
             res%dispfile = trim(adjustl(" "))
          end block
 
