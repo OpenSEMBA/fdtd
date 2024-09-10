@@ -280,7 +280,7 @@ contains
       res%totalZ = this%getIntAt(this%root, P//'(3)')
    end function
 
-   function readGrid(this) result (res)s
+   function readGrid(this) result (res)
       class(parser_t) :: this
       type(Desplazamiento) :: res
       real, dimension(:), allocatable :: vec
