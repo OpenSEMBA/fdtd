@@ -1131,9 +1131,9 @@ contains
             type(json_value_ptr) :: m
             m = this%matTable%getId(this%getIntAt(cable, J_MATERIAL_ID, found))
             if (.not. found) write(error_unit, *) "ERROR: material id not found in mat. association."
-            call this%core%get(m%p, J_MAT_WIRE_RADIUS,     rad, default = 0.0)
-            call this%core%get(m%p, J_MAT_WIRE_RESISTANCE, res, default = 0.0)
-            call this%core%get(m%p, J_MAT_WIRE_INDUCTANCE, ind, default = 0.0)
+            call this%core%get(m%p, J_MAT_WIRE_RADIUS,     radius, default = 0.0)
+            call this%core%get(m%p, J_MAT_WIRE_RESISTANCE, resistance, default = 0.0)
+            call this%core%get(m%p, J_MAT_WIRE_INDUCTANCE, inductance, default = 0.0)
             res%rad = radius 
             res%res = resistance
             res%ind = inductance
