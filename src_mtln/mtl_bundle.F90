@@ -283,12 +283,12 @@ contains
             order=[2,3,1])
         this%i_diff = IF1
 
-        do i = 2, this%number_of_divisions
-            this%i_diff(i,1,1) = this%i_diff(i,1,1)/1.39747448
-            this%i_diff(i,1,2) = this%i_diff(i,1,2)/1.45943295
-            this%i_diff(i,2,1) = this%i_diff(i,2,1)/1.46943083
-            this%i_diff(i,2,2) = this%i_diff(i,2,2)/1.20919624
-        end do
+        ! do i = 2, this%number_of_divisions
+        !     this%i_diff(i,1,1) = this%i_diff(i,1,1)/1.39747448
+        !     this%i_diff(i,1,2) = this%i_diff(i,1,2)/1.45943295
+        !     this%i_diff(i,2,1) = this%i_diff(i,2,1)/1.46943083
+        !     this%i_diff(i,2,2) = this%i_diff(i,2,2)/1.20919624
+        ! end do
          
     end subroutine
 
