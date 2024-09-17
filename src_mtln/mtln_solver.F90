@@ -250,7 +250,7 @@ contains
             call this%advanceBundlesCurrent()
             call this%advanceTime()
             call this%updateProbes()
-            if (modulo(i, 1000) == 0) write(*,*) i
+            ! if (modulo(i, 1000) == 0) write(*,*) i
         end do
 
     end subroutine
