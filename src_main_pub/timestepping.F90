@@ -632,12 +632,13 @@ contains
          endif
          write(buff,*) 'saveall=',saveall,', flushsecondsFields=',flushsecondsFields,', flushsecondsData=',flushsecondsData,', maxCPUtime=',maxCPUtime,', singlefilewrite=',singlefilewrite
          call WarnErrReport(buff)
-         write(buff,*) 'TAPARRABOS=',TAPARRABOS,', wiresflavor=',wiresflavor,', mindistwires=',mindistwires,', wirecrank=',wirecrank , 'makeholes=',makeholes
+         write(buff,*) 'TAPARRABOS=',TAPARRABOS,', wiresflavor=',trim(adjustl(wiresflavor)),', mindistwires=',mindistwires,', wirecrank=',wirecrank , 'makeholes=',makeholes
          call WarnErrReport(buff)
          write(buff,*) 'use_mtln_wires=', use_mtln_wires
          write(buff,*) 'connectendings=',connectendings,', isolategroupgroups=',isolategroupgroups
          call WarnErrReport(buff)
-         write(buff,*) 'wirethickness ', wirethickness, 'stableradholland=',stableradholland,'mtlnberenger=',mtlnberenger,' inductance_model=',inductance_model,', inductance_order=',inductance_order,', groundwires=',groundwires,' ,fieldtotl=',fieldtotl,' noSlantedcrecepelo =',noSlantedcrecepelo 
+         write(buff,*) 'wirethickness ', wirethickness, 'stableradholland=',stableradholland,'mtlnberenger=',mtlnberenger,' inductance_model=',trim(adjustl(inductance_model)), &
+                       ', inductance_order=',inductance_order,', groundwires=',groundwires,' ,fieldtotl=',fieldtotl,' noSlantedcrecepelo =',noSlantedcrecepelo 
          call WarnErrReport(buff)
          write(buff,*) 'sgbc=',sgbc,', mibc=',mibc,', attfactorc=',attfactorc,', attfactorw=',attfactorw
          call WarnErrReport(buff)

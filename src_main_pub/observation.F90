@@ -5418,113 +5418,178 @@ contains
       fqVal=fqVal*2.0_RKIND !BUG HIRAI ENERGIA DOBLE PARSEVAL  mail 24/07/19
 
     end subroutine
+ 
+    real (kind=RKIND) function interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, i, j, k, field, atwhere) result(interp)
 
-    real (kind=RKIND) function interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,i, j, k, field,atwhere) result(interp)
-    
-        type (SGGFDTDINFO), intent(IN)         ::  sgg
-        REAL (KIND=RKIND)   , intent(in) , target     :: &
-        Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
-        Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
-        Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
-        Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
-        Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
-        Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-                  
-        integer, intent(in) :: i, j, k
-        integer ::ip1,jp1,kp1,im1,jm1,km1, iip1,jjp1,kkp1,iim1,jjm1,kkm1
-        integer, intent(in) :: field,atwhere
-              
-        iip1=i+1
-        jjp1=j+1
-        kkp1=k+1  
-        iim1=i-1
-        jjm1=j-1
-        kkm1=k-1
-        
-        im1=Max(iim1,sgg%alloc(field)%XI)
-        jm1=Max(jjm1,sgg%alloc(field)%YI)
-        km1=Max(kkm1,sgg%alloc(field)%ZI)
-        ip1=Min(iip1,sgg%alloc(field)%XE)
-        jp1=Min(jjp1,sgg%alloc(field)%YE)
-        kp1=Min(kkp1,sgg%alloc(field)%ZE);
-        ! Initialize output
-        interp = 0.0
-        
-           
- !electric  atwhere  
-        if (atwhere == iEx) tHEn         
-            if (field==iEx) interp =  Ex(i, j, k)     
-            if (field==iEy) interp = (Ey(i, j, k) + Ey(i, jm1, k) + Ey(ip1, j  , k) + Ey(ip1, jm1, k  )) / 4.0    
-            if (field==iEz) interp = (Ez(i, j, k) + Ez(i, j, km1) + Ez(ip1, j  , k) + Ez(ip1, j  , km1)) / 4.0 
-            
-            if (field==iHx) interp = (Hx(i  , j  , k) + Hx(i  , j  , km1) + Hx(i  , jm1, k) + Hx(i  , jm1, km1) + &
-                                      Hx(ip1, j  , k) + Hx(ip1, j  , km1) + Hx(ip1, jm1, k) + Hx(ip1, jm1, km1)) / 8.0    
-            if (field==iHy) interp = (Hy(i, j, k) + Hy(i, j, km1)) / 2.0     
-            if (field==iHz) interp = (Hz(i, j, k) + Hz(i, jm1, k)) / 2.0  
-         elseif (atwhere == iEy) tHEn       
-            if (field==iEx) interp = (Ex(i, j, k) + Ex(im1, j, k  ) + Ex(i, jp1, k) + Ex(im1, jp1, k  )) / 4.0   
-            if (field==iEy) interp =  Ey(i, j, k)     
-            if (field==iEz) interp = (Ez(i, j, k) + Ez(i  , j, km1) + Ez(i, jp1, k) + Ez(i  , jp1, km1)) / 4.0    
-              
-            if (field==iHx) interp = (Hx(i, j, k)     + Hx(i, j, km1)) / 2.0                   
-            if (field==iHy) interp = (Hy(i  , j  , k) + Hy(im1  , j  , k) + Hy(i  , j, km1) + Hy(im1  , j, km1) + &
-                                      Hy(i, jp1  , k) + Hy(im1, jp1  , k) + Hy(i, jp1, km1) + Hy(im1, jp1, km1)) / 8.0    
-            if (field==iHz) interp = (Hz(i, j, k)     + Hz(im1, j, k)) / 2.0   
-         elseif (atwhere == iEz) tHEn                                  
-            if (field==iEx) interp = (Ex(i, j, k) + Ex(im1, j  , k) + Ex(i, j, kp1) + Ex(im1, j, kp1)) / 4.0  
-            if (field==iEy) interp = (Ey(i, j, k) + Ey(i  , jm1, k) + Ey(i, j, kp1) + Ey(i, jm1, kp1)) / 4.0
-            if (field==iEz) interp =  Ez(i, j, k)     
-            
-            if (field==iHx) interp = (Hx(i, j, k) + Hx(i, jm1, k)) / 2.0     
-            if (field==iHy) interp = (Hy(i, j, k) + Hy(im1, j, k)) / 2.0      
-            if (field==iHz) interp = (Hz(i, j  , k  )  + Hz(i  , jm1, k  ) + Hz(im1, j, k)  + Hz(im1, jm1, k  )  + &
-                                      Hz(i, j  , kp1)  + Hz(i  , jm1, kp1) + Hz(im1, j, kp1)+ Hz(im1, jm1, kp1)) / 8.0    
-         endif
-        
-!magnetic atwhere
-        if (atwhere == iHx) then                    
-            if (field==iEx) interp = (Ex(i  , j  , k)   + Ex(im1, j  , k  ) + Ex(i  , jp1, k  )   + Ex(im1, jp1, k  ) + &
-                                      Ex(i  , j  , kp1) + Ex(im1, j  , kp1) + Ex(i  , jp1, kp1)   + Ex(im1, jp1, kp1) ) / 8.0
-            
-            if (field==iEy) interp = (Ey(i, j, k) + Ey(i, j, kp1)) / 2.0     
-            if (field==iEz) interp = (Ez(i, j, k) + Ez(i, jp1, k)) / 2.0 
-            
-            if (field==iHx) interp =  Hx(i, j, k)     
-            if (field==iHy) interp = (Hy(i  , j  , k  ) + Hy(im1, j  , k  )+  &
-                                      Hy(i  , jp1, k  ) + Hy(im1, jp1, k  )) / 4.0 
-            if (field==iHz) interp = (Hz(i  , j  , k  ) + Hz(im1, j  , k  ) +  &
-                                      Hz(i  , j  , kp1) + Hz(im1, j  , kp1)) / 4.0
-            
-            
-        elseif (atwhere == iHy) then          
-              
-            if (field==iEx) interp = (Ex(i, j, k) + Ex(i, j, kp1)) / 2.0           
-            if (field==iEy) interp = (Ey(i  , j  , k)   + Ey(ip1,  j, k  ) + Ey(i, jm1, k)   + Ey(ip1,jm1, k) &
-                                    + Ey(i  , j  , kp1) + Ey(ip1,  j, kp1)+  Ey(i, jm1, kp1) + Ey(ip1,jm1, kp1)) / 8.0   
-            if (field==iEz) interp = (Ez(ip1, j, k) + Ez(i, j, k)) / 2.0   
-            
-            if (field==iHy) interp =  Hy(i   , j, k)     
-            if (field==iHx) interp = (Hx(i   , j, k) + Hx(i  , jm1, k  )+   &
-                                      Hx(ip1 , j, k) + Hx(ip1, jm1, k  )) / 4.0 
-            if (field==iHz) interp = (Hz(i, j  , k)   + Hz(i  , jm1  , k)  + &
-                                      Hz(i, j  , kp1) + Hz(i  , jm1, kp1)) / 4.0   
-            
-        elseif (atwhere == iHz) then     
-            
-            if (field==iEx) interp = (Ex(i, j, k) + Ex(i, jp1, k)) / 2.0     
-            if (field==iEy) interp = (Ey(i, j, k) + Ey(ip1 , j, k)) / 2.0      
-            if (field==iEz) interp = (Ez(i  , j  , k)   + Ez(i  , jp1, k)   + Ez(i  , j, km1)   + Ez(i  , jp1, km1) + &
-                                      Ez(ip1, j  , k)   + Ez(ip1, jp1, k)   + Ez(ip1, j, km1)   + Ez(ip1, jp1, km1)) / 8.0
-            
-            if (field==iHz) interp =  Hz(i, j, k)     
-            if (field==iHx) interp = (Hx(i, j, k  ) + Hx(ip1, j, k  ) + &
-                                      Hx(i, j, km1) + Hx(ip1, j, km1)) / 4.0    
-            if (field==iHy) interp = (Hy(i, j, k)   + Hy(i ,jp1, k  ) + + &
-                                      Hy(i, j, km1) + Hy(i ,jp1, km1)) / 4.0                  
+    type (SGGFDTDINFO), intent(IN) :: sgg
+    REAL (KIND=RKIND), intent(in), target :: &
+        Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
+        Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
+        Ez(sgg%alloc(iEz)%XI:sgg%alloc(iEz)%XE, sgg%alloc(iEz)%YI:sgg%alloc(iEz)%YE, sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE), &
+        Hx(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE, sgg%alloc(iHx)%YI:sgg%alloc(iHx)%YE, sgg%alloc(iHx)%ZI:sgg%alloc(iHx)%ZE), &
+        Hy(sgg%alloc(iHy)%XI:sgg%alloc(iHy)%XE, sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE, sgg%alloc(iHy)%ZI:sgg%alloc(iHy)%ZE), &
+        Hz(sgg%alloc(iHz)%XI:sgg%alloc(iHz)%XE, sgg%alloc(iHz)%YI:sgg%alloc(iHz)%YE, sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
+
+    integer, intent(in) :: i, j, k
+    integer, intent(in) :: field, atwhere
+   !! real (kind=RKIND) :: interp
+
+    ! Index variables for each field
+    integer :: im1_Ex, ip1_Ex, jm1_Ex, jp1_Ex, km1_Ex, kp1_Ex
+    integer :: im1_Ey, ip1_Ey, jm1_Ey, jp1_Ey, km1_Ey, kp1_Ey
+    integer :: im1_Ez, ip1_Ez, jm1_Ez, jp1_Ez, km1_Ez, kp1_Ez
+    integer :: im1_Hx, ip1_Hx, jm1_Hx, jp1_Hx, km1_Hx, kp1_Hx
+    integer :: im1_Hy, ip1_Hy, jm1_Hy, jp1_Hy, km1_Hy, kp1_Hy
+    integer :: im1_Hz, ip1_Hz, jm1_Hz, jp1_Hz, km1_Hz, kp1_Hz
+
+    ! Compute indices for Ex
+    im1_Ex = Max(i - 1, sgg%alloc(iEx)%XI)
+    ip1_Ex = Min(i + 1, sgg%alloc(iEx)%XE)
+    jm1_Ex = Max(j - 1, sgg%alloc(iEx)%YI)
+    jp1_Ex = Min(j + 1, sgg%alloc(iEx)%YE)
+    km1_Ex = Max(k - 1, sgg%alloc(iEx)%ZI)
+    kp1_Ex = Min(k + 1, sgg%alloc(iEx)%ZE)
+
+    ! Compute indices for Ey
+    im1_Ey = Max(i - 1, sgg%alloc(iEy)%XI)
+    ip1_Ey = Min(i + 1, sgg%alloc(iEy)%XE)
+    jm1_Ey = Max(j - 1, sgg%alloc(iEy)%YI)
+    jp1_Ey = Min(j + 1, sgg%alloc(iEy)%YE)
+    km1_Ey = Max(k - 1, sgg%alloc(iEy)%ZI)
+    kp1_Ey = Min(k + 1, sgg%alloc(iEy)%ZE)
+
+    ! Compute indices for Ez
+    im1_Ez = Max(i - 1, sgg%alloc(iEz)%XI)
+    ip1_Ez = Min(i + 1, sgg%alloc(iEz)%XE)
+    jm1_Ez = Max(j - 1, sgg%alloc(iEz)%YI)
+    jp1_Ez = Min(j + 1, sgg%alloc(iEz)%YE)
+    km1_Ez = Max(k - 1, sgg%alloc(iEz)%ZI)
+    kp1_Ez = Min(k + 1, sgg%alloc(iEz)%ZE)
+
+    ! Compute indices for Hx
+    im1_Hx = Max(i - 1, sgg%alloc(iHx)%XI)
+    ip1_Hx = Min(i + 1, sgg%alloc(iHx)%XE)
+    jm1_Hx = Max(j - 1, sgg%alloc(iHx)%YI)
+    jp1_Hx = Min(j + 1, sgg%alloc(iHx)%YE)
+    km1_Hx = Max(k - 1, sgg%alloc(iHx)%ZI)
+    kp1_Hx = Min(k + 1, sgg%alloc(iHx)%ZE)
+
+    ! Compute indices for Hy
+    im1_Hy = Max(i - 1, sgg%alloc(iHy)%XI)
+    ip1_Hy = Min(i + 1, sgg%alloc(iHy)%XE)
+    jm1_Hy = Max(j - 1, sgg%alloc(iHy)%YI)
+    jp1_Hy = Min(j + 1, sgg%alloc(iHy)%YE)
+    km1_Hy = Max(k - 1, sgg%alloc(iHy)%ZI)
+    kp1_Hy = Min(k + 1, sgg%alloc(iHy)%ZE)
+
+    ! Compute indices for Hz
+    im1_Hz = Max(i - 1, sgg%alloc(iHz)%XI)
+    ip1_Hz = Min(i + 1, sgg%alloc(iHz)%XE)
+    jm1_Hz = Max(j - 1, sgg%alloc(iHz)%YI)
+    jp1_Hz = Min(j + 1, sgg%alloc(iHz)%YE)
+    km1_Hz = Max(k - 1, sgg%alloc(iHz)%ZI)
+    kp1_Hz = Min(k + 1, sgg%alloc(iHz)%ZE)
+
+    ! Initialize output
+    interp = 0.0
+
+    ! Electric field interpolation at various positions
+    if (atwhere == iEx) then
+        if (field == iEx) then
+            interp = Ex(i, j, k)
+        elseif (field == iEy) then
+            interp = (Ey(i, j, k) + Ey(i, jm1_Ey, k) + Ey(ip1_Ey, j, k) + Ey(ip1_Ey, jm1_Ey, k)) / 4.0
+        elseif (field == iEz) then
+            interp = (Ez(i, j, k) + Ez(i, j, km1_Ez) + Ez(ip1_Ez, j, k) + Ez(ip1_Ez, j, km1_Ez)) / 4.0
+        elseif (field == iHx) then
+            interp = (Hx(i, j, k) + Hx(i, j, km1_Hx) + Hx(i, jm1_Hx, k) + Hx(i, jm1_Hx, km1_Hx) + &
+                      Hx(ip1_Hx, j, k) + Hx(ip1_Hx, j, km1_Hx) + Hx(ip1_Hx, jm1_Hx, k) + Hx(ip1_Hx, jm1_Hx, km1_Hx)) / 8.0
+        elseif (field == iHy) then
+            interp = (Hy(i, j, k) + Hy(i, j, km1_Hy)) / 2.0
+        elseif (field == iHz) then
+            interp = (Hz(i, j, k) + Hz(i, jm1_Hz, k)) / 2.0
         endif
+    elseif (atwhere == iEy) then
+        if (field == iEx) then
+            interp = (Ex(i, j, k) + Ex(im1_Ex, j, k) + Ex(i, jp1_Ex, k) + Ex(im1_Ex, jp1_Ex, k)) / 4.0
+        elseif (field == iEy) then
+            interp = Ey(i, j, k)
+        elseif (field == iEz) then
+            interp = (Ez(i, j, k) + Ez(i, j, km1_Ez) + Ez(i, jp1_Ez, k) + Ez(i, jp1_Ez, km1_Ez)) / 4.0
+        elseif (field == iHx) then
+            interp = (Hx(i, j, k) + Hx(i, j, km1_Hx)) / 2.0
+        elseif (field == iHy) then
+            interp = (Hy(i, j, k) + Hy(im1_Hy, j, k) + Hy(i, j, km1_Hy) + Hy(im1_Hy, j, km1_Hy) + &
+                      Hy(i, jp1_Hy, k) + Hy(im1_Hy, jp1_Hy, k) + Hy(i, jp1_Hy, km1_Hy) + Hy(im1_Hy, jp1_Hy, km1_Hy)) / 8.0
+        elseif (field == iHz) then
+            interp = (Hz(i, j, k) + Hz(im1_Hz, j, k)) / 2.0
+        endif
+    elseif (atwhere == iEz) then
+        if (field == iEx) then
+            interp = (Ex(i, j, k) + Ex(im1_Ex, j, k) + Ex(i, j, kp1_Ex) + Ex(im1_Ex, j, kp1_Ex)) / 4.0
+        elseif (field == iEy) then
+            interp = (Ey(i, j, k) + Ey(i, jm1_Ey, k) + Ey(i, j, kp1_Ey) + Ey(i, jm1_Ey, kp1_Ey)) / 4.0
+        elseif (field == iEz) then
+            interp = Ez(i, j, k)
+        elseif (field == iHx) then
+            interp = (Hx(i, j, k) + Hx(i, jm1_Hx, k)) / 2.0
+        elseif (field == iHy) then
+            interp = (Hy(i, j, k) + Hy(im1_Hy, j, k)) / 2.0
+        elseif (field == iHz) then
+            interp = (Hz(i, j, k) + Hz(i, jm1_Hz, k) + Hz(im1_Hz, j, k) + Hz(im1_Hz, jm1_Hz, k) + &
+                      Hz(i, j, kp1_Hz) + Hz(i, jm1_Hz, kp1_Hz) + Hz(im1_Hz, j, kp1_Hz) + Hz(im1_Hz, jm1_Hz, kp1_Hz)) / 8.0
+        endif
+    endif
 
-        
-  end function interpolate_field_atwhere      
-        
+    ! Magnetic field interpolation at various positions
+    if (atwhere == iHx) then
+        if (field == iEx) then
+            interp = (Ex(i, j, k) + Ex(im1_Ex, j, k) + Ex(i, jp1_Ex, k) + Ex(im1_Ex, jp1_Ex, k) + &
+                      Ex(i, j, kp1_Ex) + Ex(im1_Ex, j, kp1_Ex) + Ex(i, jp1_Ex, kp1_Ex) + Ex(im1_Ex, jp1_Ex, kp1_Ex)) / 8.0
+        elseif (field == iEy) then
+            interp = (Ey(i, j, k) + Ey(i, j, kp1_Ey)) / 2.0
+        elseif (field == iEz) then
+            interp = (Ez(i, j, k) + Ez(i, jp1_Ez, k)) / 2.0
+        elseif (field == iHx) then
+            interp = Hx(i, j, k)
+        elseif (field == iHy) then
+            interp = (Hy(i, j, k) + Hy(im1_Hy, j, k) + Hy(i, jp1_Hy, k) + Hy(im1_Hy, jp1_Hy, k)) / 4.0
+        elseif (field == iHz) then
+            interp = (Hz(i, j, k) + Hz(im1_Hz, j, k) + Hz(i, j, kp1_Hz) + Hz(im1_Hz, j, kp1_Hz)) / 4.0
+        endif
+    elseif (atwhere == iHy) then
+        if (field == iEx) then
+            interp = (Ex(i, j, k) + Ex(i, j, kp1_Ex)) / 2.0
+        elseif (field == iEy) then
+            interp = (Ey(i, j, k) + Ey(ip1_Ey, j, k) + Ey(i, jm1_Ey, k) + Ey(ip1_Ey, jm1_Ey, k) + &
+                      Ey(i, j, kp1_Ey) + Ey(ip1_Ey, j, kp1_Ey) + Ey(i, jm1_Ey, kp1_Ey) + Ey(ip1_Ey, jm1_Ey, kp1_Ey)) / 8.0
+        elseif (field == iEz) then
+            interp = (Ez(ip1_Ez, j, k) + Ez(i, j, k)) / 2.0
+        elseif (field == iHy) then
+            interp = Hy(i, j, k)
+        elseif (field == iHx) then
+            interp = (Hx(i, j, k) + Hx(i, jm1_Hx, k) + Hx(ip1_Hx, j, k) + Hx(ip1_Hx, jm1_Hx, k)) / 4.0
+        elseif (field == iHz) then
+            interp = (Hz(i, j, k) + Hz(i, jm1_Hz, k) + Hz(i, j, kp1_Hz) + Hz(i, jm1_Hz, kp1_Hz)) / 4.0
+        endif
+    elseif (atwhere == iHz) then
+        if (field == iEx) then
+            interp = (Ex(i, j, k) + Ex(i, jp1_Ex, k)) / 2.0
+        elseif (field == iEy) then
+            interp = (Ey(i, j, k) + Ey(ip1_Ey, j, k)) / 2.0
+        elseif (field == iEz) then
+            interp = (Ez(i, j, k) + Ez(i, jp1_Ez, k) + Ez(i, j, km1_Ez) + Ez(i, jp1_Ez, km1_Ez) + &
+                      Ez(ip1_Ez, j, k) + Ez(ip1_Ez, jp1_Ez, k) + Ez(ip1_Ez, j, km1_Ez) + Ez(ip1_Ez, jp1_Ez, km1_Ez)) / 8.0
+        elseif (field == iHz) then
+            interp = Hz(i, j, k)
+        elseif (field == iHx) then
+            interp = (Hx(i, j, k) + Hx(ip1_Hx, j, k) + Hx(i, j, km1_Hx) + Hx(ip1_Hx, j, km1_Hx)) / 4.0
+        elseif (field == iHy) then
+            interp = (Hy(i, j, k) + Hy(i, jp1_Hy, k) + Hy(i, j, km1_Hy) + Hy(i, jp1_Hy, km1_Hy)) / 4.0
+        endif
+    endif
+
+end function interpolate_field_atwhere
+
 
 end module Observa
