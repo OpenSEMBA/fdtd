@@ -2,9 +2,9 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Module thin wires from Wires paper
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-#ifdef CompileWithMTLN
 
-module Wire_bundles_mtln_mod
+module Wire_bundles_mtln_mod             
+#ifdef CompileWithMTLN
 
    use report
    use fdetypes
@@ -226,7 +226,6 @@ contains
    end subroutine
 
 
+#endif
 
 end module Wire_bundles_mtln_mod
-
-#endif

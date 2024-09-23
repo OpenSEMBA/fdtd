@@ -136,7 +136,7 @@ CONTAINS
          DO j = punto%YI, puntoPlus1%YE
             DO i = punto%XI, punto%XE
                medio = MMiEx (i, j, k)
-!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEx (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0); 
                      !ojo no es sumar porque no debe desbordarse. solo hay que poner el bit
@@ -158,7 +158,7 @@ CONTAINS
          DO j = punto%YI, punto%YE
             DO i = punto%XI, puntoPlus1%XE
                medio = MMiEy (i, j, k)
-!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEy (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
@@ -177,7 +177,7 @@ CONTAINS
          DO j = punto%YI, puntoPlus1%YE
             DO i = punto%XI, puntoPlus1%XE
                medio = MMiEz (i, j, k)
-!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEz (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
@@ -195,7 +195,7 @@ CONTAINS
          DO j = punto%YI, punto%YE
             DO i = punto%XI, puntoPlus1%XE
                medio = MMiHx (i, j, k)
-!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority >= med(medio)%Priority) THEN
                      MMiHx (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
                   END IF
@@ -208,7 +208,7 @@ CONTAINS
          DO j = punto%YI, puntoPlus1%YE
             DO i = punto%XI, punto%XE
                medio = MMiHy (i, j, k)
-!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority >= med(medio)%Priority) THEN
                      MMiHy (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);
                   END IF
@@ -221,7 +221,7 @@ CONTAINS
          DO j = punto%YI, punto%YE
             DO i = punto%XI, punto%XE
                medio = MMiHz (i, j, k)
-!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority >= med(medio)%Priority) THEN
                      MMiHz (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
                   END IF
@@ -330,7 +330,7 @@ CONTAINS
             DO j = punto%YI, punto%YE
                DO k = punto%ZI, punto%ZE
                   medio = MMiHx (i, j, k)
-!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority >= med(medio)%Priority) then
                          MMiHx (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
                      endif
@@ -366,7 +366,7 @@ CONTAINS
             DO i = punto%XI, punto%XE
                DO k = punto%ZI, punto%ZE
                   medio = MMiHy (i, j, k)
-!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority >= med(medio)%Priority) then
                          MMiHy (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);;
                      endif
@@ -402,7 +402,7 @@ CONTAINS
             DO i = punto%XI, punto%XE
                DO j = punto%YI, punto%YE
                   medio = MMiHz (i, j, k)
-!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority >= med(medio)%Priority) then
                          MMiHz (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
                      endif
@@ -487,7 +487,7 @@ CONTAINS
             DO j = punto%YI, punto%YE
                DO i = punto%XI, punto%XE
                   medio = MMiEx (i, j, k)
-!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                         numeroasignaciones=numeroasignaciones+1
                         if (med(indicemedio)%is%lumped) then
@@ -515,7 +515,7 @@ CONTAINS
             DO j = punto%YI, punto%YE
                DO i = punto%XI, punto%XE
                   medio = MMiEy (i, j, k)
-!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                         numeroasignaciones=numeroasignaciones+1
                         if (med(indicemedio)%is%lumped) then
@@ -544,7 +544,7 @@ CONTAINS
             DO j = punto%YI, punto%YE
                DO i = punto%XI, punto%XE
                   medio = MMiEz (i, j, k)
-!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! çç cambio agresivo 031016!!!
+!                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                         numeroasignaciones=numeroasignaciones+1
                         if (med(indicemedio)%is%lumped) then
@@ -1616,7 +1616,7 @@ CONTAINS
          END DO
       END IF
 
-      !ÇÇÇMEDIOEXTRA
+      !!?!?!?MEDIOEXTRA
 
       !
       !adjust constitutive parameters, matrices

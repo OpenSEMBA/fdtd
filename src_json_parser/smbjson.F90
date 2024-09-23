@@ -1,5 +1,6 @@
 module smbjson
 
+#ifdef CompileWithSMBJSON
    use NFDETypes
 
    use NFDETypes_extension
@@ -2879,4 +2880,6 @@ contains
       if (size(res) /= 1) &
          write(error_unit, *) "Entity must contain a single cell region defining a volume."
    end function
+
+#endif   
 end module
