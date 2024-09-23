@@ -353,6 +353,11 @@ They must contain the following entries:
 + `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero.
 + `[transferImpedancePerMeter]` which represents the coupling with the external domain, described below. If not present, it defaults to zero, i.e. perfect shielding.
 
+If the number of wires of the `multiwire` is equal to 1, none of the properties above are scalars:
+
++ `<inductancePerMeter>` and `<capacitancePerMeter>` will be a $1 \times 1$ matrix, i.e `[[1e-7]]` 
++ `[resistancePerMeter]` and `[conductancePerMeter]` will be arrays of size $1$, i.e `[50]`
+
 `transferImpedancePerMeter` can contain:
 
 + `[resistiveTerm]` defined by a real representing transfer impedance resistance. Defaults to `0.0`
