@@ -1445,18 +1445,18 @@ CONTAINS
       CALL print11 (l%layoutnumber, dubuf)
 #ifdef CompileWithMPI
       CALL print11 (l%layoutnumber, 'Compiled WITH MPI support')
-#else
-      CALL print11 (l%layoutnumber, 'Compiled without MPI support')
 #endif
 #ifdef CompileWithHDF
       CALL print11 (l%layoutnumber, 'Compiled WITH .h5 HDF support')
-#else
-      CALL print11 (l%layoutnumber, 'Compiled without .h5 HDF support')
 #endif
 #ifdef CompileWithConformal
       CALL print11 (l%layoutnumber, 'Compiled WITH Conformal support')
-#else
-      CALL print11 (l%layoutnumber, 'Compiled without Conformal support')
+#endif
+#ifdef CompileWithMTLN
+      CALL print11 (l%layoutnumber, 'Compiled WITH MTLN support')
+#endif
+#ifdef CompileWithSMBJSON
+      CALL print11 (l%layoutnumber, 'Compiled WITH SMBJSON support')
 #endif
       WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
       CALL print11 (l%layoutnumber, dubuf)
