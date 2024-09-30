@@ -819,6 +819,9 @@ contains
                                  g2, SINPML_fullsize, dtcritico,eps0,mu0,verbose)
          l_auxinput=thereare%Wires
          l_auxoutput=l_auxinput
+!check for MUR1 nodes sgg 230124
+         call init_murABC_slanted(sgg,SINPML_Fullsize,eps0,mu0)
+!!!!!!         
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
