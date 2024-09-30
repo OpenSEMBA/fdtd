@@ -44,7 +44,7 @@ Prebuilt binares are available at [releases](https://github.com/OpenSEMBA/fdtd/r
 
 In windows, you need to install [intel oneapi runtime libraries](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html).
 
-## Compilation
+## GNU/Linux Compilation
 
 It is important to point out the repository has dependencies which are available as submodules. It is necessary to run `git submodule init` and `git submodule update` from the root folder before running any `cmake` or `build` commands.
 
@@ -104,7 +104,6 @@ libngspice_la_CFLAGS = -static
 libngspice_la_LDFLAGS = -static -version-info @LIB_VERSION@
 ```
 
-
 #### MPI
 
 If you use intel oneapi, make sure to load the mpi environment variables:
@@ -113,9 +112,64 @@ If you use intel oneapi, make sure to load the mpi environment variables:
   source /opt/intel/oneapi/mpi/latest/env/vars.sh
 ```
 
-## Testing
+## Windows (intelLLVM) Compilation
 
-Tests must be run from the root folder. `python` wrapper test assumes that `semba-fdtd` has been compiled successfully and is located in folder `build/bin/`. For intel compilation it also assumes that the intel runtime libraries are accessible.
+Clone this repository:
+
+```shell
+  git clone https://github.com/OpenSEMBA/fdtd.git
+```
+
+or, if using SSH keys:
+
+```shell
+  git clone git@github.com:OpenSEMBA/fdtd.git
+```
+
+navigate to the `/fdtd/` folder that has been created, this folder will be referred to as `root` for any future purposes.
+
+### Prerequisites
+
+This compilation process will use the already available precompiled libraries included with the project, thus it's not required to build them manually.
+This repository has dependencies that are available as submodules. It is necessary to run `git submodule init` and `git submodule update` from the root folder before running any `cmake` or `build` commands.
+
+Additionally, this software requires [Windows BaseKit](https://registrationcenter-download.intel.com/akdlm/IRC_NAS/62641e01-1e8d-4ace-91d6-ae03f7f8a71f/w_BaseKit_p_2024.0.0.49563_offline.exe) and [Windows HPCKit](https://registrationcenter-download.intel.com/akdlm/IRC_NAS/5b36181e-4974-4733-91c7-0c10c54900a5/w_HPCKit_p_2024.0.0.49588_offline.exe). Install these packages with all their features selected.
+
+If not done already, install [CMake](https://cmake.org/download/) and [Ninja](https://github.com/seanmiddleditch/gha-setup-ninja), follow their respective installation steps.
+
+### Compilation process
+
+Open a command prompt with OneAPI variables initialised, to do this open a new command prompt and type:
+
+```shell
+"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" intel64
+```
+
+This will load the OneAPI environment for x64.
+
+Navigate to the fdtd root folder, choose between "Debug"/"Release" for `-DCMAKE_BUILD_TYPE`, and "Yes"/"No" for `-DSEMBA_FDTD_ENABLE_MPI`, for example, a Release version with MPI Support would be:
+
+```shell
+cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DSEMBA_FDTD_ENABLE_MPI=Yes
+```
+
+Then,
+
+```shell
+cmake --build build -j
+```
+
+We should now find the compiled executables in `\build\bin\`.
+
+### Usage
+
+In order to use semba-fdtd, the executable must have access to the dynamic libraries it has dependencies on. Either move the libraries to the same folder as the executable, or run the executable through a console with the OneAPI environment loaded:
+
+```shell
+"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" intel64
+```
+
+Once the environment is loaded, follow the steps in the next section.
 
 ## Running cases
 
@@ -125,6 +179,10 @@ These can be run with
 ```shell
   semba-fdtd -i CASE_NAME.fdtd.json
 ```
+
+## Testing
+
+Tests must be run from the root folder. `python` wrapper test assumes that `semba-fdtd` has been compiled successfully and is located in folder `build/bin/`. For intel compilation it also assumes that the intel runtime libraries are accessible.
 
 # License
 
