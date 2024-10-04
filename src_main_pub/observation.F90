@@ -193,7 +193,7 @@ contains
       integer (kind=4)  ::  ierr
 #endif
       logical :: Esborde
-      integer (kind=4)  ::  imed,imed1,imed2,imed3,imed4
+      integer (kind=4)  ::  imed,imed1,imed2,imed3,imed4,medium
       integer (kind=4)  ::  thefile !for file management
 !for dft
       REAL (KIND=RKIND), allocatable, dimension(:) :: signal,fqPos
@@ -1236,8 +1236,10 @@ contains
                                  if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%ThinWire).and. &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                     conta=conta+1
-                                 endif
-                                 if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif  
+                                 medium=sggMiEx(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &   
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                !!!   if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                !!!   (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
@@ -1245,8 +1247,10 @@ contains
                                !!!   (.not.sgg%med(sggMiHz(III   , JJJ -1, KKK   ))%Is%PEC)) then
                                        conta=conta+1
                                !!!     endif
-                                 endif
-                                 if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif 
+                                 medium=sggMiEy(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. &   
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                  !!! if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                  !!! (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
@@ -1254,8 +1258,10 @@ contains
                                  !!! (.not.sgg%med(sggMiHx(III   , JJJ   , KKK -1))%Is%PEC)) then
                                        conta=conta+1
                                  !!!   endif
-                                 endif
-                                 if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif  
+                                 medium=sggMiEz(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and. &      
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                  !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                  !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
@@ -1514,8 +1520,10 @@ contains
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJz
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
-                                 endif
-                                 if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif   
+                                 medium=sggMiEx(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &        
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                   !!! if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                   !!! (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
@@ -1528,8 +1536,10 @@ contains
                                        output(ii)%item(i)%Serialized%currentType(conta)=iJx
                                        output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  !!!   endif
-                                 endif
-                                 if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif    
+                                 medium=sggMiEy(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. &   
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                  !!!  if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                  !!!  (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
@@ -1542,8 +1552,10 @@ contains
                                        output(ii)%item(i)%Serialized%currentType(conta)=iJy
                                        output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                   !!!  endif
-                                 endif
-                                 if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif    
+                                 medium=sggMiEz(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and. &   
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                  !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                  !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
@@ -2669,7 +2681,7 @@ contains
 
       !---------------------------> variables locales <-----------------------------------------------
       integer( kind = 4)  ::  i, ii, i1, i2, j1, j2, k1, k2, i1_m, i2_m, j1_m, j2_m, k1_m, k2_m, field,jjx,jjy,jjz,if1,i1t,j1t,k1t,iff1
-      integer( kind = 4)  ::  iii, kkk, jjj, jjj_m, iii_m, kkk_m,NtimeforVolumic,imed,imed1,imed2,imed3,imed4
+      integer( kind = 4)  ::  iii, kkk, jjj, jjj_m, iii_m, kkk_m,NtimeforVolumic,imed,imed1,imed2,imed3,imed4,medium
       logical :: esborde,wirecrank
       REAL (KIND=RKIND_tiempo)    ::  at
       real (kind = RKIND) :: jx,jy,jz
@@ -3242,8 +3254,10 @@ contains
                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEz)
                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
-                                       endif
-                                       if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and.  &
+                                       endif       
+                                       medium=sggMiEx(III , JJJ , KKK )
+                                     ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &   
+                                       if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                            (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                        !!! if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                        !!! (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
@@ -3264,8 +3278,10 @@ contains
                                            output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEx)
                                            output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEx)
                                        !!!   endif
-                                       endif
-                                       if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and.  &
+                                       endif        
+                                       medium=sggMiEy(III , JJJ , KKK )
+                                     ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. &      
+                                       if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                            (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                        !!! if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                        !!! (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
@@ -3286,8 +3302,10 @@ contains
                                            output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEy)
                                            output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEy)
                                         !!!  endif
-                                       endif
-                                       if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and.  &
+                                       endif   
+                                       medium=sggMiEz(III , JJJ , KKK )
+                                     ! if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and. & 
+                                       if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                            (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                        !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                        !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
@@ -3810,8 +3828,10 @@ contains
                                     output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
                                     output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
                                  end do
-                              endif
-                              if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and.  &
+                              endif          
+                               medium=sggMiEx(III , JJJ , KKK )
+                             ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &  
+                               if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                !!!  if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                !!!  (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
@@ -3834,8 +3854,10 @@ contains
                                        output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEx)
                                     end do
                                 !!! endif
-                              endif
-                              if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and.  &
+                              endif         
+                               medium=sggMiEy(III , JJJ , KKK )
+                            ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. & 
+                              if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                !!! if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                !!! (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
@@ -3859,7 +3881,9 @@ contains
                                     end do
                                 !!! endif
                               endif
-                              if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and.  &
+                              medium=sggMiEz(III , JJJ , KKK )       
+                            ! if ((sgg%med(medium)%Is%Line).and. &  
+                              if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
