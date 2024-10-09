@@ -132,11 +132,11 @@ navigate to the `/fdtd/` folder that has been created, this folder will be refer
 
 This compilation process will use the already available precompiled libraries included with the project, thus it's not required to build them manually.
 This repository has dependencies that are available as submodules. It is necessary to run `git submodule init` and `git submodule update` from the root folder before running any `cmake` or `build` commands.
-Important Note: The submodules use a SSH remote URL to be cloned. If not using a SSH-key in the computer where the following process will be performed, the remote addresses for each submodule in the .gitmodules file must be individually changed to their HTTPS alternative.
+In the .gitmodules file, the submodules use the SSH remote URL by default. If not using a SSH-key in the computer where the following process will be performed, the remote addresses for each submodule must be individually changed to their HTTPS alternative.
 
-Additionally, this software requires [Windows BaseKit](https://registrationcenter-download.intel.com/akdlm/IRC_NAS/62641e01-1e8d-4ace-91d6-ae03f7f8a71f/w_BaseKit_p_2024.0.0.49563_offline.exe) and [Windows HPCKit](https://registrationcenter-download.intel.com/akdlm/IRC_NAS/5b36181e-4974-4733-91c7-0c10c54900a5/w_HPCKit_p_2024.0.0.49588_offline.exe). Install these packages with all their features selected.
+This software requires [Windows BaseKit](https://registrationcenter-download.intel.com/akdlm/IRC_NAS/62641e01-1e8d-4ace-91d6-ae03f7f8a71f/w_BaseKit_p_2024.0.0.49563_offline.exe) and [Windows HPCKit](https://registrationcenter-download.intel.com/akdlm/IRC_NAS/5b36181e-4974-4733-91c7-0c10c54900a5/w_HPCKit_p_2024.0.0.49588_offline.exe). Install these packages with all their features selected.
 
-If not done already, install [CMake](https://cmake.org/download/) and [Ninja](https://github.com/seanmiddleditch/gha-setup-ninja), follow their respective installation steps.
+Additionally, if not done already, install [CMake](https://cmake.org/download/) and [Ninja](https://github.com/seanmiddleditch/gha-setup-ninja), follow their respective installation steps.
 
 ### Compilation process
 
