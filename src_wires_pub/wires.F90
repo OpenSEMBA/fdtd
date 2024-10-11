@@ -3918,24 +3918,25 @@ end subroutine deembed_segment
                nodo%islossy = nodo%islossy .or. (abs(sigt) > 1.0e-19_RKIND_wires)
                
               !091024 para poner bien uniones hilo-lossy sgbc conformal !ojooo es bruto  !bug  FU50_50mm_conf    
-               !fallaria en un hipotetico conformal dielectrico con hilos unidos... habria que distinguir bien ojooooo
-               nodo%islossy = nodo%islossy .or. &
-                           sgg%Med(sggMino(i  ,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
-                           sgg%Med(sggMiEx(i  ,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
-                           sgg%Med(sggMiEy(i,j  ,k         ))%Is%already_YEEadvanced_byconformal .or. &
-                           sgg%Med(sggMiEz(i,j,k           ))%Is%already_YEEadvanced_byconformal .or. &
-                           sgg%Med(sggMiEx(i-1,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
-                           sgg%Med(sggMiEy(i,j-1,k         ))%Is%already_YEEadvanced_byconformal .or. &
-                           sgg%Med(sggMiEz(i,j,kmenos1     ))%Is%already_YEEadvanced_byconformal
-               nodo%islossy = nodo%islossy .or. &
-                           sgg%Med(sggMino(i  ,j,k         ))%Is%split_and_useless .or. &
-                           sgg%Med(sggMiEx(i  ,j,k         ))%Is%split_and_useless .or. &
-                           sgg%Med(sggMiEy(i,j  ,k         ))%Is%split_and_useless .or. &
-                           sgg%Med(sggMiEz(i,j,k           ))%Is%split_and_useless .or. &
-                           sgg%Med(sggMiEx(i-1,j,k         ))%Is%split_and_useless .or. &
-                           sgg%Med(sggMiEy(i,j-1,k         ))%Is%split_and_useless .or. &
-                           sgg%Med(sggMiEz(i,j,kmenos1     ))%Is%split_and_useless
-               !
+               !fallaria en un hipotetico conformal dielectrico con hilos unidos... habria que distinguir bien ojooooo  y propagar este cambio al resto de sabores de hilos
+             !!!!!
+             !!!!! if( sgg%Med(sggMino(i  ,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEx(i  ,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEy(i,j  ,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEz(i,j,k           ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEx(i-1,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEy(i,j-1,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEz(i,j,kmenos1     ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMino(i  ,j,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEx(i  ,j,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEy(i,j  ,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEz(i,j,k           ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEx(i-1,j,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEy(i,j-1,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEz(i,j,kmenos1     ))%Is%split_and_useless) then
+             !!!!!     nodo%ispec=.true.
+             !!!!! endif
+               !tampoco es esto lo del bug  FU50_50mm_conf   pero no esta de mas tenerlo en cuenta
             
                nodo%ispec = &
                ( sggMiNo(i  ,j,k) ==0).or.(sgg%med( sggMiNo(i  ,j,k) )%is%pec) .or. &
