@@ -408,7 +408,7 @@ contains
              diagonalcaja=sqrt( (sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(iHx)%XI)) - sgg%Linex(min(sgg%PlaneWave(jjj)%esqx2+1,SINPML_fullsize(iHx)%XE)))**2.0_RKIND  + &
                                 (sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(iHy)%YI)) - sgg%Liney(min(sgg%PlaneWave(jjj)%esqy2+1,SINPML_fullsize(iHy)%YE)))**2.0_RKIND  + &
                                 (sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(iHz)%ZI)) - sgg%Linez(min(sgg%PlaneWave(jjj)%esqz2+1,SINPML_fullsize(iHz)%ZE)))**2.0_RKIND  ) 
-             distanciaInicial(jjj,kkk)=((XD0*pxpw(jjj,kkk)+YD0*pypw(jjj,kkk)+ZD0*pzpw(jjj,kkk)))-INCERT(jjj,kkk)*diagonalcaja !CREO QUE LA TENGO QUE RESTAR PARA QUE LA INCERTIDUMBRE SOLO AGRANDE LA CAJA (RETRASE LA SEÑAL)
+             distanciaInicial(jjj,kkk)=((XD0*pxpw(jjj,kkk)+YD0*pypw(jjj,kkk)+ZD0*pzpw(jjj,kkk)))-INCERT(jjj,kkk)*diagonalcaja !CREO QUE LA TENGO QUE RESTAR PARA QUE LA INCERTIDUMBRE SOLO AGRANDE LA CAJA (RETRASE LA SEniAL)
                                                                            !!!! corroboro a 150419 que hay que restar la incertidumbre, despues de dudar sobre el signo, pq luego t-d/c, d=n.r-(n.r0-incert)>0 sii incert>0, ya que n.r-n.r0>0 siempre
 
              

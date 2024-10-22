@@ -1,4 +1,6 @@
 module parser_tools_mod
+    
+#ifdef CompileWithSMBJSON
    use labels_mod
    use mesh_mod
    use cells_mod
@@ -32,18 +34,35 @@ contains
       type(coords), dimension(:), pointer :: res
       type(cell_region_t), dimension(:), intent(in) :: cellRegions
       integer, intent(in), optional :: cellType
-      type(cell_interval_t), dimension(:), allocatable :: intervals
+      type(cell_interval_t), dimension(:), allocatable :: intervals, intervalsInRegion
       type(coords), dimension(:), allocatable :: cs
-      integer :: i
+      integer :: i, j
+      integer :: numberOfIntervals, copiedIntervals
 
-      allocate(intervals(0))
+      
+      numberOfIntervals = 0
       do i = 1, size(cellRegions)
          if (present(cellType)) then
-            intervals = [intervals, cellRegions(i)%getIntervalsOfType(cellType)]
-         else
-            intervals = [intervals, cellRegions(i)%intervals]
+            numberOfIntervals = numberOfIntervals + count(cellRegions(i)%intervals%getType() == cellType)
+         else 
+            numberOfIntervals = numberOfIntervals + size(cellRegions(i)%intervals)
          end if
       end do
+      
+      allocate(intervals(numberOfIntervals))
+      copiedIntervals = 0
+      do i = 1, size(cellRegions)
+         if (present(cellType)) then
+            intervalsInRegion = cellRegions(i)%getIntervalsOfType(cellType)
+         else
+            intervalsInRegion = cellRegions(i)%intervals
+         end if
+         do j = 1, size(intervalsInRegion)
+            copiedIntervals = copiedIntervals + 1
+            intervals(copiedIntervals) = intervalsInRegion(j) 
+         end do
+      end do
+      
       cs = cellIntervalsToCoords(intervals)
       allocate(res(size(cs)))
       res = cs
@@ -175,5 +194,5 @@ contains
       allocate(res(1,1), source = 0.0)
       res(1,1) = scalar
    end function
-
+#endif
 end module

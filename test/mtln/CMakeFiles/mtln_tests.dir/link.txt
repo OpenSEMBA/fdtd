@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmtln_tests.a CMakeFiles/mtln_tests.dir/mtln_tests.cpp.o
+/usr/bin/ranlib libmtln_tests.a

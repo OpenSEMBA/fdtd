@@ -2657,7 +2657,7 @@ contains
                               endif
                               !
                               If( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT) then
-                                 !!!!!!!!피피피피피피피피
+                                 !!!!!!!!!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?
                                  new_My = - My
                                  new_Mz = + Mz
                                  new_Jy = + Jy
@@ -3136,7 +3136,7 @@ contains
                               call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               !
                               If( FF%farfieldAb_ClonePEC_LEFT.or.FF%farfieldAr_ClonePEC_LEFT) then
-                                 !피피피피피피피피피피
+                                 !!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?!?
                                  new_Mx = + Mx
                                  new_My = - My
                                  new_Jx = - Jx

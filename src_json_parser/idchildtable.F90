@@ -1,4 +1,6 @@
 module idchildtable_mod
+
+#ifdef CompileWithSMBJSON    
    use json_module
    use fhash, only: fhash_tbl_t, key=>fhash_key
    use labels_mod
@@ -61,5 +63,5 @@ contains
          res = d
       end select
    end function
-
+#endif
 end module
