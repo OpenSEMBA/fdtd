@@ -428,7 +428,7 @@ PROGRAM SEMBA_FDTD_launcher
 !!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!
 
-   call set_priorities(l%prioritizeCOMPOoverPEC,l%prioritizeISOTROPICBODYoverall) !!! asigna las prioridades
+   call set_priorities(l%prioritizeCOMPOoverPEC,l%prioritizeISOTROPICBODYoverall,l%prioritizeTHINWIRE) !!! asigna las prioridades
    if (l%finaltimestep /= -2) then
       ! nfde part
       CALL print11 (l%layoutnumber, 'INIT conversion internal ASCII => Binary')

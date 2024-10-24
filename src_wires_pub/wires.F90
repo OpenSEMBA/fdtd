@@ -5766,35 +5766,37 @@ subroutine resume_casuistics
       !END OF CHARGE ADVANCING from n+1.0_RKIND_wires / 2 to n+3/2
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-#ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
-#endif
-      do n=1,HWires%NumChargeNodes
-         Nodo => HWires%ChargeNode(n)
-!!!!140220 pon a PEC los viejos notouch=already_YEEadvanced_byconformal_changedtoPECfield que tenga conectado un nodo
-         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield2)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield2=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield3)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield3=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield4)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield4=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield5)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield5=0.0_RKIND
-         endif
-         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield6)) then
-             nodo%already_YEEadvanced_byconformal_changedtoPECfield6=0.0_RKIND
-         endif
-      end do
-#ifdef CompileWithOpenMP
-!$OMP END PARALLEL DO
-#endif
+      
+!!!mal a 1024 !comentado en todos los sabores de wires
+!!!#ifdef CompileWithOpenMP
+!!!!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
+!!!#endif
+!!!      do n=1,HWires%NumChargeNodes
+!!!         Nodo => HWires%ChargeNode(n)
+!!!!!!!140220 pon a PEC los viejos notouch=already_YEEadvanced_byconformal_changedtoPECfield que tenga conectado un nodo
+!!!         !debe ser lo primero que se hace para overridear el call conformal_advance_E 
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield1)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield1=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield2)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield2=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield3)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield3=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield4)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield4=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield5)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield5=0.0_RKIND
+!!!         endif
+!!!         if (associated(nodo%already_YEEadvanced_byconformal_changedtoPECfield6)) then
+!!!             nodo%already_YEEadvanced_byconformal_changedtoPECfield6=0.0_RKIND
+!!!         endif
+!!!      end do
+!!!#ifdef CompileWithOpenMP
+!!!!$OMP END PARALLEL DO
+!!!#endif
 !
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

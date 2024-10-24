@@ -3338,9 +3338,11 @@ contains
                                           conta=conta+1
                                           jJx=sggMiEx(III , JJJ, KKK)
                                           !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((jJx==0).or.(sgg%Med(jJx)%is%Pec)) then
-                                             jx=0.5_RKIND
-                                          elseif (sgg%Med(jJx)%is%thinwire) then
+                                          if ((sgg%Med(jJx)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
+                                             jx=5.5
+                                          elseif ((sgg%Med(jJx)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
+                                             jx=6.5
+                                          elseif (sgg%Med(jJx)%is%thinwire) then !cambio orden para que siempre salgan los thin wires 231024
                                              if (((sggMiEy(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK  ))%is%thinwire)).or. &
                                                  ((sggMiEy(III   , JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK  ))%is%thinwire)).or. &
                                                  ((sggMiEz(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK  ))%is%thinwire)).or. &
@@ -3353,6 +3355,8 @@ contains
                                              else  !no hay una colision
                                                 jx=7
                                              endif
+                                          elseif ((jJx==0).or.(sgg%Med(jJx)%is%Pec)) then
+                                             jx=0.5_RKIND
                                           elseif ((sgg%Med(jJx)%is%SGBC).or.(sgg%Med(jJx)%is%multiport).or.(sgg%Med(jJx)%is%anismultiport)) then
                                              jx=3.5
                                           elseif ((sgg%Med(jJx)%is%edispersive).or.(sgg%Med(jJx)%is%EDispersiveANIS).or.(sgg%Med(jJx)%is%mDispersive).or.(sgg%Med(jJx)%is%mDispersiveANIS)) then
@@ -3361,10 +3365,6 @@ contains
                                              jx=2.5
                                           elseif (sgg%Med(jJx)%is%thinslot) then
                                              jx=4.5
-                                          elseif ((sgg%Med(jJx)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                             jx=5.5
-                                          elseif ((sgg%Med(jJx)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
-                                             jx=6.5
                                           else
                                              jx=-0.5_RKIND
                                           endif
@@ -3381,9 +3381,11 @@ contains
                                           conta=conta+1
                                           jJy=sggMiEy(III , JJJ, KKK)
                                           !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((jJy==0).or.(sgg%Med(jJy)%is%Pec)) then
-                                             jy=0.5_RKIND
-                                          elseif (sgg%Med(jJy)%is%thinwire) then
+                                          if ((sgg%Med(jJy)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then 
+                                             jy=5.5
+                                          elseif ((sgg%Med(jJy)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
+                                             jy=6.5
+                                          elseif (sgg%Med(jJy)%is%thinwire) then    !cambio orden para que siempre salgan los thin wires 231024
                                              if (((sggMiEz(III   , JJJ    , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ    , KKK  ))%is%thinwire)).or. &
                                              ((sggMiEz(III   , JJJ    , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ    , KKK-1))%is%thinwire)).or. &
                                              ((sggMiEx(III   , JJJ    , KKK  )/=1).AND.(.not.sgg%med(sggMiEx(III   , JJJ    , KKK  ))%is%thinwire)).or. &
@@ -3396,6 +3398,8 @@ contains
                                              else  !no hay una colision
                                                 jy=7
                                              endif
+                                          elseif ((jJy==0).or.(sgg%Med(jJy)%is%Pec)) then
+                                             jy=0.5_RKIND
                                           elseif ((sgg%Med(jJy)%is%SGBC).or.(sgg%Med(jJy)%is%multiport).or.(sgg%Med(jJy)%is%anismultiport)) then
                                              jy=3.5
                                           elseif ((sgg%Med(jJy)%is%edispersive).or.(sgg%Med(jJy)%is%EDispersiveANIS).or.(sgg%Med(jJy)%is%mDispersive).or.(sgg%Med(jJy)%is%mDispersiveANIS)) then
@@ -3404,10 +3408,6 @@ contains
                                              jy=2.5
                                           elseif (sgg%Med(jJy)%is%thinslot) then
                                              jy=4.5
-                                          elseif ((sgg%Med(jJy)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then 
-                                             jy=5.5
-                                          elseif ((sgg%Med(jJy)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
-                                             jy=6.5
                                           else
                                              jy=-0.5_RKIND
                                           endif
@@ -3424,9 +3424,11 @@ contains
                                           conta=conta+1
                                           jJz=sggMiEz(III , JJJ, KKK)
                                           !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((jJz==0).or.(sgg%Med(jJz)%is%Pec)) then
-                                             jz=0.5_RKIND
-                                          elseif (sgg%Med(jJz)%is%thinwire) then
+                                          if ((sgg%Med(jJz)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
+                                             jz=5.5
+                                          elseif ((sgg%Med(jJz)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
+                                             jz=6.5
+                                          elseif (sgg%Med(jJz)%is%thinwire) then   !cambio orden para que siempre salgan los thin wires 231024
                                              if (((sggMiEy(III   , JJJ  , KKK    )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK    ))%is%thinwire)).or. &
                                              ((sggMiEy(III   , JJJ-1, KKK    )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK    ))%is%thinwire)).or. &
                                              ((sggMiEx(III   , JJJ  , KKK    )/=1).AND.(.not.sgg%med(sggMiEx(III   , JJJ  , KKK    ))%is%thinwire)).or. &
@@ -3439,6 +3441,8 @@ contains
                                              else  !no hay una colision
                                                 jz=7
                                              endif
+                                          elseif ((jJz==0).or.(sgg%Med(jJz)%is%Pec)) then
+                                             jz=0.5_RKIND
                                           elseif ((sgg%Med(jJz)%is%SGBC).or.(sgg%Med(jJz)%is%multiport).or.(sgg%Med(jJz)%is%anismultiport)) then
                                              jz=3.5
                                           elseif ((sgg%Med(jJz)%is%edispersive).or.(sgg%Med(jJz)%is%EDispersiveANIS).or.(sgg%Med(jJz)%is%mDispersive).or.(sgg%Med(jJz)%is%mDispersiveANIS)) then
@@ -3447,10 +3451,6 @@ contains
                                              jz=2.5
                                           elseif (sgg%Med(jJz)%is%thinslot) then
                                              jz=4.5
-                                          elseif ((sgg%Med(jJz)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                             jz=5.5
-                                          elseif ((sgg%Med(jJz)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
-                                             jz=6.5
                                           else
                                              jz=-0.5_RKIND
                                           endif
@@ -3487,7 +3487,7 @@ contains
                                           Jy=(dzh(KKK ) * Hz( III -1, JJJ   , KKK   ) + dzh(KKK +1) *Hz( III -1, JJJ   , KKK +1) )/1.0_RKIND -  &
                                              (dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/1.0_RKIND +  &
                                               dxh(III )*( Hx( III   , JJJ   , KKK +1) -              Hx( III   , JJJ   , KKK -1) )/1.0_RKIND
-                                          !el Hx al promediarlo con el suyo (i,j,k) a ambos lados pierde su componente y solo quedan las adyancentes     
+                                          !el Hx al promediarlo con el suyo (i,j,k) a ambos lados pierde su componente y solo quedan las adyacentes     
                                           !a pesar de ser lógico tengo dudas de esa division por 2 caso tiras guada 0824 !?!?
                                           !he quitado la division por 2 porque el lazo debe tragarse los lados de la celda
                                           !otro tema sería la resta de la corriente de desplazamiento ahora que tambien calculamos campo electrico es posible 020824
