@@ -74,10 +74,22 @@ contains
                select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))
                   case(1)                                
                   mtln_solver%bundles(m)%external_field_segments(n)%field => Ex(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT1 => Ey(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT2 => Ez(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT1n => Ey(i+1, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT2n => Ez(i+1, j, k) 
                   case(2)     
                   mtln_solver%bundles(m)%external_field_segments(n)%field => Ey(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT1 => Ez(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT1 => Ez(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT2n => Ex(i, j+1, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT2n => Ex(i, j+1, k) 
                   case(3)     
                   mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT1 => Ex(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT1 => Ex(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT2n => Ey(i, j, k+1) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldT2n => Ey(i, j, k+1) 
                   end select
             end do
          end do

@@ -305,13 +305,15 @@ contains
         real, dimension(:,:,:), allocatable :: i_diff_eps
         i_diff_eps = this%i_diff
 
-        ! eps_r = this%external_field_segments(1)%effectiveRelativePermittivity
-        eps_r = 1.00
+        eps_r = this%external_field_segments(1)%effectiveRelativePermittivity
+        ! eps_r = 3.0
         ! if (eps_r == 1.0) then 
         do i = 2, this%number_of_divisions
             ! i_diff_eps(i,2,2) = i_diff_eps(i,2,2)/eps_r
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:)/eps_r, this%i(:,i) - this%i(:,i-1)  )
+            ! this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i) - this%step_size(i)*(this%e_T(:,i) - this%e_Tprev(:,i)) ) - &
+            !                matmul(this%i_diff(i,:,:)/eps_r, (this%i(:,i) - this%i(:,i-1)))
         end do
 
         ! else 
@@ -344,6 +346,11 @@ contains
                         matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i) + this%v_eps(:,i+1) - this%v_eps(:,i)) - &
                                                     this%e_L(:,i) * this%step_size(i)) - &
                         matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
+            ! this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
+            !             matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i) + this%v_eps(:,i+1) - this%v_eps(:,i)) + &
+            !                                         (this%e_T(:,i+1) - this%e_T(:,i)) * this%step_size(i) - &
+            !                                         this%e_L(:,i) * this%step_size(i)) - &
+            !             matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
         ! else 
 

@@ -136,7 +136,7 @@ include_directories(${HDF5_INCLUDE_DIRS})
 include_directories(${FHASH_INCLUDES})
 
 add_definitions(		
--DCompileWithInt2 
+-DCompileWithInt4
 -DCompileWithReal4 
 -DCompileWithOpenMP 
 -DCompileWithAnisotropic 
