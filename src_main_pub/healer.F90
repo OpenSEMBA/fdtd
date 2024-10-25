@@ -54,7 +54,28 @@ MODULE CreateMatrices
    PUBLIC CreateVolumeMM, CreateSurfaceMM, CreateLineMM
    PUBLIC CreateSurfaceSlotMM,CreateMagneticSurface
    !
-CONTAINS
+    CONTAINS
+    
+   SUBROUTINE SortInitEndWithIncreasingOrder(p)
+        type(XYZlimit_t), intent(inout) :: p
+        integer (kind=4) :: aux
+        if (p%XI > p%XE) then
+            aux = p%XI
+            p%XI = p%XE
+            p%XE = aux
+        endif
+        if (p%YI > p%YE) then
+            aux = p%YI
+            p%YI = p%YE
+            p%YE = aux
+        endif
+        if (p%ZI > p%ZE) then
+            aux = p%ZI
+            p%ZI = p%ZE
+            p%ZE = aux
+        endif
+   END SUBROUTINE
+    
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Routine :  CreateVolumeMM :  Sets every field component of a volume voxel to the index of the medium
    ! Inputs :   M(field)%Mediamatrix(i,j,k)  : type of medium at each i,j,k, for each field
@@ -70,7 +91,6 @@ CONTAINS
    & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, BoundingBox, point, indicemedio)
-      logical :: malordenado
       character(len=BUFSIZE) :: buff
       TYPE (Shared_t) :: Eshared
       !
@@ -79,7 +99,8 @@ CONTAINS
       INTEGER (KIND=4) :: medio
       !
       TYPE (XYZlimit_t) :: punto, puntoPlus1
-      TYPE (XYZlimit_t), INTENT (IN) :: point, BoundingBox
+      TYPE (XYZlimit_t), INTENT (INOUT) :: point
+      TYPE (XYZlimit_t), INTENT(IN) ::  BoundingBox
       !
       INTEGER (KIND=4) :: indicemedio
       !
@@ -102,12 +123,7 @@ CONTAINS
       !
       med(indicemedio)%Is%Volume = .TRUE.
       !
-      !
-      malordenado=(point%XI > point%XE).or.(point%YI > point%YE).or.(point%ZI > point%ZE)
-      if (malordenado) then
-         wRITE (buff, '(a,6i5)') 'pre2_Error: CreateVolumeMM first point with higher coordinates than second point: ',point%XI , point%XE , point%YI , point%YE , point%ZI, point%ZE
-         CALL WarnErrReport (buff,.true.)
-      endif
+      call SortInitEndWithIncreasingOrder(point)
       !
       punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
       punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
@@ -250,14 +266,14 @@ CONTAINS
    & Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, &
    & Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, &
    & med, NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio)
-      logical :: malordenado
       character(len=BUFSIZE) :: buff
       INTEGER (KIND=4) :: NumMedia
       TYPE (Shared_t) :: Eshared
       TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
       TYPE (XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
-      TYPE (XYZlimit_t), INTENT (IN) :: point, BoundingBox
+      TYPE (XYZlimit_t), INTENT (INOUT) :: point
+      TYPE (XYZlimit_t), INTENT(IN) :: BoundingBox
       !
       INTEGER (KIND=4) :: indicemedio, orientacion
       INTEGER (KIND=4) :: layoutnumber, i, j, k
@@ -280,11 +296,7 @@ CONTAINS
       med(indicemedio)%Is%Surface = .TRUE.
       !
       !
-      malordenado=(point%XI > point%XE).or.(point%YI > point%YE).or.(point%ZI > point%ZE)
-      if (malordenado) then
-         wRITE (buff, '(a,6i5)') 'pre2_Error: CreateSurfaceMM first point with higher coordinates than second point: ',point%XI , point%XE , point%YI , point%YE , point%ZI, point%ZE
-         CALL WarnErrReport (buff,.true.)
-      endif
+      call SortInitEndWithIncreasingOrder(point)
       !
       punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
       punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
@@ -416,7 +428,7 @@ CONTAINS
       RETURN
    END SUBROUTINE
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Routine :  CreateLineMM :  Sets every field component of the inner X/Y/Z axis of a voxel to the index of the medium
+   ! Routine :  CreateLineMM :  Sets every field component of the inner Y/Y/Z axis of a voxel to the index of the medium
    ! Inputs :   M(field)%Mediamatrix(i,j,k)  : type of medium at each i,j,k, for each field
    !          punto%XI,punto%XE,punto%YI,punto%YE,punto%ZI,punto%ZE : initial and end coordinates of the voxel
    !          indicemedio       : index of the voxel medium
@@ -431,14 +443,15 @@ CONTAINS
    & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio, isathinwire, verbose,numeroasignaciones)
-      logical :: malordenado
-
+      
       TYPE (Shared_t) :: Eshared
       INTEGER (KIND=4) :: NumMedia
       TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
       TYPE (XYZlimit_t) :: punto
-      TYPE (XYZlimit_t), INTENT (IN) :: point, BoundingBox
+      TYPE (XYZlimit_t), INTENT (INOUT) :: point
+      TYPE (XYZlimit_t), INTENT(IN) :: BoundingBox
+      
       INTEGER (KIND=4) :: indicemedio, orientacion,numeroasignaciones
       LOGICAL, INTENT (IN) :: isathinwire, verbose
       INTEGER (KIND=4) :: i, j, k, layoutnumber
@@ -463,11 +476,7 @@ CONTAINS
       med(indicemedio)%Is%Line = .TRUE.
       !
       !
-      malordenado=(point%XI > point%XE).or.(point%YI > point%YE).or.(point%ZI > point%ZE)
-      if (malordenado) then
-         wRITE (buff, '(a,6i5)') 'pre2_Error: CreateLineMM CreateLineMM first point with higher coordinates than second point: ',point%XI , point%XE , point%YI , point%YE , point%ZI, point%ZE
-         CALL WarnErrReport (buff,.true.)
-      endif
+      call SortInitEndWithIncreasingOrder(point)
       !
       punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
       punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
@@ -587,14 +596,14 @@ CONTAINS
    & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, Hshared, BoundingBox, point, orientacion, direccion, indicemedio)
-      logical :: malordenado
       character(len=BUFSIZE) :: buff
       TYPE (Shared_t) :: Eshared, Hshared
       INTEGER (KIND=4) :: NumMedia
       TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
       TYPE (XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
-      TYPE (XYZlimit_t), INTENT (IN) :: point, BoundingBox
+      TYPE (XYZlimit_t), INTENT (INOUT) :: point
+      TYPE (XYZlimit_t), INTENT(IN) :: BoundingBox
       !
       INTEGER (KIND=4) :: indicemedio, orientacion, direccion
       !
@@ -617,11 +626,7 @@ CONTAINS
       INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       med(indicemedio)%Is%Surface = .TRUE.
       !
-      malordenado=(point%XI > point%XE).or.(point%YI > point%YE).or.(point%ZI > point%ZE)
-      if (malordenado) then
-         wRITE (buff, '(a,6i5)') 'pre2_Error: CreateSurfaceSlotMM first point with higher coordinates than second point: ',point%XI , point%XE , point%YI , point%YE , point%ZI, point%ZE
-         CALL WarnErrReport (buff,.true.)
-      endif
+      call SortInitEndWithIncreasingOrder(point)
       !
       !
       punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
@@ -801,14 +806,14 @@ CONTAINS
    & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio)
-      logical :: malordenado
       character(len=BUFSIZE) :: buff
       INTEGER (KIND=4) :: NumMedia
       TYPE (Shared_t) :: Eshared
       TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
       TYPE (XYZlimit_t) :: punto, puntoPlus1   !,puntoBboxplus1
-      TYPE (XYZlimit_t), INTENT (IN) :: point, BoundingBox
+      TYPE (XYZlimit_t), INTENT (INOUT) :: point
+      TYPE (XYZlimit_t), INTENT(IN) :: BoundingBox
       !
       INTEGER (KIND=4) :: indicemedio, orientacion
       INTEGER (KIND=4) :: layoutnumber, i, j, k
@@ -831,11 +836,7 @@ CONTAINS
       med(indicemedio)%Is%Surface = .TRUE.
       !
       !
-      malordenado=(point%XI > point%XE).or.(point%YI > point%YE).or.(point%ZI > point%ZE)
-      if (malordenado) then
-         wRITE (buff, '(a,6i5)') 'pre2_Error: CreateMagneticSurface first point with higher coordinates than second point: ',point%XI , point%XE , point%YI , point%YE , point%ZI, point%ZE
-         CALL WarnErrReport (buff,.true.)
-      endif
+      call SortInitEndWithIncreasingOrder(point)
       !
       punto%XI = Max (point%XI, Min(BoundingBox%XI, BoundingBox%XE))
       punto%YI = Max (point%YI, Min(BoundingBox%YI, BoundingBox%YE))
