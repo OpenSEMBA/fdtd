@@ -306,27 +306,10 @@ contains
         i_diff_eps = this%i_diff
 
         eps_r = this%external_field_segments(1)%effectiveRelativePermittivity
-        ! eps_r = 3.0
-        ! if (eps_r == 1.0) then 
         do i = 2, this%number_of_divisions
-            ! i_diff_eps(i,2,2) = i_diff_eps(i,2,2)/eps_r
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:)/eps_r, this%i(:,i) - this%i(:,i-1)  )
-            ! this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i) - this%step_size(i)*(this%e_T(:,i) - this%e_Tprev(:,i)) ) - &
-            !                matmul(this%i_diff(i,:,:)/eps_r, (this%i(:,i) - this%i(:,i-1)))
         end do
-
-        ! else 
-        !     do i = 2, this%number_of_divisions
-
-        !         this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
-        !                        matmul(this%i_diff(i,:,:)*0.11, this%i(:,i) - this%i(:,i-1)  )
-
-
-        !         this%v_eps(:, i) = matmul(this%v_term(i,:,:), this%v_eps(:,i)) - &
-        !                            matmul(this%i_diff(i,:,:)*(0.89/eps_r), this%i(:,i) - this%i(:,i-1)  )
-        !     end do
-        ! end if
 
     end subroutine
 
@@ -338,34 +321,13 @@ contains
         real :: eps_r
         call this%transfer_impedance%updateQ3Phi()
         i_prev = this%i
-        ! eps_r = this%external_field_segments(1)%relativePermittivity
-        ! if (eps_r == 1.0) then 
 
         do i = 1, this%number_of_divisions 
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
                         matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i) + this%v_eps(:,i+1) - this%v_eps(:,i)) - &
                                                     this%e_L(:,i) * this%step_size(i)) - &
                         matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
-            ! this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
-            !             matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i) + this%v_eps(:,i+1) - this%v_eps(:,i)) + &
-            !                                         (this%e_T(:,i+1) - this%e_T(:,i)) * this%step_size(i) - &
-            !                                         this%e_L(:,i) * this%step_size(i)) - &
-            !             matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
-        ! else 
-
-        !     do i = 1, this%number_of_divisions 
-        !         this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
-        !                     matmul(1.0*this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i))) +  &
-        !                     matmul(1.0*this%v_diff(i,:,:), (this%v_eps(:,i+1) - this%v_eps(:,i))) -  &
-        !                     matmul(this%v_diff(i,:,:), this%e_L(:,i) * this%step_size(i)) - &
-        !                     !- &
-        !                             !  matmul(0.5*this%du_length(i,:,:), this%el))
-        !                     matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
-        !     enddo
-
-        ! end if 
-
         !TODO - revisar
         i_now = this%i
         call this%transfer_impedance%updatePhi(i_prev, i_now)

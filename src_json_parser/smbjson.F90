@@ -2299,15 +2299,24 @@ contains
             if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
                res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
             end if
+
+            if (this%existsAt(material%p,J_MAT_WIRE_REL_PERMITTIVITY)) then
+               call assignWireRelativePermittivity(res, this%getRealAt(material%p, J_MAT_WIRE_REL_PERMITTIVITY))
+               ! call assignRelativePermittivity(res, this%getMatrixAt(mat%p, J_MAT_WIRE_REL_PERMITTIVITY,found))
+            end if
+   
          else if (isMultiwire(j_cable)) then
             call assignPULProperties(res, material, size(getCableElemIds(j_cable)))
+
+            if (this%existsAt(material%p,J_MAT_WIRE_REL_PERMITTIVITY)) then
+               ! call assignRelativePermittivity(res, this%getRealAt(material%p, J_MAT_WIRE_REL_PERMITTIVITY))
+               call assignMultiwireRelativePermittivity(res, this%getMatrixAt(mat%p, J_MAT_WIRE_REL_PERMITTIVITY,found))
+            end if
+   
          else
             write(error_unit, *) "Error reading cable: is neither wire nor multiwire"
          end if
 
-         if (this%existsAt(material%p,J_MAT_WIRE_REL_PERMITTIVITY)) then
-            call assignRelativePermittivity(res, this%getRealAt(material%p, J_MAT_WIRE_REL_PERMITTIVITY))
-         end if
 
 
          res%initial_connector => findConnectorWithId(j_cable, J_MAT_ASS_CAB_INI_CONN_ID)
@@ -2317,9 +2326,18 @@ contains
 
       end function
 
-      subroutine assignRelativePermittivity(res, effectiveRelativePermittivity)
+      subroutine assignWireRelativePermittivity(res, effectiveRelativePermittivity)
          type(cable_t), intent(inout) :: res
          real, intent(in) :: effectiveRelativePermittivity
+         integer :: i
+         do i = 1, size(res%external_field_segments(:))
+            res%external_field_segments(i)%effectiveRelativePermittivity(1,1) = effectiveRelativePermittivity
+         end do
+      end subroutine
+
+      subroutine assignMultiireRelativePermittivity(res, effectiveRelativePermittivity)
+         type(cable_t), intent(inout) :: res
+         real, dimension(:,:) intent(in) :: effectiveRelativePermittivity
          integer :: i
          do i = 1, size(res%external_field_segments(:))
             res%external_field_segments(i)%effectiveRelativePermittivity = effectiveRelativePermittivity

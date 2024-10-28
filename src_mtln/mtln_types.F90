@@ -36,7 +36,7 @@ module mtln_types_mod
    type :: external_field_segment_t
       integer, dimension(3) ::position
       integer :: direction
-      real :: effectiveRelativePermittivity = 1.0
+      real, allocatable, dimension(:,:) :: effectiveRelativePermittivity = 1.0
       real (kind=rkind) , pointer  ::  field => null()
    contains
       private
