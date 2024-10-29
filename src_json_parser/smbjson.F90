@@ -2296,22 +2296,24 @@ contains
 
          if (isWire(j_cable)) then
             call assignReferenceProperties(res, material)
+
+            if (this%existsAt(material%p, J_MAT_WIRE_DIELECTRIC)) then
+               call assignDielectricProperties(res, material)
+               ! call assignRelativePermittivity(res, this%getMatrixAt(mat%p, J_MAT_WIRE_REL_PERMITTIVITY,found))
+            end if
+
             if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
                res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
             end if
 
-            if (this%existsAt(material%p,J_MAT_WIRE_REL_PERMITTIVITY)) then
-               call assignWireRelativePermittivity(res, this%getRealAt(material%p, J_MAT_WIRE_REL_PERMITTIVITY))
-               ! call assignRelativePermittivity(res, this%getMatrixAt(mat%p, J_MAT_WIRE_REL_PERMITTIVITY,found))
-            end if
    
          else if (isMultiwire(j_cable)) then
             call assignPULProperties(res, material, size(getCableElemIds(j_cable)))
 
-            if (this%existsAt(material%p,J_MAT_WIRE_REL_PERMITTIVITY)) then
-               ! call assignRelativePermittivity(res, this%getRealAt(material%p, J_MAT_WIRE_REL_PERMITTIVITY))
-               call assignMultiwireRelativePermittivity(res, this%getMatrixAt(mat%p, J_MAT_WIRE_REL_PERMITTIVITY,found))
-            end if
+            ! if (this%existsAt(material%p,J_MAT_WIRE_REL_PERMITTIVITY)) then
+            !    ! call assignRelativePermittivity(res, this%getRealAt(material%p, J_MAT_WIRE_REL_PERMITTIVITY))
+            !    call assignMultiwireRelativePermittivity(res, this%getMatrixAt(material%p, J_MAT_WIRE_REL_PERMITTIVITY,found))
+            ! end if
    
          else
             write(error_unit, *) "Error reading cable: is neither wire nor multiwire"
@@ -2326,23 +2328,48 @@ contains
 
       end function
 
-      subroutine assignWireRelativePermittivity(res, effectiveRelativePermittivity)
+      subroutine assignDielectricProperties(res, mat)
          type(cable_t), intent(inout) :: res
-         real, intent(in) :: effectiveRelativePermittivity
+         type(json_value_ptr) :: mat, diel
+         type(json_value), pointer :: diel_ptr
          integer :: i
-         do i = 1, size(res%external_field_segments(:))
-            res%external_field_segments(i)%effectiveRelativePermittivity(1,1) = effectiveRelativePermittivity
-         end do
+
+         if (this%existsAt(mat%p, J_MAT_WIRE_RADIUS)) then
+            do i = 1, size(res%external_field_segments(:))
+               res%external_field_segments(i)%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS)
+            end do
+         else
+            write(error_unit, *) "Wire radius is missing"
+         end if
+
+
+         call this%core%get(mat%p, J_MAT_WIRE_DIELECTRIC, diel_ptr)
+         if (this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY)) then
+            do i = 1, size(res%external_field_segments(:))
+               res%external_field_segments(i)%dielectricRelativePermittivity = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY)
+            end do
+         else
+            write(error_unit, *) "Dielectric permittivity is missing"
+         end if
+
+         if (this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)) then
+            do i = 1, size(res%external_field_segments(:))
+               res%external_field_segments(i)%dielectricRadius = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)
+            end do
+         else
+            write(error_unit, *) "Dielectric radius is missing"
+         end if
+
       end subroutine
 
-      subroutine assignMultiireRelativePermittivity(res, effectiveRelativePermittivity)
-         type(cable_t), intent(inout) :: res
-         real, dimension(:,:) intent(in) :: effectiveRelativePermittivity
-         integer :: i
-         do i = 1, size(res%external_field_segments(:))
-            res%external_field_segments(i)%effectiveRelativePermittivity = effectiveRelativePermittivity
-         end do
-      end subroutine
+      ! subroutine assignMultiwireRelativePermittivity(res, effectiveRelativePermittivity)
+      !    type(cable_t), intent(inout) :: res
+      !    real, intent(in), dimension(:,:) :: effectiveRelativePermittivity
+      !    integer :: i
+      !    do i = 1, size(res%external_field_segments(:))
+      !       res%external_field_segments(i)%effectiveRelativePermittivity = effectiveRelativePermittivity
+      !    end do
+      ! end subroutine
 
 
       function buildTransferImpedance(mat) result(res)

@@ -34,7 +34,9 @@ module labels_mod
    character (len=*), parameter :: J_MAT_WIRE_INDUCTANCE = "inductancePermeter"
    character (len=*), parameter :: J_MAT_WIRE_REF_CAPACITANCE = "__referenceCapacitancePerMeter"
    character (len=*), parameter :: J_MAT_WIRE_REF_INDUCTANCE = "__referenceInductancePerMeter"
-   character (len=*), parameter :: J_MAT_WIRE_REL_PERMITTIVITY = "effectiveRelativePermittivity"
+   character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC = "dielectric"
+   character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_RADIUS = "radius"
+   character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_PERMITTIVITY = "relativePermittivity"
    character (len=*), parameter :: J_MAT_WIRE_PASS = "isPassthrough"
    
    character (len=*), parameter :: J_MAT_TERM_TERMINATIONS = "terminations"

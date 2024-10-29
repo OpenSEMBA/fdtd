@@ -25,7 +25,7 @@ module Wire_bundles_mtln_mod
 contains
 
 
-   subroutine InitWires_mtln(sgg,Ex,Ey,Ez, eps00, mu00, mtln_parsed,thereAreMTLNbundles)
+   subroutine InitWires_mtln(sgg,Ex,Ey,Ez, Idxh, Idyh, Idzh, eps00, mu00, mtln_parsed,thereAreMTLNbundles)
       type (SGGFDTDINFO), intent(IN), target    :: sgg 
       REAL (KIND=RKIND), intent(inout), target :: &
          Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,  &
@@ -37,6 +37,11 @@ contains
          Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,  &
             sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,  &
             sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
+      real (kind=RKIND), dimension (:), intent(in) :: &
+            Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
+            Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
+            Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
+   
       real(KIND=RKIND) :: eps00,mu00
    
       type(mtln_t) :: mtln_parsed
@@ -86,6 +91,7 @@ contains
       subroutine assignLCToExternalConductor()
          integer(kind=4) :: m, n
          real (kind=rkind) :: l,c
+
          do m = 1, mtln_solver%number_of_bundles
             do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
                l = hwires%CurrentSegment(indexMap(m,n))%Lind
@@ -94,12 +100,48 @@ contains
                ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0 .and. mtln_solver%bundles(m)%isPassthrough .eqv. .false.) then 
                   mtln_solver%bundles(m)%lpul(n,1,1) = l 
                   mtln_solver%bundles(m)%cpul(n,1,1) = c 
+                  mtln_solver%bundles(m)%external_field_segments(n)%effectiveRelativePermittivity = computeEffectivePermittivity(m,n,l,c)
                end if
             end do
             mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1,1) = &
                mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1,1)
          end do
       end subroutine
+
+      function computeEffectivePermittivity(m,n,l0,c0) result(res)
+         integer (kind=4) :: i, j, k, direction
+         integer (kind=4) :: m,n
+         real(kind=rkind) :: dS_inverse
+         real(kind=rkind) :: l0, c0
+         real(kind=rkind) :: shield_inductance, external_inductance
+         real(kind=rkind) :: shield_capacitance, external_capacitance, effective_capacitance
+         real(kind=rkind) :: r, r_diel
+         real(kind=rkind) :: res
+
+         call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
+         direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
+         select case (abs(direction))  
+         case(1)   
+            dS_inverse = (idyh(j)*idzh(k))
+         case(2)     
+            dS_inverse = (idxh(i)*idzh(k))
+         case(3)   
+            dS_inverse = (idxh(i)*idyh(j))
+         end select
+
+         r = mtln_solver%bundles(m)%external_field_segments(n)%radius
+         r_diel = mtln_solver%bundles(m)%external_field_segments(n)%dielectricRadius
+
+         shield_inductance = (0.5*mu0/pi)*log(r_diel/r)*(1-pi*r**2*dS_inverse)
+         external_inductance = l0 - shield_inductance
+
+         shield_capacitance = mu0*eps0*mtln_solver%bundles(m)%external_field_segments(n)%dielectricRelativePermittivity/shield_inductance
+         external_capacitance = mu0*eps0/external_inductance
+
+         effective_capacitance = shield_capacitance*external_capacitance/(shield_capacitance+external_capacitance)
+         res = effective_capacitance/c0
+
+      end function
 
       subroutine updateNetworksLineCapacitors()
          integer(kind=4) :: m,init, end, sep
