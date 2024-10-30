@@ -1909,7 +1909,7 @@ contains
          integer :: polylineId
 
          character (len=*), dimension(2), parameter :: validTypes = &
-         [J_SRC_TYPE_JGEN, J_SRC_TYPE_GEN]
+         [J_SRC_TYPE_GEN]
 
          call this%core%get(this%root, J_SOURCES, sources, found)
          if (.not. found) then
