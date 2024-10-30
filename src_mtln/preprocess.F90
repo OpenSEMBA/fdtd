@@ -385,7 +385,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: termination_r, termination_l, termination_c, line_c
+        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
 
         write(termination_c, *) termination%capacitance
         write(termination_r, *) termination%resistance
@@ -416,6 +416,12 @@ contains
         buff = trim(trim("CL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_c))
         call appendToStringArray(res, buff)
 
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+
     end function
 
     function writeModelNode(node, termination, end_node) result(res)
@@ -425,7 +431,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: model_name, model_file
-        character(20) :: line_c
+        character(20) :: line_c, line_g
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
@@ -443,6 +449,13 @@ contains
         buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
         call appendToStringArray(res, buff)
 
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+
+
     end function
 
     function writeSeriesRLnode(node, termination, end_node) result(res)
@@ -451,7 +464,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: termination_r, termination_l, line_c
+        character(20) :: termination_r, termination_l, line_c, line_g
 
         write(termination_r, *) termination%resistance
         write(termination_l, *) termination%inductance
@@ -479,7 +492,13 @@ contains
         call appendToStringArray(res, buff)
         buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
         call appendToStringArray(res, buff)
-        
+
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+
     end function
 
     function writeRLsCpnode(node, termination, end_node) result(res)
@@ -488,7 +507,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: termination_r, termination_l, termination_c, line_c
+        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
 
         write(termination_r, *) termination%resistance
         write(termination_c, *) termination%capacitance
@@ -521,6 +540,12 @@ contains
         call appendToStringArray(res, buff)
         buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
         call appendToStringArray(res, buff)
+
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
 
 
     end function
@@ -560,7 +585,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: short_R, line_c
+        character(20) :: short_R, line_c, line_g
 
         write(short_r, *) 1e-10
         write(line_c, *) node%line_c_per_meter*node%step/2
@@ -585,6 +610,12 @@ contains
         buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
         call appendToStringArray(res, buff)
         
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+
     end function
 
     function writeOpenNode(node, termination, end_node) result(res)
@@ -593,7 +624,7 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(20) :: line_c
+        character(20) :: line_c, line_g
 
         ! write(line_c, *) 0.0
         ! write(line_c, *) node%line_c_per_meter*node%step/(2*2.57)
@@ -607,6 +638,12 @@ contains
         buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
         call appendToStringArray(res, buff)
         
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+
     end function
 
     function writeLCpRsNode(node, termination, end_node) result(res)
@@ -616,7 +653,7 @@ contains
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
         character(len=:), allocatable :: node_name
-        character(20) :: termination_r, termination_l, termination_c, line_c
+        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
         
         write(termination_r, *) termination%resistance
         write(termination_l, *) termination%inductance
@@ -648,6 +685,13 @@ contains
         call appendToStringArray(res, buff)
         buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
         call appendToStringArray(res, buff)
+
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+
 
     end function
 
@@ -699,11 +743,12 @@ contains
         
         block
             integer :: v_index, i_index
-            real :: line_c_per_meter, step
+            real :: line_c_per_meter, line_g_per_meter, step
             if (node%side == TERMINAL_NODE_SIDE_INI) then 
                 v_index = lbound(this%bundles(d)%v,2)
                 i_index = lbound(this%bundles(d)%i,2)
                 line_c_per_meter = this%bundles(d)%cpul(lbound(this%bundles(d)%cpul,1), conductor_number, conductor_number)
+                line_g_per_meter = this%bundles(d)%gpul(lbound(this%bundles(d)%gpul,1), conductor_number, conductor_number)
                 step = this%bundles(d)%du(lbound(this%bundles(d)%du,1), conductor_number, conductor_number)
                 res%side = TERMINAL_NODE_SIDE_INI
 
@@ -711,12 +756,14 @@ contains
                 v_index = ubound(this%bundles(d)%v,2)
                 i_index = ubound(this%bundles(d)%i,2)
                 line_c_per_meter = this%bundles(d)%cpul(ubound(this%bundles(d)%cpul,1), conductor_number, conductor_number)
+                line_g_per_meter = this%bundles(d)%gpul(ubound(this%bundles(d)%gpul,1), conductor_number, conductor_number)
                 step = this%bundles(d)%du(ubound(this%bundles(d)%du,1), conductor_number, conductor_number)
                 res%side = TERMINAL_NODE_SIDE_END
             end if
             res%v_index = v_index
             res%i_index = i_index
             res%line_c_per_meter = line_c_per_meter
+            res%line_g_per_meter = line_g_per_meter
             res%step = step
         end block
 

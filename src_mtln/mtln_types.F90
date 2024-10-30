@@ -138,7 +138,6 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: capacitance_per_meter
       real, allocatable, dimension(:,:) :: inductance_per_meter
       real, allocatable, dimension(:,:) :: conductance_per_meter
-      ! real, allocatable, dimension(:,:) :: effective_relative_permittivity
       real, allocatable, dimension(:) :: step_size
       type(transfer_impedance_per_meter_t) :: transfer_impedance
       type(cable_t), pointer :: parent_cable => null()

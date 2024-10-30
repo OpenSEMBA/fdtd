@@ -285,9 +285,6 @@ contains
 
         do i = 2, this%number_of_divisions
             this%i_diff(i,1,1) = this%i_diff(i,1,1)/this%external_field_segments(i)%dielectricRelativePermittivity
-            ! this%i_diff(i,1,2) = this%i_diff(i,1,2)/1.45943295
-            ! this%i_diff(i,2,1) = this%i_diff(i,2,1)/1.46943083
-            ! this%i_diff(i,2,2) = this%i_diff(i,2,2)/1.20919624
         end do
          
     end subroutine
@@ -301,17 +298,10 @@ contains
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
         integer :: i
-        ! real :: eps_r
-        real, dimension(:,:,:), allocatable :: i_diff_eps
-        i_diff_eps = this%i_diff
-
-        ! eps_r = this%external_field_segments(1)%effectiveRelativePermittivity
         do i = 2, this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
-                        !    matmul(this%i_diff(i,:,:)/eps_r, this%i(:,i) - this%i(:,i-1)  )
         end do
-
     end subroutine
 
 
