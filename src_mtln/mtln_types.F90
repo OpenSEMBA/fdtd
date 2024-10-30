@@ -33,11 +33,18 @@ module mtln_types_mod
    integer, parameter :: DIRECTION_Z_POS   =  3
    integer, parameter :: DIRECTION_Z_NEG   =  -3
 
+   type :: external_dielectric_t
+      real :: radius = 0.0 
+      real :: relative_permittivity = 1.0
+      real :: effective_relative_permittivity = 1.0
+   end type
+
    type :: external_field_segment_t
       integer, dimension(3) ::position
-      integer :: direction
-      real :: radius, dielectricRadius, dielectricRelativePermittivity
-      real :: effectiveRelativePermittivity
+      integer :: direction = 0
+      real :: radius = 0.0
+      logical :: has_dielectric = .false.
+      type(external_dielectric_t) :: dielectric
       real (kind=rkind) , pointer  ::  field => null()
    contains
       private

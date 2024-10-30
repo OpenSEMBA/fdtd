@@ -626,8 +626,6 @@ contains
         character(len=256) :: buff
         character(20) :: line_c, line_g
 
-        ! write(line_c, *) 0.0
-        ! write(line_c, *) node%line_c_per_meter*node%step/(2*2.57)
         write(line_c, *) node%line_c_per_meter*node%step/2
 
         allocate(res(0))

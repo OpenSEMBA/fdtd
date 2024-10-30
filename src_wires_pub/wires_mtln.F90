@@ -100,7 +100,9 @@ contains
                ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0 .and. mtln_solver%bundles(m)%isPassthrough .eqv. .false.) then 
                   mtln_solver%bundles(m)%lpul(n,1,1) = l 
                   mtln_solver%bundles(m)%cpul(n,1,1) = c 
-                  mtln_solver%bundles(m)%external_field_segments(n)%effectiveRelativePermittivity = computeEffectivePermittivity(m,n,l,c)
+                  if (mtln_solver%bundles(m)%external_field_segments(n)%has_dielectric) then
+                     mtln_solver%bundles(m)%external_field_segments(n)%dielectric%effective_relative_permittivity = computeEffectivePermittivity(m,n,l,c)
+                  end if
                end if
             end do
             mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1,1) = &
@@ -130,12 +132,12 @@ contains
          end select
 
          r = mtln_solver%bundles(m)%external_field_segments(n)%radius
-         r_diel = mtln_solver%bundles(m)%external_field_segments(n)%dielectricRadius
+         r_diel = mtln_solver%bundles(m)%external_field_segments(n)%dielectric%radius
 
          shield_inductance = (0.5*mu0/pi)*log(r_diel/r)*(1-pi*r**2*dS_inverse)
          external_inductance = l0 - shield_inductance
 
-         shield_capacitance = mu0*eps0*mtln_solver%bundles(m)%external_field_segments(n)%dielectricRelativePermittivity/shield_inductance
+         shield_capacitance = mu0*eps0*mtln_solver%bundles(m)%external_field_segments(n)%dielectric%relative_permittivity/shield_inductance
          external_capacitance = mu0*eps0/external_inductance
 
          effective_capacitance = shield_capacitance*external_capacitance/(shield_capacitance+external_capacitance)
@@ -219,7 +221,6 @@ contains
          real(kind=rkind) :: curr
          integer (kind=4) :: direction, i
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-         ! call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
          if (mtln_solver%bundles(m)%isPassthrough) then 
             curr = 0
             do i = 2, 1 + mtln_solver%bundles(m)%conductors_in_level(2)
@@ -235,9 +236,7 @@ contains
          real(kind=rkind) :: dS_inverse, factor
          real(kind=rkind) :: res
          integer (kind=4) :: i, j, k, direction
-         real :: epsr
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-         ! epsr = mtln_solver%bundles(m)%external_field_segments(n)%relativePermittivity
          call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
          select case (abs(direction))  
          case(1)   
@@ -248,7 +247,6 @@ contains
             dS_inverse = (idxh(i)*idyh(j))
          end select
          factor = (sgg%dt / (eps0)) * dS_inverse
-         ! factor = (sgg%dt / (eps0*epsr)) * dS_inverse
          res = factor * getOrientedCurrent()
       end function
 

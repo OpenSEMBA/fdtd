@@ -1971,11 +1971,10 @@ contains
       end function
 
       function isSourceAttachedToLine(src, polyline, id, label) result(res)
-         logical :: hasAttachedInfo
          type(json_value), pointer, intent(in)  :: src
          type(polyline_t), intent(in) :: polyline
          integer, intent(in) :: id, label
-         integer :: polylineId, index
+         integer :: index
          integer, dimension(:), allocatable :: sourceElemIds
          type(node_t) :: srcCoord
          logical :: res
@@ -1983,16 +1982,14 @@ contains
          call this%core%get(src, J_ELEMENTIDS, sourceElemIds)
          srcCoord = this%mesh%getNode(sourceElemIds(1))
 
-         hasAttachedInfo = this%existsAt(src, J_SRC_ATTACHED_ID)
          if (label == TERMINAL_NODE_SIDE_INI) then
             index = 1
          else if (label == TERMINAL_NODE_SIDE_END) then 
             index = ubound(polyline%coordIds,1)
          end if
-
-         if (hasAttachedInfo) then 
-            polylineId = this%getIntAt(src, J_SRC_ATTACHED_ID)
-            res = (srcCoord%coordIds(1) == polyline%coordIds(index)) .and. (polylineId == id)
+         
+         if (this%existsAt(src, J_SRC_ATTACHED_ID)) then 
+            res = (srcCoord%coordIds(1) == polyline%coordIds(index)) .and. (this%getIntAt(src, J_SRC_ATTACHED_ID) == id)
          else
             res = (srcCoord%coordIds(1) == polyline%coordIds(index))
          end if
@@ -2318,7 +2315,7 @@ contains
 
          if (isWire(j_cable)) then
             call assignReferenceProperties(res, material)
-
+            call assignExternalRadius(res, material)
             if (this%existsAt(material%p, J_MAT_WIRE_DIELECTRIC)) then
                call assignDielectricProperties(res, material)
             end if
@@ -2342,10 +2339,9 @@ contains
 
       end function
 
-      subroutine assignDielectricProperties(res, mat)
+      subroutine assignExternalRadius(res, mat)
          type(cable_t), intent(inout) :: res
-         type(json_value_ptr) :: mat, diel
-         type(json_value), pointer :: diel_ptr
+         type(json_value_ptr) :: mat
          integer :: i
 
          if (this%existsAt(mat%p, J_MAT_WIRE_RADIUS)) then
@@ -2356,22 +2352,25 @@ contains
             write(error_unit, *) "Wire radius is missing"
          end if
 
+      end subroutine
+
+      subroutine assignDielectricProperties(res, mat)
+         type(cable_t), intent(inout) :: res
+         type(json_value_ptr) :: mat, diel
+         type(json_value), pointer :: diel_ptr
+         integer :: i
 
          call this%core%get(mat%p, J_MAT_WIRE_DIELECTRIC, diel_ptr)
-         if (this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY)) then
-            do i = 1, size(res%external_field_segments(:))
-               res%external_field_segments(i)%dielectricRelativePermittivity = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY)
-            end do
-         else
-            write(error_unit, *) "Dielectric permittivity is missing"
-         end if
+         if (this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY) .and. & 
+             this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)) then
 
-         if (this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)) then
             do i = 1, size(res%external_field_segments(:))
-               res%external_field_segments(i)%dielectricRadius = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)
+               res%external_field_segments(i)%has_dielectric = .true.
+               res%external_field_segments(i)%dielectric%relative_permittivity = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY)
+               res%external_field_segments(i)%dielectric%radius = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)
             end do
          else
-            write(error_unit, *) "Dielectric radius is missing"
+            write(error_unit, *) "Dielectric permittivity and/of radius is missing"
          end if
 
       end subroutine
@@ -2532,6 +2531,7 @@ contains
          allocate(res(n_segments))
          curr_pos%position = [(c1%position(i), i = 1, 3)]
          curr_pos%field => null()
+         curr_pos%radius = 0.0
 
          res = [(curr_pos, i = 1, n_segments)]
          res(:)%position(axis) = [(res(i)%position(axis) - i, i = 1, n_segments)]

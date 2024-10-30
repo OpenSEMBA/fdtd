@@ -12,7 +12,6 @@ module mtl_bundle_mod
         integer  :: number_of_conductors = 0, number_of_divisions = 0
         real, dimension(:), allocatable :: step_size
         real, allocatable, dimension(:,:) :: v, i, e_L
-        real, allocatable, dimension(:,:) :: v_eps
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         real :: time = 0.0, dt = 1e10
         type(probe_t), allocatable, dimension(:) :: probes
@@ -84,8 +83,6 @@ contains
         allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         
-        allocate(this%v_eps(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
-
         allocate(this%i_term(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
         allocate(this%v_diff(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
 
@@ -284,7 +281,7 @@ contains
         this%i_diff = IF1
 
         do i = 2, this%number_of_divisions
-            this%i_diff(i,1,1) = this%i_diff(i,1,1)/this%external_field_segments(i)%dielectricRelativePermittivity
+            this%i_diff(i,1,1) = this%i_diff(i,1,1)/this%external_field_segments(i)%dielectric%effective_relative_permittivity
         end do
          
     end subroutine
@@ -315,7 +312,7 @@ contains
 
         do i = 1, this%number_of_divisions 
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
-                        matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i) + this%v_eps(:,i+1) - this%v_eps(:,i)) - &
+                        matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
                                                     this%e_L(:,i) * this%step_size(i)) - &
                         matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
