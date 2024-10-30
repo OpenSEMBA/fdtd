@@ -84,7 +84,7 @@
 	"sources": [
 		{
 			"name": "external_source",
-			"type": "junctionGenerator",
+			"type": "generator",
 			"field": "voltage",
 			"magnitudeFile": "coated.exc",
 			"elementIds": [1],
