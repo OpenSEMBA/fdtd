@@ -1908,7 +1908,7 @@ contains
          type(node_source_t) :: res
          integer :: polylineId
 
-         character (len=*), dimension(2), parameter :: validTypes = &
+         character (len=*), dimension(1), parameter :: validTypes = &
          [J_SRC_TYPE_GEN]
 
          call this%core%get(this%root, J_SOURCES, sources, found)
