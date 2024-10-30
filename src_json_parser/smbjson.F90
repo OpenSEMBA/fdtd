@@ -1484,6 +1484,9 @@ contains
                if (isWire(cables(i)%p) .or. isMultiwire(cables(i)%p)) then
                   is_read = .true.
                   read_cable = readMTLNCable(cables(i)%p, is_read)
+                  if (.not. isCableNameUnique(read_cable, mtln_res%cables, ncc)) then
+                     error stop 'Cable name "'//read_cable%name//'" has already been used'
+                  end if
                   ncc = ncc + 1
                   mtln_res%cables(ncc) = read_cable
                   call addElemIdToCableMap(elemIdToCable, getCableElemIds(cables(i)%p), ncc)
@@ -1523,6 +1526,19 @@ contains
 
    contains
 
+      function isCableNameUnique(cable, cables, n) result(res)
+         type(cable_t) :: cable
+         type(cable_t), dimension(:), pointer :: cables
+         integer :: n, i
+         logical :: res
+         res = .true.
+         do i = 1, n
+            if (cable%name == cables(i)%name) then
+               res = .false.
+               exit
+            end if
+         end do
+      end function
 
       function readConnectors() result(res)
          type(connector_t), dimension(:), pointer :: res
