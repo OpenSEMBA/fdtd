@@ -44,7 +44,7 @@ Prebuilt binares are available at [releases](https://github.com/OpenSEMBA/fdtd/r
 
 In windows, you need to install [intel oneapi runtime libraries](https://www.intel.com/content/www/us/en/developer/articles/tool/oneapi-standalone-components.html).
 
-## Compilation
+## GNU/Linux Compilation
 
 It is important to point out the repository has dependencies which are available as submodules. It is necessary to run `git submodule init` and `git submodule update` from the root folder before running any `cmake` or `build` commands.
 
@@ -104,7 +104,6 @@ libngspice_la_CFLAGS = -static
 libngspice_la_LDFLAGS = -static -version-info @LIB_VERSION@
 ```
 
-
 #### MPI
 
 If you use intel oneapi, make sure to load the mpi environment variables:
@@ -113,9 +112,101 @@ If you use intel oneapi, make sure to load the mpi environment variables:
   source /opt/intel/oneapi/mpi/latest/env/vars.sh
 ```
 
-## Testing
+## Windows (intelLLVM) Compilation
 
-Tests must be run from the root folder. `python` wrapper test assumes that `semba-fdtd` has been compiled successfully and is located in folder `build/bin/`. For intel compilation it also assumes that the intel runtime libraries are accessible.
+Clone this repository:
+
+```shell
+  git clone https://github.com/OpenSEMBA/fdtd.git
+```
+
+or, if using SSH keys:
+
+```shell
+  git clone git@github.com:OpenSEMBA/fdtd.git
+```
+
+navigate to the `/fdtd/` folder that has been created, this folder will be referred to as `root` for any future purposes.
+
+### Prerequisites
+
+This compilation process will use the already available precompiled libraries included with the project, thus it's not required to build them manually.
+This repository has dependencies that are available as submodules. It is necessary to run `git submodule init` and `git submodule update` from the root folder before running any `cmake` or `build` commands.
+In the .gitmodules file, the submodules use the SSH remote URL by default. If not using a SSH-key in the computer where the following process will be performed, the remote addresses for each submodule must be individually changed to their HTTPS alternative.
+
+This software requires [Windows BaseKit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit.html) and [Windows HPCKit](https://www.intel.com/content/www/us/en/developer/tools/oneapi/hpc-toolkit-download.html). Install these packages with all their features selected.
+
+Additionally, if not done already, install [CMake](https://cmake.org/download/) and [Ninja](https://github.com/ninja-build/ninja), follow their respective installation steps.
+
+### Compilation process
+
+Open a command prompt with OneAPI variables initialised, to do this open a new command prompt and type:
+
+```shell
+"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" intel64
+```
+
+This will load the OneAPI environment for x64.
+
+Navigate to the fdtd root folder, choose between "Debug"/"Release" for `-DCMAKE_BUILD_TYPE`, and "Yes"/"No" for `-DSEMBA_FDTD_ENABLE_MPI`, for example, a Release version with MPI Support would be:
+
+```shell
+cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DSEMBA_FDTD_ENABLE_MPI=Yes
+```
+
+Then,
+
+```shell
+cmake --build build -j
+```
+
+We should now find the compiled executables in `\build\bin\`.
+
+### Usage
+
+In order to use semba-fdtd, the executable must have access to the dynamic libraries it has dependencies on. Either move the libraries to the same folder as the executable, or run the executable through a console with the OneAPI environment loaded:
+
+```shell
+"C:\Program Files (x86)\Intel\oneAPI\setvars.bat" intel64
+```
+
+Once the environment is loaded, follow the steps in the next section.
+
+### Debugging with Visual Studio
+
+1. **Install necessary tools**:
+   - Install **Intel Base Kit** and **Intel HPC Kit**.
+   - Install Visual Studio 2019. This must be done **after** the intel Intel compilers. Visual Studio 2022 is not supported (as of Oct. 2024).
+   - Ensure **CMake** is installed. It's recommended to use **CMake GUI** to simplify configuration on Windows.
+
+2. **Generate the Project with CMake GUI**:
+   - In **CMake GUI**, select the option to create a project for **Visual Studio 2019** from the CMake files.
+   - Specify the output folder where the `.sln` file for the project will be generated.
+
+3. **Open the Project in Visual Studio**:
+   - Open the generated `.sln` file in Visual Studio 2019.
+   - You will see multiple projects in the solution, one for each library and executable.
+
+4. **Compilation Configuration**:
+   - You may encounter specific errors in the **fdtd-tests** projects during compilation, particularly related to the `/Mtd` or `/MD` options.
+   - To resolve this issue:
+     - Right-click on the problematic project (`fdtd_tests`) and select **Properties**.
+     - Go to **Code Generation** and change the corresponding option to `/Mtd`.
+
+5. **Set the Main Project**:
+   - Select the `semba-fdtd` project and set it as the main project.
+
+6. **Debugger Configuration**:
+   - In the project properties, go to the **Debugger** section.
+   - Configure the following parameters:
+     - **Working Directory**: Set the working directory based on the case you want to debug.
+     - **Command Arguments**: Enter `-i filename` (where `filename` is the required input file).
+
+7. **Debug the Project**:
+   - Launch the project by pressing **F5** to begin debugging.
+
+Following these steps, the project should be set up and ready to compile and debug in Visual Studio 2019 with Intel tools.
+
 
 ## Running cases
 
@@ -125,6 +216,10 @@ These can be run with
 ```shell
   semba-fdtd -i CASE_NAME.fdtd.json
 ```
+
+## Testing
+
+Tests must be run from the root folder. `python` wrapper test assumes that `semba-fdtd` has been compiled successfully and is located in folder `build/bin/`. For intel compilation it also assumes that the intel runtime libraries are accessible.
 
 # License
 

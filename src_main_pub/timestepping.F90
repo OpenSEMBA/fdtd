@@ -88,7 +88,9 @@ module Solver
    use Anisotropic
 #endif
 #ifdef CompileWithWires  
-   use HollandWires        
+   use HollandWires     
+#endif       
+#ifdef CompileWithWires    
 #ifdef CompileWithMTLN  
    use Wire_bundles_mtln_mod             
 #endif       
@@ -179,7 +181,7 @@ contains
       opcionestotales,sgbcFreq,sgbcresol,sgbccrank,sgbcDepth,fatalerror,fieldtotl,permitscaling, &
       EpsMuTimeScale_input_parameters, &
       stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess,planewavecorr, &
-      dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk)
+      dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk,use_mtln_wires)
 #endif
 
    !!!           
@@ -413,7 +415,7 @@ contains
       Idxe=1.0_RKIND/dxe ; Idye=1.0_RKIND/dye; Idze=1.0_RKIND/dze; Idxh=1.0_RKIND/dxh; Idyh=1.0_RKIND/dyh; Idzh=1.0_RKIND/dzh;
 
 
-!!!lo cambio aqui permit scaling a 211118 por problemas con resuming: debe leer el eps0, mu0, antes de hacer números
+!!!lo cambio aqui permit scaling a 211118 por problemas con resuming: debe leer el eps0, mu0, antes de hacer numeros
 
       allocate (G1(0 : sgg%NumMedia),G2(0 : sgg%NumMedia),GM1(0 : sgg%NumMedia),GM2(0 : sgg%NumMedia))
      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -458,8 +460,8 @@ contains
             Excor=0.0_RKIND; Eycor=0.0_RKIND; Ezcor=0.0_RKIND; Hxcor=0.0_RKIND; Hycor=0.0_RKIND; Hzcor=0.0_RKIND
          !!!endif
       !!!!
-  !!!!!!!!!!!!!!!ççççççç        Ex=1.0_RKIND; Ey=2.0_RKIND; Ez=3.0_RKIND; Hx=4.0_RKIND; Hy=5.0_RKIND; Hz=6.0_RKIND
-         initialtimestep=0 !vamos a empezar en 0 para escribir el tiempo 0 !sgg sept'16 ç
+  !!!!!!!!!!!!!!!!?!?!?!?!?!?!?        Ex=1.0_RKIND; Ey=2.0_RKIND; Ez=3.0_RKIND; Hx=4.0_RKIND; Hy=5.0_RKIND; Hz=6.0_RKIND
+         initialtimestep=0 !vamos a empezar en 0 para escribir el tiempo 0 !sgg sept'16 !?
          tiempoinicial = 0.0_RKIND_tiempo
          lastexecutedtimestep=0
          lastexecutedtime=0.0_RKIND_tiempo
@@ -633,12 +635,13 @@ contains
          endif
          write(buff,*) 'saveall=',saveall,', flushsecondsFields=',flushsecondsFields,', flushsecondsData=',flushsecondsData,', maxCPUtime=',maxCPUtime,', singlefilewrite=',singlefilewrite
          call WarnErrReport(buff)
-         write(buff,*) 'TAPARRABOS=',TAPARRABOS,', wiresflavor=',wiresflavor,', mindistwires=',mindistwires,', wirecrank=',wirecrank , 'makeholes=',makeholes
+         write(buff,*) 'TAPARRABOS=',TAPARRABOS,', wiresflavor=',trim(adjustl(wiresflavor)),', mindistwires=',mindistwires,', wirecrank=',wirecrank , 'makeholes=',makeholes
          call WarnErrReport(buff)
          write(buff,*) 'use_mtln_wires=', use_mtln_wires
          write(buff,*) 'connectendings=',connectendings,', isolategroupgroups=',isolategroupgroups
          call WarnErrReport(buff)
-         write(buff,*) 'wirethickness ', wirethickness, 'stableradholland=',stableradholland,'mtlnberenger=',mtlnberenger,' inductance_model=',inductance_model,', inductance_order=',inductance_order,', groundwires=',groundwires,' ,fieldtotl=',fieldtotl,' noSlantedcrecepelo =',noSlantedcrecepelo 
+         write(buff,*) 'wirethickness ', wirethickness, 'stableradholland=',stableradholland,'mtlnberenger=',mtlnberenger,' inductance_model=',trim(adjustl(inductance_model)), &
+                       ', inductance_order=',inductance_order,', groundwires=',groundwires,' ,fieldtotl=',fieldtotl,' noSlantedcrecepelo =',noSlantedcrecepelo 
          call WarnErrReport(buff)
          write(buff,*) 'sgbc=',sgbc,', mibc=',mibc,', attfactorc=',attfactorc,', attfactorw=',attfactorw
          call WarnErrReport(buff)
@@ -819,6 +822,9 @@ contains
                                  g2, SINPML_fullsize, dtcritico,eps0,mu0,verbose)
          l_auxinput=thereare%Wires
          l_auxoutput=l_auxinput
+!check for MUR1 nodes sgg 230124
+         call init_murABC_slanted(sgg,SINPML_Fullsize,eps0,mu0)
+!!!!!!         
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
@@ -961,7 +967,7 @@ contains
 
          !!!!!!!sgg 051214 !rellena correctamente los campos magneticos. Necesario para construir los surfaces a partir del wireframe 
          !        call fillMagnetic(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, b)
-         !!!!!!!ojo solo es valido para PEC!!!! cambiar luego !ççççç
+         !!!!!!!ojo solo es valido para PEC!!!! cambiar luego !!?!?!?!?!?
          if (l_auxoutput ) then
              write (dubuf,*) '----> there are conformal elements';  call print11(layoutnumber,dubuf)
          else
@@ -1061,8 +1067,8 @@ contains
       write(dubuf,*) 'Init Observation...';  call print11(layoutnumber,dubuf)
       call InitObservation (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
                             Thereare%Observation,Thereare%wires,Thereare%FarFields,resume,initialtimestep,finaltimestep,lastexecutedtime, &
-                            nEntradaRoot,layoutnumber,size,saveall,b,singlefilewrite,wiresflavor,&
-                            SINPML_FULLSIZE,facesNF2FF,NF2FFDecim,eps0,mu0,simu_devia,mpidir,niapapostprocess)
+                            nEntradaRoot,layoutnumber,size,saveall,singlefilewrite,wiresflavor,&
+                            SINPML_FULLSIZE,facesNF2FF,NF2FFDecim,eps0,mu0,simu_devia,mpidir,niapapostprocess,b)
       l_auxinput=Thereare%Observation.or.Thereare%FarFields
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1076,7 +1082,7 @@ contains
         endif
       !observation must be the last one to initialize
       
-!!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aquí
+!!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aqui
 #ifdef CompileWithMPI
       !MPI initialization
       if (size>1) then
@@ -1310,7 +1316,7 @@ contains
         endif
         call MPIinitSubcomm(layoutnumber,size,SUBCOMM_MPI_conformal_probes,&
                                 MPI_conformal_probes_root,group_conformalprobes_dummy)
-        print *,'-----creating--->',layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
+       ! print *,'-----creating--->',layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
         call MPI_BARRIER(SUBCOMM_MPI, ierr)
     !!!no lo hago pero al salir deberia luego destruir el grupo call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)                   
 #endif  
@@ -1380,7 +1386,7 @@ contains
 
          
 !vuelta la burra al trigo a 140220. En consenso  traido aqui de donde estaba al final de toda la parte electrica, etc, para poder corregir lo already_YEEadvanced_byconformal=dont_yeeadvance
-!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) ççç. Discutido a 140220 y no pasa nada
+!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) !?!?!?. Discutido a 140220 y no pasa nada
          !**************************************************************************************************
          !***[conformal]  *******************************************************************
          !**************************************************************************************************
@@ -1392,7 +1398,7 @@ contains
          endif
 #endif
          
-!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) ççç
+!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) !?!?!?
          !**************************************************************************************************
          !***[conformal]  *******************************************************************
          !**************************************************************************************************
@@ -1406,12 +1412,12 @@ contains
          !**************************************************************************************************
          !**************************************************************************************************
          !**************************************************************************************************
-!!!finmovido antes de hilos por coherencia. 171216 discutir si esto afecta a algo (MPI, etc) ççç
+!!!finmovido antes de hilos por coherencia. 171216 discutir si esto afecta a algo (MPI, etc) !?!?!?
 
          !*******************************************************************************
          !*******************************************************************************
          !*******************************************************************************
-!!!lamo aquí los hilos por coherencia con las PML que deben absorber los campos creados por los hilos
+!!!lamo aqui los hilos por coherencia con las PML que deben absorber los campos creados por los hilos
 #ifdef CompileWithWires
          !Wires (only updated here. No need to update in the H-field part)
          if (( (trim(adjustl(wiresflavor))=='holland') .or. &
@@ -1556,7 +1562,7 @@ contains
          !***[conformal]  *******************************************************************
          !**************************************************************************************************
 !vuelta la burra al trigo a 140220. En consenso, llevado a despues de call Advance_Ex, etc, para poder corregir lo already_YEEadvanced_byconformal=dont_yeeadvance
-!!!!!!!!me lo he llevado antes de hilos 171216. confirmar  que no hay problemas ni con MPI ni con PML ni con nada ççç
+!!!!!!!!me lo he llevado antes de hilos 171216. confirmar  que no hay problemas ni con MPI ni con PML ni con nada !?!?!?
 !!!          !NOTE: ene-2019 lo vuelvo a poner aqui
 !!!#ifdef CompileWithConformal
 !!!         if(input_conformal_flag)then
@@ -1809,8 +1815,8 @@ contains
          !Update observation matrices !MUST GO AFTER THE MPI EXCHANGING INFO, SINCE Bloque CURRENTS NEED UPDATED INFO
          IF (Thereare%Observation) then
             !se le pasan los incrementos autenticos (bug que podia aparecer en NF2FF y Bloque currents 17/10/12)
-            call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, n,ini_save, b, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank, &
-                                   Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,planewavecorr,noconformalmapvtk)
+            call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, n,ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank, &
+                                   Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,planewavecorr,noconformalmapvtk,b)
 
             if (n>=ini_save+BuffObse)  then
                mindum=min(FinalTimeStep,ini_save+BuffObse)

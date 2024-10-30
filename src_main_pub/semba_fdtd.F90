@@ -139,9 +139,10 @@ PROGRAM SEMBA_FDTD_launcher
    !****************************************************************************
    !****************************************************************************
 
-   type (entrada_t) :: l
+   type (entrada_t) :: l    
+#ifdef CompileWithMTLN
    type(mtln_t) :: mtln_parsed
-
+#endif
    logical :: lexis
    integer (kind=4) :: my_iostat
    
@@ -892,7 +893,7 @@ PROGRAM SEMBA_FDTD_launcher
             l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbccrank,l%sgbcdepth,l%fatalerror,l%fieldtotl,l%permitscaling, &
             l%EpsMuTimeScale_input_parameters, &
             l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
-            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk)
+            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk,l%use_mtln_wires)
 #endif
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else

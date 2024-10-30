@@ -22,9 +22,9 @@
 			"id": 1,
 			"name": "coaxial_single_wire",
 			"type": "multiwire",
-			"resistancePerMeter" : 0.0,
-			"inductancePerMeter": 0.25e-6,
-			"capacitancePerMeter": 100.0e-12
+			"resistancePerMeter" : [0.0],
+			"inductancePerMeter": [[0.25e-6]],
+			"capacitancePerMeter": [[100.0e-12]]
 		},
 		{
 			"id": 2,

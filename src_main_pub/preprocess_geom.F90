@@ -212,6 +212,7 @@ CONTAINS
       !se crea siempre por defecto
       contamedia = contamedia+2 !para acomodar los no_use no_use_notouch
       !!!!!!!!!!!!!
+      contamedia = contamedia +1 !para acomodar los nodal sources como caso especial de linea vacia
       sgg%NumMedia = contamedia
       sgg%AllocMed = contamedia
       !reserva espacio
@@ -498,7 +499,7 @@ CONTAINS
                         !realmente en el borderscpml
                         !sig_max(sig_max,-((log( 0.99999d0                 )*(sgg%PML%orden(o,p)+1))/ &
                         !    (2.0_RKIND *sqrt(Mu0/eps0)*sgg%PML%NumLayers(o,p)*del)))
-                        !trampa para que entonces tome la conductividad autentica que se especifique y poder anular las PML y solo dejar capa fisica !��
+                        !trampa para que entonces tome la conductividad autentica que se especifique y poder anular las PML y solo dejar capa fisica !!?!?
                         sig_max = 1.0_RKIND
                      else
                         sig_max = max(sig_max,-((log( sgg%PML%CoeffReflPML(o,p) )*(sgg%PML%orden(o,p)+1))/ &
@@ -595,10 +596,10 @@ CONTAINS
       !el medio 1 se reserva para sustrato  y saltamos
       contamedia = 1
 
-      !para el conformal !debe ser tipicamente contamedia=1+1=2 pq el 0 es pec y el 1 es vacio. Ojo cambiado de sitio el PMC porque podia hacer que fuesen 3 y 4. 130220!!! y puede haber error pq por ahi se comprueba el 2 y el 3
+      !para el conformal !debe ser tipicamente contamedia =1+1=2 pq el 0 es pec y el 1 es vacio. Ojo cambiado de sitio el PMC porque podia hacer que fuesen 3 y 4. 130220!!! y puede haber error pq por ahi se comprueba el 2 y el 3
       contamedia = contamedia + 1
       sgg%Med(contamedia)%Is%already_YEEadvanced_byconformal = .TRUE.
-      !debe ser contamedia=2+1=3
+      !debe ser contamedia =2+1=3
       contamedia = contamedia + 1
       sgg%Med(contamedia)%Is%split_and_useless = .TRUE.
       
@@ -608,7 +609,7 @@ CONTAINS
       !regiones PMC
       IF ((this%pmcregs%nvols)+(this%pmcregs%nsurfs)+(this%pmcregs%nLINS) /= 0) THEN
          !los PMC de existir tienen todos indice 2
-         contamedia=contamedia+1      !!!!contamedia = 2 !!!ufff. cambiado a 130220 por posible bug con conformal si algun dia habia regiones PMC
+         contamedia =contamedia+1      !!!!contamedia = 2 !!!ufff. cambiado a 130220 por posible bug con conformal si algun dia habia regiones PMC
          sgg%Med(contamedia)%Epr = sgg%Med(1)%Epr
          sgg%Med(contamedia)%Mur = sgg%Med(1)%Mur
          sgg%Med(contamedia)%Sigma = 0.0_RKIND
@@ -2566,7 +2567,7 @@ endif
       ENDIF
       !FIN WIRES
       
-      !���
+      !!?!?!?
       !
 #ifdef CompileWithDMMA
       if (run_with_dmma) then
@@ -2879,6 +2880,7 @@ endif
       END DO
       sgg%NumNodalSources = conta1
       ALLOCATE (sgg%NodalSource(conta1))
+      if (sgg%NumNodalSources /=0) contamedia =contamedia+1          
       !
       conta1 = 0
       DO i = 1, tama
@@ -3051,6 +3053,31 @@ endif
                sgg%NodalSource(conta1)%punto(conta2)%YE = punto_s%YE
                sgg%NodalSource(conta1)%punto(conta2)%ZI = punto_s%ZI
                sgg%NodalSource(conta1)%punto(conta2)%ZE = punto_s%ZE
+               !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824
+               sgg%Med(contamedia)%Is%Dielectric = .TRUE.
+               sgg%Med(contamedia)%Is%LINE = .TRUE.
+               sgg%Med(contamedia)%Priority = prior_IL
+               sgg%Med(contamedia)%Epr =  1.0
+               sgg%Med(contamedia)%Sigma = 0.
+               sgg%Med(contamedia)%Mur =  1.0
+               sgg%Med(contamedia)%SigmaM = 0.
+               punto%XI = punto_s%XI
+               punto%XE = punto_s%XE
+               punto%YI = punto_s%YI
+               punto%YE = punto_s%YE
+               punto%ZI = punto_s%ZI
+               punto%ZE = punto_s%ZE
+               orientacion = punto_s%or
+               isathinwire = .FALSE.
+               numertag = 37
+               CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+                                  sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+                                  Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
+                                  Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
+                                  Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
+                                  Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
+                                  Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, &
+                                  contamedia, isathinwire,verbose,numeroasignaciones)
             END IF
             sgg%NodalSource(conta1)%numpuntos = conta2 !update with the correct value
          END DO
@@ -3200,7 +3227,32 @@ endif
                sgg%NodalSource(conta1)%punto(conta2)%YI = punto_s%YI
                sgg%NodalSource(conta1)%punto(conta2)%YE = punto_s%YE
                sgg%NodalSource(conta1)%punto(conta2)%ZI = punto_s%ZI
-               sgg%NodalSource(conta1)%punto(conta2)%ZE = punto_s%ZE
+               sgg%NodalSource(conta1)%punto(conta2)%ZE = punto_s%ZE      
+               !PARA ACOMODAR LAS NODAL SOURCE COMO MEDIOS LINE Y PODER VISUALIZAR SONDAS 010824         
+               sgg%Med(contamedia)%Is%Dielectric = .TRUE.
+               sgg%Med(contamedia)%Is%LINE = .TRUE.
+               sgg%Med(contamedia)%Priority = prior_IL
+               sgg%Med(contamedia)%Epr =  1.0
+               sgg%Med(contamedia)%Sigma = 0.
+               sgg%Med(contamedia)%Mur =  1.0
+               sgg%Med(contamedia)%SigmaM = 0.
+               punto%XI = punto_s%XI
+               punto%XE = punto_s%XE
+               punto%YI = punto_s%YI
+               punto%YE = punto_s%YE
+               punto%ZI = punto_s%ZI
+               punto%ZE = punto_s%ZE
+               orientacion = punto_s%or
+               isathinwire = .FALSE.
+               numertag = 37
+               CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+                                  sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+                                  Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
+                                  Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
+                                  Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
+                                  Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
+                                  Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, &
+                                  contamedia, isathinwire,verbose,numeroasignaciones)
             END IF
             sgg%NodalSource(conta1)%numpuntos = conta2 !update with the correct value
          END DO
@@ -4482,7 +4534,7 @@ endif
       END IF
       !las lineas goto 8 que sigue la comento a 27/10/14 porque "creo" que la informacion de shared es necesaria actualizarse
       !este bug aparece en bug_OLD221014_a400m_skindepth en Modelo.nfde
-      !!!goto 8 !!!�
+      !!!goto 8 !!!!?
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !Update the number of the shared fields
     if (updateshared) then !!aqui se pierde mucho tiempo aniadido flag -noshared para evitarlo 040717  
@@ -4769,7 +4821,7 @@ endif
                   ! while (.not.eof(15))
                   DO
                      READ (15,*, end=79) tiempo1, field1
-                     if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !� repensar
+                     if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !!? repensar
                      nsurfs = nsurfs + 1
                   END DO
 79                CONTINUE
@@ -4872,7 +4924,7 @@ endif
                   ! while (.not.eof(15))
                   DO
                      READ (15,*, end=279) tiempo1, field1
-                     if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !� repensar
+                     if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !!? repensar
                      nsurfs = nsurfs + 1
                   END DO
 279               CONTINUE

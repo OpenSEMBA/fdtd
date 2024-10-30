@@ -1445,18 +1445,18 @@ CONTAINS
       CALL print11 (l%layoutnumber, dubuf)
 #ifdef CompileWithMPI
       CALL print11 (l%layoutnumber, 'Compiled WITH MPI support')
-#else
-      CALL print11 (l%layoutnumber, 'Compiled without MPI support')
 #endif
 #ifdef CompileWithHDF
       CALL print11 (l%layoutnumber, 'Compiled WITH .h5 HDF support')
-#else
-      CALL print11 (l%layoutnumber, 'Compiled without .h5 HDF support')
 #endif
 #ifdef CompileWithConformal
       CALL print11 (l%layoutnumber, 'Compiled WITH Conformal support')
-#else
-      CALL print11 (l%layoutnumber, 'Compiled without Conformal support')
+#endif
+#ifdef CompileWithMTLN
+      CALL print11 (l%layoutnumber, 'Compiled WITH MTLN support')
+#endif
+#ifdef CompileWithSMBJSON
+      CALL print11 (l%layoutnumber, 'Compiled WITH SMBJSON support')
 #endif
       WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
       CALL print11 (l%layoutnumber, dubuf)
@@ -1684,94 +1684,94 @@ CONTAINS
 #ifdef CompileWithOpenMP
       CALL print11 (l%layoutnumber, 'SUPPORTED:   MultiCPU parallel simulation (OpenMP)')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: MultiCPU parallel simulation (OpenMP)')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: MultiCPU parallel simulation (OpenMP)')
 #endif
 !
 #ifdef CompileWithMPI
       CALL print11 (l%layoutnumber, 'SUPPORTED:   MultiCPU/Multinode parallel simulation (MPI)')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: MultiCPU/Multinode parallel simulation (MPI)')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: MultiCPU/Multinode parallel simulation (MPI)')
 #endif
 #ifdef CompileWithConformal
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Conformal algorithm')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Conformal algorithm')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Conformal algorithm')
 #endif
 #ifdef CompileWithNF2FF
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Near-to-Far field probes')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Near-to-Far field probes')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Near-to-Far field probes')
 #endif
 #ifdef CompileWithAnisotropic
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Lossy anistropic materials, both electric and magnetic')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Lossy anistropic materials, both electric and magnetic')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Lossy anistropic materials, both electric and magnetic')
 #endif
 #ifdef CompileWithDMMA
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Thin Slots ')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Thin Slots ')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Thin Slots ')
 #endif
 #ifdef CompileWithEDispersives
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Electric and Magnetic Dispersive materials ')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Electric and Magnetic Dispersive materials ')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Electric and Magnetic Dispersive materials ')
 #endif
 #ifdef CompileWithSGBC
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (sgbc)')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (sgbc)')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (sgbc)')
 #endif
 #ifdef CompileWithNIBC
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (l%mibc)')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (l%mibc)')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (l%mibc)')
 #endif
 
 #ifdef CompileWithWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Loaded and grounded thin-wires with juntions')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Loaded and grounded thin-wires with juntions')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Loaded and grounded thin-wires with juntions')
 #endif
 #ifdef CompileWithNodalSources
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Nodal hard/soft electric and magnetic sources')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Nodal hard/soft electric and magnetic sources')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Nodal hard/soft electric and magnetic sources')
 #endif
 #ifdef CompileWithHDF
       CALL print11 (l%layoutnumber, 'SUPPORTED:   .xdmf+.h5 probes ')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: .xdmf+.h5 probes ')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: .xdmf+.h5 probes ')
 #endif
 #ifdef CompileWithOldSaving
       CALL print11 (l%layoutnumber, 'SUPPORTED:   .fields.old files created (fail-safe)')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: .fields.old files created (fail-safe)')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: .fields.old files created (fail-safe)')
 #endif
 #ifdef CompileWithStochastic
       CALL print11 (l%layoutnumber, 'SUPPORTED:   l%stochastic analysis')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: l%stochastic analysis')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: l%stochastic analysis')
 #endif
 #ifdef CompileWithPrescale
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Permittivity scaling accelerations')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Permittivity scaling accelerations')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Permittivity scaling accelerations')
 #endif
 #ifdef CompileWithWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Holland Wires')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Holland Wires')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Holland Wires')
 #endif
 #ifdef CompileWithBerengerWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Multi-Wires')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Multi-Wires')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Multi-Wires')
 #endif
 #ifdef CompileWithSlantedWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Slanted Wires')
 #else
-      CALL print11 (l%layoutnumber, 'UNSUPPORTED: Slanted Wires')
+      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Slanted Wires')
 #endif
 !!!!!!!!!!!!!!!!!
 #ifdef CompileWithReal4

@@ -351,7 +351,7 @@ contains
                   AniMed%info(jmed)%Ex_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times)) !OJO, EN EL ORIGINAL LO ALLOCATEABA HASTA -1
-                     !LO CAMBIO EL 26/10 POR ERROR EN LA NACELLE DEL SS5, PERO NO ESTOY SEGURO QUE HAYA UN BUG CON ESTO DE LOS SHARED !Ç
+                     !LO CAMBIO EL 26/10 POR ERROR EN LA NACELLE DEL SS5, PERO NO ESTOY SEGURO QUE HAYA UN BUG CON ESTO DE LOS SHARED !!?
                   endif
                   !PRINT *,'---> eX',sgg%Eshared%elem(j1)%i,sgg%Eshared%elem(j1)%J,sgg%Eshared%elem(j1)%k,sgg%Eshared%elem(j1)%times
                   exit buscaEx
