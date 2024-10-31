@@ -172,6 +172,42 @@ In order to use semba-fdtd, the executable must have access to the dynamic libra
 
 Once the environment is loaded, follow the steps in the next section.
 
+### Debugging with Visual Studio
+
+1. **Install necessary tools**:
+   - Install **Intel Base Kit** and **Intel HPC Kit**.
+   - Install Visual Studio 2019. This must be done **after** the intel Intel compilers. Visual Studio 2022 is not supported (as of Oct. 2024).
+   - Ensure **CMake** is installed. It's recommended to use **CMake GUI** to simplify configuration on Windows.
+
+2. **Generate the Project with CMake GUI**:
+   - In **CMake GUI**, select the option to create a project for **Visual Studio 2019** from the CMake files.
+   - Specify the output folder where the `.sln` file for the project will be generated.
+
+3. **Open the Project in Visual Studio**:
+   - Open the generated `.sln` file in Visual Studio 2019.
+   - You will see multiple projects in the solution, one for each library and executable.
+
+4. **Compilation Configuration**:
+   - You may encounter specific errors in the **fdtd-tests** projects during compilation, particularly related to the `/Mtd` or `/MD` options.
+   - To resolve this issue:
+     - Right-click on the problematic project (`fdtd_tests`) and select **Properties**.
+     - Go to **Code Generation** and change the corresponding option to `/Mtd`.
+
+5. **Set the Main Project**:
+   - Select the `semba-fdtd` project and set it as the main project.
+
+6. **Debugger Configuration**:
+   - In the project properties, go to the **Debugger** section.
+   - Configure the following parameters:
+     - **Working Directory**: Set the working directory based on the case you want to debug.
+     - **Command Arguments**: Enter `-i filename` (where `filename` is the required input file).
+
+7. **Debug the Project**:
+   - Launch the project by pressing **F5** to begin debugging.
+
+Following these steps, the project should be set up and ready to compile and debug in Visual Studio 2019 with Intel tools.
+
+
 ## Running cases
 
 `semba-fdtd` uses the following [format](doc/smbjson.md) as input files.
