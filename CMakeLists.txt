@@ -114,6 +114,7 @@ if (SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/resuming.F90"	
 		"src_main_pub/timestepping.F90"
 		"src_main_pub/observation.F90"
+		"src_main_pub/vtk.F90"
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
 	)
