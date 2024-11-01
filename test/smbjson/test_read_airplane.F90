@@ -58,22 +58,6 @@ contains
       expected%front%propiedadesPML(:)%refl = 0.001
 
       ! Expected sources.
-      allocate(expected%plnSrc%collection(1))
-      expected%plnSrc%collection(1)%nombre_fichero = "holland.exc"
-      expected%plnSrc%collection(1)%atributo = ""
-      expected%plnSrc%collection(1)%coor1 = [1, 1, 1]
-      expected%plnSrc%collection(1)%coor2 = [18, 18, 20]
-      expected%plnSrc%collection(1)%theta = 1.5708
-      expected%plnSrc%collection(1)%phi = 0.0
-      expected%plnSrc%collection(1)%alpha = 0.0
-      expected%plnSrc%collection(1)%beta = 0.0
-      expected%plnSrc%collection(1)%isRC=.false.
-      expected%plnSrc%collection(1)%nummodes=1
-      expected%plnSrc%collection(1)%INCERTMAX=0.0
-      expected%plnSrc%nc = 1
-      expected%plnSrc%nC_max = 1
-
-      ! Expected sources.
       expected%nodSrc%n_nodSrc = 1
       expected%nodSrc%n_nodSrc_max = 1
       expected%nodSrc%n_C1P_max = 0
@@ -99,8 +83,6 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%xc = 0.0
       expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0.0
       expected%nodSrc%NodalSource(1)%c2P(1)%zc = 1.0
-
-
    end function
 end function
 

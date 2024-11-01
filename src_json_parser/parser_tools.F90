@@ -62,22 +62,21 @@ contains
 
    end function
    
-   subroutine cellRegionsToCoords(res, cellRegions, cellType)
-      type(coords), dimension(:), pointer :: res
+   function cellRegionsToCoords(cellRegions, cellType) result(res)
+      type(coords), dimension(:), allocatable :: res
       type(cell_region_t), dimension(:), intent(in) :: cellRegions
       integer, intent(in), optional :: cellType
       type(cell_interval_t), dimension(:), allocatable :: intervals
       type(coords), dimension(:), allocatable :: cs
 
       intervals = getIntervalsInCellRegions(cellRegions, cellType)
-      cs = cellIntervalsToCoords(intervals)
-      allocate(res(size(cs)))
-      res = cs
-   end subroutine
+      res = cellIntervalsToCoords(intervals)
+   end
 
-   function coordsToScaledCoords(res, coords), result(res)
+   function coordsToScaledCoords(cs) result(res)
+      type(coords), intent(in), dimension(:) :: cs
       type(coords_scaled), dimension(:), allocatable :: res
-      type(coords), dimension(:), allocatable :: cs
+      integer :: i
 
       allocate(res(size(cs)))
       res(:)%Xi = cs(:)%Xi
@@ -122,7 +121,7 @@ contains
    end
 
    function cellIntervalsToCoords(ivls) result(res)
-      type(coords), dimension(:), allocatable :: res
+      type(coords), dimension(:), pointer :: res
       type(cell_interval_t), dimension(:), intent(in) :: ivls
       integer :: i
 
@@ -168,7 +167,7 @@ contains
 
       node = mesh%getNode(id, nodeFound)
       if (nodeFound) then
-         res = mesh%convertNodeToPixel(node)
+         res = mesh%nodeToPixel(node)
       else
          stop "Error converting pixel. Node not found."
       end if

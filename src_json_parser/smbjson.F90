@@ -395,9 +395,9 @@ contains
    function buildPECPMCRegion(cRs) result(res)
       type(PECRegions) :: res
       type(cell_region_t), dimension(:), allocatable, intent(in) :: cRs
-      call addCellRegionsAsCoords(res%Lins, cRs, CELL_TYPE_LINEL)
-      call addCellRegionsAsCoords(res%Surfs, cRs, CELL_TYPE_SURFEL)
-      call addCellRegionsAsCoords(res%Vols, cRs, CELL_TYPE_VOXEL)
+      res%Lins = cellRegionsToCoords(cRs, CELL_TYPE_LINEL)
+      res%Surfs = cellRegionsToCoords(cRs, CELL_TYPE_SURFEL)
+      res%Vols = cellRegionsToCoords(cRs, CELL_TYPE_VOXEL)
       res%nLins = size(res%lins)
       res%nSurfs = size(res%surfs)
       res%nVols = size(res%vols)
@@ -504,7 +504,7 @@ contains
          type(Curr_Field_Src) :: res
          type(json_value), pointer :: jns, entry
          integer, dimension(:), allocatable :: elementIds
-         type(coords_scaled), dimension(:) :: coordsFromLinels, coordsFromPolylines
+         type(coords_scaled), dimension(:), allocatable :: coordsFromLinels
 
          select case (this%getStrAt(jns, J_FIELD))
           case (J_FIELD_ELECTRIC)
@@ -527,9 +527,8 @@ contains
          res%n_C1P = 0
 
          elementIds = this%getIntsAt(jns, J_ELEMENTIDS)
-         coordsFromLinels    = cellRegionsToScaledCoords( this%mesh%getCellRegions(elementIds) )
-         coordsFromPolylines = polylinesToScaledCoords( this%mesh%getCellRegions(elementIds) )
-         res%C2P = [coordsFromLinels, coordsFromPolines]
+         coordsFromLinels = cellRegionsToScaledCoords( this%mesh%getCellRegions(elementIds) )
+         res%C2P = coordsFromLinels
          res%n_C2P = size(res%C2p)
 
       end function
@@ -1182,7 +1181,7 @@ contains
                write(error_unit, *) "Thin wires must be defined by a single polyline element."
             end if
             polyline = this%mesh%getPolyline(elementIds(1))
-            linels = this%mesh%convertPolylineToLinels(polyline)
+            linels = this%mesh%polylineToLinels(polyline)
 
             write(tagLabel, '(i10)') elementIds(1)
 
@@ -1276,7 +1275,7 @@ contains
          type(pixel_t) :: pixel
          integer :: res
          integer :: i
-         pixel = this%mesh%convertNodeToPixel(this%mesh%getNode(srcElemIds(1)))
+         pixel = this%mesh%nodeToPixel(this%mesh%getNode(srcElemIds(1)))
          do i = 1, size(linels)
             if (linels(i)%tag == pixel%tag) then
                res = i
