@@ -395,9 +395,9 @@ contains
    function buildPECPMCRegion(cRs) result(res)
       type(PECRegions) :: res
       type(cell_region_t), dimension(:), allocatable, intent(in) :: cRs
-      res%Lins = cellRegionsToCoords(cRs, CELL_TYPE_LINEL)
-      res%Surfs = cellRegionsToCoords(cRs, CELL_TYPE_SURFEL)
-      res%Vols = cellRegionsToCoords(cRs, CELL_TYPE_VOXEL)
+      call cellRegionsToCoords(res%Lins, cRs, CELL_TYPE_LINEL)
+      call cellRegionsToCoords(res%Surfs, cRs, CELL_TYPE_SURFEL)
+      call cellRegionsToCoords(res%Vols, cRs, CELL_TYPE_VOXEL)
       res%nLins = size(res%lins)
       res%nSurfs = size(res%surfs)
       res%nVols = size(res%vols)
@@ -527,8 +527,7 @@ contains
          res%n_C1P = 0
 
          elementIds = this%getIntsAt(jns, J_ELEMENTIDS)
-         coordsFromLinels = cellRegionsToScaledCoords( this%mesh%getCellRegions(elementIds) )
-         res%C2P = coordsFromLinels
+         call cellRegionsToScaledCoords(res%C2P,  this%mesh%getCellRegions(elementIds) )
          res%n_C2P = size(res%C2p)
 
       end function

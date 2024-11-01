@@ -62,15 +62,17 @@ contains
 
    end function
    
-   function cellRegionsToCoords(cellRegions, cellType) result(res)
-      type(coords), dimension(:), allocatable :: res
+   subroutine cellRegionsToCoords(res, cellRegions, cellType)
+      type(coords), dimension(:), pointer :: res
       type(cell_region_t), dimension(:), intent(in) :: cellRegions
       integer, intent(in), optional :: cellType
       type(cell_interval_t), dimension(:), allocatable :: intervals
       type(coords), dimension(:), allocatable :: cs
 
       intervals = getIntervalsInCellRegions(cellRegions, cellType)
-      res = cellIntervalsToCoords(intervals)
+      cs = cellIntervalsToCoords(intervals)
+      allocate(res(size(cs)))
+      res = cs
    end
 
    function coordsToScaledCoords(cs) result(res)
@@ -109,15 +111,18 @@ contains
       end do
    end 
 
-   function cellRegionsToScaledCoords(cellRegions) result(res)
-      type(coords_scaled), dimension(:), allocatable :: res
+   subroutine cellRegionsToScaledCoords(res, cellRegions)
+      type(coords_scaled), dimension(:), pointer :: res
       type(cell_region_t), dimension(:), intent(in) :: cellRegions
       type(cell_interval_t), dimension(:), allocatable :: intervals
       type(coords), dimension(:), allocatable :: cs
+      type(coords_scaled), dimension(:), allocatable :: scaledCoords
       
       intervals = getIntervalsInCellRegions(cellRegions, CELL_TYPE_LINEL)
       cs = cellIntervalsToCoords(intervals)
-      res = coordsToScaledCoords(cs)
+      scaledCoords = coordsToScaledCoords(cs)
+      allocate(res(size(scaledCoords)))
+      res = scaledCoords
    end
 
    function cellIntervalsToCoords(ivls) result(res)
