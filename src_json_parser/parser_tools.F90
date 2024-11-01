@@ -30,16 +30,13 @@ module parser_tools_mod
    
 contains
 
-   subroutine addCellRegionsAsCoords(res, cellRegions, cellType)
-      type(coords), dimension(:), pointer :: res
+   function getIntervalsInCellRegions(cellRegions, cellType) result (intervals)
       type(cell_region_t), dimension(:), intent(in) :: cellRegions
       integer, intent(in), optional :: cellType
       type(cell_interval_t), dimension(:), allocatable :: intervals, intervalsInRegion
-      type(coords), dimension(:), allocatable :: cs
-      integer :: i, j
       integer :: numberOfIntervals, copiedIntervals
+      integer :: i, j
 
-      
       numberOfIntervals = 0
       do i = 1, size(cellRegions)
          if (present(cellType)) then
@@ -62,34 +59,25 @@ contains
             intervals(copiedIntervals) = intervalsInRegion(j) 
          end do
       end do
-      
+
+   end function
+   
+   subroutine cellRegionsToCoords(res, cellRegions, cellType)
+      type(coords), dimension(:), pointer :: res
+      type(cell_region_t), dimension(:), intent(in) :: cellRegions
+      integer, intent(in), optional :: cellType
+      type(cell_interval_t), dimension(:), allocatable :: intervals
+      type(coords), dimension(:), allocatable :: cs
+
+      intervals = getIntervalsInCellRegions(cellRegions, cellType)
       cs = cellIntervalsToCoords(intervals)
       allocate(res(size(cs)))
       res = cs
    end subroutine
 
-   subroutine addCellRegionsAsScaledCoords(res, cellRegions, cellType)
-      type(coords_scaled), dimension(:), pointer :: res
-      type(cell_region_t), dimension(:), intent(in) :: cellRegions
-      integer, intent(in), optional :: cellType
-      type(cell_interval_t), dimension(:), allocatable :: intervals
+   function coordsToScaledCoords(res, coords), result(res)
+      type(coords_scaled), dimension(:), allocatable :: res
       type(coords), dimension(:), allocatable :: cs
-      integer :: i
-
-      allocate(intervals(0))
-      do i = 1, size(cellRegions)
-         if (present(cellType)) then
-            intervals = [intervals, cellRegions(i)%getIntervalsOfType(cellType)]
-         else
-            intervals = [intervals, cellRegions(i)%intervals]
-         end if
-      end do
-
-      if (any(intervals%getType() /= CELL_TYPE_LINEL)) then
-         stop "Error converting cell regions to scaled coordinates. Only linels are supported."
-      end if
-
-      cs = cellIntervalsToCoords(intervals)
 
       allocate(res(size(cs)))
       res(:)%Xi = cs(:)%Xi
@@ -120,8 +108,18 @@ contains
             res(i)%zc = -1.0
          end select
       end do
+   end 
 
-   end subroutine
+   function cellRegionsToScaledCoords(cellRegions) result(res)
+      type(coords_scaled), dimension(:), allocatable :: res
+      type(cell_region_t), dimension(:), intent(in) :: cellRegions
+      type(cell_interval_t), dimension(:), allocatable :: intervals
+      type(coords), dimension(:), allocatable :: cs
+      
+      intervals = getIntervalsInCellRegions(cellRegions, CELL_TYPE_LINEL)
+      cs = cellIntervalsToCoords(intervals)
+      res = coordsToScaledCoords(cs)
+   end
 
    function cellIntervalsToCoords(ivls) result(res)
       type(coords), dimension(:), allocatable :: res

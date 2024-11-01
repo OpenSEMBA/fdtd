@@ -503,6 +503,8 @@ contains
       function readField(jns) result(res)
          type(Curr_Field_Src) :: res
          type(json_value), pointer :: jns, entry
+         integer, dimension(:), allocatable :: elementIds
+         type(coords_scaled), dimension(:) :: coordsFromLinels, coordsFromPolylines
 
          select case (this%getStrAt(jns, J_FIELD))
           case (J_FIELD_ELECTRIC)
@@ -524,10 +526,10 @@ contains
          allocate(res%c1P(0))
          res%n_C1P = 0
 
-         call addCellRegionsAsScaledCoords(res%c2P, &
-            this%mesh%getCellRegions(&
-            this%getIntsAt(jns, J_ELEMENTIDS)), CELL_TYPE_LINEL)
-
+         elementIds = this%getIntsAt(jns, J_ELEMENTIDS)
+         coordsFromLinels    = cellRegionsToScaledCoords( this%mesh%getCellRegions(elementIds) )
+         coordsFromPolylines = polylinesToScaledCoords( this%mesh%getCellRegions(elementIds) )
+         res%C2P = [coordsFromLinels, coordsFromPolines]
          res%n_C2P = size(res%C2p)
 
       end function

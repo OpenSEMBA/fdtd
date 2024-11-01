@@ -42,11 +42,12 @@ module mesh_mod
       procedure :: addElement => mesh_addElement
       procedure :: getNode => mesh_getNode
       procedure :: getPolyline => mesh_getPolyline
-
+      
       procedure :: addCellRegion  => mesh_addCellRegion
       procedure :: getCellRegion  => mesh_getCellRegion
       procedure :: getCellRegions => mesh_getCellRegions
 
+      procedure :: countPolylineSegments => mesh_countPolylineSegments
       procedure :: arePolylineSegmentsStructured => mesh_arePolylineSegmentsStructured
       procedure :: convertPolylineToLinels => mesh_convertPolylineToLinels
       procedure :: convertNodeToPixel => mesh_convertNodeToPixel
@@ -202,6 +203,23 @@ contains
 
    end function
 
+   function mesh_countPolylineSegments(this, pl) result(res)
+      integer :: res
+      class(mesh_t) :: this
+      type(polyline_t) :: pl
+      type(coordinate_t) :: iC, eC
+
+      res = 0
+      do i = 1, size(pl%coordIds)-1
+         iC = this%getCoordinate(pl%coordIds(i))
+         eC = this%getCoordinate(pl%coordIds(i+1))
+         interval%ini%cell = int(iC%position)
+         interval%end%cell = int(eC%position)
+         res = res + interval%getSize()
+      end do
+      
+   end
+
    function mesh_arePolylineSegmentsStructured(this, pl) result(res)
       logical :: res
       class(mesh_t) :: this
@@ -233,6 +251,30 @@ contains
       res = .true.
    end function
 
+   function mesh_convertPolylineToCellRegion(this, pl) result(res)
+      type(cell_region_t) :: res
+      class(mesh_t), intent(in) :: this
+      type(polyline_t), intent(in) :: pl
+      type(coordinate_t) :: iC, eC
+      integer :: i, j
+
+      if (.not. this%arePolylineSegmentsStructured(pl)) then
+         allocate(res(0))
+         return
+      end if
+
+      allocate(res%intervals(this%countSegments(pl)))
+      if (size(res%intervals) == 0) return
+
+      do i = 1, size(pl%coordIds)-1
+         iC = this%getCoordinate(pl%coordIds(i))
+         eC = this%getCoordinate(pl%coordIds(i+1))
+         res%intervals(i)%ini%cell = int(iC%position)
+         res%intervals(i)%end%cell = int(eC%position)
+      end do
+
+   end function
+
    function mesh_convertPolylineToLinels(this, pl) result(res)
       type(linel_t), dimension(:), allocatable :: res
       class(mesh_t), intent(in) :: this
@@ -247,7 +289,7 @@ contains
          return
       end if
 
-      allocate(res(countSegments(pl)))
+      allocate(res(this%countSegments(pl)))
       if (size(res) == 0) return
 
       lastSegment = 1
@@ -272,22 +314,6 @@ contains
       res(1)%tag             = pl%coordIds( 1 )
       res(lastSegment-1)%tag = pl%coordIds( size(pl%coordIds) )
       
-   contains
-      integer function countSegments(pl)
-         class(polyline_t) :: pl
-         type(cell_interval_t) :: interval
-         type(coordinate_t) :: iC, eC
-         
-         ! Assumes that polyline is structured.
-         countSegments = 0
-         do i = 1, size(pl%coordIds)-1
-            iC = this%getCoordinate(pl%coordIds(i))
-            eC = this%getCoordinate(pl%coordIds(i+1))
-            interval%ini%cell = int(iC%position)
-            interval%end%cell = int(eC%position)
-            countSegments = countSegments + interval%getSize()
-         end do
-      end function
    end function
 
    function mesh_convertNodeToPixel(this, node) result(res)
