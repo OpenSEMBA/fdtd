@@ -35,8 +35,7 @@ def test_probes_output_exists(tmp_path):
     assert solver.hasFinishedSuccessfully() == True
     assert len(probe_files) == 1
     assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
-           
-    
+             
 
 def test_probes_output_number_of_steps(tmp_path):
     case = 'holland1981'
@@ -58,6 +57,7 @@ def test_probes_output_number_of_steps(tmp_path):
     assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
     assert countLinesInFile(probe_files[0]) == number_of_steps + 2
 
+
 def test_holland(tmp_path):
     case = 'holland1981'
     makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
@@ -72,7 +72,6 @@ def test_holland(tmp_path):
     assert len(probe_files) == 1
     assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
     assert countLinesInFile(probe_files[0]) == 1002
-
 
     
 def test_towel_hanger(tmp_path):
@@ -131,4 +130,22 @@ def test_read_far_field_probe(tmp_path):
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([2,2,2]))
     
+    
+def test_read_airplane(tmp_path):    
+    case = 'airplane'
+    input_json = getCase(case)
+    input_json['general']['numberOfSteps'] = 1
+        
+    fn = tmp_path._str + '/' + case + '.fdtd.json'
+    with open(fn, 'w') as modified_json:
+        json.dump(input_json, modified_json) 
+
+    makeCopy(tmp_path, EXCITATIONS_FOLDER+'gauss.exc')
+
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mapvtk'])
+    solver.run()  
+
+    assert solver.hasFinishedSuccessfully
+    
+    # vtkmap = solver.getVTKMap()
     

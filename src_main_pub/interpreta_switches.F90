@@ -436,12 +436,7 @@ CONTAINS
           CASE ('-vtkindex')
             l%vtkindex = .TRUE.  
           CASE ('-mapvtk')
-            !dump the map files
-#ifdef CompileWithVTK   
             l%createmapvtk = .TRUE.
-#else
-            l%createmapvtk = .FALSE.
-#endif
           CASE ('-hopf')
             l%hopf=.true.
             i = i + 1;

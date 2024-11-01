@@ -603,15 +603,12 @@ contains
 
    elemental logical function planewaves_eq(a,b) result(res)
       type(Planewaves), intent(in) :: a, b
-      integer :: i
       res = .false.
       if (.not. associated(a%collection)) return
       if (.not. associated(b%collection)) return
-
-      if (any(.not. a%collection == b%collection)) return
-
       if (a%nc /= b%nc) return
       if (a%nC_max /= b%nC_max) return
+      if (any(.not. a%collection == b%collection)) return
       res = .true.
    end function
 

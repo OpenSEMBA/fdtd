@@ -1,5 +1,3 @@
-cmake_minimum_required (VERSION 3.10)
-
 message(STATUS "Creating build system for smbjson")
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
