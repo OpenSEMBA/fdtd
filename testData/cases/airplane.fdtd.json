@@ -10730,7 +10730,7 @@
         {
             "name": "nodalSource",
             "type": "nodalSource",
-            "magnitudeFile": "predefinedExcitation.1.exc",
+            "magnitudeFile": "gauss.exc",
             "elementIds": [
                 1
             ],

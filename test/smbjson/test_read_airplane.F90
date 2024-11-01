@@ -63,7 +63,7 @@ contains
       expected%nodSrc%n_C1P_max = 0
       expected%nodSrc%n_C2P_max = 1
       allocate(expected%nodSrc%NodalSource(1))
-      expected%nodSrc%NodalSource(1)%nombre = "predefinedExcitation.1.exc"
+      expected%nodSrc%NodalSource(1)%nombre = "gauss.exc"
       expected%nodSrc%NodalSource(1)%isElec = .true.
       expected%nodSrc%NodalSource(1)%isMagnet = .false.
       expected%nodSrc%NodalSource(1)%isCurrent = .false.
