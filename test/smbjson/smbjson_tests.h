@@ -20,6 +20,7 @@ extern "C" int test_read_currentinjection();
 extern "C" int test_read_shieldedpair();
 extern "C" int test_read_mtln();
 extern "C" int test_read_sphere();
+extern "C" int test_read_airplane();
 
 TEST(smbjson, idchildtable_fhash)     {EXPECT_EQ(0, test_idchildtable_fhash()); }
 TEST(smbjson, idchildtable_add_get)   {EXPECT_EQ(0, test_idchildtable()); }
@@ -40,3 +41,4 @@ TEST(smbjson, read_currentinjection)  { EXPECT_EQ(0, test_read_currentinjection(
 // TEST(smbjson, read_shieldedpair)      { EXPECT_EQ(0, test_read_shieldedpair()); }
 TEST(smbjson, read_mtln)              { EXPECT_EQ(0, test_read_mtln()); }
 TEST(smbjson, read_sphere)            { EXPECT_EQ(0, test_read_sphere()); }
+TEST(smbjson, read_airplane)            { EXPECT_EQ(0, test_read_airplane()); }
