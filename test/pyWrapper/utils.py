@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # Use of absolute path to avoid conflicts when changing directory.
-SEMBA_EXE = os.getcwd() + '/buildLLVM/bin/semba-fdtd'
+SEMBA_EXE = os.getcwd() + '/build/bin/semba-fdtd'
 SEMBA_EXE_INTEL_LLVM_RELEASE = os.getcwd() + '/build-ubuntu-intelLLVM-release/bin/semba-fdtd'
 SEMBA_EXE_INTEL_LLVM_DEBUG   = os.getcwd() + '/build-ubuntu-intelLLVM-debug/bin/semba-fdtd'
 TEST_DATA_FOLDER = os.getcwd() + '/testData/' 

@@ -248,19 +248,19 @@
 			"id": 24,
 			"name": "SegmentConnector1",
 			"type": "connector",
-			"resistance": 100.0e-3
+			"resistances": [100.0e-3]
 		},
 		{
 			"id": 25,
 			"name": "SegmentConnector2",
 			"type": "connector",
-			"resistance": 19.0
+			"resistances": [19.0]
 		},
 		{
 			"id": 204,
-			"name": "SegmentConnector1",
+			"name": "SegmentConnector3",
 			"type": "connector",
-			"resistance": 100.0e-3,
+			"resistances": [100.0e-3],
 			"transferImpedancePerMeter" : {
 				"resistiveTerm" : 3.33,
 				"inductiveTerm" : 2.6e-9,
@@ -269,9 +269,9 @@
 		},
 		{
 			"id": 205,
-			"name": "SegmentConnector2",
+			"name": "SegmentConnector4",
 			"type": "connector",
-			"resistance": 19.0,
+			"resistances": [19.0],
 			"transferImpedancePerMeter" : {
 				"resistiveTerm" : 609.3,
 				"inductiveTerm" : 2.6e-9,

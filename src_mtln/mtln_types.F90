@@ -394,7 +394,15 @@ contains
       class(external_field_segment_t), intent(in) :: a,b
       external_field_segments_eq = &
          all(a%position == b%position) .and. &
-         a%direction == b%direction
+         a%direction == b%direction .and. &
+         a%radius == b%radius .and. &
+         a%has_dielectric .eqv. b%has_dielectric
+
+      external_field_segments_eq = external_field_segments_eq .and. &
+         a%dielectric%effective_relative_permittivity == b%dielectric%effective_relative_permittivity .and. &
+         a%dielectric%radius == b%dielectric%radius  .and. &
+         a%dielectric%relative_permittivity == b%dielectric%relative_permittivity
+
 
       if (.not. associated(a%field) .and. .not. associated(b%field)) then
          external_field_segments_eq = external_field_segments_eq .and. .true.
@@ -404,8 +412,6 @@ contains
       else
          external_field_segments_eq = external_field_segments_eq .and. (a%field == b%field)
       end if
-
-
    end function
 
    subroutine terminal_connection_add_node(this, node)

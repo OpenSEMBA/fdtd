@@ -1561,7 +1561,7 @@ contains
                if (this%existsAt(connectors(i)%p, J_MAT_CONN_RESISTANCES)) then
                   res(i)%resistances = this%getRealsAt(connectors(i)%p, J_MAT_CONN_RESISTANCES)
                else
-                  allocatE(res(i)%resistances(0))
+                  allocate(res(i)%resistances(0))
                end if
 
                if (this%existsAt(connectors(i)%p, J_MAT_CONN_TRANSFER_IMPEDANCE)) then
