@@ -29,20 +29,17 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: cache install oneAPI
-      id: cache-install
-      uses: actions/cache@v2
+    - name: Setup MPI
+      uses: mpi4py/setup-mpi@v1
       with:
-        path: |
-            C:\Program Files (x86)\Intel\oneAPI\setvars-vcvarsall.bat
-            C:\Program Files (x86)\Intel\oneAPI\compiler
-        key: install-${{ env.CACHE_NUMBER }}-${{ env.WINDOWS_HPCKIT_URL }}-${{ env.WINDOWS_FORTRAN_COMPONENTS }}-compiler-${{ hashFiles('**/scripts/cache_exclude_windows.sh') }}
+        mpi: 'intelmpi'
 
-    - name: non-cache install oneAPI
-      if: steps.cache-install.outputs.cache-hit != 'true'
-      shell: bash
-      timeout-minutes: 20
-      run: .github/workflows/install_windows.bat $WINDOWS_HPCKIT_URL
+    - name: Setup intel fortran
+      uses: fortran-lang/setup-fortran@v1
+      id: setup-fortran
+      with:
+        compiler: intel
+        version: '2024.2'
 
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
