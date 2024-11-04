@@ -102,7 +102,7 @@ contains
       expected%Sonda%length_max = 2
       allocate(expected%Sonda%collection(2))
       
-      expected%Sonda%collection(1)%outputrequest = "current_at_wire_end"
+      expected%Sonda%collection(1)%outputrequest = "wire_end"
       expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(1)%type2 = NP_T2_TIME
       expected%Sonda%collection(1)%filename = ' '
@@ -114,13 +114,13 @@ contains
       expected%Sonda%collection(1)%fstep = 0.0
       allocate(expected%Sonda%collection(1)%cordinates(1))
       expected%Sonda%collection(1)%len_cor = 1
-      expected%Sonda%collection(1)%cordinates(1)%tag = "current_at_wire_end"
+      expected%Sonda%collection(1)%cordinates(1)%tag = "wire_end"
       expected%Sonda%collection(1)%cordinates(1)%Xi = 1 ! Coord id as tag.
       expected%Sonda%collection(1)%cordinates(1)%Yi = 0
       expected%Sonda%collection(1)%cordinates(1)%Zi = 0
       expected%Sonda%collection(1)%cordinates(1)%Or = NP_COR_WIRECURRENT
       
-      expected%Sonda%collection(2)%outputrequest = "current_at_wire_start"
+      expected%Sonda%collection(2)%outputrequest = "wire_start"
       expected%Sonda%collection(2)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(2)%type2 = NP_T2_TIME
       expected%Sonda%collection(2)%filename = ' '
@@ -132,7 +132,7 @@ contains
       expected%Sonda%collection(2)%fstep = 0.0
       allocate(expected%Sonda%collection(2)%cordinates(1))
       expected%Sonda%collection(2)%len_cor = 1
-      expected%Sonda%collection(2)%cordinates(1)%tag = "current_at_wire_start"
+      expected%Sonda%collection(2)%cordinates(1)%tag = "wire_start"
       expected%Sonda%collection(2)%cordinates(1)%Xi = 4 ! Coord id as tag.
       expected%Sonda%collection(2)%cordinates(1)%Yi = 0
       expected%Sonda%collection(2)%cordinates(1)%Zi = 0
@@ -270,25 +270,25 @@ contains
       expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1) ! to which cable is the probe attached in mtln?
       expected%mtln%probes(1)%index = 1
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
-      expected%mtln%probes(1)%probe_name = "current_at_wire_end"
+      expected%mtln%probes(1)%probe_name = "wire_end"
       expected%mtln%probes(1)%probe_position = [75,71,74]
       
       expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)
       expected%mtln%probes(2)%index = 1
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_VOLTAGE
-      expected%mtln%probes(2)%probe_name = "voltage_at_wire_end"
+      expected%mtln%probes(2)%probe_name = "wire_end"
       expected%mtln%probes(2)%probe_position = [75,71,74]
       
       expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1) ! to which cable is the probe attached in mtln?
       expected%mtln%probes(3)%index = 6
       expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
-      expected%mtln%probes(3)%probe_name = "current_at_wire_start"
+      expected%mtln%probes(3)%probe_name = "wire_start"
       expected%mtln%probes(3)%probe_position = [75,74,74]
       
       expected%mtln%probes(4)%attached_to_cable => expected%mtln%cables(1)
       expected%mtln%probes(4)%index = 6
       expected%mtln%probes(4)%probe_type = PROBE_TYPE_VOLTAGE
-      expected%mtln%probes(4)%probe_name = "voltage_at_wire_start"
+      expected%mtln%probes(4)%probe_name = "wire_start"
       expected%mtln%probes(4)%probe_position = [75,74,74]
 
       ! networks

@@ -135,28 +135,28 @@
 
 	"probes": [
 		{
-			"name": "current_at_wire_end",
+			"name": "wire_end",
 			"type": "wire",
 			"field": "current",
 			"elementIds": [2],
             "domain": { "type": "time" }
 		},
 		{
-			"name": "voltage_at_wire_end",
+			"name": "wire_end",
 			"type": "wire",
 			"field": "voltage",
 			"elementIds": [2],
             "domain": { "type": "time" }
 		},
 		{
-			"name": "current_at_wire_start",
+			"name": "wire_start",
 			"type": "wire",
 			"field": "current",
 			"elementIds": [3],
             "domain": { "type": "time" }
 		},
 		{
-			"name": "voltage_at_wire_start",
+			"name": "wire_start",
 			"type": "wire",
 			"field": "voltage",
 			"elementIds": [3],

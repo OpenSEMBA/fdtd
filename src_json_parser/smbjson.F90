@@ -1,4 +1,4 @@
-module smbjson
+gitmodule smbjson
 
 #ifdef CompileWithSMBJSON
    use NFDETypes
@@ -2408,7 +2408,7 @@ contains
                res_conn%resistances = this%getRealsAt(conn%p, J_MAT_CONN_RESISTANCES)
             else
                allocate(res_conn%resistances(0))
-               write(error_unit, *) "Error reading connector: no resistance label found"
+               write(error_unit, *) "Error reading connector: no resistances label found"
             end if
 
             if (this%existsAt(conn%p, J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE)) then
