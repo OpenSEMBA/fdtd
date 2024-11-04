@@ -22,7 +22,7 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: 'recursive'
-        
+
     - name: Setup MPI
       uses: mpi4py/setup-mpi@v1
       with:
@@ -33,7 +33,7 @@ jobs:
       id: setup-fortran
       with:
         compiler: intel
-        version: '2024.2'    
+        version: '2024.1'    
     
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
