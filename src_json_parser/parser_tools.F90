@@ -151,7 +151,7 @@ contains
             xi = a
             xe = b
          else
-            xi = b + 1
+            xi = b
             xe = a - 1
          end if
 
