@@ -1,4 +1,4 @@
-gitmodule smbjson
+module smbjson
 
 #ifdef CompileWithSMBJSON
    use NFDETypes
