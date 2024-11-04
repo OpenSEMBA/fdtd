@@ -23,34 +23,37 @@ contains
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 1e-12
-      expected%general%nmax = 1000
+      expected%general%dt = 0.43e-10
+      expected%general%nmax = 700
 
       ! Excected media matrix.
-      expected%matriz%totalX = 4
-      expected%matriz%totalY = 4
-      expected%matriz%totalZ = 20
+      expected%matriz%totalX = 150
+      expected%matriz%totalY = 150
+      expected%matriz%totalZ = 150
 
       ! Expected grid.
-      expected%despl%nX = 4
-      expected%despl%nY = 4
-      expected%despl%nZ = 20
+      expected%despl%nX = 150
+      expected%despl%nY = 150
+      expected%despl%nZ = 150
 
-      allocate(expected%despl%desX(4))
-      allocate(expected%despl%desY(4))
-      allocate(expected%despl%desZ(20))
-      expected%despl%desX = 1.0
-      expected%despl%desY = 1.0
-      expected%despl%desZ = 0.03
+      allocate(expected%despl%desX(150))
+      allocate(expected%despl%desY(150))
+      allocate(expected%despl%desZ(150))
+      expected%despl%desX = 0.180
+      expected%despl%desY = 0.180
+      expected%despl%desZ = 0.0504
       expected%despl%mx1 = 0
-      expected%despl%mx2 = 4
+      expected%despl%mx2 = 150
       expected%despl%my1 = 0
-      expected%despl%my2 = 4
+      expected%despl%my2 = 150
       expected%despl%mz1 = 0
-      expected%despl%mz2 = 20
+      expected%despl%mz2 = 150
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(:) = F_MUR
+      expected%front%tipoFrontera(:) = F_PML
+      expected%front%propiedadesPML(:)%numCapas = 6
+      expected%front%propiedadesPML(:)%orden = 2.0
+      expected%front%propiedadesPML(:)%refl = 0.0001
 
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))

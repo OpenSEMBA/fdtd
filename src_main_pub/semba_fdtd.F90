@@ -833,23 +833,7 @@ PROGRAM SEMBA_FDTD_launcher
             write(thefileno,'(a)') '# ( -0.5 , -0.5 ) '//trim(adjustl('Other types of media                                                    (Line)'))
             write(thefileno,'(a)') '# ( -1.0 , -1.0 ) '//trim(adjustl('Other types of media                                                    (Surface)'))
         close(thefileno)
-        
-        
-        
-        
-        !esto es el programmable filter para cargar estados con todos los materiales
-!!!input = self.GetUnstructuredGridInput() 
-!!!output = self.GetUnstructuredGridOutput()
-!!!output.GetPointData().PassData(input.GetPointData())
-!!!output.GetCellData().PassData(input.GetCellData()) 
-!!!cellTypes = vtk.vtkUnsignedCharArray() 
-!!!cellTypes.DeepCopy(input.GetCellTypesArray())
-!!!cellTypes.SetName("Cell Types") 
-!!!output.GetCellData().AddArray(cellTypes)
-
     endif
-
-
 
    ! call each simulation   !ojo que los layoutnumbers empiezan en 0
    IF (l%finaltimestep /= 0) THEN

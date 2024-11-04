@@ -145,7 +145,9 @@ def test_read_airplane(tmp_path):
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mapvtk'])
     solver.run()  
 
-    assert solver.hasFinishedSuccessfully
+    assert solver.hasFinishedSuccessfully()
+       
+    vtkmapfile = solver.getVTKMap()
     
-    # vtkmap = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
     
