@@ -20,6 +20,9 @@ module mtl_mod
         integer :: conductor_in_parent
 
         type(transfer_impedance_per_meter_t) :: transfer_impedance
+        type(transfer_impedance_per_meter_t) :: initial_connector_transfer_impedance, end_connector_transfer_impedance
+
+
         type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
         logical :: isPassthrough = .false.
     contains

@@ -454,10 +454,13 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
 
 #### `connector`
 
-The `connector` assigns properties to the initial or last segment of a `wire` or a $N+1$ conductors `multiwire` as explained in the [material associations](#materialassociations) section. The following entries can be present:
+The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire` or a `multiwire`. 
+This `wire` can be either a single wire or the outermost conductor of a `cable` bundle. The `conector`  can have the following properties:
 
-+ `[resistances]`, an array of $N$ real numbers which will be converted to resistances per unit length and will replace the `resistancePerMeter` of that segment of the `multiwire`.
++ `[resistances]`, an array of $N$ real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment of the multiwire
 + `[transferImpedancePerMeter]`, described in the same way as explained in the [multiwire](#multiwire) section. Only valid in a `connector` associated with `multiwire`.
+
+
 
 **Example:**
 
@@ -466,7 +469,7 @@ The `connector` assigns properties to the initial or last segment of a `wire` or
     "name": "SegmentConnector1",
     "id": 204,
     "type": "connector",
-    "resistances": [100e-3],
+    "resistance": 100e-3,
     "transferImpedancePerMeter" : {
         "resistiveTerm" : 3.33,
         "inductiveTerm" : 2.6e-9,

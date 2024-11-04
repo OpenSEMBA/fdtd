@@ -36,7 +36,7 @@ module mtl_bundle_mod
         procedure :: advanceVoltage => bundle_advanceVoltage
         procedure :: advanceCurrent => bundle_advanceCurrent
         procedure :: addTransferImpedance => bundle_addTransferImpedance
-        ! procedure :: setConnectorTransferImpedance
+        procedure :: setConnectorTransferImpedance => bundle_setConnectorTransferImpedance
         procedure :: setExternalLongitudinalField => bundle_setExternalLongitudinalField
 
     end type mtl_bundle_t
@@ -195,6 +195,17 @@ contains
         this%probes(1:size(this%probes)-1) = aux_probes
         this%probes(size(aux_probes)+1) = res
     end function
+
+    subroutine bundle_setConnectorTransferImpedance(this, index, conductor_out, range_in, transfer_impedance)
+        class(mtl_bundle_t) :: this
+        integer, intent(in) :: index
+        integer, intent(in) :: conductor_out
+        integer, dimension(:), intent(in) :: range_in
+        type(transfer_impedance_per_meter_t) :: transfer_impedance
+
+        call this%transfer_impedance%setTransferImpedance(index, conductor_out, range_in, transfer_impedance)
+
+    end subroutine
 
     subroutine bundle_addTransferImpedance(this, conductor_out, range_in, transfer_impedance)
         class(mtl_bundle_t) :: this

@@ -126,7 +126,7 @@ module mtln_types_mod
       private
       procedure :: transfer_impedance_per_meter_eq
       generic, public :: operator(==) => transfer_impedance_per_meter_eq
-
+      procedure, public :: has_transfer_impedance
    end type
 
    type :: connector_t
@@ -301,7 +301,7 @@ contains
       logical :: l
       connector_eq = &
          (a%id == b%id) .and. &
-         (all(a%resistances == b%resistances)) .and. &
+         all((a%resistances == b%resistances)) .and. &
          (a%transfer_impedance_per_meter == b%transfer_impedance_per_meter)
    end function
 
@@ -423,6 +423,13 @@ contains
       call MOVE_ALLOC(from=newNodes, to=this%nodes)
 
    end subroutine
+
+   function has_transfer_impedance(this) result(res)
+      class(transfer_impedance_per_meter_t) :: this
+      logical :: res
+      res = (this%resistive_term /= 0) .and. (this%inductive_term /= 0) .and. &
+                               (size(this%poles) /= 0) .and. (size(this%residues) /= 0)
+   end function
 
    subroutine terminal_network_add_connection(this, connection)
       class(terminal_network_t) :: this

@@ -72,15 +72,25 @@ contains
         
     end function
 
-    subroutine addConnector(line, connector, side)
+    subroutine addInitialConnector(line, connector)
         type(mtl_t), intent(inout) :: line
         type(connector_t) :: connector
-        integer :: side
-
         integer :: i
-        do i = 1, size(connector%resistances)
-            line%rpul(side,i,i) = connector%resistances(i)
+        do i = 1, line%number_of_conductors
+            line%rpul(1, i, i) = connector%resistances(i)/line%du(1, i, i)
         end do
+        line%initial_connector_transfer_impedance = connector%transfer_impedance_per_meter
+
+    end subroutine
+
+    subroutine addEndConnector(line, connector)
+        type(mtl_t), intent(inout) :: line
+        type(connector_t) :: connector
+        integer :: i
+        do i = 1, line%number_of_conductors
+            line%rpul(size(line%du,1), i, i) = connector%resistances(i)/line%du(size(line%du,1), i, i)
+        end do
+        line%end_connector_transfer_impedance = connector%transfer_impedance_per_meter
 
     end subroutine
 
@@ -151,6 +161,14 @@ contains
                 conductor_out = findOuterConductorNumber(line%levels(i)%lines(j), line%levels(i-1), sum(conductors_in_level(1:i-2)))
                 range_in = findInnerConductorRange(line%levels(i)%lines(j), line%levels(i), sum(conductors_in_level(1:i-1)))
                 call bundle%addTransferImpedance(conductor_out, range_in, line%levels(i)%lines(j)%transfer_impedance)
+
+                if (line%levels(i)%lines(j)%initial_connector_transfer_impedance%has_transfer_impedance() .eqv. .true.) then 
+                    call bundle%setConnectorTransferImpedance(1, conductor_out, range_in, line%levels(i)%lines(j)%initial_connector_transfer_impedance)
+                end if
+                if (line%levels(i)%lines(j)%end_connector_transfer_impedance%has_transfer_impedance() .eqv. .true.) then 
+                    call bundle%setConnectorTransferImpedance(size(bundle%du, 1), conductor_out, range_in, line%levels(i)%lines(j)%end_connector_transfer_impedance)
+                end if
+
             end do
         end do  
 
@@ -221,8 +239,21 @@ contains
                              external_field_segments = cable%external_field_segments, &
                              isPassthrough = cable%isPassthrough)
 
-        if (associated(cable%initial_connector)) call addConnector(res, cable%initial_connector, 0)
-        if (associated(cable%end_connector))     call addConnector(res, cable%initial_connector, size(res%rpul,1))
+        if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
+        if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
+        
+        ! if (associated(cable%parent_cable)) then 
+        !     if (.not. associated(cable%initial_connector) .and. associated(cable%parent_cable%initial_connector) ) then 
+        !         call addConnector(res, cable%parent_cable%initial_connector, 1)
+        !         res%initial_connector_transfer_impedance = cable%parent_cable%initial_connector%transfer_impedance_per_meter
+        !     end if
+    
+        !     if (.not. associated(cable%end_connector) .and. associated(cable%parent_cable%end_connector) ) then 
+        !         call addConnector(res, cable%parent_cable%end_connector, size(res%du,1))
+        !         res%end_connector_transfer_impedance = cable%parent_cable%end_connector%transfer_impedance_per_meter
+        !     end if
+        ! end if
+
                 
 
     end function

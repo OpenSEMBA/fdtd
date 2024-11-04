@@ -1561,7 +1561,7 @@ contains
                if (this%existsAt(connectors(i)%p, J_MAT_CONN_RESISTANCES)) then
                   res(i)%resistances = this%getRealsAt(connectors(i)%p, J_MAT_CONN_RESISTANCES)
                else
-                  allocate(res(i)%resistances(0))
+                  allocatE(res(i)%resistances(0))
                end if
 
                if (this%existsAt(connectors(i)%p, J_MAT_CONN_TRANSFER_IMPEDANCE)) then
@@ -2408,7 +2408,7 @@ contains
                res_conn%resistances = this%getRealsAt(conn%p, J_MAT_CONN_RESISTANCES)
             else
                allocate(res_conn%resistances(0))
-               write(error_unit, *) "Error reading connector: no resistances label found"
+               write(error_unit, *) "Error reading connector: no resistance label found"
             end if
 
             if (this%existsAt(conn%p, J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE)) then

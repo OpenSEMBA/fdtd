@@ -1,6 +1,5 @@
 {
     "format": "FDTD Input file",
-    "__comments": "1m linear antenna illuminated by a pulse : Holland, R. Finite-Difference Analysis of EMP Coupling to Thin Struts and Wires. 2000. IEEE-TEMC.",
 
     "general": {
         "timeStep": 5e-12,
