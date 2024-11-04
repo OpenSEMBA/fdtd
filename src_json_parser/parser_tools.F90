@@ -30,16 +30,13 @@ module parser_tools_mod
    
 contains
 
-   subroutine addCellRegionsAsCoords(res, cellRegions, cellType)
-      type(coords), dimension(:), pointer :: res
+   function getIntervalsInCellRegions(cellRegions, cellType) result (intervals)
       type(cell_region_t), dimension(:), intent(in) :: cellRegions
       integer, intent(in), optional :: cellType
       type(cell_interval_t), dimension(:), allocatable :: intervals, intervalsInRegion
-      type(coords), dimension(:), allocatable :: cs
-      integer :: i, j
       integer :: numberOfIntervals, copiedIntervals
+      integer :: i, j
 
-      
       numberOfIntervals = 0
       do i = 1, size(cellRegions)
          if (present(cellType)) then
@@ -62,34 +59,26 @@ contains
             intervals(copiedIntervals) = intervalsInRegion(j) 
          end do
       end do
-      
-      cs = cellIntervalsToCoords(intervals)
-      allocate(res(size(cs)))
-      res = cs
-   end subroutine
 
-   subroutine addCellRegionsAsScaledCoords(res, cellRegions, cellType)
-      type(coords_scaled), dimension(:), pointer :: res
+   end function
+   
+   subroutine cellRegionsToCoords(res, cellRegions, cellType)
+      type(coords), dimension(:), pointer :: res
       type(cell_region_t), dimension(:), intent(in) :: cellRegions
       integer, intent(in), optional :: cellType
       type(cell_interval_t), dimension(:), allocatable :: intervals
       type(coords), dimension(:), allocatable :: cs
-      integer :: i
 
-      allocate(intervals(0))
-      do i = 1, size(cellRegions)
-         if (present(cellType)) then
-            intervals = [intervals, cellRegions(i)%getIntervalsOfType(cellType)]
-         else
-            intervals = [intervals, cellRegions(i)%intervals]
-         end if
-      end do
-
-      if (any(intervals%getType() /= CELL_TYPE_LINEL)) then
-         stop "Error converting cell regions to scaled coordinates. Only linels are supported."
-      end if
-
+      intervals = getIntervalsInCellRegions(cellRegions, cellType)
       cs = cellIntervalsToCoords(intervals)
+      allocate(res(size(cs)))
+      res = cs
+   end
+
+   function coordsToScaledCoords(cs) result(res)
+      type(coords), intent(in), dimension(:) :: cs
+      type(coords_scaled), dimension(:), allocatable :: res
+      integer :: i
 
       allocate(res(size(cs)))
       res(:)%Xi = cs(:)%Xi
@@ -120,11 +109,24 @@ contains
             res(i)%zc = -1.0
          end select
       end do
+   end 
 
-   end subroutine
+   subroutine cellRegionsToScaledCoords(res, cellRegions)
+      type(coords_scaled), dimension(:), pointer :: res
+      type(cell_region_t), dimension(:), intent(in) :: cellRegions
+      type(cell_interval_t), dimension(:), allocatable :: intervals
+      type(coords), dimension(:), allocatable :: cs
+      type(coords_scaled), dimension(:), allocatable :: scaledCoords
+      
+      intervals = getIntervalsInCellRegions(cellRegions, CELL_TYPE_LINEL)
+      cs = cellIntervalsToCoords(intervals)
+      scaledCoords = coordsToScaledCoords(cs)
+      allocate(res(size(scaledCoords)))
+      res = scaledCoords
+   end
 
    function cellIntervalsToCoords(ivls) result(res)
-      type(coords), dimension(:), allocatable :: res
+      type(coords), dimension(:), pointer :: res
       type(cell_interval_t), dimension(:), intent(in) :: ivls
       integer :: i
 
@@ -170,7 +172,7 @@ contains
 
       node = mesh%getNode(id, nodeFound)
       if (nodeFound) then
-         res = mesh%convertNodeToPixel(node)
+         res = mesh%nodeToPixel(node)
       else
          stop "Error converting pixel. Node not found."
       end if

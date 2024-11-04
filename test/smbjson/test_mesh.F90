@@ -122,7 +122,7 @@ integer function test_mesh_node_to_pixel() bind(C) result(err)
    block
       ! Valid pixel conversion.
       type(pixel_t) :: pix
-      pix = mesh%convertNodeToPixel(node_t([1]))
+      pix = mesh%nodeToPixel(node_t([1]))
       if (.not. pixel_t(cell=[0, 0, 0], tag=1) == pix) err = err + 1
    end block
 end function
@@ -155,7 +155,7 @@ integer function test_mesh_polyline_to_linel() bind(C) result(err)
       type(polyline_t) :: pl
 
       pl = polyline_t([1, 2, 3])
-      ls = mesh%convertPolylineToLinels(pl)
+      ls = mesh%polylineToLinels(pl)
       if (.not. allocated(ls)) err = err + 1
       if (size(ls) /= 4) err = err + 1
 
@@ -177,7 +177,7 @@ integer function test_mesh_polyline_to_linel() bind(C) result(err)
       type(polyline_t) :: pl
 
       pl = polyline_t([3, 2, 1])
-      ls = mesh%convertPolylineToLinels(pl)
+      ls = mesh%polylineToLinels(pl)
 
       if (.not. allocated(ls)) err = err + 1
       if (size(ls) /= 4) err = err + 1
@@ -198,7 +198,7 @@ integer function test_mesh_polyline_to_linel() bind(C) result(err)
       type(linel_t), dimension(:), allocatable :: ls
       type(polyline_t) :: pl
       pl = polyline_t([1, 3])
-      ls = mesh%convertPolylineToLinels(pl)
+      ls = mesh%polylineToLinels(pl)
       if (size(ls) /= 0) err = err + 1
 
       if (mesh%arePolylineSegmentsStructured(pl) .neqv. .false.) err = err + 1
@@ -210,7 +210,7 @@ integer function test_mesh_polyline_to_linel() bind(C) result(err)
       type(linel_t), dimension(:), allocatable :: ls
       type(polyline_t) :: pl
       pl = polyline_t([1, 2, 4])
-      ls = mesh%convertPolylineToLinels(pl)
+      ls = mesh%polylineToLinels(pl)
 
       if (.not. allocated(ls)) err = err + 1
       if (size(ls) /= 3) err = err + 1
@@ -227,7 +227,7 @@ integer function test_mesh_polyline_to_linel() bind(C) result(err)
       type(linel_t), dimension(:), allocatable :: ls
       type(polyline_t) :: pl
       pl = polyline_t([4, 2, 1])
-      ls = mesh%convertPolylineToLinels(pl)
+      ls = mesh%polylineToLinels(pl)
 
       if (.not. allocated(ls)) err = err + 1
       if (size(ls) /= 3) err = err + 1

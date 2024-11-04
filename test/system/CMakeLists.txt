@@ -1,9 +1,5 @@
-cmake_minimum_required (VERSION 3.18)
 
 message(STATUS "Creating build system for test/system")
-
-enable_language (CXX Fortran)
-enable_testing ()
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 

@@ -1,7 +1,3 @@
-cmake_minimum_required(VERSION 3.5)
-enable_language (CXX Fortran)
-enable_testing ()
-
 message(STATUS "Creating build system for test/mtln")
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)

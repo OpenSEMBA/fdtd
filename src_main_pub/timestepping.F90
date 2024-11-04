@@ -59,9 +59,7 @@ module Solver
 #ifdef CompileWithXDMF
    use xdmf
 #endif   
-#ifdef CompileWithVTK
    use vtk
-#endif   
 #ifdef CompileWithMPI
    use MPIcomm
 #endif
@@ -1952,9 +1950,7 @@ contains
                          call print11(layoutnumber,dubuf)
                          call print11(layoutnumber,SEPARADOR//separador//separador)
                          somethingdone=.false.
-#ifdef CompileWithVTK                         
                          if (Thereare%Observation) call createvtkOnTheFly(layoutnumber,size,sgg,vtkindex,somethingdone,mpidir,tagtype,sggMtag,dontwritevtk)
-#endif                         
 #ifdef CompileWithMPI
                          call MPI_Barrier(SUBCOMM_MPI,ierr)
                          call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -2174,9 +2170,8 @@ contains
       call print11(layoutnumber,dubuf)
       somethingdone=.false.
 
-#ifdef CompileWithVTK      
       if (Thereare%Observation) call createvtk(layoutnumber,size,sgg,vtkindex,somethingdone,mpidir,tagtype,sggMtag,dontwritevtk)
-#endif      
+
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)

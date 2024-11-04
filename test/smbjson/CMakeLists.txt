@@ -1,9 +1,4 @@
-cmake_minimum_required (VERSION 3.18)
-
 message(STATUS "Creating build system for test/smbjson")
-
-enable_language (CXX Fortran)
-enable_testing ()
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
@@ -21,6 +16,7 @@ add_library (smbjson_test_fortran
     "test_read_shieldedPair.F90"
     "test_read_mtln.F90"
     "test_read_sphere.F90"
+    "test_read_airplane.F90"
 )
 target_link_libraries(smbjson_test_fortran
     smbjson 

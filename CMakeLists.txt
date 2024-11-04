@@ -1,7 +1,7 @@
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.15)
 
-enable_language (CXX Fortran)
 project(semba-fdtd Fortran)
+enable_language (CXX C Fortran)
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -32,10 +32,10 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 	add_definitions(-DCompileWithIncludeMpifh)
 endif()
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
-	set(CMAKE_Fortran_FLAGS "-fpp -diag-disable=10441 -qopenmp")
-	set(CMAKE_CXX_FLAGS "-diag-disable=10448")
+	set(CMAKE_Fortran_FLAGS "-fpp")
 	if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp -diag-disable=10448")
+		set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -qopenmp")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
 	endif()
 	if(CMAKE_BUILD_TYPE MATCHES "Debug")
 		set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -check all,nouninit -debug full -traceback")
@@ -115,6 +115,7 @@ if (SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/resuming.F90"	
 		"src_main_pub/timestepping.F90"
 		"src_main_pub/observation.F90"
+		"src_main_pub/vtk.F90"
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
 	)

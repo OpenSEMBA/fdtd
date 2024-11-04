@@ -110,9 +110,8 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%xc = 0.0
       expected%nodSrc%NodalSource(1)%c2P(1)%yc = 1.0
       expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0
+
       ! Expected probes
-      
-      ! sonda      
       ! bloqueprobes
       expected%BloquePrb%n_bp = 2
       expected%BloquePrb%n_bp_max = 2
