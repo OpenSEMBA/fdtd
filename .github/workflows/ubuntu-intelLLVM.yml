@@ -71,7 +71,3 @@ jobs:
       timeout-minutes: 60
       run: |
         python -m pytest test    
-        
-    - name: exclude unused files from cache
-      if: steps.cache-install.outputs.cache-hit != 'true'
-      run: sh -c .github/workflows/oneapi_cache_exclude_linux.sh

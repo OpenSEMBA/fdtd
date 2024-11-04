@@ -52,11 +52,6 @@ jobs:
       timeout-minutes: 120
       run: |
         .github/workflows/run_tests_windows.bat
-                 
-    - name: exclude unused files from cache
-      if: steps.cache-install.outputs.cache-hit != 'true'
-      shell: bash
-      run: .github/workflows/oneapi_cache_exclude_windows.sh
     
     - name: Get current date
       id: date
