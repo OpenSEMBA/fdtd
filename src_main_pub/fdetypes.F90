@@ -672,8 +672,8 @@ contains
        return
    end subroutine
 
-   subroutine set_priorities(prioritizeCOMPOoverPEC,prioritizeISOTROPICBODYoverall)
-      logical :: prioritizeCOMPOoverPEC,prioritizeISOTROPICBODYoverall
+   subroutine set_priorities(prioritizeCOMPOoverPEC,prioritizeISOTROPICBODYoverall,prioritizeTHINWIRE)
+      logical :: prioritizeCOMPOoverPEC,prioritizeISOTROPICBODYoverall,prioritizeTHINWIRE
       !!movido aqui el sistema de prioridades para poder controlarlos con switches. util para siva 070815 (bug de PEC con prioridad sobre compo del siva
       prior_BV      =10 !background volume
       prior_AB      =30 !anisotropic body
@@ -691,7 +691,11 @@ contains
       prior_PMC     =160  !Perfectly magnetic conducting body, surface, line, or point
       prior_TG      =155       !thin Slot has more priority than PEC
       !!!!!se aniade la opcion -prioritizeCOMPOoverPEC para subir su prioridad y poder simular SIVA (sgg 070815)
-      prior_TW   = 15   !prioridad del thin-wire por debajo de todos (excepto del background)
+      if (prioritizeTHINWIRE) then
+        prior_TW   = 1500   !cambiado a 231024 y puesto con maxima prioridad. es solo experimental y por visualizacion    
+      else !opcion correcta. lo anterior es solo experimental y por visualizacion      
+        prior_TW   = 15   !prioridad del thin-wire por debajo de todos (excepto del background)  
+      endif  
 !      prior_pmlbody = prior_TW-1 !el hilo tiene prioridad sobre el pmlbody (prueba HOLD coax sgg 251019)
       prior_pmlbody = prior_BV+1 !el pml body puede ser penetrado por todo 311019 sgg
       !!!!
