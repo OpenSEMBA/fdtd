@@ -75,6 +75,7 @@ module interpreta_switches_m
             stochastic                      , &
             chosenyesornostochastic         , &
             prioritizeCOMPOoverPEC          , &
+            prioritizeTHINWIRE              , &
             createh5bin                     , &
             deleteintermediates             , &
             existeNFDE                      , &
@@ -349,7 +350,11 @@ CONTAINS
             l%singlefilewrite = .TRUE.
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))  
           CASE ('-ignoresamplingerrors')
-            l%ignoresamplingerrors = .TRUE.
+            l%ignoresamplingerrors = .TRUE.      
+          CASE ('-prioritizeTHINWIRE')
+            l%prioritizeTHINWIRE=.true.
+            l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
+            l%ignoreerrors = .TRUE.
           CASE ('-prioritizeCOMPOoverPEC')
             l%prioritizeCOMPOoverPEC=.true.
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
@@ -2066,6 +2071,7 @@ CONTAINS
       l%niapapostprocess=.false.
       l%planewavecorr=.false.
       l%prioritizeCOMPOoverPEC=.false.  !pec has default more priority than compo (para siva hay que cambiarlo)
+      l%prioritizeTHINWIRE=.false. !solo para visualizacion y experimentacion 231024
       l%prioritizeISOTROPICBODYoverall=.FALSE. !PARA EL SIVA SE CAMBIA POR LINEA DE COMANDO
       l%mpidir=3 !DEFAULT DO NOT ROTATE GEOMETRY !JUST TO TAKE PROFIT OF MPI
       l%maxwireradius=-1.0_RKIND

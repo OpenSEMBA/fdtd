@@ -193,7 +193,7 @@ contains
       integer (kind=4)  ::  ierr
 #endif
       logical :: Esborde
-      integer (kind=4)  ::  imed,imed1,imed2,imed3,imed4
+      integer (kind=4)  ::  imed,imed1,imed2,imed3,imed4,medium
       integer (kind=4)  ::  thefile !for file management
 !for dft
       REAL (KIND=RKIND), allocatable, dimension(:) :: signal,fqPos
@@ -1236,8 +1236,10 @@ contains
                                  if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%ThinWire).and. &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                     conta=conta+1
-                                 endif
-                                 if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif  
+                                 medium=sggMiEx(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &   
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                !!!   if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                !!!   (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
@@ -1245,8 +1247,10 @@ contains
                                !!!   (.not.sgg%med(sggMiHz(III   , JJJ -1, KKK   ))%Is%PEC)) then
                                        conta=conta+1
                                !!!     endif
-                                 endif
-                                 if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif 
+                                 medium=sggMiEy(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. &   
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                  !!! if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                  !!! (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
@@ -1254,8 +1258,10 @@ contains
                                  !!! (.not.sgg%med(sggMiHx(III   , JJJ   , KKK -1))%Is%PEC)) then
                                        conta=conta+1
                                  !!!   endif
-                                 endif
-                                 if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif  
+                                 medium=sggMiEz(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and. &      
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                  !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                  !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
@@ -1514,8 +1520,10 @@ contains
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJz
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
-                                 endif
-                                 if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif   
+                                 medium=sggMiEx(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &        
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                   !!! if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                   !!! (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
@@ -1528,8 +1536,10 @@ contains
                                        output(ii)%item(i)%Serialized%currentType(conta)=iJx
                                        output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  !!!   endif
-                                 endif
-                                 if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif    
+                                 medium=sggMiEy(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. &   
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                  !!!  if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                  !!!  (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
@@ -1542,8 +1552,10 @@ contains
                                        output(ii)%item(i)%Serialized%currentType(conta)=iJy
                                        output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                   !!!  endif
-                                 endif
-                                 if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and.  &
+                                 endif    
+                                 medium=sggMiEz(III , JJJ , KKK )
+                               ! if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and. &   
+                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                  !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                  !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
@@ -2669,7 +2681,7 @@ contains
 
       !---------------------------> variables locales <-----------------------------------------------
       integer( kind = 4)  ::  i, ii, i1, i2, j1, j2, k1, k2, i1_m, i2_m, j1_m, j2_m, k1_m, k2_m, field,jjx,jjy,jjz,if1,i1t,j1t,k1t,iff1
-      integer( kind = 4)  ::  iii, kkk, jjj, jjj_m, iii_m, kkk_m,NtimeforVolumic,imed,imed1,imed2,imed3,imed4
+      integer( kind = 4)  ::  iii, kkk, jjj, jjj_m, iii_m, kkk_m,NtimeforVolumic,imed,imed1,imed2,imed3,imed4,medium
       logical :: esborde,wirecrank
       REAL (KIND=RKIND_tiempo)    ::  at
       real (kind = RKIND) :: jx,jy,jz
@@ -3242,8 +3254,10 @@ contains
                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEz)
                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
-                                       endif
-                                       if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and.  &
+                                       endif       
+                                       medium=sggMiEx(III , JJJ , KKK )
+                                     ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &   
+                                       if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                            (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                        !!! if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                        !!! (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
@@ -3264,8 +3278,10 @@ contains
                                            output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEx)
                                            output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEx)
                                        !!!   endif
-                                       endif
-                                       if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and.  &
+                                       endif        
+                                       medium=sggMiEy(III , JJJ , KKK )
+                                     ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. &      
+                                       if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                            (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                        !!! if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                        !!! (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
@@ -3286,8 +3302,10 @@ contains
                                            output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEy)
                                            output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEy)
                                         !!!  endif
-                                       endif
-                                       if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and.  &
+                                       endif   
+                                       medium=sggMiEz(III , JJJ , KKK )
+                                     ! if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and. & 
+                                       if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                            (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                        !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                        !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
@@ -3320,9 +3338,11 @@ contains
                                           conta=conta+1
                                           jJx=sggMiEx(III , JJJ, KKK)
                                           !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((jJx==0).or.(sgg%Med(jJx)%is%Pec)) then
-                                             jx=0.5_RKIND
-                                          elseif (sgg%Med(jJx)%is%thinwire) then
+                                          if ((sgg%Med(jJx)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
+                                             jx=5.5
+                                          elseif ((sgg%Med(jJx)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
+                                             jx=6.5
+                                          elseif (sgg%Med(jJx)%is%thinwire) then !cambio orden para que siempre salgan los thin wires 231024
                                              if (((sggMiEy(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK  ))%is%thinwire)).or. &
                                                  ((sggMiEy(III   , JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK  ))%is%thinwire)).or. &
                                                  ((sggMiEz(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK  ))%is%thinwire)).or. &
@@ -3335,6 +3355,8 @@ contains
                                              else  !no hay una colision
                                                 jx=7
                                              endif
+                                          elseif ((jJx==0).or.(sgg%Med(jJx)%is%Pec)) then
+                                             jx=0.5_RKIND
                                           elseif ((sgg%Med(jJx)%is%SGBC).or.(sgg%Med(jJx)%is%multiport).or.(sgg%Med(jJx)%is%anismultiport)) then
                                              jx=3.5
                                           elseif ((sgg%Med(jJx)%is%edispersive).or.(sgg%Med(jJx)%is%EDispersiveANIS).or.(sgg%Med(jJx)%is%mDispersive).or.(sgg%Med(jJx)%is%mDispersiveANIS)) then
@@ -3343,10 +3365,6 @@ contains
                                              jx=2.5
                                           elseif (sgg%Med(jJx)%is%thinslot) then
                                              jx=4.5
-                                          elseif ((sgg%Med(jJx)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                             jx=5.5
-                                          elseif ((sgg%Med(jJx)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
-                                             jx=6.5
                                           else
                                              jx=-0.5_RKIND
                                           endif
@@ -3363,9 +3381,11 @@ contains
                                           conta=conta+1
                                           jJy=sggMiEy(III , JJJ, KKK)
                                           !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((jJy==0).or.(sgg%Med(jJy)%is%Pec)) then
-                                             jy=0.5_RKIND
-                                          elseif (sgg%Med(jJy)%is%thinwire) then
+                                          if ((sgg%Med(jJy)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then 
+                                             jy=5.5
+                                          elseif ((sgg%Med(jJy)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
+                                             jy=6.5
+                                          elseif (sgg%Med(jJy)%is%thinwire) then    !cambio orden para que siempre salgan los thin wires 231024
                                              if (((sggMiEz(III   , JJJ    , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ    , KKK  ))%is%thinwire)).or. &
                                              ((sggMiEz(III   , JJJ    , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ    , KKK-1))%is%thinwire)).or. &
                                              ((sggMiEx(III   , JJJ    , KKK  )/=1).AND.(.not.sgg%med(sggMiEx(III   , JJJ    , KKK  ))%is%thinwire)).or. &
@@ -3378,6 +3398,8 @@ contains
                                              else  !no hay una colision
                                                 jy=7
                                              endif
+                                          elseif ((jJy==0).or.(sgg%Med(jJy)%is%Pec)) then
+                                             jy=0.5_RKIND
                                           elseif ((sgg%Med(jJy)%is%SGBC).or.(sgg%Med(jJy)%is%multiport).or.(sgg%Med(jJy)%is%anismultiport)) then
                                              jy=3.5
                                           elseif ((sgg%Med(jJy)%is%edispersive).or.(sgg%Med(jJy)%is%EDispersiveANIS).or.(sgg%Med(jJy)%is%mDispersive).or.(sgg%Med(jJy)%is%mDispersiveANIS)) then
@@ -3386,10 +3408,6 @@ contains
                                              jy=2.5
                                           elseif (sgg%Med(jJy)%is%thinslot) then
                                              jy=4.5
-                                          elseif ((sgg%Med(jJy)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then 
-                                             jy=5.5
-                                          elseif ((sgg%Med(jJy)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
-                                             jy=6.5
                                           else
                                              jy=-0.5_RKIND
                                           endif
@@ -3406,9 +3424,11 @@ contains
                                           conta=conta+1
                                           jJz=sggMiEz(III , JJJ, KKK)
                                           !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((jJz==0).or.(sgg%Med(jJz)%is%Pec)) then
-                                             jz=0.5_RKIND
-                                          elseif (sgg%Med(jJz)%is%thinwire) then
+                                          if ((sgg%Med(jJz)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
+                                             jz=5.5
+                                          elseif ((sgg%Med(jJz)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
+                                             jz=6.5
+                                          elseif (sgg%Med(jJz)%is%thinwire) then   !cambio orden para que siempre salgan los thin wires 231024
                                              if (((sggMiEy(III   , JJJ  , KKK    )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK    ))%is%thinwire)).or. &
                                              ((sggMiEy(III   , JJJ-1, KKK    )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK    ))%is%thinwire)).or. &
                                              ((sggMiEx(III   , JJJ  , KKK    )/=1).AND.(.not.sgg%med(sggMiEx(III   , JJJ  , KKK    ))%is%thinwire)).or. &
@@ -3421,6 +3441,8 @@ contains
                                              else  !no hay una colision
                                                 jz=7
                                              endif
+                                          elseif ((jJz==0).or.(sgg%Med(jJz)%is%Pec)) then
+                                             jz=0.5_RKIND
                                           elseif ((sgg%Med(jJz)%is%SGBC).or.(sgg%Med(jJz)%is%multiport).or.(sgg%Med(jJz)%is%anismultiport)) then
                                              jz=3.5
                                           elseif ((sgg%Med(jJz)%is%edispersive).or.(sgg%Med(jJz)%is%EDispersiveANIS).or.(sgg%Med(jJz)%is%mDispersive).or.(sgg%Med(jJz)%is%mDispersiveANIS)) then
@@ -3429,10 +3451,6 @@ contains
                                              jz=2.5
                                           elseif (sgg%Med(jJz)%is%thinslot) then
                                              jz=4.5
-                                          elseif ((sgg%Med(jJz)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                             jz=5.5
-                                          elseif ((sgg%Med(jJz)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
-                                             jz=6.5
                                           else
                                              jz=-0.5_RKIND
                                           endif
@@ -3469,7 +3487,7 @@ contains
                                           Jy=(dzh(KKK ) * Hz( III -1, JJJ   , KKK   ) + dzh(KKK +1) *Hz( III -1, JJJ   , KKK +1) )/1.0_RKIND -  &
                                              (dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/1.0_RKIND +  &
                                               dxh(III )*( Hx( III   , JJJ   , KKK +1) -              Hx( III   , JJJ   , KKK -1) )/1.0_RKIND
-                                          !el Hx al promediarlo con el suyo (i,j,k) a ambos lados pierde su componente y solo quedan las adyancentes     
+                                          !el Hx al promediarlo con el suyo (i,j,k) a ambos lados pierde su componente y solo quedan las adyacentes     
                                           !a pesar de ser lógico tengo dudas de esa division por 2 caso tiras guada 0824 !?!?
                                           !he quitado la division por 2 porque el lazo debe tragarse los lados de la celda
                                           !otro tema sería la resta de la corriente de desplazamiento ahora que tambien calculamos campo electrico es posible 020824
@@ -3810,8 +3828,10 @@ contains
                                     output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
                                     output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
                                  end do
-                              endif
-                              if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and.  &
+                              endif          
+                               medium=sggMiEx(III , JJJ , KKK )
+                             ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &  
+                               if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                !!!  if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                !!!  (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
@@ -3834,8 +3854,10 @@ contains
                                        output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEx)
                                     end do
                                 !!! endif
-                              endif
-                              if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and.  &
+                              endif         
+                               medium=sggMiEy(III , JJJ , KKK )
+                            ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. & 
+                              if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                !!! if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                !!! (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
@@ -3859,7 +3881,9 @@ contains
                                     end do
                                 !!! endif
                               endif
-                              if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and.  &
+                              medium=sggMiEz(III , JJJ , KKK )       
+                            ! if ((sgg%med(medium)%Is%Line).and. &  
+                              if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
                                      (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
                                !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
