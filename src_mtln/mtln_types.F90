@@ -33,9 +33,18 @@ module mtln_types_mod
    integer, parameter :: DIRECTION_Z_POS   =  3
    integer, parameter :: DIRECTION_Z_NEG   =  -3
 
+   type :: external_dielectric_t
+      real :: radius = 0.0 
+      real :: relative_permittivity = 1.0
+      real :: effective_relative_permittivity = 1.0
+   end type
+
    type :: external_field_segment_t
       integer, dimension(3) ::position
-      integer :: direction
+      integer :: direction = 0
+      real :: radius = 0.0
+      logical :: has_dielectric = .false.
+      type(external_dielectric_t) :: dielectric
       real (kind=rkind) , pointer  ::  field => null()
    contains
       private
@@ -117,7 +126,7 @@ module mtln_types_mod
       private
       procedure :: transfer_impedance_per_meter_eq
       generic, public :: operator(==) => transfer_impedance_per_meter_eq
-
+      procedure, public :: has_transfer_impedance
    end type
 
    type :: connector_t
@@ -143,6 +152,7 @@ module mtln_types_mod
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
       type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
+      logical :: isPassthrough = .false.
 
    contains
       private
@@ -291,7 +301,7 @@ contains
       logical :: l
       connector_eq = &
          (a%id == b%id) .and. &
-         (all(a%resistances == b%resistances)) .and. &
+         all((a%resistances == b%resistances)) .and. &
          (a%transfer_impedance_per_meter == b%transfer_impedance_per_meter)
    end function
 
@@ -384,7 +394,15 @@ contains
       class(external_field_segment_t), intent(in) :: a,b
       external_field_segments_eq = &
          all(a%position == b%position) .and. &
-         a%direction == b%direction
+         a%direction == b%direction .and. &
+         a%radius == b%radius .and. &
+         a%has_dielectric .eqv. b%has_dielectric
+
+      external_field_segments_eq = external_field_segments_eq .and. &
+         a%dielectric%effective_relative_permittivity == b%dielectric%effective_relative_permittivity .and. &
+         a%dielectric%radius == b%dielectric%radius  .and. &
+         a%dielectric%relative_permittivity == b%dielectric%relative_permittivity
+
 
       if (.not. associated(a%field) .and. .not. associated(b%field)) then
          external_field_segments_eq = external_field_segments_eq .and. .true.
@@ -394,8 +412,6 @@ contains
       else
          external_field_segments_eq = external_field_segments_eq .and. (a%field == b%field)
       end if
-
-
    end function
 
    subroutine terminal_connection_add_node(this, node)
@@ -413,6 +429,13 @@ contains
       call MOVE_ALLOC(from=newNodes, to=this%nodes)
 
    end subroutine
+
+   function has_transfer_impedance(this) result(res)
+      class(transfer_impedance_per_meter_t) :: this
+      logical :: res
+      res = (this%resistive_term /= 0) .and. (this%inductive_term /= 0) .and. &
+                               (size(this%poles) /= 0) .and. (size(this%residues) /= 0)
+   end function
 
    subroutine terminal_network_add_connection(this, connection)
       class(terminal_network_t) :: this

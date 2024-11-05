@@ -1,0 +1,2 @@
+/usr/bin/ar qc libjsonfortran.a CMakeFiles/jsonfortran.dir/src/json_kinds.F90.o CMakeFiles/jsonfortran.dir/src/json_parameters.F90.o CMakeFiles/jsonfortran.dir/src/json_string_utilities.F90.o CMakeFiles/jsonfortran.dir/src/json_value_module.F90.o CMakeFiles/jsonfortran.dir/src/json_file_module.F90.o CMakeFiles/jsonfortran.dir/src/json_module.F90.o
+/usr/bin/ranlib libjsonfortran.a
