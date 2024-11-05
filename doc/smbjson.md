@@ -214,7 +214,7 @@ An interval allows specifying regions within the grid which can be a point, an o
 + The first one represents a single rectangular surface with its normal oriented towards the $+\hat{z}$ direction (light green).
 + The second one is formed by an square surface oriented towards the $-\hat{z}$ direction (light red) and a line oriented towards $-\hat{x}$.
 + The third is formed by two oriented lines towards $+\hat{x}$ and $+\hat{y}$, respectively.
-+ Finally, the fourth `cell` is formed by a single line, oriented towards $-\hat{y}$. Note that the integer in the ending segment is $-1$ as it falls out from the lower bound of the grid.
++ Finally, the fourth `cell` is formed by a single line, oriented towards $-\hat{y}$.
 
 ![Intervals example](fig/grid-intervals.png)
 
@@ -230,7 +230,7 @@ An interval allows specifying regions within the grid which can be a point, an o
                                                        [[5,4,0], [3,4,0]] ]},
         {"id": 3, "type": "cell", "intervals": [ [[3,2,0], [5,2,0]],
                                                        [[5,2,0], [5,3,0]] ]},
-        {"id": 4, "type": "cell", "intervals": [ [[7,3,0], [7,-1,0]] ]},
+        {"id": 4, "type": "cell", "intervals": [ [[7,3,0], [7,0,0]] ]},
     ]
 }
 ```

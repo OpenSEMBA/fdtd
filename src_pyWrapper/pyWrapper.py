@@ -88,7 +88,8 @@ class FDTD():
     
     def run(self):
         os.chdir(self.folder)
-        self.output = subprocess.run([self.path_to_exe, "-i",self.filename]+self.flags)
+        case_name = self.case + ".json"
+        self.output = subprocess.run([self.path_to_exe, "-i",case_name]+self.flags)
         self.hasRun = True
     
     def readJsonDict(self):
@@ -108,7 +109,15 @@ class FDTD():
             
         return probeFiles
     
-    
+    def getVTKMap(self):
+        current_path = os.getcwd()
+        folders = [item for item in os.listdir(current_path) if os.path.isdir(os.path.join(current_path, item))]
+        if len(folders) != 1:
+            return None
+        mapFile = os.path.join(current_path,folders[0],folders[0]+"_1.vtk")
+        assert os.path.isfile(mapFile)
+        return mapFile
+        
     def hasFinishedSuccessfully(self):
         if self.hasRun:
             if (self.output.returncode == 0):

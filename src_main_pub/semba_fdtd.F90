@@ -428,7 +428,7 @@ PROGRAM SEMBA_FDTD_launcher
 !!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!
 
-   call set_priorities(l%prioritizeCOMPOoverPEC,l%prioritizeISOTROPICBODYoverall) !!! asigna las prioridades
+   call set_priorities(l%prioritizeCOMPOoverPEC,l%prioritizeISOTROPICBODYoverall,l%prioritizeTHINWIRE) !!! asigna las prioridades
    if (l%finaltimestep /= -2) then
       ! nfde part
       CALL print11 (l%layoutnumber, 'INIT conversion internal ASCII => Binary')
@@ -777,8 +777,10 @@ PROGRAM SEMBA_FDTD_launcher
         
         open(newunit=thefileno,FILE = trim(adjustl(l%nEntradaRoot))//'_tag_paraviewfilters.txt')
             write(thefileno,'(a)') trim(adjustl('### FOR SLICE CURRENT VTK PROBES select the "current_t" or "current_f"                           '))   
-            write(thefileno,'(a)') trim(adjustl('### FOR MAP VTK PROBES select the "mediatype" layer                                               '))   
-            write(thefileno,'(a)') trim(adjustl('### Copy and paste the next as a programmable filter to select only one interval of tags           '))
+            write(thefileno,'(a)') trim(adjustl('### FOR MAP VTK PROBES select the "mediatype" layer                                               '))             
+            write(thefileno,'(a)') trim(adjustl('### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval'))           
+            write(thefileno,'(a)') trim(adjustl('### ######################'))
+            write(thefileno,'(a)') trim(adjustl('### For Paraview versions under 5.10 Copy and paste the next as a programmable filter to select only one interval of tags'))
             write(thefileno,'(a)') trim(adjustl('import vtk                                                                                        '))
             write(thefileno,'(a)') trim(adjustl('inp = self.GetInputDataObject(0, 0)                                                               '))
             write(thefileno,'(a)') trim(adjustl('outp = self.GetOutputDataObject(0)                                                                '))
@@ -797,8 +799,10 @@ PROGRAM SEMBA_FDTD_launcher
             !!
             write(thefileno,'(a)') trim(adjustl( '###    '))   
             write(thefileno,'(a)') trim(adjustl( '###    '))   
-            write(thefileno,'(a)') trim(adjustl( '### FOR MAP VTK PROBES select the "mediatype" layer                                               '))   
-            write(thefileno,'(a)') trim(adjustl( '### Copy and paste the next as a programmable filter to select only one types of media           '))
+            write(thefileno,'(a)') trim(adjustl( '### FOR MAP VTK PROBES select the "mediatype" layer                                               '))                
+            write(thefileno,'(a)') trim(adjustl( '### For Paraview versions over 5.10 just use the Threshold exisiting filter to select the interval'))           
+            write(thefileno,'(a)') trim(adjustl( '### ######################'))
+            write(thefileno,'(a)') trim(adjustl( '### For Paraview versions under 5.10Copy and paste the next as a programmable filter to select only one types of media'))
             write(thefileno,'(a)') trim(adjustl( 'import vtk                                                                                        '))
             write(thefileno,'(a)') trim(adjustl( 'inp = self.GetInputDataObject(0, 0)                                                               '))
             write(thefileno,'(a)') trim(adjustl( 'outp = self.GetOutputDataObject(0)                                                                '))
@@ -833,23 +837,7 @@ PROGRAM SEMBA_FDTD_launcher
             write(thefileno,'(a)') '# ( -0.5 , -0.5 ) '//trim(adjustl('Other types of media                                                    (Line)'))
             write(thefileno,'(a)') '# ( -1.0 , -1.0 ) '//trim(adjustl('Other types of media                                                    (Surface)'))
         close(thefileno)
-        
-        
-        
-        
-        !esto es el programmable filter para cargar estados con todos los materiales
-!!!input = self.GetUnstructuredGridInput() 
-!!!output = self.GetUnstructuredGridOutput()
-!!!output.GetPointData().PassData(input.GetPointData())
-!!!output.GetCellData().PassData(input.GetCellData()) 
-!!!cellTypes = vtk.vtkUnsignedCharArray() 
-!!!cellTypes.DeepCopy(input.GetCellTypesArray())
-!!!cellTypes.SetName("Cell Types") 
-!!!output.GetCellData().AddArray(cellTypes)
-
     endif
-
-
 
    ! call each simulation   !ojo que los layoutnumbers empiezan en 0
    IF (l%finaltimestep /= 0) THEN

@@ -1,8 +1,5 @@
-cmake_minimum_required (VERSION 3.18)
-
 message(STATUS "Creating build system for fdtd_tests")
 
-enable_language (CXX Fortran)
 enable_testing ()
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
@@ -28,6 +25,7 @@ target_link_libraries(fdtd_tests
     ${SYSTEM_TESTS_LIBRARY}
     GTest::gtest_main
 )
+
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
     add_custom_command(TARGET fdtd_tests POST_BUILD

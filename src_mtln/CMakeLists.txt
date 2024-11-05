@@ -1,9 +1,3 @@
-cmake_minimum_required (VERSION 3.10)
-
-project (mtlnsolver)
-enable_language (Fortran)
-enable_language (C)
-
 message(STATUS "Creating build system for mtlnsolver")
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
