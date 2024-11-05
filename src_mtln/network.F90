@@ -9,7 +9,7 @@ module network_mod
         character(len=:), allocatable :: name
         type(node_source_t) :: source
         integer :: source_type
-        real :: line_c_per_meter
+        real :: line_c_per_meter, line_g_per_meter
         real :: step
         real :: v
         real :: i

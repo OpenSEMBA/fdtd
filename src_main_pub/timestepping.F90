@@ -281,7 +281,10 @@ contains
       !*******************************************************************************
       !*******************************************************************************
       !*******************************************************************************
-!!!! 
+      !!!! 
+      !  sgg%Med(4)%Epr = 3.2
+       !!!! 
+
        if (size.gt.maxcores) then
            print *,'Maximum cores ',maxcores,' reached.  to recompile'
            stop
@@ -859,7 +862,7 @@ contains
 #ifdef CompileWithWires
       if (use_mtln_wires) then
 #ifdef CompileWithMTLN
-         call InitWires_mtln(sgg,Ex,Ey,Ez,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
+         call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
 #else
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif

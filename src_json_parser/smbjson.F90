@@ -1490,6 +1490,9 @@ contains
                if (isWire(cables(i)%p) .or. isMultiwire(cables(i)%p)) then
                   is_read = .true.
                   read_cable = readMTLNCable(cables(i)%p, is_read)
+                  if (.not. isCableNameUnique(read_cable, mtln_res%cables, ncc)) then
+                     error stop 'Cable name "'//read_cable%name//'" has already been used'
+                  end if
                   ncc = ncc + 1
                   mtln_res%cables(ncc) = read_cable
                   call addElemIdToCableMap(elemIdToCable, getCableElemIds(cables(i)%p), ncc)
@@ -1529,6 +1532,19 @@ contains
 
    contains
 
+      function isCableNameUnique(cable, cables, n) result(res)
+         type(cable_t) :: cable
+         type(cable_t), dimension(:), pointer :: cables
+         integer :: n, i
+         logical :: res
+         res = .true.
+         do i = 1, n
+            if (cable%name == cables(i)%name) then
+               res = .false.
+               exit
+            end if
+         end do
+      end function
 
       function readConnectors() result(res)
          type(connector_t), dimension(:), pointer :: res
@@ -1890,7 +1906,11 @@ contains
          type(json_value_ptr), dimension(:), allocatable :: genSrcs
          logical :: found
          type(node_source_t) :: res
-         
+         integer :: polylineId
+
+         character (len=*), dimension(1), parameter :: validTypes = &
+         [J_SRC_TYPE_GEN]
+
          call this%core%get(this%root, J_SOURCES, sources, found)
          if (.not. found) then
             res%path_to_excitation = trim("")
@@ -1898,7 +1918,7 @@ contains
             return
          end if
          
-         genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, [J_SRC_TYPE_GEN])
+         genSrcs = this%jsonValueFilterByKeyValues(sources, J_TYPE, validTypes)
          if (size(genSrcs) == 0) then
             res%path_to_excitation = trim("")
             res%source_type = SOURCE_TYPE_UNDEFINED
@@ -1934,34 +1954,46 @@ contains
                   return
                end if
 
-
-               call this%core%get(genSrcs(i)%p, J_ELEMENTIDS, sourceElemIds)
-               srcCoord = this%mesh%getNode(sourceElemIds(1))
-               if (label == TERMINAL_NODE_SIDE_INI) then
-                  if ((srcCoord%coordIds(1) == poly%coordIds(1))) then 
-                     if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
-                        res%source_type = SOURCE_TYPE_VOLTAGE 
-                     else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
-                        res%source_type = SOURCE_TYPE_CURRENT
-                     end if
-                     res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
-                     return
+               if (isSourceAttachedToLine(genSrcs(i)%p, poly, id, label)) then 
+                  if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
+                     res%source_type = SOURCE_TYPE_VOLTAGE 
+                  else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
+                     res%source_type = SOURCE_TYPE_CURRENT
                   end if
-               else if (label == TERMINAL_NODE_SIDE_END) then
-                  if ((srcCoord%coordIds(1) == poly%coordIds(ubound(poly%coordIds,1)))) then 
-                     if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_VOLTAGE) then 
-                        res%source_type = SOURCE_TYPE_VOLTAGE 
-                     else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
-                        res%source_type = SOURCE_TYPE_CURRENT
-                     end if
-                     res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
-                     return
-                  end if
+                  res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
+                  return
                end if
+
             end do
             res%path_to_excitation = trim("")
             res%source_type = SOURCE_TYPE_UNDEFINED
          end block 
+      end function
+
+      function isSourceAttachedToLine(src, polyline, id, label) result(res)
+         type(json_value), pointer, intent(in)  :: src
+         type(polyline_t), intent(in) :: polyline
+         integer, intent(in) :: id, label
+         integer :: index
+         integer, dimension(:), allocatable :: sourceElemIds
+         type(node_t) :: srcCoord
+         logical :: res
+
+         call this%core%get(src, J_ELEMENTIDS, sourceElemIds)
+         srcCoord = this%mesh%getNode(sourceElemIds(1))
+
+         if (label == TERMINAL_NODE_SIDE_INI) then
+            index = 1
+         else if (label == TERMINAL_NODE_SIDE_END) then 
+            index = ubound(polyline%coordIds,1)
+         end if
+         
+         if (this%existsAt(src, J_SRC_ATTACHED_ID)) then 
+            res = (srcCoord%coordIds(1) == polyline%coordIds(index)) .and. (this%getIntAt(src, J_SRC_ATTACHED_ID) == id)
+         else
+            res = (srcCoord%coordIds(1) == polyline%coordIds(index))
+         end if
+      
       end function
 
       function readTerminationType(termination) result(res)
@@ -2276,17 +2308,29 @@ contains
 
          res%step_size = buildStepSize(j_cable)
          res%external_field_segments = mapSegmentsToGridCoordinates(j_cable)
+
          material = this%matTable%getId(this%getIntAt(j_cable, J_MATERIAL_ID, found))
          if (.not. found) &
             write(error_unit, *) "Error reading material region: materialId label not found."
 
          if (isWire(j_cable)) then
             call assignReferenceProperties(res, material)
+            call assignExternalRadius(res, material)
+            if (this%existsAt(material%p, J_MAT_WIRE_DIELECTRIC)) then
+               call assignDielectricProperties(res, material)
+            end if
+
+            if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
+               res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
+            end if
+
          else if (isMultiwire(j_cable)) then
             call assignPULProperties(res, material, size(getCableElemIds(j_cable)))
          else
             write(error_unit, *) "Error reading cable: is neither wire nor multiwire"
          end if
+
+
 
          res%initial_connector => findConnectorWithId(j_cable, J_MAT_ASS_CAB_INI_CONN_ID)
          res%end_connector => findConnectorWithId(j_cable, J_MAT_ASS_CAB_END_CONN_ID)
@@ -2295,6 +2339,41 @@ contains
 
       end function
 
+      subroutine assignExternalRadius(res, mat)
+         type(cable_t), intent(inout) :: res
+         type(json_value_ptr) :: mat
+         integer :: i
+
+         if (this%existsAt(mat%p, J_MAT_WIRE_RADIUS)) then
+            do i = 1, size(res%external_field_segments(:))
+               res%external_field_segments(i)%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS)
+            end do
+         else
+            write(error_unit, *) "Wire radius is missing"
+         end if
+
+      end subroutine
+
+      subroutine assignDielectricProperties(res, mat)
+         type(cable_t), intent(inout) :: res
+         type(json_value_ptr) :: mat, diel
+         type(json_value), pointer :: diel_ptr
+         integer :: i
+
+         call this%core%get(mat%p, J_MAT_WIRE_DIELECTRIC, diel_ptr)
+         if (this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY) .and. & 
+             this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)) then
+
+            do i = 1, size(res%external_field_segments(:))
+               res%external_field_segments(i)%has_dielectric = .true.
+               res%external_field_segments(i)%dielectric%relative_permittivity = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY)
+               res%external_field_segments(i)%dielectric%radius = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)
+            end do
+         else
+            write(error_unit, *) "Dielectric permittivity and/of radius is missing"
+         end if
+
+      end subroutine
 
       function buildTransferImpedance(mat) result(res)
          type(json_value_ptr):: mat
@@ -2452,6 +2531,7 @@ contains
          allocate(res(n_segments))
          curr_pos%position = [(c1%position(i), i = 1, 3)]
          curr_pos%field => null()
+         curr_pos%radius = 0.0
 
          res = [(curr_pos, i = 1, n_segments)]
          res(:)%position(axis) = [(res(i)%position(axis) - i, i = 1, n_segments)]
@@ -2845,7 +2925,7 @@ contains
       do i = 1, this%core%count(place)
          call this%core%get_child(place, i, src)
          call this%core%get(src, key, type, found)
-         if(found .and. type == value) then
+         if(found .and. type == trim(value)) then
             n = n + 1
          end if
       end do
