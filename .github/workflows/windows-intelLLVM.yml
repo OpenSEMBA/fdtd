@@ -1,12 +1,5 @@
 name: windows-intelLLVM
 
-env:
-  WINDOWS_BASEKIT_URL: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/62641e01-1e8d-4ace-91d6-ae03f7f8a71f/w_BaseKit_p_2024.0.0.49563_offline.exe
-  WINDOWS_HPCKIT_URL: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/5b36181e-4974-4733-91c7-0c10c54900a5/w_HPCKit_p_2024.0.0.49588_offline.exe
-  WINDOWS_CPP_COMPONENTS: intel.oneapi.win.cpp-dpcpp-common
-  WINDOWS_FORTRAN_COMPONENTS: intel.oneapi.win.ifort-compiler
-  WINDOWS_DPCPP_COMPONENTS: intel.oneapi.win.cpp-dpcpp-common
-
 on:
   push:
     branches:
@@ -29,20 +22,17 @@ jobs:
       with:
         submodules: 'recursive'
 
-    - name: cache install oneAPI
-      id: cache-install
-      uses: actions/cache@v2
+    - name: Setup MPI
+      uses: mpi4py/setup-mpi@v1
       with:
-        path: |
-            C:\Program Files (x86)\Intel\oneAPI\setvars-vcvarsall.bat
-            C:\Program Files (x86)\Intel\oneAPI\compiler
-        key: install-${{ env.CACHE_NUMBER }}-${{ env.WINDOWS_HPCKIT_URL }}-${{ env.WINDOWS_FORTRAN_COMPONENTS }}-compiler-${{ hashFiles('**/scripts/cache_exclude_windows.sh') }}
+        mpi: 'intelmpi'
 
-    - name: non-cache install oneAPI
-      if: steps.cache-install.outputs.cache-hit != 'true'
-      shell: bash
-      timeout-minutes: 20
-      run: .github/workflows/install_windows.bat $WINDOWS_HPCKIT_URL
+    - name: Setup intel fortran
+      uses: fortran-lang/setup-fortran@v1
+      id: setup-fortran
+      with:
+        compiler: intel
+        version: '2024.0'
 
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
@@ -61,9 +51,3 @@ jobs:
       timeout-minutes: 120
       run: |
         .github/workflows/run_tests_windows.bat
-         
-         
-    - name: exclude unused files from cache
-      if: steps.cache-install.outputs.cache-hit != 'true'
-      shell: bash
-      run: .github/workflows/oneapi_cache_exclude_windows.sh
