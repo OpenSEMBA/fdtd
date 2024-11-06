@@ -299,14 +299,6 @@ contains
 
       call print11(layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
       !!!
-      if ((thereare%NodalE).or.(thereare%NodalH))    then
-#ifdef CompileWithNodalSources
-         continue
-#else
-         buff=trim(adjustl(whoami))//' Nodal sources unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
       !
       IF (thereare%FarFields)     then
 #ifdef  CompileWithNF2FF

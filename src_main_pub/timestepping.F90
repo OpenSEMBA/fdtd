@@ -50,10 +50,7 @@ module Solver
    use Borders_CPML
    use Borders_MUR
    use Resuming
-
-#ifdef CompileWithNodalSources
    use nodalsources
-#endif
    use Lumped
    use PMLbodies
 #ifdef CompileWithXDMF
@@ -1024,8 +1021,6 @@ contains
               write(dubuf,*) '----> no Plane waves are found';  call print11(layoutnumber,dubuf)
         endif
 
-#ifdef CompileWithNodalSources
-      !debe venir antes para que observation las use en mapvtk
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1049,8 +1044,6 @@ contains
          else
               write(dubuf,*) '----> no Structured Nodal sources are found';  call print11(layoutnumber,dubuf)
         endif
-
-#endif
 
          !!!!!!!sgg 121020 !rellena la matriz Mtag con los slots de una celda
                  call fillMtag(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b)
@@ -1518,16 +1511,13 @@ contains
               endif
          endif
 
-
-#ifdef CompileWithNodalSources
-         !NOdal sources  E-field advancing
+         !Nodal sources  E-field advancing
          If (Thereare%NodalE) then
-  !            if (.not.simu_devia) then  !bug! debe entrar en nodal y si son hard simplemente ponerlas a cero !mdrc 290323
-                 call AdvanceNodalE(sgg,sggMiEx,sggMiEy,sggMiEz,sgg%NumMedia,n, b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,simu_devia)
-  !            endif
+            !            if (.not.simu_devia) then  !bug! debe entrar en nodal y si son hard simplemente ponerlas a cero !mdrc 290323
+            call AdvanceNodalE(sgg,sggMiEx,sggMiEy,sggMiEz,sgg%NumMedia,n, b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,simu_devia)
+            !            endif
          endif
          
-#endif
 
 
          !!!!!!!!!!!!!!!!!!
@@ -1693,16 +1683,12 @@ contains
          
          endif  
 
-
-#ifdef CompileWithNodalSources
-         !NOdal sources  E-field advancing
+         !Nodal sources  E-field advancing
          If (Thereare%NodalH) then
           !!    if (.not.simu_devia) then  !bug! debe entrar en nodal y si son hard simplemente ponerlas a cero !mdrc 290323
                  call AdvanceNodalH(sgg,sggMiHx,sggMiHy,sggMiHz,sgg%NumMedia,n, b       ,GM2,Idxe,Idye,Idze,Hx,Hy,Hz,simu_devia)
           !!    endif
         endif
-
-#endif
 
          !Must be called here again at the end to enforce any of the previous changes
          !Posible Wire for thickwires advancing in the H-field part    
@@ -3272,9 +3258,7 @@ contains
       REAL (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : )  ::  G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 
       call DestroyObservation(sgg)
-#ifdef CompileWithNodalSources
       Call DestroyNodal(sgg)
-#endif
       call DestroyIlumina(sgg)
 #ifdef CompileWithNIBC
       call DestroyMultiports(sgg)

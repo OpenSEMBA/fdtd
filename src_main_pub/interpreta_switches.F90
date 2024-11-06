@@ -5,9 +5,7 @@ module interpreta_switches_m
    use EpsMuTimeScale_m
    use Report
    use version
-! #ifdef CompilePrivateVersion
-!    use ParseadorClass
-! #endif   
+ 
    IMPLICIT NONE
    PRIVATE
    !   
@@ -1733,11 +1731,8 @@ CONTAINS
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Loaded and grounded thin-wires with juntions')
 #endif
-#ifdef CompileWithNodalSources
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Nodal hard/soft electric and magnetic sources')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Nodal hard/soft electric and magnetic sources')
-#endif
+
 #ifdef CompileWithHDF
       CALL print11 (l%layoutnumber, 'SUPPORTED:   .xdmf+.h5 probes ')
 #else

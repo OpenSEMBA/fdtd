@@ -54,9 +54,7 @@ module Observa
 #ifdef CompileWithNF2FF
    use farfield_m
 #endif
-#ifdef CompileWithNodalSources
    use nodalsources
-#endif
 !
    IMPLICIT NONE
    private
@@ -1310,10 +1308,8 @@ contains
                      if (field==mapvtk) then
                         INIT=.TRUE.; geom=.false. ; asigna=.false.; magnetic=.false. ; electric=.true.
 
-#ifdef CompileWithNodalSources
                         call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
                         init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-#endif                              
 
 #ifdef CompileWithWires
                         call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
@@ -1375,10 +1371,9 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.false. ; asigna=.false.; magnetic=.true. ; electric=.false.
-#ifdef CompileWithNodalSources
                         call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-#endif                              
+                          
                      endif
                      !!!
                      output(ii)%item(i)%columnas=conta
@@ -1623,10 +1618,8 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.false. ; electric=.true.
-#ifdef CompileWithNodalSources
                         call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-#endif                              
 #ifdef CompileWithWires
                         call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
 #endif
@@ -1733,10 +1726,9 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.true. ; electric=.false.
-#ifdef CompileWithNodalSources
                         call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-#endif                              
+
                      endif
                      !!!
                      my_iostat=0
@@ -3466,10 +3458,9 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.false. ; electric=.true.
-#ifdef CompileWithNodalSources
                               call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-#endif                              
+          
 #ifdef CompileWithWires
                               call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
 #endif
@@ -3488,9 +3479,9 @@ contains
                                              (dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/1.0_RKIND +  &
                                               dxh(III )*( Hx( III   , JJJ   , KKK +1) -              Hx( III   , JJJ   , KKK -1) )/1.0_RKIND
                                           !el Hx al promediarlo con el suyo (i,j,k) a ambos lados pierde su componente y solo quedan las adyacentes     
-                                          !a pesar de ser lógico tengo dudas de esa division por 2 caso tiras guada 0824 !?!?
+                                          !a pesar de ser lï¿½gico tengo dudas de esa division por 2 caso tiras guada 0824 !?!?
                                           !he quitado la division por 2 porque el lazo debe tragarse los lados de la celda
-                                          !otro tema sería la resta de la corriente de desplazamiento ahora que tambien calculamos campo electrico es posible 020824
+                                          !otro tema serï¿½a la resta de la corriente de desplazamiento ahora que tambien calculamos campo electrico es posible 020824
                                           Jz=(dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/1.0_RKIND -  &
                                              (dyh(JJJ ) * Hy( III -1, JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III -1, JJJ +1, KKK   ) )/1.0_RKIND +  &
                                               dxh(III )*( Hx( III   , JJJ -1, KKK   ) -              Hx( III   , JJJ +1, KKK   ) )/1.0_RKIND 
@@ -3669,10 +3660,8 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.true. ; electric=.false.
-#ifdef CompileWithNodalSources
                               call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-#endif                              
                            endif
                            !!!
                            !!!!!!!!!!!!esto dara problemas en los angulos y aristas donde porque ahi sacara la Bloque current en Hx!!!! 19/2/14
@@ -4815,10 +4804,6 @@ contains
       return
     end subroutine contabordes
 
-    
-
-
-#ifdef CompileWithNodalSources
    subroutine nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
                          init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
@@ -5184,8 +5169,6 @@ contains
       return
    end subroutine
 
-#endif
-!del CompileWithNodalSources
 
 
 #ifdef CompileWithWires

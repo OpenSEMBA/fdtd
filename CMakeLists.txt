@@ -143,7 +143,6 @@ add_definitions(
 -DCompileWithAnisotropic 
 -DCompileWithEDispersives
 -DCompileWithNF2FF
--DCompileWithNodalSources
 -DCompileWithDMMA
 -DCompileWithSGBC
 -DCompileWithWires
