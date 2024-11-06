@@ -1,12 +1,5 @@
 name: automatic-release-windows-intelLLVM
 
-env:
-  WINDOWS_BASEKIT_URL: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/62641e01-1e8d-4ace-91d6-ae03f7f8a71f/w_BaseKit_p_2024.0.0.49563_offline.exe
-  WINDOWS_HPCKIT_URL: https://registrationcenter-download.intel.com/akdlm/IRC_NAS/5b36181e-4974-4733-91c7-0c10c54900a5/w_HPCKit_p_2024.0.0.49588_offline.exe
-  WINDOWS_CPP_COMPONENTS: intel.oneapi.win.cpp-dpcpp-common
-  WINDOWS_FORTRAN_COMPONENTS: intel.oneapi.win.ifort-compiler
-  WINDOWS_DPCPP_COMPONENTS: intel.oneapi.win.cpp-dpcpp-common
-
 on:
   push:
     branches:
@@ -33,7 +26,7 @@ jobs:
       id: setup-fortran
       with:
         compiler: intel
-        version: '2024.1'    
+        version: '2024.0'    
     
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
