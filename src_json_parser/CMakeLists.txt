@@ -13,7 +13,7 @@ add_library (jsonfortran
 )
 
 add_library(smbjson 
-	"labels_mod.F90"
+	"smbjson_labels.F90"
 	"cells.F90"
 	"smbjson.F90"
 	"idchildtable.F90"
