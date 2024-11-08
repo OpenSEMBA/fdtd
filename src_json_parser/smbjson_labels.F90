@@ -155,7 +155,7 @@ module smbjson_labels_mod
    
    character (len=*), parameter :: J_PR_POINT_DIRECTIONS = "directions"
 
-   character (len=*), parameter :: J_PR_MOVIE_COMPONENTS = "component"
+   character (len=*), parameter :: J_PR_MOVIE_COMPONENT = "component"
 
    character (len=*), parameter :: J_PR_FAR_FIELD_THETA = "theta"
    character (len=*), parameter :: J_PR_FAR_FIELD_PHI = "phi"

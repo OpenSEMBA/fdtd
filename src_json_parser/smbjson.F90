@@ -985,7 +985,7 @@ contains
          cs = cellIntervalsToCoords(cRs(1)%intervals)
 
          fieldType = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC)
-         call this%core%get(p, J_PR_MOVIE_COMPONENTS, compsPtr, found=componentsFound)
+         call this%core%get(p, J_PR_MOVIE_COMPONENT, compsPtr, found=componentsFound)
          allocate(res%cordinates(1))
          if (componentsFound) then
             call this%core%get(compsPtr, component)
