@@ -1,7 +1,6 @@
 module parser_tools_mod
     
 #ifdef CompileWithSMBJSON
-   use labels_mod
    use mesh_mod
    use cells_mod
    use json_module
