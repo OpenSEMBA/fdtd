@@ -13,17 +13,11 @@ class Probe():
     
     def __init__(self, probe_filename):
         self.filename = probe_filename
-        
-        # with open(probe_filename, 'r') as file:
-        #     data = file.read()             
-        #     data = data.replace('/', '-') 
-        # with open(probe_filename, 'w') as file:
-        #     file.write(data) 
 
         mtln_probe_tags = ['_V_','_I_']
         current_probe_tags = ['_Wx_', '_Wy_', '_Wz_']
         far_field_tag = ['_FF_']
-        movie_tags = ['_ExC_', '_EyC_', '_EzC_', '_HxC_', '_HyC_', '_HzC_']
+        movie_tags = ['_ExC_', '_EyC_', '_EzC_', '_HxC_', '_HyC_', '_HzC_', '_ME_', '_MH_']
         all_tags = current_probe_tags + far_field_tag + movie_tags + mtln_probe_tags
       
         
@@ -48,14 +42,14 @@ class Probe():
                 elif tag in far_field_tag:
                     self.type = 'farField'
                     self.name, positions_str = basename_with_no_case_name.split(tag)
-                    init_str, end_str = pos = positions_str.split('__')
+                    init_str, end_str = positions_str.split('__')
                     self.cell_init = positionStrToCell(init_str)
                     self.cell_end = positionStrToCell(end_str)
                     self.df = pd.read_csv(self.filename, sep='\s+')
                 elif tag in movie_tags:
                     self.type = 'movie'
                     self.name, positions_str = basename_with_no_case_name.split(tag)
-                    init_str, end_str = pos = positions_str.split('__')
+                    init_str, end_str = positions_str.split('__')
                     self.cell_init = positionStrToCell(init_str)
                     self.cell_end = positionStrToCell(end_str)
                 elif tag in mtln_probe_tags:
@@ -101,7 +95,7 @@ class FDTD():
         if not "probes" in input_json:
             raise ValueError('Solver does not contain probes.')
         
-        file_extensions = ('*.dat', '*.bin')
+        file_extensions = ('*.dat', '*.xdmf', '*.bin', '*.h5')
         probeFiles = []
         for ext in file_extensions:
             newProbes = [x for x in glob.glob(ext) if re.match(self.case + '_' + probe_name, x)]

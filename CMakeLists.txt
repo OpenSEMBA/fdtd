@@ -116,6 +116,8 @@ if (SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/timestepping.F90"
 		"src_main_pub/observation.F90"
 		"src_main_pub/vtk.F90"
+		"src_main_pub/xdmf.F90"
+		"src_main_pub/xdmf_h5.F90"
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
 	)
@@ -146,6 +148,7 @@ add_definitions(
 -DCompileWithDMMA
 -DCompileWithSGBC
 -DCompileWithWires
+-DCompileWithXDMF
 )
 
 

@@ -1,7 +1,6 @@
 module parser_tools_mod
     
 #ifdef CompileWithSMBJSON
-   use labels_mod
    use mesh_mod
    use cells_mod
    use json_module
@@ -153,7 +152,7 @@ contains
             xi = a
             xe = b
          else
-            xi = b + 1
+            xi = b
             xe = a - 1
          end if
 

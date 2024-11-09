@@ -30,7 +30,14 @@ def copyInputFiles(temp_dir, input, excitation, executable):
     makeCopy(temp_dir, executable)
 
 def getProbeFile(prefix, probe_name):
-    return  ([x for x in glob.glob('*dat') if re.match(prefix + '_' + probe_name + '.*dat',x)])[0]
+    extensions = ["dat", "xdmf", "h5", "bin"]
+    
+    probeFiles = []
+    for ext in extensions:
+        newFiles = ([x for x in glob.glob('*'+ext)  if re.match(prefix + '_' + probe_name + '.*'+ext,  x)])[0]
+        probeFiles.append(newFiles)
+    
+    return  probeFiles
 
 def countLinesInFile(probe_fn):
     with open(probe_fn, 'r') as f:

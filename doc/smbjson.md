@@ -214,7 +214,7 @@ An interval allows specifying regions within the grid which can be a point, an o
 + The first one represents a single rectangular surface with its normal oriented towards the $+\hat{z}$ direction (light green).
 + The second one is formed by an square surface oriented towards the $-\hat{z}$ direction (light red) and a line oriented towards $-\hat{x}$.
 + The third is formed by two oriented lines towards $+\hat{x}$ and $+\hat{y}$, respectively.
-+ Finally, the fourth `cell` is formed by a single line, oriented towards $-\hat{y}$. Note that the integer in the ending segment is $-1$ as it falls out from the lower bound of the grid.
++ Finally, the fourth `cell` is formed by a single line, oriented towards $-\hat{y}$.
 
 ![Intervals example](fig/grid-intervals.png)
 
@@ -230,7 +230,7 @@ An interval allows specifying regions within the grid which can be a point, an o
                                                        [[5,4,0], [3,4,0]] ]},
         {"id": 3, "type": "cell", "intervals": [ [[3,2,0], [5,2,0]],
                                                        [[5,2,0], [5,3,0]] ]},
-        {"id": 4, "type": "cell", "intervals": [ [[7,3,0], [7,-1,0]] ]},
+        {"id": 4, "type": "cell", "intervals": [ [[7,3,0], [7,0,0]] ]},
     ]
 }
 ```
@@ -634,7 +634,7 @@ If not `magnitudeFile` is specified and only one `source` is defined, the `magni
 
 Probes of type `movie` record a vector field in a volume region indicated by `elementIds`. `[field]` can be `electric`, `magnetic`, or `currentDensity`; defaults to `electric`.
 `currentDensity` will store only the surface density currents on `pec` or lossy surfaces.
-The stored values can be selected using `[components]`, which stores an array of the following labels `x`, `y`, `z`, or `magnitude`; if no components are specified, defaults to `magnitude`.
+The stored values can be selected using the `[component]` entry, which stores one of the following labels `x`, `y`, `z`, or `magnitude`; if no component is specified, defaults to `magnitude`.
 
 An example follows:
 ```json
@@ -642,7 +642,7 @@ An example follows:
     "name": "electric_field_movie",
     "type": "movie",
     "field": "electric",
-    "components": ["x"],
+    "component": "x",
     "elementIds": [4]
 }
 ```

@@ -41,4 +41,4 @@ TEST(smbjson, read_currentinjection)  { EXPECT_EQ(0, test_read_currentinjection(
 // TEST(smbjson, read_shieldedpair)      { EXPECT_EQ(0, test_read_shieldedpair()); }
 TEST(smbjson, read_mtln)              { EXPECT_EQ(0, test_read_mtln()); }
 TEST(smbjson, read_sphere)            { EXPECT_EQ(0, test_read_sphere()); }
-TEST(smbjson, read_airplane)            { EXPECT_EQ(0, test_read_airplane()); }
+TEST(smbjson, read_airplane)          { EXPECT_EQ(0, test_read_airplane()); }
