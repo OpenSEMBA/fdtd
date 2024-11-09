@@ -307,16 +307,6 @@ contains
 #endif
       endif
       !
-      !
-      IF (thereare%EDispersives.or.thereare%MDispersives)     then
-#ifdef CompileWithEDispersives
-         continue
-#else
-         buff=trim(adjustl(whoami))//' Dispersive materials unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
-      !
       If (thereare%Wires)            then
 #ifdef CompileWithWires
          continue
@@ -380,7 +370,6 @@ contains
          call warnerrreport(buff)
       endif
       !
-#ifdef CompileWithEDispersives
       IF (thereare%EDispersives)     then
          buff=   ' has electric dispersives'
          call warnerrreport(buff)
@@ -389,7 +378,6 @@ contains
          buff=   ' has magnetic dispersives'
          call warnerrreport(buff)
       endif
-#endif
 #ifdef CompileWithWires
       If (thereare%Wires)            then
          buff=   ' has Holland WIREs'

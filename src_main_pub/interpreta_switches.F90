@@ -1686,11 +1686,7 @@ CONTAINS
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Near-to-Far field probes')
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Lossy anistropic materials, both electric and magnetic')
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Thin Slots ')
-#ifdef CompileWithEDispersives
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Electric and Magnetic Dispersive materials ')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Electric and Magnetic Dispersive materials ')
-#endif
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (sgbc)')
 #ifdef CompileWithNIBC
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (l%mibc)')

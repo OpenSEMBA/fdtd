@@ -142,7 +142,6 @@ add_definitions(
 -DCompileWithInt2 
 -DCompileWithReal4 
 -DCompileWithOpenMP 
--DCompileWithEDispersives
 -DCompileWithWires
 )
 

@@ -33,7 +33,6 @@
 
 module Mdispersives
 
-#ifdef CompileWithEDispersives
    !mismo switch electrico y magnetico
 
    use fdetypes
@@ -440,7 +439,5 @@ contains
       if (associated(MDutton%Medium))  deallocate (MDutton%Medium)
 
    end subroutine
-
-#endif
 
 end module Mdispersives

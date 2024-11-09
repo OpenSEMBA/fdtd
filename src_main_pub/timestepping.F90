@@ -70,11 +70,8 @@ module Solver
 #else
    use sgbc_NOstoch
 #endif  
-
-#ifdef CompileWithEDispersives
    use EDispersives
    use MDispersives
-#endif
    use Anisotropic
 #ifdef CompileWithWires  
    use HollandWires     
@@ -956,7 +953,6 @@ contains
      endif
 #endif
 
-#ifdef CompileWithEDispersives
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -989,7 +985,6 @@ contains
          else
               write(dubuf,*) '----> no Structured Magnetic dispersive elements found';  call print11(layoutnumber,dubuf)
         endif
-#endif
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1470,10 +1465,8 @@ contains
 !!!
         if (ThereAre%Lumpeds) call AdvanceLumpedE(sgg,n,simu_devia,stochastic)
 !!!
-#ifdef CompileWithEDispersives
          !EDispersives (only updated here. No need to update in the H-field part)
          IF (Thereare%Edispersives)     call AdvanceEDispersiveE(sgg)
-#endif
 
          !PMC are only called in the H-field part (image theory method)
 
@@ -1634,10 +1627,8 @@ contains
             call AdvancesgbcH
          endif
 
-#ifdef CompileWithEDispersives
          !MDispersives (only updated here. No need to update in the E-field part)
          IF (Thereare%Mdispersives)     call AdvanceMDispersiveH(sgg)
-#endif
 
 #ifdef CompileWithNIBC
          !Multiports H-field advancing
@@ -3239,10 +3230,8 @@ contains
 
       call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((Thereare%sgbcs).and.(sgbc))
       call destroyLumped(sgg)
-#ifdef CompileWithEDispersives
       call DestroyEDispersives(sgg)
       call DestroyMDispersives(sgg)
-#endif
 #ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then

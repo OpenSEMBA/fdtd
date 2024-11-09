@@ -31,28 +31,18 @@ module resuming
    Use Report
 
    use fdetypes
-
-
-
-   !Thin metals
 #ifdef CompileWithStochastic
    use SGBC_stoch
 #else
    use SGBC_NOstoch
 #endif  
    use PMLbodies
-
    use Lumped
 #ifdef CompileWithNIBC
    use Multiports
 #endif
-
-   !EDispersives
-#ifdef CompileWithEDispersives
    use EDispersives
    use MDispersives
-#endif
-
    use farfield_m
 
    !Wires Thin Module
@@ -352,11 +342,8 @@ contains
 #ifdef CompileWithNIBC
       if( Thereare%Multiports)       call StoreFieldsMultiports
 #endif
-
-#ifdef CompileWithEDispersives
       if( Thereare%EDispersives)     call StoreFieldsEDispersives
       if( Thereare%MDispersives)     call StoreFieldsMDispersives
-#endif
       if( Thereare%PlaneWaveBoxes)     call StorePlaneWaves(sgg)
       if( Thereare%FarFields)       call StoreFarFields(b)  !called at initobservation
 #ifdef CompileWithMPI

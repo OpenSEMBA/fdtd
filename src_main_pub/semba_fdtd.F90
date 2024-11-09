@@ -632,20 +632,6 @@ PROGRAM SEMBA_FDTD_launcher
          CONTINUE
       END IF
       !
-      IF (sgg%Med(i)%Is%EDispersive) THEN
-#ifndef CompileWithEDispersives
-         CALL stoponerror (l%layoutnumber, l%size, 'Edispersives without Edispersives support. Recompile!')
-#endif
-         CONTINUE
-      END IF
-      !
-      IF (sgg%Med(i)%Is%MDispersive) THEN
-#ifndef CompileWithEDispersives
-         CALL stoponerror (l%layoutnumber, l%size, 'Mdispersives without Edispersives support. Recompile!')
-#endif
-         CONTINUE
-      END IF
-      !
       IF ((sgg%Med(i)%Is%AnisMultiport) .OR. (sgg%Med(i)%Is%multiport).OR. (sgg%Med(i)%Is%SGBC)) THEN
 #ifndef CompileWithNIBC
          if (l%mibc) CALL stoponerror (l%layoutnumber, l%size, 'l%mibc Multiports without support. Recompile!')
