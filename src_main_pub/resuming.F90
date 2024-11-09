@@ -56,9 +56,7 @@ module resuming
    use MDispersives
 #endif
 
-#ifdef CompileWithNF2FF
    use farfield_m
-#endif
 
    !Wires Thin Module
 #ifdef CompileWithWires
@@ -366,9 +364,7 @@ contains
       if( Thereare%MDispersives)     call StoreFieldsMDispersives
 #endif
       if( Thereare%PlaneWaveBoxes)     call StorePlaneWaves(sgg)
-#ifdef CompileWithNF2FF
       if( Thereare%FarFields)       call StoreFarFields(b)  !called at initobservation
-#endif
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif

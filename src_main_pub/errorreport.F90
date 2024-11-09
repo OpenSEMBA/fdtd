@@ -298,15 +298,6 @@ contains
       call print11(layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
       !!!
       !
-      IF (thereare%FarFields)     then
-#ifdef  CompileWithNF2FF
-         continue
-#else
-         buff=trim(adjustl(whoami))//' NF2FF unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
-      !
       IF (thereare%SGBCs)     then
 #ifdef CompileWithSGBC
          continue

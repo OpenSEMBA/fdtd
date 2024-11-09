@@ -50,10 +50,7 @@ module Observa
    use WiresSlanted_Constants
 #endif
    use report
-
-#ifdef CompileWithNF2FF
    use farfield_m
-#endif
    use nodalsources
 !
    IMPLICIT NONE
@@ -428,7 +425,6 @@ contains
                endif
 #endif
              case (FarField)
-#ifdef CompileWithNF2FF
                if ( (sgg%observation(ii)%P(1)%ZI >  sgg%SINPMLSweep(IHz)%ZE).or. &  !MPI NO DUPLICAR CALCULOS
                (sgg%observation(ii)%P(1)%ZE < sgg%SINPMLSweep(iHz)%ZI)) then
 
@@ -450,9 +446,6 @@ contains
                endif
 #endif
                !
-#else
-               call stoponerror(layoutnumber,size,'Current version does not support Near to Far field. Recompile')
-#endif
             end select
          end do
       end do
@@ -2086,8 +2079,8 @@ contains
                         endif
                      endif
                   endif
-#ifdef CompileWithNF2FF
-                case (farfield)
+
+               case (farfield)
                   ThereAreFarFields=.true.
                   !
                   write(chari ,'(i7)') sgg%observation(ii)%P(1)%XI
@@ -2153,7 +2146,6 @@ contains
                   ,output(ii)%item(i)%MPISubComm,output(ii)%item(i)%MPIRoot &
 #endif
                   ,eps0,mu0)
-#endif
                   !no es necesario hacer wipe out pq en DF se van machacando
                end select
             end do loop_ob
@@ -3668,7 +3660,6 @@ contains
                         endif
                      endif
                      !!!!!!!!fin sondas corriente
-#ifdef CompileWithNF2FF
                    case( FarField)
                      if (planewavecorr) then
                          Excor=Ex-Exvac; Eycor=Ey-Eyvac; Ezcor=Ez-Ezvac;
@@ -3677,8 +3668,6 @@ contains
                      else
                          call UpdateFarField(ntime, b, Ex, Ey, Ez,Hx,Hy,Hz)
                      endif
-                     
-#endif
                   endselect
                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FREQMAIN
                   !!!!!!!!!!!!!!!!!!!!
@@ -4212,11 +4201,10 @@ contains
 #ifdef CompileWithMPI
                endif
 #endif
-#ifdef CompileWithNF2FF
-                CASe (FarField) !no emplear tiempo calculando rcs por el camino solo al final
+
+                case (FarField) !no emplear tiempo calculando rcs por el camino solo al final
                   at=sgg%tiempo(FinalInstant)
                   if (flushFF) call FlushFarfield(layoutnumber,size,  b, dxe, dye, dze, dxh, dyh, dzh,facesNF2FF,at)
-#endif
                 case (iMHC,iHxC,iHyC,iHzC,iMEC,iExC,iEyC,iEzC,icur,iCurX,iCurY,iCurZ,mapvtk)
                   DO N=nInit,FinalInstant
                      at=sgg%tiempo(N)
@@ -4486,14 +4474,12 @@ contains
 
              case (iBloqueMz,iBloqueJz,iEx,iEy,iEz,iHx,iHy,iHz)
                deallocate (output(ii)%item(i)%valor)
-#ifdef CompileWithNF2FF
              case (farfield)
                call DestroyFarField
 #ifdef CompileWithMPI
                if (output(ii)%item(i)%MPISubComm /= -1) then
                   call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)
                endif
-#endif
 #endif
             end select
          end do
@@ -4577,10 +4563,8 @@ contains
          ext='BCY_'
        case (iCurZ)
          ext='BCZ_'
-#ifdef CompileWithNF2FF
        case (farfield)
          ext='FF_'
-#endif
       end select
 
       return

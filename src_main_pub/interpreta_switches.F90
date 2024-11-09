@@ -1608,12 +1608,10 @@ CONTAINS
       CALL print11 (l%layoutnumber, '-clip                  : Permits to clip a bigger problem truncating wires.')
       CALL print11 (l%layoutnumber, '-wirecrank             : Uses Crank-Nicolson for wires (development)       ')
 #endif
-#ifdef CompileWithNF2FF
       CALL print11 (l%layoutnumber, '-noNF2FF string        : Supress a NF2FF plane for calculation             ')
       CALL print11 (l%layoutnumber, '&                        String can be: up, down, left, right, back , front')
       CALL print11 (l%layoutnumber, '-NF2FFDecim            : Uses decimation in NF2FF calculation (faster).    ')
       CALL print11 (l%layoutnumber, '&                        WARNING: High-freq aliasing may occur             ')
-#endif
       CALL print11 (l%layoutnumber, '-vtkindex              : Output index instead of real point in 3D slices.  ')
       CALL print11 (l%layoutnumber, '-ignoreerrors          : Run even if errors reported in *Warnings.txt file.')
       CALL print11 (l%layoutnumber, '___________________________________________________________________________')
@@ -1695,11 +1693,7 @@ CONTAINS
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Conformal algorithm')
 #endif
-#ifdef CompileWithNF2FF
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Near-to-Far field probes')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Near-to-Far field probes')
-#endif
 #ifdef CompileWithAnisotropic
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Lossy anistropic materials, both electric and magnetic')
 #else
@@ -1725,14 +1719,12 @@ CONTAINS
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (l%mibc)')
 #endif
-
 #ifdef CompileWithWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Loaded and grounded thin-wires with juntions')
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Loaded and grounded thin-wires with juntions')
 #endif
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Nodal hard/soft electric and magnetic sources')
-
 #ifdef CompileWithHDF
       CALL print11 (l%layoutnumber, 'SUPPORTED:   .xdmf+.h5 probes ')
 #else

@@ -144,7 +144,6 @@ add_definitions(
 -DCompileWithOpenMP 
 -DCompileWithAnisotropic 
 -DCompileWithEDispersives
--DCompileWithNF2FF
 -DCompileWithDMMA
 -DCompileWithSGBC
 -DCompileWithWires
