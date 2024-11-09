@@ -55,10 +55,7 @@ PROGRAM SEMBA_FDTD_launcher
 
    USE Preprocess_m
    USE storeData
-
-#ifdef CompileWithXDMF
    USE xdmf_h5
-#endif   
    !
 #ifdef CompileWithMPI
    USE MPIcomm
@@ -394,7 +391,6 @@ PROGRAM SEMBA_FDTD_launcher
    end if
 #endif
 
-#ifdef CompileWithXDMF   
 #ifdef CompileWithHDF
 !!!!tunel a lo bestia para crear el .h5 a 021219
    if (l%createh5filefromsinglebin) then
@@ -418,7 +414,6 @@ PROGRAM SEMBA_FDTD_launcher
 #endif
       stop
    endif
-#endif
 #endif
 
    IF (status /= 0) then

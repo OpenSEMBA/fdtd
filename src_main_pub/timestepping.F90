@@ -53,9 +53,7 @@ module Solver
    use nodalsources
    use Lumped
    use PMLbodies
-#ifdef CompileWithXDMF
    use xdmf
-#endif   
    use vtk
 #ifdef CompileWithMPI
    use MPIcomm
@@ -1957,10 +1955,10 @@ contains
                             call print11(layoutnumber,dubuf)
                             call print11(layoutnumber,SEPARADOR//separador//separador)
                             somethingdone=.false.
-#ifdef CompileWithXDMF      
+
                             if (Thereare%Observation) call createxdmfOnTheFly(sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)                          
                             if (createh5bin) call createh5bintxt(sgg,layoutnumber,size) !lo deben llamar todos haya on on thereare%observation
-#endif  
+
 #ifdef CompileWithMPI
                         call MPI_Barrier(SUBCOMM_MPI,ierr)
                         call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -2177,11 +2175,9 @@ contains
       write(dubuf,*) SEPARADOR//separador//separador
       call print11(layoutnumber,dubuf)
       somethingdone=.false.
-#ifdef CompileWithXDMF
       if (Thereare%Observation) call createxdmf(sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)
       if (createh5bin) call createh5bintxt(sgg,layoutnumber,size) !lo deben llamar todos haya o no thereare%observation
          !        call create_interpreted_mesh(sgg)
-#endif      
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)

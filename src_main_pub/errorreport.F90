@@ -25,9 +25,7 @@
 Module Report
    use FDETYPES
 
-#ifdef CompileWithXDMF
    use snapxdmf
-#endif
 
    implicit none
    private
@@ -1160,7 +1158,6 @@ contains
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
 
-#ifdef CompileWithXDMF
          if ((mustsnap.and.(lmaxval  (layoutnumber+1)> snapLevel)).or.(countersnap > 0)) then
             countersnap=countersnap + 1
             !
@@ -1264,7 +1261,6 @@ contains
                countersnap=0
             endif
          endif
-#endif         
 
 #ifdef CompileWithMPI
          call MPI_Barrier(MPI_COMM_WORLD,ierr) !TODOS STOCH O NO 060619

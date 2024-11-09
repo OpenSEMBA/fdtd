@@ -148,7 +148,6 @@ add_definitions(
 -DCompileWithDMMA
 -DCompileWithSGBC
 -DCompileWithWires
--DCompileWithXDMF
 )
 
 
