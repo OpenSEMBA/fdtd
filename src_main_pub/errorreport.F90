@@ -308,15 +308,6 @@ contains
       endif
       !
       !
-      IF (thereare%ThinSlot)     then
-#ifdef CompileWithDMMA
-         continue
-#else
-         buff=trim(adjustl(whoami))//' Thin slots unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
-      !
       IF (thereare%EDispersives.or.thereare%MDispersives)     then
 #ifdef CompileWithEDispersives
          continue
@@ -384,12 +375,10 @@ contains
          buff=   ' has pure anisotropic media'
          call warnerrreport(buff)
       endif
-#ifdef CompileWithDMMA
       IF (thereare%ThinSlot)     then
          buff=   ' has Thin Slots'
          call warnerrreport(buff)
       endif
-#endif
       !
 #ifdef CompileWithEDispersives
       IF (thereare%EDispersives)     then

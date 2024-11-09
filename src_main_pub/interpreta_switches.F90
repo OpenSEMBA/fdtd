@@ -454,13 +454,12 @@ CONTAINS
             END IF
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
 !
-#ifdef CompileWithDMMA
           CASE ('-dmma')
               l%run_with_dmma = .TRUE.
               l%run_with_abrezanjas = .FALSE.
               l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
 !!              i = i + 1;
-#endif
+
 #ifdef CompileWithConformal
           CASE ('-abrezanjas') !Provisional FEB-2018
 
@@ -1622,9 +1621,7 @@ CONTAINS
       CALL print11 (l%layoutnumber, '-conf file             : conformal file  ')
       CALL print11 (l%layoutnumber, '-abrezanjas            : Thin-gaps treated in conformal manner  ')
 #endif
-#ifdef CompileWithDMMA
       CALL print11 (l%layoutnumber, '-dmma                  : Thin-gaps treated in DMMA manner  ')
-#endif
 #ifdef CompileWithMPI
       CALL print11 (l%layoutnumber, '-mpidir {x,y,z}        : Rotate model to force MPI along z be the largest  ')
       CALL print11 (l%layoutnumber, '-force    cutplane     : Force a MPI layout to begin at cutplane (debug!)  ')
@@ -1688,11 +1685,7 @@ CONTAINS
 #endif
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Near-to-Far field probes')
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Lossy anistropic materials, both electric and magnetic')
-#ifdef CompileWithDMMA
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Thin Slots ')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Thin Slots ')
-#endif
 #ifdef CompileWithEDispersives
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Electric and Magnetic Dispersive materials ')
 #else
@@ -2173,12 +2166,7 @@ CONTAINS
       l%relaunching=.false.
       l%forcestop=.false.
       l%input_conformal_flag = .false.
-!thin gaps  
-#ifdef CompileWithDMMA
       l%run_with_dmma = .true.
-#else
-      l%run_with_dmma = .false.
-#endif    
 #ifdef CompileWithConformal
       l%run_with_dmma = .false.
 ! todo esto para el abrezanjas. se precisa tambien el l%input_conformal_flag  
