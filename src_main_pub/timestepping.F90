@@ -77,9 +77,7 @@ module Solver
    use EDispersives
    use MDispersives
 #endif
-#ifdef CompileWithAnisotropic
    use Anisotropic
-#endif
 #ifdef CompileWithWires  
    use HollandWires     
 #endif       
@@ -861,9 +859,6 @@ contains
       endif
 #endif
 
-
-
-#ifdef CompileWithAnisotropic
       !Anisotropic
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -876,12 +871,11 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif   
-         if (l_auxoutput) then
-             write (dubuf,*) '----> there are Structured anisotropic elements';  call print11(layoutnumber,dubuf)
-         else
-              write(dubuf,*) '----> no Structured anisotropic elements found';  call print11(layoutnumber,dubuf)
-        endif
-#endif
+      if (l_auxoutput) then
+            write (dubuf,*) '----> there are Structured anisotropic elements';  call print11(layoutnumber,dubuf)
+      else
+            write(dubuf,*) '----> no Structured anisotropic elements found';  call print11(layoutnumber,dubuf)
+      endif
 
 #ifdef CompileWithSGBC
       IF (sgbc)  then
@@ -1328,12 +1322,11 @@ contains
                  if (thereareplanewave) call print11(layoutnumber,dubuf)
              endif
           endif
-#ifdef CompileWithAnisotropic
+
          !Anisotropic
          !Must be previous to the main stepping since the main stepping overrides the past components with the last and the
          !lossy part of the anisotropic STILL requires the past info on adjacent components
          IF (Thereare%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-#endif
 
          !!electric Fields Maxwell  AND CPML Zone
          !!for tuning
@@ -1534,12 +1527,10 @@ contains
          !
          !Magnetic Fields Maxwell AND CPML Zone
 
-#ifdef CompileWithAnisotropic
          !Anisotropic
          !Must be previous to the main stepping since the main stepping overrides the past components with the last and the
          !lossy part of the anisotropic STILL requires the past info on adjacent components
          IF (Thereare%Anisotropic) call AdvanceAnisotropicH(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-#endif
 
          !**************************************************************************************************
          !***[conformal]  *******************************************************************

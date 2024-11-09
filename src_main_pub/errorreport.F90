@@ -316,15 +316,6 @@ contains
       endif
       !
       !
-      IF (thereare%Anisotropic)     then
-#ifdef CompileWithAnisotropic
-         continue
-#else
-         buff=trim(adjustl(whoami))//' Anisotropic unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
-      !
       IF (thereare%ThinSlot)     then
 #ifdef CompileWithDMMA
          continue
@@ -397,7 +388,6 @@ contains
          buff=   ' has Thin metal Materials'
          call warnerrreport(buff)
       endif
-#ifdef CompileWithAnisotropic
       IF ((thereare%Anisotropic).and.(.not.thereare%ThinSlot))     then
          buff=   ' has pure anisotropic media'
          call warnerrreport(buff)
@@ -407,7 +397,6 @@ contains
          buff=   ' has Thin Slots'
          call warnerrreport(buff)
       endif
-#endif
 #endif
       !
 #ifdef CompileWithEDispersives

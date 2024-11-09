@@ -1019,12 +1019,6 @@ CONTAINS
    END IF
 #endif
 
-#ifdef CompileWithDMMA
-#ifndef CompileWithAnisotropic
-   CALL stoponerror (l%layoutnumber, l%size, 'ERROR: DMMA without Anisotropic support. Recompile!')
-#endif
-#endif
-
    IF (l%connectendings .AND. l%strictOLD) THEN
       CALL stoponerror (l%layoutnumber, l%size, 'l%strictOLD option not compatible with -l%connectendings',.true.); statuse=-1; !goto 668
    END IF
@@ -1694,11 +1688,7 @@ CONTAINS
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Conformal algorithm')
 #endif
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Near-to-Far field probes')
-#ifdef CompileWithAnisotropic
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Lossy anistropic materials, both electric and magnetic')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Lossy anistropic materials, both electric and magnetic')
-#endif
 #ifdef CompileWithDMMA
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Thin Slots ')
 #else

@@ -650,16 +650,6 @@ PROGRAM SEMBA_FDTD_launcher
 #ifndef CompileWithDMMA
          CALL stoponerror (l%layoutnumber, l%size, 'Slots without Slots support. Recompile!')
 #endif
-#ifndef CompileWithAnisotropic
-         CALL stoponerror (l%layoutnumber, l%size, 'Slots without Anisotropic support. Recompile!')
-#endif
-         CONTINUE
-      END IF
-      !
-      IF (sgg%Med(i)%Is%Anisotropic) THEN
-#ifndef CompileWithAnisotropic
-         CALL stoponerror (l%layoutnumber, l%size, 'Anisotropics without Anisotropic support. Recompile!')
-#endif
          CONTINUE
       END IF
       !
