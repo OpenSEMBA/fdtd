@@ -65,13 +65,11 @@ module Solver
    use Multiports
 #endif
 
-#ifdef CompileWithSGBC
 #ifdef CompileWithStochastic
    use sgbc_stoch
 #else
    use sgbc_NOstoch
 #endif  
-#endif
 
 #ifdef CompileWithEDispersives
    use EDispersives
@@ -877,7 +875,6 @@ contains
             write(dubuf,*) '----> no Structured anisotropic elements found';  call print11(layoutnumber,dubuf)
       endif
 
-#ifdef CompileWithSGBC
       IF (sgbc)  then
 #ifdef CompileWithMPI
            call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -897,7 +894,6 @@ contains
               write(dubuf,*) '----> no Structured sgbc elements found';  call print11(layoutnumber,dubuf)
         endif
       endif
-#endif
 
 !!!!
 #ifdef CompileWithNIBC
@@ -1214,7 +1210,6 @@ contains
 #endif
 #endif
 !!!no se si el orden wires - sgbcs del sync importa 150519
-#ifdef CompileWithSGBC
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
           if (stochastic)  then
@@ -1222,7 +1217,6 @@ contains
           endif
 #endif    
 #endif    
-#endif  
 
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
@@ -1469,13 +1463,10 @@ contains
          IF (Thereare%Multiports.and.(mibc))      call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
 #endif
 
-
-#ifdef CompileWithSGBC
          !MultiportS  H-field advancing
          IF (Thereare%sgbcs.and.(sgbc))  then
             call AdvancesgbcE(real(sgg%dt,RKIND),sgbcDispersive,simu_devia,stochastic)
          endif
-#endif
 !!!
         if (ThereAre%Lumpeds) call AdvanceLumpedE(sgg,n,simu_devia,stochastic)
 !!!
@@ -1638,13 +1629,10 @@ contains
             call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
          endif
          !
-
-#ifdef CompileWithSGBC
          !MultiportS  H-field advancing
          IF (Thereare%sgbcs.and.(sgbc))  then
             call AdvancesgbcH
          endif
-#endif
 
 #ifdef CompileWithEDispersives
          !MDispersives (only updated here. No need to update in the E-field part)
@@ -1749,13 +1737,11 @@ contains
 #endif
 
 !!!no se si el orden wires - sgbcs del sync importa 150519
-#ifdef CompileWithSGBC
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
           if (stochastic)  then
              call syncstoch_mpi_sgbcs(simu_devia,layoutnumber,size)
           endif
-#endif    
 #endif    
 #endif
 
@@ -3251,9 +3237,7 @@ contains
       call DestroyMultiports(sgg)
 #endif
 
-#ifdef CompileWithSGBC
       call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((Thereare%sgbcs).and.(sgbc))
-#endif
       call destroyLumped(sgg)
 #ifdef CompileWithEDispersives
       call DestroyEDispersives(sgg)

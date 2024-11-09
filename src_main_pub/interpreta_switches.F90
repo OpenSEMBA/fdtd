@@ -1533,7 +1533,6 @@ CONTAINS
 #endif
       CALL print11 (l%layoutnumber, '-prioritizeCOMPOoverPEC: Uses Composites instead of PEC in conflicts.       ')
       CALL print11 (l%layoutnumber, '-prioritizeISOTROPICBODYoverall: Uses ISOTROPIC BODY FOR conflicts (JUST FOR SIVA).       ')
-#ifdef CompileWithSGBC
       CALL print11 (l%layoutnumber, '-sgbc               : Enables the defaults sgbc model for composites. Default sgbc:')
       CALL print11 (l%layoutnumber, '-nosgbc             : Disables the defaults sgbc model for composites. Default sgbc:')
       CALL print11 (l%layoutnumber, '&                        -sgbfreq 3e9 -sgbresol 1 -sgbcrank      ')
@@ -1543,7 +1542,7 @@ CONTAINS
       CALL print11 (l%layoutnumber, '-sgbccrank          : Uses sgbc Crank-Nicolson (default)        ')
       CALL print11 (l%layoutnumber, '-sgbcdepth number   : Overrides automatic calculation of number of cells ')
       CALL print11 (l%layoutnumber, '&                        within sgbc                              ')
-#endif
+
       CALL print11 (l%layoutnumber, '-pmlalpha factor order : CPML Alpha factor (>=0, <1 sug.) & polyn. grading.')
       CALL print11 (l%layoutnumber, '&                        alpha=factor * maximum_PML_sigma , order=polynom. ')
       write(buff,'(a,2e10.2e3)')    '&                        Default= ',l%alphamaxpar,l%alphaOrden
@@ -1699,11 +1698,7 @@ CONTAINS
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Electric and Magnetic Dispersive materials ')
 #endif
-#ifdef CompileWithSGBC
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (sgbc)')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (sgbc)')
-#endif
 #ifdef CompileWithNIBC
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (l%mibc)')
 #else

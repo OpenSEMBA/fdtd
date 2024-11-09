@@ -298,14 +298,6 @@ contains
       call print11(layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
       !!!
       !
-      IF (thereare%SGBCs)     then
-#ifdef CompileWithSGBC
-         continue
-#else
-         buff=trim(adjustl(whoami))//' SGBC unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
       IF ((thereare%Multiports).or.(thereare%AnisMultiports))     then
 #ifdef CompileWithNIBC
          continue

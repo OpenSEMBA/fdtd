@@ -657,10 +657,7 @@ PROGRAM SEMBA_FDTD_launcher
 #ifndef CompileWithNIBC
          if (l%mibc) CALL stoponerror (l%layoutnumber, l%size, 'l%mibc Multiports without support. Recompile!')
 #endif
-
-#ifndef CompileWithSGBC
          if (l%sgbc) CALL stoponerror (l%layoutnumber, l%size, 'sgbc thin metals without support. Recompile!')
-#endif
          if (.not.(l%mibc.or.l%sgbc)) &
          CALL stoponerror (l%layoutnumber, l%size, 'Choose some treatment for multiports (-l%mibc,-sgbc)')
          CONTINUE

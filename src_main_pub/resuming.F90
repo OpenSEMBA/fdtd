@@ -35,14 +35,11 @@ module resuming
 
 
    !Thin metals
-
-#ifdef CompileWithSGBC
 #ifdef CompileWithStochastic
    use SGBC_stoch
 #else
    use SGBC_NOstoch
 #endif  
-#endif
    use PMLbodies
 
    use Lumped
@@ -342,7 +339,6 @@ contains
 #endif    
       if (ThereAre%Lumpeds) call StoreFieldsLumpeds(stochastic)
       
-#ifdef CompileWithSGBC
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
       if (stochastic)  then
@@ -352,9 +348,7 @@ contains
 #endif    
       if( Thereare%SGBCs)       then
           call StoreFieldsSGBCs(stochastic)
-      endif
-      
-#endif
+      endif      
 #ifdef CompileWithNIBC
       if( Thereare%Multiports)       call StoreFieldsMultiports
 #endif

@@ -144,7 +144,6 @@ add_definitions(
 -DCompileWithOpenMP 
 -DCompileWithEDispersives
 -DCompileWithDMMA
--DCompileWithSGBC
 -DCompileWithWires
 )
 
