@@ -44,11 +44,7 @@ module resuming
    use EDispersives
    use MDispersives
    use farfield_m
-
-   !Wires Thin Module
-#ifdef CompileWithWires
    use HollandWires
-#endif
 #ifdef CompileWithBerengerWires
    use WiresBerenger
 #ifdef CompileWithMPI
@@ -278,7 +274,6 @@ contains
 #ifdef CompileWithMPI
       !do an update of the currents to later read the currents OK
       if (size>1)  then
-#ifdef CompileWithWires
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
              if ((size>1).and.(thereare%wires))   then
@@ -290,7 +285,6 @@ contains
              endif
 #endif             
              endif
-#endif
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             call FlushWiresMPI_Berenger(layoutnumber,size)
@@ -301,12 +295,10 @@ contains
 
 #endif
       if( Thereare%Wires)       then
-#ifdef CompileWithWires
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
             call StoreFieldsWires
          endif
-#endif
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             call StoreFieldsWires_Berenger

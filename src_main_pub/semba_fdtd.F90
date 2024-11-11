@@ -616,9 +616,6 @@ PROGRAM SEMBA_FDTD_launcher
    !check that simulation can actually be done for the kind of media requested
    DO i = 1, sgg%nummedia
       IF (sgg%Med(i)%Is%ThinWire) THEN
-#ifndef CompileWithWires
-         CALL stoponerror (l%layoutnumber, l%size, 'Wires without wire support. Recompile!')
-#endif
 #ifndef CompileWithBerengerWires
     if  ((l%wiresflavor=='berenger')) then
          CALL stoponerror (l%layoutnumber, l%size, 'Berenger Wires without support. Recompile!')

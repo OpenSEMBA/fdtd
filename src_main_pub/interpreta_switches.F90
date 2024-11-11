@@ -694,7 +694,6 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
           CASE ('-saveall')
             l%saveall = .TRUE.
-#ifdef CompileWithWires
           CASE ('-attw')
             i = i + 1
             CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
@@ -837,14 +836,12 @@ CONTAINS
                 endif
             end select   
 #endif
-#ifdef CompileWithWires
             select case (trim(adjustl(l%wiresflavor)))
             case ('berenger','slanted','experimental','transition')   
                 if (l%wirethickness/=1) then
                     CALL stoponerror (l%layoutnumber, l%size, 'Thickness>1 unsupported for this wireflavor',.true.); statuse=-1; !goto 668
                 endif    
             end select   
-#endif
 #ifndef CompileWithBerengerWires
             select case (trim(adjustl(l%wiresflavor)))
             case ('berenger')
@@ -884,7 +881,6 @@ CONTAINS
             GO TO 180
 179         CALL stoponerror (l%layoutnumber, l%size, 'Invalid inductance order',.true.); statuse=-1; !goto 668
 180         l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
-#endif
           CASE ('-prefix')
             i = i + 1
             CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
@@ -1552,16 +1548,13 @@ CONTAINS
       CALL print11 (l%layoutnumber, '&                        sigma=factor * maximum_PML_sigma, depth= # layers ')
       CALL print11 (l%layoutnumber, '-mur1                  : Supplement PMLs with 1st order Mur ABCs           ')
       CALL print11 (l%layoutnumber, '-mur2                  : Supplement PMLs with 2nd order Mur ABCs           ')
-#ifdef CompileWithWires
       CALL print11 (l%layoutnumber, '-wiresflavor {holland.or.old} : model for the wires    ')
-#endif
 #ifdef CompileWithBerengerWires
       CALL print11 (l%layoutnumber, '-wiresflavor {berenger} : model for the wires    ')   
 #endif
 #ifdef CompileWithSlantedWires
       CALL print11 (l%layoutnumber, '-wiresflavor {new/Slanted.or.experimental.or.slanted/transition/semistructured l%precision} : model for the wires    ')   
 #endif
-#ifdef CompileWithWires
       CALL print11 (l%layoutnumber, '&                        (default '//trim(adjustl(l%wiresflavor))//')   ')
       CALL print11 (l%layoutnumber, '-mtlnwires             : Use mtln solver to advance wires currents ')
       CALL print11 (l%layoutnumber, '-notaparrabos          : Do not remove extra double tails at the end of the wires ')
@@ -1599,7 +1592,6 @@ CONTAINS
       CALL print11 (l%layoutnumber, '-maxwireradius number  : Bounds globally the wire radius                   ')
       CALL print11 (l%layoutnumber, '-clip                  : Permits to clip a bigger problem truncating wires.')
       CALL print11 (l%layoutnumber, '-wirecrank             : Uses Crank-Nicolson for wires (development)       ')
-#endif
       CALL print11 (l%layoutnumber, '-noNF2FF string        : Supress a NF2FF plane for calculation             ')
       CALL print11 (l%layoutnumber, '&                        String can be: up, down, left, right, back , front')
       CALL print11 (l%layoutnumber, '-NF2FFDecim            : Uses decimation in NF2FF calculation (faster).    ')
@@ -1693,11 +1685,7 @@ CONTAINS
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (l%mibc)')
 #endif
-#ifdef CompileWithWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Loaded and grounded thin-wires with juntions')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Loaded and grounded thin-wires with juntions')
-#endif
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Nodal hard/soft electric and magnetic sources')
 #ifdef CompileWithHDF
       CALL print11 (l%layoutnumber, 'SUPPORTED:   .xdmf+.h5 probes ')
@@ -1719,11 +1707,7 @@ CONTAINS
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Permittivity scaling accelerations')
 #endif
-#ifdef CompileWithWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Holland Wires')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Holland Wires')
-#endif
 #ifdef CompileWithBerengerWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Multi-Wires')
 #else

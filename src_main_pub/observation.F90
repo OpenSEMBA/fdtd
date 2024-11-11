@@ -33,13 +33,12 @@ module Observa
    use MPIcomm
 #endif
 
-#ifdef CompileWithWires
    use wiresHolland_constants
    use HollandWires
+
 #ifdef CompileWithMTLN   
    use Wire_bundles_mtln_mod
    use mtln_solver_mod , mtln_solver_t => mtln_t 
-#endif
 #endif
 #ifdef CompileWithBerengerWires
    use WiresBerenger
@@ -66,9 +65,9 @@ module Observa
       complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_Hx,valorComplex_Hy,valorComplex_Hz
    end type Serialized_t
    type item_t
-#ifdef CompileWithWires
-      type (CurrentSegments), pointer  ::  segmento !segmento de hilo que se observa si lo hubiere
-#endif
+
+   type (CurrentSegments), pointer  ::  segmento !segmento de hilo que se observa si lo hubiere
+
 #ifdef CompileWithBerengerWires
       type (TSegment)       , pointer  ::  segmento_Berenger !segmento de hilo que se observa si lo hubiere
 #endif
@@ -105,11 +104,7 @@ module Observa
       complex( kind = CKIND), dimension( :), allocatable  :: auxExp_E,auxExp_H,dftEntrada   !para sondas freqdomain
    end type output_t
 
-
-
-#ifdef CompileWithWires
    type(Thinwires_t), pointer  ::  Hwireslocal
-#endif
 #ifdef CompileWithBerengerWires
    type(TWires)     , pointer  ::  Hwireslocal_Berenger
 #endif
@@ -477,12 +472,10 @@ contains
 9138     if(my_iostat /= 0) write(*,fmt='(a)',advance='no') '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9138,'.',layoutnumber,trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt'
          open (19,file=trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt',err=9138,iostat=my_iostat,status='new',action='write')
 
-#ifdef CompileWithWires
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
             if (Therearewires) Hwireslocal => GetHwires()
          endif
-#endif
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             if (Therearewires) Hwireslocal_Berenger => GetHwires_Berenger()
@@ -754,7 +747,7 @@ contains
                   endif
                   allocate (output(ii)%item(i)%valor(0 : BuffObse))
                   output(ii)%item(i)%valor(0 : BuffObse)=0.0_RKIND
-#ifdef CompileWithWires
+
                   if ((trim(adjustl(wiresflavor))=='holland') .or. &
                       (trim(adjustl(wiresflavor))=='transition')) then
                      found=.false.
@@ -819,7 +812,7 @@ contains
                           CALL WarnErrReport (buff,.true.)
                      endif
                   endif
-#endif
+
 #ifdef CompileWithBerengerWires
                   if (trim(adjustl(wiresflavor))=='berenger') then 
                      found=.false.
@@ -1304,9 +1297,7 @@ contains
                         call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
                         init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
 
-#ifdef CompileWithWires
                         call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
-#endif
                      endif
                      !!!
                      do kkk=sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1613,9 +1604,7 @@ contains
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.false. ; electric=.true.
                         call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-#ifdef CompileWithWires
                         call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
-#endif
                      endif
                      !!!
                      do kkk=sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -2671,9 +2660,8 @@ contains
       real (kind = RKIND) :: jx,jy,jz
       integer(kind=4) :: conta !para realmente dar tangenciales de campos en los medios superficiales
       character(len=*), INTENT(in) :: wiresflavor
-#ifdef CompileWithWires
+
       type( CurrentSegments), pointer  ::  segmDumm !segmento de hilo que se observa si lo hubiere
-#endif
       !
 #ifdef CompileWithBerengerWires      
       type(TSegment)        , pointer  ::  segmDumm_Berenger !segmento de hilo que se observa si lo hubiere
@@ -2876,8 +2864,8 @@ contains
                         output( ii)%item( i)%valor(nTime-nInit) +   &
                         (Ey( i1_m, JJJ_m, k1_m) - Ey( i2_m+1, JJJ_m, k1_m)) * dye( JJJ_m )
                      enddo
+
                    case( iJx, iJy, iJz)
-#ifdef CompileWithWires
                      if ((trim(adjustl(wiresflavor))=='holland') .or. &
                          (trim(adjustl(wiresflavor))=='transition')) then
                         output( ii)%item( i)%valor(nTime-nInit) = 0.0_RKIND !wipe value
@@ -2908,7 +2896,7 @@ contains
                         endif
                         !!!!!!!!!!!!!!!!!!
                      endif   
-#endif                    
+
 #ifdef CompileWithBerengerWires
                      if (trim(adjustl(wiresflavor))=='berenger') then 
                         SegmDumm_Berenger => output( ii)%item( i)%Segmento_Berenger
@@ -3453,9 +3441,7 @@ contains
                               call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
           
-#ifdef CompileWithWires
                               call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
-#endif
                            endif
                            !!!
                            do KKK = k1, k2
@@ -4114,8 +4100,6 @@ contains
                                  endif
                               endif
                               !
-
-#ifdef CompileWithWires
                             case(iJx,iJy,iJz)
                               if (singlefilewrite) then
                                  unidad=output(ii)%item(i)%unitmaster
@@ -4133,7 +4117,6 @@ contains
                                                         output(ii)%item(i)%valor4(n-nInit) , & ! Vminus 
                                                         output(ii)%item(i)%valor5(n-nInit) ! vplus-vminus
                               endif
-#endif
                            end select
                         endif
                      endif
@@ -4432,10 +4415,8 @@ contains
             field=sgg%observation(ii)%P(i)%what
             select case(field)
              case (iJx,iJy,iJz)
-#ifdef CompileWithWires
                deallocate (output(ii)%item(i)%valor)
                deallocate (output(ii)%item(i)%valor2,output(ii)%item(i)%valor3,output(ii)%item(i)%valor4,output(ii)%item(i)%valor5)  !en caso de hilos se necesitan
-#endif
              case (iBloqueJx,iBloqueJy,iBloqueMx,iBloqueMy)
                deallocate (output(ii)%item(i)%valor)
 #ifdef CompileWithMPI
@@ -5153,9 +5134,6 @@ contains
       return
    end subroutine
 
-
-
-#ifdef CompileWithWires
    subroutine wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
    
       type (SGGFDTDINFO), intent(IN)   :: sgg
@@ -5181,12 +5159,10 @@ contains
 
       !print *,'----antes wires init,geom,asigna,conta,i,ii',init,geom,asigna,conta,i,ii
       if (init) then
-#ifdef CompileWithWires
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
             Hwireslocal => GetHwires()
          endif
-#endif
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             Hwireslocal_Berenger => GetHwires_Berenger()
@@ -5241,7 +5217,6 @@ contains
          endif
       endif
 #endif
-#ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
               (trim(adjustl(wiresflavor))=='transition')) then
          if (geom) then
@@ -5285,7 +5260,6 @@ contains
             end do
          endif
       endif
-#endif
 #ifdef CompileWithSlantedWires
       if ((trim(adjustl(wiresflavor))=='slanted').or.(trim(adjustl(wiresflavor))=='semistructured')) then
          !parsea los hilos
@@ -5334,9 +5308,6 @@ contains
 
       return
    end subroutine
-
-#endif
-
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !Function to publish the private output data (used in postprocess)

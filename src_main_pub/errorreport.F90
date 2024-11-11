@@ -306,24 +306,6 @@ contains
          call stoponerror(layoutnumber,size,buff)
 #endif
       endif
-      !
-      If (thereare%Wires)            then
-#ifdef CompileWithWires
-         continue
-#else
-#ifdef CompileWithBerengerWires
-         continue
-#else
-#ifdef CompileWithSlantedWires
-         continue
-#else
-         buff=trim(adjustl(whoami))//'  WIREs unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-#endif
-#endif
-      endif
-      !
       !!!!!!!!!!!!!
       if (thereAre%MagneticMedia) then
          buff=' has special H-media'
@@ -378,12 +360,10 @@ contains
          buff=   ' has magnetic dispersives'
          call warnerrreport(buff)
       endif
-#ifdef CompileWithWires
       If (thereare%Wires)            then
          buff=   ' has Holland WIREs'
          call warnerrreport(buff)
       endif
-#endif
 #ifdef CompileWithBerengerWires
       If (thereare%Wires)            then
          buff=   ' has Multi-WIREs'

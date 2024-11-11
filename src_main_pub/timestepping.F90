@@ -73,13 +73,10 @@ module Solver
    use EDispersives
    use MDispersives
    use Anisotropic
-#ifdef CompileWithWires  
    use HollandWires     
-#endif       
-#ifdef CompileWithWires    
+
 #ifdef CompileWithMTLN  
    use Wire_bundles_mtln_mod             
-#endif       
 #endif       
 
 #ifdef CompileWithBerengerWires
@@ -88,6 +85,7 @@ module Solver
    use WiresBerenger_MPI
 #endif
 #endif
+
 #ifdef CompileWithSlantedWires
    use WiresSlanted
    use estructura_slanted_m
@@ -729,7 +727,6 @@ contains
          
       ! one more MM for right adjancencies
       dtcritico=sgg%dt
-#ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then
 #ifdef CompileWithMPI
@@ -752,7 +749,6 @@ contains
         endif
       endif
 
-#endif
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
 
@@ -843,8 +839,6 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
 
-
-#ifdef CompileWithWires
       if (use_mtln_wires) then
 #ifdef CompileWithMTLN
          call InitWires_mtln(sgg,Ex,Ey,Ez,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
@@ -852,7 +846,6 @@ contains
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif
       endif
-#endif
 
       !Anisotropic
 #ifdef CompileWithMPI
@@ -1093,7 +1086,7 @@ contains
          Ex,Ey,Ez,Hx,Hy,Hz)
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          write(dubuf,*) '[OK]';  call print11(layoutnumber,dubuf)
-#ifdef CompileWithWires
+
          !this modifies the initwires stuff and must be called after initwires (typically at the end)
          !llamalo siempre aunque no HAYA WIRES!!! para que no se quede colgado en hilos terminales
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
@@ -1103,7 +1096,7 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) '[OK]';  call print11(layoutnumber,dubuf)
          endif
-#endif
+
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             write(dubuf,*) 'Init MPI Multi-Wires...';  call print11(layoutnumber,dubuf)
@@ -1123,12 +1116,11 @@ contains
 
 
       !must be called now in case the MPI has changed the connectivity info
-#ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then
          call ReportWireJunctions(layoutnumber,size,thereare%wires,sgg%Sweep(iHz)%ZI, sgg%Sweep(iHz)%ZE,groundwires,strictOLD,verbose)
       endif
-#endif
+
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
          call ReportWireJunctionsBerenger(layoutnumber,size,thereare%wires,sgg%Sweep(iHz)%ZI, sgg%Sweep(iHz)%ZE,groundwires,strictOLD,verbose)
@@ -1185,7 +1177,6 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call   FlushMPI_H_Cray
       endif
-#ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then
          if ((size>1).and.(thereare%wires))   then
@@ -1197,7 +1188,7 @@ contains
          endif
 #endif
       endif
-#endif
+
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
          if ((size>1).and.(thereare%wires))   call FlushWiresMPI_Berenger(layoutnumber,size)
@@ -1386,7 +1377,6 @@ contains
          !*******************************************************************************
          !*******************************************************************************
 !!!lamo aqui los hilos por coherencia con las PML que deben absorber los campos creados por los hilos
-#ifdef CompileWithWires
          !Wires (only updated here. No need to update in the H-field part)
          if (( (trim(adjustl(wiresflavor))=='holland') .or. &
                (trim(adjustl(wiresflavor))=='transition')) .and. .not. use_mtln_wires) then
@@ -1404,7 +1394,6 @@ contains
                endif
             endif
          endif
-#endif
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             IF (Thereare%Wires) call AdvanceWiresE_Berenger(sgg,n)
@@ -1417,7 +1406,6 @@ contains
             call AdvanceWiresE_Slanted(sgg,n) 
          endif
 #endif
-#ifdef CompileWithWires
          if (use_mtln_wires) then
 #ifdef CompileWithMTLN
             call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
@@ -1425,7 +1413,6 @@ contains
             write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif   
          end if
-#endif 
          If (Thereare%PMLbodies) then !waveport absorbers
             call AdvancePMLbodyE
          endif
@@ -1660,7 +1647,6 @@ contains
 
          !Must be called here again at the end to enforce any of the previous changes
          !Posible Wire for thickwires advancing in the H-field part    
-#ifdef CompileWithWires
          !Wires (only updated here. No need to update in the H-field part)
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
@@ -1672,7 +1658,6 @@ contains
                endif
             endif
          endif
-#endif
          !PMC BORDERS  H-field advancing (duplicates the H-fields at the interface changing their sign)
          If (Thereare%PMCBorders)     call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
          !Periodic BORDERS  H-field mirroring
@@ -1707,7 +1692,6 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call   FlushMPI_H_Cray
          endif
-#ifdef CompileWithWires
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
             if ((size>1).and.(thereare%wires))   then
@@ -1719,7 +1703,6 @@ contains
             endif
 #endif
          endif
-#endif             
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             if ((size>1).and.(thereare%wires))   call FlushWiresMPI_Berenger(layoutnumber,size)
@@ -3232,12 +3215,10 @@ contains
       call destroyLumped(sgg)
       call DestroyEDispersives(sgg)
       call DestroyMDispersives(sgg)
-#ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then
          call DestroyWires(sgg)
       endif
-#endif
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
          call DestroyWires_Berenger(sgg)
