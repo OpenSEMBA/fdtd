@@ -1,6 +1,5 @@
 MODULE xdmf
    !
-#ifdef CompileWithXDMF
    USE fdetypes
    USE Observa
    use report
@@ -575,7 +574,6 @@ CONTAINS
 
       RETURN
    END SUBROUTINE createxdmfOnTheFly
-#endif   
 END MODULE xdmf
 !
 !

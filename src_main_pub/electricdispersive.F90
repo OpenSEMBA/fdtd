@@ -33,7 +33,6 @@
 
 module EDispersives
 
-#ifdef CompileWithEDispersives
 
    use fdetypes
    USE REPORT
@@ -441,7 +440,5 @@ contains
       if (associated(Dutton%Medium)) deallocate (Dutton%Medium)
 
    end subroutine
-
-#endif
 
 end module EDispersives

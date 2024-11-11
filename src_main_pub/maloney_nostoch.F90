@@ -38,8 +38,6 @@
 
 module SGBC_nostoch
 
-
-#ifdef CompileWithSGBC
 #ifndef CompileWithStochastic
    use Report
 
@@ -1717,7 +1715,6 @@ end subroutine solve_tridiag_distintos
       end subroutine solve_tridiag_iguales
             
 #endif   
-#endif
 
 end module SGBC_nostoch
 

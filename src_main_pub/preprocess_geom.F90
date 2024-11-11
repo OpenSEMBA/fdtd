@@ -38,9 +38,7 @@ MODULE Preprocess_m
    USE CreateMatrices
    !typos que leo desde mi FDE
    USE FDEtypes
-#ifdef CompileWithDMMA
    USE DMMA
-#endif
 #ifdef CompileWithConformal
    USE CONFORMAL_INI_CLASS
    USE CONFORMAL_TOOLS
@@ -113,14 +111,12 @@ CONTAINS
       character (LEN=BUFSIZE)  ::  chari,charj,chark,chari2,charj2,chark2
       !
       logical :: paraerrhilo,groundwires,islossy,DENTRO
-#ifdef CompileWithDMMA
       REAL (KIND=RKIND) :: width, dir (1:3), epr1, mur1
       LOGICAL :: oriX, oriY, oriZ, oriX2, oriY2, oriZ2, oriX3, oriY3, oriZ3, iguales
       LOGICAL :: oriX4, oriY4, oriZ4
       REAL (KIND=RKIND), DIMENSION (3, 3) :: EprSlot, MurSlot
       INTEGER (KIND=4) :: indicemedio
       INTEGER (KIND=4) :: i11, j11
-#endif
       !
       type (tagtype_t) :: tagtype
       TYPE (FreqDepenMaterial), POINTER :: fdgeom
@@ -195,13 +191,12 @@ CONTAINS
       !echo por demas, habria que precontar pero es complicado porque depende del procesamiento
       !thin Slots
 
-#ifdef CompileWithDMMA
       if (run_with_dmma) then
         DO j = 1, this%tSlots%n_tg
            contamedia = contamedia + this%tSlots%Tg(j)%N_tgc
         END DO
       endif
-#endif
+
       !end thin Slots
       !PARA LA CAPA EXTRA 2013
       if (medioextra%exists) then
@@ -2567,9 +2562,6 @@ endif
       ENDIF
       !FIN WIRES
       
-      !!?!?!?
-      !
-#ifdef CompileWithDMMA
       if (run_with_dmma) then
       !always at the end since the orientation is found from the PEC one
       !thin Slots
@@ -2834,7 +2826,7 @@ endif
       END DO
       !
       endif !del run_with_dmma
-#endif
+
       !debe ir al final para respetar el tipo de medio que haya SI SE TRATASE COMO A UN MEDIO
       !nodalsource
       !precounting

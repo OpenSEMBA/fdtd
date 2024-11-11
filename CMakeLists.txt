@@ -142,14 +142,6 @@ add_definitions(
 -DCompileWithInt2 
 -DCompileWithReal4 
 -DCompileWithOpenMP 
--DCompileWithAnisotropic 
--DCompileWithEDispersives
--DCompileWithNF2FF
--DCompileWithNodalSources
--DCompileWithDMMA
--DCompileWithSGBC
--DCompileWithWires
--DCompileWithXDMF
 )
 
 
