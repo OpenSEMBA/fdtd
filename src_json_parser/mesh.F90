@@ -193,14 +193,28 @@ contains
       integer, dimension(:), intent(in) :: ids
       type(cell_region_t) :: cR
       logical :: found
-      integer :: i
+      integer :: i, j
+      integer :: numberOfCellRegions
 
-      allocate(res(0))
+      ! Precounts
+      numberOfCellRegions = 0
       do i = 1, size(ids)
          cR = this%getCellRegion(ids(i), found)
-         if (found) res = [res, cR]
+         if (found) then
+             numberOfCellRegions = numberOfCellRegions + 1
+         end if
+      end do     
+      
+      allocate(res(numberOfCellRegions))
+      j = 1
+      do i = 1, size(ids)
+         cR = this%getCellRegion(ids(i), found)
+         if (found) then
+             res(j) = cR
+             j = j + 1
+         end if
       end do
-   
+
    end function
 
    function mesh_countPolylineSegments(this, pl) result(res)
