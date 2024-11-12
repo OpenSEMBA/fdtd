@@ -82,8 +82,8 @@ integer function test_parser_read_mesh() bind(C) result(err)
    err = 0
 
    parser = parser_t(filename)
-   call parser%initializeJson()
    mesh = parser%readMesh()
+   
    call mesh%printCoordHashInfo()
    expected%position = [10,2,1]
    

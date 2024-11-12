@@ -54,6 +54,7 @@ module mesh_mod
 
       procedure :: printCoordHashInfo => mesh_printCoordHashInfo
       procedure :: allocateCoordinates => mesh_allocateCoordinates
+      procedure :: allocateElements => mesh_allocateElements
    end type
 
 
@@ -65,6 +66,13 @@ contains
       integer :: buck
       call this%coordinates%allocate(buck)
    end subroutine
+   
+   subroutine mesh_allocateElements(this, buck)
+      class(mesh_t) :: this
+      integer :: buck
+      call this%elements%allocate(buck)
+   end subroutine
+
 
    subroutine mesh_printCoordHashInfo(this)
       class(mesh_t) :: this
