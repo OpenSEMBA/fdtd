@@ -40,10 +40,10 @@ module mesh_mod
       procedure :: checkId => mesh_checkId
 
       procedure :: addElement => mesh_addElement
+      procedure :: addCellRegion  => mesh_addCellRegion
+      
       procedure :: getNode => mesh_getNode
       procedure :: getPolyline => mesh_getPolyline
-      
-      procedure :: addCellRegion  => mesh_addCellRegion
       procedure :: getCellRegion  => mesh_getCellRegion
       procedure :: getCellRegions => mesh_getCellRegions
 
@@ -200,7 +200,7 @@ contains
          cR = this%getCellRegion(ids(i), found)
          if (found) res = [res, cR]
       end do
-
+   
    end function
 
    function mesh_countPolylineSegments(this, pl) result(res)
