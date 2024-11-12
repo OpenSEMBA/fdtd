@@ -110,27 +110,33 @@ def test_towelHanger(tmp_path):
     for i in range(3):
         p_solved = Probe(probe_files[i])
         assert np.allclose(p_expected[i].df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 5e-2, atol=5e-2)
-
-
     
 def test_sphere(tmp_path):    
     case = 'sphere'
     input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 200
-    input_json['probes'][0]['domain']['numberOfFrequencies'] = 100
+    input_json['general']['numberOfSteps'] = 20
+    input_json['probes'][0]['domain']['initialFrequency'] = 1e8
+    input_json['probes'][0]['domain']['finalFrequency'] = 1e9
     
     fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
+    with open(fn, 'w') as modified_json_file:
+        json.dump(input_json, modified_json_file) 
 
     makeCopy(tmp_path, EXCITATIONS_FOLDER+'gauss.exc')
 
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
     solver.run()
-    probe_files = solver.getSolvedProbeFilenames("Far") # semba-fdtd seems to always use the name Far for "far field" probes.
+    assert solver.hasFinishedSuccessfully()
     
+    far_field_probe_files = solver.getSolvedProbeFilenames("Far") # semba-fdtd seems to always use the name Far for "far field" probes.
     assert solver.hasFinishedSuccessfully() == True
-    assert len(probe_files) == 1
-    
-    p = Probe(probe_files[0])
+    assert len(far_field_probe_files) == 1
+    p = Probe(far_field_probe_files[0])
     assert p.type == 'farField'
+
+    electric_field_movie_files = solver.getSolvedProbeFilenames("electric_field_movie")
+    assert solver.hasFinishedSuccessfully() == True
+    assert len(electric_field_movie_files) == 3
+    p = Probe(electric_field_movie_files[0])
+    assert p.type == 'movie'
+    

@@ -29,8 +29,6 @@
 
 module nodalsources
 
-#ifdef CompileWithNodalSources
-
    use fdetypes
    USE REPORT
 
@@ -771,8 +769,6 @@ contains
       character (LEN=BUFSIZE) :: ficherohopf
       return
    end subroutine InitHopf
-
-#endif
 
 END MODULE nodalsources
  

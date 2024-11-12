@@ -5,9 +5,7 @@ module interpreta_switches_m
    use EpsMuTimeScale_m
    use Report
    use version
-! #ifdef CompilePrivateVersion
-!    use ParseadorClass
-! #endif   
+ 
    IMPLICIT NONE
    PRIVATE
    !   
@@ -456,13 +454,12 @@ CONTAINS
             END IF
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
 !
-#ifdef CompileWithDMMA
           CASE ('-dmma')
               l%run_with_dmma = .TRUE.
               l%run_with_abrezanjas = .FALSE.
               l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
 !!              i = i + 1;
-#endif
+
 #ifdef CompileWithConformal
           CASE ('-abrezanjas') !Provisional FEB-2018
 
@@ -697,7 +694,6 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
           CASE ('-saveall')
             l%saveall = .TRUE.
-#ifdef CompileWithWires
           CASE ('-attw')
             i = i + 1
             CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
@@ -840,14 +836,12 @@ CONTAINS
                 endif
             end select   
 #endif
-#ifdef CompileWithWires
             select case (trim(adjustl(l%wiresflavor)))
             case ('berenger','slanted','experimental','transition')   
                 if (l%wirethickness/=1) then
                     CALL stoponerror (l%layoutnumber, l%size, 'Thickness>1 unsupported for this wireflavor',.true.); statuse=-1; !goto 668
                 endif    
             end select   
-#endif
 #ifndef CompileWithBerengerWires
             select case (trim(adjustl(l%wiresflavor)))
             case ('berenger')
@@ -887,7 +881,6 @@ CONTAINS
             GO TO 180
 179         CALL stoponerror (l%layoutnumber, l%size, 'Invalid inductance order',.true.); statuse=-1; !goto 668
 180         l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
-#endif
           CASE ('-prefix')
             i = i + 1
             CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
@@ -1019,12 +1012,6 @@ CONTAINS
    IF ((sizeof(MPI_DOUBLE_PRECISION) /= 4) .OR. (sizeof(MPI_REAL) /= 4)) THEN
       CALL stoponerror (l%layoutnumber, l%size, 'SEVERE COMPILATION ERROR: MPI_REAL l%size is not 4. ')
    END IF
-#endif
-
-#ifdef CompileWithDMMA
-#ifndef CompileWithAnisotropic
-   CALL stoponerror (l%layoutnumber, l%size, 'ERROR: DMMA without Anisotropic support. Recompile!')
-#endif
 #endif
 
    IF (l%connectendings .AND. l%strictOLD) THEN
@@ -1541,7 +1528,6 @@ CONTAINS
 #endif
       CALL print11 (l%layoutnumber, '-prioritizeCOMPOoverPEC: Uses Composites instead of PEC in conflicts.       ')
       CALL print11 (l%layoutnumber, '-prioritizeISOTROPICBODYoverall: Uses ISOTROPIC BODY FOR conflicts (JUST FOR SIVA).       ')
-#ifdef CompileWithSGBC
       CALL print11 (l%layoutnumber, '-sgbc               : Enables the defaults sgbc model for composites. Default sgbc:')
       CALL print11 (l%layoutnumber, '-nosgbc             : Disables the defaults sgbc model for composites. Default sgbc:')
       CALL print11 (l%layoutnumber, '&                        -sgbfreq 3e9 -sgbresol 1 -sgbcrank      ')
@@ -1551,7 +1537,7 @@ CONTAINS
       CALL print11 (l%layoutnumber, '-sgbccrank          : Uses sgbc Crank-Nicolson (default)        ')
       CALL print11 (l%layoutnumber, '-sgbcdepth number   : Overrides automatic calculation of number of cells ')
       CALL print11 (l%layoutnumber, '&                        within sgbc                              ')
-#endif
+
       CALL print11 (l%layoutnumber, '-pmlalpha factor order : CPML Alpha factor (>=0, <1 sug.) & polyn. grading.')
       CALL print11 (l%layoutnumber, '&                        alpha=factor * maximum_PML_sigma , order=polynom. ')
       write(buff,'(a,2e10.2e3)')    '&                        Default= ',l%alphamaxpar,l%alphaOrden
@@ -1562,16 +1548,13 @@ CONTAINS
       CALL print11 (l%layoutnumber, '&                        sigma=factor * maximum_PML_sigma, depth= # layers ')
       CALL print11 (l%layoutnumber, '-mur1                  : Supplement PMLs with 1st order Mur ABCs           ')
       CALL print11 (l%layoutnumber, '-mur2                  : Supplement PMLs with 2nd order Mur ABCs           ')
-#ifdef CompileWithWires
       CALL print11 (l%layoutnumber, '-wiresflavor {holland.or.old} : model for the wires    ')
-#endif
 #ifdef CompileWithBerengerWires
       CALL print11 (l%layoutnumber, '-wiresflavor {berenger} : model for the wires    ')   
 #endif
 #ifdef CompileWithSlantedWires
       CALL print11 (l%layoutnumber, '-wiresflavor {new/Slanted.or.experimental.or.slanted/transition/semistructured l%precision} : model for the wires    ')   
 #endif
-#ifdef CompileWithWires
       CALL print11 (l%layoutnumber, '&                        (default '//trim(adjustl(l%wiresflavor))//')   ')
       CALL print11 (l%layoutnumber, '-mtlnwires             : Use mtln solver to advance wires currents ')
       CALL print11 (l%layoutnumber, '-notaparrabos          : Do not remove extra double tails at the end of the wires ')
@@ -1609,13 +1592,10 @@ CONTAINS
       CALL print11 (l%layoutnumber, '-maxwireradius number  : Bounds globally the wire radius                   ')
       CALL print11 (l%layoutnumber, '-clip                  : Permits to clip a bigger problem truncating wires.')
       CALL print11 (l%layoutnumber, '-wirecrank             : Uses Crank-Nicolson for wires (development)       ')
-#endif
-#ifdef CompileWithNF2FF
       CALL print11 (l%layoutnumber, '-noNF2FF string        : Supress a NF2FF plane for calculation             ')
       CALL print11 (l%layoutnumber, '&                        String can be: up, down, left, right, back , front')
       CALL print11 (l%layoutnumber, '-NF2FFDecim            : Uses decimation in NF2FF calculation (faster).    ')
       CALL print11 (l%layoutnumber, '&                        WARNING: High-freq aliasing may occur             ')
-#endif
       CALL print11 (l%layoutnumber, '-vtkindex              : Output index instead of real point in 3D slices.  ')
       CALL print11 (l%layoutnumber, '-ignoreerrors          : Run even if errors reported in *Warnings.txt file.')
       CALL print11 (l%layoutnumber, '___________________________________________________________________________')
@@ -1633,9 +1613,7 @@ CONTAINS
       CALL print11 (l%layoutnumber, '-conf file             : conformal file  ')
       CALL print11 (l%layoutnumber, '-abrezanjas            : Thin-gaps treated in conformal manner  ')
 #endif
-#ifdef CompileWithDMMA
       CALL print11 (l%layoutnumber, '-dmma                  : Thin-gaps treated in DMMA manner  ')
-#endif
 #ifdef CompileWithMPI
       CALL print11 (l%layoutnumber, '-mpidir {x,y,z}        : Rotate model to force MPI along z be the largest  ')
       CALL print11 (l%layoutnumber, '-force    cutplane     : Force a MPI layout to begin at cutplane (debug!)  ')
@@ -1697,47 +1675,18 @@ CONTAINS
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Conformal algorithm')
 #endif
-#ifdef CompileWithNF2FF
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Near-to-Far field probes')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Near-to-Far field probes')
-#endif
-#ifdef CompileWithAnisotropic
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Lossy anistropic materials, both electric and magnetic')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Lossy anistropic materials, both electric and magnetic')
-#endif
-#ifdef CompileWithDMMA
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Thin Slots ')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Thin Slots ')
-#endif
-#ifdef CompileWithEDispersives
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Electric and Magnetic Dispersive materials ')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Electric and Magnetic Dispersive materials ')
-#endif
-#ifdef CompileWithSGBC
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (sgbc)')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (sgbc)')
-#endif
 #ifdef CompileWithNIBC
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Isotropic Multilayer Skin-depth Materials (l%mibc)')
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Isotropic Multilayer Skin-depth Materials (l%mibc)')
 #endif
-
-#ifdef CompileWithWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Loaded and grounded thin-wires with juntions')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Loaded and grounded thin-wires with juntions')
-#endif
-#ifdef CompileWithNodalSources
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Nodal hard/soft electric and magnetic sources')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Nodal hard/soft electric and magnetic sources')
-#endif
 #ifdef CompileWithHDF
       CALL print11 (l%layoutnumber, 'SUPPORTED:   .xdmf+.h5 probes ')
 #else
@@ -1758,11 +1707,7 @@ CONTAINS
 #else
       !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Permittivity scaling accelerations')
 #endif
-#ifdef CompileWithWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Holland Wires')
-#else
-      !CALL print11 (l%layoutnumber, 'UNSUPPORTED: Holland Wires')
-#endif
 #ifdef CompileWithBerengerWires
       CALL print11 (l%layoutnumber, 'SUPPORTED:   Multi-Wires')
 #else
@@ -2201,12 +2146,7 @@ CONTAINS
       l%relaunching=.false.
       l%forcestop=.false.
       l%input_conformal_flag = .false.
-!thin gaps  
-#ifdef CompileWithDMMA
       l%run_with_dmma = .true.
-#else
-      l%run_with_dmma = .false.
-#endif    
 #ifdef CompileWithConformal
       l%run_with_dmma = .false.
 ! todo esto para el abrezanjas. se precisa tambien el l%input_conformal_flag  

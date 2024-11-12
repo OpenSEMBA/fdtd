@@ -32,9 +32,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module Anisotropic
-
-#ifdef CompileWithAnisotropic
-
    use fdetypes
    implicit none
    private
@@ -1580,7 +1577,5 @@ contains
       return
 
    end subroutine
-
-#endif
 
 end module Anisotropic

@@ -29,9 +29,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module farfield_m
-
-#ifdef CompileWithNF2FF
-
    use fdetypes
    USE REPORT
 
@@ -3576,5 +3573,4 @@ contains
       RETURN
    END FUNCTION
 
-#endif
 END MODULE farfield_m

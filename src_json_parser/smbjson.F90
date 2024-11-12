@@ -4,7 +4,7 @@ module smbjson
    use NFDETypes
 
    use NFDETypes_extension
-   use labels_mod
+   use smbjson_labels_mod
    use mesh_mod
    use parser_tools_mod
    use idchildtable_mod
@@ -985,19 +985,13 @@ contains
          cs = cellIntervalsToCoords(cRs(1)%intervals)
 
          fieldType = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC)
-         call this%core%get(p, J_PR_MOVIE_COMPONENTS, compsPtr, found=componentsFound)
+         call this%core%get(p, J_PR_MOVIE_COMPONENT, compsPtr, found=componentsFound)
+         allocate(res%cordinates(1))
          if (componentsFound) then
-            numberOfComponents = this%core%count(compsPtr)
-            allocate(res%cordinates(numberOfComponents))
-            do i = 1, numberOfComponents
-               call this%core%get_child(compsPtr, i, compPtr)
-               call this%core%get(compPtr, component)
-               res%cordinates(i) = cs(1)
-               res%cordinates(i)%Or  = buildVolProbeType(fieldType, component)
-            end do
-         else 
-            allocate(res%cordinates(1))
+            call this%core%get(compsPtr, component)
             res%cordinates(1) = cs(1)
+            res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
+         else 
             component = J_DIR_M
             res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
          endif

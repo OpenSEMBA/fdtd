@@ -55,10 +55,7 @@ PROGRAM SEMBA_FDTD_launcher
 
    USE Preprocess_m
    USE storeData
-
-#ifdef CompileWithXDMF
    USE xdmf_h5
-#endif   
    !
 #ifdef CompileWithMPI
    USE MPIcomm
@@ -394,7 +391,6 @@ PROGRAM SEMBA_FDTD_launcher
    end if
 #endif
 
-#ifdef CompileWithXDMF   
 #ifdef CompileWithHDF
 !!!!tunel a lo bestia para crear el .h5 a 021219
    if (l%createh5filefromsinglebin) then
@@ -418,7 +414,6 @@ PROGRAM SEMBA_FDTD_launcher
 #endif
       stop
    endif
-#endif
 #endif
 
    IF (status /= 0) then
@@ -621,9 +616,6 @@ PROGRAM SEMBA_FDTD_launcher
    !check that simulation can actually be done for the kind of media requested
    DO i = 1, sgg%nummedia
       IF (sgg%Med(i)%Is%ThinWire) THEN
-#ifndef CompileWithWires
-         CALL stoponerror (l%layoutnumber, l%size, 'Wires without wire support. Recompile!')
-#endif
 #ifndef CompileWithBerengerWires
     if  ((l%wiresflavor=='berenger')) then
          CALL stoponerror (l%layoutnumber, l%size, 'Berenger Wires without support. Recompile!')
@@ -637,45 +629,11 @@ PROGRAM SEMBA_FDTD_launcher
          CONTINUE
       END IF
       !
-      IF (sgg%Med(i)%Is%EDispersive) THEN
-#ifndef CompileWithEDispersives
-         CALL stoponerror (l%layoutnumber, l%size, 'Edispersives without Edispersives support. Recompile!')
-#endif
-         CONTINUE
-      END IF
-      !
-      IF (sgg%Med(i)%Is%MDispersive) THEN
-#ifndef CompileWithEDispersives
-         CALL stoponerror (l%layoutnumber, l%size, 'Mdispersives without Edispersives support. Recompile!')
-#endif
-         CONTINUE
-      END IF
-      !
-      IF (sgg%Med(i)%Is%ThinSlot) THEN
-#ifndef CompileWithDMMA
-         CALL stoponerror (l%layoutnumber, l%size, 'Slots without Slots support. Recompile!')
-#endif
-#ifndef CompileWithAnisotropic
-         CALL stoponerror (l%layoutnumber, l%size, 'Slots without Anisotropic support. Recompile!')
-#endif
-         CONTINUE
-      END IF
-      !
-      IF (sgg%Med(i)%Is%Anisotropic) THEN
-#ifndef CompileWithAnisotropic
-         CALL stoponerror (l%layoutnumber, l%size, 'Anisotropics without Anisotropic support. Recompile!')
-#endif
-         CONTINUE
-      END IF
-      !
       IF ((sgg%Med(i)%Is%AnisMultiport) .OR. (sgg%Med(i)%Is%multiport).OR. (sgg%Med(i)%Is%SGBC)) THEN
 #ifndef CompileWithNIBC
          if (l%mibc) CALL stoponerror (l%layoutnumber, l%size, 'l%mibc Multiports without support. Recompile!')
 #endif
-
-#ifndef CompileWithSGBC
          if (l%sgbc) CALL stoponerror (l%layoutnumber, l%size, 'sgbc thin metals without support. Recompile!')
-#endif
          if (.not.(l%mibc.or.l%sgbc)) &
          CALL stoponerror (l%layoutnumber, l%size, 'Choose some treatment for multiports (-l%mibc,-sgbc)')
          CONTINUE

@@ -2,8 +2,8 @@ module idchildtable_mod
 
 #ifdef CompileWithSMBJSON    
    use json_module
+   use smbjson_labels_mod, only: J_ID
    use fhash, only: fhash_tbl_t, key=>fhash_key
-   use labels_mod
    use parser_tools_mod, only: json_value_ptr
 
    type :: IdChildTable_t

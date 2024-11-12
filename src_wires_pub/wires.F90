@@ -28,7 +28,6 @@
 
 module HollandWires
    !
-#ifdef CompileWithWires
 
    use report
    use fdetypes
@@ -7034,8 +7033,6 @@ subroutine resume_casuistics
 
 
     end subroutine wiresconstantes
-
-#endif
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 end module HollandWires
