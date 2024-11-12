@@ -22,7 +22,7 @@ module mtl_bundle_mod
         real, dimension(:,:,:), allocatable :: v_diff, i_diff
 
         type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
-
+        logical :: isPassthrough = .false.
 
     contains
         procedure :: mergePULMatrices
@@ -36,7 +36,7 @@ module mtl_bundle_mod
         procedure :: advanceVoltage => bundle_advanceVoltage
         procedure :: advanceCurrent => bundle_advanceCurrent
         procedure :: addTransferImpedance => bundle_addTransferImpedance
-        ! procedure :: setConnectorTransferImpedance
+        procedure :: setConnectorTransferImpedance => bundle_setConnectorTransferImpedance
         procedure :: setExternalLongitudinalField => bundle_setExternalLongitudinalField
 
     end type mtl_bundle_t
@@ -63,6 +63,7 @@ contains
         res%step_size = levels(1)%lines(1)%step_size
         res%number_of_divisions = size(res%step_size,1)
         res%external_field_segments = levels(1)%lines(1)%external_field_segments
+        res%isPassthrough = levels(1)%lines(1)%isPassthrough
         call res%initialAllocation()
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
@@ -81,7 +82,7 @@ contains
         allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
         allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0)
-
+        
         allocate(this%i_term(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
         allocate(this%v_diff(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
 
@@ -195,6 +196,17 @@ contains
         this%probes(size(aux_probes)+1) = res
     end function
 
+    subroutine bundle_setConnectorTransferImpedance(this, index, conductor_out, range_in, transfer_impedance)
+        class(mtl_bundle_t) :: this
+        integer, intent(in) :: index
+        integer, intent(in) :: conductor_out
+        integer, dimension(:), intent(in) :: range_in
+        type(transfer_impedance_per_meter_t) :: transfer_impedance
+
+        call this%transfer_impedance%setTransferImpedance(index, conductor_out, range_in, transfer_impedance)
+
+    end subroutine
+
     subroutine bundle_addTransferImpedance(this, conductor_out, range_in, transfer_impedance)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: conductor_out
@@ -279,6 +291,10 @@ contains
             order=[2,3,1])
         this%i_diff = IF1
 
+        do i = 2, this%number_of_divisions
+            this%i_diff(i,1,1) = this%i_diff(i,1,1)/this%external_field_segments(i)%dielectric%effective_relative_permittivity
+        end do
+         
     end subroutine
 
     subroutine bundle_updateSources(this, time, dt)
@@ -296,18 +312,20 @@ contains
         end do
     end subroutine
 
+
     subroutine bundle_advanceCurrent(this)
         class(mtl_bundle_t) ::this
         real, dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
+        real :: eps_r
         call this%transfer_impedance%updateQ3Phi()
         i_prev = this%i
+
         do i = 1, this%number_of_divisions 
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
-                          matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - this%e_L(:,i) * this%step_size(i)) - &
-                          !- &
-                                !  matmul(0.5*this%du_length(i,:,:), this%el))
-                          matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
+                        matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
+                                                    this%e_L(:,i) * this%step_size(i)) - &
+                        matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
         !TODO - revisar
         i_now = this%i
@@ -316,11 +334,21 @@ contains
 
     subroutine bundle_setExternalLongitudinalField(this)
         class(mtl_bundle_t) :: this
-        integer :: i
-        do i = 1, size(this%e_L,2)
-            this%e_L(1,i) = this%external_field_segments(i)%field * &
-                            this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
-        end do
+        integer :: i, j
+
+        if (this%isPassthrough) then 
+            do j = 2, 1 + this%conductors_in_level(2)
+                do i = 1, size(this%e_L,2)
+                    this%e_L(j,i) = this%external_field_segments(i)%field * &
+                                    this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+                end do
+            end do
+        else
+            do i = 1, size(this%e_L,2)
+                this%e_L(1,i) = this%external_field_segments(i)%field * &
+                                this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+            end do
+        end if
     end subroutine
 
 end module mtl_bundle_mod

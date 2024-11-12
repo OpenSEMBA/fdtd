@@ -87,7 +87,9 @@ contains
       ! SGETRF computes an LU factorization of a general M-by-N matrix A
       ! using partial pivoting with row interchanges.
       call SGETRF(n,n,Ainv,n,ipiv,info)
-      if (info.ne.0) stop 'Matrix is numerically singular!'
+      if (info.ne.0) then 
+         stop 'Matrix is numerically singular!'
+      end if
       ! SGETRI computes the inverse of a matrix using the LU factorization
       ! computed by SGETRF.
       call SGETRI(n,Ainv,n,ipiv,work,n,info)
