@@ -50,15 +50,10 @@ module Solver
    use Borders_CPML
    use Borders_MUR
    use Resuming
-
-#ifdef CompileWithNodalSources
    use nodalsources
-#endif
    use Lumped
    use PMLbodies
-#ifdef CompileWithXDMF
    use xdmf
-#endif   
    use vtk
 #ifdef CompileWithMPI
    use MPIcomm
@@ -70,28 +65,18 @@ module Solver
    use Multiports
 #endif
 
-#ifdef CompileWithSGBC
 #ifdef CompileWithStochastic
    use sgbc_stoch
 #else
    use sgbc_NOstoch
 #endif  
-#endif
-
-#ifdef CompileWithEDispersives
    use EDispersives
    use MDispersives
-#endif
-#ifdef CompileWithAnisotropic
    use Anisotropic
-#endif
-#ifdef CompileWithWires  
    use HollandWires     
-#endif       
-#ifdef CompileWithWires    
+
 #ifdef CompileWithMTLN  
    use Wire_bundles_mtln_mod             
-#endif       
 #endif       
 
 #ifdef CompileWithBerengerWires
@@ -100,6 +85,7 @@ module Solver
    use WiresBerenger_MPI
 #endif
 #endif
+
 #ifdef CompileWithSlantedWires
    use WiresSlanted
    use estructura_slanted_m
@@ -741,7 +727,6 @@ contains
          
       ! one more MM for right adjancencies
       dtcritico=sgg%dt
-#ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then
 #ifdef CompileWithMPI
@@ -764,7 +749,6 @@ contains
         endif
       endif
 
-#endif
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
 
@@ -855,8 +839,6 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
 
-
-#ifdef CompileWithWires
       if (use_mtln_wires) then
 #ifdef CompileWithMTLN
          call InitWires_mtln(sgg,Ex,Ey,Ez,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
@@ -864,11 +846,7 @@ contains
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif
       endif
-#endif
 
-
-
-#ifdef CompileWithAnisotropic
       !Anisotropic
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -881,14 +859,12 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif   
-         if (l_auxoutput) then
-             write (dubuf,*) '----> there are Structured anisotropic elements';  call print11(layoutnumber,dubuf)
-         else
-              write(dubuf,*) '----> no Structured anisotropic elements found';  call print11(layoutnumber,dubuf)
-        endif
-#endif
+      if (l_auxoutput) then
+            write (dubuf,*) '----> there are Structured anisotropic elements';  call print11(layoutnumber,dubuf)
+      else
+            write(dubuf,*) '----> no Structured anisotropic elements found';  call print11(layoutnumber,dubuf)
+      endif
 
-#ifdef CompileWithSGBC
       IF (sgbc)  then
 #ifdef CompileWithMPI
            call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -908,7 +884,6 @@ contains
               write(dubuf,*) '----> no Structured sgbc elements found';  call print11(layoutnumber,dubuf)
         endif
       endif
-#endif
 
 !!!!
 #ifdef CompileWithNIBC
@@ -971,7 +946,6 @@ contains
      endif
 #endif
 
-#ifdef CompileWithEDispersives
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1004,7 +978,6 @@ contains
          else
               write(dubuf,*) '----> no Structured Magnetic dispersive elements found';  call print11(layoutnumber,dubuf)
         endif
-#endif
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1024,8 +997,6 @@ contains
               write(dubuf,*) '----> no Plane waves are found';  call print11(layoutnumber,dubuf)
         endif
 
-#ifdef CompileWithNodalSources
-      !debe venir antes para que observation las use en mapvtk
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1049,8 +1020,6 @@ contains
          else
               write(dubuf,*) '----> no Structured Nodal sources are found';  call print11(layoutnumber,dubuf)
         endif
-
-#endif
 
          !!!!!!!sgg 121020 !rellena la matriz Mtag con los slots de una celda
                  call fillMtag(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b)
@@ -1117,7 +1086,7 @@ contains
          Ex,Ey,Ez,Hx,Hy,Hz)
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          write(dubuf,*) '[OK]';  call print11(layoutnumber,dubuf)
-#ifdef CompileWithWires
+
          !this modifies the initwires stuff and must be called after initwires (typically at the end)
          !llamalo siempre aunque no HAYA WIRES!!! para que no se quede colgado en hilos terminales
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
@@ -1127,7 +1096,7 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) '[OK]';  call print11(layoutnumber,dubuf)
          endif
-#endif
+
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             write(dubuf,*) 'Init MPI Multi-Wires...';  call print11(layoutnumber,dubuf)
@@ -1147,12 +1116,11 @@ contains
 
 
       !must be called now in case the MPI has changed the connectivity info
-#ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then
          call ReportWireJunctions(layoutnumber,size,thereare%wires,sgg%Sweep(iHz)%ZI, sgg%Sweep(iHz)%ZE,groundwires,strictOLD,verbose)
       endif
-#endif
+
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
          call ReportWireJunctionsBerenger(layoutnumber,size,thereare%wires,sgg%Sweep(iHz)%ZI, sgg%Sweep(iHz)%ZE,groundwires,strictOLD,verbose)
@@ -1209,7 +1177,6 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call   FlushMPI_H_Cray
       endif
-#ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then
          if ((size>1).and.(thereare%wires))   then
@@ -1221,7 +1188,7 @@ contains
          endif
 #endif
       endif
-#endif
+
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
          if ((size>1).and.(thereare%wires))   call FlushWiresMPI_Berenger(layoutnumber,size)
@@ -1229,7 +1196,6 @@ contains
 #endif
 #endif
 !!!no se si el orden wires - sgbcs del sync importa 150519
-#ifdef CompileWithSGBC
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
           if (stochastic)  then
@@ -1237,7 +1203,6 @@ contains
           endif
 #endif    
 #endif    
-#endif  
 
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
@@ -1337,12 +1302,11 @@ contains
                  if (thereareplanewave) call print11(layoutnumber,dubuf)
              endif
           endif
-#ifdef CompileWithAnisotropic
+
          !Anisotropic
          !Must be previous to the main stepping since the main stepping overrides the past components with the last and the
          !lossy part of the anisotropic STILL requires the past info on adjacent components
          IF (Thereare%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-#endif
 
          !!electric Fields Maxwell  AND CPML Zone
          !!for tuning
@@ -1413,7 +1377,6 @@ contains
          !*******************************************************************************
          !*******************************************************************************
 !!!lamo aqui los hilos por coherencia con las PML que deben absorber los campos creados por los hilos
-#ifdef CompileWithWires
          !Wires (only updated here. No need to update in the H-field part)
          if (( (trim(adjustl(wiresflavor))=='holland') .or. &
                (trim(adjustl(wiresflavor))=='transition')) .and. .not. use_mtln_wires) then
@@ -1431,7 +1394,6 @@ contains
                endif
             endif
          endif
-#endif
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             IF (Thereare%Wires) call AdvanceWiresE_Berenger(sgg,n)
@@ -1444,7 +1406,6 @@ contains
             call AdvanceWiresE_Slanted(sgg,n) 
          endif
 #endif
-#ifdef CompileWithWires
          if (use_mtln_wires) then
 #ifdef CompileWithMTLN
             call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
@@ -1452,7 +1413,6 @@ contains
             write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif   
          end if
-#endif 
          If (Thereare%PMLbodies) then !waveport absorbers
             call AdvancePMLbodyE
          endif
@@ -1485,20 +1445,15 @@ contains
          IF (Thereare%Multiports.and.(mibc))      call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
 #endif
 
-
-#ifdef CompileWithSGBC
          !MultiportS  H-field advancing
          IF (Thereare%sgbcs.and.(sgbc))  then
             call AdvancesgbcE(real(sgg%dt,RKIND),sgbcDispersive,simu_devia,stochastic)
          endif
-#endif
 !!!
         if (ThereAre%Lumpeds) call AdvanceLumpedE(sgg,n,simu_devia,stochastic)
 !!!
-#ifdef CompileWithEDispersives
          !EDispersives (only updated here. No need to update in the H-field part)
          IF (Thereare%Edispersives)     call AdvanceEDispersiveE(sgg)
-#endif
 
          !PMC are only called in the H-field part (image theory method)
 
@@ -1518,16 +1473,13 @@ contains
               endif
          endif
 
-
-#ifdef CompileWithNodalSources
-         !NOdal sources  E-field advancing
+         !Nodal sources  E-field advancing
          If (Thereare%NodalE) then
-  !            if (.not.simu_devia) then  !bug! debe entrar en nodal y si son hard simplemente ponerlas a cero !mdrc 290323
-                 call AdvanceNodalE(sgg,sggMiEx,sggMiEy,sggMiEz,sgg%NumMedia,n, b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,simu_devia)
-  !            endif
+            !            if (.not.simu_devia) then  !bug! debe entrar en nodal y si son hard simplemente ponerlas a cero !mdrc 290323
+            call AdvanceNodalE(sgg,sggMiEx,sggMiEy,sggMiEz,sgg%NumMedia,n, b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,simu_devia)
+            !            endif
          endif
          
-#endif
 
 
          !!!!!!!!!!!!!!!!!!
@@ -1546,12 +1498,10 @@ contains
          !
          !Magnetic Fields Maxwell AND CPML Zone
 
-#ifdef CompileWithAnisotropic
          !Anisotropic
          !Must be previous to the main stepping since the main stepping overrides the past components with the last and the
          !lossy part of the anisotropic STILL requires the past info on adjacent components
          IF (Thereare%Anisotropic) call AdvanceAnisotropicH(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-#endif
 
          !**************************************************************************************************
          !***[conformal]  *******************************************************************
@@ -1659,18 +1609,13 @@ contains
             call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
          endif
          !
-
-#ifdef CompileWithSGBC
          !MultiportS  H-field advancing
          IF (Thereare%sgbcs.and.(sgbc))  then
             call AdvancesgbcH
          endif
-#endif
 
-#ifdef CompileWithEDispersives
          !MDispersives (only updated here. No need to update in the E-field part)
          IF (Thereare%Mdispersives)     call AdvanceMDispersiveH(sgg)
-#endif
 
 #ifdef CompileWithNIBC
          !Multiports H-field advancing
@@ -1693,20 +1638,15 @@ contains
          
          endif  
 
-
-#ifdef CompileWithNodalSources
-         !NOdal sources  E-field advancing
+         !Nodal sources  E-field advancing
          If (Thereare%NodalH) then
           !!    if (.not.simu_devia) then  !bug! debe entrar en nodal y si son hard simplemente ponerlas a cero !mdrc 290323
                  call AdvanceNodalH(sgg,sggMiHx,sggMiHy,sggMiHz,sgg%NumMedia,n, b       ,GM2,Idxe,Idye,Idze,Hx,Hy,Hz,simu_devia)
           !!    endif
         endif
 
-#endif
-
          !Must be called here again at the end to enforce any of the previous changes
          !Posible Wire for thickwires advancing in the H-field part    
-#ifdef CompileWithWires
          !Wires (only updated here. No need to update in the H-field part)
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
@@ -1718,7 +1658,6 @@ contains
                endif
             endif
          endif
-#endif
          !PMC BORDERS  H-field advancing (duplicates the H-fields at the interface changing their sign)
          If (Thereare%PMCBorders)     call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
          !Periodic BORDERS  H-field mirroring
@@ -1753,7 +1692,6 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call   FlushMPI_H_Cray
          endif
-#ifdef CompileWithWires
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
             if ((size>1).and.(thereare%wires))   then
@@ -1765,7 +1703,6 @@ contains
             endif
 #endif
          endif
-#endif             
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             if ((size>1).and.(thereare%wires))   call FlushWiresMPI_Berenger(layoutnumber,size)
@@ -1774,13 +1711,11 @@ contains
 #endif
 
 !!!no se si el orden wires - sgbcs del sync importa 150519
-#ifdef CompileWithSGBC
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
           if (stochastic)  then
              call syncstoch_mpi_sgbcs(simu_devia,layoutnumber,size)
           endif
-#endif    
 #endif    
 #endif
 
@@ -1971,10 +1906,10 @@ contains
                             call print11(layoutnumber,dubuf)
                             call print11(layoutnumber,SEPARADOR//separador//separador)
                             somethingdone=.false.
-#ifdef CompileWithXDMF      
+
                             if (Thereare%Observation) call createxdmfOnTheFly(sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)                          
                             if (createh5bin) call createh5bintxt(sgg,layoutnumber,size) !lo deben llamar todos haya on on thereare%observation
-#endif  
+
 #ifdef CompileWithMPI
                         call MPI_Barrier(SUBCOMM_MPI,ierr)
                         call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -2191,11 +2126,9 @@ contains
       write(dubuf,*) SEPARADOR//separador//separador
       call print11(layoutnumber,dubuf)
       somethingdone=.false.
-#ifdef CompileWithXDMF
       if (Thereare%Observation) call createxdmf(sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)
       if (createh5bin) call createh5bintxt(sgg,layoutnumber,size) !lo deben llamar todos haya o no thereare%observation
          !        call create_interpreted_mesh(sgg)
-#endif      
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -3272,28 +3205,20 @@ contains
       REAL (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : )  ::  G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 
       call DestroyObservation(sgg)
-#ifdef CompileWithNodalSources
       Call DestroyNodal(sgg)
-#endif
       call DestroyIlumina(sgg)
 #ifdef CompileWithNIBC
       call DestroyMultiports(sgg)
 #endif
 
-#ifdef CompileWithSGBC
       call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((Thereare%sgbcs).and.(sgbc))
-#endif
       call destroyLumped(sgg)
-#ifdef CompileWithEDispersives
       call DestroyEDispersives(sgg)
       call DestroyMDispersives(sgg)
-#endif
-#ifdef CompileWithWires
       if ((trim(adjustl(wiresflavor))=='holland') .or. &
           (trim(adjustl(wiresflavor))=='transition')) then
          call DestroyWires(sgg)
       endif
-#endif
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(wiresflavor))=='berenger') then
          call DestroyWires_Berenger(sgg)

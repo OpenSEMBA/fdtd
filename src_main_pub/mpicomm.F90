@@ -32,17 +32,13 @@ module MPIcomm
    Use Report
    use fdetypes
 
-#ifdef CompileWithWires
    use wiresHolland_constants
    use HollandWires
-#endif
 
    implicit none
    private
 
-#ifdef CompileWithWires
    type(Thinwires_t), pointer  ::  HwiresMPI
-#endif
 
 
    Type buffer_t
@@ -68,10 +64,8 @@ module MPIcomm
 
    public FlushMPI_E,FlushMPI_H,InitMPI,MPIupdateMin, InitGeneralMPI,MPIdivide
    public MPIupdateBloques, MPIinitSubcomm
-#ifdef CompileWithWires
    !public InitWiresMPI
    public newInitWiresMPI,NewFlushWiresMPI
-#endif
    public InitExtraFlushMPI
 
 
@@ -649,7 +643,7 @@ contains
    !
 
 
-#ifdef CompileWithWires
+
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! new routine: works without the MediaMatrix Info
    ! supports multiwires
@@ -1218,10 +1212,6 @@ contains
    !!!   endif
    !!!   return
    !!!end subroutine newFlushWiresMPIindexmedInfo
-
-#endif
-   !del compilewithwires
-
 
    subroutine InitExtraFlushMPI (layoutnumber,sggsweep,sggalloc,med,nummed,sggmiez,sggMiHz)
       type (XYZlimit_t), dimension(1:6)  ::  sggalloc,sggsweep

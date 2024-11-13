@@ -23,10 +23,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 MODULE DMMA
-
-
-#ifdef CompileWithDMMA
-
    USE FDETYPES
    IMPLICIT NONE
    PRIVATE
@@ -161,7 +157,5 @@ CONTAINS
    !
    !
    !
-
-#endif
 
 END MODULE

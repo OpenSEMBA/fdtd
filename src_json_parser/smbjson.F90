@@ -4,7 +4,7 @@ module smbjson
    use NFDETypes
 
    use NFDETypes_extension
-   use labels_mod
+   use smbjson_labels_mod
    use mesh_mod
    use parser_tools_mod
    use idchildtable_mod
@@ -30,7 +30,6 @@ module smbjson
 
    contains
       procedure :: readProblemDescription
-      procedure :: initializeJson
 
       ! private
       procedure :: readGeneral
@@ -93,112 +92,96 @@ contains
       type(parser_t) :: res
       character(len=*), intent(in) :: filename
       res%filename = filename
+      
+      allocate(res%jsonfile)
+      call res%jsonfile%initialize()
+      if (res%jsonfile%failed()) then
+         call res%jsonfile%print_error_message(error_unit)
+         return
+      end if
+
+      call res%jsonfile%load(filename = res%filename)
+      if (res%jsonfile%failed()) then
+         call res%jsonfile%print_error_message(error_unit)
+         return
+      end if
+
+      allocate(res%core)
+      call res%jsonfile%get_core(res%core)
+      call res%jsonfile%get('.', res%root)
    end function
-
-   subroutine initializeJson(this)
-      class(parser_t) :: this
-      integer :: stat
-
-      allocate(this%jsonfile)
-      call this%jsonfile%initialize()
-      if (this%jsonfile%failed()) then
-         call this%jsonfile%print_error_message(error_unit)
-         return
-      end if
-
-      call this%jsonfile%load(filename = this%filename)
-      if (this%jsonfile%failed()) then
-         call this%jsonfile%print_error_message(error_unit)
-         return
-      end if
-
-      allocate(this%core)
-      call this%jsonfile%get_core(this%core)
-      call this%jsonfile%get('.', this%root)
-   end subroutine
 
    function readProblemDescription(this) result (res)
       class(parser_t) :: this
       type(Parseador) :: res
       integer :: stat 
 
-      allocate(this%jsonfile)
-      call this%jsonfile%initialize()
-      if (this%jsonfile%failed()) then
-         call this%jsonfile%print_error_message(error_unit)
-         return
-      end if
-
-      call this%jsonfile%load(filename = this%filename)
-      if (this%jsonfile%failed()) then
-         call this%jsonfile%print_error_message(error_unit)
-         return
-      end if
-
-      allocate(this%core)
-      call this%jsonfile%get_core(this%core)
-      call this%jsonfile%get('.', this%root)
-
       this%mesh = this%readMesh()
       this%matTable = IdChildTable_t(this%core, this%root, J_MATERIALS)
-
+      
       call initializeProblemDescription(res)
-
+      
       ! Basics
       res%general = this%readGeneral()
       res%matriz = this%readMediaMatrix()
       res%despl = this%readGrid()
       res%front = this%readBoundary()
-
+      
       ! Materials
       res%pecRegs = this%readPECRegions()
       res%pmcRegs = this%readPMCRegions()
-
+      
       ! Sources
       res%plnSrc = this%readPlanewaves()
       res%nodSrc = this%readNodalSources()
-
+      
       ! Probes
       res%oldSonda = this%readProbes()
       res%sonda = this%readMoreProbes()
       res%BloquePrb = this%readBlockProbes()
       res%VolPrb = this%readVolumicProbes()
-
+      
       ! Thin elements
       res%tWires = this%readThinWires()
       res%mtln = this%readMTLN(res%despl)
 
-      ! Cleanup
-      call this%core%destroy()
-      call this%jsonfile%destroy()
-      nullify(this%root)
+      !! Cleanup
+      !call this%core%destroy()
+      !call this%jsonfile%destroy()
+      !nullify(this%root)
 
    end function
 
    function readMesh(this) result(res)
       class(parser_t) :: this
       type(Mesh_t) :: res
-      type(json_value), pointer :: jcs, jc
-      integer :: id, i
-      real, dimension(:), allocatable :: pos
-      type(coordinate_t) :: c
-      integer :: stat
-      logical :: found
-
-      call this%core%get(this%root, J_MESH//'.'//J_COORDINATES, jcs, found=found)
-      if (found) then
-         call res%allocateCoordinates(10*this%core%count(jcs))
-         do i = 1, this%core%count(jcs)
-            call this%core%get_child(jcs, i, jc)
-            call this%core%get(jc, J_ID, id)
-            call this%core%get(jc, J_COORDINATE_POS, pos)
-            c%position = pos
-            call res%addCoordinate(id, c)
-         end do
-      end if
+      call addCoordinates(res)
       call addElements(res)
 
    contains
+      subroutine addCoordinates(mesh)
+          type(mesh_t), intent(inout) :: mesh
+          type(json_value), pointer :: jcs, jc
+          integer :: id, i
+          real, dimension(:), allocatable :: pos
+          type(coordinate_t) :: c
+          integer :: numberOfCoordinates 
+          logical :: found
+          
+          call this%core%get(this%root, J_MESH//'.'//J_COORDINATES, jcs, found=found)
+          if (found) then
+             numberOfCoordinates = this%core%count(jcs)
+             call res%allocateCoordinates(10*numberOfCoordinates)
+             do i = 1, numberOfCoordinates
+                call this%core%get_child(jcs, i, jc)
+                call this%core%get(jc, J_ID, id)
+                call this%core%get(jc, J_COORDINATE_POS, pos)
+                c%position = pos
+                call mesh%addCoordinate(id, c)
+             end do
+          end if
+      end subroutine
+   
       subroutine addElements(mesh)
          type(mesh_t), intent(inout) :: mesh
          character (len=:), allocatable :: elementType
@@ -207,10 +190,15 @@ contains
          type(node_t) :: node
          type(polyline_t) :: polyline
          integer, dimension(:), allocatable :: coordIds
+         integer :: numberOfElements
          logical :: found
+         
          call this%core%get(this%root, J_MESH//'.'//J_ELEMENTS, jes, found=found)
+         numberOfElements = this%core%count(jes)
+         call res%allocateElements(10*numberOfElements)
+             
          if (found) then
-            do i = 1, this%core%count(jes)
+            do i = 1, numberOfElements
                call this%core%get_child(jes, i, je)
                call this%core%get(je, J_ID, id)
                call this%core%get(je, J_TYPE, elementType)
@@ -985,19 +973,13 @@ contains
          cs = cellIntervalsToCoords(cRs(1)%intervals)
 
          fieldType = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC)
-         call this%core%get(p, J_PR_MOVIE_COMPONENTS, compsPtr, found=componentsFound)
+         call this%core%get(p, J_PR_MOVIE_COMPONENT, compsPtr, found=componentsFound)
+         allocate(res%cordinates(1))
          if (componentsFound) then
-            numberOfComponents = this%core%count(compsPtr)
-            allocate(res%cordinates(numberOfComponents))
-            do i = 1, numberOfComponents
-               call this%core%get_child(compsPtr, i, compPtr)
-               call this%core%get(compPtr, component)
-               res%cordinates(i) = cs(1)
-               res%cordinates(i)%Or  = buildVolProbeType(fieldType, component)
-            end do
-         else 
-            allocate(res%cordinates(1))
+            call this%core%get(compsPtr, component)
             res%cordinates(1) = cs(1)
+            res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
+         else 
             component = J_DIR_M
             res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
          endif

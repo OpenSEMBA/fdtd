@@ -31,39 +31,20 @@ module resuming
    Use Report
 
    use fdetypes
-
-
-
-   !Thin metals
-
-#ifdef CompileWithSGBC
 #ifdef CompileWithStochastic
    use SGBC_stoch
 #else
    use SGBC_NOstoch
 #endif  
-#endif
    use PMLbodies
-
    use Lumped
 #ifdef CompileWithNIBC
    use Multiports
 #endif
-
-   !EDispersives
-#ifdef CompileWithEDispersives
    use EDispersives
    use MDispersives
-#endif
-
-#ifdef CompileWithNF2FF
    use farfield_m
-#endif
-
-   !Wires Thin Module
-#ifdef CompileWithWires
    use HollandWires
-#endif
 #ifdef CompileWithBerengerWires
    use WiresBerenger
 #ifdef CompileWithMPI
@@ -293,7 +274,6 @@ contains
 #ifdef CompileWithMPI
       !do an update of the currents to later read the currents OK
       if (size>1)  then
-#ifdef CompileWithWires
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
              if ((size>1).and.(thereare%wires))   then
@@ -305,7 +285,6 @@ contains
              endif
 #endif             
              endif
-#endif
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             call FlushWiresMPI_Berenger(layoutnumber,size)
@@ -316,12 +295,10 @@ contains
 
 #endif
       if( Thereare%Wires)       then
-#ifdef CompileWithWires
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
             call StoreFieldsWires
          endif
-#endif
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             call StoreFieldsWires_Berenger
@@ -344,7 +321,6 @@ contains
 #endif    
       if (ThereAre%Lumpeds) call StoreFieldsLumpeds(stochastic)
       
-#ifdef CompileWithSGBC
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
       if (stochastic)  then
@@ -354,21 +330,14 @@ contains
 #endif    
       if( Thereare%SGBCs)       then
           call StoreFieldsSGBCs(stochastic)
-      endif
-      
-#endif
+      endif      
 #ifdef CompileWithNIBC
       if( Thereare%Multiports)       call StoreFieldsMultiports
 #endif
-
-#ifdef CompileWithEDispersives
       if( Thereare%EDispersives)     call StoreFieldsEDispersives
       if( Thereare%MDispersives)     call StoreFieldsMDispersives
-#endif
       if( Thereare%PlaneWaveBoxes)     call StorePlaneWaves(sgg)
-#ifdef CompileWithNF2FF
       if( Thereare%FarFields)       call StoreFarFields(b)  !called at initobservation
-#endif
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif

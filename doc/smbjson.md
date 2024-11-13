@@ -634,7 +634,7 @@ If not `magnitudeFile` is specified and only one `source` is defined, the `magni
 
 Probes of type `movie` record a vector field in a volume region indicated by `elementIds`. `[field]` can be `electric`, `magnetic`, or `currentDensity`; defaults to `electric`.
 `currentDensity` will store only the surface density currents on `pec` or lossy surfaces.
-The stored values can be selected using `[components]`, which stores an array of the following labels `x`, `y`, `z`, or `magnitude`; if no components are specified, defaults to `magnitude`.
+The stored values can be selected using the `[component]` entry, which stores one of the following labels `x`, `y`, `z`, or `magnitude`; if no component is specified, defaults to `magnitude`.
 
 An example follows:
 ```json
@@ -642,7 +642,7 @@ An example follows:
     "name": "electric_field_movie",
     "type": "movie",
     "field": "electric",
-    "components": ["x"],
+    "component": "x",
     "elementIds": [4]
 }
 ```

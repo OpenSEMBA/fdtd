@@ -25,9 +25,7 @@
 Module Report
    use FDETYPES
 
-#ifdef CompileWithXDMF
    use snapxdmf
-#endif
 
    implicit none
    private
@@ -299,32 +297,7 @@ contains
 
       call print11(layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
       !!!
-      if ((thereare%NodalE).or.(thereare%NodalH))    then
-#ifdef CompileWithNodalSources
-         continue
-#else
-         buff=trim(adjustl(whoami))//' Nodal sources unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
       !
-      IF (thereare%FarFields)     then
-#ifdef  CompileWithNF2FF
-         continue
-#else
-         buff=trim(adjustl(whoami))//' NF2FF unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
-      !
-      IF (thereare%SGBCs)     then
-#ifdef CompileWithSGBC
-         continue
-#else
-         buff=trim(adjustl(whoami))//' SGBC unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
       IF ((thereare%Multiports).or.(thereare%AnisMultiports))     then
 #ifdef CompileWithNIBC
          continue
@@ -333,52 +306,6 @@ contains
          call stoponerror(layoutnumber,size,buff)
 #endif
       endif
-      !
-      !
-      IF (thereare%Anisotropic)     then
-#ifdef CompileWithAnisotropic
-         continue
-#else
-         buff=trim(adjustl(whoami))//' Anisotropic unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
-      !
-      IF (thereare%ThinSlot)     then
-#ifdef CompileWithDMMA
-         continue
-#else
-         buff=trim(adjustl(whoami))//' Thin slots unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
-      !
-      IF (thereare%EDispersives.or.thereare%MDispersives)     then
-#ifdef CompileWithEDispersives
-         continue
-#else
-         buff=trim(adjustl(whoami))//' Dispersive materials unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-      endif
-      !
-      If (thereare%Wires)            then
-#ifdef CompileWithWires
-         continue
-#else
-#ifdef CompileWithBerengerWires
-         continue
-#else
-#ifdef CompileWithSlantedWires
-         continue
-#else
-         buff=trim(adjustl(whoami))//'  WIREs unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
-#endif
-#endif
-#endif
-      endif
-      !
       !!!!!!!!!!!!!
       if (thereAre%MagneticMedia) then
          buff=' has special H-media'
@@ -416,20 +343,15 @@ contains
          buff=   ' has Thin metal Materials'
          call warnerrreport(buff)
       endif
-#ifdef CompileWithAnisotropic
       IF ((thereare%Anisotropic).and.(.not.thereare%ThinSlot))     then
          buff=   ' has pure anisotropic media'
          call warnerrreport(buff)
       endif
-#ifdef CompileWithDMMA
       IF (thereare%ThinSlot)     then
          buff=   ' has Thin Slots'
          call warnerrreport(buff)
       endif
-#endif
-#endif
       !
-#ifdef CompileWithEDispersives
       IF (thereare%EDispersives)     then
          buff=   ' has electric dispersives'
          call warnerrreport(buff)
@@ -438,13 +360,10 @@ contains
          buff=   ' has magnetic dispersives'
          call warnerrreport(buff)
       endif
-#endif
-#ifdef CompileWithWires
       If (thereare%Wires)            then
          buff=   ' has Holland WIREs'
          call warnerrreport(buff)
       endif
-#endif
 #ifdef CompileWithBerengerWires
       If (thereare%Wires)            then
          buff=   ' has Multi-WIREs'
@@ -1168,7 +1087,6 @@ contains
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
 
-#ifdef CompileWithXDMF
          if ((mustsnap.and.(lmaxval  (layoutnumber+1)> snapLevel)).or.(countersnap > 0)) then
             countersnap=countersnap + 1
             !
@@ -1272,7 +1190,6 @@ contains
                countersnap=0
             endif
          endif
-#endif         
 
 #ifdef CompileWithMPI
          call MPI_Barrier(MPI_COMM_WORLD,ierr) !TODOS STOCH O NO 060619
