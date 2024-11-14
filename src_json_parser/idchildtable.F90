@@ -29,10 +29,13 @@ contains
       integer :: id
       integer :: i
       logical :: found
+      integer :: numberOfEntries
 
       call core%get(root, path, jentries, found)
       if (.not. found) return
-      do i = 1, core%count(jentries)
+      numberOfEntries = core%count(jentries)
+      call res%idToChilds%allocate(10*numberOfEntries)
+      do i = 1, numberOfEntries
          call core%get_child(jentries, i, jentry)
          call core%get(jentry, J_ID, id)
          call res%idToChilds%set(key(id), json_value_ptr(jentry))

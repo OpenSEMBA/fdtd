@@ -21,6 +21,7 @@ extern "C" int test_read_shieldedpair();
 extern "C" int test_read_mtln();
 extern "C" int test_read_sphere();
 extern "C" int test_read_airplane();
+extern "C" int test_read_large_airplane_mtln();
 
 TEST(smbjson, idchildtable_fhash)     {EXPECT_EQ(0, test_idchildtable_fhash()); }
 TEST(smbjson, idchildtable_add_get)   {EXPECT_EQ(0, test_idchildtable()); }

@@ -40,10 +40,10 @@ module mesh_mod
       procedure :: checkId => mesh_checkId
 
       procedure :: addElement => mesh_addElement
+      procedure :: addCellRegion  => mesh_addCellRegion
+      
       procedure :: getNode => mesh_getNode
       procedure :: getPolyline => mesh_getPolyline
-      
-      procedure :: addCellRegion  => mesh_addCellRegion
       procedure :: getCellRegion  => mesh_getCellRegion
       procedure :: getCellRegions => mesh_getCellRegions
 
@@ -54,6 +54,7 @@ module mesh_mod
 
       procedure :: printCoordHashInfo => mesh_printCoordHashInfo
       procedure :: allocateCoordinates => mesh_allocateCoordinates
+      procedure :: allocateElements => mesh_allocateElements
    end type
 
 
@@ -65,6 +66,13 @@ contains
       integer :: buck
       call this%coordinates%allocate(buck)
    end subroutine
+   
+   subroutine mesh_allocateElements(this, buck)
+      class(mesh_t) :: this
+      integer :: buck
+      call this%elements%allocate(buck)
+   end subroutine
+
 
    subroutine mesh_printCoordHashInfo(this)
       class(mesh_t) :: this
@@ -193,12 +201,26 @@ contains
       integer, dimension(:), intent(in) :: ids
       type(cell_region_t) :: cR
       logical :: found
-      integer :: i
+      integer :: i, j
+      integer :: numberOfCellRegions
 
-      allocate(res(0))
+      ! Precounts
+      numberOfCellRegions = 0
       do i = 1, size(ids)
          cR = this%getCellRegion(ids(i), found)
-         if (found) res = [res, cR]
+         if (found) then
+             numberOfCellRegions = numberOfCellRegions + 1
+         end if
+      end do     
+      
+      allocate(res(numberOfCellRegions))
+      j = 1
+      do i = 1, size(ids)
+         cR = this%getCellRegion(ids(i), found)
+         if (found) then
+             res(j) = cR
+             j = j + 1
+         end if
       end do
 
    end function
