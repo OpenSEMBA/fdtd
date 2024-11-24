@@ -17,6 +17,7 @@ module parser_tools_mod
       type(json_value), pointer :: p
    end type
 
+#ifdef CompileWithMTLN
    type :: aux_node_t
       type(terminal_node_t) :: node
       integer :: cId
@@ -26,7 +27,8 @@ module parser_tools_mod
    type :: cable_ptr_t
       type(cable_t), pointer :: p
    end type
-   
+#endif
+
 contains
 
    function getIntervalsInCellRegions(cellRegions, cellType) result (intervals)

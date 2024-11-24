@@ -13,7 +13,12 @@ jobs:
     strategy:
       matrix: 
         build-type: ["Debug", "Release"]
-        mpi-build: ["No", "Yes"]
+        mpi: ["No", "Yes"]
+        mtln: ["Yes"]
+        include:
+          - build-type: "Release"
+            mpi: "Yes"
+            mtln: "No"
     steps:       
     - name: Checkout
       uses: actions/checkout@v4
@@ -27,7 +32,10 @@ jobs:
    
     - name: Build application
       run: |       
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi-build}} -DSEMBA_FDTD_ENABLE_HDF=YES
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
         cmake --build build -j
       
     - name: Run fdtd unit tests 

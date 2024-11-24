@@ -141,11 +141,13 @@ contains
       allocate(pD%sWires)
       allocate(pD%tSlots)
 
+#ifdef CompileWithMTLN
       allocate(pD%mtln)
       allocate(pD%mtln%cables(0))
       allocate(pD%mtln%probes(0))
       allocate(pD%mtln%networks(0))
       allocate(pD%mtln%connectors(0))
+#endif
 
    end subroutine
 

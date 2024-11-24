@@ -48,7 +48,9 @@ module smbjson
       !
       procedure :: readMesh
       !
+#ifdef CompileWithMTLN
       procedure :: readMTLN
+#endif
       !
       procedure :: getLogicalAt
       procedure :: getIntAt
@@ -143,12 +145,10 @@ contains
       
       ! Thin elements
       res%tWires = this%readThinWires()
-      res%mtln = this%readMTLN(res%despl)
 
-      !! Cleanup
-      !call this%core%destroy()
-      !call this%jsonfile%destroy()
-      !nullify(this%root)
+#ifdef CompileWithMTLN
+      res%mtln = this%readMTLN(res%despl)
+#endif
 
    end function
 
@@ -1444,6 +1444,7 @@ contains
       end function
    end function
 
+#ifdef CompileWithMTLN
    function readMTLN(this, grid) result (mtln_res)
       class(parser_t) :: this
       type(Desplazamiento), intent(in) :: grid
@@ -2745,6 +2746,7 @@ contains
       end function
 
    end function
+#endif
 
 
    function getLogicalAt(this, place, path, found, default) result(res)
