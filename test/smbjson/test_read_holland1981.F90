@@ -123,8 +123,7 @@ contains
       
       expected%tWires%n_tw = 1
       expected%tWires%n_tw_max = 1
-
-      ! expected mtln bundles
+  
       expected%mtln%time_step = 30e-12
       expected%mtln%number_of_steps = 1000
 
