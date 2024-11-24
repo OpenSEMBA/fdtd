@@ -32,10 +32,7 @@ jobs:
    
     - name: Build application
       run: |       
-        cmake -S . -B build \
-          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
-          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
-          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
         cmake --build build -j
       
     - name: Run fdtd unit tests 
