@@ -19,6 +19,9 @@ jobs:
           - build-type: "Release"
             mpi: "Yes"
             mtln: "No"
+
+    name: ubuntu ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
+
     steps:       
     - name: Checkout
       uses: actions/checkout@v4
