@@ -70,8 +70,9 @@ if(SEMBA_FDTD_ENABLE_SMBJSON)
 endif()
 if (SEMBA_FDTD_ENABLE_MTLN)
 	add_subdirectory("external/ngspice/")
-	add_subdirectory(src_mtln)
 	set(NGSPICE_LIB ngspice)
+	
+	add_subdirectory(src_mtln)
 	set(MTLN_LIBRARIES mtlnsolver ngspice_interface)
 endif()
 
