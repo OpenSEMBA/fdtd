@@ -3,6 +3,7 @@ import shutil, glob, re
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+from os import environ as env
 
 # Use of absolute path to avoid conflicts when changing directory.
 SEMBA_EXE = os.getcwd() + '/build/bin/semba-fdtd'
@@ -14,7 +15,7 @@ CASE_FOLDER = TEST_DATA_FOLDER + 'cases/'
 MODELS_FOLDER = TEST_DATA_FOLDER + 'models/'
 EXCITATIONS_FOLDER = TEST_DATA_FOLDER + 'excitations/'
 OUTPUT_FOLDER = TEST_DATA_FOLDER + 'outputs/'
-
+SCRIPTS_FOLDER = TEST_DATA_FOLDER + 'scripts/'
 
 def getCase(case):
     return json.load(open(CASE_FOLDER + case + '.fdtd.json'))
@@ -63,3 +64,15 @@ def readSpiceFile(spice_file):
             val = np.append(val, float(l.split()[1]))
     return t, val
 
+# checks if file 'spinit' exist in the local scripts folder, the folder where the executable
+# is located, or a system script folder, and sets the env variable SPICE_SCRIPTS to that path
+# SPICE_SCRIPTS is used by ngspice to look for the file
+def setSpiceScriptsFolder():
+    
+    folders = [SCRIPTS_FOLDER, os.getcwd() + '/build/bin/', '/usr/share/ngspice/scripts']
+    for f in folders:
+        if os.path.isfile(f+'spinit'):
+            env["SPICE_SCRIPTS"] = str(f)
+            return
+    return
+        

@@ -135,6 +135,10 @@ def test_spice_opamp_saturation(tmp_path):
     fn = tmp_path._str + '/' + case + '.fdtd.json'
 
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+    
+    #ngspice needs to read file 'spinit' to load code models needed by xspice
+    setSpiceScriptsFolder()
+    
     solver.run()
     assert solver.hasFinishedSuccessfully() == True
             

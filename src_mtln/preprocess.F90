@@ -1066,9 +1066,15 @@ contains
     subroutine addNetworksDescription(description, networks)
         character(256), dimension(:), allocatable, intent(inout) :: description
         type(network_t), dimension(:), intent(in) :: networks
-        integer :: i
+        integer :: i,j 
+        character(256) :: buff
         do i = 1, size(networks)
-            description = [description, networks(i)%description]
+            ! description = [description, networks(i)%description]
+            ! call appendToString_tArray(description, networks(i)%description(j))
+            do j = 1, size(networks(i)%description)
+                buff = networks(i)%description(j)
+                call appendToStringArray(description, buff)
+            end do
         end do
     end subroutine
 
@@ -1115,6 +1121,7 @@ contains
         type(network_t), dimension(:), allocatable :: networks
         type(network_manager_t) :: res
         character(256), dimension(:), allocatable :: description
+        character(256) :: buff
         integer :: i
 
         allocate(networks(size(terminal_networks)))
@@ -1123,7 +1130,9 @@ contains
         end do
         
         allocate(description(0))
-        description = ["* network description message"]
+        buff = "* network description message"
+        call appendToStringArray(description, buff)
+        ! description = ["* network description message"]
         call addNetworksDescription(description, networks)
         call addAnalysis(description, this%final_time, this%dt, 100)
         call addSavedNodes(description, networks)
