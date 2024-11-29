@@ -132,13 +132,10 @@ def test_spice_opamp_saturation(tmp_path):
     makeCopy(tmp_path, EXCITATIONS_FOLDER+'spice_sine_250k_2.exc')
     makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
     makeCopy(tmp_path, MODELS_FOLDER + 'TL071.301')
+    setNgspice(tmp_path)
     fn = tmp_path._str + '/' + case + '.fdtd.json'
 
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
-    
-    #ngspice needs to read file 'spinit' to load code models needed by xspice
-    setSpiceScriptsFolder()
-    
     solver.run()
     assert solver.hasFinishedSuccessfully() == True
             

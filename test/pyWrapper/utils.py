@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 from os import environ as env
 
 # Use of absolute path to avoid conflicts when changing directory.
+EXE_FOLDER = os.getcwd() + '/build/bin/'
 SEMBA_EXE = os.getcwd() + '/build/bin/semba-fdtd'
 SEMBA_EXE_INTEL_LLVM_RELEASE = os.getcwd() + '/build-ubuntu-intelLLVM-release/bin/semba-fdtd'
 SEMBA_EXE_INTEL_LLVM_DEBUG   = os.getcwd() + '/build-ubuntu-intelLLVM-debug/bin/semba-fdtd'
@@ -15,7 +16,7 @@ CASE_FOLDER = TEST_DATA_FOLDER + 'cases/'
 MODELS_FOLDER = TEST_DATA_FOLDER + 'models/'
 EXCITATIONS_FOLDER = TEST_DATA_FOLDER + 'excitations/'
 OUTPUT_FOLDER = TEST_DATA_FOLDER + 'outputs/'
-SCRIPTS_FOLDER = TEST_DATA_FOLDER + 'scripts/'
+SPINIT_FOLDER = TEST_DATA_FOLDER + 'spinit/'
 
 def getCase(case):
     return json.load(open(CASE_FOLDER + case + '.fdtd.json'))
@@ -24,6 +25,8 @@ def makeCopy(temp_dir, file_path):
     file_name = file_path.split('/')[-1]
     temp_path = os.path.join(temp_dir, file_name)
     shutil.copy2(file_path, temp_path)
+
+
 
 def copyInputFiles(temp_dir, input, excitation, executable):
     makeCopy(temp_dir, input)
@@ -69,10 +72,25 @@ def readSpiceFile(spice_file):
 # SPICE_SCRIPTS is used by ngspice to look for the file
 def setSpiceScriptsFolder():
     
-    folders = [SCRIPTS_FOLDER, os.getcwd() + '/build/bin/', '/usr/share/ngspice/scripts']
+    folders = [EXE_FOLDER + '../../src_mtln/spinit/', SCRIPTS_FOLDER, os.getcwd() + '/build/bin/', '/usr/share/ngspice/scripts']
     for f in folders:
         if os.path.isfile(f+'spinit'):
             env["SPICE_SCRIPTS"] = str(f)
             return
     return
+
+def setNgspice(tmp_path):
+    makeCopy(tmp_path, SPINIT_FOLDER + 'spinit')
+    copyXSpiceModels(tmp_path)
+    #ngspice needs to read file 'spinit' to load code models needed by xspice
+    # setSpiceScriptsFolder()
+    env["SPICE_SCRIPTS"] = "./"
+
+def copyXSpiceModels(temp_dir):
+    makeCopy(temp_dir, SPINIT_FOLDER + 'analog.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + 'digital.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + 'spice2poly.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + 'table.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + 'xtradev.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + 'xtraevt.cm')
         
