@@ -143,6 +143,7 @@ Once the environment is loaded, follow the steps in the next section.
 
 2. **Generate the Project with CMake GUI**:
    - In **CMake GUI**, select the option to create a project for **Visual Studio 2019** from the CMake files.
+   - Set `-T fortran=ifx` to use intelLLVM compiler.
    - Specify the output folder where the `.sln` file for the project will be generated.
 
 3. **Open the Project in Visual Studio**:
