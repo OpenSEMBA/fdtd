@@ -27,10 +27,10 @@ target_link_libraries(fdtd_tests
 )
 
 
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-    add_custom_command(TARGET fdtd_tests POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${NGSPICE_DIR}ngspice.dll"      
-            $<TARGET_FILE_DIR:fdtd_tests>
-    )
-endif()
+# if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+#     add_custom_command(TARGET fdtd_tests POST_BUILD
+#         COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#             "${NGSPICE_DIR}ngspice.dll"      
+#             $<TARGET_FILE_DIR:fdtd_tests>
+#     )
+# endif()
