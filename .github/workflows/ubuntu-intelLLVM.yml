@@ -58,3 +58,7 @@ jobs:
       timeout-minutes: 60
       run: |
         python -m pytest test    
+
+    - uses: actions/checkout@v2
+    - name: Setup upterm session
+      uses: lhotari/action-upterm@v1
