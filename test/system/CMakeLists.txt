@@ -20,7 +20,7 @@ target_link_libraries(system_test_fortran
 
 add_library(system_tests "system_tests.cpp")
 
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND SEMBA_FDTD_ENABLE_MTLN)
     add_custom_command(TARGET system_tests POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${NGSPICE_DIR}ngspice.dll"      

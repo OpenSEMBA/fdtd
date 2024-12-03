@@ -340,6 +340,22 @@ Materials of this type must contain:
 }
 ```
 
+A single wire might be surrounded by a dielectric material. In that case, the radius and the relative permittivity of the material are needed. 
+
+**Example:**
+
+```json
+{
+    "name": "WireWithDielectric",
+    "id": 2,
+    "type": "wire",
+    "radius": 0.0001,
+    "resistancePerMeter": 22.9e-3,
+    "dielectric" : {"radius": 0.001, "relativePermittivity" : 3}
+}
+```
+If the `dielectric` field is present but any of `radius` or `relativePermittivity` is absent, the parsing of the dielectric will fail.
+
 #### `multiwire`
 
 A `multiwire`, models $N+1$ electrical wires inside a bundled. The voltages and currents on these wires are solved by a multiconductor transmission lines (MTLN) solver described in:
@@ -438,10 +454,13 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
 
 #### `connector`
 
-The `connector` assigns properties to the initial or last segment of a `wire` or a $N+1$ conductors `multiwire` as explained in the [material associations](#materialassociations) section. The following entries can be present:
+The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire` or a `multiwire`. 
+This `wire` can be either a single wire or the outermost conductor of a `cable` bundle. The `conector`  can have the following properties:
 
-+ `[resistances]`, an array of $N$ real numbers which will be converted to resistances per unit length and will replace the `resistancePerMeter` of that segment of the `multiwire`.
++ `[resistances]`, an array of $N$ real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment of the multiwire
 + `[transferImpedancePerMeter]`, described in the same way as explained in the [multiwire](#multiwire) section. Only valid in a `connector` associated with `multiwire`.
+
+
 
 **Example:**
 
@@ -450,7 +469,7 @@ The `connector` assigns properties to the initial or last segment of a `wire` or
     "name": "SegmentConnector1",
     "id": 204,
     "type": "connector",
-    "resistances": [100e-3],
+    "resistance": 100e-3,
     "transferImpedancePerMeter" : {
         "resistiveTerm" : 3.33,
         "inductiveTerm" : 2.6e-9,
@@ -634,6 +653,7 @@ If not `magnitudeFile` is specified and only one `source` is defined, the `magni
 
 Probes of type `movie` record a vector field in a volume region indicated by `elementIds`. `[field]` can be `electric`, `magnetic`, or `currentDensity`; defaults to `electric`.
 `currentDensity` will store only the surface density currents on `pec` or lossy surfaces.
+For movies in time domain, the `initialTime`, `finalTime`, and `samplingPeriod` must be specified by the user; there is no default value.  
 The stored values can be selected using the `[component]` entry, which stores one of the following labels `x`, `y`, `z`, or `magnitude`; if no component is specified, defaults to `magnitude`.
 
 An example follows:
@@ -735,5 +755,20 @@ A `generator` source must be located on a single `node` whose `coordinateId` is 
     "field": "current",
     "magnitudeFile": "gauss.exc", 
     "elementIds": [1]
+}
+```
+
+In case the generator is located at the junction (connection point) of two of more lines, the  `node` shared by the lines will share the same  `coordinateId`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elemId` of the `polyline` the source is connected to. 
+
+**Example:**
+
+```json
+{
+    "name": "voltage_source",
+    "type": "generator",
+    "field": "voltage",
+    "magnitudeFile": "gauss.exc", 
+    "elementIds": [1], 
+    "attachedToLineId" : 2
 }
 ```

@@ -3,8 +3,7 @@ name: automatic-release-ubuntu-gnu
 on:
   push:
     branches:
-      - main
-     
+      - main 
 
 jobs:
   

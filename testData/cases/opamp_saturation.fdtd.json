@@ -22,16 +22,23 @@
 			"id": 1,
 			"name": "coaxial_single_wire",
 			"type": "multiwire",
-			"resistancePerMeter" : [0.0],
-			"inductancePerMeter":  [[9.656499462314852e-07]],
-			"capacitancePerMeter": [[1.151684214047674e-11]]
+			"inductancePerMeter": [
+                [9.656499462314852e-07,0.0],
+                [0.0, 9.656499462314852e-07]
+            ],
+			"capacitancePerMeter": [
+                [1.151684214047674e-11, 0.0],
+                [0.0, 1.151684214047674e-11]
+            ]
+                
 		},
 		{
 			"id": 2,
 			"name": "terminal_left",
 			"type": "terminal",
 			"terminations" : [
-				{"type": "series", "resistance": 50, "capacitance": 1e22, "inductance" : 0.0 }
+				{"type": "series", "resistance": 50, "capacitance": 1e22, "inductance" : 0.0 },
+				{"type": "open"}
 			]
 		},
 		{
@@ -39,41 +46,37 @@
 			"name": "terminal_right",
 			"type": "terminal",
 			"terminations" : [
-				{"type": "circuit", "name": "bzx85c3v9", "file" : "BZX85C3V9.model"}
+				{"type": "circuit",  "file" : "TL071.301", "name": "TL071"},
+				{"type": "short"}
 			]
 		}
 	],
 	"mesh": {
 		"grid": {
-			"numberOfCells": [20, 20, 20],
-			"steps": {"x": [0.1], "y": [0.1], "z": [0.1]}
+			"numberOfCells": [30, 30, 30],
+			"steps": {"x": [0.08], "y": [0.08], "z": [0.08]}
 		},
 		"coordinates": [
-			{"id": 1 , "relativePosition": [ 10, 10, 8]},
-			{"id": 2 , "relativePosition": [ 10, 10, 12]}
+			{"id": 1 , "relativePosition": [ 10, 10, 2]},
+			{"id": 2 , "relativePosition": [ 10, 10, 7]},
+			{"id": 3 , "relativePosition": [ 10, 10, 2]}
 			
 		],
 		"elements": [
 			{"id": 1,  "type": "polyline", "coordinateIds": [ 1, 2]},
-			{"id": 2, "type": "node", "coordinateIds": [1]},
-			{"id": 3, "type": "node", "coordinateIds": [2]}
+			{"id": 2,  "type": "polyline", "coordinateIds": [ 3, 2]},
+			{"id": 3, "type": "node", "coordinateIds": [1]},
+			{"id": 4, "type": "node", "coordinateIds": [2]}
 		]
 	
 	},
 	
 	"probes": [
 		{
-			"name": "start_voltage",
+			"name": "opamp_voltage",
 			"type": "wire",
 			"field": "voltage",
-			"elementIds": [2],
-            "domain": { "type": "time" }
-		},
-		{
-			"name": "end_voltage",
-			"type": "wire",
-			"field": "voltage",
-			"elementIds": [3],
+			"elementIds": [4],
             "domain": { "type": "time" }
 		}
 	],
@@ -84,16 +87,16 @@
 			"name": "external_source",
 			"type": "generator",
 			"field": "voltage",
-			"magnitudeFile": "spice_sine_500k_3.exc",
-			"elementIds": [2]
+			"magnitudeFile": "spice_sine_250k_2.exc",
+			"elementIds": [3]
 		}
 	],
 
 	"materialAssociations": [
 		{
-			"name": "wire",
+			"name": "wire1",
 			"type": "cable",
-			"elementIds": [ 1 ],
+			"elementIds": [ 1, 2 ],
 			"materialId": 1,
 			"initialTerminalId": 2,
 			"endTerminalId": 3
