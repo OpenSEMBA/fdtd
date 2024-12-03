@@ -59,9 +59,4 @@ jobs:
       run: |
         python -m pytest test    
 
-    - name: Archive Artifact
-      uses: actions/upload-artifact@v4
-      with:
-        name: antenna-output
-        path: /tmp/pytest-of-runner/pytest-0/test_dielectric_antenna0/coated_antenna.fdtd_mid_point_Wz_11_11_11_s2.dat
 
