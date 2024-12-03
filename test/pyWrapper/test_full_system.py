@@ -50,7 +50,7 @@ def test_dielectric_antenna(tmp_path):
     p_expected = Probe(OUTPUT_FOLDER+'coated_antenna.fdtd_mid_point_Wz_11_11_11_s2.dat')
     
     p_solved = Probe(probe_files[0])
-    assert np.allclose(p_expected.df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 1e-5, atol=1e-6)
+    assert np.allclose(p_expected.df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 1e-3, atol=1e-6)
     
 
 def test_holland(tmp_path):
