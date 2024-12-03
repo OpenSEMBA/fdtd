@@ -59,6 +59,9 @@ jobs:
       run: |
         python -m pytest test    
 
-    - uses: actions/checkout@v2
-    - name: Setup upterm session
-      uses: lhotari/action-upterm@v1
+    - name: Archive Artifact
+      uses: actions/upload-artifact@v2
+      with:
+        name: antenna-output
+        path: /tmp/pytest-of-runner/pytest-0/test_dielectric_antenna0/coated_antenna.fdtd_mid_point_Wz_11_11_11_s2.dat
+
