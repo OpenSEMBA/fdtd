@@ -1,5 +1,8 @@
 message(STATUS "Creating build system for mtlnsolver")
 
+project(mtln)
+enable_language(C CXX Fortran)
+
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
 add_library(ngspice_interface

@@ -1137,7 +1137,6 @@ contains
         call addAnalysis(description, this%final_time, this%dt, 100)
         call addSavedNodes(description, networks)
         call endDescription(description)        
-
         res = network_managerCtor(networks, description, this%final_time, this%dt)
 
     end function

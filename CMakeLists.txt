@@ -1,7 +1,7 @@
 cmake_minimum_required (VERSION 3.15)
 
 project(semba-fdtd Fortran)
-enable_language (CXX C Fortran)
+enable_language (Fortran)
 
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
