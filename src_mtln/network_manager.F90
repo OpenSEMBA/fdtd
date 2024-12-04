@@ -89,7 +89,7 @@ contains
         res%networks = networks
         call res%circuit%init(copy_node_names(networks), copy_sources(networks))
         res%circuit%dt = dt
-        call res%circuit%readInput(description)
+        call res%circuit%readInput(description, .true.)
         call res%circuit%setModStopTimes(dt)
 
     end function

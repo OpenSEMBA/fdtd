@@ -88,6 +88,7 @@ contains
 
         call start()
         if (present(netlist)) then
+            write(*,*) 'load netlist'
             call this%loadNetlist(netlist)
         end if
 
