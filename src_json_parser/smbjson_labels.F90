@@ -26,6 +26,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TYPE_PEC = "pec"
    character (len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
    character (len=*), parameter :: J_MAT_TYPE_SIMPLE = "simple"
+   character (len=*), parameter :: J_MAT_TYPE_MULTILAYERED_SURFACE = "multilayeredSurface"
    character (len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
    character (len=*), parameter :: J_MAT_TYPE_MULTIWIRE = "multiwire"
    character (len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"

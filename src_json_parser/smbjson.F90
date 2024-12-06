@@ -37,6 +37,7 @@ module smbjson
       procedure :: readMediaMatrix
       procedure :: readPECRegions
       procedure :: readPMCRegions
+      procedure :: readLossyThinSurfaces
       procedure :: readBoundary
       procedure :: readPlanewaves
       procedure :: readNodalSources
@@ -130,6 +131,7 @@ contains
       ! Materials
       res%pecRegs = this%readPECRegions()
       res%pmcRegs = this%readPMCRegions()
+      res%lossyThinSurfs = this%readLossyThinSurfaces()
       
       ! Sources
       res%plnSrc = this%readPlanewaves()
@@ -144,11 +146,6 @@ contains
       ! Thin elements
       res%tWires = this%readThinWires()
       res%mtln = this%readMTLN(res%despl)
-
-      !! Cleanup
-      !call this%core%destroy()
-      !call this%jsonfile%destroy()
-      !nullify(this%root)
 
    end function
 
@@ -392,6 +389,52 @@ contains
       res%nLins_max = size(res%Lins)
       res%nSurfs_max = size(res%Surfs)
       res%nVols_max = size(res%Vols)
+   end function
+
+   function readLossyThinSurfaces(this) result (res)
+      class(parser_t), intent(in) :: this
+      type(LossyThinSurfaces) :: res
+      type(json_value), pointer :: matAss
+      type(json_value_ptr), dimension(:), allocatable :: surfaces
+      type(json_value_ptr) :: mat
+      integer :: nLossySurfaces
+      logical :: found
+      integer :: i
+      integer :: matId
+      
+      call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, matAss, found)
+      if (.not. found) then
+         res = emptyLossyThinSurfaces()
+         return
+      end if
+
+      surfaces = this%jsonValueFilterByKeyValue(matAss, J_TYPE, J_MAT_ASS_TYPE_SURFACE)
+      nLossySurfaces = 0
+      do i = 1, size(surfaces)
+         matId = this%getIntAt(surfaces(i)%p, J_MATERIAL_ID, found)
+         if (.not. found) then
+            write(error_unit, *) "ERROR: material id not found in surface mat. association."
+         end if
+
+         mat = this%matTable%getId(matId)
+         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTILAYERED_SURFACE) then
+            nLossySurfaces = nLossySurfaces + 1
+         end if
+      end do
+
+      if (nLossySurfaces == 0) then
+         res = emptyLossyThinSurfaces()
+         return
+      end if
+      
+   contains
+      function emptyLossyThinSurfaces() result (res)
+         type(LossyThinSurfaces) :: res
+         allocate(res%cs(0))
+         res%length = 0
+         res%length_max = 0
+         res%nC_max = 0
+      end function
    end function
 
    function readPlanewaves(this) result (res)

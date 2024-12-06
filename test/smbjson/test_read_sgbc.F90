@@ -60,6 +60,7 @@ contains
       expected%pecRegs%nLins_max = 0
       allocate(expected%pecRegs%Vols(0))
       allocate(expected%pecRegs%Surfs(1))
+      
       !!! 2x2 PEC square
       expected%pecRegs%Surfs(1)%Or = +iEz
       expected%pecRegs%Surfs(1)%Xi = 3
@@ -88,6 +89,11 @@ contains
       expected%lossyThinSurfs%cs(1)%c(1)%Zi = 3
       expected%lossyThinSurfs%cs(1)%c(1)%Ze = 4
       expected%lossyThinSurfs%cs(1)%numcapas = 2
+      allocate(expected%lossyThinSurfs%cs(1)%thk(2))
+      allocate(expected%lossyThinSurfs%cs(1)%sigma(2))
+      allocate(expected%lossyThinSurfs%cs(1)%eps(2))
+      allocate(expected%lossyThinSurfs%cs(1)%mu(2))
+      allocate(expected%lossyThinSurfs%cs(1)%sigmam(2))
       expected%lossyThinSurfs%cs(1)%thk    = [              1e-3,               5e-3]
       expected%lossyThinSurfs%cs(1)%sigma  = [              2e-4,                0.0]
       expected%lossyThinSurfs%cs(1)%eps    = [1.3*EPSILON_VACUUM, 1.3*EPSILON_VACUUM]
@@ -106,6 +112,11 @@ contains
       expected%lossyThinSurfs%cs(2)%c(1)%Zi = 3
       expected%lossyThinSurfs%cs(2)%c(1)%Ze = 4
       expected%lossyThinSurfs%cs(2)%numcapas = 3
+      allocate(expected%lossyThinSurfs%cs(2)%thk(3))
+      allocate(expected%lossyThinSurfs%cs(2)%sigma(3))
+      allocate(expected%lossyThinSurfs%cs(2)%eps(3))
+      allocate(expected%lossyThinSurfs%cs(2)%mu(3))
+      allocate(expected%lossyThinSurfs%cs(2)%sigmam(3))
       expected%lossyThinSurfs%cs(2)%thk    = [          1e-3,           5e-3,           1e-3]
       expected%lossyThinSurfs%cs(2)%sigma  = [          2e-4,            0.0,            0.0]
       expected%lossyThinSurfs%cs(2)%eps    = [EPSILON_VACUUM, EPSILON_VACUUM, EPSILON_VACUUM]
