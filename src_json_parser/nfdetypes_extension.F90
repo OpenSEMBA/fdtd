@@ -7,6 +7,8 @@ module NFDETypes_extension
    public
 
    interface operator(==)
+      module procedure Parseador_eq
+
       module procedure NFDEGeneral_eq
       module procedure desplazamiento_eq
 
@@ -106,7 +108,13 @@ contains
       allocate(pD%pmcRegs%vols(0))
 
       allocate(pD%DielRegs)
+      allocate(pD%DielRegs%lins(0))
+      allocate(pD%DielRegs%surfs(0))
+      allocate(pD%DielRegs%vols(0))
+      
       allocate(pD%LossyThinSurfs)
+      allocate(pD%LossyThinSurfs%cs(0))
+
       allocate(pD%frqDepMats)
       allocate(pD%aniMats)
       !

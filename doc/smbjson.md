@@ -289,22 +289,9 @@ A `multilayeredSurface` must contain the entry `<layers>` which is an array indi
     "id": 2,
     "layers": [
         {"thickness": 1e-3, "relativePermittivity": 1.3, "electricConductivity": 2e-4},
-        {"thickness": 5e-3, "relativePermittivity": 1.3}
+        {"thickness": 5e-3, "relativePermittivity": 1.3},
         {"thickness": 1e-3, "relativePermittivity": 1.3, "electricConductivity": 2e-4}
     ]
-}
-```
-
-#### `frequencyDependentSurface`
-
-The entry `<file>` is the path to a file containing the poles and residues which are used to model the surface impedance of the material.
-
-```json
-{
-    "name": "carbon_fiber_model",
-    "type": "frequencyDependentSurface",
-    "id": 3,
-    "file": "cfc.dat"
 }
 ```
 
