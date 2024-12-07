@@ -61,6 +61,7 @@ module smbjson
       procedure :: existsAt
       procedure :: getCellRegionsWithMaterialType
       procedure :: getDomain
+      procedure :: buildMaterialAssociation
       procedure :: jsonValueFilterByKeyValue
       procedure :: jsonValueFilterByKeyValues
       procedure :: getSingleVolumeInElementsIds
@@ -79,6 +80,12 @@ module smbjson
       real :: multiplier
    end type
 
+   type, private :: materialAssociation_t
+      character(:), allocatable :: name
+      integer :: materialId
+      integer, dimension(:), allocatable :: elementIds
+      character(:), allocatable :: matAssType
+   end type
 
    type, private :: domain_t
       real :: tstart, tstop, tstep
@@ -89,6 +96,55 @@ module smbjson
       logical :: isLogarithmicFrequencySpacing
    end type
 contains
+   function buildMaterialAssociation(this, matAss) result(res)
+      class(parser_t) :: this
+      type(json_value_ptr), intent(in) :: matAss
+      type(materialAssociation_t) :: res
+      character (len=*), parameter :: errorMsgInit = "ERROR reading material association: "
+      logical :: found
+      
+      ! Fills material association.
+      res%materialId = this%getIntAt(matAss%p, J_MATERIAL_ID, found)
+      if (.not. found) call showLabelNotFoundError(J_MATERIAL_ID)
+      res%elementIds = this%getIntsAt(matAss%p, J_ELEMENTIDS, found)
+      if (.not. found) call showLabelNotFoundError(J_ELEMENTIDS)
+      res%matAssType = this%getStrAt(matAss%p, J_TYPE, found)
+      if (.not. found) call showLabelNotFoundError(J_TYPE)
+      res%name = this%getStrAt(matAss%p, J_NAME, found)
+      if (.not. found) then
+         res%name = ""
+      end if
+
+      ! Checks validity of associations.
+      if (this%matTable%checkId(res%materialId) /= 0) then
+         write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " not found."
+      endif
+      
+      if (size(res%elementIds) == 0) then
+         write(error_unit, *) errorMsgInit, J_ELEMENTIDS, "must not be empty."
+      end if
+      block
+         integer :: i
+         do i = 1, size(res%elementIds)
+            if (this%mesh%checkElementId(res%elementIds(i)) /= 0) then
+               write(error_unit, *) errorMsgInit, "element with id ", res%elementIds(i), " not found."
+            end if
+         end do
+      end block
+
+      if (res%matAssType /= J_MAT_ASS_TYPE_BULK .or. &
+          res%matAssType /= J_MAT_ASS_TYPE_SURFACE .or. &
+          res%matAssType /= J_MAT_ASS_TYPE_CABLE) then
+            write(error_unit, *) errorMsgInit, "invalid type."
+      endif
+      
+   contains 
+      subroutine showLabelNotFoundError(label)
+         character (len=*), intent(in) :: label
+         write(error_unit, *) errorMsgInit, label, " not found."
+      end subroutine
+   end function
+
    function parser_ctor(filename) result(res)
       type(parser_t) :: res
       character(len=*), intent(in) :: filename
@@ -395,46 +451,45 @@ contains
       class(parser_t), intent(in) :: this
       type(LossyThinSurfaces) :: res
       type(json_value), pointer :: matAss
-      type(json_value_ptr), dimension(:), allocatable :: surfaces
+      type(json_value_ptr), dimension(:), allocatable :: surfsMatAssPtr
       type(json_value_ptr) :: mat
+      type(json_value), pointer :: jmrs, jmr
+      type(json_value_ptr) :: jm
+      integer, dimension(:), allocatable :: eIds
+      type(cell_region_t) :: cR
       integer :: nLossySurfaces
       logical :: found
       integer :: i
-      integer :: matId
+      type(materialAssociation_t) :: surfMatAss
       
-      call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, matAss, found)
-      if (.not. found) then
-         res = emptyLossyThinSurfaces()
-         return
-      end if
-
-      surfaces = this%jsonValueFilterByKeyValue(matAss, J_TYPE, J_MAT_ASS_TYPE_SURFACE)
       nLossySurfaces = 0
-      do i = 1, size(surfaces)
-         matId = this%getIntAt(surfaces(i)%p, J_MATERIAL_ID, found)
-         if (.not. found) then
-            write(error_unit, *) "ERROR: material id not found in surface mat. association."
-         end if
-
-         mat = this%matTable%getId(matId)
+      surfsMatAssPtr = this%jsonValueFilterByKeyValue(matAss, J_TYPE, J_MAT_ASS_TYPE_SURFACE)
+      do i = 1, size(surfsMatAssPtr)
+         surfMatAss = this%buildMaterialAssociation(surfsMatAssPtr(i))
+         mat = this%matTable%getId(surfMatAss%materialId)
          if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTILAYERED_SURFACE) then
-            nLossySurfaces = nLossySurfaces + 1
+            nLossySurfaces = nLossySurfaces + size(surfMatAss%elementIds)
          end if
       end do
 
       if (nLossySurfaces == 0) then
-         res = emptyLossyThinSurfaces()
-         return
-      end if
-      
-   contains
-      function emptyLossyThinSurfaces() result (res)
-         type(LossyThinSurfaces) :: res
          allocate(res%cs(0))
          res%length = 0
          res%length_max = 0
          res%nC_max = 0
-      end function
+         return
+      end if
+
+      allocate(res%cs(nLossySurfaces))
+      res%length = nLossySurfaces
+      res%length_max = nLossySurfaces
+      res%nC_max = nLossySurfaces
+      do i = 1, size(surfsMatAssPtr)
+         surfMatAss = this%buildMaterialAssociation(surfsMatAssPtr(i))
+         ! WIP
+
+      end do
+
    end function
 
    function readPlanewaves(this) result (res)

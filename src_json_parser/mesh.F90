@@ -37,7 +37,8 @@ module mesh_mod
    contains
       procedure :: addCoordinate => mesh_addCoordinate
       procedure :: getCoordinate => mesh_getCoordinate
-      procedure :: checkId => mesh_checkId
+      procedure :: checkCoordinateId => mesh_checkCoordinateId
+      procedure :: checkElementId => mesh_checkElementId
 
       procedure :: addElement => mesh_addElement
       procedure :: addCellRegion  => mesh_addCellRegion
@@ -86,12 +87,20 @@ contains
 
    end subroutine
 
-   subroutine mesh_checkId(this, id, stat)
+   function mesh_checkCoordinateId(this, id) result(stat)
       class(mesh_t) :: this
       integer, intent(in) :: id
-      integer, intent(inout) :: stat
+      integer :: stat
       call this%coordinates%check_key(key(id), stat)
-   end subroutine
+   end function
+
+   
+   function mesh_checkElementId(this, id) result(stat)
+      class(mesh_t) :: this
+      integer, intent(in) :: id
+      integer :: stat
+      call this%coordinates%check_key(key(id), stat)
+   end function
 
    subroutine mesh_addCoordinate(this, id, coordinate)
       class(mesh_t) :: this
