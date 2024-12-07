@@ -22,6 +22,10 @@ module smbjson_labels_mod
 
    ! -- materials
    character (len=*), parameter :: J_MATERIALS = "materials"
+   character (len=*), parameter :: J_MAT_REL_PERMITTIVITY = "relativePermittivity"
+   character (len=*), parameter :: J_MAT_REL_PERMEABILITY = "relativePermeability"
+   character (len=*), parameter :: J_MAT_ELECTRIC_CONDUCTIVITY = "electricConductivity"
+   character (len=*), parameter :: J_MAT_MAGNETIC_CONDUCTIVITY = "magneticConductivity"
    
    character (len=*), parameter :: J_MAT_TYPE_PEC = "pec"
    character (len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
@@ -59,6 +63,9 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_MULTIWIRE_INDUCTANCE = "inductancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_RESISTANCE = "resistancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_CONDUCTANCE = "conductancePerMeter"
+
+   character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_LAYERS = "layers"
+   character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_THICKNESS = "thickness"
 
    ! -- materialAssociations
    character (len=*), parameter :: J_MATERIAL_ASSOCIATIONS = "materialAssociations"

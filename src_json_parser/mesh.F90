@@ -99,7 +99,7 @@ contains
       class(mesh_t) :: this
       integer, intent(in) :: id
       integer :: stat
-      call this%coordinates%check_key(key(id), stat)
+      call this%elements%check_key(key(id), stat)
    end function
 
    subroutine mesh_addCoordinate(this, id, coordinate)
