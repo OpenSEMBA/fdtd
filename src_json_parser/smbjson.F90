@@ -26,45 +26,46 @@ module smbjson
       type(json_core), pointer :: core => null()
       type(json_value), pointer :: root => null()
       type(mesh_t) :: mesh
-      type(IdChildTable_t) :: matTable
+      type(IdChildTable_t) :: matTable, elementTable
 
    contains
       procedure :: readProblemDescription
+      procedure :: readMesh
 
       ! private
-      procedure :: readGeneral
-      procedure :: readGrid
-      procedure :: readMediaMatrix
-      procedure :: readPECRegions
-      procedure :: readPMCRegions
-      procedure :: readLossyThinSurfaces
-      procedure :: readBoundary
-      procedure :: readPlanewaves
-      procedure :: readNodalSources
-      procedure :: readProbes
-      procedure :: readMoreProbes
-      procedure :: readBlockProbes
-      procedure :: readVolumicProbes
-      procedure :: readThinWires
+      procedure, private :: readGeneral
+      procedure, private :: readGrid
+      procedure, private :: readMediaMatrix
+      procedure, private :: readPECRegions
+      procedure, private :: readPMCRegions
+      procedure, private :: readLossyThinSurfaces
+      procedure, private :: readBoundary
+      procedure, private :: readPlanewaves
+      procedure, private :: readNodalSources
+      procedure, private :: readProbes
+      procedure, private :: readMoreProbes
+      procedure, private :: readBlockProbes
+      procedure, private :: readVolumicProbes
+      procedure, private :: readThinWires
       !
-      procedure :: readMesh
       !
-      procedure :: readMTLN
+      procedure, private :: readMTLN
       !
-      procedure :: getLogicalAt
-      procedure :: getIntAt
-      procedure :: getIntsAt
-      procedure :: getRealAt
-      procedure :: getRealsAt
-      procedure :: getMatrixAt
-      procedure :: getStrAt
-      procedure :: existsAt
-      procedure :: getCellRegionsWithMaterialType
-      procedure :: getDomain
-      procedure :: buildMaterialAssociation
-      procedure :: jsonValueFilterByKeyValue
-      procedure :: jsonValueFilterByKeyValues
-      procedure :: getSingleVolumeInElementsIds
+      procedure, private :: getLogicalAt
+      procedure, private :: getIntAt
+      procedure, private :: getIntsAt
+      procedure, private :: getRealAt
+      procedure, private :: getRealsAt
+      procedure, private :: getMatrixAt
+      procedure, private :: getStrAt
+      procedure, private :: existsAt
+      procedure, private :: getCellRegionsWithMaterialType
+      procedure, private :: getDomain
+      procedure, private :: buildMaterialAssociation
+      procedure, private :: buildTagName
+      procedure, private :: jsonValueFilterByKeyValue
+      procedure, private :: jsonValueFilterByKeyValues
+      procedure, private :: getSingleVolumeInElementsIds
    end type
    interface parser_t
       module procedure parser_ctor
@@ -126,6 +127,7 @@ contains
 
       this%mesh = this%readMesh()
       this%matTable = IdChildTable_t(this%core, this%root, J_MATERIALS)
+      this%elementTable = IdChildTable_t(this%core, this%root, J_MESH//'.'//J_ELEMENTS)
       
       call initializeProblemDescription(res)
       
@@ -403,7 +405,7 @@ contains
       type(LossyThinSurfaces) :: res
       type(json_value_ptr), dimension(:), allocatable :: surfsMatAssPtrs
       type(json_value), pointer :: matAss
-      type(json_value_ptr), pointer :: mat
+      type(json_value_ptr) :: mat
       integer :: nLossySurfaces
       logical :: found
       integer :: i, j
@@ -421,9 +423,8 @@ contains
       do i = 1, size(surfsMatAssPtrs)
          surfMatAss = this%buildMaterialAssociation(surfsMatAssPtrs(i))
          mat = this%matTable%getId(surfMatAss%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTILAYERED_SURFACE) then
-            nLossySurfaces = nLossySurfaces + size(surfMatAss%elementIds)
-         end if
+         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_MULTILAYERED_SURFACE) cycle
+         nLossySurfaces = nLossySurfaces + size(surfMatAss%elementIds)
       end do
 
       ! Fills
@@ -439,32 +440,41 @@ contains
       do i = 1, size(surfsMatAssPtrs)
          surfMatAss = this%buildMaterialAssociation(surfsMatAssPtrs(i))
          mat = this%matTable%getId(surfMatAss%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTILAYERED_SURFACE) then
-            do j = 1, size(surfMatAss%elementIds)
-               res%cs(i+j) = readLossyThinSurface(mat%p, surfMatAss%elementIds(j))
-            end do
-         end if
+         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_MULTILAYERED_SURFACE) cycle
+         do j = 1, size(surfMatAss%elementIds)
+            res%cs(i+j-1) = readLossyThinSurface(surfMatAss%materialId, surfMatAss%elementIds(j))
+         end do
       end do
       
    contains
 
-      function readLossyThinSurface(mat, eId) result(res)
-         type(json_value), pointer, intent(in) :: mat
+      function readLossyThinSurface(matId, eId) result(res)
+         integer, intent(in) :: matId
          integer, intent(in) :: eId
          type(LossyThinSurface) :: res
          logical :: found
          character (len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
-                  
+         
          ! Reads coordinates.
-         !!!! WIP
+         block 
+            type(cell_region_t), dimension(:), allocatable :: cRs
+            cRs = this%mesh%getCellRegions([eId])
+            if (size(cRs) /= 1) then
+               write(error_unit, *) errorMsgInit, "problem finding cell regions in element ", eId
+            end if
+            res%nc = 1
+            res%c = cellIntervalsToCoords(cRs(1)%intervals, this%buildTagName(matId, eId))
+         end block
          
          ! Reads layers.
          block
             integer :: i
+            type(json_value_ptr) :: mat
             type(json_value), pointer :: layer
             type(json_value), pointer :: layers
 
-            call this%core%get(mat, J_MAT_MULTILAYERED_SURF_LAYERS, layers, found)
+            mat = this%matTable%getId(surfMatAss%materialId)
+            call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers, found)
             if (.not. found) then
                write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_LAYERS, " not found."
             end if
@@ -1583,23 +1593,53 @@ contains
          end do
       end block
 
-      if (res%matAssType /= J_MAT_ASS_TYPE_BULK .or. &
-          res%matAssType /= J_MAT_ASS_TYPE_SURFACE .or. &
+      if (res%matAssType /= J_MAT_ASS_TYPE_BULK .and. &
+          res%matAssType /= J_MAT_ASS_TYPE_SURFACE .and. &
           res%matAssType /= J_MAT_ASS_TYPE_CABLE) then
             write(error_unit, *) errorMsgInit, "invalid type."
       endif
       ! This function does not work with material associatiosn for cables. 
       ! DO NOT use it to read that.
-      if (res%matAssType /= J_MAT_ASS_TYPE_CABLE) then
+      if (res%matAssType == J_MAT_ASS_TYPE_CABLE) then
          write(error_unit, *) errorMsgInit, "invalid type."
       endif
-   
       
    contains 
       subroutine showLabelNotFoundError(label)
          character (len=*), intent(in) :: label
          write(error_unit, *) errorMsgInit, label, " not found."
       end subroutine
+   end function
+
+   function buildTagName(this, matId, elementId) result(res)
+      class(parser_t) :: this
+      integer, intent(in) :: matId, elementId
+      character(len=BUFSIZE) :: res
+      character(len=BUFSIZE) :: matName, elemName
+      logical :: found
+      
+      block
+         type(json_value_ptr) :: mat
+         mat = this%matTable%getId(matId)
+         matName = this%getStrAt(mat%p, J_NAME, found)
+         if (.not. found) then
+            write(matName, *) 'material'
+            write(matName, '(a)') matId
+         end if
+      end block
+      
+      block
+         type(json_value_ptr) :: elem
+         elem = this%elementTable%getId(elementId)
+         elemName = this%getStrAt(elem%p, J_NAME, found)
+         if (.not. found) then
+            write(elemName, *) 'element'
+            write(elemName, '(a)') elementId
+         end if
+      end block
+      
+      res = trim(matName) // '@' // trim(elemName)
+
    end function
 
    function readMTLN(this, grid) result (mtln_res)
