@@ -69,7 +69,8 @@ contains
       expected%pecRegs%Surfs(1)%Ye = 4
       expected%pecRegs%Surfs(1)%Zi = 3
       expected%pecRegs%Surfs(1)%Ze = 3
-      expected%pecRegs%Surfs(1)%tag = 'pec-layer'
+      expected%pecRegs%Surfs(1)%tag = ''
+      ! expected%pecRegs%Surfs(1)%tag = 'pec-layer@layer1'
 
       !! Composites
       allocate(expected%lossyThinSurfs%cs(2))
@@ -80,7 +81,7 @@ contains
       !!! 2-layer composite
       allocate(expected%lossyThinSurfs%cs(1)%c(1))
       expected%lossyThinSurfs%cs(1)%nc = 1
-      expected%lossyThinSurfs%cs(1)%c(1)%tag = '2-layers-composite'
+      expected%lossyThinSurfs%cs(1)%c(1)%tag = '2-layers-composite@layer2'
       expected%lossyThinSurfs%cs(1)%c(1)%Or = +iEx
       expected%lossyThinSurfs%cs(1)%c(1)%Xi = 3
       expected%lossyThinSurfs%cs(1)%c(1)%Xe = 4
@@ -103,7 +104,7 @@ contains
       !!! 3-layer composite
       allocate(expected%lossyThinSurfs%cs(2)%c(1))
       expected%lossyThinSurfs%cs(2)%nc = 1
-      expected%lossyThinSurfs%cs(2)%c(1)%tag = '3-layers-composite'
+      expected%lossyThinSurfs%cs(2)%c(1)%tag = '3-layers-composite@layer3'
       expected%lossyThinSurfs%cs(2)%c(1)%Or = +iEy
       expected%lossyThinSurfs%cs(2)%c(1)%Xi = 3
       expected%lossyThinSurfs%cs(2)%c(1)%Xe = 3

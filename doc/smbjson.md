@@ -51,7 +51,7 @@ The following entries are shared by several FDTD-JSON objects and have a common 
 
 + `type` followed by a string, indicates the type of JSON object that. Some examples of types are `planewave` for `sources` objects, and `polyline` for `elements`.
 + `id` is a unique integer identifier for objects that belong to a list and which can be referenced by other objects. For instance, an element in the `elements` list must contain a `id` which can be referenced by a source in `sources` through its list of `elementIds`.
-+ `[name]` is an optional entry which is used to make the FDTD-JSON input human-readable, helping to identify inputs and outputs. The following characters are reserved and can't be used in a `name`: `@`.
++ `[name]` is an optional entry which is used to make the FDTD-JSON input human-readable, helping to identify inputs and outputs. Leading and trailing blank spaces are removed. Blank spaces are substituted by underscroes. The following characters are reserved and can't be used in a `name`: `@`.
 
 ### `<general>`
 

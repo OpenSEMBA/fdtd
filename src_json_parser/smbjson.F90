@@ -17,7 +17,9 @@ module smbjson
 
    implicit none
 
-   integer, private, parameter  ::  MAX_LINE = 256
+   integer, private, parameter  :: MAX_LINE = BUFSIZE
+   character (len=*), parameter :: TAG_MATERIAL = 'material'
+   character (len=*), parameter :: TAG_LAYER = 'layer'
 
    type, public :: parser_t
       private
@@ -408,7 +410,7 @@ contains
       type(json_value_ptr) :: mat
       integer :: nLossySurfaces
       logical :: found
-      integer :: i, j
+      integer :: i, j, k
       type(materialAssociation_t) :: surfMatAss
       
       call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, matAss, found)
@@ -437,12 +439,14 @@ contains
       res%length = nLossySurfaces
       res%length_max = nLossySurfaces
       res%nC_max = nLossySurfaces
+      k = 1
       do i = 1, size(surfsMatAssPtrs)
          surfMatAss = this%buildMaterialAssociation(surfsMatAssPtrs(i))
          mat = this%matTable%getId(surfMatAss%materialId)
          if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_MULTILAYERED_SURFACE) cycle
          do j = 1, size(surfMatAss%elementIds)
-            res%cs(i+j-1) = readLossyThinSurface(surfMatAss%materialId, surfMatAss%elementIds(j))
+            res%cs(k) = readLossyThinSurface(surfMatAss%materialId, surfMatAss%elementIds(j))
+            k = k + 1
          end do
       end do
       
@@ -463,7 +467,7 @@ contains
                write(error_unit, *) errorMsgInit, "problem finding cell regions in element ", eId
             end if
             res%nc = 1
-            res%c = cellIntervalsToCoords(cRs(1)%intervals, this%buildTagName(matId, eId))
+            call cellRegionsToCoords(res%c, cRs, tag=this%buildTagName(matId, eId))
          end block
          
          ! Reads layers.
@@ -1615,7 +1619,7 @@ contains
       class(parser_t) :: this
       integer, intent(in) :: matId, elementId
       character(len=BUFSIZE) :: res
-      character(len=BUFSIZE) :: matName, elemName
+      character(len=:), allocatable :: matName, layerName
       logical :: found
       
       block
@@ -1623,23 +1627,52 @@ contains
          mat = this%matTable%getId(matId)
          matName = this%getStrAt(mat%p, J_NAME, found)
          if (.not. found) then
-            write(matName, *) 'material'
-            write(matName, '(a)') matId
+            deallocate(matName)
+            allocate(character(len(TAG_MATERIAL) + 12) :: matName)
+            write(matName, '(a,i0)') TAG_MATERIAL, matId
          end if
+         matName = adaptName(matName)
       end block
       
       block
          type(json_value_ptr) :: elem
          elem = this%elementTable%getId(elementId)
-         elemName = this%getStrAt(elem%p, J_NAME, found)
+         layerName = this%getStrAt(elem%p, J_NAME, found)
          if (.not. found) then
-            write(elemName, *) 'element'
-            write(elemName, '(a)') elementId
+            deallocate(layerName)
+            allocate(character(len(TAG_LAYER) + 12) :: layerName)
+            write(layerName, '(a,i0)') TAG_LAYER, elementId 
          end if
+         layerName = adaptName(layerName)
       end block
       
-      res = trim(matName) // '@' // trim(elemName)
+      call checkIsValidName(matName)
+      call checkIsValidName(layerName)
+      res = trim(matName // '@' // layerName)
+   contains
+      subroutine checkIsValidName(str)
+         character (len=:), allocatable, intent(in) :: str
+         character (len=*), parameter :: notAllowedChars = '@'
+         integer :: i
+         do i = 1, len((notAllowedChars))
+            if (index(str, notAllowedChars(i:i)) /= 0) then
+               write(error_unit, *) "ERROR in name: ", str, &
+                  " contains invalid character ", notAllowedChars(i:i)
+            end if 
+         end do
+      end subroutine
 
+      function adaptName(str) result(res)
+         character (len=:), allocatable, intent(in) :: str
+         character (len=:), allocatable :: res
+         integer :: i
+         res = trim(adjustl(str))
+         do i = 1, len(res)
+            if (res(i:i) == ' ') then
+               res(i:i) = '_'
+            end if
+         end do
+      end function
    end function
 
    function readMTLN(this, grid) result (mtln_res)
