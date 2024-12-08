@@ -40,7 +40,6 @@ contains
       end if
       
       ! Sources
-      ! if (.not. ex%boxSrc == pr%boxSrc) call testFails(err, 'Expected and read "box sources" do not match')
       if (.not. ex%plnSrc == pr%plnSrc) call testFails(err, 'Expected and read "planewave sources" do not match')
       if (.not. ex%nodSrc == pr%nodSrc) call testFails(err, 'Expected and read "nodal sources" do not match')
       
@@ -49,6 +48,7 @@ contains
       if (.not. ex%sonda == pr%sonda)         call testFails(err, 'Expected and read "new probes" do not match')
       if (.not. ex%BloquePrb == pr%BloquePrb) call testFails(err, 'Expected and read "block probes" do not match')
       if (.not. ex%VolPrb == pr%VolPrb)       call testFails(err, 'Expected and read "vol probes" do not match')
+      
       ! Thin elements
       if (.not. ex%tWires == pr%tWires) call testFails(err, 'Expected and read "thin wires" do not match')
       if (.not. ex%mtln == pr%mtln) call testFails(err, 'Expected and read mtln types do not match')

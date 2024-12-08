@@ -61,8 +61,8 @@ module smbjson
       procedure, private :: getMatrixAt
       procedure, private :: getStrAt
       procedure, private :: existsAt
-      procedure, private :: getCellRegionsWithMaterialType
       procedure, private :: getDomain
+      procedure, private :: getMaterialAssociations
       procedure, private :: buildMaterialAssociation
       procedure, private :: buildTagName
       procedure, private :: jsonValueFilterByKeyValue
@@ -375,58 +375,108 @@ contains
    function readPECRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(PECRegions) :: res
-      type(cell_region_t), dimension(:), allocatable :: cRs
-      cRs = this%getCellRegionsWithMaterialType(J_MAT_TYPE_PEC)
-      res = buildPECPMCRegion(cRs)
+      res = buildPECPMCRegion(J_MAT_TYPE_PEC)
    end function
 
    function readPMCRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(PECRegions) :: res
-      type(cell_region_t), dimension(:), allocatable :: cRs
-      cRs = this%getCellRegionsWithMaterialType(J_MAT_TYPE_PMC)
-      res = buildPECPMCRegion(cRs)
+      res = buildPECPMCRegion(J_MAT_TYPE_PMC)
    end function
 
-   function buildPECPMCRegion(cRs) result(res)
+   function buildPECPMCRegion(this, matType) result(res)
+      class(parser_t) :: this
+      character (len=*), intent(in) :: matType 
       type(PECRegions) :: res
-      type(cell_region_t), dimension(:), allocatable, intent(in) :: cRs
-      call cellRegionsToCoords(res%Lins, cRs, CELL_TYPE_LINEL)
-      call cellRegionsToCoords(res%Surfs, cRs, CELL_TYPE_SURFEL)
-      call cellRegionsToCoords(res%Vols, cRs, CELL_TYPE_VOXEL)
-      res%nLins = size(res%lins)
-      res%nSurfs = size(res%surfs)
-      res%nVols = size(res%vols)
-      res%nLins_max = size(res%Lins)
-      res%nSurfs_max = size(res%Surfs)
-      res%nVols_max = size(res%Vols)
+      integer :: nRegions
+      type(json_value_ptr), dimension(:), allocatable :: matAssPtrs
+      type(json_value), pointer :: matAss
+      type(materialAssociation_t) :: matAss
+      type(coords) :: auxCoords
+
+      integer :: i, jLinel, jSurfs, jVols
+      character (len=:) :: tagName
+
+      matAssPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, matType)
+
+      ! Precounts 
+      res%nLins = countCoords(matAssPtrs, CELL_TYPE_LINEL)
+      res%nSurfs = countCoords(matAssPtrs, CELL_TYPE_SURFEL)
+      res%nVols = countCoords(matAssPtrs, CELL_TYPE_VOXEL)
+      res%nLins_max  = res%nLins
+      res%nSurfs_max = res%nSurfs
+      res%nVols_max  = res%nVols
+
+      ! Fills
+      allocate(res%lins(res%nLins))
+      allocate(res%surfs(res%nSurfs))
+      allocate(res%vols(res%nLins))
+      jLinel = 1
+      jSurfs = 1
+      jVols = 1
+      do i = 1, size(matAssPtrs)
+         mat = this%buildMaterialAssociation(matAssPtrs(i)%p)
+         do e = 1, size(mat%elementIds)
+            tagName = this%buildTagName(mat%materialId, mat%elementIds(e))
+
+            auxCoords = cellRegionToCoords(cRs, CELL_TYPE_LINEL, tag=tagName)
+            res%lins(jLinel:(jLinel+size(auxCoords))) = auxCoords
+            jLinel = jLinel + size(auxCoords) + 1 
+            
+            auxCoords = cellRegionToCoords(cRs, CELL_TYPE_SURFEL, tag=tagName)
+            res%lins(jSurfs:(jSurfs+size(auxCoords))) = auxCoords
+            jSurfs = jSurfs + size(auxCoords) + 1 
+            
+            auxCoords = cellRegionToCoords(cRs, CELL_TYPE_VOXEL, tag=tagName)
+            res%vols(jVols:(jVols+size(auxCoords))) = auxCoords
+            jVols = jVols + size(auxCoords) + 1 
+         end do
+      end do
+
+   contains
+      function countCoords(matAssPtrs, cellType) result(res)
+         type(json_value_ptr), dimension(:), allocatable, intent(in) :: matAssPtrs
+         character (len=:), intent(in) :: cellType
+         integer :: res
+         
+         type(materialAssociation_t) :: mat
+         type(cell_region_t) :: cR
+         integer :: i, j
+         type(coords), dimension(:), pointer :: cs
+
+         res = 0
+         do i = 1, size(matAssPtrs)
+            mat = this%buildMaterialAssociation(matAssPtrs%p)
+            do j = 1, size(mat%elementIds)
+               cR = this%mesh%getCellRegion(mat%elementIds(i))
+               cs = cellRegionToCoords(cR, cellType)
+               res = res + size(cs)
+            end do
+         end do
+      end function
+
    end function
+
+
 
    function readLossyThinSurfaces(this) result (res)
       class(parser_t), intent(in) :: this
       type(LossyThinSurfaces) :: res
-      type(json_value_ptr), dimension(:), allocatable :: surfsMatAssPtrs
-      type(json_value), pointer :: matAss
+      type(json_value_ptr), dimension(:), allocatable :: matAssPtrs
       type(json_value_ptr) :: mat
       integer :: nLossySurfaces
       logical :: found
       integer :: i, j, k
-      type(materialAssociation_t) :: surfMatAss
+      type(materialAssociation_t) :: matAss
       
-      call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, matAss, found)
-      if (.not. found) then
-         res = emptyLossyThinSurfaces()
-         return
-      end if
+      matAssPtrs = this%getMaterialAssociations(&
+         J_MAT_ASS_TYPE_SURFACE, J_MAT_TYPE_MULTILAYERED_SURFACE)
       
-      ! Precounts 
+      ! Precounts
       nLossySurfaces = 0
-      surfsMatAssPtrs = this%jsonValueFilterByKeyValue(matAss, J_TYPE, J_MAT_ASS_TYPE_SURFACE)
-      do i = 1, size(surfsMatAssPtrs)
-         surfMatAss = this%buildMaterialAssociation(surfsMatAssPtrs(i))
-         mat = this%matTable%getId(surfMatAss%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_MULTILAYERED_SURFACE) cycle
-         nLossySurfaces = nLossySurfaces + size(surfMatAss%elementIds)
+      do i = 1, size(matAssPtrs)
+         matAss = this%buildMaterialAssociation(matAssPtrs(i))
+         nLossySurfaces = nLossySurfaces + size(matAss%elementIds)
       end do
 
       ! Fills
@@ -440,18 +490,15 @@ contains
       res%length_max = nLossySurfaces
       res%nC_max = nLossySurfaces
       k = 1
-      do i = 1, size(surfsMatAssPtrs)
-         surfMatAss = this%buildMaterialAssociation(surfsMatAssPtrs(i))
-         mat = this%matTable%getId(surfMatAss%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_MULTILAYERED_SURFACE) cycle
-         do j = 1, size(surfMatAss%elementIds)
-            res%cs(k) = readLossyThinSurface(surfMatAss%materialId, surfMatAss%elementIds(j))
+      do i = 1, size(matAssPtrs)
+         matAss = this%buildMaterialAssociation(matAssPtrs(i))
+         do j = 1, size(matAss%elementIds)
+            res%cs(k) = readLossyThinSurface(matAss%materialId, matAss%elementIds(j))
             k = k + 1
          end do
       end do
       
    contains
-
       function readLossyThinSurface(matId, eId) result(res)
          integer, intent(in) :: matId
          integer, intent(in) :: eId
@@ -461,13 +508,8 @@ contains
          
          ! Reads coordinates.
          block 
-            type(cell_region_t), dimension(:), allocatable :: cRs
-            cRs = this%mesh%getCellRegions([eId])
-            if (size(cRs) /= 1) then
-               write(error_unit, *) errorMsgInit, "problem finding cell regions in element ", eId
-            end if
             res%nc = 1
-            call cellRegionsToCoords(res%c, cRs, tag=this%buildTagName(matId, eId))
+            call cellRegionToCoords(res%c, cR = this%mesh%getCellRegion(eId), tag=this%buildTagName(matId, eId))
          end block
          
          ! Reads layers.
@@ -1613,6 +1655,52 @@ contains
          character (len=*), intent(in) :: label
          write(error_unit, *) errorMsgInit, label, " not found."
       end subroutine
+   end function
+
+   function getMaterialAssociations(this, matAssType, materialType)
+      class(parser_t) :: this
+      type(json_value), pointer :: allMatAss
+      character(len=*), intent(in) :: matAssType
+      character(len=*), intent(in) :: materialType
+      type(json_value_ptr), dimension(:), allocatable :: res
+      
+      type(json_value_ptr), dimension(:), allocatable :: matAss
+      integer :: i, j
+      integer :: nMaterials
+
+      call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, allMatAss, found)
+      if (.not. found) then
+         allocate(res(0))
+         return
+      end if
+      
+      matAss = this%jsonValueFilterByKeyValue(matAss, J_TYPE, matAssType)
+
+      nMaterials = 0
+      do i = 1, size(matAssPtrs)
+         if (isAssociatedWithMaterial(materialType)) nMaterials = nMaterials + 1
+      end do
+
+      allocate(res(nMaterials))
+      j = 1
+      do i = 1, size(matAssPtrs)
+         if (isAssociatedWithMaterial(materialType)) then
+            res(j) = matAssPtrs(i)
+            j = j+1
+         end if
+      end do
+
+   contains 
+      logical function isAssociatedWithMaterial(materialType)
+         character (len=*), intent(in) :: materialType
+         
+         type(materialAssociation_t) :: matAss
+         type(json_value_ptr) :: mat
+
+         matAss = this%buildMaterialAssociation(matAssPtrs(i))
+         mat = this%matTable%getId(matAss%materialId)
+         isAssociatedWithMaterial = this%getStrAt(mat%p, J_TYPE) == materialType
+      end function
    end function
 
    function buildTagName(this, matId, elementId) result(res)
@@ -2987,43 +3075,6 @@ contains
       type(json_value), pointer :: place
       character(len=*) :: path
       call this%core%info(place, path, found=res)
-   end function
-
-   function getCellRegionsWithMaterialType(this, matType) result(res)
-      class(parser_t) :: this
-      character (len=*), intent(in) :: matType
-      type(cell_region_t), dimension(:), allocatable :: res
-
-      logical :: found
-      type(json_value), pointer :: jmrs, jmr
-      type(json_value_ptr) :: jm
-      integer, dimension(:), allocatable :: eIds
-      type(cell_region_t) :: cR
-      integer :: i, j
-      integer :: numCellRegions
-
-      call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, jmrs, found)
-      allocate(res(0))
-      if (.not. found) then
-         return
-      end if
-
-      do i = 1, this%core%count(jmrs)
-         call this%core%get_child(jmrs, i, jmr)
-         jm = this%matTable%getId(this%getIntAt(jmr, J_MATERIAL_ID, found))
-         if (.not. found) &
-            write(error_unit, *) "Error reading material region: materialId label not found."
-
-         if (matType == this%getStrAt(jm%p, J_TYPE)) then
-            eIds = this%getIntsAt(jmr, J_ELEMENTIDS)
-            do j = 1, size(eIds)
-               cR = this%mesh%getCellRegion(eIds(j), found)
-               if (found) then
-                  res = [res, cR]
-               end if
-            end do
-         end if
-      end do
    end function
 
    function jsonValueFilterByKeyValues(this, srcs, key, values) result (res)

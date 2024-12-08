@@ -61,22 +61,21 @@ contains
 
    end function
    
-   subroutine cellRegionsToCoords(res, cellRegions, cellType, tag)
-      type(coords), dimension(:), pointer :: res
-      type(cell_region_t), dimension(:), intent(in) :: cellRegions
+   function cellRegionToCoords(cellRegion, cellType, tag) result(res)
+      type(cell_region_t), intent(in) :: cellRegion
       integer, intent(in), optional :: cellType
       character (LEN=BUFSIZE), optional, intent(in) :: tag
+      type(coords), dimension(:) :: res
 
       type(cell_interval_t), dimension(:), allocatable :: intervals
       type(coords), dimension(:), allocatable :: cs
 
-      intervals = getIntervalsInCellRegions(cellRegions, cellType)
+      intervals = getIntervalsInCellRegions([cellRegion], cellType)
       if (present(tag)) then
          cs = cellIntervalsToCoords(intervals, tag)
       else 
          cs = cellIntervalsToCoords(intervals)
       endif
-      allocate(res(size(cs)))
       res = cs
    end
 

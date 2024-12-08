@@ -25,7 +25,6 @@
 
     "materials": [
         {
-            "name": "pec-layer",
             "type": "pec",
             "id": 1
         },

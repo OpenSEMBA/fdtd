@@ -253,9 +253,9 @@ These materials represent a perfectly electrically conducting (`pec`) and perfec
 "materials": [ {"id": 1, "type": "pec"} ]
 ```
 
-#### `simple`
+#### `isotropic`
 
-A `material` with `type` `simple` represents an isotropic material with constant (not frequency dependent) relative permittivity $\varepsilon_r$, relative permeability $\mu_r$, electric conductivity $\sigma$ and/or magnetic conductivity $\sigma_m$:
+A `material` with `type` `isotropic` represents an isotropic material with constant (not frequency dependent) relative permittivity $\varepsilon_r$, relative permeability $\mu_r$, electric conductivity $\sigma$ and/or magnetic conductivity $\sigma_m$:
 
 + `[relativePermittivity]` is a real which defaults to $1.0$. Must be greater than $1.0$.
 + `[relativePermeability]` is a real which defaults to $1.0$. Must be greater than $1.0$.
@@ -268,7 +268,7 @@ A `material` with `type` `simple` represents an isotropic material with constant
 {
     "name": "teflon"
     "id": 1, 
-    "type": "simple",
+    "type": "isotropic",
     "relativePermittivity": 2.5,
     "electricConducitivity": 1e-6
 } 
@@ -280,7 +280,7 @@ In surface materials, `elementIds` must reference `cell` elements. All `interval
 
 #### `multilayeredSurface`
 
-A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials which are described in the same way as [simple materials](#simple) and a `<thickness>`.
+A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials which are described in the same way as [isotropic materials](#isotropic) and a `<thickness>`.
 
 ```json
 {
@@ -456,7 +456,7 @@ This entry stores associations between `materials` and `elements` using their re
 
 ### `bulk`
 
-Bulk materials such as `pec`, `pmc` or `simple` can be assigned to one or many elements of type `cell`. If the `cell` contains `intervals` representing points, these will be ignored.
+Bulk materials such as `pec`, `pmc` or `isotropic` can be assigned to one or many elements of type `cell`. If the `cell` contains `intervals` representing points, these will be ignored.
 
 ```json
 "materialAssociations": [

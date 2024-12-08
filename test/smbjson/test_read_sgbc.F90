@@ -69,8 +69,7 @@ contains
       expected%pecRegs%Surfs(1)%Ye = 4
       expected%pecRegs%Surfs(1)%Zi = 3
       expected%pecRegs%Surfs(1)%Ze = 3
-      expected%pecRegs%Surfs(1)%tag = ''
-      ! expected%pecRegs%Surfs(1)%tag = 'pec-layer@layer1'
+      expected%pecRegs%Surfs(1)%tag = 'material1@layer1'
 
       !! Composites
       allocate(expected%lossyThinSurfs%cs(2))
