@@ -64,7 +64,7 @@ contains
       allocate(expected%pecRegs%Surfs(1))
       allocate(expected%pecRegs%Lins(1))
       
-      ! PEC square
+      ! Body
       expected%pecRegs%Surfs(1)%Or = +iEz
       expected%pecRegs%Surfs(1)%Xi = 5
       expected%pecRegs%Surfs(1)%Xe = 14
@@ -72,7 +72,7 @@ contains
       expected%pecRegs%Surfs(1)%Ye = 14
       expected%pecRegs%Surfs(1)%Zi = 10
       expected%pecRegs%Surfs(1)%Ze = 10
-      expected%pecRegs%Surfs(1)%tag = ''
+      expected%pecRegs%Surfs(1)%tag = 'aluminum@body'
 
       ! Exit line
       expected%pecRegs%Lins(1)%Or = +iEy
@@ -82,7 +82,7 @@ contains
       expected%pecRegs%Lins(1)%Ye = 19
       expected%pecRegs%Lins(1)%Zi = 10
       expected%pecRegs%Lins(1)%Ze = 10
-      expected%pecRegs%Lins(1)%tag = ''
+      expected%pecRegs%Lins(1)%tag = 'aluminum@exit'
 
       ! Expected sources.
       expected%nodSrc%n_nodSrc = 1

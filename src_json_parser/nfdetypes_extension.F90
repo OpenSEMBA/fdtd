@@ -227,10 +227,13 @@ contains
       pecregions_eq = &
          (a%nVols == b%nVols) .and. &
          (a%nSurfs == b%nSurfs) .and. &
-         (a%nLins == b%nLins) .and. &
-         all(a%Lins == b%Lins) .and. &
-         all(a%Vols == b%Vols) .and. &
-         all(a%Surfs == b%Surfs)
+         (a%nLins_max == b%nLins_max) .and. &
+         (a%nVols_max == b%nVols_max) .and. &
+         (a%nSurfs_max == b%nSurfs_max) .and. &
+         (a%nLins == b%nLins)
+      pecregions_eq = pecregions_eq .and. all(a%Lins == b%Lins) 
+      pecregions_eq = pecregions_eq .and. all(a%surfs == b%surfs) 
+      pecregions_eq = pecregions_eq .and. all(a%vols == b%vols) 
 
    end function pecregions_eq
 

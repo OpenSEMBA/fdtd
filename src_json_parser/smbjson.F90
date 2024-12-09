@@ -425,8 +425,8 @@ contains
          nCs = 0
          do i = 1, size(matAssPtrs)
             mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
-            do j = 1, size(mA%elementIds)
-               cR = this%mesh%getCellRegion(mA%elementIds(i))
+            do e = 1, size(mA%elementIds)
+               cR = this%mesh%getCellRegion(mA%elementIds(e))
                cs = cellRegionToCoords(cR, cellType)
                nCs = nCs + size(cs)
             end do
@@ -439,10 +439,11 @@ contains
             mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
             do e = 1, size(mA%elementIds)
                tagName = this%buildTagName(mA%materialId, mA%elementIds(e))
-               cR = this%mesh%getCellRegion(mA%elementIds(i))
+               cR = this%mesh%getCellRegion(mA%elementIds(e))
                cs = cellRegionToCoords(cR, cellType, tag=tagName)
-               res(j:(j+size(cs))) = cs
-               j = j + size(cs) + 1 
+               if (size(cs) == 0) cycle
+               res(j:(j+size(cs)-1)) = cs
+               j = j + size(cs) 
             end do
          end do
       end function
@@ -507,8 +508,15 @@ contains
          ! Reads layers.
          block
             integer :: i
+            type(json_value_ptr) :: mat
             type(json_value), pointer :: layer
             type(json_value), pointer :: layers
+
+            mat = this%matTable%getId(matId)
+            call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers, found)
+            if (.not. found) then
+               write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_LAYERS, " not found."
+            end if
 
             res%numcapas = this%core%count(layers)
             allocate(res%sigma( res%numcapas))
