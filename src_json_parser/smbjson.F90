@@ -495,12 +495,15 @@ contains
          type(LossyThinSurface) :: res
          logical :: found
          character (len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
-         
+         type(coords), dimension(:), allocatable :: cs
          ! Reads coordinates.
          res%nc = 1
-         res%c = cellRegionToCoords(this%mesh%getCellRegion(eId), &
+         cs = cellRegionToCoords(this%mesh%getCellRegion(eId), &
             tag = this%buildTagName(matId, eId))
-         
+         allocate(res%c(size(cs)))
+         res%c = cs(:)
+
+
          ! Reads layers.
          block
             integer :: i
