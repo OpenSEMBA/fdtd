@@ -88,9 +88,9 @@ These objects must contain a `<type>` label which can be:
 + `mur` for Mur's first order absorbing boundary condition.
 + `pml` for perfectly matched layer termination. If this `type` is selected, it must also contain:
 
-  + `[layers]`: with an integer indicating the number of pml layers which will be used. TODO Change to an optional input which defaults to 10 layers
-  + `[order]`: TODO Change to an optional input which defaults to order 2.
-  + `[reflection]`: TODO Change to an optional input which defaults to 0.001 refl.
+  + `[layers]`: with an integer indicating the number of pml layers which will be used. Defaults to $10$ layers
+  + `[order]`: an integer indicating the order of the profile. defaults to order $2$.
+  + `[reflection]`: Computed reflection coefficient, defaults to $0.001$.
 
 **Example:**
 
