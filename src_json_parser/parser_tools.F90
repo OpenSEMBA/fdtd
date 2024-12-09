@@ -65,7 +65,7 @@ contains
       type(cell_region_t), intent(in) :: cellRegion
       integer, intent(in), optional :: cellType
       character (LEN=BUFSIZE), optional, intent(in) :: tag
-      type(coords), dimension(:) :: res
+      type(coords), dimension(:), allocatable :: res
 
       type(cell_interval_t), dimension(:), allocatable :: intervals
       type(coords), dimension(:), allocatable :: cs

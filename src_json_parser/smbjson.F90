@@ -62,6 +62,7 @@ module smbjson
       procedure, private :: getStrAt
       procedure, private :: existsAt
       procedure, private :: getDomain
+      procedure, private :: buildPECPMCRegions
       procedure, private :: getMaterialAssociations
       procedure, private :: buildMaterialAssociation
       procedure, private :: buildTagName
@@ -375,89 +376,78 @@ contains
    function readPECRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(PECRegions) :: res
-      res = buildPECPMCRegion(J_MAT_TYPE_PEC)
+      res = this%buildPECPMCRegions(J_MAT_TYPE_PEC)
    end function
 
    function readPMCRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(PECRegions) :: res
-      res = buildPECPMCRegion(J_MAT_TYPE_PMC)
+      res = this%buildPECPMCRegions(J_MAT_TYPE_PMC)
    end function
 
-   function buildPECPMCRegion(this, matType) result(res)
+   function buildPECPMCRegions(this, matType) result(res)
       class(parser_t) :: this
       character (len=*), intent(in) :: matType 
       type(PECRegions) :: res
-      integer :: nRegions
-      type(json_value_ptr), dimension(:), allocatable :: matAssPtrs
-      type(json_value), pointer :: matAss
-      type(materialAssociation_t) :: matAss
-      type(coords) :: auxCoords
+      type(json_value_ptr), dimension(:), allocatable :: mA
+      
+      ma = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, matType)
 
-      integer :: i, jLinel, jSurfs, jVols
-      character (len=:) :: tagName
-
-      matAssPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, matType)
-
-      ! Precounts 
-      res%nLins = countCoords(matAssPtrs, CELL_TYPE_LINEL)
-      res%nSurfs = countCoords(matAssPtrs, CELL_TYPE_SURFEL)
-      res%nVols = countCoords(matAssPtrs, CELL_TYPE_VOXEL)
-      res%nLins_max  = res%nLins
-      res%nSurfs_max = res%nSurfs
-      res%nVols_max  = res%nVols
-
-      ! Fills
-      allocate(res%lins(res%nLins))
-      allocate(res%surfs(res%nSurfs))
-      allocate(res%vols(res%nLins))
-      jLinel = 1
-      jSurfs = 1
-      jVols = 1
-      do i = 1, size(matAssPtrs)
-         mat = this%buildMaterialAssociation(matAssPtrs(i)%p)
-         do e = 1, size(mat%elementIds)
-            tagName = this%buildTagName(mat%materialId, mat%elementIds(e))
-
-            auxCoords = cellRegionToCoords(cRs, CELL_TYPE_LINEL, tag=tagName)
-            res%lins(jLinel:(jLinel+size(auxCoords))) = auxCoords
-            jLinel = jLinel + size(auxCoords) + 1 
-            
-            auxCoords = cellRegionToCoords(cRs, CELL_TYPE_SURFEL, tag=tagName)
-            res%lins(jSurfs:(jSurfs+size(auxCoords))) = auxCoords
-            jSurfs = jSurfs + size(auxCoords) + 1 
-            
-            auxCoords = cellRegionToCoords(cRs, CELL_TYPE_VOXEL, tag=tagName)
-            res%vols(jVols:(jVols+size(auxCoords))) = auxCoords
-            jVols = jVols + size(auxCoords) + 1 
-         end do
-      end do
-
-   contains
-      function countCoords(matAssPtrs, cellType) result(res)
-         type(json_value_ptr), dimension(:), allocatable, intent(in) :: matAssPtrs
-         character (len=:), intent(in) :: cellType
-         integer :: res
+      call fillRegion(res%lins,  res%nLins,  res%nLins_max,  buildRegionCoords(mA, CELL_TYPE_LINEL))
+      call fillRegion(res%surfs, res%nSurfs, res%nSurfs_max, buildRegionCoords(mA, CELL_TYPE_SURFEL))
+      call fillRegion(res%vols,  res%nVols,  res%nVols_max,  buildRegionCoords(mA, CELL_TYPE_VOXEL))
          
-         type(materialAssociation_t) :: mat
-         type(cell_region_t) :: cR
-         integer :: i, j
-         type(coords), dimension(:), pointer :: cs
+   contains
+      subroutine fillRegion(resCoords, resNCoords, resNCoordsMax, cs)
+         type(coords), dimension(:), pointer :: resCoords
+         integer, intent(out) :: resNCoords, resNCoordsMax
+         type(coords), dimension(:), allocatable, intent(in) :: cs
 
-         res = 0
+         allocate(resCoords(size(cs)))
+         resCoords(:) = cs(:)
+         resNCoords = size(cs)
+         resNCoordsMax = size(cs)
+      end subroutine
+
+      function buildRegionCoords(matAssPtrs, cellType) result(res)
+         type(json_value_ptr), dimension(:), allocatable, intent(in) :: matAssPtrs
+         integer, intent(in) :: cellType
+         type(coords), dimension(:), allocatable :: res
+         
+         type(materialAssociation_t) :: mA
+         type(cell_region_t) :: cR
+         integer :: i, j, e
+         integer :: nCs
+         character (len=:), allocatable :: tagName
+         type(coords), dimension(:), allocatable :: cs
+
+         ! Precounts
+         nCs = 0
          do i = 1, size(matAssPtrs)
-            mat = this%buildMaterialAssociation(matAssPtrs%p)
-            do j = 1, size(mat%elementIds)
-               cR = this%mesh%getCellRegion(mat%elementIds(i))
+            mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+            do j = 1, size(mA%elementIds)
+               cR = this%mesh%getCellRegion(mA%elementIds(i))
                cs = cellRegionToCoords(cR, cellType)
-               res = res + size(cs)
+               nCs = nCs + size(cs)
+            end do
+         end do
+
+         ! Fills
+         allocate(res(nCs))
+         j = 1
+         do i = 1, size(matAssPtrs)
+            mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+            do e = 1, size(mA%elementIds)
+               tagName = this%buildTagName(mA%materialId, mA%elementIds(e))
+               cR = this%mesh%getCellRegion(mA%elementIds(i))
+               cs = cellRegionToCoords(cR, cellType, tag=tagName)
+               res(j:(j+size(cs))) = cs
+               j = j + size(cs) + 1 
             end do
          end do
       end function
 
    end function
-
-
 
    function readLossyThinSurfaces(this) result (res)
       class(parser_t), intent(in) :: this
@@ -467,7 +457,7 @@ contains
       integer :: nLossySurfaces
       logical :: found
       integer :: i, j, k
-      type(materialAssociation_t) :: matAss
+      type(materialAssociation_t) :: mA
       
       matAssPtrs = this%getMaterialAssociations(&
          J_MAT_ASS_TYPE_SURFACE, J_MAT_TYPE_MULTILAYERED_SURFACE)
@@ -475,8 +465,8 @@ contains
       ! Precounts
       nLossySurfaces = 0
       do i = 1, size(matAssPtrs)
-         matAss = this%buildMaterialAssociation(matAssPtrs(i))
-         nLossySurfaces = nLossySurfaces + size(matAss%elementIds)
+         mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+         nLossySurfaces = nLossySurfaces + size(mA%elementIds)
       end do
 
       ! Fills
@@ -491,9 +481,9 @@ contains
       res%nC_max = nLossySurfaces
       k = 1
       do i = 1, size(matAssPtrs)
-         matAss = this%buildMaterialAssociation(matAssPtrs(i))
-         do j = 1, size(matAss%elementIds)
-            res%cs(k) = readLossyThinSurface(matAss%materialId, matAss%elementIds(j))
+         mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+         do j = 1, size(mA%elementIds)
+            res%cs(k) = readLossyThinSurface(mA%materialId, mA%elementIds(j))
             k = k + 1
          end do
       end do
@@ -507,23 +497,16 @@ contains
          character (len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
          
          ! Reads coordinates.
-         block 
-            res%nc = 1
-            call cellRegionToCoords(res%c, cR = this%mesh%getCellRegion(eId), tag=this%buildTagName(matId, eId))
-         end block
+         res%nc = 1
+         res%c = cellRegionToCoords(this%mesh%getCellRegion(eId), &
+            tag = this%buildTagName(matId, eId))
          
          ! Reads layers.
          block
             integer :: i
-            type(json_value_ptr) :: mat
             type(json_value), pointer :: layer
             type(json_value), pointer :: layers
 
-            mat = this%matTable%getId(surfMatAss%materialId)
-            call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers, found)
-            if (.not. found) then
-               write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_LAYERS, " not found."
-            end if
             res%numcapas = this%core%count(layers)
             allocate(res%sigma( res%numcapas))
             allocate(res%eps(   res%numcapas))
@@ -1605,19 +1588,19 @@ contains
 
    function buildMaterialAssociation(this, matAss) result(res)
       class(parser_t) :: this
-      type(json_value_ptr), intent(in) :: matAss
+      type(json_value), pointer, intent(in) :: matAss
       type(materialAssociation_t) :: res
       character (len=*), parameter :: errorMsgInit = "ERROR reading material association: "
       logical :: found
       
       ! Fills material association.
-      res%materialId = this%getIntAt(matAss%p, J_MATERIAL_ID, found)
+      res%materialId = this%getIntAt(matAss, J_MATERIAL_ID, found)
       if (.not. found) call showLabelNotFoundError(J_MATERIAL_ID)
-      res%elementIds = this%getIntsAt(matAss%p, J_ELEMENTIDS, found)
+      res%elementIds = this%getIntsAt(matAss, J_ELEMENTIDS, found)
       if (.not. found) call showLabelNotFoundError(J_ELEMENTIDS)
-      res%matAssType = this%getStrAt(matAss%p, J_TYPE, found)
+      res%matAssType = this%getStrAt(matAss, J_TYPE, found)
       if (.not. found) call showLabelNotFoundError(J_TYPE)
-      res%name = this%getStrAt(matAss%p, J_NAME, found)
+      res%name = this%getStrAt(matAss, J_NAME, found)
       if (.not. found) then
          res%name = ""
       end if
@@ -1657,16 +1640,17 @@ contains
       end subroutine
    end function
 
-   function getMaterialAssociations(this, matAssType, materialType)
+   function getMaterialAssociations(this, matAssType, materialType) result(res)
       class(parser_t) :: this
       type(json_value), pointer :: allMatAss
       character(len=*), intent(in) :: matAssType
       character(len=*), intent(in) :: materialType
       type(json_value_ptr), dimension(:), allocatable :: res
       
-      type(json_value_ptr), dimension(:), allocatable :: matAss
+      type(json_value_ptr), dimension(:), allocatable :: mAPtrs
       integer :: i, j
       integer :: nMaterials
+      logical :: found
 
       call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, allMatAss, found)
       if (.not. found) then
@@ -1674,30 +1658,33 @@ contains
          return
       end if
       
-      matAss = this%jsonValueFilterByKeyValue(matAss, J_TYPE, matAssType)
+      mAPtrs = this%jsonValueFilterByKeyValue(allMatAss, J_TYPE, matAssType)
 
       nMaterials = 0
-      do i = 1, size(matAssPtrs)
-         if (isAssociatedWithMaterial(materialType)) nMaterials = nMaterials + 1
+      do i = 1, size(mAPtrs)
+         if (isAssociatedWithMaterial(mAPtrs(i)%p, materialType)) then
+            nMaterials = nMaterials + 1
+         end if
       end do
 
       allocate(res(nMaterials))
       j = 1
-      do i = 1, size(matAssPtrs)
-         if (isAssociatedWithMaterial(materialType)) then
-            res(j) = matAssPtrs(i)
+      do i = 1, size(mAPtrs)
+         if (isAssociatedWithMaterial(mAPtrs(i)%p, materialType)) then
+            res(j) = mAPtrs(i)
             j = j+1
          end if
       end do
 
    contains 
-      logical function isAssociatedWithMaterial(materialType)
+      logical function isAssociatedWithMaterial(mAPtr, materialType)
+         type(json_value), pointer, intent(in) :: mAPtr
          character (len=*), intent(in) :: materialType
          
          type(materialAssociation_t) :: matAss
          type(json_value_ptr) :: mat
 
-         matAss = this%buildMaterialAssociation(matAssPtrs(i))
+         matAss = this%buildMaterialAssociation(mAPtr)
          mat = this%matTable%getId(matAss%materialId)
          isAssociatedWithMaterial = this%getStrAt(mat%p, J_TYPE) == materialType
       end function
