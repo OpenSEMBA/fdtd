@@ -51,7 +51,7 @@ The following entries are shared by several FDTD-JSON objects and have a common 
 
 + `type` followed by a string, indicates the type of JSON object that. Some examples of types are `planewave` for `sources` objects, and `polyline` for `elements`.
 + `id` is a unique integer identifier for objects that belong to a list and which can be referenced by other objects. For instance, an element in the `elements` list must contain a `id` which can be referenced by a source in `sources` through its list of `elementIds`.
-+ `[name]` is an optional entry which is used to make the FDTD-JSON input human-readable, helping to identify inputs and outputs.
++ `[name]` is an optional entry which is used to make the FDTD-JSON input human-readable, helping to identify inputs and outputs. Leading and trailing blank spaces are removed. Blank spaces are substituted by underscroes. The following characters are reserved and can't be used in a `name`: `@`.
 
 ### `<general>`
 
@@ -253,9 +253,9 @@ These materials represent a perfectly electrically conducting (`pec`) and perfec
 "materials": [ {"id": 1, "type": "pec"} ]
 ```
 
-#### `simple`
+#### `isotropic`
 
-A `material` with `type` `simple` represents an isotropic material with constant (not frequency dependent) relative permittivity $\varepsilon_r$, relative permeability $\mu_r$, electric conductivity $\sigma$ and/or magnetic conductivity $\sigma_m$:
+A `material` with `type` `isotropic` represents an isotropic material with constant (not frequency dependent) relative permittivity $\varepsilon_r$, relative permeability $\mu_r$, electric conductivity $\sigma$ and/or magnetic conductivity $\sigma_m$:
 
 + `[relativePermittivity]` is a real which defaults to $1.0$. Must be greater than $1.0$.
 + `[relativePermeability]` is a real which defaults to $1.0$. Must be greater than $1.0$.
@@ -268,7 +268,7 @@ A `material` with `type` `simple` represents an isotropic material with constant
 {
     "name": "teflon"
     "id": 1, 
-    "type": "simple",
+    "type": "isotropic",
     "relativePermittivity": 2.5,
     "electricConducitivity": 1e-6
 } 
@@ -280,7 +280,7 @@ In surface materials, `elementIds` must reference `cell` elements. All `interval
 
 #### `multilayeredSurface`
 
-A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials which are described in the same way as [simple materials](#simple) and a `<thickness>`.
+A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials which are described in the same way as [isotropic materials](#isotropic) and a `<thickness>`.
 
 ```json
 {
@@ -289,22 +289,9 @@ A `multilayeredSurface` must contain the entry `<layers>` which is an array indi
     "id": 2,
     "layers": [
         {"thickness": 1e-3, "relativePermittivity": 1.3, "electricConductivity": 2e-4},
-        {"thickness": 5e-3, "relativePermittivity": 1.3}
+        {"thickness": 5e-3, "relativePermittivity": 1.3},
         {"thickness": 1e-3, "relativePermittivity": 1.3, "electricConductivity": 2e-4}
     ]
-}
-```
-
-#### `frequencyDependentSurface`
-
-The entry `<file>` is the path to a file containing the poles and residues which are used to model the surface impedance of the material.
-
-```json
-{
-    "name": "carbon_fiber_model",
-    "type": "frequencyDependentSurface",
-    "id": 3,
-    "file": "cfc.dat"
 }
 ```
 
@@ -469,7 +456,7 @@ This entry stores associations between `materials` and `elements` using their re
 
 ### `bulk`
 
-Bulk materials such as `pec`, `pmc` or `simple` can be assigned to one or many elements of type `cell`. If the `cell` contains `intervals` representing points, these will be ignored.
+Bulk materials such as `pec`, `pmc` or `isotropic` can be assigned to one or many elements of type `cell`. If the `cell` contains `intervals` representing points, these will be ignored.
 
 ```json
 "materialAssociations": [
