@@ -85,6 +85,7 @@ These objects must contain a `<type>` label which can be:
 
 + `pec` for perfectly electric conducting termination.
 + `pmc` for perfectly magnetic conducting termination.
++ `periodic` for periodic boundary conditions. Must be paired with the opposite side. 
 + `mur` for Mur's first order absorbing boundary condition.
 + `pml` for perfectly matched layer termination. If this `type` is selected, it must also contain:
 

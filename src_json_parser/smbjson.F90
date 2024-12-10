@@ -330,45 +330,86 @@ contains
    function readBoundary(this) result (res)
       class(parser_t) :: this
       type(Frontera) :: res
-      character(kind=json_CK,len=:), allocatable :: boundaryTypeLabel
-      logical(LK) :: allLabelFound = .false.
-      real :: orden, refl
-      call this%core%get(this%root, J_BOUNDARY//'.'//J_BND_ALL//'.'//J_TYPE,  boundaryTypeLabel, allLabelFound)
-      if (allLabelFound) then
-         res%tipoFrontera(:) = labelToBoundaryType(boundaryTypeLabel)
-         if (all(res%tipoFrontera == F_PML)) then
-            res%propiedadesPML(:) = readPMLProperties(J_BOUNDARY//"."//J_BND_ALL)
-         end if
-         return
-      else
-         ! TODO Check every bound.
-         write(error_unit,*) 'WIP: Boundaries of different types not implemented.'
+      character (len=:), allocatable :: bdrType
+      type(json_value), pointer :: bdrs
+      logical :: found
+      character(len=*), parameter :: errorMsgInit = "ERROR reading boundary: "
+      
+      call this%core%get(this%root, J_BOUNDARY, bdrs, found)
+      if (.not. found) then
+         write(error_unit, * ) errorMsgInit, J_BOUNDARY, " object not found."
       end if
+      
+      block
+         call this%core%get(bdrs, J_BND_ALL//'.'//J_TYPE,  bdrType, found)
+         if (found) then
+            res%tipoFrontera(:) = labelToBoundaryType(bdrType)
+            if (all(res%tipoFrontera == F_PML)) then
+               res%propiedadesPML(:) = readPMLProperties(J_BOUNDARY//"."//J_BND_ALL)
+            end if
+            return
+         end if
+      end block
+         
+      block
+         character(len=*), dimension(6), parameter :: placeLabels = &
+            [J_BND_XL, J_BND_XU, J_BND_YL, J_BND_YU, J_BND_ZL, J_BND_ZU]
+         integer :: i, j
+         do i = 1, 6
+            bdrType = this%getStrAt(bdrs, placeLabels(i)//"."//J_TYPE, found)
+            if (.not. found) then
+               write(error_unit, *) errorMsgInit, placeLabels(i), " or ", J_BND_ALL, " not found."
+            end if
+            j = labelToBoundaryPlace(placeLabels(i))
+            res%tipoFrontera(j) = labelToBoundaryType(bdrType)
+            if (res%tipoFrontera(j) == F_PML) then
+               res%propiedadesPML(j) = readPMLProperties(J_BOUNDARY//"."//placeLabels(i))
+            end if
+         end do
+      end block
+
    contains
       function readPMLProperties(p) result(res)
          type(FronteraPML) :: res
          character(len=*), intent(in) :: p
          call this%core%get(this%root, p//'.'//J_BND_PML_LAYERS,     res%numCapas, default=8)
-         call this%core%get(this%root, p//'.'//J_BND_PML_ORDER,      orden,    default=2.0)
-         call this%core%get(this%root, p//'.'//J_BND_PML_REFLECTION, refl,     default=0.001)
-         res%orden = orden
-         res%refl = refl
+         call this%core%get(this%root, p//'.'//J_BND_PML_ORDER,      res%orden,    default=2.0)
+         call this%core%get(this%root, p//'.'//J_BND_PML_REFLECTION, res%refl,     default=0.001)
       end function
 
-      function labelToBoundaryType(str) result (type)
-         character(len=:), allocatable :: str
-         integer :: type
+      function labelToBoundaryPlace(str) result (place)
+         character(len=*), intent(in) :: str
+         integer :: place
+         select case (str)
+            case (J_BND_XL)
+               place = F_XL
+            case (J_BND_XU)
+               place = F_XU
+            case (J_BND_YL)
+               place = F_YL
+            case (J_BND_YU)
+               place = F_YU
+            case (J_BND_ZL)
+               place = F_ZL
+            case (J_BND_ZU)
+               place = F_ZU
+         end select
+      end function
+
+      function labelToBoundaryType(str) result (bdrType)
+         character(len=:), allocatable, intent(in) :: str
+         integer :: bdrType
          select case (str)
           case (J_BND_TYPE_PEC)
-            type = F_PEC
+            bdrType = F_PEC
           case (J_BND_TYPE_PMC)
-            type = F_PMC
+            bdrType = F_PMC
           case (J_BND_TYPE_PERIODIC)
-            type = F_PER
+            bdrType = F_PER
           case (J_BND_TYPE_MUR)
-            type = F_MUR
+            bdrType = F_MUR
           case (J_BND_TYPE_PML)
-            type = F_PML
+            bdrType = F_PML
          end select
       end function
    end function
@@ -581,8 +622,7 @@ contains
          character (len=:), allocatable :: label
          logical :: found
 
-         res%nombre_fichero = trim(adjustl( &
-            this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
+         res%nombre_fichero = trim(adjustl(this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
 
          call this%core%get(pw, J_SRC_PW_ATTRIBUTE, label, found)
          if (found) then
@@ -839,7 +879,7 @@ contains
       do i=1, size(ps)
          call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
-            res%collection(n) = readProbe(ps(i)%p)
+            res%collection(n) = readPointProbe(ps(i)%p)
             n = n + 1
          end if
       end do
@@ -848,9 +888,10 @@ contains
       res%length_max = size(res%collection)
       res%len_cor_max = 0
    contains
-      function readProbe(p) result (res)
+      function readPointProbe(p) result (res)
          type(MasSonda) :: res
-         type(json_value), pointer :: p, dirLabels, dirLabelPtr
+         type(json_value), pointer :: p, dirLabelPtr
+         character(len=1), dimension(:), allocatable :: dirLabels
          integer :: i, j, k
          character (len=:), allocatable :: typeLabel, fieldLabel, outputName, dirLabel
          type(pixel_t) :: pixel
@@ -889,24 +930,24 @@ contains
             res%cordinates(1)%Zi = 0
             res%cordinates(1)%Or = strToFieldType(fieldLabel)
           case (J_PR_TYPE_POINT)
-            call this%core%get(p, J_PR_POINT_DIRECTIONS, dirLabels, found=dirLabelsFound)
-            if (.not. dirLabelsFound) then
-               write(error_unit, *) "ERROR: Point probe direction labels not found."
+            call this%core%get(p, J_PR_POINT_DIRECTIONS, dirLabelPtr, found=dirLabelsFound)
+            if(dirLabelsFound) then
+               dirLabels = buildDirLabels(dirLabelPtr)
+            else 
+               dirLabels = [J_DIR_X, J_DIR_Y, J_DIR_Z]
             end if
             call this%core%get(p, J_FIELD, fieldLabel, default=J_FIELD_ELECTRIC, found=fieldLabelFound)
             if (.not. fieldLabelFound) then
                write(error_unit, *) "ERROR: Point probe field label not found."
             end if
             if (dirLabelsFound) then
-               allocate(res%cordinates(this%core%count(dirLabels)))
-               do j = 1, this%core%count(dirLabels)
+               allocate(res%cordinates(size(dirLabels)))
+               do j = 1, size(dirLabels)
                   res%cordinates(j)%tag = outputName
                   res%cordinates(j)%Xi = int (pixel%cell(1))
                   res%cordinates(j)%Yi = int (pixel%cell(2))
                   res%cordinates(j)%Zi = int (pixel%cell(3))
-                  call this%core%get_child(dirLabels, j, dirLabelPtr)
-                  call this%core%get(dirLabelPtr, dirLabel)
-                  res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabel)
+                  res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabels(j))
                end do
             else
                do j = 1, 3
@@ -928,6 +969,20 @@ contains
          end select
 
          res%len_cor = size(res%cordinates)
+      end function
+
+      function buildDirLabels(dirLabelsPtr) result (res)
+         type(json_value), pointer, intent(in) :: dirLabelsPtr
+         character(len=1), dimension(:), allocatable :: res
+         type(json_value), pointer :: child
+         character(len=:), allocatable :: str
+         integer :: i
+         allocate(res(this%core%count(dirLabelsPtr)))
+         do i = 1, this%core%count(dirLabelsPtr)
+            call this%core%get_child(dirLabelsPtr, i, child)
+            call this%core%get(child, str)
+            res(i) = str
+         end do
       end function
 
       subroutine setDomain(res, domain)

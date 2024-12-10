@@ -127,6 +127,13 @@ module smbjson_labels_mod
    ! type(Frontera)
    character (len=*), parameter :: J_BOUNDARY = "boundary"
    character (len=*), parameter :: J_BND_ALL = "all"
+   character (len=*), parameter :: J_BND_XL = "xLower"
+   character (len=*), parameter :: J_BND_XU = "xUpper"
+   character (len=*), parameter :: J_BND_YL = "yLower"
+   character (len=*), parameter :: J_BND_YU = "yUpper"
+   character (len=*), parameter :: J_BND_ZL = "zLower"
+   character (len=*), parameter :: J_BND_ZU = "zUpper"
+
 
    character (len=*), parameter :: J_BND_TYPE_PEC = "pec"
    character (len=*), parameter :: J_BND_TYPE_PMC = "pmc"

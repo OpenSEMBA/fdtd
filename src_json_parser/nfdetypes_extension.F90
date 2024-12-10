@@ -239,11 +239,10 @@ contains
 
    elemental logical function dielectric_eq(a, b)
       type(dielectric_t), intent(in) :: a, b
+      logical :: allAssociated
       dielectric_eq = &
          (a%n_C1P == b%n_C1P) .and. &
          (a%n_C2P == b%n_C2P) .and. &
-         all(a%C1P == b%C1P) .and. &
-         all(a%C2P == b%C2P) .and. &
          (a%sigma == b%sigma) .and. &
          (a%eps == b%eps) .and. &
          (a%mu == b%mu) .and. &
@@ -266,6 +265,15 @@ contains
          (a%diodo     .eqv. b%diodo) .and. &
          (a%plain     .eqv. b%plain) .and. &
          (a%PMLbody   .eqv. b%PMLbody)
+      
+      allAssociated = &
+         associated(a%C1P) .and. associated(b%C1P) .and. &
+         associated(a%C2P) .and. associated(b%C2P) 
+      if (.not. allAssociated) then
+         dielectric_eq = .false.
+         return
+      end if
+      dielectric_eq = all(a%C1P == b%C1P) .and. all(a%C2P == b%C2P)
    end function dielectric_eq
 
    elemental logical function freqdepenmaterial_eq(a, b)
@@ -390,6 +398,17 @@ contains
 
    elemental logical function dielectricregions_eq(a, b)
       type(DielectricRegions), intent(in) :: a, b
+      logical :: allAssociated
+      
+      allAssociated = &
+         associated(a%Lins) .and. associated(b%Lins) .and. &
+         associated(a%Surfs) .and. associated(b%Surfs) .and. &
+         associated(a%Vols) .and. associated(b%Vols)
+         if (.not. allAssociated) then
+            dielectricregions_eq = .false.
+            return
+         end if
+
       dielectricregions_eq = &
          a%nVols == b%nVols .and. &
          a%nSurfs == b%nSurfs .and. &
@@ -398,10 +417,11 @@ contains
          a%nSurfs_max == b%nSurfs_max .and. &
          a%nLins_max == b%nLins_max .and. &
          a%n_C1P_max == b%n_C1P_max .and. &
-         a%n_C2P_max == b%n_C2P_max .and. &
-         all(a%Vols == b%Vols) .and. &
-         all(a%Surfs == b%Surfs) .and. &
-         all(a%Lins == b%Lins)
+         a%n_C2P_max == b%n_C2P_max
+
+      dielectricregions_eq = dielectricregions_eq .and. all(a%Lins == b%Lins) 
+      dielectricregions_eq = dielectricregions_eq .and. all(a%surfs == b%surfs) 
+      dielectricregions_eq = dielectricregions_eq .and. all(a%vols == b%vols) 
    end function dielectricregions_eq
 
    elemental logical function LossyThinSurface_eq(a, b)
