@@ -9,6 +9,7 @@ add_library (smbjson_test_fortran
     "test_mesh.F90"
     "test_parser.F90"    
     "test_read_planewave.F90"
+    "test_read_dielectricslab.F90"
     "test_read_sgbc.F90"
     "test_read_holland1981.F90"
     "test_read_towelHanger.F90"
