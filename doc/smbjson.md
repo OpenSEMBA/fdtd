@@ -567,8 +567,6 @@ Performs a loop integral along on the contour of the surface reference in the `e
 
 Due to Ampere's law, the loop integral of the magnetic field is equal to the total electric current passing through the surfaces. `[field]`, can be `electric` or `magnetic`. Defaults to `electric`, which gives the total current passing through the surface.
 
-TODO REVIEW DO BULK CURRENTS DO AVERAGES OF MAGNETIC FIELDS IN CELLS NEXT TO THE SELECTED?
-
 In the following example `elementId` points an element describing a single oriented surface, therefore `direction` does not need to be stated explicitly.
 
 ```json
@@ -589,8 +587,6 @@ In this example `elementId` points to a volume element, therefore `direction` mu
     "direction": "x"
 }
 ```
-
-TODO EXAMPLE IMAGE
 
 #### `farField`
 
@@ -637,7 +633,7 @@ An example follows:
 
 ### `[domain]`
 
-If `domain` is not specified, it defaults to record from the beginning to the end of the simulation.
+If `domain` is not specified, it defaults to a time domain recording from the beginning to the end of the simulation.
 The domain must specify a `<type>` from the following ones:
 
 + `time`, means recording only in time domain. A probe with a `domain` of this `type` can contain the following entries:

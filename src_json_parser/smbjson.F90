@@ -92,12 +92,12 @@ module smbjson
    end type
 
    type, private :: domain_t
-      real :: tstart, tstop, tstep
-      real :: fstart, fstop
-      integer :: fstep
+      real :: tstart = 0.0, tstop = 0.0, tstep = 0.0
+      real :: fstart = 0.0, fstop = 0.0
+      integer :: fstep = 0
       character(len=:), allocatable :: filename
-      integer :: type1, type2
-      logical :: isLogarithmicFrequencySpacing
+      integer :: type1 = NP_T1_PLAIN, type2 = NP_T2_TIME
+      logical :: isLogarithmicFrequencySpacing = .false.
    end type
 contains
    function parser_ctor(filename) result(res)
@@ -904,6 +904,7 @@ contains
             write(error_unit, *) "ERROR: name entry not found for probe."
          end if
          res%outputrequest = trim(adjustl(outputName))
+
          call setDomain(res, this%getDomain(p, J_PR_DOMAIN))
 
          call this%core%get(p, J_ELEMENTIDS, elemIds, found=elementIdsFound)
@@ -939,33 +940,15 @@ contains
             call this%core%get(p, J_FIELD, fieldLabel, default=J_FIELD_ELECTRIC, found=fieldLabelFound)
             if (.not. fieldLabelFound) then
                write(error_unit, *) "ERROR: Point probe field label not found."
-            end if
-            if (dirLabelsFound) then
-               allocate(res%cordinates(size(dirLabels)))
-               do j = 1, size(dirLabels)
-                  res%cordinates(j)%tag = outputName
-                  res%cordinates(j)%Xi = int (pixel%cell(1))
-                  res%cordinates(j)%Yi = int (pixel%cell(2))
-                  res%cordinates(j)%Zi = int (pixel%cell(3))
-                  res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabels(j))
-               end do
-            else
-               do j = 1, 3
-                  res%cordinates(j)%tag = outputName
-                  res%cordinates(j)%Xi = int (pixel%cell(1))
-                  res%cordinates(j)%Yi = int (pixel%cell(2))
-                  res%cordinates(j)%Zi = int (pixel%cell(3))
-                  select case (j)
-                  case (1)
-                     dirLabel = J_DIR_X
-                  case (2)
-                     dirLabel = J_DIR_Y
-                  case (3)
-                     dirLabel = J_DIR_Z
-                  end select
-                  res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabel)
-               end do
-            end if
+            end if           
+            allocate(res%cordinates(size(dirLabels)))
+            do j = 1, size(dirLabels)
+               res%cordinates(j)%tag = outputName
+               res%cordinates(j)%Xi = int (pixel%cell(1))
+               res%cordinates(j)%Yi = int (pixel%cell(2))
+               res%cordinates(j)%Zi = int (pixel%cell(3))
+               res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabels(j))
+            end do
          end select
 
          res%len_cor = size(res%cordinates)

@@ -127,19 +127,19 @@ contains
       end do
       ! point probe at front
       expected%Sonda%collection(1)%outputrequest = "front"
-      expected%Sonda%collection(1)%cordinates(1:3)%tag = "probe@layer1"
+      expected%Sonda%collection(1)%cordinates(1:3)%tag = "front"
       expected%Sonda%collection(1)%cordinates(1:3)%Xi = 2
       expected%Sonda%collection(1)%cordinates(1:3)%Yi = 2
       expected%Sonda%collection(1)%cordinates(1:3)%Zi = 10
       ! point probe in dielectric slab
       expected%Sonda%collection(2)%outputrequest = "inner"
-      expected%Sonda%collection(2)%cordinates(1:3)%tag = "probe@layer2"
+      expected%Sonda%collection(2)%cordinates(1:3)%tag = "inner"
       expected%Sonda%collection(2)%cordinates(1:3)%Xi = 2
       expected%Sonda%collection(2)%cordinates(1:3)%Yi = 2
       expected%Sonda%collection(2)%cordinates(1:3)%Zi = 25
       ! point probe at back
       expected%Sonda%collection(3)%outputrequest = "back"
-      expected%Sonda%collection(3)%cordinates(1:3)%tag = "probe@layer2"
+      expected%Sonda%collection(3)%cordinates(1:3)%tag = "back"
       expected%Sonda%collection(3)%cordinates(1:3)%Xi = 2
       expected%Sonda%collection(3)%cordinates(1:3)%Yi = 2
       expected%Sonda%collection(3)%cordinates(1:3)%Zi = 40

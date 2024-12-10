@@ -804,28 +804,10 @@ contains
       res = .false.
 
       if (a%n_FarField /= b%n_FarField) return
-      ! if (a%n_Electric /= b%n_Electric) return
-      ! if (a%n_Magnetic /= b%n_Magnetic) return
-      ! if (a%n_NormalElectric /= b%n_NormalElectric) return
-      ! if (a%n_NormalMagnetic /= b%n_NormalMagnetic) return
-      ! if (a%n_SurfaceElectricCurrent /= b%n_SurfaceElectricCurrent) return
-      ! if (a%n_SurfaceMagneticCurrent /= b%n_SurfaceMagneticCurrent) return
 
       if (.not. associated(a%FarField)               .or. .not. associated(b%FarField)) return
-      ! if (.not. associated(a%Electric)               .or. .not. associated(b%Electric)) return
-      ! if (.not. associated(a%Magnetic)               .or. .not. associated(b%Magnetic)) return
-      ! if (.not. associated(a%NormalElectric)         .or. .not. associated(b%NormalElectric)) return
-      ! if (.not. associated(a%NormalMagnetic)         .or. .not. associated(b%NormalMagnetic)) return
-      ! if (.not. associated(a%SurfaceElectricCurrent) .or. .not. associated(b%SurfaceElectricCurrent)) return
-      ! if (.not. associated(a%SurfaceMagneticCurrent) .or. .not. associated(b%SurfaceMagneticCurrent)) return
 
       if (any(.not. a%FarField == b%FarField)) return
-      ! if (any(.not. a%Electric == b%Electric)) return
-      ! if (any(.not. a%Magnetic == b%Magnetic)) return
-      ! if (any(.not. a%NormalElectric == b%NormalElectric)) return
-      ! if (any(.not. a%NormalMagnetic == b%NormalMagnetic)) return
-      ! if (any(.not. a%SurfaceElectricCurrent == b%SurfaceElectricCurrent)) return
-      ! if (any(.not. a%SurfaceMagneticCurrent == b%SurfaceMagneticCurrent)) return
 
       res = .true.
    end function abstractSonda_eq
