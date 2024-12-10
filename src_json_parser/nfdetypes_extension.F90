@@ -7,6 +7,8 @@ module NFDETypes_extension
    public
 
    interface operator(==)
+      module procedure Parseador_eq
+
       module procedure NFDEGeneral_eq
       module procedure desplazamiento_eq
 
@@ -106,7 +108,13 @@ contains
       allocate(pD%pmcRegs%vols(0))
 
       allocate(pD%DielRegs)
+      allocate(pD%DielRegs%lins(0))
+      allocate(pD%DielRegs%surfs(0))
+      allocate(pD%DielRegs%vols(0))
+      
       allocate(pD%LossyThinSurfs)
+      allocate(pD%LossyThinSurfs%cs(0))
+
       allocate(pD%frqDepMats)
       allocate(pD%aniMats)
       !
@@ -219,10 +227,13 @@ contains
       pecregions_eq = &
          (a%nVols == b%nVols) .and. &
          (a%nSurfs == b%nSurfs) .and. &
-         (a%nLins == b%nLins) .and. &
-         all(a%Lins == b%Lins) .and. &
-         all(a%Vols == b%Vols) .and. &
-         all(a%Surfs == b%Surfs)
+         (a%nLins_max == b%nLins_max) .and. &
+         (a%nVols_max == b%nVols_max) .and. &
+         (a%nSurfs_max == b%nSurfs_max) .and. &
+         (a%nLins == b%nLins)
+      pecregions_eq = pecregions_eq .and. all(a%Lins == b%Lins) 
+      pecregions_eq = pecregions_eq .and. all(a%surfs == b%surfs) 
+      pecregions_eq = pecregions_eq .and. all(a%vols == b%vols) 
 
    end function pecregions_eq
 
