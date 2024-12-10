@@ -55,7 +55,7 @@ integer function test_idchildtable() bind(C) result(err)
 
    tbl = IdChildTable_t(core, root, J_MATERIALS)
 
-   if (tbl%count() /= 2) err = err + 1
+   if (tbl%totalSize() /= 2) err = err + 1
    block
       character (len=:), allocatable :: matType
       logical :: found

@@ -17,7 +17,9 @@ module smbjson
 
    implicit none
 
-   integer, private, parameter  ::  MAX_LINE = 256
+   integer, private, parameter  :: MAX_LINE = BUFSIZE
+   character (len=*), parameter :: TAG_MATERIAL = 'material'
+   character (len=*), parameter :: TAG_LAYER = 'layer'
 
    type, public :: parser_t
       private
@@ -26,43 +28,47 @@ module smbjson
       type(json_core), pointer :: core => null()
       type(json_value), pointer :: root => null()
       type(mesh_t) :: mesh
-      type(IdChildTable_t) :: matTable
+      type(IdChildTable_t) :: matTable, elementTable
 
    contains
       procedure :: readProblemDescription
+      procedure :: readMesh
 
       ! private
-      procedure :: readGeneral
-      procedure :: readGrid
-      procedure :: readMediaMatrix
-      procedure :: readPECRegions
-      procedure :: readPMCRegions
-      procedure :: readBoundary
-      procedure :: readPlanewaves
-      procedure :: readNodalSources
-      procedure :: readProbes
-      procedure :: readMoreProbes
-      procedure :: readBlockProbes
-      procedure :: readVolumicProbes
-      procedure :: readThinWires
+      procedure, private :: readGeneral
+      procedure, private :: readGrid
+      procedure, private :: readMediaMatrix
+      procedure, private :: readPECRegions
+      procedure, private :: readPMCRegions
+      procedure, private :: readLossyThinSurfaces
+      procedure, private :: readBoundary
+      procedure, private :: readPlanewaves
+      procedure, private :: readNodalSources
+      procedure, private :: readProbes
+      procedure, private :: readMoreProbes
+      procedure, private :: readBlockProbes
+      procedure, private :: readVolumicProbes
+      procedure, private :: readThinWires
       !
-      procedure :: readMesh
       !
-      procedure :: readMTLN
+      procedure, private :: readMTLN
       !
-      procedure :: getLogicalAt
-      procedure :: getIntAt
-      procedure :: getIntsAt
-      procedure :: getRealAt
-      procedure :: getRealsAt
-      procedure :: getMatrixAt
-      procedure :: getStrAt
-      procedure :: existsAt
-      procedure :: getCellRegionsWithMaterialType
-      procedure :: getDomain
-      procedure :: jsonValueFilterByKeyValue
-      procedure :: jsonValueFilterByKeyValues
-      procedure :: getSingleVolumeInElementsIds
+      procedure, private :: getLogicalAt
+      procedure, private :: getIntAt
+      procedure, private :: getIntsAt
+      procedure, private :: getRealAt
+      procedure, private :: getRealsAt
+      procedure, private :: getMatrixAt
+      procedure, private :: getStrAt
+      procedure, private :: existsAt
+      procedure, private :: getDomain
+      procedure, private :: buildPECPMCRegions
+      procedure, private :: getMaterialAssociations
+      procedure, private :: buildMaterialAssociation
+      procedure, private :: buildTagName
+      procedure, private :: jsonValueFilterByKeyValue
+      procedure, private :: jsonValueFilterByKeyValues
+      procedure, private :: getSingleVolumeInElementsIds
    end type
    interface parser_t
       module procedure parser_ctor
@@ -78,14 +84,20 @@ module smbjson
       real :: multiplier
    end type
 
+   type, private :: materialAssociation_t
+      character(:), allocatable :: name
+      integer :: materialId
+      integer, dimension(:), allocatable :: elementIds
+      character(:), allocatable :: matAssType
+   end type
 
    type, private :: domain_t
-      real :: tstart, tstop, tstep
-      real :: fstart, fstop
-      integer :: fstep
+      real :: tstart = 0.0, tstop = 0.0, tstep = 0.0
+      real :: fstart = 0.0, fstop = 0.0
+      integer :: fstep = 0
       character(len=:), allocatable :: filename
-      integer :: type1, type2
-      logical :: isLogarithmicFrequencySpacing
+      integer :: type1 = NP_T1_PLAIN, type2 = NP_T2_TIME
+      logical :: isLogarithmicFrequencySpacing = .false.
    end type
 contains
    function parser_ctor(filename) result(res)
@@ -118,6 +130,7 @@ contains
 
       this%mesh = this%readMesh()
       this%matTable = IdChildTable_t(this%core, this%root, J_MATERIALS)
+      this%elementTable = IdChildTable_t(this%core, this%root, J_MESH//'.'//J_ELEMENTS)
       
       call initializeProblemDescription(res)
       
@@ -130,6 +143,7 @@ contains
       ! Materials
       res%pecRegs = this%readPECRegions()
       res%pmcRegs = this%readPMCRegions()
+      res%lossyThinSurfs = this%readLossyThinSurfaces()
       
       ! Sources
       res%plnSrc = this%readPlanewaves()
@@ -144,11 +158,6 @@ contains
       ! Thin elements
       res%tWires = this%readThinWires()
       res%mtln = this%readMTLN(res%despl)
-
-      !! Cleanup
-      !call this%core%destroy()
-      !call this%jsonfile%destroy()
-      !nullify(this%root)
 
    end function
 
@@ -321,45 +330,86 @@ contains
    function readBoundary(this) result (res)
       class(parser_t) :: this
       type(Frontera) :: res
-      character(kind=json_CK,len=:), allocatable :: boundaryTypeLabel
-      logical(LK) :: allLabelFound = .false.
-      real :: orden, refl
-      call this%core%get(this%root, J_BOUNDARY//'.'//J_BND_ALL//'.'//J_TYPE,  boundaryTypeLabel, allLabelFound)
-      if (allLabelFound) then
-         res%tipoFrontera(:) = labelToBoundaryType(boundaryTypeLabel)
-         if (all(res%tipoFrontera == F_PML)) then
-            res%propiedadesPML(:) = readPMLProperties(J_BOUNDARY//"."//J_BND_ALL)
-         end if
-         return
-      else
-         ! TODO Check every bound.
-         write(error_unit,*) 'WIP: Boundaries of different types not implemented.'
+      character (len=:), allocatable :: bdrType
+      type(json_value), pointer :: bdrs
+      logical :: found
+      character(len=*), parameter :: errorMsgInit = "ERROR reading boundary: "
+      
+      call this%core%get(this%root, J_BOUNDARY, bdrs, found)
+      if (.not. found) then
+         write(error_unit, * ) errorMsgInit, J_BOUNDARY, " object not found."
       end if
+      
+      block
+         call this%core%get(bdrs, J_BND_ALL//'.'//J_TYPE,  bdrType, found)
+         if (found) then
+            res%tipoFrontera(:) = labelToBoundaryType(bdrType)
+            if (all(res%tipoFrontera == F_PML)) then
+               res%propiedadesPML(:) = readPMLProperties(J_BOUNDARY//"."//J_BND_ALL)
+            end if
+            return
+         end if
+      end block
+         
+      block
+         character(len=*), dimension(6), parameter :: placeLabels = &
+            [J_BND_XL, J_BND_XU, J_BND_YL, J_BND_YU, J_BND_ZL, J_BND_ZU]
+         integer :: i, j
+         do i = 1, 6
+            bdrType = this%getStrAt(bdrs, placeLabels(i)//"."//J_TYPE, found)
+            if (.not. found) then
+               write(error_unit, *) errorMsgInit, placeLabels(i), " or ", J_BND_ALL, " not found."
+            end if
+            j = labelToBoundaryPlace(placeLabels(i))
+            res%tipoFrontera(j) = labelToBoundaryType(bdrType)
+            if (res%tipoFrontera(j) == F_PML) then
+               res%propiedadesPML(j) = readPMLProperties(J_BOUNDARY//"."//placeLabels(i))
+            end if
+         end do
+      end block
+
    contains
       function readPMLProperties(p) result(res)
          type(FronteraPML) :: res
          character(len=*), intent(in) :: p
          call this%core%get(this%root, p//'.'//J_BND_PML_LAYERS,     res%numCapas, default=8)
-         call this%core%get(this%root, p//'.'//J_BND_PML_ORDER,      orden,    default=2.0)
-         call this%core%get(this%root, p//'.'//J_BND_PML_REFLECTION, refl,     default=0.001)
-         res%orden = orden
-         res%refl = refl
+         call this%core%get(this%root, p//'.'//J_BND_PML_ORDER,      res%orden,    default=2.0)
+         call this%core%get(this%root, p//'.'//J_BND_PML_REFLECTION, res%refl,     default=0.001)
       end function
 
-      function labelToBoundaryType(str) result (type)
-         character(len=:), allocatable :: str
-         integer :: type
+      function labelToBoundaryPlace(str) result (place)
+         character(len=*), intent(in) :: str
+         integer :: place
+         select case (str)
+            case (J_BND_XL)
+               place = F_XL
+            case (J_BND_XU)
+               place = F_XU
+            case (J_BND_YL)
+               place = F_YL
+            case (J_BND_YU)
+               place = F_YU
+            case (J_BND_ZL)
+               place = F_ZL
+            case (J_BND_ZU)
+               place = F_ZU
+         end select
+      end function
+
+      function labelToBoundaryType(str) result (bdrType)
+         character(len=:), allocatable, intent(in) :: str
+         integer :: bdrType
          select case (str)
           case (J_BND_TYPE_PEC)
-            type = F_PEC
+            bdrType = F_PEC
           case (J_BND_TYPE_PMC)
-            type = F_PMC
+            bdrType = F_PMC
           case (J_BND_TYPE_PERIODIC)
-            type = F_PER
+            bdrType = F_PER
           case (J_BND_TYPE_MUR)
-            type = F_MUR
+            bdrType = F_MUR
           case (J_BND_TYPE_PML)
-            type = F_PML
+            bdrType = F_PML
          end select
       end function
    end function
@@ -367,31 +417,175 @@ contains
    function readPECRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(PECRegions) :: res
-      type(cell_region_t), dimension(:), allocatable :: cRs
-      cRs = this%getCellRegionsWithMaterialType(J_MAT_TYPE_PEC)
-      res = buildPECPMCRegion(cRs)
+      res = this%buildPECPMCRegions(J_MAT_TYPE_PEC)
    end function
 
    function readPMCRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(PECRegions) :: res
-      type(cell_region_t), dimension(:), allocatable :: cRs
-      cRs = this%getCellRegionsWithMaterialType(J_MAT_TYPE_PMC)
-      res = buildPECPMCRegion(cRs)
+      res = this%buildPECPMCRegions(J_MAT_TYPE_PMC)
    end function
 
-   function buildPECPMCRegion(cRs) result(res)
+   function buildPECPMCRegions(this, matType) result(res)
+      class(parser_t) :: this
+      character (len=*), intent(in) :: matType 
       type(PECRegions) :: res
-      type(cell_region_t), dimension(:), allocatable, intent(in) :: cRs
-      call cellRegionsToCoords(res%Lins, cRs, CELL_TYPE_LINEL)
-      call cellRegionsToCoords(res%Surfs, cRs, CELL_TYPE_SURFEL)
-      call cellRegionsToCoords(res%Vols, cRs, CELL_TYPE_VOXEL)
-      res%nLins = size(res%lins)
-      res%nSurfs = size(res%surfs)
-      res%nVols = size(res%vols)
-      res%nLins_max = size(res%Lins)
-      res%nSurfs_max = size(res%Surfs)
-      res%nVols_max = size(res%Vols)
+      type(json_value_ptr), dimension(:), allocatable :: mA
+      
+      ma = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, matType)
+
+      call fillRegion(res%lins,  res%nLins,  res%nLins_max,  buildRegionCoords(mA, CELL_TYPE_LINEL))
+      call fillRegion(res%surfs, res%nSurfs, res%nSurfs_max, buildRegionCoords(mA, CELL_TYPE_SURFEL))
+      call fillRegion(res%vols,  res%nVols,  res%nVols_max,  buildRegionCoords(mA, CELL_TYPE_VOXEL))
+         
+   contains
+      subroutine fillRegion(resCoords, resNCoords, resNCoordsMax, cs)
+         type(coords), dimension(:), pointer :: resCoords
+         integer, intent(out) :: resNCoords, resNCoordsMax
+         type(coords), dimension(:), allocatable, intent(in) :: cs
+
+         allocate(resCoords(size(cs)))
+         resCoords(:) = cs(:)
+         resNCoords = size(cs)
+         resNCoordsMax = size(cs)
+      end subroutine
+
+      function buildRegionCoords(matAssPtrs, cellType) result(res)
+         type(json_value_ptr), dimension(:), allocatable, intent(in) :: matAssPtrs
+         integer, intent(in) :: cellType
+         type(coords), dimension(:), allocatable :: res
+         
+         type(materialAssociation_t) :: mA
+         type(cell_region_t) :: cR
+         integer :: i, j, e
+         integer :: nCs
+         character (len=:), allocatable :: tagName
+         type(coords), dimension(:), allocatable :: cs
+
+         ! Precounts
+         nCs = 0
+         do i = 1, size(matAssPtrs)
+            mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+            do e = 1, size(mA%elementIds)
+               cR = this%mesh%getCellRegion(mA%elementIds(e))
+               cs = cellRegionToCoords(cR, cellType)
+               nCs = nCs + size(cs)
+            end do
+         end do
+
+         ! Fills
+         allocate(res(nCs))
+         j = 1
+         do i = 1, size(matAssPtrs)
+            mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+            do e = 1, size(mA%elementIds)
+               tagName = this%buildTagName(mA%materialId, mA%elementIds(e))
+               cR = this%mesh%getCellRegion(mA%elementIds(e))
+               cs = cellRegionToCoords(cR, cellType, tag=tagName)
+               if (size(cs) == 0) cycle
+               res(j:(j+size(cs)-1)) = cs
+               j = j + size(cs) 
+            end do
+         end do
+      end function
+
+   end function
+
+   function readLossyThinSurfaces(this) result (res)
+      class(parser_t), intent(in) :: this
+      type(LossyThinSurfaces) :: res
+      type(json_value_ptr), dimension(:), allocatable :: matAssPtrs
+      type(json_value_ptr) :: mat
+      integer :: nLossySurfaces
+      logical :: found
+      integer :: i, j, k
+      type(materialAssociation_t) :: mA
+      
+      matAssPtrs = this%getMaterialAssociations(&
+         J_MAT_ASS_TYPE_SURFACE, J_MAT_TYPE_MULTILAYERED_SURFACE)
+      
+      ! Precounts
+      nLossySurfaces = 0
+      do i = 1, size(matAssPtrs)
+         mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+         nLossySurfaces = nLossySurfaces + size(mA%elementIds)
+      end do
+
+      ! Fills
+      if (nLossySurfaces == 0) then
+         res = emptyLossyThinSurfaces()
+         return
+      end if
+
+      allocate(res%cs(nLossySurfaces))
+      res%length = nLossySurfaces
+      res%length_max = nLossySurfaces
+      res%nC_max = nLossySurfaces
+      k = 1
+      do i = 1, size(matAssPtrs)
+         mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+         do j = 1, size(mA%elementIds)
+            res%cs(k) = readLossyThinSurface(mA%materialId, mA%elementIds(j))
+            k = k + 1
+         end do
+      end do
+      
+   contains
+      function readLossyThinSurface(matId, eId) result(res)
+         integer, intent(in) :: matId
+         integer, intent(in) :: eId
+         type(LossyThinSurface) :: res
+         logical :: found
+         character (len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
+         type(coords), dimension(:), allocatable :: cs
+         ! Reads coordinates.
+         res%nc = 1
+         cs = cellRegionToCoords(this%mesh%getCellRegion(eId), &
+            tag = this%buildTagName(matId, eId))
+         allocate(res%c(size(cs)))
+         res%c = cs(:)
+
+
+         ! Reads layers.
+         block
+            integer :: i
+            type(json_value_ptr) :: mat
+            type(json_value), pointer :: layer
+            type(json_value), pointer :: layers
+
+            mat = this%matTable%getId(matId)
+            call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers, found)
+            if (.not. found) then
+               write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_LAYERS, " not found."
+            end if
+
+            res%numcapas = this%core%count(layers)
+            allocate(res%sigma( res%numcapas))
+            allocate(res%eps(   res%numcapas))
+            allocate(res%mu(    res%numcapas))
+            allocate(res%sigmam(res%numcapas))
+            allocate(res%thk(   res%numcapas))
+            do i = 1, res%numcapas
+               call this%core%get_child(layers, i, layer)
+               res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
+               res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
+               res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0) * EPSILON_VACUUM
+               res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0) * MU_VACUUM
+               res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
+               if (.not. found) then
+                  write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_THICKNESS, " in layer not found."
+               end if
+            end do
+         end block
+      end function
+
+      function emptyLossyThinSurfaces() result (res)
+         type(LossyThinSurfaces) :: res
+         allocate(res%cs(0))
+         res%length = 0
+         res%length_max = 0
+         res%nC_max = 0
+      end function
    end function
 
    function readPlanewaves(this) result (res)
@@ -428,8 +622,7 @@ contains
          character (len=:), allocatable :: label
          logical :: found
 
-         res%nombre_fichero = trim(adjustl( &
-            this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
+         res%nombre_fichero = trim(adjustl(this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
 
          call this%core%get(pw, J_SRC_PW_ATTRIBUTE, label, found)
          if (found) then
@@ -686,7 +879,7 @@ contains
       do i=1, size(ps)
          call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
-            res%collection(n) = readProbe(ps(i)%p)
+            res%collection(n) = readPointProbe(ps(i)%p)
             n = n + 1
          end if
       end do
@@ -695,9 +888,10 @@ contains
       res%length_max = size(res%collection)
       res%len_cor_max = 0
    contains
-      function readProbe(p) result (res)
+      function readPointProbe(p) result (res)
          type(MasSonda) :: res
-         type(json_value), pointer :: p, dirLabels, dirLabelPtr
+         type(json_value), pointer :: p, dirLabelPtr
+         character(len=1), dimension(:), allocatable :: dirLabels
          integer :: i, j, k
          character (len=:), allocatable :: typeLabel, fieldLabel, outputName, dirLabel
          type(pixel_t) :: pixel
@@ -710,6 +904,7 @@ contains
             write(error_unit, *) "ERROR: name entry not found for probe."
          end if
          res%outputrequest = trim(adjustl(outputName))
+
          call setDomain(res, this%getDomain(p, J_PR_DOMAIN))
 
          call this%core%get(p, J_ELEMENTIDS, elemIds, found=elementIdsFound)
@@ -736,45 +931,41 @@ contains
             res%cordinates(1)%Zi = 0
             res%cordinates(1)%Or = strToFieldType(fieldLabel)
           case (J_PR_TYPE_POINT)
-            call this%core%get(p, J_PR_POINT_DIRECTIONS, dirLabels, found=dirLabelsFound)
-            if (.not. dirLabelsFound) then
-               write(error_unit, *) "ERROR: Point probe direction labels not found."
+            call this%core%get(p, J_PR_POINT_DIRECTIONS, dirLabelPtr, found=dirLabelsFound)
+            if(dirLabelsFound) then
+               dirLabels = buildDirLabels(dirLabelPtr)
+            else 
+               dirLabels = [J_DIR_X, J_DIR_Y, J_DIR_Z]
             end if
             call this%core%get(p, J_FIELD, fieldLabel, default=J_FIELD_ELECTRIC, found=fieldLabelFound)
             if (.not. fieldLabelFound) then
                write(error_unit, *) "ERROR: Point probe field label not found."
-            end if
-            if (dirLabelsFound) then
-               allocate(res%cordinates(this%core%count(dirLabels)))
-               do j = 1, this%core%count(dirLabels)
-                  res%cordinates(j)%tag = outputName
-                  res%cordinates(j)%Xi = int (pixel%cell(1))
-                  res%cordinates(j)%Yi = int (pixel%cell(2))
-                  res%cordinates(j)%Zi = int (pixel%cell(3))
-                  call this%core%get_child(dirLabels, j, dirLabelPtr)
-                  call this%core%get(dirLabelPtr, dirLabel)
-                  res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabel)
-               end do
-            else
-               do j = 1, 3
-                  res%cordinates(j)%tag = outputName
-                  res%cordinates(j)%Xi = int (pixel%cell(1))
-                  res%cordinates(j)%Yi = int (pixel%cell(2))
-                  res%cordinates(j)%Zi = int (pixel%cell(3))
-                  select case (j)
-                  case (1)
-                     dirLabel = J_DIR_X
-                  case (2)
-                     dirLabel = J_DIR_Y
-                  case (3)
-                     dirLabel = J_DIR_Z
-                  end select
-                  res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabel)
-               end do
-            end if
+            end if           
+            allocate(res%cordinates(size(dirLabels)))
+            do j = 1, size(dirLabels)
+               res%cordinates(j)%tag = outputName
+               res%cordinates(j)%Xi = int (pixel%cell(1))
+               res%cordinates(j)%Yi = int (pixel%cell(2))
+               res%cordinates(j)%Zi = int (pixel%cell(3))
+               res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabels(j))
+            end do
          end select
 
          res%len_cor = size(res%cordinates)
+      end function
+
+      function buildDirLabels(dirLabelsPtr) result (res)
+         type(json_value), pointer, intent(in) :: dirLabelsPtr
+         character(len=1), dimension(:), allocatable :: res
+         type(json_value), pointer :: child
+         character(len=:), allocatable :: str
+         integer :: i
+         allocate(res(this%core%count(dirLabelsPtr)))
+         do i = 1, this%core%count(dirLabelsPtr)
+            call this%core%get_child(dirLabelsPtr, i, child)
+            call this%core%get(child, str)
+            res(i) = str
+         end do
       end function
 
       subroutine setDomain(res, domain)
@@ -1441,6 +1632,170 @@ contains
          end if
 
          write(error_unit, *) "Error parsing domain."
+      end function
+   end function
+
+   function buildMaterialAssociation(this, matAss) result(res)
+      class(parser_t) :: this
+      type(json_value), pointer, intent(in) :: matAss
+      type(materialAssociation_t) :: res
+      character (len=*), parameter :: errorMsgInit = "ERROR reading material association: "
+      logical :: found
+      
+      ! Fills material association.
+      res%materialId = this%getIntAt(matAss, J_MATERIAL_ID, found)
+      if (.not. found) call showLabelNotFoundError(J_MATERIAL_ID)
+      res%elementIds = this%getIntsAt(matAss, J_ELEMENTIDS, found)
+      if (.not. found) call showLabelNotFoundError(J_ELEMENTIDS)
+      res%matAssType = this%getStrAt(matAss, J_TYPE, found)
+      if (.not. found) call showLabelNotFoundError(J_TYPE)
+      res%name = this%getStrAt(matAss, J_NAME, found)
+      if (.not. found) then
+         res%name = ""
+      end if
+
+      ! Checks validity of associations.
+      if (this%matTable%checkId(res%materialId) /= 0) then
+         write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " not found."
+      endif
+      
+      if (size(res%elementIds) == 0) then
+         write(error_unit, *) errorMsgInit, J_ELEMENTIDS, "must not be empty."
+      end if
+      block
+         integer :: i
+         do i = 1, size(res%elementIds)
+            if (this%mesh%checkElementId(res%elementIds(i)) /= 0) then
+               write(error_unit, *) errorMsgInit, "element with id ", res%elementIds(i), " not found."
+            end if
+         end do
+      end block
+
+      if (res%matAssType /= J_MAT_ASS_TYPE_BULK .and. &
+          res%matAssType /= J_MAT_ASS_TYPE_SURFACE .and. &
+          res%matAssType /= J_MAT_ASS_TYPE_CABLE) then
+            write(error_unit, *) errorMsgInit, "invalid type."
+      endif
+      ! This function does not work with material associatiosn for cables. 
+      ! DO NOT use it to read that.
+      if (res%matAssType == J_MAT_ASS_TYPE_CABLE) then
+         write(error_unit, *) errorMsgInit, "invalid type."
+      endif
+      
+   contains 
+      subroutine showLabelNotFoundError(label)
+         character (len=*), intent(in) :: label
+         write(error_unit, *) errorMsgInit, label, " not found."
+      end subroutine
+   end function
+
+   function getMaterialAssociations(this, matAssType, materialType) result(res)
+      class(parser_t) :: this
+      type(json_value), pointer :: allMatAss
+      character(len=*), intent(in) :: matAssType
+      character(len=*), intent(in) :: materialType
+      type(json_value_ptr), dimension(:), allocatable :: res
+      
+      type(json_value_ptr), dimension(:), allocatable :: mAPtrs
+      integer :: i, j
+      integer :: nMaterials
+      logical :: found
+
+      call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, allMatAss, found)
+      if (.not. found) then
+         allocate(res(0))
+         return
+      end if
+      
+      mAPtrs = this%jsonValueFilterByKeyValue(allMatAss, J_TYPE, matAssType)
+
+      nMaterials = 0
+      do i = 1, size(mAPtrs)
+         if (isAssociatedWithMaterial(mAPtrs(i)%p, materialType)) then
+            nMaterials = nMaterials + 1
+         end if
+      end do
+
+      allocate(res(nMaterials))
+      j = 1
+      do i = 1, size(mAPtrs)
+         if (isAssociatedWithMaterial(mAPtrs(i)%p, materialType)) then
+            res(j) = mAPtrs(i)
+            j = j+1
+         end if
+      end do
+
+   contains 
+      logical function isAssociatedWithMaterial(mAPtr, materialType)
+         type(json_value), pointer, intent(in) :: mAPtr
+         character (len=*), intent(in) :: materialType
+         
+         type(materialAssociation_t) :: matAss
+         type(json_value_ptr) :: mat
+
+         matAss = this%buildMaterialAssociation(mAPtr)
+         mat = this%matTable%getId(matAss%materialId)
+         isAssociatedWithMaterial = this%getStrAt(mat%p, J_TYPE) == materialType
+      end function
+   end function
+
+   function buildTagName(this, matId, elementId) result(res)
+      class(parser_t) :: this
+      integer, intent(in) :: matId, elementId
+      character(len=BUFSIZE) :: res
+      character(len=:), allocatable :: matName, layerName
+      logical :: found
+      
+      block
+         type(json_value_ptr) :: mat
+         mat = this%matTable%getId(matId)
+         matName = this%getStrAt(mat%p, J_NAME, found)
+         if (.not. found) then
+            deallocate(matName)
+            allocate(character(len(TAG_MATERIAL) + 12) :: matName)
+            write(matName, '(a,i0)') TAG_MATERIAL, matId
+         end if
+         matName = adaptName(matName)
+      end block
+      
+      block
+         type(json_value_ptr) :: elem
+         elem = this%elementTable%getId(elementId)
+         layerName = this%getStrAt(elem%p, J_NAME, found)
+         if (.not. found) then
+            deallocate(layerName)
+            allocate(character(len(TAG_LAYER) + 12) :: layerName)
+            write(layerName, '(a,i0)') TAG_LAYER, elementId 
+         end if
+         layerName = adaptName(layerName)
+      end block
+      
+      call checkIsValidName(matName)
+      call checkIsValidName(layerName)
+      res = trim(matName // '@' // layerName)
+   contains
+      subroutine checkIsValidName(str)
+         character (len=:), allocatable, intent(in) :: str
+         character (len=*), parameter :: notAllowedChars = '@'
+         integer :: i
+         do i = 1, len((notAllowedChars))
+            if (index(str, notAllowedChars(i:i)) /= 0) then
+               write(error_unit, *) "ERROR in name: ", str, &
+                  " contains invalid character ", notAllowedChars(i:i)
+            end if 
+         end do
+      end subroutine
+
+      function adaptName(str) result(res)
+         character (len=:), allocatable, intent(in) :: str
+         character (len=:), allocatable :: res
+         integer :: i
+         res = trim(adjustl(str))
+         do i = 1, len(res)
+            if (res(i:i) == ' ') then
+               res(i:i) = '_'
+            end if
+         end do
       end function
    end function
 
@@ -2699,13 +3054,14 @@ contains
       call this%core%get(place, path, res, found)
    end function
 
-   function getRealAt(this, place, path, found) result(res)
+   function getRealAt(this, place, path, found, default) result(res)
       real :: res
       class(parser_t) :: this
       type(json_value), pointer :: place
       character(len=*) :: path
       logical, intent(out), optional :: found
-      call this%core%get(place, path, res, found)
+      real, optional :: default
+      call this%core%get(place, path, res, found, default)
    end function
 
    function getRealsAt(this, place, path, found) result(res)
@@ -2755,43 +3111,6 @@ contains
       type(json_value), pointer :: place
       character(len=*) :: path
       call this%core%info(place, path, found=res)
-   end function
-
-   function getCellRegionsWithMaterialType(this, matType) result(res)
-      class(parser_t) :: this
-      character (len=*), intent(in) :: matType
-      type(cell_region_t), dimension(:), allocatable :: res
-
-      logical :: found
-      type(json_value), pointer :: jmrs, jmr
-      type(json_value_ptr) :: jm
-      integer, dimension(:), allocatable :: eIds
-      type(cell_region_t) :: cR
-      integer :: i, j
-      integer :: numCellRegions
-
-      call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, jmrs, found)
-      allocate(res(0))
-      if (.not. found) then
-         return
-      end if
-
-      do i = 1, this%core%count(jmrs)
-         call this%core%get_child(jmrs, i, jmr)
-         jm = this%matTable%getId(this%getIntAt(jmr, J_MATERIAL_ID, found))
-         if (.not. found) &
-            write(error_unit, *) "Error reading material region: materialId label not found."
-
-         if (matType == this%getStrAt(jm%p, J_TYPE)) then
-            eIds = this%getIntsAt(jmr, J_ELEMENTIDS)
-            do j = 1, size(eIds)
-               cR = this%mesh%getCellRegion(eIds(j), found)
-               if (found) then
-                  res = [res, cR]
-               end if
-            end do
-         end if
-      end do
    end function
 
    function jsonValueFilterByKeyValues(this, srcs, key, values) result (res)

@@ -22,10 +22,15 @@ module smbjson_labels_mod
 
    ! -- materials
    character (len=*), parameter :: J_MATERIALS = "materials"
+   character (len=*), parameter :: J_MAT_REL_PERMITTIVITY = "relativePermittivity"
+   character (len=*), parameter :: J_MAT_REL_PERMEABILITY = "relativePermeability"
+   character (len=*), parameter :: J_MAT_ELECTRIC_CONDUCTIVITY = "electricConductivity"
+   character (len=*), parameter :: J_MAT_MAGNETIC_CONDUCTIVITY = "magneticConductivity"
    
    character (len=*), parameter :: J_MAT_TYPE_PEC = "pec"
    character (len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
-   character (len=*), parameter :: J_MAT_TYPE_SIMPLE = "simple"
+   character (len=*), parameter :: J_MAT_TYPE_ISOTROPIC = "isotropic"
+   character (len=*), parameter :: J_MAT_TYPE_MULTILAYERED_SURFACE = "multilayeredSurface"
    character (len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
    character (len=*), parameter :: J_MAT_TYPE_MULTIWIRE = "multiwire"
    character (len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"
@@ -58,6 +63,9 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_MULTIWIRE_INDUCTANCE = "inductancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_RESISTANCE = "resistancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_CONDUCTANCE = "conductancePerMeter"
+
+   character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_LAYERS = "layers"
+   character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_THICKNESS = "thickness"
 
    ! -- materialAssociations
    character (len=*), parameter :: J_MATERIAL_ASSOCIATIONS = "materialAssociations"
@@ -119,6 +127,13 @@ module smbjson_labels_mod
    ! type(Frontera)
    character (len=*), parameter :: J_BOUNDARY = "boundary"
    character (len=*), parameter :: J_BND_ALL = "all"
+   character (len=*), parameter :: J_BND_XL = "xLower"
+   character (len=*), parameter :: J_BND_XU = "xUpper"
+   character (len=*), parameter :: J_BND_YL = "yLower"
+   character (len=*), parameter :: J_BND_YU = "yUpper"
+   character (len=*), parameter :: J_BND_ZL = "zLower"
+   character (len=*), parameter :: J_BND_ZU = "zUpper"
+
 
    character (len=*), parameter :: J_BND_TYPE_PEC = "pec"
    character (len=*), parameter :: J_BND_TYPE_PMC = "pmc"

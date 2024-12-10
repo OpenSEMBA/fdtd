@@ -13,6 +13,9 @@ extern "C" int test_parser_ctor();
 extern "C" int test_parser_read_mesh();
 
 extern "C" int test_read_planewave();
+extern "C" int test_read_sgbc();
+extern "C" int test_read_dielectricslab();
+extern "C" int test_read_thinslot();
 extern "C" int test_read_holland1981();
 extern "C" int test_read_towelhanger();
 extern "C" int test_read_connectedwires();
@@ -35,6 +38,9 @@ TEST(smbjson, mesh_polyline_to_linel)    { EXPECT_EQ(0, test_mesh_polyline_to_li
 TEST(smbjson, parser_ctor)               { EXPECT_EQ(0, test_parser_ctor()); }
 TEST(smbjson, parser_read_mesh)          { EXPECT_EQ(0, test_parser_read_mesh()); }
 TEST(smbjson, read_planewave)            { EXPECT_EQ(0, test_read_planewave()); }
+TEST(smbjson, read_dielectricslab)       { EXPECT_EQ(0, test_read_dielectricslab()); }
+TEST(smbjson, read_thinslot)             { EXPECT_EQ(0, test_read_thinslot()); }
+TEST(smbjson, read_sgbc)                 { EXPECT_EQ(0, test_read_sgbc()); }
 TEST(smbjson, read_holland1981)          { EXPECT_EQ(0, test_read_holland1981()); }
 TEST(smbjson, read_towelhanger)          { EXPECT_EQ(0, test_read_towelhanger()); }
 TEST(smbjson, read_connectedwires)       { EXPECT_EQ(0, test_read_connectedwires()); }
