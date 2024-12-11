@@ -40,6 +40,7 @@ module smbjson
       procedure, private :: readMediaMatrix
       procedure, private :: readPECRegions
       procedure, private :: readPMCRegions
+      procedure, private :: readDielectricRegions
       procedure, private :: readLossyThinSurfaces
       procedure, private :: readBoundary
       procedure, private :: readPlanewaves
@@ -49,6 +50,7 @@ module smbjson
       procedure, private :: readBlockProbes
       procedure, private :: readVolumicProbes
       procedure, private :: readThinWires
+      procedure, private :: readThinSlots
       !
       !
       procedure, private :: readMTLN
@@ -143,6 +145,7 @@ contains
       ! Materials
       res%pecRegs = this%readPECRegions()
       res%pmcRegs = this%readPMCRegions()
+      res%dielRegs = this%readDielectricRegions()
       res%lossyThinSurfs = this%readLossyThinSurfaces()
       
       ! Sources
@@ -157,6 +160,7 @@ contains
       
       ! Thin elements
       res%tWires = this%readThinWires()
+      res%tSlots = this%readThinSlots()
       res%mtln = this%readMTLN(res%despl)
 
    end function
@@ -488,7 +492,16 @@ contains
             end do
          end do
       end function
+   end function
 
+   function readDielectricRegions(this) result (res)
+      class(parser_t), intent(in) :: this
+      type(DielectricRegions) :: res
+
+      ! TODO
+      allocate(res%lins(0))
+      allocate(res%surfs(0))
+      allocate(res%vols(0))
    end function
 
    function readLossyThinSurfaces(this) result (res)
@@ -565,6 +578,11 @@ contains
             allocate(res%mu(    res%numcapas))
             allocate(res%sigmam(res%numcapas))
             allocate(res%thk(   res%numcapas))
+            allocate(res%sigma_devia( res%numcapas))
+            allocate(res%eps_devia(   res%numcapas))
+            allocate(res%mu_devia(    res%numcapas))
+            allocate(res%sigmam_devia(res%numcapas))
+            allocate(res%thk_devia(   res%numcapas))
             do i = 1, res%numcapas
                call this%core%get_child(layers, i, layer)
                res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
@@ -572,6 +590,11 @@ contains
                res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0) * EPSILON_VACUUM
                res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0) * MU_VACUUM
                res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
+               res%sigma_devia(i) = 0.0
+               res%eps_devia(i) = 0.0
+               res%mu_devia(i) = 0.0
+               res%sigmam_devia(i) = 0.0
+               res%thk_devia(i) = 0.0
                if (.not. found) then
                   write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_THICKNESS, " in layer not found."
                end if
@@ -1245,6 +1268,14 @@ contains
       character (len=*), parameter :: SMBJSON_LOG_SUFFIX = "_log_"
       fn = trim(fn) // SMBJSON_LOG_SUFFIX
    end subroutine
+
+   function readThinSlots(this) result (res)
+      class(parser_t) :: this
+      type(ThinSlots) :: res
+
+      !! TODO
+      allocate(res%tg(0))
+   end function
 
    function readThinWires(this) result (res)
       class(parser_t) :: this

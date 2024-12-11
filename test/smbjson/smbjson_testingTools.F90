@@ -37,6 +37,8 @@ contains
       if (checkRegions) then
          if (.not. ex%pecRegs == pr%pecRegs) call testFails(err, 'Expected and read "pec regions" do not match')
          if (.not. ex%pmcRegs == pr%pmcRegs) call testFails(err, 'Expected and read "pmc regions" do not match')
+         if (.not. ex%dielRegs == pr%dielRegs) call testFails(err, 'Expected and read "dielectric regions" do not match')
+         if (.not. ex%lossyThinSurfs == pr%lossyThinSurfs) call testFails(err, 'Expected and read "lossy thin surfaces" do not match')
       end if
       
       ! Sources
@@ -50,6 +52,7 @@ contains
       if (.not. ex%VolPrb == pr%VolPrb)       call testFails(err, 'Expected and read "vol probes" do not match')
       
       ! Thin elements
+      if (.not. ex%tSlots == pr%tSlots) call testFails(err, 'Expected and read "thin slots" do not match')
       if (.not. ex%tWires == pr%tWires) call testFails(err, 'Expected and read "thin wires" do not match')
       if (.not. ex%mtln == pr%mtln) call testFails(err, 'Expected and read mtln types do not match')
       if (err == 0) write(*,*) "Read and expected inputs are equal."      

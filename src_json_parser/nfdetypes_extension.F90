@@ -148,6 +148,7 @@ contains
 
       allocate(pD%sWires)
       allocate(pD%tSlots)
+      allocate(pD%tSlots%tg(0))
 
       allocate(pD%mtln)
       allocate(pD%mtln%cables(0))
@@ -556,8 +557,15 @@ contains
 
    elemental logical function SlantedWires_eq(a, b)
       type(SlantedWires), intent(in) :: a, b
-
-      SlantedWires_eq = all(a%sw == b%sw) .and. &
+      logical :: allAssociated
+      allAssociated = &
+         associated(a%sw) .and. associated(b%sw)
+      if (.not. allAssociated) then
+         SlantedWires_eq = .false.
+         return
+      end if
+      SlantedWires_eq = &
+         all(a%sw == b%sw) .and. &
          (a%n_sw == b%n_sw) .and. &
          (a%n_sw_max == b%n_sw_max)
    end function SlantedWires_eq
@@ -576,8 +584,14 @@ contains
 
    elemental logical function ThinSlot_eq(a, b)
       type(ThinSlot), intent(in) :: a, b
-
-      ThinSlot_eq = all(a%tgc == b%tgc) .and. &
+      logical :: allAssociated
+      allAssociated = associated(a%tgc) .and. associated(b%tgc)
+      if (.not. allAssociated) then
+         ThinSlot_eq = .false.
+         return
+      end if
+      ThinSlot_eq = &
+         all(a%tgc == b%tgc) .and. &
          (a%width == b%width) .and. &
          (a%n_tgc == b%n_tgc) .and. &
          (a%n_tgc_max == b%n_tgc_max)
@@ -585,6 +599,7 @@ contains
 
    elemental logical function ThinSlots_eq(a, b)
       type(ThinSlots), intent(in) :: a, b
+
 
       ThinSlots_eq = all(a%tg == b%tg) .and. &
          (a%n_tg == b%n_tg) .and. &

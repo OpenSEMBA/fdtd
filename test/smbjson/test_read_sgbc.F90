@@ -81,7 +81,7 @@ contains
       allocate(expected%lossyThinSurfs%cs(1)%c(1))
       expected%lossyThinSurfs%cs(1)%nc = 1
       expected%lossyThinSurfs%cs(1)%c(1)%tag = '2-layers-composite@layer2'
-      expected%lossyThinSurfs%cs(1)%c(1)%Or = +iEx
+      expected%lossyThinSurfs%cs(1)%c(1)%Or = +iEy
       expected%lossyThinSurfs%cs(1)%c(1)%Xi = 3
       expected%lossyThinSurfs%cs(1)%c(1)%Xe = 4
       expected%lossyThinSurfs%cs(1)%c(1)%Yi = 3
@@ -99,12 +99,22 @@ contains
       expected%lossyThinSurfs%cs(1)%eps    = [1.3*EPSILON_VACUUM, 1.3*EPSILON_VACUUM]
       expected%lossyThinSurfs%cs(1)%mu     = [         MU_VACUUM,          MU_VACUUM]
       expected%lossyThinSurfs%cs(1)%sigmam = [               0.0,                0.0]
+      allocate(expected%lossyThinSurfs%cs(1)%thk_devia(2))
+      allocate(expected%lossyThinSurfs%cs(1)%sigma_devia(2))
+      allocate(expected%lossyThinSurfs%cs(1)%eps_devia(2))
+      allocate(expected%lossyThinSurfs%cs(1)%mu_devia(2))
+      allocate(expected%lossyThinSurfs%cs(1)%sigmam_devia(2))
+      expected%lossyThinSurfs%cs(1)%thk_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(1)%sigma_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(1)%eps_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(1)%mu_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(1)%sigmam_devia(:) = 0.0
       
       !!! 3-layer composite
       allocate(expected%lossyThinSurfs%cs(2)%c(1))
       expected%lossyThinSurfs%cs(2)%nc = 1
       expected%lossyThinSurfs%cs(2)%c(1)%tag = '3-layers-composite@layer3'
-      expected%lossyThinSurfs%cs(2)%c(1)%Or = +iEy
+      expected%lossyThinSurfs%cs(2)%c(1)%Or = +iEx
       expected%lossyThinSurfs%cs(2)%c(1)%Xi = 3
       expected%lossyThinSurfs%cs(2)%c(1)%Xe = 3
       expected%lossyThinSurfs%cs(2)%c(1)%Yi = 3
@@ -122,6 +132,16 @@ contains
       expected%lossyThinSurfs%cs(2)%eps    = [EPSILON_VACUUM, EPSILON_VACUUM, EPSILON_VACUUM]
       expected%lossyThinSurfs%cs(2)%mu     = [     MU_VACUUM,  1.3*MU_VACUUM,      MU_VACUUM]
       expected%lossyThinSurfs%cs(2)%sigmam = [           0.0,            0.0,           1e-4]
+      allocate(expected%lossyThinSurfs%cs(2)%thk_devia(3))
+      allocate(expected%lossyThinSurfs%cs(2)%sigma_devia(3))
+      allocate(expected%lossyThinSurfs%cs(2)%eps_devia(3))
+      allocate(expected%lossyThinSurfs%cs(2)%mu_devia(3))
+      allocate(expected%lossyThinSurfs%cs(2)%sigmam_devia(3))
+      expected%lossyThinSurfs%cs(2)%thk_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(2)%sigma_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(2)%eps_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(2)%mu_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(2)%sigmam_devia(:) = 0.0
    end function
 end function
 
