@@ -66,7 +66,7 @@ module smbjson
       procedure, private :: getDomain
       procedure, private :: buildPECPMCRegions
       procedure, private :: getMaterialAssociations
-      procedure, private :: buildMaterialAssociation
+      procedure, private :: parseMaterialAssociation
       procedure, private :: buildTagName
       procedure, private :: jsonValueFilterByKeyValue
       procedure, private :: jsonValueFilterByKeyValues
@@ -469,7 +469,7 @@ contains
          ! Precounts
          nCs = 0
          do i = 1, size(matAssPtrs)
-            mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+            mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
             do e = 1, size(mA%elementIds)
                cR = this%mesh%getCellRegion(mA%elementIds(e))
                cs = cellRegionToCoords(cR, cellType)
@@ -481,7 +481,7 @@ contains
          allocate(res(nCs))
          j = 1
          do i = 1, size(matAssPtrs)
-            mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+            mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
             do e = 1, size(mA%elementIds)
                tagName = this%buildTagName(mA%materialId, mA%elementIds(e))
                cR = this%mesh%getCellRegion(mA%elementIds(e))
@@ -497,11 +497,59 @@ contains
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(DielectricRegions) :: res
+      type(json_value_ptr), dimension(:), allocatable :: matAssPtrs
 
-      ! TODO
-      allocate(res%lins(0))
-      allocate(res%surfs(0))
-      allocate(res%vols(0))
+      res%vols =  readDielectricsOfCellType(CELL_TYPE_VOXEL)
+      res%surfs = readDielectricsOfCellType(CELL_TYPE_SURFEL)
+      res%lins =  readDielectricsOfCellType(CELL_TYPE_LINEL)
+      
+      res%nVols = size(res%vols)
+      res%nSurfs = size(res%nSurfs)
+      res%nLins = size(res%nLins)
+   contains
+      function readDielectricsOfCellType(cellType) result (res)
+         integer, intent(in) :: cellType
+         type(dielectric_t), dimension(:), allocatable :: res
+         
+         type(json_value_ptr), dimension(:), allocatable :: mAPtrs
+         type(materialAssociation_t) :: mA
+         type(cell_region_t) :: cR
+
+         integer :: i, e
+         integer :: nCs, nDielectrics
+
+         mAPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, J_MAT_TYPE_ISOTROPIC)
+         
+         ! Precounts
+         nDielectrics = 0
+         do i = 1, size(mAPtrs)           
+            if (containsCellRegionsWithType(mAPtrs(i), cellType)) then
+               nDielectrics = nDielectrics + 1
+            end if 
+         end do
+
+         ! Fills
+         allocate(res(nDielectrics))
+         
+      end function
+
+      logical function containsCellRegionsWithType(mAPtr, cellType)
+         integer, intent(in) :: cellType
+         type(json_value_ptr), intent(in) :: mAPtr
+         type(materialAssociation_t) :: mA
+         type(cell_region_t) :: cR
+         
+         mA = this%parseMaterialAssociation(mAPtrs)
+         do e = 1, size(mA%elementIds)
+            cR = this%mesh%getCellRegion(mA%elementIds(e))
+            if (size(cellRegionToCoords(cR, cellType)) /= 0) then
+               containsCellRegionsWithType = .true.
+               return
+            end if
+         end do
+
+         containsCellRegionsWithType = .false.
+      end function
    end function
 
    function readLossyThinSurfaces(this) result (res)
@@ -520,7 +568,7 @@ contains
       ! Precounts
       nLossySurfaces = 0
       do i = 1, size(matAssPtrs)
-         mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+         mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
          nLossySurfaces = nLossySurfaces + size(mA%elementIds)
       end do
 
@@ -536,7 +584,7 @@ contains
       res%nC_max = nLossySurfaces
       k = 1
       do i = 1, size(matAssPtrs)
-         mA = this%buildMaterialAssociation(matAssPtrs(i)%p)
+         mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
          do j = 1, size(mA%elementIds)
             res%cs(k) = readLossyThinSurface(mA%materialId, mA%elementIds(j))
             k = k + 1
@@ -1666,7 +1714,7 @@ contains
       end function
    end function
 
-   function buildMaterialAssociation(this, matAss) result(res)
+   function parseMaterialAssociation(this, matAss) result(res)
       class(parser_t) :: this
       type(json_value), pointer, intent(in) :: matAss
       type(materialAssociation_t) :: res
@@ -1764,7 +1812,7 @@ contains
          type(materialAssociation_t) :: matAss
          type(json_value_ptr) :: mat
 
-         matAss = this%buildMaterialAssociation(mAPtr)
+         matAss = this%parseMaterialAssociation(mAPtr)
          mat = this%matTable%getId(matAss%materialId)
          isAssociatedWithMaterial = this%getStrAt(mat%p, J_TYPE) == materialType
       end function
