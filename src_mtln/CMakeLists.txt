@@ -5,14 +5,15 @@ enable_language(C CXX Fortran)
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
-add_library(ngspice_interface
-    "ngspice_interface.c"
-)
+add_subdirectory(interface)
+# add_library(ngspice_interface
+#     "ngspice_interface.c"
+# )
 
-target_link_libraries(ngspice_interface PRIVATE	${NGSPICE_LIB})
+# target_link_libraries(ngspice_interface PRIVATE	${NGSPICE_LIB})
 
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-	target_link_libraries(ngspice_interface PRIVATE	stdc++)
+# target_link_libraries(ngspice_interface PRIVATE	stdc++)
 endif ()
 
 add_library(mtlnsolver

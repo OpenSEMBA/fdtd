@@ -14,7 +14,7 @@
 #include <signal.h>
 
 #include "ngspice_interface.h"
-
+// #include "../../build/external/ngspice/ngspice_export.h"
 bool no_bg = true;
 static bool errorflag = false;
 
