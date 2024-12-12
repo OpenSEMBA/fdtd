@@ -515,7 +515,7 @@ contains
          type(materialAssociation_t) :: mA
          type(cell_region_t) :: cR
 
-         integer :: i, e
+         integer :: i, j
          integer :: nCs, nDielectrics
 
          mAPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, J_MAT_TYPE_ISOTROPIC)
@@ -523,23 +523,68 @@ contains
          ! Precounts
          nDielectrics = 0
          do i = 1, size(mAPtrs)           
-            if (containsCellRegionsWithType(mAPtrs(i), cellType)) then
+            if (containsCellRegionsWithType(mAPtrs(i)%p, cellType)) then
                nDielectrics = nDielectrics + 1
             end if 
          end do
 
          ! Fills
          allocate(res(nDielectrics))
+         j = 0
+         do i = 1, size(mAPtrs)       
+            if (.not. containsCellRegionsWithType(mAPtrs(i)%p, cellType)) cycle
+            j = j + 1
+            res(j) = readDielectric(mAPtrs(i)%p, cellType)
+         end do
+      end function
+
+      function readDielectric(mA, cellType) result(res)
+         type(json_value), pointer, intent(in) :: mAPtr
+         integer, intent(in) :: cellType
+         type(Dielectric_t) :: res
+         type(materialAssociation_t) :: mA
+         type(cell_region_t) :: cR
          
+         integer :: e, j
+
+         mA = this%parseMaterialAssociation(mAPtr)
+         
+         ! Precount
+         res%n_C2P = 0
+         do e = 1, size(mA%elementIds)
+            cR = this%mesh%getCellRegion(mA%elementIds(e))
+            if (size(cellRegionToCoords(cR, cellType)) /= 0) then
+               res%n_C2P = res%n_C2P + 1
+            end if
+         end do
+
+         ! Fills coords
+         j = 0
+         allocate(res%c1P(0))
+         allocate(res%c2P(res%n_C2P))
+         do e = 1, size(mA%elementIds)
+            cR = this%mesh%getCellRegion(mA%elementIds(e))
+            if (size(cellRegionToCoords(cR, cellType)) == 0) cycle
+            j = j + 1
+            res%c2p(j) = cellRegionToCoords(cR)
+         end do
+
+         ! Fills rest of dielectric data.
+         res%sigma  = this%getRealAt(mAPtr, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
+         res%sigmam = this%getRealAt(mAPtr, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
+         res%eps    = this%getRealAt(mAPtr, J_MAT_REL_PERMITTIVITY, default=1.0)*EPSILON_VACUUM
+         res%mu     = this%getRealAt(mAPtr, J_MAT_REL_PERMEABILITY, default=1.0)*MU_VACUUM
+
       end function
 
       logical function containsCellRegionsWithType(mAPtr, cellType)
          integer, intent(in) :: cellType
-         type(json_value_ptr), intent(in) :: mAPtr
+         type(json_value), pointer, intent(in) :: mAPtr
          type(materialAssociation_t) :: mA
+         integer :: e
          type(cell_region_t) :: cR
          
-         mA = this%parseMaterialAssociation(mAPtrs)
+         mA = this%parseMaterialAssociation(mAPtr)
          do e = 1, size(mA%elementIds)
             cR = this%mesh%getCellRegion(mA%elementIds(e))
             if (size(cellRegionToCoords(cR, cellType)) /= 0) then
