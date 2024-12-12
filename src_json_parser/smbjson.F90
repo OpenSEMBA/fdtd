@@ -67,6 +67,7 @@ module smbjson
       procedure, private :: buildPECPMCRegions
       procedure, private :: getMaterialAssociations
       procedure, private :: parseMaterialAssociation
+      procedure, private :: matAssToCoords
       procedure, private :: buildTagName
       procedure, private :: jsonValueFilterByKeyValue
       procedure, private :: jsonValueFilterByKeyValues
@@ -434,64 +435,49 @@ contains
       class(parser_t) :: this
       character (len=*), intent(in) :: matType 
       type(PECRegions) :: res
-      type(json_value_ptr), dimension(:), allocatable :: mA
+      type(json_value_ptr), dimension(:), allocatable :: mAPtrs
+      type(materialAssociation_t) :: mA
+      integer :: i
       
-      ma = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, matType)
+      mAPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, matType)
+      do i = 1, size(mAPtrs)
+         mA = this%parseMaterialAssociation(mAptrs(i)%p)
+         call appendRegion(res%lins,  res%nLins,  res%nLins_max,  this%matAssToCoords(mA, CELL_TYPE_LINEL))
+         call appendRegion(res%surfs, res%nSurfs, res%nSurfs_max, this%matAssToCoords(mA, CELL_TYPE_SURFEL))
+         call appendRegion(res%vols,  res%nVols,  res%nVols_max,  this%matAssToCoords(mA, CELL_TYPE_VOXEL))
+      end do
 
-      call fillRegion(res%lins,  res%nLins,  res%nLins_max,  buildRegionCoords(mA, CELL_TYPE_LINEL))
-      call fillRegion(res%surfs, res%nSurfs, res%nSurfs_max, buildRegionCoords(mA, CELL_TYPE_SURFEL))
-      call fillRegion(res%vols,  res%nVols,  res%nVols_max,  buildRegionCoords(mA, CELL_TYPE_VOXEL))
-         
+      block
+         type(coords), dimension(:), allocatable :: emptyCoords
+         allocate(emptyCoords(0))
+         if (size(mAPtrs) == 0) then 
+            call appendRegion(res%lins,  res%nLins,  res%nLins_max,  emptyCoords)
+            call appendRegion(res%surfs, res%nSurfs, res%nSurfs_max, emptyCoords)
+            call appendRegion(res%vols,  res%nVols,  res%nVols_max,  emptyCoords)
+         end if
+      end block
    contains
-      subroutine fillRegion(resCoords, resNCoords, resNCoordsMax, cs)
+      subroutine appendRegion(resCoords, resNCoords, resNCoordsMax, cs)
          type(coords), dimension(:), pointer :: resCoords
          integer, intent(out) :: resNCoords, resNCoordsMax
          type(coords), dimension(:), allocatable, intent(in) :: cs
+         type(coords) , dimension(:), allocatable :: auxCs
 
-         allocate(resCoords(size(cs)))
-         resCoords(:) = cs(:)
-         resNCoords = size(cs)
-         resNCoordsMax = size(cs)
-      end subroutine
-
-      function buildRegionCoords(matAssPtrs, cellType) result(res)
-         type(json_value_ptr), dimension(:), allocatable, intent(in) :: matAssPtrs
-         integer, intent(in) :: cellType
-         type(coords), dimension(:), allocatable :: res
-         
-         type(materialAssociation_t) :: mA
-         type(cell_region_t) :: cR
-         integer :: i, j, e
-         integer :: nCs
-         character (len=:), allocatable :: tagName
-         type(coords), dimension(:), allocatable :: cs
-
-         ! Precounts
-         nCs = 0
-         do i = 1, size(matAssPtrs)
-            mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
-            do e = 1, size(mA%elementIds)
-               cR = this%mesh%getCellRegion(mA%elementIds(e))
-               cs = cellRegionToCoords(cR, cellType)
-               nCs = nCs + size(cs)
-            end do
-         end do
-
-         ! Fills
-         allocate(res(nCs))
-         j = 1
-         do i = 1, size(matAssPtrs)
-            mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
-            do e = 1, size(mA%elementIds)
-               tagName = this%buildTagName(mA%materialId, mA%elementIds(e))
-               cR = this%mesh%getCellRegion(mA%elementIds(e))
-               cs = cellRegionToCoords(cR, cellType, tag=tagName)
-               if (size(cs) == 0) cycle
-               res(j:(j+size(cs)-1)) = cs
-               j = j + size(cs) 
-            end do
-         end do
-      end function
+         if (.not. associated(resCoords)) then
+            allocate(resCoords(size(cs)))
+            resCoords(:) = cs(:)
+            resNCoords = size(cs)
+            resNCoordsMax = size(cs)
+         else 
+            auxCs(:) = resCoords(:)
+            deallocate(resCoords)
+            allocate(resCoords(resNCoords + size(cs)))
+            resCoords(1:resNCoords) = auxCs
+            resCoords(resNCoords+1 : resNCoords+size(cs)) = cs(:)
+            resNCoords = resNCoords + size(cs)
+            resNCoordsMax = resNCoordsMax + size(cs)
+         end if
+      end subroutine         
    end function
 
    function readDielectricRegions(this) result (res)
@@ -504,8 +490,8 @@ contains
       res%lins =  readDielectricsOfCellType(CELL_TYPE_LINEL)
       
       res%nVols = size(res%vols)
-      res%nSurfs = size(res%nSurfs)
-      res%nLins = size(res%nLins)
+      res%nSurfs = size(res%Surfs)
+      res%nLins = size(res%Lins)
    contains
       function readDielectricsOfCellType(cellType) result (res)
          integer, intent(in) :: cellType
@@ -519,7 +505,7 @@ contains
          integer :: nCs, nDielectrics
 
          mAPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, J_MAT_TYPE_ISOTROPIC)
-         
+
          ! Precounts
          nDielectrics = 0
          do i = 1, size(mAPtrs)           
@@ -538,37 +524,22 @@ contains
          end do
       end function
 
-      function readDielectric(mA, cellType) result(res)
+      function readDielectric(mAPtr, cellType) result(res)
          type(json_value), pointer, intent(in) :: mAPtr
          integer, intent(in) :: cellType
          type(Dielectric_t) :: res
          type(materialAssociation_t) :: mA
          type(cell_region_t) :: cR
+         type (coords), dimension(:), allocatable :: coords
          
          integer :: e, j
 
          mA = this%parseMaterialAssociation(mAPtr)
-         
-         ! Precount
-         res%n_C2P = 0
-         do e = 1, size(mA%elementIds)
-            cR = this%mesh%getCellRegion(mA%elementIds(e))
-            if (size(cellRegionToCoords(cR, cellType)) /= 0) then
-               res%n_C2P = res%n_C2P + 1
-            end if
-         end do
-
-         ! Fills coords
-         j = 0
          allocate(res%c1P(0))
-         allocate(res%c2P(res%n_C2P))
-         do e = 1, size(mA%elementIds)
-            cR = this%mesh%getCellRegion(mA%elementIds(e))
-            if (size(cellRegionToCoords(cR, cellType)) == 0) cycle
-            j = j + 1
-            res%c2p(j) = cellRegionToCoords(cR)
-         end do
-
+         res%n_c1p = 0
+         res%c2p = this%matAssToCoords(mA, cellType)
+         res%n_c2p = size(res%c2p)
+         
          ! Fills rest of dielectric data.
          res%sigma  = this%getRealAt(mAPtr, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
          res%sigmam = this%getRealAt(mAPtr, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
@@ -595,6 +566,37 @@ contains
 
          containsCellRegionsWithType = .false.
       end function
+   end function
+
+   function matAssToCoords(this, mA, cellType) result(res)
+      class(parser_t) :: this
+      type(materialAssociation_t), intent(in) :: mA
+      integer, intent(in) :: cellType
+      character (len=:), allocatable :: tagName
+      type (coords), dimension(:), allocatable :: res
+      type (cell_region_t) :: cR
+      integer :: nCs
+      integer :: e, jIni, jEnd
+      
+      ! Precount
+      nCs = 0
+      do e = 1, size(mA%elementIds)
+         cR = this%mesh%getCellRegion(mA%elementIds(e))
+         nCs = nCs + size(cellRegionToCoords(cR, cellType))
+      end do
+
+      ! Fills coords
+      jIni = 1
+      allocate(res(nCs))
+      do e = 1, nCs
+         cR = this%mesh%getCellRegion(mA%elementIds(e))
+         tagName = this%buildTagName(mA%materialId, mA%elementIds(e))
+         res = cellRegionToCoords(cR, cellType, tag=tagName)
+         if (size(res) == 0) cycle
+         jEnd = jIni + size(res)
+         res(jIni:jEnd) = res(:)
+         jIni = jEnd + 1 
+      end do
    end function
 
    function readLossyThinSurfaces(this) result (res)
