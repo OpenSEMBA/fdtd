@@ -18,12 +18,12 @@ unset osdi_enabled
 
 * Load the codemodels
 if $?xspice_enabled
- codemodel spice2poly.cm
- codemodel analog.cm
- codemodel digital.cm
- codemodel xtradev.cm
- codemodel xtraevt.cm
- codemodel table.cm
+ codemodel ./spice2poly.cm
+ codemodel ./analog.cm
+ codemodel ./digital.cm
+ codemodel ./xtradev.cm
+ codemodel ./xtraevt.cm
+ codemodel ./table.cm
 end
 
 * Load the OpenVAF/OSDI models

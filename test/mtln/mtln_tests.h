@@ -38,6 +38,7 @@ extern "C" int test_termination_rls_cp();
 extern "C" int test_termination_rls_cp_ns();
 extern "C" int test_termination_rcp();
 // extern "C" int test_wire_panel();
+// extern "C" int test_load_codemodels();
 
 TEST(mtln, mtl_homogeneous)   { EXPECT_EQ(0, test_mtl_init_homogeneous()); }
 TEST(mtln, mtl_inhomogeneous) { EXPECT_EQ(0, test_mtl_init_inhomogeneous()); }
@@ -65,6 +66,7 @@ TEST(mtln, dispersive_init_1_pole_lines_with_lumped) { EXPECT_EQ(0, test_dispers
 
 // TEST(mtln, wire_panel){ EXPECT_EQ(0, test_wire_panel()); }
 
+// TEST(mtln, codemodels) { EXPECT_EQ(0, test_load_codemodels()); }
 TEST(mtln, spice_tran) { EXPECT_EQ(0, test_spice_tran()); }
 TEST(mtln, spice_tran_2) { EXPECT_EQ(0, test_spice_tran_2()); }
 TEST(mtln, spice_multiple) { EXPECT_EQ(0, test_spice_multiple()); }

@@ -54,6 +54,9 @@ module circuit_mod
         procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
+        procedure :: loadCodeModels
+        procedure :: printCWD
+
     end type circuit_t
 
 contains
@@ -78,6 +81,21 @@ contains
                 
         res = (time*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
     end function
+
+    subroutine printCWD(this)
+        class(circuit_t) :: this
+        call command('getcwd' // c_null_char)
+    end subroutine
+
+    subroutine loadCodeModels(this)
+        class(circuit_t) :: this
+        call command('codemodel .\testData\spinit\linux\analog.cm' // c_null_char)
+        call command('codemodel .\testData\spinit\linux\digital.cm' // c_null_char)
+        call command('codemodel .\testData\spinit\linux\spice2poly.cm' // c_null_char)
+        call command('codemodel .\testData\spinit\linux\table.cm' // c_null_char)
+        call command('codemodel .\testData\spinit\linux\xtradev.cm' // c_null_char)
+        call command('codemodel .\testData\spinit\linux\xtraevt.cm' // c_null_char)
+    end subroutine
 
     subroutine init(this, names, sources, netlist)
         class(circuit_t) :: this

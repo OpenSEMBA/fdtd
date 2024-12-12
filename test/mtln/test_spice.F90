@@ -294,3 +294,20 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
     ! call circuit%quit()
 
 end function
+
+
+integer function test_load_codemodels() bind(C) result(error_cnt)
+    use circuit_mod
+    use mtln_testingTools_mod
+    implicit none
+    type(circuit_t) :: circuit
+    type(string_t), dimension(4) :: names
+    names(1) = string_t("in", 2)
+    names(2) = string_t("int", 3)
+    names(3) = string_t("out", 3)
+    names(4) = string_t("time", 4)
+    error_cnt = 0
+    call circuit%init(names=names)
+    call circuit%printCWD()
+    call circuit%loadCodeModels()
+end function

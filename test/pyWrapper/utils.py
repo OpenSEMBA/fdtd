@@ -4,7 +4,7 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 from os import environ as env
-
+from sys import platform
 # Use of absolute path to avoid conflicts when changing directory.
 EXE_FOLDER = os.getcwd() + '/build/bin/'
 SEMBA_EXE = os.getcwd() + '/build/bin/semba-fdtd'
@@ -80,17 +80,23 @@ def setSpiceScriptsFolder():
     return
 
 def setNgspice(tmp_path):
-    makeCopy(tmp_path, SPINIT_FOLDER + 'spinit')
-    copyXSpiceModels(tmp_path)
+    if platform == "linux" or platform == "linux2":
+        sys_name = "linux/"
+        env["SPICE_SCRIPTS"] = "./"
+    elif platform == "win32":
+        sys_name = "windows\\"    
+        env["SPICE_SCRIPTS"] = ".\\"
+    
+    makeCopy(tmp_path, SPINIT_FOLDER + sys_name + 'spinit' )
+    copyXSpiceModels(tmp_path, sys_name)
     #ngspice needs to read file 'spinit' to load code models needed by xspice
     # setSpiceScriptsFolder()
-    env["SPICE_SCRIPTS"] = "./"
 
-def copyXSpiceModels(temp_dir):
-    makeCopy(temp_dir, SPINIT_FOLDER + 'analog.cm')
-    makeCopy(temp_dir, SPINIT_FOLDER + 'digital.cm')
-    makeCopy(temp_dir, SPINIT_FOLDER + 'spice2poly.cm')
-    makeCopy(temp_dir, SPINIT_FOLDER + 'table.cm')
-    makeCopy(temp_dir, SPINIT_FOLDER + 'xtradev.cm')
-    makeCopy(temp_dir, SPINIT_FOLDER + 'xtraevt.cm')
+def copyXSpiceModels(temp_dir, sys_name):
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'analog.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'digital.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'spice2poly.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'table.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'xtradev.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'xtraevt.cm')
         
