@@ -84,8 +84,8 @@ def setNgspice(tmp_path):
         sys_name = "linux/"
         env["SPICE_SCRIPTS"] = "./"
     elif platform == "win32":
-        sys_name = "windows\\"    
-        env["SPICE_SCRIPTS"] = ".\\"
+        sys_name = "windows/"    
+        env["SPICE_SCRIPTS"] = "./"
     
     makeCopy(tmp_path, SPINIT_FOLDER + sys_name + 'spinit' )
     copyXSpiceModels(tmp_path, sys_name)
