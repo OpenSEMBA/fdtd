@@ -1786,8 +1786,10 @@ contains
       real :: val
 
       call this%core%get(place, path, domain, found)
-      if (.not. found) return
-
+      if (.not. found) then
+         res%filename = " "
+         return
+      end if
 
       call this%core%get(domain, J_PR_DOMAIN_MAGNITUDE_FILE, fn, transferFunctionFound)
       if (found) then
