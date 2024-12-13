@@ -1387,9 +1387,96 @@ contains
    function readThinSlots(this) result (res)
       class(parser_t) :: this
       type(ThinSlots) :: res
+      
+      type(json_value_ptr), dimension(:), allocatable :: mAPtrs
+      integer :: i
 
-      !! TODO
-      allocate(res%tg(0))
+      mAPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_LINE, J_MAT_TYPE_SLOT)
+      if (size(mAPtrs) == 0) then
+         allocate(res%tg(0))
+         return
+      end if
+
+      res%n_tg = size(mAPtrs)
+      allocate(res%tg(res%n_tg))
+      do i = 1, size(mAPtrs)
+         res%tg = readThinSlot(mAPtrs(i)%p)
+      end do
+   contains
+      function readThinSlot(mAPtr) result(res)
+         type (json_value), pointer, intent(in) :: mAPtr
+         type (thinSlot) :: res
+         type (materialAssociation_t) :: mA
+         type (coords), dimension(:), pointer :: cs
+         type(json_value_ptr) :: mat
+         logical :: found
+         
+         mA = this%parseMaterialAssociation(mAPtr)
+
+         mat = this%matTable%getId(mA%materialId)
+         res%width = this%getRealAt(mat%p, J_MAT_THINSLOT_WIDTH, found)
+         if (.not. found) then
+            write(error_unit, *) "ERROR reading thin slot: ", &
+               J_MAT_THINSLOT_WIDTH, "not found"
+         end if
+
+         call this%matAssToCoords(cs, mA, CELL_TYPE_LINEL)
+         call coordsToThinSlotComp(res%tgc, cs)
+         res%n_tgc = size(res%tgc)
+
+      end function
+
+      subroutine coordsToThinSlotComp(tc, cs)
+         type(coords), dimension(:), pointer, intent(in) :: cs
+         type(thinSlotComp), dimension(:), pointer :: tc
+         integer :: i, j, k
+         integer :: nTgc, nXYZ
+         integer :: dir
+         ! Precount
+         nTgc = 0
+         do i = 1, size(cs)
+            nXYZ =  (cs(i)%xe - cs(i)%xi + 1) * &
+                    (cs(i)%ye - cs(i)%yi + 1) * &
+                    (cs(i)%ze - cs(i)%zi + 1) 
+            nTgc = nTgc + nXYZ
+         end do
+
+         ! Fill
+         j = 1
+         allocate(tc(nTgc))
+         do i = 1, size(cs)
+            select case (abs(cs(i)%Or))
+            case (iEx)
+               do k = 1, (cs(i)%xe - cs(i)%xi + 1)
+                  tc(j) = buildBaseThinSlotComponent(cs(i))
+                  tc(j)%i = cs(i)%xi + k - 1
+                  j = j + 1
+               end do
+            case (iEy)
+               do k = 1, (cs(i)%xe - cs(i)%xi + 1)
+                  tc(j) = buildBaseThinSlotComponent(cs(i))
+                  tc(j)%j = cs(i)%yi + k - 1
+                  j = j + 1
+               end do
+            case (iEz)
+               do k = 1, (cs(i)%xe - cs(i)%xi + 1)
+                  tc(j) = buildBaseThinSlotComponent(cs(i))
+                  tc(j)%k = cs(i)%zi + k - 1
+                  j = j + 1
+               end do
+            end select
+         end do
+      end subroutine
+
+      function buildBaseThinSlotComponent(cs) result(res)
+         type(coords), intent(in) :: cs
+         type(thinSlotComp) :: res
+         res%i = cs%xi
+         res%j = cs%yi
+         res%k = cs%zi
+         res%dir = abs(cs%Or)
+         res%tag = cs%tag
+      end function
    end function
 
    function readThinWires(this) result (res)
@@ -1817,12 +1904,7 @@ contains
          end do
       end block
 
-      if (res%matAssType /= J_MAT_ASS_TYPE_BULK .and. &
-          res%matAssType /= J_MAT_ASS_TYPE_SURFACE .and. &
-          res%matAssType /= J_MAT_ASS_TYPE_CABLE) then
-            write(error_unit, *) errorMsgInit, "invalid type."
-      endif
-      ! This function does not work with material associatiosn for cables. 
+      ! This function does not work with material associations for cables. 
       ! DO NOT use it to read that.
       if (res%matAssType == J_MAT_ASS_TYPE_CABLE) then
          write(error_unit, *) errorMsgInit, "invalid type."
@@ -1831,7 +1913,7 @@ contains
    contains 
       subroutine showLabelNotFoundError(label)
          character (len=*), intent(in) :: label
-         write(error_unit, *) errorMsgInit, label, " not found."
+         
       end subroutine
    end function
 

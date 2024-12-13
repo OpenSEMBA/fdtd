@@ -599,7 +599,11 @@ contains
 
    elemental logical function ThinSlots_eq(a, b)
       type(ThinSlots), intent(in) :: a, b
-
+      if (.not. associated(a%tg) .or. &
+          .not. associated(b%tg)) then
+         ThinSlots_eq = .false. 
+         return
+      end if
 
       ThinSlots_eq = all(a%tg == b%tg) .and. &
          (a%n_tg == b%n_tg) .and. &

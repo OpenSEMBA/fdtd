@@ -50,10 +50,10 @@ contains
       expected%despl%mz2 = 50
 
       ! Expected boundaries.
-      expected%front%tipoFrontera(F_XL) = F_PEC
-      expected%front%tipoFrontera(F_XU) = F_PEC
-      expected%front%tipoFrontera(F_YL) = F_PMC
-      expected%front%tipoFrontera(F_YU) = F_PMC
+      expected%front%tipoFrontera(F_XL) = F_PER
+      expected%front%tipoFrontera(F_XU) = F_PER
+      expected%front%tipoFrontera(F_YL) = F_PER
+      expected%front%tipoFrontera(F_YU) = F_PER
       expected%front%tipoFrontera(F_ZL) = F_PML
       expected%front%tipoFrontera(F_ZU) = F_PML
 
@@ -95,11 +95,9 @@ contains
       
       !! thin slot
       expected%tSlots%n_tg = 1
-      expected%tSlots%n_tg_max = 1
       allocate(expected%tslots%tg(1))
       expected%tSlots%tg(1)%width = 3e-3
       expected%tSlots%tg(1)%n_tgc = 2
-      expected%tSlots%tg(1)%n_tgc_max = 2
       allocate(expected%tSlots%tg(1)%tgc(2))
       expected%tSlots%tg(1)%tgc(1)%i = 1
       expected%tSlots%tg(1)%tgc(1)%j = 2
