@@ -79,8 +79,6 @@ contains
       expected%dielRegs%nLins = 0
       expected%dielRegs%nVols_max = 1
       expected%dielRegs%nSurfs_max = 0
-      expected%dielRegs%n_C1P_max = 0
-      expected%dielRegs%n_C2P_max = 1
       allocate(expected%dielRegs%Vols(1))
       allocate(expected%dielRegs%Surfs(0))
       allocate(expected%dielRegs%Lins(0))
@@ -95,11 +93,11 @@ contains
       expected%dielRegs%vols(1)%sigmam = 0.0  
       expected%dielRegs%vols(1)%c2P%Or = 0
       expected%dielRegs%vols(1)%c2P%Xi = 0
-      expected%dielRegs%vols(1)%c2P%Xe = 4
+      expected%dielRegs%vols(1)%c2P%Xe = 3
       expected%dielRegs%vols(1)%c2P%Yi = 0
-      expected%dielRegs%vols(1)%c2P%Ye = 4
+      expected%dielRegs%vols(1)%c2P%Ye = 3
       expected%dielRegs%vols(1)%c2P%Zi = 20
-      expected%dielRegs%vols(1)%c2P%Ze = 30
+      expected%dielRegs%vols(1)%c2P%Ze = 29
       expected%dielRegs%vols(1)%c2P%tag = 'teflon@slab'
 
       ! Expected probes
