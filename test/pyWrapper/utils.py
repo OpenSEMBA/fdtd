@@ -67,17 +67,6 @@ def readSpiceFile(spice_file):
             val = np.append(val, float(l.split()[1]))
     return t, val
 
-# checks if file 'spinit' exist in the local scripts folder, the folder where the executable
-# is located, or a system script folder, and sets the env variable SPICE_SCRIPTS to that path
-# SPICE_SCRIPTS is used by ngspice to look for the file
-def setSpiceScriptsFolder():
-    
-    folders = [EXE_FOLDER + '../../src_mtln/spinit/', SCRIPTS_FOLDER, os.getcwd() + '/build/bin/', '/usr/share/ngspice/scripts']
-    for f in folders:
-        if os.path.isfile(f+'spinit'):
-            env["SPICE_SCRIPTS"] = str(f)
-            return
-    return
 
 def setNgspice(tmp_path):
     if platform == "linux" or platform == "linux2":
