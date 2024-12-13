@@ -73,43 +73,52 @@ contains
       expected%plnSrc%nc = 1
       expected%plnSrc%nC_max = 1
 
-      ! dielectric slab region
-      expected%dielRegs%nVols = 1
-      expected%dielRegs%nSurfs = 0
-      expected%dielRegs%nLins = 0
-      expected%dielRegs%nVols_max = 1
-      expected%dielRegs%nSurfs_max = 0
-      expected%dielRegs%n_C1P_max = 0
-      expected%dielRegs%n_C2P_max = 1
-      allocate(expected%dielRegs%Vols(1))
-      allocate(expected%dielRegs%Surfs(0))
-      allocate(expected%dielRegs%Lins(0))
-      ! slab
-      allocate(expected%dielRegs%vols(1)%c1P(0))
-      allocate(expected%dielRegs%vols(1)%c2P(1))
-      expected%dielRegs%vols(1)%n_C1P = 0
-      expected%dielRegs%vols(1)%n_C2P = 1
-      expected%dielRegs%vols(1)%sigma = 0.0
-      expected%dielRegs%vols(1)%eps = 1.3*EPSILON_VACUUM
-      expected%dielRegs%vols(1)%mu = MU_VACUUM
-      expected%dielRegs%vols(1)%sigmam = 0.0  
-      expected%dielRegs%vols(1)%c2P%Or = 0
-      expected%dielRegs%vols(1)%c2P%Xi = 0
-      expected%dielRegs%vols(1)%c2P%Xe = 4
-      expected%dielRegs%vols(1)%c2P%Yi = 0
-      expected%dielRegs%vols(1)%c2P%Ye = 4
-      expected%dielRegs%vols(1)%c2P%Zi = 20
-      expected%dielRegs%vols(1)%c2P%Ze = 30
-      expected%dielRegs%vols(1)%c2P%tag = 'teflon@slab'
+      ! materials
+      !! pec square
+      expected%pecRegs%nVols = 0
+      expected%pecRegs%nSurfs = 1
+      expected%pecRegs%nLins = 0
+      expected%pecRegs%nVols_max = 0
+      expected%pecRegs%nSurfs_max = 1
+      expected%pecRegs%nLins_max = 0
+      allocate(expected%pecRegs%Vols(0))
+      allocate(expected%pecRegs%Surfs(1))
+      allocate(expected%pecRegs%Lins(0))
+      expected%pecRegs%Surfs(1)%Or = +iEz
+      expected%pecRegs%Surfs(1)%Xi = 0
+      expected%pecRegs%Surfs(1)%Xe = 3
+      expected%pecRegs%Surfs(1)%Yi = 0
+      expected%pecRegs%Surfs(1)%Ye = 3
+      expected%pecRegs%Surfs(1)%Zi = 25
+      expected%pecRegs%Surfs(1)%Ze = 25
+      expected%pecRegs%Surfs(1)%tag = 'copper@square'
+      
+      !! thin slot
+      expected%tSlots%n_tg = 1
+      expected%tSlots%n_tg_max = 1
+      allocate(expected%tslots%tg(1))
+      expected%tSlots%tg(1)%width = 3e-3
+      expected%tSlots%tg(1)%n_tgc = 2
+      expected%tSlots%tg(1)%n_tgc_max = 2
+      allocate(expected%tSlots%tg(1)%tgc(2))
+      expected%tSlots%tg(1)%tgc(1)%i = 1
+      expected%tSlots%tg(1)%tgc(1)%j = 2
+      expected%tSlots%tg(1)%tgc(1)%k = 25
+      expected%tSlots%tg(1)%tgc(1)%node = 0
+      expected%tSlots%tg(1)%tgc(1)%dir = iEx
+      expected%tSlots%tg(1)%tgc(1)%Or = -1
+      expected%tSlots%tg(1)%tgc(1)%tag = "3mm-gap@slot"
+      expected%tSlots%tg(1)%tgc(2) = expected%tSlots%tg(1)%tgc(1)
+      expected%tSlots%tg(1)%tgc(2)%i = 2
 
       ! Expected probes
       ! sonda
       expected%Sonda%len_cor_max = 0
-      expected%Sonda%length = 3
-      expected%Sonda%length_max = 3
-      allocate(expected%Sonda%collection(3))
+      expected%Sonda%length = 2
+      expected%Sonda%length_max = 2
+      allocate(expected%Sonda%collection(2))
       ! common data
-      do i = 1, 3
+      do i = 1, 2
          expected%Sonda%collection(i)%type1 = NP_T1_PLAIN
          expected%Sonda%collection(i)%type2 = NP_T2_TIME
          expected%Sonda%collection(i)%filename = ' '
@@ -131,19 +140,12 @@ contains
       expected%Sonda%collection(1)%cordinates(1:3)%Xi = 2
       expected%Sonda%collection(1)%cordinates(1:3)%Yi = 2
       expected%Sonda%collection(1)%cordinates(1:3)%Zi = 10
-      ! point probe in dielectric slab
-      expected%Sonda%collection(2)%outputrequest = "inner"
-      expected%Sonda%collection(2)%cordinates(1:3)%tag = "inner"
+      ! point probe at back
+      expected%Sonda%collection(2)%outputrequest = "back"
+      expected%Sonda%collection(2)%cordinates(1:3)%tag = "back"
       expected%Sonda%collection(2)%cordinates(1:3)%Xi = 2
       expected%Sonda%collection(2)%cordinates(1:3)%Yi = 2
-      expected%Sonda%collection(2)%cordinates(1:3)%Zi = 25
-      ! point probe at back
-      expected%Sonda%collection(3)%outputrequest = "back"
-      expected%Sonda%collection(3)%cordinates(1:3)%tag = "back"
-      expected%Sonda%collection(3)%cordinates(1:3)%Xi = 2
-      expected%Sonda%collection(3)%cordinates(1:3)%Yi = 2
-      expected%Sonda%collection(3)%cordinates(1:3)%Zi = 40
-
+      expected%Sonda%collection(2)%cordinates(1:3)%Zi = 40
       
    end function
 end function

@@ -296,6 +296,23 @@ A `multilayeredSurface` must contain the entry `<layers>` which is an array indi
 }
 ```
 
+### Line materials
+
+In line materials, `elementIds` must reference `cell` elements. All `intervals` modeling entities different to lines are ignored.
+
+#### `thinSlot`
+
+A `thinSlot` represents a gap between two conductive surfaces. Therefore it must be located at a surface and be defined using line cell elements only. Its `<width>` is a real number which defines the distance between the surfaces in meters.
+
+```json
+{
+    "name": "3mm-gap",
+    "type": "thinSlot",
+    "id": 2,
+    "width": 3e-3
+}
+```
+
 ### Cable materials
 
 #### `wire`
@@ -473,6 +490,16 @@ Surface materials can only be assigned to elements of type `cell`. If the `cell`
 ```json
 "materialAssociations": [
     {"type": "surface", "materialId": 1, "elementIds": [2]}
+]
+```
+
+### `line`
+
+Line materials can only be assigned to elements of type `cell`. If the `cell` contains `intervals` representing entities different to segments these will be ignored.
+
+```json
+"materialAssociations": [
+    {"type": "line", "materialId": 2, "elementIds": [4]}
 ]
 ```
 

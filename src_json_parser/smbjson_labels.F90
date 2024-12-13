@@ -31,6 +31,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
    character (len=*), parameter :: J_MAT_TYPE_ISOTROPIC = "isotropic"
    character (len=*), parameter :: J_MAT_TYPE_MULTILAYERED_SURFACE = "multilayeredSurface"
+   character (len=*), parameter :: J_MAT_TYPE_SLOT = "thinSlot"
    character (len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
    character (len=*), parameter :: J_MAT_TYPE_MULTIWIRE = "multiwire"
    character (len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"
@@ -66,6 +67,8 @@ module smbjson_labels_mod
 
    character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_LAYERS = "layers"
    character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_THICKNESS = "thickness"
+   
+   character (len=*), parameter :: J_MAT_THINSLOT_WIDTH = "width"
 
    ! -- materialAssociations
    character (len=*), parameter :: J_MATERIAL_ASSOCIATIONS = "materialAssociations"
@@ -73,6 +76,7 @@ module smbjson_labels_mod
 
    character (len=*), parameter :: J_MAT_ASS_TYPE_BULK = "bulk"
    character (len=*), parameter :: J_MAT_ASS_TYPE_SURFACE = "surface"
+   character (len=*), parameter :: J_MAT_ASS_TYPE_LINE = "line"
    character (len=*), parameter :: J_MAT_ASS_TYPE_CABLE = "cable"
 
    character (len=*), parameter :: J_MAT_ASS_CAB_INI_TERM_ID = "initialTerminalId"
