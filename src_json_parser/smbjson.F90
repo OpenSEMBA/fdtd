@@ -461,6 +461,7 @@ contains
          call appendRegion(res%surfs, res%nSurfs, res%nSurfs_max, cs)
          call this%matAssToCoords(cs, mA, CELL_TYPE_VOXEL)
          call appendRegion(res%vols,  res%nVols,  res%nVols_max, cs)
+         deallocate(cs)
       end do
 
    contains
@@ -607,7 +608,7 @@ contains
       ! Fills coords
       jIni = 1
       allocate(res(nCs))
-      do e = 1, nCs
+      do e = 1, size(mA%elementIds)
          cR = this%mesh%getCellRegion(mA%elementIds(e))
          tagName = this%buildTagName(mA%materialId, mA%elementIds(e))
          newCoords = cellRegionToCoords(cR, cellType, tag=tagName)
