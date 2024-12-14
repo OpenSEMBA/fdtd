@@ -22,10 +22,16 @@ module smbjson_labels_mod
 
    ! -- materials
    character (len=*), parameter :: J_MATERIALS = "materials"
+   character (len=*), parameter :: J_MAT_REL_PERMITTIVITY = "relativePermittivity"
+   character (len=*), parameter :: J_MAT_REL_PERMEABILITY = "relativePermeability"
+   character (len=*), parameter :: J_MAT_ELECTRIC_CONDUCTIVITY = "electricConductivity"
+   character (len=*), parameter :: J_MAT_MAGNETIC_CONDUCTIVITY = "magneticConductivity"
    
    character (len=*), parameter :: J_MAT_TYPE_PEC = "pec"
    character (len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
-   character (len=*), parameter :: J_MAT_TYPE_SIMPLE = "simple"
+   character (len=*), parameter :: J_MAT_TYPE_ISOTROPIC = "isotropic"
+   character (len=*), parameter :: J_MAT_TYPE_MULTILAYERED_SURFACE = "multilayeredSurface"
+   character (len=*), parameter :: J_MAT_TYPE_SLOT = "thinSlot"
    character (len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
    character (len=*), parameter :: J_MAT_TYPE_MULTIWIRE = "multiwire"
    character (len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"
@@ -59,12 +65,18 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_MULTIWIRE_RESISTANCE = "resistancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_CONDUCTANCE = "conductancePerMeter"
 
+   character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_LAYERS = "layers"
+   character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_THICKNESS = "thickness"
+   
+   character (len=*), parameter :: J_MAT_THINSLOT_WIDTH = "width"
+
    ! -- materialAssociations
    character (len=*), parameter :: J_MATERIAL_ASSOCIATIONS = "materialAssociations"
    character (len=*), parameter :: J_MATERIAL_ID = "materialId"
 
    character (len=*), parameter :: J_MAT_ASS_TYPE_BULK = "bulk"
    character (len=*), parameter :: J_MAT_ASS_TYPE_SURFACE = "surface"
+   character (len=*), parameter :: J_MAT_ASS_TYPE_LINE = "line"
    character (len=*), parameter :: J_MAT_ASS_TYPE_CABLE = "cable"
 
    character (len=*), parameter :: J_MAT_ASS_CAB_INI_TERM_ID = "initialTerminalId"
@@ -119,6 +131,13 @@ module smbjson_labels_mod
    ! type(Frontera)
    character (len=*), parameter :: J_BOUNDARY = "boundary"
    character (len=*), parameter :: J_BND_ALL = "all"
+   character (len=*), parameter :: J_BND_XL = "xLower"
+   character (len=*), parameter :: J_BND_XU = "xUpper"
+   character (len=*), parameter :: J_BND_YL = "yLower"
+   character (len=*), parameter :: J_BND_YU = "yUpper"
+   character (len=*), parameter :: J_BND_ZL = "zLower"
+   character (len=*), parameter :: J_BND_ZU = "zUpper"
+
 
    character (len=*), parameter :: J_BND_TYPE_PEC = "pec"
    character (len=*), parameter :: J_BND_TYPE_PMC = "pmc"

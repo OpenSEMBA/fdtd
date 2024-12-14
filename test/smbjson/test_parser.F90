@@ -84,7 +84,7 @@ integer function test_parser_read_mesh() bind(C) result(err)
    parser = parser_t(filename)
    mesh = parser%readMesh()
    
-   call mesh%printCoordHashInfo()
+   ! call mesh%printCoordHashInfo() !! For debugging only
    expected%position = [10,2,1]
    
    obtained = mesh%getCoordinate(59, found)

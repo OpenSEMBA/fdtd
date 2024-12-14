@@ -1,4 +1,5 @@
 from utils import *
+import pytest
 
 def test_read_wire_probe():
     p = Probe(OUTPUT_FOLDER + 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')

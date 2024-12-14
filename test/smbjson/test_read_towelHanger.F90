@@ -74,7 +74,7 @@ contains
       expected%pecRegs%Surfs(1)%Ytrancos = 1
       expected%pecRegs%Surfs(1)%Ztrancos = 1
       expected%pecRegs%Surfs(1)%Or = 3
-      expected%pecRegs%Surfs(1)%tag =  trim(adjustl(" "))
+      expected%pecRegs%Surfs(1)%tag =  "copper@ground_plane"
 
       ! Expected probes
       ! sonda
