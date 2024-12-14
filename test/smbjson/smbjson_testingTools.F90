@@ -54,7 +54,9 @@ contains
       ! Thin elements
       if (.not. ex%tSlots == pr%tSlots) call testFails(err, 'Expected and read "thin slots" do not match')
       if (.not. ex%tWires == pr%tWires) call testFails(err, 'Expected and read "thin wires" do not match')
+#ifdef CompileWithMTLN
       if (.not. ex%mtln == pr%mtln) call testFails(err, 'Expected and read mtln types do not match')
+#endif
       if (err == 0) write(*,*) "Read and expected inputs are equal."      
    end subroutine
 
