@@ -1,10 +1,7 @@
 name: ubuntu-intelLLVM
 
 on:
-  push:
-    branches:
-      - dev
-      
+
   pull_request:
     branches:
       - main
@@ -18,6 +15,8 @@ jobs:
       matrix: 
         optimization-type: ["Debug", "Release"]
         mpi-build: ["No", "Yes"]
+
+    name: ubuntu-intelLLVM ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
 
     steps:
 
@@ -39,9 +38,6 @@ jobs:
 
     - name: CMake build
       run: |
-        export FC=ifx
-        export CC=icx
-        export CXX=icpx
         cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi-build}} -DSEMBA_FDTD_ENABLE_HDF=YES
         cmake --build build -j
         
