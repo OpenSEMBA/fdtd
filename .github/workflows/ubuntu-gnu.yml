@@ -47,11 +47,11 @@ jobs:
         python -m pip install -r requirements.txt
 
     - name: Run all wrapper tests
-      if: ${{matrix.mtln}}=='Yes'
+      if: matrix.mtln=='Yes'
       run: python -m pytest test/
         
     - name: Run non-mtln wrapper tests
-      if: ${{matrix.mtln}}=='No'
+      if: matrix.mtln=='No'
       run: python -m pytest -m 'not mtln' test/
        
       
