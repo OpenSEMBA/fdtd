@@ -20,7 +20,7 @@ jobs:
             mpi: "Yes"
             mtln: "No"
 
-    name: ubuntu ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
+    name: ubuntu-gnu ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
 
     steps:       
     - name: Checkout
