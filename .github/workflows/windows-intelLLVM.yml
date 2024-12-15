@@ -44,7 +44,7 @@ jobs:
       shell: bash
       run: |
         cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
-        cmake --build build -j
+        cmake --build build -j 
           
     - name: Install python wrapper requirements
       run: |
