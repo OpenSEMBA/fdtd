@@ -634,7 +634,7 @@ contains
       logical :: found
       integer :: i, j, k
       type(materialAssociation_t) :: mA
-      
+      type(coords), dimension(:), pointer :: cs
       matAssPtrs = this%getMaterialAssociations(&
          J_MAT_ASS_TYPE_SURFACE, J_MAT_TYPE_MULTILAYERED_SURFACE)
       
@@ -642,7 +642,8 @@ contains
       nLossySurfaces = 0
       do i = 1, size(matAssPtrs)
          mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
-         nLossySurfaces = nLossySurfaces + size(mA%elementIds)
+         call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
+         if (size(cs) > 0) nLossySurfaces = nLossySurfaces + 1
       end do
 
       ! Fills
@@ -658,28 +659,23 @@ contains
       k = 1
       do i = 1, size(matAssPtrs)
          mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
-         do j = 1, size(mA%elementIds)
-            res%cs(k) = readLossyThinSurface(mA%materialId, mA%elementIds(j))
-            k = k + 1
-         end do
+         call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
+         if (size(cs) == 0) cycle
+         res%cs(k) = readLossyThinSurface(mA)
+         k = k + 1
       end do
       
    contains
-      function readLossyThinSurface(matId, eId) result(res)
-         integer, intent(in) :: matId
-         integer, intent(in) :: eId
+      function readLossyThinSurface(mA) result(res)
+         type(materialAssociation_t), intent(in) :: mA
          type(LossyThinSurface) :: res
          logical :: found
          character (len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
-         type(coords), dimension(:), allocatable :: cs
+         
          ! Reads coordinates.
-         res%nc = 1
-         cs = cellRegionToCoords(this%mesh%getCellRegion(eId), &
-            tag = this%buildTagName(matId, eId))
-         allocate(res%c(size(cs)))
-         res%c = cs(:)
-
-
+         call this%matAssToCoords(res%c, mA, CELL_TYPE_SURFEL)
+         res%nc = size(res%c)
+         
          ! Reads layers.
          block
             integer :: i
@@ -687,11 +683,8 @@ contains
             type(json_value), pointer :: layer
             type(json_value), pointer :: layers
 
-            mat = this%matTable%getId(matId)
-            call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers, found)
-            if (.not. found) then
-               write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_LAYERS, " not found."
-            end if
+            mat = this%matTable%getId(mA%materialId)
+            call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers)
 
             res%numcapas = this%core%count(layers)
             allocate(res%sigma( res%numcapas))
