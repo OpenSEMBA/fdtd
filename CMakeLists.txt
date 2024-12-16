@@ -51,7 +51,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
 	elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 
-		if(CMAKE_BUILD_TYPE MATCHES "Debug" and ${CMAKE_Fortran_COMPILER_ID} STREQUAL "IntelLLVM")
+		if(CMAKE_BUILD_TYPE MATCHES "Debug" and CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp /Wno-debug-option-simd")
 		else()
 			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp")
