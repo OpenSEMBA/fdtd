@@ -11,7 +11,8 @@ module idchildtable_mod
       type(fhash_tbl_t) :: idToChilds
    contains
       procedure :: getId 
-      procedure :: count
+      procedure :: totalSize
+      procedure :: checkId
    end type
 
    interface IdChildTable_t
@@ -42,9 +43,17 @@ contains
       end do
    end function
 
-   integer function count(this)
+   function totalSize(this) result(res)
       class(IdChildTable_t) :: this
-      call this%idToChilds%stats(num_items=count)
+      integer :: res
+      call this%idToChilds%stats(num_items=res)
+   end function
+   
+   function checkId(this, id) result(stat)
+      class(IdChildTable_t) :: this
+      integer, intent(in) :: id
+      integer :: stat
+      call this%idToChilds%check_key(key(id), stat)
    end function
 
    function getId(this, id) result(res)
@@ -66,5 +75,6 @@ contains
          res = d
       end select
    end function
+
 #endif
 end module

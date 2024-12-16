@@ -38,6 +38,7 @@
                 "type": "short"}]
         },
         {
+            "name": "copper",
             "id": 4,
             "type": "pec"
         }
@@ -59,7 +60,7 @@
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [1]},
             {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 5, 3, 4] },
-            {"id": 3, "type": "cell", "intervals": [[[25, 20, 30], [45, 30, 30]]] },
+            {"id": 3, "type": "cell", "name": "ground_plane", "intervals": [[[25, 20, 30], [45, 30, 30]]] },
             {"id": 4, "type": "node", "coordinateIds": [4]},
             {"id": 5, "type": "cell", "intervals": [[[1, 1, 1], [59, 59, 59]]] },
             {"id": 6, "type": "node", "coordinateIds": [5]}
