@@ -33,6 +33,10 @@ module smbjson
    contains
       procedure :: readProblemDescription
       procedure :: readMesh
+   
+#ifdef CompileWithMTLN
+      procedure :: readMTLN
+#endif
 
       ! private
       procedure, private :: readGeneral
@@ -53,7 +57,6 @@ module smbjson
       procedure, private :: readThinSlots
       !
       !
-      procedure, private :: readMTLN
       !
       procedure, private :: getLogicalAt
       procedure, private :: getIntAt
@@ -162,7 +165,10 @@ contains
       ! Thin elements
       res%tWires = this%readThinWires()
       res%tSlots = this%readThinSlots()
+
+#ifdef CompileWithMTLN
       res%mtln = this%readMTLN(res%despl)
+#endif
 
    end function
 
@@ -2034,6 +2040,7 @@ contains
       end function
    end function
 
+#ifdef CompileWithMTLN
    function readMTLN(this, grid) result (mtln_res)
       class(parser_t) :: this
       type(Desplazamiento), intent(in) :: grid
@@ -3255,6 +3262,7 @@ contains
       end function
 
    end function
+#endif
 
 
    function getLogicalAt(this, place, path, found, default) result(res)

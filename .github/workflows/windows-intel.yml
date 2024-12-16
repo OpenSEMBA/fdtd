@@ -1,7 +1,6 @@
-name: windows-intelLLVM
+name: windows-intel
 
 on:
-
   pull_request:
     branches:
       - main
@@ -17,7 +16,8 @@ jobs:
         mpi: ["No"]
         mtln: ["No"]
 
-    name: windows-intelLLVM ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
+
+    name: windows-intel ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
 
     steps:
 
@@ -34,8 +34,8 @@ jobs:
       uses: fortran-lang/setup-fortran@v1
       id: setup-fortran
       with:
-        compiler: intel
-        version: '2024.0'
+        compiler: intel-classic
+        version: '2021.10'
 
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
@@ -44,7 +44,7 @@ jobs:
       shell: bash
       run: |
         cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
-        cmake --build build -j 
+        cmake --build build -j
           
     - name: Install python wrapper requirements
       run: |

@@ -41,12 +41,15 @@ TEST(smbjson, read_planewave)            { EXPECT_EQ(0, test_read_planewave()); 
 TEST(smbjson, read_dielectricslab)       { EXPECT_EQ(0, test_read_dielectricslab()); }
 TEST(smbjson, read_thinslot)             { EXPECT_EQ(0, test_read_thinslot()); }
 TEST(smbjson, read_sgbc)                 { EXPECT_EQ(0, test_read_sgbc()); }
-TEST(smbjson, read_holland1981)          { EXPECT_EQ(0, test_read_holland1981()); }
+TEST(smbjson, read_sphere)               { EXPECT_EQ(0, test_read_sphere()); }
+TEST(smbjson, read_airplane)             { EXPECT_EQ(0, test_read_airplane()); }
+
+#ifdef CompileWithMTLN
 TEST(smbjson, read_towelhanger)          { EXPECT_EQ(0, test_read_towelhanger()); }
+TEST(smbjson, read_holland1981)          { EXPECT_EQ(0, test_read_holland1981()); }
 TEST(smbjson, read_connectedwires)       { EXPECT_EQ(0, test_read_connectedwires()); }
 TEST(smbjson, read_currentinjection)     { EXPECT_EQ(0, test_read_currentinjection()); }
 // TEST(smbjson, read_shieldedpair)         { EXPECT_EQ(0, test_read_shieldedpair()); }
 TEST(smbjson, read_mtln)                 { EXPECT_EQ(0, test_read_mtln()); }
-TEST(smbjson, read_sphere)               { EXPECT_EQ(0, test_read_sphere()); }
-TEST(smbjson, read_airplane)             { EXPECT_EQ(0, test_read_airplane()); }
 TEST(smbjson, read_large_airplane_mtln)  { EXPECT_EQ(0, test_read_large_airplane_mtln()); }
+#endif

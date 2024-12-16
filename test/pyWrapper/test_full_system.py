@@ -1,6 +1,7 @@
 from utils import *
+import pytest
 
-
+@pytest.mark.mtln
 def test_shielded_pair(tmp_path):
     case = 'shieldedPair'
     makeCopy(tmp_path, EXCITATIONS_FOLDER+'shielded_pair.exc')
@@ -52,6 +53,7 @@ def test_holland(tmp_path):
     p_solved = Probe(probe_files[0])
     assert np.allclose(p_expected.df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 1e-5, atol=1e-6)
 
+@pytest.mark.mtln
 def test_holland_mtln(tmp_path):
     case = 'holland1981'
     makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
