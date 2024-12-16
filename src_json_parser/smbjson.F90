@@ -634,7 +634,7 @@ contains
       logical :: found
       integer :: i, j, k
       type(materialAssociation_t) :: mA
-      
+      type(coords), dimension(:), pointer :: cs
       matAssPtrs = this%getMaterialAssociations(&
          J_MAT_ASS_TYPE_SURFACE, J_MAT_TYPE_MULTILAYERED_SURFACE)
       
@@ -642,7 +642,8 @@ contains
       nLossySurfaces = 0
       do i = 1, size(matAssPtrs)
          mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
-         nLossySurfaces = nLossySurfaces + size(mA%elementIds)
+         call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
+         if (size(cs) > 0) nLossySurfaces = nLossySurfaces + 1
       end do
 
       ! Fills
@@ -658,69 +659,56 @@ contains
       k = 1
       do i = 1, size(matAssPtrs)
          mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
-         do j = 1, size(mA%elementIds)
-            res%cs(k) = readLossyThinSurface(mA%materialId, mA%elementIds(j))
-            k = k + 1
-         end do
+         call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
+         if (size(cs) == 0) cycle
+         res%cs(k) = readLossyThinSurface(mA)
+         k = k + 1
       end do
       
    contains
-      function readLossyThinSurface(matId, eId) result(res)
-         integer, intent(in) :: matId
-         integer, intent(in) :: eId
+      function readLossyThinSurface(mA) result(res)
+         type(materialAssociation_t), intent(in) :: mA
          type(LossyThinSurface) :: res
          logical :: found
          character (len=*), parameter :: errorMsgInit = "ERROR reading lossy thin surface: "
-         type(coords), dimension(:), allocatable :: cs
-         ! Reads coordinates.
-         res%nc = 1
-         cs = cellRegionToCoords(this%mesh%getCellRegion(eId), &
-            tag = this%buildTagName(matId, eId))
-         allocate(res%c(size(cs)))
-         res%c = cs(:)
+         integer :: i
+         type(json_value_ptr) :: mat
+         type(json_value), pointer :: layer
+         type(json_value), pointer :: layers
+         
+         call this%matAssToCoords(res%c, mA, CELL_TYPE_SURFEL)
+         res%nc = size(res%c)
 
+         mat = this%matTable%getId(mA%materialId)
+         call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers)
 
-         ! Reads layers.
-         block
-            integer :: i
-            type(json_value_ptr) :: mat
-            type(json_value), pointer :: layer
-            type(json_value), pointer :: layers
-
-            mat = this%matTable%getId(matId)
-            call this%core%get(mat%p, J_MAT_MULTILAYERED_SURF_LAYERS, layers, found)
+         res%numcapas = this%core%count(layers)
+         allocate(res%sigma( res%numcapas))
+         allocate(res%eps(   res%numcapas))
+         allocate(res%mu(    res%numcapas))
+         allocate(res%sigmam(res%numcapas))
+         allocate(res%thk(   res%numcapas))
+         allocate(res%sigma_devia( res%numcapas))
+         allocate(res%eps_devia(   res%numcapas))
+         allocate(res%mu_devia(    res%numcapas))
+         allocate(res%sigmam_devia(res%numcapas))
+         allocate(res%thk_devia(   res%numcapas))
+         do i = 1, res%numcapas
+            call this%core%get_child(layers, i, layer)
+            res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
+            res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
+            res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0) * EPSILON_VACUUM
+            res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0) * MU_VACUUM
+            res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
             if (.not. found) then
-               write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_LAYERS, " not found."
+               write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_THICKNESS, " in layer not found."
             end if
-
-            res%numcapas = this%core%count(layers)
-            allocate(res%sigma( res%numcapas))
-            allocate(res%eps(   res%numcapas))
-            allocate(res%mu(    res%numcapas))
-            allocate(res%sigmam(res%numcapas))
-            allocate(res%thk(   res%numcapas))
-            allocate(res%sigma_devia( res%numcapas))
-            allocate(res%eps_devia(   res%numcapas))
-            allocate(res%mu_devia(    res%numcapas))
-            allocate(res%sigmam_devia(res%numcapas))
-            allocate(res%thk_devia(   res%numcapas))
-            do i = 1, res%numcapas
-               call this%core%get_child(layers, i, layer)
-               res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
-               res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
-               res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0) * EPSILON_VACUUM
-               res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0) * MU_VACUUM
-               res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
-               res%sigma_devia(i) = 0.0
-               res%eps_devia(i) = 0.0
-               res%mu_devia(i) = 0.0
-               res%sigmam_devia(i) = 0.0
-               res%thk_devia(i) = 0.0
-               if (.not. found) then
-                  write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_THICKNESS, " in layer not found."
-               end if
-            end do
-         end block
+            res%sigma_devia(i) = 0.0
+            res%eps_devia(i) = 0.0
+            res%mu_devia(i) = 0.0
+            res%sigmam_devia(i) = 0.0
+            res%thk_devia(i) = 0.0
+         end do
       end function
 
       function emptyLossyThinSurfaces() result (res)

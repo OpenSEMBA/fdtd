@@ -152,3 +152,16 @@ def test_read_airplane(tmp_path):
     
     assert os.path.isfile(vtkmapfile)
     
+
+def test_sgbc_can_launch(tmp_path):
+    case = 'sgbc'
+    input_json = getCase(case)
+    input_json['general']['numberOfSteps'] = 1
+    fn = tmp_path._str + '/' + case + '.fdtd.json'
+    with open(fn, 'w') as modified_json:
+        json.dump(input_json, modified_json) 
+
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+    solver.run()
+   
+    assert solver.hasFinishedSuccessfully() == True
