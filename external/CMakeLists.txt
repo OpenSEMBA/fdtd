@@ -19,5 +19,5 @@ endif()
 
 if (SEMBA_FDTD_ENABLE_MTLN)
 	add_subdirectory("ngspice/")
-	set(NGSPICE_LIB ngspice)
+	# set(NGSPICE_LIB ngspice)
 endif()

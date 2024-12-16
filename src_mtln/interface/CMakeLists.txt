@@ -6,7 +6,6 @@ enable_language(C CXX)
 add_library(ngspice_interface
     "ngspice_interface.c"
 )
-
 target_link_libraries(ngspice_interface PRIVATE ${NGSPICE_LIB})
 if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
 	target_link_libraries(ngspice_interface PRIVATE	stdc++)
