@@ -1,7 +1,6 @@
-name: ubuntu-intelLLVM
+name: ubuntu-intel
 
 on:
-
   pull_request:
     branches:
       - main
@@ -13,10 +12,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix: 
-        optimization-type: ["Debug", "Release"]
-        mpi-build: ["No", "Yes"]
+        build-type: ["Debug", "Release"]
+        mpi: ["No"]
+        mtln: ["No"]
 
-    name: ubuntu-intelLLVM ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
+
+    name: ubuntu-intel ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
 
     steps:
 
@@ -33,12 +34,12 @@ jobs:
       uses: fortran-lang/setup-fortran@v1
       id: setup-fortran
       with:
-        compiler: intel
-        version: '2024.2'
+        compiler: intel-classic
+        version: '2021.10'
 
     - name: CMake build
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi-build}} -DSEMBA_FDTD_ENABLE_HDF=YES
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
         cmake --build build -j
         
     - name: Run fdtd unit tests
@@ -50,9 +51,10 @@ jobs:
       run: |
         python -m pip install -r requirements.txt
 
-    - name: Run wrapper tests
-      timeout-minutes: 60
-      run: |
-        python -m pytest test    
-
-
+    - name: Run all wrapper tests
+      if: matrix.mtln=='Yes'
+      run: python -m pytest test/
+        
+    - name: Run non-mtln wrapper tests
+      if: matrix.mtln=='No'
+      run: python -m pytest -m 'not mtln' test/

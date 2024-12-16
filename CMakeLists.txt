@@ -25,6 +25,18 @@ else()
 	set(SEMBA_FDTD_MAIN_LIB OFF)
 endif()
 
+if(SEMBA_FDTD_ENABLE_SMBJSON)
+	add_definitions(-DCompileWithSMBJSON)
+endif()
+if (SEMBA_FDTD_ENABLE_MTLN)
+	add_definitions(-DCompileWithMTLN)
+endif()
+add_definitions(		
+	-DCompileWithInt2 
+	-DCompileWithReal4 
+	-DCompileWithOpenMP 
+)
+
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
@@ -51,6 +63,7 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
 	endif()
 endif()
 
+<<<<<<< HEAD
 if (SEMBA_FDTD_ENABLE_MTLN OR SEMBA_FDTD_ENABLE_SMBJSON)
 	set (FHASH_SOURCES_FOLDER "external/fhash/src/")
 	add_library(fhash 
@@ -73,6 +86,9 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	add_subdirectory("external/ngspice/")
 	set(NGSPICE_LIB ngspice)
 endif()
+=======
+add_subdirectory(external)
+>>>>>>> origin/dev
 
 add_library(semba-types 
 	"src_main_pub/nfde_types.F90"
@@ -83,7 +99,6 @@ add_library(semba-types
 )
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
-	add_definitions(-DCompileWithSMBJSON)
 	add_subdirectory(src_json_parser)
 	set(SMBJSON_LIBRARIES smbjson)
 endif()
@@ -152,10 +167,13 @@ include_directories(${CMAKE_BINARY_DIR}/mod)
 include_directories(${HDF5_INCLUDE_DIRS})
 include_directories(${FHASH_INCLUDES})
 
+<<<<<<< HEAD
 add_definitions(		
 	-DCompileWithInt2 
 	-DCompileWithReal4 
 	-DCompileWithOpenMP 
 )
+=======
+>>>>>>> origin/dev
 
 
