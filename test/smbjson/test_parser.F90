@@ -4,7 +4,7 @@ integer function test_parser_ctor() bind(C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = 'cases/planewave.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/planewave.fdtd.json'
    type(parser_t) :: parser
    err = 0
 

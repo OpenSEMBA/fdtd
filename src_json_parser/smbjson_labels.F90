@@ -42,6 +42,10 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_WIRE_INDUCTANCE = "inductancePermeter"
    character (len=*), parameter :: J_MAT_WIRE_REF_CAPACITANCE = "__referenceCapacitancePerMeter"
    character (len=*), parameter :: J_MAT_WIRE_REF_INDUCTANCE = "__referenceInductancePerMeter"
+   character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC = "dielectric"
+   character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_RADIUS = "radius"
+   character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_PERMITTIVITY = "relativePermittivity"
+   character (len=*), parameter :: J_MAT_WIRE_PASS = "isPassthrough"
    
    character (len=*), parameter :: J_MAT_TERM_TERMINATIONS = "terminations"
    character (len=*), parameter :: J_MAT_TERM_TYPE_OPEN = "open"
@@ -73,6 +77,7 @@ module smbjson_labels_mod
    ! -- materialAssociations
    character (len=*), parameter :: J_MATERIAL_ASSOCIATIONS = "materialAssociations"
    character (len=*), parameter :: J_MATERIAL_ID = "materialId"
+   character (len=*), parameter :: J_MATERIAL_PASS = "materialId"
 
    character (len=*), parameter :: J_MAT_ASS_TYPE_BULK = "bulk"
    character (len=*), parameter :: J_MAT_ASS_TYPE_SURFACE = "surface"
@@ -155,6 +160,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_SRC_TYPE_PW = "planewave"
    character (len=*), parameter :: J_SRC_TYPE_NS = "nodalSource"
    character (len=*), parameter :: J_SRC_TYPE_GEN = "generator"
+   character (len=*), parameter :: J_SRC_ATTACHED_ID = "attachedToLineId"
 
    ! type(Planewave)
    character (len=*), parameter :: J_SRC_PW_ATTRIBUTE = "attribute"

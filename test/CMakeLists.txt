@@ -1,6 +1,8 @@
 message(STATUS "Creating build system for fdtd_tests")
 
 enable_testing ()
+project(fdtd_tests)
+enable_language(C CXX Fortran)
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
