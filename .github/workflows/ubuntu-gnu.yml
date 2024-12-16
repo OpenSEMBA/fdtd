@@ -32,10 +32,6 @@ jobs:
       run: |
         sudo apt update
         sudo apt install libhdf5-dev libopenmpi-dev
-<<<<<<< HEAD
-    
-=======
->>>>>>> origin/dev
    
     - name: Build application
       run: |       

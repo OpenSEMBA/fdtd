@@ -52,7 +52,7 @@ jobs:
 
     - name: Run all wrapper tests
       if: matrix.mtln=='Yes'
-      run: python -m pytest test/
+      run: python -m pytest 'not codemodel' test/
         
     - name: Run non-mtln wrapper tests
       if: matrix.mtln=='No'

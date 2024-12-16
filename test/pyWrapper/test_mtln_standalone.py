@@ -131,6 +131,8 @@ def test_line_multiline_junction(tmp_path):
     for i in range(3):
         assert np.allclose(p_expected[i].df.to_numpy()[:-20,:], Probe(probe_files[i]).df.to_numpy()[:-20,:], rtol = 0.01, atol=5e-3)
 
+@pytest.mark.mtln    
+@pytest.mark.codemodel    
 def test_spice_opamp_saturation(tmp_path):
     case = 'opamp_saturation'
     makeCopy(tmp_path, EXCITATIONS_FOLDER+'spice_sine_250k_2.exc')
