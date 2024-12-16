@@ -35,6 +35,7 @@ def test_shielded_pair(tmp_path):
         p_solved = Probe(probe_files[i])
         assert np.allclose(p_expected[i].df.to_numpy()[:,0:4], p_solved.df.to_numpy()[:,0:4], rtol = 5e-2, atol=0.2)
 
+@pytest.mark.mtln
 def test_dielectric_antenna(tmp_path):
     case = 'coated_antenna'
     makeCopy(tmp_path, EXCITATIONS_FOLDER+'coated.exc')
