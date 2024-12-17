@@ -165,3 +165,26 @@ def test_sgbc_can_launch(tmp_path):
     solver.run()
    
     assert solver.hasFinishedSuccessfully() == True
+    
+def test_sgbc_vtk_tags(tmp_path):
+    case = 'sgbc'
+    input_json = getCase(case)
+    input_json['general']['numberOfSteps'] = 1
+    fn = tmp_path._str + '/' + case + '.fdtd.json'
+    with open(fn, 'w') as modified_json:
+        json.dump(input_json, modified_json) 
+
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mapvtk'])
+    solver.run()
+   
+    assert solver.hasFinishedSuccessfully() == True
+       
+    vtkmapfile = solver.getVTKMap()
+    
+    assert os.path.isfile(vtkmapfile)
+    
+    d = createFaceTagDictionary(vtkmapfile)    
+    assert d[64] == 4
+    assert d[128] == 4
+    assert d[192] == 4
+    
