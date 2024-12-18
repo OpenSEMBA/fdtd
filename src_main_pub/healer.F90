@@ -257,7 +257,7 @@ MODULE CreateMatrices
    ! Outputs :  M(field)%Mediamatrix(i,j,k) = type of medium indicemedio set for all the fields at each voxel centered at i,j,k
    !                                        (usual convention)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   SUBROUTINE CreateSurfaceMM (layoutnumber, Mtag, numertag, MMiEx, MMiEy, MMiEz, MMiHx, &
+   SUBROUTINE CreateSurfaceMM (layoutnumber, Mtag, tags, numertag, MMiEx, MMiEy, MMiEz, MMiHx, &
    & MMiHy, MMiHz,  &
    & Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, &
    & Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, &
@@ -283,8 +283,9 @@ MODULE CreateMatrices
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
-      & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
+      & Alloc_iHz_XE, Alloc_iHz_YI , Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
+      type(taglist_t) :: tags
       INTEGER (KIND=IKINDMTAG) numertag
       INTEGER (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
@@ -295,6 +296,12 @@ MODULE CreateMatrices
       INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       med(indicemedio)%Is%Surface = .TRUE.
       !
+      ! allocate(tags%edge%x (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE))
+      ! allocate(tags%edge%y (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE))
+      ! allocate(tags%edge%z (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE))
+      ! allocate(tags%face%x (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE))
+      ! allocate(tags%face%y (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE))
+      ! allocate(tags%face%z (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
       !
       call SortInitEndWithIncreasingOrder(point)
       !
@@ -323,7 +330,9 @@ MODULE CreateMatrices
                DO k = punto%ZI, puntoPlus1%ZE
                   medio = MMiEy (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
-                     MMiEy (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
+                     MMiEy (i, j, k) = indicemedio; 
+                     Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
+                     tags%edge%y(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                   END IF
@@ -333,7 +342,9 @@ MODULE CreateMatrices
                DO k = punto%ZI, punto%ZE
                   medio = MMiEz (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
-                     MMiEz (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
+                     MMiEz (i, j, k) = indicemedio; 
+                     Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
+                     tags%edge%z(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                   END IF
@@ -344,7 +355,9 @@ MODULE CreateMatrices
                   medio = MMiHx (i, j, k)
 !                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority >= med(medio)%Priority) then
-                         MMiHx (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
+                         MMiHx (i, j, k) = indicemedio; 
+                         Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
+                         tags%face%x(i,j,k) = 64*numertag
                      endif
 !                  END IF
                END DO
@@ -359,7 +372,9 @@ MODULE CreateMatrices
                DO k = punto%ZI, punto%ZE
                   medio = MMiEz (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
-                     MMiEz (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
+                     MMiEz (i, j, k) = indicemedio; 
+                     Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
+                     tags%edge%z(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                   END IF
@@ -369,7 +384,9 @@ MODULE CreateMatrices
                DO k = punto%ZI, puntoPlus1%ZE
                   medio = MMiEx (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
-                     MMiEx (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
+                     MMiEx (i, j, k) = indicemedio; 
+                     Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
+                     tags%edge%x(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                   END IF
@@ -380,7 +397,9 @@ MODULE CreateMatrices
                   medio = MMiHy (i, j, k)
 !                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority >= med(medio)%Priority) then
-                         MMiHy (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);;
+                         MMiHy (i, j, k) = indicemedio; 
+                         Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);;
+                         tags%face%y(i,j,k) = 64*numertag
                      endif
 !                  END IF
                END DO
@@ -395,7 +414,9 @@ MODULE CreateMatrices
                DO j = punto%YI, puntoPlus1%YE
                   medio = MMiEx (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
-                     MMiEx (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
+                     MMiEx (i, j, k) = indicemedio; 
+                     Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
+                     tags%edge%x(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                   END IF
@@ -406,6 +427,7 @@ MODULE CreateMatrices
                   medio = MMiEy (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEy (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
+                     tags%edge%y(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                   END IF
@@ -416,7 +438,10 @@ MODULE CreateMatrices
                   medio = MMiHz (i, j, k)
 !                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority >= med(medio)%Priority) then
-                         MMiHz (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
+                         MMiHz (i, j, k) = indicemedio; 
+                         Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
+                         tags%face%z(i,j,k) = 64*numertag
+
                      endif
 !                  END IF
                END DO

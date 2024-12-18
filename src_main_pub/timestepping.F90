@@ -132,7 +132,7 @@ contains
 #endif
 
 #ifdef CompileWithMTLN
-   subroutine launch_simulation(sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
+   subroutine launch_simulation(sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
    SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
 !!!los del tipo l%
    simu_devia,cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
@@ -150,7 +150,7 @@ contains
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
    mtln_parsed, use_mtln_wires)
 #else
-   subroutine launch_simulation(sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
+   subroutine launch_simulation(sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
       SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
    !!!los del tipo l%
       simu_devia,cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
@@ -205,6 +205,7 @@ contains
       !!!! 
       integer (KIND=IKINDMTAG)   ::  &
       sggMtag(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      type(taglist_t) :: tag_numbers
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES)   ::  &
       sggMiNo(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE), &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
@@ -267,7 +268,7 @@ contains
       !*******************************************************************************
       !*******************************************************************************
       !*******************************************************************************
-!!!! 
+
        if (size.gt.maxcores) then
            print *,'Maximum cores ',maxcores,' reached.  to recompile'
            stop
@@ -1029,7 +1030,7 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       write(dubuf,*) 'Init Observation...';  call print11(layoutnumber,dubuf)
-      call InitObservation (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
+      call InitObservation (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                             Thereare%Observation,Thereare%wires,Thereare%FarFields,resume,initialtimestep,finaltimestep,lastexecutedtime, &
                             nEntradaRoot,layoutnumber,size,saveall,singlefilewrite,wiresflavor,&
                             SINPML_FULLSIZE,facesNF2FF,NF2FFDecim,eps0,mu0,simu_devia,mpidir,niapapostprocess,b)

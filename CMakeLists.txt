@@ -33,7 +33,7 @@ endif()
 add_definitions(		
 	-DCompileWithInt2 
 	-DCompileWithReal4 
-	-DCompileWithOpenMP 
+	-DCompileWithOpenMP
 )
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")

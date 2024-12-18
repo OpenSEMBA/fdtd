@@ -134,7 +134,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
+   subroutine InitObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                               ThereAreObservation,ThereAreWires,ThereAreFarFields,resume,initialtimestep, finaltimestep,lastexecutedtime, &
                               nEntradaRoot,layoutnumber,size, saveall, singlefilewrite,wiresflavor, &
                               SINPML_fullsize,facesNF2FF,NF2FFDecim,eps00,mu00,simu_devia,mpidir,niapapostprocess,b)
@@ -142,6 +142,7 @@ contains
       type (bounds_t)  ::  b
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      type(taglist_t) :: tag_numbers
       logical :: simu_devia,niapapostprocess
       REAL (KIND=RKIND)           ::  eps00,mu00
       !---------------------------> inputs <----------------------------------------------------------
@@ -1483,6 +1484,7 @@ contains
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJx
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  endif
                                  if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                     conta=conta+1
@@ -1563,7 +1565,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJx !las lineas las asimilo a corrientes para que salgan en edges
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk) !sin valor absoluto pq es mapvtk
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk) !sin valor absoluto pq es mapvtk
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%edge%x(iii,jjj,kkk)
                                  endif
                                  imed =sggMiEy(III  , JJJ  , KKK  )
                                  imed1=sggMiHz(III   , JJJ  , KKK  )
@@ -1577,7 +1580,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJy !las lineas las asimilo a corrientes para que salgan en edges
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%edge%y(iii,jjj,kkk)
                                  endif
                                  imed =sggMiEz(III  , JJJ  , KKK  )
                                  imed1=sggMiHx(III   , JJJ  , KKK  )
@@ -1591,7 +1595,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJz !las lineas las asimilo a corrientes para que salgan en edges
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%edge%z(iii,jjj,kkk)
                                  endif
                               endif
                               !
@@ -1649,7 +1654,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)  !sin valor absoluto pq es mapvtk
+                                    !  output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)  !sin valor absoluto pq es mapvtk
+                                     output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%x(iii,jjj,kkk)
                                  endif
                                  if ((sggMiHy(III, JJJ, KKK)/=1).and. &
                                  (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
@@ -1658,7 +1664,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%y(iii,jjj,kkk)
                                  endif
                                  if ((sggMiHz(III, JJJ, KKK)/=1).and. &
                                  (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
@@ -1667,7 +1674,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%z(iii,jjj,kkk)
                                  endif
 !                                 ! los tags 141020 para mapvtk
                                  if (sggMtag(iii,jjj,kkk)<0) then
@@ -1678,7 +1686,8 @@ contains
                                         output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                         output(ii)%item(i)%Serialized%eK(conta)=kkk
                                         output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
-                                        output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk) !sin valor absoluto pq es mapvtk
+                                       !  output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk) !sin valor absoluto pq es mapvtk
+                                        output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%x(iii,jjj,kkk)
                                      endif
                                      if ( (btest(iabs(sggMtag(iii,jjj,kkk)),4)).and. & 
                                      (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
@@ -1687,7 +1696,8 @@ contains
                                         output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                         output(ii)%item(i)%Serialized%eK(conta)=kkk
                                         output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
-                                        output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                       !  output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                        output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%y(iii,jjj,kkk)
                                      endif
                                      if ( (btest(iabs(sggMtag(iii,jjj,kkk)),5)).and. &
                                      (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
@@ -1696,7 +1706,8 @@ contains
                                         output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                         output(ii)%item(i)%Serialized%eK(conta)=kkk
                                         output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
-                                        output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                       !  output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
+                                        output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%z(iii,jjj,kkk)
                                      endif
                                 endif
                               endif
