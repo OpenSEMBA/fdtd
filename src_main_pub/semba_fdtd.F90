@@ -822,7 +822,7 @@ PROGRAM SEMBA_FDTD_launcher
            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
            mtln_parsed, l%use_mtln_wires)
 #else
-            CALL launch_simulation (sgg,sggMtag,tag_numbers,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+            CALL launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
             SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
          !los del tipo l%             
             l%simu_devia,l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
