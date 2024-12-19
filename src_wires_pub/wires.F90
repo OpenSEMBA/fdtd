@@ -3916,7 +3916,27 @@ end subroutine deembed_segment
                                    MAX(    sgg%Med(sggMiEy(i  ,j-1,k      ))%sigma,  &
                                    sgg%Med(sggMiEz(i  ,j  ,kmenos1))%sigma) )
                nodo%islossy = nodo%islossy .or. (abs(sigt) > 1.0e-19_RKIND_wires)
-
+               
+              !091024 para poner bien uniones hilo-lossy sgbc conformal !ojooo es bruto  !bug  FU50_50mm_conf    
+               !fallaria en un hipotetico conformal dielectrico con hilos unidos... habria que distinguir bien ojooooo  y propagar este cambio al resto de sabores de hilos
+             !!!!!
+             !!!!! if( sgg%Med(sggMino(i  ,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEx(i  ,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEy(i,j  ,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEz(i,j,k           ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEx(i-1,j,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEy(i,j-1,k         ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMiEz(i,j,kmenos1     ))%Is%already_YEEadvanced_byconformal .or. &
+             !!!!!     sgg%Med(sggMino(i  ,j,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEx(i  ,j,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEy(i,j  ,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEz(i,j,k           ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEx(i-1,j,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEy(i,j-1,k         ))%Is%split_and_useless .or. &
+             !!!!!     sgg%Med(sggMiEz(i,j,kmenos1     ))%Is%split_and_useless) then
+             !!!!!     nodo%ispec=.true.
+             !!!!! endif
+               !tampoco es esto lo del bug  FU50_50mm_conf   pero no esta de mas tenerlo en cuenta
             
                nodo%ispec = &
                ( sggMiNo(i  ,j,k) ==0).or.(sgg%med( sggMiNo(i  ,j,k) )%is%pec) .or. &
@@ -3926,6 +3946,9 @@ end subroutine deembed_segment
                ( sggMiEx(i-1,j,k) ==0).or.(sgg%med( sggMiEx(i-1,j,k) )%is%pec) .or. &
                ( sggMiEy(i,j-1,k) ==0).or.(sgg%med( sggMiEy(i,j-1,k) )%is%pec) .or. &
                ( sggMiEz(i,j,kmenos1) ==0).or.(sgg%med( sggMiEz(i,j,kmenos1) )%is%pec)
+               
+
+               
                
                if ((.not.(nodo%Is_RightEnd.or.nodo%Is_LeftEnd)).and.(nodo%ispec.or.nodo%islossy)) then
                    if (nodo%ispec) write (buff,*)  'wir1_WARNING: Un-grounding NON-TERMINAL node from PEC ', i,j,k
@@ -4040,11 +4063,17 @@ end subroutine deembed_segment
                       !esta a PEC/lossy o al punietero aire
                               !!!lo he sacado del if. solo para reporte y que coincida con lo que da estructurado  280323
                       if (nodo%ispec)  then
-                          write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node grounded to PEC ', i,j,k
+                          write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node grounded to PEC ', i,j,k  
+                          if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                       elseif (nodo%islossy) then
-                          write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node grounded to Lossy ', i,j,k
+                          write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node grounded to Lossy ', i,j,k    
+                          if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
+                      elseif (nodo%IsHeterogeneousJunction) then
+                          write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node is heteoreneous junction ', i,j,k    
+                          if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                       else
-                          write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node embedded in air ', i,j,k
+                          write (buff,*)  'wir1_INFO: (SHOULD BE REDUNDANT) Terminal Node embedded in air ', i,j,k        
+                          if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                       endif
                       if ((k >  ZI).and.(k <= ZE)) call WarnErrReport(buff)
                  endif
