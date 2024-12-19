@@ -59,7 +59,7 @@ MODULE Preprocess_m
    !
 CONTAINS
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   SUBROUTINE read_geomData (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, fichin, layoutnumber, size, SINPML_fullsize, fullsize, this, &
+   SUBROUTINE read_geomData (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, fichin, layoutnumber, size, SINPML_fullsize, fullsize, this, &
    groundwires,attfactor,mibc,SGBC,SGBCDispersive,MEDIOEXTRA,maxSourceValue,skindepthpre,createmapvtk,input_conformal_flag,CLIPREGION,boundwireradius,maxwireradius,updateshared,run_with_dmma, &
    eps00,mu00,simu_devia,hay_slanted_wires,verbose,ignoresamplingerrors,tagtype,wiresflavor)
       logical :: simu_devia,verbose,hay_slanted_wires
@@ -73,11 +73,12 @@ CONTAINS
       LOGICAL, INTENT (INout) :: createmapvtk
       TYPE (limit_t), DIMENSION (1:6) :: SINPML_fullsize, fullsize
       type (SGGFDTDINFO), intent(INOUT)    :: sgg
+
       character(len=BUFSIZE) :: extraswitches
 
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
       integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) ::  sggMtag
-
+      type(taglist_t) :: tag_numbers
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) :: tama, tama2, tama3, tama4, tama5, tama6, i, j, k, tipotemp, tamaSonda,  &
       &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones
@@ -268,6 +269,14 @@ CONTAINS
       numertag = 0
       ALLOCATE (sggMtag(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
       ALLOCATE (sggmiNo(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
+
+      ALLOCATE (tag_numbers%edge%x(Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE))
+      ALLOCATE (tag_numbers%edge%y(Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE))
+      ALLOCATE (tag_numbers%edge%z(Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE))
+      ALLOCATE (tag_numbers%face%x(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE))
+      ALLOCATE (tag_numbers%face%y(Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE))
+      ALLOCATE (tag_numbers%face%z(Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
+
       !!!nodos materiales: se precisan para el conformal !sgg310715
       ALLOCATE (sggmiEx(Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE))
       ALLOCATE (sggmiEy(Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE))
@@ -277,6 +286,12 @@ CONTAINS
       ALLOCATE (sggmiHz(Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
       !el tag esta voided porque luego el numero va con el del tag
       sggMtag (:, :, :) = 0 !LO VOIDEO A 0 EN VEZ DE A -1 PORQUE EL TAG 0 NO VA A EXISTIR NUNCA 141020
+      tag_numbers%edge%x(:,:,:) = 0
+      tag_numbers%edge%y(:,:,:) = 0
+      tag_numbers%edge%z(:,:,:) = 0
+      tag_numbers%face%x(:,:,:) = 0
+      tag_numbers%face%x(:,:,:) = 0
+      tag_numbers%face%x(:,:,:) = 0
       !todo sustrato por defecto
       sggmiNo (:, :, :) = 1
       sggmiEx (:, :, :) = 1
@@ -559,7 +574,7 @@ CONTAINS
             punto%ZE = this%pecregs%surfs(i)%ZE
             orientacion = this%pecregs%surfs(i)%or
             numertag = searchtag(tagtype,this%pecregs%surfs(i)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, &
             & Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, &
             & Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, &
@@ -647,7 +662,7 @@ CONTAINS
             punto%ZE = this%pmcregs%surfs(i)%ZE
             orientacion = this%pmcregs%surfs(i)%or
             numertag = searchtag(tagtype,this%pmcregs%surfs(i)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -759,7 +774,7 @@ CONTAINS
             punto%ZE = this%DielRegs%surfs(i)%c2P(j)%ZE
             orientacion = this%DielRegs%surfs(i)%c2P(j)%or
             numertag = searchtag(tagtype,this%DielRegs%surfs(i)%c2P(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -779,7 +794,7 @@ CONTAINS
             punto%ZE = this%DielRegs%surfs(i)%c1P(j)%ZI
             orientacion = this%DielRegs%surfs(i)%c1P(j)%or
             numertag = searchtag(tagtype,this%DielRegs%surfs(i)%c1P(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -999,7 +1014,7 @@ CONTAINS
             punto%ZE = this%ANIMATS%surfs(i)%c2P(j)%ZE
             orientacion = this%ANIMATS%surfs(i)%c2P(j)%or
             numertag = searchtag(tagtype,this%ANIMATS%surfs(i)%c2P(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -1018,7 +1033,7 @@ CONTAINS
             punto%ZE = this%ANIMATS%surfs(i)%c1P(j)%ZI
             orientacion = this%ANIMATS%surfs(i)%c1P(j)%or
             numertag = searchtag(tagtype,this%ANIMATS%surfs(i)%c1P(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -1130,7 +1145,7 @@ CONTAINS
             punto%ZE = this%FRQDEPMATS%surfs(i)%C(j)%ZE
             orientacion = this%FRQDEPMATS%surfs(i)%C(j)%or
             numertag = searchtag(tagtype,this%FRQDEPMATS%surfs(i)%C(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -1404,7 +1419,7 @@ CONTAINS
                !
                !
                numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-               CALL CreateSurfaceMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+               CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
                & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
                & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
                & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -1533,7 +1548,7 @@ CONTAINS
                !
                !
                numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-               CALL CreateSurfaceMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+               CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
                & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
                & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
                & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &

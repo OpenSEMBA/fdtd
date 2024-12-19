@@ -100,6 +100,7 @@ PROGRAM SEMBA_FDTD_launcher
    integer (kind=4) :: finaltimestepantesdecorregir,NEWfinaltimestep,thefileno
    TYPE (Parseador), POINTER :: parser
    type (SGGFDTDINFO)   :: sgg
+   type(taglist_t) :: tag_numbers
    TYPE (limit_t), DIMENSION (1:6) :: fullsize, SINPML_fullsize
    !
    LOGICAL :: existe  
@@ -864,7 +865,7 @@ PROGRAM SEMBA_FDTD_launcher
       finishedwithsuccess=.false.
       if ((l%finaltimestep >= 0).and.(.not.l%skindepthpre)) then
 #ifdef CompileWithMTLN
-         CALL launch_simulation (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+         CALL launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
 !los del tipo l%             
            l%simu_devia,l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
@@ -882,7 +883,7 @@ PROGRAM SEMBA_FDTD_launcher
            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
            mtln_parsed, l%use_mtln_wires)
 #else
-            CALL launch_simulation (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+            CALL launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
             SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
          !los del tipo l%             
             l%simu_devia,l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
@@ -1344,7 +1345,7 @@ subroutine NFDE2sgg
          !!fin 16/07/15
          WRITE (dubuf,*) 'INIT NFDE --------> GEOM'
          CALL print11 (l%layoutnumber, dubuf)
-         CALL read_geomData (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, l%fichin, l%layoutnumber, l%size, SINPML_fullsize, fullsize, parser, &
+         CALL read_geomData (sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, l%fichin, l%layoutnumber, l%size, SINPML_fullsize, fullsize, parser, &
          l%groundwires,l%attfactorc,l%mibc,l%sgbc,l%sgbcDispersive,l%MEDIOEXTRA,maxSourceValue,l%skindepthpre,l%createmapvtk,l%input_conformal_flag,l%CLIPREGION,l%boundwireradius,l%maxwireradius,l%updateshared,l%run_with_dmma, &
          eps0,mu0,.false.,l%hay_slanted_wires,l%verbose,l%ignoresamplingerrors,tagtype,l%wiresflavor)
 #ifdef CompileWithMTLN
@@ -1417,7 +1418,7 @@ subroutine NFDE2sgg
          WRITE (dubuf,*) 'INIT NFDE --------> GEOM'
          CALL print11 (l%layoutnumber, dubuf)           
 
-         CALL read_geomData (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, l%fichin, l%layoutnumber, l%size, SINPML_fullsize, fullsize, parser, &
+         CALL read_geomData (sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, l%fichin, l%layoutnumber, l%size, SINPML_fullsize, fullsize, parser, &
          l%groundwires,l%attfactorc,l%mibc,l%sgbc,l%sgbcDispersive,l%MEDIOEXTRA,maxSourceValue,l%skindepthpre,l%createmapvtk,l%input_conformal_flag,l%CLIPREGION,l%boundwireradius,l%maxwireradius,l%updateshared,l%run_with_dmma, &
          eps0,mu0,l%simu_devia,l%hay_slanted_wires,l%verbose,l%ignoresamplingerrors,tagtype,l%wiresflavor)
 

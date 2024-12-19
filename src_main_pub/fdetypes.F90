@@ -310,6 +310,14 @@ module  FDETYPES
       INTEGER (KIND=4) :: Or   !to include possible orientations (nodal sources 180915)
    end type
 
+   type tagnumber_t
+   integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: x, y, z
+   end type
+
+   type taglist_t
+      type (tagnumber_t) :: edge, face
+   end type
+
    !
    type bounds_t
       type (limit_t)  ::  sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
