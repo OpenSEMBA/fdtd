@@ -2154,10 +2154,6 @@ CONTAINS
   !!!    l%run_with_abrezanjas = .true. !OJO 0323 A VECES DA ERROR. PONER A FALSE SI SUCEDE
       l%run_with_abrezanjas = .false. !OJO 0323 A VECES DA ERROR. PONER A FALSE SI SUCEDE
       !!!!l%run_with_abrezanjas = .false.
-      if (.NOT.l%input_conformal_flag) then
-            l%conformal_file_input_name = char(0)
-            l%input_conformal_flag = .true.
-      end if
 #else
       l%run_with_abrezanjas = .false.
 #endif
