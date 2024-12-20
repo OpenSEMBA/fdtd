@@ -3,9 +3,11 @@ import shutil, glob, re
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+from os import environ as env
+from sys import platform
 import pyvista as pv
-
 # Use of absolute path to avoid conflicts when changing directory.
+EXE_FOLDER = os.getcwd() + '/build/bin/'
 SEMBA_EXE = os.getcwd() + '/build/bin/semba-fdtd'
 SEMBA_EXE_INTEL_LLVM_RELEASE = os.getcwd() + '/build-ubuntu-intelLLVM-release/bin/semba-fdtd'
 SEMBA_EXE_INTEL_LLVM_DEBUG   = os.getcwd() + '/build-ubuntu-intelLLVM-debug/bin/semba-fdtd'
@@ -15,7 +17,7 @@ CASE_FOLDER = TEST_DATA_FOLDER + 'cases/'
 MODELS_FOLDER = TEST_DATA_FOLDER + 'models/'
 EXCITATIONS_FOLDER = TEST_DATA_FOLDER + 'excitations/'
 OUTPUT_FOLDER = TEST_DATA_FOLDER + 'outputs/'
-
+SPINIT_FOLDER = TEST_DATA_FOLDER + 'spinit/'
 
 def getCase(case):
     return json.load(open(CASE_FOLDER + case + '.fdtd.json'))
@@ -24,6 +26,8 @@ def makeCopy(temp_dir, file_path):
     file_name = file_path.split('/')[-1]
     temp_path = os.path.join(temp_dir, file_name)
     shutil.copy2(file_path, temp_path)
+
+
 
 def copyInputFiles(temp_dir, input, excitation, executable):
     makeCopy(temp_dir, input)
@@ -74,3 +78,25 @@ def createFaceTagDictionary(vtkfile):
 
     unique, counts = np.unique(tags, return_counts=True)
     return dict(zip(unique, counts))
+
+def setNgspice(tmp_path):
+    if platform == "linux" or platform == "linux2":
+        sys_name = "linux/"
+        env["SPICE_SCRIPTS"] = "./"
+    elif platform == "win32":
+        sys_name = "windows/"    
+        env["SPICE_SCRIPTS"] = "./"
+    
+    makeCopy(tmp_path, SPINIT_FOLDER + sys_name + 'spinit' )
+    copyXSpiceModels(tmp_path, sys_name)
+    #ngspice needs to read file 'spinit' to load code models needed by xspice
+    # setSpiceScriptsFolder()
+
+def copyXSpiceModels(temp_dir, sys_name):
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'analog.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'digital.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'spice2poly.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'table.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'xtradev.cm')
+    makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'xtraevt.cm')
+        
