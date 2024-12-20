@@ -1,0 +1,81 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Planewave illuminating an sgbc panel. Cabello2017, SGBC paper.",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 2000
+    },
+    
+    "boundary": {
+        "xLower": {"type": "pmc"},
+        "xUpper": {"type": "pmc"},
+        "yLower": {"type": "pec"},
+        "yUpper": {"type": "pec"},
+        "zLower": {"type": "pml"},
+        "zUpper": {"type": "pml"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [2, 2, 6],
+            "steps": { "x": [0.0025], "y": [0.0025], "z": [0.0025] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [1, 1, 1]},
+            {"id": 2, "relativePosition": [1, 1, 4]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [1]},
+            {"id": 2, "type": "node", "coordinateIds": [2]},
+            {"id": 3, "type": "cell", "name": "pw-box", "intervals": [ [ [0, 0, 3], [2, 2, 25] ] ]},
+            {"id": 4, "type": "cell", "name": "square", "intervals": [ [ [0, 0, 4], [2, 2, 4] ] ]}
+        ]
+    },
+
+    "materials": [ 
+        {
+            "name": "aluminum",
+            "id": 1, 
+            "type": "multilayeredSurface",
+            "layers": [
+                {"thickness": 0.3e-3, "electricConductivity": 3.456e7}
+            ]
+        }
+    ],
+
+    "materialAssociations": [
+        {"type": "surface", "materialId": 1, "elementIds": [3]}
+    ],
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss_1GHz.exc",
+            "elementIds": [3],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5708,
+                "phi": 0.0
+            }
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "front",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [1]
+        },
+        {
+            "name": "back",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [2]
+        }
+    ]
+}
