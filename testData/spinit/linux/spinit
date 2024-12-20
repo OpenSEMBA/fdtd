@@ -1,0 +1,42 @@
+* Standard ngspice init file
+alias exit quit
+alias acct rusage all
+set x11lineararcs
+*set rndseed=12
+** ascii rawfile **
+*set filetype=ascii
+** frontend debug output **
+*set ngdebug
+** asking after quit **
+*set askquit
+** set the number of threads in openmp
+** default (if compiled with --enable-openmp) is: 2
+*set num_threads=4
+
+* comment out if central osdi management is set up
+unset osdi_enabled
+
+* Load the codemodels
+if $?xspice_enabled
+ codemodel ./spice2poly.cm
+ codemodel ./analog.cm
+ codemodel ./digital.cm
+ codemodel ./xtradev.cm
+ codemodel ./xtraevt.cm
+ codemodel ./table.cm
+end
+
+* Load the OpenVAF/OSDI models
+if $?osdi_enabled
+
+ osdi ./asmhemt.osdi
+ osdi ./bjt504t.osdi
+ osdi ./BSIMBULK107.osdi
+ osdi ./BSIMCMG.osdi
+ osdi ./HICUMl0-2.0.osdi
+ osdi ./psp103.osdi
+ osdi ./r2_cmc.osdi
+ osdi ./vbic_4T_et_cf.osdi
+ 
+end
+
