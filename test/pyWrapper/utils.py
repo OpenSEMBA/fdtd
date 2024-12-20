@@ -3,13 +3,10 @@ import shutil, glob, re
 import json
 import numpy as np
 import matplotlib.pyplot as plt
-<<<<<<< HEAD
 import pyvista as pv
-
-=======
 from os import environ as env
 from sys import platform
->>>>>>> origin/dev
+
 # Use of absolute path to avoid conflicts when changing directory.
 EXE_FOLDER = os.getcwd() + '/build/bin/'
 SEMBA_EXE = os.getcwd() + '/build/bin/semba-fdtd'
