@@ -71,9 +71,9 @@ contains
       ! Expected probes
       ! sonda
       expected%Sonda%len_cor_max = 0
-      expected%Sonda%length = 1
-      expected%Sonda%length_max = 1
-      allocate(expected%Sonda%collection(1))
+      expected%Sonda%length = 2
+      expected%Sonda%length_max = 2
+      allocate(expected%Sonda%collection(2))
       expected%Sonda%collection(1)%outputrequest = "electric_field_point_probe"
       expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(1)%type2 = NP_T2_TIME
@@ -93,6 +93,24 @@ contains
       expected%Sonda%collection(1)%cordinates(1)%Or = NP_COR_EX
       expected%Sonda%collection(1)%cordinates(2)%Or = NP_COR_EY
       expected%Sonda%collection(1)%cordinates(3)%Or = NP_COR_EZ
+
+      expected%Sonda%collection(2)%outputrequest = "magnetic_field_point_probe"
+      expected%Sonda%collection(2)%type1 = NP_T1_PLAIN
+      expected%Sonda%collection(2)%type2 = NP_T2_TIME
+      expected%Sonda%collection(2)%filename = ' '
+      expected%Sonda%collection(2)%tstart = 0.0
+      expected%Sonda%collection(2)%tstop = 0.0
+      expected%Sonda%collection(2)%tstep = 0.0
+      expected%Sonda%collection(2)%fstart = 0.0
+      expected%Sonda%collection(2)%fstop = 0.0
+      expected%Sonda%collection(2)%fstep = 0.0
+      allocate(expected%Sonda%collection(2)%cordinates(1))
+      expected%Sonda%collection(2)%len_cor = 1
+      expected%Sonda%collection(2)%cordinates(1)%tag = "magnetic_field_point_probe"
+      expected%Sonda%collection(2)%cordinates(1)%Xi = 6
+      expected%Sonda%collection(2)%cordinates(1)%Yi = 6
+      expected%Sonda%collection(2)%cordinates(1)%Zi = 6
+      expected%Sonda%collection(2)%cordinates(1)%Or = NP_COR_HX
 
    end function
 end function

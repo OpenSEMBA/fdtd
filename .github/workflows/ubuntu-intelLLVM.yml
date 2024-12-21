@@ -1,4 +1,4 @@
-name: ubuntu
+name: ubuntu-intelLLVM
 
 on:
 
