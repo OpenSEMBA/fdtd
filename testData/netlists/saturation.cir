@@ -1,0 +1,22 @@
+Rwire1_1_initial wire1_1_initial_R wire1_1_initial    50.00000
+Lwire1_1_initial wire1_1_initial_R wire1_1_initial_S   0.0000000E+00
+Vwire1_1_initial_s wire1_1_initial_S 0 dc 0
+Iwire1_1_initial wire1_1_initial 0  dc 0
+CLwire1_1_initial wire1_1_initial 0   4.6067365E-13
+Rwire1_2_initial wire1_2_initial 0 1e22
+Iwire1_2_initial wire1_2_initial 0  dc 0
+CLwire1_2_initial wire1_2_initial 0   4.6067365E-13
+.include TL071.301
+xwire1_1_end wire1_1_end wire1_wire1_inter TL071
+Iwire1_1_end wire1_1_end 0  dc 0
+CLwire1_1_end wire1_1_end 0   4.6067365E-13
+Rwire1_2_end wire1_2_end wire1_wire1_inter   1.0000000E-10
+Iwire1_2_end wire1_2_end 0  dc 0
+CLwire1_2_end wire1_2_end 0   4.6067365E-13
+.option reltol = 0.005
+.tran   0.20E-09             0.40E-05           0   0.10E-11
+.save  V1wire1_1_initial#branch wire1_1_initial
+.save  V1wire1_2_initial#branch wire1_2_initial
+.save  V1wire1_1_end#branch wire1_1_end
+.save  V1wire1_2_end#branch wire1_2_end
+.end

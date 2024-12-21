@@ -92,7 +92,6 @@ CONTAINS
         CALL h5dwrite_f (dset_id, H5T_NATIVE_DOUBLE, valor3d, valor3d_dims, error, slice2D_id, &
         & dspace_id)
 #elif CompileWithReal16
-        !miguel-2018: compila pero no testeado
         CALL h5dwrite_f (dset_id, H5T_NATIVE_LDOUBLE, valor3d, valor3d_dims, error, slice2D_id, &
         & dspace_id)
 #else
@@ -168,7 +167,6 @@ CONTAINS
         CALL h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_DOUBLE, dspace_id, dset_id, error)
         CALL h5dwrite_f (dset_id, H5T_NATIVE_DOUBLE, att, DATA_dims, error)
 #elif CompileWithReal16
-        !miguel-2018: compila pero no testeado
         CALL h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_LDOUBLE, dspace_id, dset_id, error)
         CALL h5dwrite_f (dset_id, H5T_NATIVE_REAL, att, DATA_dims, error)
 #else

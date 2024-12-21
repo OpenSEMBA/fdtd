@@ -7,6 +7,8 @@ module NFDETypes_extension
    public
 
    interface operator(==)
+      module procedure Parseador_eq
+
       module procedure NFDEGeneral_eq
       module procedure desplazamiento_eq
 
@@ -106,7 +108,13 @@ contains
       allocate(pD%pmcRegs%vols(0))
 
       allocate(pD%DielRegs)
+      allocate(pD%DielRegs%lins(0))
+      allocate(pD%DielRegs%surfs(0))
+      allocate(pD%DielRegs%vols(0))
+      
       allocate(pD%LossyThinSurfs)
+      allocate(pD%LossyThinSurfs%cs(0))
+
       allocate(pD%frqDepMats)
       allocate(pD%aniMats)
       !
@@ -140,12 +148,15 @@ contains
 
       allocate(pD%sWires)
       allocate(pD%tSlots)
+      allocate(pD%tSlots%tg(0))
 
+#ifdef CompileWithMTLN
       allocate(pD%mtln)
       allocate(pD%mtln%cables(0))
       allocate(pD%mtln%probes(0))
       allocate(pD%mtln%networks(0))
       allocate(pD%mtln%connectors(0))
+#endif
 
    end subroutine
 
@@ -219,20 +230,22 @@ contains
       pecregions_eq = &
          (a%nVols == b%nVols) .and. &
          (a%nSurfs == b%nSurfs) .and. &
-         (a%nLins == b%nLins) .and. &
-         all(a%Lins == b%Lins) .and. &
-         all(a%Vols == b%Vols) .and. &
-         all(a%Surfs == b%Surfs)
+         (a%nLins_max == b%nLins_max) .and. &
+         (a%nVols_max == b%nVols_max) .and. &
+         (a%nSurfs_max == b%nSurfs_max) .and. &
+         (a%nLins == b%nLins)
+      pecregions_eq = pecregions_eq .and. all(a%Lins == b%Lins) 
+      pecregions_eq = pecregions_eq .and. all(a%surfs == b%surfs) 
+      pecregions_eq = pecregions_eq .and. all(a%vols == b%vols) 
 
    end function pecregions_eq
 
    elemental logical function dielectric_eq(a, b)
       type(dielectric_t), intent(in) :: a, b
+      logical :: allAssociated
       dielectric_eq = &
          (a%n_C1P == b%n_C1P) .and. &
          (a%n_C2P == b%n_C2P) .and. &
-         all(a%C1P == b%C1P) .and. &
-         all(a%C2P == b%C2P) .and. &
          (a%sigma == b%sigma) .and. &
          (a%eps == b%eps) .and. &
          (a%mu == b%mu) .and. &
@@ -255,6 +268,15 @@ contains
          (a%diodo     .eqv. b%diodo) .and. &
          (a%plain     .eqv. b%plain) .and. &
          (a%PMLbody   .eqv. b%PMLbody)
+      
+      allAssociated = &
+         associated(a%C1P) .and. associated(b%C1P) .and. &
+         associated(a%C2P) .and. associated(b%C2P) 
+      if (.not. allAssociated) then
+         dielectric_eq = .false.
+         return
+      end if
+      dielectric_eq = all(a%C1P == b%C1P) .and. all(a%C2P == b%C2P)
    end function dielectric_eq
 
    elemental logical function freqdepenmaterial_eq(a, b)
@@ -379,6 +401,17 @@ contains
 
    elemental logical function dielectricregions_eq(a, b)
       type(DielectricRegions), intent(in) :: a, b
+      logical :: allAssociated
+      
+      allAssociated = &
+         associated(a%Lins) .and. associated(b%Lins) .and. &
+         associated(a%Surfs) .and. associated(b%Surfs) .and. &
+         associated(a%Vols) .and. associated(b%Vols)
+         if (.not. allAssociated) then
+            dielectricregions_eq = .false.
+            return
+         end if
+
       dielectricregions_eq = &
          a%nVols == b%nVols .and. &
          a%nSurfs == b%nSurfs .and. &
@@ -387,10 +420,11 @@ contains
          a%nSurfs_max == b%nSurfs_max .and. &
          a%nLins_max == b%nLins_max .and. &
          a%n_C1P_max == b%n_C1P_max .and. &
-         a%n_C2P_max == b%n_C2P_max .and. &
-         all(a%Vols == b%Vols) .and. &
-         all(a%Surfs == b%Surfs) .and. &
-         all(a%Lins == b%Lins)
+         a%n_C2P_max == b%n_C2P_max
+
+      dielectricregions_eq = dielectricregions_eq .and. all(a%Lins == b%Lins) 
+      dielectricregions_eq = dielectricregions_eq .and. all(a%surfs == b%surfs) 
+      dielectricregions_eq = dielectricregions_eq .and. all(a%vols == b%vols) 
    end function dielectricregions_eq
 
    elemental logical function LossyThinSurface_eq(a, b)
@@ -525,8 +559,15 @@ contains
 
    elemental logical function SlantedWires_eq(a, b)
       type(SlantedWires), intent(in) :: a, b
-
-      SlantedWires_eq = all(a%sw == b%sw) .and. &
+      logical :: allAssociated
+      allAssociated = &
+         associated(a%sw) .and. associated(b%sw)
+      if (.not. allAssociated) then
+         SlantedWires_eq = .false.
+         return
+      end if
+      SlantedWires_eq = &
+         all(a%sw == b%sw) .and. &
          (a%n_sw == b%n_sw) .and. &
          (a%n_sw_max == b%n_sw_max)
    end function SlantedWires_eq
@@ -545,8 +586,14 @@ contains
 
    elemental logical function ThinSlot_eq(a, b)
       type(ThinSlot), intent(in) :: a, b
-
-      ThinSlot_eq = all(a%tgc == b%tgc) .and. &
+      logical :: allAssociated
+      allAssociated = associated(a%tgc) .and. associated(b%tgc)
+      if (.not. allAssociated) then
+         ThinSlot_eq = .false.
+         return
+      end if
+      ThinSlot_eq = &
+         all(a%tgc == b%tgc) .and. &
          (a%width == b%width) .and. &
          (a%n_tgc == b%n_tgc) .and. &
          (a%n_tgc_max == b%n_tgc_max)
@@ -554,6 +601,11 @@ contains
 
    elemental logical function ThinSlots_eq(a, b)
       type(ThinSlots), intent(in) :: a, b
+      if (.not. associated(a%tg) .or. &
+          .not. associated(b%tg)) then
+         ThinSlots_eq = .false. 
+         return
+      end if
 
       ThinSlots_eq = all(a%tg == b%tg) .and. &
          (a%n_tg == b%n_tg) .and. &
@@ -773,28 +825,10 @@ contains
       res = .false.
 
       if (a%n_FarField /= b%n_FarField) return
-      ! if (a%n_Electric /= b%n_Electric) return
-      ! if (a%n_Magnetic /= b%n_Magnetic) return
-      ! if (a%n_NormalElectric /= b%n_NormalElectric) return
-      ! if (a%n_NormalMagnetic /= b%n_NormalMagnetic) return
-      ! if (a%n_SurfaceElectricCurrent /= b%n_SurfaceElectricCurrent) return
-      ! if (a%n_SurfaceMagneticCurrent /= b%n_SurfaceMagneticCurrent) return
 
       if (.not. associated(a%FarField)               .or. .not. associated(b%FarField)) return
-      ! if (.not. associated(a%Electric)               .or. .not. associated(b%Electric)) return
-      ! if (.not. associated(a%Magnetic)               .or. .not. associated(b%Magnetic)) return
-      ! if (.not. associated(a%NormalElectric)         .or. .not. associated(b%NormalElectric)) return
-      ! if (.not. associated(a%NormalMagnetic)         .or. .not. associated(b%NormalMagnetic)) return
-      ! if (.not. associated(a%SurfaceElectricCurrent) .or. .not. associated(b%SurfaceElectricCurrent)) return
-      ! if (.not. associated(a%SurfaceMagneticCurrent) .or. .not. associated(b%SurfaceMagneticCurrent)) return
 
       if (any(.not. a%FarField == b%FarField)) return
-      ! if (any(.not. a%Electric == b%Electric)) return
-      ! if (any(.not. a%Magnetic == b%Magnetic)) return
-      ! if (any(.not. a%NormalElectric == b%NormalElectric)) return
-      ! if (any(.not. a%NormalMagnetic == b%NormalMagnetic)) return
-      ! if (any(.not. a%SurfaceElectricCurrent == b%SurfaceElectricCurrent)) return
-      ! if (any(.not. a%SurfaceMagneticCurrent == b%SurfaceMagneticCurrent)) return
 
       res = .true.
    end function abstractSonda_eq

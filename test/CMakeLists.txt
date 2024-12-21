@@ -1,6 +1,8 @@
 message(STATUS "Creating build system for fdtd_tests")
 
 enable_testing ()
+project(fdtd_tests)
+enable_language(C CXX Fortran)
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
@@ -27,7 +29,7 @@ target_link_libraries(fdtd_tests
 )
 
 
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND SEMBA_FDTD_ENABLE_MTLN)
     add_custom_command(TARGET fdtd_tests POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_if_different
             "${NGSPICE_DIR}ngspice.dll"      
