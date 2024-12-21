@@ -1000,7 +1000,7 @@ contains
       
       filtered_size = 0
       do i=1, size(ps)
-         call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
+         call this%core%get(ps(i)%p, J_FIELD, fieldLbl, default=J_FIELD_ELECTRIC)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
             filtered_size = filtered_size + 1
          end if
@@ -1009,7 +1009,7 @@ contains
       n = 1
       allocate(res%collection(filtered_size))
       do i=1, size(ps)
-         call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
+         call this%core%get(ps(i)%p, J_FIELD, fieldLbl, default=J_FIELD_ELECTRIC)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
             res%collection(n) = readPointProbe(ps(i)%p)
             n = n + 1

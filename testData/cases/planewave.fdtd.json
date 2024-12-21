@@ -47,7 +47,6 @@
         {
             "name": "electric_field_point_probe",
             "type": "point",
-            "field": "electric",
             "elementIds": [1],
             "directions": ["x", "y", "z"],
             "domain": { 
