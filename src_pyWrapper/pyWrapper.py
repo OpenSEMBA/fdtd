@@ -16,11 +16,16 @@ class Probe():
 
         mtln_probe_tags = ['_V_','_I_']
         current_probe_tags = ['_Wx_', '_Wy_', '_Wz_']
+        point_probe_tags = ['_Ex_', '_Ey_', '_Ez_', '_Hx_', '_Hy_', '_Hz_']
         far_field_tag = ['_FF_']
         movie_tags = ['_ExC_', '_EyC_', '_EzC_', '_HxC_', '_HyC_', '_HzC_', '_ME_', '_MH_']
-        all_tags = current_probe_tags + far_field_tag + movie_tags + mtln_probe_tags
-      
         
+        all_tags = mtln_probe_tags \
+            + current_probe_tags \
+            + point_probe_tags \
+            + far_field_tag \
+            + movie_tags 
+      
         basename = os.path.basename(self.filename)
         self.case_name, basename_with_no_case_name = basename.split('.fdtd_')
         basename_with_no_case_name = os.path.splitext(basename_with_no_case_name)[0]
@@ -38,7 +43,18 @@ class Probe():
                     self.segment_tag = int(position_str.split('_s')[1])
                     self.df = pd.read_csv(self.filename, sep='\s+')
                     self.df = self.df.rename(columns={'t': 'time', self.df.columns[1]: 'current'})
-                    # self.df = self.df.rename(columns={'t': 'time', basename: 'current'})
+                elif tag in point_probe_tags:
+                    self.type = 'point'
+                    self.name, position_str = basename_with_no_case_name.split(tag)
+                    self.cell = positionStrToCell(position_str)
+                    self.field = tag[1]
+                    self.direction = tag[2]                       
+                    self.df = pd.read_csv(self.filename, sep='\s+')
+                    self.df = self.df.rename(columns = {
+                        't': 'time', 
+                        self.df.columns[1]: 'field',
+                        self.df.columns[2]: 'incident'
+                    })
                 elif tag in far_field_tag:
                     self.type = 'farField'
                     self.name, positions_str = basename_with_no_case_name.split(tag)
@@ -77,6 +93,8 @@ class FDTD():
         self.flags = flags
 
         self.folder = os.path.dirname(self.filename)
+        if len(self.folder) == 0:
+            self.folder = './'
         self.case = os.path.basename(self.filename).split('.json')[0]
         self.hasRun = False
     
