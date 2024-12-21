@@ -13,11 +13,12 @@ jobs:
     strategy:
       matrix: 
         build-type: ["Debug", "Release"]
-        mpi: ["No"]
+        mpi: ["No", "Yes"]
         mtln: ["No"]
+        hdf: ["Yes"]
 
 
-    name: ubuntu-intel ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
+    name: ${{matrix.build-type}}- mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}} - hdf ${{matrix.hdf}}
 
     steps:
 
@@ -39,7 +40,11 @@ jobs:
 
     - name: CMake build
       run: |
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
+          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
         cmake --build build -j
         
     - name: Run fdtd unit tests
