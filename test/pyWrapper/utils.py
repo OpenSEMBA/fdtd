@@ -3,8 +3,10 @@ import shutil, glob, re
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+import pyvista as pv
 from os import environ as env
 from sys import platform
+
 # Use of absolute path to avoid conflicts when changing directory.
 EXE_FOLDER = os.getcwd() + '/build/bin/'
 SEMBA_EXE = os.getcwd() + '/build/bin/semba-fdtd'
@@ -67,6 +69,16 @@ def readSpiceFile(spice_file):
             val = np.append(val, float(l.split()[1]))
     return t, val
 
+def createFaceTagDictionary(vtkfile):
+    ugrid = pv.UnstructuredGrid(vtkfile)
+    quads = np.argwhere(ugrid.celltypes == 9) #[i][0]
+    tags = np.array([])
+    tagnumber_array = ugrid.cell_data['tagnumber']
+    for i in range(quads[0][0], quads[-1][0]+1):
+        tags = np.append(tags, tagnumber_array[i])
+
+    unique, counts = np.unique(tags, return_counts=True)
+    return dict(zip(unique, counts))
 
 def setNgspice(tmp_path):
     if platform == "linux" or platform == "linux2":
