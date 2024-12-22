@@ -115,6 +115,7 @@ def test_towelHanger(tmp_path):
     for i in range(3):
         p_solved = Probe(probe_files[i])
         assert np.allclose(p_expected[i].df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 5e-2, atol=5e-2)
+   
     
 def test_sphere(tmp_path):    
     case = 'sphere'
@@ -144,4 +145,21 @@ def test_sphere(tmp_path):
     assert len(electric_field_movie_files) == 3
     p = Probe(electric_field_movie_files[0])
     assert p.type == 'movie'
+
+
+def test_planewave_in_box(tmp_path):    
+    makeCopy(tmp_path, CASE_FOLDER+'planewave/*')
+    input = tmp_path._str + '/' +'pw-in-box.fdtd.json'
+    solver = FDTD(input, path_to_exe=SEMBA_EXE)
     
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    
+    before = Probe(solver.getSolvedProbeFilenames("before")[0])
+    inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
+    after = Probe(solver.getSolvedProbeFilenames("after")[0])
+    
+    np.allclose(inbox.df['field'], inbox.df['incident'])
+    zeros = np.zeros_like(before.df['field'])
+    np.allclose(before.df['field'], zeros)
+    np.allclose(after.df['field'], zeros)

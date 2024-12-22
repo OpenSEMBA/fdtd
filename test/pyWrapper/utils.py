@@ -23,12 +23,13 @@ SPINIT_FOLDER = TEST_DATA_FOLDER + 'spinit/'
 def getCase(case):
     return json.load(open(CASE_FOLDER + case + '.fdtd.json'))
 
-def makeCopy(temp_dir, file_path):
-    file_name = file_path.split('/')[-1]
-    temp_path = os.path.join(temp_dir, file_name)
-    shutil.copy2(file_path, temp_path)
 
-
+def makeCopy(dest_dir, src_path):
+    for file in glob.glob(src_path):
+        src_file = file.split('/')[-1]
+        dest_path = os.path.join(dest_dir, src_file)
+        shutil.copy2(file, dest_path)
+        
 
 def copyInputFiles(temp_dir, input, excitation, executable):
     makeCopy(temp_dir, input)

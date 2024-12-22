@@ -25,14 +25,14 @@
             {"id": 1, "type": "node", "coordinateIds": [1]},
             {"id": 2, "type": "node", "coordinateIds": [2]},
             {"id": 3, "type": "node", "coordinateIds": [3]},
-            {"id": 11, "type": "cell", "name": "pw-box", "intervals": [ [ [1, 1, 1], [5, 5, 5] ] ]}
+            {"id": 11, "type": "cell", "name": "pw-box", "intervals": [ [ [2, 2, 2], [5, 5, 5] ] ]}
         ]
     },
 
     "sources": [
         {
             "type": "planewave",
-            "magnitudeFile": "gauss.exc",
+            "magnitudeFile": "gauss_1GHz.exc",
             "elementIds": [11],
             "direction": {
                 "theta": 0.0,
