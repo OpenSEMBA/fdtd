@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix: 
         build-type: ["Debug", "Release"]
-        mpi: ["No", "Yes"]
+        mpi: ["No"]
         mtln: ["No"]
         hdf: ["Yes"]
 

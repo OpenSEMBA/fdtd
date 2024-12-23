@@ -15,7 +15,8 @@ jobs:
       matrix: 
         build-type: ["Debug", "Release"]
         mpi: ["No"]
-        mtln: ["No"]
+        mtln: ["Yes", "No"]
+        hdf: ["Yes"]
 
     name: windows-intelLLVM ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
 
@@ -43,14 +44,18 @@ jobs:
     - name: CMake build
       shell: bash
       run: |
-        cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
+          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
         cmake --build build -j 
           
     - name: Install python wrapper requirements
       run: |
         python -m pip install -r requirements.txt
 
-    - name: Run all wrapper tests
+    - name: Run all wrapper tests (except codemodel)
       if: matrix.mtln=='Yes'
       run: python -m pytest 'not codemodel' test/
         
