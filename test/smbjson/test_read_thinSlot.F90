@@ -4,7 +4,7 @@ integer function test_read_thinSlot() bind (C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'cases/thinSlot.fdtd.json'
+   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'thinSlot.fdtd.json'
    type(Parseador) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame

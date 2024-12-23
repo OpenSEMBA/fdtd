@@ -41,3 +41,13 @@ def test_read_point_probe():
     assert np.isclose(p['incident'][0], 0.134010895E-005)
     assert     p['incident'].iat[-1] == 0.0
   
+  
+def test_set_new_folder_to_run(tmp_path):
+    input = CASE_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    
+    solver.input['general']['numberOfSteps'] = 1
+    
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    

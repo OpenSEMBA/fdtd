@@ -31,7 +31,7 @@ integer function test_idchildtable() bind(C) result(err)
 
    type(IdChildTable_t) :: tbl
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/holland1981.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981.fdtd.json'
    type(json_file) :: jsonfile
    type(json_core) :: core
    type(json_value), pointer :: root => null()

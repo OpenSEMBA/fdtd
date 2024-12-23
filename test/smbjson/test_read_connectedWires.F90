@@ -4,7 +4,7 @@ integer function test_read_connectedwires() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/connectedWires.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'connectedWires.fdtd.json'
    type(Parseador) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame

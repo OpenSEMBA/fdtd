@@ -4,7 +4,7 @@ integer function test_read_planewave() bind (C) result(err)
 
    implicit none
 
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'cases/planewave.fdtd.json'
+   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
    type(Parseador) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame

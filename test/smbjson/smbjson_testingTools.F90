@@ -3,6 +3,8 @@ module smbjson_testingTools
    implicit none
 
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'
+   character(len=*), parameter :: INPUT_EXAMPLES='input_examples/'
+   
 contains
    subroutine expect_eq_int(err, ex, pr, msg) 
       integer, intent(inout) :: err

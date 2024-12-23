@@ -4,7 +4,7 @@ integer function test_read_currentinjection() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/currentInjection.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'currentInjection.fdtd.json'
    type(Parseador) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame

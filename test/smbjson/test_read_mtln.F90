@@ -4,7 +4,7 @@ integer function test_read_mtln() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/mtln.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
    type(Parseador) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
