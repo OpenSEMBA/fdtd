@@ -128,9 +128,24 @@ def test_sphere(tmp_path):
 
 
 def test_planewave_in_box(tmp_path):    
-    makeCopy(tmp_path, CASE_FOLDER+'planewave/*')
-    input = tmp_path._str + '/' +'pw-in-box.fdtd.json'
-    solver = FDTD(input, path_to_exe=SEMBA_EXE)
+    fn = CASE_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    
+    before = Probe(solver.getSolvedProbeFilenames("before")[0])
+    inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
+    after = Probe(solver.getSolvedProbeFilenames("after")[0])
+    
+    np.allclose(inbox.df['field'], inbox.df['incident'])
+    zeros = np.zeros_like(before.df['field'])
+    np.allclose(before.df['field'], zeros)
+    np.allclose(after.df['field'], zeros)
+
+def test_planewave_with_periodic_boundaries(tmp_path):    
+    fn = CASE_FOLDER + 'planewave/pw-with-periodic.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     
     solver.run()
     assert solver.hasFinishedSuccessfully()

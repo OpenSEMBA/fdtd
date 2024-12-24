@@ -30,7 +30,7 @@
             {"id": 1, "type": "node", "coordinateIds": [1]},
             {"id": 2, "type": "node", "coordinateIds": [2]},
             {"id": 3, "type": "node", "coordinateIds": [3]},
-            {"id": 11, "type": "cell", "name": "pw-box", "intervals": [ [ [0, 0, 2], [6, 6, 4] ] ]}
+            {"id": 11, "type": "cell", "name": "pw-box", "intervals": [ [ [-1, -1, 2], [7, 7, 4] ] ]}
         ]
     },
 
