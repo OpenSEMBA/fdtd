@@ -13,12 +13,12 @@ if platform == "linux":
 elif platform == "win32":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
 
-TEST_DATA_FOLDER = os.path.join(os.getcwd(), 'testData') 
-CASE_FOLDER        = os.path.join(TEST_DATA_FOLDER, 'cases')
-MODELS_FOLDER      = os.path.join(TEST_DATA_FOLDER, 'models')
-EXCITATIONS_FOLDER = os.path.join(TEST_DATA_FOLDER, 'excitations')
-OUTPUT_FOLDER      = os.path.join(TEST_DATA_FOLDER, 'outputs')
-SPINIT_FOLDER      = os.path.join(TEST_DATA_FOLDER, 'spinit')
+TEST_DATA_FOLDER = os.path.join(os.getcwd(), 'testData/') 
+CASE_FOLDER        = os.path.join(TEST_DATA_FOLDER, 'cases/')
+MODELS_FOLDER      = os.path.join(TEST_DATA_FOLDER, 'models/')
+EXCITATIONS_FOLDER = os.path.join(TEST_DATA_FOLDER, 'excitations/')
+OUTPUT_FOLDER      = os.path.join(TEST_DATA_FOLDER, 'outputs/')
+SPINIT_FOLDER      = os.path.join(TEST_DATA_FOLDER, 'spinit/')
 
 def getCase(case):
     return json.load(open(CASE_FOLDER + case + '.fdtd.json'))
