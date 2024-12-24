@@ -43,7 +43,7 @@ def test_read_point_probe():
   
   
 def test_set_new_folder_to_run(tmp_path):
-    input = CASE_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    input = os.path.join(CASE_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     
     solver.input['general']['numberOfSteps'] = 1

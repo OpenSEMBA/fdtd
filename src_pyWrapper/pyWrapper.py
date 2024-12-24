@@ -94,8 +94,8 @@ class FDTD():
     def __init__(self, input_filename, path_to_exe=None, flags = [], run_in_folder = None):
         self._setFilename(input_filename)
         
-        if path_to_exe == None:
-            self.path_to_exe = os.getcwd() + DEFAULT_SEMBA_FDTD_PATH
+        if path_to_exe is None:
+            self.path_to_exe = os.path.join(os.getcwd(), DEFAULT_SEMBA_FDTD_PATH)
         else:
             self.path_to_exe = path_to_exe
         assert os.path.isfile(self.path_to_exe)
