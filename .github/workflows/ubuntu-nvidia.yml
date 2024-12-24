@@ -31,6 +31,11 @@ jobs:
       with:
         compiler: nvidia-hpc
         version: '24.5'
+
+    - name: Install required packages
+      run: |
+        sudo apt update
+        sudo apt install libhdf5-dev libopenmpi-dev
       
     - name: Build application
       run: |
