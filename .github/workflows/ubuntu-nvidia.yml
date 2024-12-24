@@ -15,7 +15,7 @@ jobs:
         build-type: ["Debug", "Release"]
         mpi: ["No"]
         mtln: ["No"]
-        hdf: ["No"]
+        hdf: ["Yes"]
 
     name: ${{matrix.build-type}}- mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}} - hdf ${{matrix.hdf}}
 

@@ -44,7 +44,7 @@ jobs:
     - name: CMake build
       shell: bash
       run: |
-        cmake -S . -B build \
+        cmake -S . -B build -G Ninja \
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
           -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
