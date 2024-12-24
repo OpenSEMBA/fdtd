@@ -167,6 +167,14 @@ class FDTD():
         with open(self._filename) as input_file:
             return json.load(input_file)
         
+    def cleanUp(self):
+        folder = self.getFolder()
+        extensions = ('*.dat', '*.pl', '*.txt', '*.xdmf', '*.bin', '*.h5')
+        for ext in extensions:
+            files = glob.glob(folder + '/' + ext)
+            for file in files:
+                os.remove(file)
+        
     def getSolvedProbeFilenames(self, probe_name):
         input_json = self.readJsonDict()
         if not "probes" in input_json:

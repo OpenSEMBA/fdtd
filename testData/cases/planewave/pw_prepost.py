@@ -12,14 +12,15 @@ from pyWrapper import *
 
 
 # %% Prepare solver
-solver = FDTD(input_filename = 'pw-in-box.fdtd.json', path_to_exe=SEMBA_EXE)
+# solver = FDTD(input_filename = 'pw-in-box.fdtd.json', path_to_exe=SEMBA_EXE)
+solver = FDTD(input_filename = 'pw-with-periodic.fdtd.json', path_to_exe=SEMBA_EXE)
+solver.cleanUp()
 
 # %% Run solver
 solver.run()
 assert solver.hasFinishedSuccessfully()
 
 # %% Postprocess
-
 before = Probe(solver.getSolvedProbeFilenames("before")[0])
 inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
 after = Probe(solver.getSolvedProbeFilenames("after")[0])

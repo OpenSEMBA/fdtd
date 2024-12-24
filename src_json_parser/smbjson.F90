@@ -1069,10 +1069,7 @@ contains
             else 
                dirLabels = [J_DIR_X, J_DIR_Y, J_DIR_Z]
             end if
-            call this%core%get(p, J_FIELD, fieldLabel, default=J_FIELD_ELECTRIC, found=fieldLabelFound)
-            if (.not. fieldLabelFound) then
-               write(error_unit, *) "ERROR: Point probe field label not found."
-            end if           
+            call this%core%get(p, J_FIELD, fieldLabel, default=J_FIELD_ELECTRIC, found=fieldLabelFound)          
             allocate(res%cordinates(size(dirLabels)))
             do j = 1, size(dirLabels)
                res%cordinates(j)%tag = outputName

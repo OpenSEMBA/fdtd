@@ -51,3 +51,21 @@ def test_set_new_folder_to_run(tmp_path):
     solver.run()
     assert solver.hasFinishedSuccessfully()
     
+    
+def test_clean_up_after_run(tmp_path):
+    input = CASE_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    
+    solver.input['general']['numberOfSteps'] = 1
+    
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    
+    pn = solver.getSolvedProbeFilenames("inbox")
+    assert os.path.isfile(pn[0])
+    
+    solver.cleanUp()
+    assert not os.path.isfile(pn[0])
+    
+    
+    
