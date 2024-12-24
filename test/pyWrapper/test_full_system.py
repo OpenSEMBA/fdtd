@@ -104,6 +104,7 @@ def test_towelHanger(tmp_path):
         assert np.allclose(p_expected[i].df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 5e-2, atol=5e-2)
    
     
+@pytest.mark.hdf5   
 def test_sphere(tmp_path):    
     fn = CASE_FOLDER + 'sphere/sphere.fdtd.json'
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
