@@ -46,12 +46,11 @@ plt.grid()
 # %% Run solver
 fn = 'shieldingEffectiveness.fdtd.json'
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+solver.cleanUp()
 solver.run()
 assert solver.hasFinishedSuccessfully()
 
 # %% Postprocess
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
-
 front = None
 for pf in solver.getSolvedProbeFilenames("front"):
     if Probe(pf).direction == 'x':
@@ -64,9 +63,25 @@ for pf in solver.getSolvedProbeFilenames("back"):
         back = Probe(pf)
         break        
 
-plt.plot(front.df['time'], front.df['incident'])    
-plt.plot(front.df['time'], front.df['field'])
-plt.plot(back.df['time'], back.df['field'])
+plt.plot(front.df['time'], back.df['incident'], label='incident')    
+plt.plot(front.df['time'], front.df['field'], label='front')
+plt.plot(back.df['time'],  back.df['field'], label='back')
+plt.legend()
+plt.xlim(0,5e-9)
 
 
+t = front.df['time']
+dt = t[1] - t[0]
+fq  = fftshift(fftfreq(len(t))/dt)
+INC = fftshift(fft(back.df['incident']))
+FRONT = fftshift(fft(front.df['field']))
+BACK  = fftshift(fft(back.df['field']))
+
+S21 = BACK/INC
+
+plt.figure()
+plt.plot(fq, 20*np.log10(np.abs(S21)),'.-')
+plt.xlim(1e6,4e9)
+plt.grid()
+plt.xscale('log')
 # %%

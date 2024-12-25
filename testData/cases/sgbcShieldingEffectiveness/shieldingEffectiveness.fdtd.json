@@ -3,15 +3,15 @@
     "__comments": "Planewave illuminating an sgbc panel. Cabello2017, SGBC paper.",
 
     "general": {
-        "timeStep": 10e-12,
-        "numberOfSteps": 2000
+        "timeStep": 3e-11,
+        "numberOfSteps": 20000
     },
     
     "boundary": {
-        "xLower": {"type": "pmc"},
-        "xUpper": {"type": "pmc"},
-        "yLower": {"type": "pec"},
-        "yUpper": {"type": "pec"},
+        "xLower": {"type": "pec"},
+        "xUpper": {"type": "pec"},
+        "yLower": {"type": "pmc"},
+        "yUpper": {"type": "pmc"},
         "zLower": {"type": "pml"},
         "zUpper": {"type": "pml"}
     },
@@ -19,7 +19,7 @@
     "mesh": {
         "grid": {
             "numberOfCells": [2, 2, 6],
-            "steps": { "x": [0.0025], "y": [0.0025], "z": [0.0025] }
+            "steps": { "x": [0.020], "y": [0.020], "z": [0.020] }
         },
         "coordinates": [
             {"id": 1, "relativePosition": [1, 1, 1]},
@@ -28,7 +28,7 @@
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [1]},
             {"id": 2, "type": "node", "coordinateIds": [2]},
-            {"id": 3, "type": "cell", "name": "pw-box", "intervals": [ [ [0, 0, 3], [2, 2, 25] ] ]},
+            {"id": 3, "type": "cell", "name": "pw-box", "intervals": [ [ [-1, -1, 3], [3, 3, 35] ] ]},
             {"id": 4, "type": "cell", "name": "square", "intervals": [ [ [0, 0, 4], [2, 2, 4] ] ]}
         ]
     },
@@ -39,8 +39,32 @@
             "id": 1, 
             "type": "multilayeredSurface",
             "layers": [
-                {"thickness": 0.3e-3, "electricConductivity": 3.456e7}
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100},
+                {"thickness": 0.5e-3, "electricConductivity": 100}
             ]
+        },
+        {
+            "name": "pec",
+            "id": 2, 
+            "type": "pec"
         }
     ],
 
