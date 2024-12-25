@@ -19,8 +19,14 @@ jobs:
       matrix: 
         build-type: ["Debug", "Release"]
         mpi: ["No"]
-        mtln: ["Yes", "No"]
+        mtln: ["Yes"]
         hdf: ["Yes"]
+
+        include:
+          - build-type: "Release"
+            mpi: "No"
+            mtln: "No"
+            hdf: "Yes"
 
     name: windows-intelLLVM ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
 

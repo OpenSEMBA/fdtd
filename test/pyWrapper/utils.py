@@ -8,17 +8,17 @@ from os import environ as env
 from sys import platform
 
 # Use of absolute path to avoid conflicts when changing directory.
-EXE_FOLDER = os.getcwd() + '/build/bin/'
-SEMBA_EXE = os.getcwd() + '/build/bin/semba-fdtd'
-SEMBA_EXE_INTEL_LLVM_RELEASE = os.getcwd() + '/build-ubuntu-intelLLVM-release/bin/semba-fdtd'
-SEMBA_EXE_INTEL_LLVM_DEBUG   = os.getcwd() + '/build-ubuntu-intelLLVM-debug/bin/semba-fdtd'
-TEST_DATA_FOLDER = os.getcwd() + '/testData/' 
+if platform == "linux":
+    SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
+elif platform == "win32":
+    SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
 
-CASE_FOLDER = TEST_DATA_FOLDER + 'cases/'
-MODELS_FOLDER = TEST_DATA_FOLDER + 'models/'
-EXCITATIONS_FOLDER = TEST_DATA_FOLDER + 'excitations/'
-OUTPUT_FOLDER = TEST_DATA_FOLDER + 'outputs/'
-SPINIT_FOLDER = TEST_DATA_FOLDER + 'spinit/'
+TEST_DATA_FOLDER = os.path.join(os.getcwd(), 'testData/') 
+CASE_FOLDER        = os.path.join(TEST_DATA_FOLDER, 'cases/')
+MODELS_FOLDER      = os.path.join(TEST_DATA_FOLDER, 'models/')
+EXCITATIONS_FOLDER = os.path.join(TEST_DATA_FOLDER, 'excitations/')
+OUTPUT_FOLDER      = os.path.join(TEST_DATA_FOLDER, 'outputs/')
+SPINIT_FOLDER      = os.path.join(TEST_DATA_FOLDER, 'spinit/')
 
 def getCase(case):
     return json.load(open(CASE_FOLDER + case + '.fdtd.json'))
