@@ -3479,12 +3479,17 @@ contains
       type(cell_interval_t), dimension(:), allocatable :: res
       logical :: found
 
-      call this%core%get(pw, J_ELEMENTIDS, elemIds)
-      if (size(elemIds) /= 1) &
+      elemIds = this%getIntsAt(pw, J_ELEMENTIDS, found=found)
+      if (.not. found) then
+         write(error_unit, *) "Error reading single volume elementIds label not found."
+      end if
+      if (size(elemIds) /= 1) then
          write(error_unit, *) "Entity must contain a single elementId."
+      end if
       cellRegion = this%mesh%getCellRegion(elemIds(1), found)
-      if (.not. found) &
+      if (.not. found) then
          write(error_unit, *) "Entity elementId ", elemIds(1), " not found."
+      end if
       res = cellRegion%getIntervalsOfType(CELL_TYPE_VOXEL)
       if (size(res) /= 1) &
          write(error_unit, *) "Entity must contain a single cell region defining a volume."
