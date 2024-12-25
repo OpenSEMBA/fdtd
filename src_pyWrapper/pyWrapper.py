@@ -1,15 +1,20 @@
 import subprocess
 import json
 import os
-import glob, re
+import shutil
+import glob
+import re
 import pandas as pd
 import numpy as np
 
-def positionStrToCell(pos_str):
-    pos = pos_str.split('_')
-    return np.array([int(pos[0]), int(pos[1]), int(pos[2])])
+DEFAULT_SEMBA_FDTD_PATH = '/build/bin/semba-fdtd'
 
 class Probe():
+    
+    @staticmethod
+    def _positionStrToCell(pos_str):
+        pos = pos_str.split('_')
+        return np.array([int(pos[0]), int(pos[1]), int(pos[2])])
     
     def __init__(self, probe_filename):
         self.filename = probe_filename
@@ -39,14 +44,14 @@ class Probe():
                 if tag in current_probe_tags:
                     self.type = 'wire'
                     self.name, position_str = basename_with_no_case_name.split(tag)
-                    self.cell = positionStrToCell(position_str)
+                    self.cell = self._positionStrToCell(position_str)
                     self.segment_tag = int(position_str.split('_s')[1])
                     self.df = pd.read_csv(self.filename, sep='\s+')
                     self.df = self.df.rename(columns={'t': 'time', self.df.columns[1]: 'current'})
                 elif tag in point_probe_tags:
                     self.type = 'point'
                     self.name, position_str = basename_with_no_case_name.split(tag)
-                    self.cell = positionStrToCell(position_str)
+                    self.cell = self._positionStrToCell(position_str)
                     self.field = tag[1]
                     self.direction = tag[2]                       
                     self.df = pd.read_csv(self.filename, sep='\s+')
@@ -59,19 +64,19 @@ class Probe():
                     self.type = 'farField'
                     self.name, positions_str = basename_with_no_case_name.split(tag)
                     init_str, end_str = positions_str.split('__')
-                    self.cell_init = positionStrToCell(init_str)
-                    self.cell_end = positionStrToCell(end_str)
+                    self.cell_init = self._positionStrToCell(init_str)
+                    self.cell_end  = self._positionStrToCell(end_str)
                     self.df = pd.read_csv(self.filename, sep='\s+')
                 elif tag in movie_tags:
                     self.type = 'movie'
                     self.name, positions_str = basename_with_no_case_name.split(tag)
                     init_str, end_str = positions_str.split('__')
-                    self.cell_init = positionStrToCell(init_str)
-                    self.cell_end = positionStrToCell(end_str)
+                    self.cell_init = self._positionStrToCell(init_str)
+                    self.cell_end  = self._positionStrToCell(end_str)
                 elif tag in mtln_probe_tags:
                     self.type ='mtln'
                     self.name, position_str = basename_with_no_case_name.split(tag)
-                    self.cell = positionStrToCell(position_str)
+                    self.cell = self._positionStrToCell(position_str)
                     self.df = pd.read_csv(self.filename, sep='\s+')
             else:
                 raise ValueError("Unable to determine probe name or type for a probe with name:" + basename)
@@ -86,27 +91,89 @@ class Probe():
         return self.df[key]
 
 class FDTD():
-    def __init__(self, input_filename, path_to_exe, flags = []):
-        self.filename = input_filename
-        self.path_to_exe = path_to_exe
-
+    def __init__(self, input_filename, path_to_exe=None, flags = [], run_in_folder = None):
+        self._setFilename(input_filename)
+        
+        if path_to_exe is None:
+            self.path_to_exe = os.path.join(os.getcwd(), DEFAULT_SEMBA_FDTD_PATH)
+        else:
+            self.path_to_exe = path_to_exe
+        assert os.path.isfile(self.path_to_exe)
+        
         self.flags = flags
-
-        self.folder = os.path.dirname(self.filename)
-        if len(self.folder) == 0:
-            self.folder = './'
-        self.case = os.path.basename(self.filename).split('.json')[0]
-        self.hasRun = False
+        self._hasRun = False
+        
+        if run_in_folder != None:
+            self._setNewFolder(run_in_folder)
+            
+    
+    def getFolder(self):
+        res = os.path.dirname(self._filename)
+        if len(res) == 0:
+            return './'
+        return res
+        
+    def getCaseName(self):
+        return os.path.basename(self._filename).split('.json')[0]
+    
+    def _setFilename(self, newFilename):
+        assert os.path.isfile(newFilename)
+        self._filename = newFilename       
+        self.input = json.load(open(self._filename))  
+        
+        
+    def _getUsedFiles(self):
+        res = []
+        
+        if 'sources' in self.input:
+            for src in self.input['sources']:
+                if 'magnitudeFile' in src:
+                    res.append(src['magnitudeFile'])
+                    
+        if 'probes' in self.input:
+            for src in self.input['probes']:
+                if 'magnitudeFile' in src:
+                    res.append(src['magnitudeFile'])
+        return res
+    
+    def _setNewFolder(self, newFolder):
+        assert os.path.isdir(newFolder)
+        
+        oldCaseFolder = self.getFolder()
+        usedFiles = self._getUsedFiles()
+        for usedFile in usedFiles:
+            newFile = os.path.join(oldCaseFolder, usedFile)
+            shutil.copy(newFile, newFolder)
+        
+        newFilename = shutil.copy(self._filename, newFolder)
+        self._setFilename(newFilename)
     
     def run(self):
-        os.chdir(self.folder)
-        case_name = self.case + ".json"
+        if self.input != json.load(open(self._filename, 'r')):
+            json.dump(self.input, open(self._filename,'w'))    
+        
+        os.chdir(self.getFolder())
+        case_name = self.getCaseName() + ".json"
         self.output = subprocess.run([self.path_to_exe, "-i",case_name]+self.flags)
-        self.hasRun = True
+        self._hasRun = True
+        
+    def hasFinishedSuccessfully(self):
+        if self._hasRun and (self.output.returncode == 0):
+            return True
+        else:
+            return False
     
     def readJsonDict(self):
-        with open(self.filename) as input_file:
+        with open(self._filename) as input_file:
             return json.load(input_file)
+        
+    def cleanUp(self):
+        folder = self.getFolder()
+        extensions = ('*.dat', '*.pl', '*.txt', '*.xdmf', '*.bin', '*.h5')
+        for ext in extensions:
+            files = glob.glob(folder + '/' + ext)
+            for file in files:
+                os.remove(file)
         
     def getSolvedProbeFilenames(self, probe_name):
         input_json = self.readJsonDict()
@@ -116,7 +183,7 @@ class FDTD():
         file_extensions = ('*.dat', '*.xdmf', '*.bin', '*.h5')
         probeFiles = []
         for ext in file_extensions:
-            newProbes = [x for x in glob.glob(ext) if re.match(self.case + '_' + probe_name, x)]
+            newProbes = [x for x in glob.glob(ext) if re.match(self.getCaseName() + '_' + probe_name, x)]
             probeFiles.extend(newProbes)
             
         return probeFiles
@@ -130,11 +197,6 @@ class FDTD():
         assert os.path.isfile(mapFile)
         return mapFile
         
-    def hasFinishedSuccessfully(self):
-        if self.hasRun:
-            if (self.output.returncode == 0):
-                return True
-            else:
-                return False
+
         
         

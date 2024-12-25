@@ -17,11 +17,13 @@
             "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
         },
         "coordinates": [
-            {"id": 1, "relativePosition": [4, 4, 4]}
+            {"id": 1, "relativePosition": [4, 4, 4]},
+            {"id": 2, "relativePosition": [6, 6, 6]}
         ],
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [1]},
-            {"id": 2, "type": "cell", "intervals": [ [ [1, 1, 1], [9, 9, 9] ] ]}
+            {"id": 2, "type": "node", "coordinateIds": [2]},
+            {"id": 10, "type": "cell", "intervals": [ [ [1, 1, 1], [9, 9, 9] ] ]}
         ]
     },
 
@@ -29,7 +31,7 @@
         {
             "type": "planewave",
             "magnitudeFile": "gauss.exc",
-            "elementIds": [2],
+            "elementIds": [10],
             "direction": {
                 "theta": 0.0,
                 "phi": 0.0
@@ -45,12 +47,18 @@
         {
             "name": "electric_field_point_probe",
             "type": "point",
-            "field": "electric",
             "elementIds": [1],
             "directions": ["x", "y", "z"],
             "domain": { 
                 "type": "time" 
             }
+        },
+        {
+            "name": "magnetic_field_point_probe",
+            "type": "point",
+            "field": "magnetic",
+            "elementIds": [2],
+            "directions": ["x"]
         }
     ]
 }

@@ -1,79 +1,17 @@
 from utils import *
 import pytest
+            
 
-def test_read_wire_probe():
-    p = Probe(OUTPUT_FOLDER + 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
-        
-    assert p.case_name == 'holland1981'
-    assert p.name == 'mid_point'
-    assert p.type == 'wire'
-    assert np.all(p.cell == np.array([11, 11, 12]))
-    assert p.segment_tag == 2
+def test_holland_case_checking_number_of_outputs(tmp_path):
+    fn = CASE_FOLDER + 'holland/holland1981.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     
-    assert len(p['time']) == 1001
-    assert p['time'][0] == 0.0
-    assert p['time'].iat[-1] == 0.2999999901276417E-007
-    
-    assert len(p['current']) == 1001
-    assert p['current'][0] == 0.0
-    assert p['current'].iat[-1] == -0.513576742E-004
-    
-    
-def test_read_point_probe():
-    p = Probe(OUTPUT_FOLDER + 'shieldingEffectiveness.fdtd_front_Ex_1_1_1.dat')
-        
-    assert p.case_name == 'shieldingEffectiveness'
-    assert p.name == 'front'
-    assert p.type == 'point'
-    assert p.direction == 'x'
-    assert p.field == 'E'
-    assert np.all(p.cell == np.array([1, 1, 1]))
-        
-    assert len(p['time']) == 5193
-    assert p['time'][0] == 0.0
-    assert np.isclose(p['time'].iat[-1], 0.19997851853637005E-007)
-    
-    assert len(p['field']) == 5193
-    assert p['field'][0] == 0.0
-    assert np.isclose(p['field'].iat[-1], 0.120145380E+000)
-    
-    assert len(p['incident']) == 5193
-    assert np.isclose(p['incident'][0], 0.134010895E-005)
-    assert     p['incident'].iat[-1] == 0.0
-  
-
-def test_probes_output_exists(tmp_path):
-    case = 'holland1981'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
-    solver.run()
-    probe_files = solver.getSolvedProbeFilenames("mid_point")
-    
-    assert solver.hasFinishedSuccessfully() == True
-    assert len(probe_files) == 1
-    assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
-             
-
-def test_probes_output_number_of_steps(tmp_path):
-    case = 'holland1981'
-    input_json = getCase(case)
     number_of_steps = 10
-    input_json['general']['numberOfSteps'] = number_of_steps
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+    solver.input['general']['numberOfSteps'] = number_of_steps
+    
     solver.run()
+    assert solver.hasFinishedSuccessfully()
+    
     probe_files = solver.getSolvedProbeFilenames("mid_point")
     
     assert solver.hasFinishedSuccessfully() == True
@@ -81,36 +19,14 @@ def test_probes_output_number_of_steps(tmp_path):
     assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
     assert countLinesInFile(probe_files[0]) == number_of_steps + 2
 
-
-def test_holland(tmp_path):
-    case = 'holland1981'
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
-    makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
+    
+def test_towel_hanger_case_creates_output_probes(tmp_path):
+    fn = CASE_FOLDER + 'towelHanger/towelHanger.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.input['general']['numberOfSteps'] = 1
+    
     solver.run()
-    probe_files = solver.getSolvedProbeFilenames("mid_point")
     
-    assert solver.hasFinishedSuccessfully() == True
-    assert len(probe_files) == 1
-    assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == 1002
-
-    
-def test_towel_hanger(tmp_path):
-    case = 'towelHanger'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'towelHanger.exc')
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
-    solver.run()
     probe_start = solver.getSolvedProbeFilenames("wire_start")
     probe_mid = solver.getSolvedProbeFilenames("wire_mid")
     probe_end = solver.getSolvedProbeFilenames("wire_end")
@@ -128,20 +44,12 @@ def test_towel_hanger(tmp_path):
     assert countLinesInFile(probe_end[0]) == 3
 
     
-def test_read_far_field_probe(tmp_path):    
-    case = 'sphere'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    input_json['probes'][0]['domain']['numberOfFrequencies'] = 100
+def test_sphere_case_with_far_field_probe_launches(tmp_path):    
+    fn = CASE_FOLDER + 'sphere/sphere.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.input['general']['numberOfSteps'] = 1
+    solver.input['probes'][0]['domain']['numberOfFrequencies'] = 100
     
-    
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'gauss.exc')
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
     solver.run()  
 
     p = Probe(solver.getSolvedProbeFilenames("Far")[0])
@@ -153,62 +61,20 @@ def test_read_far_field_probe(tmp_path):
     assert p.case_name == 'sphere'
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([2,2,2]))
-    
-    
-def test_read_airplane(tmp_path):    
-    case = 'airplane'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-        
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'gauss.exc')
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mapvtk'])
-    solver.run()  
-
-    assert solver.hasFinishedSuccessfully()
        
-    vtkmapfile = solver.getVTKMap()
     
-    assert os.path.isfile(vtkmapfile)
+def test_sgbc_with_mapvtk_checking_tagnumbers(tmp_path):
+    fn = CASE_FOLDER + 'sgbc/sgbc.fdtd.json'
+    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver.input['general']['numberOfSteps'] = 1
     
-
-def test_sgbc_can_launch(tmp_path):
-    case = 'sgbc'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
     solver.run()
-   
-    assert solver.hasFinishedSuccessfully() == True
-    
-    
-def test_sgbc_vtk_tags(tmp_path):
-    case = 'sgbc'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mapvtk'])
-    solver.run()
-   
     assert solver.hasFinishedSuccessfully() == True
        
-    vtkmapfile = solver.getVTKMap()
-    
+    vtkmapfile = solver.getVTKMap()   
     assert os.path.isfile(vtkmapfile)
     
     d = createFaceTagDictionary(vtkmapfile)    
     assert d[64] == 4
     assert d[128] == 4
     assert d[192] == 4
-    

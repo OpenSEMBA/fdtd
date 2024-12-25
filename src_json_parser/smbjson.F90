@@ -1000,7 +1000,7 @@ contains
       
       filtered_size = 0
       do i=1, size(ps)
-         call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
+         call this%core%get(ps(i)%p, J_FIELD, fieldLbl, default=J_FIELD_ELECTRIC)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
             filtered_size = filtered_size + 1
          end if
@@ -1009,7 +1009,7 @@ contains
       n = 1
       allocate(res%collection(filtered_size))
       do i=1, size(ps)
-         call this%core%get(ps(i)%p, J_FIELD, fieldLbl)
+         call this%core%get(ps(i)%p, J_FIELD, fieldLbl, default=J_FIELD_ELECTRIC)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
             res%collection(n) = readPointProbe(ps(i)%p)
             n = n + 1
@@ -1069,10 +1069,7 @@ contains
             else 
                dirLabels = [J_DIR_X, J_DIR_Y, J_DIR_Z]
             end if
-            call this%core%get(p, J_FIELD, fieldLabel, default=J_FIELD_ELECTRIC, found=fieldLabelFound)
-            if (.not. fieldLabelFound) then
-               write(error_unit, *) "ERROR: Point probe field label not found."
-            end if           
+            call this%core%get(p, J_FIELD, fieldLabel, default=J_FIELD_ELECTRIC, found=fieldLabelFound)          
             allocate(res%cordinates(size(dirLabels)))
             do j = 1, size(dirLabels)
                res%cordinates(j)%tag = outputName
@@ -3482,12 +3479,17 @@ contains
       type(cell_interval_t), dimension(:), allocatable :: res
       logical :: found
 
-      call this%core%get(pw, J_ELEMENTIDS, elemIds)
-      if (size(elemIds) /= 1) &
+      elemIds = this%getIntsAt(pw, J_ELEMENTIDS, found=found)
+      if (.not. found) then
+         write(error_unit, *) "Error reading single volume elementIds label not found."
+      end if
+      if (size(elemIds) /= 1) then
          write(error_unit, *) "Entity must contain a single elementId."
+      end if
       cellRegion = this%mesh%getCellRegion(elemIds(1), found)
-      if (.not. found) &
-         write(error_unit, *) "Entity elementId not found."
+      if (.not. found) then
+         write(error_unit, *) "Entity elementId ", elemIds(1), " not found."
+      end if
       res = cellRegion%getIntervalsOfType(CELL_TYPE_VOXEL)
       if (size(res) /= 1) &
          write(error_unit, *) "Entity must contain a single cell region defining a volume."

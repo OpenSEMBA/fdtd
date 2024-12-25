@@ -73,7 +73,7 @@ integer function test_parser_read_mesh() bind(C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/mtln.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
    type(parser_t) :: parser
    type(mesh_t) :: mesh
    logical :: found
