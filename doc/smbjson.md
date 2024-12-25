@@ -654,7 +654,7 @@ If not `magnitudeFile` is specified and only one `source` is defined, the `magni
         "type": "frequency",
         "initialFrequency": 1e6,
         "finalFrequency": 1e9,
-         "numberOfFrequencies": 30,
+        "numberOfFrequencies": 30,
         "frequencySpacing": "logarithmic"
     }
 }
