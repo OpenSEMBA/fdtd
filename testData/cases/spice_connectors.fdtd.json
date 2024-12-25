@@ -84,7 +84,7 @@
 			"name": "external_source",
 			"type": "generator",
 			"field": "voltage",
-			"magnitudeFile": "spice_sine_500k.exc",
+			"magnitudeFile": "spice_sine_500k_3.exc",
 			"elementIds": [2]
 		}
 	],

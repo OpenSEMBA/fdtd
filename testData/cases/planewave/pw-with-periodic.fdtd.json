@@ -1,0 +1,58 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Planewave passing through an empty box.",
+
+    "general": {
+        "timeStep": 0.05e-9,
+        "numberOfSteps": 400
+    },
+    
+    "boundary": {
+        "xLower": {"type": "periodic"},
+        "xUpper": {"type": "periodic"},
+        "yLower": {"type": "periodic"},
+        "yUpper": {"type": "periodic"},
+        "zLower": {"type": "mur"},
+        "zUpper": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [6, 6, 6],
+            "steps": { "x": [0.01], "y": [0.01], "z": [0.01] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [3, 3, 1]},
+            {"id": 2, "relativePosition": [3, 3, 3]},
+            {"id": 3, "relativePosition": [3, 3, 5]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [1]},
+            {"id": 2, "type": "node", "coordinateIds": [2]},
+            {"id": 3, "type": "node", "coordinateIds": [3]},
+            {"id": 4, "type": "cell", "name": "pw-box", "intervals": [ [ [-1, -1, 2], [7, 7, 4] ] ]}
+        ]
+    },
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss_1GHz.exc",
+            "elementIds": [4],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5708,
+                "phi": 0.0
+            }
+        }
+    ],
+
+    "probes": [
+        {"name": "before", "type": "point", "elementIds": [1], "directions": ["x"]},
+        {"name": "inbox",  "type": "point", "elementIds": [2], "directions": ["x"]},
+        {"name": "after",  "type": "point", "elementIds": [3], "directions": ["x"]}
+    ]
+}

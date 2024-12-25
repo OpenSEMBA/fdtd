@@ -101,8 +101,8 @@ integer function test_mesh_add_get_long_list() bind(C) result(error_cnt)
       if (.not. found) error_cnt = error_cnt + 1
       if (any(obtained%position /= expected%position)) error_cnt = error_cnt + 1
    end block
-
-   call mesh%printCoordHashInfo()
+ 
+   ! call mesh%printCoordHashInfo() !! For debugging only
 
 end function
 

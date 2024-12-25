@@ -4,7 +4,7 @@ integer function test_read_sphere() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/sphere.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sphere.fdtd.json'
    type(Parseador) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame

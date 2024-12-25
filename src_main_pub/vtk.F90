@@ -1293,7 +1293,6 @@ CONTAINS
       endif
 
       write(myunit,'(a)') ' '
-
       !!!info del tag 240220
       write (buff,'(a,i9)') 'SCALARS tagnumber float 1'
       write (myunit,'(a)') trim(adjustl(buff))
@@ -1301,18 +1300,18 @@ CONTAINS
       write (myunit,'(a)') trim(adjustl(buff))
       do conta=1,numberOfSerialized
             !!!escribo por exceso tags en sitios donde no hay realmente ese medio incluyendo en quads solo porque uno de sus lados tiene ese tag. arreglar algun dia aunque no es critiico porque los tags solo serviran para filtran luego visualizaciones !240220
-               !if (Elems(conta,3)==-1) then !es un edge
+               ! if (Elems(conta,3)==-1) then !es un edge
                !   write (myunit,'(i4)')  sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta)) 
-               !else !es un quad y hay que verlo mejor
+               ! else !es un quad y hay que verlo mejor
                !    if ( ((sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)+1,Serialized%eJ(conta)  ,Serialized%eK(conta)  )).and. &
                !          (sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)  ,Serialized%eJ(conta)+1,Serialized%eK(conta)  )).and. &
                !          (sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)+1,Serialized%eJ(conta)+1,Serialized%eK(conta)  )) ).or. &
                !        !
                !         ((sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)+1,Serialized%eJ(conta)  ,Serialized%eK(conta)  )).and. &
                !          (sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)  ,Serialized%eJ(conta)  ,Serialized%eK(conta)+1)).and. &
-               !          (sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)+1,Serialized%eJ(conta)+1,Serialized%eK(conta)+1)) ).or. &
+               !          (sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)+1,Serialized%eJ(conta)  ,Serialized%eK(conta)+1)) ).or. &
                !        !
-               !         ((sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)  ,Serialized%eJ(conta)  ,Serialized%eK(conta)  )).and. &
+               !         ((sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)  ,Serialized%eJ(conta)  ,Serialized%eK(conta)+1)).and. &
                !          (sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)  ,Serialized%eJ(conta)+1,Serialized%eK(conta)  )).and. &
                !          (sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta))==sggMtag(Serialized%eI(conta)  ,Serialized%eJ(conta)+1,Serialized%eK(conta)+1)) ) ) then
                      if (tamaniompi == 0) then !mantengo la dicotomia mpisize=0 nocero solo para degugeo comparando

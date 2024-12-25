@@ -1,7 +1,8 @@
 cmake_minimum_required (VERSION 3.15)
 
 project(semba-fdtd Fortran)
-enable_language (CXX C Fortran)
+enable_language (Fortran)
+
 
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -24,6 +25,18 @@ else()
 	set(SEMBA_FDTD_MAIN_LIB OFF)
 endif()
 
+if(SEMBA_FDTD_ENABLE_SMBJSON)
+	add_definitions(-DCompileWithSMBJSON)
+endif()
+if (SEMBA_FDTD_ENABLE_MTLN)
+	add_definitions(-DCompileWithMTLN)
+endif()
+add_definitions(		
+	-DCompileWithInt2 
+	-DCompileWithReal4 
+	-DCompileWithOpenMP
+)
+
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
@@ -36,29 +49,28 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
 	if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -qopenmp")
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
+	elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
+
+		if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp")
+		else()
+			if(CMAKE_BUILD_TYPE MATCHES "Debug")
+				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp /Wno-debug-option-simd")
+			else()
+				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp")
+			endif()
+		endif()
+
+
+	else()
+		message(FATAL_ERROR "Unrecognized system name")
 	endif()
 	if(CMAKE_BUILD_TYPE MATCHES "Debug")
 		set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -check all,nouninit -debug full -traceback")
 	endif()
 endif()
 
-if (SEMBA_FDTD_ENABLE_MTLN OR SEMBA_FDTD_ENABLE_SMBJSON)
-set (FHASH_SOURCES_FOLDER "external/fhash/src/")
-add_library(fhash 
-	${FHASH_SOURCES_FOLDER}/fhash.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_sll.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_data_container.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_tbl.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_tbl_iter.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_fnv.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_key/base.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_key/int32.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_key/int64.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_key/char.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_key/int32_1d.f90 
-	${FHASH_SOURCES_FOLDER}/fhash_key/int64_1d.f90
-)
-endif()
+add_subdirectory(external)
 
 add_library(semba-types 
 	"src_main_pub/nfde_types.F90"
@@ -69,11 +81,11 @@ add_library(semba-types
 )
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
-	add_definitions(-DCompileWithSMBJSON)
 	add_subdirectory(src_json_parser)
 	set(SMBJSON_LIBRARIES smbjson)
 endif()
 if (SEMBA_FDTD_ENABLE_MTLN)
+	set(NGSPICE_LIB ngspice)
 	add_definitions(-DCompileWithMTLN)
 	add_subdirectory(src_mtln)
 	set(MTLN_LIBRARIES mtlnsolver ngspice_interface)
@@ -138,10 +150,5 @@ include_directories(${CMAKE_BINARY_DIR}/mod)
 include_directories(${HDF5_INCLUDE_DIRS})
 include_directories(${FHASH_INCLUDES})
 
-add_definitions(		
--DCompileWithInt2 
--DCompileWithReal4 
--DCompileWithOpenMP 
-)
 
 

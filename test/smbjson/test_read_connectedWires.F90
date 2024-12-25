@@ -4,7 +4,7 @@ integer function test_read_connectedwires() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/connectedWires.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'connectedWires.fdtd.json'
    type(Parseador) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -74,7 +74,7 @@ contains
       expected%pecRegs%Surfs(1)%Ytrancos = 1
       expected%pecRegs%Surfs(1)%Ztrancos = 1
       expected%pecRegs%Surfs(1)%Or = 3
-      expected%pecRegs%Surfs(1)%tag =  trim(adjustl(" "))
+      expected%pecRegs%Surfs(1)%tag =  "aluminum@ground_plane"
 
       ! Expected probes
       ! sonda
@@ -207,7 +207,7 @@ contains
       ! expected mtln bundles
       allocate(expected%mtln%cables(2))
 
-      expected%mtln%cables(1)%name = ""
+      expected%mtln%cables(1)%name = "cable1"
       allocate(expected%mtln%cables(1)%inductance_per_meter(1,1))
       allocate(expected%mtln%cables(1)%capacitance_per_meter(1,1))
       allocate(expected%mtln%cables(1)%resistance_per_meter(1,1))
@@ -240,7 +240,7 @@ contains
       expected%mtln%cables(1)%initial_connector => null()
       expected%mtln%cables(1)%end_connector => null()
 
-      expected%mtln%cables(2)%name = ""
+      expected%mtln%cables(2)%name = "cable2"
       allocate(expected%mtln%cables(2)%inductance_per_meter(1,1))
       allocate(expected%mtln%cables(2)%capacitance_per_meter(1,1))
       allocate(expected%mtln%cables(2)%resistance_per_meter(1,1))

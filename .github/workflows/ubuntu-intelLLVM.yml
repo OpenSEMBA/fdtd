@@ -1,14 +1,15 @@
 name: ubuntu-intelLLVM
 
 on:
-  push:
-    branches:
-      - dev
-      
+
   pull_request:
     branches:
       - main
       - dev 
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
 
@@ -16,8 +17,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix: 
-        optimization-type: ["Debug", "Release"]
-        mpi-build: ["No", "Yes"]
+        build-type: ["Debug", "Release"]
+        mpi: ["No", "Yes"]
+        mtln: ["Yes"]
+        hdf: ["Yes"]
+
+    name: ${{matrix.build-type}}- mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}} - hdf ${{matrix.hdf}}
 
     steps:
 
@@ -39,10 +44,11 @@ jobs:
 
     - name: CMake build
       run: |
-        export FC=ifx
-        export CC=icx
-        export CXX=icpx
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.optimization-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi-build}} -DSEMBA_FDTD_ENABLE_HDF=YES
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
+          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
         cmake --build build -j
         
     - name: Run fdtd unit tests
@@ -58,3 +64,5 @@ jobs:
       timeout-minutes: 60
       run: |
         python -m pytest test    
+
+

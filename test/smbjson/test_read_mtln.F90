@@ -4,7 +4,7 @@ integer function test_read_mtln() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/mtln.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
    type(Parseador) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -290,7 +290,7 @@ contains
       ! id = 205
       allocate(expected%mtln%connectors(4)%resistances(1))
       expected%mtln%connectors(4)%id = 205
-      expected%mtln%connectors(4)%resistances = [19]
+      expected%mtln%connectors(4)%resistances = [19.0]
       expected%mtln%connectors(4)%transfer_impedance_per_meter%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
       expected%mtln%connectors(4)%transfer_impedance_per_meter%resistive_term = 609.3
       expected%mtln%connectors(4)%transfer_impedance_per_meter%inductive_term = 2.6e-9
