@@ -27,12 +27,3 @@ target_link_libraries(fdtd_tests
     ${SYSTEM_TESTS_LIBRARY}
     GTest::gtest_main
 )
-
-
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows" AND SEMBA_FDTD_ENABLE_MTLN)
-    add_custom_command(TARGET fdtd_tests POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-            "${NGSPICE_DIR}ngspice.dll"      
-            $<TARGET_FILE_DIR:fdtd_tests>
-    )
-endif()

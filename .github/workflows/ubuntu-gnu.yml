@@ -5,7 +5,11 @@ on:
     branches:
       - main
       - dev
-
+      
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+  
 jobs:
   
   builds-and-test:
@@ -15,12 +19,15 @@ jobs:
         build-type: ["Debug", "Release"]
         mpi: ["No", "Yes"]
         mtln: ["Yes"]
+        hdf: ["Yes"]
+
         include:
           - build-type: "Release"
             mpi: "Yes"
             mtln: "No"
+            hdf: "Yes"
 
-    name: ubuntu-gnu ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
+    name: ${{matrix.build-type}}- mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}} - hdf ${{matrix.hdf}}
 
     steps:       
     - name: Checkout
@@ -35,7 +42,11 @@ jobs:
    
     - name: Build application
       run: |       
-        cmake -S . -B build -DCMAKE_BUILD_TYPE=${{matrix.build-type}} -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
+          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
         cmake --build build -j
       
     - name: Run fdtd unit tests 
