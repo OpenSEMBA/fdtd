@@ -11,11 +11,11 @@ SEMBA_EXE = '../../../build/bin/semba-fdtd'
 from pyWrapper import *
 
 # %% Generate excitation and visualize
-dx = 2.5e-3
+dx = 20e-3
 cfl = 0.25
 dt = cfl * np.sqrt(3*dx**3)/scipy.constants.speed_of_light
 
-w0 = 0.187e-9
+w0 = 0.1e-9
 t0 = 10*w0
 t = np.arange(0, t0+20*w0, dt)
 f = np.exp( -np.power(t-t0,2)/ w0**2 )
@@ -51,33 +51,29 @@ solver.run()
 assert solver.hasFinishedSuccessfully()
 
 # %% Postprocess
-front = None
-for pf in solver.getSolvedProbeFilenames("front"):
-    if Probe(pf).direction == 'x':
-        front = Probe(pf)
-        break        
-
-back = None 
-for pf in solver.getSolvedProbeFilenames("back"):
-    if Probe(pf).direction == 'x':
-        back = Probe(pf)
-        break        
-
-plt.plot(front.df['time'], back.df['incident'], label='incident')    
-plt.plot(front.df['time'], front.df['field'], label='front')
+back = Probe(solver.getSolvedProbeFilenames("back")[0])
+plt.plot(back.df['time'], back.df['incident'], label='incident')    
 plt.plot(back.df['time'],  back.df['field'], label='back')
 plt.legend()
-plt.xlim(0,5e-9)
+plt.xlim(0,3e-9)
 
 
-t = front.df['time']
+t = back.df['time']
 dt = t[1] - t[0]
 fq  = fftshift(fftfreq(len(t))/dt)
 INC = fftshift(fft(back.df['incident']))
-FRONT = fftshift(fft(front.df['field']))
 BACK  = fftshift(fft(back.df['field']))
 
 S21 = BACK/INC
+
+plt.figure()
+# plt.plot(fq, (np.abs(INC)),'.-')
+plt.plot(fq, (np.abs(BACK)),'.-')
+plt.xlim(1e6,4e9)
+plt.grid()
+plt.xscale('log')
+plt.yscale('log')
+
 
 plt.figure()
 plt.plot(fq, 20*np.log10(np.abs(S21)),'.-')

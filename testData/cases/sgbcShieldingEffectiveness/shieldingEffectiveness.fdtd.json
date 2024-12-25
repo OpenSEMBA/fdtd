@@ -3,7 +3,7 @@
     "__comments": "Planewave illuminating an sgbc panel. Cabello2017, SGBC paper.",
 
     "general": {
-        "timeStep": 3e-11,
+        "timeStep": 3e-12,
         "numberOfSteps": 20000
     },
     
@@ -93,12 +93,14 @@
             "name": "front",
             "type": "point",
             "field": "electric",
+            "directions": ["x"],
             "elementIds": [1]
         },
         {
             "name": "back",
             "type": "point",
             "field": "electric",
+            "directions": ["x"],
             "elementIds": [2]
         }
     ]
