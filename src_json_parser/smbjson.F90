@@ -3484,7 +3484,7 @@ contains
          write(error_unit, *) "Entity must contain a single elementId."
       cellRegion = this%mesh%getCellRegion(elemIds(1), found)
       if (.not. found) &
-         write(error_unit, *) "Entity elementId not found."
+         write(error_unit, *) "Entity elementId ", elemIds(1), " not found."
       res = cellRegion%getIntervalsOfType(CELL_TYPE_VOXEL)
       if (size(res) /= 1) &
          write(error_unit, *) "Entity must contain a single cell region defining a volume."
