@@ -28,7 +28,7 @@ jobs:
             mtln: "No"
             hdf: "Yes"
 
-    name: windows-intelLLVM ${{matrix.build-type}} - mpi ${{matrix.mpi}} - mtln ${{matrix.mtln}}
+    name: ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})
 
     steps:
 

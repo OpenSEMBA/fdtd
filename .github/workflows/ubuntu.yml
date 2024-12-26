@@ -27,12 +27,12 @@ jobs:
 
         include:
           - compiler: {name: 'intel-classic', version: '2021.10'}
-            build-type: "Release"
+            build-type: ["Debug", "Release"]
             mpi: "No"
             mtln: "No"
             hdf: "Yes"
           - compiler: {name: 'nvidia-hpc', version: '24.5'}
-            build-type: "Release"
+            build-type: ["Debug", "Release"]
             mpi: "No"
             mtln: "No"
             hdf: "No"
@@ -85,11 +85,9 @@ jobs:
         python -m pip install -r requirements.txt
 
     - name: Run all wrapper tests
-      if: matrix.mtln=='Yes'
-      run: python -m pytest test/
-        
-    - name: Run non-mtln wrapper tests
-      if: matrix.mtln=='No'
+      env:
+        SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
       run: python -m pytest -m 'not mtln' test/
+        
        
       
