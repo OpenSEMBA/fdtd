@@ -9,6 +9,12 @@ jobs:
 
   builds-and-tests:
     runs-on: windows-latest
+    strategy:
+      matrix: 
+        build-type: ["Release"]
+        mpi: ["No"]
+        mtln: ["Yes"]
+        hdf: ["Yes"]
 
     steps:
 
@@ -34,17 +40,23 @@ jobs:
     - name: CMake build
       shell: bash
       run: |
-        .github/workflows/build_windows.bat
-          
+        cmake -S . -B build -G Ninja \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
+          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
+        cmake --build build -j 
+
+    - name: Run fdtd unit tests
+      run: |
+        build/bin/fdtd_tests.exe
+    
     - name: Install python wrapper requirements
       run: |
         python -m pip install -r requirements.txt
 
-    - name: Run all tests 
-      shell: bash
-      timeout-minutes: 120
-      run: |
-        .github/workflows/run_tests_windows.bat
+    - name: Run all wrapper tests (except codemodel)
+      run: python -m pytest -m 'not codemodel' test/
     
     - name: Get current date
       id: date
