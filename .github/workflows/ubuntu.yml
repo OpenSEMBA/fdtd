@@ -87,7 +87,8 @@ jobs:
     - name: Run all wrapper tests
       env:
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
-      run: python -m pytest -m 'not mtln' test/
+        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
+      run: python -m pytest test/
         
        
       
