@@ -1,4 +1,4 @@
-name: ubuntu-gnu
+name: ubuntu
 
 on:
   pull_request:
@@ -55,7 +55,7 @@ jobs:
         mpi: 'intelmpi'
 
     - name: Install required packages
-      if: matrix.compiler.name=='gnu'
+      if: matrix.compiler.name=='gcc'
       run: |
         sudo apt update
         sudo apt install libhdf5-dev libopenmpi-dev
