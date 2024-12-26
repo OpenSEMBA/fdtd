@@ -27,12 +27,12 @@ jobs:
 
         include:
           - compiler: {name: 'intel-classic', version: '2021.10'}
-            build-type: ["Debug", "Release"]
+            build-type: "Release"
             mpi: "No"
             mtln: "No"
             hdf: "Yes"
           - compiler: {name: 'nvidia-hpc', version: '24.5'}
-            build-type: ["Debug", "Release"]
+            build-type: "Release"
             mpi: "No"
             mtln: "No"
             hdf: "No"
