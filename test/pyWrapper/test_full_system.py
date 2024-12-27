@@ -1,7 +1,7 @@
 from utils import *
 import pytest
 
-
+@no_mtln_skip
 @pytest.mark.mtln
 def test_shieldedPair(tmp_path):
     fn = CASE_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
@@ -32,6 +32,7 @@ def test_shieldedPair(tmp_path):
         p_solved = Probe(probe_files[i])
         assert np.allclose(p_expected[i].df.to_numpy()[:,0:4], p_solved.df.to_numpy()[:,0:4], rtol = 5e-2, atol=0.2)
 
+@no_mtln_skip
 @pytest.mark.mtln
 def test_coated_antenna(tmp_path):
     fn = CASE_FOLDER + 'coated_antenna/coated_antenna.fdtd.json'
@@ -68,6 +69,7 @@ def test_holland(tmp_path):
     p_solved = Probe(probe_files[0])
     assert np.allclose(p_expected.df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 1e-5, atol=1e-6)
 
+@no_mtln_skip
 @pytest.mark.mtln
 def test_holland_mtln(tmp_path):
     fn = CASE_FOLDER + 'holland/holland1981.fdtd.json'
@@ -104,8 +106,8 @@ def test_towelHanger(tmp_path):
         p_solved = Probe(probe_files[i])
         assert np.allclose(p_expected[i].df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 5e-2, atol=5e-2)
    
-    
-@pytest.mark.hdf5   
+@no_hdf_skip
+@pytest.mark.hdf 
 def test_sphere(tmp_path):    
     fn = CASE_FOLDER + 'sphere/sphere.fdtd.json'
     solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
