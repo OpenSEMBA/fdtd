@@ -4,7 +4,7 @@
 
     "general": {
         "timeStep": 3e-12,
-        "numberOfSteps": 100000
+        "numberOfSteps": 50000
     },
     
     "boundary": {
@@ -23,7 +23,7 @@
         },
         "coordinates": [
             {"id": 1, "relativePosition": [1, 1, 1]},
-            {"id": 2, "relativePosition": [1, 1, 4]}
+            {"id": 2, "relativePosition": [1, 1, 5]}
         ],
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [1]},

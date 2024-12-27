@@ -14,10 +14,7 @@ SEMBA_EXE = '../../../build/bin/semba-fdtd'
 from pyWrapper import *
 
 # %% Generate excitation and visualize
-dx = 20e-3
-cfl = 0.25
-dt = cfl * np.sqrt(3*dx**3)/scipy.constants.speed_of_light
-
+dt = 1e-12
 w0 = 0.1e-9    # ~ 2 GHz bandwidth
 t0 = 10*w0
 t = np.arange(0, t0+20*w0, dt)
@@ -33,6 +30,8 @@ np.savetxt('gauss.exc', data)
  
 fq = fftfreq(len(t))/dt
 F = fft(f)
+F = F[fq>=0]
+fq = fq[fq>=0]
 Fmax = np.max(np.abs(F))
 Fcut = Fmax / np.sqrt(2.0)
 idx = (np.abs(np.abs(F) - Fcut)).argmin()
@@ -55,10 +54,10 @@ assert solver.hasFinishedSuccessfully()
 
 # %% Postprocess
 back = Probe(solver.getSolvedProbeFilenames("back")[0])
-plt.plot(back.df['time'], back.df['incident'], label='incident')    
-plt.plot(back.df['time'],  back.df['field'], label='back')
-plt.legend()
-plt.xlim(0,3e-9)
+# plt.plot(back.df['time'], back.df['incident'], label='incident')    
+# plt.plot(back.df['time'],  back.df['field'], label='back')
+# plt.legend()
+# plt.xlim(0,3e-9)
 
 
 t = back.df['time']
@@ -69,7 +68,7 @@ BACK  = fft(back.df['field'])
 S21 = BACK/INC
 
 fmin = 8e6
-fmax = 4e9
+fmax = 1e9
 idx_min = (np.abs(fq - fmin)).argmin()
 idx_max = (np.abs(fq - fmax)).argmin()
 f = fq[idx_min:idx_max]
