@@ -4,7 +4,7 @@ integer function test_parser_ctor() bind(C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = 'cases/planewave.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/planewave.fdtd.json'
    type(parser_t) :: parser
    err = 0
 
@@ -73,7 +73,7 @@ integer function test_parser_read_mesh() bind(C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/mtln.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'mtln.fdtd.json'
    type(parser_t) :: parser
    type(mesh_t) :: mesh
    logical :: found
@@ -84,7 +84,7 @@ integer function test_parser_read_mesh() bind(C) result(err)
    parser = parser_t(filename)
    mesh = parser%readMesh()
    
-   call mesh%printCoordHashInfo()
+   ! call mesh%printCoordHashInfo() !! For debugging only
    expected%position = [10,2,1]
    
    obtained = mesh%getCoordinate(59, found)

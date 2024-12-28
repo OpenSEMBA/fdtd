@@ -3,6 +3,8 @@ module smbjson_testingTools
    implicit none
 
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'
+   character(len=*), parameter :: INPUT_EXAMPLES='input_examples/'
+   
 contains
    subroutine expect_eq_int(err, ex, pr, msg) 
       integer, intent(inout) :: err
@@ -37,10 +39,11 @@ contains
       if (checkRegions) then
          if (.not. ex%pecRegs == pr%pecRegs) call testFails(err, 'Expected and read "pec regions" do not match')
          if (.not. ex%pmcRegs == pr%pmcRegs) call testFails(err, 'Expected and read "pmc regions" do not match')
+         if (.not. ex%dielRegs == pr%dielRegs) call testFails(err, 'Expected and read "dielectric regions" do not match')
+         if (.not. ex%lossyThinSurfs == pr%lossyThinSurfs) call testFails(err, 'Expected and read "lossy thin surfaces" do not match')
       end if
       
       ! Sources
-      ! if (.not. ex%boxSrc == pr%boxSrc) call testFails(err, 'Expected and read "box sources" do not match')
       if (.not. ex%plnSrc == pr%plnSrc) call testFails(err, 'Expected and read "planewave sources" do not match')
       if (.not. ex%nodSrc == pr%nodSrc) call testFails(err, 'Expected and read "nodal sources" do not match')
       
@@ -49,7 +52,9 @@ contains
       if (.not. ex%sonda == pr%sonda)         call testFails(err, 'Expected and read "new probes" do not match')
       if (.not. ex%BloquePrb == pr%BloquePrb) call testFails(err, 'Expected and read "block probes" do not match')
       if (.not. ex%VolPrb == pr%VolPrb)       call testFails(err, 'Expected and read "vol probes" do not match')
+      
       ! Thin elements
+      if (.not. ex%tSlots == pr%tSlots) call testFails(err, 'Expected and read "thin slots" do not match')
       if (.not. ex%tWires == pr%tWires) call testFails(err, 'Expected and read "thin wires" do not match')
 #ifdef CompileWithMTLN
       if (.not. ex%mtln == pr%mtln) call testFails(err, 'Expected and read mtln types do not match')

@@ -4,7 +4,7 @@ integer function test_read_towelhanger() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/towelHanger.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'towelHanger.fdtd.json'
    type(Parseador) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -74,7 +74,7 @@ contains
       expected%pecRegs%Surfs(1)%Ytrancos = 1
       expected%pecRegs%Surfs(1)%Ztrancos = 1
       expected%pecRegs%Surfs(1)%Or = 3
-      expected%pecRegs%Surfs(1)%tag =  trim(adjustl(" "))
+      expected%pecRegs%Surfs(1)%tag =  "copper@ground_plane"
 
       ! Expected probes
       ! sonda

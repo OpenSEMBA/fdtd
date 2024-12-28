@@ -16,3 +16,8 @@ if (SEMBA_FDTD_ENABLE_MTLN OR SEMBA_FDTD_ENABLE_SMBJSON)
 		${FHASH_SOURCES_FOLDER}/fhash_key/int64_1d.f90
 	)
 endif()
+
+if (SEMBA_FDTD_ENABLE_MTLN)
+	add_subdirectory("ngspice/")
+	# set(NGSPICE_LIB ngspice)
+endif()
