@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#ifdef CompileWithHDF
+    #include "hdf/hdf_tests.h"
+#endif
 #ifdef CompileWithMTLN
     #include "mtln/mtln_tests.h"
     #include "system/system_tests.h"

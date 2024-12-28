@@ -6,6 +6,10 @@ enable_language(C CXX Fortran)
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
+if (SEMBA_FDTD_ENABLE_HDF)
+    add_subdirectory(hdf)
+    set(HDF_TESTS_LIBRARY hdf_tests)
+endif()
 if (SEMBA_FDTD_ENABLE_MTLN)
     add_subdirectory(mtln)
     add_subdirectory(system)
@@ -25,5 +29,6 @@ target_link_libraries(fdtd_tests
     ${MTLN_TESTS_LIBRARY}
     ${SMBJSON_TESTS_LIBRARY}
     ${SYSTEM_TESTS_LIBRARY}
+    ${HDF_TESTS_LIBRARY}
     GTest::gtest_main
 )
