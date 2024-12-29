@@ -455,7 +455,7 @@ contains
       type(coords), dimension(:), pointer :: cs
       integer :: i
       
-      mAs = this%getMaterialAssociations(matType)
+      mAs = this%getMaterialAssociations([matType])
       
       block
          type(coords), dimension(:), pointer :: emptyCoords
@@ -539,7 +539,7 @@ contains
          integer :: i, j
          integer :: nCs, nDielectrics
          
-         mAs = this%getMaterialAssociations(J_MAT_TYPE_ISOTROPIC)
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_ISOTROPIC])
          if (size(mAs) == 0) then
             allocate(res(0))
             return
@@ -650,7 +650,7 @@ contains
       integer :: i, j, k
       type(coords), dimension(:), pointer :: cs
 
-      mAs = this%getMaterialAssociations(J_MAT_TYPE_MULTILAYERED_SURFACE)
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_MULTILAYERED_SURFACE])
       
       ! Precounts
       nLossySurfaces = 0
@@ -1394,7 +1394,7 @@ contains
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       integer :: i
 
-      mAs = this%getMaterialAssociations(J_MAT_TYPE_SLOT)
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_SLOT])
       if (size(mAs) == 0) then
          allocate(res%tg(0))
          return
@@ -1486,7 +1486,7 @@ contains
       integer :: i, j
       logical :: found
 
-      mAs = this%getMaterialAssociations(J_MAT_TYPE_WIRE)
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
 
       ! Pre-allocates thin wires.
       block
@@ -1892,19 +1892,19 @@ contains
          if (res%initialTerminalId == -1 .or. res%endTerminalId == -1) then
             write(error_unit, *), errorMsgInit, "wire associations must include terminals."
          end if
-         if (isMaterialIdOfType(res%initialTerminalId, J_MAT_TYPE_TERMINAL)) then
+         if (.not. isMaterialIdOfType(res%initialTerminalId, J_MAT_TYPE_TERMINAL)) then
             write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
          end if
-         if (isMaterialIdOfType(res%endTerminalId, J_MAT_TYPE_TERMINAL)) then
+         if (.not. isMaterialIdOfType(res%endTerminalId, J_MAT_TYPE_TERMINAL)) then
             write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
          end if
          if (res%initialConnectorId /= -1) then
-            if (isMaterialIdOfType(res%initialConnectorId, J_MAT_TYPE_CONNECTOR)) then
+            if (.not. isMaterialIdOfType(res%initialConnectorId, J_MAT_TYPE_CONNECTOR)) then
                write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
             end if
          end if 
          if (res%endConnectorId /= -1) then
-            if (isMaterialIdOfType(res%endConnectorId, J_MAT_TYPE_CONNECTOR)) then
+            if (.not. isMaterialIdOfType(res%endConnectorId, J_MAT_TYPE_CONNECTOR)) then
                write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
             end if
          end if
@@ -1939,14 +1939,14 @@ contains
       end subroutine
    end function
 
-   function getMaterialAssociations(this, materialType) result(res)
+   function getMaterialAssociations(this, materialTypes) result(res)
       class(parser_t) :: this
+      character(len=*), intent(in) :: materialTypes(:)
       type(materialAssociation_t), dimension(:), allocatable :: res
       type(json_value), pointer :: allMatAss
-      character(len=*), intent(in) :: materialType
       
       type(json_value), pointer :: mAPtr
-      integer :: i, j
+      integer :: i, j, k
       integer :: nMaterials
       logical :: found
 
@@ -1959,19 +1959,23 @@ contains
       nMaterials = 0
       do i = 1, this%core%count(allMatAss)
          call this%core%get_child(allMatAss, i, mAPtr)
-         if (isAssociatedWithMaterial(mAPtr, materialType)) then
-            nMaterials = nMaterials + 1
-         end if
+         do j = 1, size(materialTypes)
+            if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(j)))) then
+               nMaterials = nMaterials + 1
+            end if
+         end do
       end do
 
       allocate(res(nMaterials))
       j = 1
       do i = 1, this%core%count(allMatAss)
          call this%core%get_child(allMatAss, i, mAPtr)
-         if (isAssociatedWithMaterial(mAPtr, materialType)) then
-            res(j) = this%parseMaterialAssociation(mAPtr)
-            j = j+1
-         end if
+         do k = 1, size(materialTypes)
+            if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(k)))) then
+               res(j) = this%parseMaterialAssociation(mAPtr)
+               j = j+1
+            end if
+         end do
       end do
 
    contains 
@@ -2059,9 +2063,9 @@ contains
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
-      wires = this%getMaterialAssociations(J_MAT_TYPE_WIRE)
-      multiwires = this%getMaterialAssociations(J_MAT_TYPE_MULTIWIRE)
-      cables = [wires, multiwires]
+      wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
+      multiwires = this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE])
+      cables = this%getMaterialAssociations([J_MAT_TYPE_WIRE//'     ', J_MAT_TYPE_MULTIWIRE])
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
@@ -2089,22 +2093,26 @@ contains
 
       block
          integer :: i, j, parentId, index
+         type(json_value_ptr) :: mat
          j = 1
-         do i = 1, size(multiwires)
-            parentId = cables(i)%containedWithinElementId
-            if (parentId == -1) then
+         do i = 1, size(cables)
+            mat = this%matTable%getId(cables(i)%materialId)
+            if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
+               parentId = cables(i)%containedWithinElementId
+               if (parentId == -1) then
+                  mtln_res%cables(j)%parent_cable => null()
+                  mtln_res%cables(j)%conductor_in_parent = 0
+               else 
+                  call elemIdToCable%get(key(parentId), value=index)
+                  mtln_res%cables(j)%parent_cable => mtln_res%cables(index)
+                  mtln_res%cables(j)%conductor_in_parent = getParentPositionInMultiwire(parentId)
+               end if
+            else if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
                mtln_res%cables(j)%parent_cable => null()
                mtln_res%cables(j)%conductor_in_parent = 0
-            else 
-               call elemIdToCable%get(key(parentId), value=index)
-               mtln_res%cables(j)%parent_cable => mtln_res%cables(index)
-               mtln_res%cables(j)%conductor_in_parent = getParentPositionInMultiwire(parentId)
+            else
+               write(error_unit, *) 'ERROR: Material type not recognized'
             end if
-            j = j + 1
-         end do
-         do i = 1, size(wires)
-            mtln_res%cables(j)%parent_cable => null()
-            mtln_res%cables(j)%conductor_in_parent = 0
             j = j + 1
          end do
       end block
@@ -2191,8 +2199,8 @@ contains
          
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
-         cables = [ this%getMaterialAssociations(J_MAT_TYPE_WIRE), &
-                    this%getMaterialAssociations(J_MAT_TYPE_MULTIWIRE) ]
+         cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
+                     this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds
             terminations_ini => getTerminationsOnSide(cables(i)%initialTerminalId)
