@@ -2065,7 +2065,11 @@ contains
 
       wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
       multiwires = this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE])
-      cables = this%getMaterialAssociations([J_MAT_TYPE_WIRE//'     ', J_MAT_TYPE_MULTIWIRE])
+      cables = this%getMaterialAssociations(&
+               [J_MAT_TYPE_WIRE//'     ',&
+                J_MAT_TYPE_MULTIWIRE    ]&) 
+      ! 5 spaces are needed to make strings have same length. 
+      ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
