@@ -29,6 +29,7 @@ module smbjson
       type(json_value), pointer :: root => null()
       type(mesh_t) :: mesh
       type(IdChildTable_t) :: matTable, elementTable
+      logical, public :: isInitialized = .false.
 
    contains
       procedure :: readProblemDescription
@@ -127,6 +128,8 @@ contains
       allocate(res%core)
       call res%jsonfile%get_core(res%core)
       call res%jsonfile%get('.', res%root)
+
+      res%isInitialized = .true.
    end function
 
    function readProblemDescription(this) result (res)
@@ -441,16 +444,15 @@ contains
       class(parser_t) :: this
       character (len=*), intent(in) :: matType 
       type(PECRegions) :: res
-      type(json_value_ptr), dimension(:), allocatable :: mAPtrs
-      type(materialAssociation_t) :: mA
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(coords), dimension(:), pointer :: cs
       integer :: i
       
-      mAPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, matType)
+      mAs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, matType)
       
       block
          type(coords), dimension(:), pointer :: emptyCoords
-         if (size(mAPtrs) == 0) then 
+         if (size(mAs) == 0) then 
             allocate(emptyCoords(0))
             call appendRegion(res%lins,  res%nLins,  res%nLins_max,  emptyCoords)
             call appendRegion(res%surfs, res%nSurfs, res%nSurfs_max, emptyCoords)
@@ -459,13 +461,12 @@ contains
          end if
       end block
 
-      do i = 1, size(mAPtrs)
-         mA = this%parseMaterialAssociation(mAptrs(i)%p)
-         call this%matAssToCoords(cs, mA, CELL_TYPE_LINEL)
+      do i = 1, size(mAs)
+         call this%matAssToCoords(cs, mAs(i), CELL_TYPE_LINEL)
          call appendRegion(res%lins,  res%nLins,  res%nLins_max, cs)
-         call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
+         call this%matAssToCoords(cs, mAs(i), CELL_TYPE_SURFEL)
          call appendRegion(res%surfs, res%nSurfs, res%nSurfs_max, cs)
-         call this%matAssToCoords(cs, mA, CELL_TYPE_VOXEL)
+         call this%matAssToCoords(cs, mAs(i), CELL_TYPE_VOXEL)
          call appendRegion(res%vols,  res%nVols,  res%nVols_max, cs)
          deallocate(cs)
       end do
@@ -497,8 +498,7 @@ contains
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(DielectricRegions) :: res
-      type(json_value_ptr), dimension(:), allocatable :: matAssPtrs
-
+      
       call fillDielectricsOfCellType(res%vols, CELL_TYPE_VOXEL)
       call fillDielectricsOfCellType(res%surfs, CELL_TYPE_SURFEL)
       call fillDielectricsOfCellType(res%lins, CELL_TYPE_LINEL)
@@ -515,23 +515,23 @@ contains
          integer, intent(in) :: cellType
          type(dielectric_t), dimension(:), pointer :: res
          
-         type(json_value_ptr), dimension(:), allocatable :: mAPtrs
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
          type(materialAssociation_t) :: mA
          type(cell_region_t) :: cR
 
          integer :: i, j
          integer :: nCs, nDielectrics
          
-         mAPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, J_MAT_TYPE_ISOTROPIC)
-         if (size(mAPtrs) == 0) then
+         mAs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, J_MAT_TYPE_ISOTROPIC)
+         if (size(mAs) == 0) then
             allocate(res(0))
             return
          end if
 
          ! Precounts
          nDielectrics = 0
-         do i = 1, size(mAPtrs)           
-            if (containsCellRegionsWithType(mAPtrs(i)%p, cellType)) then
+         do i = 1, size(mAs)           
+            if (containsCellRegionsWithType(mAs(i), cellType)) then
                nDielectrics = nDielectrics + 1
             end if 
          end do
@@ -542,45 +542,42 @@ contains
          if (nDielectrics == 0) return
 
          j = 0
-         do i = 1, size(mAPtrs)       
-            if (.not. containsCellRegionsWithType(mAPtrs(i)%p, cellType)) cycle
+         do i = 1, size(mAs)       
+            if (.not. containsCellRegionsWithType(mAs(i), cellType)) cycle
             j = j + 1
-            res(j) = readDielectric(mAPtrs(i)%p, cellType)
+            res(j) = readDielectric(mAs(i), cellType)
          end do
       end subroutine
 
-      function readDielectric(mAPtr, cellType) result(res)
-         type(json_value), pointer, intent(in) :: mAPtr
+      function readDielectric(mA, cellType) result(res)
+         type(materialAssociation_t), intent(in) :: mA
          integer, intent(in) :: cellType
          type(Dielectric_t) :: res
-         type(materialAssociation_t) :: mA
          type(cell_region_t) :: cR
          type (coords), dimension(:), allocatable :: coords
-         
+         type(json_value_ptr) :: matPtr
          integer :: e, j
 
-         mA = this%parseMaterialAssociation(mAPtr)
          allocate(res%c1P(0))
          res%n_c1p = 0
          call this%matAssToCoords(res%c2p, mA, cellType)
          res%n_c2p = size(res%c2p)
          
+         matPtr = this%matTable%getId(mA%materialId)
          ! Fills rest of dielectric data.
-         res%sigma  = this%getRealAt(mAPtr, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
-         res%sigmam = this%getRealAt(mAPtr, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
-         res%eps    = this%getRealAt(mAPtr, J_MAT_REL_PERMITTIVITY, default=1.0)*EPSILON_VACUUM
-         res%mu     = this%getRealAt(mAPtr, J_MAT_REL_PERMEABILITY, default=1.0)*MU_VACUUM
+         res%sigma  = this%getRealAt(matPtr%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
+         res%sigmam = this%getRealAt(matPtr%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
+         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0)*EPSILON_VACUUM
+         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0)*MU_VACUUM
 
       end function
 
-      logical function containsCellRegionsWithType(mAPtr, cellType)
+      logical function containsCellRegionsWithType(mA, cellType)
          integer, intent(in) :: cellType
-         type(json_value), pointer, intent(in) :: mAPtr
-         type(materialAssociation_t) :: mA
+         type(materialAssociation_t), intent(in) :: mA
          integer :: e
          type(cell_region_t) :: cR
          
-         mA = this%parseMaterialAssociation(mAPtr)
          do e = 1, size(mA%elementIds)
             cR = this%mesh%getCellRegion(mA%elementIds(e))
             if (size(cellRegionToCoords(cR, cellType)) /= 0) then
@@ -628,21 +625,20 @@ contains
    function readLossyThinSurfaces(this) result (res)
       class(parser_t), intent(in) :: this
       type(LossyThinSurfaces) :: res
-      type(json_value_ptr), dimension(:), allocatable :: matAssPtrs
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(json_value_ptr) :: mat
       integer :: nLossySurfaces
       logical :: found
       integer :: i, j, k
-      type(materialAssociation_t) :: mA
       type(coords), dimension(:), pointer :: cs
-      matAssPtrs = this%getMaterialAssociations(&
+
+      mAs = this%getMaterialAssociations(&
          J_MAT_ASS_TYPE_SURFACE, J_MAT_TYPE_MULTILAYERED_SURFACE)
       
       ! Precounts
       nLossySurfaces = 0
-      do i = 1, size(matAssPtrs)
-         mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
-         call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
+      do i = 1, size(mAs)
+         call this%matAssToCoords(cs, mAs(i), CELL_TYPE_SURFEL)
          if (size(cs) > 0) nLossySurfaces = nLossySurfaces + 1
       end do
 
@@ -657,11 +653,10 @@ contains
       res%length_max = nLossySurfaces
       res%nC_max = nLossySurfaces
       k = 1
-      do i = 1, size(matAssPtrs)
-         mA = this%parseMaterialAssociation(matAssPtrs(i)%p)
-         call this%matAssToCoords(cs, mA, CELL_TYPE_SURFEL)
+      do i = 1, size(mAs)
+         call this%matAssToCoords(cs, mAs(i), CELL_TYPE_SURFEL)
          if (size(cs) == 0) cycle
-         res%cs(k) = readLossyThinSurface(mA)
+         res%cs(k) = readLossyThinSurface(mAs(i))
          k = k + 1
       end do
       
@@ -1379,31 +1374,28 @@ contains
       class(parser_t) :: this
       type(ThinSlots) :: res
       
-      type(json_value_ptr), dimension(:), allocatable :: mAPtrs
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
       integer :: i
 
-      mAPtrs = this%getMaterialAssociations(J_MAT_ASS_TYPE_LINE, J_MAT_TYPE_SLOT)
-      if (size(mAPtrs) == 0) then
+      mAs = this%getMaterialAssociations(J_MAT_ASS_TYPE_LINE, J_MAT_TYPE_SLOT)
+      if (size(mAs) == 0) then
          allocate(res%tg(0))
          return
       end if
 
-      res%n_tg = size(mAPtrs)
+      res%n_tg = size(mAs)
       allocate(res%tg(res%n_tg))
-      do i = 1, size(mAPtrs)
-         res%tg = readThinSlot(mAPtrs(i)%p)
+      do i = 1, size(mAs)
+         res%tg = readThinSlot(mAs(i))
       end do
    contains
-      function readThinSlot(mAPtr) result(res)
-         type (json_value), pointer, intent(in) :: mAPtr
+      function readThinSlot(mA) result(res)
+         type (materialAssociation_t), intent(in) :: mA
          type (thinSlot) :: res
-         type (materialAssociation_t) :: mA
          type (coords), dimension(:), pointer :: cs
          type(json_value_ptr) :: mat
          logical :: found
          
-         mA = this%parseMaterialAssociation(mAPtr)
-
          mat = this%matTable%getId(mA%materialId)
          res%width = this%getRealAt(mat%p, J_MAT_THINSLOT_WIDTH, found)
          if (.not. found) then
@@ -1912,10 +1904,10 @@ contains
 
    function getMaterialAssociations(this, matAssType, materialType) result(res)
       class(parser_t) :: this
+      type(materialAssociation_t), dimension(:), allocatable :: res
       type(json_value), pointer :: allMatAss
       character(len=*), intent(in) :: matAssType
       character(len=*), intent(in) :: materialType
-      type(json_value_ptr), dimension(:), allocatable :: res
       
       type(json_value_ptr), dimension(:), allocatable :: mAPtrs
       integer :: i, j
@@ -1946,7 +1938,7 @@ contains
       j = 1
       do i = 1, size(mAPtrs)
          if (isAssociatedWithMaterial(mAPtrs(i)%p, materialType)) then
-            res(j) = mAPtrs(i)
+            res(j) = this%parseMaterialAssociation(mAPtrs(i)%p)
             j = j+1
          end if
       end do
