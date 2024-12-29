@@ -477,20 +477,30 @@ contains
          integer, intent(out) :: resNCoords, resNCoordsMax
          type(coords), dimension(:), pointer, intent(in) :: cs
          type(coords) , dimension(:), allocatable :: auxCs
+         integer :: i
 
          if (.not. associated(resCoords)) then
             allocate(resCoords(size(cs)))
-            resCoords(:) = cs(:)
+            do i = 1, size(cs) ! Use do loop to prevent stack overflow in large cs
+                resCoords(i) = cs(i)
+            end do
             resNCoords = size(cs)
             resNCoordsMax = size(cs)
          else 
-            auxCs(:) = resCoords(:)
+            do i = 1, size(resCoords)
+                auxCs(i) = resCoords(i)
+            end do
             deallocate(resCoords)
-            allocate(resCoords(resNCoords + size(cs)))
-            resCoords(1:resNCoords) = auxCs
-            resCoords(resNCoords+1 : resNCoords+size(cs)) = cs(:)
-            resNCoords = resNCoords + size(cs)
-            resNCoordsMax = resNCoordsMax + size(cs)
+            
+            allocate(resCoords(size(auxCs) + size(cs)))
+            resNCoords = size(resCoords)
+            resNCoordsMax = size(resCoords)
+            do i = 1, size(auxCs)
+                resCoords(i) = auxCs(i)
+            end do
+            do i = 1, size(cs)
+                resCoords(i + size(auxCs)) = cs(i)
+            end do
          end if
       end subroutine         
    end function
@@ -605,7 +615,8 @@ contains
       nCs = 0
       do e = 1, size(mA%elementIds)
          cR = this%mesh%getCellRegion(mA%elementIds(e))
-         nCs = nCs + size(cellRegionToCoords(cR, cellType))
+         newCoords = cellRegionToCoords(cR, cellType)
+         nCs = nCs + size(newCoords)
       end do
 
       ! Fills coords
