@@ -130,6 +130,21 @@ def test_sphere(tmp_path):
     p = Probe(electric_field_movie_files[0])
     assert p.type == 'movie'
 
+def test_movie_in_planewave_in_box(tmp_path):    
+    fn = CASE_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    h5file = solver.getSolvedProbeFilenames("electric_field_movie")[2]
+    with h5py.File(h5file, "r") as f:
+        time_key = list(f.keys())[0]
+        field_key = list(f.keys())[1]
+        time_ds = f[time_key][()] 
+        field_ds = f[field_key][()]
+    
+    assert np.isclose(np.max(field_ds), 1.0, rtol=1e-2)
+    assert np.min(field_ds) == 0.0
 
 def test_planewave_in_box(tmp_path):    
     fn = CASE_FOLDER + 'planewave/pw-in-box.fdtd.json'

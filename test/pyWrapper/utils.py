@@ -5,6 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pyvista as pv
 import pytest
+import h5py
 from os import environ as env
 from sys import platform
 
