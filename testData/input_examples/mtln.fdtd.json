@@ -404,8 +404,7 @@
 	"materialAssociations": [
 		{
 			"name": "line_0_0",
-			"type": "cable",
-			"elementIds": [ 1 ],
+						"elementIds": [ 1 ],
 			"materialId": 10,
 			"initialTerminalId": 20,
 			"endTerminalId": 7,
@@ -413,8 +412,7 @@
 		},
 		{
 			"name": "line_1_0",
-			"type": "cable",
-			"elementIds": [ 6 ],
+						"elementIds": [ 6 ],
 			"materialId": 2,
 			"initialTerminalId": 7,
 			"endTerminalId": 7,
@@ -423,8 +421,7 @@
 		},
 		{
 			"name": "line_2_0",
-			"type": "cable",
-			"elementIds": [ 17, 18, 19, 20, 21, 22, 23, 24 ],
+						"elementIds": [ 17, 18, 19, 20, 21, 22, 23, 24 ],
 			"materialId": 61,
 			"initialTerminalId": 100,
 			"endTerminalId": 78,
@@ -432,8 +429,7 @@
 		},
 		{
 			"name": "line_0_1",
-			"type": "cable",
-			"elementIds": [ 2 ],
+						"elementIds": [ 2 ],
 			"materialId": 11,
 			"initialTerminalId": 7,
 			"endTerminalId": 21,
@@ -441,8 +437,7 @@
 		},
 		{
 			"name": "line_1_1",
-			"type": "cable",
-			"elementIds": [10],
+						"elementIds": [10],
 			"materialId": 3,
 			"initialTerminalId": 7,
 			"endTerminalId": 7,
@@ -451,8 +446,7 @@
 		},
 		{
 			"name": "line_2_4",
-			"type": "cable",
-			"elementIds": [ 25, 26 ],
+						"elementIds": [ 25, 26 ],
 			"materialId": 62,
 			"initialTerminalId": 72,
 			"endTerminalId": 8,
@@ -460,16 +454,14 @@
 		},
 		{
 			"name": "line_0_2",
-			"type": "cable",
-			"elementIds": [ 3 ],
+						"elementIds": [ 3 ],
 			"materialId": 12,
 			"initialTerminalId": 7,
 			"endTerminalId": 20
 		},
 		{
 			"name": "line_1_2",
-			"type": "cable",
-			"elementIds": [ 11 ],
+						"elementIds": [ 11 ],
 			"materialId": 4,
 			"initialTerminalId": 7,
 			"endTerminalId": 7,
@@ -477,8 +469,7 @@
 		},
 		{
 			"name": "line_2_5",
-			"type": "cable",
-			"elementIds": [ 27, 28, 29, 30, 31, 32 ],
+						"elementIds": [ 27, 28, 29, 30, 31, 32 ],
 			"materialId": 63,
 			"initialTerminalId": 76,
 			"endTerminalId": 86,
