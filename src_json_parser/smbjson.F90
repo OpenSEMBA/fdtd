@@ -29,6 +29,7 @@ module smbjson
       type(json_value), pointer :: root => null()
       type(mesh_t) :: mesh
       type(IdChildTable_t) :: matTable, elementTable
+      logical, public :: isInitialized = .false.
 
    contains
       procedure :: readProblemDescription
@@ -90,10 +91,17 @@ module smbjson
    end type
 
    type, private :: materialAssociation_t
+      ! Common fields
       character(:), allocatable :: name
       integer :: materialId
       integer, dimension(:), allocatable :: elementIds
       character(:), allocatable :: matAssType
+      ! Cable specific fields.
+      integer :: initialTerminalId = -1
+      integer :: endTerminalId = -1
+      integer :: initialConnectorId = -1
+      integer :: endConnectorId = -1
+      integer :: containedWithinElementId = -1
    end type
 
    type, private :: domain_t
@@ -126,6 +134,8 @@ contains
       allocate(res%core)
       call res%jsonfile%get_core(res%core)
       call res%jsonfile%get('.', res%root)
+
+      res%isInitialized = .true.
    end function
 
    function readProblemDescription(this) result (res)
@@ -441,11 +451,10 @@ contains
       character (len=*), intent(in) :: matType 
       type(PECRegions) :: res
       type(materialAssociation_t), dimension(:), allocatable :: mAs
-      type(materialAssociation_t) :: mA
       type(coords), dimension(:), pointer :: cs
       integer :: i
       
-      mAs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, matType)
+      mAs = this%getMaterialAssociations([matType])
       
       block
          type(coords), dimension(:), pointer :: emptyCoords
@@ -474,20 +483,30 @@ contains
          integer, intent(out) :: resNCoords, resNCoordsMax
          type(coords), dimension(:), pointer, intent(in) :: cs
          type(coords) , dimension(:), allocatable :: auxCs
+         integer :: i
 
          if (.not. associated(resCoords)) then
             allocate(resCoords(size(cs)))
-            resCoords(:) = cs(:)
+            do i = 1, size(cs) ! Use do loop to prevent stack overflow in large cs
+                resCoords(i) = cs(i)
+            end do
             resNCoords = size(cs)
             resNCoordsMax = size(cs)
          else 
-            auxCs(:) = resCoords(:)
+            do i = 1, size(resCoords)
+                auxCs(i) = resCoords(i)
+            end do
             deallocate(resCoords)
-            allocate(resCoords(resNCoords + size(cs)))
-            resCoords(1:resNCoords) = auxCs
-            resCoords(resNCoords+1 : resNCoords+size(cs)) = cs(:)
-            resNCoords = resNCoords + size(cs)
-            resNCoordsMax = resNCoordsMax + size(cs)
+            
+            allocate(resCoords(size(auxCs) + size(cs)))
+            resNCoords = size(resCoords)
+            resNCoordsMax = size(resCoords)
+            do i = 1, size(auxCs)
+                resCoords(i) = auxCs(i)
+            end do
+            do i = 1, size(cs)
+                resCoords(i + size(auxCs)) = cs(i)
+            end do
          end if
       end subroutine         
    end function
@@ -495,8 +514,7 @@ contains
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
       type(DielectricRegions) :: res
-      type(json_value_ptr), dimension(:), allocatable :: matAssPtrs
-
+      
       call fillDielectricsOfCellType(res%vols, CELL_TYPE_VOXEL)
       call fillDielectricsOfCellType(res%surfs, CELL_TYPE_SURFEL)
       call fillDielectricsOfCellType(res%lins, CELL_TYPE_LINEL)
@@ -514,12 +532,13 @@ contains
          type(dielectric_t), dimension(:), pointer :: res
          
          type(materialAssociation_t), dimension(:), allocatable :: mAs
+         type(materialAssociation_t) :: mA
          type(cell_region_t) :: cR
 
          integer :: i, j
          integer :: nCs, nDielectrics
          
-         mAs = this%getMaterialAssociations(J_MAT_ASS_TYPE_BULK, J_MAT_TYPE_ISOTROPIC)
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_ISOTROPIC])
          if (size(mAs) == 0) then
             allocate(res(0))
             return
@@ -552,7 +571,7 @@ contains
          type(Dielectric_t) :: res
          type(cell_region_t) :: cR
          type (coords), dimension(:), allocatable :: coords
-         type(material_t) :: mat
+         type(json_value_ptr) :: matPtr
          integer :: e, j
 
          allocate(res%c1P(0))
@@ -560,24 +579,23 @@ contains
          call this%matAssToCoords(res%c2p, mA, cellType)
          res%n_c2p = size(res%c2p)
          
-         mat = this%materials%get(mA%materialId)
-         
+         matPtr = this%matTable%getId(mA%materialId)
          ! Fills rest of dielectric data.
-         res%sigma  = this%getRealAt(mat, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
-         res%sigmam = this%getRealAt(mat, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
-         res%eps    = this%getRealAt(mat, J_MAT_REL_PERMITTIVITY, default=1.0)*EPSILON_VACUUM
-         res%mu     = this%getRealAt(mat, J_MAT_REL_PERMEABILITY, default=1.0)*MU_VACUUM
+         res%sigma  = this%getRealAt(matPtr%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
+         res%sigmam = this%getRealAt(matPtr%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
+         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0)*EPSILON_VACUUM
+         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0)*MU_VACUUM
 
       end function
 
-      logical function containsCellRegionsWithType(matAss, cellType)
+      logical function containsCellRegionsWithType(mA, cellType)
          integer, intent(in) :: cellType
-         type(materialAssociation_t), intent(in) :: matAss
+         type(materialAssociation_t), intent(in) :: mA
          integer :: e
          type(cell_region_t) :: cR
          
-         do e = 1, size(matAss%elementIds)
-            cR = this%mesh%getCellRegion(matAss%elementIds(e))
+         do e = 1, size(mA%elementIds)
+            cR = this%mesh%getCellRegion(mA%elementIds(e))
             if (size(cellRegionToCoords(cR, cellType)) /= 0) then
                containsCellRegionsWithType = .true.
                return
@@ -603,7 +621,8 @@ contains
       nCs = 0
       do e = 1, size(mA%elementIds)
          cR = this%mesh%getCellRegion(mA%elementIds(e))
-         nCs = nCs + size(cellRegionToCoords(cR, cellType))
+         newCoords = cellRegionToCoords(cR, cellType)
+         nCs = nCs + size(newCoords)
       end do
 
       ! Fills coords
@@ -623,14 +642,14 @@ contains
    function readLossyThinSurfaces(this) result (res)
       class(parser_t), intent(in) :: this
       type(LossyThinSurfaces) :: res
-      type(json_value_ptr), dimension(:), allocatable :: mAs
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(json_value_ptr) :: mat
       integer :: nLossySurfaces
       logical :: found
       integer :: i, j, k
       type(coords), dimension(:), pointer :: cs
-      
-      mAs = this%getMaterialAssociations(J_MAT_ASS_TYPE_SURFACE, J_MAT_TYPE_MULTILAYERED_SURFACE)
+
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_MULTILAYERED_SURFACE])
       
       ! Precounts
       nLossySurfaces = 0
@@ -653,7 +672,7 @@ contains
       do i = 1, size(mAs)
          call this%matAssToCoords(cs, mAs(i), CELL_TYPE_SURFEL)
          if (size(cs) == 0) cycle
-         res%cs(k) = readLossyThinSurface(mA)
+         res%cs(k) = readLossyThinSurface(mAs(i))
          k = k + 1
       end do
       
@@ -1371,10 +1390,10 @@ contains
       class(parser_t) :: this
       type(ThinSlots) :: res
       
-      type(json_value_ptr), dimension(:), allocatable :: mAs
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
       integer :: i
 
-      mAs = this%getMaterialAssociations(J_MAT_ASS_TYPE_LINE, J_MAT_TYPE_SLOT)
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_SLOT])
       if (size(mAs) == 0) then
          allocate(res%tg(0))
          return
@@ -1383,7 +1402,7 @@ contains
       res%n_tg = size(mAs)
       allocate(res%tg(res%n_tg))
       do i = 1, size(mAs)
-         res%tg = readThinSlot(mAs(i)%p)
+         res%tg = readThinSlot(mAs(i))
       end do
    contains
       function readThinSlot(mA) result(res)
@@ -1462,28 +1481,19 @@ contains
    function readThinWires(this) result (res)
       class(parser_t) :: this
       type(ThinWires) :: res
-      type(json_value), pointer :: cable, matAss
-      type(json_value_ptr), dimension(:), allocatable :: cables
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
       integer :: i, j
       logical :: found
 
-      call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, matAss, found)
-      if (.not. found) then
-         allocate(res%tw(0))
-         res%n_tw = 0
-         res%n_tw_max = 0
-         return
-      end if
-
-      cables = this%jsonValueFilterByKeyValue(matAss, J_TYPE, J_MAT_ASS_TYPE_CABLE)
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
 
       ! Pre-allocates thin wires.
       block
          integer :: nTw
          nTw = 0
-         if (size(cables) /=0 ) then
-            do i = 1, size(cables)
-               if (isThinWire(cables(i)%p)) nTw = nTw+1
+         if (size(mAs) /=0 ) then
+            do i = 1, size(mAs)
+               if (isThinWire(mAs(i))) nTw = nTw+1
             end do
          end if
 
@@ -1493,21 +1503,19 @@ contains
       end block
 
       j = 1
-      if (size(cables) /=0 ) then
-         do i = 1, size(cables)
-            if (isThinWire(cables(i)%p)) then
-               res%tw(j) = readThinWire(cables(i)%p)
+      if (size(mAs) /=0 ) then
+         do i = 1, size(mAs)
+            if (isThinWire(mAs(i))) then
+               res%tw(j) = readThinWire(mAs(i))
                j = j+1
             end if
          end do
       end if
 
-
-
    contains
       function readThinWire(cable) result(res)
          type(ThinWire) :: res
-         type(json_value), pointer, intent(in) :: cable
+         type(materialAssociation_t), intent(in) :: cable
 
          character (len=:), allocatable :: entry
          type(json_value), pointer :: je, je2
@@ -1516,8 +1524,7 @@ contains
          real :: radius, resistance, inductance
          block
             type(json_value_ptr) :: m
-            m = this%matTable%getId(this%getIntAt(cable, J_MATERIAL_ID, found))
-            if (.not. found) write(error_unit, *) "ERROR: material id not found in mat. association."
+            m = this%matTable%getId(cable%materialId)
             call this%core%get(m%p, J_MAT_WIRE_RADIUS,     radius, default = 0.0)
             call this%core%get(m%p, J_MAT_WIRE_RESISTANCE, resistance, default = 0.0)
             call this%core%get(m%p, J_MAT_WIRE_INDUCTANCE, inductance, default = 0.0)
@@ -1531,7 +1538,7 @@ contains
             type(json_value_ptr) :: terminal
             type(thinwiretermination_t) :: term
             character (len=:), allocatable :: label
-            terminal = this%matTable%getId(this%getIntAt(cable, J_MAT_ASS_CAB_INI_TERM_ID))
+            terminal = this%matTable%getId(cable%initialTerminalId)
             term = readThinWireTermination(terminal%p)
             res%tl = term%terminationType
             res%R_LeftEnd = term%r
@@ -1543,7 +1550,7 @@ contains
          block
             type(json_value_ptr) :: terminal
             type(thinwiretermination_t) :: term
-            terminal = this%matTable%getId(this%getIntAt(cable, J_MAT_ASS_CAB_END_TERM_ID))
+            terminal = this%matTable%getId(cable%endTerminalId)
             term = readThinWireTermination(terminal%p)
             res%tr = term%terminationType
             res%R_RightEnd = term%r
@@ -1554,23 +1561,16 @@ contains
 
          block
             type(linel_t), dimension(:), allocatable :: linels
-            integer, dimension(:), allocatable :: elementIds
             type(polyline_t) :: polyline
             character (len=MAX_LINE) :: tagLabel
             type(generator_description_t), dimension(:), allocatable :: genDesc
-            call this%core%get(cable, J_ELEMENTIDS, elementIds, found)
-            if (.not. found) then
-               write(error_unit, *) "elementIds not found for material association."
-            end if
-            if (size(elementIds) /= 1) then
-               write(error_unit, *) "Thin wires must be defined by a single polyline element."
-            end if
-            polyline = this%mesh%getPolyline(elementIds(1))
+            
+            polyline = this%mesh%getPolyline(cable%elementIds(1))
             linels = this%mesh%polylineToLinels(polyline)
 
-            write(tagLabel, '(i10)') elementIds(1)
+            write(tagLabel, '(i10)') cable%elementIds(1)
 
-            genDesc = readGeneratorOnThinWire(linels, elementIds)
+            genDesc = readGeneratorOnThinWire(linels, cable%elementIds)
 
             res%n_twc = size(linels)
             res%n_twc_max = size(linels)
@@ -1720,35 +1720,22 @@ contains
          end select
       end function
 
-      logical function isThinWire(cable)
-         type(json_value), pointer :: cable
+      logical function isThinWire(mA)
+         type(materialAssociation_t) :: mA
          type(json_value_ptr) :: mat
-         integer, dimension(:), allocatable :: eIds
+         type(polyline_t) :: pl
          logical :: found
          isThinWire = .false.
 
-         mat = this%matTable%getId(this%getIntAt(cable, J_MATERIAL_ID, found=found))
-         if (.not. found) return
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_WIRE) return
+         if (size(mA%elementIds) /= 1) then
+            write(error_unit, *) "ERROR: Thin wires must be defined by a single element id."
+         end if
 
-         mat = this%matTable%getId(this%getIntAt(cable, J_MAT_ASS_CAB_INI_TERM_ID, found=found))
-         if (.not. found) return
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_TERMINAL) return
-
-         mat = this%matTable%getId(this%getIntAt(cable, J_MAT_ASS_CAB_END_TERM_ID, found=found))
-         if (.not. found) return
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_TERMINAL) return
-
-         eIds = this%getIntsAt(cable, J_ELEMENTIDS, found=found)
-         if (.not. found) return
-         if (size(eIds) /= 1) return
-
-         block
-            type(polyline_t) :: pl
-            pl = this%mesh%getPolyline(eIds(1))
-            if (.not. this%mesh%arePolylineSegmentsStructured(pl)) return
-         end block
-
+         pl = this%mesh%getPolyline(mA%elementIds(1))
+         if (.not. this%mesh%arePolylineSegmentsStructured(pl)) then
+            write(error_unit, *) "ERROR: Thin wires must be defined by a structured polyline."
+         end if
+      
          isThinWire = .true.
       end function
    end function
@@ -1853,21 +1840,30 @@ contains
    function parseMaterialAssociation(this, matAss) result(res)
       class(parser_t) :: this
       type(json_value), pointer, intent(in) :: matAss
+      type(json_value_ptr) :: mat
       type(materialAssociation_t) :: res
       character (len=*), parameter :: errorMsgInit = "ERROR reading material association: "
       logical :: found
+      logical :: isMultiwire, isWireOrMultiwire
       
       ! Fills material association.
       res%materialId = this%getIntAt(matAss, J_MATERIAL_ID, found)
       if (.not. found) call showLabelNotFoundError(J_MATERIAL_ID)
+      
       res%elementIds = this%getIntsAt(matAss, J_ELEMENTIDS, found)
       if (.not. found) call showLabelNotFoundError(J_ELEMENTIDS)
-      res%matAssType = this%getStrAt(matAss, J_TYPE, found)
-      if (.not. found) call showLabelNotFoundError(J_TYPE)
+      
       res%name = this%getStrAt(matAss, J_NAME, found)
       if (.not. found) then
          res%name = ""
       end if
+
+      res%initialTerminalId  = this%getIntAt(matAss, J_MAT_ASS_CAB_INI_TERM_ID, default=-1)
+      res%endTerminalId      = this%getIntAt(matAss, J_MAT_ASS_CAB_END_TERM_ID, default=-1)
+      res%initialConnectorId = this%getIntAt(matAss, J_MAT_ASS_CAB_INI_CONN_ID, default=-1)
+      res%endConnectorId     = this%getIntAt(matAss, J_MAT_ASS_CAB_END_CONN_ID, default=-1)
+      res%containedWithinElementId = &
+                  this%getIntAt(matAss, J_MAT_ASS_CAB_CONTAINED_WITHIN_ID, default=-1)
 
       ! Checks validity of associations.
       if (this%matTable%checkId(res%materialId) /= 0) then
@@ -1886,28 +1882,70 @@ contains
          end do
       end block
 
-      ! This function does not work with material associations for cables. 
-      ! DO NOT use it to read that.
-      if (res%matAssType == J_MAT_ASS_TYPE_CABLE) then
-         write(error_unit, *) errorMsgInit, "invalid type."
-      endif
+      mat = this%matTable%getId(res%materialId)
+      isMultiwire = this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE
+      isWireOrMultiwire = &
+         this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE .or. isMultiwire 
+      
+      if (isWireOrMultiwire) then
+         if (res%initialTerminalId == -1 .or. res%endTerminalId == -1) then
+            write(error_unit, *), errorMsgInit, "wire associations must include terminals."
+         end if
+         if (.not. isMaterialIdOfType(res%initialTerminalId, J_MAT_TYPE_TERMINAL)) then
+            write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
+         end if
+         if (.not. isMaterialIdOfType(res%endTerminalId, J_MAT_TYPE_TERMINAL)) then
+            write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
+         end if
+         if (res%initialConnectorId /= -1) then
+            if (.not. isMaterialIdOfType(res%initialConnectorId, J_MAT_TYPE_CONNECTOR)) then
+               write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
+            end if
+         end if 
+         if (res%endConnectorId /= -1) then
+            if (.not. isMaterialIdOfType(res%endConnectorId, J_MAT_TYPE_CONNECTOR)) then
+               write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
+            end if
+         end if
+      end if
+      if (isMultiwire) then
+         ! Not defininign a containedWithinElementId is an error if the simulation is a 3D-FDTD one. 
+         ! For pure MTLN mode it is not an error.
+         ! if (res%containedWithinElementId == -1) then
+         !    write(error_unit, *) errorMsgInit, "multiwire associations must include: ", J_MAT_ASS_CAB_CONTAINED_WITHIN_ID
+         ! end if
+         if (this%mesh%checkElementId(res%containedWithinElementId) /= 0) then
+            write(error_unit, *) errorMsgInit, "element with id ", res%containedWithinElementId, " not found."
+         end if
+      end if
       
    contains 
+      logical function isMaterialIdOfType(matId, matType)
+         integer, intent(in) :: matId
+         character (len=*), intent(in) :: matType
+         type(json_value_ptr) :: mat
+         logical :: materialFound
+         if (this%matTable%checkId(matId) /= 0) then
+            write(error_unit, *) "Material with id ", matId, " not found."
+         end if
+         mat = this%matTable%getId(matId)
+         isMaterialIdOfType = this%getStrAt(mat%p, J_TYPE) == matType
+      end function
+      
       subroutine showLabelNotFoundError(label)
          character (len=*), intent(in) :: label
          
       end subroutine
    end function
 
-   function getMaterialAssociations(this, matAssType, materialType) result(res)
+   function getMaterialAssociations(this, materialTypes) result(res)
       class(parser_t) :: this
-      type(json_value), pointer :: allMatAss
-      character(len=*), intent(in) :: matAssType
-      character(len=*), intent(in) :: materialType
+      character(len=*), intent(in) :: materialTypes(:)
       type(materialAssociation_t), dimension(:), allocatable :: res
+      type(json_value), pointer :: allMatAss
       
-      type(json_value_ptr), dimension(:), allocatable :: mAPtrs
-      integer :: i, j
+      type(json_value), pointer :: mAPtr
+      integer :: i, j, k
       integer :: nMaterials
       logical :: found
 
@@ -1917,27 +1955,26 @@ contains
          return
       end if
 
-      mAPtrs = this%jsonValueFilterByKeyValue(allMatAss, J_TYPE, matAssType)
-      if (size(mAPtrs) == 0) then
-         allocate(res(0))
-         return
-      end if
-      
-
       nMaterials = 0
-      do i = 1, size(mAPtrs)
-         if (isAssociatedWithMaterial(mAPtrs(i)%p, materialType)) then
-            nMaterials = nMaterials + 1
-         end if
+      do i = 1, this%core%count(allMatAss)
+         call this%core%get_child(allMatAss, i, mAPtr)
+         do j = 1, size(materialTypes)
+            if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(j)))) then
+               nMaterials = nMaterials + 1
+            end if
+         end do
       end do
 
       allocate(res(nMaterials))
       j = 1
-      do i = 1, size(mAPtrs)
-         if (isAssociatedWithMaterial(mAPtrs(i)%p, materialType)) then
-            res(j) = this%parseMaterialAssociation(mAPtrs(i))
-            j = j+1
-         end if
+      do i = 1, this%core%count(allMatAss)
+         call this%core%get_child(allMatAss, i, mAPtr)
+         do k = 1, size(materialTypes)
+            if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(k)))) then
+               res(j) = this%parseMaterialAssociation(mAPtr)
+               j = j+1
+            end if
+         end do
       end do
 
    contains 
@@ -2020,65 +2057,68 @@ contains
       type(Desplazamiento), intent(in) :: grid
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
-      type(json_value_ptr), dimension(:), allocatable :: cables
+      type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, cables
 
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
-      cables = readCables()
+      wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
+      multiwires = this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE])
+      cables = this%getMaterialAssociations(&
+               [J_MAT_TYPE_WIRE//'     ',&
+                J_MAT_TYPE_MULTIWIRE    ]) 
+      ! 5 spaces are needed to make strings have same length. 
+      ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
 
-      if (countNumberOfMultiwires(cables) /= 0) mtln_res%has_multiwires = .true.
+      if (size(multiwires) /= 0) mtln_res%has_multiwires = .true.
 
-      allocate (mtln_res%cables(countNumberOfWires(cables) + countNumberOfMultiwires(cables)))
+      allocate (mtln_res%cables(size(wires) + size(multiwires)))
       block
          logical :: is_read
          integer :: i, j, ncc
          type(cable_t) :: read_cable
-         if (size(cables) /= 0) then
-            ncc = 0
-            do i = 1, size(cables)
-               if (isWire(cables(i)%p) .or. isMultiwire(cables(i)%p)) then
-                  is_read = .true.
-                  read_cable = readMTLNCable(cables(i)%p, is_read)
-                  if (.not. isCableNameUnique(read_cable, mtln_res%cables, ncc)) then
-                     error stop 'Cable name "'//read_cable%name//'" has already been used'
-                  end if
-                  ncc = ncc + 1
-                  mtln_res%cables(ncc) = read_cable
-                  call addElemIdToCableMap(elemIdToCable, getCableElemIds(cables(i)%p), ncc)
-                  call addElemIdToPositionMap(elemIdToPosition, cables(i)%p)
-               end if
-            end do
-         end if
+         ncc = 0
+         do i = 1, size(cables)
+            is_read = .true.
+            read_cable = readMTLNCable(cables(i), is_read)
+            if (.not. isCableNameUnique(read_cable, mtln_res%cables, ncc)) then
+               error stop 'Cable name "'//read_cable%name//'" has already been used'
+            end if
+            ncc = ncc + 1
+            mtln_res%cables(ncc) = read_cable
+            call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, ncc)
+            call addElemIdToPositionMap(elemIdToPosition, cables(i)%elementIds)
+         end do
       end block
 
       block
          integer :: i, j, parentId, index
+         type(json_value_ptr) :: mat
          j = 1
-         if (size(cables) /= 0) then
-            do i = 1, size(cables)
-               if (isMultiwire(cables(i)%p)) then
-                  parentId = this%getIntAt(cables(i)%p, J_MAT_ASS_CAB_CONTAINED_WITHIN_ID, default=0)
-                  if (parentId == 0) then
-                     mtln_res%cables(j)%parent_cable => null()
-                     mtln_res%cables(j)%conductor_in_parent = 0
-                  else 
-                     call elemIdToCable%get(key(parentId), value=index)
-                     mtln_res%cables(j)%parent_cable => mtln_res%cables(index)
-                     mtln_res%cables(j)%conductor_in_parent = getParentPositionInMultiwire(parentId)
-                  end if
-               else if (isWire(cables(i)%p)) then
+         do i = 1, size(cables)
+            mat = this%matTable%getId(cables(i)%materialId)
+            if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
+               parentId = cables(i)%containedWithinElementId
+               if (parentId == -1) then
                   mtln_res%cables(j)%parent_cable => null()
                   mtln_res%cables(j)%conductor_in_parent = 0
+               else 
+                  call elemIdToCable%get(key(parentId), value=index)
+                  mtln_res%cables(j)%parent_cable => mtln_res%cables(index)
+                  mtln_res%cables(j)%conductor_in_parent = getParentPositionInMultiwire(parentId)
                end if
-               j = j + 1
-            end do
-         end if
+            else if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
+               mtln_res%cables(j)%parent_cable => null()
+               mtln_res%cables(j)%conductor_in_parent = 0
+            else
+               write(error_unit, *) 'ERROR: Material type not recognized'
+            end if
+            j = j + 1
+         end do
       end block
-
 
       mtln_res%probes = readWireProbes()
       mtln_res%networks = buildNetworks()
@@ -2129,37 +2169,6 @@ contains
 
       end function
 
-      function countNumberOfMultiwires(cables) result (res)
-         type(json_value_ptr), dimension(:), intent(in) :: cables
-         type(json_value_ptr) :: material
-         integer :: i
-         integer :: res
-         res = 0
-         if (size(cables) /= 0) then
-            do i = 1, size(cables)
-               if (isMultiwire(cables(i)%p)) then
-                  res = res + 1
-               end if
-            end do
-         end if
-      end function
-
-      function countNumberOfWires(cables) result (res)
-         type(json_value_ptr), dimension(:), intent(in) :: cables
-         type(json_value_ptr) :: material
-         integer :: i
-         integer :: res
-         res = 0
-         if (size(cables) /= 0) then
-            do i = 1, size(cables)
-               if (isWire(cables(i)%p)) then
-                  material = this%matTable%getId(this%getIntAt(cables(i)%p, J_MATERIAL_ID))
-                  res = res + 1
-               end if
-            end do
-         end if
-      end function
-
       function findMaxElemId(cables) result(res)
          type(json_value_ptr), dimension(:), intent(in) :: cables
          integer :: i, m
@@ -2180,37 +2189,25 @@ contains
 
       end function
 
-      function readCables() result(res)
-         type(json_value), pointer :: matAss
-         type(json_value_ptr), dimension(:), allocatable :: res
-         if (this%existsAt(this%root,  J_MATERIAL_ASSOCIATIONS)) then
-            call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, matAss)
-            res = this%jsonValueFilterByKeyValue(matAss, J_TYPE, J_MAT_ASS_TYPE_CABLE)
-         else
-            allocate(res(0))
-         end if
-      end function
-
-
       function buildNetworks() result(res)
          type(terminal_network_t), dimension(:), allocatable :: res
          type(aux_node_t), dimension(:), allocatable :: aux_nodes
-         type(json_value_ptr), dimension(:), allocatable :: cables
          integer :: i,j
          integer, dimension(:), allocatable :: elemIds
          type(json_value), pointer :: terminations_ini, terminations_end
          type(coordinate_t), dimension(:), allocatable :: networks_coordinates
          type(subcircuit_t), dimension(:), allocatable :: subcircuits
-
+         type(materialAssociation_t), dimension(:), allocatable :: cables
          subcircuits = readSubcircuits()
          
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
-         cables = readCables()
+         cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
+                     this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE]) ]
          do i = 1, size(cables)
-            elemIds = getCableElemIds(cables(i)%p)
-            terminations_ini => getTerminationsOnSide(cables(i)%p, J_MAT_ASS_CAB_INI_TERM_ID)
-            terminations_end => getTerminationsOnSide(cables(i)%p, J_MAT_ASS_CAB_END_TERM_ID)
+            elemIds = cables(i)%elementIds
+            terminations_ini => getTerminationsOnSide(cables(i)%initialTerminalId)
+            terminations_end => getTerminationsOnSide(cables(i)%endTerminalId)
             do j = 1, size(elemIds)
                aux_nodes = [aux_nodes, buildNode(terminations_ini, TERMINAL_NODE_SIDE_INI, j, elemIds(j))]
                aux_nodes = [aux_nodes, buildNode(terminations_end, TERMINAL_NODE_SIDE_END, j, elemIds(j))]
@@ -2396,18 +2393,17 @@ contains
 
       end subroutine
 
-      function getTerminationsOnSide(cable, label) result(res)
-         type(json_value), pointer :: cable
-         character(*), intent(in) :: label
+      function getTerminationsOnSide(terminationId) result(res)
+         integer, intent(in) :: terminationId
          type(json_value_ptr) :: terminal
          type(json_value), pointer :: res
 
-         if (.not. this%existsAt(cable, label)) then
+         if (terminationId == -1) then
             write(error_unit, *) 'Error: missing terminal on cable side'
             res => null()
             return
          end if
-         terminal = this%matTable%getId(this%getIntAt(cable, label))
+         terminal = this%matTable%getId(terminationId)
          if (.not. this%existsAt(terminal%p, J_MAT_TERM_TERMINATIONS)) then
             write(error_unit, *) 'Error: missing terminations on terminal'
             res => null()
@@ -2751,13 +2747,11 @@ contains
          end select
       end function
 
-      function findConnectorWithId(j_cable, side) result(res)
-         type(json_value), pointer :: j_cable
-         character(*), intent(in) :: side
-         integer :: conn_id, conn_index
+      function findConnectorWithId(conn_Id) result(res)
+         integer, intent(in) :: conn_id
+         integer :: conn_index
          type(connector_t), pointer :: res
-         if (this%existsAt(j_cable, side)) then
-            conn_id = this%getIntAt(j_cable, side)
+         if (conn_id /= -1) then
             call connIdToConnector%get(key(conn_id), conn_index)
             res => mtln_res%connectors(conn_index)
          else
@@ -2822,12 +2816,10 @@ contains
          end do
       end subroutine
 
-      subroutine addElemIdToPositionMap(map, j_cable)
+      subroutine addElemIdToPositionMap(map, elemIds)
          type(fhash_tbl_t), intent(inout) :: map
-         type(json_value), pointer :: j_cable
-         integer, dimension(:), allocatable :: elemIds
+         integer, dimension(:), allocatable, intent(in) :: elemIds
          integer :: i
-         elemIds = getCableElemIds(j_cable)
          do i = 1, size(elemIds)
             call map%set(key(elemIds(i)), i)
          end do
@@ -2846,27 +2838,22 @@ contains
 
 
       function readMTLNCable(j_cable, is_read) result(res)
-         type(json_value), pointer :: j_cable
+         type(materialAssociation_t), intent(in) :: j_cable
          type(cable_t) :: res
          type(json_value_ptr) :: material
          logical, intent(inout) :: is_read
          integer :: nConductors
          logical :: found
+         character(:), allocatable :: materialType
 
-         if (this%existsAt(j_cable,J_NAME)) then
-            res%name = trim(adjustl(this%getStrAt(j_cable,J_NAME)))
-         else
-            res%name  = ""
-         end if
+         res%name = j_cable%name
 
          res%step_size = buildStepSize(j_cable)
          res%external_field_segments = mapSegmentsToGridCoordinates(j_cable)
 
-         material = this%matTable%getId(this%getIntAt(j_cable, J_MATERIAL_ID, found))
-         if (.not. found) &
-            write(error_unit, *) "Error reading material region: materialId label not found."
-
-         if (isWire(j_cable)) then
+         material = this%matTable%getId(j_cable%materialId)
+         materialType = this%getStrAt(material%p, J_TYPE)
+         if (materialType == J_MAT_TYPE_WIRE) then
             call assignReferenceProperties(res, material)
             call assignExternalRadius(res, material)
             if (this%existsAt(material%p, J_MAT_WIRE_DIELECTRIC)) then
@@ -2877,16 +2864,14 @@ contains
                res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
             end if
 
-         else if (isMultiwire(j_cable)) then
-            call assignPULProperties(res, material, size(getCableElemIds(j_cable)))
+         else if (materialType == J_MAT_TYPE_MULTIWIRE) then
+            call assignPULProperties(res, material, size(j_cable%elementIds))
          else
             write(error_unit, *) "Error reading cable: is neither wire nor multiwire"
          end if
 
-
-
-         res%initial_connector => findConnectorWithId(j_cable, J_MAT_ASS_CAB_INI_CONN_ID)
-         res%end_connector => findConnectorWithId(j_cable, J_MAT_ASS_CAB_END_CONN_ID)
+         res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
+         res%end_connector => findConnectorWithId(j_cable%endConnectorId)
          res%transfer_impedance = buildTransferImpedance(material)
 
 
@@ -3045,12 +3030,12 @@ contains
       end subroutine
 
       function mapSegmentsToGridCoordinates(j_cable) result(res)
-         type(json_value), pointer :: j_cable
+         type(materialAssociation_t), intent(in) :: j_cable
          type(external_field_segment_t), dimension(:), allocatable :: res
          integer, dimension(:), allocatable :: elemIds
          type(polyline_t) :: p_line
 
-         elemIds = getCableElemIds(j_cable)
+         elemIds = j_cable%elementIds
          if (size(elemIds) == 0) return
 
          p_line = this%mesh%getPolyline(elemIds(1))
@@ -3110,7 +3095,7 @@ contains
       end function
 
       function buildStepSize(j_cable) result(res)
-         type(json_value), pointer :: j_cable
+         type(materialAssociation_t), intent(in) :: j_cable
          real, dimension(:), allocatable :: res
          integer, dimension(:), allocatable :: elemIds
          type(polyline_t) :: p_line
@@ -3118,7 +3103,7 @@ contains
 
          desp = this%readGrid()
 
-         elemIds = getCableElemIds(j_cable)
+         elemIds = j_cable%elementIds
          if (size(elemIds) == 0) return
 
          p_line = this%mesh%getPolyline(elemIds(1))
@@ -3254,66 +3239,6 @@ contains
          end do
       end function
 
-      logical function isMultiwire(cable)
-         type(json_value), pointer :: cable
-         type(json_value_ptr) :: mat
-         integer, dimension(:), allocatable :: eIds
-         logical :: found
-
-         isMultiwire = .false.
-
-         ! materialId is multiwire
-         mat = this%matTable%getId(this%getIntAt(cable, J_MATERIAL_ID, found=found))
-         if (.not. found) return
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_MULTIWIRE) return
-
-         ! has terminal on initial side
-         mat = this%matTable%getId(this%getIntAt(cable, J_MAT_ASS_CAB_INI_TERM_ID, found=found))
-         if (.not. found) return
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_TERMINAL) return
-
-         ! has terminal on end side
-         mat = this%matTable%getId(this%getIntAt(cable, J_MAT_ASS_CAB_END_TERM_ID, found=found))
-         if (.not. found) return
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_TERMINAL) return
-
-         ! has elementIds
-         eIds = this%getIntsAt(cable, J_ELEMENTIDS, found=found)
-         if (.not. found) return
-
-         isMultiwire = .true.
-
-      end function
-
-      logical function isWire(cable)
-         type(json_value), pointer :: cable
-         type(json_value_ptr) :: mat
-         integer, dimension(:), allocatable :: eIds
-         logical :: found
-         isWire = .false.
-
-         ! materialId is wire
-         mat = this%matTable%getId(this%getIntAt(cable, J_MATERIAL_ID, found=found))
-         if (.not. found) return
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_WIRE) return
-
-         ! has terminal on initial side
-         mat = this%matTable%getId(this%getIntAt(cable, J_MAT_ASS_CAB_INI_TERM_ID, found=found))
-         if (.not. found) return
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_TERMINAL) return
-
-         ! has terminal on end side
-         mat = this%matTable%getId(this%getIntAt(cable, J_MAT_ASS_CAB_END_TERM_ID, found=found))
-         if (.not. found) return
-         if (this%getStrAt(mat%p, J_TYPE) /= J_MAT_TYPE_TERMINAL) return
-
-         ! has elementIds
-         eIds = this%getIntsAt(cable, J_ELEMENTIDS, found=found)
-         if (.not. found) return
-
-         isWire = .true.
-
-      end function
 
    end function
 #endif
