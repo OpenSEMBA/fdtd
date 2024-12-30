@@ -17,3 +17,5 @@ target_link_libraries(hdf_tests
     hdf_test_fortran
     GTest::gtest
 )
+
+include_directories(${HDF5_INCLUDE_DIRS})

@@ -129,7 +129,9 @@ def test_sphere(tmp_path):
     assert len(electric_field_movie_files) == 3
     p = Probe(electric_field_movie_files[0])
     assert p.type == 'movie'
-
+   
+@no_hdf_skip
+@pytest.mark.hdf 
 def test_movie_in_planewave_in_box(tmp_path):    
     fn = CASE_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
