@@ -9,6 +9,12 @@ jobs:
   
   builds-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix: 
+        build-type: ["Release"]
+        mpi: ["No"]
+        mtln: ["Yes"]
+        hdf: ["Yes"]
 
     steps:       
     - name: Checkout
@@ -24,9 +30,13 @@ jobs:
         sudo apt update
         sudo apt install libhdf5-dev libopenmpi-dev
         
-    - name: Build application
-      run: |       
-        cmake -S . -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+    - name: CMake build
+      run: |
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
+          -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
+          -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
         cmake --build build -j
       
     - name: Run fdtd unit tests 
@@ -34,12 +44,10 @@ jobs:
         build/bin/fdtd_tests
 
     - name: Install python wrapper requirements
-      timeout-minutes: 60
       run: |
         python -m pip install -r requirements.txt
 
     - name: Run wrapper tests
-      timeout-minutes: 60
       run: |
         python -m pytest test
 
