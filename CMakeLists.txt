@@ -60,8 +60,6 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp")
 			endif()
 		endif()
-
-
 	else()
 		message(FATAL_ERROR "Unrecognized system name")
 	endif()
