@@ -17,6 +17,8 @@ class Probe():
         return np.array([int(pos[0]), int(pos[1]), int(pos[2])])
     
     def __init__(self, probe_filename):
+        # This initializatoin tries to infer all probe properties from the filename.
+        
         self.filename = probe_filename
 
         mtln_probe_tags = ['_V_','_I_']
@@ -32,9 +34,19 @@ class Probe():
             + movie_tags 
       
         basename = os.path.basename(self.filename)
-        self.case_name, basename_with_no_case_name = basename.split('.fdtd_')
+        if '.fdtd_' in basename:
+            self.case_name, basename_with_no_case_name = basename.split('.fdtd_')
+        else:
+            for tag in all_tags:
+                if tag in basename:
+                    self.case_name, basename_with_no_case_name = basename.split(tag)
+                    break           
         basename_with_no_case_name = os.path.splitext(basename_with_no_case_name)[0]
         
+        if '_df.' in basename:
+            self.domainType = 'time'
+        else:
+            self.domainType = 'frequency'    
         
         for tag in all_tags:
             ids = [m.start() for m in re.finditer(tag, basename_with_no_case_name)]
@@ -47,7 +59,13 @@ class Probe():
                     self.cell = self._positionStrToCell(position_str)
                     self.segment_tag = int(position_str.split('_s')[1])
                     self.df = pd.read_csv(self.filename, sep='\s+')
-                    self.df = self.df.rename(columns={'t': 'time', self.df.columns[1]: 'current'})
+                    if self.domainType == 'time':
+                        self.df = self.df.rename(columns={self.df.columns[1]: 'current'})
+                    elif self.domainType == 'frequency':
+                        self.df = self.df.rename( columns={\
+                            self.df.columns[1]: 'magnitude', \
+                            self.df.columns[2]: 'phase'}, \
+                            )   
                 elif tag in point_probe_tags:
                     self.type = 'point'
                     self.name, position_str = basename_with_no_case_name.split(tag)
@@ -56,7 +74,6 @@ class Probe():
                     self.direction = tag[2]                       
                     self.df = pd.read_csv(self.filename, sep='\s+')
                     self.df = self.df.rename(columns = {
-                        't': 'time', 
                         self.df.columns[1]: 'field',
                         self.df.columns[2]: 'incident'
                     })
