@@ -32,12 +32,14 @@ class Probe():
         self.domainType = self._getDomainTypeFromFilename(probe_filename)
         
         tag = self._getTagFromFilename(probe_filename)
+        if tag not in Probe.MOVIE_TAGS:
+            self.df = pd.read_csv(self.filename, sep='\\s+')
+        
         position_str = self._getPositionStrFromFilename(probe_filename)
         if tag in Probe.CURRENT_PROBE_TAGS:
             self.type = 'wire'
             self.cell = self._positionStrToCell(position_str)
             self.segment = int(position_str.split('_s')[1])
-            self.df = pd.read_csv(self.filename, sep='\s+')
             if self.domainType == 'time':
                 self.df = self.df.rename(columns={\
                     't': 'time',
@@ -54,7 +56,6 @@ class Probe():
             self.cell = self._positionStrToCell(position_str)
             self.field = tag[1]
             self.direction = tag[2]                       
-            self.df = pd.read_csv(self.filename, sep='\s+')
             if self.domainType == 'time':
                 self.df = self.df.rename(columns = {
                     't': 'time',
@@ -66,7 +67,6 @@ class Probe():
             init_str, end_str = position_str.split('__')
             self.cell_init = self._positionStrToCell(init_str)
             self.cell_end  = self._positionStrToCell(end_str)
-            self.df = pd.read_csv(self.filename, sep='\s+')
         elif tag in Probe.MOVIE_TAGS:
             self.type = 'movie'
             init_str, end_str = position_str.split('__')
@@ -75,7 +75,6 @@ class Probe():
         elif tag in Probe.MTLN_PROBE_TAGS:
             self.type ='mtln'
             self.cell = self._positionStrToCell(position_str)
-            self.df = pd.read_csv(self.filename, sep='\s+')
         else:
             raise ValueError("Unable to determine probe name or type for a probe with name:" + basename)
     
