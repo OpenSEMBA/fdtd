@@ -112,6 +112,8 @@ class Probe():
     def _getPositionStrFromFilename(fn):
         bn_no_ext = os.path.splitext(os.path.basename(fn))[0]
         tag = Probe._getTagFromFilename(fn)
+        if '_df' in bn_no_ext:
+            bn_no_ext = bn_no_ext.replace('_df', '')
         position_str = bn_no_ext.split(tag)[1]
         return position_str
     
