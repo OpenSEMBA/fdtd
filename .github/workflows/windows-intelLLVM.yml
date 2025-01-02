@@ -69,11 +69,12 @@ jobs:
           -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
         cmake --build build -j 
 
-    - name: Run fdtd unit tests
-      run: |
-        build/bin/fdtd_tests.exe      
+    - name: Run unit tests 
+      run: build/bin/fdtd_tests.exe
 
-    - name: Run all wrapper tests (except codemodel)
-      if: matrix.mtln=='Yes'
+    - name: Run python tests (except codemodel)
+      env:
+        SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
+        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest -m 'not codemodel' test/
         

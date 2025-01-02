@@ -4,12 +4,15 @@ integer function test_parser_ctor() bind(C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/planewave.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
    type(parser_t) :: parser
-   err = 0
-
+   
    parser = parser_t(filename)
-
+   if (parser%isInitialized) then
+      err = 0
+   else 
+      err = 1
+   end if
 end function
 
 integer function test_parser_tools_interval_to_coords() result(err)
