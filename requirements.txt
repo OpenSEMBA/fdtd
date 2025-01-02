@@ -1,6 +1,8 @@
 pytest
+scipy
 numpy
 matplotlib
 pandas
 pyvista
 h5py
+scikit-rf
