@@ -1,6 +1,4 @@
 from utils import *
-import pytest
-
 
 @no_mtln_skip
 @pytest.mark.mtln

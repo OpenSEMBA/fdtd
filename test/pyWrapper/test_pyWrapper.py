@@ -1,5 +1,6 @@
 from utils import *
 
+
 def test_read_wire_probe():
     p = Probe(OUTPUTS_FOLDER + 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
 
@@ -81,4 +82,16 @@ def test_fdtd_clean_up_after_run(tmp_path):
     assert os.path.isfile(pn[0])
 
     solver.cleanUp()
+
     assert not os.path.isfile(pn[0])
+
+
+def test_fdtd_get_used_files():
+    fn = CASES_FOLDER + 'multilines_opamp/multilines_opamp.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE)
+
+    used_files = solver.getUsedFiles()
+
+    assert len(used_files) == 2
+    assert used_files[0] == 'spice_4port_pulse_start_75.exc'
+    assert used_files[1] == 'opamp.model'

@@ -1,5 +1,4 @@
 from utils import *
-import pytest
 
 
 def test_holland_case_checking_number_of_outputs(tmp_path):
