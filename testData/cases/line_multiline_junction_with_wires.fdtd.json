@@ -133,7 +133,6 @@
 	"materialAssociations": [
 		{
 			"name": "s1",
-			"type": "cable",
 			"elementIds": [ 1 ],
 			"materialId": 1,
 			"initialTerminalId": 4,
@@ -141,7 +140,6 @@
 		},
 		{
 			"name": "s2",
-			"type": "cable",
 			"elementIds": [ 2 ],
 			"materialId": 1,
 			"initialTerminalId": 3,
@@ -149,7 +147,6 @@
 		},
 		{
 			"name": "s3",
-			"type": "cable",
 			"elementIds": [ 3,4 ],
 			"materialId": 2,
 			"initialTerminalId": 5,
@@ -157,7 +154,6 @@
 		},
 		{
 			"name": "s4",
-			"type": "cable",
 			"elementIds": [ 5 ],
 			"materialId": 1,
 			"initialTerminalId": 6,
@@ -165,7 +161,6 @@
 		},
 		{
 			"name": "s5",
-			"type": "cable",
 			"elementIds": [ 6 ],
 			"materialId": 1,
 			"initialTerminalId": 6,
