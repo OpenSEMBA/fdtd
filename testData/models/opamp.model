@@ -1,6 +1,0 @@
-.SUBCKT opamp IN INV- OUT
-V1 IN 0 PULSE(0 1 0 1ns 100ns 1s 1s)
-R1 INV- IN 100
-R2 OUT INV- 1k
-E1 OUT 0 INV- 0 -1e6
-.ENDS opamp
