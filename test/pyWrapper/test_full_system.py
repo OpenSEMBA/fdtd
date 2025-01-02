@@ -162,3 +162,57 @@ def test_planewave_with_periodic_boundaries(tmp_path):
     zeros = np.zeros_like(before.df['field'])
     np.allclose(before.df['field'], zeros)
     np.allclose(after.df['field'], zeros)
+    
+def test_sgbc_shielding_effectiveness(tmp_path):
+    fn = CASE_FOLDER + 'sgbcShieldingEffectiveness/shieldingEffectiveness.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    
+    # FDTD results
+    back = Probe(solver.getSolvedProbeFilenames("back")[0])
+    
+    t = back.df['time']
+    dt = t[1] - t[0]
+    fq  = fftfreq(len(t))/dt
+    INC = fft(back.df['incident'])
+    BACK  = fft(back.df['field'])
+    S21 = BACK/INC
+    
+    fmin = 8e6
+    fmax = 1e9
+    idx_min = (np.abs(fq - fmin)).argmin()
+    idx_max = (np.abs(fq - fmax)).argmin()
+    f = fq[idx_min:idx_max]
+    fdtd_s21 = S21[idx_min:idx_max]
+    
+    # Analytical results
+    from skrf.media import Freespace
+    from skrf.frequency import Frequency
+    import scipy.constants
+
+    freq = Frequency.from_f(f, unit='Hz')
+    air =  Freespace(freq)
+
+    sigma = 100
+    width = 10e-3
+    mat_ep_r = (1+sigma/(1j*freq.w*scipy.constants.epsilon_0))
+    conductive_material = Freespace(freq, ep_r=mat_ep_r)
+
+    slab = air.thru() ** conductive_material.line(width, unit='m') ** air.thru()
+    
+    # For debugging only.
+    # plt.figure()
+    # plt.plot(f, 20*np.log10(np.abs(fdtd_s21)),'.-', label='FDTD S21')
+    # plt.plot(f, 20*np.log10(np.abs(slab.s[:,0,1])),'.-', label='Analytical S21')
+    # plt.grid(which='both')
+    # plt.xlim(f[0], f[-1])
+    # plt.xscale('log')
+    # plt.legend()
+    # plt.show()
+    
+    fdtd_s21_db = 20*np.log10(np.abs(fdtd_s21))
+    anal_s21_db = 20*np.log10(np.abs(slab.s[:,0,1]))
+    
+    assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
