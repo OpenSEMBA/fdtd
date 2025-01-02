@@ -4,19 +4,8 @@ import json
 import numpy as np
 import matplotlib.pyplot as plt
 import pyvista as pv
-import pytest
 from os import environ as env
 from sys import platform
-
-no_mtln_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "No",
-    reason="MTLN is not available",
-)
-
-no_hdf_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_HDF") == "No",
-    reason="HDF5 is not available",
-)
 
 # Use of absolute path to avoid conflicts when changing directory.
 if platform == "linux":

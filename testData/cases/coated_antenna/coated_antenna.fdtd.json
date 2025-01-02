@@ -64,14 +64,16 @@
 
     "materialAssociations": [
         { 
-                        "name" : "half_1",
+            "type": "cable",
+            "name" : "half_1",
             "materialId": 1,
             "initialTerminalId": 2,
             "endTerminalId": 3,
             "elementIds": [2]
         },
         { 
-                        "name" : "half_2",
+            "type": "cable",
+            "name" : "half_2",
             "materialId": 1,
             "initialTerminalId": 3,
             "endTerminalId": 2,

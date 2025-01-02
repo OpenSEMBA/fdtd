@@ -53,6 +53,7 @@
 
     "materialAssociations": [
         { 
+            "type": "cable",
             "name" : "single_wire",
             "materialId": 1,
             "initialTerminalId": 2,

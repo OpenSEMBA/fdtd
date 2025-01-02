@@ -244,7 +244,7 @@ This entry is an array formed by all the physical models contained in the simula
 
 ### Bulk materials
 
-### `pec` and `pmc`
+#### `pec` and `pmc`
 
 These materials represent a perfectly electrically conducting (`pec`) and perfectly magnetically conducting (`pmc`).
 
@@ -254,7 +254,7 @@ These materials represent a perfectly electrically conducting (`pec`) and perfec
 "materials": [ {"id": 1, "type": "pec"} ]
 ```
 
-### `isotropic`
+#### `isotropic`
 
 A `material` with `type` `isotropic` represents an isotropic material with constant (not frequency dependent) relative permittivity $\varepsilon_r$, relative permeability $\mu_r$, electric conductivity $\sigma$ and/or magnetic conductivity $\sigma_m$:
 
@@ -275,10 +275,13 @@ A `material` with `type` `isotropic` represents an isotropic material with const
 } 
 ```
 
-### `multilayeredSurface`
+### Surface materials
+
+In surface materials, `elementIds` must reference `cell` elements. All `intervals` modeling entities different to oriented surfaces are ignored.
+
+#### `multilayeredSurface`
 
 A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials which are described in the same way as [isotropic materials](#isotropic) and a `<thickness>`.
-Its `elementIds` must reference `cell` elements. All `intervals` modeling entities different to oriented surfaces are ignored.
 
 ```json
 {
@@ -293,7 +296,11 @@ Its `elementIds` must reference `cell` elements. All `intervals` modeling entiti
 }
 ```
 
-### `thinSlot`
+### Line materials
+
+In line materials, `elementIds` must reference `cell` elements. All `intervals` modeling entities different to lines are ignored.
+
+#### `thinSlot`
 
 A `thinSlot` represents a gap between two conductive surfaces. Therefore it must be located at a surface and be defined using line cell elements only. Its `<width>` is a real number which defines the distance between the surfaces in meters.
 
@@ -306,7 +313,9 @@ A `thinSlot` represents a gap between two conductive surfaces. Therefore it must
 }
 ```
 
-### `wire`
+### Cable materials
+
+#### `wire`
 
 A `wire`, or *thin wire*, represents an electrically conducting wire-like structure with a radius much smaller than the surrounding cell sizes. 
 These structures are solved by an algorithm similar to the one described in:
@@ -352,13 +361,13 @@ A single wire might be surrounded by a dielectric material. In that case, the ra
 ```
 If the `dielectric` field is present but any of `radius` or `relativePermittivity` is absent, the parsing of the dielectric will fail.
 
-### `multiwire`
+#### `multiwire`
 
 A `multiwire`, models $N+1$ electrical wires inside a bundled. The voltages and currents on these wires are solved by a multiconductor transmission lines (MTLN) solver described in:
 
     Paul, C. R. (2007). Analysis of multiconductor transmission lines. John Wiley & Sons.
 
-`multiwire` materials are assumed to be contained within a `wire` or another `multiwire` which is the external domain and is used as voltage reference. 
+`multiwire` materials are assumed to be contained within a `wire` or another `multiwire` (see the [cable](#cable) `materialAssociation`) which is the external domain and is used as voltage reference. 
 They must contain the following entries:
 
 + `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$.
@@ -374,6 +383,7 @@ If the number of wires of the `multiwire` is equal to 1, none of the properties 
 
 + `[resistiveTerm]` defined by a real representing transfer impedance resistance. Defaults to `0.0`
 + `[inductiveTerm]` defined by a real representing transfer impedance inductance. Defaults to `0.0`.
++ `[pole-residues]` TODO REVIEW
 + `[direction]` which can be `both`, `inwards`, or `outwards`. Indicating the type of coupling considered. Defaults to `both` meaning that fields can couple from the exterior to interior and the other way round.
 
 **Example:**
@@ -399,7 +409,7 @@ If the number of wires of the `multiwire` is equal to 1, none of the properties 
 }
 ```
 
-### `terminal`
+#### `terminal`
 
 A `terminal` models a lumped circuit which is assumed to located at one end of a `wire` or `multiwire`. Terminals are assumed to be assigned on points and therefore have zero dimension.
 
@@ -430,7 +440,7 @@ There is an optional key which is needed in case the termination is attached to 
     "termination": [ {"type": "series", "resistance": 50.0} ]
 }
 ```
-#### `SPICE terminations`
+##### `SPICE terminations`
 
 As with the rest of terminations, SPICE terminations have to be equivalents to 2-port networks, i.e, the model in `file` can be composed of an arbitrary number of components, but it must have only two external nodes. 
 
@@ -447,7 +457,7 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
 
 `ListOfComponents.lib` is a file where one or more SPICE subcircuits are defined. The file does not need to contain only the subcircuit that is going to be used in the termination. The particular subcircuit among those defined in the file is selected using the key `name`.
 
-### `connector`
+#### `connector`
 
 The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire` or a `multiwire`. 
 This `wire` can be either a single wire or the outermost conductor of a `cable` bundle. The `conector`  can have the following properties:
@@ -479,18 +489,42 @@ This entry stores associations between `materials` and `elements` using their re
 
 + `<materialId>`: A single integer indicating the `id` of a material which must be present in the `materials` list.
 + `<elementIds>`: A list of `id`s of the elements to which this material will be associated.
++ `<type>`: can be `bulk`, `surface`, or `cable`; described below.
 
+### `bulk`
 
-Material associations with bulk or surface materials such as `pec`, `pmc` or `isotropic` can be assigned to one or many elements of type `cell`. If the `cell` contains `intervals` representing points, these will be ignored.
+Bulk materials such as `pec`, `pmc` or `isotropic` can be assigned to one or many elements of type `cell`. If the `cell` contains `intervals` representing points, these will be ignored.
 
 ```json
 "materialAssociations": [
-    {"materialId": 1, "elementIds": [2]},
-    {"materialId": 1, "elementIds": [3]}
+    {"type": "bulk", "materialId": 1, "elementIds": [2]},
+    {"type": "bulk", "materialId": 1, "elementIds": [3]}
 ]
 ```
 
-Associations with cables can contain the following inputs:
+### `surface`
+
+Surface materials can only be assigned to elements of type `cell`. If the `cell` contains `intervals` representing entities different to oriented surfaces these will be ignored.
+
+```json
+"materialAssociations": [
+    {"type": "surface", "materialId": 1, "elementIds": [2]}
+]
+```
+
+### `line`
+
+Line materials can only be assigned to elements of type `cell`. If the `cell` contains `intervals` representing entities different to segments these will be ignored.
+
+```json
+"materialAssociations": [
+    {"type": "line", "materialId": 2, "elementIds": [4]}
+]
+```
+
+### `cable`
+
+This object establishes the relationship between the physical models described in a `material` and parts of the geometry. Besides a `type`, `materialId` and `elementIds`; a `cable` can contain the following inputs:
 
 + `<initialTerminalId>` and `<endTerminalId>` which must be present within the `materials` list of type. These entries indicate the lumped circuits connected at the ends of the cable.
 + `[initialConnectorId]` and `[endConnectorId]` entries which must point to materials of type `connector` and are assigned to the last segments of the corresponding ends of the cable.
@@ -501,6 +535,7 @@ Associations with cables can contain the following inputs:
 ```json
 {
     "name": "line_0_0",
+    "type": "cable",
     "elementIds": [ 1 ],
     "materialId": 10,
     "initialTerminalId": 20,

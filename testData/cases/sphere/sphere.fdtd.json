@@ -40903,7 +40903,8 @@
     ],
     "materialAssociations": [
         {
-                        "materialId": 1,
+            "type": "surface",
+            "materialId": 1,
             "elementIds": [
                 3
             ]

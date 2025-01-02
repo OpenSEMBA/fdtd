@@ -115,7 +115,8 @@
 	"materialAssociations": [
 		{
 			"name": "panel",
-						"elementIds": [ 1,2,3,4 ],
+			"type": "cable",
+			"elementIds": [ 1,2,3,4 ],
 			"materialId": 1,
 			"initialTerminalId": 2,
 			"endTerminalId": 2

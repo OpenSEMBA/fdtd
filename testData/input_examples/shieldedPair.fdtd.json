@@ -167,21 +167,24 @@
 	"materialAssociations": [
 		{
 			"name": "line_0",
-						"elementIds": [ 1 ],
+			"type": "cable",
+			"elementIds": [ 1 ],
 			"materialId": 2,
 			"initialTerminalId": 6,
 			"endTerminalId": 6
 		},
 		{
 			"name": "line_1",
-						"elementIds": [ 6,7 ],
+			"type": "cable",
+			"elementIds": [ 6,7 ],
 			"materialId": 1,
 			"initialTerminalId": 3,
 			"endTerminalId": 3,
 			"containedWithinElementId": 1
 		},
 		{
-						"materialId" : 5,
+			"type": "bulk",
+			"materialId" : 5,
 			"elementIds": [5]
 
 		}

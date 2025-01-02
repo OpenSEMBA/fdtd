@@ -79,6 +79,11 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MATERIAL_ID = "materialId"
    character (len=*), parameter :: J_MATERIAL_PASS = "materialId"
 
+   character (len=*), parameter :: J_MAT_ASS_TYPE_BULK = "bulk"
+   character (len=*), parameter :: J_MAT_ASS_TYPE_SURFACE = "surface"
+   character (len=*), parameter :: J_MAT_ASS_TYPE_LINE = "line"
+   character (len=*), parameter :: J_MAT_ASS_TYPE_CABLE = "cable"
+
    character (len=*), parameter :: J_MAT_ASS_CAB_INI_TERM_ID = "initialTerminalId"
    character (len=*), parameter :: J_MAT_ASS_CAB_END_TERM_ID = "endTerminalId"
    character (len=*), parameter :: J_MAT_ASS_CAB_INI_CONN_ID = "initialConnectorId"

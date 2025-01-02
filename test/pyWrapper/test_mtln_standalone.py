@@ -1,7 +1,6 @@
 from utils import *
 import pytest
 
-@no_mtln_skip
 @pytest.mark.mtln
 def test_paul_8_6_square(tmp_path):
     case = 'paul_8_6_square'
@@ -22,7 +21,6 @@ def test_paul_8_6_square(tmp_path):
 
     assert np.allclose(p_expected.df.to_numpy()[:,0:2], p_solved.df.to_numpy()[:,0:2], rtol = 0.01, atol=0.2)
 
-@no_mtln_skip
 @pytest.mark.mtln
 def test_paul_8_6_triangle(tmp_path):
     case = 'paul_8_6_triangle'
@@ -43,7 +41,6 @@ def test_paul_8_6_triangle(tmp_path):
 
     assert np.allclose(p_expected.df.to_numpy()[:,0:2], p_solved.df.to_numpy()[:,0:2], rtol = 0.01, atol=0.5)
 
-@no_mtln_skip
 @pytest.mark.mtln
 def test_paul_9_6(tmp_path):
     case = 'paul_9_6'
@@ -67,7 +64,6 @@ def test_paul_9_6(tmp_path):
     for i in range(2):
         assert np.allclose(p_expected[i].df.to_numpy()[:,:], p_solved[i].df.to_numpy()[:,:], rtol = 0.01, atol=0.5)
 
-@no_mtln_skip
 @pytest.mark.mtln
 def test_spice_multilines_opamp(tmp_path):
     case = 'multilines_opamp'
@@ -88,7 +84,6 @@ def test_spice_multilines_opamp(tmp_path):
 
     assert np.allclose(p_expected[0].df.to_numpy()[:-1,:], p_solved[0].df.to_numpy()[:-1,:], rtol = 0.01, atol=0.05e-3)
 
-@no_mtln_skip
 @pytest.mark.mtln
 def test_spice_connector_diode(tmp_path):
     case = 'spice_connectors'
@@ -113,7 +108,6 @@ def test_spice_connector_diode(tmp_path):
     for i in range(2):
         assert np.allclose(p_expected[i].df.to_numpy()[:-20,:], p_solved[i].df.to_numpy()[:-20,:], rtol = 0.01, atol=0.05e-3)
 
-@no_mtln_skip
 @pytest.mark.mtln    
 def test_line_multiline_junction(tmp_path):
     case = 'line_multiline_junction'
@@ -137,7 +131,6 @@ def test_line_multiline_junction(tmp_path):
     for i in range(3):
         assert np.allclose(p_expected[i].df.to_numpy()[:-20,:], Probe(probe_files[i]).df.to_numpy()[:-20,:], rtol = 0.01, atol=5e-3)
 
-@no_mtln_skip
 @pytest.mark.mtln    
 @pytest.mark.codemodel    
 def test_spice_opamp_saturation(tmp_path):
