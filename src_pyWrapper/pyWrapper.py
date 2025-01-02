@@ -24,13 +24,11 @@ class Probe():
         + FAR_FIELD_TAG \
         + MOVIE_TAGS
 
-    def __init__(self, probe_filename: str | os.PathLike[str]):
+    def __init__(self, probe_filename: str | os.PathLike):
         if isinstance(probe_filename, os.PathLike):
-            self.filename = str(probe_filename)
+            self.filename = probe_filename.as_posix()
         else:
             self.filename = probe_filename
-
-        self.filename = probe_filename
         assert os.path.isfile(self.filename)
 
         # This initialization tries to infer all probe properties from the filename.
