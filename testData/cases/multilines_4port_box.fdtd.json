@@ -137,16 +137,14 @@
 	"materialAssociations": [
 		{
 			"name": "s1",
-			"type": "cable",
-			"elementIds": [ 1,2 ],
+						"elementIds": [ 1,2 ],
 			"materialId": 1,
 			"initialTerminalId": 2,
 			"endTerminalId": 3
 		},
 		{
 			"name": "s2",
-			"type": "cable",
-			"elementIds": [ 3,4 ],
+						"elementIds": [ 3,4 ],
 			"materialId": 1,
 			"initialTerminalId": 4,
 			"endTerminalId": 2

@@ -69,16 +69,14 @@
 
     "materialAssociations": [
         { 
-            "type": "cable",
-            "name": "wire",
+                        "name": "wire",
             "materialId": 1,
             "initialTerminalId": 2,
             "endTerminalId": 3,
             "elementIds": [2]
         },
         { 
-            "type": "bulk",
-            "materialId" : 4,
+                        "materialId" : 4,
             "elementIds": [3]
         }
     ],

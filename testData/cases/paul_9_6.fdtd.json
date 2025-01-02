@@ -104,8 +104,7 @@
 	"materialAssociations": [
 		{
 			"name": "two_wires",
-			"type": "cable",
-			"elementIds": [ 1,2 ],
+						"elementIds": [ 1,2 ],
 			"materialId": 1,
 			"initialTerminalId": 2,
 			"endTerminalId": 3
