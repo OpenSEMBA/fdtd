@@ -58,7 +58,6 @@ module smbjson
       procedure, private :: readThinSlots
       !
       !
-      !
       procedure, private :: getLogicalAt
       procedure, private :: getIntAt
       procedure, private :: getIntsAt

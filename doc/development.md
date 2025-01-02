@@ -29,9 +29,9 @@ You can compile HDF5 for your specific platform downloading the latest sources f
 Extract to a folder and build and install with the following commands
 
 ```shell
-  cmake -S . -B build-ifx --fresh -DHDF5_BUILD_FORTRAN=YES
-  cmake --build build-ifx -j 
-  cmake --install build-ifx --prefix ~/hdf5-installed 
+  cmake -S . -B build -DHDF5_BUILD_FORTRAN=YES -DHDF5_ENABLE_Z_LIB_SUPPORT=NO --fresh
+  cmake --build build -j 
+  cmake --install build --prefix ~/hdf5-installed 
 ```
 
 A specific HDF5 library can be set with the option `-DHDF5_ROOT=<path-to-library>`, e.g.
@@ -143,6 +143,7 @@ Once the environment is loaded, follow the steps in the next section.
 
 2. **Generate the Project with CMake GUI**:
    - In **CMake GUI**, select the option to create a project for **Visual Studio 2019** from the CMake files.
+   - Set `-T fortran=ifx` to use intelLLVM compiler.
    - Specify the output folder where the `.sln` file for the project will be generated.
 
 3. **Open the Project in Visual Studio**:
