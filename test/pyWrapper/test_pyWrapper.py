@@ -1,9 +1,7 @@
 from utils import *
-import pytest
-
 
 def test_read_wire_probe():
-    p = Probe(OUTPUT_FOLDER + 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+    p = Probe(OUTPUTS_FOLDER + 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
 
     assert p.case_name == 'holland1981'
     assert p.name == 'mid_point'
@@ -22,13 +20,13 @@ def test_read_wire_probe():
 
 
 def test_read_probe_from_NFDE():
-    p = Probe(OUTPUT_FOLDER + 'fakeCurrentProbe_mid_point_Wz_11_11_11_s2.dat')
+    p = Probe(OUTPUTS_FOLDER + 'fakeCurrentProbe_mid_point_Wz_11_11_11_s2.dat')
 
     assert p.type == 'wire'
 
 
 def test_read_frequency_probe_from_NFDE():
-    p = Probe(OUTPUT_FOLDER + 'edelcadfixZ_COR2_log__Wz_21_21_28_s10_df.dat')
+    p = Probe(OUTPUTS_FOLDER + 'edelcadfixZ_COR2_log__Wz_21_21_28_s10_df.dat')
 
     assert p.type == 'wire'
     assert p.domainType == 'frequency'
@@ -37,7 +35,7 @@ def test_read_frequency_probe_from_NFDE():
 
 
 def test_read_point_probe():
-    p = Probe(OUTPUT_FOLDER + 'shieldingEffectiveness.fdtd_front_Ex_1_1_1.dat')
+    p = Probe(OUTPUTS_FOLDER + 'shieldingEffectiveness.fdtd_front_Ex_1_1_1.dat')
 
     assert p.case_name == 'shieldingEffectiveness'
     assert p.name == 'front'
@@ -61,20 +59,20 @@ def test_read_point_probe():
 
 
 def test_fdtd_set_new_folder_to_run(tmp_path):
-    input = os.path.join(CASE_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
+    input = os.path.join(CASES_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
-    solver.input['general']['numberOfSteps'] = 1
+    solver['general']['numberOfSteps'] = 1
 
     solver.run()
     assert solver.hasFinishedSuccessfully()
 
 
 def test_fdtd_clean_up_after_run(tmp_path):
-    input = CASE_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
-    solver.input['general']['numberOfSteps'] = 1
+    solver['general']['numberOfSteps'] = 1
 
     solver.run()
     assert solver.hasFinishedSuccessfully()

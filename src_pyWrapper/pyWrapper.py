@@ -22,20 +22,25 @@ class Probe():
         + FAR_FIELD_TAG \
         + MOVIE_TAGS 
        
-    def __init__(self, probe_filename):
-        assert os.path.isfile(probe_filename)
+    def __init__(self, probe_filename: str | os.PathLike[str]):
+        if isinstance(probe_filename, os.PathLike):
+            self.filename = str(probe_filename)
+        else:
+            self.filename = probe_filename
+
+        self.filename = probe_filename
+        assert os.path.isfile(self.filename)
         
         # This initialization tries to infer all probe properties from the filename.
-        self.filename = probe_filename
-        self.case_name = self._getCaseNameFromFilename(probe_filename)
-        self.name = self._getProbeNameFromFilename(probe_filename)
-        self.domainType = self._getDomainTypeFromFilename(probe_filename)
+        self.case_name = self._getCaseNameFromFilename(self.filename)
+        self.name = self._getProbeNameFromFilename(self.filename)
+        self.domainType = self._getDomainTypeFromFilename(self.filename)
         
-        tag = self._getTagFromFilename(probe_filename)
+        tag = self._getTagFromFilename(self.filename)
         if tag not in Probe.MOVIE_TAGS:
             self.df = pd.read_csv(self.filename, sep='\\s+')
         
-        position_str = self._getPositionStrFromFilename(probe_filename)
+        position_str = self._getPositionStrFromFilename(self.filename)
         if tag in Probe.CURRENT_PROBE_TAGS:
             self.type = 'wire'
             self.cell = self._positionStrToCell(position_str)
@@ -125,7 +130,7 @@ class Probe():
             return 'time'
     
     @staticmethod
-    def _positionStrToCell(pos_str):
+    def _positionStrToCell(pos_str: str):
         pos = pos_str.split('_')
         return np.array([int(pos[0]), int(pos[1]), int(pos[2])])
     
@@ -157,22 +162,28 @@ class FDTD():
     def getCaseName(self):
         return os.path.basename(self._filename).split('.json')[0]
     
-    def _setFilename(self, newFilename):
-        assert os.path.isfile(newFilename)
+    def __getitem__(self, key):
+        return self._input[key]
+    
+    def _setFilename(self, newFilename: str | os.PathLike[str]):
+        if isinstance(newFilename, os.PathLike):
+            self._filename = str(newFilename)
+        else:
+            self._filename = newFilename
         self._filename = newFilename       
-        self.input = json.load(open(self._filename))  
+        self._input = json.load(open(self._filename))  
         
-        
+
     def _getUsedFiles(self):
         res = []
         
-        if 'sources' in self.input:
-            for src in self.input['sources']:
+        if 'sources' in self._input:
+            for src in self._input['sources']:
                 if 'magnitudeFile' in src:
                     res.append(src['magnitudeFile'])
                     
-        if 'probes' in self.input:
-            for src in self.input['probes']:
+        if 'probes' in self._input:
+            for src in self._input['probes']:
                 if 'magnitudeFile' in src:
                     res.append(src['magnitudeFile'])
         return res
@@ -190,8 +201,8 @@ class FDTD():
         self._setFilename(newFilename)
     
     def run(self):
-        if self.input != json.load(open(self._filename, 'r')):
-            json.dump(self.input, open(self._filename,'w'))    
+        if self._input != json.load(open(self._filename, 'r')):
+            json.dump(self._input, open(self._filename,'w'))    
         
         os.chdir(self.getFolder())
         case_name = self.getCaseName() + ".json"
@@ -204,12 +215,8 @@ class FDTD():
         else:
             return False
     
-    def readJsonDict(self):
-        with open(self._filename) as input_file:
-            return json.load(input_file)
-        
     def __getitem__(self, key):
-        return self.input[key]
+        return self._input[key]
         
     def cleanUp(self):
         folder = self.getFolder()
@@ -220,8 +227,7 @@ class FDTD():
                 os.remove(file)
         
     def getSolvedProbeFilenames(self, probe_name):
-        input_json = self.readJsonDict()
-        if not "probes" in input_json:
+        if not "probes" in self._input:
             raise ValueError('Solver does not contain probes.')
         
         file_extensions = ('*.dat', '*.xdmf', '*.bin', '*.h5')
