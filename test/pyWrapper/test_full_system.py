@@ -1,11 +1,14 @@
 from utils import *
 
+
 @no_mtln_skip
 @pytest.mark.mtln
 def test_shieldedPair(tmp_path):
     fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], run_in_folder=tmp_path)
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  flags=['-mtlnwires'],
+                  run_in_folder=tmp_path)
     solver.run()
     assert solver.hasFinishedSuccessfully() == True
 
@@ -16,16 +19,9 @@ def test_shieldedPair(tmp_path):
                    'shieldedPair.fdtd_wire_end_bundle_line_0_I_75_71_74.dat',
                    'shieldedPair.fdtd_wire_end_bundle_line_0_V_75_71_74.dat']
 
-    p_expected = [Probe(OUTPUTS_FOLDER+'shieldedPair.fdtd_wire_start_bundle_line_0_V_75_74_74.dat'),
-                  Probe(
-                      OUTPUTS_FOLDER+'shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat'),
-                  Probe(OUTPUTS_FOLDER +
-                        'shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat'),
-                  Probe(OUTPUTS_FOLDER +
-                        'shieldedPair.fdtd_wire_end_Wz_75_71_74_s1.dat'),
-                  Probe(
-                      OUTPUTS_FOLDER+'shieldedPair.fdtd_wire_end_bundle_line_0_I_75_71_74.dat'),
-                  Probe(OUTPUTS_FOLDER+'shieldedPair.fdtd_wire_end_bundle_line_0_V_75_71_74.dat')]
+    p_expected = []
+    for pf in probe_files:
+        p_expected.append(Probe(OUTPUTS_FOLDER+pf))
 
     for i in [2, 3]:
         p_solved = Probe(probe_files[i])
@@ -43,8 +39,10 @@ def test_coated_antenna(tmp_path):
     fn = CASES_FOLDER + 'coated_antenna/coated_antenna.fdtd.json'
 
     solver = FDTD(
-        input_filename=fn, path_to_exe=SEMBA_EXE,
-        flags=['-mtlnwires'], run_in_folder=tmp_path)
+        input_filename=fn,
+        path_to_exe=SEMBA_EXE,
+        flags=['-mtlnwires'],
+        run_in_folder=tmp_path)
     solver.run()
     assert solver.hasFinishedSuccessfully() == True
 
@@ -55,17 +53,24 @@ def test_coated_antenna(tmp_path):
         OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_Wz_11_11_11_s2.dat')
 
     p_solved = Probe(probe_files[0])
-    assert np.allclose(p_expected.df.to_numpy()[:, 0], p_solved.df.to_numpy()[
-                       :, 0], rtol=0.0, atol=10e-8)
-    assert np.allclose(p_expected.df.to_numpy()[:, 1], p_solved.df.to_numpy()[
-                       :, 1], rtol=0.0, atol=10e-8)
-    assert np.allclose(p_expected.df.to_numpy()[:, 2], p_solved.df.to_numpy()[
-                       :, 2], rtol=0.0, atol=10e-6)
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 0],
+        p_solved.df.to_numpy()[:, 0],
+        rtol=0.0, atol=10e-8)
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 1],
+        p_solved.df.to_numpy()[:, 1],
+        rtol=0.0, atol=10e-8)
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 2],
+        p_solved.df.to_numpy()[:, 2],
+        rtol=0.0, atol=10e-6)
 
 
 def test_holland(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+    solver = FDTD(input_filename=fn, 
+                  path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
 
     solver.run()
@@ -78,8 +83,10 @@ def test_holland(tmp_path):
         OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
 
     p_solved = Probe(probe_files[0])
-    assert np.allclose(p_expected.df.to_numpy()[:, 0:3], p_solved.df.to_numpy()[
-                       :, 0:3], rtol=1e-5, atol=1e-6)
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 0:3], 
+        p_solved.df.to_numpy()[:, 0:3], 
+        rtol=1e-5, atol=1e-6)
 
 
 @no_mtln_skip
@@ -99,8 +106,10 @@ def test_holland_mtln(tmp_path):
         OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
 
     p_solved = Probe(probe_files[0])
-    assert np.allclose(p_expected.df.to_numpy()[:, 0:3], p_solved.df.to_numpy()[
-                       :, 0:3], rtol=1e-5, atol=1e-6)
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 0:3], 
+        p_solved.df.to_numpy()[:, 0:3], 
+        rtol=1e-5, atol=1e-6)
 
 
 def test_towelHanger(tmp_path):
