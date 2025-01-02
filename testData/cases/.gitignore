@@ -4,3 +4,6 @@
 *.vtk
 *.bin
 *.log
+*.h5
+*.xdmf
+*.bin

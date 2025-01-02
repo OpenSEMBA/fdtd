@@ -12,11 +12,8 @@ from pyWrapper import *
 
 
 # %% Prepare solver
-# solver = FDTD(input_filename = 'pw-in-box.fdtd.json', path_to_exe=SEMBA_EXE)
-solver = FDTD(input_filename = 'pw-with-periodic.fdtd.json', path_to_exe=SEMBA_EXE)
+solver = FDTD(input_filename = 'pw-in-box.fdtd.json', path_to_exe=SEMBA_EXE)
 solver.cleanUp()
-
-# %% Run solver
 solver.run()
 assert solver.hasFinishedSuccessfully()
 
@@ -33,4 +30,20 @@ plt.legend()
 plt.xlim(0,4e-9)
 
 
+
+# %%
+# %% Prepare solver
+solver = FDTD(input_filename = 'pw-in-box-with-movie.fdtd.json', path_to_exe=SEMBA_EXE)
+solver.cleanUp()
+solver.run()
+assert solver.hasFinishedSuccessfully()
+
+# %% Postprocess
+import h5py
+fn = solver.getSolvedProbeFilenames("electric_field_movie")[2]
+with h5py.File(fn, "r") as f:
+    time_key = list(f.keys())[0]
+    field_key = list(f.keys())[1]
+    time_ds = f[time_key][()] 
+    field_ds = f[field_key][()]
 # %%

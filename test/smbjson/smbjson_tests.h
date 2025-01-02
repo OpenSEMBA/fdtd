@@ -18,12 +18,13 @@ extern "C" int test_read_dielectricslab();
 extern "C" int test_read_thinslot();
 extern "C" int test_read_holland1981();
 extern "C" int test_read_towelhanger();
-extern "C" int test_read_connectedwires();
 extern "C" int test_read_currentinjection();
-extern "C" int test_read_shieldedpair();
-extern "C" int test_read_mtln();
 extern "C" int test_read_sphere();
 extern "C" int test_read_airplane();
+extern "C" int test_read_mtln();
+extern "C" int test_read_holland1981();
+extern "C" int test_read_connectedwires();
+extern "C" int test_read_shieldedpair();
 extern "C" int test_read_large_airplane_mtln();
 
 TEST(smbjson, idchildtable_fhash)     {EXPECT_EQ(0, test_idchildtable_fhash()); }

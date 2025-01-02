@@ -61,3 +61,4 @@ src_pyWrapper/__pycache__/*
 tmp/
 tmp_cases/
 testData/outputs/paul/paul_8.6_square.txt
+testing_hdf5_writing_and_reading.h5
