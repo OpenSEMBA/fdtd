@@ -77,13 +77,21 @@ add_library(semba-types
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_subdirectory(src_json_parser)
-	set(SMBJSON_LIBRARIES smbjson)
+	if(PROJECT_IS_TOP_LEVEL)
+		set(SMBJSON_LIBRARIES smbjson)
+	else()
+		set(SMBJSON_LIBRARIES smbjson PARENT_SCOPE)
+	endif()
 endif()
 if (SEMBA_FDTD_ENABLE_MTLN)
 	set(NGSPICE_LIB ngspice)
 	add_definitions(-DCompileWithMTLN)
 	add_subdirectory(src_mtln)
-	set(MTLN_LIBRARIES mtlnsolver ngspice_interface)
+	if (PROJECT_IS_TOP_LEVEL)
+		set(MTLN_LIBRARIES mtlnsolver ngspice_interface)
+	else()
+		set(MTLN_LIBRARIES mtlnsolver ngspice_interface PARENT_SCOPE)
+	endif()
 endif()
 
 if (SEMBA_FDTD_ENABLE_TEST)
@@ -92,7 +100,7 @@ if (SEMBA_FDTD_ENABLE_TEST)
 endif()
 
 if(SEMBA_FDTD_COMPONENTS_LIB)
-	add_library(semba-components SHARED IMPORTED GLOBAL
+	add_library(semba-components
 		"src_main_pub/errorreport.F90"
 		"src_main_pub/anisotropic.F90"
 		"src_main_pub/borderscpml.F90"
