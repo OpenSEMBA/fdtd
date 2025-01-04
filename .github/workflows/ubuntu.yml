@@ -43,7 +43,7 @@ jobs:
       fail-fast: false
             
     runs-on: ${{ matrix.os }}
-    name: ${{matrix.os}}-${{matrix.compiler.name}}-${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})
 
     steps:       
     - name: Checkout
