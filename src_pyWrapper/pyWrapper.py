@@ -24,7 +24,7 @@ class Probe():
         + FAR_FIELD_TAG \
         + MOVIE_TAGS
 
-    def __init__(self, probe_filename: str | os.PathLike):
+    def __init__(self, probe_filename):
         if isinstance(probe_filename, os.PathLike):
             self.filename = probe_filename.as_posix()
         else:
@@ -165,7 +165,7 @@ class FDTD():
     def __getitem__(self, key):
         return self._input[key]
 
-    def _setFilename(self, newFilename: str | os.PathLike[str]):
+    def _setFilename(self, newFilename):
         if isinstance(newFilename, os.PathLike):
             self._filename = str(newFilename)
         else:

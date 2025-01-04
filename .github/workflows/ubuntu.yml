@@ -13,9 +13,9 @@ concurrency:
 jobs:
   
   builds-and-test:
-    runs-on: ubuntu-latest
     strategy:
       matrix: 
+        os: [ubuntu-latest]
         compiler: [
           {name: 'intel', version: '2024.2'},
           {name: 'gcc', version: 11}
@@ -26,21 +26,24 @@ jobs:
         hdf: ["Yes"]
 
         include:
-          - compiler: {name: 'intel-classic', version: '2021.10'}
+          - os: ubuntu-22.04
+            compiler: {name: 'intel-classic', version: '2021.10'}
             build-type: "Release"
             mpi: "No"
             mtln: "No"
             hdf: "Yes"
-          - compiler: {name: 'nvidia-hpc', version: '24.5'}
+          - os: ubuntu-latest
+            compiler: {name: 'nvidia-hpc', version: '24.5'}
             build-type: "Release"
             mpi: "No"
             mtln: "No"
             hdf: "No"
           
-
+            
       fail-fast: false
-    
-    name: ${{matrix.compiler.name}}-${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})
+            
+    runs-on: ${{ matrix.os }}
+    name: ${{matrix.os}}-${{matrix.compiler.name}}-${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})
 
     steps:       
     - name: Checkout
