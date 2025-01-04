@@ -123,6 +123,7 @@ endif()
 
 if(SEMBA_FDTD_OUTPUTS_LIB)
 	add_library(semba-outputs
+		"src_main_pub/mpicomm.F90"
 		"src_main_pub/observation.F90"
 		"src_main_pub/vtk.F90"
 		"src_main_pub/snapxdmf.F90"
@@ -139,7 +140,6 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/EpsMuTimeScale.F90"
 		"src_main_pub/getargs.F90"
 		"src_main_pub/healer.F90"
-		"src_main_pub/mpicomm.F90"
 		"src_main_pub/preprocess_geom.F90"
 		"src_main_pub/storegeom.F90"
 		"src_main_pub/version.F90"
