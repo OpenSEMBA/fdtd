@@ -96,6 +96,7 @@ endif()
 
 if (SEMBA_FDTD_MAIN_LIB)
 	add_library(semba-components
+		"src_main_pub/errorreport.F90"
 		"src_main_pub/anisotropic.F90"
 		"src_main_pub/borderscpml.F90"
 		"src_main_pub/bordersmur.F90"
@@ -109,17 +110,18 @@ if (SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/dmma_thin_slot.F90"
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
+		"src_main_pub/farfield.F90"
 	)
+	target_link_libraries(semba-components semba-types ${MTLN_LIBRARIES})
+
 	add_library(semba-outputs
-		"src_main_pub/errorreport.F90"
+		"src_main_pub/observation.F90"
 		"src_main_pub/vtk.F90"
 		"src_main_pub/snapxdmf.F90"
 		"src_main_pub/xdmf.F90"
 		"src_main_pub/xdmf_h5.F90"
-		"src_main_pub/observation.F90"
-		"src_main_pub/farfield.F90"
 	)
-	target_link_libraries(semba-outputs semba-components semba-types ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+	target_link_libraries(semba-outputs semba-components ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 
 	add_library(semba-main
 		"src_main_pub/calc_constants.F90"
