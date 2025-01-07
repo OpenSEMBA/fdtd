@@ -25,7 +25,7 @@
 Module Report
    use FDETYPES
 
-   use snapxdmf
+   ! use snapxdmf
 
    implicit none
    private
@@ -1159,9 +1159,12 @@ contains
             ficherito=trim(adjustl(fichsnap))//'.h5' 
             call openclosedelete(ficherito)
             !
-            call write_xdmfsnap(n,fichsnap,ini_ibox + b%Ex%XI , ini_ibox + dimxsnap + b%Ex%XI , &
-            ini_jbox + b%Ex%YI , ini_jbox + dimysnap + b%Ex%YI , &
-            ini_kbox + b%Ex%ZI , ini_kbox + dimzsnap + b%Ex%ZI , snap)
+            ! call write_xdmfsnap(n,fichsnap,ini_ibox + b%Ex%XI , ini_ibox + dimxsnap + b%Ex%XI , &
+            ! ini_jbox + b%Ex%YI , ini_jbox + dimysnap + b%Ex%YI , &
+            ! ini_kbox + b%Ex%ZI , ini_kbox + dimzsnap + b%Ex%ZI , snap)
+            ! write_xdmfsnap disabled by Luis to try to reorganize compilation.
+            stop 'xdmfsnap has been disabled by Luis to try to reorganize compilation.'
+            
 #endif
             !             open (35,file=trim(adjustl(fichsnap))//'.bin')
             !             write (35,*) '!END'

@@ -227,10 +227,10 @@ contains
 
       !depth information matrices
       do i=sgg%ALLOC(iHx)%XI,sgg%ALLOC(iHx)%XE
-         if (i <= SINPML_Fullsize(iHx)%XI) then
+         if (i <= SINPML_Fullsize(iHx)%XI .and. sgg%PML%NumLayers(1,1) /= 0) then
             ce_x (i)=                        1.0_RKIND * (SINPML_Fullsize(iHx)%XI-i) /(sgg%PML%NumLayers(1,1))
             Ice_x(i)=1.0_RKIND * (sgg%PML%NumLayers(1,1)-(SINPML_Fullsize(iHx)%XI-i))/(sgg%PML%NumLayers(1,1))
-         elseif (i >= SINPML_Fullsize(iHx)%XE ) then
+         elseif (i >= SINPML_Fullsize(iHx)%XE .and. sgg%PML%NumLayers(1,2) /= 0) then
             ce_x(i)=                         1.0_RKIND * (i-SINPML_Fullsize(iHx)%XE) /(sgg%PML%NumLayers(1,2))
             Ice_x(i)=1.0_RKIND * (sgg%PML%NumLayers(1,2)-(i-SINPML_Fullsize(iHx)%XE))/(sgg%PML%NumLayers(1,2))
          else
@@ -239,10 +239,10 @@ contains
          endif
       end do
       do i=sgg%ALLOC(iHx)%XI,sgg%ALLOC(iHx)%XE
-         if (i <= SINPML_Fullsize(iHx)%XI-1) then
+         if (i <= SINPML_Fullsize(iHx)%XI-1 .and. sgg%PML%NumLayers(1,1) /= 0) then
             cm_x(i)=                         1.0_RKIND * (SINPML_Fullsize(iHx)%XI-(i+0.5_RKIND )) /(sgg%PML%NumLayers(1,1))
             Icm_x(i)=1.0_RKIND * (sgg%PML%NumLayers(1,1)-(SINPML_Fullsize(iHx)%XI-(i+0.5_RKIND )))/(sgg%PML%NumLayers(1,1))
-         elseif (i >= SINPML_Fullsize(iHx)%XE ) then  !!cuidado pues los h empiezan antes
+         elseif (i >= SINPML_Fullsize(iHx)%XE .and. sgg%PML%NumLayers(1,2) /= 0) then  !!cuidado pues los h empiezan antes
             cm_x(i)=                         1.0_RKIND * (i-SINPML_Fullsize(iHx)%XE+0.5_RKIND ) /(sgg%PML%NumLayers(1,2))
             Icm_x(i)=1.0_RKIND * (sgg%PML%NumLayers(1,2)-(i-SINPML_Fullsize(iHx)%XE+0.5_RKIND ))/(sgg%PML%NumLayers(1,2))
          else
@@ -251,10 +251,10 @@ contains
          endif
       end do
       do j=sgg%ALLOC(iHy)%YI,sgg%ALLOC(iHy)%YE
-         if (j <= SINPML_Fullsize(iHy)%YI) then
+         if (j <= SINPML_Fullsize(iHy)%YI .and. sgg%PML%NumLayers(2,1) /= 0) then
             ce_y(j)=                         1.0_RKIND * (SINPML_Fullsize(iHy)%YI-j) /(sgg%PML%NumLayers(2,1))
             Ice_y(j)=1.0_RKIND * (sgg%PML%NumLayers(2,1)-(SINPML_Fullsize(iHy)%YI-j))/(sgg%PML%NumLayers(2,1))
-         elseif (j >= SINPML_Fullsize(iHy)%YE ) then
+         elseif (j >= SINPML_Fullsize(iHy)%YE .and. sgg%PML%NumLayers(2,2) /= 0) then
             ce_y(j)=                         1.0_RKIND * (j-SINPML_Fullsize(iHy)%YE) /(sgg%PML%NumLayers(2,2))
             Ice_y(j)=1.0_RKIND * (sgg%PML%NumLayers(2,2)-(j-SINPML_Fullsize(iHy)%YE))/(sgg%PML%NumLayers(2,2))
          else
@@ -263,10 +263,10 @@ contains
          endif
       end do
       do j=sgg%ALLOC(iHy)%YI,sgg%ALLOC(iHy)%YE
-         if (j <= SINPML_Fullsize(iHy)%YI-1) then
+         if (j <= SINPML_Fullsize(iHy)%YI-1 .and. sgg%PML%NumLayers(2,1) /= 0) then
             cm_y(j)=                         1.0_RKIND * (SINPML_Fullsize(iHy)%YI-(j+0.5_RKIND )) /(sgg%PML%NumLayers(2,1))
             Icm_y(j)=1.0_RKIND * (sgg%PML%NumLayers(2,1)-(SINPML_Fullsize(iHy)%YI-(j+0.5_RKIND )))/(sgg%PML%NumLayers(2,1))
-         elseif (j >= SINPML_Fullsize(iHy)%YE ) then
+         elseif (j >= SINPML_Fullsize(iHy)%YE .and. sgg%PML%NumLayers(2,2) /= 0) then
             cm_y(j)=                         1.0_RKIND * (j-SINPML_Fullsize(iHy)%YE+0.5_RKIND ) /(sgg%PML%NumLayers(2,2))
             Icm_y(j)=1.0_RKIND * (sgg%PML%NumLayers(2,2)-(j-SINPML_Fullsize(iHy)%YE+0.5_RKIND ))/(sgg%PML%NumLayers(2,2))
          else
@@ -275,10 +275,10 @@ contains
          endif
       end do
       do k=sgg%ALLOC(iHz)%ZI,sgg%ALLOC(iHz)%ZE
-         if (k <= SINPML_Fullsize(iHz)%ZI) then
+         if (k <= SINPML_Fullsize(iHz)%ZI .and. sgg%PML%NumLayers(3,1) /= 0) then
             ce_z(k)=                         1.0_RKIND * (SINPML_Fullsize(iHz)%ZI-k)/(sgg%PML%NumLayers(3,1))
             Ice_z(k)=1.0_RKIND * (sgg%PML%NumLayers(3,1)-(SINPML_Fullsize(iHz)%ZI-k))/(sgg%PML%NumLayers(3,1))
-         elseif (k >= SINPML_Fullsize(iHz)%ZE ) then
+         elseif (k >= SINPML_Fullsize(iHz)%ZE .and. sgg%PML%NumLayers(3,2) /= 0) then
             ce_z(k)=                         1.0_RKIND * (k-SINPML_Fullsize(iHz)%ZE) /(sgg%PML%NumLayers(3,2))
             Ice_z(k)=1.0_RKIND * (sgg%PML%NumLayers(3,2)-(k-SINPML_Fullsize(iHz)%ZE))/(sgg%PML%NumLayers(3,2))
          else
@@ -287,10 +287,10 @@ contains
          endif
       end do
       do k=sgg%ALLOC(iHz)%ZI,sgg%ALLOC(iHz)%ZE
-         if (k <= SINPML_Fullsize(iHz)%ZI-1) then
+         if (k <= SINPML_Fullsize(iHz)%ZI-1 .and. sgg%PML%NumLayers(3,1) /= 0) then
             cm_z(k)=                         1.0_RKIND * (SINPML_Fullsize(iHz)%ZI-(k+0.5_RKIND )) /(sgg%PML%NumLayers(3,1))
             Icm_z(k)=1.0_RKIND * (sgg%PML%NumLayers(3,1)-(SINPML_Fullsize(iHz)%ZI-(k+0.5_RKIND )))/(sgg%PML%NumLayers(3,1))
-         elseif (k >= SINPML_Fullsize(iHz)%ZE ) then
+         elseif (k >= SINPML_Fullsize(iHz)%ZE .and. sgg%PML%NumLayers(3,2) /= 0) then
             cm_z(k)=                         1.0_RKIND * (k-SINPML_Fullsize(iHz)%ZE+0.5_RKIND ) /(sgg%PML%NumLayers(3,2))
             Icm_z(k)=1.0_RKIND * (sgg%PML%NumLayers(3,2)-(k-SINPML_Fullsize(iHz)%ZE+0.5_RKIND ))/(sgg%PML%NumLayers(3,2))
          else
