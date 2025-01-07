@@ -1,0 +1,113 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "wire panel",
+	
+    "general": {
+        "timeStep": 4.250797024442083e-12,
+        "numberOfSteps": 9410,
+		"mtlnProblem" : true
+    },
+	  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6, 
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+
+	"materials": [
+		{
+			"id": 1,
+			"name": "coaxial_single_wire",
+			"type": "multiwire",
+			"resistancePerMeter" : [0.0, 0.0],
+			"inductancePerMeter": [
+				[0.805756e-6, 0.538771e-6],
+				[0.538771e-6, 1.07754e-6]
+			],
+			"capacitancePerMeter": [
+				[117.791e-12, -58.8956e-12],
+				[-58.8956e-12, 71.8544e-12 ]
+			]
+		},
+		{
+			"id": 2,
+			"name": "terminal_left",
+			"type": "terminal",
+			"terminations" : [
+				{"type": "series", "resistance": 5, "capacitance": 1e22, "inductance" : 0.0 },
+				{"type": "series", "resistance": 50, "capacitance": 1e22, "inductance" : 0.0 }
+			]
+		},
+		{
+			"id": 3,
+			"name": "terminal_right",
+			"type": "terminal",
+			"terminations" : [
+				{"type": "RLsCp", "resistance": 10, "capacitance": 100e-12, "inductance" : 1e-6 },
+				{"type": "series", "resistance": 50, "capacitance": 1e22, "inductance" : 0.0 }
+			]
+		}
+	],
+	"mesh": {
+		"grid": {
+			"numberOfCells": [10, 10, 795],
+			"steps": {"x": [0.1], "y": [0.1], "z": [0.0006289308176100629]}
+		},
+		"coordinates": [
+			{"id": 1 , "relativePosition": [ 5, 5, 1]},
+			{"id": 2 , "relativePosition": [ 5, 5, 795]},
+			{"id": 3 , "relativePosition": [ 5, 5, 1]},
+			{"id": 4 , "relativePosition": [ 5, 5, 795]}
+			
+		],
+		"elements": [
+			{"id": 1,  "type": "polyline", "coordinateIds": [ 1,  2]},
+			{"id": 2,  "type": "polyline", "coordinateIds": [ 3,  4]},
+			{"id": 3, "type": "node", "coordinateIds": [1]},
+			{"id": 4, "type": "node", "coordinateIds": [2]},
+			{"id": 5, "type": "node", "coordinateIds": [3]}
+		]
+	
+	},
+	
+	"probes": [
+		{
+			"name": "start_voltage",
+			"type": "wire",
+			"field": "voltage",
+			"elementIds": [3],
+            "domain": { "type": "time" }
+		},
+		{
+			"name": "end_voltage",
+			"type": "wire",
+			"field": "voltage",
+			"elementIds": [4],
+            "domain": { "type": "time" }
+		}
+	],
+
+	
+	"sources": [
+		{
+			"name": "external_source",
+			"type": "generator",
+			"field": "voltage",
+			"magnitudeFile": "2_conductor_line_paul_9_6_pulse.exc",
+			"elementIds": [5]
+		}
+	],
+
+	"materialAssociations": [
+		{
+			"name": "two_wires",
+						"elementIds": [ 1,2 ],
+			"materialId": 1,
+			"initialTerminalId": 2,
+			"endTerminalId": 3
+		}
+	]
+}

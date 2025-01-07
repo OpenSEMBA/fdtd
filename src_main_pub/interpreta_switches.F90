@@ -2004,7 +2004,7 @@ CONTAINS
       l%precision=0 !redondeo del semiestructurado
       l%stochastic=.false.
       l%chosenyesornostochastic=.false. !es un flag informativo que debe inicializarse a .false. a pesar de qu el sentido comun diga lo contrario
-      l%simu_devia=.false. !puto bug semana santa '19 cazado a 210419
+      l%simu_devia=.false. !puto bug semana santa 2019 cazado a 210419
    
 #ifdef CompileWithHDF
       l%createh5bin=.false.
