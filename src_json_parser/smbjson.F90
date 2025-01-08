@@ -1237,7 +1237,11 @@ contains
          res%fstart = domain%fstart
          res%fstep = domain%fstep
          res%fstop = domain%fstop
-         res%FileNormalize = domain%filename
+         if (allocated(domain%filename)) then
+            res%FileNormalize = domain%filename
+         else
+            res%fileNormalize = " "
+         end if
          res%type2 = domain%type2
 
          if (domain%isLogarithmicFrequencySpacing) then
@@ -1371,7 +1375,11 @@ contains
          res%fstart = domain%fstart
          res%fstep = domain%fstep
          res%fstop = domain%fstop
-         res%filename = domain%filename
+         if (allocated(domain%filename)) then
+            res%filename = domain%filename
+         else
+            res%filename = " "
+         end if
          res%type2 = domain%type2
 
          if (domain%isLogarithmicFrequencySpacing) then
