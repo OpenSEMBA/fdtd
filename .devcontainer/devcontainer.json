@@ -6,11 +6,8 @@
 		"dockerfile": "Dockerfile"
 	},
 	"features": {
-		"ghcr.io/msclock/features/vcpkg:2": {
-			"vcpkgversion": "stable",
-			"vcpkgroot": "/usr/local/vcpkg",
-			"vcpkgdownload": "/usr/local/vcpkg-downloads"
-		}
+		"ghcr.io/msclock/features/vcpkg:2": {},
+		"ghcr.io/devcontainers/features/python:1": {}
 	},
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
@@ -32,6 +29,14 @@
 			"opensemba/ngtest": {"permissions": "read-all" },
 			"google/googletest": { "permissions": "read-all" }
 		  }
+		},
+		"vscode": {
+			"extensions": [
+				"ms-toolsai.jupyter",
+				"fortran-lang.linter-gfortran",
+				"ms-vscode.cmake-tools",
+				"ms-python.autopep8"
+			]
 		}
 	  }
 
