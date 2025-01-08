@@ -203,8 +203,8 @@ contains
              call res%allocateCoordinates(10*numberOfCoordinates)
              do i = 1, numberOfCoordinates
                 call this%core%get_child(jcs, i, jc)
-                call this%core%get(jc, J_ID, id)
-                call this%core%get(jc, J_COORDINATE_POS, pos)
+                id = this%getIntAt(jc, J_ID)
+                pos = this%getRealsAt(jc, J_COORDINATE_POS)
                 c%position = pos
                 call mesh%addCoordinate(id, c)
              end do
@@ -229,15 +229,15 @@ contains
          if (found) then
             do i = 1, numberOfElements
                call this%core%get_child(jes, i, je)
-               call this%core%get(je, J_ID, id)
-               call this%core%get(je, J_TYPE, elementType)
+               id = this%getIntAt(je, J_ID)
+               elementType = this%getStrAt(je, J_TYPE)
                select case (elementType)
                 case (J_ELEM_TYPE_NODE)
-                  call this%core%get(je, J_COORDINATE_IDS, coordIds)
+                  coordIds = this%getIntsAt(je, J_COORDINATE_IDS)
                   node%coordIds = coordIds
                   call mesh%addElement(id, node)
                 case (J_ELEM_TYPE_POLYLINE)
-                  call this%core%get(je, J_COORDINATE_IDS, coordIds)
+                  coordIds = this%getIntsAt(je, J_COORDINATE_IDS)
                   polyline%coordIds = coordIds
                   call mesh%addElement(id, polyline)
                 CASE (J_ELEM_TYPE_CELL)
@@ -273,8 +273,8 @@ contains
          allocate(res(nIntervals))
          do i = 1, nIntervals
             call this%core%get_child(intervalsPlace, i, interval)
-            call this%core%get(interval, '(1)', cellIni)
-            call this%core%get(interval, '(2)', cellEnd)
+            cellIni = this%getRealsAt(interval, '(1)')
+            cellEnd = this%getRealsAt(interval, '(2)')
             res(i)%ini%cell = cellIni(1:3)
             res(i)%end%cell = cellEnd(1:3)
          end do
@@ -286,7 +286,7 @@ contains
       type(NFDEGeneral) :: res
       res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
-      res%mtlnProblem = this%GetLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
+      res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
 
    function readMediaMatrix(this) result(res)
@@ -328,7 +328,7 @@ contains
          integer (kind=4), intent(in) :: numberOfCells
          logical :: found = .false.
 
-         call this%core%get(this%root, path, vec, found)
+         vec= this%getRealsAt(this%root, path, found)
 
          if (.not. found) then
             write(error_unit, *) 'Error reading grid: steps not found.'
@@ -361,7 +361,7 @@ contains
       end if
       
       block
-         call this%core%get(bdrs, J_BND_ALL//'.'//J_TYPE,  bdrType, found)
+         bdrType = this%getStrAt(bdrs, J_BND_ALL//'.'//J_TYPE, found)
          if (found) then
             res%tipoFrontera(:) = labelToBoundaryType(bdrType)
             if (all(res%tipoFrontera == F_PML)) then
@@ -392,9 +392,9 @@ contains
       function readPMLProperties(p) result(res)
          type(FronteraPML) :: res
          character(len=*), intent(in) :: p
-         call this%core%get(this%root, p//'.'//J_BND_PML_LAYERS,     res%numCapas, default=8)
-         call this%core%get(this%root, p//'.'//J_BND_PML_ORDER,      res%orden,    default=2.0)
-         call this%core%get(this%root, p//'.'//J_BND_PML_REFLECTION, res%refl,     default=0.001)
+         res%numCapas = this%getIntAt(this%root, p//'.'//J_BND_PML_LAYERS, default=8)
+         res%orden = this%getRealAt(this%root, p//'.'//J_BND_PML_ORDER, default=2.0)
+         res%refl = this%getRealAt(this%root, p//'.'//J_BND_PML_REFLECTION, default=0.001)
       end function
 
       function labelToBoundaryPlace(str) result (place)
@@ -767,17 +767,12 @@ contains
 
          res%nombre_fichero = trim(adjustl(this%getStrAt(pw,J_SRC_MAGNITUDE_FILE)))
 
-         call this%core%get(pw, J_SRC_PW_ATTRIBUTE, label, found)
-         if (found) then
-            res%atributo = trim(adjustl(label))
-         else
-            res%atributo = ""
-         endif
+         res%atributo = ""
 
-         call this%core%get(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_THETA, res%theta)
-         call this%core%get(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_PHI, res%phi)
-         call this%core%get(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_THETA, res%alpha)
-         call this%core%get(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_PHI, res%beta)
+         res%theta = this%getRealAt(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_THETA)
+         res%phi = this%getRealAt(pw, J_SRC_PW_DIRECTION//'.'//J_SRC_PW_PHI)
+         res%alpha = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_THETA)
+         res%beta = this%getRealAt(pw, J_SRC_PW_POLARIZATION//'.'//J_SRC_PW_PHI)
 
          block
             type(coords), dimension(:), allocatable :: nfdeCoords
@@ -899,13 +894,14 @@ contains
          ff => res%FarField(1)%probe
 
          ff%grname = " "
-         call this%core%get(p, J_NAME, outputName)
+         outputName = this%getStrAt(p, J_NAME)
          ff%outputrequest = trim(adjustl(outputName))
 
          ! Far fields only accept frequency domains.
          domain = this%getDomain(p, J_PR_DOMAIN)
-         if (domain%type2 /= NP_T2_FREQ) &
+         if (domain%type2 /= NP_T2_FREQ) then
             write(error_unit, *) "ERROR at far field probe: Only accepted domain is frequency."
+         end if
          ff%tstart = 0.0
          ff%tstop = 0.0
          ff%tstep = 0.0
@@ -924,7 +920,7 @@ contains
                if (sourcesFound) then
                   if (this%core%count(sources) == 1) then
                      call this%core%get_child(sources, 1, src)
-                     call this%core%get(src, J_SRC_MAGNITUDE_FILE, fn, found=transferFunctionFound)
+                     fn = this%getStrAt(src, J_SRC_MAGNITUDE_FILE, found=transferFunctionFound)
                   end if
                end if
             end if
@@ -1011,7 +1007,7 @@ contains
       
       filtered_size = 0
       do i=1, size(ps)
-         call this%core%get(ps(i)%p, J_FIELD, fieldLbl, default=J_FIELD_ELECTRIC)
+         fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
             filtered_size = filtered_size + 1
          end if
@@ -1020,7 +1016,7 @@ contains
       n = 1
       allocate(res%collection(filtered_size))
       do i=1, size(ps)
-         call this%core%get(ps(i)%p, J_FIELD, fieldLbl, default=J_FIELD_ELECTRIC)
+         fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
             res%collection(n) = readPointProbe(ps(i)%p)
             n = n + 1
@@ -1042,7 +1038,7 @@ contains
          integer, dimension(:), allocatable :: elemIds
          logical :: elementIdsFound, typeLabelFound, dirLabelsFound, fieldLabelFound, nameFound
 
-         call this%core%get(p, J_NAME, outputName, found = nameFound)
+         outputName = this%getStrAt(p, J_NAME, found=nameFound)
          if (.not. nameFound) then 
             write(error_unit, *) "ERROR: name entry not found for probe."
          end if
@@ -1050,7 +1046,7 @@ contains
 
          call setDomain(res, this%getDomain(p, J_PR_DOMAIN))
 
-         call this%core%get(p, J_ELEMENTIDS, elemIds, found=elementIdsFound)
+         elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
          if (.not. elementIdsFound) then
             write(error_unit, *) "ERROR: element ids entry not found for probe."
          end if
@@ -1060,14 +1056,14 @@ contains
 
          pixel = getPixelFromElementId(this%mesh, elemIds(1))
 
-         call this%core%get(p, J_TYPE, typeLabel, found=typeLabelFound)
+         typeLabel = this%getStrAt(p, J_TYPE, found=typeLabelFound)
          if (.not. typeLabelFound) then
             write(error_unit, *) "ERROR: Point probe type label not found."
          end if
          select case (typeLabel)
           case (J_PR_TYPE_WIRE)
             allocate(res%cordinates(1))
-            call this%core%get(p, J_FIELD, fieldLabel, default=J_FIELD_VOLTAGE)
+            fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_VOLTAGE)
             res%cordinates(1)%tag = outputName
             res%cordinates(1)%Xi = pixel%tag
             res%cordinates(1)%Yi = 0
@@ -1080,7 +1076,7 @@ contains
             else 
                dirLabels = [J_DIR_X, J_DIR_Y, J_DIR_Z]
             end if
-            call this%core%get(p, J_FIELD, fieldLabel, default=J_FIELD_ELECTRIC, found=fieldLabelFound)          
+            fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC, found=fieldLabelFound)          
             allocate(res%cordinates(size(dirLabels)))
             do j = 1, size(dirLabels)
                res%cordinates(j)%tag = outputName
@@ -1525,9 +1521,9 @@ contains
          block
             type(json_value_ptr) :: m
             m = this%matTable%getId(cable%materialId)
-            call this%core%get(m%p, J_MAT_WIRE_RADIUS,     radius, default = 0.0)
-            call this%core%get(m%p, J_MAT_WIRE_RESISTANCE, resistance, default = 0.0)
-            call this%core%get(m%p, J_MAT_WIRE_INDUCTANCE, inductance, default = 0.0)
+            radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS, default = 0.0)
+            resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default = 0.0)
+            inductance = this%getRealAt(m%p, J_MAT_WIRE_INDUCTANCE, default = 0.0)
             res%rad = radius 
             res%res = resistance
             res%ind = inductance
@@ -1622,7 +1618,7 @@ contains
             type(node_t) :: srcCoord
             type(polyline_t) :: polylineCoords
             do i = 1, size(genSrcs)
-               call this%core%get(genSrcs(i)%p, J_ELEMENTIDS, sourceElemIds)
+               sourceElemIds = this%getIntsAt(genSrcs(i)%p, J_ELEMENTIDS)
                srcCoord = this%mesh%getNode(sourceElemIds(1))
                polylineCoords = this%mesh%getPolyline(plineElemIds(1))
                if (.not. any(polylineCoords%coordIds == srcCoord%coordIds(1))) then
@@ -1700,9 +1696,9 @@ contains
             res%l = 0.0
             res%c = 0.0
           case default
-            call this%core%get(tm, J_MAT_TERM_RESISTANCE, res%r, default=0.0)
-            call this%core%get(tm, J_MAT_TERM_INDUCTANCE, res%l, default=0.0)
-            call this%core%get(tm, J_MAT_TERM_CAPACITANCE, res%c, default=1e22)
+            res%r = this%getRealAt(tm, J_MAT_TERM_RESISTANCE, default=0.0)
+            res%l = this%getRealAt(tm, J_MAT_TERM_INDUCTANCE, default=0.0)
+            res%c = this%getRealAt(tm, J_MAT_TERM_CAPACITANCE, default=1e22)
          end select
 
       end function
@@ -1758,33 +1754,31 @@ contains
          return
       end if
 
-      call this%core%get(domain, J_PR_DOMAIN_MAGNITUDE_FILE, fn, transferFunctionFound)
-      if (found) then
+      fn = this%getStrAt(domain, J_PR_DOMAIN_MAGNITUDE_FILE, transferFunctionFound, default=" ")
+      if (transferFunctionFound) then
          res%filename = trim(adjustl(fn))
-      else
-         res%filename = " "
       endif
 
       res%type1 = NP_T1_PLAIN
 
-      call this%core%get(domain, J_TYPE, domainType)
+      domainType = this%getStrAt(domain, J_TYPE, default=J_PR_DOMAIN_TYPE_TIME)
       res%type2 = getNPDomainType(domainType, transferFunctionFound)
 
-      call this%core%get(domain, J_PR_DOMAIN_TIME_START, res%tstart, default=0.0)
-      call this%core%get(domain, J_PR_DOMAIN_TIME_STOP,  res%tstop,  default=0.0)
-      call this%core%get(domain, J_PR_DOMAIN_TIME_STEP,  res%tstep,  default=0.0)
-      call this%core%get(domain, J_PR_DOMAIN_FREQ_START, res%fstart, default=0.0)
-      call this%core%get(domain, J_PR_DOMAIN_FREQ_STOP,  res%fstop,  default=0.0)
+      res%tstart = this%getRealAt(domain, J_PR_DOMAIN_TIME_START, default=0.0)
+      res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0)
+      res%tstep = this%getRealAt(domain, J_PR_DOMAIN_TIME_STEP, default=0.0)
+      res%fstart = this%getRealAt(domain, J_PR_DOMAIN_FREQ_START, default=0.0)
+      res%fstop = this%getRealAt(domain, J_PR_DOMAIN_FREQ_STOP, default=0.0)
 
-      call this%core%get(domain, J_PR_DOMAIN_FREQ_NUMBER,  numberOfFrequencies,  default=0)
+      numberOfFrequencies = this%getIntAt(domain, J_PR_DOMAIN_FREQ_NUMBER, default=0)
       if (numberOfFrequencies == 0) then
          res%fstep = 0.0
       else
          res%fstep = res%fstart * numberOfFrequencies
       endif
 
-      call this%core%get(domain, J_PR_DOMAIN_FREQ_SPACING, &
-         freqSpacing, default=J_PR_DOMAIN_FREQ_SPACING_LINEAR)
+      freqSpacing = &
+         this%getStrAt(domain, J_PR_DOMAIN_FREQ_SPACING, default=J_PR_DOMAIN_FREQ_SPACING_LINEAR)
       select case (freqSpacing)
        case (J_PR_DOMAIN_FREQ_SPACING_LINEAR)
          res%isLogarithmicFrequencySpacing = .false.
@@ -2528,7 +2522,7 @@ contains
          type(node_t) :: srcCoord
          logical :: res
 
-         call this%core%get(src, J_ELEMENTIDS, sourceElemIds)
+         sourceElemIds = this%getIntsAt(src, J_ELEMENTIDS)
          srcCoord = this%mesh%getNode(sourceElemIds(1))
 
          if (label == TERMINAL_NODE_SIDE_INI) then
@@ -3243,6 +3237,14 @@ contains
    end function
 #endif
 
+   subroutine handleFoundAndDefault(path, found, defaultPresent)
+      character(len=*), intent(in) :: path
+      logical, intent(in) :: found
+      logical, intent(in) :: defaultPresent
+      if (.not. found .and. .not. defaultPresent) then
+         write(error_unit,*) 'ERROR expecting a value at: '//path
+      end if
+   end subroutine
 
    function getLogicalAt(this, place, path, found, default) result(res)
       logical :: res
@@ -3251,8 +3253,14 @@ contains
       character(len=*) :: path
       logical, intent(out), optional :: found
       logical, optional :: default
-
-      call this%core%get(place, path, res, found, default)
+      logical :: localFound
+      
+      call this%core%get(place, path, res, localFound, default)
+      if (present(found)) then
+         found = localFound
+      else
+         call handleFoundAndDefault(path, localFound, present(default))
+      endif
    end function
 
 
@@ -3263,8 +3271,14 @@ contains
       character(len=*) :: path
       logical, intent(out), optional :: found
       integer, optional :: default
-
-      call this%core%get(place, path, res, found, default)
+      logical :: localFound
+      
+      call this%core%get(place, path, res, localFound, default)
+      if (present(found)) then
+         found = localFound
+      else
+         call handleFoundAndDefault(path, localFound, present(default))
+      endif
    end function
 
    function getIntsAt(this, place, path, found) result(res)
@@ -3273,7 +3287,14 @@ contains
       type(json_value), pointer :: place
       character(len=*) :: path
       logical, intent(out), optional :: found
-      call this%core%get(place, path, res, found)
+      logical :: localFound
+      
+      call this%core%get(place, path, res, localFound)
+      if (present(found)) then
+         found = localFound
+      else
+         call handleFoundAndDefault(path, localFound, .false.)
+      endif
    end function
 
    function getRealAt(this, place, path, found, default) result(res)
@@ -3283,7 +3304,14 @@ contains
       character(len=*) :: path
       logical, intent(out), optional :: found
       real, optional :: default
-      call this%core%get(place, path, res, found, default)
+      logical :: localFound
+
+      call this%core%get(place, path, res, localFound, default)
+      if (present(found)) then
+         found = localFound
+      else
+         call handleFoundAndDefault(path, localFound, present(default))
+      endif
    end function
 
    function getRealsAt(this, place, path, found) result(res)
@@ -3292,7 +3320,14 @@ contains
       type(json_value), pointer :: place
       character(len=*) :: path
       logical, intent(out), optional :: found
-      call this%core%get(place, path, res, found)
+      logical :: localFound
+
+      call this%core%get(place, path, res, localfound)
+      if (present(found)) then
+         found = localFound
+      else
+         call handleFoundAndDefault(path, localFound, .false.)
+      endif
    end function
 
    function getMatrixAt(this, place, path, found) result(res)
@@ -3303,8 +3338,14 @@ contains
       logical, intent(out), optional :: found
       integer :: i, vartype, nr
       real, dimension(:), allocatable :: res_row
+      logical :: localFound
 
-      call this%core%get(place, path,  matrix, found)
+      call this%core%get(place, path,  matrix, localfound)
+      if (present(found)) then
+         found = localFound
+      else
+         call handleFoundAndDefault(path, localFound, .false.)
+      endif
       call this%core%info(matrix, vartype, nr)
       allocate(res(nr,nr))
 
@@ -3324,7 +3365,14 @@ contains
       character(len=*) :: path
       logical, intent(out), optional :: found
       character (len=*), optional :: default
-      call this%core%get(place, path, res, found, default)
+      logical :: localFound
+      
+      call this%core%get(place, path, res, localFound, default)
+      if (present(found)) then
+         found = localFound
+      else
+         call handleFoundAndDefault(path, localFound, present(default))
+      endif
    end function
 
    function existsAt(this, place, path) result(res)
@@ -3360,15 +3408,16 @@ contains
       type(json_value_ptr), allocatable :: res(:)
       character (kind=JSON_CK, len=*) :: key, value
       type(json_value), pointer :: place, src
-      character (kind=JSON_CK, len=:), allocatable :: type
+      character (kind=JSON_CK, len=:), allocatable :: typeStr
       integer :: i, j, n
       logical :: found
 
       n = 0
       do i = 1, this%core%count(place)
          call this%core%get_child(place, i, src)
-         call this%core%get(src, key, type, found)
-         if(found .and. type == trim(value)) then
+         typeStr = this%getStrAt(src, key, found)
+         call this%core%get(src, key, typeStr, found)
+         if(found .and. typeStr == trim(value)) then
             n = n + 1
          end if
       end do
@@ -3377,8 +3426,8 @@ contains
       j = 1
       do i = 1, this%core%count(place)
          call this%core%get_child(place, i, src)
-         call this%core%get(src, key, type, found)
-         if(found .and. type == value) then
+         typeStr = this%getStrAt(src, key, found)
+         if(found .and. typeStr == value) then
             res(j)%p => src
             j = j + 1
          end if
