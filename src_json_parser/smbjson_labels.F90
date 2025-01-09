@@ -158,7 +158,6 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_SRC_ATTACHED_ID = "attachedToLineId"
 
    ! type(Planewave)
-   character (len=*), parameter :: J_SRC_PW_ATTRIBUTE = "attribute"
    character (len=*), parameter :: J_SRC_PW_DIRECTION = "direction"
    character (len=*), parameter :: J_SRC_PW_POLARIZATION = "polarization"
    character (len=*), parameter :: J_SRC_PW_THETA = "theta"
