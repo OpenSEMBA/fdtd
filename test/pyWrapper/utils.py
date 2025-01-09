@@ -103,6 +103,16 @@ def createFaceTagDictionary(vtkfile):
     unique, counts = np.unique(tags, return_counts=True)
     return dict(zip(unique, counts))
 
+def createLineTagDictionary(vtkfile):
+    ugrid = pv.UnstructuredGrid(vtkfile)
+    lines = np.argwhere(ugrid.celltypes == 3)  # [i][0]
+    tags = np.array([])
+    tagnumber_array = ugrid.cell_data['tagnumber']
+    for i in range(lines[0][0], lines[-1][0]+1):
+        tags = np.append(tags, tagnumber_array[i])
+
+    unique, counts = np.unique(tags, return_counts=True)
+    return dict(zip(unique, counts))
 
 def setNgspice(tmp_path):
     if platform == "linux" or platform == "linux2":

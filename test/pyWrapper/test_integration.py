@@ -78,3 +78,39 @@ def test_sgbc_with_mapvtk_checking_tagnumbers(tmp_path):
     assert d[64] == 4
     assert d[128] == 4
     assert d[192] == 4
+
+    d = createLineTagDictionary(vtkmapfile)
+    assert d[64] == 8
+    assert d[128] == 6
+    assert d[192] == 4
+
+def test_tagnumbers_1_volume(tmp_path):
+    fn = CASES_FOLDER + 'tagNumber_mediaType/pec_volume.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully() == True
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    d = createFaceTagDictionary(vtkmapfile)
+    assert d[64] == 36
+
+def test_tagnumbers_2_volumes(tmp_path):
+    fn = CASES_FOLDER + 'tagNumber_mediaType/pec_volumes.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully() == True
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    d = createFaceTagDictionary(vtkmapfile)
+    assert d[64] == 36
+    assert d[128] == 36
