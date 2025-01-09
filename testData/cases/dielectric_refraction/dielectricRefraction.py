@@ -76,15 +76,45 @@ plt.xlim(0, 5e-8)
 plt.legend()
 
 # %%
-getMaxTimeOutside = outside.df['field'].argmin()
-getMaxTimeOutside
-# %%
-outside.df['field'][getMaxTimeOutside]
-# %%
-outside.df['time'][getMaxTimeOutside]
-# %%
-getMaxTimeInside = inside.df['field'].argmin()
-inside.df['field'][getMaxTimeInside]
-inside.df['time'][getMaxTimeInside]
+incidentPulseIndex = outside.df['field'].argmin()
+reflectedPulseIndex = outside.df['field'].argmax()
+refractedPulseIndex = inside.df['field'].argmin()
 
+# %%
+incidentPulse = outside.df['field'][incidentPulseIndex]
+reflectedPulse = outside.df['field'][reflectedPulseIndex]
+refractedPulse = inside.df['field'][refractedPulseIndex]
+pulses = [
+    incidentPulse,
+    reflectedPulse,
+    refractedPulse
+]
+
+incidentTime = outside.df['time'][incidentPulseIndex]
+reflectedTime = outside.df['time'][reflectedPulseIndex]
+refractedTime = inside.df['time'][refractedPulseIndex]
+
+times = [
+    incidentTime,
+    reflectedTime,
+    refractedTime
+]
+
+for i in range(len(pulses)):
+    print(pulses[i])
+    print(times[i])
+    print()
+
+# %%
+
+print(pulses[0] + pulses[1] - pulses[2])
+# %%
+
+timeToDielectricSurface = (times[1] - times[0])/2 + times[0]
+
+reflectedDelay = times[1] - timeToDielectricSurface
+refractedDelay = times[2] - timeToDielectricSurface
+print(reflectedDelay)
+print(refractedDelay)
+print(reflectedDelay/refractedDelay)
 # %%
