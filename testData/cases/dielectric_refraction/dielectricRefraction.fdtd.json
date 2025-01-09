@@ -1,0 +1,104 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Example input with sgbc material",
+
+    "general": {
+        "timeStep": 10e-11,
+        "numberOfSteps": 2000
+    },
+    
+    "boundary": {
+        "xLower": {"type": "pec"},
+        "xUpper": {"type": "pec"},
+        "yLower": {"type": "pmc"},
+        "yUpper": {"type": "pmc"},
+        "zLower": {"type": "mur"},
+        "zUpper": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [2, 2, 60],
+            "steps": { "x": [0.25], "y": [0.25], "z": [0.25] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [1, 1, 20]},
+            {"id": 2, "relativePosition": [1, 1, 40]},
+            {"id": 3, "relativePosition": [1, 1, 5]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [1]},
+            {"id": 2, "type": "node", "coordinateIds": [2]},
+            {"id": 3, "type": "node", "coordinateIds": [3]},
+            {"id": 4, "type": "cell", "intervals": [ [ [0, 0, 0], [2,2,60] ] ]},
+            {"id": 5, "type": "cell", "intervals": [[ [0, 0, 30], [2,2,60] ]]}
+        ]
+    },
+
+    "materials": [
+        {
+            "id": 1,
+            "name": "DielectricMaterial",
+            "type": "isotropic",
+            "relativePermittivity": 4
+        }
+
+    ],
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [4],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5708,
+                "phi": 0.0
+            }
+        }
+    ],
+
+    "materialAssociations": [
+        {
+            "type": "bulk",
+            "materialId": 1,
+            "elementIds": [ 5 ]
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "outside",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [1],
+            "directions": ["x"],
+            "domain": { 
+                "type": "time" 
+            }
+        },
+        {
+            "name": "inside",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [2],
+            "directions": ["x"],
+            "domain": { 
+                "type": "time"
+            } 
+        },
+        {
+            "name": "nearWave",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [3],
+            "directions": ["x"],
+            "domain": { 
+                "type": "time"
+            } 
+        }
+    ]
+}
