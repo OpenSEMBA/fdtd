@@ -338,7 +338,7 @@ MODULE CreateMatrices
                      CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                   END IF
                END DO
-            END DO
+            END DO  
             DO j = punto%YI, punto%YE
                DO k = punto%ZI, punto%ZE
                   medio = MMiHx (i, j, k)
