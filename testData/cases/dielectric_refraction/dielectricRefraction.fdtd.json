@@ -18,20 +18,20 @@
 
     "mesh": {
         "grid": {
-            "numberOfCells": [2, 2, 60],
-            "steps": { "x": [0.25], "y": [0.25], "z": [0.25] }
+            "numberOfCells": [2, 2, 200],
+            "steps": { "x": [0.025], "y": [0.025], "z": [0.025] }
         },
         "coordinates": [
-            {"id": 1, "relativePosition": [1, 1, 20]},
-            {"id": 2, "relativePosition": [1, 1, 40]},
+            {"id": 1, "relativePosition": [1, 1, 40]},
+            {"id": 2, "relativePosition": [1, 1, 160]},
             {"id": 3, "relativePosition": [1, 1, 5]}
         ],
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [1]},
             {"id": 2, "type": "node", "coordinateIds": [2]},
             {"id": 3, "type": "node", "coordinateIds": [3]},
-            {"id": 4, "type": "cell", "intervals": [ [ [0, 0, 0], [2,2,60] ] ]},
-            {"id": 5, "type": "cell", "intervals": [[ [0, 0, 30], [2,2,60] ]]}
+            {"id": 4, "type": "cell", "intervals": [ [ [-1, -1, 0], [3,3,10] ] ]},
+            {"id": 5, "type": "cell", "intervals": [[ [0, 0, 100], [2,2,200] ]]}
         ]
     },
 
@@ -44,7 +44,6 @@
         }
 
     ],
-
     "sources": [
         {
             "type": "planewave",
@@ -91,7 +90,7 @@
             } 
         },
         {
-            "name": "nearWave",
+            "name": "reflected",
             "type": "point",
             "field": "electric",
             "elementIds": [3],

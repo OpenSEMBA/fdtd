@@ -12,8 +12,8 @@ SEMBA_EXE = '../../../build/bin/semba-fdtd'
 
 from pyWrapper import *
 # %%
-dt = 1e-11
-w0 = 0.5e-9
+dt = 1e-12
+w0 = 0.1e-8
 t0 = 10*w0
 t = np.arange(0, t0+2*t0, dt)
 f = np.exp( -np.power(t-t0,2)/ w0**2 )
@@ -25,6 +25,14 @@ data = np.zeros((len(t), 2))
 data[:,0] = t
 data[:,1] = f
 np.savetxt('gauss.exc', data)
+
+#%%
+fwave = np.sin(w0*t)
+
+data = np.zeros((len(t), 2))
+data[:,0] = t
+data[:,1] = fwave
+np.savetxt('wave.exc', data)
 
 #%%
 fq = fftfreq(len(t))/dt
@@ -54,14 +62,18 @@ assert solver.hasFinishedSuccessfully()
 #%%
 outside = Probe(solver.getSolvedProbeFilenames("outside")[0]) 
 plt.plot(outside.df['time'],  outside.df['field'], label='outside')
+plt.xlim(0, 5e-8)
 plt.legend()
-plt.xlim(0,1e-7)
 #%%
 inside = Probe(solver.getSolvedProbeFilenames("inside")[0])   
 plt.plot(inside.df['time'], inside.df['field'], label='inside')
+plt.xlim(0, 5e-8)
 plt.legend()
-plt.xlim(0,1e-7)
-
+#%%
+reflected = Probe(solver.getSolvedProbeFilenames("reflected")[0])
+plt.plot(reflected.df['time'], reflected.df['field'], label='reflected')
+plt.xlim(0, 5e-8)
+plt.legend()
 
 # %%
 getMaxTimeOutside = outside.df['field'].argmin()
