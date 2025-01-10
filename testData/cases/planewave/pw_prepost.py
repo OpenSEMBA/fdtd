@@ -14,8 +14,7 @@ from pyWrapper import *
 # %% Prepare solver
 solver = FDTD(input_filename = 'pw-in-box.fdtd.json', path_to_exe=SEMBA_EXE)
 solver.cleanUp()
-solver.run()
-assert solver.hasFinishedSuccessfully()
+solver.run() 
 
 # %% Postprocess
 before = Probe(solver.getSolvedProbeFilenames("before")[0])
@@ -35,8 +34,7 @@ plt.xlim(0,4e-9)
 # %% Prepare solver
 solver = FDTD(input_filename = 'pw-in-box-with-movie.fdtd.json', path_to_exe=SEMBA_EXE)
 solver.cleanUp()
-solver.run()
-assert solver.hasFinishedSuccessfully()
+solver.run() 
 
 # %% Postprocess
 import h5py

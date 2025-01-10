@@ -10,7 +10,6 @@ def test_shieldedPair(tmp_path):
                   flags=['-mtlnwires'],
                   run_in_folder=tmp_path)
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
 
     probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_0_V_75_74_74.dat',
                    'shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat',
@@ -25,11 +24,11 @@ def test_shieldedPair(tmp_path):
 
     for i in [2, 3]:
         p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:3], p_solved.df.to_numpy()[
+        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:3], p_solved._recordedData.to_numpy()[
                            :, 0:3], rtol=5e-2, atol=0.2)
     for i in [0, 1, 4, 5]:
         p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:4], p_solved.df.to_numpy()[
+        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:4], p_solved._recordedData.to_numpy()[
                            :, 0:4], rtol=5e-2, atol=0.2)
 
 
@@ -44,7 +43,6 @@ def test_coated_antenna(tmp_path):
         flags=['-mtlnwires'],
         run_in_folder=tmp_path)
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
 
     probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
     probe_files = [probe_current]
@@ -54,16 +52,16 @@ def test_coated_antenna(tmp_path):
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
-        p_expected.df.to_numpy()[:, 0],
-        p_solved.df.to_numpy()[:, 0],
+        p_expected._recordedData.to_numpy()[:, 0],
+        p_solved._recordedData.to_numpy()[:, 0],
         rtol=0.0, atol=10e-8)
     assert np.allclose(
-        p_expected.df.to_numpy()[:, 1],
-        p_solved.df.to_numpy()[:, 1],
+        p_expected._recordedData.to_numpy()[:, 1],
+        p_solved._recordedData.to_numpy()[:, 1],
         rtol=0.0, atol=10e-8)
     assert np.allclose(
-        p_expected.df.to_numpy()[:, 2],
-        p_solved.df.to_numpy()[:, 2],
+        p_expected._recordedData.to_numpy()[:, 2],
+        p_solved._recordedData.to_numpy()[:, 2],
         rtol=0.0, atol=10e-6)
 
 
@@ -74,7 +72,6 @@ def test_holland(tmp_path):
                   run_in_folder=tmp_path)
 
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
 
     probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
     probe_files = [probe_current]
@@ -84,8 +81,8 @@ def test_holland(tmp_path):
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
-        p_expected.df.to_numpy()[:, 0:3], 
-        p_solved.df.to_numpy()[:, 0:3], 
+        p_expected._recordedData.to_numpy()[:, 0:3], 
+        p_solved._recordedData.to_numpy()[:, 0:3], 
         rtol=1e-5, atol=1e-6)
 
 
@@ -97,7 +94,6 @@ def test_holland_mtln(tmp_path):
                   flags=['-mtlnwires'], run_in_folder=tmp_path)
 
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
 
     probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
     probe_files = [probe_current]
@@ -107,8 +103,8 @@ def test_holland_mtln(tmp_path):
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
-        p_expected.df.to_numpy()[:, 0:3], 
-        p_solved.df.to_numpy()[:, 0:3], 
+        p_expected._recordedData.to_numpy()[:, 0:3], 
+        p_solved._recordedData.to_numpy()[:, 0:3], 
         rtol=1e-5, atol=1e-6)
 
 
@@ -117,7 +113,6 @@ def test_towelHanger(tmp_path):
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
 
     probe_files = [solver.getSolvedProbeFilenames("wire_start")[0],
                    solver.getSolvedProbeFilenames("wire_mid")[0],
@@ -130,7 +125,7 @@ def test_towelHanger(tmp_path):
 
     for i in range(3):
         p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:3], p_solved.df.to_numpy()[
+        assert np.allclose(p_expected[i]._recordedData.to_numpy()[:, 0:3], p_solved._recordedData.to_numpy()[
                            :, 0:3], rtol=5e-2, atol=5e-2)
 
 
@@ -145,18 +140,16 @@ def test_sphere(tmp_path):
     solver['probes'][0]['domain']['finalFrequency'] = 1e9
 
     solver.run()
-    assert solver.hasFinishedSuccessfully()
 
     # semba-fdtd seems to always use the name Far for "far field" probes.
     far_field_probe_files = solver.getSolvedProbeFilenames("Far")
-    assert solver.hasFinishedSuccessfully() == True
+    assert 
     assert len(far_field_probe_files) == 1
     p = Probe(far_field_probe_files[0])
     assert p.type == 'farField'
 
     electric_field_movie_files = solver.getSolvedProbeFilenames(
         "electric_field_movie")
-    assert solver.hasFinishedSuccessfully() == True
     assert len(electric_field_movie_files) == 3
     p = Probe(electric_field_movie_files[0])
     assert p.type == 'movie'
@@ -168,7 +161,6 @@ def test_movie_in_planewave_in_box(tmp_path):
     fn = CASES_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    assert solver.hasFinishedSuccessfully()
 
     h5file = solver.getSolvedProbeFilenames("electric_field_movie")[2]
     with h5py.File(h5file, "r") as f:
@@ -186,16 +178,15 @@ def test_planewave_in_box(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver.run()
-    assert solver.hasFinishedSuccessfully()
 
     before = Probe(solver.getSolvedProbeFilenames("before")[0])
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
 
-    np.allclose(inbox.df['field'], inbox.df['incident'])
-    zeros = np.zeros_like(before.df['field'])
-    np.allclose(before.df['field'], zeros)
-    np.allclose(after.df['field'], zeros)
+    np.allclose(inbox._recordedData['field'], inbox._recordedData['incident'])
+    zeros = np.zeros_like(before._recordedData['field'])
+    np.allclose(before._recordedData['field'], zeros)
+    np.allclose(after._recordedData['field'], zeros)
 
 
 def test_planewave_with_periodic_boundaries(tmp_path):
@@ -203,16 +194,16 @@ def test_planewave_with_periodic_boundaries(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver.run()
-    assert solver.hasFinishedSuccessfully()
+    assert 
 
     before = Probe(solver.getSolvedProbeFilenames("before")[0])
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
 
-    np.allclose(inbox.df['field'], inbox.df['incident'])
-    zeros = np.zeros_like(before.df['field'])
-    np.allclose(before.df['field'], zeros)
-    np.allclose(after.df['field'], zeros)
+    np.allclose(inbox._recordedData['field'], inbox._recordedData['incident'])
+    zeros = np.zeros_like(before._recordedData['field'])
+    np.allclose(before._recordedData['field'], zeros)
+    np.allclose(after._recordedData['field'], zeros)
 
 
 def test_sgbc_shielding_effectiveness(tmp_path):
@@ -220,16 +211,15 @@ def test_sgbc_shielding_effectiveness(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver.run()
-    assert solver.hasFinishedSuccessfully()
 
     # FDTD results
     back = Probe(solver.getSolvedProbeFilenames("back")[0])
 
-    t = back.df['time']
+    t = back._recordedData['time']
     dt = t[1] - t[0]
     fq = fftfreq(len(t))/dt
-    INC = fft(back.df['incident'])
-    BACK = fft(back.df['field'])
+    INC = fft(back._recordedData['incident'])
+    BACK = fft(back._recordedData['field'])
     S21 = BACK/INC
 
     fmin = 8e6

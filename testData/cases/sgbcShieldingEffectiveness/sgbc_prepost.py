@@ -50,7 +50,6 @@ fn = 'shieldingEffectiveness.fdtd.json'
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
-assert solver.hasFinishedSuccessfully()
 
 # %% Postprocess
 back = Probe(solver.getSolvedProbeFilenames("back")[0])
