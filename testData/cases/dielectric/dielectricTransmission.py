@@ -53,7 +53,7 @@ plt.yscale('log')
 
 plt.grid()
 # %%
-fn = 'dielectricRefraction.fdtd.json'
+fn = 'dielectricTransmission.fdtd.json'
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
@@ -61,38 +61,33 @@ assert solver.hasFinishedSuccessfully()
 
 #%%
 outside = Probe(solver.getSolvedProbeFilenames("outside")[0]) 
-plt.plot(outside.df['time'],  outside.df['field'], label='outside')
+plt.plot(outside["time"].to_numpy(),  outside["field"].to_numpy(), label='outside')
 plt.xlim(0, 5e-8)
 plt.legend()
 #%%
 inside = Probe(solver.getSolvedProbeFilenames("inside")[0])   
-plt.plot(inside.df['time'], inside.df['field'], label='inside')
-plt.xlim(0, 5e-8)
-plt.legend()
-#%%
-reflected = Probe(solver.getSolvedProbeFilenames("reflected")[0])
-plt.plot(reflected.df['time'], reflected.df['field'], label='reflected')
+plt.plot(inside["time"].to_numpy(), inside["field"].to_numpy(), label='inside')
 plt.xlim(0, 5e-8)
 plt.legend()
 
 # %%
-incidentPulseIndex = outside.df['field'].argmin()
-reflectedPulseIndex = outside.df['field'].argmax()
-refractedPulseIndex = inside.df['field'].argmin()
+incidentPulseIndex = outside['field'].argmin()
+reflectedPulseIndex = outside['field'].argmax()
+refractedPulseIndex = inside['field'].argmin()
 
 # %%
-incidentPulse = outside.df['field'][incidentPulseIndex]
-reflectedPulse = outside.df['field'][reflectedPulseIndex]
-refractedPulse = inside.df['field'][refractedPulseIndex]
+incidentPulse = outside['field'][incidentPulseIndex]
+reflectedPulse = outside['field'][reflectedPulseIndex]
+refractedPulse = inside['field'][refractedPulseIndex]
 pulses = [
     incidentPulse,
     reflectedPulse,
     refractedPulse
 ]
 
-incidentTime = outside.df['time'][incidentPulseIndex]
-reflectedTime = outside.df['time'][reflectedPulseIndex]
-refractedTime = inside.df['time'][refractedPulseIndex]
+incidentTime = outside["time"][incidentPulseIndex]
+reflectedTime = outside["time"][reflectedPulseIndex]
+refractedTime = inside["time"][refractedPulseIndex]
 
 times = [
     incidentTime,
