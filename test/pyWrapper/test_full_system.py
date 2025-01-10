@@ -143,7 +143,6 @@ def test_sphere(tmp_path):
 
     # semba-fdtd seems to always use the name Far for "far field" probes.
     far_field_probe_files = solver.getSolvedProbeFilenames("Far")
-    assert 
     assert len(far_field_probe_files) == 1
     p = Probe(far_field_probe_files[0])
     assert p.type == 'farField'
@@ -194,8 +193,7 @@ def test_planewave_with_periodic_boundaries(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver.run()
-    assert 
-
+    
     before = Probe(solver.getSolvedProbeFilenames("before")[0])
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
