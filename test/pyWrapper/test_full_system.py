@@ -1,4 +1,5 @@
 from utils import *
+from typing import Dict
 
 
 @no_mtln_skip
@@ -268,3 +269,73 @@ def test_sgbc_shielding_effectiveness(tmp_path):
     anal_s21_db = 20*np.log10(np.abs(slab.s[:, 0, 1]))
 
     assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
+
+def test_dielectric_transmission(tmp_path):
+    _FIELD_TOLERANCE = 0.05
+
+    def getIncidentField(probe:Probe) -> Dict:
+        idx = probe["field"].argmin()
+        time = probe["time"][idx]
+        value = probe["field"][idx]
+        return {"time":time, "value": value}
+    
+    def getReflectedField(probe:Probe) -> Dict:
+        idx = probe["field"].argmax()
+        time = probe["time"][idx]
+        value = probe["field"][idx]
+        return {"time":time, "value": value}
+    
+    def getTransmitedField(probe:Probe) -> Dict:
+        idx = probe["field"].argmin()
+        time = probe["time"][idx]
+        value = probe["field"][idx]
+        return {"time":time, "value": value}
+    
+    def getReflectedDelay(incidentTime:float, reflectedTime:float):
+        timeToSurface:float = ((reflectedTime-incidentTime)/2) + incidentTime
+        reflectedDelay:float = reflectedTime - timeToSurface
+        return reflectedDelay
+        
+    def getTransmitedDelay(incidentTime:float, reflectedTime:float, transmitedTime:float):
+        timeToSurface:float = ((reflectedTime-incidentTime)/2) + incidentTime
+        transmitedDelay = transmitedTime - timeToSurface
+        return transmitedDelay
+
+    fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    relativePermittivity = solver.getMaterialProperties('DielectricMaterial')["relativePermittivity"]
+    materialRelativeImpedance = np.sqrt(1/relativePermittivity)
+    
+    expectedReflectedCoeff = (materialRelativeImpedance - 1) / (materialRelativeImpedance + 1)
+    expectedtransmitedCoeff = (1 + expectedReflectedCoeff)
+    expectedDelayRatio = 1/np.sqrt(relativePermittivity)
+
+    outsideProbe = Probe(solver.getSolvedProbeFilenames("outside")[0])
+    insideProbe = Probe(solver.getSolvedProbeFilenames("inside")[0])
+
+    time = outsideProbe["time"]
+    dt = time[1] - time[0]
+    fq = fftfreq(len(time))/dt
+
+    incidentField = getIncidentField(outsideProbe)
+    reflectedField = getReflectedField(outsideProbe)
+    transmitedField = getTransmitedField(insideProbe)
+ 
+    assert (incidentField['value'] - transmitedField['value'] + reflectedField['value']) < _FIELD_TOLERANCE
+    assert np.allclose(reflectedField["value"]/incidentField["value"], expectedReflectedCoeff, rtol=_FIELD_TOLERANCE)
+    assert np.allclose(transmitedField["value"]/incidentField["value"], expectedtransmitedCoeff, rtol=_FIELD_TOLERANCE)
+
+    reflectedDelay:float = getReflectedDelay(incidentField['time'], reflectedField['time'])
+    transmitedDelay:float = getTransmitedDelay(incidentField['time'], reflectedField['time'], transmitedField['time'])
+
+    assert np.allclose(reflectedDelay/transmitedDelay, expectedDelayRatio, rtol=_FIELD_TOLERANCE)
+
+    
+
+
+    
+
+    

@@ -265,3 +265,9 @@ class FDTD():
         mapFile = os.path.join(current_path, folders[0], folders[0]+"_1.vtk")
         assert os.path.isfile(mapFile)
         return mapFile
+    
+    def getMaterialProperties(self, materialName):
+        if 'materials' in self._input:
+            for idx, element in enumerate(self._input['materials']):
+                if element["name"] == materialName:
+                    return self._input['materials'][idx]

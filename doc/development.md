@@ -169,3 +169,157 @@ Once the environment is loaded, follow the steps in the next section.
    - Launch the project by pressing **F5** to begin debugging.
 
 Following these steps, the project should be set up and ready to compile and debug in Visual Studio 2019 with Intel tools.
+
+## WSL2 + Visual Studio Code + GFortran Setup Guide
+
+### Prerequisites
+
+- **Windows 10** (version 1903 or higher) or **Windows 11**
+- **WSL2** installed
+- **Visual Studio Code (VSCode)** installed on Windows
+
+### Step 1: Install WSL2
+
+#### 1.1 Install WSL (Windows Subsystem for Linux)
+
+1. Open **PowerShell** as Administrator and run the following command to enable the required features:
+
+```bash
+  wsl --install
+  wsl --set-default-version 2
+```
+
+2. After installation is complete, you can choose a Linux distribution from the Microsoft Store (e.g., Ubuntu). for example if you want to install Ubuntu:
+
+```bash
+  wsl --install -d Ubuntu-24.04
+```
+
+
+3. Launch the installed distribution from the Start menu, and it will complete the installation by setting up a user.
+
+### Step 2: Install Visual Studio Code
+
+#### 2.1 Download Visual Studio Code
+Go to the official Visual Studio Code website and download the installer:
+https://code.visualstudio.com/
+
+Once downloaded, double-click the installer and follow the on-screen instructions to complete the installation.
+
+#### 2.2 Launch Visual Studio Code
+
+After the installation is complete, you can open Visual Studio Code either by:
+- Searching for "Visual Studio Code" in the Start Menu
+- Or by launching the VSCode application from the shortcut created during installation.
+
+#### 2.3 Installing VSCode Extensions
+
+To work with these project is mandatory to install the next extensions
+
+- Modern Fortran (Fortran development)
+- Python (Python development)
+- C/C++ (C/C++ development)
+- CMake (CMake integration)
+- C++ TestMate (C++ testing)
+- Remote - WSL
+
+#### 2.4 Connect to WSL2
+
+After installing the Remote - WSL extension, follow these steps to open VSCode in the WSL2 environment:
+1. Press Ctrl + Shift + P to open the Command Palette.
+2. Type `Remote-WSL: New Window` and press Enter.
+3. VSCode will open a new window and connect to your default WSL2 distribution.
+
+Now you're set up to work with your WSL2 environment directly from VSCode
+
+Now we are ready to clone the repo
+
+#### Step 1: Clone the Repository
+```bash
+git clone <repository_url>
+cd <repository_name>
+```
+
+This project has submodule dependencies remember to initiate an update the
+
+```bash
+git submodule init
+git submodule update
+```
+
+#### Step 2: Install Python Requirements
+
+If the project has Python dependencies listed in a requirements.txt file, you can install them using the following command:
+
+1. Make sure you have Python and pip installed on your system. It is recomended to use a venv.
+2. Run the following command to install the required dependencies:
+
+```bash
+python3 -m pip install -r requirements.txt
+```
+
+#### Step 3: Install hdf5 dependencies
+It is needed to install manually the hdf5 dependencies. On the terminal type the next command:
+```
+sudo apt install libhdf5-dev libopenmpi-dev
+```
+#### Step 4: Build the Project with CMake
+
+Now, you need to build the project using CMake.
+
+1. Open the Command Palette in Visual Studio Code by pressing Ctrl + Shift + P.
+2. Type CMake: Build and select it from the list of commands.
+
+   This will trigger the build process using the current CMake configuration.
+
+
+#### Step 5: Change CMake Settings (Optional)
+
+If you want to modify the CMake settings (such as build options or configurations), follow these steps:
+
+1. Open the Command Palette in Visual Studio Code by pressing Ctrl + Shift + P.
+2. Type CMake: Configure and select it from the list of commands.
+
+   This will open the CMake configuration interface where you can modify build settings.
+
+3. After making any changes to the settings, rebuild the project by running the CMake: Clean Rebuild command again from the Command Palette.
+
+
+#### Step 6: Configure and Run Python Tests
+
+To run Python unit tests, you need to configure the testing framework.
+
+1. Open the Command Palette in Visual Studio Code by pressing Ctrl + Shift + P.
+2. Type Python: Configure Tests and select it from the list of commands.
+3. When prompted, select unittest as the testing framework.
+4. Select the folder containing your test files. Typically, this folder is named tests or something similar. Once selected, Visual Studio Code will automatically configure and discover the tests.
+
+To run the tests:
+
+1. Open the Command Palette again by pressing Ctrl + Shift + P.
+2. Type Python: Run All Tests to run the unit tests in your project.
+
+## Debugging the project
+
+For a correct debugging experience is needed to configure a launch.json file. This file usually is created by vscode automatically. In case it does not exist. You can create your own on .vscode folder.
+
+An example of launch.json filke is given. This will use a file as argument when calling to semba-fdtd.
+```json
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Fortran Launch (GDB)",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/bin/semba-fdtd",
+            "miDebuggerPath": "gdb",
+            "args": ["-i", "shieldingEffectiveness.fdtd.json"],
+            "stopAtEntry": false,
+            "cwd": "${workspaceRoot}/tmp_cases/sgbcShieldingEffectiveness/"
+        }
+    ]
+}
+```
+
+Now you are ready to work with the project.
