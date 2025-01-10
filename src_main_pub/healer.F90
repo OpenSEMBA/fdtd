@@ -168,7 +168,6 @@ MODULE CreateMatrices
                      !cuando se actualiza el numero de shared (sept'11)
                      !        OnSurface = (k == punto%ZI).or.(k == puntoPlus1%ZE).or.(j == punto%YI).or.(j == puntoPlus1%YE)
                      !        if (OnSurface) call AddToShared(iEx,i,j,k,indicemedio,medio,Eshared)
-                     tags%edge%x(i,j,k) = 64*numertag
                   END IF
 !               END IF
             END DO
@@ -190,7 +189,6 @@ MODULE CreateMatrices
                      !cuando se actualiza el numero de shared (sept'11)
                      !        OnSurface = (k == punto%ZI).or.(k == puntoPlus1%ZE).or.(i == punto%XI).or.(i == puntoPlus1%XE)
                      !        if (OnSurface) call AddToShared(iEy,i,j,k,indicemedio,medio,Eshared)
-                     tags%edge%y(i,j,k) = 64*numertag
                   END IF
                   
  !              END IF
@@ -213,7 +211,6 @@ MODULE CreateMatrices
                      !cuando se actualiza el numero de shared (sept'11)
                      !        OnSurface = (i == punto%XI).or.(i == puntoPlus1%XE).or.(j == punto%YI).or.(j == puntoPlus1%YE)
                      !        if (OnSurface) call AddToShared(iEz,i,j,k,indicemedio,medio,Eshared)
-                     tags%edge%z(i,j,k) = 64*numertag
                   END IF
 !               END IF
             END DO
@@ -350,7 +347,6 @@ MODULE CreateMatrices
                      tags%edge%y(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
-                     tags%edge%y(i,j,k) = 64*numertag
                   END IF
                END DO
             END DO
@@ -363,7 +359,6 @@ MODULE CreateMatrices
                      tags%edge%z(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
-                     tags%edge%z(i,j,k) = 64*numertag
                   END IF
                END DO
             END DO
@@ -394,7 +389,6 @@ MODULE CreateMatrices
                      tags%edge%z(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
-                     tags%edge%z(i,j,k) = 64*numertag
                   END IF
                END DO
             END DO
@@ -407,7 +401,6 @@ MODULE CreateMatrices
                      tags%edge%x(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
-                     tags%edge%x(i,j,k) = 64*numertag
                   END IF
                END DO
             END DO
@@ -438,7 +431,6 @@ MODULE CreateMatrices
                      tags%edge%x(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
-                     tags%edge%x(i,j,k) = 64*numertag
                   END IF
                END DO
             END DO
@@ -450,7 +442,6 @@ MODULE CreateMatrices
                      tags%edge%y(i,j,k) = 64*numertag
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
-                     tags%edge%y(i,j,k) = 64*numertag
                   END IF
                END DO
             END DO
@@ -566,7 +557,6 @@ MODULE CreateMatrices
                         endif
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
-                        tags%edge%x(i,j,k) = 64*numertag
                      END IF
                END DO
             END DO
@@ -605,7 +595,6 @@ MODULE CreateMatrices
                         
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
-                        tags%edge%y(i,j,k) = 64*numertag
                      END IF
                END DO
             END DO
@@ -644,7 +633,6 @@ MODULE CreateMatrices
                         
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
-                        tags%edge%z(i,j,k) = 64*numertag
                      END IF
 
                END DO
@@ -744,7 +732,6 @@ MODULE CreateMatrices
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
-                        tags%edge%y(i,j,k) = 64*numertag
                      END IF
                   END DO
                END DO
@@ -762,7 +749,6 @@ MODULE CreateMatrices
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
-                        tags%edge%z(i,j,k) = 64*numertag
                      END IF
                   END DO
                END DO
@@ -779,9 +765,6 @@ MODULE CreateMatrices
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      !CALL AddToShared (iHx, i, j, k, indicemedio, medio, Hshared)
-                     if (tags%face%x(i,j,k) /= 0) then 
-                        tags%face%x(i,j,k) = 64*numertag
-                     end if
 
                   END IF
                END DO
@@ -804,7 +787,6 @@ MODULE CreateMatrices
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
-                        tags%edge%z(i,j,k) = 64*numertag
                      END IF
                   END DO
                END DO
@@ -822,7 +804,6 @@ MODULE CreateMatrices
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
-                        tags%edge%x(i,j,k) = 64*numertag
                      END IF
                   END DO
                END DO
@@ -839,10 +820,6 @@ MODULE CreateMatrices
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      !CALL AddToShared (iHy, i, j, k, indicemedio, medio, Hshared)
-                     if (tags%face%y(i,j,k) /= 0) then 
-                        tags%face%y(i,j,k) = 64*numertag
-                     end if
-
                   END IF
                END DO
             END DO
@@ -864,7 +841,6 @@ MODULE CreateMatrices
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
-                        tags%edge%x(i,j,k) = 64*numertag
                      END IF
                   END DO
                END DO
@@ -882,7 +858,6 @@ MODULE CreateMatrices
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
-                        tags%edge%y(i,j,k) = 64*numertag
                      END IF
                   END DO
                END DO
@@ -899,7 +874,6 @@ MODULE CreateMatrices
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      !CALL AddToShared (iHz, i, j, k, indicemedio, medio, Hshared)
-                     tags%face%z(i,j,k) = 64*numertag
                   END IF
                END DO
             END DO
