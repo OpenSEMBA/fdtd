@@ -92,15 +92,18 @@ def readSpiceFile(spice_file):
     return t, val
 
 
-def createFaceTagDictionary(vtkfile):
+def createPropertyDictionary(vtkfile, celltype:int, property:str):
     ugrid = pv.UnstructuredGrid(vtkfile)
-    quads = np.argwhere(ugrid.celltypes == 9)  # [i][0]
-    tags = np.array([])
-    tagnumber_array = ugrid.cell_data['tagnumber']
-    for i in range(quads[0][0], quads[-1][0]+1):
-        tags = np.append(tags, tagnumber_array[i])
+    objs = np.argwhere(ugrid.celltypes == celltype)  # [i][0]
+    if len(objs) == 0:
+        return dict()
+    
+    props = np.array([])
+    prop_array = ugrid.cell_data[property]
+    for i in range(objs[0][0], objs[-1][0]+1):
+        props = np.append(props, prop_array[i])
 
-    unique, counts = np.unique(tags, return_counts=True)
+    unique, counts = np.unique(props, return_counts=True)
     return dict(zip(unique, counts))
 
 

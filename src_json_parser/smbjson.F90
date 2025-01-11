@@ -493,6 +493,7 @@ contains
             resNCoords = size(cs)
             resNCoordsMax = size(cs)
          else 
+            allocate(auxCs(size(resCoords)))
             do i = 1, size(resCoords)
                 auxCs(i) = resCoords(i)
             end do
