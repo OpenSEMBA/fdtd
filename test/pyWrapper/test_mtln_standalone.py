@@ -18,7 +18,7 @@ def test_paul_8_6_square(tmp_path):
     probe_files = [probe_voltage, probe_current]
     p_solved = Probe(probe_files[0])
 
-    assert np.allclose(p_expected._recordedData.to_numpy()[:, 0:2], p_solved._recordedData.to_numpy()[
+    assert np.allclose(p_expected.data.to_numpy()[:, 0:2], p_solved.data.to_numpy()[
                        :, 0:2], rtol=0.01, atol=0.2)
 
 
@@ -39,7 +39,7 @@ def test_paul_8_6_triangle(tmp_path):
     probe_files = [probe_voltage, probe_current]
     p_solved = Probe(probe_files[0])
 
-    assert np.allclose(p_expected._recordedData.to_numpy()[:, 0:2], p_solved._recordedData.to_numpy()[
+    assert np.allclose(p_expected.data.to_numpy()[:, 0:2], p_solved.data.to_numpy()[
                        :, 0:2], rtol=0.01, atol=0.5)
 
 
@@ -64,8 +64,8 @@ def test_paul_9_6(tmp_path):
     p_solved = [Probe(probe_files[0]), Probe(probe_files[1])]
 
     for i in range(2):
-        assert np.allclose(p_expected[i]._recordedData.to_numpy()[
-                           :, :], p_solved[i]._recordedData.to_numpy()[:, :], rtol=0.01, atol=0.5)
+        assert np.allclose(p_expected[i].data.to_numpy()[
+                           :, :], p_solved[i].data.to_numpy()[:, :], rtol=0.01, atol=0.5)
 
 
 @no_mtln_skip
@@ -85,8 +85,8 @@ def test_spice_multilines_opamp(tmp_path):
 
     p_solved = [Probe(probe_files[0]), Probe(probe_files[0])]
 
-    assert np.allclose(p_expected[0]._recordedData.to_numpy()[
-                       :-1, :], p_solved[0]._recordedData.to_numpy()[:-1, :], rtol=0.01, atol=0.05e-3)
+    assert np.allclose(p_expected[0].data.to_numpy()[
+                       :-1, :], p_solved[0].data.to_numpy()[:-1, :], rtol=0.01, atol=0.05e-3)
 
 
 @no_mtln_skip
@@ -111,8 +111,8 @@ def test_spice_connectors_diode(tmp_path):
     p_solved = [Probe(probe_files[0]), Probe(probe_files[1])]
 
     for i in range(2):
-        assert np.allclose(p_expected[i]._recordedData.to_numpy()[
-                           :-20, :], p_solved[i]._recordedData.to_numpy()[:-20, :], rtol=0.01, atol=0.05e-3)
+        assert np.allclose(p_expected[i].data.to_numpy()[
+                           :-20, :], p_solved[i].data.to_numpy()[:-20, :], rtol=0.01, atol=0.05e-3)
 
 
 @no_mtln_skip
@@ -136,8 +136,8 @@ def test_line_multiline_junction(tmp_path):
     probe_files = [probe_s4, probe_s5, probe_s2]
 
     for i in range(3):
-        assert np.allclose(p_expected[i]._recordedData.to_numpy()[
-                           :-20, :], Probe(probe_files[i])._recordedData.to_numpy()[:-20, :], rtol=0.01, atol=5e-3)
+        assert np.allclose(p_expected[i].data.to_numpy()[
+                           :-20, :], Probe(probe_files[i]).data.to_numpy()[:-20, :], rtol=0.01, atol=5e-3)
 
 
 @no_mtln_skip
@@ -157,5 +157,5 @@ def test_spice_opamp_saturation(tmp_path):
     p_solved = Probe(solver.getSolvedProbeFilenames(
         "opamp_voltage_bundle_wire1")[0])
 
-    assert np.allclose(p_expected._recordedData.to_numpy()[
-                       :-5, :], p_solved._recordedData.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)
+    assert np.allclose(p_expected.data.to_numpy()[
+                       :-5, :], p_solved.data.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)

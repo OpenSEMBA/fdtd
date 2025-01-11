@@ -24,11 +24,11 @@ def test_shieldedPair(tmp_path):
 
     for i in [2, 3]:
         p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:3], p_solved._recordedData.to_numpy()[
+        assert np.allclose(p_expected[i].data.to_numpy()[:, 0:3], p_solved.data.to_numpy()[
                            :, 0:3], rtol=5e-2, atol=0.2)
     for i in [0, 1, 4, 5]:
         p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:4], p_solved._recordedData.to_numpy()[
+        assert np.allclose(p_expected[i].data.to_numpy()[:, 0:4], p_solved.data.to_numpy()[
                            :, 0:4], rtol=5e-2, atol=0.2)
 
 
@@ -52,16 +52,16 @@ def test_coated_antenna(tmp_path):
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
-        p_expected._recordedData.to_numpy()[:, 0],
-        p_solved._recordedData.to_numpy()[:, 0],
+        p_expected.data.to_numpy()[:, 0],
+        p_solved.data.to_numpy()[:, 0],
         rtol=0.0, atol=10e-8)
     assert np.allclose(
-        p_expected._recordedData.to_numpy()[:, 1],
-        p_solved._recordedData.to_numpy()[:, 1],
+        p_expected.data.to_numpy()[:, 1],
+        p_solved.data.to_numpy()[:, 1],
         rtol=0.0, atol=10e-8)
     assert np.allclose(
-        p_expected._recordedData.to_numpy()[:, 2],
-        p_solved._recordedData.to_numpy()[:, 2],
+        p_expected.data.to_numpy()[:, 2],
+        p_solved.data.to_numpy()[:, 2],
         rtol=0.0, atol=10e-6)
 
 
@@ -81,8 +81,8 @@ def test_holland(tmp_path):
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
-        p_expected._recordedData.to_numpy()[:, 0:3], 
-        p_solved._recordedData.to_numpy()[:, 0:3], 
+        p_expected.data.to_numpy()[:, 0:3], 
+        p_solved.data.to_numpy()[:, 0:3], 
         rtol=1e-5, atol=1e-6)
 
 
@@ -103,8 +103,8 @@ def test_holland_mtln(tmp_path):
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
-        p_expected._recordedData.to_numpy()[:, 0:3], 
-        p_solved._recordedData.to_numpy()[:, 0:3], 
+        p_expected.data.to_numpy()[:, 0:3], 
+        p_solved.data.to_numpy()[:, 0:3], 
         rtol=1e-5, atol=1e-6)
 
 
@@ -125,7 +125,7 @@ def test_towelHanger(tmp_path):
 
     for i in range(3):
         p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i]._recordedData.to_numpy()[:, 0:3], p_solved._recordedData.to_numpy()[
+        assert np.allclose(p_expected[i].data.to_numpy()[:, 0:3], p_solved.data.to_numpy()[
                            :, 0:3], rtol=5e-2, atol=5e-2)
 
 
@@ -182,10 +182,10 @@ def test_planewave_in_box(tmp_path):
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
 
-    np.allclose(inbox._recordedData['field'], inbox._recordedData['incident'])
-    zeros = np.zeros_like(before._recordedData['field'])
-    np.allclose(before._recordedData['field'], zeros)
-    np.allclose(after._recordedData['field'], zeros)
+    np.allclose(inbox.data['field'], inbox.data['incident'])
+    zeros = np.zeros_like(before.data['field'])
+    np.allclose(before.data['field'], zeros)
+    np.allclose(after.data['field'], zeros)
 
 
 def test_planewave_with_periodic_boundaries(tmp_path):
@@ -198,10 +198,10 @@ def test_planewave_with_periodic_boundaries(tmp_path):
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
 
-    np.allclose(inbox._recordedData['field'], inbox._recordedData['incident'])
-    zeros = np.zeros_like(before._recordedData['field'])
-    np.allclose(before._recordedData['field'], zeros)
-    np.allclose(after._recordedData['field'], zeros)
+    np.allclose(inbox.data['field'], inbox.data['incident'])
+    zeros = np.zeros_like(before.data['field'])
+    np.allclose(before.data['field'], zeros)
+    np.allclose(after.data['field'], zeros)
 
 
 def test_sgbc_shielding_effectiveness(tmp_path):
@@ -213,11 +213,11 @@ def test_sgbc_shielding_effectiveness(tmp_path):
     # FDTD results
     back = Probe(solver.getSolvedProbeFilenames("back")[0])
 
-    t = back._recordedData['time']
+    t = back.data['time']
     dt = t[1] - t[0]
     fq = fftfreq(len(t))/dt
-    INC = fft(back._recordedData['incident'])
-    BACK = fft(back._recordedData['field'])
+    INC = fft(back.data['incident'])
+    BACK = fft(back.data['field'])
     S21 = BACK/INC
 
     fmin = 8e6
