@@ -1,0 +1,37 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Example input with sgbc material",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 2000
+    },
+    
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 10, 10],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "elements": [
+            {"id": 1, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 3, 5] ] ]}
+        ]
+    },
+
+    "materials": [
+        {
+            "type": "pec",
+            "id": 1
+        }
+    ],
+
+    "materialAssociations": [
+        {
+            "materialId": 1,
+            "elementIds": [ 1 ]
+        }
+    ]
+}

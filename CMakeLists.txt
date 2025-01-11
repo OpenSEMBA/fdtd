@@ -17,13 +17,10 @@ option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
-option(SEMBA_FDTD_MAIN_LIB   "Compiles main library" ON)
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
-if (SEMBA_FDTD_EXECUTABLE)
-	set(SEMBA_FDTD_MAIN_LIB ON)
-else()
-	set(SEMBA_FDTD_MAIN_LIB OFF)
-endif()
+option(SEMBA_FDTD_MAIN_LIB   "Compiles main library" ON)
+option(SEMBA_FDTD_COMPONENTS_LIB  "Compiles components library" ON)
+option(SEMBA_FDTD_OUTPUTS_LIB  "Compiles outputs library" ON)
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_definitions(-DCompileWithSMBJSON)
@@ -40,8 +37,8 @@ add_definitions(
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-	set(CMAKE_Fortran_FLAGS "-ffree-form -ffree-line-length-none -fdec -fcheck=bounds -fopenmp -fallow-argument-mismatch")
-	set(CMAKE_CXX_FLAGS "-fopenmp")
+	set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -ffree-form -ffree-line-length-none -fdec -fcheck=bounds -fopenmp -fallow-argument-mismatch")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
 	add_definitions(-DCompileWithIncludeMpifh)
 endif()
 if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
@@ -60,8 +57,6 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
 				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp")
 			endif()
 		endif()
-
-
 	else()
 		message(FATAL_ERROR "Unrecognized system name")
 	endif()
@@ -82,13 +77,21 @@ add_library(semba-types
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_subdirectory(src_json_parser)
-	set(SMBJSON_LIBRARIES smbjson)
+	if(PROJECT_IS_TOP_LEVEL)
+		set(SMBJSON_LIBRARIES smbjson)
+	else()
+		set(SMBJSON_LIBRARIES smbjson PARENT_SCOPE)
+	endif()
 endif()
 if (SEMBA_FDTD_ENABLE_MTLN)
 	set(NGSPICE_LIB ngspice)
 	add_definitions(-DCompileWithMTLN)
 	add_subdirectory(src_mtln)
-	set(MTLN_LIBRARIES mtlnsolver ngspice_interface)
+	if (PROJECT_IS_TOP_LEVEL)
+		set(MTLN_LIBRARIES mtlnsolver ngspice_interface)
+	else()
+		set(MTLN_LIBRARIES mtlnsolver ngspice_interface PARENT_SCOPE)
+	endif()
 endif()
 
 if (SEMBA_FDTD_ENABLE_TEST)
@@ -96,45 +99,56 @@ if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(test)
 endif()
 
-if (SEMBA_FDTD_MAIN_LIB)
-	add_library(semba-main
+if(SEMBA_FDTD_COMPONENTS_LIB)
+	add_library(semba-components
+		"src_main_pub/errorreport.F90"
 		"src_main_pub/anisotropic.F90"
 		"src_main_pub/borderscpml.F90"
 		"src_main_pub/bordersmur.F90"
 		"src_main_pub/bordersother.F90"
-		"src_main_pub/calc_constants.F90"
-		"src_main_pub/dmma_thin_slot.F90"
 		"src_main_pub/electricdispersive.F90"
-		"src_main_pub/EpsMuTimeScale.F90"
-		"src_main_pub/farfield.F90"
-		"src_main_pub/getargs.F90"
-		"src_main_pub/healer.F90"
-		"src_main_pub/lumped.F90"
 		"src_main_pub/magneticdispersive.F90"
-		"src_main_pub/maloney_nostoch.F90"
-		"src_main_pub/mpicomm.F90"
-		"src_main_pub/nfde_rotate.F90"
 		"src_main_pub/nodalsources.F90"
 		"src_main_pub/planewaves.F90"
 		"src_main_pub/pml_bodies.F90"
-		"src_main_pub/preprocess_geom.F90"
-		"src_main_pub/storegeom.F90"
-		"src_main_pub/snapxdmf.F90"
-		"src_main_pub/version.F90"
-		"src_main_pub/postprocess.F90"
-		"src_main_pub/errorreport.F90"
-		"src_main_pub/interpreta_switches.F90"
-		"src_main_pub/resuming.F90"	
-		"src_main_pub/timestepping.F90"
-		"src_main_pub/observation.F90"
-		"src_main_pub/vtk.F90"
-		"src_main_pub/xdmf.F90"
-		"src_main_pub/xdmf_h5.F90"
+		"src_main_pub/maloney_nostoch.F90"
+		"src_main_pub/lumped.F90"
+		"src_main_pub/dmma_thin_slot.F90"
+		"src_main_pub/farfield.F90"
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
 	)
-	target_link_libraries(semba-main semba-types ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
-	target_link_libraries(semba-main ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+	target_link_libraries(semba-components semba-types ${MTLN_LIBRARIES})
+endif()
+
+if(SEMBA_FDTD_OUTPUTS_LIB)
+	add_library(semba-outputs
+		"src_main_pub/mpicomm.F90"
+		"src_main_pub/observation.F90"
+		"src_main_pub/vtk.F90"
+		"src_main_pub/snapxdmf.F90"
+		"src_main_pub/xdmf.F90"
+		"src_main_pub/xdmf_h5.F90"
+	)
+	target_link_libraries(semba-outputs semba-components ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+endif()
+
+if(SEMBA_FDTD_MAIN_LIB)
+	add_library(semba-main
+		"src_main_pub/calc_constants.F90"
+		"src_main_pub/nfde_rotate.F90"
+		"src_main_pub/EpsMuTimeScale.F90"
+		"src_main_pub/getargs.F90"
+		"src_main_pub/healer.F90"
+		"src_main_pub/preprocess_geom.F90"
+		"src_main_pub/storegeom.F90"
+		"src_main_pub/version.F90"
+		"src_main_pub/postprocess.F90"
+		"src_main_pub/interpreta_switches.F90"
+		"src_main_pub/resuming.F90"	
+		"src_main_pub/timestepping.F90"
+	)
+	target_link_libraries(semba-main semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
 endif()
 
 if (SEMBA_FDTD_EXECUTABLE)

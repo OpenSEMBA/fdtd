@@ -1,14 +1,18 @@
 from utils import *
-import pytest
+from typing import Dict
 
+
+@no_mtln_skip
 @pytest.mark.mtln
 def test_shieldedPair(tmp_path):
-    fn = CASE_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, \
-        flags = ['-mtlnwires'], run_in_folder=tmp_path)
+    fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  flags=['-mtlnwires'],
+                  run_in_folder=tmp_path)
     solver.run()
     assert solver.hasFinishedSuccessfully() == True
-    
+
     probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_0_V_75_74_74.dat',
                    'shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat',
                    'shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat',
@@ -16,146 +20,322 @@ def test_shieldedPair(tmp_path):
                    'shieldedPair.fdtd_wire_end_bundle_line_0_I_75_71_74.dat',
                    'shieldedPair.fdtd_wire_end_bundle_line_0_V_75_71_74.dat']
 
-    p_expected = [Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_start_bundle_line_0_V_75_74_74.dat'),
-                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat'),
-                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat'),
-                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_end_Wz_75_71_74_s1.dat'),
-                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_end_bundle_line_0_I_75_71_74.dat'),
-                  Probe(OUTPUT_FOLDER+'shieldedPair.fdtd_wire_end_bundle_line_0_V_75_71_74.dat')]
-    
-    
-    for i in [2,3]:
-        p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 5e-2, atol=0.2)
-    for i in [0,1,4,5]:
-        p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:,0:4], p_solved.df.to_numpy()[:,0:4], rtol = 5e-2, atol=0.2)
+    p_expected = []
+    for pf in probe_files:
+        p_expected.append(Probe(OUTPUTS_FOLDER+pf))
 
+    for i in [2, 3]:
+        p_solved = Probe(probe_files[i])
+        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:3], p_solved.df.to_numpy()[
+                           :, 0:3], rtol=5e-2, atol=0.2)
+    for i in [0, 1, 4, 5]:
+        p_solved = Probe(probe_files[i])
+        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:4], p_solved.df.to_numpy()[
+                           :, 0:4], rtol=5e-2, atol=0.2)
+
+
+@no_mtln_skip
 @pytest.mark.mtln
 def test_coated_antenna(tmp_path):
-    fn = CASE_FOLDER + 'coated_antenna/coated_antenna.fdtd.json'
+    fn = CASES_FOLDER + 'coated_antenna/coated_antenna.fdtd.json'
 
-    solver = FDTD(\
-        input_filename = fn, path_to_exe=SEMBA_EXE, \
-        flags = ['-mtlnwires'], run_in_folder=tmp_path)
-    solver.run()
-    assert solver.hasFinishedSuccessfully() == True
-    
-    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
-    probe_files = [probe_current]
-    
-    p_expected = Probe(OUTPUT_FOLDER+'coated_antenna.fdtd_mid_point_Wz_11_11_11_s2.dat')
-    
-    p_solved = Probe(probe_files[0])
-    assert np.allclose(p_expected.df.to_numpy()[:,0], p_solved.df.to_numpy()[:,0], rtol = 0.0 , atol=10e-8)
-    assert np.allclose(p_expected.df.to_numpy()[:,1], p_solved.df.to_numpy()[:,1], rtol = 0.0 , atol=10e-8)
-    assert np.allclose(p_expected.df.to_numpy()[:,2], p_solved.df.to_numpy()[:,2], rtol = 0.0 , atol=10e-6)
-    
-
-def test_holland(tmp_path):
-    fn = CASE_FOLDER + 'holland/holland1981.fdtd.json'
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    
-    solver.run()
-    assert solver.hasFinishedSuccessfully() == True
-    
-    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
-    probe_files = [probe_current]
-    
-    p_expected = Probe(OUTPUT_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
-    
-    p_solved = Probe(probe_files[0])
-    assert np.allclose(p_expected.df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 1e-5, atol=1e-6)
-
-@pytest.mark.mtln
-def test_holland_mtln(tmp_path):
-    fn = CASE_FOLDER + 'holland/holland1981.fdtd.json'
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags = ['-mtlnwires'], run_in_folder=tmp_path)
-    
-    solver.run()
-    assert solver.hasFinishedSuccessfully() == True
-    
-    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
-    probe_files = [probe_current]
-    
-    p_expected = Probe(OUTPUT_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
-    
-    p_solved = Probe(probe_files[0])
-    assert np.allclose(p_expected.df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 1e-5, atol=1e-6)
-
-
-def test_towelHanger(tmp_path):
-    fn = CASE_FOLDER + 'towelHanger/towelHanger.fdtd.json'
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE,\
+    solver = FDTD(
+        input_filename=fn,
+        path_to_exe=SEMBA_EXE,
+        flags=['-mtlnwires'],
         run_in_folder=tmp_path)
     solver.run()
     assert solver.hasFinishedSuccessfully() == True
-    
-    probe_files = [solver.getSolvedProbeFilenames("wire_start")[0], 
-                   solver.getSolvedProbeFilenames("wire_mid")[0], 
+
+    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
+    probe_files = [probe_current]
+
+    p_expected = Probe(
+        OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_Wz_11_11_11_s2.dat')
+
+    p_solved = Probe(probe_files[0])
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 0],
+        p_solved.df.to_numpy()[:, 0],
+        rtol=0.0, atol=10e-8)
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 1],
+        p_solved.df.to_numpy()[:, 1],
+        rtol=0.0, atol=10e-8)
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 2],
+        p_solved.df.to_numpy()[:, 2],
+        rtol=0.0, atol=10e-6)
+
+
+def test_holland(tmp_path):
+    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    solver = FDTD(input_filename=fn, 
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully() == True
+
+    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
+    probe_files = [probe_current]
+
+    p_expected = Probe(
+        OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+
+    p_solved = Probe(probe_files[0])
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 0:3], 
+        p_solved.df.to_numpy()[:, 0:3], 
+        rtol=1e-5, atol=1e-6)
+
+
+@no_mtln_skip
+@pytest.mark.mtln
+def test_holland_mtln(tmp_path):
+    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  flags=['-mtlnwires'], run_in_folder=tmp_path)
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully() == True
+
+    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
+    probe_files = [probe_current]
+
+    p_expected = Probe(
+        OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+
+    p_solved = Probe(probe_files[0])
+    assert np.allclose(
+        p_expected.df.to_numpy()[:, 0:3], 
+        p_solved.df.to_numpy()[:, 0:3], 
+        rtol=1e-5, atol=1e-6)
+
+
+def test_towelHanger(tmp_path):
+    fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.run()
+    assert solver.hasFinishedSuccessfully() == True
+
+    probe_files = [solver.getSolvedProbeFilenames("wire_start")[0],
+                   solver.getSolvedProbeFilenames("wire_mid")[0],
                    solver.getSolvedProbeFilenames("wire_end")[0]]
-    
-    p_expected = [Probe(OUTPUT_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
-                  Probe(OUTPUT_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
-                  Probe(OUTPUT_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
-    
+
+    p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
+                  Probe(OUTPUTS_FOLDER +
+                        'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
+                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
+
     for i in range(3):
         p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].df.to_numpy()[:,0:3], p_solved.df.to_numpy()[:,0:3], rtol = 5e-2, atol=5e-2)
-   
-    
-@pytest.mark.hdf5   
-def test_sphere(tmp_path):    
-    fn = CASE_FOLDER + 'sphere/sphere.fdtd.json'
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver.input['general']['numberOfSteps'] = 20
-    solver.input['probes'][0]['domain']['initialFrequency'] = 1e8
-    solver.input['probes'][0]['domain']['finalFrequency'] = 1e9
+        assert np.allclose(p_expected[i].df.to_numpy()[:, 0:3], p_solved.df.to_numpy()[
+                           :, 0:3], rtol=5e-2, atol=5e-2)
+
+
+@no_hdf_skip
+@pytest.mark.hdf
+def test_sphere(tmp_path):
+    fn = CASES_FOLDER + 'sphere/sphere.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver['general']['numberOfSteps'] = 20
+    solver['probes'][0]['domain']['initialFrequency'] = 1e8
+    solver['probes'][0]['domain']['finalFrequency'] = 1e9
 
     solver.run()
     assert solver.hasFinishedSuccessfully()
-    
-    far_field_probe_files = solver.getSolvedProbeFilenames("Far") # semba-fdtd seems to always use the name Far for "far field" probes.
+
+    # semba-fdtd seems to always use the name Far for "far field" probes.
+    far_field_probe_files = solver.getSolvedProbeFilenames("Far")
     assert solver.hasFinishedSuccessfully() == True
     assert len(far_field_probe_files) == 1
     p = Probe(far_field_probe_files[0])
     assert p.type == 'farField'
 
-    electric_field_movie_files = solver.getSolvedProbeFilenames("electric_field_movie")
+    electric_field_movie_files = solver.getSolvedProbeFilenames(
+        "electric_field_movie")
     assert solver.hasFinishedSuccessfully() == True
     assert len(electric_field_movie_files) == 3
     p = Probe(electric_field_movie_files[0])
     assert p.type == 'movie'
 
 
-def test_planewave_in_box(tmp_path):    
-    fn = CASE_FOLDER + 'planewave/pw-in-box.fdtd.json'
+@no_hdf_skip
+@pytest.mark.hdf
+def test_movie_in_planewave_in_box(tmp_path):
+    fn = CASES_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    
     solver.run()
     assert solver.hasFinishedSuccessfully()
-    
+
+    h5file = solver.getSolvedProbeFilenames("electric_field_movie")[2]
+    with h5py.File(h5file, "r") as f:
+        time_key = list(f.keys())[0]
+        field_key = list(f.keys())[1]
+        time_ds = f[time_key][()]
+        field_ds = f[field_key][()]
+
+    assert np.isclose(np.max(field_ds), 1.0, rtol=1e-2)
+    assert np.min(field_ds) == 0.0
+
+
+def test_planewave_in_box(tmp_path):
+    fn = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
     before = Probe(solver.getSolvedProbeFilenames("before")[0])
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
-    
+
     np.allclose(inbox.df['field'], inbox.df['incident'])
     zeros = np.zeros_like(before.df['field'])
     np.allclose(before.df['field'], zeros)
     np.allclose(after.df['field'], zeros)
 
-def test_planewave_with_periodic_boundaries(tmp_path):    
-    fn = CASE_FOLDER + 'planewave/pw-with-periodic.fdtd.json'
+
+def test_planewave_with_periodic_boundaries(tmp_path):
+    fn = CASES_FOLDER + 'planewave/pw-with-periodic.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    
+
     solver.run()
     assert solver.hasFinishedSuccessfully()
-    
+
     before = Probe(solver.getSolvedProbeFilenames("before")[0])
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
-    
+
     np.allclose(inbox.df['field'], inbox.df['incident'])
     zeros = np.zeros_like(before.df['field'])
     np.allclose(before.df['field'], zeros)
     np.allclose(after.df['field'], zeros)
+
+
+def test_sgbc_shielding_effectiveness(tmp_path):
+    fn = CASES_FOLDER + 'sgbcShieldingEffectiveness/shieldingEffectiveness.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    # FDTD results
+    back = Probe(solver.getSolvedProbeFilenames("back")[0])
+
+    t = back.df['time']
+    dt = t[1] - t[0]
+    fq = fftfreq(len(t))/dt
+    INC = fft(back.df['incident'])
+    BACK = fft(back.df['field'])
+    S21 = BACK/INC
+
+    fmin = 8e6
+    fmax = 1e9
+    idx_min = (np.abs(fq - fmin)).argmin()
+    idx_max = (np.abs(fq - fmax)).argmin()
+    f = fq[idx_min:idx_max]
+    fdtd_s21 = S21[idx_min:idx_max]
+
+    # Analytical results
+    from skrf.media import Freespace
+    from skrf.frequency import Frequency
+    import scipy.constants
+
+    freq = Frequency.from_f(f, unit='Hz')
+    air = Freespace(freq)
+
+    sigma = 100
+    width = 10e-3
+    mat_ep_r = (1+sigma/(1j*freq.w*scipy.constants.epsilon_0))
+    conductive_material = Freespace(freq, ep_r=mat_ep_r)
+
+    slab = air.thru() ** conductive_material.line(width, unit='m') ** air.thru()
+
+    # For debugging only.
+    # plt.figure()
+    # plt.plot(f, 20*np.log10(np.abs(fdtd_s21)),'.-', label='FDTD S21')
+    # plt.plot(f, 20*np.log10(np.abs(slab.s[:,0,1])),'.-', label='Analytical S21')
+    # plt.grid(which='both')
+    # plt.xlim(f[0], f[-1])
+    # plt.xscale('log')
+    # plt.legend()
+    # plt.show()
+
+    fdtd_s21_db = 20*np.log10(np.abs(fdtd_s21))
+    anal_s21_db = 20*np.log10(np.abs(slab.s[:, 0, 1]))
+
+    assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
+
+def test_dielectric_transmission(tmp_path):
+    _FIELD_TOLERANCE = 0.05
+
+    def getIncidentField(probe:Probe) -> Dict:
+        idx = probe["field"].argmin()
+        time = probe["time"][idx]
+        value = probe["field"][idx]
+        return {"time":time, "value": value}
+    
+    def getReflectedField(probe:Probe) -> Dict:
+        idx = probe["field"].argmax()
+        time = probe["time"][idx]
+        value = probe["field"][idx]
+        return {"time":time, "value": value}
+    
+    def getTransmitedField(probe:Probe) -> Dict:
+        idx = probe["field"].argmin()
+        time = probe["time"][idx]
+        value = probe["field"][idx]
+        return {"time":time, "value": value}
+    
+    def getReflectedDelay(incidentTime:float, reflectedTime:float):
+        timeToSurface:float = ((reflectedTime-incidentTime)/2) + incidentTime
+        reflectedDelay:float = reflectedTime - timeToSurface
+        return reflectedDelay
+        
+    def getTransmitedDelay(incidentTime:float, reflectedTime:float, transmitedTime:float):
+        timeToSurface:float = ((reflectedTime-incidentTime)/2) + incidentTime
+        transmitedDelay = transmitedTime - timeToSurface
+        return transmitedDelay
+
+    fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    relativePermittivity = solver.getMaterialProperties('DielectricMaterial')["relativePermittivity"]
+    materialRelativeImpedance = np.sqrt(1/relativePermittivity)
+    
+    expectedReflectedCoeff = (materialRelativeImpedance - 1) / (materialRelativeImpedance + 1)
+    expectedtransmitedCoeff = (1 + expectedReflectedCoeff)
+    expectedDelayRatio = 1/np.sqrt(relativePermittivity)
+
+    outsideProbe = Probe(solver.getSolvedProbeFilenames("outside")[0])
+    insideProbe = Probe(solver.getSolvedProbeFilenames("inside")[0])
+
+    time = outsideProbe["time"]
+    dt = time[1] - time[0]
+    fq = fftfreq(len(time))/dt
+
+    incidentField = getIncidentField(outsideProbe)
+    reflectedField = getReflectedField(outsideProbe)
+    transmitedField = getTransmitedField(insideProbe)
+ 
+    assert (incidentField['value'] - transmitedField['value'] + reflectedField['value']) < _FIELD_TOLERANCE
+    assert np.allclose(reflectedField["value"]/incidentField["value"], expectedReflectedCoeff, rtol=_FIELD_TOLERANCE)
+    assert np.allclose(transmitedField["value"]/incidentField["value"], expectedtransmitedCoeff, rtol=_FIELD_TOLERANCE)
+
+    reflectedDelay:float = getReflectedDelay(incidentField['time'], reflectedField['time'])
+    transmitedDelay:float = getTransmitedDelay(incidentField['time'], reflectedField['time'], transmitedField['time'])
+
+    assert np.allclose(reflectedDelay/transmitedDelay, expectedDelayRatio, rtol=_FIELD_TOLERANCE)
+
+    
+
+
+    
+
+    

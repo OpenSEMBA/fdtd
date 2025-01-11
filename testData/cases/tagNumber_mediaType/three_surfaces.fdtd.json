@@ -1,0 +1,68 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Example input with sgbc material",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 2000
+    },
+    
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 10, 10],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "elements": [
+            {"id": 1, "type": "cell", "intervals": [ [ [3, 3, 3], [5, 5, 3] ] ]},
+            {"id": 2, "type": "cell", "intervals": [ [ [3, 3, 3], [5, 3, 5] ] ]},
+            {"id": 3, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 5, 5] ] ]}
+        ]
+    },
+
+    "materials": [
+        {
+            "type": "pec",
+            "id": 1
+        },
+        {
+            "name": "2-layers-composite",
+            "type": "multilayeredSurface",
+            "id": 2,
+            "layers": [
+                {"thickness": 1e-3, "relativePermittivity": 1.3, "electricConductivity": 2e-4},
+                {"thickness": 5e-3, "relativePermittivity": 1.3}
+            ]
+        },
+        {
+            "name": "3-layers-composite",
+            "type": "multilayeredSurface",
+            "id": 3,
+            "layers": [
+                {"thickness": 1e-3, "electricConductivity": 2e-4},
+                {"thickness": 5e-3, "relativePermeability": 1.3},
+                {"thickness": 1e-3, "magneticConductivity": 1e-4}
+            ]
+        }
+    ],
+
+    "materialAssociations": [
+        {
+                        "materialId": 1,
+            "elementIds": [ 1 ]
+        },
+        {
+            "type": "surface",
+            "materialId": 2,
+            "elementIds": [ 2 ]
+        },
+        {
+            "type": "surface",
+            "materialId": 3,
+            "elementIds": [ 3 ]
+        }
+    ]
+}

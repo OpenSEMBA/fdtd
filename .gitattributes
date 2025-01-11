@@ -1,4 +1,5 @@
 precompiled_libraries/** linguist-vendored
+precompiled_libraries/linux* eol=lf
 *.sh     -crlf
 *.ac     -crlf
 *.am     -crlf

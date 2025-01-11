@@ -1,5 +1,0 @@
-.SUBCKT bzx85c3v9 2 1
-d1 2 1 zener39
-.ENDS bzx85c3v9
-
-.model zener39 D (IS=1e-12 BV=3.9 IBV=0.06)

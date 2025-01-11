@@ -46867,8 +46867,7 @@
         },
         {
             "name": "Cable000",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 36
             ],
             "materialId": 2,
@@ -46877,8 +46876,7 @@
         },
         {
             "name": "Cable001",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 37
             ],
             "materialId": 2,
@@ -46887,8 +46885,7 @@
         },
         {
             "name": "Cable002",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 38
             ],
             "materialId": 2,
@@ -46897,8 +46894,7 @@
         },
         {
             "name": "Cable003",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 39
             ],
             "materialId": 2,
@@ -46907,8 +46903,7 @@
         },
         {
             "name": "Cable004",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 40
             ],
             "materialId": 2,
@@ -46917,8 +46912,7 @@
         },
         {
             "name": "Cable005",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 41
             ],
             "materialId": 2,
@@ -46927,8 +46921,7 @@
         },
         {
             "name": "Cable006",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 42
             ],
             "materialId": 2,
@@ -46937,8 +46930,7 @@
         },
         {
             "name": "Cable007",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 43
             ],
             "materialId": 2,
@@ -46947,8 +46939,7 @@
         },
         {
             "name": "Cable008",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 44
             ],
             "materialId": 2,
@@ -46957,8 +46948,7 @@
         },
         {
             "name": "Cable009",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 45
             ],
             "materialId": 2,
@@ -46967,8 +46957,7 @@
         },
         {
             "name": "Cable010",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 46
             ],
             "materialId": 2,
@@ -46977,8 +46966,7 @@
         },
         {
             "name": "InnerBundle_Cable010",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 47,
                 48
             ],
@@ -46989,8 +46977,7 @@
         },
         {
             "name": "InnerBundle_Cable009",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 49,
                 50
             ],
@@ -47001,8 +46988,7 @@
         },
         {
             "name": "InnerBundle_Cable008",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 51,
                 52
             ],
@@ -47013,8 +46999,7 @@
         },
         {
             "name": "InnerBundle_Cable007",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 53,
                 54
             ],
@@ -47025,8 +47010,7 @@
         },
         {
             "name": "InnerBundle_Cable006",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 55,
                 56
             ],
@@ -47037,8 +47021,7 @@
         },
         {
             "name": "InnerBundle_Cable005",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 57,
                 58
             ],
@@ -47049,8 +47032,7 @@
         },
         {
             "name": "InnerBundle_Cable004",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 59,
                 60
             ],
@@ -47061,8 +47043,7 @@
         },
         {
             "name": "InnerBundle_Cable003",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 61,
                 62
             ],
@@ -47073,8 +47054,7 @@
         },
         {
             "name": "InnerBundle_Cable002",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 63,
                 64
             ],
@@ -47085,8 +47065,7 @@
         },
         {
             "name": "InnerBundle_Cable001",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 65,
                 66
             ],
@@ -47097,8 +47076,7 @@
         },
         {
             "name": "InnerBundle_Cable000",
-            "type": "cable",
-            "elementIds": [
+                        "elementIds": [
                 67,
                 68
             ],

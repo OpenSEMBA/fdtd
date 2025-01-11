@@ -53,7 +53,7 @@ module mesh_mod
       procedure :: polylineToLinels => mesh_polylineToLinels
       procedure :: nodeToPixel => mesh_nodeToPixel
 
-      procedure :: printCoordHashInfo => mesh_printCoordHashInfo
+      procedure :: printHashInfo => mesh_printHashInfo
       procedure :: allocateCoordinates => mesh_allocateCoordinates
       procedure :: allocateElements => mesh_allocateElements
    end type
@@ -75,15 +75,23 @@ contains
    end subroutine
 
 
-   subroutine mesh_printCoordHashInfo(this)
+   subroutine mesh_printHashInfo(this)
       class(mesh_t) :: this
       integer :: num_buckets, num_items, num_collisions, max_depth
+      
+      write(*,*) 'Coordinates hash info:'
       call this%coordinates%stats(num_buckets,num_items,num_collisions,max_depth)
       write(*,'(A,T40,I0)') '  Number of buckets allocated: ',num_buckets
       write(*,'(A,T40,I0)') '  Number of key-value pairs stored: ',num_items
       write(*,'(A,T40,I0)') '  Total number of hash-collisions: ',num_collisions
       write(*,'(A,T40,I0)') '  The worst case bucket depth is ',max_depth
-      print *
+      
+      write(*,*) 'Elements hash info:'
+      call this%elements%stats(num_buckets,num_items,num_collisions,max_depth)
+      write(*,'(A,T40,I0)') '  Number of buckets allocated: ',num_buckets
+      write(*,'(A,T40,I0)') '  Number of key-value pairs stored: ',num_items
+      write(*,'(A,T40,I0)') '  Total number of hash-collisions: ',num_collisions
+      write(*,'(A,T40,I0)') '  The worst case bucket depth is ',max_depth
 
    end subroutine
 
@@ -137,7 +145,7 @@ contains
       if (stat /= 0) return
 
       select type(d)
-       type is (coordinate_t)
+         type is (coordinate_t)
          res = d
          if (present(found)) found = .true.
       end select
@@ -157,7 +165,7 @@ contains
       if (status /= 0) return
 
       select type(d)
-       type is (node_t)
+         type is (node_t)
          res = d
          if (present(found)) found = .true.
       end select
@@ -177,7 +185,7 @@ contains
       if (stat /= 0) return
 
       select type(d)
-       type is (polyline_t)
+         type is (polyline_t)
          res = d
          if (present(found)) found = .true.
       end select
@@ -197,7 +205,7 @@ contains
       if (stat /= 0) return
 
       select type(d)
-       type is (cell_region_t)
+         type is (cell_region_t)
          res = d
          if (present(found)) found = .true.
       end select
@@ -218,7 +226,7 @@ contains
       do i = 1, size(ids)
          cR = this%getCellRegion(ids(i), found)
          if (found) then
-             numberOfCellRegions = numberOfCellRegions + 1
+               numberOfCellRegions = numberOfCellRegions + 1
          end if
       end do     
       
@@ -227,8 +235,8 @@ contains
       do i = 1, size(ids)
          cR = this%getCellRegion(ids(i), found)
          if (found) then
-             res(j) = cR
-             j = j + 1
+               res(j) = cR
+               j = j + 1
          end if
       end do
 

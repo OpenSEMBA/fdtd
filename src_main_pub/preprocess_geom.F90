@@ -549,7 +549,7 @@ CONTAINS
             punto%ZI = this%pecregs%vols(i)%ZI
             punto%ZE = this%pecregs%vols(i)%ZE
             numertag = searchtag(tagtype,this%pecregs%vols(i)%tag )
-            CALL CreateVolumeMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz,  Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -590,7 +590,7 @@ CONTAINS
             orientacion = this%pecregs%lins(i)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%pecregs%lins(i)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -637,7 +637,7 @@ CONTAINS
             !
             !
             numertag = searchtag(tagtype,this%pmcregs%vols(i)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -677,7 +677,7 @@ CONTAINS
             orientacion = this%pmcregs%lins(i)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%pmcregs%lins(i)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -720,7 +720,7 @@ CONTAINS
             punto%ZI = this%DielRegs%vols(i)%c2P(j)%ZI
             punto%ZE = this%DielRegs%vols(i)%c2P(j)%ZE
             numertag = searchtag(tagtype,this%DielRegs%vols(i)%c2P(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -739,7 +739,7 @@ CONTAINS
             punto%ZE = this%DielRegs%vols(i)%c1P(j)%ZI
             !
             numertag = searchtag(tagtype,this%DielRegs%vols(i)%c1P(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -906,7 +906,7 @@ CONTAINS
             orientacion = this%DielRegs%lins(i)%c2P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%DielRegs%lins(i)%c2P(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -926,7 +926,7 @@ CONTAINS
             orientacion = this%DielRegs%lins(i)%c1P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%DielRegs%lins(i)%c1P(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -960,7 +960,7 @@ CONTAINS
             punto%ZI = this%ANIMATS%vols(i)%c2P(j)%ZI
             punto%ZE = this%ANIMATS%vols(i)%c2P(j)%ZE
             numertag = searchtag(tagtype,this%ANIMATS%vols(i)%c2P(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -978,7 +978,7 @@ CONTAINS
             punto%ZE = this%ANIMATS%vols(i)%c1P(j)%ZI
             !
             numertag = searchtag(tagtype,this%ANIMATS%vols(i)%c1P(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -1059,7 +1059,7 @@ CONTAINS
             orientacion = this%ANIMATS%lins(i)%c2P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%ANIMATS%lins(i)%c2P(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -1079,7 +1079,7 @@ CONTAINS
             orientacion = this%ANIMATS%lins(i)%c1P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%ANIMATS%lins(i)%c1P(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -1110,7 +1110,7 @@ CONTAINS
             punto%ZI = this%FRQDEPMATS%vols(i)%C(j)%ZI
             punto%ZE = this%FRQDEPMATS%vols(i)%C(j)%ZE
             numertag = searchtag(tagtype,this%FRQDEPMATS%vols(i)%C(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -1168,7 +1168,7 @@ CONTAINS
             orientacion = this%FRQDEPMATS%lins(i)%C(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%FRQDEPMATS%lins(i)%C(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -1597,7 +1597,7 @@ CONTAINS
                   punto%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
                   punto%XE = this%LossyThinSurfs%cs(j)%C(i)%XI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface(layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy,   &
+                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
                   sggmiEz, &
                   & sggmiHx, sggmiHy, sggmiHz,   &
                   Alloc_iEx_XI, &
@@ -1615,7 +1615,7 @@ CONTAINS
                   punto%XI = this%LossyThinSurfs%cs(j)%C(i)%XI-1
                   punto%XE = this%LossyThinSurfs%cs(j)%C(i)%XI-1
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface(layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy,  &
+                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,  &
                   sggmiEz, &
                   & sggmiHx, sggmiHy, sggmiHz,   &
                   Alloc_iEx_XI, &
@@ -1634,7 +1634,7 @@ CONTAINS
                   punto%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
                   punto%YE = this%LossyThinSurfs%cs(j)%C(i)%YI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface(layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy,   &
+                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
                   sggmiEz, &
                   & sggmiHx, sggmiHy, sggmiHz,   &
                   Alloc_iEx_XI, &
@@ -1652,7 +1652,7 @@ CONTAINS
                   punto%YI = this%LossyThinSurfs%cs(j)%C(i)%YI-1
                   punto%YE = this%LossyThinSurfs%cs(j)%C(i)%YI-1
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface(layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy,   &
+                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
                   sggmiEz, &
                   & sggmiHx, sggmiHy, sggmiHz,   &
                   Alloc_iEx_XI, &
@@ -1671,7 +1671,7 @@ CONTAINS
                   punto%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
                   punto%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface(layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy,   &
+                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
                   sggmiEz, &
                   & sggmiHx, sggmiHy, sggmiHz,   &
                   Alloc_iEx_XI, &
@@ -1689,7 +1689,7 @@ CONTAINS
                   punto%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI-1
                   punto%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZI-1
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface(layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy,   &
+                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
                   sggmiEz, &
                   & sggmiHx, sggmiHy, sggmiHz,   &
                   Alloc_iEx_XI, &
@@ -2305,7 +2305,7 @@ endif
             !
             isathinwire = .TRUE.
             numertag = searchtag(tagtype,this%twires%TW(j)%TWC(i)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
             & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -2821,7 +2821,7 @@ endif
                punto%ZI = k1
                punto%ZE = k1
                numertag = searchtag(tagtype,this%tSlots%Tg(j)%TgC(i)%tag)
-               CALL CreateSurfaceSlotMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz,&
+               CALL CreateSurfaceSlotMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz,&
                sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI,&
                Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, &
                Alloc_iEy_YI,&
@@ -3076,7 +3076,7 @@ endif
                orientacion = punto_s%or
                isathinwire = .FALSE.
                numertag = 37
-               CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+               CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
                                   sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
                                   Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
                                   Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -3251,7 +3251,7 @@ endif
                orientacion = punto_s%or
                isathinwire = .FALSE.
                numertag = 37
-               CALL CreateLineMM (layoutnumber, sggMtag, numertag, sggmiEx, sggmiEy, sggmiEz, &
+               CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
                                   sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
                                   Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
                                   Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
