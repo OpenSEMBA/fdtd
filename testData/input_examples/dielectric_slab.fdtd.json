@@ -45,7 +45,7 @@
     ],
 
     "materialAssociations": [
-        {"type": "bulk", "materialId": 1, "elementIds": [5]}
+        {"materialId": 1, "elementIds": [5]}
     ],
 
     "sources": [

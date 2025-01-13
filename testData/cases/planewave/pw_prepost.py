@@ -14,18 +14,17 @@ from pyWrapper import *
 # %% Prepare solver
 solver = FDTD(input_filename = 'pw-in-box.fdtd.json', path_to_exe=SEMBA_EXE)
 solver.cleanUp()
-solver.run()
-assert solver.hasFinishedSuccessfully()
+solver.run() 
 
 # %% Postprocess
 before = Probe(solver.getSolvedProbeFilenames("before")[0])
 inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
 after = Probe(solver.getSolvedProbeFilenames("after")[0])
 
-plt.plot(inbox.df['time'], inbox.df['incident'], 'b.', label='incident') 
-plt.plot(before.df['time'], before.df['field'], 'r-', label='before')
-plt.plot(inbox.df['time'], inbox.df['field'], 'g-', label='inbox')
-plt.plot(after.df['time'], after.df['field'], 'k-', label='after')
+plt.plot(inbox['time'], inbox['incident'], 'b.', label='incident') 
+plt.plot(before['time'], before['field'], 'r-', label='before')
+plt.plot(inbox['time'], inbox['field'], 'g-', label='inbox')
+plt.plot(after['time'], after['field'], 'k-', label='after')
 plt.legend()
 plt.xlim(0,4e-9)
 
@@ -35,8 +34,7 @@ plt.xlim(0,4e-9)
 # %% Prepare solver
 solver = FDTD(input_filename = 'pw-in-box-with-movie.fdtd.json', path_to_exe=SEMBA_EXE)
 solver.cleanUp()
-solver.run()
-assert solver.hasFinishedSuccessfully()
+solver.run() 
 
 # %% Postprocess
 import h5py

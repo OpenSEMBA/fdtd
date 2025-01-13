@@ -79,7 +79,6 @@
             "elementIds": [5]
         },
         {
-            "type": "bulk", 
             "materialId": 4, 
             "elementIds": [3]
         }

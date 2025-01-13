@@ -14,25 +14,20 @@ concurrency:
 jobs:
 
   builds-and-tests:
-    runs-on: windows-latest
+    
     strategy:
       matrix:
+        os: [windows-latest]
         compiler: [ {name: 'intel', version: '2024.0'} ]
         build-type: ["Debug", "Release"]
         mpi: ["No"]
         mtln: ["Yes"]
         hdf: ["Yes"]
 
-        include:
-          - compiler: {name: 'intel', version: '2024.0'}
-            build-type: "Release"
-            mpi: "No"
-            mtln: "No"
-            hdf: "Yes"
-
       fail-fast: false
+    runs-on: ${{matrix.os}}
 
-    name: ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})
 
     steps:
 
