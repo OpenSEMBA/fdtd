@@ -1746,7 +1746,7 @@ contains
          !Update observation matrices !MUST GO AFTER THE MPI EXCHANGING INFO, SINCE Bloque CURRENTS NEED UPDATED INFO
          IF (Thereare%Observation) then
             !se le pasan los incrementos autenticos (bug que podia aparecer en NF2FF y Bloque currents 17/10/12)
-            call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, n,ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank, &
+            call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, n,ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank, &
                                    Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,planewavecorr,noconformalmapvtk,b)
 
             if (n>=ini_save+BuffObse)  then
