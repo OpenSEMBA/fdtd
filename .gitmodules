@@ -1,23 +1,23 @@
 [submodule "external/json-fortran"]
 	path = external/json-fortran
-	url = git@github.com:lmdiazangulo/json-fortran.git
+	url = https://github.com/lmdiazangulo/json-fortran.git
 	ignore = dirty
 
 [submodule "external/fhash"]
 	path = external/fhash
-	url = git@github.com:opensemba/fhash.git
+	url = https://github.com/OpenSEMBA/fhash.git
 	ignore = dirty
 
 [submodule "external/lapack"]
 	path = external/lapack
-	url = git@github.com:Reference-LAPACK/lapack.git
+	url = https://github.com/Reference-LAPACK/lapack.git
 	ignore = dirty
 
 [submodule "external/ngspice"]
 	path = external/ngspice
-	url = git@github.com:opensemba/ngspice
+	url = https://github.com/OpenSEMBA/ngspice.git
 	ignore = dirty
 	
 [submodule "external/googletest"]
 	path = external/googletest
-	url = git@github.com:google/googletest.git
+	url = https://github.com/google/googletest.git
