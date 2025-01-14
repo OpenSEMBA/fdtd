@@ -1295,7 +1295,7 @@ contains
                      if (field==mapvtk) then
                         INIT=.TRUE.; geom=.false. ; asigna=.false.; magnetic=.false. ; electric=.true.
 
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                         init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
 
                         call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
@@ -1356,7 +1356,7 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.false. ; asigna=.false.; magnetic=.true. ; electric=.false.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
                           
                      endif
@@ -1607,7 +1607,7 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.false. ; electric=.true.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
+                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
                         call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
                      endif
@@ -1719,7 +1719,7 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.true. ; electric=.false.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
+                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
 
                      endif
@@ -2611,7 +2611,7 @@ contains
    !!! The Wire modules uses its own updating procedure
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+   subroutine UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, tag_numbers, &
       nTime,nInit, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_fullsize,wirecrank, &
        Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,planewavecorr,noconformalmapvtk,b)
       !solo lo precisa de entrada farfield
@@ -2619,6 +2619,7 @@ contains
       logical :: noconformalmapvtk
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      type(taglist_t) :: tag_numbers
       !---------------------------> inputs <----------------------------------------------------------
       logical :: planewavecorr
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
@@ -3449,7 +3450,7 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.false. ; electric=.true.
-                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
+                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
           
                               call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
@@ -3649,7 +3650,7 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.true. ; electric=.false.
-                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
                            endif
                            !!!
@@ -4778,9 +4779,9 @@ contains
          esborde=.false.
       ENDIF !DEL IMED1
       return
-    end subroutine contabordes
+    end subroutine contabordes 
 
-   subroutine nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+   subroutine nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                          init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
@@ -4790,7 +4791,7 @@ contains
 
       logical geom,asigNa,init,electric,magnetic
       integer(kind=4) conta,sweep,ni,nj,nk,i_m,j_m,k_m,IMED
-
+      type(taglist_t) :: tag_numbers
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
       sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
