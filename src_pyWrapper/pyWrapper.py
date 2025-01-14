@@ -64,9 +64,12 @@ class Probe():
             if self.domainType == 'time':
                 self.data = self.data.rename(columns={
                     't': 'time',
-                    self.data.columns[1]: 'field',
-                    self.data.columns[2]: 'incident'
+                    self.data.columns[1]: 'field'
                 })
+                if len(self.data.columns) == 3:
+                    self.data = self.data.rename(columns={
+                        self.data.columns[2]: 'incident'
+                    })
         elif tag in Probe.FAR_FIELD_TAG:
             self.type = 'farField'
             init_str, end_str = position_str.split('__')
