@@ -59,7 +59,7 @@ def test_read_point_probe():
     assert p['incident'].iat[-1] == 0.0
 
 
-def test_read_probe_without_planewave():
+def test_read_point_probe_without_planewave():
     p = Probe(OUTPUTS_FOLDER + 'twoWires.fdtd_ProbeEnd_Ey_25_13_5.dat')
 
     assert p.case_name == 'twoWires'
@@ -69,6 +69,16 @@ def test_read_probe_without_planewave():
     assert p.direction == 'y'
     assert p.field == 'E'
     assert np.all(p.cell == np.array([25, 13, 5]))
+
+
+def test_read_bulk_current_probe():
+    p = Probe(OUTPUTS_FOLDER + 'twoWires.fdtd_Bulk probe_Jx_15_11_13__15_13_17.dat')
+    
+    assert p.case_name == 'twoWires'
+    assert p.name == 'Bulk probe'
+    assert p.type == 'bulkCurrent'
+    assert p.domainType == 'time'
+    assert p.direction == 'x'
 
 
 def test_fdtd_set_new_folder_to_run(tmp_path):

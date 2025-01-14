@@ -13,6 +13,7 @@ DEFAULT_SEMBA_FDTD_PATH = '/build/bin/semba-fdtd'
 class Probe():
     MTLN_PROBE_TAGS = ['_V_', '_I_']
     CURRENT_PROBE_TAGS = ['_Wx_', '_Wy_', '_Wz_']
+    BULK_CURRENT_PROBE_TAGS = ['_Jx_', '_Jy_', '_Jz_']
     POINT_PROBE_TAGS = ['_Ex_', '_Ey_', '_Ez_', '_Hx_', '_Hy_', '_Hz_']
     FAR_FIELD_TAG = ['_FF_']
     MOVIE_TAGS = ['_ExC_', '_EyC_', '_EzC_',
@@ -20,6 +21,7 @@ class Probe():
 
     ALL_TAGS = MTLN_PROBE_TAGS \
         + CURRENT_PROBE_TAGS \
+        + BULK_CURRENT_PROBE_TAGS \
         + POINT_PROBE_TAGS \
         + FAR_FIELD_TAG \
         + MOVIE_TAGS
@@ -43,6 +45,7 @@ class Probe():
         position_str = self._getPositionStrFromFilename(self.filename)
         if tag in Probe.CURRENT_PROBE_TAGS:
             self.type = 'wire'
+            self.field, self.direction = Probe._getFieldAndDirection(tag)
             self.cell = self._positionStrToCell(position_str)
             self.segment = int(position_str.split('_s')[1])
             if self.domainType == 'time':
@@ -58,9 +61,9 @@ class Probe():
                 })
         elif tag in Probe.POINT_PROBE_TAGS:
             self.type = 'point'
+            self.field, self.direction = Probe._getFieldAndDirection(tag)
             self.cell = self._positionStrToCell(position_str)
-            self.field = tag[1]
-            self.direction = tag[2]
+
             if self.domainType == 'time':
                 self.data = self.data.rename(columns={
                     't': 'time',
@@ -70,16 +73,29 @@ class Probe():
                     self.data = self.data.rename(columns={
                         self.data.columns[2]: 'incident'
                     })
+        elif tag in Probe.BULK_CURRENT_PROBE_TAGS:
+            self.type = 'bulkCurrent'
+            self.field, self.direction = Probe._getFieldAndDirection(tag)
+            self.cell_init, self.cell_end = \
+                Probe._positionStrToTwoCells(position_str)
+            
+            if self.domainType == 'time':
+                self.data = self.data.rename(columns={
+                    't': 'time',
+                    self.data.columns[1]: 'current'
+                })
+                if len(self.data.columns) == 3:
+                    self.data = self.data.rename(columns={
+                        self.data.columns[2]: 'incident'
+                    })
         elif tag in Probe.FAR_FIELD_TAG:
             self.type = 'farField'
-            init_str, end_str = position_str.split('__')
-            self.cell_init = self._positionStrToCell(init_str)
-            self.cell_end = self._positionStrToCell(end_str)
+            self.cell_init, self.cell_end = \
+                Probe._positionStrToTwoCells(position_str)
         elif tag in Probe.MOVIE_TAGS:
             self.type = 'movie'
-            init_str, end_str = position_str.split('__')
-            self.cell_init = self._positionStrToCell(init_str)
-            self.cell_end = self._positionStrToCell(end_str)
+            self.cell_init, self.cell_end = \
+                Probe._positionStrToTwoCells(position_str)
         elif tag in Probe.MTLN_PROBE_TAGS:
             self.type = 'mtln'
             self.cell = self._positionStrToCell(position_str)
@@ -136,6 +152,16 @@ class Probe():
     def _positionStrToCell(pos_str: str):
         pos = pos_str.split('_')
         return np.array([int(pos[0]), int(pos[1]), int(pos[2])])
+
+    @staticmethod
+    def _positionStrToTwoCells(pos_str: str):
+        init_str, end_str = pos_str.split('__')
+        return Probe._positionStrToCell(init_str), \
+            Probe._positionStrToCell(end_str)
+
+    @staticmethod
+    def _getFieldAndDirection(tag: str):
+        return tag[1], tag[2]
 
 
 class FDTD():
@@ -202,7 +228,7 @@ class FDTD():
                 if 'terminations' in p:
                     for t in p['terminations']:
                         if 'file' in t:
-                            res.append(t['file'])   
+                            res.append(t['file'])
 
         return res
 
@@ -226,7 +252,7 @@ class FDTD():
         case_name = self.getCaseName() + ".json"
         self.output = subprocess.run(
             [self.path_to_exe, "-i", case_name]+self.flags)
-        
+
         self._hasRun = True
         assert self.hasFinishedSuccessfully()
 
@@ -258,7 +284,7 @@ class FDTD():
                 self.getCaseName() + '_' + probe_name, x)]
             probeFiles.extend(newProbes)
 
-        return probeFiles
+        return sorted(probeFiles)
 
     def getVTKMap(self):
         current_path = os.getcwd()
@@ -269,7 +295,7 @@ class FDTD():
         mapFile = os.path.join(current_path, folders[0], folders[0]+"_1.vtk")
         assert os.path.isfile(mapFile)
         return mapFile
-    
+
     def getMaterialProperties(self, materialName):
         if 'materials' in self._input:
             for idx, element in enumerate(self._input['materials']):
