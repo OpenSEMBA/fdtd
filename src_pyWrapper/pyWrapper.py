@@ -38,7 +38,7 @@ class Probe():
 
         tag = self._getTagFromFilename(self.filename)
         if tag not in Probe.MOVIE_TAGS:
-            self.df = pd.read_csv(self.filename, sep='\\s+')
+            self.data = pd.read_csv(self.filename, sep='\\s+')
 
         position_str = self._getPositionStrFromFilename(self.filename)
         if tag in Probe.CURRENT_PROBE_TAGS:
@@ -46,15 +46,15 @@ class Probe():
             self.cell = self._positionStrToCell(position_str)
             self.segment = int(position_str.split('_s')[1])
             if self.domainType == 'time':
-                self.df = self.df.rename(columns={
+                self.data = self.data.rename(columns={
                     't': 'time',
-                    self.df.columns[1]: 'current'
+                    self.data.columns[1]: 'current'
                 })
             elif self.domainType == 'frequency':
-                self.df = self.df.rename(columns={
-                    self.df.columns[0]: 'frequency',
-                    self.df.columns[1]: 'magnitude',
-                    self.df.columns[2]: 'phase'
+                self.data = self.data.rename(columns={
+                    self.data.columns[0]: 'frequency',
+                    self.data.columns[1]: 'magnitude',
+                    self.data.columns[2]: 'phase'
                 })
         elif tag in Probe.POINT_PROBE_TAGS:
             self.type = 'point'
@@ -62,10 +62,10 @@ class Probe():
             self.field = tag[1]
             self.direction = tag[2]
             if self.domainType == 'time':
-                self.df = self.df.rename(columns={
+                self.data = self.data.rename(columns={
                     't': 'time',
-                    self.df.columns[1]: 'field',
-                    self.df.columns[2]: 'incident'
+                    self.data.columns[1]: 'field',
+                    self.data.columns[2]: 'incident'
                 })
         elif tag in Probe.FAR_FIELD_TAG:
             self.type = 'farField'
@@ -81,11 +81,10 @@ class Probe():
             self.type = 'mtln'
             self.cell = self._positionStrToCell(position_str)
         else:
-            raise ValueError(
-                "Unable to determine probe name or type for a probe with name:" + basename)
+            raise ValueError("Unable to determine probe type")
 
     def __getitem__(self, key):
-        return self.df[key]
+        return self.data[key]
 
     @staticmethod
     def _getCaseNameFromFilename(fn):
@@ -224,7 +223,9 @@ class FDTD():
         case_name = self.getCaseName() + ".json"
         self.output = subprocess.run(
             [self.path_to_exe, "-i", case_name]+self.flags)
+        
         self._hasRun = True
+        assert self.hasFinishedSuccessfully()
 
     def hasFinishedSuccessfully(self):
         if self._hasRun and (self.output.returncode == 0):

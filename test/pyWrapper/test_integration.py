@@ -9,11 +9,9 @@ def test_holland_case_checking_number_of_outputs(tmp_path):
     solver['general']['numberOfSteps'] = number_of_steps
 
     solver.run()
-    assert solver.hasFinishedSuccessfully()
 
     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
-    assert solver.hasFinishedSuccessfully() == True
     assert len(probe_files) == 1
     assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
     assert countLinesInFile(probe_files[0]) == number_of_steps + 2
@@ -30,7 +28,6 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
     probe_mid = solver.getSolvedProbeFilenames("wire_mid")
     probe_end = solver.getSolvedProbeFilenames("wire_end")
 
-    assert solver.hasFinishedSuccessfully() == True
     assert len(probe_start) == 1
     assert len(probe_mid) == 1
     assert len(probe_end) == 1
@@ -69,8 +66,7 @@ def test_tagnumbers_3_surfaces(tmp_path):
     solver['general']['numberOfSteps'] = 1
 
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
-
+    
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
 

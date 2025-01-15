@@ -1295,10 +1295,10 @@ contains
                      if (field==mapvtk) then
                         INIT=.TRUE.; geom=.false. ; asigna=.false.; magnetic=.false. ; electric=.true.
 
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                         init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
 
-                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
+                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
                      endif
                      !!!
                      do kkk=sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1335,20 +1335,20 @@ contains
                                     conta=conta+1
                                  endif
                                  ! los tags de vacio negativos 141020 para mapvtk
-                                 if (sggMtag(iii,jjj,kkk)<0) then
-                                     if ( (btest(iabs(sggMtag(iii,jjj,kkk)),3)).and. & 
-                                     (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                        conta=conta+1
-                                     endif
-                                     if ( (btest(iabs(sggMtag(iii,jjj,kkk)),4)).and. &
-                                     (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                        conta=conta+1
-                                     endif
-                                     if ( (btest(iabs(sggMtag(iii,jjj,kkk)),5)).and. &
-                                     (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                        conta=conta+1
-                                     endif  
+                                 ! if (sggMtag(iii,jjj,kkk)<0) then
+                                 if ( tag_numbers%edge%x(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%x(iii,jjj,kkk)),3)).and. & 
+                                 (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
+                                    conta=conta+1
                                  endif
+                                 if ( tag_numbers%edge%y(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%y(iii,jjj,kkk)),4)).and. &
+                                 (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
+                                    conta=conta+1
+                                 endif
+                                 if ( tag_numbers%edge%z(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%z(iii,jjj,kkk)),5)).and. &
+                                 (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
+                                    conta=conta+1
+                                 endif  
+                                 ! endif
                               endif
                            end do
                         end do
@@ -1356,7 +1356,7 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.false. ; asigna=.false.; magnetic=.true. ; electric=.false.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
                           
                      endif
@@ -1483,8 +1483,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJx
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%x(iii,jjj,kkk))
                                  endif
                                  if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
                                     conta=conta+1
@@ -1492,7 +1492,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJy
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%y(iii,jjj,kkk))
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  endif
                                  if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
                                     conta=conta+1
@@ -1500,7 +1501,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iJz
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%z(iii,jjj,kkk))
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  endif   
                                  medium=sggMiEx(III , JJJ , KKK )
                                ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &        
@@ -1515,7 +1517,8 @@ contains
                                        output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                        output(ii)%item(i)%Serialized%eK(conta)=kkk
                                        output(ii)%item(i)%Serialized%currentType(conta)=iJx
-                                       output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                       output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%x(iii,jjj,kkk))
+                                       ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  !!!   endif
                                  endif    
                                  medium=sggMiEy(III , JJJ , KKK )
@@ -1531,7 +1534,8 @@ contains
                                        output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                        output(ii)%item(i)%Serialized%eK(conta)=kkk
                                        output(ii)%item(i)%Serialized%currentType(conta)=iJy
-                                       output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                       output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%y(iii,jjj,kkk))
+                                       ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                   !!!  endif
                                  endif    
                                  medium=sggMiEz(III , JJJ , KKK )
@@ -1547,7 +1551,8 @@ contains
                                        output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                        output(ii)%item(i)%Serialized%eK(conta)=kkk
                                        output(ii)%item(i)%Serialized%currentType(conta)=iJz
-                                       output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                       output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%z(iii,jjj,kkk))
+                                       ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  !!!   endif
                                  endif
                               else !si es mapvtk
@@ -1607,9 +1612,9 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.false. ; electric=.true.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
+                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
+                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
                      endif
                      !!!
                      do kkk=sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1624,7 +1629,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%x(iii,jjj,kkk))
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  endif
                                  if (((sgg%med(sggMiHy(III, JJJ, KKK))%Is%PEC).or. &
                                  (sgg%med(sggMiHy(III, JJJ, KKK))%Is%Surface).or. &
@@ -1634,7 +1640,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%y(iii,jjj,kkk))
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  endif
                                  if (((sgg%med(sggMiHz(III, JJJ, KKK))%Is%PEC).or. &
                                  (sgg%med(sggMiHz(III, JJJ, KKK))%Is%Surface).or. &
@@ -1644,7 +1651,8 @@ contains
                                     output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                     output(ii)%item(i)%Serialized%eK(conta)=kkk
                                     output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
+                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%z(iii,jjj,kkk))
+                                    ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(iii,jjj,kkk))
                                  endif
                               else !mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
                                  if ((sggMiHx(III , JJJ, KKK)/=1).and. &
@@ -1719,7 +1727,7 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.true. ; electric=.false.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
+                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
 
                      endif
@@ -2611,7 +2619,7 @@ contains
    !!! The Wire modules uses its own updating procedure
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+   subroutine UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, tag_numbers, &
       nTime,nInit, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_fullsize,wirecrank, &
        Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,planewavecorr,noconformalmapvtk,b)
       !solo lo precisa de entrada farfield
@@ -2619,6 +2627,7 @@ contains
       logical :: noconformalmapvtk
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      type(taglist_t) :: tag_numbers
       !---------------------------> inputs <----------------------------------------------------------
       logical :: planewavecorr
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
@@ -3449,10 +3458,10 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.false. ; electric=.true.
-                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
+                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
           
-                              call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
+                              call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
                            endif
                            !!!
                            do KKK = k1, k2
@@ -3620,26 +3629,26 @@ contains
                                           output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jz      
                                        endif
                                      ! los tags 141020 para mapvtk se quedan con el medio -100: es una forma de voidearlos para visualizacion
-                                       if (sggMtag(iii,jjj,kkk)<0) then
-                                           if ( (btest(iabs(sggMtag(iii,jjj,kkk)),3)).and. & 
-                                           (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                              conta=conta+1
-                                              jx=-100 !ojo pq el vacio que es 1 pasa a ser -100 si es un candidato a slot
-                                              output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jx  
-                                           endif
-                                           if ( (btest(iabs(sggMtag(iii,jjj,kkk)),4)).and. & 
-                                           (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                              conta=conta+1
-                                              jy=-100
-                                              output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jy
-                                           endif
-                                           if ( (btest(iabs(sggMtag(iii,jjj,kkk)),5)).and. &
-                                           (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                              conta=conta+1
-                                              jz=-100
-                                              output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jz
-                                           endif
-                                       endif !de los tags negativos
+                                       ! if (sggMtag(iii,jjj,kkk)<0) then
+                                       if ( tag_numbers%edge%x(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%x(iii,jjj,kkk)),3)).and. & 
+                                       (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
+                                          conta=conta+1
+                                          jx=-100 !ojo pq el vacio que es 1 pasa a ser -100 si es un candidato a slot
+                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jx  
+                                       endif
+                                       if ( tag_numbers%edge%y(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%y(iii,jjj,kkk)),4)).and. & 
+                                       (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
+                                          conta=conta+1
+                                          jy=-100
+                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jy
+                                       endif
+                                       if ( tag_numbers%edge%z(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%z(iii,jjj,kkk)),5)).and. &
+                                       (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
+                                          conta=conta+1
+                                          jz=-100
+                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jz
+                                       endif
+                                       ! endif !de los tags negativos
                                     endif !del if mapvtk
                                     !
                                  end do
@@ -3649,7 +3658,7 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.true. ; electric=.false.
-                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
                            endif
                            !!!
@@ -4778,9 +4787,9 @@ contains
          esborde=.false.
       ENDIF !DEL IMED1
       return
-    end subroutine contabordes
+    end subroutine contabordes 
 
-   subroutine nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, &
+   subroutine nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                          init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
@@ -4790,7 +4799,7 @@ contains
 
       logical geom,asigNa,init,electric,magnetic
       integer(kind=4) conta,sweep,ni,nj,nk,i_m,j_m,k_m,IMED
-
+      type(taglist_t) :: tag_numbers
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
       sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
@@ -4824,7 +4833,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iJx
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%x(ni,nj,nk))
                            ! print *,'-------tras  GEOM',output(ii)%item(i)%Serialized%eI(conta),output(ii)%item(i)%Serialized%currentType(conta)
                         endif
                         if (asigna) then
@@ -4854,7 +4864,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iJx
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%x(ni,nj,nk))
                            ! print *,'-------tras  GEOM',output(ii)%item(i)%Serialized%eI(conta),output(ii)%item(i)%Serialized%currentType(conta)
                         endif
                         if (asigna) then
@@ -4885,7 +4896,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iJy
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%y(ni,nj,nk))
                            ! print *,'-------tras  GEOM',output(ii)%item(i)%Serialized%eI(conta),output(ii)%item(i)%Serialized%currentType(conta)
                         endif
                         if (asigna) then
@@ -4915,7 +4927,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iJy
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%y(ni,nj,nk))
                            ! print *,'-------tras  GEOM',output(ii)%item(i)%Serialized%eI(conta),output(ii)%item(i)%Serialized%currentType(conta)
                         endif
                         if (asigna) then
@@ -4945,7 +4958,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iJz
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%z(ni,nj,nk))
                            ! print *,'-------tras  GEOM',output(ii)%item(i)%Serialized%eI(conta),output(ii)%item(i)%Serialized%currentType(conta)
                         endif
                         if (asigna) then
@@ -4975,7 +4989,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iJz
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%z(ni,nj,nk))
                            ! print *,'-------tras  GEOM',output(ii)%item(i)%Serialized%eI(conta),output(ii)%item(i)%Serialized%currentType(conta)
                         endif
                         if (asigna) then
@@ -5007,7 +5022,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%x(ni,nj,nk))
                         endif
                         if (asigna) output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = 9.0
                      endif
@@ -5031,7 +5047,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%x(ni,nj,nk))
                         endif
                         if (asigna) output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = 9.0
                      endif
@@ -5056,7 +5073,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%y(ni,nj,nk))
                         endif
                         if (asigna) output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = 9.0
                      endif
@@ -5080,7 +5098,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%y(ni,nj,nk))
                         endif
                         if (asigna) output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = 9.0
                      endif
@@ -5104,7 +5123,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%z(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
                         endif
                         if (asigna) output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = 9.0
                      endif
@@ -5128,7 +5148,8 @@ contains
                            output(ii)%item(i)%Serialized%eJ(conta)=nj
                            output(ii)%item(i)%Serialized%eK(conta)=nk
                            output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
-                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+                           output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%z(ni,nj,nk))
+                           ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
                         endif
                         if (asigna) output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = 9.0
                      endif
@@ -5145,10 +5166,11 @@ contains
       return
    end subroutine
 
-   subroutine wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag)
+   subroutine wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
    
       type (SGGFDTDINFO), intent(IN)   :: sgg
       INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      type(taglist_t) :: tag_numbers
       type (output_t), pointer, dimension( : )  ::  output
       integer(kind=4), intent(IN) :: i,ii,Ntimeforvolumic
       logical, intent( IN) :: geom,asigNa,init
@@ -5197,18 +5219,23 @@ contains
                ni=Hwireslocal_Berenger%Segments(n)%ii
                nj=Hwireslocal_Berenger%Segments(n)%ji
                nk=Hwireslocal_Berenger%Segments(n)%ki
-               select case (Hwireslocal_Berenger%Segments(n)%orient)
-                case (iEx)
-                  output(ii)%item(i)%Serialized%currentType(conta)=iJx
-                case (iEy)
-                  output(ii)%item(i)%Serialized%currentType(conta)=iJy
-                case (iEz)
-                  output(ii)%item(i)%Serialized%currentType(conta)=iJz
-               end select
+
                output(ii)%item(i)%Serialized%eI(conta)=ni
                output(ii)%item(i)%Serialized%eJ(conta)=nj
                output(ii)%item(i)%Serialized%eK(conta)=nk
-               output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+               
+               select case (Hwireslocal_Berenger%Segments(n)%orient)
+               case (iEx)
+                  output(ii)%item(i)%Serialized%currentType(conta)=iJx
+                  output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%x(ni,nj,nk))
+               case (iEy)
+                  output(ii)%item(i)%Serialized%currentType(conta)=iJy
+                  output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%y(ni,nj,nk))
+               case (iEz)
+                  output(ii)%item(i)%Serialized%currentType(conta)=iJz
+                  output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%z(ni,nj,nk))
+               end select
+               ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
             end do
 
          elseif (asigna) then
@@ -5238,18 +5265,23 @@ contains
                ni=Hwireslocal%CurrentSegment(n)%i
                nj=Hwireslocal%CurrentSegment(n)%j
                nk=Hwireslocal%CurrentSegment(n)%k
-               select case (Hwireslocal%CurrentSegment(n)%tipofield)
-                case (iEx)
-                  output(ii)%item(i)%Serialized%currentType(conta)=iJx
-                case (iEy)
-                  output(ii)%item(i)%Serialized%currentType(conta)=iJy
-                case (iEz)
-                  output(ii)%item(i)%Serialized%currentType(conta)=iJz
-               end select
+
                output(ii)%item(i)%Serialized%eI(conta)=ni
                output(ii)%item(i)%Serialized%eJ(conta)=nj
                output(ii)%item(i)%Serialized%eK(conta)=nk
-               output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+
+               select case (Hwireslocal%CurrentSegment(n)%tipofield)
+                case (iEx)
+                  output(ii)%item(i)%Serialized%currentType(conta)=iJx
+                  output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%x(ni,nj,nk))
+               case (iEy)
+                  output(ii)%item(i)%Serialized%currentType(conta)=iJy
+                  output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%y(ni,nj,nk))
+               case (iEz)
+                  output(ii)%item(i)%Serialized%currentType(conta)=iJz
+                  output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%z(ni,nj,nk))
+               end select
+               ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
             end do
 
          elseif (asigna) then
@@ -5282,18 +5314,23 @@ contains
                ni=Hwireslocal_Slanted%SegmentsStr(n)%cell(iX)
                nj=Hwireslocal_Slanted%SegmentsStr(n)%cell(iY)
                nk=Hwireslocal_Slanted%SegmentsStr(n)%cell(iZ)
-               select case (Hwireslocal_Slanted%SegmentsStr(n)%orient)
-                case (iEx)
-                  output(ii)%item(i)%Serialized%currentType(conta)=iJx
-                case (iEy)
-                  output(ii)%item(i)%Serialized%currentType(conta)=iJy
-                case (iEz)
-                  output(ii)%item(i)%Serialized%currentType(conta)=iJz
-               end select
+
                output(ii)%item(i)%Serialized%eI(conta)=ni
                output(ii)%item(i)%Serialized%eJ(conta)=nj
                output(ii)%item(i)%Serialized%eK(conta)=nk
-               output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
+
+               select case (Hwireslocal_Slanted%SegmentsStr(n)%orient)
+                case (iEx)
+                  output(ii)%item(i)%Serialized%currentType(conta)=iJx
+                  output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%x(ni,nj,nk))
+               case (iEy)
+                  output(ii)%item(i)%Serialized%currentType(conta)=iJy
+                  output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%y(ni,nj,nk))
+               case (iEz)
+                  output(ii)%item(i)%Serialized%currentType(conta)=iJz
+                  output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%z(ni,nj,nk))
+               end select
+               ! output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(sggMtag(ni,nj,nk))
             end do
 
          elseif (asigna) then

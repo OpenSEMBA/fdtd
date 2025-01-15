@@ -50,21 +50,20 @@ fn = 'shieldingEffectiveness.fdtd.json'
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
-assert solver.hasFinishedSuccessfully()
 
 # %% Postprocess
 back = Probe(solver.getSolvedProbeFilenames("back")[0])
-# plt.plot(back.df['time'], back.df['incident'], label='incident')    
-# plt.plot(back.df['time'],  back.df['field'], label='back')
+# plt.plot(back['time'], back['incident'], label='incident')    
+# plt.plot(back['time'],  back['field'], label='back')
 # plt.legend()
 # plt.xlim(0,3e-9)
 
 
-t = back.df['time']
+t = back['time']
 dt = t[1] - t[0]
 fq  = fftfreq(len(t))/dt
-INC = fft(back.df['incident'])
-BACK  = fft(back.df['field'])
+INC = fft(back['incident'])
+BACK  = fft(back['field'])
 S21 = BACK/INC
 
 fmin = 8e6
