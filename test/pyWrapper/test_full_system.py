@@ -258,6 +258,15 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
     assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
 
+def test_sgbc_structured_resistance(tmp_path):
+    fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    i = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0]).data['current']
+    assert np.allclose(i.array[-101:-1], np.ones(100)*i.array[-100], rtol=1e-3)
+    assert np.allclose(-1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
+
 def test_dielectric_transmission(tmp_path):
     _FIELD_TOLERANCE = 0.05
 

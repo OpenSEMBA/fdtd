@@ -13,6 +13,7 @@ DEFAULT_SEMBA_FDTD_PATH = '/build/bin/semba-fdtd'
 class Probe():
     MTLN_PROBE_TAGS = ['_V_', '_I_']
     CURRENT_PROBE_TAGS = ['_Wx_', '_Wy_', '_Wz_']
+    BULK_PROBE_TAGS = ['_Jx_', '_Jy_', '_Jz_']
     POINT_PROBE_TAGS = ['_Ex_', '_Ey_', '_Ez_', '_Hx_', '_Hy_', '_Hz_']
     FAR_FIELD_TAG = ['_FF_']
     MOVIE_TAGS = ['_ExC_', '_EyC_', '_EzC_',
@@ -22,7 +23,8 @@ class Probe():
         + CURRENT_PROBE_TAGS \
         + POINT_PROBE_TAGS \
         + FAR_FIELD_TAG \
-        + MOVIE_TAGS
+        + MOVIE_TAGS \
+        + BULK_PROBE_TAGS
 
     def __init__(self, probe_filename):
         if isinstance(probe_filename, os.PathLike):
@@ -45,6 +47,20 @@ class Probe():
             self.type = 'wire'
             self.cell = self._positionStrToCell(position_str)
             self.segment = int(position_str.split('_s')[1])
+            if self.domainType == 'time':
+                self.data = self.data.rename(columns={
+                    't': 'time',
+                    self.data.columns[1]: 'current'
+                })
+            elif self.domainType == 'frequency':
+                self.data = self.data.rename(columns={
+                    self.data.columns[0]: 'frequency',
+                    self.data.columns[1]: 'magnitude',
+                    self.data.columns[2]: 'phase'
+                })
+        elif tag in Probe.BULK_PROBE_TAGS:
+            self.type = 'bulk'
+            self.cell = self._positionStrToCell(position_str)
             if self.domainType == 'time':
                 self.data = self.data.rename(columns={
                     't': 'time',
