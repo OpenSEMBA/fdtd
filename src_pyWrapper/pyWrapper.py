@@ -24,8 +24,7 @@ class Probe():
         + BULK_CURRENT_PROBE_TAGS \
         + POINT_PROBE_TAGS \
         + FAR_FIELD_TAG \
-        + MOVIE_TAGS
-
+        + MOVIE_TAGS 
     def __init__(self, probe_filename):
         if isinstance(probe_filename, os.PathLike):
             self.filename = probe_filename.as_posix()
@@ -48,6 +47,21 @@ class Probe():
             self.field, self.direction = Probe._getFieldAndDirection(tag)
             self.cell = self._positionStrToCell(position_str)
             self.segment = int(position_str.split('_s')[1])
+            if self.domainType == 'time':
+                self.data = self.data.rename(columns={
+                    't': 'time',
+                    self.data.columns[1]: 'current'
+                })
+            elif self.domainType == 'frequency':
+                self.data = self.data.rename(columns={
+                    self.data.columns[0]: 'frequency',
+                    self.data.columns[1]: 'magnitude',
+                    self.data.columns[2]: 'phase'
+                })
+        elif tag in Probe.BULK_CURRENT_PROBE_TAGS:
+            self.type = 'bulkCurrent'
+            self.field, self.direction = Probe._getFieldAndDirection(tag)
+            self.cell = self._positionStrToCell(position_str)
             if self.domainType == 'time':
                 self.data = self.data.rename(columns={
                     't': 'time',

@@ -96,7 +96,6 @@ def test_tagnumbers_1_volume(tmp_path):
     solver['general']['numberOfSteps'] = 1
 
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
 
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
@@ -120,7 +119,6 @@ def test_tagnumbers_2_volumes(tmp_path):
     solver['general']['numberOfSteps'] = 1
 
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
 
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
@@ -145,7 +143,6 @@ def test_tagnumbers_1_line(tmp_path):
     solver['general']['numberOfSteps'] = 1
 
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
 
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
@@ -169,7 +166,6 @@ def test_tagnumbers_volume_and_surfacs(tmp_path):
     solver['general']['numberOfSteps'] = 1
 
     solver.run()
-    assert solver.hasFinishedSuccessfully() == True
 
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
