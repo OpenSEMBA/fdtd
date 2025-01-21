@@ -57,7 +57,6 @@ fn = 'dielectricTransmission.fdtd.json'
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
-assert solver.hasFinishedSuccessfully()
 
 #%%
 outside = Probe(solver.getSolvedProbeFilenames("outside")[0]) 

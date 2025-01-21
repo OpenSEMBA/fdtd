@@ -70730,7 +70730,6 @@
     ],
     "materialAssociations": [
         {
-            "type": "surface",
             "materialId": 1,
             "elementIds": [
                 4,
@@ -70742,7 +70741,6 @@
             ]
         },
         {
-            "type": "surface",
             "materialId": 2,
             "elementIds": [
                 11
@@ -70750,7 +70748,6 @@
         },
         {
             "name": "Cable",
-            "type": "cable",
             "elementIds": [
                 13
             ],

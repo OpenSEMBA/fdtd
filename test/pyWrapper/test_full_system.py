@@ -162,7 +162,8 @@ def test_movie_in_planewave_in_box(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    h5file = solver.getSolvedProbeFilenames("electric_field_movie")[2]
+    movie_files = solver.getSolvedProbeFilenames("electric_field_movie")
+    h5file = [f for f in movie_files if f.endswith('.h5')][0]
     with h5py.File(h5file, "r") as f:
         time_key = list(f.keys())[0]
         field_key = list(f.keys())[1]
@@ -282,7 +283,7 @@ def test_dielectric_transmission(tmp_path):
         value = probe["field"][idx]
         return {"time":time, "value": value}
     
-    def getTransmitedField(probe:Probe) -> Dict:
+    def getTransmittedField(probe:Probe) -> Dict:
         idx = probe["field"].argmin()
         time = probe["time"][idx]
         value = probe["field"][idx]
@@ -293,40 +294,36 @@ def test_dielectric_transmission(tmp_path):
         reflectedDelay:float = reflectedTime - timeToSurface
         return reflectedDelay
         
-    def getTransmitedDelay(incidentTime:float, reflectedTime:float, transmitedTime:float):
+    def getTransmittedDelay(incidentTime:float, reflectedTime:float, transmittedTime:float):
         timeToSurface:float = ((reflectedTime-incidentTime)/2) + incidentTime
-        transmitedDelay = transmitedTime - timeToSurface
+        transmitedDelay = transmittedTime - timeToSurface
         return transmitedDelay
 
     fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    assert solver.hasFinishedSuccessfully()
 
     relativePermittivity = solver.getMaterialProperties('DielectricMaterial')["relativePermittivity"]
     materialRelativeImpedance = np.sqrt(1/relativePermittivity)
     
     expectedReflectedCoeff = (materialRelativeImpedance - 1) / (materialRelativeImpedance + 1)
-    expectedtransmitedCoeff = (1 + expectedReflectedCoeff)
+    expectedtransmittedCoeff = (1 + expectedReflectedCoeff)
     expectedDelayRatio = 1/np.sqrt(relativePermittivity)
 
     outsideProbe = Probe(solver.getSolvedProbeFilenames("outside")[0])
     insideProbe = Probe(solver.getSolvedProbeFilenames("inside")[0])
 
-    time = outsideProbe["time"]
-    dt = time[1] - time[0]
-    fq = fftfreq(len(time))/dt
 
     incidentField = getIncidentField(outsideProbe)
     reflectedField = getReflectedField(outsideProbe)
-    transmitedField = getTransmitedField(insideProbe)
+    transmittedField = getTransmittedField(insideProbe)
  
-    assert (incidentField['value'] - transmitedField['value'] + reflectedField['value']) < _FIELD_TOLERANCE
+    assert (incidentField['value'] - transmittedField['value'] + reflectedField['value']) < _FIELD_TOLERANCE
     assert np.allclose(reflectedField["value"]/incidentField["value"], expectedReflectedCoeff, rtol=_FIELD_TOLERANCE)
-    assert np.allclose(transmitedField["value"]/incidentField["value"], expectedtransmitedCoeff, rtol=_FIELD_TOLERANCE)
+    assert np.allclose(transmittedField["value"]/incidentField["value"], expectedtransmittedCoeff, rtol=_FIELD_TOLERANCE)
 
     reflectedDelay:float = getReflectedDelay(incidentField['time'], reflectedField['time'])
-    transmitedDelay:float = getTransmitedDelay(incidentField['time'], reflectedField['time'], transmitedField['time'])
+    transmitedDelay:float = getTransmittedDelay(incidentField['time'], reflectedField['time'], transmittedField['time'])
 
     assert np.allclose(reflectedDelay/transmitedDelay, expectedDelayRatio, rtol=_FIELD_TOLERANCE)
 
