@@ -267,6 +267,39 @@ def test_sgbc_structured_resistance(tmp_path):
     assert np.allclose(i.array[-101:-1], np.ones(100)*i.array[-100], rtol=1e-3)
     assert np.allclose(-1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
 
+
+def test_pec_overlapping_sgbcs(tmp_path):
+    """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
+    """
+    fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
+
+    # Runs case without overlap.
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
+    t = p['time'].to_numpy()
+    iSGBC = p['current'].to_numpy()
+
+    # Adds current SGBC elements as PEC. Now both are defined over same surface.
+    sgbcElementIds = solver["materialAssociations"][1]["elementIds"]
+    solver['materialAssociations'][0]["elementIds"].extend(sgbcElementIds)
+    solver.cleanUp()
+    solver.run()
+    iPEC = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
+
+    
+    # For debugging only.
+    plt.figure()
+    plt.plot(t, iSGBC,'.-', label='SGBC case')
+    plt.plot(t, iPEC,'.-', label='PEC overlapping')
+    plt.grid(which='both')
+    plt.legend()
+    plt.show()
+
+    
+    # Checks values are different due to PEC prioritization.
+    assert not np.allclose(iSGBC, iPEC, rtol=1e-3)
+
 def test_dielectric_transmission(tmp_path):
     _FIELD_TOLERANCE = 0.05
 
