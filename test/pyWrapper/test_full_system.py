@@ -271,7 +271,7 @@ def test_sgbc_structured_resistance(tmp_path):
 def test_pec_overlapping_sgbcs(tmp_path):
     """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
     """
-    fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
+    fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
 
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -298,7 +298,43 @@ def test_pec_overlapping_sgbcs(tmp_path):
 
     
     # Checks values are different due to PEC prioritization.
-    assert not np.allclose(iSGBC, iPEC, rtol=1e-3)
+    assert np.all(np.greater(np.abs(iPEC[1000:]), np.abs(iSGBC[1000:])))
+
+def test_sgbc_overlapping_sgbc(tmp_path):
+    """ Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss.
+    """
+    fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
+
+    # Runs case without overlap.
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    # Changes materialId in first SGBC in MatAss to material with larger conductivity.
+    solver['materialAssociations'][1]["materialId"] = 6
+    solver.cleanUp()
+    solver.run()
+    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
+
+    t = p['time'].to_numpy()
+    iSGBC_top = p['current'].to_numpy()
+
+    # Changes materialId in second SGBC in MatAss to material with larger conductivity.
+    solver['materialAssociations'][1]["materialId"] = 2
+    solver['materialAssociations'][2]["materialId"] = 6
+    solver.cleanUp()
+    solver.run()
+    iSGBC_bottom = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
+
+    
+    # For debugging only.
+    plt.figure()
+    plt.plot(t, iSGBC_top,'.-', label='SGBC sigma = 40 S/m, top')
+    plt.plot(t, iSGBC_bottom,'.-', label='SGBC sigma = 20 S/m, bottom')
+    plt.grid(which='both')
+    plt.legend()
+    plt.show()
+
+    
+    # Checks values are different due to prioritization of first written.
+    assert np.all(np.greater(np.abs(iSGBC_top[1000:]), np.abs(iSGBC_bottom[1000:])))
 
 def test_dielectric_transmission(tmp_path):
     _FIELD_TOLERANCE = 0.05
