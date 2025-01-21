@@ -4,7 +4,7 @@ integer function test_read_holland1981() bind (C) result(err)
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//'cases/holland1981.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981.fdtd.json'
    type(Parseador) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
@@ -123,8 +123,7 @@ contains
       
       expected%tWires%n_tw = 1
       expected%tWires%n_tw_max = 1
-
-      ! expected mtln bundles
+  
       expected%mtln%time_step = 30e-12
       expected%mtln%number_of_steps = 1000
 

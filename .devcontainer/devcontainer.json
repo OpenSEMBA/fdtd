@@ -1,0 +1,46 @@
+// For format details, see https://aka.ms/devcontainer.json. For config options, see the
+// README at: https://github.com/devcontainers/templates/tree/main/src/cpp
+{
+	"name": "OpenSEMBA dev. framework",
+	"build": {
+		"dockerfile": "Dockerfile"
+	},
+	"features": {
+		"ghcr.io/msclock/features/vcpkg:2": {},
+		"ghcr.io/devcontainers/features/python:1": {}
+	},
+
+	// Features to add to the dev container. More info: https://containers.dev/features.
+	// "features": {},
+
+	// Use 'forwardPorts' to make a list of ports inside the container available locally.
+	// "forwardPorts": [],
+
+	// Use 'postCreateCommand' to run commands after the container is created.
+	"postStartCommand": "git config --global --add safe.directory ${containerWorkspaceFolder}",
+
+	// Configure tool-specific properties.
+	"customizations": {
+		"codespaces": {
+		  "repositories": {
+			"lmdiazangulo/json-fortran": { "permissions": "read-all" },
+			"opensemba/fhash": { "permissions": "read-all" },
+			"reference-lapack/lapack": { "permissions": "read-all" },
+			"opensemba/ngtest": {"permissions": "read-all" },
+			"google/googletest": { "permissions": "read-all" }
+		  }
+		},
+		"vscode": {
+			"extensions": [
+				"ms-toolsai.jupyter",
+				"fortran-lang.linter-gfortran",
+				"ms-vscode.cmake-tools",
+				"ms-python.autopep8",
+				"matepek.vscode-catch2-test-adapter"
+			]
+		}
+	  }
+
+	// Uncomment to connect as root instead. More info: https://aka.ms/dev-containers-non-root.
+	// "remoteUser": "root"
+}

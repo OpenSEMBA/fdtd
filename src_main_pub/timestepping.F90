@@ -132,7 +132,7 @@ contains
 #endif
 
 #ifdef CompileWithMTLN
-   subroutine launch_simulation(sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
+   subroutine launch_simulation(sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
    SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
 !!!los del tipo l%
    simu_devia,cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
@@ -150,7 +150,7 @@ contains
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
    mtln_parsed, use_mtln_wires)
 #else
-   subroutine launch_simulation(sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
+   subroutine launch_simulation(sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
       SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
    !!!los del tipo l%
       simu_devia,cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
@@ -205,6 +205,7 @@ contains
       !!!! 
       integer (KIND=IKINDMTAG)   ::  &
       sggMtag(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      type(taglist_t) :: tag_numbers
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES)   ::  &
       sggMiNo(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE), &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
@@ -267,7 +268,7 @@ contains
       !*******************************************************************************
       !*******************************************************************************
       !*******************************************************************************
-!!!! 
+
        if (size.gt.maxcores) then
            print *,'Maximum cores ',maxcores,' reached.  to recompile'
            stop
@@ -841,7 +842,7 @@ contains
 
       if (use_mtln_wires) then
 #ifdef CompileWithMTLN
-         call InitWires_mtln(sgg,Ex,Ey,Ez,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
+         call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
 #else
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif
@@ -1029,7 +1030,7 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       write(dubuf,*) 'Init Observation...';  call print11(layoutnumber,dubuf)
-      call InitObservation (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,&
+      call InitObservation (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
                             Thereare%Observation,Thereare%wires,Thereare%FarFields,resume,initialtimestep,finaltimestep,lastexecutedtime, &
                             nEntradaRoot,layoutnumber,size,saveall,singlefilewrite,wiresflavor,&
                             SINPML_FULLSIZE,facesNF2FF,NF2FFDecim,eps0,mu0,simu_devia,mpidir,niapapostprocess,b)
@@ -1745,7 +1746,7 @@ contains
          !Update observation matrices !MUST GO AFTER THE MPI EXCHANGING INFO, SINCE Bloque CURRENTS NEED UPDATED INFO
          IF (Thereare%Observation) then
             !se le pasan los incrementos autenticos (bug que podia aparecer en NF2FF y Bloque currents 17/10/12)
-            call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, n,ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank, &
+            call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, n,ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank, &
                                    Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,planewavecorr,noconformalmapvtk,b)
 
             if (n>=ini_save+BuffObse)  then

@@ -2004,7 +2004,7 @@ CONTAINS
       l%precision=0 !redondeo del semiestructurado
       l%stochastic=.false.
       l%chosenyesornostochastic=.false. !es un flag informativo que debe inicializarse a .false. a pesar de qu el sentido comun diga lo contrario
-      l%simu_devia=.false. !puto bug semana santa '19 cazado a 210419
+      l%simu_devia=.false. !puto bug semana santa 2019 cazado a 210419
    
 #ifdef CompileWithHDF
       l%createh5bin=.false.
@@ -2154,10 +2154,6 @@ CONTAINS
   !!!    l%run_with_abrezanjas = .true. !OJO 0323 A VECES DA ERROR. PONER A FALSE SI SUCEDE
       l%run_with_abrezanjas = .false. !OJO 0323 A VECES DA ERROR. PONER A FALSE SI SUCEDE
       !!!!l%run_with_abrezanjas = .false.
-      if (.NOT.l%input_conformal_flag) then
-            l%conformal_file_input_name = char(0)
-            l%input_conformal_flag = .true.
-      end if
 #else
       l%run_with_abrezanjas = .false.
 #endif

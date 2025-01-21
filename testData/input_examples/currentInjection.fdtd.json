@@ -1,0 +1,56 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "PEC surface attached to line currents. Typical lightning case.",
+
+    "general": {
+        "timeStep": 1e-12,
+        "numberOfSteps": 1000
+    },
+  
+    "boundary": { "all": { "type": "mur" } },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [20, 20, 20],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "elements": [
+            {"id": 1, "type": "cell", "name": "entry", "intervals": [ [[10,  0, 10], [10,  5, 10]] ]},
+            {"id": 2, "type": "cell", "name": "body", "intervals": [ [[ 5,  5, 10], [15, 15, 10]] ]},
+            {"id": 3, "type": "cell", "name": "exit", "intervals": [ [[10, 15, 10], [10, 20, 10]] ]},
+            {"id": 4, "type": "cell", "name": "bulk_current_entry", "intervals": [ [[ 9,  2,  9], [11,  2, 11]] ]},
+            {"id": 5, "type": "cell", "name": "bulk_current_exit", "intervals": [ [[ 9, 17,  9], [11, 17, 11]] ]}
+        ]
+    },
+
+    "materials": [ {"id": 1, "type": "pec", "name": "aluminum"} ],
+
+    "materialAssociations": [
+        {"materialId": 1, "elementIds": [2, 3]}
+    ],
+
+    "sources": [
+        {
+            "name": "entry_line_curent",
+            "type": "nodalSource", 
+            "magnitudeFile": "gauss.exc", 
+            "elementIds": [1],
+            "field": "electric"
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "bulk_current_at_entry",
+            "type": "bulkCurrent",
+            "elementIds": [4],
+            "domain": { "type": "time" }
+        },
+        {
+            "name": "bulk_current_at_exit",
+            "type": "bulkCurrent",
+            "elementIds": [5],
+            "domain": { "type": "time" }
+        }
+    ]
+}

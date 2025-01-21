@@ -1,0 +1,190 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Shielded pair.",
+	
+    "general": {
+        "timeStep": 0.43e-10,
+        "numberOfSteps": 700,
+		"mtlnProblem": false
+    },
+  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6, 
+            "order": 2.0,
+            "reflection": 0.0001
+        }
+    },
+
+	"materials": [
+		{
+			"name": "InnerCoaxial",
+			"id": 1,
+			"type": "multiwire",
+			"inductancePerMeter": [
+				[3.13182309e-07, 7.45674981e-08],
+				[7.45674981e-08, 3.13182309e-07]
+			],
+			"capacitancePerMeter": [
+				[85.0e-12, -20.5e-12],
+				[-20.5e-12, 85.0e-12 ]
+			],
+			"transferImpedancePerMeter" : {
+				"resistiveTerm" : 0.0,
+				"inductiveTerm" : 4.0e-9,
+				"direction": "both"
+			}
+		},
+		{
+			"name": "Shield",
+			"id": 2,
+			"type": "wire",
+			"radius": 6.538e-3,
+            "inductancePerMeter": 0.0,
+			"resistancePerMeter": 22.9e-3
+		},
+		{
+			"name": "leftTerminal",
+			"id": 3,
+			"type": "terminal",
+			"terminations" : [
+				{"type": "series", "resistance": 50},
+				{"type": "series", "resistance": 50}
+			]
+		},
+		{
+			"name": "shieldTerminal",
+			"id": 4,
+			"type": "terminal",
+			"terminations": [
+				{"type": "series","resistance": 50.0}
+			]
+		},
+		{
+			"name": "50OhmTerminal",
+			"id": 6,
+			"type": "terminal",
+			"terminations": [
+				{"type": "series", "resistance": 50}
+			]
+		},
+		{
+			"name": "shortTerminal",
+			"id": 7,
+			"type": "terminal",
+			"terminations": [
+				{"type": "short"}
+			]
+		},
+		{
+			"id": 5,
+			"type": "pec"
+		}
+
+	],
+
+	"mesh": {
+		"grid": {
+			"numberOfCells": [150, 150, 150],
+			"steps": {"x": [0.180], "y": [0.180], "z": [0.0504]}
+		},
+		"coordinates": [
+			{"id": 1, "relativePosition": [75, 71, 74 ] },
+			{"id": 2, "relativePosition": [75, 71, 75] },
+			{"id": 3, "relativePosition": [75, 74, 75] },
+			{"id": 4, "relativePosition": [75, 74, 74 ] },
+
+			{"id": 5, "relativePosition": [75, 71, 74 ] },
+			{"id": 6, "relativePosition": [75, 71, 75] },
+			{"id": 7, "relativePosition": [75, 74, 75] },
+			{"id": 8, "relativePosition": [75, 74, 74 ] },
+
+			{"id": 9, "relativePosition":  [75, 71, 74 ] },
+			{"id": 10, "relativePosition": [75, 71, 75] },
+			{"id": 11, "relativePosition": [75, 74, 75] },
+			{"id": 12, "relativePosition": [75, 74, 74 ] }
+		],
+		"elements": [
+			{ "id": 1, "type": "polyline", "coordinateIds": [1,2,3,4]},
+			{ "id": 2, "type": "node",     "coordinateIds": [1] },
+			{ "id": 3, "type": "node",     "coordinateIds": [4] },
+            { "id": 4, "type": "cell", "intervals": [[[10,10,10], [140,140,140]]] },
+            { "id": 5, "type": "cell", "intervals": [[[20,20,74], [130,130,74]]] },
+			{ "id": 6, "type": "polyline", "coordinateIds": [5,6,7,8]},
+			{ "id": 7, "type": "polyline", "coordinateIds": [9,10,11,12]}
+		]
+	},
+	
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "shielded_pair.exc",
+            "elementIds": [4],
+            "direction": {
+                "theta": 3.1416,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5708,
+                "phi": -1.5708
+            }
+        }
+    ],
+
+
+	"probes": [
+		{
+			"name": "wire_end",
+			"type": "wire",
+			"field": "current",
+			"elementIds": [2],
+            "domain": { "type": "time" }
+		},
+		{
+			"name": "wire_end",
+			"type": "wire",
+			"field": "voltage",
+			"elementIds": [2],
+            "domain": { "type": "time" }
+		},
+		{
+			"name": "wire_start",
+			"type": "wire",
+			"field": "current",
+			"elementIds": [3],
+            "domain": { "type": "time" }
+		},
+		{
+			"name": "wire_start",
+			"type": "wire",
+			"field": "voltage",
+			"elementIds": [3],
+            "domain": { "type": "time" }
+		}
+	],
+
+	"materialAssociations": [
+		{
+			"name": "line_0",
+						"elementIds": [ 1 ],
+			"materialId": 2,
+			"initialTerminalId": 6,
+			"endTerminalId": 6
+		},
+		{
+			"name": "line_1",
+						"elementIds": [ 6,7 ],
+			"materialId": 1,
+			"initialTerminalId": 3,
+			"endTerminalId": 3,
+			"containedWithinElementId": 1
+		},
+		{
+						"materialId" : 5,
+			"elementIds": [5]
+
+		}
+
+	]
+}

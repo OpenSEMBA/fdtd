@@ -1,5 +1,0 @@
-/mnt/b/salva/uGRFDTD/semba-fdtd/sources/publico/test/mtln/CMakeFiles/mtln_solver_tests_fortran.dir
-/mnt/b/salva/uGRFDTD/semba-fdtd/sources/publico/test/mtln/CMakeFiles/mtln_tests.dir
-/mnt/b/salva/uGRFDTD/semba-fdtd/sources/publico/test/mtln/CMakeFiles/test.dir
-/mnt/b/salva/uGRFDTD/semba-fdtd/sources/publico/test/mtln/CMakeFiles/edit_cache.dir
-/mnt/b/salva/uGRFDTD/semba-fdtd/sources/publico/test/mtln/CMakeFiles/rebuild_cache.dir

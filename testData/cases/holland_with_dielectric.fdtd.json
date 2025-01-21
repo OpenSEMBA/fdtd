@@ -1,0 +1,89 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "1m linear antenna illuminated by a pulse : Holland, R. Finite-Difference Analysis of EMP Coupling to Thin Struts and Wires. 2000. IEEE-TEMC.",
+
+    "general": {
+        "timeStep": 30e-12,
+        "numberOfSteps": 1000
+    },
+  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6, 
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+
+    "materials": [
+        {
+            "id": 1,
+            "type": "wire",
+            "radius": 0.02,
+            "_referenceInductancePerMeter": 1e-7,
+            "_referenceCapacitancePerMeter": 2e-11, 
+            "insulationRelativePermittivity" : 1.5
+        },
+        {
+            "id": 2,
+            "type": "terminal",
+            "terminations": [{"type": "open"}]
+        }
+    ],
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [20, 20, 22],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [11, 11,  7]},
+            {"id": 2, "relativePosition": [11, 11, 12]},
+            {"id": 3, "relativePosition": [11, 11, 17]},
+            {"id": 4, "relativePosition": [12, 11, 17]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [2]},
+            {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
+            {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [19, 19, 21]]] },
+            {"id": 4, "type": "node", "coordinateIds": [4]}
+        ]
+    },
+
+    "materialAssociations": [
+        { 
+            "name" : "single_wire",
+            "materialId": 1,
+            "initialTerminalId": 2,
+            "endTerminalId": 2,
+            "elementIds": [2]
+        }
+    ],
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "holland.exc",
+            "elementIds": [3],
+            "direction": {
+                "theta": 1.5708,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 0.0,
+                "phi": 0.0
+            }
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "mid_point",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [1],
+            "domain": { "type": "time" }
+        }
+    ]
+}

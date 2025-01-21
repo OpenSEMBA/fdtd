@@ -1,102 +1,37 @@
 from utils import *
-import pytest
 
-def test_read_wire_probe():
-    p = Probe(OUTPUT_FOLDER + 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
-        
-    assert p.case_name == 'holland1981'
-    assert p.name == 'mid_point'
-    assert p.type == 'wire'
-    assert np.all(p.cell == np.array([11, 11, 12]))
-    assert p.segment_tag == 2
-    
-    assert len(p['time']) == 1001
-    assert p['time'][0] == 0.0
-    assert p['time'].iat[-1] == 0.2999999901276417E-007
-    
-    assert len(p['current']) == 1001
-    assert p['current'][0] == 0.0
-    assert p['current'].iat[-1] == -0.513576742E-004
-  
 
-def test_probes_output_exists(tmp_path):
-    case = 'holland1981'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
+def test_holland_case_checking_number_of_outputs(tmp_path):
+    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
-    solver.run()
-    probe_files = solver.getSolvedProbeFilenames("mid_point")
-    
-    assert solver.hasFinishedSuccessfully() == True
-    assert len(probe_files) == 1
-    assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
-             
-
-def test_probes_output_number_of_steps(tmp_path):
-    case = 'holland1981'
-    input_json = getCase(case)
     number_of_steps = 10
-    input_json['general']['numberOfSteps'] = number_of_steps
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
+    solver['general']['numberOfSteps'] = number_of_steps
 
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
     solver.run()
+
     probe_files = solver.getSolvedProbeFilenames("mid_point")
-    
-    assert solver.hasFinishedSuccessfully() == True
+
     assert len(probe_files) == 1
     assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
     assert countLinesInFile(probe_files[0]) == number_of_steps + 2
 
 
-def test_holland(tmp_path):
-    case = 'holland1981'
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'holland.exc')
-    makeCopy(tmp_path, CASE_FOLDER + case + '.fdtd.json')
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
+def test_towel_hanger_case_creates_output_probes(tmp_path):
+    fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['general']['numberOfSteps'] = 1
 
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
     solver.run()
-    probe_files = solver.getSolvedProbeFilenames("mid_point")
-    
-    assert solver.hasFinishedSuccessfully() == True
-    assert len(probe_files) == 1
-    assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == 1002
 
-    
-def test_towel_hanger(tmp_path):
-    case = 'towelHanger'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'towelHanger.exc')
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
-    solver.run()
     probe_start = solver.getSolvedProbeFilenames("wire_start")
     probe_mid = solver.getSolvedProbeFilenames("wire_mid")
     probe_end = solver.getSolvedProbeFilenames("wire_end")
-    
-    assert solver.hasFinishedSuccessfully() == True
+
     assert len(probe_start) == 1
     assert len(probe_mid) == 1
     assert len(probe_end) == 1
-    
+
     assert 'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat' == probe_start[0]
     assert 'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat' == probe_mid[0]
     assert 'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat' == probe_end[0]
@@ -104,87 +39,153 @@ def test_towel_hanger(tmp_path):
     assert countLinesInFile(probe_mid[0]) == 3
     assert countLinesInFile(probe_end[0]) == 3
 
-    
-def test_read_far_field_probe(tmp_path):    
-    case = 'sphere'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    input_json['probes'][0]['domain']['numberOfFrequencies'] = 100
-    
-    
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
 
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'gauss.exc')
+def test_sphere_case_with_far_field_probe_launches(tmp_path):
+    fn = CASES_FOLDER + 'sphere/sphere.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['general']['numberOfSteps'] = 1
+    solver['probes'][0]['domain']['numberOfFrequencies'] = 100
 
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
-    solver.run()  
+    solver.run()
 
     p = Probe(solver.getSolvedProbeFilenames("Far")[0])
     assert p.case_name == 'sphere'
     assert p.type == 'farField'
-    assert np.all(p.cell_init == np.array([2,2,2]))
-    
+    assert np.all(p.cell_init == np.array([2, 2, 2]))
+
     p = Probe(solver.getSolvedProbeFilenames("electric_field_movie")[0])
     assert p.case_name == 'sphere'
     assert p.type == 'movie'
-    assert np.all(p.cell_init == np.array([2,2,2]))
-    
-    
-def test_read_airplane(tmp_path):    
-    case = 'airplane'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-        
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
+    assert np.all(p.cell_init == np.array([2, 2, 2]))
 
-    makeCopy(tmp_path, EXCITATIONS_FOLDER+'gauss.exc')
 
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mapvtk'])
-    solver.run()  
+def test_tagnumbers_3_surfaces(tmp_path):
+    fn = CASES_FOLDER + 'tagNumber_mediaType/three_surfaces.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
 
-    assert solver.hasFinishedSuccessfully()
-       
-    vtkmapfile = solver.getVTKMap()
-    
-    assert os.path.isfile(vtkmapfile)
-    
-
-def test_sgbc_can_launch(tmp_path):
-    case = 'sgbc'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
     solver.run()
-   
-    assert solver.hasFinishedSuccessfully() == True
     
-def test_sgbc_vtk_tags(tmp_path):
-    case = 'sgbc'
-    input_json = getCase(case)
-    input_json['general']['numberOfSteps'] = 1
-    fn = tmp_path._str + '/' + case + '.fdtd.json'
-    with open(fn, 'w') as modified_json:
-        json.dump(input_json, modified_json) 
-
-    solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mapvtk'])
-    solver.run()
-   
-    assert solver.hasFinishedSuccessfully() == True
-       
     vtkmapfile = solver.getVTKMap()
-    
     assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    assert face_tag_dict[64] == 4
+    assert face_tag_dict[128] == 4
+    assert face_tag_dict[192] == 4
+
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+    assert line_tag_dict[64] == 8
+    assert line_tag_dict[128] == 4
+    assert line_tag_dict[192] == 4
     
-    d = createFaceTagDictionary(vtkmapfile)    
-    assert d[64] == 4
-    assert d[128] == 4
-    assert d[192] == 4
+    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
+    assert face_media_dict[0] == 4 #PEC surface
+    assert face_media_dict[304] == 4 #SGBC surface
+    assert face_media_dict[305] == 4 #SGBC surface
     
+    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
+    assert line_media_dict[0.5] == 8 #PEC line
+    assert line_media_dict[3.5] == 8 #SGBC line
+    
+def test_tagnumbers_1_volume(tmp_path):
+    fn = CASES_FOLDER + 'tagNumber_mediaType/pec_volume.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    assert face_tag_dict[64] == 36
+    
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+    assert len(line_tag_dict) == 0
+    
+    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
+    assert face_media_dict[0] == 36 #PEC surface
+    
+    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
+    assert len(line_media_dict) == 0
+
+def test_tagnumbers_2_volumes(tmp_path):
+    fn = CASES_FOLDER + 'tagNumber_mediaType/pec_volumes.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    assert face_tag_dict[64] == 36
+    assert face_tag_dict[128] == 36
+    
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+    assert len(line_tag_dict) == 0
+    
+    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
+    assert face_media_dict[0] == 72 #PEC surface
+    
+    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
+    assert len(line_media_dict) == 0
+
+def test_tagnumbers_1_line(tmp_path):
+    fn = CASES_FOLDER + 'tagNumber_mediaType/pec_line.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    assert len(face_tag_dict) == 0
+    
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+    assert line_tag_dict[64] == 2
+    
+    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
+    assert len(face_media_dict) == 0
+    
+    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
+    assert line_media_dict[0.5] == 2 #PEC line
+    
+def test_tagnumbers_volume_and_surfacs(tmp_path):
+    fn = CASES_FOLDER + 'tagNumber_mediaType/volume_and_surfaces.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    assert face_tag_dict[64] == 6
+    assert face_tag_dict[128] == 1
+    assert face_tag_dict[192] == 1
+    
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+    assert line_tag_dict[64] == 1
+    assert line_tag_dict[128] == 4
+    assert line_tag_dict[192] == 3
+    
+    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
+    assert face_media_dict[-1] == 1 #PEC surface
+    assert face_media_dict[0] == 6 #PEC surface
+    assert face_media_dict[305] == 1 #SGBC surface
+    
+    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
+    assert line_media_dict[-0.5] == 4 #PMC line
+    assert line_media_dict[0.5] == 1 #PEC line
+    assert line_media_dict[3.5] == 3 #SGBC line
