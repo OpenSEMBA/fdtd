@@ -2,7 +2,7 @@
     "_format": "FDTD Input file",
     "general": {
         "timeStep": 1e-11,
-        "numberOfSteps": 2000
+        "numberOfSteps": 50
     },
     "boundary": {
         "all": {
@@ -70685,7 +70685,7 @@
             "type": "pec"
         },
         {
-            "name": "SurfaceImpedance",
+            "name": "SurfaceImpedance20",
             "id": 2,
             "type": "multilayeredSurface",
             "layers": [
@@ -70698,7 +70698,7 @@
             ]
         },
         {
-            "name": "SurfaceImpedance",
+            "name": "SurfaceImpedance40",
             "id": 6,
             "type": "multilayeredSurface",
             "layers": [
@@ -70743,17 +70743,6 @@
     ],
     "materialAssociations": [
         {
-            "materialId": 1,
-            "elementIds": [
-                4,
-                5,
-                6,
-                7,
-                8,
-                9
-            ]
-        },
-        {
             "materialId": 2,
             "elementIds": [
                 11
@@ -70764,50 +70753,8 @@
             "elementIds": [
                 11
             ]
-        },
-        {
-            "name": "Cable",
-            "elementIds": [
-                13
-            ],
-            "materialId": 3,
-            "initialTerminalId": 4,
-            "endTerminalId": 5
         }
     ],
-    "sources": [
-        {
-            "name": "Generator on line",
-            "type": "generator",
-            "magnitudeFile": "ramp.exc",
-            "elementIds": [
-                1
-            ],
-            "field": "voltage"
-        }
-    ],
-    "probes": [
-        {
-            "name": "Wire probe",
-            "type": "wire",
-            "field": "current",
-            "elementIds": [
-                3
-            ],
-            "domain": {
-                "type": "time"
-            }
-        },
-        {
-            "name": "Bulk probe",
-            "type": "bulkCurrent",
-            "field": "electric",
-            "elementIds": [
-                2
-            ],
-            "domain": {
-                "type": "time"
-            }
-        }
-    ]
+    "sources": [],
+    "probes": []
 }

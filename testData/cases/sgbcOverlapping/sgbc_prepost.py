@@ -30,6 +30,7 @@ data[:,0] = t
 data[:,1] = v
 np.savetxt('ramp.exc', data)
  
+ 
 #####################################################
 # %% Run solver
 fn = 'sgbcOverlapping.fdtd.json'
@@ -40,18 +41,20 @@ solver.run()
 #sgbc sigma= 20 first in materialAssociations
 p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
 t = p['time'].to_numpy()
-iSGBC40_bottom = p['current'].to_numpy()
+iSGBC40_last = p['current'].to_numpy()
 
 #sgbc sigma= 40 first in materialAssociations
 solver['materialAssociations'][1]["materialId"] = 6
+solver['materialAssociations'][2]["materialId"] = 2
 solver.cleanUp()
 solver.run()
-iSGBC40_top = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
+iSGBC40_first = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
 
 
 
 #restore default values
 solver['materialAssociations'][1]["materialId"] = 2
+solver['materialAssociations'][2]["materialId"] = 6
 solver.cleanUp()
 solver.run()
 
@@ -63,8 +66,8 @@ w = 120e-3
 f = l/(w*h)
 
 plt.figure()
-plt.plot(t, f/(-1/iSGBC40_top-50),'--', label='SGBC cond = 40S/m, top')
-plt.plot(t, f/(-1/iSGBC40_bottom-50),'-.g', label='SGBC cond = 40S/m, bottom')
+plt.plot(t, f/(-1/iSGBC40_first-50),'--', label='SGBC cond = 40S/m, top')
+plt.plot(t, f/(-1/iSGBC40_last-50),'-.g', label='SGBC cond = 40S/m, bottom')
 plt.grid(which='both')
 plt.legend()
 plt.xlabel('Time (ns)')
@@ -72,3 +75,10 @@ plt.ylabel('Conductivity (S/m)')
 plt.show()
 
 
+#####################################################
+                                                                                                                                                                                                                                                                                                                                                                                                                                          # %% Run overlap mapvtk case
+fn = 'sgbcOverlapping_vtk.fdtd.json'
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mapvtk'])
+solver['general']["numberOfSteps"] = 1
+
+# %%
