@@ -15,11 +15,17 @@ from pyWrapper import *
 
 #####################################################
 # %% Generate excitation and visualize
-dt = 1e-11
-tf = 20e-9
-tramp = 5e-9
+dt = 1e-10
+tf = 5*0.5e-8
+t0 = 4*0.1e-8
+ts = 4*0.027e-8
 t = np.arange(0, tf, dt)
-v = (t/tramp)*(t < tramp) + 1*(t >= tramp)
+v = ( np.exp(-(t-t0)**2/(2*ts**2)) )*(t < t0) + 1*(t >= t0)
+# dt = 1e-11
+# tf = 20e-9
+# tramp = 5e-9
+# t = np.arange(0, tf, dt)
+# v = (t/tramp)*(t < tramp) + 1*(t >= tramp)
 
 plt.figure()
 plt.plot(t*1e9,v)
@@ -28,7 +34,7 @@ plt.xlabel('Time (ns)')
 data = np.zeros((len(t), 2))
 data[:,0] = t
 data[:,1] = v
-np.savetxt('ramp.exc', data)
+np.savetxt('gauss_cte.exc', data)
  
 #####################################################
 # %% Run solver
