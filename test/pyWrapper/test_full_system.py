@@ -289,12 +289,12 @@ def test_pec_overlapping_sgbcs(tmp_path):
 
     
     # For debugging only.
-    plt.figure()
-    plt.plot(t, iSGBC,'.-', label='SGBC case')
-    plt.plot(t, iPEC,'.-', label='PEC overlapping')
-    plt.grid(which='both')
-    plt.legend()
-    plt.show()
+    # plt.figure()
+    # plt.plot(t, iSGBC,'.-', label='SGBC case')
+    # plt.plot(t, iPEC,'.-', label='PEC overlapping')
+    # plt.grid(which='both')
+    # plt.legend()
+    # plt.show()
 
     
     # Checks values are different due to PEC prioritization.
@@ -325,12 +325,12 @@ def test_sgbc_overlapping_sgbc(tmp_path):
 
     
     # For debugging only.
-    plt.figure()
-    plt.plot(t, iSGBC_top,'.-', label='SGBC sigma = 40 S/m, top')
-    plt.plot(t, iSGBC_bottom,'.-', label='SGBC sigma = 20 S/m, bottom')
-    plt.grid(which='both')
-    plt.legend()
-    plt.show()
+    # plt.figure()
+    # plt.plot(t, iSGBC_top,'.-', label='SGBC sigma = 40 S/m, top')
+    # plt.plot(t, iSGBC_bottom,'.-', label='SGBC sigma = 20 S/m, bottom')
+    # plt.grid(which='both')
+    # plt.legend()
+    # plt.show()
 
     
     # Checks values are different due to prioritization of first written.
