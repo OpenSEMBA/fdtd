@@ -162,7 +162,8 @@ def test_movie_in_planewave_in_box(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    h5file = solver.getSolvedProbeFilenames("electric_field_movie")[2]
+    movie_files = solver.getSolvedProbeFilenames("electric_field_movie")
+    h5file = [f for f in movie_files if f.endswith('.h5')][0]
     with h5py.File(h5file, "r") as f:
         time_key = list(f.keys())[0]
         field_key = list(f.keys())[1]
