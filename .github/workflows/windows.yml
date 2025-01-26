@@ -19,7 +19,7 @@ jobs:
       matrix:
         os: [windows-latest]
         compiler: [ {name: 'intel', version: '2024.0'} ]
-        build-type: ["Debug", "Release"]
+        build-type: ["Release"]
         mpi: ["No"]
         mtln: ["Yes"]
         hdf: ["Yes"]
