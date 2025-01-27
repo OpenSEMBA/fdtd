@@ -2842,7 +2842,6 @@ contains
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHx(i-1,j,k)/=1).or.(sggMiHx(i+1,j,k)/=1)))) !esta condicion en realidad no detecta alabeos de una celda que siendo slots son acoples de un agujerito solo en el peor de los casos
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                       !solo lo hace con celdas de vacio porque en particular el mismo medio sgbc con diferentes orientaciones tiene distintos indices de medio y lo activaria erroneamente si lo hago para todos los medios
-                     !  sggMtag(i,j,k)=-ibset(iabs(sggMtag(i,j,k)),3) 
                       tag_numbers%face%x(i,j,k)=-ibset(iabs(tag_numbers%face%x(i,j,k)),3) 
                       !ojo no cambiar: interacciona con observation tags 141020 !151020 a efectos de mapvtk el signo importa
                   endif
@@ -2865,7 +2864,6 @@ contains
                   mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHy(i,j-1,k)/=1).or.(sggMiHy(i,j+1,k)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
-                     !  sggMtag(i,j,k)=-ibset(iabs(sggMtag(i,j,k)),4) 
                      tag_numbers%face%y(i,j,k)=-ibset(iabs(tag_numbers%face%y(i,j,k)),4) 
                   endif
                End do
@@ -2887,9 +2885,7 @@ contains
                   mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHz(i,j,k-1)/=1).or.(sggMiHz(i,j,k+1)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
-                     !  sggMtag(i,j,k)=-ibset(iabs(sggMtag(i,j,k)),5) 
                      tag_numbers%face%z(i,j,k)=-ibset(iabs(tag_numbers%face%z(i,j,k)),5) 
-
                   endif
                End do
             End do
