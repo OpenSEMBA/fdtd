@@ -1369,24 +1369,24 @@ contains
                                  endif
                                  ! los tags de vacio negativos 141020 para mapvtk
                                  ! if (sggMtag(iii,jjj,kkk)<0) then
-                                 if ( tag_numbers%edge%x(iii,jjj,kkk)<0 .and. & 
-                                    (btest(iabs(tag_numbers%edge%x(iii,jjj,kkk)),3)).and. & 
+                                 if ( tag_numbers%face%x(iii,jjj,kkk)<0 .and. & 
+                                    (btest(iabs(tag_numbers%face%x(iii,jjj,kkk)),3)).and. & 
                                     (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
                                     (iii <= SINPML_fullsize(iHx)%XE).and. & 
                                     (jjj <= SINPML_fullsize(iHx)%YE).and. & 
                                     (kkk <= SINPML_fullsize(iHx)%ZE)) then
                                     conta=conta+1
                                  endif
-                                 if ( tag_numbers%edge%y(iii,jjj,kkk)<0 .and. & 
-                                    (btest(iabs(tag_numbers%edge%y(iii,jjj,kkk)),4)).and. &
+                                 if ( tag_numbers%face%y(iii,jjj,kkk)<0 .and. & 
+                                    (btest(iabs(tag_numbers%face%y(iii,jjj,kkk)),4)).and. &
                                     (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and. & 
                                     (iii <= SINPML_fullsize(iHy)%XE).and. & 
                                     (jjj <= SINPML_fullsize(iHy)%YE).and. & 
                                     (kkk <= SINPML_fullsize(iHy)%ZE)) then
                                     conta=conta+1
                                  endif
-                                 if ( tag_numbers%edge%z(iii,jjj,kkk)<0 .and. & 
-                                    (btest(iabs(tag_numbers%edge%z(iii,jjj,kkk)),5)).and. &
+                                 if ( tag_numbers%face%z(iii,jjj,kkk)<0 .and. & 
+                                    (btest(iabs(tag_numbers%face%z(iii,jjj,kkk)),5)).and. &
                                     (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and. & 
                                     (iii <= SINPML_fullsize(iHz)%XE).and. & 
                                     (jjj <= SINPML_fullsize(iHz)%YE).and. & 
@@ -1767,9 +1767,11 @@ contains
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%z(iii,jjj,kkk)
                                  endif
 !                                 ! los tags 141020 para mapvtk
-                                 if (sggMtag(iii,jjj,kkk)<0) then
-                                     if ( (btest(iabs(sggMtag(iii,jjj,kkk)),3)).and. & 
-                                     (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
+                                 ! if (sggMtag(iii,jjj,kkk)<0) then
+                                 !     if ( (btest(iabs(sggMtag(iii,jjj,kkk)),3)).and. & 
+                                 if ( tag_numbers%face%x(iii,jjj,kkk)<0 .and. & 
+                                    (btest(iabs(tag_numbers%face%x(iii,jjj,kkk)),3)).and. & 
+                                    (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
                                      (iii <= SINPML_fullsize(iHx)%XE).and. & 
                                      (jjj <= SINPML_fullsize(iHx)%YE).and. & 
                                      (kkk <= SINPML_fullsize(iHx)%ZE)) then
@@ -1780,8 +1782,9 @@ contains
                                         output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
                                        !  output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk) !sin valor absoluto pq es mapvtk
                                         output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%x(iii,jjj,kkk)
-                                     endif
-                                     if ( (btest(iabs(sggMtag(iii,jjj,kkk)),4)).and. & 
+                                 endif
+                                 if ( tag_numbers%face%y(iii,jjj,kkk)<0 .and. & 
+                                    (btest(iabs(tag_numbers%face%y(iii,jjj,kkk)),4)).and. & 
                                        (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and. &
                                        (iii <= SINPML_fullsize(iHy)%XE).and. & 
                                        (jjj <= SINPML_fullsize(iHy)%YE).and. & 
@@ -1793,9 +1796,9 @@ contains
                                         output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
                                        !  output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
                                         output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%y(iii,jjj,kkk)
-                                     endif
-                                     if ( (btest(iabs(sggMtag(iii,jjj,kkk)),5)).and. &
-                                       (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and. & 
+                                 endif
+                                 if ( tag_numbers%face%z(iii,jjj,kkk)<0 .and. & 
+                                    (btest(iabs(tag_numbers%face%z(iii,jjj,kkk)),5)).and. & 
                                        (iii <= SINPML_fullsize(iHz)%XE).and. & 
                                        (jjj <= SINPML_fullsize(iHz)%YE).and. & 
                                        (kkk <= SINPML_fullsize(iHz)%ZE)) then
@@ -1806,8 +1809,8 @@ contains
                                         output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
                                        !  output(ii)%item(i)%Serialized%sggMtag(conta)=sggMtag(iii,jjj,kkk)
                                         output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%z(iii,jjj,kkk)
-                                     endif
-                                endif
+                                 endif
+                              !   endif
                               endif
                               !
                            end do

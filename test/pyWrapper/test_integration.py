@@ -196,3 +196,15 @@ def test_tagnumbers_count_bug(tmp_path):
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
     solver.run()
+
+    solver["materialAssociations"][0]["materialId"] = 3
+    solver["materialAssociations"][1]["materialId"] = 1
+    solver["materialAssociations"][2]["materialId"] = 3
+    solver.cleanUp()
+    solver.run()    
+    
+    solver["materialAssociations"][0]["materialId"] = 3
+    solver["materialAssociations"][1]["materialId"] = 3
+    solver["materialAssociations"][2]["materialId"] = 1
+    solver.cleanUp()
+    solver.run()

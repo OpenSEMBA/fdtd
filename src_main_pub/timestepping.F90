@@ -1023,7 +1023,7 @@ contains
         endif
 
          !!!!!!!sgg 121020 !rellena la matriz Mtag con los slots de una celda
-                 call fillMtag(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b)
+                 call fillMtag(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b, tag_numbers)
          !!!!!!!fin
                  
 #ifdef CompileWithMPI
@@ -2806,7 +2806,7 @@ contains
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine fillMtag(sgg,sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b)
+      subroutine fillMtag(sgg,sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b, tag_numbers)
 
          !------------------------>
          type (SGGFDTDINFO), intent(IN)    ::  sgg
@@ -2818,6 +2818,7 @@ contains
          integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( IN   )     ::  sggMiEx
          integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( IN   )     ::  sggMiEy
          integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( IN   )     ::  sggMiEz
+         type (taglist_t) :: tag_numbers
          !------------------------> Variables locales
          integer(kind = 4)  ::  i, j, k
          integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio1,medio2,medio3,medio4,medio5
@@ -2841,7 +2842,8 @@ contains
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHx(i-1,j,k)/=1).or.(sggMiHx(i+1,j,k)/=1)))) !esta condicion en realidad no detecta alabeos de una celda que siendo slots son acoples de un agujerito solo en el peor de los casos
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                       !solo lo hace con celdas de vacio porque en particular el mismo medio sgbc con diferentes orientaciones tiene distintos indices de medio y lo activaria erroneamente si lo hago para todos los medios
-                      sggMtag(i,j,k)=-ibset(iabs(sggMtag(i,j,k)),3) 
+                     !  sggMtag(i,j,k)=-ibset(iabs(sggMtag(i,j,k)),3) 
+                      tag_numbers%face%x(i,j,k)=-ibset(iabs(tag_numbers%face%x(i,j,k)),3) 
                       !ojo no cambiar: interacciona con observation tags 141020 !151020 a efectos de mapvtk el signo importa
                   endif
                End do
@@ -2863,7 +2865,8 @@ contains
                   mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHy(i,j-1,k)/=1).or.(sggMiHy(i,j+1,k)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
-                      sggMtag(i,j,k)=-ibset(iabs(sggMtag(i,j,k)),4) 
+                     !  sggMtag(i,j,k)=-ibset(iabs(sggMtag(i,j,k)),4) 
+                     tag_numbers%face%y(i,j,k)=-ibset(iabs(tag_numbers%face%y(i,j,k)),4) 
                   endif
                End do
             End do
@@ -2884,7 +2887,9 @@ contains
                   mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHz(i,j,k-1)/=1).or.(sggMiHz(i,j,k+1)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
-                      sggMtag(i,j,k)=-ibset(iabs(sggMtag(i,j,k)),5) 
+                     !  sggMtag(i,j,k)=-ibset(iabs(sggMtag(i,j,k)),5) 
+                     tag_numbers%face%z(i,j,k)=-ibset(iabs(tag_numbers%face%z(i,j,k)),5) 
+
                   endif
                End do
             End do
