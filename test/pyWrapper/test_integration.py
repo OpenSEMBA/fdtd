@@ -189,3 +189,10 @@ def test_tagnumbers_volume_and_surfacs(tmp_path):
     assert line_media_dict[-0.5] == 4 #PMC line
     assert line_media_dict[0.5] == 1 #PEC line
     assert line_media_dict[3.5] == 3 #SGBC line
+    
+def test_tagnumbers_count_bug(tmp_path):
+    fn = CASES_FOLDER + 'tagNumber_mediaType/count_bug.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+    solver.run()
