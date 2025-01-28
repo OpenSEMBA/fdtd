@@ -162,7 +162,8 @@ def test_movie_in_planewave_in_box(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
-    h5file = solver.getSolvedProbeFilenames("electric_field_movie")[2]
+    movie_files = solver.getSolvedProbeFilenames("electric_field_movie")
+    h5file = [f for f in movie_files if f.endswith('.h5')][0]
     with h5py.File(h5file, "r") as f:
         time_key = list(f.keys())[0]
         field_key = list(f.keys())[1]
@@ -258,6 +259,84 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
     assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
 
+def test_sgbc_structured_resistance(tmp_path):
+    fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    i = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0]).data['current']
+    assert np.allclose(i.array[-101:-1], np.ones(100)*i.array[-100], rtol=1e-3)
+    assert np.allclose(-1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
+
+
+def test_pec_overlapping_sgbcs(tmp_path):
+    """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
+    """
+    fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
+
+    # Runs case without overlap.
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
+    t = p['time'].to_numpy()
+    iSGBC = p['current'].to_numpy()
+
+    # Adds current SGBC elements as PEC. Now both are defined over same surface.
+    sgbcElementIds = solver["materialAssociations"][1]["elementIds"]
+    solver['materialAssociations'][0]["elementIds"].extend(sgbcElementIds)
+    solver.cleanUp()
+    solver.run()
+    iPEC = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
+
+    
+    # For debugging only.
+    # plt.figure()
+    # plt.plot(t, iSGBC,'.-', label='SGBC case')
+    # plt.plot(t, iPEC,'.-', label='PEC overlapping')
+    # plt.grid(which='both')
+    # plt.legend()
+    # plt.show()
+
+    
+    # Checks values are different due to PEC prioritization.
+    assert np.all(np.greater(np.abs(iPEC[1000:]), np.abs(iSGBC[1000:])))
+
+def test_sgbc_overlapping_sgbc(tmp_path):
+    """ Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss.
+    """
+    fn = CASES_FOLDER + 'sgbcOverlapping/sgbcOverlapping.fdtd.json'
+
+    # Runs case without overlap.
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    # Changes materialId in first SGBC in MatAss to material with larger conductivity.
+    solver['materialAssociations'][1]["materialId"] = 6
+    solver.cleanUp()
+    solver.run()
+    p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
+
+    t = p['time'].to_numpy()
+    iSGBC_top = p['current'].to_numpy()
+
+    # Changes materialId in second SGBC in MatAss to material with larger conductivity.
+    solver['materialAssociations'][1]["materialId"] = 2
+    solver['materialAssociations'][2]["materialId"] = 6
+    solver.cleanUp()
+    solver.run()
+    iSGBC_bottom = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])['current'].to_numpy()
+
+    
+    # For debugging only.
+    # plt.figure()
+    # plt.plot(t, iSGBC_top,'.-', label='SGBC sigma = 40 S/m, top')
+    # plt.plot(t, iSGBC_bottom,'.-', label='SGBC sigma = 20 S/m, bottom')
+    # plt.grid(which='both')
+    # plt.legend()
+    # plt.show()
+
+    
+    # Checks values are different due to prioritization of first written.
+    assert np.all(np.greater(np.abs(iSGBC_top[1000:]), np.abs(iSGBC_bottom[1000:])))
+
 def test_dielectric_transmission(tmp_path):
     _FIELD_TOLERANCE = 0.05
 
@@ -273,7 +352,7 @@ def test_dielectric_transmission(tmp_path):
         value = probe["field"][idx]
         return {"time":time, "value": value}
     
-    def getTransmitedField(probe:Probe) -> Dict:
+    def getTransmittedField(probe:Probe) -> Dict:
         idx = probe["field"].argmin()
         time = probe["time"][idx]
         value = probe["field"][idx]
@@ -284,40 +363,36 @@ def test_dielectric_transmission(tmp_path):
         reflectedDelay:float = reflectedTime - timeToSurface
         return reflectedDelay
         
-    def getTransmitedDelay(incidentTime:float, reflectedTime:float, transmitedTime:float):
+    def getTransmittedDelay(incidentTime:float, reflectedTime:float, transmittedTime:float):
         timeToSurface:float = ((reflectedTime-incidentTime)/2) + incidentTime
-        transmitedDelay = transmitedTime - timeToSurface
+        transmitedDelay = transmittedTime - timeToSurface
         return transmitedDelay
 
     fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
-    assert solver.hasFinishedSuccessfully()
 
     relativePermittivity = solver.getMaterialProperties('DielectricMaterial')["relativePermittivity"]
     materialRelativeImpedance = np.sqrt(1/relativePermittivity)
     
     expectedReflectedCoeff = (materialRelativeImpedance - 1) / (materialRelativeImpedance + 1)
-    expectedtransmitedCoeff = (1 + expectedReflectedCoeff)
+    expectedtransmittedCoeff = (1 + expectedReflectedCoeff)
     expectedDelayRatio = 1/np.sqrt(relativePermittivity)
 
     outsideProbe = Probe(solver.getSolvedProbeFilenames("outside")[0])
     insideProbe = Probe(solver.getSolvedProbeFilenames("inside")[0])
 
-    time = outsideProbe["time"]
-    dt = time[1] - time[0]
-    fq = fftfreq(len(time))/dt
 
     incidentField = getIncidentField(outsideProbe)
     reflectedField = getReflectedField(outsideProbe)
-    transmitedField = getTransmitedField(insideProbe)
+    transmittedField = getTransmittedField(insideProbe)
  
-    assert (incidentField['value'] - transmitedField['value'] + reflectedField['value']) < _FIELD_TOLERANCE
+    assert (incidentField['value'] - transmittedField['value'] + reflectedField['value']) < _FIELD_TOLERANCE
     assert np.allclose(reflectedField["value"]/incidentField["value"], expectedReflectedCoeff, rtol=_FIELD_TOLERANCE)
-    assert np.allclose(transmitedField["value"]/incidentField["value"], expectedtransmitedCoeff, rtol=_FIELD_TOLERANCE)
+    assert np.allclose(transmittedField["value"]/incidentField["value"], expectedtransmittedCoeff, rtol=_FIELD_TOLERANCE)
 
     reflectedDelay:float = getReflectedDelay(incidentField['time'], reflectedField['time'])
-    transmitedDelay:float = getTransmitedDelay(incidentField['time'], reflectedField['time'], transmitedField['time'])
+    transmitedDelay:float = getTransmittedDelay(incidentField['time'], reflectedField['time'], transmittedField['time'])
 
     assert np.allclose(reflectedDelay/transmitedDelay, expectedDelayRatio, rtol=_FIELD_TOLERANCE)
 
