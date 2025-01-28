@@ -159,7 +159,7 @@ def test_tagnumbers_1_line(tmp_path):
     line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
     assert line_media_dict[0.5] == 2 #PEC line
     
-def test_tagnumbers_volume_and_surfacs(tmp_path):
+def test_tagnumbers_volume_and_surfaces(tmp_path):
     fn = CASES_FOLDER + 'tagNumber_mediaType/volume_and_surfaces.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])

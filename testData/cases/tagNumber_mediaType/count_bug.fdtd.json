@@ -51,7 +51,6 @@
 
     "materialAssociations": [
         {
-            "type": "surface",
             "materialId": 1,
             "elementIds": [ 3 ]
         },
@@ -60,7 +59,6 @@
             "elementIds": [ 1 ]
         },
         {
-            "type": "surface",
             "materialId": 3,
             "elementIds": [ 2 ]
         }
