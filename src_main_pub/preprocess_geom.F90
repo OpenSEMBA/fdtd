@@ -262,8 +262,8 @@ CONTAINS
       tag_numbers%edge%y(:,:,:) = 0
       tag_numbers%edge%z(:,:,:) = 0
       tag_numbers%face%x(:,:,:) = 0
-      tag_numbers%face%x(:,:,:) = 0
-      tag_numbers%face%x(:,:,:) = 0
+      tag_numbers%face%y(:,:,:) = 0
+      tag_numbers%face%z(:,:,:) = 0
       !todo sustrato por defecto
       sggmiNo (:, :, :) = 1
       sggmiEx (:, :, :) = 1

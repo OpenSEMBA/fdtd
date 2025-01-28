@@ -17,9 +17,9 @@
             "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
         },
         "elements": [
-            {"id": 1, "type": "cell", "intervals": [ [ [3, 3, 3], [5, 5, 3] ] ]},
-            {"id": 2, "type": "cell", "intervals": [ [ [3, 3, 3], [5, 3, 5] ] ]},
-            {"id": 3, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 5, 5] ] ]}
+            {"id": 1, "type": "cell", "intervals": [ [ [3, 3, 3], [4, 4, 3] ] ]},
+            {"id": 2, "type": "cell", "intervals": [ [ [3, 3, 4], [4, 4, 4] ] ]},
+            {"id": 3, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 4, 4] ] ]}
         ]
     },
 
@@ -51,16 +51,16 @@
 
     "materialAssociations": [
         {
-                        "materialId": 1,
-            "elementIds": [ 1 ]
-        },
-        {
-            "materialId": 2,
-            "elementIds": [ 2 ]
+            "materialId": 1,
+            "elementIds": [ 3 ]
         },
         {
             "materialId": 3,
-            "elementIds": [ 3 ]
+            "elementIds": [ 1 ]
+        },
+        {
+            "materialId": 3,
+            "elementIds": [ 2 ]
         }
     ]
 }
