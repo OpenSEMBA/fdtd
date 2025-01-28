@@ -2242,10 +2242,6 @@ contains
 
    contains
 
-      logical function isPML()
-
-      end function
-
       subroutine checkduplicatenames
          integer(Kind=4) :: n_ii, n_i,off
          p1=output(ii)%item(i)%path
