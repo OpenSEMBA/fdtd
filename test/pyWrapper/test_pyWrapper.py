@@ -72,8 +72,9 @@ def test_read_point_probe_without_planewave():
 
 
 def test_read_bulk_current_probe():
-    p = Probe(OUTPUTS_FOLDER + 'twoWires.fdtd_Bulk probe_Jx_15_11_13__15_13_17.dat')
-    
+    p = Probe(OUTPUTS_FOLDER +
+              'twoWires.fdtd_Bulk probe_Jx_15_11_13__15_13_17.dat')
+
     assert p.case_name == 'twoWires'
     assert p.name == 'Bulk probe'
     assert p.type == 'bulkCurrent'
@@ -88,7 +89,7 @@ def test_fdtd_set_new_folder_to_run(tmp_path):
     solver['general']['numberOfSteps'] = 1
 
     solver.run()
-    
+
 
 def test_fdtd_clean_up_after_run(tmp_path):
     input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
@@ -97,7 +98,7 @@ def test_fdtd_clean_up_after_run(tmp_path):
     solver['general']['numberOfSteps'] = 1
 
     solver.run()
-    
+
     pn = solver.getSolvedProbeFilenames("inbox")
     assert os.path.isfile(pn[0])
 
@@ -115,3 +116,11 @@ def test_fdtd_get_used_files():
     assert len(used_files) == 2
     assert used_files[0] == 'spice_4port_pulse_start_75.exc'
     assert used_files[1] == 'opamp.model'
+
+
+def test_casemaker_sphere_from_vtk():
+    cm = CaseMaker()
+
+    cm.addSphereFromVTK(VTK_FOLDER + 'sphere.vtk', 'sphere', 'sphere', 1, 1, 1)
+
+    cm.write(CASES_FOLDER + 'sphere/sphere.json')
