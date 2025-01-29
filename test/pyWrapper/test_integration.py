@@ -39,6 +39,19 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
     assert countLinesInFile(probe_mid[0]) == 3
     assert countLinesInFile(probe_end[0]) == 3
 
+@no_mpi_skip
+def test_airplane_case_with_mpi(tmp_path):
+    fn = CASES_FOLDER + 'airplane/airplane.fdtd.json'
+    solver = FDTD(fn, 
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, 
+                  flags=['-mapvtk'],
+                  mpi_command='mpirun -np 2')
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
 
 def test_sphere_case_with_far_field_probe_launches(tmp_path):
     fn = CASES_FOLDER + 'sphere/sphere.fdtd.json'
@@ -66,29 +79,34 @@ def test_tagnumbers_3_surfaces(tmp_path):
     solver['general']['numberOfSteps'] = 1
 
     solver.run()
-    
+
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
 
-    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
     assert face_tag_dict[64] == 4
     assert face_tag_dict[128] == 4
     assert face_tag_dict[192] == 4
 
-    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
     assert line_tag_dict[64] == 8
     assert line_tag_dict[128] == 4
     assert line_tag_dict[192] == 4
-    
-    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
-    assert face_media_dict[0] == 4 #PEC surface
-    assert face_media_dict[304] == 4 #SGBC surface
-    assert face_media_dict[305] == 4 #SGBC surface
-    
-    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
-    assert line_media_dict[0.5] == 8 #PEC line
-    assert line_media_dict[3.5] == 8 #SGBC line
-    
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert face_media_dict[0] == 4  # PEC surface
+    assert face_media_dict[304] == 4  # SGBC surface
+    assert face_media_dict[305] == 4  # SGBC surface
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 8  # PEC line
+    assert line_media_dict[3.5] == 8  # SGBC line
+
+
 def test_tagnumbers_1_volume(tmp_path):
     fn = CASES_FOLDER + 'tagNumber_mediaType/pec_volume.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -100,17 +118,22 @@ def test_tagnumbers_1_volume(tmp_path):
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
 
-    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
     assert face_tag_dict[64] == 36
-    
-    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
     assert len(line_tag_dict) == 0
-    
-    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
-    assert face_media_dict[0] == 36 #PEC surface
-    
-    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert face_media_dict[0] == 36  # PEC surface
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
     assert len(line_media_dict) == 0
+
 
 def test_tagnumbers_2_volumes(tmp_path):
     fn = CASES_FOLDER + 'tagNumber_mediaType/pec_volumes.fdtd.json'
@@ -123,18 +146,23 @@ def test_tagnumbers_2_volumes(tmp_path):
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
 
-    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
     assert face_tag_dict[64] == 36
     assert face_tag_dict[128] == 36
-    
-    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
     assert len(line_tag_dict) == 0
-    
-    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
-    assert face_media_dict[0] == 72 #PEC surface
-    
-    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert face_media_dict[0] == 72  # PEC surface
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
     assert len(line_media_dict) == 0
+
 
 def test_tagnumbers_1_line(tmp_path):
     fn = CASES_FOLDER + 'tagNumber_mediaType/pec_line.fdtd.json'
@@ -147,18 +175,23 @@ def test_tagnumbers_1_line(tmp_path):
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
 
-    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
     assert len(face_tag_dict) == 0
-    
-    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
     assert line_tag_dict[64] == 2
-    
-    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
     assert len(face_media_dict) == 0
-    
-    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
-    assert line_media_dict[0.5] == 2 #PEC line
-    
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+
+
 def test_tagnumbers_volume_and_surfaces(tmp_path):
     fn = CASES_FOLDER + 'tagNumber_mediaType/volume_and_surfaces.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -170,26 +203,31 @@ def test_tagnumbers_volume_and_surfaces(tmp_path):
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
 
-    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'tagnumber')
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
     assert face_tag_dict[64] == 6
     assert face_tag_dict[128] == 1
     assert face_tag_dict[192] == 1
-    
-    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'tagnumber')
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
     assert line_tag_dict[64] == 1
     assert line_tag_dict[128] == 4
     assert line_tag_dict[192] == 3
-    
-    face_media_dict = createPropertyDictionary(vtkmapfile, celltype = 9, property = 'mediatype')
-    assert face_media_dict[-1] == 1 #PEC surface
-    assert face_media_dict[0] == 6 #PEC surface
-    assert face_media_dict[305] == 1 #SGBC surface
-    
-    line_media_dict = createPropertyDictionary(vtkmapfile, celltype = 3, property = 'mediatype')
-    assert line_media_dict[-0.5] == 4 #PMC line
-    assert line_media_dict[0.5] == 1 #PEC line
-    assert line_media_dict[3.5] == 3 #SGBC line
-    
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert face_media_dict[-1] == 1  # PEC surface
+    assert face_media_dict[0] == 6  # PEC surface
+    assert face_media_dict[305] == 1  # SGBC surface
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[-0.5] == 4  # PMC line
+    assert line_media_dict[0.5] == 1  # PEC line
+    assert line_media_dict[3.5] == 3  # SGBC line
+
+
 def test_tagnumbers_count_bug(tmp_path):
     fn = CASES_FOLDER + 'tagNumber_mediaType/count_bug.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -201,8 +239,8 @@ def test_tagnumbers_count_bug(tmp_path):
     solver["materialAssociations"][1]["materialId"] = 1
     solver["materialAssociations"][2]["materialId"] = 3
     solver.cleanUp()
-    solver.run()    
-    
+    solver.run()
+
     solver["materialAssociations"][0]["materialId"] = 3
     solver["materialAssociations"][1]["materialId"] = 3
     solver["materialAssociations"][2]["materialId"] = 1

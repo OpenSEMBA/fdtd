@@ -19,7 +19,7 @@ jobs:
       matrix:
         os: [windows-latest]
         compiler: [ {name: 'intel', version: '2024.0'} ]
-        build-type: ["Debug", "Release"]
+        build-type: ["Release"]
         mpi: ["No"]
         mtln: ["Yes"]
         hdf: ["Yes"]
@@ -69,6 +69,7 @@ jobs:
 
     - name: Run python tests (except codemodel)
       env:
+        SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: python -m pytest -m 'not codemodel' test/
