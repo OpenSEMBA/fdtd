@@ -22,11 +22,17 @@ no_hdf_skip = pytest.mark.skipif(
     reason="HDF5 is not available",
 )
 
+no_mpi_skip = pytest.mark.skipif(
+    os.getenv("SEMBA_FDTD_ENABLE_MPI") == "No",
+    reason="MPI is not available",
+)
+
 # Use of absolute path to avoid conflicts when changing directory.
 if platform == "linux":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
 elif platform == "win32":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
+
 
 TEST_DATA_FOLDER = os.path.join(os.getcwd(), 'testData/')
 CASES_FOLDER = os.path.join(TEST_DATA_FOLDER, 'cases/')
