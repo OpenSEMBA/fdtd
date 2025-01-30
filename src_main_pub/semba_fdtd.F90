@@ -147,11 +147,6 @@ PROGRAM SEMBA_FDTD_launcher
 #endif
       call setglobal(l%layoutnumber,l%size) !para crear variables globales con info MPI
       
-      if (l%size.gt.maxcores) then
-         print *,'Maximum cores ',maxcores,' reached.  to recompile'
-         stop
-      endif
-      
       WRITE (whoamishort, '(i5)') l%layoutnumber + 1
       WRITE (whoami, '(a,i5,a,i5,a)') '(', l%layoutnumber + 1, '/', l%size, ') '
       

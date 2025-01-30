@@ -170,11 +170,6 @@ contains
       integer (kind=4) :: timesteps,klk,fqlength
       integer :: my_iostat
 !
-      
-   if (size.gt.maxcores) then
-       print *,'Maximum cores ',maxcores,' reached.  to recompile'
-       stop
-   endif
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !
 !!

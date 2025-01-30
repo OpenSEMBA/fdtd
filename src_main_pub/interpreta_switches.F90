@@ -1220,7 +1220,7 @@ CONTAINS
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   if ((l%run)) then  !el modo run crea el semaforo pause para permiter encolados salvajes en ugrgrid
+   if ((l%run)) then 
 #ifdef keeppause
           !!!solo para el cluster
                   INQUIRE (file='running', EXIST=hayinput)
