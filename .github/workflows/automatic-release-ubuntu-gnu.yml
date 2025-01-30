@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix: 
         build-type: ["Release"]
-        mpi: ["Yes"]
+        mpi: ["No"]
         mtln: ["Yes"]
         hdf: ["Yes"]
 
@@ -21,9 +21,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
-
-    - name: Setup ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
       
     - name: Install required packages
       run: |
