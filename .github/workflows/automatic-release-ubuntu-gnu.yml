@@ -12,7 +12,7 @@ jobs:
     strategy:
       matrix: 
         build-type: ["Release"]
-        mpi: ["No"]
+        mpi: ["Yes"]
         mtln: ["Yes"]
         hdf: ["Yes"]
 
@@ -48,6 +48,10 @@ jobs:
         python -m pip install -r requirements.txt
 
     - name: Run wrapper tests
+      env:
+        SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
+        SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
+        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: |
         python -m pytest test
 
