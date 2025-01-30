@@ -72,7 +72,7 @@ module  FDETYPES
    integer (kind=8),  parameter  ::  MaxProbes=150000 !Maximum number of probes (a limit of 200000 is set with ulimit in Linux)
    !
    !
-   INTEGER, parameter :: topCPUtime=10000000 !maximum cpu time in minutes !set to 690 in UGRGRID
+   INTEGER, parameter :: topCPUtime=10000000 !maximum cpu time in minutes 
    !size of character strings 
    INTEGER, parameter :: BUFSIZE=1024
    INTEGER, parameter :: BUFSIZE_LONG=16384
