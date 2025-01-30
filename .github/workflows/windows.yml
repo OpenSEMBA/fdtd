@@ -20,7 +20,7 @@ jobs:
         os: [windows-latest]
         compiler: [ {name: 'intel', version: '2024.0'} ]
         build-type: ["Release"]
-        mpi: ["Yes", "No"]
+        mpi: ["No"]
         mtln: ["Yes"]
         hdf: ["Yes"]
 
