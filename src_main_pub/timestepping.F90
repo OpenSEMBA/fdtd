@@ -1,3 +1,44 @@
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+! MIT License
+! 
+! Copyright (c) 2023 University of Granada
+! 
+! Permission is hereby granted, free of charge, to any person obtaining a copy
+! of this software and associated documentation files (the "Software"), to deal
+! in the Software without restriction, including without limitation the rights
+! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+! copies of the Software, and to permit persons to whom the Software is
+! furnished to do so, subject to the following conditions:
+! 
+! The above copyright notice and this permission notice shall be included in all
+! copies or substantial portions of the Software.
+! 
+! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+! AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+! LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+! OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+! SOFTWARE.
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
+    
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!  SEMBA_FDTD sOLVER MODULE
+!  Creation date Date :  April, 8, 2010
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+!__________________________________________________________________________________________________
+!******************************** REVISAR PARA PGI (CRAY) *****************************************
+!---> AdvanceMultiportE
+!---> AdvanceAnisMultiportE
+!---> AdvanceMultiportH
+!---> AdvanceAnisMultiportH
+!---> dfUpdateE
+!---> dfUpdateH
+!---> MinusCloneMagneticPMC
+!________________________________________________________________________________________
+
 module Solver
 
    use fdetypes
@@ -2782,8 +2823,11 @@ contains
          integer(kind = 4)  ::  i, j, k
          integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio1,medio2,medio3,medio4,medio5
          logical  ::  mediois1,mediois2,mediois3,mediois4
-         
-         
+         integer, dimension(3) :: lbx, lby, lbz
+         lbx = lbound(tag_numbers%face%x)
+         lby = lbound(tag_numbers%face%y)   
+         lbz = lbound(tag_numbers%face%z)
+
          mediois3=.true.; mediois4=.true.
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
@@ -2801,7 +2845,7 @@ contains
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHx(i-1,j,k)/=1).or.(sggMiHx(i+1,j,k)/=1)))) !esta condicion en realidad no detecta alabeos de una celda que siendo slots son acoples de un agujerito solo en el peor de los casos
                   if ((mediois1.or.mediois2).and.(mediois3))  then
                       !solo lo hace con celdas de vacio porque en particular el mismo medio sgbc con diferentes orientaciones tiene distintos indices de medio y lo activaria erroneamente si lo hago para todos los medios
-                      tag_numbers%face%x(i,j,k)=-ibset(iabs(tag_numbers%face%x(i,j,k)),3) 
+                      tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)=-ibset(iabs(tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)),3) 
                       !ojo no cambiar: interacciona con observation tags 141020 !151020 a efectos de mapvtk el signo importa
                   endif
                End do
@@ -2823,7 +2867,7 @@ contains
                   mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHy(i,j-1,k)/=1).or.(sggMiHy(i,j+1,k)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
-                     tag_numbers%face%y(i,j,k)=-ibset(iabs(tag_numbers%face%y(i,j,k)),4) 
+                     tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)=-ibset(iabs(tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)),4) 
                   endif
                End do
             End do
@@ -2844,7 +2888,7 @@ contains
                   mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
                   mediois3= .true. !.not.((medio5==1).and.(((sggMiHz(i,j,k-1)/=1).or.(sggMiHz(i,j,k+1)/=1))))
                   if ((mediois1.or.mediois2).and.(mediois3))  then
-                     tag_numbers%face%z(i,j,k)=-ibset(iabs(tag_numbers%face%z(i,j,k)),5) 
+                     tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)=-ibset(iabs(tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)),5) 
                   endif
                End do
             End do
