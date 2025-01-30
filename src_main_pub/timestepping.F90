@@ -244,10 +244,6 @@ contains
       !*******************************************************************************
       !*******************************************************************************
 
-       if (size.gt.maxcores) then
-           print *,'Maximum cores ',maxcores,' reached.  to recompile'
-           stop
-       endif
       planewave_switched_off=.false.
       fatalerror=.false.
       parar=.false.
