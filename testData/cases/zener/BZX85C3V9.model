@@ -1,0 +1,8 @@
+.SUBCKT bzx85c3v9 2 1
+d1 2 1 Z3_9
+.ENDS bzx85c3v9
+
+.model Z3_9 D(Is=193.4E-15 Rs=.1 Cjo=239.5E-12 nbv=13 bv=3.966 Ibv=64.74E-3)
+
+
+
