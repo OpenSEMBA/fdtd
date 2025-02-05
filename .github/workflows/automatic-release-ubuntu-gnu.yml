@@ -21,9 +21,6 @@ jobs:
       uses: actions/checkout@v4
       with:
         submodules: 'recursive'
-
-    - name: Setup ninja
-      uses: seanmiddleditch/gha-setup-ninja@master
       
     - name: Install required packages
       run: |
@@ -48,6 +45,10 @@ jobs:
         python -m pip install -r requirements.txt
 
     - name: Run wrapper tests
+      env:
+        SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
+        SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
+        SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
       run: |
         python -m pytest test
 

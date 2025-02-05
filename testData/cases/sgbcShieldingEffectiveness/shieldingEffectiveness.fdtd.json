@@ -50,7 +50,7 @@
     ],
 
     "materialAssociations": [
-        {"type": "surface", "materialId": 1, "elementIds": [4]}
+        {"materialId": 1, "elementIds": [4]}
     ],
 
     "sources": [

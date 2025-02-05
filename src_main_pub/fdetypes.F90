@@ -1,26 +1,4 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! MIT License
-! 
-! Copyright (c) 2023 University of Granada
-! 
-! Permission is hereby granted, free of charge, to any person obtaining a copy
-! of this software and associated documentation files (the "Software"), to deal
-! in the Software without restriction, including without limitation the rights
-! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-! copies of the Software, and to permit persons to whom the Software is
-! furnished to do so, subject to the following conditions:
-! 
-! The above copyright notice and this permission notice shall be included in all
-! copies or substantial portions of the Software.
-! 
-! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-! AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-! LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-! OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-! SOFTWARE.
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
  
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! This module contains the types and parameters shared by all the rest of the modules
@@ -88,21 +66,13 @@ module  FDETYPES
    !y esto debe desaparecer
    integer(kind=4)  :: SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
 !!!
-
-#if (defined MaxCores)
-   integer(kind=4), parameter  :: maxcores = MaxCores
-#else
-   integer(kind=4), parameter  :: maxcores = 2048
-#endif
-
-
    integer (kind=8),  parameter  ::  maxmpibytes = 2**27
    integer (kind=4),  parameter  ::  BuffObse=2**10 !Steps of the temporal buffer to store evolution data
    integer (kind=8),  parameter  ::  MaxMemoryProbes=2_8**37_8 !128 Gb Maximum bytes of the buffer to store evolution data
    integer (kind=8),  parameter  ::  MaxProbes=150000 !Maximum number of probes (a limit of 200000 is set with ulimit in Linux)
    !
    !
-   INTEGER, parameter :: topCPUtime=10000000 !maximum cpu time in minutes !set to 690 in UGRGRID
+   INTEGER, parameter :: topCPUtime=10000000 !maximum cpu time in minutes 
    !size of character strings 
    INTEGER, parameter :: BUFSIZE=1024
    INTEGER, parameter :: BUFSIZE_LONG=16384

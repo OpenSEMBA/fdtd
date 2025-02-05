@@ -1,36 +1,3 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! MIT License
-! 
-! Copyright (c) 2023 University of Granada
-! 
-! Permission is hereby granted, free of charge, to any person obtaining a copy
-! of this software and associated documentation files (the "Software"), to deal
-! in the Software without restriction, including without limitation the rights
-! to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-! copies of the Software, and to permit persons to whom the Software is
-! furnished to do so, subject to the following conditions:
-! 
-! The above copyright notice and this permission notice shall be included in all
-! copies or substantial portions of the Software.
-! 
-! THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-! IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-! FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-! AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-! LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-! OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-! SOFTWARE.
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  SEMBA_FDTD LAUNCHER MODULE
-!  Creation date Date :  April, 8, 2010
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! in Unix Systems checkt that ulimit -n gives high numbers (more than 2e6 files may be open at the same time!!!)
-! in Ubuntu this is in /etc/security/limits.conf
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! 
-
 PROGRAM SEMBA_FDTD_launcher
 
    USE version
@@ -38,7 +5,7 @@ PROGRAM SEMBA_FDTD_launcher
    USE Getargs
    !
    USE fdetypes
-   USE Solver         !!!el timestepping.F90
+   USE Solver         
    USE Resuming
    !nfde parser stuff
    USE NFDETypes                
@@ -169,28 +136,22 @@ PROGRAM SEMBA_FDTD_launcher
    !activate printing through screen
    CALL OnPrint
    !!!!!!!!!!!!
-!!!!!!!!!!!!!!!!!
    call l%EpsMuTimeScale_input_parameters%init0()
-
+   
 #ifdef CompileWithMPI
    CALL InitGeneralMPI (l%layoutnumber, l%size)
    SUBCOMM_MPI=MPI_COMM_WORLD !default el l%stochastic es el global a menos que luego se divida
 #else
-   l%size = 1
-   l%layoutnumber = 0
+      l%size = 1
+      l%layoutnumber = 0
 #endif
-    call setglobal(l%layoutnumber,l%size) !para crear variables globales con info MPI
-    
-   if (l%size.gt.maxcores) then
-       print *,'Maximum cores ',maxcores,' reached.  to recompile'
-       stop
-   endif
-       
-   WRITE (whoamishort, '(i5)') l%layoutnumber + 1
-   WRITE (whoami, '(a,i5,a,i5,a)') '(', l%layoutnumber + 1, '/', l%size, ') '
-
+      call setglobal(l%layoutnumber,l%size) !para crear variables globales con info MPI
+      
+      WRITE (whoamishort, '(i5)') l%layoutnumber + 1
+      WRITE (whoami, '(a,i5,a,i5,a)') '(', l%layoutnumber + 1, '/', l%size, ') '
+      
 #ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,l%ierr)
+   call MPI_Barrier(SUBCOMM_MPI,l%ierr)
 #endif
    call get_secnds(l%time_out2)
    time_desdelanzamiento= l%time_out2%segundos
@@ -435,12 +396,6 @@ PROGRAM SEMBA_FDTD_launcher
       call NFDE2sgg
       l%fatalerror=l%fatalerror.or.l%fatalerrornfde2sgg
       !!!!!!!!!!!!!!!!!!!!!
-      !NOTE: md: necesito parser vivo hata el conformal ini, lo paso abajo
-      ! CALL Destroy_Parser (parser)
-      ! DEALLOCATE (NFDE_FILE%lineas)
-      ! DEALLOCATE (NFDE_FILE)
-      ! nullify (NFDE_FILE)
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
       !wait until everything comes out
       CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
@@ -452,14 +407,6 @@ PROGRAM SEMBA_FDTD_launcher
          if (allocated(sggMiEx)) deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
          CALL stoponerror (l%layoutnumber, l%size, 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any',.true.); goto 652
       endif
-      !**********************************************
-      !INIT DXF OUTPUT
-      !
-      !!!!    CALL INITdxfFILE (l%layoutnumber, l%size, l%nEntradaRoot)
-      !************************************************
-      !
-      ! IF (l%createmap) CALL store_geomData (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, l%geomfile)
-      ! Se hace otra vez luego (sgg 220817)
 
       !*************************************************************************
       !***[conformal] ******************************************
@@ -494,8 +441,6 @@ PROGRAM SEMBA_FDTD_launcher
          if(conf_err/=0)then
             call WarnErrReport(Trim(buff),.true.)
          end if
-      !NOTE: md: lo necesito despues del conformal init (antes se borraba mas arriba)
-      !REVIEW: sgg
 
 #ifdef CompilePrivateVersion  
       if (trim(adjustl(l%extension))=='.nfde') then
@@ -510,11 +455,6 @@ PROGRAM SEMBA_FDTD_launcher
 #ifdef CompileWithMPI
        !wait until everything comes out
        CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-         !tocado para reducir en MPI 1119 con sgg pa no se que demonios quiere
-         !l%input_conformal_flag = .True. ! lo fuerzo para evitar deadlocks tengo que revisarlo
-         !lo que sigue debe resolve los deadlocks 1119 sgg
-#ifdef CompileWithMPI
          l_auxinput = l%input_conformal_flag
          call MPI_Barrier(SUBCOMM_MPI,l%ierr)
          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, l%ierr)
@@ -571,8 +511,6 @@ PROGRAM SEMBA_FDTD_launcher
       !*************************************************************************
 #endif
 
-      !310715
-
       if (allocated(sggMiEx)) then !para el l%skindepthpre no se allocatea nada
 #ifdef CompileWithConformal
         call AssigLossyOrPECtoNodes(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,&
@@ -595,7 +533,6 @@ PROGRAM SEMBA_FDTD_launcher
    else
       l%finaltimestep = sgg%TimeSteps
    endif
-!aniadido correcion timesteps finales si no hay l%forcesteps 250417
    IF (.not.l%forcesteps) then
          finaltimestepantesdecorregir=l%finaltimestep
          l%finaltimestep=int(dtantesdecorregir/sgg%dt*finaltimestepantesdecorregir)
@@ -613,7 +550,6 @@ PROGRAM SEMBA_FDTD_launcher
              if (l%layoutnumber==0) call print11(l%layoutnumber,dubuf)
          endif
    endif
-!fin aniadido 250417
    !check that simulation can actually be done for the kind of media requested
    DO i = 1, sgg%nummedia
       IF (sgg%Med(i)%Is%ThinWire) THEN
@@ -659,15 +595,14 @@ PROGRAM SEMBA_FDTD_launcher
    endif
 
    
-!punietero error abrezanjas y no l%resume conformal !niapa 121020
-          ThereArethinslots=.FALSE.
-          do jmed=1,sgg%NumMedia
-             if (sgg%Med(jmed)%Is%ThinSlot) ThereArethinslots=.true.
-          end do
-         if (l%resume.and.l%run_with_abrezanjas.and.ThereArethinslots) then   
-             CALL stoponerror (l%layoutnumber, l%size, 'l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
-         end if
-!fin niapa  
+   !Error abrezanjas y no l%resume conformal
+   ThereArethinslots=.FALSE.
+   do jmed=1,sgg%NumMedia
+      if (sgg%Med(jmed)%Is%ThinSlot) ThereArethinslots=.true.
+   end do
+   if (l%resume.and.l%run_with_abrezanjas.and.ThereArethinslots) then   
+         CALL stoponerror (l%layoutnumber, l%size, 'l%resume -r currently unsupported by conformal solver',.true.); statuse=-1; !return
+   end if
    !
 !!!SOME FINAL REPORTING
 

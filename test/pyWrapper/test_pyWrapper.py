@@ -91,6 +91,30 @@ def test_fdtd_set_new_folder_to_run(tmp_path):
     solver.run()
 
 
+def test_fdtd_with_string_args(tmp_path):
+    input = os.path.join(CASES_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
+    solver = FDTD(input,
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path,
+                  flags='-h')
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+
+@no_mpi_skip
+def test_fdtd_with_mpi_run(tmp_path):
+    input = os.path.join(CASES_FOLDER, 'planewave', 'pw-in-box.fdtd.json')
+    solver = FDTD(input,
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path,
+                  flags=['-h'],
+                  mpi_command='mpirun -np 2')
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+
 def test_fdtd_clean_up_after_run(tmp_path):
     input = CASES_FOLDER + 'planewave/pw-in-box.fdtd.json'
     solver = FDTD(input, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)

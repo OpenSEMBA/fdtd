@@ -24,7 +24,8 @@ class Probe():
         + BULK_CURRENT_PROBE_TAGS \
         + POINT_PROBE_TAGS \
         + FAR_FIELD_TAG \
-        + MOVIE_TAGS 
+        + MOVIE_TAGS
+
     def __init__(self, probe_filename):
         if isinstance(probe_filename, os.PathLike):
             self.filename = probe_filename.as_posix()
@@ -92,7 +93,7 @@ class Probe():
             self.field, self.direction = Probe._getFieldAndDirection(tag)
             self.cell_init, self.cell_end = \
                 Probe._positionStrToTwoCells(position_str)
-            
+
             if self.domainType == 'time':
                 self.data = self.data.rename(columns={
                     't': 'time',
@@ -179,17 +180,32 @@ class Probe():
 
 
 class FDTD():
-    def __init__(self, input_filename, path_to_exe=None, flags=[], run_in_folder=None):
+    def __init__(self, input_filename, path_to_exe=None,
+                 flags=None, run_in_folder=None, mpi_command=None):
+
         self._setFilename(input_filename)
 
         if path_to_exe is None:
-            self.path_to_exe = os.path.join(
-                os.getcwd(), DEFAULT_SEMBA_FDTD_PATH)
+            semba_exe = \
+                os.path.join(os.getcwd(), DEFAULT_SEMBA_FDTD_PATH)
         else:
-            self.path_to_exe = path_to_exe
-        assert os.path.isfile(self.path_to_exe)
+            semba_exe = path_to_exe
+        assert os.path.isfile(semba_exe)
 
-        self.flags = flags
+        if mpi_command is None:
+            mpi_command_parts = []
+        else:
+            mpi_command_parts = mpi_command.split()
+
+        if flags is None:
+            flags = []
+        elif isinstance(flags, str):
+            flags = flags.split()
+
+        case_name = self.getCaseName() + ".json"
+        self.run_command = \
+            mpi_command_parts + [semba_exe] + ["-i", case_name] + flags
+
         self._hasRun = False
 
         if run_in_folder != None:
@@ -263,9 +279,7 @@ class FDTD():
             json.dump(self._input, open(self._filename, 'w'))
 
         os.chdir(self.getFolder())
-        case_name = self.getCaseName() + ".json"
-        self.output = subprocess.run(
-            [self.path_to_exe, "-i", case_name]+self.flags)
+        self.output = subprocess.run(self.run_command)
 
         self._hasRun = True
         assert self.hasFinishedSuccessfully()

@@ -46856,7 +46856,6 @@
     ],
     "materialAssociations": [
         {
-            "type": "surface",
             "materialId": 1,
             "elementIds": [
                 7,
