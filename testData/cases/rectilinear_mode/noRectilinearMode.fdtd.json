@@ -1,0 +1,140 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 7.7033e-12,
+        "numberOfSteps": 2000
+    },
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 10,
+            "order": 2,
+            "reflection": 0.001
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                40,
+                40,
+                40
+            ],
+            "steps": {
+                "x": [
+                    0.005
+                ],
+                "y": [
+                    0.005
+                ],
+                "z": [
+                    0.005
+                ]
+            }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    20.0,
+                    20.0,
+                    5.0
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    5.0,
+                    5.0,
+                    5.0
+                ]
+            }
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            1,
+                            1,
+                            1
+                        ],
+                        [
+                            39,
+                            39,
+                            39
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 2,
+                "type": "node",
+                "coordinateIds": [
+                    1
+                ]
+            },
+            {
+                "id": 3,
+                "type": "node",
+                "coordinateIds": [
+                    2
+                ]
+            }
+        ]
+    },
+    "materials": [],
+    "materialAssociations": [],
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "predefinedExcitation.1.exc",
+            "elementIds": [
+                1
+            ],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5707963268,
+                "phi": 0.0
+            }
+        }
+    ],
+    "probes": [
+        {
+            "name": "Front probe",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [
+                2
+            ],
+            "directions": [
+                "x",
+                "y",
+                "z"
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "Vertex probe",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [
+                3
+            ],
+            "directions": [
+                "x",
+                "y",
+                "z"
+            ],
+            "domain": {
+                "type": "time"
+            }
+        }
+    ]
+}

@@ -1,6 +1,6 @@
 from utils import *
 from typing import Dict
-
+import os
 
 @no_mtln_skip
 @pytest.mark.mtln
@@ -397,6 +397,40 @@ def test_dielectric_transmission(tmp_path):
     assert np.allclose(reflectedDelay/transmitedDelay, expectedDelayRatio, rtol=_FIELD_TOLERANCE)
 
     
+def test_rectilinear_mode(tmp_path):
+    _FIELD_TOLERANCE = 4
+    _TIME_TOLERANCE = 4
+
+    def getPeakPulse(probe:Probe) -> Dict:
+        idx = probe["field"].argmax()
+        time = probe["time"][idx]
+        value = probe["field"][idx]
+        return {"time":time, "value": value}
+    
+    rectilinearModeFile = CASES_FOLDER + "rectilinear_mode/rectilinearMode.fdtd.json"
+    noRectilinearModeFile = CASES_FOLDER + "rectilinear_mode/noRectilinearMode.fdtd.json"
+
+    rectilinearModeFolder = os.path.join(tmp_path, 'rectilinear')
+    noRectilinearModeFolder = os.path.join(tmp_path, 'noRectilinear')
+
+    os.mkdir(rectilinearModeFolder)
+    os.mkdir(noRectilinearModeFolder)
+
+    solverRectilinear = FDTD(rectilinearModeFile, path_to_exe=SEMBA_EXE, run_in_folder=rectilinearModeFolder)
+    solverRectilinear.run()
+    rectilinearFrontProbe = Probe(solverRectilinear.getSolvedProbeFilenames("Front probe")[0])
+    rectilinearVertexProbe = Probe(solverRectilinear.getSolvedProbeFilenames("Vertex probe")[0])
+
+
+    solverNoRectilinear = FDTD(noRectilinearModeFile, path_to_exe=SEMBA_EXE, run_in_folder=noRectilinearModeFolder)
+    solverNoRectilinear.run()
+    noRectilinearFrontProbe = Probe(solverNoRectilinear.getSolvedProbeFilenames("Front probe")[0])
+    noRectilinearVertexProbe = Probe(solverNoRectilinear.getSolvedProbeFilenames("Vertex probe")[0])
+
+    np.testing.assert_almost_equal(getPeakPulse(rectilinearFrontProbe)['value'], getPeakPulse(noRectilinearFrontProbe)['value'], decimal=_FIELD_TOLERANCE)
+    np.testing.assert_almost_equal(getPeakPulse(rectilinearFrontProbe)['time'], getPeakPulse(noRectilinearFrontProbe)['time'], decimal=_TIME_TOLERANCE)
+    np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['value'], getPeakPulse(noRectilinearVertexProbe)['value'], decimal=_FIELD_TOLERANCE)
+    np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['time'], getPeakPulse(noRectilinearVertexProbe)['time'], decimal=_TIME_TOLERANCE)
 
 
     
