@@ -1177,6 +1177,7 @@ contains
                      call checkduplicatenames
                      !!!!!!
                      !precontaje
+
                      conta=0
                      do kkk=sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
@@ -2213,6 +2214,32 @@ contains
       return
 
    contains
+
+      logical function isThinWireWithinBounds(direction,i,j,k)
+         integer(kind=4) direction, i,j,k
+         isThinWireWithinBounds = isThinWire(direction, i, j, k) .and. &
+                                  isWithinBounds(direction, i, j, k)
+      end function
+
+      logical function isThinWire(direction, i, j, k)
+         integer(kind=4) direction, i,j,k
+         select case(direction)
+         case(iEx)
+            isThinWire = sgg%med(sggMiEx(III , JJJ , KKK ))%Is%ThinWire
+         case(iEy)
+            isThinWire = sgg%med(sggMiEy(III , JJJ , KKK ))%Is%ThinWire
+         case(iEz)
+            isThinWire = sgg%med(sggMiEz(III , JJJ , KKK ))%Is%ThinWire
+         end select
+      end function
+
+      logical function isWithinBounds(direction, i,j,k)
+         integer(kind=4) direction, i,j,k
+         isWithinBounds  = i <= SINPML_fullsize(direction)%XE .and. &
+                           j <= SINPML_fullsize(direction)%YE .and. & 
+                           k <= SINPML_fullsize(direction)%ZE
+      end function
+
 
       subroutine checkduplicatenames
          integer(Kind=4) :: n_ii, n_i,off
