@@ -1319,27 +1319,18 @@ contains
                                  endif
                               else
                                  ! si es mapvtk y si no es vacio
-                                 if ((sggMiHx(III , JJJ, KKK)/=1).and. &
-                                     (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
-                                     (iii <= SINPML_fullsize(iHx)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iHx)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                    conta=conta+1
-                                 endif
-                                 if ((sggMiHy(III, JJJ, KKK)/=1).and. &
-                                     (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and. & 
-                                     (iii <= SINPML_fullsize(iHy)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iHy)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                    conta=conta+1
-                                 endif
-                                 if ((sggMiHz(III, JJJ, KKK)/=1).and. &
-                                     (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and. & 
-                                     (iii <= SINPML_fullsize(iHz)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iHz)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                    conta=conta+1
-                                 endif
+
+                              block
+                                 integer (kind=4) :: HDirection
+                                 do HDirection = iHx, iHz
+                                    if (.not. isMediaVacuum(HDirection, iii, jjj, kkk) .and. &
+                                        .not. isPML(HDirection, iii, jjj, kkk) .and. & 
+                                        isWithinBounds(HDirection, iii, jjj , kkk)) then
+                                           conta = conta + 1
+                                    end if
+                              end do
+                              end block
+
                                  ! los tags de vacio negativos 141020 para mapvtk
                                  if ( tag_numbers%face%x(iii,jjj,kkk)<0 .and. & 
                                     (btest(iabs(tag_numbers%face%x(iii,jjj,kkk)),3)).and. & 
