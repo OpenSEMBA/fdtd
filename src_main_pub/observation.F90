@@ -1318,7 +1318,7 @@ contains
                                     conta=conta+1
                                  endif
                               else
-                                 !si es mapvtk y si no es vacio
+                                 ! si es mapvtk y si no es vacio
                                  if ((sggMiHx(III , JJJ, KKK)/=1).and. &
                                      (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
                                      (iii <= SINPML_fullsize(iHx)%XE).and. & 

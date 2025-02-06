@@ -16,8 +16,12 @@
             "numberOfCells": [10, 10, 10],
             "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
         },
+        "coordinates": [
+			{"id": 1 , "relativePosition": [ 3, 3, 3]}		
+		],
         "elements": [
-            {"id": 1, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 3, 5] ] ]}
+            {"id": 1, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 3, 5] ] ]},
+            {"id": 2, "type": "node", "coordinateIds": [1 ]}
         ]
     },
 
@@ -27,7 +31,6 @@
             "id": 1
         }
     ],
-
     "materialAssociations": [
         {
             "materialId": 1,
