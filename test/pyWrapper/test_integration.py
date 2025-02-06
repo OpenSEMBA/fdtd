@@ -246,3 +246,37 @@ def test_tagnumbers_count_bug(tmp_path):
     solver["materialAssociations"][2]["materialId"] = 1
     solver.cleanUp()
     solver.run()
+
+def test_observation_three_surfaces(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_three_surfaces.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert face_tag_dict[64] == 4
+    assert face_tag_dict[128] == 4
+    assert face_tag_dict[192] == 4
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 8
+    assert line_tag_dict[128] == 4
+    assert line_tag_dict[192] == 4
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert face_media_dict[0] == 4  # PEC surface
+    assert face_media_dict[304] == 4  # SGBC surface
+    assert face_media_dict[305] == 4  # SGBC surface
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 8  # PEC line
+    assert line_media_dict[3.5] == 8  # SGBC line
