@@ -1328,7 +1328,7 @@ contains
                                         isWithinBounds(HDirection, iii, jjj , kkk)) then
                                            conta = conta + 1
                                     end if
-                              end do
+                                 end do
                               end block
 
                                  ! los tags de vacio negativos 141020 para mapvtk
@@ -2201,25 +2201,32 @@ contains
          end select
       end function
 
-      logical function isMediaVacuum(direction, i, j, k) 
+      function getMedia(direction, i, j ,k) result(res)
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
          integer (kind=4) :: direction, i, j, k
-         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: vacuum = 1
          select case(direction)
          case(iEx)
-            isMediaVacuum = (sggMiEx(i, j, k) == vacuum)
+            res = sggMiEx(i, j, k)
          case(iEy)
-            isMediaVacuum = (sggMiEy(i, j, k) == vacuum)
+            res = sggMiEy(i, j, k)
          case(iEz)
-            isMediaVacuum = (sggMiEz(i, j, k) == vacuum)
+            res = sggMiEz(i, j, k)
          case(iHx)
-            isMediaVacuum = (sggMiHx(i, j, k) == vacuum)
+            res = sggMiHx(i, j, k)
          case(iHy)
-            isMediaVacuum = (sggMiHy(i, j, k) == vacuum)
+            res = sggMiHy(i, j, k)
          case(iHz)
-            isMediaVacuum = (sggMiHz(i, j, k) == vacuum)
+            res = sggMiHz(i, j, k)
          case default
             call StopOnError(layoutnumber, size, 'Unrecognized direction')
          end select
+      end function
+
+      logical function isMediaVacuum(direction, i, j, k) 
+         integer (kind=4) :: direction, i, j, k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media, vacuum = 1
+         media = getMedia(direction, i, j, k)
+         isMediaVacuum = (media == vacuum)
       end function
 
       logical function isThinWireWithinBounds(direction,i,j,k)
@@ -2228,33 +2235,22 @@ contains
                                   isWithinBounds(direction, i, j, k)
       end function
 
+      ! logical function isPec(direction, i, j, k) 
+
+      ! end function
+
       logical function isThinWire(direction, i, j, k)
          integer(kind=4) :: direction, i,j,k
-         select case(direction)
-         case(iEx)
-            isThinWire = sgg%med(sggMiEx(i, j, k))%Is%ThinWire
-         case(iEy)
-            isThinWire = sgg%med(sggMiEy(i, j, k))%Is%ThinWire
-         case(iEz)
-            isThinWire = sgg%med(sggMiEz(i, j, k))%Is%ThinWire
-         case default
-            call stoponerror(layoutnumber,size,'Direction is not a face direction')
-         end select
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(direction, i, j, k)
+         isThinWire = sgg%Med(media)%is%ThinWire
       end function
       
       logical function isPML(direction, i, j ,k)
          integer (kind=4) :: direction, i, j, k
-         select case(direction)
-         case(iHx)
-            isPML = sgg%med(sggMiHx(i, j, k))%is%PML
-         case(iHy)
-            isPML = sgg%med(sggMiHy(i, j, k))%is%PML
-         case(iHz)
-            isPML = sgg%med(sggMiHz(i, j, k))%is%PML
-         case default
-            call stoponerror(layoutnumber,size,'Direction is not an edge direction')
-         end select
-
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(direction, i, j, k)
+         isPML = sgg%med(media)%is%PML
       end function
 
       logical function isWithinBounds(direction, i,j,k)
@@ -3642,87 +3638,43 @@ contains
                                            output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHz)
                                        endif
                                     else                                       !si es mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
-                                       if ((sggMiHx(III , JJJ, KKK)/=1).and. &
-                                       (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                          conta=conta+1
-                                          jJx=sggMiHx(III , JJJ, KKK)
-                                          !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((jJx==0).or.(sgg%Med(jJx)%is%Pec)) then
-                                             jx=0
-                                          elseif (sgg%Med(jJx)%is%thinwire) then
-                                             CALL StopOnError (0,1,'ERROR: A magnetic field cannot be a thin-wire')
-                                          elseif ((sgg%Med(jJx)%is%SGBC).or.(sgg%Med(jJx)%is%multiport).or.(sgg%Med(jJx)%is%anismultiport)) then
-                                             jx=300+jJx
-                                          elseif ((sgg%Med(jJx)%is%edispersive).or.(sgg%Med(jJx)%is%EDispersiveANIS).or.(sgg%Med(jJx)%is%mDispersive).or.(sgg%Med(jJx)%is%mDispersiveANIS)) then
-                                             jx=100+jJx
-                                          elseif ((sgg%Med(jJx)%is%Dielectric).or.(sgg%Med(jJx)%is%Anisotropic)) then
-                                             jx=200+jJx
-                                          elseif (sgg%Med(jJx)%is%thinslot) then
-                                             jx=400+jJx
-                                          elseif ((sgg%Med(jJx)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                             jx=5
-                                          elseif ((sgg%Med(jJx)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
-                                             jx=6
-                                          else
-                                             jx=-1
+
+                                    block 
+                                       integer (kind=4) :: HDirection, jmedia
+                                       real (kind = RKIND) :: mediaType
+                                       do HDirection = iHx, iHz
+                                          jmedia = getMedia(HDirection, iii, jjj, kkk)
+                                          if (.not. isMediaVacuum(HDirection,iii,jjj,kkk) .and. &
+                                             .not. isPML(HDirection, iii, jjj, kkk) .and. &
+                                             isWithinBounds(HDirection, iii, jjj, kkk)) then
+
+                                                conta=conta+1
+                                                if ((jmedia==0).or.(sgg%Med(jmedia)%is%Pec)) then
+                                                   mediaType=0
+                                                elseif (sgg%Med(jmedia)%is%thinwire) then
+                                                   CALL StopOnError (0,1,'ERROR: A magnetic field cannot be a thin-wire')
+                                                elseif (isSGBCorMultiport(jmedia)) then
+                                                            mediaType = 300+jmedia
+                                                elseif (isDispersive(jmedia)) then
+                                                            mediaType = 100+jmedia
+                                                elseif ((sgg%Med(jmedia)%is%Dielectric).or. &
+                                                       (sgg%Med(jmedia)%is%Anisotropic)) then
+                                                            mediaType = 200+jmedia
+                                                elseif (sgg%Med(jmedia)%is%thinslot) then
+                                                            mediaType = 400+jmedia
+                                                elseif ((sgg%Med(jmedia)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
+                                                            mediaType = 5
+                                                elseif ((sgg%Med(jmedia)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
+                                                            mediaType = 6
+                                                else
+                                                            mediaType=-1
+                                                endif
+                                                !!!fin discretizo los colores para saber mejor que son
+                                                output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = mediaType
                                           endif
-                                          !!!fin discretizo los colores para saber mejor que son
-                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jx    
-                                       endif
-                                       if ((sggMiHy(III, JJJ, KKK)/=1).and. &
-                                       (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                          conta=conta+1
-                                          jJy=sggMiHy(III, JJJ, KKK)
-                                          !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((jJy==0).or.(sgg%Med(jJy)%is%Pec)) then
-                                             jy=0
-                                          elseif (sgg%Med(jJy)%is%thinwire) then
-                                             CALL StopOnError (0,1,'ERROR: A magnetic field cannot be a thin-wire')
-                                          elseif ((sgg%Med(jJy)%is%SGBC).or.(sgg%Med(jJy)%is%multiport).or.(sgg%Med(jJy)%is%anismultiport)) then
-                                             jy=300+jJy
-                                          elseif ((sgg%Med(jJy)%is%edispersive).or.(sgg%Med(jJy)%is%EDispersiveANIS).or.(sgg%Med(jJy)%is%mDispersive).or.(sgg%Med(jJy)%is%mDispersiveANIS)) then
-                                             jy=100+jJy
-                                          elseif ((sgg%Med(jJy)%is%Dielectric).or.(sgg%Med(jJy)%is%Anisotropic)) then
-                                             jy=200+jJy
-                                          elseif (sgg%Med(jJy)%is%thinslot) then
-                                             jy=400+jJy
-                                          elseif ((sgg%Med(jJy)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                             jy=5
-                                          elseif ((sgg%Med(jJy)%is%split_and_useless) .and.(.not.noconformalmapvtk)) then
-                                             jy=6
-                                          else
-                                             jy=-1
-                                          endif
-                                          !!!fin discretizo los colores para saber mejor que son
-                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jy     
-                                       endif
-                                       if ((sggMiHz(III, JJJ, KKK)/=1).and. &
-                                       (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                          conta=conta+1
-                                          jJz=sggMiHz(III, JJJ, KKK)
-                                          !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((jJz==0).or.(sgg%Med(jJz)%is%Pec)) then
-                                             jz=0
-                                          elseif (sgg%Med(jJz)%is%thinwire) then
-                                             CALL StopOnError (0,1,'ERROR: A magnetic field cannot be a thin-wire')
-                                          elseif ((sgg%Med(jJz)%is%SGBC).or.(sgg%Med(jJz)%is%multiport).or.(sgg%Med(jJz)%is%anismultiport)) then
-                                             jz=300+jJz
-                                          elseif ((sgg%Med(jJz)%is%edispersive).or.(sgg%Med(jJz)%is%EDispersiveANIS).or.(sgg%Med(jJz)%is%mDispersive).or.(sgg%Med(jJz)%is%mDispersiveANIS)) then
-                                             jz=100+jJz
-                                          elseif ((sgg%Med(jJz)%is%Dielectric).or.(sgg%Med(jJz)%is%Anisotropic)) then
-                                             jz=200+jJz
-                                          elseif (sgg%Med(jJz)%is%thinslot) then
-                                             jz=400+jJz
-                                          elseif ((sgg%Med(jJz)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                             jz=5
-                                          elseif ((sgg%Med(jJz)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
-                                             jz=6
-                                          else
-                                             jz=-1
-                                          endif
-                                          !!!fin discretizo los colores para saber mejor que son
-                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jz      
-                                       endif
+                                       end do
+                                    end block
+
                                      ! los tags 141020 para mapvtk se quedan con el medio -100: es una forma de voidearlos para visualizacion 
                                        if ( tag_numbers%edge%x(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%x(iii,jjj,kkk)),3)).and. & 
                                        (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
@@ -4087,7 +4039,66 @@ contains
       enddo
       !---------------------------> acaba UpdateObservation <-----------------------------------------
       return
+
+      contains 
+      function getMedia(direction, i, j ,k) result(res)
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
+         integer (kind=4) :: direction, i, j, k
+         select case(direction)
+         case(iEx)
+            res = sggMiEx(i, j, k)
+         case(iEy)
+            res = sggMiEy(i, j, k)
+         case(iEz)
+            res = sggMiEz(i, j, k)
+         case(iHx)
+            res = sggMiHx(i, j, k)
+         case(iHy)
+            res = sggMiHy(i, j, k)
+         case(iHz)
+            res = sggMiHz(i, j, k)
+         end select
+      end function
+
+      logical function isMediaVacuum(direction, i, j, k) 
+         integer (kind=4) :: direction, i, j, k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media, vacuum = 1
+         media = getMedia(direction, i, j, k)
+         isMediaVacuum = (media == vacuum)
+      end function
+
+      logical function isWithinBounds(direction, i,j,k)
+         integer(kind=4) :: direction, i,j,k
+         isWithinBounds  = (i <= SINPML_fullsize(direction)%XE) .and. &
+                           (j <= SINPML_fullsize(direction)%YE) .and. & 
+                           (k <= SINPML_fullsize(direction)%ZE)
+      end function
+
+      logical function isPML(direction, i, j ,k)
+         integer (kind=4) :: direction, i, j, k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(direction, i, j, k)
+         isPML = sgg%med(media)%is%PML
+      end function
+
+      logical function isSGBCorMultiport(media) 
+         integer(kind=4) :: media
+         isSGBCorMultiport =  (sgg%Med(media)%is%SGBC).or. &
+                              (sgg%Med(media)%is%multiport).or. & 
+                              (sgg%Med(media)%is%anismultiport)
+      end function
+
+      logical function isDispersive(media)
+         integer(kind=4) :: media
+         isDispersive = (sgg%Med(media)%is%edispersive).or. &
+                        (sgg%Med(media)%is%EDispersiveANIS).or. &
+                        (sgg%Med(media)%is%mDispersive).or. &
+                        (sgg%Med(media)%is%mDispersiveANIS)
+      end function
+
+
    endsubroutine UpdateObservation
+
 
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
