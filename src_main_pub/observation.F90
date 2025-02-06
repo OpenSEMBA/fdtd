@@ -1678,42 +1678,23 @@ contains
                                     output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%z(iii,jjj,kkk))
                                  endif
                               else !mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
-                                 if ((sggMiHx(III , JJJ, KKK)/=1).and. &
-                                     (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. &
-                                    (iii <= SINPML_fullsize(iHx)%XE).and. & 
-                                    (jjj <= SINPML_fullsize(iHx)%YE).and. & 
-                                    (kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
-                                     output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%x(iii,jjj,kkk)
-                                 endif
-                                 if ((sggMiHy(III, JJJ, KKK)/=1).and. &
-                                     (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and. & 
-                                     (iii <= SINPML_fullsize(iHy)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iHy)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%y(iii,jjj,kkk)
-                                 endif
-                                 if ((sggMiHz(III, JJJ, KKK)/=1).and. &
-                                     (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and. & 
-                                     (iii <= SINPML_fullsize(iHz)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iHz)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%z(iii,jjj,kkk)
-                                 endif
+
+                                 block
+                                    integer (kind=4) :: HDirection
+                                    do HDirection = iHx, iHz
+                                       if (.not. isMediaVacuum(HDirection, iii, jjj, kkk) .and. &
+                                           .not. isPML(HDirection, iii, jjj, kkk) .and. & 
+                                           isWithinBounds(HDirection, iii, jjj , kkk)) then
+                                              conta = conta + 1
+                                              output(ii)%item(i)%Serialized%eI(conta)=iii
+                                              output(ii)%item(i)%Serialized%eJ(conta)=jjj
+                                              output(ii)%item(i)%Serialized%eK(conta)=kkk
+                                              output(ii)%item(i)%Serialized%currentType(conta)=currentType(HDirection)
+                                              output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(HDirection, iii, jjj, kkk)
+                                       end if
+                                    end do
+                                 end block
+
 !                                 ! los tags 141020 para mapvtk
                                  if ( tag_numbers%face%x(iii,jjj,kkk)<0 .and. & 
                                     (btest(iabs(tag_numbers%face%x(iii,jjj,kkk)),3)).and. & 
@@ -2206,6 +2187,20 @@ contains
 
    contains
 
+      integer function currentType(direction)
+         integer (kind=4) :: direction
+         select case(direction)
+         case(iHx)
+            currentType = iBloqueJx
+         case(iHy)
+            currentType = iBloqueJy
+         case(iHz)
+            currentType = iBloqueJz
+         case default
+            call StopOnError(layoutnumber, size, 'Direction is not a face direction')
+         end select
+      end function
+
       logical function isMediaVacuum(direction, i, j, k) 
          integer (kind=4) :: direction, i, j, k
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: vacuum = 1
@@ -2230,12 +2225,6 @@ contains
       logical function isThinWireWithinBounds(direction,i,j,k)
          integer(kind=4) :: direction, i,j,k
          isThinWireWithinBounds = isThinWire(direction, i, j, k) .and. &
-                                  isWithinBounds(direction, i, j, k)
-      end function
-
-      logical function isNotPMLWithinBounds(direction,i,j,k)
-         integer(kind=4) :: direction, i,j,k
-         isNotPMLWithinBounds = .not. isPML(direction, i, j, k) .and. &
                                   isWithinBounds(direction, i, j, k)
       end function
 

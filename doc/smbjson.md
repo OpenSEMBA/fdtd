@@ -427,7 +427,7 @@ There is an optional key which is needed in case the termination is attached to 
     "name": "shieldTerminal",
     "id": 4,
     "type": "terminal",
-    "termination": [ {"type": "series", "resistance": 50.0} ]
+    "terminations": [ {"type": "series", "resistance": 50.0} ]
 }
 ```
 #### `SPICE terminations`
@@ -441,7 +441,7 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
     "name": "SpiceTerminal",
     "id": 5,
     "type": "terminal",
-    "termination": [ {"type": "circuit", "file": "ListOfComponents.lib", "name": "Component_1"} ]
+    "terminations": [ {"type": "circuit", "file": "ListOfComponents.lib", "name": "Component_1"} ]
 }
 ```
 

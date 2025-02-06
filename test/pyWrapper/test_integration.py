@@ -280,3 +280,34 @@ def test_observation_three_surfaces(tmp_path):
         vtkmapfile, celltype=3, property='mediatype')
     assert line_media_dict[0.5] == 8  # PEC line
     assert line_media_dict[3.5] == 8  # SGBC line
+
+def test_observation_wires(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_wires.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 4
+    assert line_tag_dict[128] == 6
+    assert line_tag_dict[192] == 4
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[7] == 7  # PEC line
+    assert line_media_dict[10] == 6  # PEC line
+    assert line_media_dict[21] == 1  # PEC line
