@@ -3411,11 +3411,31 @@ contains
                                         !!!  endif
                                        endif
                                     else !si es mapvtk
-                                       imed =sggMiEx(III , JJJ  , KKK  )
-                                       imed1=sggMiHy(III , JJJ  , KKK  )
-                                       imed2=sggMiHy(III , JJJ  , KKK-1)
-                                       imed3=sggMiHz(III , JJJ  , KKK  )
-                                       imed4=sggMiHz(III , JJJ-1, KKK  )
+
+                                       block
+                                          integer (kind=4) :: EDirection
+                                          integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: emedia
+                                          do EDirection = iEx, iEz
+                                             emedia = getMedia(EDirection, iii, jjj, kkk)
+                                             call assignMedia(imed,imed1,imed2,imed3,imed4,EDirection, iii, jjj, kkk)
+                                             ! imed  = getMedia(EDirection, iii, jjj, kkk)
+                                             ! imed1 = getMedia(3+modulo(EDirection+4, 3), iii, jjj, kkk)
+                                             ! imed2 = getMedia(3+modulo(EDirection+4, 3), iii - merge(1,0, Edirection == iEy), jjj - merge(1,0, Edirection == iEz), kkk - merge(1,0, Edirection == iEx))
+                                             ! imed3 = getMedia(3+modulo(EDirection+5, 3), iii, jjj, kkk)
+                                             ! imed4 = getMedia(3+modulo(EDirection+5, 3), iii - merge(1,0, Edirection == iEz), jjj - merge(1,0, Edirection == iEx), kkk - merge(1,0, Edirection == iEy))
+                                             call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,EDirection,iii,jjj,kkk)
+                                             if (esBorde) then 
+                                                output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = assignEdgeMediaType()    
+                                             end if
+
+                                          end do
+                                       end block
+                                       
+                                       ! imed =sggMiEx(III , JJJ  , KKK  )
+                                       ! imed1=sggMiHy(III , JJJ  , KKK  )
+                                       ! imed2=sggMiHy(III , JJJ  , KKK-1)
+                                       ! imed3=sggMiHz(III , JJJ  , KKK  )
+                                       ! imed4=sggMiHz(III , JJJ-1, KKK  )
                                        call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEx,iii,jjj,kkk)
                                        if (EsBorde) then
                                           conta=conta+1
@@ -3639,38 +3659,14 @@ contains
                                        endif
                                     else                                       !si es mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
 
+                                
                                     block 
-                                       integer (kind=4) :: HDirection, jmedia
-                                       real (kind = RKIND) :: mediaType
+                                       integer (kind=4) :: HDirection
                                        do HDirection = iHx, iHz
-                                          jmedia = getMedia(HDirection, iii, jjj, kkk)
-                                          if (.not. isMediaVacuum(HDirection,iii,jjj,kkk) .and. &
-                                             .not. isPML(HDirection, iii, jjj, kkk) .and. &
-                                             isWithinBounds(HDirection, iii, jjj, kkk)) then
-
+                                          if (surfaceIsMedia(HDirection, iii, jjj, kkk))then
                                                 conta=conta+1
-                                                if ((jmedia==0).or.(sgg%Med(jmedia)%is%Pec)) then
-                                                   mediaType=0
-                                                elseif (sgg%Med(jmedia)%is%thinwire) then
-                                                   CALL StopOnError (0,1,'ERROR: A magnetic field cannot be a thin-wire')
-                                                elseif (isSGBCorMultiport(jmedia)) then
-                                                            mediaType = 300+jmedia
-                                                elseif (isDispersive(jmedia)) then
-                                                            mediaType = 100+jmedia
-                                                elseif ((sgg%Med(jmedia)%is%Dielectric).or. &
-                                                       (sgg%Med(jmedia)%is%Anisotropic)) then
-                                                            mediaType = 200+jmedia
-                                                elseif (sgg%Med(jmedia)%is%thinslot) then
-                                                            mediaType = 400+jmedia
-                                                elseif ((sgg%Med(jmedia)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                                            mediaType = 5
-                                                elseif ((sgg%Med(jmedia)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
-                                                            mediaType = 6
-                                                else
-                                                            mediaType=-1
-                                                endif
-                                                !!!fin discretizo los colores para saber mejor que son
-                                                output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = mediaType
+                                                output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = & 
+                                                   assignSurfaceMediaType(getMedia(HDirection, iii, jjj, kkk))
                                           endif
                                        end do
                                     end block
@@ -4082,20 +4078,68 @@ contains
       end function
 
       logical function isSGBCorMultiport(media) 
-         integer(kind=4) :: media
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
          isSGBCorMultiport =  (sgg%Med(media)%is%SGBC).or. &
                               (sgg%Med(media)%is%multiport).or. & 
                               (sgg%Med(media)%is%anismultiport)
       end function
 
       logical function isDispersive(media)
-         integer(kind=4) :: media
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
          isDispersive = (sgg%Med(media)%is%edispersive).or. &
                         (sgg%Med(media)%is%EDispersiveANIS).or. &
                         (sgg%Med(media)%is%mDispersive).or. &
                         (sgg%Med(media)%is%mDispersiveANIS)
       end function
 
+      logical function surfaceIsMedia(direction, i, j ,k)
+         integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: surfaceMedia, vacuum = 1
+         integer (kind=4) :: direction, i, j, k
+         surfaceMedia = getMedia(direction, i, j ,k)
+         surfaceIsMedia =  ( (surfaceMedia /= vacuum) .and. &
+                            .not. sgg%med(surfaceMedia)%is%PML .and.&
+                            isWithinBounds(direction, i, j ,k) )
+      end function
+
+      function assignSurfaceMediaType(media) result(res)
+         real (kind=RKIND) :: res 
+         integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+            if ((media==0).or.(sgg%Med(media)%is%Pec)) then
+               res=0
+            elseif (sgg%Med(media)%is%thinwire) then
+               CALL StopOnError (0,1,'ERROR: A magnetic field cannot be a thin-wire')
+            elseif (isSGBCorMultiport(media)) then
+               res = 300+media
+            elseif (isDispersive(media)) then
+               res = 100+media
+            elseif ((sgg%Med(media)%is%Dielectric).or. &
+                  (sgg%Med(media)%is%Anisotropic)) then
+               res = 200+media
+            elseif (sgg%Med(media)%is%thinslot) then
+               res = 400+media
+            elseif ((sgg%Med(media)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
+               res = 5
+            elseif ((sgg%Med(media)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
+               res = 6
+            else
+               res=-1
+            endif
+      end function
+
+      function assignEdgeMediaType() result(res)
+         real(kind=RKIND) :: res
+         res = 1.0
+      end function
+
+      subroutine assignMedia(m,m1,m2,m3,m4,dir, i, j, k)
+         integer( kind = 4), intent(inout) :: m, m1, m2, m3, m4
+         integer (kind=4) :: dir, i, j, k
+         m  = getMedia(dir, i, j, k)
+         m1 = getMedia(3+modulo(dir+4, 3), i, j, k)
+         m2 = getMedia(3+modulo(dir+4, 3), i - merge(1,0, dir == iEy), j - merge(1,0, dir == iEz), k - merge(1,0, dir == iEx))
+         m3 = getMedia(3+modulo(dir+5, 3), i, jjj, kkk)
+         m4 = getMedia(3+modulo(dir+5, 3), i - merge(1,0, dir == iEz), j - merge(1,0, dir == iEx), k - merge(1,0, dir == iEy))
+      end subroutine
 
    endsubroutine UpdateObservation
 
@@ -5693,3 +5737,40 @@ end function interpolate_field_atwhere
 
 
 end module Observa
+
+! x
+! imed =sggMiEx(III , JJJ  , KKK  )
+! imed1=sggMiHy(III , JJJ  , KKK  )
+! imed3=sggMiHz(III , JJJ  , KKK  )
+! imed2=sggMiHy(III , JJJ  , KKK-1)
+! imed4=sggMiHz(III , JJJ-1, KKK  )
+
+! y
+! imed =sggMiEy(III  , JJJ  , KKK  )
+! imed1=sggMiHz(III   , JJJ  , KKK  )
+! imed3=sggMiHx(III   , JJJ  , KKK  )
+! imed2=sggMiHz(III -1, JJJ  , KKK  )
+! imed4=sggMiHx(III   , JJJ  , KKK-1)
+
+! z
+! imed =sggMiEz(III  , JJJ  , KKK  )                                             call assignMedia(imed,imed1,imed2,imed3,imed4,EDirection, iii, jjj, kkk)
+                                             ! imed  = getMedia(EDirection, iii, jjj, kkk)
+                                             ! imed1 = getMedia(3+modulo(EDirection+4, 3), iii, jjj, kkk)
+                                             ! imed2 = getMedia(3+modulo(EDirection+4, 3), iii - merge(1,0, Edirection == iEy), jjj - merge(1,0, Edirection == iEz), kkk - merge(1,0, Edirection == iEx))
+                                             ! imed3 = getMedia(3+modulo(EDirection+5, 3), iii, jjj, kkk)
+                                             ! imed4 = getMedia(3+modulo(EDirection+5, 3), iii - merge(1,0, Edirection == iEz), jjj - merge(1,0, Edirection == iEx), kkk - merge(1,0, Edirection == iEy))
+
+! imed1=sggMiHx(III   , JJJ  , KKK  )
+! imed3=sggMiHy(III   , JJJ  , KKK  )
+! imed2=sggMiHx(III   , JJJ-1, KKK  )
+! imed4=sggMiHy(III -1, JJJ  , KKK  )
+
+! i
+! imed = getMedia(EDirection, iii, jjj, kkk)
+! imed1 = getMedia(3+modulo(EDirection+4, 3), iii, jjj, kkk)
+! imed2 = getMedia(3+modulo(EDirection+4, 3), iii - merge(1,0, Edirection == iEy), jjj - merge(1,0, Edirection == iEz), kkk - merge(1,0, Edirection == iEx))
+! imed3 = getMedia(3+modulo(EDirection+5, 3), iii, jjj, kkk)
+! imed4 = getMedia(3+modulo(EDirection+5, 3), iii - merge(1,0, Edirection == iEz), jjj - merge(1,0, Edirection == iEx), kkk - merge(1,0, Edirection == iEy))
+
+
+
