@@ -2215,29 +2215,73 @@ contains
 
    contains
 
+      logical function isMediaVacuum(direction, i, j, k) 
+         integer (kind=4) :: direction, i, j, k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: vacuum = 1
+         select case(direction)
+         case(iEx)
+            isMediaVacuum = (sggMiEx(i, j, k) == vacuum)
+         case(iEy)
+            isMediaVacuum = (sggMiEy(i, j, k) == vacuum)
+         case(iEz)
+            isMediaVacuum = (sggMiEz(i, j, k) == vacuum)
+         case(iHx)
+            isMediaVacuum = (sggMiHx(i, j, k) == vacuum)
+         case(iHy)
+            isMediaVacuum = (sggMiHy(i, j, k) == vacuum)
+         case(iHz)
+            isMediaVacuum = (sggMiHz(i, j, k) == vacuum)
+         case default
+            call StopOnError(layoutnumber, size, 'Unrecognized direction')
+         end select
+      end function
+
       logical function isThinWireWithinBounds(direction,i,j,k)
-         integer(kind=4) direction, i,j,k
+         integer(kind=4) :: direction, i,j,k
          isThinWireWithinBounds = isThinWire(direction, i, j, k) .and. &
                                   isWithinBounds(direction, i, j, k)
       end function
 
+      logical function isNotPMLWithinBounds(direction,i,j,k)
+         integer(kind=4) :: direction, i,j,k
+         isNotPMLWithinBounds = .not. isPML(direction, i, j, k) .and. &
+                                  isWithinBounds(direction, i, j, k)
+      end function
+
       logical function isThinWire(direction, i, j, k)
-         integer(kind=4) direction, i,j,k
+         integer(kind=4) :: direction, i,j,k
          select case(direction)
          case(iEx)
-            isThinWire = sgg%med(sggMiEx(III , JJJ , KKK ))%Is%ThinWire
+            isThinWire = sgg%med(sggMiEx(i, j, k))%Is%ThinWire
          case(iEy)
-            isThinWire = sgg%med(sggMiEy(III , JJJ , KKK ))%Is%ThinWire
+            isThinWire = sgg%med(sggMiEy(i, j, k))%Is%ThinWire
          case(iEz)
-            isThinWire = sgg%med(sggMiEz(III , JJJ , KKK ))%Is%ThinWire
+            isThinWire = sgg%med(sggMiEz(i, j, k))%Is%ThinWire
+         case default
+            call stoponerror(layoutnumber,size,'Direction is not a face direction')
          end select
+      end function
+      
+      logical function isPML(direction, i, j ,k)
+         integer (kind=4) :: direction, i, j, k
+         select case(direction)
+         case(iHx)
+            isPML = sgg%med(sggMiHx(i, j, k))%is%PML
+         case(iHy)
+            isPML = sgg%med(sggMiHy(i, j, k))%is%PML
+         case(iHz)
+            isPML = sgg%med(sggMiHz(i, j, k))%is%PML
+         case default
+            call stoponerror(layoutnumber,size,'Direction is not an edge direction')
+         end select
+
       end function
 
       logical function isWithinBounds(direction, i,j,k)
-         integer(kind=4) direction, i,j,k
-         isWithinBounds  = i <= SINPML_fullsize(direction)%XE .and. &
-                           j <= SINPML_fullsize(direction)%YE .and. & 
-                           k <= SINPML_fullsize(direction)%ZE
+         integer(kind=4) :: direction, i,j,k
+         isWithinBounds  = (i <= SINPML_fullsize(direction)%XE) .and. &
+                           (j <= SINPML_fullsize(direction)%YE) .and. & 
+                           (k <= SINPML_fullsize(direction)%ZE)
       end function
 
 
