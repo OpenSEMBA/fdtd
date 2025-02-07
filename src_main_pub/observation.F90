@@ -1665,57 +1665,70 @@ contains
                                     integer (kind=4) :: HDirection
                                     do HDirection = iHx, iHz
                                        if (.not. isMediaVacuum(HDirection, iii, jjj, kkk) .and. &
-                                           .not. isPML(HDirection, iii, jjj, kkk) .and. & 
-                                           isWithinBounds(HDirection, iii, jjj , kkk)) then
-                                              conta = conta + 1
-                                              output(ii)%item(i)%Serialized%eI(conta)=iii
-                                              output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                              output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                              output(ii)%item(i)%Serialized%currentType(conta)=currentType(HDirection)
-                                              output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(HDirection, iii, jjj, kkk)
+                                          .not. isPML(HDirection, iii, jjj, kkk) .and. & 
+                                          isWithinBounds(HDirection, iii, jjj , kkk)) then
+                                             conta = conta + 1
+                                             output(ii)%item(i)%Serialized%eI(conta)=iii
+                                             output(ii)%item(i)%Serialized%eJ(conta)=jjj
+                                             output(ii)%item(i)%Serialized%eK(conta)=kkk
+                                             output(ii)%item(i)%Serialized%currentType(conta)=currentType(HDirection)
+                                             output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(HDirection, iii, jjj, kkk)
+                                       end if
+
+                                       if (tag_numbers%getFaceTag(HDirection, iii, jjj, kkk) < 0 .and. &
+                                          (btest(iabs(tag_numbers%getFaceTag(HDirection, iii,jjj,kkk)),3)) .and. &
+                                          .not. isPML(HDirection, iii, jjj, kkk).and. &
+                                          isWithinBounds(HDirection, iii, jjj, kkk)) then 
+                                             conta=conta+1
+                                             output(ii)%item(i)%Serialized%eI(conta)=iii
+                                             output(ii)%item(i)%Serialized%eJ(conta)=jjj
+                                             output(ii)%item(i)%Serialized%eK(conta)=kkk
+                                             output(ii)%item(i)%Serialized%currentType(conta)=currentType(HDirection)
+                                             output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(HDirection, iii, jjj, kkk)
+     
                                        end if
                                     end do
                                  end block
 
-!                                 ! los tags 141020 para mapvtk
-                                 if ( tag_numbers%face%x(iii,jjj,kkk)<0 .and. & 
-                                    (btest(iabs(tag_numbers%face%x(iii,jjj,kkk)),3)).and. & 
-                                    (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
-                                     (iii <= SINPML_fullsize(iHx)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iHx)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                        conta=conta+1
-                                        output(ii)%item(i)%Serialized%eI(conta)=iii
-                                        output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                        output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                        output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
-                                        output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%x(iii,jjj,kkk)
-                                 endif
-                                 if ( tag_numbers%face%y(iii,jjj,kkk)<0 .and. & 
-                                    (btest(iabs(tag_numbers%face%y(iii,jjj,kkk)),4)).and. & 
-                                       (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and. &
-                                       (iii <= SINPML_fullsize(iHy)%XE).and. & 
-                                       (jjj <= SINPML_fullsize(iHy)%YE).and. & 
-                                       (kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                        conta=conta+1
-                                        output(ii)%item(i)%Serialized%eI(conta)=iii
-                                        output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                        output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                        output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
-                                        output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%y(iii,jjj,kkk)
-                                 endif
-                                 if ( tag_numbers%face%z(iii,jjj,kkk)<0 .and. & 
-                                    (btest(iabs(tag_numbers%face%z(iii,jjj,kkk)),5)).and. & 
-                                       (iii <= SINPML_fullsize(iHz)%XE).and. & 
-                                       (jjj <= SINPML_fullsize(iHz)%YE).and. & 
-                                       (kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                        conta=conta+1
-                                        output(ii)%item(i)%Serialized%eI(conta)=iii
-                                        output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                        output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                        output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
-                                        output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%z(iii,jjj,kkk)
-                                 endif
+! !                                 ! los tags 141020 para mapvtk
+!                                  if ( tag_numbers%face%x(iii,jjj,kkk)<0 .and. & 
+!                                     (btest(iabs(tag_numbers%face%x(iii,jjj,kkk)),3)).and. & 
+!                                     (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
+!                                      (iii <= SINPML_fullsize(iHx)%XE).and. & 
+!                                      (jjj <= SINPML_fullsize(iHx)%YE).and. & 
+!                                      (kkk <= SINPML_fullsize(iHx)%ZE)) then
+!                                         conta=conta+1
+!                                         output(ii)%item(i)%Serialized%eI(conta)=iii
+!                                         output(ii)%item(i)%Serialized%eJ(conta)=jjj
+!                                         output(ii)%item(i)%Serialized%eK(conta)=kkk
+!                                         output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
+!                                         output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%x(iii,jjj,kkk)
+!                                  endif
+!                                  if ( tag_numbers%face%y(iii,jjj,kkk)<0 .and. & 
+!                                     (btest(iabs(tag_numbers%face%y(iii,jjj,kkk)),4)).and. & 
+!                                        (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and. &
+!                                        (iii <= SINPML_fullsize(iHy)%XE).and. & 
+!                                        (jjj <= SINPML_fullsize(iHy)%YE).and. & 
+!                                        (kkk <= SINPML_fullsize(iHy)%ZE)) then
+!                                         conta=conta+1
+!                                         output(ii)%item(i)%Serialized%eI(conta)=iii
+!                                         output(ii)%item(i)%Serialized%eJ(conta)=jjj
+!                                         output(ii)%item(i)%Serialized%eK(conta)=kkk
+!                                         output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
+!                                         output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%y(iii,jjj,kkk)
+!                                  endif
+!                                  if ( tag_numbers%face%z(iii,jjj,kkk)<0 .and. & 
+!                                     (btest(iabs(tag_numbers%face%z(iii,jjj,kkk)),5)).and. & 
+!                                        (iii <= SINPML_fullsize(iHz)%XE).and. & 
+!                                        (jjj <= SINPML_fullsize(iHz)%YE).and. & 
+!                                        (kkk <= SINPML_fullsize(iHz)%ZE)) then
+!                                         conta=conta+1
+!                                         output(ii)%item(i)%Serialized%eI(conta)=iii
+!                                         output(ii)%item(i)%Serialized%eJ(conta)=jjj
+!                                         output(ii)%item(i)%Serialized%eK(conta)=kkk
+!                                         output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
+!                                         output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%face%z(iii,jjj,kkk)
+!                                  endif
                               !   endif
                               endif
                               !
