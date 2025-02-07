@@ -1245,35 +1245,17 @@ contains
                                  endif
                               else !si es mapvtk
                                  !si es mapvtk y si no es vacio
-                                 imed =sggMiEx(III , JJJ  , KKK  )
-                                 imed1=sggMiHy(III , JJJ  , KKK  )
-                                 imed2=sggMiHy(III , JJJ  , KKK-1)
-                                 imed3=sggMiHz(III , JJJ  , KKK  )
-                                 imed4=sggMiHz(III , JJJ-1, KKK  )
-                                 call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEx,iii,jjj,kkk)
-                                 if (EsBorde) then
-                                    conta=conta+1
-                                 endif
-                                 !
-                                 imed =sggMiEy(III  , JJJ  , KKK  )
-                                 imed1=sggMiHz(III   , JJJ  , KKK  )
-                                 imed2=sggMiHz(III -1, JJJ  , KKK  )
-                                 imed3=sggMiHx(III   , JJJ  , KKK  )
-                                 imed4=sggMiHx(III   , JJJ  , KKK-1)
-                                 call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEy,iii,jjj,kkk)
-                                 if (EsBorde) then
-                                    conta=conta+1
-                                 endif
-                                 !
-                                 imed =sggMiEz(III  , JJJ  , KKK  )
-                                 imed1=sggMiHx(III   , JJJ  , KKK  )
-                                 imed2=sggMiHx(III   , JJJ-1, KKK  )
-                                 imed3=sggMiHy(III   , JJJ  , KKK  )
-                                 imed4=sggMiHy(III -1, JJJ  , KKK  )
-                                 call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEz,iii,jjj,kkk)
-                                 if (EsBorde) then
-                                    conta=conta+1
-                                 endif
+                                 block
+                                    integer (kind=4) :: EDirection
+                                    do EDirection = iEx, iEz
+                                       call assignMedia(imed, imed1, imed2, imed3, imed4, EDirection, iii, jjj, kkk)
+                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,EDirection,iii,jjj,kkk)
+                                       if (EsBorde) then
+                                          conta=conta+1
+                                       endif
+                                    end do
+                                 end block
+
                               endif
                            end do
                         end do
@@ -1293,33 +1275,46 @@ contains
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
-                                 if (((sgg%med(sggMiHx(III , JJJ, KKK))%Is%PEC).or.  &
-                                      (sgg%med(sggMiHx(III , JJJ, KKK))%Is%Surface).or.  &
-                                      (field==icurX)).and. & 
-                                      (iii <= SINPML_fullsize(iHx)%XE).and. & 
-                                      (jjj <= SINPML_fullsize(iHx)%YE).and. & 
-                                      (kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                    conta=conta+1
-                                 endif
-                                 if (((sgg%med(sggMiHy(III, JJJ, KKK))%Is%PEC).or.  &
-                                      (sgg%med(sggMiHy(III, JJJ, KKK))%Is%Surface).or. &
-                                      (field==icurY)).and. & 
-                                      (iii <= SINPML_fullsize(iHy)%XE).and. & 
-                                      (jjj <= SINPML_fullsize(iHy)%YE).and. & 
-                                      (kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                    conta=conta+1
-                                 endif
-                                 if (((sgg%med(sggMiHz(III, JJJ, KKK))%Is%PEC).or.  &
-                                      (sgg%med(sggMiHz(III, JJJ, KKK))%Is%Surface).or. &
-                                      (field==icurZ)).and. & 
-                                      (iii <= SINPML_fullsize(iHz)%XE).and. & 
-                                      (jjj <= SINPML_fullsize(iHz)%YE).and. & 
-                                      (kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                    conta=conta+1
-                                 endif
+
+                                 block
+                                    integer (kind=4) :: HDirection
+                                    integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: hmedia
+                                    do HDirection = iHx, iHz
+                                       hmedia = getMedia(direction, i, j, k)
+                                       if (sgg%med(hmedia)%is%PEC .and. sgg%med(hmedia)%is%Surface .and. &
+                                          field == 50+HDirection .and. isWithinBounds(HDirection, iii, jjj, kkk)) then 
+                                             conta = conta + 1
+                                       end if
+                                    end do
+                                 end block
+                                 ! if (((sgg%med(sggMiHx(III , JJJ, KKK))%Is%PEC).or.  &
+                                 !      (sgg%med(sggMiHx(III , JJJ, KKK))%Is%Surface).or.  &
+                                 !      (field==icurX)).and. & 
+                                 !      (iii <= SINPML_fullsize(iHx)%XE).and. & 
+                                 !      (jjj <= SINPML_fullsize(iHx)%YE).and. & 
+                                 !      (kkk <= SINPML_fullsize(iHx)%ZE)) then
+                                 !    conta=conta+1
+                                 ! endif
+                                 ! if (((sgg%med(sggMiHy(III, JJJ, KKK))%Is%PEC).or.  &
+                                 !      (sgg%med(sggMiHy(III, JJJ, KKK))%Is%Surface).or. &
+                                 !      (field==icurY)).and. & 
+                                 !      (iii <= SINPML_fullsize(iHy)%XE).and. & 
+                                 !      (jjj <= SINPML_fullsize(iHy)%YE).and. & 
+                                 !      (kkk <= SINPML_fullsize(iHy)%ZE)) then
+                                 !    conta=conta+1
+                                 ! endif
+                                 ! if (((sgg%med(sggMiHz(III, JJJ, KKK))%Is%PEC).or.  &
+                                 !      (sgg%med(sggMiHz(III, JJJ, KKK))%Is%Surface).or. &
+                                 !      (field==icurZ)).and. & 
+                                 !      (iii <= SINPML_fullsize(iHz)%XE).and. & 
+                                 !      (jjj <= SINPML_fullsize(iHz)%YE).and. & 
+                                 !      (kkk <= SINPML_fullsize(iHz)%ZE)) then
+                                 !    conta=conta+1
+                                 ! endif
                               else
                                  ! si es mapvtk y si no es vacio
 
+                              ! count media surfaces
                               block
                                  integer (kind=4) :: HDirection
                                  do HDirection = iHx, iHz
@@ -1331,31 +1326,44 @@ contains
                                  end do
                               end block
 
-                                 ! los tags de vacio negativos 141020 para mapvtk
-                                 if ( tag_numbers%face%x(iii,jjj,kkk)<0 .and. & 
-                                    (btest(iabs(tag_numbers%face%x(iii,jjj,kkk)),3)).and. & 
-                                    (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
-                                    (iii <= SINPML_fullsize(iHx)%XE).and. & 
-                                    (jjj <= SINPML_fullsize(iHx)%YE).and. & 
-                                    (kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                    conta=conta+1
-                                 endif
-                                 if ( tag_numbers%face%y(iii,jjj,kkk)<0 .and. & 
-                                    (btest(iabs(tag_numbers%face%y(iii,jjj,kkk)),4)).and. &
-                                    (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and. & 
-                                    (iii <= SINPML_fullsize(iHy)%XE).and. & 
-                                    (jjj <= SINPML_fullsize(iHy)%YE).and. & 
-                                    (kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                    conta=conta+1
-                                 endif
-                                 if ( tag_numbers%face%z(iii,jjj,kkk)<0 .and. & 
-                                    (btest(iabs(tag_numbers%face%z(iii,jjj,kkk)),5)).and. &
-                                    (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and. & 
-                                    (iii <= SINPML_fullsize(iHz)%XE).and. & 
-                                    (jjj <= SINPML_fullsize(iHz)%YE).and. & 
-                                    (kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                    conta=conta+1
-                                 endif  
+                              ! count negative vacuum tags
+                              block 
+                                 integer (kind=4) :: HDirection
+                                 do HDirection = iHx, iHz 
+                                    if (tag_numbers%getFaceTag(HDirection, iii, jjj, kkk) < 0 .and. &
+                                       (btest(iabs(tag_numbers%getFaceTag(HDirection, iii, jjj, kkk)), HDirection - 1)) .and. & 
+                                       .not. isPML(HDirection, iii, jjj, kkk) .and. &
+                                       isWithinBounds(HDirection, iii, jjj, kkk)) then 
+                                          conta = conta + 1
+                                    end if
+                                 end do
+
+                              end block
+                                 ! ! los tags de vacio negativos 141020 para mapvtk
+                                 ! if ( tag_numbers%face%x(iii,jjj,kkk)<0 .and. & 
+                                 !    (btest(iabs(tag_numbers%face%x(iii,jjj,kkk)),3)).and. & 
+                                 !    (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
+                                 !    (iii <= SINPML_fullsize(iHx)%XE).and. & 
+                                 !    (jjj <= SINPML_fullsize(iHx)%YE).and. & 
+                                 !    (kkk <= SINPML_fullsize(iHx)%ZE)) then
+                                 !    conta=conta+1
+                                 ! endif
+                                 ! if ( tag_numbers%face%y(iii,jjj,kkk)<0 .and. & 
+                                 !    (btest(iabs(tag_numbers%face%y(iii,jjj,kkk)),4)).and. &
+                                 !    (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and. & 
+                                 !    (iii <= SINPML_fullsize(iHy)%XE).and. & 
+                                 !    (jjj <= SINPML_fullsize(iHy)%YE).and. & 
+                                 !    (kkk <= SINPML_fullsize(iHy)%ZE)) then
+                                 !    conta=conta+1
+                                 ! endif
+                                 ! if ( tag_numbers%face%z(iii,jjj,kkk)<0 .and. & 
+                                 !    (btest(iabs(tag_numbers%face%z(iii,jjj,kkk)),5)).and. &
+                                 !    (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and. & 
+                                 !    (iii <= SINPML_fullsize(iHz)%XE).and. & 
+                                 !    (jjj <= SINPML_fullsize(iHz)%YE).and. & 
+                                 !    (kkk <= SINPML_fullsize(iHz)%ZE)) then
+                                 !    conta=conta+1
+                                 ! endif  
                                  ! endif
                               endif
                            end do
@@ -2253,12 +2261,29 @@ contains
          isPML = sgg%med(media)%is%PML
       end function
 
+      logical function isPEC(direction, i, j ,k)
+         integer (kind=4) :: direction, i, j, k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(direction, i, j, k)
+         isPEC = sgg%med(media)%is%PEC
+      end function
+
       logical function isWithinBounds(direction, i,j,k)
          integer(kind=4) :: direction, i,j,k
          isWithinBounds  = (i <= SINPML_fullsize(direction)%XE) .and. &
                            (j <= SINPML_fullsize(direction)%YE) .and. & 
                            (k <= SINPML_fullsize(direction)%ZE)
       end function
+
+      subroutine assignMedia(m,m1,m2,m3,m4,dir, i, j, k)
+         integer( kind = 4), intent(inout) :: m, m1, m2, m3, m4
+         integer (kind=4) :: dir, i, j, k
+         m  = getMedia(dir, i, j, k)
+         m1 = getMedia(4+modulo(dir, 3), i, j, k)
+         m2 = getMedia(4+modulo(dir, 3), i - merge(1,0, dir == iEy), j - merge(1,0, dir == iEz), k - merge(1,0, dir == iEx))
+         m3 = getMedia(4+modulo(dir+1, 3), i, j, k)
+         m4 = getMedia(4+modulo(dir+1, 3), i - merge(1,0, dir == iEz), j - merge(1,0, dir == iEx), k - merge(1,0, dir == iEy))
+      end subroutine
 
 
       subroutine checkduplicatenames
@@ -3290,6 +3315,32 @@ contains
                                  do III = i1, i2
                                     !saca  current a lo largo del edge con las sondas icur
                                     if (field/=mapvtk) then
+
+                                       ! block
+                                       !    integer (kind=4) :: Edirection
+                                       !    integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: emedia
+                                       !    real (kind=RKIND) :: ej
+                                       !    do EDirection = iEx, iEz
+                                       !       emedia = getMedia(EDirection, iii, jjj, kkk)
+                                       !       if (sgg%med(emedia)%Is%ThinWire .and. isWithinBounds(EDirection, iii, jjj, kkk)) then 
+
+                                       !          i1 = i - merge(1,0,1+mod(direction+1,3) == iEx); j1 = j - merge(1,0,1+mod(direction+1,3) == iEy); k1 = k - merge(1,0,1+mod(direction+1,3) == iEz)
+                                       !          i2 = i - merge(1,0,1+mod(direction,3) == iEx),j2 = j - merge(1,0,1+mod(direction,3) == iEy), k2 = k - merge(1,0,1+mod(direction,3) == iEz)
+                                       !          ej = getDelta(1+mod(direction,3)) * [-getMedia(1+mod(direction,3),i,j,k) + getMedia(1+mod(direction,3),i1,j1,k1)]  + &
+                                       !               getDelta(1+mod(direction+1,3)) * [-getMedia(1+mod(direction+1,3),i,j,k) + getMedia(1+mod(direction+1,3),i2,j2,k2)]  
+                                       !                   output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = merge(ej, 0.0_RKIND, EDirection == iEx)
+
+                                       !                   output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = merge(ej, 0.0_RKIND, EDirection == iEy)
+                                       !          output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = merge(ej, 0.0_RKIND, EDirection == iEz)
+                                       !          output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,EDirection) 
+                                       !          output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,EDirection)
+                                       !          output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,EDirection)
+                                       !          output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,EDirection)
+                                       !          output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,EDirection)
+                                       !          output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,EDirection)
+                                       !       end if
+                                       !    end do
+                                       ! end block
                                        if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
                                           conta=conta+1
                                           Jx= dyh(JJJ ) * (- Hy( III , JJJ , KKK )+Hy( III   , JJJ   , KKK -1))  + &  
