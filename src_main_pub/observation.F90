@@ -3414,152 +3414,16 @@ contains
 
                                        block
                                           integer (kind=4) :: EDirection
-                                          integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: emedia
                                           do EDirection = iEx, iEz
-                                             emedia = getMedia(EDirection, iii, jjj, kkk)
                                              call assignMedia(imed,imed1,imed2,imed3,imed4,EDirection, iii, jjj, kkk)
-                                             ! imed  = getMedia(EDirection, iii, jjj, kkk)
-                                             ! imed1 = getMedia(3+modulo(EDirection+4, 3), iii, jjj, kkk)
-                                             ! imed2 = getMedia(3+modulo(EDirection+4, 3), iii - merge(1,0, Edirection == iEy), jjj - merge(1,0, Edirection == iEz), kkk - merge(1,0, Edirection == iEx))
-                                             ! imed3 = getMedia(3+modulo(EDirection+5, 3), iii, jjj, kkk)
-                                             ! imed4 = getMedia(3+modulo(EDirection+5, 3), iii - merge(1,0, Edirection == iEz), jjj - merge(1,0, Edirection == iEx), kkk - merge(1,0, Edirection == iEy))
                                              call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,EDirection,iii,jjj,kkk)
                                              if (esBorde) then 
-                                                output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = assignEdgeMediaType(emedia)    
+                                                conta = conta + 1
+                                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = & 
+                                                   assignEdgeMediaType(EDirection, iii, jjj, kkk)
                                              end if
-
                                           end do
                                        end block
-                                       
-                                       ! imed =sggMiEx(III , JJJ  , KKK  )
-                                       ! imed1=sggMiHy(III , JJJ  , KKK  )
-                                       ! imed2=sggMiHy(III , JJJ  , KKK-1)
-                                       ! imed3=sggMiHz(III , JJJ  , KKK  )
-                                       ! imed4=sggMiHz(III , JJJ-1, KKK  )
-                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEx,iii,jjj,kkk)
-                                       if (EsBorde) then
-                                          conta=conta+1
-                                          jJx=sggMiEx(III , JJJ, KKK)
-                                          !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((sgg%Med(jJx)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                             jx=5.5
-                                          elseif ((sgg%Med(jJx)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
-                                             jx=6.5
-                                          elseif (sgg%Med(jJx)%is%thinwire) then !cambio orden para que siempre salgan los thin wires 231024
-                                             if (((sggMiEy(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK  ))%is%thinwire)).or. &
-                                                 ((sggMiEy(III   , JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK  ))%is%thinwire)).or. &
-                                                 ((sggMiEz(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK  ))%is%thinwire)).or. &
-                                                 ((sggMiEz(III   , JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK-1))%is%thinwire)).or. &
-                                                 ((sggMiEy(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
-                                                 ((sggMiEy(III +1, JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ-1, KKK  ))%is%thinwire)).or. &
-                                                 ((sggMiEz(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
-                                                 ((sggMiEz(III +1, JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK-1))%is%thinwire))) then
-                                                jx=8
-                                             else  !no hay una colision
-                                                jx=7
-                                             endif
-                                          elseif ((jJx==0).or.(sgg%Med(jJx)%is%Pec)) then
-                                             jx=0.5_RKIND
-                                          elseif ((sgg%Med(jJx)%is%SGBC).or.(sgg%Med(jJx)%is%multiport).or.(sgg%Med(jJx)%is%anismultiport)) then
-                                             jx=3.5
-                                          elseif ((sgg%Med(jJx)%is%edispersive).or.(sgg%Med(jJx)%is%EDispersiveANIS).or.(sgg%Med(jJx)%is%mDispersive).or.(sgg%Med(jJx)%is%mDispersiveANIS)) then
-                                             jx=1.5
-                                          elseif ((sgg%Med(jJx)%is%Dielectric).or.(sgg%Med(jJx)%is%Anisotropic)) then
-                                             jx=2.5
-                                          elseif (sgg%Med(jJx)%is%thinslot) then
-                                             jx=4.5
-                                          else
-                                             jx=-0.5_RKIND
-                                          endif
-                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = jx    
-                                          !!!fin discretizo los colores para saber mejor que son
-                                       endif
-                                       imed =sggMiEy(III  , JJJ  , KKK  )
-                                       imed1=sggMiHz(III   , JJJ  , KKK  )
-                                       imed2=sggMiHz(III -1, JJJ  , KKK  )
-                                       imed3=sggMiHx(III   , JJJ  , KKK  )
-                                       imed4=sggMiHx(III   , JJJ  , KKK-1)
-                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEy,iii,jjj,kkk)
-                                       if (EsBorde) then
-                                          conta=conta+1
-                                          jJy=sggMiEy(III , JJJ, KKK)
-                                          !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((sgg%Med(jJy)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then 
-                                             jy=5.5
-                                          elseif ((sgg%Med(jJy)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
-                                             jy=6.5
-                                          elseif (sgg%Med(jJy)%is%thinwire) then    !cambio orden para que siempre salgan los thin wires 231024
-                                             if (((sggMiEz(III   , JJJ    , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ    , KKK  ))%is%thinwire)).or. &
-                                             ((sggMiEz(III   , JJJ    , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ    , KKK-1))%is%thinwire)).or. &
-                                             ((sggMiEx(III   , JJJ    , KKK  )/=1).AND.(.not.sgg%med(sggMiEx(III   , JJJ    , KKK  ))%is%thinwire)).or. &
-                                             ((sggMiEx(III -1, JJJ    , KKK  )/=1).AND.(.not.sgg%med(sggMiEx(III -1, JJJ    , KKK  ))%is%thinwire)).or. &
-                                             ((sggMiEz(III   , JJJ+1  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ+1  , KKK  ))%is%thinwire)).or. &
-                                             ((sggMiEz(III   , JJJ+1  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ+1  , KKK-1))%is%thinwire)).or. &
-                                             ((sggMiEx(III   , JJJ+1  , KKK  )/=1).AND.(.not.sgg%med(sggMiEx(III   , JJJ+1  , KKK  ))%is%thinwire)).or. &
-                                             ((sggMiEx(III -1, JJJ+1  , KKK  )/=1).AND.(.not.sgg%med(sggMiEx(III -1, JJJ+1  , KKK  ))%is%thinwire))) then
-                                                jy=8
-                                             else  !no hay una colision
-                                                jy=7
-                                             endif
-                                          elseif ((jJy==0).or.(sgg%Med(jJy)%is%Pec)) then
-                                             jy=0.5_RKIND
-                                          elseif ((sgg%Med(jJy)%is%SGBC).or.(sgg%Med(jJy)%is%multiport).or.(sgg%Med(jJy)%is%anismultiport)) then
-                                             jy=3.5
-                                          elseif ((sgg%Med(jJy)%is%edispersive).or.(sgg%Med(jJy)%is%EDispersiveANIS).or.(sgg%Med(jJy)%is%mDispersive).or.(sgg%Med(jJy)%is%mDispersiveANIS)) then
-                                             jy=1.5
-                                          elseif ((sgg%Med(jJy)%is%Dielectric).or.(sgg%Med(jJy)%is%Anisotropic)) then
-                                             jy=2.5
-                                          elseif (sgg%Med(jJy)%is%thinslot) then
-                                             jy=4.5
-                                          else
-                                             jy=-0.5_RKIND
-                                          endif
-                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = jy    
-                                          !!!fin discretizo los colores para saber mejor que son
-                                       endif
-                                       imed =sggMiEz(III  , JJJ  , KKK  )
-                                       imed1=sggMiHx(III   , JJJ  , KKK  )
-                                       imed2=sggMiHx(III   , JJJ-1, KKK  )
-                                       imed3=sggMiHy(III   , JJJ  , KKK  )
-                                       imed4=sggMiHy(III -1, JJJ  , KKK  )
-                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEz,iii,jjj,kkk)
-                                       if (EsBorde) then
-                                          conta=conta+1
-                                          jJz=sggMiEz(III , JJJ, KKK)
-                                          !!!discretizo los colores para saber mejor que son (27/06/15)
-                                          if ((sgg%Med(jJz)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-                                             jz=5.5
-                                          elseif ((sgg%Med(jJz)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
-                                             jz=6.5
-                                          elseif (sgg%Med(jJz)%is%thinwire) then   !cambio orden para que siempre salgan los thin wires 231024
-                                             if (((sggMiEy(III   , JJJ  , KKK    )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK    ))%is%thinwire)).or. &
-                                             ((sggMiEy(III   , JJJ-1, KKK    )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK    ))%is%thinwire)).or. &
-                                             ((sggMiEx(III   , JJJ  , KKK    )/=1).AND.(.not.sgg%med(sggMiEx(III   , JJJ  , KKK    ))%is%thinwire)).or. &
-                                             ((sggMiEx(III -1, JJJ  , KKK    )/=1).AND.(.not.sgg%med(sggMiEx(III -1, JJJ  , KKK    ))%is%thinwire)).or. &
-                                             ((sggMiEy(III   , JJJ  , KKK+1  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK+1  ))%is%thinwire)).or. &
-                                             ((sggMiEy(III   , JJJ-1, KKK+1  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK+1  ))%is%thinwire)).or. &
-                                             ((sggMiEx(III   , JJJ  , KKK+1  )/=1).AND.(.not.sgg%med(sggMiEx(III   , JJJ  , KKK+1  ))%is%thinwire)).or. &
-                                             ((sggMiEx(III -1, JJJ  , KKK+1  )/=1).AND.(.not.sgg%med(sggMiEx(III -1, JJJ  , KKK+1  ))%is%thinwire))) then
-                                                jz=8
-                                             else  !no hay una colision
-                                                jz=7
-                                             endif
-                                          elseif ((jJz==0).or.(sgg%Med(jJz)%is%Pec)) then
-                                             jz=0.5_RKIND
-                                          elseif ((sgg%Med(jJz)%is%SGBC).or.(sgg%Med(jJz)%is%multiport).or.(sgg%Med(jJz)%is%anismultiport)) then
-                                             jz=3.5
-                                          elseif ((sgg%Med(jJz)%is%edispersive).or.(sgg%Med(jJz)%is%EDispersiveANIS).or.(sgg%Med(jJz)%is%mDispersive).or.(sgg%Med(jJz)%is%mDispersiveANIS)) then
-                                             jz=1.5
-                                          elseif ((sgg%Med(jJz)%is%Dielectric).or.(sgg%Med(jJz)%is%Anisotropic)) then
-                                             jz=2.5
-                                          elseif (sgg%Med(jJz)%is%thinslot) then
-                                             jz=4.5
-                                          else
-                                             jz=-0.5_RKIND
-                                          endif
-                                          !!!fin discretizo los colores para saber mejor que son
-                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = jz  
-                                       endif
 
                                     endif
                                  end do
@@ -3666,7 +3530,7 @@ contains
                                           if (surfaceIsMedia(HDirection, iii, jjj, kkk))then
                                                 conta=conta+1
                                                 output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = & 
-                                                   assignSurfaceMediaType(getMedia(HDirection, iii, jjj, kkk))
+                                                   assignSurfaceMediaType(HDirection, iii, jjj, kkk)
                                           endif
                                        end do
                                     end block
@@ -4101,49 +3965,46 @@ contains
                             isWithinBounds(direction, i, j ,k) )
       end function
 
-      function assignSurfaceMediaType(media) result(res)
+      function assignSurfaceMediaType(direction, i, j, k) result(res)
+         integer (kind=4) :: direction, i, j, k
          real (kind=RKIND) :: res 
          integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: media
-            if ((media==0).or.(sgg%Med(media)%is%Pec)) then
-               res=0
-            elseif (sgg%Med(media)%is%thinwire) then
-               CALL StopOnError (0,1,'ERROR: A magnetic field cannot be a thin-wire')
-            elseif (isSGBCorMultiport(media)) then
-               res = 300+media
-            elseif (isDispersive(media)) then
-               res = 100+media
-            elseif ((sgg%Med(media)%is%Dielectric).or. &
-                  (sgg%Med(media)%is%Anisotropic)) then
-               res = 200+media
-            elseif (sgg%Med(media)%is%thinslot) then
-               res = 400+media
-            elseif ((sgg%Med(media)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
-               res = 5
-            elseif ((sgg%Med(media)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
-               res = 6
-            else
-               res=-1
-            endif
+         media = getMedia(direction, i, j, k)
+         if ((media==0).or.(sgg%Med(media)%is%Pec)) then
+            res=0
+         elseif (sgg%Med(media)%is%thinwire) then
+            CALL StopOnError (0,1,'ERROR: A magnetic field cannot be a thin-wire')
+         elseif (isSGBCorMultiport(media)) then
+            res = 300+media
+         elseif (isDispersive(media)) then
+            res = 100+media
+         elseif ((sgg%Med(media)%is%Dielectric).or. &
+               (sgg%Med(media)%is%Anisotropic)) then
+            res = 200+media
+         elseif (sgg%Med(media)%is%thinslot) then
+            res = 400+media
+         elseif ((sgg%Med(media)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
+            res = 5
+         elseif ((sgg%Med(media)%is%split_and_useless).and.(.not.noconformalmapvtk)) then
+            res = 6
+         else
+            res=-1
+         endif
       end function
 
-      function assignEdgeMediaType(media) result(res)
+      function assignEdgeMediaType(direction, i, j, k) result(res)
+         integer (kind=4) :: direction, i, j, k
          real(kind=RKIND) :: res
          integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(direction, i, j, k)
          if ((sgg%Med(media)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
             res=5.5
          elseif ((sgg%Med(media)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
             res=6.5
-         elseif (sgg%Med(media)%is%thinwire) then !cambio orden para que siempre salgan los thin wires 231024
-            if (((sggMiEy(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK  ))%is%thinwire)).or. &
-                ((sggMiEy(III   , JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK  ))%is%thinwire)).or. &
-                ((sggMiEz(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK  ))%is%thinwire)).or. &
-                ((sggMiEz(III   , JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK-1))%is%thinwire)).or. &
-                ((sggMiEy(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
-                ((sggMiEy(III +1, JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ-1, KKK  ))%is%thinwire)).or. &
-                ((sggMiEz(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
-                ((sggMiEz(III +1, JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK-1))%is%thinwire))) then
+         elseif (sgg%Med(media)%is%thinwire) then
+            if (collidesWithNonThinWire(direction, i, j, k)) then
                res=8
-            else  !no hay una colision
+            else
                res=7
             endif
          elseif ((media==0).or.(sgg%Med(media)%is%Pec)) then
@@ -4172,6 +4033,56 @@ contains
          m3 = getMedia(4+modulo(dir+1, 3), i, j, k)
          m4 = getMedia(4+modulo(dir+1, 3), i - merge(1,0, dir == iEz), j - merge(1,0, dir == iEx), k - merge(1,0, dir == iEy))
       end subroutine
+
+   logical function collidesWithNonThinWire(direction, i, j ,k)
+      integer (kind=4) :: direction, i, j, k
+      integer (kind=4) :: idx(6)
+
+      collidesWithNonThinWire = .false.
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),i,j,k)/=1 .and. .not.   sgg%med(getMedia(1+mod(direction,3),i,j,k))%is%thinWire)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),i,j,k)/=1 .and. .not. sgg%med(getMedia(1+mod(direction+1,3),i,j,k))%is%thinWire)
+      idx = assignIndices1(direction, i, j, k)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(direction,3),idx(1),idx(2),idx(3)))%is%thinWire)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
+      idx = assignIndices2(direction, i, j, k)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(direction,3),idx(1),idx(2),idx(3)))%is%thinWire)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
+      idx = assignIndices3(direction, i, j, k)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(direction,3),idx(1),idx(2),idx(3)))%is%thinWire)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
+
+   end function
+
+   function assignIndices1(direction, i, j, k) result (res)
+      integer (kind=4), intent(in)  :: direction, i, j, k
+      integer (kind=4) :: res(6)
+      res(1) = i - merge(1,0, 1+mod(direction,3) == iEx)
+      res(2) = j - merge(1,0, 1+mod(direction,3) == iEy)
+      res(3) = k - merge(1,0, 1+mod(direction,3) == iEz)
+      res(4) = i - merge(1,0, 1+mod(direction+1,3) == iEx)
+      res(5) = j - merge(1,0, 1+mod(direction+1,3) == iEy)
+      res(6) = k - merge(1,0, 1+mod(direction+1,3) == iEz)
+   end function
+   function assignIndices2(direction, i, j, k) result (res)
+      integer (kind=4), intent(in)  :: direction, i, j, k
+      integer (kind=4) :: res(6)
+      res(1) = i + merge(1,0, direction == iEx)
+      res(2) = j + merge(1,0, direction == iEy)
+      res(3) = k + merge(1,0, direction == iEz)
+      res(4) = i + merge(1,0, direction == iEx)
+      res(5) = j + merge(1,0, direction == iEy) 
+      res(6) = k + merge(1,0, direction == iEz)
+   end function
+   function assignIndices3(direction, i, j, k) result (res)
+      integer (kind=4), intent(in)  :: direction, i, j, k
+      integer (kind=4) :: res(6)
+      res(1) = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction,3) == iEx)
+      res(2) = j + merge(1,0, direction == iEy) - merge(1,0, 1 + mod(direction,3) == iEy)
+      res(3) = k + merge(1,0, direction == iEz) - merge(1,0, 1+mod(direction,3) == iEz)
+      res(4) = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction+1,3) == iEx) 
+      res(5) = j + merge(1,0, direction == iEy) - merge(1,0, 1+mod(direction+1,3) == iEy)
+      res(6) = k + merge(1,0, direction == iEz) - merge(1,0, 1 + mod(direction+1,3) == iEz)
+   end function
 
    endsubroutine UpdateObservation
 
@@ -5770,75 +5681,4 @@ end function interpolate_field_atwhere
 
 end module Observa
 
-((sggMiEy(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK  ))%is%thinwire)).or. &
-((sggMiEz(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK  ))%is%thinwire)).or. &
 
-((sggMiEy(III   , JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK  ))%is%thinwire)).or. &
-((sggMiEz(III   , JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK-1))%is%thinwire)).or. &
-
-((sggMiEy(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
-((sggMiEz(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
-
-((sggMiEy(III +1, JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ-1, KKK  ))%is%thinwire)).or. &
-((sggMiEz(III +1, JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK-1))%is%thinwire))) then
-
-logical function collidesWithNonThinWire(direction, i, j ,k)
-   integer (kind=4) :: direction, i, j, k
-   integer (kind=4) :: idx
-
-   collidesWithNonThinWire = .false.
-   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),i,j,k)/=1 .and. . not. getMedia(1+mod(direction,3),i,j,k)%is%thinWire)
-   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),i,j,k)/=1 .and. . not. getMedia(1+mod(direction+1,3),i,j,k)%is%thinWire)
-   idx = assignIndices1(direcion, i, j, k)
-   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. . not. getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))%is%thinWire)
-   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. . not. getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))%is%thinWire)
-   idx = assignIndices2(direcion, i, j, k)
-   i1 = i + merge(1,0, direction == iEx); j1 = j + merge(1,0, direction == iEy); k1 = k + merge(1,0, direction == iEz)
-   i2 = i + merge(1,0, direction == iEx); j2 = j + merge(1,0, direction == iEy); k2 = k + merge(1,0, direction == iEz)
-   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. . not. getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))%is%thinWire)
-   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. . not. getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))%is%thinWire)
-   i1 = i + merge(1,0, direction == iEx)  - merge(1,0, 1+mod(direction,3) == iEx)
-   j1 = j + merge(1,0, direction == iEy) - merge(1,0, 1 + mod(direction,3) == iEy)
-   k1 = k + merge(1,0, direction == iEz)  - merge(1,0, 1+mod(direction,3) == iEz)
-   i2 = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction+1,3) == iEx) 
-   j2 = j + merge(1,0, direction == iEy) - merge(1,0, 1+mod(direction+1,3) == iEy)
-   k2 = k + merge(1,0, direction == iEz) - merge(1,0, 1 + mod(direction+1,3) == iEz)
-   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. . not. getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))%is%thinWire)
-   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. . not. getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))%is%thinWire)
-
-end function
-
-function assignIndices1(direction, i, j, k) result (res)
-   integer (kind=4), intent(in)  :: direction, i, j, k
-   integer (kind=4) :: res(6)
-   res(1) = i - merge(1,0, 1+mod(direction,3) == iEx)
-   res(2) = j - merge(1,0, 1+mod(direction,3) == iEy)
-   res(3) = k - merge(1,0, 1+mod(direction,3) == iEz)
-   res(4) = i - merge(1,0, 1+mod(direction+1,3) == iEx)
-   res(5) = j - merge(1,0, 1+mod(direction+1,3) == iEy)
-   res(6) = k - merge(1,0, 1+mod(direction+1,3) == iEz)
-end function
-function assignIndices2(direction, i, j, k) result (res)
-   integer (kind=4), intent(in)  :: direction, i, j, k
-   integer (kind=4) :: res(6)
-   res(1) = i + merge(1,0, direction == iEx)
-   res(2) = j + merge(1,0, direction == iEy)
-   res(3) = k + merge(1,0, direction == iEz)
-   res(4) = i + merge(1,0, direction == iEx)
-   res(5) = j + merge(1,0, direction == iEy) 
-   res(6) = k + merge(1,0, direction == iEz)
-end function
-function assignIndices3(direction, i, j, k) result (res)
-   integer (kind=4), intent(in)  :: direction, i, j, k
-   integer (kind=4) :: res(6)
-   res(1) = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction,3) == iEx)
-   res(2) = j + merge(1,0, direction == iEy) - merge(1,0, 1 + mod(direction,3) == iEy)
-   res(3) = k + merge(1,0, direction == iEz) - merge(1,0, 1+mod(direction,3) == iEz)
-   res(4) = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction+1,3) == iEx) 
-   res(5) = j + merge(1,0, direction == iEy) - merge(1,0, 1+mod(direction+1,3) == iEy)
-   res(6) = k + merge(1,0, direction == iEz) - merge(1,0, 1 + mod(direction+1,3) == iEz)
-end function
-
-subroutine assignIndices1(direction, i, j, k, i1, j1, k1, i2, j2, k2)
-   integer (kind=4), intent(in)  :: direction, i, j, k
-   integer (kind=4),  :: i1, j1, k1, i2, j2, k2
