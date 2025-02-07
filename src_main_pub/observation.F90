@@ -1280,7 +1280,7 @@ contains
                                     integer (kind=4) :: HDirection
                                     integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: hmedia
                                     do HDirection = iHx, iHz
-                                       hmedia = getMedia(direction, i, j, k)
+                                       hmedia = getMedia(HDirection, iii, jjj, kkk)
                                        if (sgg%med(hmedia)%is%PEC .and. sgg%med(hmedia)%is%Surface .and. &
                                           field == 50+HDirection .and. isWithinBounds(HDirection, iii, jjj, kkk)) then 
                                              conta = conta + 1
@@ -1586,48 +1586,22 @@ contains
                               else !si es mapvtk
                                  !si es mapvtk y si no es vacio
 
-                                 imed =sggMiEx(III , JJJ  , KKK  )
-                                 imed1=sggMiHy(III , JJJ  , KKK  )
-                                 imed2=sggMiHy(III , JJJ  , KKK-1)
-                                 imed3=sggMiHz(III , JJJ  , KKK  )
-                                 imed4=sggMiHz(III , JJJ-1, KKK  )
-                                 call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEx,iii,jjj,kkk)
-                                 if (EsBorde) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iJx !las lineas las asimilo a corrientes para que salgan en edges
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%edge%x(iii,jjj,kkk)
-                                 endif
-                                 imed =sggMiEy(III  , JJJ  , KKK  )
-                                 imed1=sggMiHz(III   , JJJ  , KKK  )
-                                 imed2=sggMiHz(III -1, JJJ  , KKK  )
-                                 imed3=sggMiHx(III   , JJJ  , KKK  )
-                                 imed4=sggMiHx(III   , JJJ  , KKK-1)
-                                 call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEy,iii,jjj,kkk)
-                                 if (EsBorde) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iJy !las lineas las asimilo a corrientes para que salgan en edges
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%edge%y(iii,jjj,kkk)
-                                 endif
-                                 imed =sggMiEz(III  , JJJ  , KKK  )
-                                 imed1=sggMiHx(III   , JJJ  , KKK  )
-                                 imed2=sggMiHx(III   , JJJ-1, KKK  )
-                                 imed3=sggMiHy(III   , JJJ  , KKK  )
-                                 imed4=sggMiHy(III -1, JJJ  , KKK  )
-                                 call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,iEz,iii,jjj,kkk)
-                                 if (EsBorde) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iJz !las lineas las asimilo a corrientes para que salgan en edges
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%edge%z(iii,jjj,kkk)
-                                 endif
+                                 block 
+                                    integer (kind=4) :: EDirection
+                                    do EDirection = iEx, iEz
+                                       call assignMedia(imed,imed1,imed2,imed3,imed4, EDirection, iii, jjj, kkk)
+                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,EDirection,iii,jjj,kkk)
+                                       if (EsBorde) then
+                                          conta=conta+1
+                                          output(ii)%item(i)%Serialized%eI(conta)=iii
+                                          output(ii)%item(i)%Serialized%eJ(conta)=jjj
+                                          output(ii)%item(i)%Serialized%eK(conta)=kkk
+                                          output(ii)%item(i)%Serialized%currentType(conta)=10*EDirection
+                                          output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getEdgeTag(EDirection, iii, jjj, kkk)
+                                       endif
+                                    end do
+                                 end block
+
                               endif
                               !
                            end do
