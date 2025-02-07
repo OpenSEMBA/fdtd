@@ -1596,12 +1596,11 @@ contains
                                           output(ii)%item(i)%Serialized%eI(conta)=iii
                                           output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                           output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                          output(ii)%item(i)%Serialized%currentType(conta)=10*EDirection
+                                          output(ii)%item(i)%Serialized%currentType(conta)=currentType(EDirection)
                                           output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getEdgeTag(EDirection, iii, jjj, kkk)
                                        endif
                                     end do
                                  end block
-
                               endif
                               !
                            end do
@@ -1676,7 +1675,7 @@ contains
                                        end if
 
                                        if (tag_numbers%getFaceTag(HDirection, iii, jjj, kkk) < 0 .and. &
-                                          (btest(iabs(tag_numbers%getFaceTag(HDirection, iii,jjj,kkk)),3)) .and. &
+                                          (btest(iabs(tag_numbers%getFaceTag(HDirection, iii,jjj,kkk)),HDirection-1)) .and. &
                                           .not. isPML(HDirection, iii, jjj, kkk).and. &
                                           isWithinBounds(HDirection, iii, jjj, kkk)) then 
                                              conta=conta+1
@@ -2145,6 +2144,12 @@ contains
       integer function currentType(direction)
          integer (kind=4) :: direction
          select case(direction)
+         case(iEx)
+            currentType = iJx
+         case(iEy)
+            currentType = iJy
+         case(iEz)
+            currentType = iJz
          case(iHx)
             currentType = iBloqueJx
          case(iHy)
@@ -3262,7 +3267,7 @@ contains
                                  do III = i1, i2
                                     !saca  current a lo largo del edge con las sondas icur
                                     if (field/=mapvtk) then
-
+                                       ! refactoring done. Needs tests
                                        ! block
                                        !    integer (kind=4) :: Edirection
                                        !    integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: emedia
@@ -3527,31 +3532,39 @@ contains
                                        do HDirection = iHx, iHz
                                           if (surfaceIsMedia(HDirection, iii, jjj, kkk))then
                                                 conta=conta+1
-                                                output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = & 
+                                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = & 
                                                    assignSurfaceMediaType(HDirection, iii, jjj, kkk)
-                                          endif
+                                          end if
+                                       end do
+                                       do HDirection = iHx, iHz
+                                           if (tag_numbers%getFaceTag(HDirection, iii, jjj, kkk) < 0 .and. &
+                                              (btest(iabs(tag_numbers%getFaceTag(HDirection, iii,jjj,kkk)),HDirection-1)) .and. &
+                                               .not. isPML(HDirection, iii, jjj, kkk) .and. isWithinBounds(HDirection,iii, jjj, kkk) ) then 
+                                                conta = conta + 1
+                                                call updateJ(HDirection)
+                                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = Jx
+                                          end if 
                                        end do
                                     end block
-
-                                     ! los tags 141020 para mapvtk se quedan con el medio -100: es una forma de voidearlos para visualizacion 
-                                       if ( tag_numbers%edge%x(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%x(iii,jjj,kkk)),3)).and. & 
-                                       (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                          conta=conta+1
-                                          jx=-100 !ojo pq el vacio que es 1 pasa a ser -100 si es un candidato a slot
-                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jx  
-                                       endif
-                                       if ( tag_numbers%edge%y(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%y(iii,jjj,kkk)),4)).and. & 
-                                       (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                          conta=conta+1
-                                          jy=-100
-                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jy
-                                       endif
-                                       if ( tag_numbers%edge%z(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%z(iii,jjj,kkk)),5)).and. &
-                                       (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                          conta=conta+1
-                                          jz=-100
-                                          output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jz
-                                       endif
+                                    !  ! los tags 141020 para mapvtk se quedan con el medio -100: es una forma de voidearlos para visualizacion 
+                                    !    if ( tag_numbers%edge%x(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%x(iii,jjj,kkk)),3)).and. & 
+                                    !    (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
+                                    !       conta=conta+1
+                                    !       jx=-100 !ojo pq el vacio que es 1 pasa a ser -100 si es un candidato a slot
+                                    !       output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jx  
+                                    !    endif
+                                    !    if ( tag_numbers%edge%y(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%y(iii,jjj,kkk)),4)).and. & 
+                                    !    (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
+                                    !       conta=conta+1
+                                    !       jy=-100
+                                    !       output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jy
+                                    !    endif
+                                    !    if ( tag_numbers%edge%z(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%z(iii,jjj,kkk)),5)).and. &
+                                    !    (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
+                                    !       conta=conta+1
+                                    !       jz=-100
+                                    !       output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = Jz
+                                    !    endif
                                        ! endif !de los tags negativos
                                     endif !del if mapvtk
                                     !
@@ -4081,6 +4094,18 @@ contains
       res(5) = j + merge(1,0, direction == iEy) - merge(1,0, 1+mod(direction+1,3) == iEy)
       res(6) = k + merge(1,0, direction == iEz) - merge(1,0, 1 + mod(direction+1,3) == iEz)
    end function
+
+   subroutine updateJ(direction)
+      integer (kind=4) :: direction
+      select case(direction)
+      case(iEx)
+         Jx = -100
+      case(iEy)
+         Jy = -100
+      case(iEz)
+         Jz = -100
+      end select
+   end subroutine
 
    endsubroutine UpdateObservation
 
