@@ -1275,7 +1275,7 @@ contains
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
-
+                                 ! count PEC surfaces
                                  block
                                     integer (kind=4) :: HDirection
                                     integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: hmedia
