@@ -3425,7 +3425,7 @@ contains
                                              ! imed4 = getMedia(3+modulo(EDirection+5, 3), iii - merge(1,0, Edirection == iEz), jjj - merge(1,0, Edirection == iEx), kkk - merge(1,0, Edirection == iEy))
                                              call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,EDirection,iii,jjj,kkk)
                                              if (esBorde) then 
-                                                output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = assignEdgeMediaType()    
+                                                output( ii)%item( i)%Serialized%valor(Ntimeforvolumic,conta) = assignEdgeMediaType(emedia)    
                                              end if
 
                                           end do
@@ -4126,19 +4126,51 @@ contains
             endif
       end function
 
-      function assignEdgeMediaType() result(res)
+      function assignEdgeMediaType(media) result(res)
          real(kind=RKIND) :: res
-         res = 1.0
+         integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         if ((sgg%Med(media)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
+            res=5.5
+         elseif ((sgg%Med(media)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
+            res=6.5
+         elseif (sgg%Med(media)%is%thinwire) then !cambio orden para que siempre salgan los thin wires 231024
+            if (((sggMiEy(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK  ))%is%thinwire)).or. &
+                ((sggMiEy(III   , JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK  ))%is%thinwire)).or. &
+                ((sggMiEz(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK  ))%is%thinwire)).or. &
+                ((sggMiEz(III   , JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK-1))%is%thinwire)).or. &
+                ((sggMiEy(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
+                ((sggMiEy(III +1, JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ-1, KKK  ))%is%thinwire)).or. &
+                ((sggMiEz(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
+                ((sggMiEz(III +1, JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK-1))%is%thinwire))) then
+               res=8
+            else  !no hay una colision
+               res=7
+            endif
+         elseif ((media==0).or.(sgg%Med(media)%is%Pec)) then
+            res=0.5_RKIND
+         elseif (isSGBCorMultiport(media)) then
+            res=3.5
+         elseif (isDispersive(media)) then
+               res=1.5
+         elseif ((sgg%Med(media)%is%Dielectric).or. & 
+                 (sgg%Med(media)%is%Anisotropic)) then
+            res=2.5
+         elseif (sgg%Med(media)%is%thinslot) then
+            res=4.5
+         else
+            res=-0.5_RKIND
+         endif
+
       end function
 
       subroutine assignMedia(m,m1,m2,m3,m4,dir, i, j, k)
          integer( kind = 4), intent(inout) :: m, m1, m2, m3, m4
          integer (kind=4) :: dir, i, j, k
          m  = getMedia(dir, i, j, k)
-         m1 = getMedia(3+modulo(dir+4, 3), i, j, k)
-         m2 = getMedia(3+modulo(dir+4, 3), i - merge(1,0, dir == iEy), j - merge(1,0, dir == iEz), k - merge(1,0, dir == iEx))
-         m3 = getMedia(3+modulo(dir+5, 3), i, jjj, kkk)
-         m4 = getMedia(3+modulo(dir+5, 3), i - merge(1,0, dir == iEz), j - merge(1,0, dir == iEx), k - merge(1,0, dir == iEy))
+         m1 = getMedia(4+modulo(dir, 3), i, j, k)
+         m2 = getMedia(4+modulo(dir, 3), i - merge(1,0, dir == iEy), j - merge(1,0, dir == iEz), k - merge(1,0, dir == iEx))
+         m3 = getMedia(4+modulo(dir+1, 3), i, j, k)
+         m4 = getMedia(4+modulo(dir+1, 3), i - merge(1,0, dir == iEz), j - merge(1,0, dir == iEx), k - merge(1,0, dir == iEy))
       end subroutine
 
    endsubroutine UpdateObservation
@@ -5738,39 +5770,75 @@ end function interpolate_field_atwhere
 
 end module Observa
 
-! x
-! imed =sggMiEx(III , JJJ  , KKK  )
-! imed1=sggMiHy(III , JJJ  , KKK  )
-! imed3=sggMiHz(III , JJJ  , KKK  )
-! imed2=sggMiHy(III , JJJ  , KKK-1)
-! imed4=sggMiHz(III , JJJ-1, KKK  )
+((sggMiEy(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ  , KKK  ))%is%thinwire)).or. &
+((sggMiEz(III   , JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK  ))%is%thinwire)).or. &
 
-! y
-! imed =sggMiEy(III  , JJJ  , KKK  )
-! imed1=sggMiHz(III   , JJJ  , KKK  )
-! imed3=sggMiHx(III   , JJJ  , KKK  )
-! imed2=sggMiHz(III -1, JJJ  , KKK  )
-! imed4=sggMiHx(III   , JJJ  , KKK-1)
+((sggMiEy(III   , JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III   , JJJ-1, KKK  ))%is%thinwire)).or. &
+((sggMiEz(III   , JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III   , JJJ  , KKK-1))%is%thinwire)).or. &
 
-! z
-! imed =sggMiEz(III  , JJJ  , KKK  )                                             call assignMedia(imed,imed1,imed2,imed3,imed4,EDirection, iii, jjj, kkk)
-                                             ! imed  = getMedia(EDirection, iii, jjj, kkk)
-                                             ! imed1 = getMedia(3+modulo(EDirection+4, 3), iii, jjj, kkk)
-                                             ! imed2 = getMedia(3+modulo(EDirection+4, 3), iii - merge(1,0, Edirection == iEy), jjj - merge(1,0, Edirection == iEz), kkk - merge(1,0, Edirection == iEx))
-                                             ! imed3 = getMedia(3+modulo(EDirection+5, 3), iii, jjj, kkk)
-                                             ! imed4 = getMedia(3+modulo(EDirection+5, 3), iii - merge(1,0, Edirection == iEz), jjj - merge(1,0, Edirection == iEx), kkk - merge(1,0, Edirection == iEy))
+((sggMiEy(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
+((sggMiEz(III +1, JJJ  , KKK  )/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK  ))%is%thinwire)).or. &
 
-! imed1=sggMiHx(III   , JJJ  , KKK  )
-! imed3=sggMiHy(III   , JJJ  , KKK  )
-! imed2=sggMiHx(III   , JJJ-1, KKK  )
-! imed4=sggMiHy(III -1, JJJ  , KKK  )
+((sggMiEy(III +1, JJJ-1, KKK  )/=1).AND.(.not.sgg%med(sggMiEy(III +1, JJJ-1, KKK  ))%is%thinwire)).or. &
+((sggMiEz(III +1, JJJ  , KKK-1)/=1).AND.(.not.sgg%med(sggMiEz(III +1, JJJ  , KKK-1))%is%thinwire))) then
 
-! i
-! imed = getMedia(EDirection, iii, jjj, kkk)
-! imed1 = getMedia(3+modulo(EDirection+4, 3), iii, jjj, kkk)
-! imed2 = getMedia(3+modulo(EDirection+4, 3), iii - merge(1,0, Edirection == iEy), jjj - merge(1,0, Edirection == iEz), kkk - merge(1,0, Edirection == iEx))
-! imed3 = getMedia(3+modulo(EDirection+5, 3), iii, jjj, kkk)
-! imed4 = getMedia(3+modulo(EDirection+5, 3), iii - merge(1,0, Edirection == iEz), jjj - merge(1,0, Edirection == iEx), kkk - merge(1,0, Edirection == iEy))
+logical function collidesWithNonThinWire(direction, i, j ,k)
+   integer (kind=4) :: direction, i, j, k
+   integer (kind=4) :: idx
 
+   collidesWithNonThinWire = .false.
+   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),i,j,k)/=1 .and. . not. getMedia(1+mod(direction,3),i,j,k)%is%thinWire)
+   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),i,j,k)/=1 .and. . not. getMedia(1+mod(direction+1,3),i,j,k)%is%thinWire)
+   idx = assignIndices1(direcion, i, j, k)
+   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. . not. getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))%is%thinWire)
+   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. . not. getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))%is%thinWire)
+   idx = assignIndices2(direcion, i, j, k)
+   i1 = i + merge(1,0, direction == iEx); j1 = j + merge(1,0, direction == iEy); k1 = k + merge(1,0, direction == iEz)
+   i2 = i + merge(1,0, direction == iEx); j2 = j + merge(1,0, direction == iEy); k2 = k + merge(1,0, direction == iEz)
+   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. . not. getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))%is%thinWire)
+   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. . not. getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))%is%thinWire)
+   i1 = i + merge(1,0, direction == iEx)  - merge(1,0, 1+mod(direction,3) == iEx)
+   j1 = j + merge(1,0, direction == iEy) - merge(1,0, 1 + mod(direction,3) == iEy)
+   k1 = k + merge(1,0, direction == iEz)  - merge(1,0, 1+mod(direction,3) == iEz)
+   i2 = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction+1,3) == iEx) 
+   j2 = j + merge(1,0, direction == iEy) - merge(1,0, 1+mod(direction+1,3) == iEy)
+   k2 = k + merge(1,0, direction == iEz) - merge(1,0, 1 + mod(direction+1,3) == iEz)
+   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. . not. getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))%is%thinWire)
+   collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. . not. getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))%is%thinWire)
 
+end function
 
+function assignIndices1(direction, i, j, k) result (res)
+   integer (kind=4), intent(in)  :: direction, i, j, k
+   integer (kind=4) :: res(6)
+   res(1) = i - merge(1,0, 1+mod(direction,3) == iEx)
+   res(2) = j - merge(1,0, 1+mod(direction,3) == iEy)
+   res(3) = k - merge(1,0, 1+mod(direction,3) == iEz)
+   res(4) = i - merge(1,0, 1+mod(direction+1,3) == iEx)
+   res(5) = j - merge(1,0, 1+mod(direction+1,3) == iEy)
+   res(6) = k - merge(1,0, 1+mod(direction+1,3) == iEz)
+end function
+function assignIndices2(direction, i, j, k) result (res)
+   integer (kind=4), intent(in)  :: direction, i, j, k
+   integer (kind=4) :: res(6)
+   res(1) = i + merge(1,0, direction == iEx)
+   res(2) = j + merge(1,0, direction == iEy)
+   res(3) = k + merge(1,0, direction == iEz)
+   res(4) = i + merge(1,0, direction == iEx)
+   res(5) = j + merge(1,0, direction == iEy) 
+   res(6) = k + merge(1,0, direction == iEz)
+end function
+function assignIndices3(direction, i, j, k) result (res)
+   integer (kind=4), intent(in)  :: direction, i, j, k
+   integer (kind=4) :: res(6)
+   res(1) = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction,3) == iEx)
+   res(2) = j + merge(1,0, direction == iEy) - merge(1,0, 1 + mod(direction,3) == iEy)
+   res(3) = k + merge(1,0, direction == iEz) - merge(1,0, 1+mod(direction,3) == iEz)
+   res(4) = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction+1,3) == iEx) 
+   res(5) = j + merge(1,0, direction == iEy) - merge(1,0, 1+mod(direction+1,3) == iEy)
+   res(6) = k + merge(1,0, direction == iEz) - merge(1,0, 1 + mod(direction+1,3) == iEz)
+end function
+
+subroutine assignIndices1(direction, i, j, k, i1, j1, k1, i2, j2, k2)
+   integer (kind=4), intent(in)  :: direction, i, j, k
+   integer (kind=4),  :: i1, j1, k1, i2, j2, k2
