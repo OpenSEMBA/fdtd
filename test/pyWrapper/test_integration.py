@@ -72,8 +72,8 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert np.all(p.cell_init == np.array([2, 2, 2]))
 
 
-def test_tagnumbers_3_surfaces(tmp_path):
-    fn = CASES_FOLDER + 'tagNumber_mediaType/three_surfaces.fdtd.json'
+def test_observation_3_surfaces(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_three_surfaces.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -107,8 +107,8 @@ def test_tagnumbers_3_surfaces(tmp_path):
     assert line_media_dict[3.5] == 8  # SGBC line
 
 
-def test_tagnumbers_1_volume(tmp_path):
-    fn = CASES_FOLDER + 'tagNumber_mediaType/pec_volume.fdtd.json'
+def test_observation_1_volume(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_pec_volume.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -135,8 +135,8 @@ def test_tagnumbers_1_volume(tmp_path):
     assert len(line_media_dict) == 0
 
 
-def test_tagnumbers_2_volumes(tmp_path):
-    fn = CASES_FOLDER + 'tagNumber_mediaType/pec_volumes.fdtd.json'
+def test_observation_2_volumes(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_pec_volumes.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -164,8 +164,8 @@ def test_tagnumbers_2_volumes(tmp_path):
     assert len(line_media_dict) == 0
 
 
-def test_tagnumbers_1_line(tmp_path):
-    fn = CASES_FOLDER + 'tagNumber_mediaType/pec_line.fdtd.json'
+def test_observation_1_line(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_pec_line.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -192,8 +192,8 @@ def test_tagnumbers_1_line(tmp_path):
     assert line_media_dict[0.5] == 2  # PEC line
 
 
-def test_tagnumbers_volume_and_surfaces(tmp_path):
-    fn = CASES_FOLDER + 'tagNumber_mediaType/volume_and_surfaces.fdtd.json'
+def test_observation_volume_and_surfaces(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_volume_and_surfaces.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -228,8 +228,8 @@ def test_tagnumbers_volume_and_surfaces(tmp_path):
     assert line_media_dict[3.5] == 3  # SGBC line
 
 
-def test_tagnumbers_count_bug(tmp_path):
-    fn = CASES_FOLDER + 'tagNumber_mediaType/count_bug.fdtd.json'
+def test_observation_count_bug(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_count_bug.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -246,40 +246,6 @@ def test_tagnumbers_count_bug(tmp_path):
     solver["materialAssociations"][2]["materialId"] = 1
     solver.cleanUp()
     solver.run()
-
-def test_observation_three_surfaces(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_three_surfaces.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path, flags=['-mapvtk'])
-    solver['general']['numberOfSteps'] = 1
-
-    solver.run()
-
-    vtkmapfile = solver.getVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property='tagnumber')
-    assert face_tag_dict[64] == 4
-    assert face_tag_dict[128] == 4
-    assert face_tag_dict[192] == 4
-
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property='tagnumber')
-    assert line_tag_dict[64] == 8
-    assert line_tag_dict[128] == 4
-    assert line_tag_dict[192] == 4
-
-    face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property='mediatype')
-    assert face_media_dict[0] == 4  # PEC surface
-    assert face_media_dict[304] == 4  # SGBC surface
-    assert face_media_dict[305] == 4  # SGBC surface
-
-    line_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property='mediatype')
-    assert line_media_dict[0.5] == 8  # PEC line
-    assert line_media_dict[3.5] == 8  # SGBC line
 
 def test_observation_wires(tmp_path):
     fn = CASES_FOLDER + 'observation/observation_wires.fdtd.json'
@@ -376,6 +342,27 @@ def test_observation_wire_x_with_collision_y(tmp_path):
     assert line_media_dict[7] == 1  #Wire w/o collision
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
+
+def test_observation_wire_x_with_collision_y_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_wire_x_with_collision_y_Jprobe.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getCurrentVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert line_tag_dict[0] ==  729
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 4 #Wire
+
 
 def test_observation_wire_x_with_collision_z(tmp_path):
     fn = CASES_FOLDER + 'observation/observation_wire_x_with_collision_z.fdtd.json'

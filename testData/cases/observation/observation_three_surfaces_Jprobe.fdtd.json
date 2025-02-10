@@ -19,7 +19,8 @@
         "elements": [
             {"id": 1, "type": "cell", "intervals": [ [ [3, 3, 3], [5, 5, 3] ] ]},
             {"id": 2, "type": "cell", "intervals": [ [ [3, 3, 3], [5, 3, 5] ] ]},
-            {"id": 3, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 5, 5] ] ]}
+            {"id": 3, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 5, 5] ] ]},
+            {"id": 4, "type": "cell", "intervals": [ [ [1, 1, 1], [9, 9, 9] ] ]}
         ]
     },
 
@@ -62,5 +63,21 @@
             "materialId": 3,
             "elementIds": [ 3 ]
         }
+    ],
+    "probes": [
+        {
+            "name": "current_movie",
+            "type": "movie",
+            "field": "currentDensity",
+            "component": "z",
+            "elementIds": [4],
+            "domain": {
+                "type": "time",
+                "initialTime": 0.0,
+                "finalTime": 20.0e-12,
+                "samplingPeriod": 10.0e-12
+            }
+        }
     ]
+
 }

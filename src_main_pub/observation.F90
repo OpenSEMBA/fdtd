@@ -1281,8 +1281,8 @@ contains
                                     integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: hmedia
                                     do Hfield = iHx, iHz
                                        hmedia = getMedia(Hfield, iii, jjj, kkk)
-                                       if (sgg%med(hmedia)%is%PEC .and. sgg%med(hmedia)%is%Surface .and. &
-                                          field == 50+Hfield .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                       if ((sgg%med(hmedia)%is%PEC .or. sgg%med(hmedia)%is%Surface .or. &
+                                          field == 50+Hfield) .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
                                              conta = conta + 1
                                        end if
                                     end do

@@ -324,6 +324,16 @@ class FDTD():
         assert os.path.isfile(mapFile)
         return mapFile
 
+    def getCurrentVTKMap(self):
+        current_path = os.getcwd()
+        folders = [item for item in os.listdir(
+            current_path) if os.path.isdir(os.path.join(current_path, item))]
+        if len(folders) != 1:
+            return None
+        mapFile = os.path.join(current_path, folders[0], folders[0]+"_1_current.vtk")
+        assert os.path.isfile(mapFile)
+        return mapFile
+
     def getMaterialProperties(self, materialName):
         if 'materials' in self._input:
             for idx, element in enumerate(self._input['materials']):
