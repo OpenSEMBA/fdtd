@@ -1246,10 +1246,10 @@ contains
                               else !si es mapvtk
                                  !si es mapvtk y si no es vacio
                                  block
-                                    integer (kind=4) :: EDirection
-                                    do EDirection = iEx, iEz
-                                       call assignMedia(imed, imed1, imed2, imed3, imed4, EDirection, iii, jjj, kkk)
-                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,EDirection,iii,jjj,kkk)
+                                    integer (kind=4) :: Efield
+                                    do Efield = iEx, iEz
+                                       call assignMedia(imed, imed1, imed2, imed3, imed4, Efield, iii, jjj, kkk)
+                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
                                        if (EsBorde) then
                                           conta=conta+1
                                        endif
@@ -1277,12 +1277,12 @@ contains
                               if (field/=mapvtk) then
                                  ! count PEC surfaces
                                  block
-                                    integer (kind=4) :: HDirection
+                                    integer (kind=4) :: Hfield
                                     integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: hmedia
-                                    do HDirection = iHx, iHz
-                                       hmedia = getMedia(HDirection, iii, jjj, kkk)
+                                    do Hfield = iHx, iHz
+                                       hmedia = getMedia(Hfield, iii, jjj, kkk)
                                        if (sgg%med(hmedia)%is%PEC .and. sgg%med(hmedia)%is%Surface .and. &
-                                          field == 50+HDirection .and. isWithinBounds(HDirection, iii, jjj, kkk)) then 
+                                          field == 50+Hfield .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
                                              conta = conta + 1
                                        end if
                                     end do
@@ -1316,11 +1316,11 @@ contains
 
                               ! count media surfaces
                               block
-                                 integer (kind=4) :: HDirection
-                                 do HDirection = iHx, iHz
-                                    if (.not. isMediaVacuum(HDirection, iii, jjj, kkk) .and. &
-                                        .not. isPML(HDirection, iii, jjj, kkk) .and. & 
-                                        isWithinBounds(HDirection, iii, jjj , kkk)) then
+                                 integer (kind=4) :: Hfield
+                                 do Hfield = iHx, iHz
+                                    if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
+                                        .not. isPML(Hfield, iii, jjj, kkk) .and. & 
+                                        isWithinBounds(Hfield, iii, jjj , kkk)) then
                                            conta = conta + 1
                                     end if
                                  end do
@@ -1328,12 +1328,12 @@ contains
 
                               ! count negative vacuum tags
                               block 
-                                 integer (kind=4) :: HDirection
-                                 do HDirection = iHx, iHz 
-                                    if (tag_numbers%getFaceTag(HDirection, iii, jjj, kkk) < 0 .and. &
-                                       (btest(iabs(tag_numbers%getFaceTag(HDirection, iii, jjj, kkk)), HDirection - 1)) .and. & 
-                                       .not. isPML(HDirection, iii, jjj, kkk) .and. &
-                                       isWithinBounds(HDirection, iii, jjj, kkk)) then 
+                                 integer (kind=4) :: Hfield
+                                 do Hfield = iHx, iHz 
+                                    if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
+                                       (btest(iabs(tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)), Hfield - 1)) .and. & 
+                                       .not. isPML(Hfield, iii, jjj, kkk) .and. &
+                                       isWithinBounds(Hfield, iii, jjj, kkk)) then 
                                           conta = conta + 1
                                     end if
                                  end do
@@ -1587,17 +1587,17 @@ contains
                                  !si es mapvtk y si no es vacio
 
                                  block 
-                                    integer (kind=4) :: EDirection
-                                    do EDirection = iEx, iEz
-                                       call assignMedia(imed,imed1,imed2,imed3,imed4, EDirection, iii, jjj, kkk)
-                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,EDirection,iii,jjj,kkk)
+                                    integer (kind=4) :: Efield
+                                    do Efield = iEx, iEz
+                                       call assignMedia(imed,imed1,imed2,imed3,imed4, Efield, iii, jjj, kkk)
+                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
                                        if (EsBorde) then
                                           conta=conta+1
                                           output(ii)%item(i)%Serialized%eI(conta)=iii
                                           output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                           output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                          output(ii)%item(i)%Serialized%currentType(conta)=currentType(EDirection)
-                                          output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getEdgeTag(EDirection, iii, jjj, kkk)
+                                          output(ii)%item(i)%Serialized%currentType(conta)=currentType(Efield)
+                                          output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getEdgeTag(Efield, iii, jjj, kkk)
                                        endif
                                     end do
                                  end block
@@ -1661,29 +1661,29 @@ contains
                               else !mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
 
                                  block
-                                    integer (kind=4) :: HDirection
-                                    do HDirection = iHx, iHz
-                                       if (.not. isMediaVacuum(HDirection, iii, jjj, kkk) .and. &
-                                          .not. isPML(HDirection, iii, jjj, kkk) .and. & 
-                                          isWithinBounds(HDirection, iii, jjj , kkk)) then
+                                    integer (kind=4) :: Hfield
+                                    do Hfield = iHx, iHz
+                                       if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
+                                          .not. isPML(Hfield, iii, jjj, kkk) .and. & 
+                                          isWithinBounds(Hfield, iii, jjj , kkk)) then
                                              conta = conta + 1
                                              output(ii)%item(i)%Serialized%eI(conta)=iii
                                              output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                              output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                             output(ii)%item(i)%Serialized%currentType(conta)=currentType(HDirection)
-                                             output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(HDirection, iii, jjj, kkk)
+                                             output(ii)%item(i)%Serialized%currentType(conta)=currentType(Hfield)
+                                             output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)
                                        end if
 
-                                       if (tag_numbers%getFaceTag(HDirection, iii, jjj, kkk) < 0 .and. &
-                                          (btest(iabs(tag_numbers%getFaceTag(HDirection, iii,jjj,kkk)),HDirection-1)) .and. &
-                                          .not. isPML(HDirection, iii, jjj, kkk).and. &
-                                          isWithinBounds(HDirection, iii, jjj, kkk)) then 
+                                       if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
+                                          (btest(iabs(tag_numbers%getFaceTag(Hfield, iii,jjj,kkk)),Hfield-1)) .and. &
+                                          .not. isPML(Hfield, iii, jjj, kkk).and. &
+                                          isWithinBounds(Hfield, iii, jjj, kkk)) then 
                                              conta=conta+1
                                              output(ii)%item(i)%Serialized%eI(conta)=iii
                                              output(ii)%item(i)%Serialized%eJ(conta)=jjj
                                              output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                             output(ii)%item(i)%Serialized%currentType(conta)=currentType(HDirection)
-                                             output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(HDirection, iii, jjj, kkk)
+                                             output(ii)%item(i)%Serialized%currentType(conta)=currentType(Hfield)
+                                             output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)
      
                                        end if
                                     end do
@@ -2141,9 +2141,9 @@ contains
 
    contains
 
-      integer function currentType(direction)
-         integer (kind=4) :: direction
-         select case(direction)
+      integer function currentType(field)
+         integer (kind=4) :: field
+         select case(field)
          case(iEx)
             currentType = iJx
          case(iEy)
@@ -2157,14 +2157,14 @@ contains
          case(iHz)
             currentType = iBloqueJz
          case default
-            call StopOnError(layoutnumber, size, 'Direction is not a face direction')
+            call StopOnError(layoutnumber, size, 'field is not a E or H field')
          end select
       end function
 
-      function getMedia(direction, i, j ,k) result(res)
+      function getMedia(field, i, j ,k) result(res)
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
-         integer (kind=4) :: direction, i, j, k
-         select case(direction)
+         integer (kind=4) :: field, i, j, k
+         select case(field)
          case(iEx)
             res = sggMiEx(i, j, k)
          case(iEy)
@@ -2178,53 +2178,53 @@ contains
          case(iHz)
             res = sggMiHz(i, j, k)
          case default
-            call StopOnError(layoutnumber, size, 'Unrecognized direction')
+            call StopOnError(layoutnumber, size, 'Unrecognized field')
          end select
       end function
 
-      logical function isMediaVacuum(direction, i, j, k) 
-         integer (kind=4) :: direction, i, j, k
+      logical function isMediaVacuum(field, i, j, k) 
+         integer (kind=4) :: field, i, j, k
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media, vacuum = 1
-         media = getMedia(direction, i, j, k)
+         media = getMedia(field, i, j, k)
          isMediaVacuum = (media == vacuum)
       end function
 
-      logical function isThinWireWithinBounds(direction,i,j,k)
-         integer(kind=4) :: direction, i,j,k
-         isThinWireWithinBounds = isThinWire(direction, i, j, k) .and. &
-                                  isWithinBounds(direction, i, j, k)
+      logical function isThinWireWithinBounds(field,i,j,k)
+         integer(kind=4) :: field, i,j,k
+         isThinWireWithinBounds = isThinWire(field, i, j, k) .and. &
+                                  isWithinBounds(field, i, j, k)
       end function
 
       ! logical function isPec(direction, i, j, k) 
 
       ! end function
 
-      logical function isThinWire(direction, i, j, k)
-         integer(kind=4) :: direction, i,j,k
+      logical function isThinWire(field, i, j, k)
+         integer(kind=4) :: field, i,j,k
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
-         media = getMedia(direction, i, j, k)
+         media = getMedia(field, i, j, k)
          isThinWire = sgg%Med(media)%is%ThinWire
       end function
       
-      logical function isPML(direction, i, j ,k)
-         integer (kind=4) :: direction, i, j, k
+      logical function isPML(field, i, j ,k)
+         integer (kind=4) :: field, i, j, k
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
-         media = getMedia(direction, i, j, k)
+         media = getMedia(field, i, j, k)
          isPML = sgg%med(media)%is%PML
       end function
 
-      logical function isPEC(direction, i, j ,k)
-         integer (kind=4) :: direction, i, j, k
+      logical function isPEC(field, i, j ,k)
+         integer (kind=4) :: field, i, j, k
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
-         media = getMedia(direction, i, j, k)
+         media = getMedia(field, i, j, k)
          isPEC = sgg%med(media)%is%PEC
       end function
 
-      logical function isWithinBounds(direction, i,j,k)
-         integer(kind=4) :: direction, i,j,k
-         isWithinBounds  = (i <= SINPML_fullsize(direction)%XE) .and. &
-                           (j <= SINPML_fullsize(direction)%YE) .and. & 
-                           (k <= SINPML_fullsize(direction)%ZE)
+      logical function isWithinBounds(field, i,j,k)
+         integer(kind=4) :: field, i,j,k
+         isWithinBounds  = (i <= SINPML_fullsize(field)%XE) .and. &
+                           (j <= SINPML_fullsize(field)%YE) .and. & 
+                           (k <= SINPML_fullsize(field)%ZE)
       end function
 
       subroutine assignMedia(m,m1,m2,m3,m4,dir, i, j, k)
@@ -3416,14 +3416,14 @@ contains
                                     else !si es mapvtk
 
                                        block
-                                          integer (kind=4) :: EDirection
-                                          do EDirection = iEx, iEz
-                                             call assignMedia(imed,imed1,imed2,imed3,imed4,EDirection, iii, jjj, kkk)
-                                             call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,EDirection,iii,jjj,kkk)
+                                          integer (kind=4) :: Efield
+                                          do Efield = iEx, iEz
+                                             call assignMedia(imed,imed1,imed2,imed3,imed4,Efield, iii, jjj, kkk)
+                                             call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
                                              if (esBorde) then 
                                                 conta = conta + 1
                                                 output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = & 
-                                                   assignEdgeMediaType(EDirection, iii, jjj, kkk)
+                                                   assignEdgeMediaType(Efield, iii, jjj, kkk)
                                              end if
                                           end do
                                        end block
@@ -3528,20 +3528,20 @@ contains
 
                                 
                                     block 
-                                       integer (kind=4) :: HDirection
-                                       do HDirection = iHx, iHz
-                                          if (surfaceIsMedia(HDirection, iii, jjj, kkk))then
+                                       integer (kind=4) :: Hfield
+                                       do Hfield = iHx, iHz
+                                          if (surfaceIsMedia(Hfield, iii, jjj, kkk))then
                                                 conta=conta+1
                                                 output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = & 
-                                                   assignSurfaceMediaType(HDirection, iii, jjj, kkk)
+                                                   assignSurfaceMediaType(Hfield, iii, jjj, kkk)
                                           end if
                                        end do
-                                       do HDirection = iHx, iHz
-                                           if (tag_numbers%getFaceTag(HDirection, iii, jjj, kkk) < 0 .and. &
-                                              (btest(iabs(tag_numbers%getFaceTag(HDirection, iii,jjj,kkk)),HDirection-1)) .and. &
-                                               .not. isPML(HDirection, iii, jjj, kkk) .and. isWithinBounds(HDirection,iii, jjj, kkk) ) then 
+                                       do Hfield = iHx, iHz
+                                           if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
+                                              (btest(iabs(tag_numbers%getFaceTag(Hfield, iii,jjj,kkk)),Hfield-1)) .and. &
+                                               .not. isPML(Hfield, iii, jjj, kkk) .and. isWithinBounds(Hfield,iii, jjj, kkk) ) then 
                                                 conta = conta + 1
-                                                call updateJ(HDirection)
+                                                call updateJ(Hfield)
                                                 output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = Jx
                                           end if 
                                        end do
@@ -3912,10 +3912,10 @@ contains
       return
 
       contains 
-      function getMedia(direction, i, j ,k) result(res)
+      function getMedia(field, i, j ,k) result(res)
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
-         integer (kind=4) :: direction, i, j, k
-         select case(direction)
+         integer (kind=4) :: field, i, j, k
+         select case(field)
          case(iEx)
             res = sggMiEx(i, j, k)
          case(iEy)
@@ -3931,24 +3931,24 @@ contains
          end select
       end function
 
-      logical function isMediaVacuum(direction, i, j, k) 
-         integer (kind=4) :: direction, i, j, k
+      logical function isMediaVacuum(field, i, j, k) 
+         integer (kind=4) :: field, i, j, k
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media, vacuum = 1
-         media = getMedia(direction, i, j, k)
+         media = getMedia(field, i, j, k)
          isMediaVacuum = (media == vacuum)
       end function
 
-      logical function isWithinBounds(direction, i,j,k)
-         integer(kind=4) :: direction, i,j,k
-         isWithinBounds  = (i <= SINPML_fullsize(direction)%XE) .and. &
-                           (j <= SINPML_fullsize(direction)%YE) .and. & 
-                           (k <= SINPML_fullsize(direction)%ZE)
+      logical function isWithinBounds(field, i,j,k)
+         integer(kind=4) :: field, i,j,k
+         isWithinBounds  = (i <= SINPML_fullsize(field)%XE) .and. &
+                           (j <= SINPML_fullsize(field)%YE) .and. & 
+                           (k <= SINPML_fullsize(field)%ZE)
       end function
 
-      logical function isPML(direction, i, j ,k)
-         integer (kind=4) :: direction, i, j, k
+      logical function isPML(field, i, j ,k)
+         integer (kind=4) :: field, i, j, k
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
-         media = getMedia(direction, i, j, k)
+         media = getMedia(field, i, j, k)
          isPML = sgg%med(media)%is%PML
       end function
 
@@ -3967,20 +3967,20 @@ contains
                         (sgg%Med(media)%is%mDispersiveANIS)
       end function
 
-      logical function surfaceIsMedia(direction, i, j ,k)
+      logical function surfaceIsMedia(field, i, j ,k)
          integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: surfaceMedia, vacuum = 1
-         integer (kind=4) :: direction, i, j, k
-         surfaceMedia = getMedia(direction, i, j ,k)
+         integer (kind=4) :: field, i, j, k
+         surfaceMedia = getMedia(field, i, j ,k)
          surfaceIsMedia =  ( (surfaceMedia /= vacuum) .and. &
                             .not. sgg%med(surfaceMedia)%is%PML .and.&
-                            isWithinBounds(direction, i, j ,k) )
+                            isWithinBounds(field, i, j ,k) )
       end function
 
-      function assignSurfaceMediaType(direction, i, j, k) result(res)
-         integer (kind=4) :: direction, i, j, k
+      function assignSurfaceMediaType(field, i, j, k) result(res)
+         integer (kind=4) :: field, i, j, k
          real (kind=RKIND) :: res 
          integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: media
-         media = getMedia(direction, i, j, k)
+         media = getMedia(field, i, j, k)
          if ((media==0).or.(sgg%Med(media)%is%Pec)) then
             res=0
          elseif (sgg%Med(media)%is%thinwire) then
@@ -4003,17 +4003,17 @@ contains
          endif
       end function
 
-      function assignEdgeMediaType(direction, i, j, k) result(res)
-         integer (kind=4) :: direction, i, j, k
+      function assignEdgeMediaType(field, i, j, k) result(res)
+         integer (kind=4) :: field, i, j, k
          real(kind=RKIND) :: res
          integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: media
-         media = getMedia(direction, i, j, k)
+         media = getMedia(field, i, j, k)
          if ((sgg%Med(media)%is%already_YEEadvanced_byconformal).and.(.not.noconformalmapvtk)) then
             res=5.5
          elseif ((sgg%Med(media)%is%split_and_useless).and.(.not.noconformalmapvtk)) then 
             res=6.5
          elseif (sgg%Med(media)%is%thinwire) then
-            if (collidesWithNonThinWire(direction, i, j, k)) then
+            if (collidesWithNonThinWire(field, i, j, k)) then
                res=8
             else
                res=7
@@ -4045,59 +4045,59 @@ contains
          m4 = getMedia(4+modulo(dir+1, 3), i - merge(1,0, dir == iEz), j - merge(1,0, dir == iEx), k - merge(1,0, dir == iEy))
       end subroutine
 
-   logical function collidesWithNonThinWire(direction, i, j ,k)
-      integer (kind=4) :: direction, i, j, k
+   logical function collidesWithNonThinWire(field, i, j ,k)
+      integer (kind=4) :: field, i, j, k
       integer (kind=4) :: idx(6)
 
       collidesWithNonThinWire = .false.
-      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),i,j,k)/=1 .and. .not.   sgg%med(getMedia(1+mod(direction,3),i,j,k))%is%thinWire)
-      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),i,j,k)/=1 .and. .not. sgg%med(getMedia(1+mod(direction+1,3),i,j,k))%is%thinWire)
-      idx = assignIndices1(direction, i, j, k)
-      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(direction,3),idx(1),idx(2),idx(3)))%is%thinWire)
-      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
-      idx = assignIndices2(direction, i, j, k)
-      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(direction,3),idx(1),idx(2),idx(3)))%is%thinWire)
-      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
-      idx = assignIndices3(direction, i, j, k)
-      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(direction,3),idx(1),idx(2),idx(3)))%is%thinWire)
-      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(direction+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field,3),i,j,k)/=1 .and. .not.   sgg%med(getMedia(1+mod(field,3),i,j,k))%is%thinWire)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field+1,3),i,j,k)/=1 .and. .not. sgg%med(getMedia(1+mod(field+1,3),i,j,k))%is%thinWire)
+      idx = assignIndices1(field, i, j, k)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(field,3),idx(1),idx(2),idx(3)))%is%thinWire)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
+      idx = assignIndices2(field, i, j, k)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(field,3),idx(1),idx(2),idx(3)))%is%thinWire)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
+      idx = assignIndices3(field, i, j, k)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(field,3),idx(1),idx(2),idx(3)))%is%thinWire)
+      collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
 
    end function
 
-   function assignIndices1(direction, i, j, k) result (res)
-      integer (kind=4), intent(in)  :: direction, i, j, k
+   function assignIndices1(field, i, j, k) result (res)
+      integer (kind=4), intent(in)  :: field, i, j, k
       integer (kind=4) :: res(6)
-      res(1) = i - merge(1,0, 1+mod(direction,3) == iEx)
-      res(2) = j - merge(1,0, 1+mod(direction,3) == iEy)
-      res(3) = k - merge(1,0, 1+mod(direction,3) == iEz)
-      res(4) = i - merge(1,0, 1+mod(direction+1,3) == iEx)
-      res(5) = j - merge(1,0, 1+mod(direction+1,3) == iEy)
-      res(6) = k - merge(1,0, 1+mod(direction+1,3) == iEz)
+      res(1) = i - merge(1,0, 1+mod(field,3) == iEx)
+      res(2) = j - merge(1,0, 1+mod(field,3) == iEy)
+      res(3) = k - merge(1,0, 1+mod(field,3) == iEz)
+      res(4) = i - merge(1,0, 1+mod(field+1,3) == iEx)
+      res(5) = j - merge(1,0, 1+mod(field+1,3) == iEy)
+      res(6) = k - merge(1,0, 1+mod(field+1,3) == iEz)
    end function
-   function assignIndices2(direction, i, j, k) result (res)
-      integer (kind=4), intent(in)  :: direction, i, j, k
+   function assignIndices2(field, i, j, k) result (res)
+      integer (kind=4), intent(in)  :: field, i, j, k
       integer (kind=4) :: res(6)
-      res(1) = i + merge(1,0, direction == iEx)
-      res(2) = j + merge(1,0, direction == iEy)
-      res(3) = k + merge(1,0, direction == iEz)
-      res(4) = i + merge(1,0, direction == iEx)
-      res(5) = j + merge(1,0, direction == iEy) 
-      res(6) = k + merge(1,0, direction == iEz)
+      res(1) = i + merge(1,0, field == iEx)
+      res(2) = j + merge(1,0, field == iEy)
+      res(3) = k + merge(1,0, field == iEz)
+      res(4) = i + merge(1,0, field == iEx)
+      res(5) = j + merge(1,0, field == iEy) 
+      res(6) = k + merge(1,0, field == iEz)
    end function
-   function assignIndices3(direction, i, j, k) result (res)
-      integer (kind=4), intent(in)  :: direction, i, j, k
+   function assignIndices3(field, i, j, k) result (res)
+      integer (kind=4), intent(in)  :: field, i, j, k
       integer (kind=4) :: res(6)
-      res(1) = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction,3) == iEx)
-      res(2) = j + merge(1,0, direction == iEy) - merge(1,0, 1 + mod(direction,3) == iEy)
-      res(3) = k + merge(1,0, direction == iEz) - merge(1,0, 1+mod(direction,3) == iEz)
-      res(4) = i + merge(1,0, direction == iEx) - merge(1,0, 1+mod(direction+1,3) == iEx) 
-      res(5) = j + merge(1,0, direction == iEy) - merge(1,0, 1+mod(direction+1,3) == iEy)
-      res(6) = k + merge(1,0, direction == iEz) - merge(1,0, 1 + mod(direction+1,3) == iEz)
+      res(1) = i + merge(1,0, field == iEx) - merge(1,0, 1+mod(field,3) == iEx)
+      res(2) = j + merge(1,0, field == iEy) - merge(1,0, 1 + mod(field,3) == iEy)
+      res(3) = k + merge(1,0, field == iEz) - merge(1,0, 1+mod(field,3) == iEz)
+      res(4) = i + merge(1,0, field == iEx) - merge(1,0, 1+mod(field+1,3) == iEx) 
+      res(5) = j + merge(1,0, field == iEy) - merge(1,0, 1+mod(field+1,3) == iEy)
+      res(6) = k + merge(1,0, field == iEz) - merge(1,0, 1 + mod(field+1,3) == iEz)
    end function
 
-   subroutine updateJ(direction)
-      integer (kind=4) :: direction
-      select case(direction)
+   subroutine updateJ(field)
+      integer (kind=4) :: field
+      select case(field)
       case(iEx)
          Jx = -100
       case(iEy)
