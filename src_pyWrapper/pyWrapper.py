@@ -114,6 +114,18 @@ class Probe():
         elif tag in Probe.MTLN_PROBE_TAGS:
             self.type = 'mtln'
             self.cell = self._positionStrToCell(position_str)
+            if self.domainType == 'time':
+                self.data = self.data.rename(columns={'t': 'time'})
+            for n in range(self.data.shape[1]-1):
+                if tag == '_V_':
+                    self.data = self.data.rename(columns={
+                        self.data.columns[n+1]: 'voltage_'+str(n)
+                    })
+                elif tag == '_I_':
+                    self.data = self.data.rename(columns={
+                        self.data.columns[n+1]: 'current_'+str(n)
+                    })
+
         else:
             raise ValueError("Unable to determine probe type")
 

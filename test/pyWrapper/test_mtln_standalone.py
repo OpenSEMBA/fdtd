@@ -159,3 +159,24 @@ def test_spice_opamp_saturation(tmp_path):
 
     assert np.allclose(p_expected.data.to_numpy()[
                        :-5, :], p_solved.data.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)
+
+
+@no_mtln_skip
+@pytest.mark.mtln
+def test_spice_zener(tmp_path):
+    fn = CASES_FOLDER + 'zener/zener.fdtd.json'
+
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.run()
+    
+    p_expected = Probe(
+        OUTPUTS_FOLDER+'zener.fdtd_end_voltage_bundle_wire_V_10_10_12.dat')
+    p_solved = Probe(solver.getSolvedProbeFilenames(
+        "end_voltage_")[0])
+
+    assert np.allclose(p_expected.data.to_numpy()[
+                       :-5, :], p_solved.data.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)
+    
+    
