@@ -614,7 +614,7 @@ If not `magnitudeFile` is specified and only one `source` is defined, the `magni
     "type": "farField",
     "elementIds": [4],
     "theta": {"initial": 0, "final": 180, "step": 10},
-    "phi": {"initial": 0, "final": 0, "step": 0}
+    "phi": {"initial": 0, "final": 0, "step": 0},
     "domain": {
         "type": "frequency",
         "initialFrequency": 1e6,
