@@ -320,9 +320,12 @@ class FDTD():
             current_path) if os.path.isdir(os.path.join(current_path, item))]
         if len(folders) != 1:
             return None
-        mapFile = os.path.join(current_path, folders[0], folders[0]+"_1.vtk")
-        assert os.path.isfile(mapFile)
-        return mapFile
+        for folder in folders:
+            mapFile = os.path.join(current_path, folder, folder+"_1.vtk")
+            if os.path.isfile(mapFile):
+                return mapFile            
+        raise ValueError("Unable to find mapvatk file")
+
 
     def getCurrentVTKMap(self):
         current_path = os.getcwd()
@@ -330,9 +333,11 @@ class FDTD():
             current_path) if os.path.isdir(os.path.join(current_path, item))]
         if len(folders) != 1:
             return None
-        mapFile = os.path.join(current_path, folders[0], folders[0]+"_1_current.vtk")
-        assert os.path.isfile(mapFile)
-        return mapFile
+        for folder in folders:
+            mapFile = os.path.join(current_path, folder, folder+"_1_current.vtk")
+            if os.path.isfile(mapFile):
+                return mapFile
+        raise ValueError("Unable to find current vtk file")
 
     def getMaterialProperties(self, materialName):
         if 'materials' in self._input:
