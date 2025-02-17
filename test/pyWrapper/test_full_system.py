@@ -1,6 +1,7 @@
 from utils import *
 from typing import Dict
 import os
+from sys import platform
 
 @no_mtln_skip
 @pytest.mark.mtln
@@ -433,11 +434,17 @@ def test_rectilinear_mode(tmp_path):
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['time'], getPeakPulse(noRectilinearVertexProbe)['time'], decimal=_TIME_TOLERANCE)
     
 def testCanExecuteFDTDFromFolderWithSpaces(tmp_path):
+    projectRoot = os.getcwd()
     folderWitSpaces: str  = os.path.join(tmp_path, "folder with spaces")
     os.mkdir(folderWitSpaces)
-    makeCopy(folderWitSpaces, SEMBA_EXE)
-    pathToExe: str = os.path.join(folderWitSpaces, SEMBA_EXE.split('/')[-1])
-
+    if platform == 'win32':
+        shutil.copy2(NGSPICE_DLL, folderWitSpaces)
+ 
+    sembaExecutable = SEMBA_EXE.split(os.path.sep)[-1]
+    pathToExe: str = os.path.join(folderWitSpaces, sembaExecutable)
+    shutil.copy2(SEMBA_EXE, pathToExe)
+    print(pathToExe)
+    
     fn = CASES_FOLDER + "dielectric/dielectricTransmission.fdtd.json"
     solver = FDTD(fn, path_to_exe=pathToExe, run_in_folder=tmp_path)
     solver.run()

@@ -3,7 +3,6 @@
 Module Getargs
    USE NFDETYPES , ONLY: BUFSIZE
    implicit none
-      character(LEN=10) :: sembaExecutableLabel = "semba-fdtd"
    private 
 
    public getcommandargument,commandargumentcount
@@ -11,46 +10,14 @@ Module Getargs
 contains
 
    subroutine getcommandargument(chain2,posic,argum,length,status)
-      character (LEN=BUFSIZE)  ::  chain2, argum
-      integer (kind=4)  :: length, status, posic, argumentStart, argumentEnd, endPathExecutableIndex
-      integer (kind=4) :: i,j,n
+      character (LEN=BUFSIZE)  ::chain2, argum, argument
+      integer (kind=4)  :: length, status, posic
+      integer (kind=4) :: n
 
-      status=0
-      argumentStart=0
-      argumentEnd=0
-      n=1
-
-      CALL removeDoubleWhiteSpaces(chain2)
-      endPathExecutableIndex = index(chain2, sembaExecutableLabel) + len(sembaExecutableLabel)
-
-      if (posic == 1) then
-         argum=trim(adjustl(chain2(:endPathExecutableIndex)))
-         return
-      endif
-
-      chain2=' '//trim(adjustl(chain2))//' '
+      CALL getarg(posic, argument)
       
-
-      findStart :  do i=endPathExecutableIndex  ,len(trim(adjustl(chain2)))+2
-         if (chain2(i : i)==' ') n=n+1
-         if (n==posic) then
-            do j=i+1,len(trim(adjustl(chain2)))
-               if (chain2(j : j)/=' ') argumentStart=j
-               exit findStart
-            end do
-         endif
-      end do findStart
-
-      findEnd :  do i=argumentStart + 1 ,len(trim(adjustl(chain2)))+2
-         if (chain2(i : i)==' ') then
-            argumentEnd=i-1
-            continue
-            exit findEnd
-         endif
-      end do findEnd
-
-      if (argumentStart*argumentEnd==0) status=1
-      argum=trim(adjustl(chain2(argumentStart : argumentEnd)))
+      argum = argument
+      status=0
 
       !100615 para evitar el crlf del .sh
       if ( (argum(1:1) ==char(10)) .or. (argum(1:1) ==char(13)) .or. (argum(1:1)==char( 0)) ) then
@@ -63,40 +30,10 @@ contains
 
    function commandargumentcount(chain2)
       character (LEN=BUFSIZE)  ::  chain2
-      integer (kind=4)  ::  status,n,i,j,commandargumentcount, endPathExecutableIndex
-      
-      n=1
-      
-      CALL removeDoubleWhiteSpaces(chain2)
-      endPathExecutableIndex = index(chain2, sembaExecutableLabel) + len(sembaExecutableLabel)
-      
-
-      do i=endPathExecutableIndex  ,len(trim(adjustl(chain2)))
-         if (chain2(i : i)==' ') then
-            n=n+1
-         endif
-      end do
-      
+      integer (kind=4)  ::  status,n,commandargumentcount
+      n = command_argument_count()  
       status=0
       commandargumentcount=n
       return
    end function
-
-   subroutine removeDoubleWhiteSpaces(chain2)
-      integer(kind=4) :: i, j
-      character(LEN=BUFSIZE) :: chain2
-
-      do i=1,len(trim(adjustl(chain2)))
-         if (chain2(i : i)==' ') then
-            rebus: do j=i+1,len(trim(adjustl(chain2)))
-               if (chain2(j : j)/=' ') then
-                  chain2(i+1 :)=chain2(j :)
-                  exit rebus
-               endif
-            end do rebus
-         endif
-      end do
-   
-      end subroutine
-
 end module
