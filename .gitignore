@@ -21,6 +21,9 @@
 *.mod
 *.smod
 
+# Python env
+venv/
+
 # Compiled Static libraries
 *.lai
 *.la
