@@ -65,7 +65,7 @@
             "name": "current_movie",
             "type": "movie",
             "field": "currentDensity",
-            "component": "x",
+            "component": "y",
             "elementIds": [4],
             "initialTime": 0.0, 
             "finalTime": 20e-8, 

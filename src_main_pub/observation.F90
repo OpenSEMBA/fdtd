@@ -1183,66 +1183,24 @@ contains
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
-                                 if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%ThinWire).and. &
-                                     (iii <= SINPML_fullsize(iEx)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEx)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEx)%ZE)) then
-                                    conta=conta+1
-                                 endif
-                                 if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%ThinWire).and. &
-                                     (iii <= SINPML_fullsize(iEy)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEy)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEy)%ZE)) then
-                                    conta=conta+1
-                                 endif
-                                 if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%ThinWire).and. &
-                                     (iii <= SINPML_fullsize(iEz)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEz)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEz)%ZE)) then
-                                    conta=conta+1
-                                 endif  
-                                 medium=sggMiEx(III , JJJ , KKK )
-                               ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &   
-                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. & 
-                                     sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
-                                     (iii <= SINPML_fullsize(iEx)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEx)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEx)%ZE)) then
-                               !!!   if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                               !!!   (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
-                               !!!   (.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                               !!!   (.not.sgg%med(sggMiHz(III   , JJJ -1, KKK   ))%Is%PEC)) then
-                                       conta=conta+1
-                               !!!     endif
-                                 endif 
-                                 medium=sggMiEy(III , JJJ , KKK )
-                               ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. &   
-                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. & 
-                                      sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
-                                     (iii <= SINPML_fullsize(iEy)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEy)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEy)%ZE)) then
-                                 !!! if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!! (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!! (.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!! (.not.sgg%med(sggMiHx(III   , JJJ   , KKK -1))%Is%PEC)) then
-                                       conta=conta+1
-                                 !!!   endif
-                                 endif  
-                                 medium=sggMiEz(III , JJJ , KKK )
-                               ! if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and. &      
-                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. & 
-                                      sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
-                                     (iii <= SINPML_fullsize(iEz)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEz)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEz)%ZE)) then
-                                 !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
-                                 !!! (.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!! (.not.sgg%med(sggMiHy(III -1, JJJ   , KKK   ))%Is%PEC)) then
-                                       conta=conta+1
-                                 !!!   endif
-                                 endif
+                                 block
+                                 integer (kind=4) :: Efield
+                                    do Efield = iEx, iEz
+
+                                       if (isWithinBounds(Efield, iii, jjj, kkk)) then
+                                          if (isThinWire(Efield, iii, jjj, kkk)) then 
+                                             conta = conta + 1
+                                          end if
+
+                                          if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. .not. & 
+                                              (sgg%med(medium)%is%split_and_useless.or. & 
+                                              sgg%med(medium)%is%already_YEEadvanced_byconformal)) then 
+                                                conta = conta +1
+                                          end if
+                                       end if
+                                    end do
+                                 end block
+
                               else !si es mapvtk
                                  !si es mapvtk y si no es vacio
                                  block
@@ -1281,90 +1239,36 @@ contains
                                     integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: hmedia
                                     do Hfield = iHx, iHz
                                        hmedia = getMedia(Hfield, iii, jjj, kkk)
-                                       if ((sgg%med(hmedia)%is%PEC .or. sgg%med(hmedia)%is%Surface .or. &
-                                          field == 50+Hfield) .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
-                                             conta = conta + 1
+                                       if ((sgg%med(hmedia)%is%PEC .or. & 
+                                            sgg%med(hmedia)%is%Surface .or. &
+                                            field == blockCurrent(Hfield)) & 
+                                            .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                                conta = conta + 1
                                        end if
                                     end do
                                  end block
-                                 ! if (((sgg%med(sggMiHx(III , JJJ, KKK))%Is%PEC).or.  &
-                                 !      (sgg%med(sggMiHx(III , JJJ, KKK))%Is%Surface).or.  &
-                                 !      (field==icurX)).and. & 
-                                 !      (iii <= SINPML_fullsize(iHx)%XE).and. & 
-                                 !      (jjj <= SINPML_fullsize(iHx)%YE).and. & 
-                                 !      (kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                 !    conta=conta+1
-                                 ! endif
-                                 ! if (((sgg%med(sggMiHy(III, JJJ, KKK))%Is%PEC).or.  &
-                                 !      (sgg%med(sggMiHy(III, JJJ, KKK))%Is%Surface).or. &
-                                 !      (field==icurY)).and. & 
-                                 !      (iii <= SINPML_fullsize(iHy)%XE).and. & 
-                                 !      (jjj <= SINPML_fullsize(iHy)%YE).and. & 
-                                 !      (kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                 !    conta=conta+1
-                                 ! endif
-                                 ! if (((sgg%med(sggMiHz(III, JJJ, KKK))%Is%PEC).or.  &
-                                 !      (sgg%med(sggMiHz(III, JJJ, KKK))%Is%Surface).or. &
-                                 !      (field==icurZ)).and. & 
-                                 !      (iii <= SINPML_fullsize(iHz)%XE).and. & 
-                                 !      (jjj <= SINPML_fullsize(iHz)%YE).and. & 
-                                 !      (kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                 !    conta=conta+1
-                                 ! endif
                               else
                                  ! si es mapvtk y si no es vacio
 
-                              ! count media surfaces
-                              block
-                                 integer (kind=4) :: Hfield
-                                 do Hfield = iHx, iHz
-                                    if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
-                                        .not. isPML(Hfield, iii, jjj, kkk) .and. & 
-                                        isWithinBounds(Hfield, iii, jjj , kkk)) then
-                                           conta = conta + 1
-                                    end if
-                                 end do
-                              end block
+                                 block
+                                    integer (kind=4) :: Hfield
+                                    do Hfield = iHx, iHz
+                                       ! count media surfaces
+                                       if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
+                                          .not. isPML(Hfield, iii, jjj, kkk) .and. & 
+                                          isWithinBounds(Hfield, iii, jjj , kkk)) then
+                                             conta = conta + 1
+                                       end if
+                                       ! count negative vacuum tag numbers
+                                       if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
+                                          (btest(iabs(tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)), Hfield - 1)) .and. & 
+                                          .not. isPML(Hfield, iii, jjj, kkk) .and. &
+                                          isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                             conta = conta + 1
+                                       end if
+                                    end do
 
-                              ! count negative vacuum tags
-                              block 
-                                 integer (kind=4) :: Hfield
-                                 do Hfield = iHx, iHz 
-                                    if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
-                                       (btest(iabs(tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)), Hfield - 1)) .and. & 
-                                       .not. isPML(Hfield, iii, jjj, kkk) .and. &
-                                       isWithinBounds(Hfield, iii, jjj, kkk)) then 
-                                          conta = conta + 1
-                                    end if
-                                 end do
-
-                              end block
-                                 ! ! los tags de vacio negativos 141020 para mapvtk
-                                 ! if ( tag_numbers%face%x(iii,jjj,kkk)<0 .and. & 
-                                 !    (btest(iabs(tag_numbers%face%x(iii,jjj,kkk)),3)).and. & 
-                                 !    (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and. & 
-                                 !    (iii <= SINPML_fullsize(iHx)%XE).and. & 
-                                 !    (jjj <= SINPML_fullsize(iHx)%YE).and. & 
-                                 !    (kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                 !    conta=conta+1
-                                 ! endif
-                                 ! if ( tag_numbers%face%y(iii,jjj,kkk)<0 .and. & 
-                                 !    (btest(iabs(tag_numbers%face%y(iii,jjj,kkk)),4)).and. &
-                                 !    (.not.sgg%med(sggMiHy(III , JJJ, KKK))%is%PML).and. & 
-                                 !    (iii <= SINPML_fullsize(iHy)%XE).and. & 
-                                 !    (jjj <= SINPML_fullsize(iHy)%YE).and. & 
-                                 !    (kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                 !    conta=conta+1
-                                 ! endif
-                                 ! if ( tag_numbers%face%z(iii,jjj,kkk)<0 .and. & 
-                                 !    (btest(iabs(tag_numbers%face%z(iii,jjj,kkk)),5)).and. &
-                                 !    (.not.sgg%med(sggMiHz(III , JJJ, KKK))%is%PML).and. & 
-                                 !    (iii <= SINPML_fullsize(iHz)%XE).and. & 
-                                 !    (jjj <= SINPML_fullsize(iHz)%YE).and. & 
-                                 !    (kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                 !    conta=conta+1
-                                 ! endif  
-                                 ! endif
+                                 end block
                               endif
                            end do
                         end do
@@ -2140,6 +2044,20 @@ contains
       return
 
    contains
+
+      integer function blockCurrent(field)
+         integer (kind=4) :: field
+         select case(field)
+         case(iHx)
+            blockCurrent = iCurX
+         case(iHy)
+            blockCurrent = iCurY
+         case(iHz)
+            blockCurrent = iCurZ
+         case default
+            call StopOnError(layoutnumber, size, 'field is not H field')
+         end select
+      end function
 
       integer function currentType(field)
          integer (kind=4) :: field

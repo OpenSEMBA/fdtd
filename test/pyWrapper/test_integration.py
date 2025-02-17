@@ -106,7 +106,7 @@ def test_observation_3_surfaces(tmp_path):
     assert line_media_dict[0.5] == 8  # PEC line
     assert line_media_dict[3.5] == 8  # SGBC line
 
-def test_observation_3_surfaces_Jprobe(tmp_path):
+def test_observation_three_surfaces_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/observation_three_surfaces_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
@@ -114,81 +114,130 @@ def test_observation_3_surfaces_Jprobe(tmp_path):
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
+    vtkmapfile = solver.getCurrentVTKMap()
     assert os.path.isfile(vtkmapfile)
 
     face_tag_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='tagnumber')
-    assert face_tag_dict[0] == 729
+    assert face_tag_dict[0] == 725
 
     line_tag_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='tagnumber')
-    assert line_tag_dict[64] == 8
-    assert line_tag_dict[128] == 4
-    assert line_tag_dict[192] == 4
+    assert line_tag_dict[64] == 12
+    assert line_tag_dict[128] == 10
+    assert line_tag_dict[192] == 8
 
-def test_observation_3_small_surfaces_Jprobe(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_three_small_surfaces_Jprobe.fdtd.json'
+def test_observation_three_one_cell_surfaces_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_three_one_cell_surfaces_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver['general']['numberOfSteps'] = 1
 
     solver.run()
 
-    vtkmapfile = solver.getVTKMap()
+    vtkmapfile = solver.getCurrentVTKMap()
     assert os.path.isfile(vtkmapfile)
 
     face_tag_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='tagnumber')
-    assert face_tag_dict[0] == 729
+    assert face_tag_dict[0] == 728
 
     line_tag_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='tagnumber')
-    assert line_tag_dict[64] == 8
-    assert line_tag_dict[128] == 4
-    assert line_tag_dict[192] == 4
+    assert line_tag_dict[64] == 4
+    assert line_tag_dict[128] == 3
+    assert line_tag_dict[192] == 2
 
-def test_observation_1_small_PEC_surfaces_Jprobe(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_one_small_PEC_surface_Jprobe.fdtd.json'
+def test_observation_one_cell_PEC_surface_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_one_cell_surface_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
+
     solver['general']['numberOfSteps'] = 1
+    solver['materialAssociations'][0]['materialId'] = 1
 
+    solver["probes"][0]["component"] = "x"
+    solver.cleanUp()
     solver.run()
-
-    vtkmapfile = solver.getVTKMap()
+    vtkmapfile = solver.getCurrentVTKMap()
     assert os.path.isfile(vtkmapfile)
 
-    face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property='tagnumber')
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
     assert face_tag_dict[0] == 729
 
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property='tagnumber')
-    assert line_tag_dict[64] == 8
-    assert line_tag_dict[128] == 4
-    assert line_tag_dict[192] == 4
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 4
 
-def test_observation_1_small_SGBC_surfaces_Jprobe(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_one_small_SGBC_surface_Jprobe.fdtd.json'
+    solver["probes"][0]["component"] = "y"
+    solver.cleanUp()
+    solver.run()
+    vtkmapfile = solver.getCurrentVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
+    assert face_tag_dict[0] == 729
+
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 4
+
+    solver["probes"][0]["component"] = "z"
+    solver.cleanUp()
+    solver.run()
+    vtkmapfile = solver.getCurrentVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
+    assert face_tag_dict[0] == 728
+
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 4
+
+def test_observation_one_cell_SGBC_surface_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/observation_one_cell_surface_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
+
     solver['general']['numberOfSteps'] = 1
+    solver['materialAssociations'][0]['materialId'] = 2
+    
 
+    solver["probes"][0]["component"] = "x"
+    solver.cleanUp()
     solver.run()
-
-    vtkmapfile = solver.getVTKMap()
+    vtkmapfile = solver.getCurrentVTKMap()
     assert os.path.isfile(vtkmapfile)
 
-    face_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property='tagnumber')
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
     assert face_tag_dict[0] == 729
 
-    line_tag_dict = createPropertyDictionary(
-        vtkmapfile, celltype=3, property='tagnumber')
-    assert line_tag_dict[64] == 8
-    assert line_tag_dict[128] == 4
-    assert line_tag_dict[192] == 4
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 4
+
+    solver["probes"][0]["component"] = "y"
+    solver.cleanUp()
+    solver.run()
+    vtkmapfile = solver.getCurrentVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
+    assert face_tag_dict[0] == 729
+
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 4
+
+    solver["probes"][0]["component"] = "z"
+    solver.cleanUp()
+    solver.run()
+    vtkmapfile = solver.getCurrentVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
+    assert face_tag_dict[0] == 728
+
+    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 4
+
+
 
 
 def test_observation_1_volume(tmp_path):

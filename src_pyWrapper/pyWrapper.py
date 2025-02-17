@@ -301,6 +301,12 @@ class FDTD():
             for file in files:
                 os.remove(file)
 
+        subfolders = [item for item in os.listdir(
+            folder) if os.path.isdir(os.path.join(folder, item))]
+        for f in subfolders:
+            shutil.rmtree(f, ignore_errors=True)
+
+
     def getSolvedProbeFilenames(self, probe_name):
         if not "probes" in self._input:
             raise ValueError('Solver does not contain probes.')
