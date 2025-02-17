@@ -143,7 +143,7 @@ contains
       character (len=*), intent(in)  ::  nEntradaRoot
 
       integer (kind=4)  ::  i,field,ii,i1,j1,k1,n,i2,j2,k2,initialtimestep, finaltimestep,NO,NO2,iwi,iwj,compo,ntime,ntimeforvolumic,iff1,i0t
-
+      integer (kind=4) :: Efield, HField
       logical, intent(inout)   ::  ThereAreObservation,ThereAreFarFields
       logical, intent(in)      ::  ThereAreWires,resume
       character (LEN=BUFSIZE)  ::  chari,charj,chark,chari2,charj2,chark2,charNO
@@ -1183,35 +1183,29 @@ contains
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
-                                 block
-                                 integer (kind=4) :: Efield
-                                    do Efield = iEx, iEz
+                                 do Efield = iEx, iEz
 
-                                       if (isWithinBounds(Efield, iii, jjj, kkk)) then
-                                          if (isThinWire(Efield, iii, jjj, kkk)) then 
-                                             conta = conta + 1
-                                          end if
-
-                                          if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. & 
-                                              .not. isSplitOrAdvanced(Efield, iii, jjj, kkk)) then 
-                                                conta = conta +1
-                                          end if
+                                    if (isWithinBounds(Efield, iii, jjj, kkk)) then
+                                       if (isThinWire(Efield, iii, jjj, kkk)) then 
+                                          conta = conta + 1
                                        end if
-                                    end do
-                                 end block
+
+                                       if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. & 
+                                             .not. isSplitOrAdvanced(Efield, iii, jjj, kkk)) then 
+                                             conta = conta +1
+                                       end if
+                                    end if
+                                 end do
 
                               else !si es mapvtk
                                  !si es mapvtk y si no es vacio
-                                 block
-                                    integer (kind=4) :: Efield
-                                    do Efield = iEx, iEz
-                                       call assignMedia(imed, imed1, imed2, imed3, imed4, Efield, iii, jjj, kkk)
-                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
-                                       if (EsBorde) then
-                                          conta=conta+1
-                                       endif
-                                    end do
-                                 end block
+                                 do Efield = iEx, iEz
+                                    call assignMedia(imed, imed1, imed2, imed3, imed4, Efield, iii, jjj, kkk)
+                                    call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
+                                    if (EsBorde) then
+                                       conta=conta+1
+                                    endif
+                                 end do
 
                               endif
                            end do
@@ -1233,37 +1227,29 @@ contains
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
                                  ! count PEC surfaces
-                                 block
-                                    integer (kind=4) :: Hfield
-                                    do Hfield = iHx, iHz
-                                       if ((isPECorSurface(Hfield, iii, jjj, kkk) .or. field == blockCurrent(Hfield)) & 
-                                            .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
-                                                conta = conta + 1
-                                       end if
-                                    end do
-                                 end block
+                                 do Hfield = iHx, iHz
+                                    if ((isPECorSurface(Hfield, iii, jjj, kkk) .or. field == blockCurrent(Hfield)) & 
+                                          .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                             conta = conta + 1
+                                    end if
+                                 end do
                               else
                                  ! si es mapvtk y si no es vacio
-
-                                 block
-                                    integer (kind=4) :: Hfield
-                                    do Hfield = iHx, iHz
-                                       ! count media surfaces
-                                       if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
-                                          .not. isPML(Hfield, iii, jjj, kkk) .and. & 
-                                          isWithinBounds(Hfield, iii, jjj , kkk)) then
-                                             conta = conta + 1
-                                       end if
-                                       ! count negative vacuum tag numbers
-                                       if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
-                                          (btest(iabs(tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)), Hfield - 1)) .and. & 
-                                          .not. isPML(Hfield, iii, jjj, kkk) .and. &
-                                          isWithinBounds(Hfield, iii, jjj, kkk)) then 
-                                             conta = conta + 1
-                                       end if
-                                    end do
-
-                                 end block
+                                 do Hfield = iHx, iHz
+                                    ! count media surfaces
+                                    if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
+                                       .not. isPML(Hfield, iii, jjj, kkk) .and. & 
+                                       isWithinBounds(Hfield, iii, jjj , kkk)) then
+                                          conta = conta + 1
+                                    end if
+                                    ! count negative vacuum tag numbers
+                                    if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
+                                       (btest(iabs(tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)), Hfield - 1)) .and. & 
+                                       .not. isPML(Hfield, iii, jjj, kkk) .and. &
+                                       isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                          conta = conta + 1
+                                    end if
+                                 end do
                               endif
                            end do
                         end do
@@ -1392,46 +1378,39 @@ contains
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
-                                 block
-                                    integer (kind=4) :: Efield
-                                    do Efield = iEx, iEz
-                                       if (isWithinBounds(Efield, iii, jjj, kkk)) then 
-                                          if (isThinWire(Efield, iii, jjj, kkk)) then 
-                                             conta = conta + 1
+                                 do Efield = iEx, iEz
+                                    if (isWithinBounds(Efield, iii, jjj, kkk)) then 
+                                       if (isThinWire(Efield, iii, jjj, kkk)) then 
+                                          conta = conta + 1
+                                          call writeSerialized(ii, i, conta, iii, jjj, kkk, & 
+                                                               currentType(Efield), & 
+                                                               iabs(tag_numbers%getEdgeTag(Efield, iii, jjj, kkk)))
+                                       end if
+
+                                       if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. & 
+                                             .not. isSplitOrAdvanced(Efield, iii, jjj ,kkk)) then
+                                             conta = conta +1
                                              call writeSerialized(ii, i, conta, iii, jjj, kkk, & 
                                                                   currentType(Efield), & 
                                                                   iabs(tag_numbers%getEdgeTag(Efield, iii, jjj, kkk)))
-                                          end if
-
-                                          if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. & 
-                                              .not. isSplitOrAdvanced(Efield, iii, jjj ,kkk)) then
-                                                conta = conta +1
-                                                call writeSerialized(ii, i, conta, iii, jjj, kkk, & 
-                                                                     currentType(Efield), & 
-                                                                     iabs(tag_numbers%getEdgeTag(Efield, iii, jjj, kkk)))
-                                          end if
-
                                        end if
-                                    end do
-                                 end block
-                                       
+
+                                    end if
+                                 end do
 
                               else !si es mapvtk
                                  !si es mapvtk y si no es vacio
-                              
-                                 block 
-                                    integer (kind=4) :: Efield
-                                    do Efield = iEx, iEz
-                                       call assignMedia(imed,imed1,imed2,imed3,imed4, Efield, iii, jjj, kkk)
-                                       call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
-                                       if (EsBorde) then
-                                          conta=conta+1
-                                          call writeSerialized(ii, i, conta, iii, jjj, kkk, &
-                                                              currentType(Efield), &
-                                                              tag_numbers%getEdgeTag(Efield, iii, jjj, kkk))
-                                       endif
-                                    end do
-                                 end block
+                                 do Efield = iEx, iEz
+                                    call assignMedia(imed,imed1,imed2,imed3,imed4, Efield, iii, jjj, kkk)
+                                    call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
+                                    if (EsBorde) then
+                                       conta=conta+1
+                                       call writeSerialized(ii, i, conta, iii, jjj, kkk, &
+                                                            currentType(Efield), &
+                                                            tag_numbers%getEdgeTag(Efield, iii, jjj, kkk))
+                                    endif
+                                 end do
+
                               endif
                               !
                            end do
@@ -1450,44 +1429,37 @@ contains
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
-                                 block 
-                                    integer (kind=4) :: Hfield
-                                    do Hfield = iHx, iHz
-                                       if ((isPECorSurface(Hfield, iii, jjj, kkk) .or. &
-                                            field == blockCurrent(Hfield)) & 
-                                            .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
-                                                conta = conta + 1
-                                                call writeSerialized(ii, i, conta, iii,jjj, kkk, &
-                                                                     currentType(Hfield), &
-                                                                     iabs(tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)))
-                                       end if
-                                    end do
-                                 end block
+                                 do Hfield = iHx, iHz
+                                    if ((isPECorSurface(Hfield, iii, jjj, kkk) .or. &
+                                          field == blockCurrent(Hfield)) & 
+                                          .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                             conta = conta + 1
+                                             call writeSerialized(ii, i, conta, iii,jjj, kkk, &
+                                                                  currentType(Hfield), &
+                                                                  iabs(tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)))
+                                    end if
+                                 end do
                               else !mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
+                                 do Hfield = iHx, iHz
+                                    if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
+                                        .not. isPML(Hfield, iii, jjj, kkk) .and. & 
+                                        isWithinBounds(Hfield, iii, jjj , kkk)) then
+                                          conta = conta + 1
+                                          call writeSerialized(ii, i, conta, iii, jjj, kkk, &
+                                                                  currentType(Hfield), &
+                                                                  tag_numbers%getFaceTag(Hfield, iii, jjj, kkk))
+                                    end if
 
-                                 block
-                                    integer (kind=4) :: Hfield
-                                    do Hfield = iHx, iHz
-                                       if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
-                                           .not. isPML(Hfield, iii, jjj, kkk) .and. & 
-                                           isWithinBounds(Hfield, iii, jjj , kkk)) then
-                                                conta = conta + 1
-                                                call writeSerialized(ii, i, conta, iii, jjj, kkk, &
-                                                                     currentType(Hfield), &
-                                                                     tag_numbers%getFaceTag(Hfield, iii, jjj, kkk))
-                                       end if
-
-                                       if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
-                                           (btest(iabs(tag_numbers%getFaceTag(Hfield, iii,jjj,kkk)),Hfield-1)) .and. &
-                                           .not. isPML(Hfield, iii, jjj, kkk).and. &
-                                           isWithinBounds(Hfield, iii, jjj, kkk)) then 
-                                                conta=conta+1
-                                                call writeSerialized(ii, i, conta, iii, jjj, kkk, &
-                                                                     currentType(Hfield), &
-                                                                     tag_numbers%getFaceTag(Hfield, iii, jjj, kkk))
-                                       end if
-                                    end do
-                                 end block
+                                    if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
+                                          (btest(iabs(tag_numbers%getFaceTag(Hfield, iii,jjj,kkk)),Hfield-1)) .and. &
+                                          .not. isPML(Hfield, iii, jjj, kkk).and. &
+                                          isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                             conta=conta+1
+                                             call writeSerialized(ii, i, conta, iii, jjj, kkk, &
+                                                                  currentType(Hfield), &
+                                                                  tag_numbers%getFaceTag(Hfield, iii, jjj, kkk))
+                                    end if
+                                 end do
                               !   endif
                               endif
                               !
@@ -2580,10 +2552,11 @@ contains
 
       !---------------------------> variables locales <-----------------------------------------------
       integer( kind = 4)  ::  i, ii, i1, i2, j1, j2, k1, k2, i1_m, i2_m, j1_m, j2_m, k1_m, k2_m, field,jjx,jjy,jjz,if1,i1t,j1t,k1t,iff1
+      integer( kind = 4)  :: Efield, HField
       integer( kind = 4)  ::  iii, kkk, jjj, jjj_m, iii_m, kkk_m,NtimeforVolumic,imed,imed1,imed2,imed3,imed4,medium
       logical :: esborde,wirecrank
       REAL (KIND=RKIND_tiempo)    ::  at
-      real (kind = RKIND) :: jx,jy,jz
+      real (kind = RKIND) :: jx,jy,jz, jdir
       integer(kind=4) :: conta !para realmente dar tangenciales de campos en los medios superficiales
       character(len=*), INTENT(in) :: wiresflavor
 
@@ -2599,7 +2572,7 @@ contains
 
       logical ::  INIT,GEOM,ASIGNA,electric,magnetic
       !!!
-      at=-1; jx=-1; jy=-1;jz=-1;  !para que gfortran no me diga que no las inicializo
+      at=-1; jx=-1; jy=-1;jz=-1;jdir=-1  !para que gfortran no me diga que no las inicializo
 
       !---------------------------> empieza UpdateObservation <---------------------------------------
       do ii = 1, sgg%NumberRequest
@@ -3106,165 +3079,49 @@ contains
                                     !saca  current a lo largo del edge con las sondas icur
                                     if (field/=mapvtk) then
                                        ! refactoring done. Needs tests
-                                       ! block
-                                       !    integer (kind=4) :: Edirection
-                                       !    integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: emedia
-                                       !    real (kind=RKIND) :: ej
-                                       !    do EDirection = iEx, iEz
-                                       !       emedia = getMedia(EDirection, iii, jjj, kkk)
-                                       !       if (sgg%med(emedia)%Is%ThinWire .and. isWithinBounds(EDirection, iii, jjj, kkk)) then 
+                                       do Efield = iEx, iEz
+                                          if (isThinWire(Efield, iii, jjj, kkk) .and. isWithinBounds(Efield, iii, jjj, kkk)) then 
+                                             conta = conta + 1
+                                             jdir = computeJ(field, iii, jjj, kkk)
+                                             output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
+                                             output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
+                                             output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
+                                             output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,Efield) 
+                                             output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,Efield)
+                                             output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,Efield)
+                                             output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,Efield)
+                                             output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
+                                             output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
+                                          end if
+                                       end do
 
-                                       !          i1 = i - merge(1,0,1+mod(direction+1,3) == iEx); j1 = j - merge(1,0,1+mod(direction+1,3) == iEy); k1 = k - merge(1,0,1+mod(direction+1,3) == iEz)
-                                       !          i2 = i - merge(1,0,1+mod(direction,3) == iEx),j2 = j - merge(1,0,1+mod(direction,3) == iEy), k2 = k - merge(1,0,1+mod(direction,3) == iEz)
-                                       !          ej = getDelta(1+mod(direction,3)) * [-getMedia(1+mod(direction,3),i,j,k) + getMedia(1+mod(direction,3),i1,j1,k1)]  + &
-                                       !               getDelta(1+mod(direction+1,3)) * [-getMedia(1+mod(direction+1,3),i,j,k) + getMedia(1+mod(direction+1,3),i2,j2,k2)]  
-                                       !                   output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = merge(ej, 0.0_RKIND, EDirection == iEx)
+                                       if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. &
+                                           .not. isSplitOrAdvanced(Efield, iii, jjj, kkk) .and. &
+                                           isWithinBounds(Efield, iii, jjj, kkk)) then 
+                                             conta = conta + 1
+                                             jdir = computeJ(field, iii, jjj, kkk)
+                                             output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
+                                             output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
+                                             output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
+                                             output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,Efield) 
+                                             output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,Efield)
+                                             output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,Efield)
+                                             output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,Efield)
+                                             output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
+                                             output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
+                                       end if  
 
-                                       !                   output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = merge(ej, 0.0_RKIND, EDirection == iEy)
-                                       !          output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = merge(ej, 0.0_RKIND, EDirection == iEz)
-                                       !          output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,EDirection) 
-                                       !          output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,EDirection)
-                                       !          output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,EDirection)
-                                       !          output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,EDirection)
-                                       !          output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,EDirection)
-                                       !          output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,EDirection)
-                                       !       end if
-                                       !    end do
-                                       ! end block
-                                       if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
-                                          conta=conta+1
-                                          Jx= dyh(JJJ ) * (- Hy( III , JJJ , KKK )+Hy( III   , JJJ   , KKK -1))  + &  
-                                              dzh(KKK ) * (  Hz( III , JJJ , KKK )-Hz( III   , JJJ -1, KKK   ))  
-                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
-                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
-                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND
-                                           !ELECTRIC                                           
-                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEx) 
-                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEx)
-                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEx)
-                                           !MAGNETIC                                            
-                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEx)
-                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEx)
-                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEx)
-                                       endif                                                                
-                                       if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
-                                          conta=conta+1
-                                          Jy=dxh(III ) * (  Hx( III , JJJ , KKK )-Hx( III   , JJJ   , KKK -1)) + &
-                                             dzh(KKK ) * ( -Hz( III , JJJ , KKK )+Hz( III -1, JJJ   , KKK   ))    
-                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND  
-                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy 
-                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND
-                                           !electric    
-                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEy)
-                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEy)
-                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEy)
-                                           !magnetic    
-                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEy)
-                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEy)
-                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEy)
-                                       endif
-                                       if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%ThinWire).and.(iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
-                                          conta=conta+1
-                                          Jz=dyh(JJJ ) * (  Hy( III , JJJ , KKK ) - Hy( III -1, JJJ   , KKK   ))  + &
-                                             dxh(III ) * ( -Hx( III , JJJ , KKK ) + Hx( III   , JJJ -1, KKK   ))     
-                                          output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND 
-                                          output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
-                                          output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz
-                                          !ELECTRIC      
-                                          output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEz)
-                                          output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEz)
-                                          output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEz)
-                                          !MAGNETIC
-                                          output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEz)
-                                          output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
-                                          output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
-                                       endif       
-                                       medium=sggMiEx(III , JJJ , KKK )
-                                     ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &   
-                                       if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
-                                           (iii <= SINPML_fullsize(iEx)%XE).and.(jjj <= SINPML_fullsize(iEx)%YE).and.(kkk <= SINPML_fullsize(iEx)%ZE)) then
-                                       !!! if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                       !!! (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
-                                       !!! (.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                       !!! (.not.sgg%med(sggMiHz(III   , JJJ -1, KKK   ))%Is%PEC)) then
-                                           conta=conta+1
-                                           Jx= dyh(JJJ ) * (- Hy( III , JJJ , KKK )+Hy( III   , JJJ   , KKK -1)) + &
-                                               dzh(KKK ) * (  Hz( III , JJJ , KKK )-Hz( III   , JJJ -1, KKK   ))  
-                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
-                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
-                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND    
-                                          !ELECTRIC  
-                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEx)
-                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEx)
-                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEx)
-                                          !MAGNETIC  
-                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEx)
-                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEx)
-                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEx)
-                                       !!!   endif
-                                       endif        
-                                       medium=sggMiEy(III , JJJ , KKK )
-                                     ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. &      
-                                       if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
-                                           (iii <= SINPML_fullsize(iEy)%XE).and.(jjj <= SINPML_fullsize(iEy)%YE).and.(kkk <= SINPML_fullsize(iEy)%ZE)) then
-                                       !!! if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                       !!! (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
-                                       !!! (.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                       !!! (.not.sgg%med(sggMiHx(III   , JJJ   , KKK -1))%Is%PEC)) then
-                                           conta=conta+1
-                                           Jy=dxh(III ) * (  Hx( III , JJJ , KKK )-Hx( III   , JJJ   , KKK -1))  + &
-                                              dzh(KKK ) * ( -Hz( III , JJJ , KKK )+Hz( III -1, JJJ   , KKK   ))   
-                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND  
-                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy 
-                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND   
-                                          !ELECTRIC  
-                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEy)
-                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEy)
-                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEy)
-                                          !MAGNETIC 
-                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEy)
-                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEy)
-                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) =  interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEy)
-                                        !!!  endif
-                                       endif   
-                                       medium=sggMiEz(III , JJJ , KKK )
-                                     ! if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and. & 
-                                       if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
-                                           (iii <= SINPML_fullsize(iEz)%XE).and.(jjj <= SINPML_fullsize(iEz)%YE).and.(kkk <= SINPML_fullsize(iEz)%ZE)) then
-                                       !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                       !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
-                                       !!! (.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                       !!! (.not.sgg%med(sggMiHy(III -1, JJJ   , KKK   ))%Is%PEC)) then
-                                             conta=conta+1
-                                             Jz=dyh(JJJ ) * (  Hy( III , JJJ , KKK ) - Hy( III -1, JJJ   , KKK   ))  + &
-                                                dxh(III ) * ( -Hx( III , JJJ , KKK ) + Hx( III   , JJJ -1, KKK   ))
-                                             output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND
-                                             output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
-                                             output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz     
-                                          !ELECTRIC   
-                                             output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEz)
-                                             output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEz)
-                                             output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEz)
-                                          !MAGNETIC    
-                                             output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEz)
-                                             output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
-                                             output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
-                                        !!!  endif
-                                       endif
                                     else !si es mapvtk
 
-                                       block
-                                          integer (kind=4) :: Efield
-                                          do Efield = iEx, iEz
-                                             call assignMedia(imed,imed1,imed2,imed3,imed4,Efield, iii, jjj, kkk)
-                                             call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
-                                             if (esBorde) then 
-                                                conta = conta + 1
-                                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = & 
-                                                   assignEdgeMediaType(Efield, iii, jjj, kkk)
-                                             end if
-                                          end do
-                                       end block
+                                       do Efield = iEx, iEz
+                                          call assignMedia(imed,imed1,imed2,imed3,imed4,Efield, iii, jjj, kkk)
+                                          call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
+                                          if (esBorde) then 
+                                             conta = conta + 1
+                                             output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = & 
+                                                assignEdgeMediaType(Efield, iii, jjj, kkk)
+                                          end if
+                                       end do
 
                                     endif
                                  end do
@@ -3365,25 +3222,22 @@ contains
                                     else                                       !si es mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
 
                                 
-                                    block 
-                                       integer (kind=4) :: Hfield
-                                       do Hfield = iHx, iHz
-                                          if (surfaceIsMedia(Hfield, iii, jjj, kkk))then
-                                                conta=conta+1
-                                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = & 
-                                                   assignSurfaceMediaType(Hfield, iii, jjj, kkk)
-                                          end if
-                                       end do
-                                       do Hfield = iHx, iHz
-                                           if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
-                                              (btest(iabs(tag_numbers%getFaceTag(Hfield, iii,jjj,kkk)),Hfield-1)) .and. &
-                                               .not. isPML(Hfield, iii, jjj, kkk) .and. isWithinBounds(Hfield,iii, jjj, kkk) ) then 
-                                                conta = conta + 1
-                                                call updateJ(Hfield)
-                                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = Jx
-                                          end if 
-                                       end do
-                                    end block
+                                    do Hfield = iHx, iHz
+                                       if (surfaceIsMedia(Hfield, iii, jjj, kkk))then
+                                             conta=conta+1
+                                             output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = & 
+                                                assignSurfaceMediaType(Hfield, iii, jjj, kkk)
+                                       end if
+                                       ! faces or edges?
+                                       if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
+                                             (btest(iabs(tag_numbers%getFaceTag(Hfield, iii,jjj,kkk)),Hfield-1)) .and. &
+                                             .not. isPML(Hfield, iii, jjj, kkk) .and. isWithinBounds(Hfield,iii, jjj, kkk) ) then 
+                                             conta = conta + 1
+                                             call updateJ(Hfield,jdir)
+                                             output(ii)%item(i)%Serialized%valor(Ntimeforvolumic,conta) = jdir
+                                       end if 
+
+                                    end do
                                     !  ! los tags 141020 para mapvtk se quedan con el medio -100: es una forma de voidearlos para visualizacion 
                                     !    if ( tag_numbers%edge%x(iii,jjj,kkk)<0 .and. (btest(iabs(tag_numbers%edge%x(iii,jjj,kkk)),3)).and. & 
                                     !    (.not.sgg%med(sggMiHx(III , JJJ, KKK))%is%PML).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
@@ -3750,6 +3604,62 @@ contains
       return
 
       contains 
+
+      logical function isSplitOrAdvanced(field, i, j, k)
+         integer (kind=4) :: field, i, j, k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(field, i, j, k)
+         isSplitOrAdvanced = sgg%med(media)%is%split_and_useless.or. & 
+                              sgg%med(media)%is%already_YEEadvanced_byconformal
+
+      end function   
+
+      function getDelta(field, i, j, k) result(res)
+         integer (kind=4) :: field, i, j, k
+         real (kind=rkind) :: res
+         select case (field)
+         case(iEx)
+            res = dxh(i)
+         case(iEy)
+            res = dyh(j)
+         case(iEz)
+            res = dzh(k)
+         end select
+      end function
+
+      function computeJ(field, i,j,k) result (res)
+         integer (kind=4) :: field, i, j, k, i1, i2, j1, j2, k1, k2
+         real (kind=rkind) :: res
+         i1 = i - merge(1,0,1+mod(field+1,3) == iEx)
+         j1 = j - merge(1,0,1+mod(field+1,3) == iEy)
+         k1 = k - merge(1,0,1+mod(field+1,3) == iEz)
+         i2 = i - merge(1,0,1+mod(field,3) == iEx)
+         j2 = j - merge(1,0,1+mod(field,3) == iEy)
+         k2 = k - merge(1,0,1+mod(field,3) == iEz)
+         res =  getDelta(1+mod(field,3)  , i, j, k) * (-getField(1+mod(field,3) + 4,  i,j,k) + getField(1+mod(field,3) + 4,  i1,j1,k1))  + &
+                getDelta(1+mod(field+1,3), i, j, k) * (-getField(1+mod(field+1,3) + 4,i,j,k) + getField(1+mod(field+1,3) + 4,i2,j2,k2))  
+      end function
+
+
+      function getField(field, i, j ,k) result(res)
+         real(kind=rkind) :: res
+         integer (kind=4) :: field, i, j, k
+         select case (field)
+         case(iEx)
+            res = Ex(i,j,k)
+         case(iEy)
+            res = Ey(i,j,k)
+         case(iEz)
+            res = Ez(i,j,k)
+         case(iHx)
+            res = Hx(i,j,k)
+         case(iHy)
+            res = Hy(i,j,k)
+         case(iHz)
+            res = Hz(i,j,k)
+         end select
+      end function
+
       function getMedia(field, i, j ,k) result(res)
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
          integer (kind=4) :: field, i, j, k
@@ -3781,6 +3691,13 @@ contains
          isWithinBounds  = (i <= SINPML_fullsize(field)%XE) .and. &
                            (j <= SINPML_fullsize(field)%YE) .and. & 
                            (k <= SINPML_fullsize(field)%ZE)
+      end function
+
+      logical function isThinWire(field, i, j, k)
+         integer(kind=4) :: field, i,j,k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(field, i, j, k)
+         isThinWire = sgg%Med(media)%is%ThinWire
       end function
 
       logical function isPML(field, i, j ,k)
@@ -3933,15 +3850,19 @@ contains
       res(6) = k + merge(1,0, field == iEz) - merge(1,0, 1 + mod(field+1,3) == iEz)
    end function
 
-   subroutine updateJ(field)
+   subroutine updateJ(field, jdir)
       integer (kind=4) :: field
+      real (kind=rkind) :: jdir
       select case(field)
       case(iEx)
          Jx = -100
+         jdir = jx
       case(iEy)
          Jy = -100
+         jdir = jy
       case(iEz)
          Jz = -100
+         jdir = jz
       end select
    end subroutine
 

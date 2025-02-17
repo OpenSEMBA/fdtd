@@ -72,7 +72,7 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert np.all(p.cell_init == np.array([2, 2, 2]))
 
 
-def test_observation_3_surfaces(tmp_path):
+def test_observation_three_surfaces(tmp_path):
     fn = CASES_FOLDER + 'observation/observation_three_surfaces.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
