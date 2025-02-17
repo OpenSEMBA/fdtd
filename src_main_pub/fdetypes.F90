@@ -696,11 +696,11 @@ contains
 
    end subroutine set_priorities
    
-   function taglist_getFaceTag(this, direction, i, j, k) result(res)
+   function taglist_getFaceTag(this, field, i, j, k) result(res)
       class(taglist_t) :: this
       integer (kind=IKINDMTAG) :: res 
-      integer (kind = 4) :: direction, i, j, k
-      select case(direction)
+      integer (kind = 4) :: field, i, j, k
+      select case(field)
       case(iHx)
          res = this%face%x(i, j, k)
       case(iHy)
@@ -710,11 +710,11 @@ contains
       end select
    end function
 
-   function taglist_getEdgeTag(this, direction, i, j, k) result(res)
+   function taglist_getEdgeTag(this, field, i, j, k) result(res)
       class(taglist_t) :: this
       integer (kind=IKINDMTAG) :: res 
-      integer (kind = 4) :: direction, i, j, k
-      select case(direction)
+      integer (kind = 4) :: field, i, j, k
+      select case(field)
       case(iEx)
          res = this%edge%x(i, j, k)
       case(iEy)

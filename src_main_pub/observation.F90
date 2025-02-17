@@ -1192,9 +1192,8 @@ contains
                                              conta = conta + 1
                                           end if
 
-                                          if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. .not. & 
-                                              (sgg%med(medium)%is%split_and_useless.or. & 
-                                              sgg%med(medium)%is%already_YEEadvanced_byconformal)) then 
+                                          if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. & 
+                                              .not. isSplitOrAdvanced(Efield, iii, jjj, kkk)) then 
                                                 conta = conta +1
                                           end if
                                        end if
@@ -1236,12 +1235,8 @@ contains
                                  ! count PEC surfaces
                                  block
                                     integer (kind=4) :: Hfield
-                                    integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: hmedia
                                     do Hfield = iHx, iHz
-                                       hmedia = getMedia(Hfield, iii, jjj, kkk)
-                                       if ((sgg%med(hmedia)%is%PEC .or. & 
-                                            sgg%med(hmedia)%is%Surface .or. &
-                                            field == blockCurrent(Hfield)) & 
+                                       if ((isPECorSurface(Hfield, iii, jjj, kkk) .or. field == blockCurrent(Hfield)) & 
                                             .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
                                                 conta = conta + 1
                                        end if
@@ -1397,99 +1392,33 @@ contains
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
-                                 if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%ThinWire).and. & 
-                                     (iii <= SINPML_fullsize(iEx)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEx)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEx)%ZE)) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iJx
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%x(iii,jjj,kkk))
-                                 endif
-                                 if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%ThinWire).and. & 
-                                     (iii <= SINPML_fullsize(iEy)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEy)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEy)%ZE)) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iJy
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%y(iii,jjj,kkk))
-                                 endif
-                                 if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%ThinWire).and. & 
-                                     (iii <= SINPML_fullsize(iEz)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEz)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEz)%ZE)) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iJz
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%z(iii,jjj,kkk))
-                                 endif   
-                                 medium=sggMiEx(III , JJJ , KKK )
-                               ! if ((sgg%med(sggMiEx(III , JJJ , KKK ))%Is%Line).and. &        
-                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. & 
-                                      sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
-                                     (iii <= SINPML_fullsize(iEx)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEx)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEx)%ZE)) then
-                                  !!! if ((.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                  !!! (.not.sgg%med(sggMiHy(III   , JJJ   , KKK -1))%Is%PEC).and. &
-                                  !!! (.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                  !!! (.not.sgg%med(sggMiHz(III   , JJJ -1, KKK   ))%Is%PEC)) then
-                                       conta=conta+1
-                                       output(ii)%item(i)%Serialized%eI(conta)=iii
-                                       output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                       output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                       output(ii)%item(i)%Serialized%currentType(conta)=iJx
-                                       output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%x(iii,jjj,kkk))
-                                 !!!   endif
-                                 endif    
-                                 medium=sggMiEy(III , JJJ , KKK )
-                               ! if ((sgg%med(sggMiEy(III , JJJ , KKK ))%Is%Line).and. &   
-                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. & 
-                                      sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
-                                     (iii <= SINPML_fullsize(iEy)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEy)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEy)%ZE)) then
-                                 !!!  if ((.not.sgg%med(sggMiHz(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!!  (.not.sgg%med(sggMiHz(III -1, JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!!  (.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!!  (.not.sgg%med(sggMiHx(III   , JJJ   , KKK -1))%Is%PEC)) then
-                                       conta=conta+1
-                                       output(ii)%item(i)%Serialized%eI(conta)=iii
-                                       output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                       output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                       output(ii)%item(i)%Serialized%currentType(conta)=iJy
-                                       output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%y(iii,jjj,kkk))
-                                  !!!  endif
-                                 endif    
-                                 medium=sggMiEz(III , JJJ , KKK )
-                               ! if ((sgg%med(sggMiEz(III , JJJ , KKK ))%Is%Line).and. &   
-                                 if ((medium/=1).and..NOT.(sgg%med(medium)%is%split_and_useless.or. & 
-                                      sgg%med(medium)%is%already_YEEadvanced_byconformal).and. &
-                                     (iii <= SINPML_fullsize(iEz)%XE).and. & 
-                                     (jjj <= SINPML_fullsize(iEz)%YE).and. & 
-                                     (kkk <= SINPML_fullsize(iEz)%ZE)) then
-                                 !!! if ((.not.sgg%med(sggMiHx(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!! (.not.sgg%med(sggMiHx(III   , JJJ -1, KKK   ))%Is%PEC).and. &
-                                 !!! (.not.sgg%med(sggMiHy(III   , JJJ   , KKK   ))%Is%PEC).and. &
-                                 !!! (.not.sgg%med(sggMiHy(III -1, JJJ   , KKK   ))%Is%PEC)) then
-                                       conta=conta+1
-                                       output(ii)%item(i)%Serialized%eI(conta)=iii
-                                       output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                       output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                       output(ii)%item(i)%Serialized%currentType(conta)=iJz
-                                       output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%edge%z(iii,jjj,kkk))
-                                 !!!   endif
-                                 endif
+                                 block
+                                    integer (kind=4) :: Efield
+                                    do Efield = iEx, iEz
+                                       if (isWithinBounds(Efield, iii, jjj, kkk)) then 
+                                          if (isThinWire(Efield, iii, jjj, kkk)) then 
+                                             conta = conta + 1
+                                             call writeSerialized(ii, i, conta, iii, jjj, kkk, & 
+                                                                  currentType(Efield), & 
+                                                                  iabs(tag_numbers%getEdgeTag(Efield, iii, jjj, kkk)))
+                                          end if
+
+                                          if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. & 
+                                              .not. isSplitOrAdvanced(Efield, iii, jjj ,kkk)) then
+                                                conta = conta +1
+                                                call writeSerialized(ii, i, conta, iii, jjj, kkk, & 
+                                                                     currentType(Efield), & 
+                                                                     iabs(tag_numbers%getEdgeTag(Efield, iii, jjj, kkk)))
+                                          end if
+
+                                       end if
+                                    end do
+                                 end block
+                                       
+
                               else !si es mapvtk
                                  !si es mapvtk y si no es vacio
-
+                              
                                  block 
                                     integer (kind=4) :: Efield
                                     do Efield = iEx, iEz
@@ -1497,11 +1426,9 @@ contains
                                        call contabordes(sgg,imed,imed1,imed2,imed3,imed4,EsBorde,SINPML_fullsize,Efield,iii,jjj,kkk)
                                        if (EsBorde) then
                                           conta=conta+1
-                                          output(ii)%item(i)%Serialized%eI(conta)=iii
-                                          output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                          output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                          output(ii)%item(i)%Serialized%currentType(conta)=currentType(Efield)
-                                          output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getEdgeTag(Efield, iii, jjj, kkk)
+                                          call writeSerialized(ii, i, conta, iii, jjj, kkk, &
+                                                              currentType(Efield), &
+                                                              tag_numbers%getEdgeTag(Efield, iii, jjj, kkk))
                                        endif
                                     end do
                                  end block
@@ -1523,72 +1450,41 @@ contains
                         do jjj=sgg%observation(ii)%P(i)%YI, sgg%observation(ii)%P(i)%YE
                            do iii=sgg%observation(ii)%P(i)%XI, sgg%observation(ii)%P(i)%XE
                               if (field/=mapvtk) then
-                                 if (((sgg%med(sggMiHx(III , JJJ, KKK))%Is%PEC).or. &
-                                      (sgg%med(sggMiHx(III , JJJ, KKK))%Is%Surface).or. &
-                                      (field==icurX)).and. & 
-                                      (iii <= SINPML_fullsize(iHx)%XE).and. & 
-                                      (jjj <= SINPML_fullsize(iHx)%YE).and. & 
-                                      (kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJx
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%x(iii,jjj,kkk))
-                                 endif
-                                 if (((sgg%med(sggMiHy(III, JJJ, KKK))%Is%PEC).or. &
-                                      (sgg%med(sggMiHy(III, JJJ, KKK))%Is%Surface).or. &
-                                      (field==icurY)).and. & 
-                                      (iii <= SINPML_fullsize(iHy)%XE).and. & 
-                                      (jjj <= SINPML_fullsize(iHy)%YE).and. & 
-                                      (kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJy
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%y(iii,jjj,kkk))
-                                 endif
-                                 if (((sgg%med(sggMiHz(III, JJJ, KKK))%Is%PEC).or. &
-                                      (sgg%med(sggMiHz(III, JJJ, KKK))%Is%Surface).or. &
-                                      (field==icurZ)).and. & 
-                                      (iii <= SINPML_fullsize(iHz)%XE).and. & 
-                                      (jjj <= SINPML_fullsize(iHz)%YE).and. & 
-                                      (kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                    conta=conta+1
-                                    output(ii)%item(i)%Serialized%eI(conta)=iii
-                                    output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                    output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                    output(ii)%item(i)%Serialized%currentType(conta)=iBloqueJz
-                                    output(ii)%item(i)%Serialized%sggMtag(conta)=iabs(tag_numbers%face%z(iii,jjj,kkk))
-                                 endif
+                                 block 
+                                    integer (kind=4) :: Hfield
+                                    do Hfield = iHx, iHz
+                                       if ((isPECorSurface(Hfield, iii, jjj, kkk) .or. &
+                                            field == blockCurrent(Hfield)) & 
+                                            .and. isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                                conta = conta + 1
+                                                call writeSerialized(ii, i, conta, iii,jjj, kkk, &
+                                                                     currentType(Hfield), &
+                                                                     iabs(tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)))
+                                       end if
+                                    end do
+                                 end block
                               else !mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
 
                                  block
                                     integer (kind=4) :: Hfield
                                     do Hfield = iHx, iHz
                                        if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
-                                          .not. isPML(Hfield, iii, jjj, kkk) .and. & 
-                                          isWithinBounds(Hfield, iii, jjj , kkk)) then
-                                             conta = conta + 1
-                                             output(ii)%item(i)%Serialized%eI(conta)=iii
-                                             output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                             output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                             output(ii)%item(i)%Serialized%currentType(conta)=currentType(Hfield)
-                                             output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)
+                                           .not. isPML(Hfield, iii, jjj, kkk) .and. & 
+                                           isWithinBounds(Hfield, iii, jjj , kkk)) then
+                                                conta = conta + 1
+                                                call writeSerialized(ii, i, conta, iii, jjj, kkk, &
+                                                                     currentType(Hfield), &
+                                                                     tag_numbers%getFaceTag(Hfield, iii, jjj, kkk))
                                        end if
 
                                        if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
-                                          (btest(iabs(tag_numbers%getFaceTag(Hfield, iii,jjj,kkk)),Hfield-1)) .and. &
-                                          .not. isPML(Hfield, iii, jjj, kkk).and. &
-                                          isWithinBounds(Hfield, iii, jjj, kkk)) then 
-                                             conta=conta+1
-                                             output(ii)%item(i)%Serialized%eI(conta)=iii
-                                             output(ii)%item(i)%Serialized%eJ(conta)=jjj
-                                             output(ii)%item(i)%Serialized%eK(conta)=kkk
-                                             output(ii)%item(i)%Serialized%currentType(conta)=currentType(Hfield)
-                                             output(ii)%item(i)%Serialized%sggMtag(conta)=tag_numbers%getFaceTag(Hfield, iii, jjj, kkk)
-     
+                                           (btest(iabs(tag_numbers%getFaceTag(Hfield, iii,jjj,kkk)),Hfield-1)) .and. &
+                                           .not. isPML(Hfield, iii, jjj, kkk).and. &
+                                           isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                                conta=conta+1
+                                                call writeSerialized(ii, i, conta, iii, jjj, kkk, &
+                                                                     currentType(Hfield), &
+                                                                     tag_numbers%getFaceTag(Hfield, iii, jjj, kkk))
                                        end if
                                     end do
                                  end block
@@ -2045,6 +1941,17 @@ contains
 
    contains
 
+      subroutine writeSerialized(i_out, i_item, conta, i, j, k, current, tag)
+         integer (kind=4) :: i_out, i_item, conta, i,j,k, current
+         integer (kind=IKINDMTAG) :: tag
+         output(i_out)%item(i_item)%Serialized%eI(conta)=i
+         output(i_out)%item(i_item)%Serialized%eJ(conta)=j
+         output(i_out)%item(i_item)%Serialized%eK(conta)=k
+         output(i_out)%item(i_item)%Serialized%currentType(conta)=current
+         output(i_out)%item(i_item)%Serialized%sggMtag(conta)=tag
+      end subroutine
+
+
       integer function blockCurrent(field)
          integer (kind=4) :: field
          select case(field)
@@ -2106,6 +2013,15 @@ contains
          media = getMedia(field, i, j, k)
          isMediaVacuum = (media == vacuum)
       end function
+      
+      logical function isSplitOrAdvanced(field, i, j, k)
+         integer (kind=4) :: field, i, j, k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(field, i, j, k)
+         isSplitOrAdvanced = sgg%med(media)%is%split_and_useless.or. & 
+                             sgg%med(media)%is%already_YEEadvanced_byconformal
+
+      end function   
 
       logical function isThinWireWithinBounds(field,i,j,k)
          integer(kind=4) :: field, i,j,k
@@ -2113,9 +2029,13 @@ contains
                                   isWithinBounds(field, i, j, k)
       end function
 
-      ! logical function isPec(direction, i, j, k) 
-
-      ! end function
+      logical function isPECorSurface(field, i, j, k) 
+         integer(kind=4) :: field, i,j,k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(field, i, j, k)
+         isPECorSurface = sgg%med(media)%is%PEC .or. &
+                          sgg%med(media)%is%Surface
+      end function
 
       logical function isThinWire(field, i, j, k)
          integer(kind=4) :: field, i,j,k
