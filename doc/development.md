@@ -19,6 +19,21 @@ If you use intel oneapi compiler, make sure to run
   export CXX=icpx
 ```
 
+## NVIDIA/Linux Compilation
+
+```shell
+  export version=24.11
+  export NVARCH=`uname -s`_`uname -m`;
+  export NVCOMPILERS=/opt/nvidia/hpc_sdk;
+  
+  export PATH=$NVCOMPILERS/$NVARCH/$version/compilers/bin:$PATH;
+  export PATH=$NVCOMPILERS/$NVARCH/$version/comm_libs/mpi/bin:$PATH
+
+  export FC="nvfortran"
+  export CC="nvc"
+  export CXX="nvc++"
+```
+
 ### Compilation options
 
 #### HDF5 Libraries
