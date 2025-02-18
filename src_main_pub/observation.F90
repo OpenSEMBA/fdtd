@@ -2556,7 +2556,7 @@ contains
       integer( kind = 4)  ::  iii, kkk, jjj, jjj_m, iii_m, kkk_m,NtimeforVolumic,imed,imed1,imed2,imed3,imed4,medium
       logical :: esborde,wirecrank
       REAL (KIND=RKIND_tiempo)    ::  at
-      real (kind = RKIND) :: jx,jy,jz, jdir
+      real (kind = RKIND) :: jx,jy,jz, jdir, jdir1, jdir2
       integer(kind=4) :: conta !para realmente dar tangenciales de campos en los medios superficiales
       character(len=*), INTENT(in) :: wiresflavor
 
@@ -2572,7 +2572,7 @@ contains
 
       logical ::  INIT,GEOM,ASIGNA,electric,magnetic
       !!!
-      at=-1; jx=-1; jy=-1;jz=-1;jdir=-1  !para que gfortran no me diga que no las inicializo
+      at=-1; jx=-1; jy=-1;jz=-1;jdir=-1;jdir1=-1;jdir2=-1  !para que gfortran no me diga que no las inicializo
 
       !---------------------------> empieza UpdateObservation <---------------------------------------
       do ii = 1, sgg%NumberRequest
@@ -3142,86 +3142,27 @@ contains
                                  do III = i1, i2      
                                    !saca current en surfaces 0124
                                     if (field/=mapvtk) then
-                                       if (((sgg%med(sggMiHx(III , JJJ, KKK))%Is%PEC).or. &
-                                       (sgg%med(sggMiHx(III , JJJ, KKK))%Is%Surface).or.  &
-                                       (field==icurX)).and.(iii <= SINPML_fullsize(iHx)%XE).and.(jjj <= SINPML_fullsize(iHx)%YE).and.(kkk <= SINPML_fullsize(iHx)%ZE)) then
-                                          conta=conta+1
-                                          Jy=(dzh(KKK ) * Hz( III -1, JJJ   , KKK   ) + dzh(KKK +1) *Hz( III -1, JJJ   , KKK +1) )/1.0_RKIND -  &
-                                             (dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/1.0_RKIND +  &
-                                              dxh(III )*( Hx( III   , JJJ   , KKK +1) -              Hx( III   , JJJ   , KKK -1) )/1.0_RKIND
-                                          !el Hx al promediarlo con el suyo (i,j,k) a ambos lados pierde su componente y solo quedan las adyacentes     
-                                          !a pesar de ser l�gico tengo dudas de esa division por 2 caso tiras guada 0824 !?!?
-                                          !he quitado la division por 2 porque el lazo debe tragarse los lados de la celda
-                                          !otro tema ser�a la resta de la corriente de desplazamiento ahora que tambien calculamos campo electrico es posible 020824
-                                          Jz=(dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/1.0_RKIND -  &
-                                             (dyh(JJJ ) * Hy( III -1, JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III -1, JJJ +1, KKK   ) )/1.0_RKIND +  &
-                                              dxh(III )*( Hx( III   , JJJ -1, KKK   ) -              Hx( III   , JJJ +1, KKK   ) )/1.0_RKIND 
-  
-                                          output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = 0.0_RKIND
-                                          output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy
-                                          output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz
-                                          !ELECTRIC    
-                                          output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iHx)
-                                          output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iHx)
-                                          output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iHx)
-                                          !MAGNETIC  
-                                          output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iHx)
-                                          output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iHx)
-                                          output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHx)
-                                       endif
-                                       if (((sgg%med(sggMiHy(III, JJJ, KKK))%Is%PEC).or. &
-                                       (sgg%med(sggMiHy(III, JJJ, KKK))%Is%Surface).or. &
-                                       (field==icurY)).and.(iii <= SINPML_fullsize(iHy)%XE).and.(jjj <= SINPML_fullsize(iHy)%YE).and.(kkk <= SINPML_fullsize(iHy)%ZE)) then
-                                          conta=conta+1
-                                          Jz=(dxh(III ) * Hx( III   , JJJ -1, KKK   ) + dxh(III +1) *Hx( III +1, JJJ -1, KKK   ) )/1.0_RKIND -  &
-                                             (dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/1.0_RKIND +  &
-                                              dyh(JJJ )*( Hy( III +1, JJJ   , KKK   ) -              Hy( III -1, JJJ   , KKK   ) )/1.0_RKIND
-                                          !
-                                          Jx=(dzh(KKK ) * Hz( III   , JJJ   , KKK   ) + dzh(KKK +1) *Hz( III   , JJJ   , KKK +1) )/1.0_RKIND -  &
-                                             (dzh(KKK ) * Hz( III   , JJJ -1, KKK   ) + dzh(KKK +1) *Hz( III   , JJJ -1, KKK +1) )/1.0_RKIND +  &
-                                              dyh(JJJ )*( Hy( III   , JJJ   , KKK -1) -              Hy( III   , JJJ   , KKK +1) )/1.0_RKIND
+                                       do HField = iHx, iHz
+                                          if ( (isPECorSurface(Hfield, iii, jjj, kkk) .or. field == blockCurrent(Hfield)) .and. &
+                                                isWithinBounds(Hfield, iii, jjj, kkk)) then 
+                                                   conta = conta + 1
+                                                   jdir1 = computeJ1(HField, iii, jjj, kkk)
+                                                   jdir2 = computeJ2(HField, iii, jjj, kkk)
 
-                                          !
-                                          output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
-                                          output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = 0.0_RKIND
-                                          output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = Jz     
-                                          !ELECTRIC   
-                                          output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iHy)
-                                          output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iHy)
-                                          output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iHy)
-                                          !MAGNETIC   
-                                          output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iHy)
-                                          output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iHy)
-                                          output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHy)
-                                       endif
-                                       if (((sgg%med(sggMiHz(III, JJJ, KKK))%Is%PEC).or. &
-                                       (sgg%med(sggMiHz(III, JJJ, KKK))%Is%Surface).or. &
-                                       (field==icurZ)).and.(iii <= SINPML_fullsize(iHz)%XE).and.(jjj <= SINPML_fullsize(iHz)%YE).and.(kkk <= SINPML_fullsize(iHz)%ZE)) then
-                                          conta=conta+1
-                                          Jx=(dyh(JJJ ) * Hy( III   , JJJ   , KKK -1) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK -1) )/1.0_RKIND -  &
-                                             (dyh(JJJ ) * Hy( III   , JJJ   , KKK   ) + dyh(JJJ +1) *Hy( III   , JJJ +1, KKK   ) )/1.0_RKIND +  &
-                                              dzh(KKK )*( Hz( III   , JJJ +1, KKK   ) -              Hz( III   , JJJ -1, KKK   ) )/1.0_RKIND
-                                          !
-                                          Jy=(dxh(III ) * Hx( III   , JJJ   , KKK   ) + dxh(III +1) *Hx( III +1, JJJ   , KKK   ) )/1.0_RKIND -  &
-                                             (dxh(III ) * Hx( III   , JJJ   , KKK -1) + dxh(III +1) *Hx( III +1, JJJ   , KKK -1) )/1.0_RKIND +  &
-                                              dzh(KKK )*( Hz( III -1, JJJ   , KKK   ) -              Hz( III +1, JJJ   , KKK   ) )/1.0_RKIND
-
-
-                                           output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = Jx
-                                           output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = Jy
-                                           output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = 0.0_RKIND   
-                                          !ELECTRIC 
-                                           output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iHz)
-                                           output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iHz)
-                                           output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iHz)
-                                          !MAGNETIC  
-                                           output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iHz)
-                                           output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iHz)
-                                           output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHz)
-                                       endif
+                                                   output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHz), Hfield == iHx)
+                                                   output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHx), Hfield == iHy)
+                                                   output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHy), Hfield == iHz)
+         
+                                                   output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,HField)
+                                                   output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,HField)
+                                                   output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,HField)
+                                                   output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,HField)
+                                                   output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,HField)
+                                                   output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,HField)
+                                          end if
+                                       end do
                                     else                                       !si es mapvtk y si no es vacio, asimilo la salida a corrientes iBloqueJ? para que vtk.f90 los escriba en quads
 
-                                
                                     do Hfield = iHx, iHz
                                        if (surfaceIsMedia(Hfield, iii, jjj, kkk))then
                                              conta=conta+1
@@ -3605,6 +3546,57 @@ contains
 
       contains 
 
+      logical function isPECorSurface(field, i, j, k) 
+         integer(kind=4) :: field, i,j,k
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+         media = getMedia(field, i, j, k)
+         isPECorSurface = sgg%med(media)%is%PEC .or. &
+                        sgg%med(media)%is%Surface
+      end function
+
+      integer function blockCurrent(field)
+         integer (kind=4) :: field
+         select case(field)
+         case(iHx)
+            blockCurrent = iCurX
+         case(iHy)
+            blockCurrent = iCurY
+         case(iHz)
+            blockCurrent = iCurZ
+         end select
+      end function
+
+      function computeJ1(f, i, j, k) result(res)
+         integer (kind=4) :: f, i, j, k, c
+         real (kind=rkind) :: res
+
+         c = mod(f-2,3)+4
+
+         res = - ((getDelta(c, i, j, k)* getField(c,i,j,k)                               + getDelta(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx))*getField(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx))) - &
+                  (getDelta(c, i, j, k)* getField(c,i-u(f,iHx),j-u(f,iHy),k-u(f,iHz))    + getDelta(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx))*getField(c, i-u(f,iHx)+u(f,iHy), j-u(f,iHy)+u(f,iHz), k-u(f,iHz)+u(f,iHx))) + &
+                   getDelta(f, i, j, k)*(getField(f,i-u(f,iHy),j-u(f,iHz),k-u(f,iHx))    -                                                 getField(f, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx))))
+
+      end function
+      function computeJ2(f, i, j, k) result(res)
+         integer (kind=4) :: f, i, j, k, c
+         real (kind=rkind) :: res
+
+         c = mod(f-3,3)+4
+
+         res =   (getDelta(c, i, j, k)* getField(c,i,j,k)                               + getDelta(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy))*getField(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy))) - &
+                 (getDelta(c, i, j, k)* getField(c,i-u(f,iHx),j-u(f,iHy),k-u(f,iHz))    + getDelta(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy))*getField(c, i-u(f,iHx)+u(f,iHz),j-u(f,iHy)+u(f,iHx),k-u(f,iHz)+u(f,iHy))) + &
+                  getDelta(f, i, j, k)*(getField(f,i-u(f,iHz),j-u(f,iHx),k-u(f,iHy))    -                                                 getField(f, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy)))
+      end function
+
+      integer function u(field1, field2)
+         integer(kind=4) :: field1, field2
+         if (field1 == field2) then 
+            u = 1
+         else
+            u = 0
+         end if
+      end function
+
       logical function isSplitOrAdvanced(field, i, j, k)
          integer (kind=4) :: field, i, j, k
          integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
@@ -3618,11 +3610,11 @@ contains
          integer (kind=4) :: field, i, j, k
          real (kind=rkind) :: res
          select case (field)
-         case(iEx)
+         case(iEx, iHx)
             res = dxh(i)
-         case(iEy)
+         case(iEy, iHy)
             res = dyh(j)
-         case(iEz)
+         case(iEz, iHz)
             res = dzh(k)
          end select
       end function
