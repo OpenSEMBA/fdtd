@@ -420,6 +420,7 @@ def test_observation_wires_with_collision_Jprobe(tmp_path):
     solver.run()
 
     vtkmapfile = solver.getCurrentVTKMap()
+    
     assert os.path.isfile(vtkmapfile)
 
     face_tag_dict = createPropertyDictionary(
