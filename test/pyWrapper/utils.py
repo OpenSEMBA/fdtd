@@ -33,7 +33,7 @@ if platform == "linux":
 elif platform == "win32":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
 
-
+NGSPICE_DLL = os.path.join(os.getcwd(), 'precompiled_libraries', 'windows-intel', 'ngspice', 'ngspice.dll')
 TEST_DATA_FOLDER = os.path.join(os.getcwd(), 'testData/')
 CASES_FOLDER = os.path.join(TEST_DATA_FOLDER, 'cases/')
 MODELS_FOLDER = os.path.join(TEST_DATA_FOLDER, 'models/')
