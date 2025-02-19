@@ -72,8 +72,8 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert np.all(p.cell_init == np.array([2, 2, 2]))
 
 
-def test_observation_three_surfaces(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_three_surfaces.fdtd.json'
+def test_three_surfaces(tmp_path):
+    fn = CASES_FOLDER + 'observation/three_surfaces.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -106,8 +106,8 @@ def test_observation_three_surfaces(tmp_path):
     assert line_media_dict[0.5] == 8  # PEC line
     assert line_media_dict[3.5] == 8  # SGBC line
 
-def test_observation_three_surfaces_Jprobe(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_three_surfaces_Jprobe.fdtd.json'
+def test_three_surfaces_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/three_surfaces_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver['general']['numberOfSteps'] = 1
@@ -127,8 +127,8 @@ def test_observation_three_surfaces_Jprobe(tmp_path):
     assert line_tag_dict[128] == 10
     assert line_tag_dict[192] == 8
 
-def test_observation_three_one_cell_surfaces_Jprobe(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_three_one_cell_surfaces_Jprobe.fdtd.json'
+def test_three_one_cell_surfaces_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/three_one_cell_surfaces_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver['general']['numberOfSteps'] = 1
@@ -148,8 +148,8 @@ def test_observation_three_one_cell_surfaces_Jprobe(tmp_path):
     assert line_tag_dict[128] == 3
     assert line_tag_dict[192] == 2
 
-def test_observation_one_cell_PEC_surface_Jprobe(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_one_cell_surface_Jprobe.fdtd.json'
+def test_one_cell_PEC_surface_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/one_cell_surface_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
 
@@ -192,8 +192,8 @@ def test_observation_one_cell_PEC_surface_Jprobe(tmp_path):
     line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
     assert line_tag_dict[64] == 4
 
-def test_observation_one_cell_SGBC_surface_Jprobe(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_one_cell_surface_Jprobe.fdtd.json'
+def test_one_cell_SGBC_surface_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/one_cell_surface_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
 
@@ -240,8 +240,8 @@ def test_observation_one_cell_SGBC_surface_Jprobe(tmp_path):
 
 
 
-def test_observation_1_volume(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_pec_volume.fdtd.json'
+def test_1_volume(tmp_path):
+    fn = CASES_FOLDER + 'observation/pec_volume.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -268,8 +268,8 @@ def test_observation_1_volume(tmp_path):
     assert len(line_media_dict) == 0
 
 
-def test_observation_2_volumes(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_pec_volumes.fdtd.json'
+def test_2_volumes(tmp_path):
+    fn = CASES_FOLDER + 'observation/pec_volumes.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -297,8 +297,8 @@ def test_observation_2_volumes(tmp_path):
     assert len(line_media_dict) == 0
 
 
-def test_observation_1_line(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_pec_line.fdtd.json'
+def test_1_line(tmp_path):
+    fn = CASES_FOLDER + 'observation/pec_line.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -325,8 +325,8 @@ def test_observation_1_line(tmp_path):
     assert line_media_dict[0.5] == 2  # PEC line
 
 
-def test_observation_volume_and_surfaces(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_volume_and_surfaces.fdtd.json'
+def test_volume_and_surfaces(tmp_path):
+    fn = CASES_FOLDER + 'observation/volume_and_surfaces.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -361,8 +361,8 @@ def test_observation_volume_and_surfaces(tmp_path):
     assert line_media_dict[3.5] == 3  # SGBC line
 
 
-def test_observation_count_bug(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_count_bug.fdtd.json'
+def test_count_bug(tmp_path):
+    fn = CASES_FOLDER + 'observation/count_bug.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -380,8 +380,8 @@ def test_observation_count_bug(tmp_path):
     solver.cleanUp()
     solver.run()
 
-def test_observation_wires(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wires.fdtd.json'
+def test_wires(tmp_path):
+    fn = CASES_FOLDER + 'observation/wires.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -411,8 +411,8 @@ def test_observation_wires(tmp_path):
     assert line_media_dict[10] == 6 
     assert line_media_dict[21] == 1 
 
-def test_observation_wires_with_collision_Jprobe(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wires_with_collision_Jprobe.fdtd.json'
+def test_wires_collision_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/wires_collision_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver['general']['numberOfSteps'] = 1
@@ -437,8 +437,8 @@ def test_observation_wires_with_collision_Jprobe(tmp_path):
     assert line_tag_dict[256] == 4 #Wire3
 
 
-def test_observation_wires_with_collision(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wires_with_collision.fdtd.json'
+def test_wires_collision(tmp_path):
+    fn = CASES_FOLDER + 'observation/wires_collision.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -471,8 +471,8 @@ def test_observation_wires_with_collision(tmp_path):
     assert line_media_dict[21] == 1 
     assert line_media_dict[0.5] == 2  # PEC line
 
-def test_observation_wire_x_with_collision_y(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wire_x_with_collision_y.fdtd.json'
+def test_wire_x_collision_y(tmp_path):
+    fn = CASES_FOLDER + 'observation/wire_x_collision_y.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -502,8 +502,8 @@ def test_observation_wire_x_with_collision_y(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
-def test_observation_wire_x_with_collision_y_Jprobe(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wire_x_with_collision_y_Jprobe.fdtd.json'
+def test_wire_x_collision_y_Jprobe(tmp_path):
+    fn = CASES_FOLDER + 'observation/wire_x_collision_y_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver['general']['numberOfSteps'] = 1
@@ -524,8 +524,8 @@ def test_observation_wire_x_with_collision_y_Jprobe(tmp_path):
 
 
 
-def test_observation_wire_x_with_collision_z(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wire_x_with_collision_z.fdtd.json'
+def test_wire_x_collision_z(tmp_path):
+    fn = CASES_FOLDER + 'observation/wire_x_collision_z.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -555,8 +555,8 @@ def test_observation_wire_x_with_collision_z(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
-def test_observation_wire_y_with_collision_x(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wire_y_with_collision_x.fdtd.json'
+def test_wire_y_collision_x(tmp_path):
+    fn = CASES_FOLDER + 'observation/wire_y_collision_x.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -586,8 +586,8 @@ def test_observation_wire_y_with_collision_x(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
-def test_observation_wire_y_with_collision_z(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wire_y_with_collision_z.fdtd.json'
+def test_wire_y_collision_z(tmp_path):
+    fn = CASES_FOLDER + 'observation/wire_y_collision_z.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -617,8 +617,8 @@ def test_observation_wire_y_with_collision_z(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
-def test_observation_wire_z_with_collision_x(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wire_z_with_collision_x.fdtd.json'
+def test_wire_z_collision_x(tmp_path):
+    fn = CASES_FOLDER + 'observation/wire_z_collision_x.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -648,8 +648,8 @@ def test_observation_wire_z_with_collision_x(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
-def test_observation_wire_z_with_collision_y(tmp_path):
-    fn = CASES_FOLDER + 'observation/observation_wire_z_with_collision_y.fdtd.json'
+def test_wire_z_collision_y(tmp_path):
+    fn = CASES_FOLDER + 'observation/wire_z_collision_y.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
