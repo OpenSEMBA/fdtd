@@ -815,7 +815,8 @@ CONTAINS
                            !
                            time=att(indi)
                            WRITE (charc, '(i10)') indi
-                           fichero=trim(adjustl(filename))//'_'//trim (adjustl(charc))//'.vtk'
+                           fichero=trim(adjustl('A'))//'_'//trim (adjustl(charc))//'.vtk'
+                           ! fichero=trim(adjustl(filename))//'_'//trim (adjustl(charc))//'.vtk'
 
 
                            if ((.not.dontwritevtk).or.(sgg%observation(ii)%P(1)%What==mapvtk)) then !el mapvtk lo procesa siempre
@@ -1144,8 +1145,6 @@ CONTAINS
       !endif
 
       !!!! 
-      write(*,*) 'writeVTKfile'
-      write(*,*) fichero
       open(newunit=myunit,file=trim(adjustl(fichero(1:iroot2)))//'/'//trim(adjustl(fichero)),form='formatted')
       close(myunit,status='delete')
       open(newunit=myunit,file=trim(adjustl(fichero(1:iroot2)))//'/'//trim(adjustl(fichero)),form='formatted')
