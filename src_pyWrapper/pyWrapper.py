@@ -296,7 +296,6 @@ class FDTD():
 
         os.chdir(self.getFolder())
         self.output = subprocess.run(self.run_command)
-
         self._hasRun = True
         assert self.hasFinishedSuccessfully()
 
