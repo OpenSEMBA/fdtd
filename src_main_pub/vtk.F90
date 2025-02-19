@@ -815,8 +815,7 @@ CONTAINS
                            !
                            time=att(indi)
                            WRITE (charc, '(i10)') indi
-                           fichero=trim(adjustl('A'))//'_'//trim (adjustl(charc))//'.vtk'
-                           ! fichero=trim(adjustl(filename))//'_'//trim (adjustl(charc))//'.vtk'
+                           fichero=trim(adjustl(filename))//'_'//trim (adjustl(charc))//'.vtk'
 
 
                            if ((.not.dontwritevtk).or.(sgg%observation(ii)%P(1)%What==mapvtk)) then !el mapvtk lo procesa siempre
