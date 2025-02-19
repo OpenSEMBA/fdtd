@@ -1,5 +1,6 @@
 name: windows
 
+
 on:
 
   pull_request:
@@ -43,6 +44,7 @@ jobs:
       uses: mpi4py/setup-mpi@v1
       with:
         mpi: 'intelmpi'
+
 
     - name: Setup intel fortran
       uses: fortran-lang/setup-fortran@v1
