@@ -44,9 +44,6 @@ jobs:
       with:
         mpi: 'intelmpi'
 
-    - name: Check LongPathsEnabled
-      run: |
-           (Get-ItemProperty "HKLM:System\CurrentControlSet\Control\FileSystem").LongPathsEnabled
 
     - name: Setup intel fortran
       uses: fortran-lang/setup-fortran@v1
