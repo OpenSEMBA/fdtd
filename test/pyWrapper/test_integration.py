@@ -156,41 +156,24 @@ def test_one_cell_PEC_surface_Jprobe(tmp_path):
     solver['general']['numberOfSteps'] = 1
     solver['materialAssociations'][0]['materialId'] = 1
 
-    solver["probes"][0]["component"] = "x"
-    solver.cleanUp()
-    solver.run()
-    vtkmapfile = solver.getCurrentVTKMap()
-    assert os.path.isfile(vtkmapfile)
+    expected_face_tags = {
+        "x": 729,
+        "y": 729,
+        "z": 728
+    }
 
-    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
-    assert face_tag_dict[0] == 729
+    for x in ["x", "y", "z"]:
+        solver["probes"][0]["component"] = x
+        solver.cleanUp()
+        solver.run()
+        vtkmapfile = solver.getCurrentVTKMap()
+        assert os.path.isfile(vtkmapfile)
 
-    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
-    assert line_tag_dict[64] == 4
+        face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
+        assert face_tag_dict[0] == expected_face_tags[x]
 
-    solver["probes"][0]["component"] = "y"
-    solver.cleanUp()
-    solver.run()
-    vtkmapfile = solver.getCurrentVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
-    assert face_tag_dict[0] == 729
-
-    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
-    assert line_tag_dict[64] == 4
-
-    solver["probes"][0]["component"] = "z"
-    solver.cleanUp()
-    solver.run()
-    vtkmapfile = solver.getCurrentVTKMap()
-    assert os.path.isfile(vtkmapfile)
-
-    face_tag_dict = createPropertyDictionary(vtkmapfile, celltype=9, property='tagnumber')
-    assert face_tag_dict[0] == 728
-
-    line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
-    assert line_tag_dict[64] == 4
+        line_tag_dict = createPropertyDictionary(vtkmapfile, celltype=3, property='tagnumber')
+        assert line_tag_dict[64] == 4
 
 def test_one_cell_SGBC_surface_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/one_cell_surface_Jprobe.fdtd.json'
