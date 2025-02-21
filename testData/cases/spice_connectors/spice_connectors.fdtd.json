@@ -92,7 +92,7 @@
 	"materialAssociations": [
 		{
 			"name": "wire",
-						"elementIds": [ 1 ],
+			"elementIds": [ 1 ],
 			"materialId": 1,
 			"initialTerminalId": 2,
 			"endTerminalId": 3

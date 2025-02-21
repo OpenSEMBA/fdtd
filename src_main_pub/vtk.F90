@@ -1144,7 +1144,6 @@ CONTAINS
       !endif
 
       !!!! 
-
       open(newunit=myunit,file=trim(adjustl(fichero(1:iroot2)))//'/'//trim(adjustl(fichero)),form='formatted')
       close(myunit,status='delete')
       open(newunit=myunit,file=trim(adjustl(fichero(1:iroot2)))//'/'//trim(adjustl(fichero)),form='formatted')

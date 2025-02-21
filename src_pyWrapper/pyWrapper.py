@@ -316,6 +316,12 @@ class FDTD():
             for file in files:
                 os.remove(file)
 
+        subfolders = [item for item in os.listdir(
+            folder) if os.path.isdir(os.path.join(folder, item))]
+        for f in subfolders:
+            shutil.rmtree(f, ignore_errors=True)
+
+
     def getSolvedProbeFilenames(self, probe_name):
         if not "probes" in self._input:
             raise ValueError('Solver does not contain probes.')
@@ -335,9 +341,24 @@ class FDTD():
             current_path) if os.path.isdir(os.path.join(current_path, item))]
         if len(folders) != 1:
             return None
-        mapFile = os.path.join(current_path, folders[0], folders[0]+"_1.vtk")
-        assert os.path.isfile(mapFile)
-        return mapFile
+        for folder in folders:
+            mapFile = os.path.join(current_path, folder, folder+"_1.vtk")
+            if os.path.isfile(mapFile):
+                return mapFile            
+        raise ValueError("Unable to find mapvatk file")
+
+
+    def getCurrentVTKMap(self):
+        current_path = os.getcwd()
+        folders = [item for item in os.listdir(
+            current_path) if os.path.isdir(os.path.join(current_path, item))]
+        if len(folders) != 1:
+            return None
+        for folder in folders:
+            mapFile = os.path.join(current_path, folder, folder+"_1_current.vtk")
+            if os.path.isfile(mapFile):
+                return mapFile
+        raise ValueError("Unable to find current vtk file")
 
     def getMaterialProperties(self, materialName):
         if 'materials' in self._input:

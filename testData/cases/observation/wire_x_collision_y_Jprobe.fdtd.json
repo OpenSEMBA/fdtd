@@ -1,0 +1,78 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Example input with sgbc material",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 2000
+    },
+    
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 10, 10],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [
+			{"id": 1 , "relativePosition": [ 3, 3, 3]},		
+			{"id": 2 , "relativePosition": [ 5, 3, 3]}		
+		],
+        "elements": [
+            {"id": 1, "type": "polyline", "coordinateIds": [1, 2 ]},
+            {"id": 2, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 5, 3] ] ]},
+            {"id": 3, "type": "cell", "intervals": [ [ [0, 0, 0], [9, 9, 9] ] ]}
+        ]
+    },
+
+    "materials": [
+        {
+            "name": "wireMaterial",
+            "id": 1,
+            "type": "wire",
+            "radius": 0.001,
+            "resistancePerMeter": 22.9e-3
+        },
+        {
+            "name": "terminal1",
+            "id": 2,
+            "type": "terminal",
+            "terminations": [ {"type": "series", "resistance": 50.0} ]
+        },
+        {
+            "type": "pec",
+            "id": 3
+        }
+
+    ],
+    "materialAssociations": [
+        {
+            "name": "wire_x",
+            "elementIds": [ 1 ],
+            "materialId": 1,
+            "initialTerminalId": 2,
+            "endTerminalId": 2
+        },
+        {
+            "name": "pec_line_y",
+            "elementIds": [ 2 ],
+            "materialId": 3
+        }
+
+    ],
+    "probes": [
+        {
+            "name": "current_movie",
+            "type": "movie",
+            "field": "currentDensity",
+            "component": "x",
+            "elementIds": [3],
+            "initialTime": 0.0, 
+            "finalTime": 20e-8, 
+            "samplingPeriod": 10e-12
+        }
+    ]
+
+}
