@@ -12,8 +12,8 @@
         "xUpper": {"type": "pec"},
         "yLower": {"type": "pmc"},
         "yUpper": {"type": "pmc"},
-        "zLower": {"type": "pml"},
-        "zUpper": {"type": "pml"}
+        "zLower": {"type": "mur"},
+        "zUpper": {"type": "mur"}
     },
 
     "mesh": {

@@ -15,12 +15,13 @@ option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
 option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
 option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
+option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
-option(SEMBA_FDTD_MAIN_LIB   "Compiles main library" ON)
-option(SEMBA_FDTD_COMPONENTS_LIB  "Compiles components library" ON)
-option(SEMBA_FDTD_OUTPUTS_LIB  "Compiles outputs library" ON)
+option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
+option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
+option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_definitions(-DCompileWithSMBJSON)
@@ -28,11 +29,18 @@ endif()
 if (SEMBA_FDTD_ENABLE_MTLN)
 	add_definitions(-DCompileWithMTLN)
 endif()
+if (SEMBA_FDTD_ENABLE_DOUBLE_PRECISION)
+	add_definitions(-DCompileWithReal8)
+else()
+	add_definitions(-DCompileWithReal4)
+endif()
 add_definitions(		
 	-DCompileWithInt2 
-	-DCompileWithReal4 
 	-DCompileWithOpenMP
 )
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+	add_definitions(-DCompileWithDebug)
+endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
