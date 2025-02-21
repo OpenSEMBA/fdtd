@@ -38,6 +38,9 @@ add_definitions(
 	-DCompileWithInt2 
 	-DCompileWithOpenMP
 )
+if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+	add_definitions(-DCompileWithDebug)
+endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
