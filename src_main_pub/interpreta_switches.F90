@@ -253,8 +253,7 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
             mpidirset=.true.
           endif
-           
-!!!!!!!#ifndef CompileWithGamusino              
+              
           case ('-pause')
             i = i + 1
             CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
@@ -369,7 +368,6 @@ CONTAINS
           CASE ('-clip')
             l%CLIPREGION = .TRUE.
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
-!endif del compileWithGamusino
 !!!!#endif        
 !     
   
