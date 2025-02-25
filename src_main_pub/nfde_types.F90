@@ -760,7 +760,9 @@ MODULE NFDETypes
       ! Thin Elements                         
       TYPE (ThinWires), POINTER ::             tWires => NULL ()
       TYPE (SlantedWires), POINTER ::          sWires => NULL ()
-      TYPE (ThinSlots), POINTER ::             tSlots => NULL ()    
+      TYPE (ThinSlots), POINTER ::             tSlots => NULL ()
+      ! Conformal
+      TYPE(conformal_t), pointer ::              conformal => NULL()
 #ifdef CompileWithMTLN
       TYPE (mtln_t), POINTER ::                mtln => NULL ()
 #endif
