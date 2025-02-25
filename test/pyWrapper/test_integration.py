@@ -679,3 +679,14 @@ def test_wire_z_collision_y(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
+def test_conformal_delay(tmp_path):
+    fn = CASES_FOLDER + 'observation/conformal.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+
+    solver.run()    
+    source = solver.getSolvedProbeFilenames("source")
+    t = source.data['time']
+    inc = source.data['incident']
+    back = source.data['field']
+    #assert delay time corresponds

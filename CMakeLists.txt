@@ -70,6 +70,7 @@ add_library(semba-types
 	"src_main_pub/nfde_types.F90"
 	"src_main_pub/fdetypes.F90"
 	"src_mtln/mtln_types.F90"
+	"src_conformal/conformal_types.F90"
 	"src_wires_pub/wires_types.F90"
 	"src_main_pub/lumped_types.F90"
 )

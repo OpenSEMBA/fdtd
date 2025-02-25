@@ -6,6 +6,7 @@ MODULE NFDETypes
 #ifdef CompileWithMTLN   
    USE mtln_types_mod
 #endif
+   USE conformal_types_mod
    !
    IMPLICIT NONE
    INTEGER (KIND=4), PARAMETER :: RK = RKIND
@@ -762,7 +763,7 @@ MODULE NFDETypes
       TYPE (SlantedWires), POINTER ::          sWires => NULL ()
       TYPE (ThinSlots), POINTER ::             tSlots => NULL ()
       ! Conformal
-      TYPE(conformal_t), pointer ::              conformal => NULL()
+      ! TYPE(conformal_regions_t), pointer ::     conformal => NULL()
 #ifdef CompileWithMTLN
       TYPE (mtln_t), POINTER ::                mtln => NULL ()
 #endif

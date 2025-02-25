@@ -11,6 +11,7 @@ extern "C" int test_mesh_polyline_to_linel();
 
 extern "C" int test_parser_ctor();
 extern "C" int test_parser_read_mesh();
+extern "C" int test_parser_read_conformal_volume();
 
 extern "C" int test_read_planewave();
 extern "C" int test_read_sgbc();
@@ -38,6 +39,7 @@ TEST(smbjson, mesh_polyline_to_linel)    { EXPECT_EQ(0, test_mesh_polyline_to_li
    
 TEST(smbjson, parser_ctor)               { EXPECT_EQ(0, test_parser_ctor()); }
 TEST(smbjson, parser_read_mesh)          { EXPECT_EQ(0, test_parser_read_mesh()); }
+TEST(smbjson, parser_read_conf_volume)   { EXPECT_EQ(0, test_parser_read_conformal_volume()); }
 TEST(smbjson, read_planewave)            { EXPECT_EQ(0, test_read_planewave()); }
 TEST(smbjson, read_dielectricslab)       { EXPECT_EQ(0, test_read_dielectricslab()); }
 TEST(smbjson, read_thinslot)             { EXPECT_EQ(0, test_read_thinslot()); }

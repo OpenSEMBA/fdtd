@@ -1,0 +1,112 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Planewave illuminating a Conformal box.",
+
+    "general": {
+        "timeStep": 3e-12,
+        "numberOfSteps": 50000
+    },
+    
+    "boundary": {
+        "all": {
+            "type": "pec"
+        }
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [2, 2, 6],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [
+            {"id": 1,  "relativePosition": [1, 1, 1]},
+            {"id": 2,  "relativePosition": [1, 1, 5]},
+            {"id": 3,  "relativePosition": [0, 0, 4]},
+            {"id": 4,  "relativePosition": [1, 0, 4]},
+            {"id": 5,  "relativePosition": [0, 1, 4]},
+            {"id": 6,  "relativePosition": [1, 1, 4]},
+            {"id": 7,  "relativePosition": [0, 0, 4.25]},
+            {"id": 8,  "relativePosition": [1, 0, 4.25]},
+            {"id": 9,  "relativePosition": [0, 1, 4.25]},
+            {"id": 10, "relativePosition": [1, 1, 4.25]},
+            {"id": 11, "relativePosition": [1, 1, 36]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [1]},
+            {"id": 2, "type": "node", "coordinateIds": [2]},
+            {"id": 3, "type": "cell", "name": "pw-box", "intervals": [ [ [-1, -1, 3], [3, 3, 35] ] ]},
+            {"id": 4, "type": "cell", "name": "square", "intervals": [ [ [0, 0, 4], [1, 1, 4] ] ]},
+            {
+                "id": 5, 
+                "type": "conformalVolume", 
+                "name": "conformal-box", 
+                "intervals" : [[[0,0,4],[1,1,4]]],
+                "triangles": [ 
+                    [4, 8, 3], 
+                    [3, 8, 7],
+                    [6, 10, 4],
+                    [4, 10, 8],
+                    [6, 9, 10],
+                    [5, 9, 6],
+                    [3, 7, 5],
+                    [5, 7, 9],
+                    [8, 9, 7],
+                    [10, 9, 8]
+                ]
+            },
+            {"id": 6, "type": "node", "coordinateIds": [11]}
+        ]
+    },
+
+    "materials": [ 
+        {
+            "name": "pec",
+            "id": 1, 
+            "type": "pec"
+        }
+    ],
+
+    "materialAssociations": [
+        {"materialId": 2, "elementIds": [5]}
+    ],
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [3],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5708,
+                "phi": 0.0
+            }
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "front",
+            "type": "point",
+            "field": "electric",
+            "directions": ["x"],
+            "elementIds": [1]
+        },
+        {
+            "name": "back",
+            "type": "point",
+            "field": "electric",
+            "directions": ["x"],
+            "elementIds": [2]
+        },
+        {
+            "name": "source",
+            "type": "point",
+            "field": "electric",
+            "directions": ["x"],
+            "elementIds": [6]
+        }
+    ]
+}
