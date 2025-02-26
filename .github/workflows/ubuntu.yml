@@ -24,6 +24,7 @@ jobs:
         mpi: ["Yes", "No"]
         mtln: ["Yes"]
         hdf: ["Yes"]
+        double-precision: ["No"]
 
         include:
           - os: ubuntu-22.04
@@ -32,18 +33,28 @@ jobs:
             mpi: "No"
             mtln: "No"
             hdf: "Yes"
+            double-precision: "No"
+
           - os: ubuntu-latest
             compiler: {name: 'nvidia-hpc', version: '24.5'}
             build-type: "Release"
             mpi: "No"
             mtln: "No"
             hdf: "No"
-          
+            double-precision: "No"
+
+          - os: ubuntu-latest
+            compiler: {name: 'intel', version: '2024.2'}
+            build-type: "Release"
+            mpi: "Yes"
+            mtln: "No"
+            hdf: "Yes"
+            double-precision: "Yes"
             
       fail-fast: false
             
     runs-on: ${{ matrix.os }}
-    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})
 
     steps:       
     - name: Checkout
@@ -80,7 +91,8 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
           -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
-          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
+          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}}
         cmake --build build -j
       
     - name: Run unit tests 

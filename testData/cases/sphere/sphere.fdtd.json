@@ -40903,7 +40903,7 @@
     ],
     "materialAssociations": [
         {
-                        "materialId": 1,
+            "materialId": 1,
             "elementIds": [
                 3
             ]

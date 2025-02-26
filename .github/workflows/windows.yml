@@ -24,11 +24,12 @@ jobs:
         mpi: ["No"]
         mtln: ["Yes"]
         hdf: ["Yes"]
+        double-precision: ["Yes", "No"]
 
       fail-fast: false
     runs-on: ${{matrix.os}}
 
-    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})
+    name: ${{matrix.os}} / ${{matrix.compiler.name}} / ${{matrix.build-type}}-mpi(${{matrix.mpi}})-mtln(${{matrix.mtln}})-hdf(${{matrix.hdf}})-double(${{matrix.double-precision}})
 
     steps:
 
@@ -63,7 +64,8 @@ jobs:
           -DCMAKE_BUILD_TYPE=${{matrix.build-type}} \
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
           -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
-          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}}
+          -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
+          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}}
         cmake --build build -j 
 
     - name: Run unit tests 

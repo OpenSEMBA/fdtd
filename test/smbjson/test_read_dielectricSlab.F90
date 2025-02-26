@@ -54,8 +54,8 @@ contains
       expected%front%tipoFrontera(F_XU) = F_PEC
       expected%front%tipoFrontera(F_YL) = F_PMC
       expected%front%tipoFrontera(F_YU) = F_PMC
-      expected%front%tipoFrontera(F_ZL) = F_PML
-      expected%front%tipoFrontera(F_ZU) = F_PML
+      expected%front%tipoFrontera(F_ZL) = F_MUR
+      expected%front%tipoFrontera(F_ZU) = F_MUR
 
       ! Expected sources.
       allocate(expected%plnSrc%collection(1))

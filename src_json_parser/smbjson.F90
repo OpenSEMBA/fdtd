@@ -177,6 +177,7 @@ contains
       res%tSlots = this%readThinSlots()
 
 #ifdef CompileWithMTLN
+      write(*,*) 'debug: mtl'
       res%mtln = this%readMTLN(res%despl)
 #endif
 
@@ -1963,7 +1964,8 @@ contains
          ! if (res%containedWithinElementId == -1) then
          !    write(error_unit, *) errorMsgInit, "multiwire associations must include: ", J_MAT_ASS_CAB_CONTAINED_WITHIN_ID
          ! end if
-         if (this%mesh%checkElementId(res%containedWithinElementId) /= 0) then
+         if (.not. (this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)) .and. &
+            (this%mesh%checkElementId(res%containedWithinElementId) /= 0)) then
             write(error_unit, *) errorMsgInit, "element with id ", res%containedWithinElementId, " not found."
          end if
       end if

@@ -198,7 +198,7 @@ CONTAINS
       !goto 668
    END IF
    l%opcionestotales=''
-   do i=2,n
+   do i=1,n
       CALL getcommandargument (l%chaininput,i,l%chain,l%length,statuse)
       IF (statuse /= 0) THEN
          CALL stoponerror (l%layoutnumber, l%size, 'Reading input',.true.)
@@ -211,7 +211,7 @@ CONTAINS
 
  
    IF (n > 0) THEN
-      i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
+      i = 1  ! se empieza en 1 porque el primer argumento es siempre el nombre del ejecutable
       DO while (i <= n)
          CALL getcommandargument (l%chaininput, i, l%chain, l%length, statuse)
          IF (statuse /= 0) THEN
@@ -253,8 +253,7 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
             mpidirset=.true.
           endif
-           
-!!!!!!!#ifndef CompileWithGamusino              
+              
           case ('-pause')
             i = i + 1
             CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
@@ -369,7 +368,6 @@ CONTAINS
           CASE ('-clip')
             l%CLIPREGION = .TRUE.
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
-!endif del compileWithGamusino
 !!!!#endif        
 !     
   
@@ -1791,7 +1789,7 @@ CONTAINS
 
    IF (n > 0) THEN
       num_nfdes=0
-      i = 2
+      i = 1
       DO while (i <= n)
          CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse)
          IF (statuse /= 0) THEN
@@ -1835,7 +1833,7 @@ CONTAINS
       END DO
       if (num_nfdes > 1) then
          temp_numnfdes=0
-         i = 2 ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
+         i = 1 ! se empieza en 1 porque el primer argumento es siempre el nombre del ejecutable
          DO while (i <= n)
             CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse)
              IF (statuse /= 0) THEN
@@ -1924,7 +1922,7 @@ CONTAINS
 
    temp_numnfdes=0
    IF (n > 0) THEN
-   i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
+   i = 1  ! se empieza en 1 porque el primer argumento es siempre el nombre del ejecutable
       DO while (i <= n)
          CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse)
          IF (statuse /= 0) THEN
