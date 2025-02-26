@@ -299,7 +299,7 @@ contains
 
          type(json_value), pointer :: triangles, triangle_ptr
          real, dimension(:), allocatable :: triangle
-         integer :: i, nTriangles
+         integer :: i, j, nTriangles
          real, dimension(:), allocatable :: cellIni, cellEnd
 
          logical :: containsTriangles
@@ -314,7 +314,9 @@ contains
          do i = 1, nTriangles
             call this%core%get_child(triangles, i, triangle_ptr)
             call this%core%get(triangle_ptr, triangle)
-            res(i)%coords = triangle(1:3)
+            do j = 1, 3
+               res(i)%vertices(j)%id = triangle(j)
+            end do
          end do
 
       end function

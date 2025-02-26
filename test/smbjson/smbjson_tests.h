@@ -13,6 +13,8 @@ extern "C" int test_parser_ctor();
 extern "C" int test_parser_read_mesh();
 extern "C" int test_parser_read_conformal_volume();
 
+extern "C" int test_triangle_normal();
+
 extern "C" int test_read_planewave();
 extern "C" int test_read_sgbc();
 extern "C" int test_read_dielectricslab();
@@ -36,7 +38,10 @@ TEST(smbjson, mesh_add_get)              { EXPECT_EQ(0, test_mesh_add_get()); }
 TEST(smbjson, mesh_add_get_long_list)    { EXPECT_EQ(0, test_mesh_add_get_long_list()); }
 TEST(smbjson, mesh_node_to_pixel)        { EXPECT_EQ(0, test_mesh_node_to_pixel()); }
 TEST(smbjson, mesh_polyline_to_linel)    { EXPECT_EQ(0, test_mesh_polyline_to_linel()); }
-   
+
+
+TEST(smbjson, triangle_normal)           { EXPECT_EQ(0, test_triangle_normal()); }
+
 TEST(smbjson, parser_ctor)               { EXPECT_EQ(0, test_parser_ctor()); }
 TEST(smbjson, parser_read_mesh)          { EXPECT_EQ(0, test_parser_read_mesh()); }
 TEST(smbjson, parser_read_conf_volume)   { EXPECT_EQ(0, test_parser_read_conformal_volume()); }
@@ -46,6 +51,7 @@ TEST(smbjson, read_thinslot)             { EXPECT_EQ(0, test_read_thinslot()); }
 TEST(smbjson, read_sgbc)                 { EXPECT_EQ(0, test_read_sgbc()); }
 TEST(smbjson, read_sphere)               { EXPECT_EQ(0, test_read_sphere()); }
 TEST(smbjson, read_airplane)             { EXPECT_EQ(0, test_read_airplane()); }
+
 
 #ifdef CompileWithMTLN
 TEST(smbjson, read_towelhanger)          { EXPECT_EQ(0, test_read_towelhanger()); }

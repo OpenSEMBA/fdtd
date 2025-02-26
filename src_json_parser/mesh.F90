@@ -137,7 +137,17 @@ contains
    subroutine mesh_addConformalRegion(this, id, e)
       class(mesh_t) :: this
       integer, intent(in) :: id
-      class(conformal_region_t), intent(in) :: e
+      class(conformal_region_t), intent(inout) :: e
+      integer :: i, j
+      type(coordinate_t) :: c
+      do i = 1, size(e%triangles)
+         do j = 1, 3
+            c = this%getCoordinate(e%triangles(i)%vertices(j)%id)
+            e%triangles(i)%vertices(j)%position(1:3) = c%position(1:3)
+         end do
+         call e%triangles(i)%computeNormal()
+         call e%triangles(i)%assignFace()
+      end do
       call this%elements%set(key(id), value=e)
    end subroutine
 
