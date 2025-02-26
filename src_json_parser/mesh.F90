@@ -34,6 +34,7 @@ module mesh_mod
       private
       type(fhash_tbl_t) :: coordinates ! Map of CoordinateIds to relative coordinates.
       type(fhash_tbl_t) :: elements    ! Map of ElementIds to elements/cellsRegions.    
+      type(fhash_tbl_t) :: conformal_elements    ! Map of ElementIds to conformal elements/regions.    
    contains
       procedure :: addCoordinate => mesh_addCoordinate
       procedure :: getCoordinate => mesh_getCoordinate
@@ -145,10 +146,9 @@ contains
             c = this%getCoordinate(e%triangles(i)%vertices(j)%id)
             e%triangles(i)%vertices(j)%position(1:3) = c%position(1:3)
          end do
-         call e%triangles(i)%computeNormal()
-         call e%triangles(i)%assignFace()
+         call e%triangles(i)%buildTriangle()
       end do
-      call this%elements%set(key(id), value=e)
+      call this%conformal_elements%set(key(id), value=e)
    end subroutine
 
    function mesh_getCoordinate(this, id, found) result(res)
@@ -271,7 +271,7 @@ contains
       class(*), allocatable :: d
 
       if (present(found)) found = .false.
-      call this%elements%get_raw(key(id), d, stat)
+      call this%conformal_elements%get_raw(key(id), d, stat)
       if (stat /= 0) return
 
       select type(d)
