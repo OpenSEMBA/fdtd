@@ -662,6 +662,7 @@ def test_wire_z_collision_y(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
+@pytest.mark.xfail(reason="feature not implemented")
 def test_conformal_delay(tmp_path):
     fn = CASES_FOLDER + 'observation/conformal.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,

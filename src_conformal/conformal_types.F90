@@ -21,79 +21,37 @@ module conformal_types_mod
 
     type, public :: side_t
         real, dimension(3) :: direction
-        logical :: isOnEdge = .false.
-        integer :: edge = NOT_ON_EDGE
     contains 
         procedure :: getEdge
-        procedure, private :: isSideOnEdge
+        procedure :: isSideOnEdge
     end type
 
     type, public :: triangle_t
-        ! real, dimension(3) :: vertices(3)
         type(coord_t), dimension(3) :: vertices
-        ! private
-        real, dimension(3) :: normal
-        integer :: face = NOT_ON_FACE
-        type(side_t), dimension(3) :: sides
-        integer(kind=4), dimension(3) :: cell
     contains
-        procedure :: buildTriangle
         procedure :: getNormal
         procedure :: getFace
         procedure :: getSides
         procedure :: getCell
+        procedure :: isOnFace
 
         procedure, private :: centroid
-        procedure, private :: setCell
-        procedure, private :: computeNormal
-        procedure, private :: setFace
-        procedure, private :: buildSides
-        procedure, private :: setEdges
-        procedure, private :: isOnFace
     end type
 
         
     type, public :: conformal_region_t
         type(triangle_t), dimension(:), allocatable :: triangles
+        type(cell_interval_t), dimension(:), allocatable :: intervals
     end type
         
 
 contains
 
-    subroutine buildTriangle(this)
-        class(triangle_t) :: this
-        call this%computeNormal()
-        call this%setFace()
-        call this%setCell()
-        call this%buildSides()
-    end subroutine
-
-    function getNormal(this) result(res)
-        class(triangle_t) :: this
-        real, dimension(3) :: res
-        res = this%normal
-    end function
-
-    integer function getFace(this)
-        class(triangle_t) :: this
-        getFace = this%face
-    end function
 
     function getCell(this) result(res)
         class(triangle_t) :: this
         integer(kind=4), dimension(3) :: res
-        res = this%cell
-    end function
-
-    function getSides(this) result(res)
-        class(triangle_t) :: this
-        type(side_t), dimension(3) :: res
-        res = this%sides
-    end function
-
-    integer function getEdge(this)
-        class(side_t) :: this
-        getEdge = this%edge
+        res = floor(this%centroid())
     end function
 
     logical function isSideOnEdge(this, edge)
@@ -104,38 +62,33 @@ contains
                        this%direction(mod(edge+1,3) + 1) == 0
     end function
 
-    subroutine buildSides(this)
-        class(triangle_t) :: this
-        this%sides(1)%direction = this%vertices(2)%position - this%vertices(1)%position
-        this%sides(2)%direction = this%vertices(3)%position - this%vertices(2)%position
-        this%sides(3)%direction = this%vertices(1)%position - this%vertices(3)%position
-        call this%setEdges()
-    end subroutine
-
-    subroutine setEdges(this)
-        class(triangle_t) :: this
-        integer :: edge, i
-        do i = 1,3
-            this%sides(i)%edge = NOT_ON_EDGE
-            this%sides(i)%isOnEdge = .false.
-            do edge = EDGE_X, EDGE_Z
-                if (this%sides(i)%isSideOnEdge(edge))  then 
-                    this%sides(i)%edge = edge
-                    this%sides(i)%isOnEdge = .true.
-                end if
-            end do
+    function getEdge(this) result(res)
+        class(side_t) :: this
+        integer :: res, edge
+        res = NOT_ON_EDGE
+        do edge = EDGE_X, EDGE_Z
+            if (this%isSideOnEdge(edge))  then 
+                res = edge
+            end if
         end do
+    end function
 
-    end subroutine
-
-    subroutine setFace(this)
+    function getSides(this) result(res)
         class(triangle_t) :: this
-        integer :: face
-        this%face = NOT_ON_FACE
+        type(side_t), dimension(3) :: res
+        res(1)%direction = this%vertices(2)%position - this%vertices(1)%position
+        res(2)%direction = this%vertices(3)%position - this%vertices(2)%position
+        res(3)%direction = this%vertices(1)%position - this%vertices(3)%position
+    end function
+
+    function getFace(this) result(res)
+        class(triangle_t) :: this
+        integer :: face, res
+        res = NOT_ON_FACE
         do face = FACE_X, FACE_Z
-            if (this%isOnFace(face)) this%face = face
+            if (this%isOnFace(face)) res = face
         end do
-    end subroutine
+    end function
 
     function centroid(this) result(res)
         class(triangle_t) :: this
@@ -148,28 +101,25 @@ contains
         res = res/3.0
     end function
     
-    subroutine setcell(this)
+    function getNormal(this) result(res)
         class(triangle_t) :: this
-        this%cell = floor(this%centroid())
-    end subroutine   
-
-    subroutine computeNormal(this)
-        class(triangle_t) :: this
-        real, dimension(3) :: v1,v2, cross
+        real, dimension(3) :: v1,v2, res
         v1 = this%vertices(2)%position - this%vertices(1)%position
         v2 = this%vertices(3)%position - this%vertices(2)%position
-        cross = [ v1(2)*v2(3)-v1(3)*v2(2), &
-                 -(v1(1)*v2(3)-v1(3)*v2(1)), &
-                   v1(1)*v2(2)-v1(2)*v2(1)]
-        this%normal = cross/norm2(cross)
-    end subroutine
+        res = [ v1(2)*v2(3)-v1(3)*v2(2), &
+                -(v1(1)*v2(3)-v1(3)*v2(1)), &
+                v1(1)*v2(2)-v1(2)*v2(1)]
+        res = res/norm2(res)
+    end function
     
     logical function isOnFace(this, dir)
         class(triangle_t) :: this
         integer :: dir
-        isOnFace = abs(this%normal(dir)) == 1 .and. &
-                   abs(this%normal(mod(dir,3) + 1)) == 0 .and. &
-                   abs(this%normal(mod(dir+1,3) + 1)) == 0
+        real, dimension(3) :: n
+        n = this%getNormal()
+        isOnFace = abs(n(dir)) == 1 .and. &
+                   abs(n(mod(dir,3) + 1)) == 0 .and. &
+                   abs(n(mod(dir+1,3) + 1)) == 0
     end function
 
 end module

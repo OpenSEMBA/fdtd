@@ -255,11 +255,8 @@ contains
                 case (J_ELEM_TYPE_CONF_VOLUME) 
                   block 
                      type(conformal_region_t) :: cV
-                     type(cell_region_t) :: cR
-                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-                     ! cV%structured_region%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                     cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
-                     call mesh%addCellRegion(id, cR)
                      call mesh%addConformalRegion(id, cV)
                   end block
                 case default

@@ -15,6 +15,7 @@ extern "C" int test_parser_read_conformal_volume();
 
 extern "C" int test_triangle_normal();
 extern "C" int test_triangle_edges();
+extern "C" int test_triangle_cell();
 
 extern "C" int test_read_planewave();
 extern "C" int test_read_sgbc();
@@ -43,6 +44,7 @@ TEST(smbjson, mesh_polyline_to_linel)    { EXPECT_EQ(0, test_mesh_polyline_to_li
 
 TEST(smbjson, triangle_normal)           { EXPECT_EQ(0, test_triangle_normal()); }
 TEST(smbjson, triangle_edges)           { EXPECT_EQ(0, test_triangle_edges()); }
+TEST(smbjson, triangle_cells)           { EXPECT_EQ(0, test_triangle_cell()); }
 
 TEST(smbjson, parser_ctor)               { EXPECT_EQ(0, test_parser_ctor()); }
 TEST(smbjson, parser_read_mesh)          { EXPECT_EQ(0, test_parser_read_mesh()); }

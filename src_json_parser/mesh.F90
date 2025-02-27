@@ -146,7 +146,6 @@ contains
             c = this%getCoordinate(e%triangles(i)%vertices(j)%id)
             e%triangles(i)%vertices(j)%position(1:3) = c%position(1:3)
          end do
-         call e%triangles(i)%buildTriangle()
       end do
       call this%conformal_elements%set(key(id), value=e)
    end subroutine
