@@ -6,7 +6,7 @@ MODULE NFDETypes
 #ifdef CompileWithMTLN   
    USE mtln_types_mod
 #endif
-   USE conformal_types_mod
+   ! USE conformal_types_mod
    !
    IMPLICIT NONE
    INTEGER (KIND=4), PARAMETER :: RK = RKIND
@@ -117,9 +117,33 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: n_Mats_max = 0
       TYPE (Material), DIMENSION (:), POINTER :: Mats => NULL ()
    END TYPE Materials
+
+   !------------------------------------------------------------------------------
+   ! Identifies conformal PEC "media"
+   !------------------------------------------------------------------------------
+
+   type, public :: conformal_face_t
+      integer (kind=4) :: cell_i, cell_j, cell_k
+      real(kind=rkind) :: area_ratio
+      integer(kind=4) :: direction
+   end type
+   type, public :: conformal_edge_t
+      integer (kind=4) :: cell_i, cell_j, cell_k
+      real(kind=rkind) :: length_ratio
+      integer(kind=4) :: direction
+   end type
+
+   TYPE, PUBLIC :: ConformalPECRegions
+      INTEGER (KIND=4) :: nEdges = 0
+      INTEGER (KIND=4) :: nFaces = 0
+      TYPE (conformal_face_t), DIMENSION (:), POINTER :: faces => NULL ()
+      TYPE (conformal_edge_t), DIMENSION (:), POINTER :: edges => NULL ()
+   END TYPE ConformalPECRegions
+
    !------------------------------------------------------------------------------
    ! Locates all the different PEC media found
    !------------------------------------------------------------------------------
+
    TYPE, PUBLIC :: PECRegions
       INTEGER (KIND=4) :: nVols = 0
       INTEGER (KIND=4) :: nSurfs = 0
@@ -763,7 +787,7 @@ MODULE NFDETypes
       TYPE (SlantedWires), POINTER ::          sWires => NULL ()
       TYPE (ThinSlots), POINTER ::             tSlots => NULL ()
       ! Conformal
-      ! TYPE(conformal_regions_t), pointer ::     conformal => NULL()
+      TYPE(ConformalPECRegions), pointer ::    conformalRegs => NULL()
 #ifdef CompileWithMTLN
       TYPE (mtln_t), POINTER ::                mtln => NULL ()
 #endif

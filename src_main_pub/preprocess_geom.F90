@@ -186,6 +186,9 @@ CONTAINS
       contamedia = contamedia+2 !para acomodar los no_use no_use_notouch
       !!!!!!!!!!!!!
       contamedia = contamedia +1 !para acomodar los nodal sources como caso especial de linea vacia
+
+      contamedia = contamedia + this%conformalRegs%nEdges + this%conformalRegs%nFaces
+
       sgg%NumMedia = contamedia
       sgg%AllocMed = contamedia
       !reserva espacio
@@ -435,6 +438,7 @@ CONTAINS
       sgg%Med%Is%SlantedWire = .FALSE.
       sgg%Med%Is%ThinSlot = .FALSE.
       sgg%Med%Is%PEC = .FALSE.
+      sgg%Med%Is%ConformalPEC = .FALSE.
       sgg%Med%Is%PMC = .FALSE.
       sgg%Med%Is%PML = .FALSE.
       sgg%Med%Is%Volume = .FALSE.
@@ -2529,6 +2533,62 @@ endif
          end do
       end do
       !END SLANTED WIRES
+
+
+      do j = 1, this%conformalRegs%nFaces
+         contamedia = contamedia + 1
+         sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
+         sgg%Med(contamedia)%Is%Needed = .TRUE.
+         sgg%Med(contamedia)%Priority = prior_PEC
+         sgg%Med(contamedia)%Epr = this%mats%mats(1)%eps / Eps0
+         sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
+         sgg%Med(contamedia)%Mur = this%conformalRegs%faces(j)%area_ratio * this%mats%mats(1)%mu / Mu0
+         sgg%Med(contamedia)%SigmaM = 0.0_RKIND
+         ! funcion al healer para tener en cuenta la prioridad
+         block
+            integer (kind=4) :: cell_i, cell_j, cell_k
+            cell_i = this%conformalRegs%faces(j)%cell_i
+            cell_j = this%conformalRegs%faces(j)%cell_j
+            cell_k = this%conformalRegs%faces(j)%cell_k
+            select case(this%conformalRegs%faces(j)%direction)
+            case(FACE_X)
+               sggMiHx(cell_i, cell_j, cell_k) = contamedia
+            case(FACE_Y)
+               sggMiHy(cell_i, cell_j, cell_k) = contamedia
+            case(FACE_Z)
+               sggMiHz(cell_i, cell_j, cell_k) = contamedia
+            end select
+         end block
+         
+      end do
+      do j = 1, this%conformalRegs%nEdges
+         contamedia = contamedia + 1
+         sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
+         sgg%Med(contamedia)%Is%Needed = .TRUE.
+         sgg%Med(contamedia)%Priority = prior_PEC
+         sgg%Med(contamedia)%Epr = (this%mats%mats(1)%eps / this%conformalRegs%edges(j)%length_ratio ) / Eps0
+         sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
+         sgg%Med(contamedia)%Mur = this%mats%mats(1)%mu / Mu0
+         sgg%Med(contamedia)%SigmaM = 0.0_RKIND
+         ! funcion al healer para tener en cuenta la prioridad
+         block
+            integer (kind=4) :: cell_i, cell_j, cell_k
+            cell_i = this%conformalRegs%edges(j)%cell_i
+            cell_j = this%conformalRegs%edges(j)%cell_j
+            cell_k = this%conformalRegs%edges(j)%cell_k
+            select case(this%conformalRegs%edges(j)%direction)
+            case(EDGE_X)
+               sggMiEx(cell_i, cell_j, cell_k) = contamedia
+            case(EDGE_Y)
+               sggMiEy(cell_i, cell_j, cell_k) = contamedia
+            case(EDGE_Z)
+               sggMiEz(cell_i, cell_j, cell_k) = contamedia
+            end select
+         end block
+
+      end do
+
+
 
       !reporta el bounding box
       

@@ -32,7 +32,12 @@ module CALC_CONSTANTS
             GM1(r)=1.0_RKIND
             GM2(r)=0.0_RKIND
          else
-            if ((sgg%Med(R)%Is%multiport).or.(sgg%Med(R)%Is%AnisMultiport)) then
+            if (sgg%Med(R)%Is%ConformalPEC) then
+               G1(r)  = 1 
+               G2(r)  = sgg%dt /Epsilon
+               GM1(r) = 1
+               GM2(r) = sgg%dt/ Mu
+            elseif ((sgg%Med(R)%Is%multiport).or.(sgg%Med(R)%Is%AnisMultiport)) then
                G1(r)=0.0_RKIND !mull fields on the main procedure (good both for Ian and for me)
                G2(r)=0.0_RKIND
                GM1(r)=0.0_RKIND

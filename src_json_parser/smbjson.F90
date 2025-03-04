@@ -56,7 +56,7 @@ module smbjson
       procedure, private :: readVolumicProbes
       procedure, private :: readThinWires
       procedure, private :: readThinSlots
-      ! procedure, private :: readConformalRegions
+      procedure, private :: readConformalRegions
       !
       !
       procedure, private :: getLogicalAt
@@ -181,7 +181,7 @@ contains
       res%mtln = this%readMTLN(res%despl)
 #endif
 
-      ! res%conformal = this%readConformalRegions()
+      res%conformalRegs = this%readConformalRegions()
 
    end function
 
@@ -552,6 +552,27 @@ contains
          end if
       end subroutine         
    end function
+
+   function readConformalRegions(this) result(res)
+      class(parser_t) :: this
+      type(ConformalPECRegions) :: res
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
+      type(conformal_region_t) :: cR
+      integer :: i, j, k
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
+      if (size(mAs) == 0) then 
+         do i = 1, size(mAs)
+            do j = 1, size(mAs(i)%elementIds)
+               cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j))
+!               cR%triangles
+!               res%faces = 
+!               res%edges = 
+            end do
+         end do
+      end if
+   end function
+
+   
 
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
@@ -2100,22 +2121,6 @@ contains
       end function
    end function
 
-   ! function readConformalRegions(this) result(conformal_res)
-   !    class(parser_t) :: this
-   !    type(conformal_region_t) :: conformal_res
-   !    type(materialAssociation_t), dimension(:), allocatable :: mAs
-   !    integer :: i, j
-   !    mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
-   !    if (size(mAs) == 0) then 
-   !       do i = 1, size(mAs)
-   !          do j = 1, size(mAs(i)%elementsIds)
-   !             if ( this%mesh%getConformalVolume(mAs(i)%elementsIds(j)) )
-   !          end do
-   !       end do
-   !    end if
-
-
-   ! end function
 
 #ifdef CompileWithMTLN
    function readMTLN(this, grid) result (mtln_res)
