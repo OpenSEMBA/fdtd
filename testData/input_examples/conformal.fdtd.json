@@ -39,6 +39,7 @@
             {
                 "id": 5, 
                 "type": "conformalVolume", 
+                "offgridPoints" : 3,
                 "name": "conformal-box", 
                 "intervals" : [[[0,0,4],[1,1,4]]],
                 "triangles": [ 

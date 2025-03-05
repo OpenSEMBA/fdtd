@@ -122,15 +122,24 @@ MODULE NFDETypes
    ! Identifies conformal PEC "media"
    !------------------------------------------------------------------------------
 
+   type, public :: cell_t 
+      integer (kind=4), dimension(3) :: index
+      integer(kind=4) :: direction
+   end type 
+
+   ! edge and face media
    type, public :: conformal_face_t
-      integer (kind=4) :: cell_i, cell_j, cell_k
-      real(kind=rkind) :: area_ratio
-      integer(kind=4) :: direction
-   end type
+      type(cell_t), dimension(:), allocatable :: cells
+      ! integer (kind=4) :: cell_i, cell_j, cell_k
+      real(kind=rkind) :: ratio
+      integer (kind=4) :: size
+      end type
    type, public :: conformal_edge_t
-      integer (kind=4) :: cell_i, cell_j, cell_k
-      real(kind=rkind) :: length_ratio
-      integer(kind=4) :: direction
+      ! integer (kind=4) :: cell_i, cell_j, cell_k
+      type(cell_t), dimension(:), allocatable :: cells
+      real(kind=rkind) :: ratio
+      integer (kind=4) :: size
+      ! integer(kind=4) :: direction
    end type
 
    TYPE, PUBLIC :: ConformalPECRegions

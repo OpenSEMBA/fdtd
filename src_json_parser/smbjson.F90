@@ -257,6 +257,7 @@ contains
                      type(conformal_region_t) :: cV
                      cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+                     cV%offgrid_points = this%getIntAt(je,J_CONF_OFFGRID)
                      call mesh%addConformalRegion(id, cV)
                   end block
                 case default
@@ -559,20 +560,101 @@ contains
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(conformal_region_t) :: cR
       integer :: i, j, k
+      type(cell_map_t) :: cell_map
+
       mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
       if (size(mAs) == 0) then 
          do i = 1, size(mAs)
             do j = 1, size(mAs(i)%elementIds)
                cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j))
-!               cR%triangles
-!               res%faces = 
-!               res%edges = 
+               cell_map = buildCellTriMap(cR%triangles)
             end do
          end do
       end if
+
+      ! buildEdgeRegions(cell_map)
+      ! buildFaceRegions(cell_map)
+
+
    end function
 
-   
+   function buildCellTriMap(triangles) result(res)
+      type(triangle_t), dimension(:), allocatable :: triangles
+      type(cell_map_t) :: res
+      integer :: i, stat
+      integer (kind=4), dimension(3) :: cell
+      do i = 1, size(triangles)
+         call res%addTriangle(triangles(i))
+      end do
+   end function
+
+   function buildEdgeRegions(cell_map) result(res)
+      type(cell_map_t) :: cell_map
+      type(triangle_t), dimension(:), allocatable :: triangles
+      type(side_t), dimension(:), allocatable :: sides_X, sides_Y, sides_Z
+      type(side_t), dimension(3) :: sides
+      logical :: res
+      integer :: i, j, k
+      do i = 1, size(cell_map%keys) 
+         triangles = getTrianglesOffFaces(cell_map%getTrianglesInCell(cell_map%keys(i)%cell))
+         sides_X = getSidesOnFace(triangles, 1) !FACE_X
+         sides_Y = getSidesOnFace(triangles, 2) !FACE_Y
+         sides_Z = getSidesOnFace(triangles, 3) !FACE_Z
+         ! do j = 1, size(triangles)
+         !    sides = triangles(j)%getSides()
+         !    do k = 1, 3
+         !       side
+         !    end do
+         ! end do
+      end do
+
+   end function
+
+   function getTrianglesOffFaces(triangles) result (res)
+      type(triangle_t), dimension(:), allocatable, intent(in) :: triangles
+      type(triangle_t), dimension(:), allocatable :: res
+      integer :: i, j, n
+      n = 0
+      do i = 1, size(triangles)
+         if (.not. (triangles(i)%isOnFace(1) .or. triangles(i)%isOnFace(1) .or. triangles(i)%isOnFace(1))) n = n + 1
+      end do
+      allocate(res(n))
+      n = 0
+      do i = 1, size(triangles)
+         if (.not. (triangles(i)%isOnFace(1) .or. triangles(i)%isOnFace(1) .or. triangles(i)%isOnFace(1))) then 
+            n = n + 1
+            res(n) = triangles(j)
+         end if
+      end do
+
+   end function   
+
+   function getSidesOnFace(triangles, face) result (res)
+      type(triangle_t), dimension(:), allocatable, intent(in) :: triangles
+      type(side_t), dimension(3) :: sides
+      integer, intent(in) :: face
+      type(side_t), dimension(:), allocatable :: res
+      integer :: i, j, n
+      n = 0
+      do i = 1, size(triangles)
+         sides = triangles(i)%getSides()
+         do j = 1, 3
+            if (sides(j)%isOnFace(face) .and. all(sides(j)%getCell() .eq. triangles(i)%getCell())) n = n + 1
+         end do
+      end do
+      allocate(res(n))
+      n = 0
+      do i = 1, size(triangles)
+         sides = triangles(i)%getSides()
+         do j = 1, 3
+            if (sides(j)%isOnFace(face) .and. all(sides(j)%getCell() .eq. triangles(i)%getCell())) then 
+               n = n + 1
+               res(n) = sides(j)
+            end if
+         end do
+      end do
+
+   end function
 
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
