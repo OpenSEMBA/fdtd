@@ -1,6 +1,6 @@
 integer function test_triangle_normal() bind(C) result(err)
 
-    use conformal_types_mod
+    use geometry_mod
     implicit none
     type(triangle_t) :: t
     err = 0
@@ -23,7 +23,7 @@ end function
 
 integer function test_triangle_edges() bind(C) result(err)
 
-    use conformal_types_mod
+    use geometry_mod
     implicit none
     type(triangle_t) :: t
     type(side_t), dimension(3) :: sides
@@ -58,7 +58,7 @@ end function
 
 integer function test_triangle_cell() bind(C) result(err)
 
-    use conformal_types_mod
+    use geometry_mod
     implicit none
     type(triangle_t) :: t
     type(side_t), dimension(3) :: sides
@@ -85,7 +85,7 @@ integer function test_triangle_cell() bind(C) result(err)
 end function
 
 integer function test_fhash_coords() bind(C) result(err)
-    use conformal_types_mod
+    use cell_map_mod
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use iso_fortran_env, only: int32, int64
 
@@ -115,7 +115,7 @@ integer function test_fhash_coords() bind(C) result(err)
 end function
 
 integer function test_fhash_array() bind(C) result(err)
-    use conformal_types_mod
+    use cell_map_mod
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use iso_fortran_env, only: int32, int64
 
@@ -124,7 +124,7 @@ integer function test_fhash_array() bind(C) result(err)
     type(cell_map_t) :: tbl
     type(triangle_t) :: t1, t2
     type(triangle_t), dimension(:), allocatable :: t_array, t_array_aux
-    type(tri_list_t) :: tri_list, tri_list_aux
+    type(element_set_t) :: tri_list, tri_list_aux
     integer (kind=4), dimension(3) :: cell_set
     class(*), allocatable :: t_alloc
     integer :: stat, n_cond
@@ -150,7 +150,7 @@ integer function test_fhash_array() bind(C) result(err)
     if (tbl%hasKey(cell_set)) then 
         call tbl%get_raw(key(cell_set), t_alloc, stat)
         select type(t_alloc)
-        type is (tri_list_t)
+        type is (element_set_t)
             if (size(t_alloc%triangles) /= 1) err = err +1
 
             allocate(tri_list_aux%triangles(size(t_alloc%triangles) + 1))
@@ -170,7 +170,7 @@ integer function test_fhash_array() bind(C) result(err)
     if (tbl%hasKey(cell_set)) then 
         call tbl%get_raw(key(cell_set), t_alloc, stat)
         select type(t_alloc)
-        type is (tri_list_t)
+        type is (element_set_t)
             if (size(t_alloc%triangles) /= 2) err = err + 1
             write(*,*) t_alloc%triangles(1)%vertices
             if (.not. all(t_alloc%triangles(1)%vertices(1)%position .eq. [0,0,0])) err = err + 1
@@ -188,7 +188,7 @@ integer function test_fhash_array() bind(C) result(err)
 end function
 
 integer function test_fhash_add_triangle() bind(C) result(err)
-    use conformal_types_mod
+    use cell_map_mod
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use iso_fortran_env, only: int32, int64
 
@@ -197,7 +197,7 @@ integer function test_fhash_add_triangle() bind(C) result(err)
     type(cell_map_t) :: tbl
     type(triangle_t) :: t1, t2
     type(triangle_t), dimension(:), allocatable :: t_array, t_array_aux
-    type(tri_list_t) :: tri_list, tri_list_aux
+    type(element_set_t) :: tri_list, tri_list_aux
     integer (kind=4), dimension(3) :: cell_set
     class(*), allocatable :: t_alloc
     integer :: stat, n_cond
@@ -215,7 +215,7 @@ integer function test_fhash_add_triangle() bind(C) result(err)
     if (.not. tbl%hasKey(cell_set)) err = err +1
     call tbl%get_raw(key(cell_set), t_alloc, stat)
     select type(t_alloc)
-    type is (tri_list_t)
+    type is (element_set_t)
         if (size(t_alloc%triangles) /= 1) err = err + 1
         write(*,*) t_alloc%triangles(1)%vertices
         if (.not. all(t_alloc%triangles(1)%vertices(1)%position .eq. [0,0,0])) err = err + 1
@@ -231,7 +231,7 @@ integer function test_fhash_add_triangle() bind(C) result(err)
 
     call tbl%get_raw(key(cell_set), t_alloc, stat)
     select type(t_alloc)
-    type is (tri_list_t)
+    type is (element_set_t)
         if (size(t_alloc%triangles) /= 2) err = err + 1
         write(*,*) t_alloc%triangles(1)%vertices
         if (.not. all(t_alloc%triangles(1)%vertices(1)%position .eq. [0,0,0])) err = err + 1

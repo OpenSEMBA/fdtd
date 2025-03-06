@@ -13,7 +13,7 @@ message(STATUS ${CMAKE_Fortran_COMPILER_ID})
 
 option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
 option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
-option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
+option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" OFF)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
@@ -78,7 +78,7 @@ add_library(semba-types
 	"src_main_pub/nfde_types.F90"
 	"src_main_pub/fdetypes.F90"
 	"src_mtln/mtln_types.F90"
-	"src_conformal/conformal_types.F90"
+	"src_json_parser/conformal_types.F90"
 	"src_wires_pub/wires_types.F90"
 	"src_main_pub/lumped_types.F90"
 )

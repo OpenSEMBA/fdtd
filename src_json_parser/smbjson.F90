@@ -12,6 +12,8 @@ module smbjson
    use json_module
    use json_kinds
 
+   use geometry_mod
+   use cell_map_mod
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -567,7 +569,7 @@ contains
          do i = 1, size(mAs)
             do j = 1, size(mAs(i)%elementIds)
                cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j))
-               cell_map = buildCellTriMap(cR%triangles)
+               cell_map = buildCellMap(cR%triangles)
             end do
          end do
       end if
@@ -578,83 +580,27 @@ contains
 
    end function
 
-   function buildCellTriMap(triangles) result(res)
-      type(triangle_t), dimension(:), allocatable :: triangles
-      type(cell_map_t) :: res
-      integer :: i, stat
-      integer (kind=4), dimension(3) :: cell
-      do i = 1, size(triangles)
-         call res%addTriangle(triangles(i))
-      end do
-   end function
 
    function buildEdgeRegions(cell_map) result(res)
       type(cell_map_t) :: cell_map
       type(triangle_t), dimension(:), allocatable :: triangles
-      type(side_t), dimension(:), allocatable :: sides_X, sides_Y, sides_Z
-      type(side_t), dimension(3) :: sides
+      type(side_t) :: side_limit
+      type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour
       logical :: res
-      integer :: i, j, k
+      integer :: i, face
       do i = 1, size(cell_map%keys) 
-         triangles = getTrianglesOffFaces(cell_map%getTrianglesInCell(cell_map%keys(i)%cell))
-         sides_X = getSidesOnFace(triangles, 1) !FACE_X
-         sides_Y = getSidesOnFace(triangles, 2) !FACE_Y
-         sides_Z = getSidesOnFace(triangles, 3) !FACE_Z
-         ! do j = 1, size(triangles)
-         !    sides = triangles(j)%getSides()
-         !    do k = 1, 3
-         !       side
-         !    end do
-         ! end do
-      end do
-
-   end function
-
-   function getTrianglesOffFaces(triangles) result (res)
-      type(triangle_t), dimension(:), allocatable, intent(in) :: triangles
-      type(triangle_t), dimension(:), allocatable :: res
-      integer :: i, j, n
-      n = 0
-      do i = 1, size(triangles)
-         if (.not. (triangles(i)%isOnFace(1) .or. triangles(i)%isOnFace(1) .or. triangles(i)%isOnFace(1))) n = n + 1
-      end do
-      allocate(res(n))
-      n = 0
-      do i = 1, size(triangles)
-         if (.not. (triangles(i)%isOnFace(1) .or. triangles(i)%isOnFace(1) .or. triangles(i)%isOnFace(1))) then 
-            n = n + 1
-            res(n) = triangles(j)
-         end if
-      end do
-
-   end function   
-
-   function getSidesOnFace(triangles, face) result (res)
-      type(triangle_t), dimension(:), allocatable, intent(in) :: triangles
-      type(side_t), dimension(3) :: sides
-      integer, intent(in) :: face
-      type(side_t), dimension(:), allocatable :: res
-      integer :: i, j, n
-      n = 0
-      do i = 1, size(triangles)
-         sides = triangles(i)%getSides()
-         do j = 1, 3
-            if (sides(j)%isOnFace(face) .and. all(sides(j)%getCell() .eq. triangles(i)%getCell())) n = n + 1
+         sides = cell_map%getSidesInCell(cell_map%keys(i)%cell)
+         do face = 1, 3
+            sides_on_face = getSidesOnFace(sides, face)
+            contour = buildSidesContour(sides_on_face, face)
+            ! computeArea(contour)
+            ! computeLengths(contour)
+            
          end do
       end do
-      allocate(res(n))
-      n = 0
-      do i = 1, size(triangles)
-         sides = triangles(i)%getSides()
-         do j = 1, 3
-            if (sides(j)%isOnFace(face) .and. all(sides(j)%getCell() .eq. triangles(i)%getCell())) then 
-               n = n + 1
-               res(n) = sides(j)
-            end if
-         end do
-      end do
-
+      ! triangles on face are treated later
    end function
+
 
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
