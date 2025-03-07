@@ -13,13 +13,24 @@ extern "C" int test_parser_ctor();
 extern "C" int test_parser_read_mesh();
 extern "C" int test_parser_read_conformal_volume();
 
-extern "C" int test_triangle_normal();
-extern "C" int test_triangle_edges();
-extern "C" int test_triangle_cell();
+extern "C" int test_geometry_side_position();
+extern "C" int test_geometry_coord_position();
+extern "C" int test_geometry_triangle_on_face();
+extern "C" int test_geometry_triangle_normal();
+extern "C" int test_geometry_triangle_edges();
+extern "C" int test_geometry_triangle_cell();
+extern "C" int test_geometry_elements_in_cell();
+extern "C" int test_geometry_path();
+extern "C" int test_geometry_map_sides();
+extern "C" int test_geometry_vertex_vertex_contour();
+extern "C" int test_geometry_vertex_side_contour();
+extern "C" int test_geometry_side_vertex_contour();
+extern "C" int test_geometry_side_side_contour();
+extern "C" int test_geometry_side_side_contour_2();
 extern "C" int test_fhash_coords();
 extern "C" int test_fhash_array();
 extern "C" int test_fhash_add_triangle();
-
+extern "C" int test_fhash_cellmap_set_get();
 extern "C" int test_read_planewave();
 extern "C" int test_read_sgbc();
 extern "C" int test_read_dielectricslab();
@@ -45,12 +56,24 @@ TEST(smbjson, mesh_node_to_pixel)        { EXPECT_EQ(0, test_mesh_node_to_pixel(
 TEST(smbjson, mesh_polyline_to_linel)    { EXPECT_EQ(0, test_mesh_polyline_to_linel()); }
 
 
-TEST(smbjson, triangle_normal)           { EXPECT_EQ(0, test_triangle_normal()); }
-TEST(smbjson, triangle_edges)            { EXPECT_EQ(0, test_triangle_edges()); }
-TEST(smbjson, triangle_cells)            { EXPECT_EQ(0, test_triangle_cell()); }
+TEST(smbjson, geometry_coord_position)   { EXPECT_EQ(0, test_geometry_coord_position()); }
+TEST(smbjson, geometry_side_position)    { EXPECT_EQ(0, test_geometry_side_position()); }
+TEST(smbjson, geometry_triangle_on_face) { EXPECT_EQ(0, test_geometry_triangle_on_face()); }
+TEST(smbjson, geometry_triangle_normal)  { EXPECT_EQ(0, test_geometry_triangle_normal()); }
+TEST(smbjson, geometry_triangle_edges)   { EXPECT_EQ(0, test_geometry_triangle_edges()); }
+TEST(smbjson, geometry_triangle_cells)   { EXPECT_EQ(0, test_geometry_triangle_cell()); }
+TEST(smbjson, geometry_elements_in_cell) { EXPECT_EQ(0, test_geometry_elements_in_cell()); }
+TEST(smbjson, geometry_path)             { EXPECT_EQ(0, test_geometry_path()); }
+TEST(smbjson, geometry_map_sides)        { EXPECT_EQ(0, test_geometry_map_sides()); }
+TEST(smbjson, geometry_vv_contour)       { EXPECT_EQ(0, test_geometry_vertex_vertex_contour()); }
+TEST(smbjson, geometry_vs_contour)       { EXPECT_EQ(0, test_geometry_vertex_side_contour()); }
+TEST(smbjson, geometry_sv_contour)       { EXPECT_EQ(0, test_geometry_side_vertex_contour()); }
+TEST(smbjson, geometry_ss_contour)       { EXPECT_EQ(0, test_geometry_side_side_contour()); }
+TEST(smbjson, geometry_ss_contour2)      { EXPECT_EQ(0, test_geometry_side_side_contour_2()); }
 TEST(smbjson, fhash_coords)              { EXPECT_EQ(0, test_fhash_coords()); }
 TEST(smbjson, fhash_array)               { EXPECT_EQ(0, test_fhash_array()); }
 TEST(smbjson, fhash_add_triangle)        { EXPECT_EQ(0, test_fhash_add_triangle()); }
+TEST(smbjson, fhash_cellmap_set_get)     { EXPECT_EQ(0, test_fhash_cellmap_set_get()); }
 
 TEST(smbjson, parser_ctor)               { EXPECT_EQ(0, test_parser_ctor()); }
 TEST(smbjson, parser_read_mesh)          { EXPECT_EQ(0, test_parser_read_mesh()); }

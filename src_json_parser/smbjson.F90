@@ -562,14 +562,16 @@ contains
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(conformal_region_t) :: cR
       integer :: i, j, k
-      type(cell_map_t) :: cell_map
+      type(triangle_map_t) :: tri_map
+      type(side_map_t) :: side_map
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
       if (size(mAs) == 0) then 
          do i = 1, size(mAs)
             do j = 1, size(mAs(i)%elementIds)
                cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j))
-               cell_map = buildCellMap(cR%triangles)
+               tri_map  = buildTriangleMap(cR%triangles)
+               side_map = buildSideMap(cR%triangles)
             end do
          end do
       end if
@@ -581,15 +583,15 @@ contains
    end function
 
 
-   function buildEdgeRegions(cell_map) result(res)
-      type(cell_map_t) :: cell_map
+   function buildEdgeRegions(side_map) result(res)
+      type(side_map_t) :: side_map
       type(triangle_t), dimension(:), allocatable :: triangles
       type(side_t) :: side_limit
       type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour
       logical :: res
       integer :: i, face
-      do i = 1, size(cell_map%keys) 
-         sides = cell_map%getSidesInCell(cell_map%keys(i)%cell)
+      do i = 1, size(side_map%keys) 
+         sides = side_map%getSidesInCell(side_map%keys(i)%cell)
          do face = 1, 3
             sides_on_face = getSidesOnFace(sides, face)
             contour = buildSidesContour(sides_on_face, face)
