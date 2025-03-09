@@ -62,6 +62,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp")
 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -fast")
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
+	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
+		# TODO: Tune flags for NVHPC
 	else()
 		message(FATAL_ERROR "Unrecognized compiler:" ${CMAKE_Fortran_COMPILER_ID})
 	endif()
