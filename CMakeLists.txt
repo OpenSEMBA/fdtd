@@ -55,10 +55,10 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		set(CMAKE_CXX_FLAGS "-qopenmp")
 		# set(CMAKE_CXX_FLAGS_RELEASE "-fast") # This causes problems because it activates -ipo.
-		set(CMAKE_CXX_FLAGS_RELEASE "-O3 -xHost")
+		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp")
 		# set(CMAKE_Fortran_FLAGS_RELEASE "-fast") # This causes problems because it activates -ipo.
-		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -no-prec-div -fp-model fast=2w -xHost")
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -no-prec-div -fp-model fast=2w") #-xHost not supported in github actions
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
 		set(CMAKE_CXX_FLAGS "-qopenmp")
