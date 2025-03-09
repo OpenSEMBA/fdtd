@@ -79,12 +79,11 @@ jobs:
         sudo apt install libhdf5-dev libopenmpi-dev
    
     - name: Setup fortran compiler
-      uses: ssciwr/setup-fortran@v0.1
+      uses: fortran-lang/setup-fortran@v1
       id: setup-fortran
       with:
         compiler: ${{matrix.compiler.name}}
         version: ${{matrix.compiler.version}}
-        install_mkl: "true"
         
     - name: Build application
       run: |       
