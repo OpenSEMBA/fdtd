@@ -23,6 +23,7 @@ option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 
+# Compilation defines.
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_definitions(-DCompileWithSMBJSON)
 endif()
@@ -54,6 +55,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_CXX_FLAGS "-fopenmp")
 		set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
 		
+		set(CMAKE_C_FLAGS_RELEASE "-O3")
+		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ffast-math -fPIC")
 		
 		set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0")
@@ -64,25 +67,31 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_CXX_FLAGS "-qopenmp")
 		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp")
 		
-		# set(CMAKE_CXX_FLAGS_RELEASE "-fast") # This causes problems because it activates -ipo.
+		# -xHost not supported in github actions.
+		# Do not use -fast beacuse it activates -ipo, which causes problems with fhash
+		set(CMAKE_C_FLAGS_RELEASE "-O3")
 		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-		# set(CMAKE_Fortran_FLAGS_RELEASE "-fast") # This causes problems because it activates -ipo.
-		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -no-prec-div -fp-model fast=2w") #-xHost not supported in github actions
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -no-prec-div -fp-model fast=2w") 
 		
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
 
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
 		message(STATUS "Using Intel (ifort) flags")
 
+		set(CMAKE_C_FLAGS "-diag-disable=10441")
 		set(CMAKE_CXX_FLAGS "-qopenmp -diag-disable=10441")
 		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp -diag-disable=8889")
 
+		set(CMAKE_C_FLAGS_RELEASE "-O3")
 		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
 
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
+		message(STATUS "Using nvhpc flags")
+		
 		# TODO: Tune flags for NVHPC
+
 	else()
 		message(FATAL_ERROR "Unrecognized compiler:" ${CMAKE_Fortran_COMPILER_ID})
 	endif()
@@ -90,15 +99,18 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		set(CMAKE_CXX_FLAGS "/Qiopenmp")
 		set(CMAKE_Fortran_FLAGS "/fpp /qopenmp")
+
 		set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
+		
 		set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
+
 	elseif((CMAKE_Fortran_COMPILER_ID MATCHES "Intel"))
 		set(CMAKE_CXX_FLAGS "/Qiopenmp")
 		set(CMAKE_Fortran_FLAGS "/fpp /qopenmp")
 		set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
 		set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
 	else()
-		message(FATAL_ERROR "Unrecognized compiler:" ${CMAKE_Fortran_COMPILER_ID})
+		message(FATAL_ERROR "Unrecognized compiler id:" ${CMAKE_Fortran_COMPILER_ID})
 	endif()
 else()
 	message(FATAL_ERROR "Unrecognized system name")
