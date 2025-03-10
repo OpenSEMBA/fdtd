@@ -192,14 +192,9 @@ contains
     logical function triangle_isOnFace(this, face)
         class(triangle_t) :: this
         integer :: face
-        ! real, dimension(3) :: n
         type(coord_t) :: c
-        ! n = this%getNormal()
         c = coord_t(position=this%centroid())
         triangle_isOnFace = c%isOnFace(face)
-        ! triangle_isOnFace = abs(n(face)) == 1 .and. &
-        !                     abs(n(mod(face,3) + 1)) == 0 .and. &
-        !                     abs(n(mod(face+1,3) + 1)) == 0
     end function
 
     logical function triangle_isOnAnyFace(this)
@@ -228,43 +223,23 @@ contains
     end function
 
 
-    function buildSidesContour(sides, face) result (res)
+    function buildSidesContour(sides) result (res)
         type(side_t), dimension(:), allocatable, intent(in) :: sides
-        integer, intent(in) :: face
         type(side_t), dimension(:), allocatable :: inner_path
         type(side_t), dimension(:), allocatable :: res
         type(coord_t) :: init, end
-        integer :: i, n
 
         inner_path = getPathOnFace(sides)
-
-        ! allocate(inner_path(size(sides)))
-        ! n = 0
-        ! do while (n < size(inner_path))
-        !     do i = i, size(sides)
-        !         if (n == 0 .and. (sides(i)%init%isOnEdge(1) .or. sides(i)%init%isOnEdge(2) .or. sides(i)%init%isOnEdge(3))) then 
-        !             n = n + 1
-        !             inner_path(n) = sides(i)
-        !         else if (n /= 0 .and. all(sides(i)%init%position .eq. inner_path(n)%end%position)) then 
-        !             n = n + 1
-        !             inner_path(n) = sides(i)
-        !         end if
-        !     end do
-        ! end do
 
         init = inner_path(1)%init
         end = inner_path(size(inner_path))%end
         if (init%isOnVertex() .and. end%isOnVertex()) then 
             res = buildVertexToVertexContour(inner_path)
-        end if
-
-        if (init%isOnVertex() .and. .not. end%isOnVertex()) then 
+        else if (init%isOnVertex() .and. .not. end%isOnVertex()) then 
             res = buildVertexToSideContour(inner_path)
         else if (.not. init%isOnVertex() .and. end%isOnVertex()) then 
-            res = buildVertexToSideContour(inner_path)
-        end if
-        
-        if (.not. init%isOnVertex() .and. .not. end%isOnVertex()) then 
+            res = buildSideToVertexContour(inner_path)
+        elseif (.not. init%isOnVertex() .and. .not. end%isOnVertex()) then 
             res = buildSideToSideContour(inner_path)
         end if
 
@@ -273,25 +248,23 @@ contains
     function buildVertexToVertexContour(inner_path) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: inner_path
         type(side_t), dimension(:), allocatable :: res
-        integer :: idx
+        integer :: mid_corner_idx
         real, dimension(3,4) :: corners
 
         corners = buildCorners(inner_path(1)%getCell(), inner_path(1)%getFace())
         
         allocate(res(size(inner_path) + 2))
         res(1:size(inner_path)) = inner_path
-        idx = mod(cornerIndex(corners, inner_path(size(inner_path))%end%position),4) + 1
-        res(size(inner_path) + 1) = buildSide(inner_path(size(inner_path))%end%position, corners(:,idx))
-        res(size(inner_path) + 2) = buildSide(corners(:,idx), inner_path(1)%init%position)
+        mid_corner_idx = mod(cornerIndex(corners, inner_path(size(inner_path))%end%position),4) + 1
+        res(size(inner_path) + 1) = buildSide(inner_path(size(inner_path))%end%position, corners(:,mid_corner_idx))
+        res(size(inner_path) + 2) = buildSide(corners(:,mid_corner_idx), inner_path(1)%init%position)
     end function
     
-    ! side to vertex?
     function buildVertexToSideContour(inner_path) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: inner_path
         type(side_t), dimension(:), allocatable :: res
         type(coord_t) :: init, end
         integer :: i, idx
-        logical :: reverse = .false.
         real, dimension(3,4) :: corners
         type(side_t) :: cell_side
 
@@ -321,8 +294,7 @@ contains
         type(side_t), dimension(:), allocatable, intent(in) :: inner_path
         type(side_t), dimension(:), allocatable :: res
         type(coord_t) :: init, end
-        integer :: i, idx
-        logical :: reverse = .false.
+        integer :: idx
         real, dimension(3,4) :: corners
         type(side_t) :: cell_side
 
@@ -333,39 +305,18 @@ contains
         allocate(res(size(inner_path)))
         res = inner_path
 
-        idx = mod(cornerIndex(corners, inner_path(size(inner_path))%end%position),4) + 1
+        idx = cornerIndex(corners, end%position)
 
         cell_side%init%position = corners(:,idx)
         cell_side%end%position  = corners(:,mod(idx,4) + 1)
         do while (.not. (all(cell_side%getCell() .eq. floor(init%position)) .and. &
                  (cell_side%getEdge() == init%getEdge())))
-                 call addSide(res, buildSide(corners(:,mod(i,4) + 1), corners(:,mod(i + 1,4) + 1)))
-                 idx = idx + 1
-                 cell_side%init%position = corners(:,mod(idx,4) + 1)
-                 cell_side%end%position  = corners(:,mod(idx + 1,4) + 1)
+                 call addSide(res, buildSide(cell_side%init%position, cell_side%end%position))
+                cell_side%init%position = corners(:,mod(idx,4) + 1)
+                cell_side%end%position  = corners(:,mod(idx + 1,4) + 1)
+                idx = idx + 1
         end do
-        call addSide(res, buildSide(corners(:,mod(i,4) + 1), init%position))
-
-
-        ! do i = 1, 4
-        !     cell_side%init%position = corners(:,i)
-        !     cell_side%end%position  = corners(:,mod(i,4) + 1)
-        !     if (all(cell_side%getCell() .eq. floor(init%position)) .and. &
-        !         (cell_side%getEdge() == init%getEdge()) ) then 
-
-        !         call addSide(res, buildSide(corners(:,mod(i,4) + 1), init%position))
-        !         exit
-        !     else 
-        !         call addSide(res, buildSide(corners(:,mod(i,4) + 1), corners(:,mod(i + 1,4) + 1)))
-        !     end if
-        ! end do
-
-        ! call addSide(res, buildSide(end%position, corners(:,mod(idx,4) + 1)))
-
-        ! do while (.not. all(corners(:,mod(idx,4) + 1) .eq. init%position))
-        !     call addSide(res, buildSide(corners(:,mod(idx,4) + 1), corners(:,mod(idx + 1,4) + 1)))
-        !     idx = idx + 1
-        ! end do
+        call addSide(res, buildSide(cell_side%init%position, init%position))
 
     end function
     

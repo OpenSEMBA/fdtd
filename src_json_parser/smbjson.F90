@@ -594,7 +594,7 @@ contains
          sides = side_map%getSidesInCell(side_map%keys(i)%cell)
          do face = 1, 3
             sides_on_face = getSidesOnFace(sides, face)
-            contour = buildSidesContour(sides_on_face, face)
+            contour = buildSidesContour(sides_on_face)
             ! computeArea(contour)
             ! computeLengths(contour)
             

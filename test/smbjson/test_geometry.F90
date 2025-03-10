@@ -385,7 +385,7 @@ integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
     init = path(1)%init
     end = path(size(path))%end
-    contour = buildVertexToVertexContour(path)
+    contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c5%position)) err = err + 1
     if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
@@ -436,7 +436,7 @@ integer function test_geometry_vertex_side_contour() bind(C) result(err)
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
     init = path(1)%init
     end = path(size(path))%end
-    contour = buildVertexToSideContour(path)
+    contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c5%position)) err = err + 1
     if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
@@ -488,7 +488,7 @@ integer function test_geometry_side_vertex_contour() bind(C) result(err)
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
     init = path(1)%init
     end = path(size(path))%end
-    contour = buildVertexToSideContour(path)
+    contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c5%position)) err = err + 1
     if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
@@ -540,7 +540,7 @@ integer function test_geometry_side_side_contour() bind(C) result(err)
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
     init = path(1)%init
     end = path(size(path))%end
-    contour = buildSideToSideContour(path)
+    contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(4)%init%position .eq. c5%position)) err = err + 1
     if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
@@ -595,7 +595,7 @@ integer function test_geometry_side_side_contour_2() bind(C) result(err)
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
     init = path(1)%init
     end = path(size(path))%end
-    contour = buildSideToSideContour(path)
+    contour = buildSidesContour(path)
     if (size(contour) /= 5) err = err + 1
     if (.not. all(contour(3)%init%position .eq. c3%position)) err = err + 1
     if (.not. all(contour(3)%end%position .eq. c1%position)) err = err + 1
