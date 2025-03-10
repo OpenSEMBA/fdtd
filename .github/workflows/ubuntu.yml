@@ -35,6 +35,14 @@ jobs:
             hdf: "Yes"
             double-precision: "No"
 
+          - os: ubuntu-22.04
+            compiler: {name: 'intel-classic', version: '2021.10'}
+            build-type: "Release"
+            mpi: "No"
+            mtln: "Yes"
+            hdf: "Yes"
+            double-precision: "No"
+
           - os: ubuntu-latest
             compiler: {name: 'nvidia-hpc', version: '24.5'}
             build-type: "Release"

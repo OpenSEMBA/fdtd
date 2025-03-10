@@ -45,26 +45,41 @@ endif()
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
 if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-	message(STATUS "Using flags for Linux system")
+	message(STATUS "Using Linux flags")
+
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+		message(STATUS "Using GNU flags")
+
 		add_definitions(-DCompileWithIncludeMpifh)
 		set(CMAKE_CXX_FLAGS "-fopenmp")
 		set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
+		
 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ffast-math -fPIC")
+		
 		set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0")
+
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
+		message(STATUS "Using IntelLLVM (ifx) flags")
+		
 		set(CMAKE_CXX_FLAGS "-qopenmp")
+		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp")
+		
 		# set(CMAKE_CXX_FLAGS_RELEASE "-fast") # This causes problems because it activates -ipo.
 		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp")
 		# set(CMAKE_Fortran_FLAGS_RELEASE "-fast") # This causes problems because it activates -ipo.
 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -no-prec-div -fp-model fast=2w") #-xHost not supported in github actions
+		
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
+
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+		message(STATUS "Using Intel (ifort) flags")
+
 		set(CMAKE_CXX_FLAGS "-qopenmp")
-		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp")
+
+		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
+
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
 		# TODO: Tune flags for NVHPC
