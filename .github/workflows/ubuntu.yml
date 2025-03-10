@@ -28,7 +28,7 @@ jobs:
 
         include:
           - os: ubuntu-22.04
-            compiler: {name: 'intel-classic', version: '2023.2'}
+            compiler: {name: 'intel-classic', version: '2021.10'}
             build-type: "Release"
             mpi: "No"
             mtln: "No"
@@ -36,7 +36,7 @@ jobs:
             double-precision: "No"
 
           - os: ubuntu-22.04
-            compiler: {name: 'intel-classic', version: '2023.2'}
+            compiler: {name: 'intel-classic', version: '2021.10'}
             build-type: "Release"
             mpi: "No"
             mtln: "Yes"
