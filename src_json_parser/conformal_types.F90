@@ -10,7 +10,5 @@ module conformal_types_mod
         type(cell_interval_t), dimension(:), allocatable :: intervals
         integer :: offgrid_points
     end type
-    
-
 
 end module

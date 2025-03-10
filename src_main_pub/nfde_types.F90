@@ -6,7 +6,7 @@ MODULE NFDETypes
 #ifdef CompileWithMTLN   
    USE mtln_types_mod
 #endif
-   ! USE conformal_types_mod
+   USE geometry_mod, only: triangle_t
    !
    IMPLICIT NONE
    INTEGER (KIND=4), PARAMETER :: RK = RKIND
@@ -122,32 +122,43 @@ MODULE NFDETypes
    ! Identifies conformal PEC "media"
    !------------------------------------------------------------------------------
 
-   type, public :: cell_t 
-      integer (kind=4), dimension(3) :: index
-      integer(kind=4) :: direction
+   type, public :: ConformalPECVolume
+      type(triangle_t), dimension(:), allocatable :: triangles
+      integer :: offgrid_points
    end type 
 
-   ! edge and face media
-   type, public :: conformal_face_t
-      type(cell_t), dimension(:), allocatable :: cells
-      ! integer (kind=4) :: cell_i, cell_j, cell_k
-      real(kind=rkind) :: ratio
-      integer (kind=4) :: size
-      end type
-   type, public :: conformal_edge_t
-      ! integer (kind=4) :: cell_i, cell_j, cell_k
-      type(cell_t), dimension(:), allocatable :: cells
-      real(kind=rkind) :: ratio
-      integer (kind=4) :: size
-      ! integer(kind=4) :: direction
+   type, public :: ConformalPECRegions
+      type(ConformalPECVolume), dimension(:), pointer :: volumes => null()
+      ! type(ConformalPECSurface), dimension(:), pointer :: surfaces => null()
    end type
 
-   TYPE, PUBLIC :: ConformalPECRegions
-      INTEGER (KIND=4) :: nEdges = 0
-      INTEGER (KIND=4) :: nFaces = 0
-      TYPE (conformal_face_t), DIMENSION (:), POINTER :: faces => NULL ()
-      TYPE (conformal_edge_t), DIMENSION (:), POINTER :: edges => NULL ()
-   END TYPE ConformalPECRegions
+
+   ! type, public :: location_t 
+   !    integer (kind=4), dimension(3) :: cell
+   !    integer(kind=4) :: direction
+   ! end type 
+
+   ! ! edge and face media
+   ! type, public :: conformal_face_t
+   !    type(location_t), dimension(:), allocatable :: locations
+   !    ! integer (kind=4) :: cell_i, cell_j, cell_k
+   !    real(kind=rkind) :: ratio
+   !    integer (kind=4) :: size
+   !    end type
+   ! type, public :: conformal_edge_t
+   !    ! integer (kind=4) :: cell_i, cell_j, cell_k
+   !    type(location_t), dimension(:), allocatable :: locations
+   !    real(kind=rkind) :: ratio
+   !    integer (kind=4) :: size
+   !    ! integer(kind=4) :: direction
+   ! end type
+
+   ! TYPE, PUBLIC :: ConformalPECRegions
+   !    INTEGER (KIND=4) :: nEdges = 0
+   !    INTEGER (KIND=4) :: nFaces = 0
+   !    TYPE (conformal_face_t), DIMENSION (:), POINTER :: faces => NULL ()
+   !    TYPE (conformal_edge_t), DIMENSION (:), POINTER :: edges => NULL ()
+   ! END TYPE ConformalPECRegions
 
    !------------------------------------------------------------------------------
    ! Locates all the different PEC media found

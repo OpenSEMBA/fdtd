@@ -126,25 +126,28 @@ contains
         type(side_set_t) :: aux_list
         integer (kind=4), dimension(3) :: cell
         type(cell_t), dimension(:), allocatable :: aux_keys
+        ! integer :: inList
         cell = side%getCell()
         if (this%hasKey(cell)) then 
 
             call this%get_raw(key(cell), alloc_list)
             select type(alloc_list)
             type is(side_set_t)
-                if (allocated(alloc_list%sides)) then 
-                    allocate(aux_list%sides(size(alloc_list%sides) + 1))
-                    aux_list%sides(1:size(alloc_list%sides)) = alloc_list%sides
-                    aux_list%sides(size(alloc_list%sides) + 1) = side
-                    deallocate(alloc_list%sides)
-                    allocate(alloc_list%sides(size(aux_list%sides)))
-                    alloc_list%sides = aux_list%sides
-                    call this%set(key(cell), value = alloc_list)
-                else 
-                    allocate(aux_list%sides(1))
-                    aux_list%sides(1) = side
-                    call this%set(key(cell), value = aux_list)
-                end if
+            
+
+                ! if (allocated(alloc_list%sides)) then 
+                allocate(aux_list%sides(size(alloc_list%sides) + 1))
+                aux_list%sides(1:size(alloc_list%sides)) = alloc_list%sides
+                aux_list%sides(size(alloc_list%sides) + 1) = side
+                deallocate(alloc_list%sides)
+                allocate(alloc_list%sides(size(aux_list%sides)))
+                alloc_list%sides = aux_list%sides
+                call this%set(key(cell), value = alloc_list)
+                ! else 
+                !     allocate(aux_list%sides(1))
+                !     aux_list%sides(1) = side
+                !     call this%set(key(cell), value = aux_list)
+                ! end if
             end select
 
         else 
@@ -163,6 +166,21 @@ contains
         end if
 
     end subroutine
+
+    ! function sideInList(list, side) result (res)
+    !     type(side_t), dimension(:), allocatable :: list
+    !     type(side_t) :: side
+    !     integer :: i, res
+    !     res = -1 
+    !     do i = 1, size(list)
+    !         if (all(list(i)%init%position .eq. side(i)%init%position) .and. &
+    !             all(list(i)%end%position .eq. side(i)%end%position)) then 
+    !                 res = i
+    !                 exit
+    !         end if
+    !     end do
+    ! end function
+
 
     function getTrianglesInCell(this, k) result(res)
         class(triangle_map_t) :: this

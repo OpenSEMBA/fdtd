@@ -102,6 +102,9 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 endif()
 
+add_subdirectory(src_conformal)
+set(CONFORMAL_LIBRARIES conformal)
+
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
 	add_subdirectory(test)
@@ -156,7 +159,7 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/resuming.F90"	
 		"src_main_pub/timestepping.F90"
 	)
-	target_link_libraries(semba-main semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
+	target_link_libraries(semba-main semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES} ${CONFORMAL_LIBRARIES})
 endif()
 
 if (SEMBA_FDTD_EXECUTABLE)

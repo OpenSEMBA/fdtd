@@ -183,7 +183,7 @@ contains
       res%mtln = this%readMTLN(res%despl)
 #endif
 
-      res%conformalRegs = this%readConformalRegions()
+      res%conformalRegs = this%readConformalRegions(res%despl)
 
    end function
 
@@ -556,51 +556,70 @@ contains
       end subroutine         
    end function
 
-   function readConformalRegions(this) result(res)
+   function readConformalRegions(this, grid) result(res)
       class(parser_t) :: this
+      type(Desplazamiento), intent(in) :: grid
+
       type(ConformalPECRegions) :: res
+
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(conformal_region_t) :: cR
+
+      type(coords), dimension(:), pointer :: cs
+
       integer :: i, j, k
       type(triangle_map_t) :: tri_map
       type(side_map_t) :: side_map
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
-      if (size(mAs) == 0) then 
-         do i = 1, size(mAs)
-            do j = 1, size(mAs(i)%elementIds)
-               cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j))
-               tri_map  = buildTriangleMap(cR%triangles)
-               side_map = buildSideMap(cR%triangles)
-            end do
+      ! if (size(mAs) == 0) then
+      do i = 1, size(mAs)
+         do j = 1, size(mAs(i)%elementIds)
+            cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j))
+            call appendRegion(res%volumes, cR)
+            ! tri_map  = buildTriangleMap(cR%triangles)
+            ! side_map = buildSideMap(cR%triangles)
+
+            ! intervals to PEC region
+            ! call this%matAssToCoords(cs, mAs(i), CELL_TYPE_VOXEL)
+            ! call appendRegion(res%vols,  res%nVols,  res%nVols_max, cs)
+   
+
          end do
-      end if
+      end do
+
+      ! res%edges = buildConformalEdgeRegions(side_map, grid)
+      ! res%faces = buildConformalFaceRegions()
 
       ! buildEdgeRegions(cell_map)
       ! buildFaceRegions(cell_map)
 
-
-   end function
-
-
-   function buildEdgeRegions(side_map) result(res)
-      type(side_map_t) :: side_map
-      type(triangle_t), dimension(:), allocatable :: triangles
-      type(side_t) :: side_limit
-      type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour
-      logical :: res
-      integer :: i, face
-      do i = 1, size(side_map%keys) 
-         sides = side_map%getSidesInCell(side_map%keys(i)%cell)
-         do face = 1, 3
-            sides_on_face = getSidesOnFace(sides, face)
-            contour = buildSidesContour(sides_on_face)
-            ! computeArea(contour)
-            ! computeLengths(contour)
+   contains 
+      subroutine appendRegion(volumes, region)
+         type(ConformalPECVolume), dimension(:), pointer :: volumes
+         type(conformal_region_t), intent(in) :: region
+         type(ConformalPECVolume), dimension(:), allocatable :: aux
+         integer :: i
+         if (.not. associated(volumes)) then 
+            allocate(volumes(1))
+            volumes(1)%triangles = cR%triangles
+            volumes(1)%offgrid_points = cR%offgrid_points
+         else 
+            allocate(aux(size(volumes)))
+            do i = 1, size(volumes)
+               aux(i) = volumes(i)
+            end do
+            deallocate(volumes)
             
-         end do
-      end do
-      ! triangles on face are treated later
+            allocate(volumes(size(aux) + 1))
+            do i = 1, size(aux)
+               volumes(i) = aux(i)
+            end do
+            volumes(i+1)%triangles = cR%triangles
+            volumes(i+1)%offgrid_points = cR%offgrid_points
+         end if
+      end subroutine
+
    end function
 
 

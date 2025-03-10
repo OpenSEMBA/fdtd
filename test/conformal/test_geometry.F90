@@ -605,3 +605,58 @@ integer function test_geometry_side_side_contour_2() bind(C) result(err)
     if (.not. all(contour(5)%end%position .eq. c4%position)) err = err + 1
 
 end function
+
+integer function test_geometry_areas() bind(C) result(err)
+    use geometry_mod
+    use cell_map_mod
+    implicit none 
+
+    type(side_map_t) :: side_map
+    type(side_t), dimension(:), allocatable :: sides, path, contour
+    type(triangle_t), dimension(:), allocatable :: triangles
+    type(triangle_t) :: t1,t2,t3
+    type(coord_t) :: c1, c2, c3, c4, c5, c6, c7
+    integer, dimension(3) :: cell
+    type(coord_t) :: init, end
+    real :: area
+
+    err = 0
+
+    c1 = coord_t(position = [1.0,0.0,0.0],   id = 1)
+    c2 = coord_t(position = [0.0,1.0,0.0],  id=  2)
+    c3 = coord_t(position = [0.0,0.0,1.0], id=  3)
+   
+    allocate(triangles(1))
+    triangles(1) = triangle_t(vertices = [c1,c2,c3])
+    cell = triangles(1)%getCell()
+    side_map = buildSideMap(triangles)
+    sides = side_map%getSidesInCell(cell)
+    if (size(sides) /= 3) err = err + 1
+
+    path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
+    contour = buildSidesContour(path)
+    area = contourArea(contour)
+    if (area /= 0.5) err = err + 1
+
+    triangles(1)%vertices(1)%position = [0.5,0.0,0.0]
+    side_map = buildSideMap(triangles)
+    sides = side_map%getSidesInCell(cell)
+    if (size(sides) /= 3) err = err + 1
+
+    path = getPathOnFace(getSidesOnFace(sides, FACE_Y))
+    contour = buildSidesContour(path)
+    area = contourArea(contour)
+    if (area /= 0.25) err = err + 1
+
+    triangles(1)%vertices(2)%position = [0.0,0.25,0.0]
+    side_map = buildSideMap(triangles)
+    sides = side_map%getSidesInCell(cell)
+    if (size(sides) /= 3) err = err + 1
+
+    path = getPathOnFace(getSidesOnFace(sides, FACE_X))
+    contour = buildSidesContour(path)
+    area = contourArea(contour)
+    if (area /= 0.125) err = err + 1
+
+
+end function

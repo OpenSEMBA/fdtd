@@ -36,6 +36,7 @@ module geometry_mod
         procedure :: isOnAnyEdge => side_isOnAnyEdge
         procedure :: isOnFace => side_isOnFace
         procedure :: isOnAnyFace => side_isOnAnyFace
+        procedure :: length
     end type
 
     type, public :: triangle_t
@@ -114,6 +115,12 @@ contains
         type(coord_t) :: c
         c = coord_t(position=0.5*(this%end%position + this%init%position))
         side_isOnEdge = c%isOnEdge(edge)
+    end function
+
+    function length(this) result(res)
+        class(side_t) :: this
+        real :: res
+        res = norm2(this%init%position - this%end%position)
     end function
 
     function side_getEdge(this) result(res)
@@ -410,6 +417,22 @@ contains
             res(:,4) = cell(:) + [0,1,0]
         end if
     end function
+
+    function contourArea(contour) result(res)
+        type(side_t), dimension(:), allocatable, intent(in) :: contour
+        real :: res
+        integer :: face, i, dir1,dir2
+        face = contour(1)%getFace()
+        dir1 = mod(face,3)+1
+        dir2 = mod(face+1,3)+1
+        res = 0
+        do i = 1, size(contour)
+           res = res + contour(i)%init%position(dir1)*contour(i)%end%position(dir2) - & 
+                       contour(i)%end%position(dir1)*contour(i)%init%position(dir2)
+        end do
+        res = 0.5*res
+    end function
+  
 
     function getPathOnFace(sides) result (res)
         type(side_t), dimension(:), allocatable, intent(in) :: sides

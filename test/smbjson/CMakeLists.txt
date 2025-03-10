@@ -7,8 +7,6 @@ add_library (smbjson_test_fortran
     "test_idchildtable.F90"
     "test_cells.F90"
     "test_mesh.F90"
-    "test_geometry.F90"
-    "test_fhash.F90"
     "test_parser.F90"    
     "test_read_planewave.F90"
     "test_read_dielectricSlab.F90"
@@ -33,6 +31,7 @@ endif()
 target_link_libraries(smbjson_test_fortran
     smbjson 
     fhash 
+
     ${JSONFORTRAN_LIB}
 )
 
