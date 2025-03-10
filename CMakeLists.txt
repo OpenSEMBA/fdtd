@@ -74,8 +74,8 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
 		message(STATUS "Using Intel (ifort) flags")
 
-		set(CMAKE_CXX_FLAGS "-qopenmp")
-		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp")
+		set(CMAKE_CXX_FLAGS "-qopenmp -diag-disable=10441")
+		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp -diag-disable=8889")
 
 		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
