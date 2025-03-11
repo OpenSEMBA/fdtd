@@ -6,6 +6,11 @@ module cell_map_mod
     implicit none
 
 
+    type :: element_set_t
+        type(triangle_t), dimension(:), allocatable :: triangles ! triangles on faces
+        type(side_t), dimension(:), allocatable :: sides ! sides from triangles off faces
+    end type
+
     type :: triangle_set_t
         type(triangle_t), dimension(:), allocatable :: triangles ! triangles on faces
     end type
@@ -23,26 +28,78 @@ module cell_map_mod
         type(cell_t), dimension(:), allocatable :: keys
     contains
         procedure :: hasKey
+        procedure :: getTrianglesInCell
+        procedure :: getSidesInCell
     end type
 
     type, extends(cell_map_t) :: triangle_map_t
     contains
         procedure :: addTriangle
-        procedure :: getTrianglesInCell
     end type
 
     type, extends(cell_map_t) :: side_map_t
     contains
         procedure :: addSide
-        procedure :: getSidesInCell
     end type
 
 contains
 
-    function buildTriangleMap(triangles) result(res)
+    subroutine buildCellMap(res, triangles)
+        type(cell_map_t), intent(inout) :: res
+        type(triangle_t), dimension(:), allocatable :: triangles
+        type(triangle_map_t) :: tri_map
+        type(side_map_t) :: side_map
+        type(cell_t), dimension(:), allocatable :: keys
+        type(element_set_t) :: elems
+        integer :: i
+        call buildTriangleMap(tri_map, triangles)
+        call buildSideMap(side_map, triangles)
+        keys = mergeKeys(tri_map%keys, side_map%keys)
+        do i = 1, size(keys)
+            elems%triangles = tri_map%getTrianglesInCell(keys(i)%cell)
+            elems%sides = side_map%getSidesInCell(keys(i)%cell)
+            call res%set(key(keys(i)%cell), value=elems)
+        end do
+        keys = mergeKeys(keys, res%keys)
+        res%keys = keys
+    end subroutine
+
+    function mergeKeys(tri_keys, side_keys) result(res)
+        type(cell_t), dimension(:), allocatable, intent(in) :: tri_keys, side_keys
+        type(cell_t), dimension(:), allocatable :: res, aux
+        integer :: i
+        allocate(res(size(tri_keys)))
+        do i = 1, size(side_keys)
+            if (isNewKey(tri_keys, side_keys(i))) call addKey(res, side_keys(i))
+        end do
+    end function
+
+    subroutine addKey(keys, new_key)
+        type(cell_t), dimension(:), allocatable, intent(inout) :: keys
+        type(cell_t), intent(in) :: new_key
+        type(cell_t), dimension(:), allocatable :: aux
+        allocate(aux(size(keys) + 1))
+        aux(1:size(keys)) = keys
+        aux(size(keys) + 1) = new_key
+        deallocate(keys)
+        allocate(keys(size(aux)))
+        keys = aux
+    end subroutine
+
+    logical function isNewKey(keys, k) 
+        type(cell_t), dimension(:), allocatable, intent(in) :: keys
+        type(cell_t), intent(in) :: k
+        integer :: i
+        isNewKey = .true.
+        do i = 1, size(keys)        
+            if (all(keys(i)%cell .eq. k%cell)) isNewKey = .false.
+        end do
+    end function    
+
+    subroutine buildTriangleMap(res, triangles)
+        type(triangle_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
-        type(triangle_map_t) :: res
         integer :: i, j
         integer (kind=4), dimension(3) :: cell
         do i = 1, size(triangles)
@@ -50,12 +107,12 @@ contains
                 call res%addTriangle(triangles(i))
             end if
         end do
-    end function
+    end subroutine
 
-    function buildSideMap(triangles) result(res)
+    subroutine buildSideMap(res, triangles)
+        type(side_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
-        type(side_map_t) :: res
         integer :: i, j
         integer (kind=4), dimension(3) :: cell
         do i = 1, size(triangles)
@@ -69,7 +126,7 @@ contains
                 end do
             end if
         end do
-    end function
+    end subroutine
 
     logical function hasKey(this, k)
         class(cell_map_t) :: this
@@ -183,7 +240,7 @@ contains
 
 
     function getTrianglesInCell(this, k) result(res)
-        class(triangle_map_t) :: this
+        class(cell_map_t) :: this
         integer(kind=4), dimension(3) :: k
         class(*), allocatable :: alloc_list
         type(triangle_t), dimension(:), allocatable :: res
@@ -201,7 +258,7 @@ contains
     end function
 
     function getSidesInCell(this, k) result(res)
-        class(side_map_t) :: this
+        class(cell_map_t) :: this
         integer(kind=4), dimension(3) :: k
         class(*), allocatable :: alloc_list
         type(side_t), dimension(:), allocatable :: res

@@ -24,6 +24,7 @@ MODULE Preprocess_m
    USE CONFORMAL_TYPES
    USE Conformal_TimeSteps_m
 #endif
+   USE conformal
    IMPLICIT NONE
 !!!variables globales del modulo
    REAL (KIND=RKIND), save           ::  cluz,zvac
@@ -106,7 +107,8 @@ CONTAINS
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
-!
+      !
+      type(ConformalMedia_t) :: conformal_media
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       cluz=1.0_RKIND/sqrt(eps0*mu0)
       zvac=sqrt(mu0/eps0)
@@ -139,6 +141,11 @@ CONTAINS
       sgg%EShared%Conta = 0
       sgg%EShared%MaxConta = 10
       ALLOCATE (sgg%EShared%elem(1:sgg%EShared%MaxConta))
+
+
+      if (associated(this%conformalRegs%volumes)) then 
+         conformal_media = buildConformalMedia(this%conformalRegs, this%despl)
+      end if
 
 
       ! Cuenta los medios
@@ -188,6 +195,7 @@ CONTAINS
       contamedia = contamedia +1 !para acomodar los nodal sources como caso especial de linea vacia
 
       ! contamedia = contamedia + this%conformalRegs%nEdges + this%conformalRegs%nFaces
+
 
       sgg%NumMedia = contamedia
       sgg%AllocMed = contamedia

@@ -18,7 +18,7 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
 endif()
 
 add_subdirectory(conformal)
-set(CONFORMAL_TEST_LIBRARY conformal_tests)
+set(CONFORMAL_TESTS_LIBRARY conformal_tests)
 
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"

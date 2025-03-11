@@ -13,7 +13,7 @@ module smbjson
    use json_kinds
 
    use geometry_mod
-   use cell_map_mod
+   ! use cell_map_mod
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -568,8 +568,8 @@ contains
       type(coords), dimension(:), pointer :: cs
 
       integer :: i, j, k
-      type(triangle_map_t) :: tri_map
-      type(side_map_t) :: side_map
+      ! type(triangle_map_t) :: tri_map
+      ! type(side_map_t) :: side_map
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
       ! if (size(mAs) == 0) then
@@ -596,9 +596,9 @@ contains
 
    contains 
       subroutine appendRegion(volumes, region)
-         type(ConformalPECVolume), dimension(:), pointer :: volumes
+         type(ConformalPECElements), dimension(:), pointer :: volumes
          type(conformal_region_t), intent(in) :: region
-         type(ConformalPECVolume), dimension(:), allocatable :: aux
+         type(ConformalPECElements), dimension(:), allocatable :: aux
          integer :: i
          if (.not. associated(volumes)) then 
             allocate(volumes(1))

@@ -78,7 +78,7 @@ add_library(semba-types
 	"src_main_pub/nfde_types.F90"
 	"src_main_pub/fdetypes.F90"
 	"src_mtln/mtln_types.F90"
-	"src_json_parser/conformal_types.F90"
+	"src_conformal/geometry.F90"
 	"src_wires_pub/wires_types.F90"
 	"src_main_pub/lumped_types.F90"
 )
@@ -159,7 +159,7 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/resuming.F90"	
 		"src_main_pub/timestepping.F90"
 	)
-	target_link_libraries(semba-main semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES} ${CONFORMAL_LIBRARIES})
+	target_link_libraries(semba-main semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
 endif()
 
 if (SEMBA_FDTD_EXECUTABLE)

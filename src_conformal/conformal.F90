@@ -2,55 +2,308 @@ module conformal
 
     use geometry_mod
     use cell_map_mod
-    use NFDETypes, only: Desplazamiento
+    use NFDETypes, only: Desplazamiento, ConformalPECRegions, ConformalMedia_t, edge_t, face_t
+
+    REAL, PARAMETER :: RATIO_EQ_TOLERANCE = 0.05
 
 contains
 
+   function buildConformalMedia(regions, grid) result(res)
+      type(ConformalPECRegions), intent(in) :: regions
+      type(Desplazamiento), intent(in) :: grid
+      type(ConformalMedia_t) :: res
+      type(side_map_t) :: side_map
+      type(triangle_map_t) :: tri_map
+      type(cell_map_t) :: cell_map
+      real, dimension(:), allocatable :: edge_ratios
+      type(edge_t), dimension(:), allocatable :: edges
+      integer :: i
+      
+      do i = 1, size(regions%volumes)
+         call buildCellMap(cell_map, regions%volumes(i)%triangles)
+      end do
+      call buildConformalEdges(cell_map, grid, edges, edge_ratios)
+      ! call buildConformalFaces(cell_map, grid, faces, face_ratios)
+
+      allocate(res%edge_media(size(edge_ratios)))
+      do i = 1, size(edge_ratios)
+         res%edge_media(i)%edges = filterEdgesByMedia(edges, edge_ratios(i))
+         res%edge_media(i)%ratio = edge_ratios(i)
+      end do
+
+      ! allocate(res%face_media(size(face_ratios)))
+      ! do i = 1, size(face_ratios)
+      !    res%face_media(i)%faces = filterFacesByMedia(faces, face_ratios(i))
+      !    res%face_media(i)%ratio = face_ratios(i)
+      ! end do
+   end function
+
+   ! subroutine fillEdgesFromContour()
 
 
-    function buildConformalEdgeRegions(side_map, grid) result(res)
-        type(side_map_t) :: side_map
-        type(Desplazamiento), intent(in) :: grid
+   subroutine buildConformalEdges(cell_map, grid, res, edge_ratios)
+      type(cell_map_t), intent(in) :: cell_map
+      ! type(triangle_map_t), intent(in) :: tri_map
+      type(Desplazamiento), intent(in) :: grid
+
+      type(side_t), dimension(:), allocatable :: sides, contour
+      type(triangle_t), dimension(:), allocatable :: tris
+      type (edge_t), dimension (:), allocatable :: res
+      type (face_t), dimension (:), allocatable :: faces
+      integer :: i, j, k, face, edge
+      real :: ratio, area
+      real, dimension(:), allocatable :: edge_ratios, face_ratios
+      integer, dimension(3) :: cell
+      allocate(res(0))
+      allocate(edge_ratios(0))
+      allocate(face_ratios(0))
+      do i = 1, size(cell_map%keys) 
+         cell = cell_map%keys(i)%cell
+         sides = cell_map%getSidesInCell(cell)
+         do face = FACE_X, FACE_Z
+            contour = buildSidesContour(getSidesOnFace(sides, face))
+            ! call fillEdges(contour)
+            ! call fillFace(contour)
+            do j = 1, size(contour)
+
+               edge = contour(j)%getEdge()
+               if (all(contour(j)%getCell() .eq. cell)) then 
+                  select case (edge)
+                  case(EDGE_X) 
+                     ratio = contour(j)%length() / grid%desX(cell(1))
+                     ! call addEdge(res, cell, edge, ratio)
+                  case(EDGE_Y)
+                     ratio = contour(j)%length() / grid%desY(cell(2))
+                     ! call addEdge(res, cell, edge, ratio)
+                  case(EDGE_Z)
+                     ratio = contour(j)%length() / grid%desZ(cell(3))
+                  end select
+                  if (edge /= NOT_ON_EDGE) then 
+                     call addEdge(res, cell, edge, ratio)
+                     if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
+                  end if
+               end if
+            end do
+         end do
+      ! end do
+
+      ! do i = 1, size(tri_map%keys) 
+         tris = cell_map%getTrianglesInCell(cell)
+         do j = 1, size(tris)
+
+
+            ! edges on faces w/o anything else
+            do k = 1, 3
+               edge = sides(edge)%getEdge()
+               select case(edge)
+               case(EDGE_X)
+                  ratio = sides(edge)%length() / grid%desX(cell(1))
+                  call addEdge(res, cell, edge, ratio)
+               case(EDGE_Y)
+                  ratio = sides(edge)%length() / grid%desY(cell(2))
+                  call addEdge(res, cell, edge, ratio)
+               case(EDGE_Z)
+                  ratio = sides(edge)%length() / grid%desZ(cell(3))
+                  call addEdge(res, cell, edge, ratio)
+               end select
+               if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
+            end do
+
+         end do
+      end do
+
+      ! triangles on face are treated later
+   end subroutine
   
-        type(triangle_t), dimension(:), allocatable :: triangles
-        type(side_t) :: side_limit
-        type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour
-        ! TYPE (conformal_edge_t), dimension (:), allocatable :: res
-        integer :: i, j, face, edge
-        real :: ratio
-        real, dimension(:), allocatable :: media
-        ! allocate(res(0))
-        allocate(media(0))
-        do i = 1, size(side_map%keys) 
-           sides = side_map%getSidesInCell(side_map%keys(i)%cell)
-           do face = 1, 3
-              sides_on_face = getSidesOnFace(sides, face)
-              contour = buildSidesContour(sides_on_face)
-              ! computeArea(contour)
-              ! computeLengths(contour)
-              
-              do j = 1, size(contour)
-                 do edge = 1, 3
-                    if (contour(j)%isOnEdge(edge) .and. all(contour(j)%getCell() .eq. side_map%keys(i)%cell) ) then 
-                       ! contour(j)%length()
-                       if (edge == 1) then 
-                          ratio = contour(j)%length() / grid%desX(side_map%keys(i)%cell(1))
-                       else if (edge == 2) then 
-                          ratio = contour(j)%length() / grid%desY(side_map%keys(i)%cell(2))
-                       else if (edge == 3) then 
-                          ratio = contour(j)%length() / grid%desZ(side_map%keys(i)%cell(3))
-                       end if
+   ! subroutine buildConformalFaces(cell_map, grid, res, face_ratios)
+   !    type(cell_map_t), intent(in) :: cell_map
+   !    ! type(triangle_map_t), intent(in) :: tri_map
+   !    type(Desplazamiento), intent(in) :: grid
+
+   !    type(side_t), dimension(:), allocatable :: sides, contour
+   !    type(triangle_t), dimension(:), allocatable :: tris
+   !    type (face_t), dimension (:), allocatable :: res
+   !    integer :: i, j, k, face, edge
+   !    real :: ratio, area
+   !    real, dimension(:), allocatable :: face_ratios
+   !    integer, dimension(3) :: cell
+   !    allocate(res(0))
+   !    allocate(face_ratios(0))
+   !    do i = 1, size(cell_map%keys) 
+   !       cell = cell_map%keys(i)%cell
+   !       sides = cell_map%getSidesInCell(cell)
+   !       do face = FACE_X, FACE_Z
+   !          ! sides_on_face = getSidesOnFace(sides, face)
+   !          contour = buildSidesContour(getSidesOnFace(sides, face))
+   !          ! call fillEdges(contour)
+   !          ! call fillFace(contour)
+   !          do j = 1, size(contour)
+
+   !             edge = contour(j)%getEdge()
+   !             if (all(contour(j)%getCell() .eq. cell)) then 
+   !                select case (edge)
+   !                case(EDGE_X) 
+   !                   ratio = contour(j)%length() / grid%desX(cell(1))
+   !                   ! call addEdge(res, cell, edge, ratio)
+   !                case(EDGE_Y)
+   !                   ratio = contour(j)%length() / grid%desY(cell(2))
+   !                   ! call addEdge(res, cell, edge, ratio)
+   !                case(EDGE_Z)
+   !                   ratio = contour(j)%length() / grid%desZ(cell(3))
+   !                end select
+   !                if (edge /= NOT_ON_EDGE) then
+   !                   call addFace(res, cell, edge, ratio)
+   !                   if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
+   !                end if
+   !             end if
+   !          end do
+   !       end do
+   !    ! end do
+
+   !    ! do i = 1, size(tri_map%keys) 
+   !       tris = cell_map%getTrianglesInCell(cell)
+   !       do j = 1, size(tris)
+
+   !          sides = tris(j)%getSides()
+   !          area = contourArea(sides)
+   !          face = tris(j)%getFace()
+   !          select case(face)
+   !          case(FACE_X)
+   !             ratio = area / (grid%desY(cell(2)) * grid%desZ(cell(3)))
+   !             ! call addFace(faces, cell, face, ratio)
+   !          case(FACE_Y)
+   !             ratio = area / (grid%desX(cell(1)) * grid%desZ(cell(3)))
+   !             ! call addFace(faces, cell, face, ratio)
+   !          case(FACE_Z)
+   !             ratio = area / (grid%desX(cell(1)) * grid%desY(cell(2)))
+   !          end select
+   !          if (FACE /= NOT_ON_FACE) then 
+   !             call addFace(faces, cell, face, ratio)
+   !             if (isNewRatio(face_ratios, ratio)) call addRatio(face_ratios, ratio)
+   !          end if
+
+   !          ! edges on faces w/o anything else
+   !          do k = 1, 3
+   !             edge = sides(edge)%getEdge()
+   !             select case(edge)
+   !             case(EDGE_X)
+   !                ratio = sides(edge)%length() / grid%desX(cell(1))
+   !                call addEdge(res, cell, edge, ratio)
+   !             case(EDGE_Y)
+   !                ratio = sides(edge)%length() / grid%desY(cell(2))
+   !                call addEdge(res, cell, edge, ratio)
+   !             case(EDGE_Z)
+   !                ratio = sides(edge)%length() / grid%desZ(cell(3))
+   !                call addEdge(res, cell, edge, ratio)
+   !             end select
+   !             if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
+   !          end do
+
+   !       end do
+   !    end do
+
+   !    ! triangles on face are treated later
+   ! end subroutine
   
-  
-                    end if
-                 end do
-              end do
-  
-           end do
-        end do
-        ! triangles on face are treated later
-     end function
-  
+   subroutine addEdge(edges, cell, edge, ratio)
+      type(edge_t), dimension(:), allocatable, intent(inout) :: edges
+      type(edge_t), dimension(:), allocatable :: aux
+      integer, dimension(3), intent(in) :: cell
+      integer :: edge 
+      type(edge_t) :: new_edge
+      real :: ratio
+      allocate(aux(size(edges) + 1))
+      aux(1:size(edges)) = edges
+      new_edge = edge_t(cell=cell, ratio=ratio, direction=edge)
+      aux(size(edges) + 1) = new_edge
+
+      deallocate(edges)
+      allocate(edges(size(aux)))
+      edges = aux
+   end subroutine
+
+   subroutine addFace(faces, cell, face, ratio)
+      type(face_t), dimension(:), allocatable, intent(inout) :: faces
+      type(face_t), dimension(:), allocatable :: aux
+      integer, dimension(3), intent(in) :: cell
+      integer :: face
+      type(face_t) :: new_face
+      real :: ratio
+      allocate(aux(size(faces) + 1))
+      aux(1:size(faces)) = faces
+      new_face = face_t(cell=cell, ratio=ratio, direction=face)
+      aux(size(faces) + 1) = new_face
+
+      deallocate(faces)
+      allocate(faces(size(aux)))
+      faces = aux
+   end subroutine
+
+   subroutine addRatio(ratios, ratio)
+      real, dimension(:), allocatable, intent(inout) :: ratios
+      real, dimension(:), allocatable :: aux
+      real :: ratio
+      integer :: i
+      logical :: new = .true.
+      if (size(ratios) == 0) then 
+         deallocate(ratios)
+         allocate(ratios(1))
+         ratios(1) = ratio
+      else
+         allocate(aux(size(ratios) + 1))
+         aux(1:size(ratios)) = ratios
+         aux(size(ratios) + 1) = ratio
+         deallocate(ratios)
+         allocate(ratios(size(aux)))
+         ratios = aux
+      end if
+   end subroutine
+
+   logical function isNewRatio(ratios, ratio)
+      real, dimension(:), allocatable, intent(in) :: ratios
+      real :: ratio
+      integer :: i
+      isNewRatio = .true.
+      do i = 1, size(ratios)
+         if (eq_ratio(ratios(i), ratio)) isNewRatio = .false.
+         ! if ((abs(ratios(i) - ratio) < 0.05)) isNewRatio = .false.
+      end do
+   end function
+
+   logical function eq_ratio(a,b)
+      real, intent(in) :: a,b
+      eq_ratio = abs(a - b) < RATIO_EQ_TOLERANCE
+   end function
+
+   function filterEdgesByMedia(edges, ratio) result(res)
+      type(edge_t), dimension(:), allocatable, intent(in) :: edges
+      real :: ratio
+      type(edge_t), dimension(:), allocatable :: res
+      integer :: i,n
+      n = 0
+      do i = 1, size(edges)
+         if (eq_ratio(edges(i)%ratio, ratio)) n = n + 1
+      end do
+      allocate(res(n))
+      do i = 1, size(edges)
+         if (eq_ratio(edges(i)%ratio, ratio)) res(n) = edges(i)
+      end do
+   end function
+
+   function filterFacesByMedia(faces, ratio) result(res)
+      type(face_t), dimension(:), allocatable, intent(in) :: faces
+      real :: ratio
+      type(face_t), dimension(:), allocatable :: res
+      integer :: i,n
+      n = 0
+      do i = 1, size(faces)
+         if (eq_ratio(faces(i)%ratio, ratio)) n = n + 1
+      end do
+      allocate(res(n))
+      do i = 1, size(faces)
+         if (eq_ratio(faces(i)%ratio, ratio)) res(n) = faces(i)
+      end do
+   end function
 
 
 end module

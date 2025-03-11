@@ -16,10 +16,10 @@ extern "C" int test_geometry_side_vertex_contour();
 extern "C" int test_geometry_side_side_contour();
 extern "C" int test_geometry_side_side_contour_2();
 extern "C" int test_geometry_areas();
-// extern "C" int test_fhash_coords();
-// extern "C" int test_fhash_array();
-// extern "C" int test_fhash_add_triangle();
-// extern "C" int test_fhash_cellmap_set_get();
+extern "C" int test_fhash_coords();
+extern "C" int test_fhash_array();
+extern "C" int test_fhash_add_triangle();
+extern "C" int test_fhash_cellmap_set_get();
 
 
 TEST(conformal, geometry_coord_position)   { EXPECT_EQ(0, test_geometry_coord_position()); }
@@ -37,7 +37,8 @@ TEST(conformal, geometry_sv_contour)       { EXPECT_EQ(0, test_geometry_side_ver
 TEST(conformal, geometry_ss_contour)       { EXPECT_EQ(0, test_geometry_side_side_contour()); }
 TEST(conformal, geometry_ss_contour2)      { EXPECT_EQ(0, test_geometry_side_side_contour_2()); }
 TEST(conformal, geometry_areas)            { EXPECT_EQ(0, test_geometry_areas()); }
-// TEST(smbjson, fhash_coords)              { EXPECT_EQ(0, test_fhash_coords()); }
-// TEST(smbjson, fhash_array)               { EXPECT_EQ(0, test_fhash_array()); }
-// TEST(smbjson, fhash_add_triangle)        { EXPECT_EQ(0, test_fhash_add_triangle()); }
-// TEST(smbjson, fhash_cellmap_set_get)     { EXPECT_EQ(0, test_fhash_cellmap_set_get()); }
+
+TEST(conformal, fhash_coords)              { EXPECT_EQ(0, test_fhash_coords()); }
+TEST(conformal, fhash_array)               { EXPECT_EQ(0, test_fhash_array()); }
+TEST(conformal, fhash_add_triangle)        { EXPECT_EQ(0, test_fhash_add_triangle()); }
+TEST(conformal, fhash_cellmap_set_get)     { EXPECT_EQ(0, test_fhash_cellmap_set_get()); }

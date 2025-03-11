@@ -5,7 +5,7 @@ module mesh_mod
    
    use fhash, only: fhash_tbl_t, key=>fhash_key
    use cells_mod
-   use conformal_types_mod
+   use conformal_region_mod
    integer, private, parameter  ::  MAX_LINE = 256
    
    type :: element_t

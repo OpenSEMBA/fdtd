@@ -122,21 +122,27 @@ MODULE NFDETypes
    ! Identifies conformal PEC "media"
    !------------------------------------------------------------------------------
 
-   type, public :: ConformalPECVolume
+   type, public :: ConformalPECElements
       type(triangle_t), dimension(:), allocatable :: triangles
       integer :: offgrid_points
    end type 
 
    type, public :: ConformalPECRegions
-      type(ConformalPECVolume), dimension(:), pointer :: volumes => null()
-      ! type(ConformalPECSurface), dimension(:), pointer :: surfaces => null()
+      type(ConformalPECElements), dimension(:), pointer :: volumes => null()
+      type(ConformalPECElements), dimension(:), pointer :: surfaces => null()
    end type
 
 
-   ! type, public :: location_t 
-   !    integer (kind=4), dimension(3) :: cell
-   !    integer(kind=4) :: direction
-   ! end type 
+   type, public :: edge_t 
+      integer (kind=4), dimension(3) :: cell
+      integer(kind=4) :: direction
+      real (kind=rkind) :: ratio
+   end type 
+   type, public :: face_t 
+      integer (kind=4), dimension(3) :: cell
+      integer(kind=4) :: direction
+      real (kind=rkind) :: ratio
+   end type 
 
    ! ! edge and face media
    ! type, public :: conformal_face_t
@@ -145,20 +151,20 @@ MODULE NFDETypes
    !    real(kind=rkind) :: ratio
    !    integer (kind=4) :: size
    !    end type
-   ! type, public :: conformal_edge_t
-   !    ! integer (kind=4) :: cell_i, cell_j, cell_k
-   !    type(location_t), dimension(:), allocatable :: locations
-   !    real(kind=rkind) :: ratio
-   !    integer (kind=4) :: size
-   !    ! integer(kind=4) :: direction
-   ! end type
+   type, public :: conformal_edge_media_t
+      ! integer (kind=4) :: cell_i, cell_j, cell_k
+      type(edge_t), dimension(:), allocatable :: edges
+      real(kind=rkind) :: ratio
+      integer (kind=4) :: size
+      ! integer(kind=4) :: direction
+   end type
 
-   ! TYPE, PUBLIC :: ConformalPECRegions
-   !    INTEGER (KIND=4) :: nEdges = 0
-   !    INTEGER (KIND=4) :: nFaces = 0
-   !    TYPE (conformal_face_t), DIMENSION (:), POINTER :: faces => NULL ()
-   !    TYPE (conformal_edge_t), DIMENSION (:), POINTER :: edges => NULL ()
-   ! END TYPE ConformalPECRegions
+   TYPE, PUBLIC :: ConformalMedia_t
+      INTEGER (KIND=4) :: edges_media = 0
+      INTEGER (KIND=4) :: faces_media = 0
+      ! TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: faces => NULL ()
+      TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
+   END TYPE ConformalMedia_t
 
    !------------------------------------------------------------------------------
    ! Locates all the different PEC media found
@@ -828,6 +834,9 @@ MODULE NFDETypes
       logical :: thereare_stoch
    END TYPE t_NFDE_FILE
 !--->
+
+contains
+
 
 END MODULE NFDETypes
 
