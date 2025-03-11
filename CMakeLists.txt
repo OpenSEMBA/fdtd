@@ -99,7 +99,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 	message(STATUS "Using Windows flags")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
-		set(CMAKE_CXX_FLAGS "/Qiopenmp")
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp")
 
 		# Not tested
 		# set(CMAKE_Fortran_FLAGS "/fpp /qopenmp")
