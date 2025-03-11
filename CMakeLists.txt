@@ -68,7 +68,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp")
 		
 		# -xHost not supported in github actions.
-		# Do not use -fast beacuse it activates -ipo, which causes problems with fhash
+		# Do not use -fast because it activates -ipo, which causes problems with fhash
 		set(CMAKE_C_FLAGS_RELEASE "-O3")
 		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -no-prec-div -fp-model fast=2w") 
@@ -96,19 +96,28 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		message(FATAL_ERROR "Unrecognized compiler:" ${CMAKE_Fortran_COMPILER_ID})
 	endif()
 elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
+	message(STATUS "Using Windows flags")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
+		message(STATUS "Using IntelLLVM (ifx) flags")
 		set(CMAKE_CXX_FLAGS "/Qiopenmp")
-		set(CMAKE_Fortran_FLAGS "/fpp /qopenmp")
 
-		set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
+		# Not tested
+		# set(CMAKE_Fortran_FLAGS "/fpp /qopenmp")
+
+		# set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
 		
-		set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
+		# set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
 
 	elseif((CMAKE_Fortran_COMPILER_ID MATCHES "Intel"))
+		message(STATUS "Using Intel (ifort) flags")
 		set(CMAKE_CXX_FLAGS "/Qiopenmp")
-		set(CMAKE_Fortran_FLAGS "/fpp /qopenmp")
-		set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
-		set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
+
+		# Not tested
+		# set(CMAKE_Fortran_FLAGS "/fpp /qopenmp") 
+
+		# set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
+
+		# set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
 	else()
 		message(FATAL_ERROR "Unrecognized compiler id:" ${CMAKE_Fortran_COMPILER_ID})
 	endif()
