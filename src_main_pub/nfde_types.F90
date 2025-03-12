@@ -152,17 +152,20 @@ MODULE NFDETypes
    !    integer (kind=4) :: size
    !    end type
    type, public :: conformal_edge_media_t
-      ! integer (kind=4) :: cell_i, cell_j, cell_k
       type(edge_t), dimension(:), allocatable :: edges
       real(kind=rkind) :: ratio
       integer (kind=4) :: size
-      ! integer(kind=4) :: direction
+   end type
+   type, public :: conformal_face_media_t
+      type(face_t), dimension(:), allocatable :: faces
+      real(kind=rkind) :: ratio
+      integer (kind=4) :: size
    end type
 
    TYPE, PUBLIC :: ConformalMedia_t
       INTEGER (KIND=4) :: edges_media = 0
       INTEGER (KIND=4) :: faces_media = 0
-      ! TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: faces => NULL ()
+      TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: face_media => NULL ()
       TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
    END TYPE ConformalMedia_t
 

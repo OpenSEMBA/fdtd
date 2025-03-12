@@ -11,14 +11,6 @@ module cell_map_mod
         type(side_t), dimension(:), allocatable :: sides ! sides from triangles off faces
     end type
 
-    type :: triangle_set_t
-        type(triangle_t), dimension(:), allocatable :: triangles ! triangles on faces
-    end type
-
-    type :: side_set_t
-        type(side_t), dimension(:), allocatable :: sides ! sides from triangles off faces
-    end type
-
     type :: cell_t
         integer, dimension(3) :: cell
      end type
@@ -60,7 +52,7 @@ contains
             elems%sides = side_map%getSidesInCell(keys(i)%cell)
             call res%set(key(keys(i)%cell), value=elems)
         end do
-        keys = mergeKeys(keys, res%keys)
+        ! keys = mergeKeys(keys, res%keys)
         res%keys = keys
     end subroutine
 
@@ -68,10 +60,17 @@ contains
         type(cell_t), dimension(:), allocatable, intent(in) :: tri_keys, side_keys
         type(cell_t), dimension(:), allocatable :: res, aux
         integer :: i
-        allocate(res(size(tri_keys)))
-        do i = 1, size(side_keys)
-            if (isNewKey(tri_keys, side_keys(i))) call addKey(res, side_keys(i))
-        end do
+        if (size(tri_keys) == 0) then 
+            allocate(res(0))
+        else
+            allocate(res(size(tri_keys)))
+        end if
+        res = tri_keys
+        if (size(side_keys) /= 0) then 
+            do i = 1, size(side_keys)
+                if (isNewKey(tri_keys, side_keys(i))) call addKey(res, side_keys(i))
+            end do
+        end if
     end function
 
     subroutine addKey(keys, new_key)
@@ -91,9 +90,11 @@ contains
         type(cell_t), intent(in) :: k
         integer :: i
         isNewKey = .true.
-        do i = 1, size(keys)        
-            if (all(keys(i)%cell .eq. k%cell)) isNewKey = .false.
-        end do
+        if (size(keys) /= 0) then 
+            do i = 1, size(keys)
+                if (all(keys(i)%cell .eq. k%cell)) isNewKey = .false.
+            end do
+        end if
     end function    
 
     subroutine buildTriangleMap(res, triangles)
@@ -102,6 +103,7 @@ contains
         type(side_t), dimension(3) :: sides
         integer :: i, j
         integer (kind=4), dimension(3) :: cell
+        if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
             if (triangles(i)%isOnAnyFace()) then 
                 call res%addTriangle(triangles(i))
@@ -115,6 +117,7 @@ contains
         type(side_t), dimension(3) :: sides
         integer :: i, j
         integer (kind=4), dimension(3) :: cell
+        if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
             if (.not. triangles(i)%isOnAnyFace()) then 
                 sides = triangles(i)%getSides()
@@ -141,7 +144,7 @@ contains
         class(triangle_map_t) :: this
         type(triangle_t) :: triangle
         class(*), allocatable :: alloc_list
-        type(triangle_set_t) :: aux_list
+        type(element_set_t) :: aux_list
         integer (kind=4), dimension(3) :: cell
         type(cell_t), dimension(:), allocatable :: aux_keys
         cell = triangle%getCell()
@@ -149,7 +152,7 @@ contains
 
             call this%get_raw(key(cell), alloc_list)
             select type(alloc_list)
-            type is(triangle_set_t)
+            type is(element_set_t)
                 allocate(aux_list%triangles(size(alloc_list%triangles) + 1))
                 aux_list%triangles(1:size(alloc_list%triangles)) = alloc_list%triangles
                 aux_list%triangles(size(alloc_list%triangles) + 1) = triangle
@@ -163,8 +166,6 @@ contains
             allocate(aux_list%triangles(1))
             aux_list%triangles(1) = triangle
             call this%set(key(cell), value = aux_list)
-
-            if (.not. allocated(this%keys)) allocate(this%keys(0))
 
             allocate(aux_keys(size(this%keys) + 1))
             aux_keys(1:size(this%keys)) = this%keys
@@ -180,7 +181,7 @@ contains
         class(side_map_t) :: this
         type(side_t) :: side
         class(*), allocatable :: alloc_list
-        type(side_set_t) :: aux_list
+        type(element_set_t) :: aux_list
         integer (kind=4), dimension(3) :: cell
         type(cell_t), dimension(:), allocatable :: aux_keys
         ! integer :: inList
@@ -189,7 +190,7 @@ contains
 
             call this%get_raw(key(cell), alloc_list)
             select type(alloc_list)
-            type is(side_set_t)
+            type is(element_set_t)
             
 
                 ! if (allocated(alloc_list%sides)) then 
@@ -212,7 +213,7 @@ contains
             aux_list%sides(1) = side
             call this%set(key(cell), value = aux_list)
 
-            if (.not. allocated(this%keys)) allocate(this%keys(0))
+            ! if (.not. allocated(this%keys)) allocate(this%keys(0))
 
             allocate(aux_keys(size(this%keys) + 1))
             aux_keys(1:size(this%keys)) = this%keys
@@ -248,7 +249,7 @@ contains
         if (this%hasKey(k)) then 
             call this%get_raw(key(k), alloc_list)
             select type(alloc_list)
-            type is(triangle_set_t)
+            type is(element_set_t)
                 allocate(res(size(alloc_list%triangles)))
                 res = alloc_list%triangles
             end select
@@ -264,9 +265,11 @@ contains
         type(side_t), dimension(:), allocatable :: res
 
         if (this%hasKey(k)) then 
+            write(*,*) 'has key'
             call this%get_raw(key(k), alloc_list)
+            write(*,*) 
             select type(alloc_list)
-            type is(side_set_t)
+            type is(element_set_t)
                 res = alloc_list%sides
             end select
         else

@@ -20,6 +20,8 @@ extern "C" int test_fhash_coords();
 extern "C" int test_fhash_array();
 extern "C" int test_fhash_add_triangle();
 extern "C" int test_fhash_cellmap_set_get();
+extern "C" int test_conformal_edges();
+extern "C" int test_conformal_faces();
 
 
 TEST(conformal, geometry_coord_position)   { EXPECT_EQ(0, test_geometry_coord_position()); }
@@ -42,3 +44,6 @@ TEST(conformal, fhash_coords)              { EXPECT_EQ(0, test_fhash_coords()); 
 TEST(conformal, fhash_array)               { EXPECT_EQ(0, test_fhash_array()); }
 TEST(conformal, fhash_add_triangle)        { EXPECT_EQ(0, test_fhash_add_triangle()); }
 TEST(conformal, fhash_cellmap_set_get)     { EXPECT_EQ(0, test_fhash_cellmap_set_get()); }
+
+TEST(conformal, conformal_edges)        { EXPECT_EQ(0, test_conformal_edges()); }
+TEST(conformal, conformal_faces)        { EXPECT_EQ(0, test_conformal_faces()); }

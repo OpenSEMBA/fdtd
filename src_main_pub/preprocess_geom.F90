@@ -24,7 +24,7 @@ MODULE Preprocess_m
    USE CONFORMAL_TYPES
    USE Conformal_TimeSteps_m
 #endif
-   USE conformal
+   USE conformal_mod
    IMPLICIT NONE
 !!!variables globales del modulo
    REAL (KIND=RKIND), save           ::  cluz,zvac

@@ -37,6 +37,7 @@ module geometry_mod
         procedure :: isOnFace => side_isOnFace
         procedure :: isOnAnyFace => side_isOnAnyFace
         procedure :: length
+        procedure :: isEquiv
     end type
 
     type, public :: triangle_t
@@ -134,6 +135,24 @@ contains
         end do
     end function
 
+    logical function isEquiv(this, side)
+        class(side_t) :: this
+        type(side_t), intent(in) :: side
+        logical :: eq, eq_inv
+        integer :: i
+        eq = .true.
+        eq_inv = .true.
+        do i = 1, 3
+            eq = eq .and. & 
+                (abs(this%init%position(i) - side%init%position(i)) < 0.01) .and. &
+                (abs(this%end%position(i) - side%end%position(i)) < 0.01)
+            eq_inv = eq_inv .and. & 
+                (abs(this%init%position(i) - side%end%position(i)) < 0.01) .and. &
+                (abs(this%end%position(i) - side%init%position(i)) < 0.01)
+        end do
+        isEquiv = eq .or. eq_inv
+    end function
+
     function getSides(this) result(res)
         class(triangle_t) :: this
         type(side_t), dimension(3) :: res
@@ -229,6 +248,56 @@ contains
         side_isOnAnyEdge = (this%isOnEdge(EDGE_X) .or. this%isOnEdge(EDGE_Y) .or. this%isOnEdge(EDGE_Z))
     end function
 
+
+    function buildCellSideSet(sides) result(res)
+        type(side_t), dimension(:), allocatable, intent(in) :: sides
+        type(side_t), dimension(:), allocatable :: contour, res
+        integer face 
+        allocate(res(0))
+        do face = FACE_X, FACE_Z
+            contour = buildSidesContour(getSidesOnFace(sides, face))
+            call addNewSides(res, contour)
+        end do
+    end function 
+
+    subroutine addNewSides(sides, new_sides)
+        type(side_t), dimension(:), allocatable, intent(inout) :: sides
+        type(side_t), dimension(:), allocatable, intent(in) :: new_sides
+        integer :: i
+        do i = 1, size(new_sides)
+            if (isNewSide(sides, new_sides(i))) call addNewSide(sides, new_sides(i))
+        end do
+    end subroutine
+
+    logical function isNewSide(sides, side)
+        type(side_t), dimension(:), allocatable, intent(in) :: sides
+        type(side_t), intent(in) :: side
+        integer :: i
+        isNewSide = .true.
+        do i = 1, size(sides)
+            if (sides(i)%isEquiv(side)) isNewSide = .false.
+            ! if ( (all(abs(sides(i)%init%position-side%init%position) < 0.01) .and. all(abs(sides(i)%end%position-side%end%position) < 0.01)) .or. &
+            !      (all(abs(sides(i)%init%position-side%end%position) < 0.01) .and. all(abs(sides(i)%end%position-side%init%position) < 0.01))) isNewSide = .false.
+        end do
+    end function    
+
+    subroutine addNewSide(sides, side)
+        type(side_t), dimension(:), allocatable, intent(inout) :: sides
+        type(side_t), intent(in) :: side
+        type(side_t), dimension(:), allocatable :: aux
+        if (size(sides) == 0) then 
+            deallocate(sides)
+            allocate(sides(1))
+            sides(1) = side
+        else 
+            allocate(aux(size(sides) + 1))
+            aux(1:size(sides)) = sides
+            aux(size(sides) + 1) = side
+            deallocate(sides)
+            allocate(sides(size(aux)))
+            sides = aux
+        end if
+    end subroutine
 
     function buildSidesContour(sides) result (res)
         type(side_t), dimension(:), allocatable, intent(in) :: sides

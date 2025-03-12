@@ -38,7 +38,7 @@ integer function test_fhash_array() bind(C) result(err)
     type(triangle_map_t) :: tbl
     type(triangle_t) :: t1, t2
     type(triangle_t), dimension(:), allocatable :: t_array, t_array_aux
-    type(triangle_set_t) :: tri_list, tri_list_aux
+    type(element_set_t) :: tri_list, tri_list_aux
     integer (kind=4), dimension(3) :: cell_set
     class(*), allocatable :: t_alloc
     integer :: stat, n_cond
@@ -64,7 +64,7 @@ integer function test_fhash_array() bind(C) result(err)
     if (tbl%hasKey(cell_set)) then 
         call tbl%get_raw(key(cell_set), t_alloc, stat)
         select type(t_alloc)
-        type is (triangle_set_t)
+        type is (element_set_t)
             if (size(t_alloc%triangles) /= 1) err = err +1
 
             allocate(tri_list_aux%triangles(size(t_alloc%triangles) + 1))
@@ -84,7 +84,7 @@ integer function test_fhash_array() bind(C) result(err)
     if (tbl%hasKey(cell_set)) then 
         call tbl%get_raw(key(cell_set), t_alloc, stat)
         select type(t_alloc)
-        type is (triangle_set_t)
+        type is (element_set_t)
             if (size(t_alloc%triangles) /= 2) err = err + 1
             write(*,*) t_alloc%triangles(1)%vertices
             if (.not. all(t_alloc%triangles(1)%vertices(1)%position .eq. [0,0,0])) err = err + 1
@@ -111,14 +111,14 @@ integer function test_fhash_add_triangle() bind(C) result(err)
     type(triangle_map_t) :: tbl
     type(triangle_t) :: t1, t2
     type(triangle_t), dimension(:), allocatable :: t_array, t_array_aux
-    type(triangle_set_t) :: tri_list, tri_list_aux
+    type(element_set_t) :: tri_list, tri_list_aux
     integer (kind=4), dimension(3) :: cell_set
     class(*), allocatable :: t_alloc
     integer :: stat, n_cond
     type(cell_t), dimension(:), allocatable :: keys
     err = 0
 
-    
+    allocate(tbl%keys(0))
 
     t1%vertices(1)%position = [0,0,0]
     t1%vertices(2)%position = [0,1,0]
@@ -129,7 +129,7 @@ integer function test_fhash_add_triangle() bind(C) result(err)
     if (.not. tbl%hasKey(cell_set)) err = err +1
     call tbl%get_raw(key(cell_set), t_alloc, stat)
     select type(t_alloc)
-    type is (triangle_set_t)
+    type is (element_set_t)
         if (size(t_alloc%triangles) /= 1) err = err + 1
         write(*,*) t_alloc%triangles(1)%vertices
         if (.not. all(t_alloc%triangles(1)%vertices(1)%position .eq. [0,0,0])) err = err + 1
@@ -145,7 +145,7 @@ integer function test_fhash_add_triangle() bind(C) result(err)
 
     call tbl%get_raw(key(cell_set), t_alloc, stat)
     select type(t_alloc)
-    type is (triangle_set_t)
+    type is (element_set_t)
         if (size(t_alloc%triangles) /= 2) err = err + 1
         write(*,*) t_alloc%triangles(1)%vertices
         if (.not. all(t_alloc%triangles(1)%vertices(1)%position .eq. [0,0,0])) err = err + 1
