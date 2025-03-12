@@ -40,6 +40,10 @@ contains
          res%face_media(i)%faces = filtered_faces
          res%face_media(i)%ratio = face_ratios(i)
       end do
+      res%n_edges_media = 0
+      res%n_faces_media = 0
+      if (associated(res%edge_media)) res%n_edges_media = size(res%edge_media)
+      if (associated(res%face_media)) res%n_faces_media = size(res%face_media)
 
    end function
 

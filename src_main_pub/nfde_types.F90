@@ -163,8 +163,8 @@ MODULE NFDETypes
    end type
 
    TYPE, PUBLIC :: ConformalMedia_t
-      INTEGER (KIND=4) :: edges_media = 0
-      INTEGER (KIND=4) :: faces_media = 0
+      INTEGER (KIND=4) :: n_edges_media = 0
+      INTEGER (KIND=4) :: n_faces_media = 0
       TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: face_media => NULL ()
       TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
    END TYPE ConformalMedia_t
