@@ -59,20 +59,10 @@ contains
       contour = buildCellSideSet(sides)
       do j = 1, size(contour)
          edge = contour(j)%getEdge()
-         if (edge /= NOT_ON_EDGE) then 
-            if (all(contour(j)%getCell() .eq. cell)) then 
-               select case (edge)
-               case(EDGE_X) 
-                  delta = contour(j)%length()/grid%desX(cell(1))
-               case(EDGE_Y)
-                  delta = contour(j)%length()/grid%desY(cell(2))
-               case(EDGE_Z)
-                  delta = contour(j)%length()/grid%desZ(cell(3))
-               end select
-               ratio = 1.0 - delta
-               call addEdge(edges, cell, edge, ratio)
-               if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
-            end if
+         if (edge /= NOT_ON_EDGE .and. (all(contour(j)%getCell() .eq. cell))) then 
+            ratio = 1.0 - contour(j)%length()
+            call addEdge(edges, cell, edge, ratio)
+            if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
          end if
       end do
    end subroutine
