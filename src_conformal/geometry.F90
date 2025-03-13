@@ -200,12 +200,20 @@ contains
         real, dimension(3) :: v1,v2, res
         v1 = this%vertices(2)%position - this%vertices(1)%position
         v2 = this%vertices(3)%position - this%vertices(2)%position
-        res = [ v1(2)*v2(3)-v1(3)*v2(2), &
-                -(v1(1)*v2(3)-v1(3)*v2(1)), &
-                v1(1)*v2(2)-v1(2)*v2(1)]
+        res = cross(v1,v2)
+        ! res = [ v1(2)*v2(3)-v1(3)*v2(2), &
+        !         -(v1(1)*v2(3)-v1(3)*v2(1)), &
+        !         v1(1)*v2(2)-v1(2)*v2(1)]
         res = res/norm2(res)
     end function
     
+    function cross(v1,v2) result(res)
+        real, dimension(3) :: v1,v2, res
+        res = [ v1(2)*v2(3)-v1(3)*v2(2), &
+                -(v1(1)*v2(3)-v1(3)*v2(1)), &
+                v1(1)*v2(2)-v1(2)*v2(1)]
+    end function
+
     logical function side_isOnFace(this, face)
         class(side_t) :: this
         integer :: face
@@ -276,8 +284,6 @@ contains
         isNewSide = .true.
         do i = 1, size(sides)
             if (sides(i)%isEquiv(side)) isNewSide = .false.
-            ! if ( (all(abs(sides(i)%init%position-side%init%position) < 0.01) .and. all(abs(sides(i)%end%position-side%end%position) < 0.01)) .or. &
-            !      (all(abs(sides(i)%init%position-side%end%position) < 0.01) .and. all(abs(sides(i)%end%position-side%init%position) < 0.01))) isNewSide = .false.
         end do
     end function    
 
@@ -305,20 +311,22 @@ contains
         type(side_t), dimension(:), allocatable :: res
         type(coord_t) :: init, end
 
-        inner_path = getPathOnFace(sides)
-
-        init = inner_path(1)%init
-        end = inner_path(size(inner_path))%end
-        if (init%isOnVertex() .and. end%isOnVertex()) then 
-            res = buildVertexToVertexContour(inner_path)
-        else if (init%isOnVertex() .and. .not. end%isOnVertex()) then 
-            res = buildVertexToSideContour(inner_path)
-        else if (.not. init%isOnVertex() .and. end%isOnVertex()) then 
-            res = buildSideToVertexContour(inner_path)
-        elseif (.not. init%isOnVertex() .and. .not. end%isOnVertex()) then 
-            res = buildSideToSideContour(inner_path)
+        if (size(sides) == 0) then 
+            allocate(res(0))
+        else
+            inner_path = getPathOnFace(sides)
+            init = inner_path(1)%init
+            end = inner_path(size(inner_path))%end
+            if (init%isOnVertex() .and. end%isOnVertex()) then 
+                res = buildVertexToVertexContour(inner_path)
+            else if (init%isOnVertex() .and. .not. end%isOnVertex()) then 
+                res = buildVertexToSideContour(inner_path)
+            else if (.not. init%isOnVertex() .and. end%isOnVertex()) then 
+                res = buildSideToVertexContour(inner_path)
+            elseif (.not. init%isOnVertex() .and. .not. end%isOnVertex()) then 
+                res = buildSideToSideContour(inner_path)
+            end if
         end if
-
     end function
 
     function buildVertexToVertexContour(inner_path) result(res)
@@ -327,7 +335,7 @@ contains
         integer :: mid_corner_idx
         real, dimension(3,4) :: corners
 
-        corners = buildCorners(inner_path(1)%getCell(), inner_path(1)%getFace())
+        corners = buildCorners(inner_path(1), inner_path(1)%getFace())
         
         allocate(res(size(inner_path) + 2))
         res(1:size(inner_path)) = inner_path
@@ -346,7 +354,7 @@ contains
 
         init = inner_path(1)%init
         end = inner_path(size(inner_path))%end
-        corners = buildCorners(inner_path(1)%getCell(), inner_path(1)%getFace())
+        corners = buildCorners(inner_path(1), inner_path(1)%getFace())
 
         allocate(res(size(inner_path)))
         res = inner_path
@@ -376,7 +384,7 @@ contains
 
         init = inner_path(1)%init
         end = inner_path(size(inner_path))%end
-        corners = buildCorners(inner_path(1)%getCell(), inner_path(1)%getFace())
+        corners = buildCorners(inner_path(1), inner_path(1)%getFace())
 
         allocate(res(size(inner_path)))
         res = inner_path
@@ -408,7 +416,7 @@ contains
         init = inner_path(1)%init
         end = inner_path(size(inner_path))%end
 
-        corners = buildCorners(inner_path(1)%getCell(), inner_path(1)%getFace())
+        corners = buildCorners(inner_path(1), inner_path(1)%getFace())
         allocate(res(size(inner_path)))
         res = inner_path
         do i = 1, 4
@@ -424,12 +432,12 @@ contains
             end if
         end do
         call addSide(res, buildSide(end%position, corners(:,mod(idx_e,4) + 1)))
-        i = idx_e
-        do while (mod(i,4) + 1 < idx_i)
-            call addSide(res, buildSide(corners(:,mod(i,4) + 1), corners(:,mod(i + 1,4) + 1)))
-            i = i + 1
+        idx_e = mod(idx_e,4) + 1
+        do while (mod(idx_e,4) + 1 <= idx_i)
+            call addSide(res, buildSide(corners(:,idx_e), corners(:,mod(idx_e,4) + 1)))
+            idx_e = mod(idx_e, 4) + 1
         end do
-        call addSide(res, buildSide(corners(:,mod(i,4) + 1), init%position))
+        call addSide(res, buildSide(corners(:,idx_e), init%position))
 
     end function
 
@@ -465,10 +473,13 @@ contains
 
     end function
 
-    function buildCorners(cell, face) result(res)
-        integer, dimension(3), intent(in) :: cell
+    function buildCorners(side, face) result(res)
+        type(side_t), intent(in) :: side
         integer, intent(in) :: face
         integer, dimension(3,4) :: res
+        integer, dimension(3) :: cell, aux
+        cell = side%getCell()
+
         if (face == FACE_X) then 
             res(:,1) = cell(:)
             res(:,2) = cell(:) + [0,1,0]
@@ -476,15 +487,30 @@ contains
             res(:,4) = cell(:) + [0,0,1]
         else if (face == FACE_Y) then 
             res(:,1) = cell(:)
-            res(:,2) = cell(:) + [0,0,1]
-            res(:,3) = cell(:) + [1,0,1]
             res(:,4) = cell(:) + [1,0,0]
+            res(:,3) = cell(:) + [1,0,1]
+            res(:,2) = cell(:) + [0,0,1]
         else if (face == FACE_Z) then 
             res(:,1) = cell(:)
             res(:,2) = cell(:) + [1,0,0]
             res(:,3) = cell(:) + [1,1,0]
             res(:,4) = cell(:) + [0,1,0]
         end if
+
+        if (isClockwise(side, face)) then 
+            aux = res(:,2)
+            res(:,2) = res(:,4)
+            res(:,4) = aux
+        end if
+    end function
+
+    logical function isClockwise(side, face)
+        type(side_t), intent(in) :: side
+        integer, intent(in) :: face
+        real, dimension(3) :: x_prod
+        isClockwise = .true.
+        x_prod = cross(side%end%position - side%init%position, side%normal)
+        if (x_prod(face) < 0) isClockwise = .false.
     end function
 
     function contourArea(contour) result(res)

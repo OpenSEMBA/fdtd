@@ -15,6 +15,7 @@ extern "C" int test_geometry_vertex_side_contour();
 extern "C" int test_geometry_side_vertex_contour();
 extern "C" int test_geometry_side_side_contour();
 extern "C" int test_geometry_side_side_contour_2();
+extern "C" int test_geometry_side_side_contour_3();
 extern "C" int test_geometry_areas();
 extern "C" int test_fhash_coords();
 extern "C" int test_fhash_array();
@@ -40,6 +41,7 @@ TEST(conformal, geometry_vs_contour)       { EXPECT_EQ(0, test_geometry_vertex_s
 TEST(conformal, geometry_sv_contour)       { EXPECT_EQ(0, test_geometry_side_vertex_contour()); }
 TEST(conformal, geometry_ss_contour)       { EXPECT_EQ(0, test_geometry_side_side_contour()); }
 TEST(conformal, geometry_ss_contour2)      { EXPECT_EQ(0, test_geometry_side_side_contour_2()); }
+TEST(conformal, geometry_ss_contour3)      { EXPECT_EQ(0, test_geometry_side_side_contour_3()); }
 TEST(conformal, geometry_areas)            { EXPECT_EQ(0, test_geometry_areas()); }
 
 TEST(conformal, fhash_coords)              { EXPECT_EQ(0, test_fhash_coords()); }

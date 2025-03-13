@@ -143,13 +143,6 @@ MODULE NFDETypes
       real (kind=rkind) :: ratio = -1
    end type 
 
-   ! ! edge and face media
-   ! type, public :: conformal_face_t
-   !    type(location_t), dimension(:), allocatable :: locations
-   !    ! integer (kind=4) :: cell_i, cell_j, cell_k
-   !    real(kind=rkind) :: ratio
-   !    integer (kind=4) :: size
-   !    end type
    type, public :: conformal_edge_media_t
       type(edge_t), dimension(:), allocatable :: edges
       real(kind=rkind) :: ratio

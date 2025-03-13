@@ -174,6 +174,9 @@ contains
       res%BloquePrb = this%readBlockProbes()
       res%VolPrb = this%readVolumicProbes()
       
+      ! Conformal elements
+      res%conformalRegs = this%readConformalRegions()
+
       ! Thin elements
       res%tWires = this%readThinWires()
       res%tSlots = this%readThinSlots()
@@ -183,7 +186,6 @@ contains
       res%mtln = this%readMTLN(res%despl)
 #endif
 
-      res%conformalRegs = this%readConformalRegions(res%despl)
 
    end function
 
@@ -258,11 +260,21 @@ contains
                   block 
                      type(conformal_region_t) :: cV
                      type(cell_region_t) :: cR
-                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+                     cV%type = REGION_TYPE_VOLUME
+                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      call mesh%addConformalRegion(id, cV)
                      call mesh%addCellRegion(id, cR)
                   end block
+               !  case (J_ELEM_TYPE_CONF_VOLUME) 
+               !    block 
+               !       type(conformal_region_t) :: cV
+               !       type(cell_region_t) :: cR
+               !       cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+               !       cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+               !       call mesh%addConformalRegion(id, cV)
+               !       call mesh%addCellRegion(id, cR)
+               !    end block
                 case default
                   write (error_unit, *) 'Invalid element type'
                end select
@@ -557,65 +569,55 @@ contains
       end subroutine         
    end function
 
-   function readConformalRegions(this, grid) result(res)
+   function readConformalRegions(this) result(res)
       class(parser_t) :: this
-      type(Desplazamiento), intent(in) :: grid
-
       type(ConformalPECRegions) :: res
-
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(conformal_region_t) :: cR
+      type(triangle_t), dimension(:), allocatable :: aux_tris
+      integer :: i, j
 
-      type(coords), dimension(:), pointer :: cs
-
-      integer :: i, j, k
-      ! type(triangle_map_t) :: tri_map
-      ! type(side_map_t) :: side_map
+      ! allocate(res%volumes(0))
+      ! allocate(res%surfaces(0))
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
-      ! if (size(mAs) == 0) then
+
+      if (size(mAs) == 0) then
+         allocate(aux_tris(0))
+         cR%triangles = aux_tris
+         call appendRegion(res%volumes, cR)
+         call appendRegion(res%surfaces, cR)
+      end if
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
             cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j))
-            call appendRegion(res%volumes, cR)
-            ! tri_map  = buildTriangleMap(cR%triangles)
-            ! side_map = buildSideMap(cR%triangles)
-
-            ! intervals to PEC region
-            ! call this%matAssToCoords(cs, mAs(i), CELL_TYPE_VOXEL)
-            ! call appendRegion(res%vols,  res%nVols,  res%nVols_max, cs)
-   
-
+            if (cR%type == REGION_TYPE_VOLUME) call appendRegion(res%volumes, cR)
+            if (cR%type == REGION_TYPE_SURFACE) call appendRegion(res%surfaces, cR)
          end do
       end do
 
-      ! res%edges = buildConformalEdgeRegions(side_map, grid)
-      ! res%faces = buildConformalFaceRegions()
-
-      ! buildEdgeRegions(cell_map)
-      ! buildFaceRegions(cell_map)
-
    contains 
-      subroutine appendRegion(volumes, region)
-         type(ConformalPECElements), dimension(:), pointer :: volumes
+      subroutine appendRegion(regions, region)
+         type(ConformalPECElements), dimension(:), pointer :: regions
          type(conformal_region_t), intent(in) :: region
          type(ConformalPECElements), dimension(:), allocatable :: aux
          integer :: i
-         if (.not. associated(volumes)) then 
-            allocate(volumes(1))
-            volumes(1)%triangles = cR%triangles
+         if (.not. associated(regions)) then 
+            allocate(regions(1))
+            regions(1)%triangles = region%triangles
          else 
-            allocate(aux(size(volumes)))
-            do i = 1, size(volumes)
-               aux(i) = volumes(i)
+            allocate(aux(size(regions) + 1))
+            do i = 1, size(regions)
+               aux(i) = regions(i)
             end do
-            deallocate(volumes)
+            aux(size(regions) + 1)%triangles = region%triangles
+            deallocate(regions)
             
-            allocate(volumes(size(aux) + 1))
+            allocate(regions(size(aux)))
             do i = 1, size(aux)
-               volumes(i) = aux(i)
+               regions(i) = aux(i)
             end do
-            volumes(i+1)%triangles = cR%triangles
+            ! regions(i+1)%triangles = region%triangles
          end if
       end subroutine
 

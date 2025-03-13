@@ -606,6 +606,51 @@ integer function test_geometry_side_side_contour_2() bind(C) result(err)
 
 end function
 
+integer function test_geometry_side_side_contour_3() bind(C) result(err)
+    use geometry_mod
+    use cell_map_mod
+    implicit none 
+
+    type(side_map_t) :: side_map
+    type(side_t), dimension(:), allocatable :: sides, path, contour
+    type(triangle_t), dimension(:), allocatable :: triangles
+    type(triangle_t) :: t1
+    type(coord_t) :: c1, c2, c3, c4, c5
+    integer, dimension(3) :: cell
+    type(coord_t) :: init, end
+
+    err = 0
+
+    c1 = coord_t(position = [0.0,0.0,0.25], id = 1)
+    c2 = coord_t(position = [1.0,0.0,0.25], id=  2)
+    c3 = coord_t(position = [0.0,1.0,0.25], id=  3)
+    c4 = coord_t(position = [0.0,0.0,0.0],  id=  4)
+    c5 = coord_t(position = [1.0,0.0,0.0],  id=  5)
+    allocate(triangles(1))
+    triangles(1) = triangle_t(vertices = [c1,c2,c3])
+
+    cell = triangles(1)%getCell()
+    call buildSideMap(side_map, triangles)
+    sides = side_map%getSidesInCell(cell)
+    if (size(sides) /= 2) err = err + 1
+
+    path = getPathOnFace(getSidesOnFace(sides, FACE_Y))
+    init = path(1)%init
+    end = path(size(path))%end
+    contour = buildSidesContour(path)
+    if (size(contour) /= 4) err = err + 1
+    if (.not. all(contour(1)%init%position .eq. c1%position)) err = err + 1
+    if (.not. all(contour(1)%end%position .eq. c2%position)) err = err + 1
+    if (.not. all(contour(2)%init%position .eq. c2%position)) err = err + 1
+    if (.not. all(contour(2)%end%position .eq. c5%position)) err = err + 1
+    if (.not. all(contour(3)%init%position .eq. c5%position)) err = err + 1
+    if (.not. all(contour(3)%end%position .eq. c4%position)) err = err + 1
+    if (.not. all(contour(4)%init%position .eq. c4%position)) err = err + 1
+    if (.not. all(contour(4)%end%position .eq. c1%position)) err = err + 1
+    
+end function
+
+
 integer function test_geometry_areas() bind(C) result(err)
     use geometry_mod
     use cell_map_mod
