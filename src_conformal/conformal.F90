@@ -109,18 +109,11 @@ contains
       integer :: face 
       do face = FACE_X, FACE_Z
          contour = buildSidesContour(getSidesOnFace(sides, face))
-         select case(face)
-         case(FACE_X)
-            delta = contourArea(contour) / (grid%desY(cell(2)) * grid%desZ(cell(3)))
-         case(FACE_Y)
-            delta = contourArea(contour) / (grid%desX(cell(1)) * grid%desZ(cell(3)))
-         case(FACE_Z)
-            delta = contourArea(contour) / (grid%desX(cell(1)) * grid%desY(cell(2)))
-         end select
-         ratio = 1.0 - delta
-         call addFace(faces, cell, face, ratio)
-         if (isNewRatio(face_ratios, ratio)) call addRatio(face_ratios, ratio)
-
+         if (size(contour) /= 0) then 
+            ratio = 1.0 - contourArea(contour)
+            call addFace(faces, cell, face, ratio)
+            if (isNewRatio(face_ratios, ratio)) call addRatio(face_ratios, ratio)
+         end if
       end do
 
    end subroutine
