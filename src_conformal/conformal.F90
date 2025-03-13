@@ -57,7 +57,6 @@ contains
       real :: ratio, delta
       integer :: face, edge
       contour = buildCellSideSet(sides)
-      ! contour = buildSidesContour(getSidesOnFace(sides, face))
       do j = 1, size(contour)
          edge = contour(j)%getEdge()
          if (edge /= NOT_ON_EDGE) then 

@@ -257,10 +257,11 @@ contains
                 case (J_ELEM_TYPE_CONF_VOLUME) 
                   block 
                      type(conformal_region_t) :: cV
-                     cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                     type(cell_region_t) :: cR
+                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
-                     cV%offgrid_points = this%getIntAt(je,J_CONF_OFFGRID)
                      call mesh%addConformalRegion(id, cV)
+                     call mesh%addCellRegion(id, cR)
                   end block
                 case default
                   write (error_unit, *) 'Invalid element type'
@@ -603,7 +604,6 @@ contains
          if (.not. associated(volumes)) then 
             allocate(volumes(1))
             volumes(1)%triangles = cR%triangles
-            volumes(1)%offgrid_points = cR%offgrid_points
          else 
             allocate(aux(size(volumes)))
             do i = 1, size(volumes)
@@ -616,7 +616,6 @@ contains
                volumes(i) = aux(i)
             end do
             volumes(i+1)%triangles = cR%triangles
-            volumes(i+1)%offgrid_points = cR%offgrid_points
          end if
       end subroutine
 

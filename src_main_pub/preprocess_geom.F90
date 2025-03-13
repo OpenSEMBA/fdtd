@@ -2542,66 +2542,7 @@ endif
       end do
       !END SLANTED WIRES
 
-      ! ! change
-      do j = 1, conformal_media%n_faces_media
-         contamedia = contamedia + 1
-         sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
-         sgg%Med(contamedia)%Is%Needed = .TRUE.
-         sgg%Med(contamedia)%Priority = prior_PEC
-         sgg%Med(contamedia)%Epr = this%mats%mats(1)%eps / Eps0
-         sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
-         sgg%Med(contamedia)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
-         sgg%Med(contamedia)%SigmaM = 0.0_RKIND
-         ! funcion al healer para tener en cuenta la prioridad
-         block
-            ! integer (kind=4) :: k
-            integer (kind=4) :: cell_i, cell_j, cell_k
-            integer (kind=4) :: direction
-            do k = 1, conformal_media%face_media(j)%size
-               cell_i = conformal_media%face_media(j)%faces(k)%cell(1)
-               cell_j = conformal_media%face_media(j)%faces(k)%cell(2)
-               cell_k = conformal_media%face_media(j)%faces(k)%cell(3)
-               select case(conformal_media%face_media(j)%faces(k)%direction)
-               case(F_X)
-                  sggMiHx(cell_i, cell_j, cell_k) = contamedia
-               case(F_Y)
-                  sggMiHy(cell_i, cell_j, cell_k) = contamedia
-               case(F_Z)
-                  sggMiHz(cell_i, cell_j, cell_k) = contamedia
-               end select
-            end do
-         end block
-      end do
-
-      do j = 1, conformal_media%n_edges_media
-         contamedia = contamedia + 1
-         sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
-         sgg%Med(contamedia)%Is%Needed = .TRUE.
-         sgg%Med(contamedia)%Priority = prior_PEC
-         sgg%Med(contamedia)%Epr = (this%mats%mats(1)%eps / conformal_media%edge_media(j)%ratio ) / Eps0
-         sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
-         sgg%Med(contamedia)%Mur = this%mats%mats(1)%mu / Mu0
-         sgg%Med(contamedia)%SigmaM = 0.0_RKIND
-         ! funcion al healer para tener en cuenta la prioridad
-         block
-            ! integer (kind=4) :: k
-            integer (kind=4) :: cell_i, cell_j, cell_k
-            do k = 1, conformal_media%edge_media(j)%size
-               cell_i = conformal_media%edge_media(j)%edges(k)%cell(1)
-               cell_j = conformal_media%edge_media(j)%edges(k)%cell(2)
-               cell_k = conformal_media%edge_media(j)%edges(k)%cell(3)
-               select case(conformal_media%face_media(j)%faces(k)%direction)
-               case(E_X)
-                  sggMiEx(cell_i, cell_j, cell_k) = contamedia
-               case(E_Y)
-                  sggMiEy(cell_i, cell_j, cell_k) = contamedia
-               case(E_Z)
-                  sggMiEz(cell_i, cell_j, cell_k) = contamedia
-               end select
-            end do
-         end block
-
-      end do
+      call addConformalMedia(sgg, conformal_media, contamedia)
 
 
 
@@ -4797,6 +4738,85 @@ endif
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      subroutine addConformalMedia(sgg, conformal_media, contamedia)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(inout) :: contamedia
+         call addConformalEdgeMedia(sgg, conformal_media, contamedia)
+         call addConformalFaceMedia(sgg, conformal_media, contamedia)
+      end subroutine
+
+      subroutine addConformalFaceMedia(sgg, conformal_media, contamedia)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(inout) :: contamedia
+         integer (kind=4) :: cell_i, cell_j, cell_k
+         integer :: j, k
+         do j = 1, conformal_media%n_faces_media
+            contamedia = contamedia + 1
+            sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
+            sgg%Med(contamedia)%Is%Needed = .TRUE.
+            sgg%Med(contamedia)%Priority = prior_PEC
+            sgg%Med(contamedia)%Epr = this%mats%mats(1)%eps / Eps0
+            sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
+            sgg%Med(contamedia)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
+            sgg%Med(contamedia)%SigmaM = 0.0_RKIND
+            ! funcion al healer para tener en cuenta la prioridad
+            do k = 1, conformal_media%face_media(j)%size
+               cell_i = conformal_media%face_media(j)%faces(k)%cell(1)
+               cell_j = conformal_media%face_media(j)%faces(k)%cell(2)
+               cell_k = conformal_media%face_media(j)%faces(k)%cell(3)
+               select case(conformal_media%face_media(j)%faces(k)%direction)
+               case(F_X)
+                  sggMiHx(cell_i, cell_j, cell_k) = contamedia
+               case(F_Y)
+                  sggMiHy(cell_i, cell_j, cell_k) = contamedia
+               case(F_Z)
+                  sggMiHz(cell_i, cell_j, cell_k) = contamedia
+               end select
+            end do
+         end do
+   
+      end subroutine
+
+      subroutine addConformalEdgeMedia(sgg, conformal_media, contamedia)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(inout) :: contamedia
+         integer (kind=4) :: edge_media
+         integer (kind=4) :: cell_i, cell_j, cell_k
+         integer :: j, k
+         do j = 1, conformal_media%n_edges_media
+            if (conformal_media%edge_media(j)%ratio /= 0) then 
+               contamedia = contamedia + 1
+               sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
+               sgg%Med(contamedia)%Is%Needed = .TRUE.
+               sgg%Med(contamedia)%Priority = prior_PEC
+               sgg%Med(contamedia)%Epr = (this%mats%mats(1)%eps / conformal_media%edge_media(j)%ratio ) / Eps0
+               sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
+               sgg%Med(contamedia)%Mur = this%mats%mats(1)%mu / Mu0
+               sgg%Med(contamedia)%SigmaM = 0.0_RKIND
+               edge_media = contamedia
+            else
+               edge_media = 0
+            end if
+            ! funcion al healer para tener en cuenta la prioridad
+            do k = 1, conformal_media%edge_media(j)%size
+               cell_i = conformal_media%edge_media(j)%edges(k)%cell(1)
+               cell_j = conformal_media%edge_media(j)%edges(k)%cell(2)
+               cell_k = conformal_media%edge_media(j)%edges(k)%cell(3)
+               select case(conformal_media%face_media(j)%faces(k)%direction)
+               case(E_X)
+                  sggMiEx(cell_i, cell_j, cell_k) = edge_media
+               case(E_Y)
+                  sggMiEy(cell_i, cell_j, cell_k) = edge_media
+               case(E_Z)
+                  sggMiEz(cell_i, cell_j, cell_k) = edge_media
+               end select
+            end do
+         end do
+      end subroutine
 
       subroutine read_TIMEFRECTRANSFsourcefiles(simu_devia)
       logical :: simu_devia

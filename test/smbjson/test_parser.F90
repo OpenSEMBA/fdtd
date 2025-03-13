@@ -126,5 +126,6 @@ integer function test_parser_read_conformal_volume() bind(C) result(err)
    conformal_regions = mesh%getConformalRegions([5])
    if (size(conformal_regions) /= 1) err = err + 1
    if (size(conformal_regions(1)%triangles) /= 10) err = err + 1
-   if (size(conformal_regions(1)%intervals) /= 1) err = err + 1
+   cell_regions = mesh%getCellRegions([5])
+   if (size(cell_regions(1)%intervals) /= 1) err = err + 1
 end function

@@ -124,7 +124,6 @@ MODULE NFDETypes
 
    type, public :: ConformalPECElements
       type(triangle_t), dimension(:), allocatable :: triangles
-      integer :: offgrid_points
    end type 
 
    type, public :: ConformalPECRegions
