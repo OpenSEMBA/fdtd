@@ -24,7 +24,7 @@ MODULE Preprocess_m
    USE CONFORMAL_TYPES
    USE Conformal_TimeSteps_m
 #endif
-   USE conformal_mod
+   USE conformal_mod, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    IMPLICIT NONE
 !!!variables globales del modulo
    REAL (KIND=RKIND), save           ::  cluz,zvac
@@ -57,7 +57,7 @@ CONTAINS
       type(taglist_t) :: tag_numbers
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) :: tama, tama2, tama3, tama4, tama5, tama6, i, j, k, tipotemp, tamaSonda,  &
-      &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones,ci,cj,cz
+      &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones,ci
       CHARACTER (LEN=*), INTENT (IN) :: fichin
       !
       CHARACTER (LEN=BUFSIZE) :: probenumber
@@ -2543,41 +2543,42 @@ endif
       !END SLANTED WIRES
 
       ! ! change
-      do cj = 1, conformal_media%n_faces_media
+      do j = 1, conformal_media%n_faces_media
          contamedia = contamedia + 1
          sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
          sgg%Med(contamedia)%Is%Needed = .TRUE.
          sgg%Med(contamedia)%Priority = prior_PEC
          sgg%Med(contamedia)%Epr = this%mats%mats(1)%eps / Eps0
          sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
-         sgg%Med(contamedia)%Mur = conformal_media%face_media(cj)%ratio * this%mats%mats(1)%mu / Mu0
+         sgg%Med(contamedia)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
          sgg%Med(contamedia)%SigmaM = 0.0_RKIND
          ! funcion al healer para tener en cuenta la prioridad
          block
             ! integer (kind=4) :: k
             integer (kind=4) :: cell_i, cell_j, cell_k
-            do ck = 1, size(conformal_media%face_media(j)%faces)
-               cell_i = conformal_media%face_media(cj)%faces(ck)%cell(1)
-               cell_j = conformal_media%face_media(cj)%faces(ck)%cell(2)
-               cell_k = conformal_media%face_media(cj)%faces(ck)%cell(3)
-               select case(conformal_media%face_media(cj)%faces(ck)%direction)
-               case(FACE_X)
+            integer (kind=4) :: direction
+            do k = 1, conformal_media%face_media(j)%size
+               cell_i = conformal_media%face_media(j)%faces(k)%cell(1)
+               cell_j = conformal_media%face_media(j)%faces(k)%cell(2)
+               cell_k = conformal_media%face_media(j)%faces(k)%cell(3)
+               select case(conformal_media%face_media(j)%faces(k)%direction)
+               case(F_X)
                   sggMiHx(cell_i, cell_j, cell_k) = contamedia
-               case(FACE_Y)
+               case(F_Y)
                   sggMiHy(cell_i, cell_j, cell_k) = contamedia
-               case(FACE_Z)
+               case(F_Z)
                   sggMiHz(cell_i, cell_j, cell_k) = contamedia
                end select
             end do
          end block
       end do
 
-      do cj = 1, conformal_media%n_edges_media
+      do j = 1, conformal_media%n_edges_media
          contamedia = contamedia + 1
          sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
          sgg%Med(contamedia)%Is%Needed = .TRUE.
          sgg%Med(contamedia)%Priority = prior_PEC
-         sgg%Med(contamedia)%Epr = (this%mats%mats(1)%eps / conformal_media%edge_media(cj)%ratio ) / Eps0
+         sgg%Med(contamedia)%Epr = (this%mats%mats(1)%eps / conformal_media%edge_media(j)%ratio ) / Eps0
          sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
          sgg%Med(contamedia)%Mur = this%mats%mats(1)%mu / Mu0
          sgg%Med(contamedia)%SigmaM = 0.0_RKIND
@@ -2585,16 +2586,16 @@ endif
          block
             ! integer (kind=4) :: k
             integer (kind=4) :: cell_i, cell_j, cell_k
-            do k = 1, size(conformal_media%edge_media(cj)%edges)
-               cell_i = conformal_media%edge_media(cj)%edges(ck)%cell(1)
-               cell_j = conformal_media%edge_media(cj)%edges(ck)%cell(2)
-               cell_k = conformal_media%edge_media(cj)%edges(ck)%cell(3)
-               select case(conformal_media%face_media(cj)%faces(ck)%direction)
-               case(EDGE_X)
+            do k = 1, conformal_media%edge_media(j)%size
+               cell_i = conformal_media%edge_media(j)%edges(k)%cell(1)
+               cell_j = conformal_media%edge_media(j)%edges(k)%cell(2)
+               cell_k = conformal_media%edge_media(j)%edges(k)%cell(3)
+               select case(conformal_media%face_media(j)%faces(k)%direction)
+               case(E_X)
                   sggMiEx(cell_i, cell_j, cell_k) = contamedia
-               case(EDGE_Y)
+               case(E_Y)
                   sggMiEy(cell_i, cell_j, cell_k) = contamedia
-               case(EDGE_Z)
+               case(E_Z)
                   sggMiEz(cell_i, cell_j, cell_k) = contamedia
                end select
             end do

@@ -135,13 +135,13 @@ MODULE NFDETypes
 
    type, public :: edge_t 
       integer (kind=4), dimension(3) :: cell
-      integer(kind=4) :: direction
-      real (kind=rkind) :: ratio
+      integer(kind=4) :: direction = -1
+      real (kind=rkind) :: ratio = -1
    end type 
    type, public :: face_t 
       integer (kind=4), dimension(3) :: cell
-      integer(kind=4) :: direction
-      real (kind=rkind) :: ratio
+      integer(kind=4) :: direction = -1
+      real (kind=rkind) :: ratio = -1
    end type 
 
    ! ! edge and face media
