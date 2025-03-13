@@ -100,8 +100,8 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
 
-		set(CMAKE_CXX_FLAGS "/qopenmp")
-		set(CMAKE_Fortran_FLAGS "/qopenmp /fpp")
+		set(CMAKE_CXX_FLAGS "/Qopenmp")
+		set(CMAKE_Fortran_FLAGS "/Qopenmp /fpp")
 
 		# Not tested
 
@@ -111,7 +111,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 
 	elseif((CMAKE_Fortran_COMPILER_ID MATCHES "Intel"))
 		message(STATUS "Using Intel (ifort) flags")
-		set(CMAKE_CXX_FLAGS "/qopenmp")
+		set(CMAKE_CXX_FLAGS "/Qopenmp")
 
 		# Not tested
 		# set(CMAKE_Fortran_FLAGS "/fpp /qopenmp") 
