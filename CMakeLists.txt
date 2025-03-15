@@ -57,9 +57,9 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_CXX_FLAGS "-fopenmp")
 		set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
 		
-		set(CMAKE_C_FLAGS_RELEASE "-O3")
-		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ffast-math -fPIC")
+		set(CMAKE_C_FLAGS_RELEASE "-Ofast")
+		set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
+		set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast")
 		
 		set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0")
 
