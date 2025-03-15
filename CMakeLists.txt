@@ -111,6 +111,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 
 		# set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
 		
+		set(CMAKE_CXX_FLAGS_FLAGS_DEBUG "/Qopenmp-simd- /Wno-debug-option-simd")
 		# set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
 
 	elseif((CMAKE_Fortran_COMPILER_ID MATCHES "Intel"))
