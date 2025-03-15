@@ -100,7 +100,8 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")
 
-		# This aims to prevent an error happening due to visual studio headers being too strict.
+		# This prevents a compilation error happening due to visual studio headers being too strict.
+		# It can possibly can be removed in the future.
 		add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH>")
 
 		set(CMAKE_CXX_FLAGS "/Qopenmp")
