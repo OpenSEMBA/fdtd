@@ -22,10 +22,10 @@ jobs:
     strategy:
       matrix:
         os: [windows-latest]
-        compiler: [ {name: 'intel', version: '2024.0'} ]
+        compiler: [ {name: 'intel', version: '2025.0'} ]
         build-type: ["Release"]
         mpi: ["No"]
-        mtln: ["Yes"]
+        mtln: ["No"]
         hdf: ["Yes"]
         double-precision: ["Yes", "No"]
 
