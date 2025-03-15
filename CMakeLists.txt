@@ -9,7 +9,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
-message(STATUS ${CMAKE_Fortran_COMPILER_ID})
+message(STATUS "Compiler Id is: ${CMAKE_Fortran_COMPILER_ID}")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
 option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
@@ -65,13 +66,14 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		message(STATUS "Using IntelLLVM (ifx) flags")
 		
 		set(CMAKE_CXX_FLAGS "-qopenmp")
-		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp")
+		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp -static")
 		
 		# -xHost not supported in github actions.
 		# Do not use -fast because it activates -ipo, which causes problems with fhash
-		set(CMAKE_C_FLAGS_RELEASE "-O3")
-		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -no-prec-div -fp-model fast=2w") 
+		set(CMAKE_C_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -fp-model fast=2w -ipo") 
+		set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 		
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
 
