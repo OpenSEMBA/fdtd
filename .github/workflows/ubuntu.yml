@@ -21,12 +21,12 @@ jobs:
       matrix: 
         os: [ubuntu-latest]
         compiler: [
-          {name: 'intel', version: '2024.2'},
+          {name: 'intel', version: '2025.0'},
           {name: 'gcc', version: 11}
         ]
         build-type: ["Debug", "Release"]
         mpi: ["Yes", "No"]
-        mtln: ["Yes"]
+        mtln: ["Yes", "No"]
         hdf: ["Yes"]
         double-precision: ["No"]
 
@@ -55,8 +55,8 @@ jobs:
             hdf: "No"
             double-precision: "No"
 
-          - os: ubuntu-latest
-            compiler: {name: 'intel', version: '2024.2'}
+          - os: ubuntu-latest # This is the only test with double precision.
+            compiler: {name: 'intel', version: '2025.0'}
             build-type: "Release"
             mpi: "Yes"
             mtln: "No"
