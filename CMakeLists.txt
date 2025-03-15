@@ -18,6 +18,7 @@ option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
+option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "Enables the -xHost optimization flag (not supported in github actions)" OFF) 
 
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
@@ -66,14 +67,17 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		message(STATUS "Using IntelLLVM (ifx) flags")
 		
 		set(CMAKE_CXX_FLAGS "-qopenmp")
-		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp -static")
+		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp -static-intel")
 		
-		# -xHost not supported in github actions.
-		# Do not use -fast because it activates -ipo, which causes problems with fhash
 		set(CMAKE_C_FLAGS_RELEASE "-O3 -ipo")
 		set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ipo")
-		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -fp-model fast=2w -ipo") 
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ipo -fp-model fast=2w") 
 		set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+		if(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION) 
+			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -xHost")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost")
+			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -xHost")
+		endif()
 		
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
 
@@ -82,11 +86,17 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 
 		set(CMAKE_C_FLAGS "-diag-disable=10441")
 		set(CMAKE_CXX_FLAGS "-qopenmp -diag-disable=10441")
-		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp -diag-disable=8889")
+		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp -diag-disable=8889 -static-intel")
 
-		set(CMAKE_C_FLAGS_RELEASE "-O3")
-		set(CMAKE_CXX_FLAGS_RELEASE "-O3")
-		set(CMAKE_Fortran_FLAGS_RELEASE "-O3")
+		set(CMAKE_C_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+		if(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION) 
+			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -xHost")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost")
+			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -xHost")
+		endif()
 
 		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
