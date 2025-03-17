@@ -260,10 +260,14 @@ contains
     function buildCellSideSet(sides) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: sides
         type(side_t), dimension(:), allocatable :: contour, res
-        integer face 
+        integer :: face, edge
         allocate(res(0))
         do face = FACE_X, FACE_Z
             contour = buildSidesContour(getSidesOnFace(sides, face))
+            call addNewSides(res, contour)
+        end do
+        do edge = EDGE_X, EDGE_Z
+            contour = getSidesOnEdge(sides, edge)
             call addNewSides(res, contour)
         end do
     end function 
@@ -515,15 +519,26 @@ contains
 
     function contourArea(contour) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: contour
+        type(side_t), dimension(:), allocatable :: aux_contour
+        ! type(side_t) :: aux_side
         real :: res
         integer :: face, i, dir1,dir2
         face = contour(1)%getFace()
+        allocate(aux_contour(size(contour)))
+        aux_contour = contour
+        if (isClockwise(contour(1), face)) then 
+            do i = 1, size(contour)
+                aux_contour(size(contour) + 1 - i)%init = contour(i)%end
+                aux_contour(size(contour) + 1 - i)%end = contour(i)%init
+            end do
+        end if
+
         dir1 = mod(face,3)+1
         dir2 = mod(face+1,3)+1
         res = 0
-        do i = 1, size(contour)
-           res = res + contour(i)%init%position(dir1)*contour(i)%end%position(dir2) - & 
-                       contour(i)%end%position(dir1)*contour(i)%init%position(dir2)
+        do i = 1, size(aux_contour)
+           res = res + aux_contour(i)%init%position(dir1)*aux_contour(i)%end%position(dir2) - & 
+                       aux_contour(i)%end%position(dir1)*aux_contour(i)%init%position(dir2)
         end do
         res = 0.5*res
     end function

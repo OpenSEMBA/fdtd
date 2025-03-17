@@ -131,6 +131,26 @@ contains
         end do
     end subroutine
 
+    ! subroutine buildSideMapFromContours(res, cell_map)
+    !     type(side_map_t), intent(inout) :: res
+    !     type(cell_map_t), intent(in) :: cell_map
+    !     type(side_t), dimension(:), allocatable :: sides, contour
+    !     integer :: i
+    !     do i = 1, size(cell_map%keys)
+    !         cell = cell_map%keys(i)%cell 
+    !         sides = cell_map%getSidesInCell(cell)
+    !         contour = buildCellSideSet(sides)
+    !         do j = 1, size(contour)
+    !             edge = contour(j)%getEdge()
+    !             if (edge /= NOT_ON_EDGE) then 
+    !                 call res%addSide(contour(j))
+    !             end if
+    !         end do
+    !      end do
+   
+
+    ! end subroutine
+
     logical function hasKey(this, k)
         class(cell_map_t) :: this
         integer(kind=4), dimension(3), intent(in) :: k

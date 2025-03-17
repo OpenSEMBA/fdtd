@@ -25,6 +25,7 @@ extern "C" int test_conformal_edges_open();
 extern "C" int test_conformal_faces_open();
 extern "C" int test_conformal_edges_closed();
 extern "C" int test_conformal_faces_closed();
+extern "C" int test_conformal_edge_next_cell();
 
 
 TEST(conformal, geometry_coord_position)   { EXPECT_EQ(0, test_geometry_coord_position()); }
@@ -53,3 +54,4 @@ TEST(conformal, conformal_edges_open)        { EXPECT_EQ(0, test_conformal_edges
 TEST(conformal, conformal_faces_open)        { EXPECT_EQ(0, test_conformal_faces_open()); }
 TEST(conformal, conformal_edges_closed)        { EXPECT_EQ(0, test_conformal_edges_closed()); }
 TEST(conformal, conformal_faces_closed)        { EXPECT_EQ(0, test_conformal_faces_closed()); }
+TEST(conformal, conformal_edge_next_cell)        { EXPECT_EQ(0, test_conformal_edge_next_cell()); }
