@@ -3083,7 +3083,7 @@ contains
                                        do Efield = iEx, iEz
                                           if (isThinWire(Efield, iii, jjj, kkk) .and. isWithinBounds(Efield, iii, jjj, kkk)) then 
                                              conta = conta + 1
-                                             jdir = computeJ(field, iii, jjj, kkk)
+                                             jdir = computeJ(EField, iii, jjj, kkk)
                                              output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
                                              output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
                                              output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
@@ -3094,13 +3094,12 @@ contains
                                              output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
                                              output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
                                           end if
-                                       end do
-
-                                       if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. &
+                                          
+                                          if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. &
                                            .not. isSplitOrAdvanced(Efield, iii, jjj, kkk) .and. &
                                            isWithinBounds(Efield, iii, jjj, kkk)) then 
                                              conta = conta + 1
-                                             jdir = computeJ(field, iii, jjj, kkk)
+                                             jdir = computeJ(EField, iii, jjj, kkk)
                                              output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
                                              output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
                                              output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
@@ -3110,7 +3109,8 @@ contains
                                              output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,Efield)
                                              output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
                                              output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
-                                       end if  
+                                          end if  
+                                       end do
 
                                     else !si es mapvtk
 
@@ -3504,8 +3504,8 @@ contains
          i2 = i - merge(1,0,1+mod(field,3) == iEx)
          j2 = j - merge(1,0,1+mod(field,3) == iEy)
          k2 = k - merge(1,0,1+mod(field,3) == iEz)
-         res =  getDelta(1+mod(field,3)  , i, j, k) * (-getField(1+mod(field,3) + 4,  i,j,k) + getField(1+mod(field,3) + 4,  i1,j1,k1))  + &
-                getDelta(1+mod(field+1,3), i, j, k) * ( getField(1+mod(field+1,3) + 4,i,j,k) - getField(1+mod(field+1,3) + 4,i2,j2,k2))  
+         res =  getDelta(1+mod(field,3)  , i, j, k) * (-getField(1+mod(field,3) + 3,  i,j,k) + getField(1+mod(field,3) + 3,  i1,j1,k1))  + &
+                getDelta(1+mod(field+1,3), i, j, k) * ( getField(1+mod(field+1,3) + 3,i,j,k) - getField(1+mod(field+1,3) + 3,i2,j2,k2))  
       end function
 
 
