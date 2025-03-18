@@ -257,8 +257,8 @@ contains
     end function
 
 
-    function buildCellSideSet(sides) result(res)
-        type(side_t), dimension(:), allocatable, intent(in) :: sides
+    function buildCellSideSet(sides, on_sides) result(res)
+        type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides
         type(side_t), dimension(:), allocatable :: contour, res
         integer :: face, edge
         allocate(res(0))
@@ -268,6 +268,8 @@ contains
         end do
         do edge = EDGE_X, EDGE_Z
             contour = getSidesOnEdge(sides, edge)
+            call addNewSides(res, contour)
+            contour = getSidesOnEdge(on_sides, edge)
             call addNewSides(res, contour)
         end do
     end function 

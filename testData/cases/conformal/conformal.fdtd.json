@@ -15,7 +15,7 @@
 
     "mesh": {
         "grid": {
-            "numberOfCells": [2, 2, 6],
+            "numberOfCells": [2, 2, 36],
             "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
         },
         "coordinates": [
@@ -67,7 +67,6 @@
     ],
 
     "materialAssociations": [
-        {"materialId": 1, "elementIds": [5]}
     ],
 
     "sources": [
@@ -104,7 +103,7 @@
         {
             "name": "source",
             "type": "point",
-            "field": "electric",
+            "fieqld": "electric",
             "directions": ["x"],
             "elementIds": [6]
         }

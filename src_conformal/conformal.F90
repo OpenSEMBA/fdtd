@@ -31,6 +31,7 @@ contains
          allocate(res%edge_media(i)%edges(size(filtered_edges)))
          res%edge_media(i)%edges = filtered_edges
          res%edge_media(i)%ratio = edge_ratios(i)
+         res%edge_media(i)%size = size(filtered_edges)
       end do
 
       allocate(res%face_media(size(face_ratios)))
@@ -39,6 +40,7 @@ contains
          allocate(res%face_media(i)%faces(size(filtered_faces)))
          res%face_media(i)%faces = filtered_faces
          res%face_media(i)%ratio = face_ratios(i)
+         res%face_media(i)%size = size(filtered_faces)
       end do
       res%n_edges_media = 0
       res%n_faces_media = 0
@@ -47,16 +49,16 @@ contains
 
    end function
 
-   subroutine fillEdgesFromSides(cell, sides, grid, edges, edge_ratios)
+   subroutine fillEdgesFromSides(cell, sides, on_sides, grid, edges, edge_ratios)
       integer, dimension(3), intent(in) :: cell
-      type(side_t), dimension(:), allocatable, intent(in) :: sides
+      type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides
       type(Desplazamiento), intent(in) :: grid
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       real, dimension(:), allocatable, intent(inout) :: edge_ratios
       type(side_t), dimension(:), allocatable :: contour
       real :: ratio, delta
       integer :: face, edge
-      contour = buildCellSideSet(sides)
+      contour = buildCellSideSet(sides, on_sides)
       do j = 1, size(contour)
          edge = contour(j)%getEdge()
          if (edge /= NOT_ON_EDGE .and. (all(contour(j)%getCell() .eq. cell))) then 
@@ -154,7 +156,7 @@ contains
       allocate(edge_ratios(0))
       do i = 1, size(cell_map%keys)
          cell = cell_map%keys(i)%cell 
-         call fillEdgesFromSides(cell, cell_map%getSidesInCell(cell), grid, edges, edge_ratios)
+         call fillEdgesFromSides(cell, cell_map%getSidesInCell(cell),cell_map%getOnSidesInCell(cell), grid, edges, edge_ratios)
          ! call fillEdgesFromTris(cell, cell_map%getTrianglesInCell(cell), grid, edges, edge_ratios)
       end do
 

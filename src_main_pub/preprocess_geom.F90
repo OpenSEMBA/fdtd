@@ -4806,7 +4806,7 @@ endif
                cell_i = conformal_media%edge_media(j)%edges(k)%cell(1)
                cell_j = conformal_media%edge_media(j)%edges(k)%cell(2)
                cell_k = conformal_media%edge_media(j)%edges(k)%cell(3)
-               select case(conformal_media%face_media(j)%faces(k)%direction)
+               select case(conformal_media%edge_media(j)%edges(k)%direction)
                case(E_X)
                   sggMiEx(cell_i, cell_j, cell_k) = edge_media
                case(E_Y)
