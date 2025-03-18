@@ -286,6 +286,10 @@ module  FDETYPES
 
    type taglist_t
       type (tagnumber_t) :: edge, face
+   contains
+      private
+      procedure, public :: getFaceTag => taglist_getFaceTag
+      procedure, public :: getEdgeTag => taglist_getEdgeTag
    end type
 
    !
@@ -692,6 +696,33 @@ contains
 
    end subroutine set_priorities
    
+   function taglist_getFaceTag(this, field, i, j, k) result(res)
+      class(taglist_t) :: this
+      integer (kind=IKINDMTAG) :: res 
+      integer (kind = 4) :: field, i, j, k
+      select case(field)
+      case(iHx)
+         res = this%face%x(i, j, k)
+      case(iHy)
+         res = this%face%y(i, j, k)
+      case(iHz)
+         res = this%face%z(i, j, k)
+      end select
+   end function
+
+   function taglist_getEdgeTag(this, field, i, j, k) result(res)
+      class(taglist_t) :: this
+      integer (kind=IKINDMTAG) :: res 
+      integer (kind = 4) :: field, i, j, k
+      select case(field)
+      case(iEx)
+         res = this%edge%x(i, j, k)
+      case(iEy)
+         res = this%edge%y(i, j, k)
+      case(iEz)
+         res = this%edge%z(i, j, k)
+      end select
+   end function
 
 
 end module FDETYPES

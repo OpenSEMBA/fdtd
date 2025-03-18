@@ -9,7 +9,8 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
-message(STATUS ${CMAKE_Fortran_COMPILER_ID})
+message(STATUS "Compiler Id is: ${CMAKE_Fortran_COMPILER_ID}")
+message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
 option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
@@ -17,12 +18,14 @@ option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
+option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "Enables the -xHost optimization flag (not supported in github actions)" OFF) 
 
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 
+# Compilation defines.
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_definitions(-DCompileWithSMBJSON)
 endif()
@@ -44,32 +47,100 @@ endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
-if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
-	set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -fopenmp -ffree-form -ffree-line-length-none -fdec -fcheck=bounds -fallow-argument-mismatch")
-	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp")
-	add_definitions(-DCompileWithIncludeMpifh)
-endif()
-if(CMAKE_Fortran_COMPILER_ID MATCHES "^Intel")
-	set(CMAKE_Fortran_FLAGS "-fpp")
-	if (CMAKE_SYSTEM_NAME MATCHES "Linux")
-		set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -qopenmp")
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -qopenmp")
-		if(CMAKE_BUILD_TYPE MATCHES "Debug")
-			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -check all,nouninit -debug full -traceback")
+if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+	message(STATUS "Using Linux flags")
+
+	if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+		message(STATUS "Using GNU flags")
+
+		add_definitions(-DCompileWithIncludeMpifh)
+		set(CMAKE_CXX_FLAGS "-fopenmp")
+		set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
+		
+		set(CMAKE_C_FLAGS_RELEASE "-Ofast")
+		set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
+		set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast")
+		
+		set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0")
+
+	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
+		message(STATUS "Using IntelLLVM (ifx) flags")
+		
+		set(CMAKE_CXX_FLAGS "-qopenmp")
+		set(CMAKE_Fortran_FLAGS "-qopenmp -fpp -static-intel")
+		
+		set(CMAKE_C_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ipo -fp-model fast=2w") 
+		set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+		if(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION) 
+			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -xHost")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost")
+			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -xHost")
 		endif()
-	elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
-		if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
-			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp")
-		else()
-			if(CMAKE_BUILD_TYPE MATCHES "Debug")
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp /Wno-debug-option-simd")
-			else()
-				set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /Qiopenmp")
-			endif()
+		
+		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
+
+	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "Intel")
+		message(STATUS "Using Intel (ifort) flags")
+
+		set(CMAKE_C_FLAGS "-diag-disable=10441")
+		set(CMAKE_CXX_FLAGS "-qopenmp -diag-disable=10441")
+		set(CMAKE_Fortran_FLAGS "-fpp -qopenmp -diag-disable=8889 -static-intel")
+
+		set(CMAKE_C_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_CXX_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -ipo")
+		set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
+		if(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION) 
+			set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -xHost")
+			set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -xHost")
+			set(CMAKE_Fortran_FLAGS "${CMAKE_Fortran_FLAGS} -xHost")
 		endif()
+
+		set(CMAKE_Fortran_FLAGS_DEBUG "-check all,nouninit -debug full -traceback")
+	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "NVHPC")
+		message(STATUS "Using nvhpc flags")
+		
+		# TODO: Tune flags for NVHPC
+
 	else()
-		message(FATAL_ERROR "Unrecognized system name")
+		message(FATAL_ERROR "Unrecognized compiler:" ${CMAKE_Fortran_COMPILER_ID})
 	endif()
+elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
+	message(STATUS "Using Windows flags")
+	if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
+		message(STATUS "Using IntelLLVM (ifx) flags")
+
+		# This prevents a compilation error happening due to visual studio headers being too strict.
+		# It can possibly can be removed in the future.
+		add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH>")
+
+		set(CMAKE_CXX_FLAGS "/Qopenmp")
+		set(CMAKE_Fortran_FLAGS "/Qopenmp /fpp")
+
+		# Not tested
+
+		# set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
+		
+		set(CMAKE_CXX_FLAGS_FLAGS_DEBUG "/Qopenmp-simd- /Wno-debug-option-simd")
+		# set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
+
+	elseif((CMAKE_Fortran_COMPILER_ID MATCHES "Intel"))
+		message(STATUS "Using Intel (ifort) flags")
+		set(CMAKE_CXX_FLAGS "/Qopenmp")
+
+		# Not tested
+		# set(CMAKE_Fortran_FLAGS "/fpp /qopenmp") 
+
+		# set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
+
+		# set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
+	else()
+		message(FATAL_ERROR "Unrecognized compiler id:" ${CMAKE_Fortran_COMPILER_ID})
+	endif()
+else()
+	message(FATAL_ERROR "Unrecognized system name")
 endif()
 
 add_subdirectory(external)
@@ -166,10 +237,6 @@ if (SEMBA_FDTD_EXECUTABLE)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
 endif()
 
-
 include_directories(${CMAKE_BINARY_DIR}/mod)
 include_directories(${HDF5_INCLUDE_DIRS})
 include_directories(${FHASH_INCLUDES})
-
-
-

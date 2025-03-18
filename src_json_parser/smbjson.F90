@@ -176,7 +176,6 @@ contains
       res%tSlots = this%readThinSlots()
 
 #ifdef CompileWithMTLN
-      write(*,*) 'debug: mtl'
       res%mtln = this%readMTLN(res%despl)
 #endif
 
@@ -2151,10 +2150,16 @@ contains
       function readConnectors() result(res)
          type(connector_t), dimension(:), pointer :: res
          type(json_value), pointer :: mat, z
-
+         logical :: materialsFound
          type(json_value_ptr), dimension(:), allocatable :: connectors
          integer :: i, id
-         call this%core%get(this%root, J_MATERIALS, mat)
+         
+         call this%core%get(this%root, J_MATERIALS, mat, materialsFound)
+         if (.not. materialsFound) then
+             allocate(res(0))
+             return
+         end if
+         
          connectors = this%jsonValueFilterByKeyValue(mat, J_TYPE, J_MAT_TYPE_CONNECTOR)
          allocate(res(size(connectors)))
          if (size(connectors) /= 0) then

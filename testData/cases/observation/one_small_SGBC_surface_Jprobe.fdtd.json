@@ -1,0 +1,72 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Example input with sgbc material",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 10
+    },
+    
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 10, 10],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "elements": [
+            {"id": 1, "type": "cell", "intervals": [ [ [3, 3, 3], [4, 4, 3] ] ]},
+            {"id": 2, "type": "cell", "intervals": [ [ [3, 3, 3], [4, 3, 4] ] ]},
+            {"id": 3, "type": "cell", "intervals": [ [ [3, 3, 3], [3, 4, 4] ] ]},
+            {"id": 4, "type": "cell", "intervals": [ [ [0, 0, 0], [9, 9, 9] ] ]}
+        ]
+    },
+
+    "materials": [
+        {
+            "type": "pec",
+            "id": 1
+        },
+        {
+            "name": "2-layers-composite",
+            "type": "multilayeredSurface",
+            "id": 2,
+            "layers": [
+                {"thickness": 1e-3, "relativePermittivity": 1.3, "electricConductivity": 2e-4},
+                {"thickness": 5e-3, "relativePermittivity": 1.3}
+            ]
+        },
+        {
+            "name": "3-layers-composite",
+            "type": "multilayeredSurface",
+            "id": 3,
+            "layers": [
+                {"thickness": 1e-3, "electricConductivity": 2e-4},
+                {"thickness": 5e-3, "relativePermeability": 1.3},
+                {"thickness": 1e-3, "magneticConductivity": 1e-4}
+            ]
+        }
+    ],
+
+    "materialAssociations": [
+        {
+            "materialId": 2,
+            "elementIds": [ 1 ]
+        }
+    ],
+    "probes": [
+        {
+            "name": "current_movie",
+            "type": "movie",
+            "field": "currentDensity",
+            "component": "x",
+            "elementIds": [4],
+            "initialTime": 0.0, 
+            "finalTime": 20e-8, 
+            "samplingPeriod": 10e-12
+        }
+    ]
+
+}
