@@ -5,7 +5,7 @@ module mesh_mod
    
    use fhash, only: fhash_tbl_t, key=>fhash_key
    use cells_mod
-
+   use conformal_region_mod
    integer, private, parameter  ::  MAX_LINE = 256
    
    type :: element_t
@@ -34,6 +34,7 @@ module mesh_mod
       private
       type(fhash_tbl_t) :: coordinates ! Map of CoordinateIds to relative coordinates.
       type(fhash_tbl_t) :: elements    ! Map of ElementIds to elements/cellsRegions.    
+      type(fhash_tbl_t) :: conformal_elements    ! Map of ElementIds to conformal elements/regions.    
    contains
       procedure :: addCoordinate => mesh_addCoordinate
       procedure :: getCoordinate => mesh_getCoordinate
@@ -42,11 +43,14 @@ module mesh_mod
 
       procedure :: addElement => mesh_addElement
       procedure :: addCellRegion  => mesh_addCellRegion
+      procedure :: addConformalRegion  => mesh_addConformalRegion
       
       procedure :: getNode => mesh_getNode
       procedure :: getPolyline => mesh_getPolyline
       procedure :: getCellRegion  => mesh_getCellRegion
       procedure :: getCellRegions => mesh_getCellRegions
+      procedure :: getConformalRegion => mesh_getConformalRegion
+      procedure :: getConformalRegions => mesh_getConformalRegions
 
       procedure :: countPolylineSegments => mesh_countPolylineSegments
       procedure :: arePolylineSegmentsStructured => mesh_arePolylineSegmentsStructured
@@ -129,6 +133,21 @@ contains
       integer, intent(in) :: id
       class(cell_region_t), intent(in) :: e
       call this%elements%set(key(id), value=e)
+   end subroutine
+
+   subroutine mesh_addConformalRegion(this, id, e)
+      class(mesh_t) :: this
+      integer, intent(in) :: id
+      class(conformal_region_t), intent(inout) :: e
+      integer :: i, j
+      type(coordinate_t) :: c
+      do i = 1, size(e%triangles)
+         do j = 1, 3
+            c = this%getCoordinate(e%triangles(i)%vertices(j)%id)
+            e%triangles(i)%vertices(j)%position(1:3) = c%position(1:3)
+         end do
+      end do
+      call this%conformal_elements%set(key(id), value=e)
    end subroutine
 
    function mesh_getCoordinate(this, id, found) result(res)
@@ -234,6 +253,56 @@ contains
       j = 1
       do i = 1, size(ids)
          cR = this%getCellRegion(ids(i), found)
+         if (found) then
+               res(j) = cR
+               j = j + 1
+         end if
+      end do
+
+   end function
+
+   function mesh_getConformalRegion(this, id, found) result (res)
+      class(mesh_t) :: this
+      type(conformal_region_t) :: res
+      integer, intent(in) :: id
+      integer :: stat
+      logical, intent(out), optional :: found
+      class(*), allocatable :: d
+
+      if (present(found)) found = .false.
+      call this%conformal_elements%get_raw(key(id), d, stat)
+      if (stat /= 0) return
+
+      select type(d)
+         type is (conformal_region_t)
+         res = d
+         if (present(found)) found = .true.
+      end select
+
+   end function
+
+   function mesh_getConformalRegions(this, ids) result (res)
+      class(mesh_t) :: this
+      type(conformal_region_t), dimension(:), allocatable :: res
+      integer, dimension(:), intent(in) :: ids
+      type(conformal_region_t) :: cR
+      logical :: found
+      integer :: i, j
+      integer :: numberOfConformalRegions
+
+      ! Precounts
+      numberOfConformalRegions = 0
+      do i = 1, size(ids)
+         cR = this%getConformalRegion(ids(i), found)
+         if (found) then
+               numberOfConformalRegions = numberOfConformalRegions + 1
+         end if
+      end do     
+      
+      allocate(res(numberOfConformalRegions))
+      j = 1
+      do i = 1, size(ids)
+         cR = this%getConformalRegion(ids(i), found)
          if (found) then
                res(j) = cR
                j = j + 1

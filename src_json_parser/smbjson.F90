@@ -12,6 +12,8 @@ module smbjson
    use json_module
    use json_kinds
 
+   use geometry_mod
+   ! use cell_map_mod
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -56,6 +58,7 @@ module smbjson
       procedure, private :: readVolumicProbes
       procedure, private :: readThinWires
       procedure, private :: readThinSlots
+      procedure, private :: readConformalRegions
       !
       !
       procedure, private :: getLogicalAt
@@ -171,6 +174,9 @@ contains
       res%BloquePrb = this%readBlockProbes()
       res%VolPrb = this%readVolumicProbes()
       
+      ! Conformal elements
+      res%conformalRegs = this%readConformalRegions()
+
       ! Thin elements
       res%tWires = this%readThinWires()
       res%tSlots = this%readThinSlots()
@@ -178,6 +184,7 @@ contains
 #ifdef CompileWithMTLN
       res%mtln = this%readMTLN(res%despl)
 #endif
+
 
    end function
 
@@ -246,7 +253,27 @@ contains
                      type(cell_interval_t), dimension(:), allocatable :: intervals
                      cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      call mesh%addCellRegion(id, cR)
+                     
                   end block
+                case (J_ELEM_TYPE_CONF_VOLUME) 
+                  block 
+                     type(conformal_region_t) :: cV
+                     type(cell_region_t) :: cR
+                     cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+                     cV%type = REGION_TYPE_VOLUME
+                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                     call mesh%addConformalRegion(id, cV)
+                     call mesh%addCellRegion(id, cR)
+                  end block
+               !  case (J_ELEM_TYPE_CONF_VOLUME) 
+               !    block 
+               !       type(conformal_region_t) :: cV
+               !       type(cell_region_t) :: cR
+               !       cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+               !       cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+               !       call mesh%addConformalRegion(id, cV)
+               !       call mesh%addCellRegion(id, cR)
+               !    end block
                 case default
                   write (error_unit, *) 'Invalid element type'
                end select
@@ -279,6 +306,35 @@ contains
             res(i)%end%cell = cellEnd(1:3)
          end do
       end function
+
+      function readTriangles(place, path) result(res)
+         type(json_value), pointer, intent(in) :: place
+         character (len=*), intent(in) :: path
+         type(triangle_t), dimension(:), allocatable :: res
+
+         type(json_value), pointer :: triangles, triangle_ptr
+         real, dimension(:), allocatable :: triangle
+         integer :: i, j, nTriangles
+         real, dimension(:), allocatable :: cellIni, cellEnd
+
+         logical :: containsTriangles
+         call this%core%get(place, path, triangles, found=containsTriangles)
+         if (.not. containsTriangles) then
+            allocate(res(0))
+            return
+         end if
+         nTriangles = this%core%count(triangles)
+         allocate(res(nTriangles))
+         do i = 1, nTriangles
+            call this%core%get_child(triangles, i, triangle_ptr)
+            call this%core%get(triangle_ptr, triangle)
+            do j = 1, 3
+               res(i)%vertices(j)%id = triangle(j)
+            end do
+         end do
+
+      end function
+
    end function
 
    function readGeneral(this) result (res)
@@ -511,6 +567,61 @@ contains
          end if
       end subroutine         
    end function
+
+   function readConformalRegions(this) result(res)
+      class(parser_t) :: this
+      type(ConformalPECRegions) :: res
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
+      type(conformal_region_t) :: cR
+      type(triangle_t), dimension(:), allocatable :: aux_tris
+      integer :: i, j
+
+      ! allocate(res%volumes(0))
+      ! allocate(res%surfaces(0))
+
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
+
+      if (size(mAs) == 0) then
+         allocate(aux_tris(0))
+         cR%triangles = aux_tris
+         call appendRegion(res%volumes, cR)
+         call appendRegion(res%surfaces, cR)
+      end if
+      do i = 1, size(mAs)
+         do j = 1, size(mAs(i)%elementIds)
+            cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j))
+            if (cR%type == REGION_TYPE_VOLUME) call appendRegion(res%volumes, cR)
+            if (cR%type == REGION_TYPE_SURFACE) call appendRegion(res%surfaces, cR)
+         end do
+      end do
+
+   contains 
+      subroutine appendRegion(regions, region)
+         type(ConformalPECElements), dimension(:), pointer :: regions
+         type(conformal_region_t), intent(in) :: region
+         type(ConformalPECElements), dimension(:), allocatable :: aux
+         integer :: i
+         if (.not. associated(regions)) then 
+            allocate(regions(1))
+            regions(1)%triangles = region%triangles
+         else 
+            allocate(aux(size(regions) + 1))
+            do i = 1, size(regions)
+               aux(i) = regions(i)
+            end do
+            aux(size(regions) + 1)%triangles = region%triangles
+            deallocate(regions)
+            
+            allocate(regions(size(aux)))
+            do i = 1, size(aux)
+               regions(i) = aux(i)
+            end do
+            ! regions(i+1)%triangles = region%triangles
+         end if
+      end subroutine
+
+   end function
+
 
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
@@ -2058,6 +2169,7 @@ contains
          end do
       end function
    end function
+
 
 #ifdef CompileWithMTLN
    function readMTLN(this, grid) result (mtln_res)

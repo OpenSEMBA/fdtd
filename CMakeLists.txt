@@ -14,7 +14,7 @@ message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
 option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
 option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
-option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
+option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" OFF)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
 option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
@@ -149,6 +149,7 @@ add_library(semba-types
 	"src_main_pub/nfde_types.F90"
 	"src_main_pub/fdetypes.F90"
 	"src_mtln/mtln_types.F90"
+	"src_conformal/geometry.F90"
 	"src_wires_pub/wires_types.F90"
 	"src_main_pub/lumped_types.F90"
 )
@@ -171,6 +172,9 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 		set(MTLN_LIBRARIES mtlnsolver ngspice_interface PARENT_SCOPE)
 	endif()
 endif()
+
+add_subdirectory(src_conformal)
+set(CONFORMAL_LIBRARIES conformal)
 
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
