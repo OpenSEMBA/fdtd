@@ -1,6 +1,6 @@
 module cell_map_mod
 
-    use geometry_mod, only: triangle_t, side_t, FACE_X, FACE_Y, FACE_Z
+    use geometry_mod, only: triangle_t, side_t, FACE_X, FACE_Y, FACE_Z, isNewSide
     use fhash, only: fhash_tbl_t, key=>fhash_key
 
     implicit none
@@ -14,13 +14,25 @@ module cell_map_mod
 
     type :: cell_t
         integer, dimension(3) :: cell
-     end type
+    end type
 
+    type, public :: cfl_info_t
+        real, dimension(3) :: area = [1,1,1], length = [1,1,1]
+    end type
+
+    type, extends(fhash_tbl_t) :: cfl_map_t
+        type(cell_t), dimension(:), allocatable :: keys
+    contains
+        procedure :: hasKey => cfl_hasKey
+        procedure :: addFaceRatio
+        procedure :: addEdgeRatio
+        procedure :: getCFLInCell
+    end type
 
     type, extends(fhash_tbl_t) :: cell_map_t
         type(cell_t), dimension(:), allocatable :: keys
     contains
-        procedure :: hasKey
+        procedure :: hasKey => cell_hasKey
         procedure :: getTrianglesInCell
         procedure :: getSidesInCell
         procedure :: getOnSidesInCell
@@ -47,9 +59,9 @@ contains
         type(cell_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
         integer :: i
-        call buildTriangleMap(tri_map, triangles)
-        call buildSideMap(side_map, triangles)
-        call buildSideOnMap(side_map_on, triangles)
+        call buildMapOfTrisOnFaces(tri_map, triangles)
+        call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
+        call buildMapOfSidesOnEdgeFromTrisOnFaces(side_map_on, triangles)
         keys = mergeKeys(tri_map%keys, side_map%keys)
         keys = mergeKeys(keys, side_map_on%keys)
         do i = 1, size(keys)
@@ -58,7 +70,6 @@ contains
             elems%sides_on = side_map_on%getOnSidesInCell(keys(i)%cell)
             call res%set(key(keys(i)%cell), value=elems)
         end do
-        ! keys = mergeKeys(keys, res%keys)
         res%keys = keys
     end subroutine
 
@@ -103,7 +114,7 @@ contains
         end if
     end function    
 
-    subroutine buildTriangleMap(res, triangles)
+    subroutine buildMapOfTrisOnFaces(res, triangles)
         type(triangle_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
@@ -116,8 +127,8 @@ contains
             end if
         end do
     end subroutine
-
-    subroutine buildSideMap(res, triangles)
+    
+    subroutine buildMapOfSidesFromTrisNotOnFaces(res, triangles)
         type(side_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
@@ -137,7 +148,7 @@ contains
         end do
     end subroutine
 
-    subroutine buildSideOnMap(res, triangles)
+    subroutine buildMapOfSidesOnEdgeFromTrisOnFaces(res, triangles)
         type(side_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
@@ -156,13 +167,22 @@ contains
         end do
     end subroutine
 
-    logical function hasKey(this, k)
+    logical function cell_hasKey(this, k)
         class(cell_map_t) :: this
         integer(kind=4), dimension(3), intent(in) :: k
         integer :: stat
-        hasKey = .false.
+        cell_hasKey = .false.
         call this%check_key(key(k), stat)
-        if (stat == 0) hasKey = .true.
+        if (stat == 0) cell_hasKey = .true.
+    end function
+
+    logical function cfl_hasKey(this, k)
+        class(cfl_map_t) :: this
+        integer(kind=4), dimension(3), intent(in) :: k
+        integer :: stat
+        cfl_hasKey = .false.
+        call this%check_key(key(k), stat)
+        if (stat == 0) cfl_hasKey = .true.
     end function
 
     subroutine addTriangle(this, triangle)
@@ -216,13 +236,15 @@ contains
             select type(alloc_list)
             type is(element_set_t)
             
-                allocate(aux_list%sides(size(alloc_list%sides) + 1))
-                aux_list%sides(1:size(alloc_list%sides)) = alloc_list%sides
-                aux_list%sides(size(alloc_list%sides) + 1) = side
-                deallocate(alloc_list%sides)
-                allocate(alloc_list%sides(size(aux_list%sides)))
-                alloc_list%sides = aux_list%sides
-                call this%set(key(cell), value = alloc_list)
+                if (isNewSide(alloc_list%sides, side)) then 
+                    allocate(aux_list%sides(size(alloc_list%sides) + 1))
+                    aux_list%sides(1:size(alloc_list%sides)) = alloc_list%sides
+                    aux_list%sides(size(alloc_list%sides) + 1) = side
+                    deallocate(alloc_list%sides)
+                    allocate(alloc_list%sides(size(aux_list%sides)))
+                    alloc_list%sides = aux_list%sides
+                    call this%set(key(cell), value = alloc_list)
+                end if
             end select
 
         else 
@@ -304,7 +326,6 @@ contains
 
         if (this%hasKey(k)) then 
             call this%get_raw(key(k), alloc_list)
-            write(*,*) 
             select type(alloc_list)
             type is(element_set_t)
                 res = alloc_list%sides
@@ -323,7 +344,6 @@ contains
 
         if (this%hasKey(k)) then 
             call this%get_raw(key(k), alloc_list)
-            write(*,*) 
             select type(alloc_list)
             type is(element_set_t)
                 res = alloc_list%sides_on
@@ -333,6 +353,85 @@ contains
         end if
     end function
 
+
+    subroutine addFaceRatio(this, cell, direction, ratio)
+        class(cfl_map_t) :: this
+        class(*), allocatable :: alloc_list
+        type(cfl_info_t) :: aux_cfl
+        integer (kind=4), dimension(3) :: cell
+        integer :: direction
+        real :: ratio
+        type(cell_t), dimension(:), allocatable :: aux_keys
+
+        if (this%hasKey(cell)) then 
+
+            call this%get_raw(key(cell), alloc_list)
+            select type(alloc_list)
+            type is(cfl_info_t)
+                alloc_list%area(direction) = ratio
+                call this%set(key(cell), value = alloc_list)
+            end select
+
+        else 
+            aux_cfl%area(direction) = ratio
+            call this%set(key(cell), value = aux_cfl)
+
+            allocate(aux_keys(size(this%keys) + 1))
+            aux_keys(1:size(this%keys)) = this%keys
+            aux_keys(size(this%keys) + 1)%cell = cell
+            deallocate(this%keys)
+            allocate(this%keys(size(aux_keys)))
+            this%keys = aux_keys
+        end if
+
+    end subroutine
+    subroutine addEdgeRatio(this, cell, direction, ratio)
+        class(cfl_map_t) :: this
+        
+        class(*), allocatable :: alloc_list
+        type(cfl_info_t) :: aux_cfl
+        integer (kind=4), dimension(3) :: cell
+        integer :: direction
+        real :: ratio
+
+        type(cell_t), dimension(:), allocatable :: aux_keys
+        if (this%hasKey(cell)) then 
+
+            call this%get_raw(key(cell), alloc_list)
+            select type(alloc_list)
+            type is(cfl_info_t)
+                alloc_list%length(direction) = ratio
+                call this%set(key(cell), value = alloc_list)
+            end select
+
+        else 
+            aux_cfl%length(direction) = ratio
+            call this%set(key(cell), value = aux_cfl)
+
+            allocate(aux_keys(size(this%keys) + 1))
+            aux_keys(1:size(this%keys)) = this%keys
+            aux_keys(size(this%keys) + 1)%cell = cell
+            deallocate(this%keys)
+            allocate(this%keys(size(aux_keys)))
+            this%keys = aux_keys
+        end if
+
+    end subroutine
+
+    function getCFLInCell(this, k) result(res)
+        class(cfl_map_t) :: this
+        integer(kind=4), dimension(3) :: k
+        class(*), allocatable :: alloc_list
+        type(cfl_info_t) :: res
+
+        if (this%hasKey(k)) then 
+            call this%get_raw(key(k), alloc_list)
+            select type(alloc_list)
+            type is(cfl_info_t)
+                res = alloc_list
+            end select
+        end if
+    end function
 
 
 end module

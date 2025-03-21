@@ -185,7 +185,7 @@ integer function test_fhash_cellmap_set_get() bind(C) result(err)
     allocate(tri_set(1))
     tri_set(1) = t1
     
-    call buildTriangleMap(tri_map,tri_set)
+    call buildMapOfTrisOnFaces(tri_map,tri_set)
     tri_get = tri_map%getTrianglesInCell(floor(c1%position))
     if (size(tri_get) /= 1) err = err + 1
     if (tri_get(1)%vertices(1)%id /= tri_set(1)%vertices(1)%id) err = err + 1
@@ -198,7 +198,7 @@ integer function test_fhash_cellmap_set_get() bind(C) result(err)
     tri_set(2) = t2
 
     call tri_map%unset(key(t1%getCell()))
-    call buildTriangleMap(tri_map, tri_set)
+    call buildMapOfTrisOnFaces(tri_map, tri_set)
     tri_get = tri_map%getTrianglesInCell(floor(c1%position))
     if (size(tri_get) /= 2) err = err + 1
     if (tri_get(1)%vertices(1)%id /= tri_set(1)%vertices(1)%id) err = err + 1

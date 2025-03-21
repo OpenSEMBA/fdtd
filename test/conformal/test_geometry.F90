@@ -235,10 +235,10 @@ integer function test_geometry_elements_in_cell() bind(C) result(err)
     triangles(3) = triangle_t(vertices = [c1,c2,c4])
 
     cell = triangles(1)%getCell()
-    call buildTriangleMap(tri_map, triangles)
+    call buildMapOfTrisOnFaces(tri_map, triangles)
     tris = tri_map%getTrianglesInCell(cell)
     if (size(tris) /= 2) err = err + 1
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
     if (size(sides) /= 2) err = err + 1
 
@@ -279,10 +279,10 @@ integer function test_geometry_map_sides() bind(C) result(err)
     triangles(8) = triangle_t(vertices = [c4,c5,c6])
 
     cell = triangles(1)%getCell()
-    call buildTriangleMap(tri_map, triangles)
+    call buildMapOfTrisOnFaces(tri_map, triangles)
     tris = tri_map%getTrianglesInCell(cell)
     if (size(tris) /= 5) err = err + 1
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
     if (size(sides) /= 5) err = err + 1
 
@@ -331,7 +331,7 @@ integer function test_geometry_path() bind(C) result(err)
     triangles(8) = triangle_t(vertices = [c4,c5,c6])
 
     cell = triangles(1)%getCell()
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
     if (.not. path(1)%init%id == 2) err = err + 1
@@ -379,7 +379,7 @@ integer function test_geometry_vertex_vertex_contour() bind(C) result(err)
     triangles(8) = triangle_t(vertices = [c4,c5,c6])
 
     cell = triangles(1)%getCell()
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
     
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
@@ -430,7 +430,7 @@ integer function test_geometry_vertex_side_contour() bind(C) result(err)
     triangles(8) = triangle_t(vertices = [c4,c5,c6])
 
     cell = triangles(1)%getCell()
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
 
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
@@ -482,7 +482,7 @@ integer function test_geometry_side_vertex_contour() bind(C) result(err)
     triangles(8) = triangle_t(vertices = [c4,c5,c6])
 
     cell = triangles(1)%getCell()
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
 
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
@@ -534,7 +534,7 @@ integer function test_geometry_side_side_contour() bind(C) result(err)
     triangles(8) = triangle_t(vertices = [c4,c5,c6])
 
     cell = triangles(1)%getCell()
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
 
     path = getPathOnFace(getSidesOnFace(sides, FACE_Z))
@@ -588,7 +588,7 @@ integer function test_geometry_side_side_contour_2() bind(C) result(err)
     triangles(10) = triangle_t(vertices = [c5,c6,c7])
 
     cell = triangles(1)%getCell()
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
     if (size(sides) /= 3) err = err + 1
 
@@ -630,7 +630,7 @@ integer function test_geometry_side_side_contour_3() bind(C) result(err)
     triangles(1) = triangle_t(vertices = [c1,c2,c3])
 
     cell = triangles(1)%getCell()
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
     if (size(sides) /= 2) err = err + 1
 
@@ -674,7 +674,7 @@ integer function test_geometry_areas() bind(C) result(err)
     allocate(triangles(1))
     triangles(1) = triangle_t(vertices = [c1,c2,c3])
     cell = triangles(1)%getCell()
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
     if (size(sides) /= 3) err = err + 1
 
@@ -685,7 +685,7 @@ integer function test_geometry_areas() bind(C) result(err)
 
     call side_map%unset(key(cell))
     triangles(1)%vertices(1)%position = [0.5,0.0,0.0]
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
     if (size(sides) /= 3) err = err + 1
 
@@ -696,7 +696,7 @@ integer function test_geometry_areas() bind(C) result(err)
     
     call side_map%unset(key(cell))
     triangles(1)%vertices(2)%position = [0.0,0.25,0.0]
-    call buildSideMap(side_map, triangles)
+    call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
     sides = side_map%getSidesInCell(cell)
     if (size(sides) /= 3) err = err + 1
 

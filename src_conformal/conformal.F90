@@ -2,19 +2,18 @@ module conformal_mod
 
     use geometry_mod
     use cell_map_mod
-    use NFDETypes, only: Desplazamiento, ConformalPECRegions, ConformalMedia_t, edge_t, face_t
+    use NFDETypes, only: ConformalPECRegions, ConformalMedia_t, edge_t, face_t, conformal_face_media_t, conformal_edge_media_t, rkind
 
-    REAL, PARAMETER :: RATIO_EQ_TOLERANCE = 0.05
+    real (kind=rkind), PARAMETER :: RATIO_EQ_TOLERANCE = 0.05
 
 contains
 
-   function buildConformalMedia(regions, grid) result(res)
+   function buildConformalMedia(regions) result(res)
       type(ConformalPECRegions), intent(in) :: regions
-      type(Desplazamiento), intent(in) :: grid
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map
-      real, dimension(:), allocatable :: edge_ratios, face_ratios
+      real (kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
       type(edge_t), dimension(:), allocatable :: edges, filtered_edges
       type(face_t), dimension(:), allocatable :: faces, filtered_faces
       integer :: i
@@ -22,61 +21,130 @@ contains
       do i = 1, size(regions%volumes)
          call buildCellMap(cell_map, regions%volumes(i)%triangles)
       end do
-      call fillConformalEdges(cell_map, grid, edges, edge_ratios)
-      call fillConformalFaces(cell_map, grid, faces, face_ratios)
+      call fillConformalEdges(cell_map, edges, edge_ratios)
+      call fillConformalFaces(cell_map, faces, face_ratios)
 
-      allocate(res%edge_media(size(edge_ratios)))
-      do i = 1, size(edge_ratios)
-         filtered_edges = filterEdgesByMedia(edges, edge_ratios(i))
-         allocate(res%edge_media(i)%edges(size(filtered_edges)))
-         res%edge_media(i)%edges = filtered_edges
-         res%edge_media(i)%ratio = edge_ratios(i)
-         res%edge_media(i)%size = size(filtered_edges)
-      end do
+      res%edge_media => addEdgeMedia(edges, edge_ratios)
+      res%face_media => addFaceMedia(faces, face_ratios)
 
-      allocate(res%face_media(size(face_ratios)))
-      do i = 1, size(face_ratios)
-         filtered_faces = filterFacesByMedia(faces, face_ratios(i))
-         allocate(res%face_media(i)%faces(size(filtered_faces)))
-         res%face_media(i)%faces = filtered_faces
-         res%face_media(i)%ratio = face_ratios(i)
-         res%face_media(i)%size = size(filtered_faces)
-      end do
-      res%n_edges_media = 0
-      res%n_faces_media = 0
-      if (associated(res%edge_media)) res%n_edges_media = size(res%edge_media)
-      if (associated(res%face_media)) res%n_faces_media = size(res%face_media)
+      res%n_edges_media = size(res%edge_media)
+      res%n_faces_media = size(res%face_media)
+
+      res%cfl = computeCFL(res%edge_media, res%face_media)
 
    end function
 
-   subroutine fillEdgesFromSides(cell, sides, on_sides, grid, edges, edge_ratios)
+   function addEdgeMedia(edges, edge_ratios) result(res)
+      real (kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
+      type(edge_t), dimension(:), allocatable, intent(in) :: edges
+      type(edge_t), dimension(:), allocatable :: filtered_edges
+      TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: res
+      allocate(res(size(edge_ratios)))
+      do i = 1, size(edge_ratios)
+         filtered_edges = filterEdgesByMedia(edges, edge_ratios(i))
+         allocate(res(i)%edges(size(filtered_edges)))
+         res(i)%edges = filtered_edges
+         res(i)%ratio = edge_ratios(i)
+         res(i)%size = size(filtered_edges)
+      end do
+   end function
+
+   function addFaceMedia(faces, face_ratios) result(res)
+      real (kind=rkind), dimension(:), allocatable, intent(in) :: face_ratios
+      type(face_t), dimension(:), allocatable, intent(in) :: faces
+      type(face_t), dimension(:), allocatable :: filtered_faces
+      TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: res
+      allocate(res(size(face_ratios)))
+      do i = 1, size(face_ratios)
+         filtered_faces = filterFacesByMedia(faces, face_ratios(i))
+         allocate(res(i)%faces(size(filtered_faces)))
+         res(i)%faces = filtered_faces
+         res(i)%ratio = face_ratios(i)
+         res(i)%size = size(filtered_faces)
+      end do
+
+   end function
+
+   function computeCFL(edges_media, faces_media) result(res)
+      TYPE (conformal_face_media_t), dimension(:), intent(in), pointer :: faces_media
+      TYPE (conformal_edge_media_t), dimension(:), intent(in), pointer :: edges_media
+      real (kind=rkind) :: res, a_ratio, l_ratio 
+      type(cfl_map_t) :: cfl_map
+      type(cfl_info_t) :: cfl_info
+      integer, dimension(3) :: cell, aux_cell
+      integer :: idx1, idx2
+      integer :: i,j
+      res = 1.0
+      if (.not. allocated(cfl_map%keys)) allocate(cfl_map%keys(0))
+      do i = 1, size(faces_media)
+         do j = 1, size(faces_media(i)%faces)
+            call cfl_map%addFaceRatio(faces_media(i)%faces(j)%cell, faces_media(i)%faces(j)%direction, faces_media(i)%faces(j)%ratio)
+         end do
+      end do
+      do i = 1, size(edges_media)
+         do j = 1, size(edges_media(i)%edges)
+            call cfl_map%addEdgeRatio(edges_media(i)%edges(j)%cell, edges_media(i)%edges(j)%direction, edges_media(i)%edges(j)%ratio)
+         end do
+      end do
+      l_ratio = 0.0
+      do i = 1, size(cfl_map%keys)
+         cell = cfl_map%keys(i)%cell
+         aux_cell = cell
+         cfl_info = cfl_map%getCFLInCell(cell)
+         do j = FACE_X, FACE_Z
+            area = cfl_info%area(j)
+            idx1 = mod(j,3) + 1
+            idx2 = mod(j + 1,3) + 1
+            l_ratio = max(cfl_info%length(idx1),cfl_info%length(idx2))
+            aux_cell(idx1) = aux_cell(idx1) + 1
+            if (cfl_map%hasKey(aux_cell)) then 
+               cfl_info = cfl_map%getCFLInCell(aux_cell)
+               l_ratio = max(l_ratio, cfl_info%length(idx2))
+            else 
+               l_ratio = 1.0
+            end if
+            aux_cell = cell
+            aux_cell(idx2) = aux_cell(idx2) + 1
+            if (cfl_map%hasKey(aux_cell)) then 
+               cfl_info = cfl_map%getCFLInCell(aux_cell)
+               l_ratio = max(l_ratio, cfl_info%length(idx1))
+            else
+               l_ratio = 1.0
+            end if
+            if (area /= 0.0 .and. l_ratio /= 0.0) then
+               res = min(res,sqrt(area/l_ratio))
+            end if
+         end do
+      end do
+   end function   
+
+
+   subroutine fillEdgesFromSides(cell, sides, on_sides, edges, edge_ratios)
       integer, dimension(3), intent(in) :: cell
       type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides
-      type(Desplazamiento), intent(in) :: grid
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
-      real, dimension(:), allocatable, intent(inout) :: edge_ratios
-      type(side_t), dimension(:), allocatable :: contour
-      real :: ratio, delta
+      real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios
+      type(side_t), dimension(:), allocatable :: sides_in_cell
+      real (kind=rkind) :: ratio, delta
       integer :: face, edge
-      contour = buildCellSideSet(sides, on_sides)
-      do j = 1, size(contour)
-         edge = contour(j)%getEdge()
-         if (edge /= NOT_ON_EDGE .and. (all(contour(j)%getCell() .eq. cell))) then 
-            ratio = 1.0 - contour(j)%length()
+      sides_in_cell = buildCellSideSet(sides, on_sides)
+      do j = 1, size(sides_in_cell)
+         edge = sides_in_cell(j)%getEdge()
+         if (edge /= NOT_ON_EDGE .and. (all(sides_in_cell(j)%getCell() .eq. cell))) then 
+            ratio = 1.0 - sides_in_cell(j)%length()
             call addEdge(edges, cell, edge, ratio)
             if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
          end if
       end do
    end subroutine
 
-   subroutine fillFacesFromSides(cell, sides, grid, faces, face_ratios)
+   subroutine fillFacesFromSides(cell, sides, faces, face_ratios)
       integer, dimension(3), intent(in) :: cell
       type(side_t), dimension(:), allocatable, intent(in) :: sides
-      type(Desplazamiento), intent(in) :: grid
       type (face_t), dimension (:), allocatable, intent(inout) :: faces
-      real, dimension(:), allocatable, intent(inout) :: face_ratios
+      real (kind=rkind), dimension(:), allocatable, intent(inout) :: face_ratios
       type(side_t), dimension(:), allocatable :: contour
-      real :: ratio, delta
+      real (kind=rkind) :: ratio, delta
       integer :: face 
       do face = FACE_X, FACE_Z
          contour = buildSidesContour(getSidesOnFace(sides, face))
@@ -88,33 +156,31 @@ contains
       end do
    end subroutine
 
-   subroutine fillConformalFaces(cell_map, grid, faces, face_ratios)
+   subroutine fillConformalFaces(cell_map, faces, face_ratios)
       type(cell_map_t), intent(in) :: cell_map
-      type(Desplazamiento), intent(in) :: grid
       type (face_t), dimension (:), allocatable :: faces
-      real, dimension(:), allocatable :: face_ratios
+      real (kind=rkind), dimension(:), allocatable :: face_ratios
       integer, dimension(3) :: cell
       integer :: i
       allocate(faces(0))
       allocate(face_ratios(0))
       do i = 1, size(cell_map%keys)
          cell = cell_map%keys(i)%cell 
-         call fillFacesFromSides(cell, cell_map%getSidesInCell(cell), grid, faces, face_ratios)
+         call fillFacesFromSides(cell, cell_map%getSidesInCell(cell), faces, face_ratios)
       end do
    end subroutine
 
-   subroutine fillConformalEdges(cell_map, grid, edges, edge_ratios)
+   subroutine fillConformalEdges(cell_map, edges, edge_ratios)
       type(cell_map_t), intent(in) :: cell_map
-      type(Desplazamiento), intent(in) :: grid
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
-      real, dimension(:), allocatable, intent(inout) :: edge_ratios
+      real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios
       integer, dimension(3) :: cell
       integer :: i
       allocate(edges(0))
       allocate(edge_ratios(0))
       do i = 1, size(cell_map%keys)
          cell = cell_map%keys(i)%cell 
-         call fillEdgesFromSides(cell, cell_map%getSidesInCell(cell),cell_map%getOnSidesInCell(cell), grid, edges, edge_ratios)
+         call fillEdgesFromSides(cell, cell_map%getSidesInCell(cell),cell_map%getOnSidesInCell(cell), edges, edge_ratios)
       end do
    end subroutine
     
@@ -124,7 +190,7 @@ contains
       integer, dimension(3), intent(in) :: cell
       integer :: edge 
       type(edge_t) :: new_edge
-      real :: ratio
+      real (kind=rkind) :: ratio
       allocate(aux(size(edges) + 1))
       aux(1:size(edges)) = edges
       new_edge = edge_t(cell=cell, ratio=ratio, direction=edge)
@@ -141,7 +207,7 @@ contains
       integer, dimension(3), intent(in) :: cell
       integer :: face
       type(face_t) :: new_face
-      real :: ratio
+      real (kind=rkind) :: ratio
       allocate(aux(size(faces) + 1))
       aux(1:size(faces)) = faces
       new_face = face_t(cell=cell, ratio=ratio, direction=face)
@@ -153,9 +219,9 @@ contains
    end subroutine
 
    subroutine addRatio(ratios, ratio)
-      real, dimension(:), allocatable, intent(inout) :: ratios
-      real, dimension(:), allocatable :: aux
-      real :: ratio
+      real (kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
+      real (kind=rkind), dimension(:), allocatable :: aux
+      real (kind=rkind) :: ratio
       integer :: i
       logical :: new = .true.
       if (size(ratios) == 0) then 
@@ -173,8 +239,8 @@ contains
    end subroutine
 
    logical function isNewRatio(ratios, ratio)
-      real, dimension(:), allocatable, intent(in) :: ratios
-      real :: ratio
+      real (kind=rkind), dimension(:), allocatable, intent(in) :: ratios
+      real (kind=rkind) :: ratio
       integer :: i
       isNewRatio = .true.
       do i = 1, size(ratios)
@@ -183,13 +249,13 @@ contains
    end function
 
    logical function eq_ratio(a,b)
-      real, intent(in) :: a,b
+      real (kind=rkind), intent(in) :: a,b
       eq_ratio = abs(a - b) < RATIO_EQ_TOLERANCE
    end function
 
    function filterEdgesByMedia(edges, ratio) result(res)
       type(edge_t), dimension(:), allocatable, intent(in) :: edges
-      real :: ratio
+      real (kind=rkind) :: ratio
       type(edge_t), dimension(:), allocatable :: res
       integer :: i,n
       n = 0
@@ -208,7 +274,7 @@ contains
 
    function filterFacesByMedia(faces, ratio) result(res)
       type(face_t), dimension(:), allocatable, intent(in) :: faces
-      real :: ratio
+      real (kind=rkind) :: ratio
       type(face_t), dimension(:), allocatable :: res
       integer :: i,n
       n = 0

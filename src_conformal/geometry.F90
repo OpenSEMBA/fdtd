@@ -201,9 +201,6 @@ contains
         v1 = this%vertices(2)%position - this%vertices(1)%position
         v2 = this%vertices(3)%position - this%vertices(2)%position
         res = cross(v1,v2)
-        ! res = [ v1(2)*v2(3)-v1(3)*v2(2), &
-        !         -(v1(1)*v2(3)-v1(3)*v2(1)), &
-        !         v1(1)*v2(2)-v1(2)*v2(1)]
         res = res/norm2(res)
     end function
     
@@ -259,7 +256,7 @@ contains
 
     function buildCellSideSet(sides, on_sides) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides
-        type(side_t), dimension(:), allocatable :: contour, res
+        type(side_t), dimension(:), allocatable :: contour, aux, res
         integer :: face, edge
         allocate(res(0))
         do face = FACE_X, FACE_Z
@@ -267,10 +264,10 @@ contains
             call addNewSides(res, contour)
         end do
         do edge = EDGE_X, EDGE_Z
-            contour = getSidesOnEdge(sides, edge)
-            call addNewSides(res, contour)
-            contour = getSidesOnEdge(on_sides, edge)
-            call addNewSides(res, contour)
+            aux = getSidesOnEdge(sides, edge)
+            call addNewSides(res, aux)
+            aux = getSidesOnEdge(on_sides, edge)
+            call addNewSides(res, aux)
         end do
     end function 
 
@@ -400,7 +397,7 @@ contains
         cell_side%init%position = corners(:,idx)
         cell_side%end%position  = corners(:,mod(idx,4) + 1)
         do while (.not. (all(cell_side%getCell() .eq. floor(init%position)) .and. &
-                 (cell_side%getEdge() == init%getEdge())))
+                 (cell_side%getEdge() == init%getEdge()) ))
                  call addSide(res, buildSide(cell_side%init%position, cell_side%end%position))
                 cell_side%init%position = corners(:,mod(idx,4) + 1)
                 cell_side%end%position  = corners(:,mod(idx + 1,4) + 1)
@@ -414,7 +411,7 @@ contains
         type(side_t), dimension(:), allocatable, intent(in) :: inner_path
         type(side_t), dimension(:), allocatable :: res
         type(side_t) :: cell_side
-        integer :: i, idx_i, idx_e
+        integer :: i, idx_i, idx_e, idx
         real, dimension(3,4) :: corners
         type(coord_t) :: init, end
 
@@ -437,13 +434,20 @@ contains
                 idx_e = i
             end if
         end do
-        call addSide(res, buildSide(end%position, corners(:,mod(idx_e,4) + 1)))
-        idx_e = mod(idx_e,4) + 1
-        do while (mod(idx_e,4) + 1 <= idx_i)
-            call addSide(res, buildSide(corners(:,idx_e), corners(:,mod(idx_e,4) + 1)))
-            idx_e = mod(idx_e, 4) + 1
+        idx = mod(idx_e,4) + 1
+        call addSide(res, buildSide(end%position, corners(:,idx)))
+
+        
+        cell_side%init%position = corners(:,idx)
+        cell_side%end%position  = corners(:,mod(idx,4) + 1)
+        do while (.not. (all(cell_side%getCell() .eq. floor(init%position)) .and. &
+                 (cell_side%getEdge() == init%getEdge()) ))
+                 call addSide(res, buildSide(cell_side%init%position, cell_side%end%position))
+                cell_side%init%position = corners(:,mod(idx,4) + 1)
+                cell_side%end%position  = corners(:,mod(idx + 1,4) + 1)
+                idx = idx + 1
         end do
-        call addSide(res, buildSide(corners(:,idx_e), init%position))
+        call addSide(res, buildSide(cell_side%init%position, init%position))
 
     end function
 

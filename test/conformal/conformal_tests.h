@@ -21,10 +21,8 @@ extern "C" int test_fhash_coords();
 extern "C" int test_fhash_array();
 extern "C" int test_fhash_add_triangle();
 extern "C" int test_fhash_cellmap_set_get();
-extern "C" int test_conformal_edges_open();
-extern "C" int test_conformal_faces_open();
-extern "C" int test_conformal_edges_closed();
-extern "C" int test_conformal_faces_closed();
+extern "C" int test_conformal_filling_open();
+extern "C" int test_conformal_filling_closed();
 extern "C" int test_conformal_edge_next_cell();
 
 
@@ -50,8 +48,6 @@ TEST(conformal, fhash_array)               { EXPECT_EQ(0, test_fhash_array()); }
 TEST(conformal, fhash_add_triangle)        { EXPECT_EQ(0, test_fhash_add_triangle()); }
 TEST(conformal, fhash_cellmap_set_get)     { EXPECT_EQ(0, test_fhash_cellmap_set_get()); }
 
-TEST(conformal, conformal_edges_open)        { EXPECT_EQ(0, test_conformal_edges_open()); }
-TEST(conformal, conformal_faces_open)        { EXPECT_EQ(0, test_conformal_faces_open()); }
-TEST(conformal, conformal_edges_closed)        { EXPECT_EQ(0, test_conformal_edges_closed()); }
-TEST(conformal, conformal_faces_closed)        { EXPECT_EQ(0, test_conformal_faces_closed()); }
+TEST(conformal, conformal_filling_open)        { EXPECT_EQ(0, test_conformal_filling_open()); }
+TEST(conformal, conformal_filling_closed)        { EXPECT_EQ(0, test_conformal_filling_closed()); }
 TEST(conformal, conformal_edge_next_cell)        { EXPECT_EQ(0, test_conformal_edge_next_cell()); }

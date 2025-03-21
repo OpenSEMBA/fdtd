@@ -159,6 +159,7 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: n_faces_media = 0
       TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: face_media => NULL ()
       TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
+      real (kind=rkind) :: cfl = 1.0
    END TYPE ConformalMedia_t
 
    !------------------------------------------------------------------------------

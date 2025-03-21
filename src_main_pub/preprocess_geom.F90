@@ -144,7 +144,8 @@ CONTAINS
 
 
       if (associated(this%conformalRegs%volumes)) then 
-         conformal_media = buildConformalMedia(this%conformalRegs, this%despl)
+         conformal_media = buildConformalMedia(this%conformalRegs)
+         sgg%dt = sgg%dt*conformal_media%cfl
       end if
 
 
