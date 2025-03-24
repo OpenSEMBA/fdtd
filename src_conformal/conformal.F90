@@ -149,7 +149,7 @@ contains
       integer :: face 
       do face = FACE_X, FACE_Z
          sides_on_face = getSidesOnFace(sides, face)
-         contour = buildSidesContour(sidesOnFace)
+         contour = buildSidesContour(sides_on_face)
          if (size(contour) /= 0) then 
             ratio = 1.0 - contourArea(contour)
             call addFace(faces, cell, face, ratio)
