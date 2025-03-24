@@ -2,7 +2,7 @@ module cell_map_mod
 
     use geometry_mod, only: triangle_t, side_t, FACE_X, FACE_Y, FACE_Z, isNewSide
     use fhash, only: fhash_tbl_t, key=>fhash_key
-
+    use NFDETypes, only: rkind
     implicit none
 
 
@@ -17,7 +17,7 @@ module cell_map_mod
     end type
 
     type, public :: cfl_info_t
-        real, dimension(3) :: area = [1,1,1], length = [1,1,1]
+        real (kind=rkind), dimension(3) :: area = [1,1,1], length = [1,1,1]
     end type
 
     type, extends(fhash_tbl_t) :: cfl_map_t
@@ -58,7 +58,7 @@ contains
         type(side_map_t) :: side_map, side_map_on
         type(cell_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
-        integer :: i
+        integer (kind=4) :: i
         call buildMapOfTrisOnFaces(tri_map, triangles)
         call buildMapOfSidesFromTrisNotOnFaces(side_map, triangles)
         call buildMapOfSidesOnEdgeFromTrisOnFaces(side_map_on, triangles)
@@ -76,7 +76,7 @@ contains
     function mergeKeys(tri_keys, side_keys) result(res)
         type(cell_t), dimension(:), allocatable, intent(in) :: tri_keys, side_keys
         type(cell_t), dimension(:), allocatable :: res, aux
-        integer :: i
+        integer (kind=4) :: i
         if (size(tri_keys) == 0) then 
             allocate(res(0))
         else
@@ -105,7 +105,7 @@ contains
     logical function isNewKey(keys, k) 
         type(cell_t), dimension(:), allocatable, intent(in) :: keys
         type(cell_t), intent(in) :: k
-        integer :: i
+        integer (kind=4) :: i
         isNewKey = .true.
         if (size(keys) /= 0) then 
             do i = 1, size(keys)
@@ -118,7 +118,7 @@ contains
         type(triangle_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
-        integer :: i, j
+        integer (kind=4) :: i, j
         integer (kind=4), dimension(3) :: cell
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
@@ -132,7 +132,7 @@ contains
         type(side_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
-        integer :: i, j
+        integer (kind=4) :: i, j
         integer (kind=4), dimension(3) :: cell
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
@@ -152,7 +152,7 @@ contains
         type(side_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
         type(side_t), dimension(3) :: sides
-        integer :: i, j
+        integer (kind=4) :: i, j
         integer (kind=4), dimension(3) :: cell
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(triangles)
@@ -358,9 +358,9 @@ contains
         class(cfl_map_t) :: this
         class(*), allocatable :: alloc_list
         type(cfl_info_t) :: aux_cfl
-        integer (kind=4), dimension(3) :: cell
-        integer :: direction
-        real :: ratio
+        integer (kind=4), dimension(3), intent(in) :: cell
+        integer (kind=4), intent(in) :: direction
+        real (kind=rkind), intent(in) :: ratio
         type(cell_t), dimension(:), allocatable :: aux_keys
 
         if (this%hasKey(cell)) then 
@@ -390,9 +390,9 @@ contains
         
         class(*), allocatable :: alloc_list
         type(cfl_info_t) :: aux_cfl
-        integer (kind=4), dimension(3) :: cell
-        integer :: direction
-        real :: ratio
+        integer (kind=4), dimension(3), intent(in) :: cell
+        integer (kind=4), intent(in) :: direction
+        real (kind=rkind), intent(in) :: ratio
 
         type(cell_t), dimension(:), allocatable :: aux_keys
         if (this%hasKey(cell)) then 

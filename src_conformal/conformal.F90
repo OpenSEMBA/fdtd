@@ -71,7 +71,7 @@ contains
       real (kind=rkind) :: res, a_ratio, l_ratio 
       type(cfl_map_t) :: cfl_map
       type(cfl_info_t) :: cfl_info
-      integer, dimension(3) :: cell, aux_cell
+      integer (kind=4), dimension(3) :: cell, aux_cell
       integer :: idx1, idx2
       integer :: i,j
       res = 1.0
@@ -120,13 +120,13 @@ contains
 
 
    subroutine fillEdgesFromSides(cell, sides, on_sides, edges, edge_ratios)
-      integer, dimension(3), intent(in) :: cell
+      integer (kind=4), dimension(3), intent(in) :: cell
       type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios
       type(side_t), dimension(:), allocatable :: sides_in_cell
       real (kind=rkind) :: ratio, delta
-      integer :: face, edge
+      integer (kind=4) :: face, edge
       sides_in_cell = buildCellSideSet(sides, on_sides)
       do j = 1, size(sides_in_cell)
          edge = sides_in_cell(j)%getEdge()
@@ -139,14 +139,14 @@ contains
    end subroutine
 
    subroutine fillFacesFromSides(cell, sides, faces, face_ratios)
-      integer, dimension(3), intent(in) :: cell
+      integer (kind=4), dimension(3), intent(in) :: cell
       type(side_t), dimension(:), allocatable, intent(in) :: sides
       type(side_t), dimension(:), allocatable :: sides_on_face
       type (face_t), dimension (:), allocatable, intent(inout) :: faces
       real (kind=rkind), dimension(:), allocatable, intent(inout) :: face_ratios
       type(side_t), dimension(:), allocatable :: contour
       real (kind=rkind) :: ratio, delta
-      integer :: face 
+      integer (kind=4) :: face 
       do face = FACE_X, FACE_Z
          sides_on_face = getSidesOnFace(sides, face)
          contour = buildSidesContour(sides_on_face)
@@ -163,7 +163,7 @@ contains
       type (face_t), dimension (:), allocatable :: faces
       type(side_t), dimension(:), allocatable :: sides
       real (kind=rkind), dimension(:), allocatable :: face_ratios
-      integer, dimension(3) :: cell
+      integer (kind=4), dimension(3) :: cell
       integer :: i
       allocate(faces(0))
       allocate(face_ratios(0))
@@ -179,7 +179,7 @@ contains
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       type (side_t), dimension (:), allocatable :: sides, on_sides
       real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios
-      integer, dimension(3) :: cell
+      integer (kind=4), dimension(3) :: cell
       integer :: i
       allocate(edges(0))
       allocate(edge_ratios(0))
@@ -194,8 +194,8 @@ contains
    subroutine addEdge(edges, cell, edge, ratio)
       type(edge_t), dimension(:), allocatable, intent(inout) :: edges
       type(edge_t), dimension(:), allocatable :: aux
-      integer, dimension(3), intent(in) :: cell
-      integer :: edge 
+      integer (kind=4), dimension(3), intent(in) :: cell
+      integer (kind=4) :: edge 
       type(edge_t) :: new_edge
       real (kind=rkind) :: ratio
       allocate(aux(size(edges) + 1))
@@ -211,8 +211,8 @@ contains
    subroutine addFace(faces, cell, face, ratio)
       type(face_t), dimension(:), allocatable, intent(inout) :: faces
       type(face_t), dimension(:), allocatable :: aux
-      integer, dimension(3), intent(in) :: cell
-      integer :: face
+      integer (kind=4), dimension(3), intent(in) :: cell
+      integer (kind=4) :: face
       type(face_t) :: new_face
       real (kind=rkind) :: ratio
       allocate(aux(size(faces) + 1))
