@@ -67,6 +67,30 @@ def test_coated_antenna(tmp_path):
         rtol=0.0, atol=10e-6)
 
 
+@no_mtln_skip
+@pytest.mark.mtln
+def test_unshielded_multiwire(tmp_path):
+    fn = CASES_FOLDER + 'berenger/berenger_mtl.fdtd.json'
+    solver = FDTD(input_filename=fn, 
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+
+    solver.run()
+
+    probe_current = solver.getSolvedProbeFilenames("mid_point_bundle")[0]
+    probe_files = [probe_current]
+
+    p_expected = Probe(
+        OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+
+    p_solved = Probe(probe_files[0])
+    assert np.allclose(
+        p_expected.data.to_numpy()[:, 0:3], 
+        p_solved.data.to_numpy()[:, 0:3], 
+        rtol=1e-5, atol=1e-6)
+    
+    
+
 def test_holland(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(input_filename=fn, 
