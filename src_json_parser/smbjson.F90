@@ -2891,6 +2891,15 @@ contains
 
       end function
 
+      function buildPassthroughWire(child_cable) result(res)
+         type(cable_t), intent(in) :: child_cable
+         type(cable_t) :: res
+         res%isPassthrough = .true.
+         res%name = child_cable%name//'_passthrough'
+         res%step_size = child_cable%step_size
+         res%transfer_impedance = noTransferImpedance()
+      end function
+
       subroutine assignExternalRadius(res, mat)
          type(cable_t), intent(inout) :: res
          type(json_value_ptr) :: mat
