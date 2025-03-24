@@ -141,13 +141,15 @@ contains
    subroutine fillFacesFromSides(cell, sides, faces, face_ratios)
       integer, dimension(3), intent(in) :: cell
       type(side_t), dimension(:), allocatable, intent(in) :: sides
+      type(side_t), dimension(:), allocatable :: sides_on_face
       type (face_t), dimension (:), allocatable, intent(inout) :: faces
       real (kind=rkind), dimension(:), allocatable, intent(inout) :: face_ratios
       type(side_t), dimension(:), allocatable :: contour
       real (kind=rkind) :: ratio, delta
       integer :: face 
       do face = FACE_X, FACE_Z
-         contour = buildSidesContour(getSidesOnFace(sides, face))
+         sides_on_face = getSidesOnFace(sides, face)
+         contour = buildSidesContour(sidesOnFace)
          if (size(contour) /= 0) then 
             ratio = 1.0 - contourArea(contour)
             call addFace(faces, cell, face, ratio)
@@ -159,6 +161,7 @@ contains
    subroutine fillConformalFaces(cell_map, faces, face_ratios)
       type(cell_map_t), intent(in) :: cell_map
       type (face_t), dimension (:), allocatable :: faces
+      type(side_t), dimension(:), allocatable :: sides
       real (kind=rkind), dimension(:), allocatable :: face_ratios
       integer, dimension(3) :: cell
       integer :: i
@@ -166,13 +169,15 @@ contains
       allocate(face_ratios(0))
       do i = 1, size(cell_map%keys)
          cell = cell_map%keys(i)%cell 
-         call fillFacesFromSides(cell, cell_map%getSidesInCell(cell), faces, face_ratios)
+         sides = cell_map%getSidesInCell(cell)
+         call fillFacesFromSides(cell, sides , faces, face_ratios)
       end do
    end subroutine
 
    subroutine fillConformalEdges(cell_map, edges, edge_ratios)
       type(cell_map_t), intent(in) :: cell_map
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
+      type (side_t), dimension (:), allocatable :: sides, on_sides
       real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios
       integer, dimension(3) :: cell
       integer :: i
@@ -180,7 +185,9 @@ contains
       allocate(edge_ratios(0))
       do i = 1, size(cell_map%keys)
          cell = cell_map%keys(i)%cell 
-         call fillEdgesFromSides(cell, cell_map%getSidesInCell(cell),cell_map%getOnSidesInCell(cell), edges, edge_ratios)
+         sides = cell_map%getSidesInCell(cell) 
+         on_sides = cell_map%getOnSidesInCell(cell)
+         call fillEdgesFromSides(cell, sides, on_sides, edges, edge_ratios)
       end do
    end subroutine
     
