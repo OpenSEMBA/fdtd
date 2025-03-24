@@ -31,6 +31,7 @@ endif()
 target_link_libraries(smbjson_test_fortran
     smbjson 
     fhash 
+
     ${JSONFORTRAN_LIB}
 )
 

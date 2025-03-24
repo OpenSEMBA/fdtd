@@ -7,6 +7,7 @@
 #ifdef CompileWithSMBJSON
     #include "smbjson/smbjson_tests.h"
 #endif
+#include "conformal/conformal_tests.h"
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

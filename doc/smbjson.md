@@ -167,6 +167,7 @@ The `elements` entry contains an array of JSON objects, each of which represents
   + `node`, representing a point in space. Elements with this type include a `<coordinateIds>` entry which is an array of a single integer representing the `id` of a coordinate and which must exist in the within the `mesh` `coordinates` list.
   + `polyline`, representing an oriented collection of segments. It must contain a list `<coordinateIds>` with at least two coordinates.
   + `cell`, containing a list of one or more `<intervals>` defined following the [interval convention](#the-interval-convention).
+  + `conformalVolume`, containing a list of one or more `<intervals>` representing the structured region of the volume, and a list of '<triangles>'((#triangles)) representing the conformal region of the volume.
 
 Below there is an example of a mesh object which includes several types of elements.
 
@@ -185,6 +186,7 @@ Below there is an example of a mesh object which includes several types of eleme
         {"id": 1, "type": "node", "coordinateIds": [2]},
         {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
         {"id": 3, "type": "cell", "intervals": [ [ [1, 1, 1], [19, 19, 21] ] ] }
+        {"id": 4, "type": "conformalVolume", "intervals": [ [ [1, 1, 1], [19, 19, 21] ] ], "triangles" : [[1,2,3]] }
     ]
 }
 ```
@@ -235,6 +237,9 @@ An interval allows specifying regions within the grid which can be a point, an o
     ]
 }
 ```
+##### Triangles
+
+Each triangle is a list of three `<coordinateId>`, representing the vertices of the triangle. Vertices have to be oriented so the normal of each triangle points outwards the volume. 
 
 ## `[materials]`
 This entry is an array formed by all the physical models contained in the simulation. Each object within the array must contain:
