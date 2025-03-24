@@ -34,7 +34,6 @@ module mesh_mod
       private
       type(fhash_tbl_t) :: coordinates ! Map of CoordinateIds to relative coordinates.
       type(fhash_tbl_t) :: elements    ! Map of ElementIds to elements/cellsRegions.    
-      type(fhash_tbl_t) :: conformal_elements    ! Map of ElementIds to conformal elements/regions.    
    contains
       procedure :: addCoordinate => mesh_addCoordinate
       procedure :: getCoordinate => mesh_getCoordinate
@@ -138,16 +137,8 @@ contains
    subroutine mesh_addConformalRegion(this, id, e)
       class(mesh_t) :: this
       integer, intent(in) :: id
-      class(conformal_region_t), intent(inout) :: e
-      integer :: i, j
-      type(coordinate_t) :: c
-      do i = 1, size(e%triangles)
-         do j = 1, 3
-            c = this%getCoordinate(e%triangles(i)%vertices(j)%id)
-            e%triangles(i)%vertices(j)%position(1:3) = c%position(1:3)
-         end do
-      end do
-      call this%conformal_elements%set(key(id), value=e)
+      class(conformal_region_t), intent(in) :: e
+      call this%elements%set(key(id), value=e)
    end subroutine
 
    function mesh_getCoordinate(this, id, found) result(res)
@@ -225,8 +216,12 @@ contains
 
       select type(d)
          type is (cell_region_t)
-         res = d
-         if (present(found)) found = .true.
+            res = d
+            if (present(found)) found = .true.
+         type is (conformal_region_t)
+            if (size(d%intervals) == 0) return
+            res%intervals = d%intervals
+            if (present(found)) found = .true.
       end select
 
    end function
@@ -270,13 +265,15 @@ contains
       class(*), allocatable :: d
 
       if (present(found)) found = .false.
-      call this%conformal_elements%get_raw(key(id), d, stat)
+      call this%elements%get_raw(key(id), d, stat)
       if (stat /= 0) return
 
       select type(d)
+         type is (cell_region_t)
+            return
          type is (conformal_region_t)
-         res = d
-         if (present(found)) found = .true.
+            res = d
+            if (present(found)) found = .true.
       end select
 
    end function

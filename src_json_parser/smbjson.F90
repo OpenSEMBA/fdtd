@@ -259,22 +259,19 @@ contains
                 case (J_ELEM_TYPE_CONF_VOLUME) 
                   block 
                      type(conformal_region_t) :: cV
-                     type(cell_region_t) :: cR
+                     type(coordinate_t) :: c
+                     integer :: j, k
                      cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+                     do k = 1, size(cV%triangles)
+                        do j = 1, 3
+                           c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
+                           cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+                        end do
+                     end do
                      cV%type = REGION_TYPE_VOLUME
-                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                     cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      call mesh%addConformalRegion(id, cV)
-                     call mesh%addCellRegion(id, cR)
                   end block
-               !  case (J_ELEM_TYPE_CONF_VOLUME) 
-               !    block 
-               !       type(conformal_region_t) :: cV
-               !       type(cell_region_t) :: cR
-               !       cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-               !       cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
-               !       call mesh%addConformalRegion(id, cV)
-               !       call mesh%addCellRegion(id, cR)
-               !    end block
                 case default
                   write (error_unit, *) 'Invalid element type'
                end select
@@ -333,6 +330,7 @@ contains
                res(i)%vertices(j)%id = triangle(j)
             end do
          end do
+         
 
       end function
 
@@ -576,9 +574,7 @@ contains
       type(conformal_region_t) :: cR
       type(triangle_t), dimension(:), allocatable :: aux_tris
       integer :: i, j
-
-      ! allocate(res%volumes(0))
-      ! allocate(res%surfaces(0))
+      logical :: found
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
 
@@ -590,9 +586,11 @@ contains
       end if
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
-            cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j))
-            if (cR%type == REGION_TYPE_VOLUME) call appendRegion(res%volumes, cR)
-            if (cR%type == REGION_TYPE_SURFACE) call appendRegion(res%surfaces, cR)
+            cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
+            if (found) then 
+               if (cR%type == REGION_TYPE_VOLUME) call appendRegion(res%volumes, cR)
+               if (cR%type == REGION_TYPE_SURFACE) call appendRegion(res%surfaces, cR)
+            end if
          end do
       end do
 
@@ -617,7 +615,6 @@ contains
             do i = 1, size(aux)
                regions(i) = aux(i)
             end do
-            ! regions(i+1)%triangles = region%triangles
          end if
       end subroutine
 

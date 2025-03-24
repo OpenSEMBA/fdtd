@@ -11,6 +11,7 @@ module conformal_region_mod
 
     type, public :: conformal_region_t
         type(triangle_t), dimension(:), allocatable :: triangles
+        type(cell_interval_t), dimension(:), allocatable :: intervals
         integer :: type
     end type
 
