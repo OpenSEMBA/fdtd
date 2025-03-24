@@ -256,11 +256,13 @@ contains
 
     function buildCellSideSet(sides, on_sides) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides
+        type(side_t), dimension(:), allocatable :: sides_on_face
         type(side_t), dimension(:), allocatable :: contour, aux, res
         integer :: face, edge
         allocate(res(0))
         do face = FACE_X, FACE_Z
-            contour = buildSidesContour(getSidesOnFace(sides, face))
+            sides_on_face = getSidesOnFace(sides, face)
+            contour = buildSidesContour(sides_on_face)
             call addNewSides(res, contour)
         end do
         do edge = EDGE_X, EDGE_Z
