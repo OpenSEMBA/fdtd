@@ -211,7 +211,7 @@ CONTAINS
 
  
    IF (n > 0) THEN
-      i = 1  ! se empieza en 1 porque el primer argumento es siempre el nombre del ejecutable
+      i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
       DO while (i <= n)
          CALL getcommandargument (l%chaininput, i, l%chain, l%length, statuse)
          IF (statuse /= 0) THEN
@@ -1789,7 +1789,7 @@ CONTAINS
 
    IF (n > 0) THEN
       num_nfdes=0
-      i = 1
+      i = 2
       DO while (i <= n)
          CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse)
          IF (statuse /= 0) THEN
@@ -1833,7 +1833,7 @@ CONTAINS
       END DO
       if (num_nfdes > 1) then
          temp_numnfdes=0
-         i = 1 ! se empieza en 1 porque el primer argumento es siempre el nombre del ejecutable
+         i = 2 ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
          DO while (i <= n)
             CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse)
              IF (statuse /= 0) THEN
@@ -1922,7 +1922,7 @@ CONTAINS
 
    temp_numnfdes=0
    IF (n > 0) THEN
-   i = 1  ! se empieza en 1 porque el primer argumento es siempre el nombre del ejecutable
+   i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
       DO while (i <= n)
          CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse)
          IF (statuse /= 0) THEN

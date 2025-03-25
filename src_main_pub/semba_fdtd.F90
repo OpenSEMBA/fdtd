@@ -333,7 +333,7 @@ PROGRAM SEMBA_FDTD_launcher
 !!!!!!!!!!!!!!!!!!!!!!!
    sgg%extraswitches=parser%switches
 !!!da preferencia a los switches por linea de comando
-   CALL getcommandargument (l%chain2, 0, chaindummy, l%length, statuse)
+   CALL getcommandargument (l%chain2, 1, chaindummy, l%length, statuse)
 
    l%chain2=trim(adjustl(l%chain2))
    chaindummy=trim(adjustl(chaindummy))
