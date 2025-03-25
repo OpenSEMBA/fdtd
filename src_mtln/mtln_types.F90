@@ -139,6 +139,10 @@ module mtln_types_mod
       generic, public :: operator(==) => connector_eq
    end type
 
+   type :: passthrough_t
+      integer :: elemId
+   end type
+
    type, public :: cable_t
       character (len=:), allocatable :: name
       real, allocatable, dimension(:,:) :: resistance_per_meter
@@ -153,6 +157,7 @@ module mtln_types_mod
       type(connector_t), pointer :: end_connector => null()
       type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
       logical :: isPassthrough = .false.
+      logical :: isUnshielded = .false.
 
    contains
       private
@@ -174,6 +179,7 @@ module mtln_types_mod
 
    type, public :: mtln_t
       type(cable_t), dimension(:), pointer :: cables
+      type(passthrough_t), dimension(:), allocatable :: passthrough_tws
       type(terminal_network_t), dimension(:), allocatable :: networks
       type(probe_t), dimension(:), allocatable :: probes
       type(connector_t), dimension(:), pointer :: connectors

@@ -56,6 +56,7 @@ module smbjson
       procedure, private :: readVolumicProbes
       procedure, private :: readThinWires
       procedure, private :: readThinSlots
+      procedure, private :: addPassthroughThinWires
       !
       !
       procedure, private :: getLogicalAt
@@ -177,7 +178,10 @@ contains
 
 #ifdef CompileWithMTLN
       res%mtln = this%readMTLN(res%despl)
+      call this%addPassthroughThinWires(res%tWires, res%mtln%passthrough_tws)
 #endif
+
+
 
    end function
 
@@ -1487,11 +1491,63 @@ contains
       end function
    end function
 
+   subroutine addPassthroughThinWires(this, thin_wires, passthrough_tws)
+      class(parser_t) :: this
+      type(ThinWires), intent(inout) :: thin_wires
+      type(passthrough_t), dimension(:), allocatable, intent(in) :: passthrough_tws
+      type(ThinWires) :: aux
+      integer :: i, j
+      allocate(aux%tw(size(thin_wires%tw) + size(passthrough_tws)))
+      aux%tw(1:size(thin_wires%tw)) = thin_wires%tw(1:size(thin_wires%tw))
+      j = size(thin_wires%tw) + 1
+      do i = 1, size(passthrough_tws)
+         aux%tw(j) = readPassthroughThinWire(passthrough_tws(i))
+         j = j + 1
+      end do
+      deallocate(thin_wires%tw)
+      allocate(thin_wires%tw(size(aux%tw)))
+      thin_wires%tw = aux%tw
+      thin_wires%n_tw = size(thin_wires%tw)
+      thin_wires%n_tw_max = size(thin_wires%tw)
+   contains
+      function readPassthroughThinWire(passthrough_tw) result(res)
+         type(passthrough_t), intent(in) :: passthrough_tw
+         type(ThinWire) :: res
+         type(linel_t), dimension(:), allocatable :: linels
+         type(polyline_t) :: polyline
+         character (len=MAX_LINE) :: tagLabel
+         integer :: i
+         res%rad = 1e-4
+         res%dispfile = trim(adjustl(" "))
+         res%dispfile_LeftEnd = trim(adjustl(" "))
+         res%dispfile_RightEnd = trim(adjustl(" "))
+
+         polyline = this%mesh%getPolyline(passthrough_tw%elemId)
+         linels = this%mesh%polylineToLinels(polyline)
+         write(tagLabel, '(i10)') passthrough_tw%elemId
+
+         res%n_twc = size(linels)
+         res%n_twc_max = size(linels)
+         allocate(res%twc(size(linels)))
+         do i = 1, size(linels)
+            res%twc(i)%srcfile = 'None'
+            res%twc(i)%srctype = 'None'
+            res%twc(i)%m = 0.0
+            res%twc(i)%i = linels(i)%cell(1)
+            res%twc(i)%j = linels(i)%cell(2)
+            res%twc(i)%k = linels(i)%cell(3)
+            res%twc(i)%d = abs(linels(i)%orientation)
+            res%twc(i)%nd = linels(i)%tag
+            res%twc(i)%tag = trim(adjustl(tagLabel))
+         end do
+      end function
+   end subroutine
+
    function readThinWires(this) result (res)
       class(parser_t) :: this
       type(ThinWires) :: res
       type(materialAssociation_t), dimension(:), allocatable :: mAs
-      integer :: i, j
+      integer :: i, j, nPTW
       logical :: found
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
@@ -1505,7 +1561,6 @@ contains
                if (isThinWire(mAs(i))) nTw = nTw+1
             end do
          end if
-
          allocate(res%tw(nTw))
          res%n_tw = size(res%tw)
          res%n_tw_max = size(res%tw)
@@ -1921,10 +1976,10 @@ contains
          ! if (res%containedWithinElementId == -1) then
          !    write(error_unit, *) errorMsgInit, "multiwire associations must include: ", J_MAT_ASS_CAB_CONTAINED_WITHIN_ID
          ! end if
-         if (.not. (this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)) .and. &
-            (this%mesh%checkElementId(res%containedWithinElementId) /= 0)) then
-            write(error_unit, *) errorMsgInit, "element with id ", res%containedWithinElementId, " not found."
-         end if
+         ! if (.not. (this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)) .and. &
+         !    (this%mesh%checkElementId(res%containedWithinElementId) /= 0)) then
+         !    write(error_unit, *) errorMsgInit, "element with id ", res%containedWithinElementId, " not found."
+         ! end if
       end if
       
    contains 
@@ -2100,8 +2155,9 @@ contains
             call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, ncc)
             call addElemIdToPositionMap(elemIdToPosition, cables(i)%elementIds)
 
-            if (mtln_res%cables(ncc)%isPassthrough) then 
-               call addPassthroughWire(mtln_res%cables)
+            if (mtln_res%cables(ncc)%isUnshielded) then 
+               call addPassthroughTW(mtln_res%passthrough_tws, cables(i))
+               call addPassthroughWire(mtln_res%cables, cables(i))
                ncc = ncc + 1
             end if
 
@@ -2116,10 +2172,17 @@ contains
             mat = this%matTable%getId(cables(i)%materialId)
             if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
                parentId = cables(i)%containedWithinElementId
-               if (parentId == -1) then
+               ! unshielded multiwire in MTL standalone mode
+               if (parentId == -1 .and. .not. mtln_res%cables(j)%isUnshielded) then
                   mtln_res%cables(j)%parent_cable => null()
                   mtln_res%cables(j)%conductor_in_parent = 0
-               else 
+               ! unshielded multiwire in 3D FDTD
+               else if (parentId == -1 .and. mtln_res%cables(j)%isUnshielded) then
+                  mtln_res%cables(j)%parent_cable => mtln_res%cables(j+1)
+                  mtln_res%cables(j)%conductor_in_parent = 1
+                  j = j + 1
+               else
+               ! shielded multwire
                   call elemIdToCable%get(key(parentId), value=index)
                   mtln_res%cables(j)%parent_cable => mtln_res%cables(index)
                   mtln_res%cables(j)%conductor_in_parent = getParentPositionInMultiwire(parentId)
@@ -2867,7 +2930,6 @@ contains
          character(:), allocatable :: materialType
 
          res%name = j_cable%name
-
          res%step_size = buildStepSize(j_cable)
          res%external_field_segments = mapSegmentsToGridCoordinates(j_cable)
 
@@ -2886,7 +2948,7 @@ contains
 
          else if (materialType == J_MAT_TYPE_MULTIWIRE) then
             call assignPULProperties(res, material, size(j_cable%elementIds))
-
+            if (j_cable%containedWithinElementId == -1) res%isUnshielded = .true.
          else
             write(error_unit, *) "Error reading cable: is neither wire nor multiwire"
          end if
@@ -2898,26 +2960,52 @@ contains
 
       end function
 
-      subroutine addPassthroughWire(mtl_cables)
+      subroutine addPassthroughTW(passthrough_tws, cable)
+         type(passthrough_t), dimension(:), allocatable, intent(inout) :: passthrough_tws
+         type(passthrough_t), dimension(:), allocatable :: aux_tws
+         type(materialAssociation_t), intent(in) :: cable
+         integer :: n
+         if (.not. allocated(passthrough_tws)) allocate(passthrough_tws(0))
+         n =  size(passthrough_tws)
+         allocate(aux_tws(n + 1))
+         aux_tws(1:n) = passthrough_tws
+         aux_tws(n+1)%elemId = cable%elementIds(1)
+         deallocate(passthrough_tws)
+         allocate(passthrough_tws(n+1))
+         passthrough_tws = aux_tws
+      end subroutine
+
+      subroutine addPassthroughWire(mtl_cables, cable)
          type(cable_t), dimension(:), pointer, intent(inout):: mtl_cables
+         type(materialAssociation_t), intent(in) :: cable
          type(cable_t), dimension(:), pointer :: aux_cables
          integer :: n
          n = size(mtl_cables)
          allocate(aux_cables(n + 1))
          aux_cables(1:n) = mtl_cables
-         aux_cables(n + 1) = buildPassthroughWire(mtl_cables(n))
+         aux_cables(n + 1) = buildPassthroughWire(mtl_cables(n), cable)
          deallocate(mtl_cables)
          allocate(mtl_cables(size(aux_cables)))
          mtl_cables = aux_cables
       end subroutine
 
-      function buildPassthroughWire(child_cable) result(res)
+
+      function buildPassthroughWire(child_cable, cable) result(res)
          type(cable_t), intent(in) :: child_cable
+         type(materialAssociation_t), intent(in) :: cable
          type(cable_t) :: res
          res%isPassthrough = .true.
          res%name = child_cable%name//'_passthrough'
          res%step_size = child_cable%step_size
          res%transfer_impedance = noTransferImpedance()
+         res%parent_cable => null()
+         res%conductor_in_parent = 0
+         allocate(res%capacitance_per_meter(1,1), source = 0.0)
+         allocate(res%inductance_per_meter(1,1), source = 0.0)
+         allocate(res%resistance_per_meter(1,1), source = 0.0)
+         allocate(res%conductance_per_meter(1,1), source = 0.0)
+         res%external_field_segments = mapSegmentsToGridCoordinates(cable)
+
       end function
 
       subroutine assignExternalRadius(res, mat)
