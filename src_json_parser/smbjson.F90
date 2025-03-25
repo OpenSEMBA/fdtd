@@ -2099,6 +2099,12 @@ contains
             mtln_res%cables(ncc) = read_cable
             call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, ncc)
             call addElemIdToPositionMap(elemIdToPosition, cables(i)%elementIds)
+
+            if (mtln_res%cables(ncc)%isPassthrough) then 
+               call addPassthroughWire(mtln_res%cables)
+               ncc = ncc + 1
+            end if
+
          end do
       end block
 
@@ -2874,12 +2880,13 @@ contains
                call assignDielectricProperties(res, material)
             end if
 
-            if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
-               res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
-            end if
+            ! if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
+            !    res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
+            ! end if
 
          else if (materialType == J_MAT_TYPE_MULTIWIRE) then
             call assignPULProperties(res, material, size(j_cable%elementIds))
+
          else
             write(error_unit, *) "Error reading cable: is neither wire nor multiwire"
          end if
@@ -2890,6 +2897,19 @@ contains
 
 
       end function
+
+      subroutine addPassthroughWire(mtl_cables)
+         type(cable_t), dimension(:), pointer, intent(inout):: mtl_cables
+         type(cable_t), dimension(:), pointer :: aux_cables
+         integer :: n
+         n = size(mtl_cables)
+         allocate(aux_cables(n + 1))
+         aux_cables(1:n) = mtl_cables
+         aux_cables(n + 1) = buildPassthroughWire(mtl_cables(n))
+         deallocate(mtl_cables)
+         allocate(mtl_cables(size(aux_cables)))
+         mtl_cables = aux_cables
+      end subroutine
 
       function buildPassthroughWire(child_cable) result(res)
          type(cable_t), intent(in) :: child_cable

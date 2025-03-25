@@ -1,0 +1,170 @@
+{
+    "format": "FDTD Input file",
+
+    "general": {
+        "timeStep": 30e-12,
+        "numberOfSteps": 1500
+    },
+  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6, 
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+
+    "materials": [
+        {
+            "id": 1,
+            "type": "wire",
+            "radius": 0.01,
+            "isPassthrough" : true
+        },
+        {
+            "id": 2,
+            "type": "terminal",
+            "terminations": [{"type": "open"}]
+        },
+        {
+            "id": 3,
+            "type": "multiwire",
+            "name": "LBerengerToC",
+            "inductancePerMeter" : [
+                [ 8.98e-07 , 2.54e-07 ],
+                [ 3.09e-07 , 3.88e-07 ]
+            ],
+            "capacitancePerMeter" : [
+                [ 1.5985301593546123e-11 , -1.0464604651445143e-11 ],
+                [ -1.2730562351561215e-11 , 3.6996909358258806e-11 ]
+            ]
+        },
+        {
+            "id": 10,
+            "type": "multiwire",
+            "name": "L0SurfQ_ToC",
+            "inductancePerMeter" : [
+                [ 8.45e-07, 2.54e-07],
+                [ 3.09e-07, 3.88e-07 ]
+            ],
+            "capacitancePerMeter" : [
+                [  1.59853016e-11 ,-1.04646047e-11],  
+                [-1.27305624e-11 , 3.69969094e-11]    
+            ]
+            
+        },
+        {
+            "id": 11,
+            "type": "multiwire",
+            "name": "Paul",
+            "inductancePerMeter" : [
+                [7.29321536e-07 ,3.07848814e-07],
+                [3.06584893e-07 ,3.84922247e-07]
+            ],
+            "capacitancePerMeter" : [
+                [  2.29718555e-11 ,-1.83721739e-11],
+                [-1.82967441e-11  ,4.35253329e-11]
+            ]          
+            
+        },
+        {
+            "id": 8,
+            "type": "multiwire",
+            "name": "L_Cinv_C_Pinv",
+            "inductancePerMeter" : 
+                [[8.97597901e-07, 2.53620023e-07],
+                [3.08409262e-07 ,3.87905057e-07]],
+            "capacitancePerMeter" : 
+                [[ 1.59798508e-11, -1.04479435e-11],
+                [-1.27050006e-11 , 3.69767815e-11]]            
+        },
+        {
+            "id": 7,
+            "type": "multiwire",
+            "name": "test",
+			"inductancePerMeter": [
+            ],
+            "capacitancePerMeter": [
+            ]
+            
+        },
+        {
+            "id": 4,
+            "type": "terminal",
+            "terminations": [{"type": "open"},{"type": "open"}]
+        }
+    ],
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [21, 21, 21],
+            "steps": { "x": [0.2], "y": [0.2], "z": [0.2] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [11, 11,  4]},
+            {"id": 2, "relativePosition": [11, 11, 11]},
+            {"id": 3, "relativePosition": [11, 11, 19]},
+            {"id": 4, "relativePosition": [11, 11,  4]},
+            {"id": 5, "relativePosition": [11, 11, 11]},
+            {"id": 6, "relativePosition": [11, 11, 19]},
+            {"id": 7, "relativePosition": [11, 11,  4]},
+            {"id": 8, "relativePosition": [11, 11, 11]},
+            {"id": 9, "relativePosition": [11, 11, 19]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [2]},
+            {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
+            {"id": 5, "type": "polyline", "coordinateIds": [4, 5, 6] },
+            {"id": 6, "type": "polyline", "coordinateIds": [7, 8, 9] },
+            {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [20, 20, 20]]] },
+            {"id": 4, "type": "node", "coordinateIds": [4]}
+        ]
+    },
+
+    "materialAssociations": [
+        { 
+            "type": "cable",
+            "name" : "passthrough_wire",
+            "materialId": 1,
+            "initialTerminalId": 2,
+            "endTerminalId": 2,
+            "elementIds": [2]
+        },
+        { 
+            "type": "cable",
+            "name" : "single_inner_wire",
+            "materialId": 10,
+            "initialTerminalId": 4,
+            "endTerminalId": 4,
+            "elementIds": [5,6], 
+            "containedWithinElementId" : 2
+        }
+    ],
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "berenger.exc",
+            "elementIds": [3],
+            "direction": {
+                "theta": 1.5708,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 0.0,
+                "phi": 0.0
+            }
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "mid_point_new",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [1],
+            "domain": { "type": "time" }
+        }
+    ]
+}

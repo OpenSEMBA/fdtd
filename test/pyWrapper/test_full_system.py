@@ -80,8 +80,9 @@ def test_unshielded_multiwire(tmp_path):
     probe_current = solver.getSolvedProbeFilenames("mid_point_bundle")[0]
     probe_files = [probe_current]
 
+    # file exists but it's empty. Use sampled files and build interpolation with same times as fdtd
     p_expected = Probe(
-        OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+        OUTPUTS_FOLDER+'berenger_multiwire_integral_equation.dat')
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
