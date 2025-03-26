@@ -40,6 +40,7 @@ module smbjson
 #endif
 
       ! private
+      procedure, private :: readAdditionalArguments
       procedure, private :: readGeneral
       procedure, private :: readGrid
       procedure, private :: readMediaMatrix
@@ -148,7 +149,8 @@ contains
       this%elementTable = IdChildTable_t(this%core, this%root, J_MESH//'.'//J_ELEMENTS)
       
       call initializeProblemDescription(res)
-      
+      res%switches = this%readAdditionalArguments()
+
       ! Basics
       res%general = this%readGeneral()
       res%matriz = this%readMediaMatrix()
@@ -279,6 +281,12 @@ contains
             res(i)%end%cell = cellEnd(1:3)
          end do
       end function
+   end function
+
+   function readAdditionalArguments(this) result (res)
+      class (parser_t) :: this
+      character (len=BUFSIZE) :: res
+      res = this%getStrAt(this%root, J_GENERAL//'.'//J__GEN_ADDITIONAL_ARGUMENTS, default = '')
    end function
 
    function readGeneral(this) result (res)
