@@ -286,7 +286,7 @@ contains
    function readAdditionalArguments(this) result (res)
       class (parser_t) :: this
       character (len=BUFSIZE) :: res
-      res = this%getStrAt(this%root, J_GENERAL//'.'//J__GEN_ADDITIONAL_ARGUMENTS, default = '')
+      res = this%getStrAt(this%root, J_GENERAL//'.'//J_GEN_ADDITIONAL_ARGUMENTS, default = '')
    end function
 
    function readGeneral(this) result (res)
