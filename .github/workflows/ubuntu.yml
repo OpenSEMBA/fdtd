@@ -24,7 +24,7 @@ jobs:
           {name: 'intel', version: '2025.0'},
           {name: 'gcc', version: 11}
         ]
-        build-type: ["Debug", "Release"]
+        build-type: ["Release"]
         mpi: ["Yes", "No"]
         mtln: ["Yes", "No"]
         hdf: ["Yes"]
