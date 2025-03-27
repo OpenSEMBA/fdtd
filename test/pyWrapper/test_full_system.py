@@ -433,9 +433,9 @@ def test_rectilinear_mode(tmp_path):
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['value'], getPeakPulse(noRectilinearVertexProbe)['value'], decimal=_FIELD_TOLERANCE)
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['time'], getPeakPulse(noRectilinearVertexProbe)['time'], decimal=_TIME_TOLERANCE)
     
-def testCanExecuteFDTDFromFolderWithSpacesAndAditionalArguments(tmp_path):
+def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_path):
     projectRoot = os.getcwd()
-    folderWitSpaces: str  = os.path.join(tmp_path, "folder with spaces")
+    folderWitSpaces: str  = os.path.join(tmp_path, "spaced bin")
     os.mkdir(folderWitSpaces)
     if platform == 'win32':
         shutil.copy2(NGSPICE_DLL, folderWitSpaces)
@@ -449,6 +449,5 @@ def testCanExecuteFDTDFromFolderWithSpacesAndAditionalArguments(tmp_path):
     solver = FDTD(fn, path_to_exe=pathToExe, run_in_folder=tmp_path)
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
-    assert (solver.getVTKMap() is not None)
-
+    assert (solver.getVTKMap()[0] is not None)
     

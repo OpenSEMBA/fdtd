@@ -2,8 +2,7 @@
     "_format": "FDTD Input file",
     "general": {
         "timeStep": 1.2971876e-09,
-        "numberOfSteps": 23,
-        "additionalArguments": "-sgbc holland"
+        "numberOfSteps": 23
     },
 
     "boundary": {

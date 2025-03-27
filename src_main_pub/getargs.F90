@@ -14,9 +14,15 @@ contains
       integer (kind=4)  :: length, status, posic, binaryPathLenght, argumentStart, argumentEnd
       integer (kind=4) :: n, i, j
 
+      CALL removeDoubleWhiteSpaces(chain2)
+
       CALL getarg(0, binaryPath)
       binaryPathLenght = len(trim(adjustl(binaryPath)))
 
+      if (posic == 1) then 
+         argum = binaryPath
+         return
+      end if
       status=0
       argumentStart=0
       argumentEnd=0
@@ -50,9 +56,29 @@ contains
       return
    end subroutine
 
+   subroutine removeDoubleWhiteSpaces(chain2)
+      integer(kind=4) :: i, j
+      character(LEN=BUFSIZE) :: chain2
+
+      do i=1,len(trim(adjustl(chain2)))
+         if (chain2(i : i)==' ') then
+            rebus: do j=i+1,len(trim(adjustl(chain2)))
+               if (chain2(j : j)/=' ') then
+                  chain2(i+1 :)=chain2(j :)
+                  exit rebus
+               endif
+            end do rebus
+         endif
+      end do
+   
+      end subroutine
+
    function commandargumentcount(chain2)
       character (LEN=BUFSIZE)  ::  chain2, binaryPath
       integer (kind=4)  ::  status,n,commandargumentcount, binaryPathLenght, i
+
+      CALL removeDoubleWhiteSpaces(chain2)
+
       CALL getarg(0, binaryPath)
       binaryPathLenght = len(trim(adjustl(binaryPath)))
 
