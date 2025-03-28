@@ -4,7 +4,8 @@
 
     "general": {
         "timeStep": 10e-11,
-        "numberOfSteps": 2000
+        "numberOfSteps": 2000,
+        "additionalArguments": "-mapvtk"
     },
     
     "boundary": {

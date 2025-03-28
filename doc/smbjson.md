@@ -63,13 +63,15 @@ This object must always be present and contains general information regarding th
 Addtionally, it may contain the following optional entry:
 
 + `<mtlnProblem>` : A bool indicating whether the problem is a pure MTLN problem and will solved using only the MTLN solver. If it is not present, its default value is `false`
++ `<additionalArguments>` : A string with flags. Keep in mind that flags passed by console have higher priority. 
 
 **Example:**
 
 ```json
 "general": {
     "timeStep": 10e-12,
-    "numberOfSteps": 2000
+    "numberOfSteps": 2000,
+    "additionalArguments": "-mapvtk -sgbc"
 }
 ```
 
