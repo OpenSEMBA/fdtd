@@ -18,11 +18,18 @@ contains
 
       CALL getarg(0, binaryPath)
       binaryPathLenght = len(trim(adjustl(binaryPath)))
+      
+      !!Check if binary path is surrounded by double quotes. In that case, returns corrected binary path and lenght
+      if ((chain2(1:1) == '"') .and. (chain2(binaryPathLenght+2 : binaryPathLenght+2) == '"')) then
+        binaryPath = '"' // trim(adjustl(binaryPath)) // '"'
+        binaryPathLenght = binaryPathLenght + 2
+      end if
 
       if (posic == 1) then 
          argum = binaryPath
          return
       end if
+      
       status=0
       argumentStart=0
       argumentEnd=0
@@ -81,6 +88,12 @@ contains
 
       CALL getarg(0, binaryPath)
       binaryPathLenght = len(trim(adjustl(binaryPath)))
+      
+      !!Check if binary path is surrounded by double quotes. In that case, returns corrected binary path and lenght
+      if ((chain2(1:1) == '"') .and. (chain2(binaryPathLenght+2 : binaryPathLenght+2) == '"')) then
+        binaryPath = '"' // trim(adjustl(binaryPath)) // '"'
+        binaryPathLenght = binaryPathLenght + 2
+      end if
 
       n = 1
 
