@@ -339,7 +339,7 @@ class FDTD():
         current_path = os.getcwd()
         folders = [item for item in os.listdir(
             current_path) if os.path.isdir(os.path.join(current_path, item))]
-        if len(folders) != 1:
+        if len(folders) == 0:
             return None
         for folder in folders:
             mapFile = os.path.join(current_path, folder, folder+"_1.vtk")

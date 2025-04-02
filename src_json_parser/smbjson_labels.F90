@@ -125,6 +125,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_GEN_TIME_STEP = "timeStep"
    character (len=*), parameter :: J_GEN_NUMBER_OF_STEPS = "numberOfSteps"
    character (len=*), parameter :: J_GEN_MTLN_PROBLEM = "mtlnProblem"
+   character (len=*), parameter :: J_GEN_ADDITIONAL_ARGUMENTS = "additionalArguments"
 
 
    ! type(Frontera)
