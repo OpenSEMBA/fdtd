@@ -82,7 +82,9 @@ contains
                   case(2)     
                   mtln_solver%bundles(m)%external_field_segments(n)%field => Ey(i, j, k) 
                   case(3)     
-                  mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k) 
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldm => Ez(i, j, k-1)
+                  mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k)
+                  mtln_solver%bundles(m)%external_field_segments(n)%fieldp => Ez(i, j, k+1)
                   end select
             end do
          end do
@@ -208,15 +210,16 @@ contains
       do m = 1, mtln_solver%number_of_bundles
          do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
             punt => mtln_solver%bundles(m)%external_field_segments(n)%field
-            punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent()
-            hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent()
+            punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
+            hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent(m,n)
          end do
       end do
       call mtln_solver%step()
 
       contains
 
-      function getOrientedCurrent() result(res)
+      function getOrientedCurrent(m,n) result(res)
+         integer(kind=4), intent(in) :: m,n
          real(kind=rkind) :: res
          real(kind=rkind) :: curr
          integer (kind=4) :: direction, i
@@ -232,7 +235,8 @@ contains
          res = mtln_solver%bundles(m)%i(1, n) * sign(1.0, real(direction))
       end function
 
-      function computeFieldFromCurrent() result(res)
+      function computeFieldFromCurrent(m,n) result(res)
+         integer (kind=4), intent(in) :: m, n
          real(kind=rkind) :: dS_inverse, factor
          real(kind=rkind) :: res
          integer (kind=4) :: i, j, k, direction
@@ -247,7 +251,7 @@ contains
             dS_inverse = (idxh(i)*idyh(j))
          end select
          factor = (sgg%dt / (eps0)) * dS_inverse
-         res = factor * getOrientedCurrent()
+         res = factor * getOrientedCurrent(m,n)
       end function
 
    end subroutine AdvanceWiresE_mtln

@@ -45,7 +45,10 @@ module mtln_types_mod
       real :: radius = 0.0
       logical :: has_dielectric = .false.
       type(external_dielectric_t) :: dielectric
+      ! real (kind=rkind) :: distanceToAxis = 0.0
+      real (kind=rkind) , pointer  ::  fieldm => null()
       real (kind=rkind) , pointer  ::  field => null()
+      real (kind=rkind) , pointer  ::  fieldp => null()
    contains
       private
       procedure :: external_field_segments_eq 

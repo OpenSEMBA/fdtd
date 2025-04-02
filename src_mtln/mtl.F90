@@ -111,7 +111,6 @@ contains
         call res%initDirections()
         call res%initLCHomogeneous(lpul, cpul)
         call res%initRGHomogeneous(rpul, gpul)
-        
         if (present(dt)) then 
             if (lpul(1,1) /= 0.0) then 
                 max_dt = res%getMaxTimeStep() 
@@ -126,7 +125,9 @@ contains
             end if
         else
             if (lpul(1,1) /= 0.0) then 
-                res%dt = res%getMaxTimeStep() 
+                max_dt = res%getMaxTimeStep() 
+                res%dt = max_dt
+                write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
             end if
         end if
 

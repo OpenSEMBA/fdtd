@@ -1517,7 +1517,15 @@ contains
          type(polyline_t) :: polyline
          character (len=MAX_LINE) :: tagLabel
          integer :: i
-         res%rad = 1e-4
+         res%rad = 1e-3
+
+         res%R_LeftEnd  = 1e10
+         res%L_LeftEnd  = 0.0
+         res%C_LeftEnd  = 0.0
+         res%R_rightEnd = 1e10
+         res%L_rightEnd = 0.0
+         res%C_rightEnd = 0.0
+
          res%dispfile = trim(adjustl(" "))
          res%dispfile_LeftEnd = trim(adjustl(" "))
          res%dispfile_RightEnd = trim(adjustl(" "))
@@ -1526,6 +1534,8 @@ contains
          linels = this%mesh%polylineToLinels(polyline)
          write(tagLabel, '(i10)') passthrough_tw%elemId
 
+
+         
          res%n_twc = size(linels)
          res%n_twc_max = size(linels)
          allocate(res%twc(size(linels)))
@@ -2941,10 +2951,6 @@ contains
             if (this%existsAt(material%p, J_MAT_WIRE_DIELECTRIC)) then
                call assignDielectricProperties(res, material)
             end if
-
-            ! if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
-            !    res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
-            ! end if
 
          else if (materialType == J_MAT_TYPE_MULTIWIRE) then
             call assignPULProperties(res, material, size(j_cable%elementIds))

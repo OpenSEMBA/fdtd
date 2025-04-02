@@ -658,14 +658,25 @@ contains
         character(20) :: line_c, line_g
 
         write(line_c, *) node%line_c_per_meter*node%step/2
-
+        
         allocate(res(0))
+        ! buff = trim("I" // node%name // "_i " // node%name // " " // node%name//"_0 0A")
+        ! call appendToStringArray(res, buff)
         buff = trim("R" // node%name // " " // node%name // " " // end_node//" 1e22")
+        ! buff = trim("R" // node%name // " " // node%name // " " // "7"//" 1e22")
         call appendToStringArray(res, buff)
+
+        ! buff = trim(".probe I(R" // node%name // ",1) ")
+        ! call appendToStringArray(res, buff)
+
+        ! buff = trim("V" // node%name // " " // node%name // " " // end_node//" dc 0")
+        ! call appendToStringArray(res, buff)
         buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
         call appendToStringArray(res, buff)
         buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
         call appendToStringArray(res, buff)
+        ! buff = trim("I" // node%name // "_open " // node%name// " " // node%name // "_I dc 0")
+        ! call appendToStringArray(res, buff)
         
         if (node%line_g_per_meter /= 0) then
             write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
@@ -739,6 +750,7 @@ contains
         else if (termination%termination_type == TERMINATION_SHORT) then 
             res = writeShortNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_OPEN) then 
+            ! res = writeOpenNode(node, termination , '10')
             res = writeOpenNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_CIRCUIT) then 
             res = writeModelNode(node, termination , end_node)
@@ -794,8 +806,9 @@ contains
             res%line_c_per_meter = line_c_per_meter
             res%line_g_per_meter = line_g_per_meter
             res%step = step
-        end block
-
+            end block
+            
+        if (node%termination%termination_type == TERMINATION_open) res%open = .true.
         res%source = node%termination%source
 
     contains
@@ -1090,7 +1103,7 @@ contains
         write(sDelta, '(E10.2)') dt/200
         write(sPrint, '(E10.2)') final_time/print_step
 
-        buff = trim(".option reltol = 0.005")
+        buff = trim(".option reltol = 0.005 gmin=1e-50")
         call appendToStringArray(description, buff)       
         buff = trim(".tran "//sdt//" "//sTime//" 0 "//sDelta)
         call appendToStringArray(description, buff)       

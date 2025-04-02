@@ -105,7 +105,6 @@ contains
         integer :: i
 
         call start()
-        ! call this%loadCodeModels()
         if (present(netlist)) then
             write(*,*) 'load netlist'
             call this%loadNetlist(netlist)
@@ -308,6 +307,7 @@ contains
                 this%nodes%values(i)%time = values(ubound(values,1))
             end if
         end do
+        
     end subroutine
 
     function getNodeVoltage(this, name) result(res)
