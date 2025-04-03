@@ -1499,6 +1499,7 @@ contains
       end function
    end function
 
+#ifdef CompileWithMTLN
    subroutine addPassthroughThinWires(this, thin_wires, passthrough_tws)
       class(parser_t) :: this
       type(ThinWires), intent(inout) :: thin_wires
@@ -1560,7 +1561,7 @@ contains
          end do
       end function
    end subroutine
-
+#endif
    function readThinWires(this) result (res)
       class(parser_t) :: this
       type(ThinWires) :: res
