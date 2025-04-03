@@ -11,7 +11,7 @@ module mtl_bundle_mod
         real, allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
         integer  :: number_of_conductors = 0, number_of_divisions = 0
         real, dimension(:), allocatable :: step_size
-        real, allocatable, dimension(:,:) :: v, i, e_L
+        real, allocatable, dimension(:,:) :: v, i, e_L, q
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         real :: time = 0.0, dt = 1e10
         type(probe_t), allocatable, dimension(:) :: probes
@@ -34,6 +34,7 @@ module mtl_bundle_mod
 
         procedure :: updateSources => bundle_updateSources
         procedure :: advanceVoltage => bundle_advanceVoltage
+        procedure :: advanceCharge => bundle_advanceCharge
         procedure :: advanceCurrent => bundle_advanceCurrent
         procedure :: addTransferImpedance => bundle_addTransferImpedance
         procedure :: setConnectorTransferImpedance => bundle_setConnectorTransferImpedance
@@ -80,6 +81,7 @@ contains
         allocate(this%du(this%number_of_divisions, this%number_of_conductors, this%number_of_conductors), source = 0.0)
         
         allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
+        allocate(this%q(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
         allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         
@@ -312,6 +314,13 @@ contains
         end do
     end subroutine
 
+    subroutine bundle_advanceCharge(this)
+        class(mtl_bundle_t) ::this
+        integer :: i
+        do i = 2, this%number_of_divisions
+            this%q(:, i) = this%q(:,i) - (this%du(1,1,1)/this%dt)*(this%i(:,i) - this%i(:,i-1))
+        end do
+    end subroutine
 
     subroutine bundle_advanceCurrent(this)
         class(mtl_bundle_t) ::this
@@ -330,6 +339,7 @@ contains
         !TODO - revisar
         i_now = this%i
         call this%transfer_impedance%updatePhi(i_prev, i_now)
+
     end subroutine
 
     subroutine bundle_setExternalLongitudinalField(this)
