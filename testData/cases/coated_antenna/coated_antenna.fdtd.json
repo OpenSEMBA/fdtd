@@ -24,12 +24,6 @@
             "dielectric" : {"radius": 6.36e-3,"relativePermittivity" : 3.2}
         },
         {
-            "id": 5,
-            "type": "multiwire",
-            "inductancePerMeter": [[1.4824688299999999e-07]],
-            "capacitancePerMeter": [[7.5053859e-11]]
-        },
-        {
             "id": 2,
             "type": "terminal",
             "terminations": [{"type": "open"}]

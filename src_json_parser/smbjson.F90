@@ -182,7 +182,7 @@ contains
 
 #ifdef CompileWithMTLN
       res%mtln = this%readMTLN(res%despl)
-      call this%addPassthroughThinWires(res%tWires, res%mtln%passthrough_tws)
+      if (size(res%mtln%passthrough_tws) /= 0) call this%addPassthroughThinWires(res%tWires, res%mtln%passthrough_tws)
 #endif
 
 
@@ -1520,6 +1520,7 @@ contains
       thin_wires%tw = aux%tw
       thin_wires%n_tw = size(thin_wires%tw)
       thin_wires%n_tw_max = size(thin_wires%tw)
+      
    contains
       function readPassthroughThinWire(passthrough_tw) result(res)
          type(passthrough_t), intent(in) :: passthrough_tw
@@ -2167,6 +2168,7 @@ contains
          integer :: i, j, ncc
          type(cable_t) :: read_cable
          ncc = 0
+         if (.not. allocated(mtln_res%passthrough_tws)) allocate(mtln_res%passthrough_tws(0))
          do i = 1, size(cables)
             is_read = .true.
             read_cable = readMTLNCable(cables(i), is_read)
@@ -2986,7 +2988,6 @@ contains
          type(passthrough_t), dimension(:), allocatable :: aux_tws
          type(materialAssociation_t), intent(in) :: cable
          integer :: n
-         if (.not. allocated(passthrough_tws)) allocate(passthrough_tws(0))
          n =  size(passthrough_tws)
          allocate(aux_tws(n + 1))
          aux_tws(1:n) = passthrough_tws
