@@ -277,6 +277,33 @@ A `material` with `type` `isotropic` represents an isotropic material with const
 } 
 ```
 
+### `lumped`
+
+TODO TODO
+
+A `material` with `type` `lumped` a material which is equivalent to a lumped circuit element. 
+
+TODO TODO TODO 
+
+several subtypes
+
++ `[relativePermittivity]` is a real which defaults to $1.0$. Must be greater than $1.0$.
++ `[relativePermeability]` is a real which defaults to $1.0$. Must be greater than $1.0$.
++ `[electricConductivity]` is a real which defaults to $0.0$. Must be greater than $0.0$.
++ `[magneticConductivity]` is a real which defaults to $0.0$. Must be greater than $0.0$.
+
+**Example:**
+
+```json
+{
+    "name": "teflon"
+    "id": 1, 
+    "type": "isotropic",
+    "relativePermittivity": 2.5,
+    "electricConducitivity": 1e-6
+} 
+```
+
 ### `multilayeredSurface`
 
 A `multilayeredSurface` must contain the entry `<layers>` which is an array indicating materials which are described in the same way as [isotropic materials](#isotropic) and a `<thickness>`.
