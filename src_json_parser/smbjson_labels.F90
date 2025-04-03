@@ -34,6 +34,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TYPE_SLOT = "thinSlot"
    character (len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
    character (len=*), parameter :: J_MAT_TYPE_MULTIWIRE = "multiwire"
+   character (len=*), parameter :: J_MAT_TYPE_UNSHIELDED_MULTIWIRE = "unshieldedMultiwire"
    character (len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"
    character (len=*), parameter :: J_MAT_TYPE_CONNECTOR = "connector"
    

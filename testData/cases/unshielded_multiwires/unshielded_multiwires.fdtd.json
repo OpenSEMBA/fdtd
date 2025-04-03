@@ -14,38 +14,8 @@
     },
     "materials": [
         {
-            "id": 1,
-            "type": "multiwire",
-            "name": "single_1",
-            "inductancePerMeter": [
-                [
-                    3.88e-07
-                ]
-            ],
-            "capacitancePerMeter": [
-                [
-                    3.565e-11
-                ]
-            ]
-        },
-        {
-            "id": 2,
-            "type": "multiwire",
-            "name": "single_2",
-            "inductancePerMeter": [
-                [
-                    8.47e-07
-                ]
-            ],
-            "capacitancePerMeter": [
-                [
-                    1.631e-11
-                ]
-            ]
-        },
-        {
             "id": 12,
-            "type": "multiwire",
+            "type": "unshieldedMultiwire",
             "name": "L_Cinv_C_Pinv",
             "inductancePerMeter": [
                 [
@@ -70,7 +40,7 @@
         },
         {
             "id": 13,
-            "type": "multiwire",
+            "type": "unshieldedMultiwire",
             "name": "L_Cinv_C_Pinv",
             "inductancePerMeter": [
                 [
@@ -103,24 +73,6 @@
                 {
                     "type": "open"
                 }
-            ]
-        },
-        {
-            "id": 40,
-            "type": "terminal",
-            "terminations": [
-                {
-                    "type": "open"
-                }
-            ]
-        },
-        {
-            "name": "OpenConnector",
-            "id": 204,
-            "type": "connector",
-            "resistance": [
-                1000000000000.0,
-                1000000000000.0
             ]
         }
     ],

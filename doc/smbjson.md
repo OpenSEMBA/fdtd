@@ -324,7 +324,7 @@ Materials of this type must contain:
 
 + `<radius>` as a real number.
 + `<resistancePerMeter>` as a real number.
-+ `[inductancePerMeter]` as a real number. Defaults to `0.0`.
++ `[cellInductancePerMeter]` as a real number. Defaults to `0.0`. If equal to `0.0`, the cell inductance is computed by the solver. 
 
 **Example:**
 
@@ -356,7 +356,7 @@ If the `dielectric` field is present but any of `radius` or `relativePermittivit
 
 ### `multiwire`
 
-A `multiwire`, models $N+1$ electrical wires inside a bundled. The voltages and currents on these wires are solved by a multiconductor transmission lines (MTLN) solver described in:
+A `multiwire`, models $N+1$ electrical wires inside a bundle. The voltages and currents on these wires are solved by a multiconductor transmission lines (MTLN) solver described in:
 
     Paul, C. R. (2007). Analysis of multiconductor transmission lines. John Wiley & Sons.
 
@@ -400,7 +400,36 @@ If the number of wires of the `multiwire` is equal to 1, none of the properties 
     }
 }
 ```
+### `unshieldedMultiwire`
 
+A `unshieldedMultiwire`, models $N$ electrical wires without a surrounding shield in the FDTD domain. The voltages and currents on these wires are solved by a MTLN solver as with `multiwires`, but the interpretation of the inductance and capacitance matrices is slightly different. $N$ conductors forming a `unshieldedMultwire` has $N \times N$ inductance and capacitance matrices, unlike `multiwire`, in which $N+1$ conductors define $NxN$ matrices.
+
+They must contain the following entries:
+
++ `<cellInductancePerMeter>` and `<cellCapacitancePerMeter>` which must be matrices with a size $N \times N$.
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero.
+
+If the number of wires of the `unshieldedMultiwire` is equal to 1, the use of a `wire` is preferred.
+
+
+**Example:**
+
+```json
+{
+    "name": "two_wires_unshielded",
+    "id": 62,
+    "type": "unshieldedMultiwire",
+    "resistancePerMeter" : [62.0e-3,62.0e-3],
+    "cellInductancePerMeter": [
+        [2.4382084E-07, 4.7377505E-08],
+        [4.7377508E-08, 2.4382081E-07]
+    ],
+    "cellCpacitancePerMeter": [
+        [105.5e-12, -20.5e-12],
+        [-20.5e-12, 105.5e-12 ]
+    ]
+}
+```
 ### `terminal`
 
 A `terminal` models a lumped circuit which is assumed to located at one end of a `wire` or `multiwire`. Terminals are assumed to be assigned on points and therefore have zero dimension.

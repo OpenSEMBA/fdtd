@@ -1963,7 +1963,7 @@ contains
       end block
 
       mat = this%matTable%getId(res%materialId)
-      isMultiwire = this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE
+      isMultiwire = (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) .or. (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
       isWireOrMultiwire = &
          this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE .or. isMultiwire 
       
@@ -2138,25 +2138,27 @@ contains
       type(Desplazamiento), intent(in) :: grid
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
-      type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, cables
+      type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, unshielded, cables
 
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
       wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
       multiwires = this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE])
+      unshielded = this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE])
       cables = this%getMaterialAssociations(&
-               [J_MAT_TYPE_WIRE//'     ',&
-                J_MAT_TYPE_MULTIWIRE    ]) 
+               [J_MAT_TYPE_WIRE//'               ', &
+                J_MAT_TYPE_MULTIWIRE//'          ', &
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE]) 
       ! 5 spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
 
-      if (size(multiwires) /= 0) mtln_res%has_multiwires = .true.
+      if (size(multiwires) /= 0 .or. size(unshielded) /= 0) mtln_res%has_multiwires = .true.
 
-      allocate (mtln_res%cables(size(wires) + size(multiwires)))
+      allocate (mtln_res%cables(size(wires) + size(multiwires) + size(unshielded)))
       block
          logical :: is_read
          integer :: i, j, ncc
@@ -2188,17 +2190,16 @@ contains
          j = 1
          do i = 1, size(cables)
             mat = this%matTable%getId(cables(i)%materialId)
-            if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
+            if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_UNSHIELDED_MULTIWIRE) then
+               mtln_res%cables(j)%parent_cable => mtln_res%cables(j+1)
+               mtln_res%cables(j)%conductor_in_parent = 1
+               j = j + 1
+            else if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
                parentId = cables(i)%containedWithinElementId
                ! unshielded multiwire in MTL standalone mode
                if (parentId == -1 .and. .not. mtln_res%cables(j)%isUnshielded) then
                   mtln_res%cables(j)%parent_cable => null()
                   mtln_res%cables(j)%conductor_in_parent = 0
-               ! unshielded multiwire in 3D FDTD
-               else if (parentId == -1 .and. mtln_res%cables(j)%isUnshielded) then
-                  mtln_res%cables(j)%parent_cable => mtln_res%cables(j+1)
-                  mtln_res%cables(j)%conductor_in_parent = 1
-                  j = j + 1
                else
                ! shielded multwire
                   call elemIdToCable%get(key(parentId), value=index)
@@ -2304,7 +2305,8 @@ contains
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
          cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
-                     this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE]) ]
+                     this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE]), &
+                     this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds
             terminations_ini => getTerminationsOnSide(cables(i)%initialTerminalId)
@@ -2962,7 +2964,9 @@ contains
 
          else if (materialType == J_MAT_TYPE_MULTIWIRE) then
             call assignPULProperties(res, material, size(j_cable%elementIds))
-            if (j_cable%containedWithinElementId == -1) res%isUnshielded = .true.
+         else if (materialType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE) then
+            call assignPULProperties(res, material, size(j_cable%elementIds))
+            res%isUnshielded = .true.
          else
             write(error_unit, *) "Error reading cable: is neither wire nor multiwire"
          end if

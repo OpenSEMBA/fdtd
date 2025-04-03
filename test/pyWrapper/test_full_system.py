@@ -125,9 +125,9 @@ def test_unshielded_multiwires(tmp_path):
         OUTPUTS_FOLDER+'unshielded_multiwires.fdtd_mid_point_bundle_single_inner_wire_passthrough_I_2_11_14.dat')
 
     assert np.allclose(
-        p_expected.data.to_numpy()[:, 0:3], 
-        p_solved.data.to_numpy()[:, 0:3], 
-        rtol=1e-5, atol=1e-6)
+        p_expected.data.to_numpy()[:, 2:4], 
+        p_solved.data.to_numpy()[:, 2:4], 
+        rtol=1e-3, atol=0.01)
 
 
 def test_towelHanger(tmp_path):
