@@ -57,7 +57,9 @@ module smbjson
       procedure, private :: readVolumicProbes
       procedure, private :: readThinWires
       procedure, private :: readThinSlots
+#ifdef CompileWithMTLN
       procedure, private :: addPassthroughThinWires
+#endif
       !
       !
       procedure, private :: getLogicalAt
