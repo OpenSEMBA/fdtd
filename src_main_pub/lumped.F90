@@ -1,12 +1,8 @@
-
-    
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Module Lumped
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!17/08/15 update!!!!!!!!!!!
 !!!Elimino el tratamiento de los campos magneticos de Lumped para programar un multiLumped 
 !!!solo teniendo en cuenta los parametros efectivos y sin actualizar los magneticos.
-!!!Mangento en el fichero Lumped_pre170815_noupdateababienH.F90 la version antigua
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module Lumped
@@ -20,17 +16,14 @@ module Lumped
 
    implicit none
    
-   !!!!!valiables locales
    type (LumpedElem_t), save, target   ::  LumpElem
    
-!!!variables globales del modulo
    REAL (KIND=RKIND), save           ::  eps0,mu0,zvac,cluz
    
    private
-
 !!!
 !!!
-   public LumpedElem_t,Nodes_t !el tipo es publico
+   public LumpedElem_t,Nodes_t 
    public AdvanceLumpedE,InitLumped,DestroyLumped,StoreFieldsLumpeds,calc_lumpedconstants,Getlumped
 
 contains
@@ -192,7 +185,7 @@ contains
             lumped_ => LumpElem%Nodes(conta)
             lumped_%EfieldPrevPrev=0.0_RKIND
             lumped_%EfieldPrev    =0.0_RKIND
-            lumped_%Jcur          =0.0_RKIND !olvide inicializar jcur 071118
+            lumped_%Jcur          =0.0_RKIND
          end do
 #ifdef CompileWithStochastic
          if (stochastic) then
@@ -207,13 +200,13 @@ contains
       else  
         do conta=1,LumpElem%numnodes
             lumped_ => LumpElem%Nodes(conta)
-            read(14) lumped_%EfieldPrevPrev,lumped_%EfieldPrev,lumped_%Jcur !olvide almacenar jcur 071118
+            read(14) lumped_%EfieldPrevPrev,lumped_%EfieldPrev,lumped_%Jcur 
         end do  
 #ifdef CompileWithStochastic
          if (stochastic) then
              do conta=1,LumpElem%numnodes
                 lumped_ => LumpElem%Nodes(conta)
-                read(14) lumped_%EfieldPrevPrev_for_devia,lumped_%EfieldPrev_for_devia,lumped_%Jcur_for_devia !olvide almacenar jcur 071118
+                read(14) lumped_%EfieldPrevPrev_for_devia,lumped_%EfieldPrev_for_devia,lumped_%Jcur_for_devia
              end do
          endif
 #endif
@@ -348,7 +341,6 @@ contains
                (epsilonEff/sgg%dt   + SigmaEff/2.0_RKIND  ) 
             
             
-    !!!!repensar si es necesario 27/08/15
             !!!lo he comentado a 050122 por consistencia con stochastic
             !!if (g1 < 0.0_RKIND) then !exponential time stepping
             !!    g1=exp(- SigmaEff * sgg%dt / (epsilonEff ))
@@ -360,10 +352,7 @@ contains
             lumped_%GJ = G2 !!!!Mittra pag65
             lumped_%sigmaEffResistInduct = sigmaEffResistInduct
   
-            
-            
             !!!!usual para resistencia que se encienden/apagan 200319
-
             G1_usual=(1.0_RKIND  - Sigma * sgg%dt / (2.0_RKIND * epsilon) ) / &
                 (1.0_RKIND  + Sigma * sgg%dt / (2.0_RKIND * epsilon) ) 
             G2_usual=  sgg%dt / epsilon                        / &
@@ -377,7 +366,6 @@ contains
             lumped_%G2a_usual= G2_usual / transversalDeltaHa 
             lumped_%G2b_usual= G2_usual / transversalDeltaHb
                   
-                
            !!!only for diodes 
             if (orient>0.0) then
                 lumped_%diodeB    = lumped_%diodeB * alignedDeltaE / 2.0_RKIND

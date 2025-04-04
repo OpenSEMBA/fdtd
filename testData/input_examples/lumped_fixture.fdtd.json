@@ -73,8 +73,7 @@
                     ]
                 ]
             },
-            {
-                "id": 2, "name": "bulk_current_surface", "type": "cell",
+            { "id": 2, "name": "bulk_current_surface", "type": "cell",
                 "intervals": [
                     [
                         [
@@ -90,14 +89,12 @@
                     ]
                 ]
             },
-            {
-                "id": 3, "name": "probe_point", "type": "node",
+            { "id": 3, "name": "probe_point", "type": "node",
                 "coordinateIds": [
                     3
                 ]
             },
-            {
-                "id": 4, "name": "left_side", "type": "cell",
+            { "id": 4, "name": "left_side", "type": "cell",
                 "intervals": [
                     [
                         [
@@ -137,8 +134,7 @@
                     ]
                 ]
             },
-            {
-                "id": 5, "name": "lumped_line", "type": "cell",
+            { "id": 5, "name": "lumped_line", "type": "cell",
                 "intervals": [
                     [
                         [
@@ -199,7 +195,7 @@
     },
     "materials": [
         { "id": 1, "type": "pec" },
-        { "id": 2, "type": "lumped"} 
+        { "id": 2, "type": "lumped", "model": "resistor", "resistance": 100 } 
     ],
     "materialAssociations": [
         { "materialId": 1, "elementIds": [ 4, 6 ] },
