@@ -150,8 +150,7 @@
                     ]
                 ]
             },
-            {
-                "id": 6, "type": "cell", "name": "right_side",
+            { "id": 6, "name": "right_side", "type": "cell", 
                 "intervals": [
                     [
                         [
@@ -194,8 +193,8 @@
         ]
     },
     "materials": [
-        { "id": 1, "type": "pec" },
-        { "id": 2, "type": "lumped", "model": "resistor", "resistance": 100 } 
+        { "id": 1, "name": "pec", "type": "pec" },
+        { "id": 2, "name": "100ohm_resistor", "type": "lumped", "model": "resistor", "resistance": 100 } 
     ],
     "materialAssociations": [
         { "materialId": 1, "elementIds": [ 4, 6 ] },
