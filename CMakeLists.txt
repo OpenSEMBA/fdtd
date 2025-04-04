@@ -12,7 +12,7 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 message(STATUS "Compiler Id is: ${CMAKE_Fortran_COMPILER_ID}")
 message(STATUS "Build type: ${CMAKE_BUILD_TYPE}")
 
-option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
+option(SEMBA_FDTD_ENABLE_MPI "Use MPI" ON)
 option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
 option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
