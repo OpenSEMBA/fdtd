@@ -136,33 +136,31 @@ contains
       allocate(expected%dielRegs%Lins(1))
 
       ! Lumped resistor line
-      expected%dielRegs%Lins(1)%c1P => NULL()
-      expected%dielRegs%Lins(1)%c2P => NULL()
+      allocate(expected%dielRegs%Lins(1)%c1P(0))
+      allocate(expected%dielRegs%Lins(1)%c2P(1))
       expected%dielRegs%Lins(1)%n_C1P = 0
-      expected%dielRegs%Lins(1)%n_C2P = 0
+      expected%dielRegs%Lins(1)%n_C2P = 1
+      expected%dielRegs%vols(1)%c2P%Or = iEx
+      expected%dielRegs%vols(1)%c2P%Xi = 9
+      expected%dielRegs%vols(1)%c2P%Xe = 10
+      expected%dielRegs%vols(1)%c2P%Yi = 4
+      expected%dielRegs%vols(1)%c2P%Ye = 4
+      expected%dielRegs%vols(1)%c2P%Zi = 7
+      expected%dielRegs%vols(1)%c2P%Ze = 7
+      expected%dielRegs%vols(1)%c2P%tag = '100ohm_resistor@lumped_line'
+
       expected%dielRegs%Lins(1)%sigma = 0.0
-      expected%dielRegs%Lins(1)%eps = 0.0
-      expected%dielRegs%Lins(1)%mu = 0.0
+      expected%dielRegs%Lins(1)%eps = EPSILON_VACUUM
+      expected%dielRegs%Lins(1)%mu = MU_VACUUM
       expected%dielRegs%Lins(1)%sigmam = 0.0
+
+      expected%dielRegs%Lins(1)%R = 100.0
       expected%dielRegs%Lins(1)%Rtime_on = 0.0
       expected%dielRegs%Lins(1)%Rtime_off = 1.0
-      expected%dielRegs%Lins(1)%R = 100.0
-      expected%dielRegs%Lins(1)%L = 0.0
-      expected%dielRegs%Lins(1)%C = 0.0
-      expected%dielRegs%Lins(1)%R_devia = 0.0
-      expected%dielRegs%Lins(1)%L_devia = 0.0
-      expected%dielRegs%Lins(1)%C_devia = 0.0
-      expected%dielRegs%Lins(1)%DiodB = 0.0
-      expected%dielRegs%Lins(1)%DiodIsat = 0.0
-      expected%dielRegs%Lins(1)%DiodOri = 0
-      expected%dielRegs%Lins(1)%orient = 0
-      expected%dielRegs%Lins(1)%resistor = .true.
-      expected%dielRegs%Lins(1)%inductor = .false.
-      expected%dielRegs%Lins(1)%capacitor = .false.
-      expected%dielRegs%Lins(1)%diodo = .false.
-      expected%dielRegs%Lins(1)%plain = .false.
-      expected%dielRegs%Lins(1)%PMLbody = .false.
 
+      expected%dielRegs%Lins(1)%resistor = .true.
+
+      
       ! Expected sources
       expected%nodSrc%n_nodSrc = 1
       expected%nodSrc%n_nodSrc_max = 1
@@ -171,9 +169,7 @@ contains
       allocate(expected%nodSrc%NodalSource(1))
       expected%nodSrc%NodalSource(1)%nombre = "predefinedExcitation.1.exc"
       expected%nodSrc%NodalSource(1)%isElec = .true.
-      expected%nodSrc%NodalSource(1)%isMagnet = .false.
-      expected%nodSrc%NodalSource(1)%isCurrent = .false.
-      expected%nodSrc%NodalSource(1)%isField = .true.
+      expected%nodSrc%NodalSource(1)%isHard = .false.
       expected%nodSrc%NodalSource(1)%isInitialValue = .false.
       allocate(expected%nodSrc%NodalSource(1)%c1P(0))
       allocate(expected%nodSrc%NodalSource(1)%c2P(1))
@@ -186,11 +182,13 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%Zi = 2
       expected%nodSrc%NodalSource(1)%c2P(1)%Ze = 2
       expected%nodSrc%NodalSource(1)%c2P(1)%tag = 'nodal_source'
+      expected%nodSrc%NodalSource(1)%c2P(1)%xc = 1.0
+      expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0.0
+      expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0
 
       ! Expected probes
       
       ! Electric field point probe
-      expected%Sonda%len_cor_max = 3
       expected%Sonda%length = 1
       expected%Sonda%length_max = 1
       allocate(expected%Sonda%collection(1))
@@ -207,13 +205,13 @@ contains
       expected%Sonda%collection(1)%fstep = 0.0
       allocate(expected%Sonda%collection(1)%cordinates(3))
       expected%Sonda%collection(1)%len_cor = 3
-      expected%Sonda%collection(1)%cordinates(1:3)%tag = "e_probe"
       expected%Sonda%collection(1)%cordinates(1:3)%Xi = 10
       expected%Sonda%collection(1)%cordinates(1:3)%Yi = 3
       expected%Sonda%collection(1)%cordinates(1:3)%Zi = 7
       expected%Sonda%collection(1)%cordinates(1)%Or = NP_COR_EX
       expected%Sonda%collection(1)%cordinates(2)%Or = NP_COR_EY
       expected%Sonda%collection(1)%cordinates(3)%Or = NP_COR_EZ
+      expected%Sonda%collection(1)%cordinates(1:3)%tag = "e_probe"
 
       ! Bulk current probe
       expected%BloquePrb%n_bp = 1
@@ -232,9 +230,9 @@ contains
       expected%BloquePrb%bp(1)%i1 = 6
       expected%BloquePrb%bp(1)%i2 = 6
       expected%BloquePrb%bp(1)%j1 = 1
-      expected%BloquePrb%bp(1)%j2 = 7
+      expected%BloquePrb%bp(1)%j2 = 6
       expected%BloquePrb%bp(1)%k1 = 6
-      expected%BloquePrb%bp(1)%k2 = 8
+      expected%BloquePrb%bp(1)%k2 = 7
       expected%BloquePrb%bp(1)%skip = 1
       expected%BloquePrb%bp(1)%nml = iEx
       expected%BloquePrb%bp(1)%t = BcELECT
