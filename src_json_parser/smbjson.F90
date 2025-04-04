@@ -832,6 +832,8 @@ contains
          type(Curr_Field_Src) :: res
          type(json_value), pointer :: jns, entry
          integer, dimension(:), allocatable :: elementIds
+         character (len=BUFSIZE) :: nodalSourceName
+         character (len=:), allocatable :: hardness
          type(coords_scaled), dimension(:), allocatable :: coordsFromLinels
 
          select case (this%getStrAt(jns, J_FIELD))
@@ -851,11 +853,22 @@ contains
          res%isInitialValue = .false.
          res%nombre = trim(adjustl(this%getStrAt(jns, J_SRC_MAGNITUDE_FILE)))
 
+         nodalSourceName = this%getStrAt(jns, J_NAME, default=' ')
+
+         hardness = this%getStrAt(jns, J_SRC_NS_HARDNESS, default=J_SRC_NS_HARDNESS_SOFT)
+         if (hardness == J_SRC_NS_HARDNESS_SOFT) then
+            res%isField = .true.
+         else if (hardness == J_SRC_NS_HARDNESS_HARD) then
+            res%isSoft = .false.
+         else
+            write(error_unit, *) 'Error reading current field source. Hardness label not recognized.'
+         end if
+
          allocate(res%c1P(0))
          res%n_C1P = 0
 
          elementIds = this%getIntsAt(jns, J_ELEMENTIDS)
-         call cellRegionsToScaledCoords(res%C2P,  this%mesh%getCellRegions(elementIds) )
+         call cellRegionsToScaledCoords(res%C2P,  this%mesh%getCellRegions(elementIds), nodalSourceName)
          res%n_C2P = size(res%C2p)
 
       end function
