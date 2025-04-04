@@ -678,8 +678,7 @@ MODULE NFDETypes
       CHARACTER (LEN=BUFSIZE) :: nombre
       INTEGER (KIND=4) :: n_C1P = 0
       INTEGER (KIND=4) :: n_C2P = 0
-      LOGICAL :: isElec, isMagnet
-      LOGICAL :: isCurrent, isField, isInitialValue
+      LOGICAL :: isElec, isHard, isInitialValue
    END TYPE Curr_Field_Src
    !------------------------------------------------------------------------------
    ! Definicin de las Nodal Source global

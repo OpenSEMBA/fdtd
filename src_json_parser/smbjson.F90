@@ -832,30 +832,38 @@ contains
          type(Curr_Field_Src) :: res
          type(json_value), pointer :: jns, entry
          integer, dimension(:), allocatable :: elementIds
+         character (len=BUFSIZE) :: nodalSourceName
          type(coords_scaled), dimension(:), allocatable :: coordsFromLinels
 
-         select case (this%getStrAt(jns, J_FIELD))
+         select case (this%getStrAt(jns, J_FIELD, default=J_FIELD_ELECTRIC))
           case (J_FIELD_ELECTRIC)
-            res%isField = .true.
             res%isElec = .true.
-            res%isMagnet = .false.
-            res%isCurrent = .false.
           case (J_FIELD_MAGNETIC)
-            res%isField = .true.
             res%isElec = .false.
-            res%isMagnet = .true.
-            res%isCurrent = .false.
           case default
             write(error_unit, *) 'Error reading current field source. Field label not recognized.'
          end select
+         
+         select case (this%getStrAt(jns, J_SRC_NS_HARDNESS, default=J_SRC_NS_HARDNESS_SOFT))
+          case (J_SRC_NS_HARDNESS_SOFT)
+            res%isHard = .false.
+          case (J_SRC_NS_HARDNESS_HARD)
+            res%isHard = .true.
+          case default
+            write(error_unit, *) 'Error reading current field source. Hardness label not recognized.'
+          end select
+         
          res%isInitialValue = .false.
+
          res%nombre = trim(adjustl(this%getStrAt(jns, J_SRC_MAGNITUDE_FILE)))
+
+         nodalSourceName = this%getStrAt(jns, J_NAME, default=' ')
 
          allocate(res%c1P(0))
          res%n_C1P = 0
 
          elementIds = this%getIntsAt(jns, J_ELEMENTIDS)
-         call cellRegionsToScaledCoords(res%C2P,  this%mesh%getCellRegions(elementIds) )
+         call cellRegionsToScaledCoords(res%C2P,  this%mesh%getCellRegions(elementIds), nodalSourceName)
          res%n_C2P = size(res%C2p)
 
       end function
