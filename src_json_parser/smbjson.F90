@@ -833,36 +833,31 @@ contains
          type(json_value), pointer :: jns, entry
          integer, dimension(:), allocatable :: elementIds
          character (len=BUFSIZE) :: nodalSourceName
-         character (len=:), allocatable :: hardness
          type(coords_scaled), dimension(:), allocatable :: coordsFromLinels
 
-         select case (this%getStrAt(jns, J_FIELD))
+         select case (this%getStrAt(jns, J_FIELD, default=J_FIELD_ELECTRIC))
           case (J_FIELD_ELECTRIC)
-            res%isField = .true.
             res%isElec = .true.
-            res%isMagnet = .false.
-            res%isCurrent = .false.
           case (J_FIELD_MAGNETIC)
-            res%isField = .true.
             res%isElec = .false.
-            res%isMagnet = .true.
-            res%isCurrent = .false.
           case default
             write(error_unit, *) 'Error reading current field source. Field label not recognized.'
          end select
+         
+         select case (this%getStrAt(jns, J_SRC_NS_HARDNESS, default=J_SRC_NS_HARDNESS_SOFT))
+          case (J_SRC_NS_HARDNESS_SOFT)
+            res%isHard = .false.
+          case (J_SRC_NS_HARDNESS_HARD)
+            res%isHard = .true.
+          case default
+            write(error_unit, *) 'Error reading current field source. Hardness label not recognized.'
+          end select
+         
          res%isInitialValue = .false.
+
          res%nombre = trim(adjustl(this%getStrAt(jns, J_SRC_MAGNITUDE_FILE)))
 
          nodalSourceName = this%getStrAt(jns, J_NAME, default=' ')
-
-         hardness = this%getStrAt(jns, J_SRC_NS_HARDNESS, default=J_SRC_NS_HARDNESS_SOFT)
-         if (hardness == J_SRC_NS_HARDNESS_SOFT) then
-            res%isField = .true.
-         else if (hardness == J_SRC_NS_HARDNESS_HARD) then
-            res%isSoft = .false.
-         else
-            write(error_unit, *) 'Error reading current field source. Hardness label not recognized.'
-         end if
 
          allocate(res%c1P(0))
          res%n_C1P = 0
