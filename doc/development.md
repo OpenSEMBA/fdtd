@@ -301,7 +301,7 @@ To run the tests:
 
 ## Debugging the project
 
-For a correct debugging experience is needed to configure a launch.json file. This file usually is created by vscode automatically. In case it does not exist. You can create your own on .vscode folder.
+For a correct debugging experience configuring a launch.json file is needed. This file usually is created by vscode automatically. In case it does not exist. You can create your own on .vscode folder.
 
 An example of launch.json filke is given. This will use a file as argument when calling to semba-fdtd.
 ```json
@@ -323,3 +323,61 @@ An example of launch.json filke is given. This will use a file as argument when 
 ```
 
 Now you are ready to work with the project.
+
+### Debugging with MPI 
+
+Instructions following [this link](https://github.com/microsoft/vscode-cpptools/issues/1723#issuecomment-1983158512).
+
+1. First install gdbserver:
+
+```bash
+sudo apt install gdbserver
+```
+
+2.  In a terminal in vscode execute this command to have gdbserver set a series of debugging servers, that will hold listening until a process is attached to them:
+```bash
+mpiexec -n 1 gdbserver :20000 ./build/bin/semba-fdtd : -n 1 gdbserver :20001 .build/bin/semba-fdtd
+```
+This example assumes we are `${workspaceRoot}` folder, hence the path to the semba-fdtd executable
+
+3. Modify the file launch.json to connect to the debugging servers when launched:
+
+```json
+{
+    "version": "0.2.0",
+    "compounds": [
+        {
+          "name": "connect F (NProcs=2)",
+          "configurations": [
+            "_rank0",
+            "_rank1"
+          ],
+          "stopAll": true
+        }
+      ],
+      "configurations": [
+        {
+          "name": "_rank0",
+          "type": "cppdbg",
+          "request": "launch",
+          "program": "${workspaceRoot}/build/bin/semba-fdtd",
+          "programArgs" :  "-i holland1981.fdtd.json -mtlnwires",
+          "miDebuggerServerAddress": "localhost:20000",
+          "MIMode": "gdb",
+          "miDebuggerPath": "/usr/bin/gdb",
+          "cwd": "${workspaceRoot}/testData/cases/holland_mpi"
+        },
+        {
+          "name": "_rank1",
+          "type": "cppdbg",
+          "request": "launch",
+          "program": "${workspaceRoot}/build/bin/semba-fdtd",
+          "programArgs" :  "-i holland1981.fdtd.json -mtlnwires",
+          "miDebuggerServerAddress": "localhost:20001",
+          "MIMode": "gdb",
+          "miDebuggerPath": "/usr/bin/gdb",
+          "cwd": "${workspaceRoot}/testData/cases/holland_mpi"
+        }
+      ]
+}
+```
