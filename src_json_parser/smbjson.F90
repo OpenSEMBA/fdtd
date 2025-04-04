@@ -547,7 +547,8 @@ contains
          integer :: i, j
          integer :: nCs, nDielectrics
          
-         mAs = this%getMaterialAssociations([J_MAT_TYPE_ISOTROPIC])
+         mAs = this%getMaterialAssociations( &
+            [J_MAT_TYPE_ISOTROPIC, J_MAT_TYPE_LUMPED])
          if (size(mAs) == 0) then
             allocate(res(0))
             return
@@ -567,10 +568,18 @@ contains
          if (nDielectrics == 0) return
 
          j = 0
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_ISOTROPIC])
          do i = 1, size(mAs)       
             if (.not. containsCellRegionsWithType(mAs(i), cellType)) cycle
             j = j + 1
             res(j) = readDielectric(mAs(i), cellType)
+         end do
+
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_LUMPED])
+         do i = 1, size(mAs)
+            if (.not. containsCellRegionsWithType(mAs(i), cellType)) cycle
+            j = j + 1
+            res(j) = readLumped(mAs(i), cellType)
          end do
       end subroutine
 
@@ -594,6 +603,73 @@ contains
          res%sigmam = this%getRealAt(matPtr%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
          res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0)*EPSILON_VACUUM
          res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0)*MU_VACUUM
+
+      end function
+
+
+      function readLumped(mA, cellType) result(res)
+         type(materialAssociation_t), intent(in) :: mA
+         integer, intent(in) :: cellType
+         type(Dielectric_t) :: res
+         type(cell_region_t) :: cR
+         type (coords), dimension(:), allocatable :: coords
+         type(json_value_ptr) :: matPtr
+         integer :: e, j
+         character(len=:), allocatable :: model
+         logical :: found
+
+         allocate(res%c1P(0))
+         res%n_c1p = 0
+         call this%matAssToCoords(res%c2p, mA, cellType)
+         res%n_c2p = size(res%c2p)
+         
+         matPtr = this%matTable%getId(mA%materialId)
+         
+         ! Get the model type
+         model = this%getStrAt(matPtr%p, J_MAT_LUMPED_MODEL, found)
+         if (.not. found) then
+            write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " model not found."
+            stop
+         end if
+         
+         ! Handle resistor model
+         select case (model)
+          case (J_MAT_LUMPED_MODEL_RESISTOR)
+            res%resistor = .true.
+            res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
+            if (.not. found) then
+               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " resistance not found."
+               stop
+            end if
+            res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0)
+            res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0)
+          case (J_MAT_LUMPED_MODEL_INDUCTOR)
+            res%inductor = .true.
+            res%L = this%getRealAt(matPtr%p, J_MAT_LUMPED_INDUCTANCE, found)
+            if (.not. found) then
+               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " inductance not found."
+               stop
+            end if
+            res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, default=0.0)
+          case (J_MAT_LUMPED_MODEL_CAPACITOR)
+            res%capacitor = .true.
+            res%C = this%getRealAt(matPtr%p, J_MAT_LUMPED_CAPACITANCE, found)
+            if (.not. found) then
+               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " capacitance not found."
+               stop
+            end if
+            res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
+            if (.not. found) then
+               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " resistance not found."
+               stop
+            end if
+          case default
+            write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " invalid model."
+            stop
+          end select
+            
+            
+         end if
 
       end function
 
