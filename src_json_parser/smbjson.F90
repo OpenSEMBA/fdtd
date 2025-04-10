@@ -2158,7 +2158,7 @@ contains
          type(cable_t), dimension(:), pointer :: cables
          integer :: n, i
          logical :: unique
-         res = .true.
+         unique = .true.
          do i = 1, n
             if (cable%name == cables(i)%name) then
                unique = .false.
