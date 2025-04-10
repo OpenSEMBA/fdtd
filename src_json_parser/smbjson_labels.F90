@@ -164,6 +164,11 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_SRC_PW_THETA = "theta"
    character (len=*), parameter :: J_SRC_PW_PHI = "phi"
 
+   ! type(NodalSource)
+   character (len=*), parameter :: J_SRC_NS_HARDNESS = "hardness"
+   character (len=*), parameter :: J_SRC_NS_HARDNESS_SOFT = "soft"
+   character (len=*), parameter :: J_SRC_NS_HARDNESS_HARD = "hard"
+
    ! --- probe types
    character (len=*), parameter :: J_PROBES = "probes"
    

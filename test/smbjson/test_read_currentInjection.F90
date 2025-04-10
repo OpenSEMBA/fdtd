@@ -92,9 +92,7 @@ contains
       allocate(expected%nodSrc%NodalSource(1))
       expected%nodSrc%NodalSource(1)%nombre = "gauss.exc"
       expected%nodSrc%NodalSource(1)%isElec = .true.
-      expected%nodSrc%NodalSource(1)%isMagnet = .false.
-      expected%nodSrc%NodalSource(1)%isCurrent = .false.
-      expected%nodSrc%NodalSource(1)%isField = .true.
+      expected%nodSrc%NodalSource(1)%isHard = .false.
       expected%nodSrc%NodalSource(1)%isInitialValue = .false.
       allocate(expected%nodSrc%NodalSource(1)%c1P(0))
       allocate(expected%nodSrc%NodalSource(1)%c2P(1))
@@ -106,7 +104,7 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%Ye =  4
       expected%nodSrc%NodalSource(1)%c2P(1)%Zi = 10
       expected%nodSrc%NodalSource(1)%c2P(1)%Ze = 10
-      expected%nodSrc%NodalSource(1)%c2P(1)%tag = ''
+      expected%nodSrc%NodalSource(1)%c2P(1)%tag = 'entry_line_curent'
       expected%nodSrc%NodalSource(1)%c2P(1)%xc = 0.0
       expected%nodSrc%NodalSource(1)%c2P(1)%yc = 1.0
       expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0

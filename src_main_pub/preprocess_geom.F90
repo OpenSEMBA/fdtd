@@ -2896,7 +2896,7 @@ endif
             !
             sgg%NodalSource(conta1)%fichero%name = trim (adjustl(this%nodsrc%NodalSource(i)%nombre))
             sgg%NodalSource(conta1)%isElec = this%nodsrc%NodalSource(i)%isElec
-            sgg%NodalSource(conta1)%IsHard = this%nodsrc%NodalSource(i)%isField
+            sgg%NodalSource(conta1)%IsHard = this%nodsrc%NodalSource(i)%isHard
             sgg%NodalSource(conta1)%IsInitialValue = this%nodsrc%NodalSource(i)%IsInitialValue 
          endif
          !
@@ -2929,7 +2929,7 @@ endif
                         !bug OLD 181214 sl_4_20mm_gli.nfde. Fuente nodal electrica embebida en pec y nodal magnetica en pmc se ignoraran sean hard or soft
                         MEDIO = sggmiEx (i1, j1, k1)
                         valido=.true.
-                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         ! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !ELSE
@@ -2944,7 +2944,7 @@ endif
                         ! COMENTADO 250816 PQ DA UN ERROR JUISTO CUANDO CAE LA FUENTE EN UN CORTE MPI. HABRIA QU TOCA LA CASUISTICA DE punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE  )) PERO NO LO HE QUERIDO HACER
                         !!!MEDIO = sggmiHx (i1, j1, k1)
                         !!!valido=.true.
-                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !!!!  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         !!!! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !!!!ELSE
@@ -2961,7 +2961,7 @@ endif
                      IF (punto_s%yc /= 0) THEN
                         MEDIO = sggmiEy (i1, j1, k1)
                         valido=.true.
-                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         ! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !ELSE
@@ -2976,7 +2976,7 @@ endif
                         !
                         !!!MEDIO = sggmiHy (i1, j1, k1)
                         !!!valido=.true.
-                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !!!!  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         !!!! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !!!!ELSE
@@ -2993,7 +2993,7 @@ endif
                      IF (punto_s%zc /= 0) THEN
                         MEDIO = sggmiEz (i1, j1, k1)
                         valido=.true.
-                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         ! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !ELSE
@@ -3008,7 +3008,7 @@ endif
                         !
                         !!!MEDIO = sggmiHz (i1, j1, k1)
                         !!!valido=.true.
-                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !!!!  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         !!!! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !!!!ELSE
@@ -3103,7 +3103,7 @@ endif
                      IF (punto_s%xc /= 0) THEN
                         MEDIO = sggmiEx (i1, j1, k1)
                         valido=.true.
-                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         ! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !ELSE
@@ -3119,7 +3119,7 @@ endif
                         !
                         !!!MEDIO = sggmiHx (i1, j1, k1)
                         !!!valido=.true.
-                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !!!!  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         !!!! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !!!!ELSE
@@ -3136,7 +3136,7 @@ endif
                      IF (punto_s%yc /= 0) THEN
                         MEDIO = sggmiEy (i1, j1, k1)
                         valido=.true.
-                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         ! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !ELSE
@@ -3151,7 +3151,7 @@ endif
                         !
                         !!!MEDIO = sggmiHy (i1, j1, k1)
                         !!!valido=.true.
-                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !!!!  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         !!!! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !!!!ELSE
@@ -3168,7 +3168,7 @@ endif
                      IF (punto_s%zc /= 0) THEN
                         MEDIO = sggmiEz (i1, j1, k1)
                         valido=.true.
-                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         ! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !ELSE
@@ -3183,7 +3183,7 @@ endif
                         !
                         !!!MEDIO = sggmiHz (i1, j1, k1)
                         !!!valido=.true.
-                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isField) THEN
+                        !!!!IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !!!!  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
                         !!!! & (sgg%Med(MEDIO)%Is%MDispersive)
                         !!!!ELSE
