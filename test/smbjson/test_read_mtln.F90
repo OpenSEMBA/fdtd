@@ -53,7 +53,6 @@ contains
       expected%front%tipoFrontera(:) = F_MUR
 
       ! Expected sources.
-      ! allocate(expected%nodSrc)
       allocate(expected%nodSrc%NodalSource(1))
       expected%nodSrc%n_C1P_max = 0
       expected%nodSrc%n_C2P_max = 1
@@ -61,9 +60,7 @@ contains
       expected%nodSrc%n_nodSrc_max = 1
       expected%nodSrc%NodalSource(1)%nombre = trim(adjustl("gauss.exc"))
       expected%nodSrc%NodalSource(1)%isElec = .true.
-      expected%nodSrc%NodalSource(1)%isMagnet = .false.
-      expected%nodSrc%NodalSource(1)%isCurrent = .false.
-      expected%nodSrc%NodalSource(1)%isField = .true.
+      expected%nodSrc%NodalSource(1)%isHard = .false.
       expected%nodSrc%NodalSource(1)%isInitialValue = .false.
       expected%nodSrc%NodalSource(1)%n_C1P = 0
       allocate(expected%nodSrc%NodalSource(1)%c1P(0))
@@ -79,7 +76,7 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0
       expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0
       expected%nodSrc%NodalSource(1)%c2P(1)%or = 1
-      expected%nodSrc%NodalSource(1)%c2P(1)%tag = " "
+      expected%nodSrc%NodalSource(1)%c2P(1)%tag = "DistributedSource"
       
       
 
