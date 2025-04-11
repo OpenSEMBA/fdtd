@@ -3,6 +3,7 @@ module mtln_solver_mod
     use mtl_bundle_mod
     use network_manager_mod
     use preprocess_mod
+    use FDETYPES, only: XYZlimit_t
     implicit none
 
 
@@ -42,13 +43,24 @@ module mtln_solver_mod
 
 contains
 
-    function mtlnCtor(parsed) result(res)
+    function mtlnCtor(parsed, alloc) result(res)
         type(parsed_mtln_t) :: parsed
+        type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         type(mtln_t) :: res
         integer :: i
         type(preprocess_t) :: pre
 
-        pre = preprocess(parsed)
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr
+#endif
+
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+        
+#endif
+
+        pre = preprocess(parsed, alloc)
+
         if (size(pre%bundles) == 0) then
             res%number_of_bundles = 0
             return

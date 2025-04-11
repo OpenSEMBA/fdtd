@@ -1,13 +1,12 @@
 module preprocess_mod
 
+    use FDETYPES
     use mtln_types_mod, parsed_probe_t => probe_t, parsed_mtln_t => mtln_t
     use mtl_bundle_mod
     use network_manager_mod
     use mtl_mod!, only: mtl_t, mtl_array_t, line_bundle_t,
 
     use fhash, only: fhash_tbl_t, key=>fhash_key, fhash_key_t
-
-    
     implicit none
 
 
@@ -28,7 +27,11 @@ module preprocess_mod
         procedure :: connectNodesToSubcircuit
         procedure :: addNodeWithId
         procedure :: addProbesWithId
-    end type
+    end type preprocess_t
+
+    interface preprocess_t
+        module procedure preprocess
+    end interface
 
     type, public :: cable_ptr_t
         type(cable_t), pointer :: p
@@ -42,26 +45,46 @@ module preprocess_mod
         type(cable_array_t), dimension(:), allocatable :: levels
     end type
 
-    interface preprocess_t
-        module procedure preprocess
-    end interface
 
 contains
 
 
-    function preprocess(parsed) result(res)
+    function preprocess(parsed, alloc) result(res)
         type(parsed_mtln_t), intent(in):: parsed
+        type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         type(preprocess_t) :: res
         type(fhash_tbl_t) :: cable_name_to_bundle_id
         type(line_bundle_t), dimension(:), allocatable :: line_bundles
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
+        integer (kind=4) :: n_segments = 0
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr
+#endif
+
+        if present(alloc) n_segments = countSegments(par)
 
         res%final_time = parsed%time_step * parsed%number_of_steps
         res%dt = parsed%time_step
-
+        
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+    
+#endif
         cable_bundles = buildCableBundles(parsed%cables)
+
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+#endif
         line_bundles = buildLineBundles(cable_bundles, res%dt)
+
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+#endif
         res%bundles = res%buildMTLBundles(line_bundles)
+
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+#endif
         res%cable_name_to_bundle_id = mapCablesToBundlesId(line_bundles, res%bundles)
         if (size(parsed%probes) /= 0) then
             res%probes = res%addProbesWithId(parsed%probes)
@@ -226,6 +249,8 @@ contains
             conductor_in_parent = cable%conductor_in_parent
         end if  
 
+        ! res = mtlHomogeneous(cable, dt)
+
         res = mtlHomogeneous(lpul = cable%inductance_per_meter, &
                              cpul = cable%capacitance_per_meter, &
                              rpul = cable%resistance_per_meter, &
@@ -295,6 +320,7 @@ contains
         
         res%levels(1) = level
 
+
         do while (findNextLevel(level, cables) /= 0)
             call appendLevel(res%levels, level)
         end do
@@ -349,7 +375,13 @@ contains
         type(cable_ptr_t), dimension(:), allocatable :: res
         integer :: i
         integer, dimension(:), allocatable :: parent_ids
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr
+#endif
 
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi,ierr)
+#endif
         allocate(parent_ids(0))
         do i = 1, size(cables)
             if (associated(cables(i)%parent_cable) .eqv. .false.) then 

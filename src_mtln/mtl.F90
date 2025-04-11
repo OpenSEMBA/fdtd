@@ -3,7 +3,7 @@ module mtl_mod
     ! use NFDETypes
     use utils_mod
     use dispersive_mod
-    use mtln_types_mod, only: external_field_segment_t
+    use mtln_types_mod, only: external_field_segment_t, cable_t
 
     implicit none
 
@@ -45,7 +45,7 @@ module mtl_mod
 
     interface mtl_t
         module procedure mtlHomogeneous
-        module procedure mtlInHomogeneous
+        module procedure mtlInhomogeneous
     end interface
 
     type, public :: mtl_array_t
