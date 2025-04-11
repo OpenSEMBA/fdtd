@@ -248,6 +248,9 @@ contains
       integer (kind=4) :: m, n
       REAL (KIND=RKIND),pointer:: punt
       type(Thinwires_t), pointer  ::  hwires
+#ifdef CompileWithMPI      
+      integer(kind=4) :: ierr
+#endif
 
       eps0 = eps00 
       mu0 = mu00
@@ -256,15 +259,20 @@ contains
       do m = 1, mtln_solver%number_of_bundles
          do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
             punt => mtln_solver%bundles(m)%external_field_segments(n)%field
-            punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent()
-            hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent()
+            punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
+            hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent(m,n)
          end do
       end do
+
+#ifdef CompileWithMPI      
+      call mpi_barrier(subcomm_mpi,ierr)
+#endif
       call mtln_solver%step()
 
       contains
 
-      function getOrientedCurrent() result(res)
+      function getOrientedCurrent(m, n) result(res)
+         integer(kind=4), intent(in) :: m, n
          real(kind=rkind) :: res
          real(kind=rkind) :: curr
          integer (kind=4) :: direction, i
@@ -280,7 +288,8 @@ contains
          res = mtln_solver%bundles(m)%i(1, n) * sign(1.0, real(direction))
       end function
 
-      function computeFieldFromCurrent() result(res)
+      function computeFieldFromCurrent(m, n) result(res)
+         integer(kind=4), intent(in) :: m, n
          real(kind=rkind) :: dS_inverse, factor
          real(kind=rkind) :: res
          integer (kind=4) :: i, j, k, direction
@@ -295,7 +304,7 @@ contains
             dS_inverse = (idxh(i)*idyh(j))
          end select
          factor = (sgg%dt / (eps0)) * dS_inverse
-         res = factor * getOrientedCurrent()
+         res = factor * getOrientedCurrent(m, n)
       end function
 
    end subroutine AdvanceWiresE_mtln

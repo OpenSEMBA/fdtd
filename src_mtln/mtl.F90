@@ -16,6 +16,9 @@ module mtl_mod
         type(lumped_t) :: lumped_elements
         real :: time = 0.0, dt = 0.0
 
+        logical :: is_left_end = .true.
+        logical :: is_right_end = .true.
+
         character (len=:), allocatable :: parent_name
         integer :: conductor_in_parent
 
@@ -117,6 +120,9 @@ contains
         call res%initLCHomogeneous(lpul, cpul)
         call res%initRGHomogeneous(rpul, gpul)
         
+        if (n_segments(1) /= 1) res%is_left_end = .false.
+        if (n_segments(2) /= size(step_size)) res%is_right_end = .false.
+
         if (present(dt)) then 
             if (lpul(1,1) /= 0.0) then 
                 max_dt = res%getMaxTimeStep() 
@@ -136,7 +142,7 @@ contains
         end if
 
      
-        res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)
+        res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
         if (present(parent_name)) then
             res%parent_name = parent_name
         end if

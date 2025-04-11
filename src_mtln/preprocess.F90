@@ -73,6 +73,7 @@ contains
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
         line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
+        ! line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
 
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
@@ -201,6 +202,13 @@ contains
         type(mtl_bundle_t), dimension(:), allocatable :: res
         type(fhash_tbl_t) :: conductors_before_cable
         integer :: i
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr
+#endif
+
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+#endif
 
         allocate(res(size(lines)))
         do i = 1, size(lines)
