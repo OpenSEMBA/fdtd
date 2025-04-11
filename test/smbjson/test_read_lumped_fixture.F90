@@ -140,14 +140,14 @@ contains
       allocate(expected%dielRegs%Lins(1)%c2P(1))
       expected%dielRegs%Lins(1)%n_C1P = 0
       expected%dielRegs%Lins(1)%n_C2P = 1
-      expected%dielRegs%vols(1)%c2P%Or = iEx
-      expected%dielRegs%vols(1)%c2P%Xi = 9
-      expected%dielRegs%vols(1)%c2P%Xe = 10
-      expected%dielRegs%vols(1)%c2P%Yi = 4
-      expected%dielRegs%vols(1)%c2P%Ye = 4
-      expected%dielRegs%vols(1)%c2P%Zi = 7
-      expected%dielRegs%vols(1)%c2P%Ze = 7
-      expected%dielRegs%vols(1)%c2P%tag = '100ohm_resistor@lumped_line'
+      expected%dielRegs%Lins(1)%c2P%Or = iEx
+      expected%dielRegs%Lins(1)%c2P%Xi = 9
+      expected%dielRegs%Lins(1)%c2P%Xe = 10
+      expected%dielRegs%Lins(1)%c2P%Yi = 4
+      expected%dielRegs%Lins(1)%c2P%Ye = 4
+      expected%dielRegs%Lins(1)%c2P%Zi = 7
+      expected%dielRegs%Lins(1)%c2P%Ze = 7
+      expected%dielRegs%Lins(1)%c2P%tag = '100ohm_resistor@lumped_line'
 
       expected%dielRegs%Lins(1)%sigma = 0.0
       expected%dielRegs%Lins(1)%eps = EPSILON_VACUUM
