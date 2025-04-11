@@ -667,9 +667,6 @@ contains
             write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " invalid model."
             stop
           end select
-            
-            
-         end if
 
       end function
 
