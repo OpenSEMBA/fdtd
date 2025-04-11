@@ -88,7 +88,7 @@ contains
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
                             external_field_segments, &
-                            isPassthrough) result(res)
+                            isPassthrough, n_segments) result(res)
         type(mtl_t) :: res
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -101,10 +101,15 @@ contains
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
         logical, optional :: isPassthrough
+        integer, dimension(1:2), optional :: n_segments
         integer :: j 
 
         res%name = name
-        res%step_size =  step_size
+        if (present(n_segments)) then 
+            res%step_size =  step_size(n_segments(1):n_segments(2))
+        else 
+            res%step_size =  step_size
+        end if
         call checkPULDimensionsHomogeneous(lpul, cpul, rpul, gpul)
         res%number_of_conductors = size(lpul, 1)
 
@@ -143,7 +148,11 @@ contains
         end if
 
         if (present(external_field_segments)) then 
-            res%external_field_segments = external_field_segments
+            if (present(n_segments)) then 
+                res%external_field_segments = external_field_segments(n_segments(1):n_segments(2))
+            else
+                res%external_field_segments = external_field_segments
+            end if
         end if
 
         if (present(isPassthrough)) then 

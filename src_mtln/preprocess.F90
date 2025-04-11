@@ -217,7 +217,7 @@ contains
     function buildLineFromCable(cable, dt, n_segments) result(res)
         type(cable_t), intent(in) :: cable
         real, intent(in) :: dt
-        integer, optional :: n_segments
+        integer, dimension(1:2), optional :: n_segments
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
@@ -239,7 +239,8 @@ contains
                              conductor_in_parent = conductor_in_parent, & 
                              transfer_impedance = cable%transfer_impedance, &
                              external_field_segments = cable%external_field_segments, &
-                             isPassthrough = cable%isPassthrough)
+                             isPassthrough = cable%isPassthrough,&
+                             n_segments = n_segments)
 
         if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
         if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
@@ -288,7 +289,7 @@ contains
         type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
-        integer :: n_segments
+        integer, dimension(1:2) :: n_segments
         nb = size(cable_bundles)
 
         allocate(res(nb))
@@ -312,9 +313,9 @@ contains
         function countSegmentsInLayer(cable, alloc) result(res)
             type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
             type (cable_t), intent(in) :: cable
-            integer :: res
+            integer, dimension(1:2) :: res
             integer :: i, direction, position(1:3)
-            res = 0
+            logical :: in_layer = .false.
             do i = 1, size(cable%external_field_segments)
                 direction = abs(cable%external_field_segments(i)%direction)
                 position = cable%external_field_segments(i)%position
@@ -324,9 +325,18 @@ contains
                     (position(2) <= Alloc(direction)%YE).and. &
                     (position(3) >= Alloc(direction)%ZI).and. &
                     (position(3) <= Alloc(direction)%ZE)) then
-                        res = res + 1
-                endif
+                        if (.not. in_layer) then 
+                            res(1) = i
+                            in_layer = .true.
+                        end if
+                else
+                    if (in_layer) then 
+                        res(2) = i-1
+                        in_layer = .false.
+                    end if
+                end if
             end do
+            if (in_layer) res(2) = i - 1
         end function
 
     end function
