@@ -48,6 +48,8 @@ PROGRAM SEMBA_FDTD_launcher
    !*************************************************
    !
    use interpreta_switches_m
+   use, intrinsic:: iso_fortran_env, only: stdin=>input_unit
+
    IMPLICIT NONE
    !
 !!!24118 pscaling
@@ -114,6 +116,8 @@ PROGRAM SEMBA_FDTD_launcher
    INTEGER (KIND=4) ::  verdadero_mpidir
    logical :: newrotate !300124 tiramos con el rotador antiguo
 
+   call sleep(10)
+
    newrotate=.false.       !!ojo tocar luego                     
 !!200918 !!!si se lanza con -pscal se overridea esto
    Eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
@@ -138,6 +142,7 @@ PROGRAM SEMBA_FDTD_launcher
    !!!!!!!!!!!!
    call l%EpsMuTimeScale_input_parameters%init0()
    
+
 #ifdef CompileWithMPI
    CALL InitGeneralMPI (l%layoutnumber, l%size)
    SUBCOMM_MPI=MPI_COMM_WORLD !default el l%stochastic es el global a menos que luego se divida
@@ -1303,6 +1308,12 @@ subroutine NFDE2sgg
 #ifdef CompileWithMPI
          !wait until everything comes out
          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+#endif
+#ifdef CompileWithMTLN
+         if (trim(adjustl(l%extension))=='.json')  then 
+            mtln_parsed = parser%mtln
+            mtln_parsed%time_step = sgg%dt
+         end if
 #endif
          WRITE (dubuf,*) '[OK] ENDED NFDE --------> GEOM'
          CALL print11 (l%layoutnumber, dubuf)
