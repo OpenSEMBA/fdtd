@@ -56,12 +56,9 @@ contains
         type(fhash_tbl_t) :: cable_name_to_bundle_id
         type(line_bundle_t), dimension(:), allocatable :: line_bundles
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
-        integer (kind=4) :: n_segments = 0
 #ifdef CompileWithMPI
         integer (kind=4) :: ierr
 #endif
-
-        if present(alloc) n_segments = countSegments(par)
 
         res%final_time = parsed%time_step * parsed%number_of_steps
         res%dt = parsed%time_step
@@ -75,7 +72,7 @@ contains
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
-        line_bundles = buildLineBundles(cable_bundles, res%dt)
+        line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
 
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
@@ -95,27 +92,6 @@ contains
         
     end function
 
-    subroutine addInitialConnector(line, connector)
-        type(mtl_t), intent(inout) :: line
-        type(connector_t) :: connector
-        integer :: i
-        do i = 1, line%number_of_conductors
-            line%rpul(1, i, i) = connector%resistances(i)/line%du(1, i, i)
-        end do
-        line%initial_connector_transfer_impedance = connector%transfer_impedance_per_meter
-
-    end subroutine
-
-    subroutine addEndConnector(line, connector)
-        type(mtl_t), intent(inout) :: line
-        type(connector_t) :: connector
-        integer :: i
-        do i = 1, line%number_of_conductors
-            line%rpul(size(line%du,1), i, i) = connector%resistances(i)/line%du(size(line%du,1), i, i)
-        end do
-        line%end_connector_transfer_impedance = connector%transfer_impedance_per_meter
-
-    end subroutine
 
     function conductorsInLevel(line) result(res)
         type(line_bundle_t), intent(in) :: line
@@ -238,9 +214,10 @@ contains
         this%conductors_before_cable = conductors_before_cable
     end function    
 
-    function buildLineFromCable(cable, dt) result(res)
+    function buildLineFromCable(cable, dt, n_segments) result(res)
         type(cable_t), intent(in) :: cable
         real, intent(in) :: dt
+        integer, optional :: n_segments
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
@@ -279,30 +256,78 @@ contains
         !     end if
         ! end if
 
-                
+    contains
+        subroutine addInitialConnector(line, connector)
+            type(mtl_t), intent(inout) :: line
+            type(connector_t) :: connector
+            integer :: i
+            do i = 1, line%number_of_conductors
+                line%rpul(1, i, i) = connector%resistances(i)/line%du(1, i, i)
+            end do
+            line%initial_connector_transfer_impedance = connector%transfer_impedance_per_meter
+
+        end subroutine
+
+        subroutine addEndConnector(line, connector)
+            type(mtl_t), intent(inout) :: line
+            type(connector_t) :: connector
+            integer :: i
+            do i = 1, line%number_of_conductors
+                line%rpul(size(line%du,1), i, i) = connector%resistances(i)/line%du(size(line%du,1), i, i)
+            end do
+            line%end_connector_transfer_impedance = connector%transfer_impedance_per_meter
+
+        end subroutine
 
     end function
 
-    function buildLineBundles(cable_bundles, dt) result(res)
+    function buildLineBundles(cable_bundles, dt, alloc) result(res)
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
         type(line_bundle_t), dimension(:), allocatable :: res
         real, intent(in) :: dt
+        type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
+        integer :: n_segments
         nb = size(cable_bundles)
 
         allocate(res(nb))
         do i = 1, nb
             nl = size(cable_bundles(i)%levels)
             allocate(res(i)%levels(nl))
+
+            if (present(alloc)) n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+
             do j = 1, nl
                 nc = size(cable_bundles(i)%levels(j)%cables)
                 allocate(res(i)%levels(j)%lines(nc))
                 do k = 1, nc
-                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt)
+                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, n_segments)
                 end do
             end do
         end do
+
+    contains
+
+        function countSegmentsInLayer(cable, alloc) result(res)
+            type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
+            type (cable_t), intent(in) :: cable
+            integer :: res
+            integer :: i, direction, position(1:3)
+            res = 0
+            do i = 1, size(cable%external_field_segments)
+                direction = abs(cable%external_field_segments(i)%direction)
+                position = cable%external_field_segments(i)%position
+                if ((position(1) >= Alloc(direction)%XI).and. &
+                    (position(1) <= Alloc(direction)%XE).and. &
+                    (position(2) >= Alloc(direction)%YI).and. &
+                    (position(2) <= Alloc(direction)%YE).and. &
+                    (position(3) >= Alloc(direction)%ZI).and. &
+                    (position(3) <= Alloc(direction)%ZE)) then
+                        res = res + 1
+                endif
+            end do
+        end function
 
     end function
 
