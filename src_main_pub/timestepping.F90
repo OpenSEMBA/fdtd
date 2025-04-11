@@ -807,12 +807,12 @@ contains
       endif
       !!!
 !!
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
 
       if (use_mtln_wires) then
 #ifdef CompileWithMTLN
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
          call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
 #else
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
@@ -1062,7 +1062,8 @@ contains
          !this modifies the initwires stuff and must be called after initwires (typically at the end)
          !llamalo siempre aunque no HAYA WIRES!!! para que no se quede colgado en hilos terminales
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
-             (trim(adjustl(wiresflavor))=='transition')) then
+             (trim(adjustl(wiresflavor))=='transition') .or. & 
+              use_mtln_wires) then
             write(dubuf,*) 'Init MPI Holland Wires...';  call print11(layoutnumber,dubuf)
             call newInitWiresMPI(layoutnumber,thereare%wires,size,resume,sgg%sweep)
             call MPI_Barrier(SUBCOMM_MPI,ierr)

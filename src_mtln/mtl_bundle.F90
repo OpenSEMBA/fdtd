@@ -4,6 +4,7 @@ module mtl_bundle_mod
     use probes_mod
     use dispersive_mod
     use mtl_mod
+    use FDETYPES, only: SUBCOMM_MPI
     implicit none
 
     type, public :: mtl_bundle_t
@@ -14,6 +15,10 @@ module mtl_bundle_mod
         real, allocatable, dimension(:,:) :: v, i, e_L
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         real :: time = 0.0, dt = 1e10
+
+        logical :: is_left_end = .true.
+        logical :: is_right_end = .true.
+
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
         integer, dimension(:), allocatable :: conductors_in_level
@@ -60,6 +65,10 @@ contains
 
         res%number_of_conductors = countNumberOfConductors(levels)
         res%dt = levels(1)%lines(1)%dt
+
+        res%is_left_end = levels(1)%lines(1)%is_left_end
+        res%is_right_end = levels(1)%lines(1)%is_right_end
+
         res%step_size = levels(1)%lines(1)%step_size
         res%number_of_divisions = size(res%step_size,1)
         res%external_field_segments = levels(1)%lines(1)%external_field_segments
@@ -305,8 +314,25 @@ contains
 
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
-        integer :: i
-        do i = 2, this%number_of_divisions
+        integer :: i, i0, i1
+
+! #ifdef CompileWithMPI
+!         call mpi_barrier(subcomm_mpi,ierr)
+! #endif
+        integer :: ierr, rank, sizeof
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+
+        i0 = 2
+        i1 = this%number_of_divisions
+        if (.not. this%is_left_end) i0 = 1
+        if (.not. this%is_right_end) i1 = this%number_of_divisions + 1
+
+! #ifdef CompileWithMPI
+!         call mpi_barrier(subcomm_mpi,ierr)
+! #endif
+
+        do i = 2, i1
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
         end do

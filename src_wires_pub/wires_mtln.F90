@@ -47,11 +47,15 @@ contains
       type(mtln_t) :: mtln_parsed
       logical :: thereAreMTLNbundles
       type(Thinwires_t), pointer  ::  hwires
+#ifdef CompileWithMPI
+      integer(kind=4) :: ierr
+#endif
+
 
       eps0 = eps00
       mu0 = mu00
 
-      mtln_solver = mtlnCtor(mtln_parsed)
+      mtln_solver = mtlnCtor(mtln_parsed, sgg%alloc)
 
       if (mtln_solver%number_of_bundles>=1) then 
            thereAreMTLNbundles=.true.
@@ -63,8 +67,48 @@ contains
       hwires => GetHwires()
       indexMap = mapFieldToCurrentSegments(hwires, mtln_solver%bundles)
 
+#ifdef CompileWithMPI
+      call mpi_barrier(subcomm_mpi,ierr)
+#endif
+
       call pointSegmentsToFields()
+
+! #ifdef CompileWithMPI
+!       block
+!          ! Variables for MPI communication
+!          integer :: ierr, rank, sizeof, local_size, global_size
+!          integer, allocatable :: local_indexMap(:), global_indexMap(:)
+      
+!          ! Get the rank and size of the communicator
+!          call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+!          call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+      
+!          ! Flatten the local indexMap into a 1D array
+!          local_size = size(indexMap)
+!          allocate(local_indexMap(local_size))
+!          local_indexMap = reshape(indexMap, [local_size])
+      
+!          ! Allocate space for the global indexMap array
+!          ! global_size = local_size * size
+!          allocate(global_indexMap(local_size))
+      
+!          ! Gather all indexMap values from all processes
+!          call MPI_ALLGATHER(local_indexMap, local_size, MPI_INTEGER, &
+!                             global_indexMap, local_size, MPI_INTEGER, SUBCOMM_MPI, ierr)
+      
+!          ! Reshape the global_indexMap back into a 2D array
+!          indexMap = reshape(global_indexMap, shape(indexMap))
+      
+!          ! Deallocate temporary arrays
+!          deallocate(local_indexMap, global_indexMap)
+!       end block
+! #endif
+
+
       call assignLCToExternalConductor()
+#ifdef CompileWithMPI
+      call mpi_barrier(subcomm_mpi,ierr)
+#endif
       call updateNetworksLineCapacitors()
       call mtln_solver%updatePULTerms()
 
@@ -91,7 +135,10 @@ contains
       subroutine assignLCToExternalConductor()
          integer(kind=4) :: m, n
          real (kind=rkind) :: l,c
-
+#ifdef CompileWithMPI
+         call mpi_barrier(subcomm_mpi,ierr)
+#endif
+   
          do m = 1, mtln_solver%number_of_bundles
             do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
                l = hwires%CurrentSegment(indexMap(m,n))%Lind
@@ -174,7 +221,8 @@ contains
                nmax = ubound(mtln_solver%bundles(m)%lpul,1)
             end if 
          end do
-         allocate(res(m,nmax))
+         allocate(res(mtln_solver%number_of_bundles,nmax))
+         res(:,:) = 0
          do m = 1, mtln_solver%number_of_bundles
             do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
                call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))                          
@@ -200,6 +248,9 @@ contains
       integer (kind=4) :: m, n
       REAL (KIND=RKIND),pointer:: punt
       type(Thinwires_t), pointer  ::  hwires
+#ifdef CompileWithMPI      
+      integer(kind=4) :: ierr
+#endif
 
       eps0 = eps00 
       mu0 = mu00
@@ -208,15 +259,20 @@ contains
       do m = 1, mtln_solver%number_of_bundles
          do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
             punt => mtln_solver%bundles(m)%external_field_segments(n)%field
-            punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent()
-            hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent()
+            punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
+            hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent(m,n)
          end do
       end do
+
+#ifdef CompileWithMPI      
+      call mpi_barrier(subcomm_mpi,ierr)
+#endif
       call mtln_solver%step()
 
       contains
 
-      function getOrientedCurrent() result(res)
+      function getOrientedCurrent(m, n) result(res)
+         integer(kind=4), intent(in) :: m, n
          real(kind=rkind) :: res
          real(kind=rkind) :: curr
          integer (kind=4) :: direction, i
@@ -232,7 +288,8 @@ contains
          res = mtln_solver%bundles(m)%i(1, n) * sign(1.0, real(direction))
       end function
 
-      function computeFieldFromCurrent() result(res)
+      function computeFieldFromCurrent(m, n) result(res)
+         integer(kind=4), intent(in) :: m, n
          real(kind=rkind) :: dS_inverse, factor
          real(kind=rkind) :: res
          integer (kind=4) :: i, j, k, direction
@@ -247,7 +304,7 @@ contains
             dS_inverse = (idxh(i)*idyh(j))
          end select
          factor = (sgg%dt / (eps0)) * dS_inverse
-         res = factor * getOrientedCurrent()
+         res = factor * getOrientedCurrent(m, n)
       end function
 
    end subroutine AdvanceWiresE_mtln
