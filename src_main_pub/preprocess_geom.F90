@@ -6157,9 +6157,9 @@ CHARACTER (LEN=*), INTENT (IN) :: fichin
 INTEGER (KIND=4), INTENT (IN) :: layoutnumber
       
 TYPE (Parseador), INTENT (INOUT) :: this
-
-integer (Kind=4) :: numertag, i,j,tama,tama2,tama3,tama2p,tama3p,precounting,acum,thefileno
-
+LOGICAL :: foundDuplicate
+integer (Kind=4) :: numertag, i,j, k, m, tama,tama2,tama3,tama2p,tama3p,precounting,acum,thefileno
+CHARACTER(LEN=BUFSIZE) :: tagToCheck
 type (tagtype_t) :: tagtype
 
     !!!ojoo 
@@ -6567,32 +6567,49 @@ do precounting=0,1
 
       tama = this%LossyThinSurfs%length
       DO i = 1, tama
-        numertag = numertag + 1; 
-            tama2 = this%LossyThinSurfs%cs(i)%nc
-            if (tama2/=0) then
-               if ((i>1)) then 
-               if ((this%LossyThinSurfs%cs(i)%C(1)%tag   == this%LossyThinSurfs%cs(i-1)%C(1)%tag  )) then !do not increase
-                    numertag=numertag-1
-               endif
-               endif
+         tama2 = this%LossyThinSurfs%cs(i)%nc
+         if (tama2 == 0) then
+            print *,'Bug in LossyThinSurf Tags. Missing coordinates'
+            stop
+         end if
+         do j = 1, tama2
+            numertag = numertag + 1
+            foundDuplicate = .false.
+             
+            ! Check if tag already exists in current or previous elements
+            tagToCheck = trim(adjustl(this%LossyThinSurfs%cs(i)%C(j)%tag))
+             
+            ! First check current cs up to j-1
+            if (j > 1) then
+               checkCurrentCS : do k = 1, j-1
+                  if (tagToCheck == trim(adjustl(this%LossyThinSurfs%cs(i)%C(k)%tag))) then
+                     foundDuplicate = .true.
+                     exit checkCurrentCS
+                  endif
+               end do checkCurrentCS
             endif
-        if (precounting==1) then
-            if (tama2/=0) then
-               tagtype%tag(numertag) =  this%LossyThinSurfs%cs(i)%C(1)%tag      
-            else
-               print *,'bug in tags. '
-               stop
+             
+            ! If not found and not first cs, check previous cs
+            if ((.not. foundDuplicate) .and. (i > 1)) then
+               checkPreviousCS : do m = 1, i-1
+                  if (this%LossyThinSurfs%cs(m)%nc > 0) then
+                     do k = 1, this%LossyThinSurfs%cs(m)%nc
+                        if (tagToCheck == trim(adjustl(this%LossyThinSurfs%cs(m)%C(k)%tag))) then
+                           print *,'Bug in LossyThinSurf Tags. Geometry have duplicated material associations'
+                           stop
+                        endif
+                     end do
+                  endif
+               end do checkPreviousCS
             endif
-            DO j = 1, tama2
-                if (trim(adjustl(this%LossyThinSurfs%cs(i)%C(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-        endif
+            if (foundDuplicate) then 
+               numertag = numertag - 1
+            else if (precounting == 1) then
+               tagtype%tag(numertag) = this%LossyThinSurfs%cs(i)%C(j)%tag
+            end if 
+         end do 
       end do
 
-      
       tama = this%twires%n_tw
       do i=1, tama
          numertag = numertag + 1
