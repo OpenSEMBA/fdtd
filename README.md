@@ -1,4 +1,4 @@
-![{63B38107-5D31-417E-8F6D-494075945788}](https://github.com/user-attachments/assets/32788197-5bb0-430c-a70a-5d4137bf4f55)[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 [![ubuntu](https://github.com/OpenSEMBA/fdtd/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/OpenSEMBA/fdtd/actions/workflows/ubuntu.yml)
 [![windows](https://github.com/OpenSEMBA/fdtd/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/OpenSEMBA/fdtd/actions/workflows/windows.yml)
