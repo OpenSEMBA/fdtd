@@ -6232,254 +6232,134 @@ do precounting=0,1
     !
     !
     !
+    
     tama = (this%DielRegs%nvols)
     DO i = 1, tama
-        numertag = numertag + 1; 
-        tama2 = (this%DielRegs%vols(i)%n_c2P)
-        tama3 = (this%DielRegs%vols(i)%n_c1P)
-        if ((i>1)) then 
-            tama2p = (this%DielRegs%vols(i-1)%n_c2P)
-            tama3p = (this%DielRegs%vols(i-1)%n_c1P)
-            if ((tama2/=0).and.(tama2p/=0)) then
-               if ((this%DielRegs%vols(i)%c2P(1)%tag == this%DielRegs%vols(i-1)%c2P(1)%tag)) then !do not increase
-                    numertag=numertag-1
-               endif
-            elseif ((tama3/=0).and.(tama3p/=0)) then
-               if ((this%DielRegs%vols(i)%c1P(1)%tag == this%DielRegs%vols(i-1)%c1P(1)%tag)) then
-                    numertag=numertag-1
-               endif
-            endif
-       endif
-       if (precounting==1) then
-            if (tama2/=0) then
-               tagtype%tag(numertag) =  this%DielRegs%vols(i)%c2P(1)%tag
-            elseif (tama3/=0) then
-               tagtype%tag(numertag) =  this%DielRegs%vols(i)%c1P(1)%tag
-            else
-                print *,'bug in tags. '
-                stop
-            endif
-            DO j = 1, tama2
-                if (trim(adjustl(this%DielRegs%vols(i)%c2P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-            DO j = 1, tama3
-                if (trim(adjustl(this%DielRegs%vols(i)%c1P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-        endif  
-    end do
-    !
-    tama = (this%DielRegs%nsurfs)
-    DO i = 1, tama
-        numertag = numertag + 1; 
-        tama2 = (this%DielRegs%surfs(i)%n_c2P)
-        tama3 = (this%DielRegs%surfs(i)%n_c1P)
-        if ((i>1)) then 
-            tama2p = (this%DielRegs%surfs(i-1)%n_c2P)
-            tama3p = (this%DielRegs%surfs(i-1)%n_c1P)
-            if ((tama2/=0).and.(tama2p/=0)) then
-               if ((this%DielRegs%surfs(i)%c2P(1)%tag == this%DielRegs%surfs(i-1)%c2P(1)%tag)) then !do not increase
-                    numertag=numertag-1
-               endif
-            elseif ((tama3/=0).and.(tama3p/=0)) then
-               if ((this%DielRegs%surfs(i)%c1P(1)%tag == this%DielRegs%surfs(i-1)%c1P(1)%tag)) then
-                    numertag=numertag-1
-               endif
-            endif
-        endif
-        if (precounting==1) then
-            if (tama2/=0) then
-               tagtype%tag(numertag) =  this%DielRegs%surfs(i)%c2P(1)%tag
-            elseif (tama3/=0) then
-               tagtype%tag(numertag) =  this%DielRegs%surfs(i)%c1P(1)%tag
-            else
-                print *,'bug in tags. '
-                stop
-            endif
-            DO j = 1, tama2
-                if (trim(adjustl(this%DielRegs%surfs(i)%c2P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-            DO j = 1, tama3
-                if (trim(adjustl(this%DielRegs%surfs(i)%c1P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-        endif  
-    end do
-    !
-    tama = (this%DielRegs%nlins)
-    DO i = 1, tama
-        numertag = numertag + 1; 
-        tama2 = (this%DielRegs%lins(i)%n_c2P)
-        tama3 = (this%DielRegs%lins(i)%n_c1P)
-        !!!ignoro esto para no complicar 170321 los repes c1p c2p
-        if ((i>1)) then 
-            tama2p = (this%DielRegs%lins(i-1)%n_c2P)
-            tama3p = (this%DielRegs%lins(i-1)%n_c1P)
-            if ((tama2/=0).and.(tama2p/=0)) then
-               if ((this%DielRegs%lins(i)%c2P(1)%tag == this%DielRegs%lins(i-1)%c2P(1)%tag)) then !do not increase
-                    numertag=numertag-1
-               endif
-            elseif ((tama3/=0).and.(tama3p/=0)) then
-               if ((this%DielRegs%lins(i)%c1P(1)%tag == this%DielRegs%lins(i-1)%c1P(1)%tag)) then
-                    numertag=numertag-1
-               endif
-            endif
-        endif
-        if (precounting==1) then
-            if (tama2/=0) then
-               tagtype%tag(numertag) =  this%DielRegs%lins(i)%c2P(1)%tag
-            elseif (tama3/=0) then
-               tagtype%tag(numertag) =  this%DielRegs%lins(i)%c1P(1)%tag
-            else
-                print *,'bug in tags. '
-                stop
-            endif
-            DO j = 1, tama2
-                if (trim(adjustl(this%DielRegs%lins(i)%c2P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-            DO j = 1, tama3
-                if (trim(adjustl(this%DielRegs%lins(i)%c1P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-        endif  
-        end do
-!
-!
+        tama2 = (this%DielRegs%vols(i)%n_c1P)
+        tama3 = (this%DielRegs%vols(i)%n_c2P)
+
+        if ((tama2 == 0) .and. (tama3==0)) then
+         print *,'Bug in Dielectric Tags. Missing coordinates'
+         stop
+     end if
+ 
+    ! Check c1P coordinates
+     call checkDielectricComponentTags(this%DielRegs%vols(i), this%DielRegs%vols(1:i-1), i-1, &
+     'c1P', numertag, tagtype, precounting, &
+     'Bug in Dielectric Volume Tags')
+
+      ! Check c2P coordinates
+      call checkDielectricComponentTags(this%DielRegs%vols(i), this%DielRegs%vols(1:i-1), i-1, &
+     'c2P', numertag, tagtype, precounting, &
+     'Bug in Dielectric Volume Tags')
+ end do
+ 
+ ! Similar for surfaces
+ tama = (this%DielRegs%nSurfs)
+ DO i = 1, tama
+     tama2 = (this%DielRegs%surfs(i)%n_c1P)
+     tama3 = (this%DielRegs%surfs(i)%n_c2P)
+ 
+     if ((tama2 == 0) .and. (tama3==0)) then
+         print *,'Bug in Dielectric Tags. Missing coordinates'
+         stop
+     end if
+ 
+    ! Check c1P coordinates
+     call checkDielectricComponentTags(this%DielRegs%surfs(i), this%DielRegs%surfs(1:i-1), i-1, &
+     'c1P', numertag, tagtype, precounting, &
+     'Bug in Dielectric Surface Tags')
+
+   ! Check c2P coordinates
+   call checkDielectricComponentTags(this%DielRegs%surfs(i), this%DielRegs%surfs(1:i-1), i-1, &
+     'c2P', numertag, tagtype, precounting, &
+     'Bug in Dielectric Surface Tags')
+ end do
+
+  ! Similar for surfaces
+ tama = (this%DielRegs%nLins)
+ DO i = 1, tama
+     tama2 = (this%DielRegs%Lins(i)%n_c1P)
+     tama3 = (this%DielRegs%Lins(i)%n_c2P)
+ 
+     if ((tama2 == 0) .and. (tama3==0)) then
+         print *,'Bug in Dielectric Tags. Missing coordinates'
+         stop
+     end if
+ 
+     ! Check c1P coordinates
+     call checkDielectricComponentTags(this%DielRegs%lins(i), this%DielRegs%lins(1:i-1), i-1, &
+     'c2P', numertag, tagtype, precounting, &
+     'Bug in Dielectric Surface Tags')
+ 
+     ! Check c2P coordinates
+     call checkDielectricComponentTags(this%DielRegs%lins(i), this%DielRegs%lins(1:i-1), i-1, &
+     'c2P', numertag, tagtype, precounting, &
+     'Bug in Dielectric Surface Tags')
+ end do
 !   
-    tama = (this%animats%nvols)
-    DO i = 1, tama
-        numertag = numertag + 1; 
-        tama2 = (this%animats%vols(i)%n_c2P)
-        tama3 = (this%animats%vols(i)%n_c1P)
-        if ((i>1)) then 
-            if (tama2/=0) then
-               if ((this%animats%vols(i)%c2P(1)%tag ==this%animats%vols(i-1)%c2P(1)%tag)) then !do not increase
-                    numertag=numertag-1
-               endif
-            elseif (tama3/=0) then
-               if ((this%animats%vols(i)%c1P(1)%tag == this%animats%vols(i-1)%c1P(1)%tag)) then
-                    numertag=numertag-1
-               endif
-            endif
-        endif
-        if (precounting==1) then
-            if (tama2/=0) then
-               tagtype%tag(numertag) =  this%animats%vols(i)%c2P(1)%tag
-            elseif (tama3/=0) then
-               tagtype%tag(numertag) =  this%animats%vols(i)%c1P(1)%tag
-            else
-                print *,'bug in tags. '
-                stop
-            endif
-            DO j = 1, tama2
-                if (trim(adjustl(this%animats%vols(i)%c2P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-            DO j = 1, tama3
-                if (trim(adjustl(this%animats%vols(i)%c1P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-        endif  
-    end do
+   tama = (this%animats%nvols)
+   DO i = 1, tama
+      tama2 = (this%DielRegs%vols(i)%n_c1P)
+      tama3 = (this%DielRegs%vols(i)%n_c2P)
+  
+      if ((tama2 == 0) .and. (tama3==0)) then
+          print *,'Bug in Animat Tags. Missing coordinates'
+          stop
+      end if
+  
+      ! Check c1P coordinates
+      call checkAnimatedComponentTags(this%aniMats%vols(i), this%aniMats%vols(1:i-1), i-1, &
+                                'c1P', numertag, tagtype, precounting, &
+                                'Bug in Animat Volume Tags')
+  
+      ! Check c2P coordinates
+      call checkAnimatedComponentTags(this%aniMats%vols(i), this%aniMats%vols(1:i-1), i-1, &
+                                'c2P', numertag, tagtype, precounting, &
+                                'Bug in Animat Volume Tags')
+  end do
     !
-    tama = (this%animats%nsurfs)
+    tama = (this%animats%nSurfs)
     DO i = 1, tama
-        numertag = numertag + 1; 
-        tama2 = (this%animats%surfs(i)%n_c2P)
-        tama3 = (this%animats%surfs(i)%n_c1P)
-        if ((i>1)) then 
-            if (tama2/=0) then
-               if ((this%animats%surfs(i)%c2P(1)%tag == this%animats%surfs(i-1)%c2P(1)%tag)) then !do not increase
-                    numertag=numertag-1
-               endif
-            elseif (tama3/=0) then
-               if ((this%animats%surfs(i)%c1P(1)%tag == this%animats%surfs(i-1)%c1P(1)%tag)) then
-                    numertag=numertag-1
-               endif
-            endif
-        endif
-        if (precounting==1) then
-            if (tama2/=0) then
-               tagtype%tag(numertag) =  this%animats%surfs(i)%c2P(1)%tag
-            elseif (tama3/=0) then
-               tagtype%tag(numertag) =  this%animats%surfs(i)%c1P(1)%tag
-            else
-                print *,'bug in tags. '
-                stop
-            endif
-            DO j = 1, tama2
-                if (trim(adjustl(this%animats%surfs(i)%c2P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-            DO j = 1, tama3
-                if (trim(adjustl(this%animats%surfs(i)%c1P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-        endif  
-    end do
+       tama2 = (this%DielRegs%Surfs(i)%n_c1P)
+       tama3 = (this%DielRegs%Surfs(i)%n_c2P)
+   
+       if ((tama2 == 0) .and. (tama3==0)) then
+           print *,'Bug in Animat Tags. Missing coordinates'
+           stop
+       end if
+     
+       ! Check c1P coordinates
+       call checkAnimatedComponentTags(this%aniMats%Surfs(i), this%aniMats%Surfs(1:i-1), i-1, &
+                                 'c1P', numertag, tagtype, precounting, &
+                                 'Bug in Animat Surface Tags')
+     
+       ! Check c2P coordinates
+       call checkAnimatedComponentTags(this%aniMats%Surfs(i), this%aniMats%Surfs(1:i-1), i-1, &
+                                 'c2P', numertag, tagtype, precounting, &
+                                 'Bug in Animat Surface Tags')
+   end do
     !
-    tama = (this%animats%nlins)
+    tama = (this%animats%nLins)
     DO i = 1, tama
-        numertag = numertag + 1; 
-        tama2 = (this%animats%lins(i)%n_c2P)
-        tama3 = (this%animats%lins(i)%n_c1P)
-        if ((i>1)) then 
-            if (tama2/=0) then
-               if ((this%animats%lins(i)%c2P(1)%tag  == this%animats%lins(i-1)%c2P(1)%tag )) then !do not increase
-                    numertag=numertag-1
-               endif
-            elseif (tama3/=0) then
-               if ((this%animats%lins(i)%c1P(1)%tag == this%animats%lins(i-1)%c1P(1)%tag)) then
-                    numertag=numertag-1
-               endif
-            endif
-        endif
-        if (precounting==1) then
-            if (tama2/=0) then
-               tagtype%tag(numertag) =  this%animats%lins(i)%c2P(1)%tag 
-            elseif (tama3/=0) then
-               tagtype%tag(numertag) =  this%animats%lins(i)%c1P(1)%tag
-            else
-                print *,'bug in tags. '
-                stop
-            endif
-            DO j = 1, tama2
-                if (trim(adjustl(this%animats%lins(i)%c2P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-            DO j = 1, tama3
-                if (trim(adjustl(this%animats%lins(i)%c1P(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
-                    print *,'bug in tags. '
-                    stop
-                endif
-            end do
-        endif  
-    end do
+       tama2 = (this%DielRegs%Lins(i)%n_c1P)
+       tama3 = (this%DielRegs%Lins(i)%n_c2P)
+
+       if ((tama2 == 0) .and. (tama3==0)) then
+           print *,'Bug in Animat Tags. Missing coordinates'
+           stop
+       end if
+
+       ! Check c1P coordinates
+       call checkAnimatedComponentTags(this%aniMats%Lins(i), this%aniMats%Lins(1:i-1), i-1, &
+                                 'c1P', numertag, tagtype, precounting, &
+                                 'Bug in Animat Line Tags')
+
+       ! Check c2P coordinates
+       call checkAnimatedComponentTags(this%aniMats%Lins(i), this%aniMats%Lins(1:i-1), i-1, &
+                                 'c2P', numertag, tagtype, precounting, &
+                                 'Bug in Animat Line Tags')
+   end do
 !
 !
 !   
@@ -6605,7 +6485,7 @@ do precounting=0,1
             if (foundDuplicate) then 
                numertag = numertag - 1
             else if (precounting == 1) then
-               tagtype%tag(numertag) = this%LossyThinSurfs%cs(i)%C(j)%tag
+               tagtype%tag(numertag) = tagToCheck
             end if 
          end do 
       end do
@@ -6724,6 +6604,174 @@ end do !del precounting
 
 return
 end subroutine cuentatags
+
+
+SUBROUTINE checkDielectricComponentTags (component, prev_components, n_prev, coord_type, numertag, tagtype, precounting, error_msg)
+   type(Dielectric_t), intent(in) :: component        ! Current component
+   type(Dielectric_t), intent(in) :: prev_components(:) ! Array of previous components
+   integer, intent(in) :: n_prev                            ! Number of previous components
+   character(len=*), intent(in) :: coord_type               ! 'c1P' or 'c2P'
+   integer, intent(inout) :: numertag
+   type(tagtype_t), intent(inout) :: tagtype
+   integer, intent(in) :: precounting
+   character(len=*), intent(in) :: error_msg
+   
+   logical :: foundDuplicate
+   character(len=BUFSIZE) :: tagToCheck
+   integer :: i, j, k, m, tama2, prev_size
+
+   if (coord_type == 'c1P') then
+       tama2 = component%n_c1P
+   else
+       tama2 = component%n_c2P
+   endif
+
+   check_tags: do j = 1, tama2
+       numertag = numertag + 1
+       foundDuplicate = .false.
+       
+       ! Get tag to check based on coord_type
+       if (coord_type == 'c1P') then
+           tagToCheck = trim(adjustl(component%c1P(j)%tag))
+       else
+           tagToCheck = trim(adjustl(component%c2P(j)%tag))
+       endif
+
+       ! Check current component up to j-1
+       if (j > 1) then
+           check_current: do k = 1, j-1
+               if (coord_type == 'c1P') then
+                   if (tagToCheck == trim(adjustl(component%c1P(k)%tag))) then
+                       foundDuplicate = .true.
+                       exit check_current
+                   endif
+               else
+                   if (tagToCheck == trim(adjustl(component%c2P(k)%tag))) then
+                       foundDuplicate = .true.
+                       exit check_current
+                   endif
+               endif
+           end do check_current
+       endif
+
+       ! If not found, check all previous components
+       if (.not. foundDuplicate) then
+           check_previous: do m = 1, n_prev
+               ! Check c1P of previous component
+               if (prev_components(m)%n_c1P > 0) then
+                   do k = 1, prev_components(m)%n_c1P
+                       if (tagToCheck == trim(adjustl(prev_components(m)%c1P(k)%tag))) then
+                           print *, error_msg
+                           print *, 'Duplicate tag found:', tagToCheck
+                           stop
+                       endif
+                   end do
+               endif
+               
+               ! Check c2P of previous component
+               if (prev_components(m)%n_c2P > 0) then
+                   do k = 1, prev_components(m)%n_c2P
+                       if (tagToCheck == trim(adjustl(prev_components(m)%c2P(k)%tag))) then
+                           print *, error_msg
+                           print *, 'Duplicate tag found:', tagToCheck
+                           stop
+                       endif
+                   end do
+               endif
+           end do check_previous
+       endif
+
+       if (foundDuplicate) then 
+           numertag = numertag - 1
+       else if (precounting == 1) then
+           tagtype%tag(numertag) = tagToCheck
+       end if 
+   end do check_tags
+END SUBROUTINE
+
+
+SUBROUTINE checkAnimatedComponentTags (component, prev_components, n_prev, coord_type, numertag, tagtype, precounting, error_msg)
+   type(ANISOTROPICbody_t), intent(in) :: component        ! Current component
+   type(ANISOTROPICbody_t), intent(in) :: prev_components(:) ! Array of previous components
+   integer, intent(in) :: n_prev                            ! Number of previous components
+   character(len=*), intent(in) :: coord_type               ! 'c1P' or 'c2P'
+   integer, intent(inout) :: numertag
+   type(tagtype_t), intent(inout) :: tagtype
+   integer, intent(in) :: precounting
+   character(len=*), intent(in) :: error_msg
+   
+   logical :: foundDuplicate
+   character(len=BUFSIZE) :: tagToCheck
+   integer :: i, j, k, m, tama2, prev_size
+
+   if (coord_type == 'c1P') then
+       tama2 = component%n_c1P
+   else
+       tama2 = component%n_c2P
+   endif
+
+   check_tags: do j = 1, tama2
+       numertag = numertag + 1
+       foundDuplicate = .false.
+       
+       ! Get tag to check based on coord_type
+       if (coord_type == 'c1P') then
+           tagToCheck = trim(adjustl(component%c1P(j)%tag))
+       else
+           tagToCheck = trim(adjustl(component%c2P(j)%tag))
+       endif
+
+       ! Check current component up to j-1
+       if (j > 1) then
+           check_current: do k = 1, j-1
+               if (coord_type == 'c1P') then
+                   if (tagToCheck == trim(adjustl(component%c1P(k)%tag))) then
+                       foundDuplicate = .true.
+                       exit check_current
+                   endif
+               else
+                   if (tagToCheck == trim(adjustl(component%c2P(k)%tag))) then
+                       foundDuplicate = .true.
+                       exit check_current
+                   endif
+               endif
+           end do check_current
+       endif
+
+       ! If not found, check all previous components
+       if (.not. foundDuplicate) then
+           check_previous: do m = 1, n_prev
+               ! Check c1P of previous component
+               if (prev_components(m)%n_c1P > 0) then
+                   do k = 1, prev_components(m)%n_c1P
+                       if (tagToCheck == trim(adjustl(prev_components(m)%c1P(k)%tag))) then
+                           print *, error_msg
+                           print *, 'Duplicate tag found:', tagToCheck
+                           stop
+                       endif
+                   end do
+               endif
+               
+               ! Check c2P of previous component
+               if (prev_components(m)%n_c2P > 0) then
+                   do k = 1, prev_components(m)%n_c2P
+                       if (tagToCheck == trim(adjustl(prev_components(m)%c2P(k)%tag))) then
+                           print *, error_msg
+                           print *, 'Duplicate tag found:', tagToCheck
+                           stop
+                       endif
+                   end do
+               endif
+           end do check_previous
+       endif
+
+       if (foundDuplicate) then 
+           numertag = numertag - 1
+       else if (precounting == 1) then
+           tagtype%tag(numertag) = tagToCheck
+       end if 
+   end do check_tags
+END SUBROUTINE
 
 
 function searchtag(tagtype,tag) result(numertag)
