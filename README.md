@@ -1,4 +1,4 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+![{63B38107-5D31-417E-8F6D-494075945788}](https://github.com/user-attachments/assets/32788197-5bb0-430c-a70a-5d4137bf4f55)[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
 [![ubuntu](https://github.com/OpenSEMBA/fdtd/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/OpenSEMBA/fdtd/actions/workflows/ubuntu.yml)
 [![windows](https://github.com/OpenSEMBA/fdtd/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/OpenSEMBA/fdtd/actions/workflows/windows.yml)
@@ -52,7 +52,8 @@ Tests must be run from the root folder. `python` wrapper test assumes that `semb
 
 This code is licensed under the terms of the [MIT License](LICENSE). All rights reserved by the University of Granada (Spain)
 
-# Funding
+## Funding
 
 - Spanish Ministry of Science and Innovation (MICIN/AEI) (Grant Number: PID2022-137495OB-C31)
 - European Union, HECATE project. (HE-HORIZON-JU-Clean-Aviation-2022-01)
+- iSense Project. In-Situ Monitoring of Electromagnetic Interference. (HE-HORIZON-MSCA-2023-DN-01)
