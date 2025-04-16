@@ -1,0 +1,470 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 6.162666244948706e-12,
+        "numberOfSteps": 500,
+        "additionalArguments": ""
+    },
+    "boundary": {
+        "all": {
+            "type": "mur"
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                100,
+                100,
+                50
+            ],
+            "steps": {
+                "x": [
+                    0.006
+                ],
+                "y": [
+                    0.004
+                ],
+                "z": [
+                    0.004
+                ]
+            }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    50.0,
+                    50.0,
+                    50.0
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    50.0,
+                    50.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 3,
+                "relativePosition": [
+                    50.0,
+                    50.0,
+                    21.0
+                ]
+            },
+            {
+                "id": 4,
+                "relativePosition": [
+                    65.0,
+                    50.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 5,
+                "relativePosition": [
+                    20.0,
+                    28.0,
+                    10.0
+                ]
+            },
+            {
+                "id": 6,
+                "relativePosition": [
+                    20.0,
+                    28.0,
+                    0.0
+                ]
+            },
+            {
+                "id": 7,
+                "relativePosition": [
+                    20.0,
+                    73.0,
+                    10.0
+                ]
+            },
+            {
+                "id": 8,
+                "relativePosition": [
+                    20.0,
+                    73.0,
+                    0.0
+                ]
+            },
+            {
+                "id": 9,
+                "relativePosition": [
+                    80.0,
+                    28.0,
+                    10.0
+                ]
+            },
+            {
+                "id": 10,
+                "relativePosition": [
+                    80.0,
+                    28.0,
+                    0.0
+                ]
+            },
+            {
+                "id": 11,
+                "relativePosition": [
+                    80.0,
+                    73.0,
+                    10.0
+                ]
+            },
+            {
+                "id": 12,
+                "relativePosition": [
+                    80.0,
+                    73.0,
+                    0.0
+                ]
+            }
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            50.0,
+                            50.0,
+                            50.0
+                        ],
+                        [
+                            50.0,
+                            50.0,
+                            40.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 2,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            49,
+                            49,
+                            45
+                        ],
+                        [
+                            51,
+                            51,
+                            45
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            19,
+                            26,
+                            5
+                        ],
+                        [
+                            21,
+                            29,
+                            5
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 4,
+                "type": "node",
+                "coordinateIds": [
+                    3
+                ]
+            },
+            {
+                "id": 5,
+                "type": "node",
+                "coordinateIds": [
+                    4
+                ]
+            },
+            {
+                "id": 6,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            20.0,
+                            28.0,
+                            10.0
+                        ],
+                        [
+                            20.0,
+                            28.0,
+                            0.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 7,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            20.0,
+                            73.0,
+                            10.0
+                        ],
+                        [
+                            20.0,
+                            73.0,
+                            0.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 8,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            80.0,
+                            28.0,
+                            10.0
+                        ],
+                        [
+                            80.0,
+                            28.0,
+                            0.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 9,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            80.0,
+                            73.0,
+                            10.0
+                        ],
+                        [
+                            80.0,
+                            73.0,
+                            0.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 10,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            40,
+                            35,
+                            10
+                        ],
+                        [
+                            60,
+                            65,
+                            10
+                        ]
+                    ],
+                    [
+                        [
+                            40,
+                            35,
+                            10
+                        ],
+                        [
+                            60,
+                            35,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            40,
+                            35,
+                            10
+                        ],
+                        [
+                            40,
+                            65,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            40,
+                            35,
+                            40
+                        ],
+                        [
+                            60,
+                            65,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            60,
+                            35,
+                            10
+                        ],
+                        [
+                            60,
+                            65,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            40,
+                            65,
+                            10
+                        ],
+                        [
+                            60,
+                            65,
+                            40
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 11,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            20,
+                            28,
+                            10
+                        ],
+                        [
+                            80,
+                            73,
+                            10
+                        ]
+                    ]
+                ]
+            }
+        ]
+    },
+    "materials": [
+        {
+        
+            "id": 1,
+            "name": "DielectricMaterial",
+            "type": "isotropic",
+            "relativePermittivity": 4
+        
+        },
+        {
+            "id": 2,
+            "type": "pec"
+        }
+    ],
+    "materialAssociations": [
+        {
+            "type": "surface",
+            "materialId": 2,
+            "elementIds": [
+                6,
+                7,
+                8,
+                9
+            ]
+        },
+        {
+            "type": "surface",
+            "materialId": 1,
+            "elementIds": [
+                10,
+                11
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "name": "nodalSource",
+            "type": "nodalSource",
+            "magnitudeFile": "predefinedExcitation.1.exc",
+            "elementIds": [
+                1
+            ],
+            "field": "electric"
+        }
+    ],
+    "probes": [
+        {
+            "name": "Point probe",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [
+                5
+            ],
+            "directions": [
+                "x",
+                "y",
+                "z"
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "Point probe001",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [
+                4
+            ],
+            "directions": [
+                "x",
+                "y",
+                "z"
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "BulkProbeExit1",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                3
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "BulkProbeEntry",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                2
+            ],
+            "domain": {
+                "type": "time"
+            }
+        }
+    ]
+}
