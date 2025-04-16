@@ -6444,51 +6444,12 @@ CONTAINS
             endif
          end do
 !!!
-
          tama = this%LossyThinSurfs%length
          DO i = 1, tama
-            tama2 = this%LossyThinSurfs%cs(i)%nc
-            if (tama2 == 0) then
-               print *,'Bug in LossyThinSurf Tags. Missing coordinates'
-               stop
-            end if
-            do j = 1, tama2
-               numertag = numertag + 1
-               foundDuplicate = .false.
-
-               ! Check if tag already exists in current or previous elements
-               tagToCheck = trim(adjustl(this%LossyThinSurfs%cs(i)%C(j)%tag))
-
-               ! First check current cs up to j-1
-               if (j > 1) then
-                  checkCurrentCS : do k = 1, j-1
-                     if (tagToCheck == trim(adjustl(this%LossyThinSurfs%cs(i)%C(k)%tag))) then
-                        foundDuplicate = .true.
-                        exit checkCurrentCS
-                     endif
-                  end do checkCurrentCS
-               endif
-
-               ! If not found and not first cs, check previous cs
-               if ((.not. foundDuplicate) .and. (i > 1)) then
-                  checkPreviousCS : do m = 1, i-1
-                     if (this%LossyThinSurfs%cs(m)%nc > 0) then
-                        do k = 1, this%LossyThinSurfs%cs(m)%nc
-                           if (tagToCheck == trim(adjustl(this%LossyThinSurfs%cs(m)%C(k)%tag))) then
-                              print *,'Bug in LossyThinSurf Tags. Geometry have duplicated material associations'
-                              stop
-                           endif
-                        end do
-                     endif
-                  end do checkPreviousCS
-               endif
-               if (foundDuplicate) then
-                  numertag = numertag - 1
-               else if (precounting == 1) then
-                  tagtype%tag(numertag) = tagToCheck
-               end if
-            end do
-         end do
+            call checkLossyTags(this%LossyThinSurfs%cs(i), &
+                              this%LossyThinSurfs%cs(1:i-1), &
+                              i-1, numertag, tagtype, precounting)
+         END DO
 
          tama = this%twires%n_tw
          do i=1, tama
@@ -6757,6 +6718,63 @@ CONTAINS
                   do k = 1, prev_components(m)%n_c2P
                      if (tagToCheck == trim(adjustl(prev_components(m)%c2P(k)%tag))) then
                         print *, error_msg
+                        print *, 'Duplicate tag found:', tagToCheck
+                        stop
+                     endif
+                  end do
+               endif
+            end do check_previous
+         endif
+
+         if (foundDuplicate) then
+            numertag = numertag - 1
+         else if (precounting == 1) then
+            tagtype%tag(numertag) = tagToCheck
+         end if
+      end do check_tags
+   END SUBROUTINE
+
+   SUBROUTINE checkLossyTags(component, prev_components, n_prev, numertag, tagtype, precounting)
+      type(LossyThinSurface), intent(in) :: component        ! Current component
+      type(LossyThinSurface), intent(in) :: prev_components(:) ! Array of previous components
+      integer, intent(in) :: n_prev                         ! Number of previous components
+      integer, intent(inout) :: numertag
+      type(tagtype_t), intent(inout) :: tagtype
+      integer, intent(in) :: precounting
+
+      logical :: foundDuplicate
+      character(len=BUFSIZE) :: tagToCheck
+      integer :: i, j, k, m, tama2
+
+      tama2 = component%nc
+      if (tama2 == 0) then
+         print *, 'Bug in LossyThinSurf Tags. Missing coordinates'
+         stop
+      endif
+
+      check_tags: do j = 1, tama2
+         numertag = numertag + 1
+         foundDuplicate = .false.
+
+         tagToCheck = trim(adjustl(component%C(j)%tag))
+
+         ! Check current component up to j-1
+         if (j > 1) then
+            check_current: do k = 1, j-1
+               if (tagToCheck == trim(adjustl(component%C(k)%tag))) then
+                  foundDuplicate = .true.
+                  exit check_current
+               endif
+            end do check_current
+         endif
+
+         ! If not found, check all previous components
+         if (.not. foundDuplicate) then
+            check_previous: do m = 1, n_prev
+               if (prev_components(m)%nc > 0) then
+                  do k = 1, prev_components(m)%nc
+                     if (tagToCheck == trim(adjustl(prev_components(m)%C(k)%tag))) then
+                        print *, 'Bug in LossyThinSurf Tags. Geometry have duplicated material associations'
                         print *, 'Duplicate tag found:', tagToCheck
                         stop
                      endif
