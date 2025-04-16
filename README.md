@@ -52,7 +52,8 @@ Tests must be run from the root folder. `python` wrapper test assumes that `semb
 
 This code is licensed under the terms of the [MIT License](LICENSE). All rights reserved by the University of Granada (Spain)
 
-# Funding
+## Funding
 
 - Spanish Ministry of Science and Innovation (MICIN/AEI) (Grant Number: PID2022-137495OB-C31)
 - European Union, HECATE project. (HE-HORIZON-JU-Clean-Aviation-2022-01)
+- iSense Project. In-Situ Monitoring of Electromagnetic Interference. (HE-HORIZON-MSCA-2023-DN-01)
