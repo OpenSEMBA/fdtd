@@ -6769,14 +6769,13 @@ CONTAINS
          endif
 
          ! If not found, check all previous components
-         if (.not. foundDuplicate) then
+         
+         if ((.not. foundDuplicate) .and. (n_prev>0)) then
             check_previous: do m = 1, n_prev
                if (prev_components(m)%nc > 0) then
                   do k = 1, prev_components(m)%nc
                      if (tagToCheck == trim(adjustl(prev_components(m)%C(k)%tag))) then
-                        print *, 'Bug in LossyThinSurf Tags. Geometry have duplicated material associations'
-                        print *, 'Duplicate tag found:', tagToCheck
-                        stop
+                        foundDuplicate = .true.
                      endif
                   end do
                endif
