@@ -4,8 +4,11 @@ module mtl_bundle_mod
     use probes_mod
     use dispersive_mod
     use mtl_mod
-    use FDETYPES, only: SUBCOMM_MPI
-    implicit none
+#ifdef CompileWithMPI
+    use FDETYPES, only: SUBCOMM_MPI, REALSIZE, MPI_STATUS_SIZE
+#endif
+!     use MPIcomm
+     implicit none
 
     type, public :: mtl_bundle_t
         character (len=:), allocatable :: name
@@ -43,6 +46,10 @@ module mtl_bundle_mod
         procedure :: addTransferImpedance => bundle_addTransferImpedance
         procedure :: setConnectorTransferImpedance => bundle_setConnectorTransferImpedance
         procedure :: setExternalLongitudinalField => bundle_setExternalLongitudinalField
+#ifdef CompileWithMPI
+        procedure :: Comm_MPI_MTL_V
+#endif
+
 
     end type mtl_bundle_t
 
@@ -314,25 +321,10 @@ contains
 
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
-        integer :: i, i0, i1
+        integer :: i
 
-! #ifdef CompileWithMPI
-!         call mpi_barrier(subcomm_mpi,ierr)
-! #endif
-        integer :: ierr, rank, sizeof
-        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
-        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
 
-        i0 = 2
-        i1 = this%number_of_divisions
-        if (.not. this%is_left_end) i0 = 1
-        if (.not. this%is_right_end) i1 = this%number_of_divisions + 1
-
-! #ifdef CompileWithMPI
-!         call mpi_barrier(subcomm_mpi,ierr)
-! #endif
-
-        do i = 2, i1
+        do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
         end do
@@ -344,6 +336,11 @@ contains
         real, dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
         real :: eps_r
+
+#ifdef CompileWithMPI
+        ! call this%Comm_MPI_MTL_V()
+#endif
+        ! write(*,*)'advance'
         call this%transfer_impedance%updateQ3Phi()
         i_prev = this%i
 
@@ -377,4 +374,38 @@ contains
         end if
     end subroutine
 
+#ifdef CompileWithMPI
+    subroutine Comm_MPI_MTL_V(this)
+        class(mtl_bundle_t) :: this
+        integer :: number_of_divisions, number_of_conductors, i
+        integer :: ierr, rank, sizeof,status(MPI_STATUS_SIZE)
+
+        call mpi_barrier(subcomm_mpi,ierr)
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+
+        number_of_conductors = size(this%v,1)
+        number_of_divisions = size(this%v,2)-1
+
+        if (.not. this%is_left_end) then 
+            do i = 1, number_of_conductors
+                ! MPI_Send(buf, count, datatype, dest, tag, comm, ierror)
+                ! MPI_Recv(buf, count, datatype, source, tag, comm, status, ierror)
+                call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 1000*(rank-1)+i,  SUBCOMM_MPI, ierr)
+                call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 100*rank+i,  SUBCOMM_MPI, status, ierr)
+            end do
+        end if
+        if (.not. this%is_right_end) then 
+            do i = 1, number_of_conductors
+                ! MPI_Send(buf, count, datatype, dest, tag, comm, ierror)
+                ! MPI_Recv(buf, count, datatype, source, tag, comm, status, ierror)
+                call MPI_send(this%v(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 100*(rank+1)+i, SUBCOMM_MPI, ierr)
+                call MPI_recv(this%v(i,number_of_divisions + 1), 1, REALSIZE, rank+1, 1000*rank+i, SUBCOMM_MPI, status, ierr)
+            end do
+        end if
+
+        call mpi_barrier(subcomm_mpi,ierr)
+
+    end subroutine
+#endif
 end module mtl_bundle_mod

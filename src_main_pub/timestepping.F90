@@ -2026,6 +2026,7 @@ contains
          call CloseObservationFiles(sgg,layoutnumber,size,singlefilewrite,initialtimestep,lastexecutedtime,resume) !dump the remaining to disk
 #ifdef CompileWithMTLN      
          if (use_mtln_wires) then
+            ! call GatherMPI_MTL()
             call FlushMTLNObservationFiles(nEntradaRoot)
          end if
 #endif

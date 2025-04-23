@@ -147,6 +147,8 @@ contains
         integer :: i,j
         integer ::b, c, v_idx, i_idx
             
+        ! left_end, right_end
+
         do i = 1, size(this%network_manager%networks)
             do j = 1, size(this%network_manager%networks(i)%nodes)
                 b = this%network_manager%networks(i)%nodes(j)%bundle_number

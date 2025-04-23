@@ -138,9 +138,12 @@ contains
 #ifdef CompileWithMPI
          call mpi_barrier(subcomm_mpi,ierr)
 #endif
-   
+
          do m = 1, mtln_solver%number_of_bundles
             do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
+#ifdef CompileWithMPI
+               call mpi_barrier(subcomm_mpi,ierr)
+#endif
                l = hwires%CurrentSegment(indexMap(m,n))%Lind
                c = mu0*eps0/l
                if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
