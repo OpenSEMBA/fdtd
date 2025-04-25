@@ -450,4 +450,17 @@ def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_p
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
     assert (solver.getVTKMap()[0] is not None)
-    
+
+def testCanAssignSameSurfaceImpedanceToMultipleGeometries(tmp_path):
+    fn = CASES_FOLDER + 'multipleAssigments/multipleSurfaceImpedance.fdtd.json'
+
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
+
+def testCanAssignSameDielectricMaterialToMultipleGeometries(tmp_path):
+    fn = CASES_FOLDER + 'multipleAssigments/multipleDielectricMaterial.fdtd.json'
+
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
