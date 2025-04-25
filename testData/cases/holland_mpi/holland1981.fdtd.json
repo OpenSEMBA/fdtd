@@ -27,13 +27,18 @@
         {
             "id": 2,
             "type": "terminal",
-            "terminations": [{"type": "open"}]
+            "terminations": [{"type": "series", "resistance":50}]
+        },
+        {
+            "id": 3,
+            "type": "terminal",
+            "terminations": [{"type": "series", "resistance":100}]
         }
     ],
 
     "mesh": {
         "grid": {
-            "numberOfCells": [20, 20, 22],
+            "numberOfCells": [40, 40, 40],
             "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
         },
         "coordinates": [
@@ -57,7 +62,7 @@
             "name" : "single_wire",
             "materialId": 1,
             "initialTerminalId": 2,
-            "endTerminalId": 2,
+            "endTerminalId": 3,
             "elementIds": [2]
         }
     ],

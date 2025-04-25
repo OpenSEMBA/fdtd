@@ -338,7 +338,7 @@ contains
         real :: eps_r
 
 #ifdef CompileWithMPI
-        ! call this%Comm_MPI_MTL_V()
+        call this%Comm_MPI_MTL_V()
 #endif
         ! write(*,*)'advance'
         call this%transfer_impedance%updateQ3Phi()
@@ -380,7 +380,7 @@ contains
         integer :: number_of_divisions, number_of_conductors, i
         integer :: ierr, rank, sizeof,status(MPI_STATUS_SIZE)
 
-        call mpi_barrier(subcomm_mpi,ierr)
+        ! call mpi_barrier(subcomm_mpi,ierr)
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
 
@@ -404,7 +404,7 @@ contains
             end do
         end if
 
-        call mpi_barrier(subcomm_mpi,ierr)
+        ! call mpi_barrier(subcomm_mpi,ierr)
 
     end subroutine
 #endif

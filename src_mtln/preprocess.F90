@@ -79,10 +79,14 @@ contains
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
         res%bundles = res%buildMTLBundles(line_bundles)
+        if (size(res%bundles) == 0) then 
+            res%network_manager%has_networks = .false.
+            return
+        end if
 
-#ifdef CompileWithMPI
-        call mpi_barrier(subcomm_mpi, ierr)
-#endif
+! #ifdef CompileWithMPI
+!         call mpi_barrier(subcomm_mpi, ierr)
+! #endif
         res%cable_name_to_bundle_id = mapCablesToBundlesId(line_bundles, res%bundles)
         if (size(parsed%probes) /= 0) then
             res%probes = res%addProbesWithId(parsed%probes)
@@ -90,7 +94,6 @@ contains
             allocate(res%probes(0))
         end if
         res%network_manager = res%buildNetworkManager(parsed%networks)
-        
     end function
 
 
@@ -298,22 +301,35 @@ contains
         integer :: i, j, k
         integer :: nb, nl, nc
         integer, dimension(1:2) :: n_segments
-        nb = size(cable_bundles)
+        logical :: buildLine = .true.
+
+        nb = 0
+        ! count bundles in layer
+        do i = 1, size(cable_bundles)
+            n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+            if (n_segments(1) /= -1 .and. n_segments(2) /= -1) nb = nb + 1
+        end do
 
         allocate(res(nb))
-        do i = 1, nb
-            nl = size(cable_bundles(i)%levels)
-            allocate(res(i)%levels(nl))
+        nb = 0
+        do i = 1, size(cable_bundles)
+            if (present(alloc)) then 
+                n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+                if (n_segments(1) == -1 .and. n_segments(2) == -1) buildLine = .false.
+            end if
+            if (buildLine) then 
+                nb = nb + 1
+                nl = size(cable_bundles(i)%levels)
+                allocate(res(nb)%levels(nl))
 
-            if (present(alloc)) n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
-
-            do j = 1, nl
-                nc = size(cable_bundles(i)%levels(j)%cables)
-                allocate(res(i)%levels(j)%lines(nc))
-                do k = 1, nc
-                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, n_segments)
+                do j = 1, nl
+                    nc = size(cable_bundles(i)%levels(j)%cables)
+                    allocate(res(nb)%levels(j)%lines(nc))
+                    do k = 1, nc
+                        res(nb)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, n_segments)
+                    end do
                 end do
-            end do
+            end if
         end do
 
     contains
@@ -837,6 +853,7 @@ contains
         conductor_number = conductor_number + node%conductor_in_cable
         
         call this%cable_name_to_bundle_id%get(key(node%belongs_to_cable%name), d, stat)
+        
         if (stat /= 0) return
         write(sConductor,'(I0)') node%conductor_in_cable
         res%name = trim(node%belongs_to_cable%name)//"_"//trim(sConductor)//"_"//nodeSideToString(node%side)
@@ -1197,11 +1214,41 @@ contains
         type(network_manager_t) :: res
         character(256), dimension(:), allocatable :: description
         character(256) :: buff
-        integer :: i
+        integer :: i, n
+        logical, dimension(:), allocatable :: network_in_MPIslice
 
-        allocate(networks(size(terminal_networks)))
+#ifdef CompileWithMPI
+        integer :: j,k,d, stat
+#endif
+        allocate(network_in_MPIslice(size(terminal_networks)), source = .true.)
+        n = size(terminal_networks)
+#ifdef CompileWithMPI
+        
         do i = 1, size(terminal_networks)
-            networks(i) = this%buildNetwork(terminal_networks(i))
+            do j = 1, size(terminal_networks(i)%connections)
+                do k = 1, size(terminal_networks(i)%connections(j)%nodes)
+                    if(associated(terminal_networks(i)%connections(j)%nodes(k)%belongs_to_cable)) then
+                        call this%cable_name_to_bundle_id%get( &
+                            key = key(terminal_networks(i)%connections(j)%nodes(k)%belongs_to_cable%name), &
+                            value = d, &
+                            stat=stat)
+                            if (stat /= 0) network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
+                    else 
+                        network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
+                    end if
+                end do
+            end do
+        end do
+        n = count(network_in_MPIslice)
+#endif
+        
+        allocate(networks(n))
+        n = 0
+        do i = 1, size(network_in_MPIslice)
+            if (network_in_MPIslice(i)) then 
+                n = n + 1
+                networks(n) = this%buildNetwork(terminal_networks(i))
+            end if
         end do
         
         allocate(description(0))

@@ -240,6 +240,7 @@ contains
       !
       TYPE (tiempo_t) :: time_out2
        real (kind=RKIND) :: pscale_alpha
+       integer :: rank
       !*******************************************************************************
       !*******************************************************************************
       !*******************************************************************************
@@ -828,7 +829,10 @@ contains
       l_auxinput=thereare%Anisotropic.or.ThereAre%ThinSlot
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
+      call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+      ! write(*,*) 'rank ', rank,' before barrier comm: ', SUBCOMM_MPI,' ierr : ', ierr
       call MPI_Barrier(SUBCOMM_MPI,ierr)
+      ! write(*,*) 'rank ', rank,' after barrier comm: ', SUBCOMM_MPI,' ierr : ', ierr
       call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif   
       if (l_auxoutput) then
@@ -1460,11 +1464,16 @@ contains
          !!!!!!!!!!!!!!!!!!
 
 #ifdef CompileWithMPI
+
          !call it always (only needed now by anisotropic, but may be needed in a future for other modules)
+         ! call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+         ! write(*,*)'rank ', rank, ' size: ', size
+
          if (size>1) then
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call   FlushMPI_E_Cray
          endif
+         ! write(*,*)'AFTER: rank ', rank, ' size: ', size
 #endif
 
 
