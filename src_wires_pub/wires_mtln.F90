@@ -235,17 +235,17 @@ contains
          end do
       end do
 
-! #ifdef CompileWithMPI      
+#ifdef CompileWithMPI      
 !       call mpi_barrier(subcomm_mpi,ierr)
-! #endif
-      ! if (mtln_solver%number_of_bundles /= 0) then 
+! if (mtln_solver%number_of_bundles /= 0) then 
       call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
       write(*,*) 'rank ', rank, ' mtln_solver%step()'
       call mtln_solver%step()
-      ! else
-      !    call mtln_solver%advanceTime()
-      ! end if
+! else
+!    call mtln_solver%advanceTime()
+! end if
 
+#endif
       contains
 
       function getOrientedCurrent(m, n) result(res)
