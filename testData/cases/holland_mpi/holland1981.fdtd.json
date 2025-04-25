@@ -38,7 +38,7 @@
 
     "mesh": {
         "grid": {
-            "numberOfCells": [40, 40, 40],
+            "numberOfCells": [20, 20, 22],
             "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
         },
         "coordinates": [

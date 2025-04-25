@@ -108,6 +108,7 @@ contains
         integer :: j 
 
         res%name = name
+        write(*,*) n_segments
         if (present(n_segments)) then 
             res%step_size =  step_size(n_segments(1):n_segments(2))
         else 
