@@ -451,3 +451,20 @@ def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_p
     assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
     assert (solver.getVTKMap()[0] is not None)
     
+
+def test_nodal_source_use_case(tmp_path):
+    fn = CASES_FOLDER + "nodalSource/NodalSourceTest.fdtd.json"
+    assert (os.path.isfile(fn))
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    
+    sourcePointProbe = Probe(solver.getSolvedProbeFilenames("Point probe bottom")[0])
+    sourceBulkProbe = Probe(solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
+    resistancePointProbe = Probe(solver.getSolvedProbeFilenames("Point probe top")[0])
+    resistanceBulkProbe = Probe(solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
+
+    exctitationFile = solver.getExcitationFile("predefinedExcitation")[0]
+
+    np.allclose(sourceBulkProbe.data['current'], (-1.0)*resistanceBulkProbe.data['current'])
+    
+

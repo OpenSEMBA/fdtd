@@ -213,3 +213,6 @@ def test_casemaker_sphere_rcs_case(tmp_path):
         path_to_exe=SEMBA_EXE)
     solver.run()
     assert solver.hasFinishedSuccessfully()
+
+def test_can_read_predefined_excitation_files():
+    
