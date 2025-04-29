@@ -326,58 +326,53 @@ Now you are ready to work with the project.
 
 ### Debugging with MPI 
 
-Instructions following [this link](https://github.com/microsoft/vscode-cpptools/issues/1723#issuecomment-1983158512).
+gdb is a serial debugger, but can be attached to one of the parallel processes after they have started running. 
 
-1. First install gdbserver:
 
-```bash
-sudo apt install gdbserver
-```
-
-2.  In a terminal in vscode execute this command to have gdbserver set a series of debugging servers, that will hold listening until a process is attached to them:
-```bash
-mpiexec -n 1 gdbserver :20000 ./build/bin/semba-fdtd : -n 1 gdbserver :20001 .build/bin/semba-fdtd
-```
-This example assumes we are `${workspaceRoot}` folder, hence the path to the semba-fdtd executable
-
-3. Modify the file launch.json to connect to the debugging servers when launched:
+1. Modify the file launch.json to attach to a running process after launching the debugger:
 
 ```json
 {
     "version": "0.2.0",
-    "compounds": [
+    "configurations": [
         {
-          "name": "connect F (NProcs=2)",
-          "configurations": [
-            "_rank0",
-            "_rank1"
-          ],
-          "stopAll": true
-        }
-      ],
-      "configurations": [
-        {
-          "name": "_rank0",
-          "type": "cppdbg",
-          "request": "launch",
-          "program": "${workspaceRoot}/build/bin/semba-fdtd",
-          "programArgs" :  "-i holland1981.fdtd.json -mtlnwires",
-          "miDebuggerServerAddress": "localhost:20000",
-          "MIMode": "gdb",
-          "miDebuggerPath": "/usr/bin/gdb",
-          "cwd": "${workspaceRoot}/testData/cases/holland_mpi"
-        },
-        {
-          "name": "_rank1",
-          "type": "cppdbg",
-          "request": "launch",
-          "program": "${workspaceRoot}/build/bin/semba-fdtd",
-          "programArgs" :  "-i holland1981.fdtd.json -mtlnwires",
-          "miDebuggerServerAddress": "localhost:20001",
-          "MIMode": "gdb",
-          "miDebuggerPath": "/usr/bin/gdb",
-          "cwd": "${workspaceRoot}/testData/cases/holland_mpi"
-        }
-      ]
+        "name": "(gdb) Attach",
+        "type": "cppdbg",
+        "request": "attach",
+        "processId": "${command:pickProcess}",
+        "program": "${workspaceFolder}/build/bin/semba-fdtd",
+        "MIMode": "gdb",
+        "miDebuggerPath": "/usr/bin/gdb",
+        "setupCommands": [
+            {
+                "description": "Enable pretty-printing for gdb",
+                "text": "-enable-pretty-printing",
+                "ignoreFailures": true
+            },
+            {
+                "description": "Set Disassembly Flavor to Intel",
+                "text": "-gdb-set disassembly-flavor intel",
+                "ignoreFailures": true
+            }
+        ]
+    }
+  ]
 }
 ```
+
+2. Use *mpirun* to execute semba-fdtd paralellized in 'np' processes:
+``` 
+mpirun -np 2 build/bin/semba-fdtd -i input_file.fdtd.json -args
+```
+
+3. Once mpirun is running, launch the debuuger. A selection box will ask which process to attach to. Type *semba-fdtd* and all mpirun processes running semba will display. Selecto which process the debugger should attach to
+
+#### Troubleshooting
+
+1. After selecting the process the debugger should attach to, a new terminal opens with the message "Superuser access is required to attach to a process"
+
+Run the following command as super user: 
+```
+echo 0| sudo tee /proc/sys/kernel/yama/ptrace_scope 
+```
+([source](https://github.com/Microsoft/MIEngine/wiki/Troubleshoot-attaching-to-processes-using-GDB))
