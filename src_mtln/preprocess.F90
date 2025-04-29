@@ -339,7 +339,9 @@ contains
             type (cable_t), intent(in) :: cable
             integer, dimension(1:2) :: res
             integer :: i, direction, position(1:3)
-            logical :: in_layer = .false.
+            logical :: in_layer
+            in_layer = .false.
+            res = (-1,-1)
             do i = 1, size(cable%external_field_segments)
                 direction = abs(cable%external_field_segments(i)%direction)
                 position = cable%external_field_segments(i)%position
