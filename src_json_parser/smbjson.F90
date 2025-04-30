@@ -632,6 +632,10 @@ contains
             stop
          end if
          
+         ! Not really needed for resistor, inductor, or capacitor. 
+         ! But avoids error in lumped initialization.
+         res%orient = 1 
+
          ! Handle resistor model
          select case (model)
           case (J_MAT_LUMPED_MODEL_RESISTOR)
