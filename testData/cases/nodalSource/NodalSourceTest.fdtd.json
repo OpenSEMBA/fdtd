@@ -2,8 +2,8 @@
     "_format": "FDTD Input file",
     "general": {
         "timeStep": 1.027e-11,
-        "numberOfSteps": 2142,
-        "additionalArguments": "-ignoresamplingerrors -stableradholland"
+        "numberOfSteps": 2000,
+        "additionalArguments": "-ignoresamplingerrors"
     },
     "boundary": {
         "all": {
@@ -105,13 +105,13 @@
                     [
                         [
                             70,
-                            22,
-                            17
+                            28,
+                            23
                         ],
                         [
                             70,
-                            28,
-                            23
+                            22,
+                            17
                         ]
                     ]
                 ]
@@ -132,20 +132,6 @@
                             43
                         ]
                     ]
-                ]
-            },
-            {
-                "id": 4,
-                "type": "node",
-                "coordinateIds": [
-                    3
-                ]
-            },
-            {
-                "id": 5,
-                "type": "node",
-                "coordinateIds": [
-                    4
                 ]
             },
             {
@@ -329,7 +315,7 @@
             "name": "ResistanceMaterial",
             "id": 2,
             "type": "wire",
-            "radius": 0.0001,
+            "radius": 0.00001,
             "resistancePerMeter": 10000.0,
             "inductancePerMeter": 0.0
         },
@@ -346,7 +332,6 @@
     ],
     "materialAssociations": [
         {
-            "type": "surface",
             "materialId": 1,
             "elementIds": [
                 6,
@@ -380,38 +365,6 @@
         }
     ],
     "probes": [
-        {
-            "name": "Point probe top",
-            "type": "point",
-            "field": "electric",
-            "elementIds": [
-                5
-            ],
-            "directions": [
-                "x",
-                "y",
-                "z"
-            ],
-            "domain": {
-                "type": "time"
-            }
-        },
-        {
-            "name": "Point probe bottom",
-            "type": "point",
-            "field": "electric",
-            "elementIds": [
-                4
-            ],
-            "directions": [
-                "x",
-                "y",
-                "z"
-            ],
-            "domain": {
-                "type": "time"
-            }
-        },
         {
             "name": "Bulk probe Nodal Source",
             "type": "bulkCurrent",

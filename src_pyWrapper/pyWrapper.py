@@ -204,25 +204,10 @@ class ExcitationFile():
         assert os.path.isfile(self.filename)
 
         self.data = pd.read_csv(self.filename, sep='\\s+', names=['time', 'value'])
+
+    def __getitem__(self, key):
+        return self.data[key]
     
-    def plotExcitationFileResults(self, save_path=None) -> None:
-        plt.figure(figsize=(8, 4))
-        plt.plot(self.data['time'], self.data['value'], label='Excitation File Value')
-        plt.xlabel('time')
-        plt.ylabel('value')
-        plt.title('Excitation File Results')
-        plt.legend()
-        plt.grid(True)
-        plt.show()
-
-        if save_path is None:
-            base, _ = os.path.splitext(self.filename)
-            save_path = base + '_plot.png'
-        plt.savefig(save_path, bbox_inches='tight', dpi=150)
-        
-        plt.show()
-        print(f"Plot saved to {save_path}")
-
 
 class FDTD():
     def __init__(self, input_filename, path_to_exe=None,
