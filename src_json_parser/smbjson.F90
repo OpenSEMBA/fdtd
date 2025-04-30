@@ -634,7 +634,11 @@ contains
          
          ! Not really needed for resistor, inductor, or capacitor. 
          ! But avoids error in lumped initialization.
-         res%orient = 1 
+         res%orient = 1
+         res%DiodOri = 1
+
+         res%eps = EPSILON_VACUUM
+         res%mu = MU_VACUUM
 
          ! Handle resistor model
          select case (model)
