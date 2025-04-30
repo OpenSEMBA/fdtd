@@ -13,14 +13,17 @@ SEMBA_EXE = '../../../build/bin/semba-fdtd'
 import pyWrapper as pW
 
 # %%
-fn = "NodalSourceTest.fdtd.json"
+fn = "nodalSource.fdtd.json"
 solver = pW.FDTD(input_filename=fn, path_to_exe=SEMBA_EXE)
 solver.run()
 
 # %%
-resistanceBulkProbe = pW.Probe(solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
-nodalBulkProbe = pW.Probe(solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
-excitation = pW.ExcitationFile(excitation_filename=solver.getExcitationFile("predefinedExcitation")[0])
+resistanceBulkProbe = pW.Probe( \
+    solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
+nodalBulkProbe = pW.Probe( \
+    solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
+excitation = pW.ExcitationFile( \
+    excitation_filename=solver.getExcitationFile("predefinedExcitation")[0])
 
 plt.figure()
 plt.plot(resistanceBulkProbe['time'].to_numpy(), 
@@ -28,8 +31,12 @@ plt.plot(resistanceBulkProbe['time'].to_numpy(),
 plt.plot(excitation.data['time'].to_numpy(), 
          excitation.data['value'].to_numpy(), label='excited current')
 plt.plot(nodalBulkProbe['time'].to_numpy(),
-         nodalBulkProbe['current'].to_numpy(), label='BP Current@nodal source')
+         -nodalBulkProbe['current'].to_numpy(), label='BP Current@nodal source')
 plt.legend()
 
-
+exc = np.interp(nodalBulkProbe['time'].to_numpy(), 
+                excitation.data['time'].to_numpy(), 
+                excitation.data['value'].to_numpy())
+assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
+assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 # %%

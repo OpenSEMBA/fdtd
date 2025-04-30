@@ -576,9 +576,9 @@ Performs a loop integral along on the contour of the surface reference in the `e
 
 + If it is a point or a volume, `direction` must be present.
 + For an oriented line, `direction` is optional and the orientation of the line will be used as default.
-+ For an oriented surface, `direction` is also optional, and if not value is given it is assumed to be the normal of the surface.
++ For an oriented surface, `direction` is also optional, and if not value is given it is assumed to be the the positive axis of the surface normal.
 
-Due to Ampere's law, the loop integral of the magnetic field is equal to the total electric current passing through the surfaces. `[field]`, can be `electric` or `magnetic`. Defaults to `electric`, which gives the total current passing through the surface.
+Due to Ampere's law, the loop integral of the magnetic field is equal to the total electric current passing through the surfaces. `[field]`, can be `electric` or `magnetic`. Defaults to `electric`, which returns the total current passing through the surface.
 
 In the following example `elementId` points an element describing a single oriented surface, therefore `direction` does not need to be stated explicitly.
 
@@ -704,7 +704,7 @@ An example of a planewave propagating towards $\hat{z}$ and polarized in the $+\
 
 This object represents a time-varying vector field applied along an oriented line with the same orientation of the line. Therefore, the `elementIds` within must contain only elements of type `cell` with `intervals` describing a collection of oriented lines. Additionally, it may contain:
 
-+ `[field]` with a `electric` or `magnetic` label which indicates the vector field which will be applied. If not present, it defaults to `electric`.
++ `[field]` with a `current` label which indicates the vector field which will be applied. If not present, it defaults to `current`.
 + `[hardness]` with `soft` or `hard` label. A `soft` hardness indicated that the magnitude will be **added** to the field this situation is typical for a waveport. `hard` sources mean that the field is **substituted** by the value established by the `magnitudeFile`, which for an electric field `nodalSource` would be equivalent to a `pec` material if the magnitude is zero.
 
 **Example:**

@@ -452,19 +452,32 @@ def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_p
     assert (solver.getVTKMap()[0] is not None)
     
 
-def test_nodal_source_use_case(tmp_path):
-    fn = CASES_FOLDER + "nodalSource/NodalSourceTest.fdtd.json"
+def test_nodal_source(tmp_path):
+    fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert (os.path.isfile(fn))
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
     
-    sourcePointProbe = Probe(solver.getSolvedProbeFilenames("Point probe bottom")[0])
-    sourceBulkProbe = Probe(solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
-    resistancePointProbe = Probe(solver.getSolvedProbeFilenames("Point probe top")[0])
-    resistanceBulkProbe = Probe(solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
+    resistanceBulkProbe = Probe( \
+    solver.getSolvedProbeFilenames("Bulk probe Resistance")[0])
+    nodalBulkProbe = Probe( \
+        solver.getSolvedProbeFilenames("Bulk probe Nodal Source")[0])
+    excitation = ExcitationFile( \
+        excitation_filename=solver.getExcitationFile("predefinedExcitation")[0])
 
-    exctitationFile = solver.getExcitationFile("predefinedExcitation")[0]
+    # For debugging.
+    # plt.figure()
+    # plt.plot(resistanceBulkProbe['time'].to_numpy(), 
+    #         resistanceBulkProbe['current'].to_numpy(), label='BP Current@resistance')
+    # plt.plot(excitation.data['time'].to_numpy(), 
+    #         excitation.data['value'].to_numpy(), label='excited current')
+    # plt.plot(nodalBulkProbe['time'].to_numpy(),
+    #         -nodalBulkProbe['current'].to_numpy(), label='BP Current@nodal source')
+    # plt.legend()
 
-    np.allclose(sourceBulkProbe.data['current'], (-1.0)*resistanceBulkProbe.data['current'])
-    
+    exc = np.interp(nodalBulkProbe['time'].to_numpy(), 
+                    excitation.data['time'].to_numpy(), 
+                    excitation.data['value'].to_numpy())
+    assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
+    assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
