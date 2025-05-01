@@ -66,32 +66,12 @@
             {"id": 5, "type": "polyline", "coordinateIds": [4, 5]},
             {"id": 6, "type": "polyline", "coordinateIds": [5, 1]},
             {"id": 7, "type": "node", "coordinateIds": [7]},
-            {"id": 8, "type": "node", "coordinateIds": [8]}
+            {"id": 8, "type": "node", "coordinateIds": [8]},
+            {"id": 9, "type": "cell", "intervals": [ [ [0, 0, 0], [50, 10, 300] ] ]}
         ]
     },
 
     "probes": [
-        {
-            "name": "source_voltage",
-            "type": "terminal",
-            "domain": "time",
-            "field": "voltage",
-            "elementIds": [7]
-        },
-        {
-            "name": "source_current",
-            "type": "terminal",
-            "domain": "time",
-            "field": "current",
-            "elementIds": [7]
-        },
-        {
-            "name": "resistance_voltage",
-            "type": "terminal",
-            "domain": "time",
-            "field": "voltage",
-            "elementIds": [8]
-        },
         {
             "name": "resistance_current",
             "type": "terminal",
@@ -100,29 +80,14 @@
             "elementIds": [8]
         },
         {
-            "name": "electric_field_xz",
-            "type": "bulk",
-            "domain": "time",
-            "field": "E",
-            "plane": "xz",
-            "coordinate": 5
-        },
-        {
-            "name": "electric_field_xy",
-            "type": "bulk",
-            "domain": "time",
-            "field": "E",
-            "plane": "xy",
-            "coordinate": 5
-        },
-        {
             "name": "field_movie",
             "type": "movie",
             "domain": "time",
             "field": "E",
             "plane": "xz",
             "coordinate": 5,
-            "samplingPeriod": 1000
+            "samplingPeriod": 1000,
+            "elementIds": [9]
         }
     ],
 
@@ -130,9 +95,9 @@
         {
             "name": "source_generator",
             "type": "generator",
-            "field": "voltage",
             "magnitudeFile": "step.exc",
-            "elementIds": [7]
+            "elementIds": [7],
+            "field": "voltage"
         }
     ],
 

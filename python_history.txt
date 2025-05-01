@@ -1,8 +1,0 @@
-   57  python3 -m venv venv
-   58  source venv/bin/activate
-   59  pip install -r requirements.txt
-   60  /home/jajimesa/fdtd/venv/bin/python /home/jajimesa/fdtd/testData/cases/sgbcShieldingEffectiveness/sgbc_prepost.py
-   61  cd testData/sgbcShieldingEffectiveness
-   62  cd testData/cases/sgbcShieldingEffectiveness
-   63  /home/jajimesa/fdtd/venv/bin/python /home/jajimesa/fdtd/testData/cases/sgbcShieldingEffectiveness/sgbc_prepost.py
-   64  history > python_history.txt
