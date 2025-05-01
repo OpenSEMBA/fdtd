@@ -46,55 +46,14 @@ solver.cleanUp()
 solver.run()
 
 # %%
-# Load probe data
-source_voltage = Probe(solver.getSolvedProbeFilenames("source_voltage")[0])
-source_current = Probe(solver.getSolvedProbeFilenames("source_current")[0])
-load_voltage = Probe(solver.getSolvedProbeFilenames("load_voltage")[0])
-load_current = Probe(solver.getSolvedProbeFilenames("load_current")[0])
+# resistance probe data
+resistance_current = Probe(solver.getSolvedProbeFilenames("resistance_current")[0])
 
-# Plot voltage signals
-plt.figure(figsize=(12, 8))
-plt.subplot(2, 1, 1)
-plt.plot(source_voltage['time']*1e9, source_voltage['voltage'], label='Source')
-plt.plot(load_voltage['time']*1e9, load_voltage['voltage'], label='Load')
-plt.xlabel('Time (ns)')
-plt.ylabel('Voltage (V)')
-plt.title('Voltage Signals')
-plt.legend()
-plt.grid(True)
-
-# Plot current signals
-plt.subplot(2, 1, 2)
-plt.plot(source_current['time']*1e9, source_current['current'], label='Source')
-plt.plot(load_current['time']*1e9, load_current['current'], label='Load')
+plt.plot(resistance_current['time']*1e9, resistance_current['current'], label='resistance')
 plt.xlabel('Time (ns)')
 plt.ylabel('Current (A)')
 plt.title('Current Signals')
 plt.legend()
-plt.grid(True)
-
-plt.tight_layout()
-plt.show()
-
-# %%
-# Load electric field data
-field_xz = Probe(solver.getSolvedProbeFilenames("electric_field_xz")[0])
-field_xy = Probe(solver.getSolvedProbeFilenames("electric_field_xy")[0])
-
-# Plot electric field magnitude over time
-plt.figure(figsize=(12, 8))
-plt.subplot(2, 1, 1)
-plt.plot(field_xz['time']*1e9, np.abs(field_xz['field']))
-plt.xlabel('Time (ns)')
-plt.ylabel('|E| (V/m)')
-plt.title('Electric Field Magnitude (XZ plane)')
-plt.grid(True)
-
-plt.subplot(2, 1, 2)
-plt.plot(field_xy['time']*1e9, np.abs(field_xy['field']))
-plt.xlabel('Time (ns)')
-plt.ylabel('|E| (V/m)')
-plt.title('Electric Field Magnitude (XY plane)')
 plt.grid(True)
 
 plt.tight_layout()
