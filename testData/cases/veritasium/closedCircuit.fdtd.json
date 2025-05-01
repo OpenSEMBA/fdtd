@@ -1,0 +1,192 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Veritasium's circuit demonstration - The Big Misconception About Electricity",
+	
+    "general": {
+        "timeStep": 1.0e-12,
+        "numberOfSteps": 150000
+    },
+	  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6,
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+
+    "materials": [
+        {
+            "id": 1,
+            "name": "wire_material",
+            "type": "wire",
+            "radius": 0.001,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "id": 2,
+            "name": "source_material",
+            "type": "terminal",
+            "terminations": [
+                {"type": "series", "resistance": 0.1}
+            ]
+        },
+        {
+            "id": 3,
+            "name": "load_material",
+            "type": "terminal",
+            "terminations": [
+                {"type": "series", "resistance": 100.0}
+            ]
+        }
+    ],
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [50, 10, 300],
+            "steps": {"x": [0.1], "y": [0.1], "z": [0.1]}
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [5, 5, 5]},
+            {"id": 2, "relativePosition": [45, 5, 5]},
+            {"id": 3, "relativePosition": [45, 5, 255]},
+            {"id": 4, "relativePosition": [5, 5, 255]},
+            {"id": 5, "relativePosition": [5, 5, 125]},
+            {"id": 6, "relativePosition": [45, 5, 125]},
+            {"id": 7, "relativePosition": [5, 5, 125]},
+            {"id": 8, "relativePosition": [45, 5, 125]}
+        ],
+        "elements": [
+            {"id": 1, "type": "polyline", "coordinateIds": [1, 2]},
+            {"id": 2, "type": "polyline", "coordinateIds": [2, 6]},
+            {"id": 3, "type": "polyline", "coordinateIds": [6, 3]},
+            {"id": 4, "type": "polyline", "coordinateIds": [3, 4]},
+            {"id": 5, "type": "polyline", "coordinateIds": [4, 5]},
+            {"id": 6, "type": "polyline", "coordinateIds": [5, 1]},
+            {"id": 7, "type": "node", "coordinateIds": [7]},
+            {"id": 8, "type": "node", "coordinateIds": [8]}
+        ]
+    },
+
+    "probes": [
+        {
+            "name": "source_voltage",
+            "type": "terminal",
+            "domain": "time",
+            "field": "voltage",
+            "elementIds": [7]
+        },
+        {
+            "name": "source_current",
+            "type": "terminal",
+            "domain": "time",
+            "field": "current",
+            "elementIds": [7]
+        },
+        {
+            "name": "load_voltage",
+            "type": "terminal",
+            "domain": "time",
+            "field": "voltage",
+            "elementIds": [8]
+        },
+        {
+            "name": "load_current",
+            "type": "terminal",
+            "domain": "time",
+            "field": "current",
+            "elementIds": [8]
+        },
+        {
+            "name": "electric_field_xz",
+            "type": "bulk",
+            "domain": "time",
+            "field": "E",
+            "plane": "xz",
+            "coordinate": 5
+        },
+        {
+            "name": "electric_field_xy",
+            "type": "bulk",
+            "domain": "time",
+            "field": "E",
+            "plane": "xy",
+            "coordinate": 5
+        },
+        {
+            "name": "field_movie",
+            "type": "movie",
+            "domain": "time",
+            "field": "E",
+            "plane": "xz",
+            "coordinate": 5,
+            "samplingPeriod": 1000
+        }
+    ],
+
+    "sources": [
+        {
+            "name": "voltage_source",
+            "type": "voltage",
+            "magnitude": 10.0,
+            "elementIds": [7]
+        }
+    ],
+
+    "materialAssociations": [
+        {
+            "name": "line_1",
+            "elementIds": [1],
+            "materialId": 1,
+            "initialTerminalId": 7,
+            "endTerminalId": 8
+        },
+        {
+            "name": "line_2",
+            "elementIds": [2],
+            "materialId": 1,
+            "initialTerminalId": 7,
+            "endTerminalId": 8
+        },
+        {
+            "name": "line_3",
+            "elementIds": [3],
+            "materialId": 1,
+            "initialTerminalId": 7,
+            "endTerminalId": 8
+        },
+        {
+            "name": "line_4",
+            "elementIds": [4],
+            "materialId": 1,
+            "initialTerminalId": 7,
+            "endTerminalId": 8
+        },
+        {
+            "name": "line_5",
+            "elementIds": [5],
+            "materialId": 1,
+            "initialTerminalId": 7,
+            "endTerminalId": 8
+        },
+        {
+            "name": "line_6",
+            "elementIds": [6],
+            "materialId": 1,
+            "initialTerminalId": 7,
+            "endTerminalId": 8
+        },
+        {
+            "name=": "terminal_1",
+            "materialId": 2,
+            "elementIds": [7]
+        },
+        {
+            "name=": "terminal_2",
+            "materialId": 3,
+            "elementIds": [8]
+        }
+    ]
+} 
