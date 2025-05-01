@@ -1,12 +1,12 @@
 {
     "format": "FDTD Input file",
     "__comments": "Veritasium's circuit demonstration - The Big Misconception About Electricity",
-	
+    
     "general": {
         "timeStep": 1.0e-12,
         "numberOfSteps": 150000
     },
-	  
+      
     "boundary": {
         "all": {
             "type": "pml",
@@ -140,53 +140,53 @@
             "name": "line_1",
             "elementIds": [1],
             "materialId": 1,
-            "initialTerminalId": 7,
-            "endTerminalId": 8
+            "initialTerminalId": 2,
+            "endTerminalId": 3
         },
         {
             "name": "line_2",
             "elementIds": [2],
             "materialId": 1,
-            "initialTerminalId": 7,
-            "endTerminalId": 8
+            "initialTerminalId": 2,
+            "endTerminalId": 3
         },
         {
             "name": "line_3",
             "elementIds": [3],
             "materialId": 1,
-            "initialTerminalId": 7,
-            "endTerminalId": 8
+            "initialTerminalId": 2,
+            "endTerminalId": 3
         },
         {
             "name": "line_4",
             "elementIds": [4],
             "materialId": 1,
-            "initialTerminalId": 7,
-            "endTerminalId": 8
+            "initialTerminalId": 2,
+            "endTerminalId": 3
         },
         {
             "name": "line_5",
             "elementIds": [5],
             "materialId": 1,
-            "initialTerminalId": 7,
-            "endTerminalId": 8
+            "initialTerminalId": 2,
+            "endTerminalId": 3
         },
         {
             "name": "line_6",
             "elementIds": [6],
             "materialId": 1,
-            "initialTerminalId": 7,
-            "endTerminalId": 8
+            "initialTerminalId": 2,
+            "endTerminalId": 3
         },
         {
-            "name=": "terminal_1",
+            "name": "terminal_1",
             "materialId": 2,
             "elementIds": [7]
         },
         {
-            "name=": "terminal_2",
+            "name": "terminal_2",
             "materialId": 3,
             "elementIds": [8]
         }
     ]
-} 
+}
