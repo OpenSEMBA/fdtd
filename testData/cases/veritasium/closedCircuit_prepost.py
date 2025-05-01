@@ -19,7 +19,11 @@ from pyWrapper import *
 dt = 1e-12  # Time step
 tf = 150e-9  # Final time
 t = np.arange(0, tf, dt)
-v = 10.0 * (t > 0)  # 10V step function
+
+# Create a Gaussian pulse
+t0 = 20e-9  # Center of the pulse
+sigma = 5e-9  # Width of the pulse
+v = 10.0 * np.exp(-(t - t0)**2 / (2 * sigma**2))
 
 plt.figure(figsize=(10, 6))
 plt.plot(t*1e9, v)

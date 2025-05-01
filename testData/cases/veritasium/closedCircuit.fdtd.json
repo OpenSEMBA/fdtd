@@ -4,7 +4,7 @@
     
     "general": {
         "timeStep": 1.0e-12,
-        "numberOfSteps": 150000
+        "numberOfSteps": 50000
     },
       
     "boundary": {
@@ -35,7 +35,7 @@
         },
         {
             "id": 3,
-            "name": "load_material",
+            "name": "resistance_material",
             "type": "terminal",
             "terminations": [
                 {"type": "series", "resistance": 100.0}
@@ -86,14 +86,14 @@
             "elementIds": [7]
         },
         {
-            "name": "load_voltage",
+            "name": "resistance_voltage",
             "type": "terminal",
             "domain": "time",
             "field": "voltage",
             "elementIds": [8]
         },
         {
-            "name": "load_current",
+            "name": "resistance_current",
             "type": "terminal",
             "domain": "time",
             "field": "current",
@@ -128,9 +128,10 @@
 
     "sources": [
         {
-            "name": "voltage_source",
-            "type": "voltage",
-            "magnitude": 10.0,
+            "name": "source_generator",
+            "type": "generator",
+            "field": "voltage",
+            "magnitudeFile": "step.exc",
             "elementIds": [7]
         }
     ],
