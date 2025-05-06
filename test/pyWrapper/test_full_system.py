@@ -481,3 +481,17 @@ def test_nodal_source(tmp_path):
     assert np.corrcoef(exc, -nodalBulkProbe['current'])[0,1] > 0.999
     assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
+
+def testCanAssignSameSurfaceImpedanceToMultipleGeometries(tmp_path):
+    fn = CASES_FOLDER + 'multipleAssigments/multipleSurfaceImpedance.fdtd.json'
+
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
+
+def testCanAssignSameDielectricMaterialToMultipleGeometries(tmp_path):
+    fn = CASES_FOLDER + 'multipleAssigments/multipleDielectricMaterial.fdtd.json'
+
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
