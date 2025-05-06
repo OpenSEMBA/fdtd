@@ -243,14 +243,14 @@ contains
          else !debe entrar aqui si es un resistor, inductor o capacitor
             if (sgg%med(lumped_%jmed)%lumped(1)%resistor) then
                 if ((timestep*sgg%dt >= sgg%Med(lumped_%jmed)%Lumped(1)%Rtime_on).and.(timestep*sgg%dt <= sgg%Med(lumped_%jmed)%Lumped(1)%Rtime_off)) then
-                   lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) + &
+                   lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) - &
                                     lumped_%GJ * lumped_%Jcur
                 else
                    lumped_%Efield = lumped_%G1_usual * lumped_%Efield +(lumped_%G2a_usual *(lumped_%Ha_Plus - lumped_%Ha_Minu) - &
                                                                         lumped_%G2b_usual *(lumped_%Hb_Plus - lumped_%Hb_Minu))
                 endif
             else !inductor o capacitor
-                lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) + &
+                lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) - &
                                  lumped_%GJ * lumped_%Jcur
             endif
          endif                     
@@ -300,7 +300,6 @@ contains
             alignedDeltaE      =lumped_%alignedDeltaE      
             transversalDeltaHa =lumped_%transversalDeltaHa 
             transversalDeltaHb =lumped_%transversalDeltaHb     
-               
 !
             epsilonEffCapac      = alignedDeltaE * Capaci / (            transversalDeltaHa * transversalDeltaHb)
             sigmaEffResistInduct = alignedDeltaE * sgg%dt / (2.0_RKIND * transversalDeltaHa * transversalDeltaHb * (Induct + Resist * sgg%dt /2.0_RKIND))
