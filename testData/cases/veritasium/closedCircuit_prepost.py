@@ -40,33 +40,40 @@ solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, flags=['-mapvtk'])
 solver.cleanUp()
 solver.run()
 
-# resistance probe data
-wire_current = Probe(solver.getSolvedProbeFilenames("wire_current")[0])
+# %%
+data = np.loadtxt('closedCircuit.fdtd_wire_current_Jx_105_99_99__105_100_100.dat', skiprows=1)
+time = data[:, 0]
+current = data[:, 1]
 
-plt.plot(wire_current['time'], wire_current['current'], label='wire')
-plt.xlabel('Time (s)')
-plt.ylabel('Current (A)')
-plt.title('Current Signals')
-plt.legend()
+# Graficar los datos
+plt.plot(time, current)
+plt.xlabel('Tiempo (s)')
+plt.ylabel('Corriente (A)')
+plt.title('Respuesta de la sonda del cable')
 plt.grid(True)
-
-plt.tight_layout()
 plt.show()
 # %%
+data = np.loadtxt('closedCircuit.fdtd_source_current_Jy_109_150_99__110_150_100.dat', skiprows=1)
+time = data[:, 0]
+current = data[:, 1]
 
-"""
-# %%
-# resistance probe data
-resistance_current = Probe(solver.getSolvedProbeFilenames("resistance_current")[0])
-
-plt.plot(resistance_current['time'], resistance_current['current'], label='resistance')
-plt.xlabel('Time (s)')
-plt.ylabel('Current (A)')
-plt.title('Current Signals')
-plt.legend()
+# Graficar los datos
+plt.plot(time, current)
+plt.xlabel('Tiempo (s)')
+plt.ylabel('Corriente (A)')
+plt.title('Respuesta de la sonda del source')
 plt.grid(True)
-
-plt.tight_layout()
 plt.show()
+
 # %%
-"""
+data = np.loadtxt('closedCircuit.fdtd_cube_current_Jy_99_150_99__100_150_100.dat', skiprows=1)
+time = data[:, 0]
+current = data[:, 1]
+
+# Graficar los datos
+plt.plot(time, current)
+plt.xlabel('Tiempo (s)')
+plt.ylabel('Corriente (A)')
+plt.title('Respuesta de la sonda del source')
+plt.grid(True)
+plt.show()
