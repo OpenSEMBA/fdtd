@@ -3,8 +3,8 @@
     "__comments": "Veritasium's circuit demonstration - The Big Misconception About Electricity",
     
     "general": {
-        "timeStep": 6.0e-10,
-        "numberOfSteps": 5000
+        "timeStep": 6.0e-9,
+        "numberOfSteps": 100
     },
       
     "boundary": {
@@ -14,6 +14,34 @@
             "order": 2.0,
             "reflection": 0.001
         }
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [210, 300, 200],
+            "steps": {"x": [0.1], "y": [0.1], "z": [0.1]}
+        },
+
+        "coordinates": [
+            {"id": 1, "relativePosition": [100, 149, 100]},
+            {"id": 2, "relativePosition": [100, 100, 100]},
+            {"id": 3, "relativePosition": [110, 100, 100]},
+            {"id": 4, "relativePosition": [110, 150, 100]},
+            {"id": 5, "relativePosition": [110, 200, 100]},
+            {"id": 6, "relativePosition": [100, 200, 100]},
+            {"id": 7, "relativePosition": [100, 151, 100]}
+        ],
+        
+        "elements": [
+            {"id": 1, "type": "polyline", "coordinateIds": [1, 2, 3, 4, 5, 6, 7]},
+            {"id": 2, "type": "node", "coordinateIds": [1]},
+            {"id": 3, "type": "node", "coordinateIds": [7]},
+            {"id": 4, "type": "node", "coordinateIds": [4]},
+            {"id": 5, "type": "cell", "name": "cube", "intervals": [ [ [99, 139, 99], [101, 141, 101] ] ]},
+            {"id": 6, "type": "cell", "name": "wire-plane", "intervals": [ [ [105, 99, 99], [105, 101, 101] ] ]},
+            {"id": 7 , "type": "cell", "name": "source-plane", "intervals": [ [ [109, 150, 99], [111, 150, 101] ] ]},
+            {"id": 8 , "type": "cell", "name": "cube-plane", "intervals": [ [ [99, 150, 99], [101, 150, 101] ] ]}
+        ]
     },
 
     "materials": [
@@ -26,54 +54,54 @@
         },
         {
             "id": 2,
-            "name": "source_material",
+            "name": "resistance_material",
             "type": "terminal",
             "terminations": [
-                {"type": "series", "resistance": 0.1}
+                {"type": "series", "resistance": 50.0}
             ]
         },
         {
             "id": 3,
-            "name": "resistance_material",
-            "type": "terminal",
-            "terminations": [
-                {"type": "series", "resistance": 100.0}
-            ]
+            "name": "cube_material",
+            "type": "pec"
         }
     ],
 
-    "mesh": {
-        "grid": {
-            "numberOfCells": [100, 100, 2000],
-            "steps": {"x": [0.01], "y": [0.01], "z": [0.1]}
+    "materialAssociations": [
+        {
+            "name": "wire_association",
+            "elementIds": [1],
+            "materialId": 1,
+            "initialTerminalId": 2,
+            "endTerminalId": 2
         },
-
-        "coordinates": [
-            {"id": 1, "relativePosition": [0, 0, 0]},
-            {"id": 2, "relativePosition": [100, 0, 0]},
-            {"id": 3, "relativePosition": [100, 0, 2000]},
-            {"id": 4, "relativePosition": [0, 0, 2000]},
-            {"id": 5, "relativePosition": [0, 0, 1000]},
-            {"id": 6, "relativePosition": [100, 0, 1000]}
-        ],
-        
-        "elements": [
-            {"id": 1, "type": "polyline", "coordinateIds": [1, 2]},
-            {"id": 2, "type": "polyline", "coordinateIds": [2, 3]},
-            {"id": 3, "type": "polyline", "coordinateIds": [3, 4]},
-            {"id": 4, "type": "polyline", "coordinateIds": [4, 1]},
-            {"id": 5, "type": "node", "coordinateIds": [5]},
-            {"id": 6, "type": "node", "coordinateIds": [6]}
-        ]
-    },
+        {
+            "name": "resistance_association",
+            "elementIds": [2, 3],
+            "materialId": 2
+        },
+        {
+            "name": "cube_association",
+            "elementIds": [5],
+            "materialId": 3
+        }
+    ],
 
     "probes": [
         {
-            "name": "resistance_current",
-            "type": "wire",
-            "field": "current",
-            "elementIds": [5],
-            "domain": { "type": "time" }
+            "name": "wire_current",
+            "type": "bulkCurrent",
+            "elementIds": [6]
+        },
+        {
+            "name": "source_current",
+            "type": "bulkCurrent",
+            "elementIds": [7]
+        },
+        {
+            "name": "cube_current",
+            "type": "bulkCurrent",
+            "elementIds": [8]
         }
     ],
 
@@ -82,39 +110,8 @@
             "name": "source_generator",
             "type": "generator",
             "magnitudeFile": "step.exc",
-            "elementIds": [6],
+            "elementIds": [4],
             "field": "voltage"
         }
-    ],
-
-    "materialAssociations": [
-        {
-            "name": "wire_line_1",
-            "elementIds": 1,
-            "materialId": 1,
-            "initialTerminalId": 2,
-            "endTerminalId": 3
-        },
-        {
-            "name": "wire_line_2",
-            "elementIds": 2,
-            "materialId": 1,
-            "initialTerminalId": 2,
-            "endTerminalId": 3
-        },
-        {
-            "name": "wire_line_3",
-            "elementIds": 3,
-            "materialId": 1,
-            "initialTerminalId": 2,
-            "endTerminalId": 3
-        },
-        {
-            "name": "wire_line_4",
-            "elementIds": 4,
-            "materialId": 1,
-            "initialTerminalId": 2,
-            "endTerminalId": 3
-        }    
     ]
 }
