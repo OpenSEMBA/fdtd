@@ -219,7 +219,6 @@ Defines probes to monitor the simulation. Two `"type"`s are used: `"bulkCurrent"
 
 ## A simple use case in Python: preprocessing, program call & postprocessing of results
 
-A simple use case in Python: preprocessing, program call & postprocessing of results
 This section illustrates a complete FDTD simulation workflow using the `pyWrapper` Python interface to interact with an external electromagnetic solver. The procedure includes three stages: generation of the excitation signal, execution of the solver via a wrapped call, and an example of how postprocessing could be performed.
 
 ### Preprocessing: signal definition
