@@ -9,8 +9,9 @@ module probes_mod
         real, allocatable, dimension(:) :: t
         real, allocatable, dimension(:,:) :: val
         real :: dt
-        integer :: index, current_frame
+        integer :: index, current_frame, layer_index
         character (len=:), allocatable :: name
+        logical :: in_layer = .true.
 
     contains
         procedure :: resizeFrames
@@ -26,18 +27,22 @@ module probes_mod
 
 contains
 
-    function probeCtor(index, probe_type, dt, name, position) result(res)
+    function probeCtor(index, probe_type, dt, layer_segments, name, position) result(res)
         type(probe_t) :: res
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
         real, intent(in) :: dt
         real, dimension(3), optional :: position
+        integer, dimension(1:2), intent(in) :: layer_segments
         character (len=:), allocatable, optional :: name
 
         res%type = probe_type
         res%index = index
         res%dt = dt
         res%current_frame = 1
+
+        if (index < layer_segments(1) .or. index > layer_segments(2)+1) res%in_layer = .false.
+        res%layer_index = index -(layer_segments(1)-1)            
 
         if (present(name)) then
             res%name = res%name//name//"_"
@@ -78,12 +83,12 @@ contains
         real, dimension(:,:), intent(in) :: i
         
         if (this%type == PROBE_TYPE_VOLTAGE) then
-            call this%saveFrame(t, v(:,this%index))
+            call this%saveFrame(t, v(:,this%layer_index))
         else if (this%type == PROBE_TYPE_CURRENT) then
-            if (this%index == size(i,2) + 1) then
-                call this%saveFrame(t + 0.5*this%dt, i(:,this%index - 1))
+            if (this%layer_index == size(i,2) + 1) then
+                call this%saveFrame(t + 0.5*this%dt, i(:,this%layer_index - 1))
             else 
-                call this%saveFrame( t+ 0.5*this%dt, i(:,this%index))
+                call this%saveFrame( t+ 0.5*this%dt, i(:,this%layer_index))
             endif
         end if  
 

@@ -71,10 +71,10 @@ contains
 
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
-#endif
         line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
-        ! line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
-
+#else
+        line_bundles = buildLineBundles(cable_bundles, res%dt)
+#endif
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
@@ -302,20 +302,30 @@ contains
         integer :: nb, nl, nc
         integer, dimension(1:2) :: n_segments
         logical :: buildLine = .true.
-
+        n_segments = (-1,-1)
         nb = 0
         ! count bundles in layer
-        do i = 1, size(cable_bundles)
-            n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
-            if (n_segments(1) /= -1 .and. n_segments(2) /= -1) nb = nb + 1
-        end do
+        if (present(alloc)) then 
+            do i = 1, size(cable_bundles)
+                n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+                if (n_segments(1) /= n_segments(2)) nb = nb + 1
+                ! if (n_segments(1) /= -1 .and. n_segments(2) /= -1) nb = nb + 1
+            end do
+        else 
+            nb = size(cable_bundles)
+        end if
 
         allocate(res(nb))
         nb = 0
         do i = 1, size(cable_bundles)
+            buildLine = .true.
             if (present(alloc)) then 
                 n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
-                if (n_segments(1) == -1 .and. n_segments(2) == -1) buildLine = .false.
+                if (n_segments(1) ==  n_segments(2) ) buildLine = .false.
+                ! if (n_segments(1) == -1 .and. n_segments(2) == -1) buildLine = .false.
+            else
+                n_segments(1) = 1
+                n_segments(2) = size(cable_bundles(i)%levels(1)%cables(1)%p%step_size)
             end if
             if (buildLine) then 
                 nb = nb + 1
@@ -1283,10 +1293,14 @@ contains
 
             if (stat /= 0) return
             probe_name = parsed_probes(i)%probe_name//"_"//this%bundles(d)%name
+
+            ! countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+
             res(i) =  this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
                                                probe_type = parsed_probes(i)%probe_type,&
                                                name = probe_name,&
-                                               position =parsed_probes(i)%probe_position)
+                                               position =parsed_probes(i)%probe_position, &
+                                               layer_segments = this%bundles(d)%layer_segments)
 
         end do
     end function

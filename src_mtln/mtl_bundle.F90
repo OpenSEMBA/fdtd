@@ -32,6 +32,7 @@ module mtl_bundle_mod
         type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
         logical :: isPassthrough = .false.
 
+        integer, dimension(1:2) :: layer_segments = (-1,-1)
     contains
         procedure :: mergePULMatrices
         procedure :: mergeDispersiveMatrices
@@ -47,7 +48,7 @@ module mtl_bundle_mod
         procedure :: setConnectorTransferImpedance => bundle_setConnectorTransferImpedance
         procedure :: setExternalLongitudinalField => bundle_setExternalLongitudinalField
 #ifdef CompileWithMPI
-        procedure :: Comm_MPI_MTL_V
+        procedure :: Comm_MPI_MTL
 #endif
 
 
@@ -84,6 +85,7 @@ contains
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
 
+        res%layer_segments = levels(1)%lines(1)%layer_segments
 
     end function
 
@@ -186,10 +188,11 @@ contains
 
     end subroutine
 
-    type(probe_t) function addProbe(this, index, probe_type, name, position) result(res)
+    type(probe_t) function addProbe(this, index, probe_type, layer_segments, name, position) result(res)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
+        integer, dimension(1:2), intent(in) :: layer_segments
         real, dimension(3), optional :: position
         character (len=:), allocatable, optional :: name
         type(probe_t), allocatable, dimension(:) :: aux_probes
@@ -199,13 +202,13 @@ contains
         allocate(this%probes(size(aux_probes)+1))
 
         if (present(position) .and. present(name)) then
-            res = probeCtor(index, probe_type, this%dt, name, position)
+            res = probeCtor(index, probe_type, this%dt, layer_segments, name=name, position=position)
         else if (present(name) .and. .not. present(position)) then 
-            res = probeCtor(index, probe_type, this%dt, name=name)
+            res = probeCtor(index, probe_type, this%dt, layer_segments, name=name)
         else if (.not. present(name) .and. present(position)) then 
-            res = probeCtor(index, probe_type, this%dt, position=position)
+            res = probeCtor(index, probe_type, this%dt, layer_segments, position=position)
         else
-            res = probeCtor(index, probe_type, this%dt)
+            res = probeCtor(index, probe_type, this%dt, layer_segments)
         end if
 
         this%probes(1:size(this%probes)-1) = aux_probes
@@ -338,7 +341,7 @@ contains
         real :: eps_r
 
 #ifdef CompileWithMPI
-        call this%Comm_MPI_MTL_V()
+        call this%Comm_MPI_MTL()
 #endif
         ! write(*,*)'advance'
         call this%transfer_impedance%updateQ3Phi()
@@ -375,7 +378,7 @@ contains
     end subroutine
 
 #ifdef CompileWithMPI
-    subroutine Comm_MPI_MTL_V(this)
+    subroutine Comm_MPI_MTL(this)
         class(mtl_bundle_t) :: this
         integer :: number_of_divisions, number_of_conductors, i
         integer :: ierr, rank, sizeof,status(MPI_STATUS_SIZE)
@@ -393,6 +396,9 @@ contains
                 ! MPI_Recv(buf, count, datatype, source, tag, comm, status, ierror)
                 call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 1000*(rank-1)+i,  SUBCOMM_MPI, ierr)
                 call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 100*rank+i,  SUBCOMM_MPI, status, ierr)
+
+                call MPI_send(this%e_L(i,2), 1, REALSIZE, rank-1, 2000*(rank-1)+i,  SUBCOMM_MPI, ierr)
+                call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 200*rank+i,  SUBCOMM_MPI, status, ierr)
             end do
         end if
         if (.not. this%is_right_end) then 
@@ -401,6 +407,9 @@ contains
                 ! MPI_Recv(buf, count, datatype, source, tag, comm, status, ierror)
                 call MPI_send(this%v(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 100*(rank+1)+i, SUBCOMM_MPI, ierr)
                 call MPI_recv(this%v(i,number_of_divisions + 1), 1, REALSIZE, rank+1, 1000*rank+i, SUBCOMM_MPI, status, ierr)
+
+                call MPI_send(this%e_L(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 200*(rank+1)+i, SUBCOMM_MPI, ierr)
+                call MPI_recv(this%e_L(i,number_of_divisions    ), 1, REALSIZE, rank+1, 2000*rank+i, SUBCOMM_MPI, status, ierr)
             end do
         end if
 

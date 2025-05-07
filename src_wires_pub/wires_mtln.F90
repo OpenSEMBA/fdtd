@@ -55,9 +55,11 @@ contains
       eps0 = eps00
       mu0 = mu00
 
-      mtln_solver = mtlnCtor(mtln_parsed, sgg%alloc)
 #ifdef CompileWithMPI
+      mtln_solver = mtlnCtor(mtln_parsed, sgg%alloc)
       call mpi_barrier(subcomm_mpi,ierr)
+#else
+      mtln_solver = mtlnCtor(mtln_parsed)
 #endif
 
       if (mtln_solver%number_of_bundles>=1) then 
@@ -238,15 +240,17 @@ contains
 #ifdef CompileWithMPI      
 !       call mpi_barrier(subcomm_mpi,ierr)
 ! if (mtln_solver%number_of_bundles /= 0) then 
-      call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
-      write(*,*) 'rank ', rank, ' mtln_solver%step()'
-      call mtln_solver%step()
+      ! call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+      ! write(*,*) 'rank ', rank, ' mtln_solver%step()'
+      ! call mtln_solver%step()
 ! else
 !    call mtln_solver%advanceTime()
 ! end if
-
 #endif
-      contains
+   call mtln_solver%step()
+
+
+   contains
 
       function getOrientedCurrent(m, n) result(res)
          integer(kind=4), intent(in) :: m, n

@@ -99,16 +99,15 @@ contains
     subroutine mtln_step(this)
         class(mtln_t) :: this
 
+        ! if (this%time > 5.5e-9) then
+        !     call sleep(1)
+        ! end if
+
         call this%setExternalLongitudinalField()
-
         call this%advanceBundlesVoltage()
-
         call this%advanceNWVoltage()
-
         call this%advanceBundlesCurrent()
-
         call this%advanceTime()
-
         call this%updateProbes()
 
     end subroutine
@@ -199,7 +198,7 @@ contains
         do i = 1, this%number_of_bundles
             if (size(this%bundles(i)%probes) /= 0) then 
                 do j = 1, size(this%bundles(i)%probes)
-                    call this%bundles(i)%probes(j)%update(this%time, this%bundles(i)%v, this%bundles(i)%i)
+                    if (this%bundles(i)%probes(j)%in_layer) call this%bundles(i)%probes(j)%update(this%time, this%bundles(i)%v, this%bundles(i)%i)
                 end do 
             end if
         end do

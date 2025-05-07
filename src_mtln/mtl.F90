@@ -28,6 +28,8 @@ module mtl_mod
 
         type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
         logical :: isPassthrough = .false.
+
+        integer, dimension(1:2) :: layer_segments = (-1,-1)
     contains
         procedure :: setTimeStep
         procedure :: initLCHomogeneous
@@ -108,10 +110,13 @@ contains
         integer :: j 
 
         res%name = name
+        if (present(n_segments)) then
         write(*,*) n_segments
-        if (present(n_segments)) then 
             res%step_size =  step_size(n_segments(1):n_segments(2))
-        else 
+            if (n_segments(1) /= 1) res%is_left_end = .false.
+            if (n_segments(2) /= size(step_size)) res%is_right_end = .false.
+            res%layer_segments = n_segments
+        else
             res%step_size =  step_size
         end if
         call checkPULDimensionsHomogeneous(lpul, cpul, rpul, gpul)
@@ -121,8 +126,6 @@ contains
         call res%initLCHomogeneous(lpul, cpul)
         call res%initRGHomogeneous(rpul, gpul)
         
-        if (n_segments(1) /= 1) res%is_left_end = .false.
-        if (n_segments(2) /= size(step_size)) res%is_right_end = .false.
 
         if (present(dt)) then 
             if (lpul(1,1) /= 0.0) then 
