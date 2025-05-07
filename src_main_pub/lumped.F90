@@ -231,7 +231,8 @@ contains
          if (sgg%med(lumped_%jmed)%lumped(1)%inductor) then
              lumped_%EfieldPrevPrev = lumped_%EfieldPrev
              lumped_%EfieldPrev     = lumped_%Efield
-             lumped_%Jcur = lumped_%Jcur + lumped_%sigmaEffResistInduct * (lumped_%EfieldPrev + lumped_%EfieldPrevPrev)
+             !!! La evolución de la corriente debe ser modificada por un coeficiente contrario a lo mostrado en Mittra.
+             lumped_%Jcur = lumped_%currentCoeff * lumped_%Jcur + lumped_%sigmaEffResistInduct * (lumped_%EfieldPrev + lumped_%EfieldPrevPrev)
          else
              lumped_%Jcur=0.0_RKIND
          endif
@@ -275,7 +276,7 @@ contains
       real (kind=RKIND) :: epsilon,sigma,g1,g2,Resist,Induct,Capaci,sigmaeff,epsiloneff,DiodB,DiodIsat
       real (kind=RKIND) :: g1_usual,g2_usual
       real (kind=RKIND) :: epsilonEffCapac    ,sigmaEffResistInduct,sigmaEffResist   ,sigmaEffResistCapac ,sigmaEffResistDiode, &
-                           alignedDeltaE,transversalDeltaHa,transversalDeltaHb 
+                           alignedDeltaE,transversalDeltaHa,transversalDeltaHb,  currentCoeff
       
       character(len=BUFSIZE) :: buff
 !
@@ -306,6 +307,7 @@ contains
             sigmaEffResist       = alignedDeltaE          / (   Resist * transversalDeltaHa * transversalDeltaHb)
             sigmaEffResistCapac  = sigmaEffResist
             sigmaEffResistDiode  = sigmaEffResist
+            currentCoeff         = (Induct - Resist * sgg%dt /2.0_RKIND) / (Induct + Resist * sgg%dt /2.0_RKIND)
 
 !!!! Mittra pag65   Parallel Finite-Difference Time-Domain Method
             if (sgg%med(jmed)%lumped(1)%resistor) then
@@ -348,8 +350,11 @@ contains
             lumped_%g1=g1 
             lumped_%G2a= G2 / transversalDeltaHa 
             lumped_%G2b= G2 / transversalDeltaHb
-            lumped_%GJ = G2 !!!!Mittra pag65
+            !!! El despeje de la corriente en la página 65 de Mittra es incorrecto y conduce a resultados que implican saturación. 
+            !!! El coeficiente correcto es el que se muestra aquí.
+            lumped_%GJ = G2 * (1 + currentCoeff) / 2 !!!!Mittra pag65
             lumped_%sigmaEffResistInduct = sigmaEffResistInduct
+            lumped_%currentCoeff = currentCoeff
   
             !!!!usual para resistencia que se encienden/apagan 200319
             G1_usual=(1.0_RKIND  - Sigma * sgg%dt / (2.0_RKIND * epsilon) ) / &
