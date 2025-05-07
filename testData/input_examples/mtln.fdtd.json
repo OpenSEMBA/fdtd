@@ -395,7 +395,7 @@
 		{
 			"name": "DistributedSource",
 			"type": "nodalSource",
-			"field": "electric",
+			"field": "current",
 			"magnitudeFile": "gauss.exc",
 			"elementIds": [33]
 		}
