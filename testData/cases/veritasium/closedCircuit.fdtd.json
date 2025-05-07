@@ -34,15 +34,12 @@
         
         "elements": [
             {"id": 1, "type": "polyline", "coordinateIds": [1, 2, 3, 4, 5, 6, 7]},
-            {"id": 2, "type": "node", "coordinateIds": [1]},
-            {"id": 3, "type": "node", "coordinateIds": [7]},
-            {"id": 4, "type": "node", "coordinateIds": [4]},
-            {"id": 5, "type": "cell", "name": "cube", "intervals": [ [ [99, 149, 99], [101, 151, 101] ] ]},
-            {"id": 6, "type": "cell", "name": "wire-plane", "intervals": [ [ [105, 99, 99], [105, 101, 101] ] ]},
-            {"id": 7 , "type": "cell", "name": "source-plane", "intervals": [ [ [109, 150, 99], [111, 150, 101] ] ]},
-            {"id": 8 , "type": "cell", "name": "cube-plane", "intervals": [ [ [98, 150, 98], [102, 150, 102] ] ]},
-            {"id": 9 , "type": "cell", "name": "movie-domain", "intervals": [ [ [80, 80, 80], [130, 220, 120] ] ]},
-            {"id": 10 , "type": "cell", "name": "cube-wave-plane", "intervals": [ [ [100, 149, 99], [100, 151, 101] ] ]}
+            {"id": 2, "type": "node", "coordinateIds": [4]},
+            {"id": 3, "type": "cell", "name": "cube", "intervals": [ [ [99, 149, 99], [101, 151, 101] ] ]},
+            {"id": 4, "type": "cell", "name": "wire-plane", "intervals": [ [ [105, 99, 99], [105, 101, 101] ] ]},
+            {"id": 5 , "type": "cell", "name": "source-plane", "intervals": [ [ [109, 150, 99], [111, 150, 101] ] ]},
+            {"id": 6 , "type": "cell", "name": "cube-plane", "intervals": [ [ [98, 150, 98], [102, 150, 102] ] ]},
+            {"id": 7 , "type": "cell", "name": "movie-domain", "intervals": [ [ [80, 80, 80], [130, 220, 120] ] ]}
         ]
     },
 
@@ -79,7 +76,7 @@
         },
         {
             "name": "cube_association",
-            "elementIds": [5],
+            "elementIds": [3],
             "materialId": 3
         }
     ],
@@ -89,7 +86,7 @@
             "name": "source_generator",
             "type": "generator",
             "magnitudeFile": "step.exc",
-            "elementIds": [4],
+            "elementIds": [2],
             "field": "voltage"
         }
     ],
@@ -98,29 +95,24 @@
         {
             "name": "wire_current",
             "type": "bulkCurrent",
-            "elementIds": [6]
+            "elementIds": [4]
         },
         {
             "name": "source_current",
             "type": "bulkCurrent",
-            "elementIds": [7]
+            "elementIds": [5]
         },
         {
             "name": "cube_current",
             "type": "bulkCurrent",
-            "elementIds": [8]
-        },
-        {
-            "name": "cube_wave_current",
-            "type": "bulkCurrent",
-            "elementIds": [10]
+            "elementIds": [6]
         },
         {
             "name": "movie_electric",
             "type": "movie",
             "field": "electric",
             "component": "magnitude",
-            "elementIds": [9],
+            "elementIds": [7],
             "initialTime": 0.0, 
             "finalTime": 2e-7, 
             "samplingPeriod": 2e-8
