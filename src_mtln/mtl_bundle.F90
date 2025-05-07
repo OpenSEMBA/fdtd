@@ -4,7 +4,11 @@ module mtl_bundle_mod
     use probes_mod
     use dispersive_mod
     use mtl_mod
-    implicit none
+#ifdef CompileWithMPI
+    use FDETYPES, only: SUBCOMM_MPI, REALSIZE, MPI_STATUS_SIZE
+#endif
+!     use MPIcomm
+     implicit none
 
     type, public :: mtl_bundle_t
         character (len=:), allocatable :: name
@@ -14,6 +18,10 @@ module mtl_bundle_mod
         real, allocatable, dimension(:,:) :: v, i, e_L
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         real :: time = 0.0, dt = 1e10
+
+        logical :: is_left_end = .true.
+        logical :: is_right_end = .true.
+
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
         integer, dimension(:), allocatable :: conductors_in_level
@@ -38,6 +46,10 @@ module mtl_bundle_mod
         procedure :: addTransferImpedance => bundle_addTransferImpedance
         procedure :: setConnectorTransferImpedance => bundle_setConnectorTransferImpedance
         procedure :: setExternalLongitudinalField => bundle_setExternalLongitudinalField
+#ifdef CompileWithMPI
+        procedure :: Comm_MPI_MTL_V
+#endif
+
 
     end type mtl_bundle_t
 
@@ -60,6 +72,10 @@ contains
 
         res%number_of_conductors = countNumberOfConductors(levels)
         res%dt = levels(1)%lines(1)%dt
+
+        res%is_left_end = levels(1)%lines(1)%is_left_end
+        res%is_right_end = levels(1)%lines(1)%is_right_end
+
         res%step_size = levels(1)%lines(1)%step_size
         res%number_of_divisions = size(res%step_size,1)
         res%external_field_segments = levels(1)%lines(1)%external_field_segments
@@ -306,7 +322,9 @@ contains
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
         integer :: i
-        do i = 2, this%number_of_divisions
+
+
+        do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
         end do
@@ -318,6 +336,11 @@ contains
         real, dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
         real :: eps_r
+
+#ifdef CompileWithMPI
+        call this%Comm_MPI_MTL_V()
+#endif
+        ! write(*,*)'advance'
         call this%transfer_impedance%updateQ3Phi()
         i_prev = this%i
 
@@ -351,4 +374,38 @@ contains
         end if
     end subroutine
 
+#ifdef CompileWithMPI
+    subroutine Comm_MPI_MTL_V(this)
+        class(mtl_bundle_t) :: this
+        integer :: number_of_divisions, number_of_conductors, i
+        integer :: ierr, rank, sizeof,status(MPI_STATUS_SIZE)
+
+        ! call mpi_barrier(subcomm_mpi,ierr)
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+
+        number_of_conductors = size(this%v,1)
+        number_of_divisions = size(this%v,2)-1
+
+        if (.not. this%is_left_end) then 
+            do i = 1, number_of_conductors
+                ! MPI_Send(buf, count, datatype, dest, tag, comm, ierror)
+                ! MPI_Recv(buf, count, datatype, source, tag, comm, status, ierror)
+                call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 1000*(rank-1)+i,  SUBCOMM_MPI, ierr)
+                call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 100*rank+i,  SUBCOMM_MPI, status, ierr)
+            end do
+        end if
+        if (.not. this%is_right_end) then 
+            do i = 1, number_of_conductors
+                ! MPI_Send(buf, count, datatype, dest, tag, comm, ierror)
+                ! MPI_Recv(buf, count, datatype, source, tag, comm, status, ierror)
+                call MPI_send(this%v(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 100*(rank+1)+i, SUBCOMM_MPI, ierr)
+                call MPI_recv(this%v(i,number_of_divisions + 1), 1, REALSIZE, rank+1, 1000*rank+i, SUBCOMM_MPI, status, ierr)
+            end do
+        end if
+
+        ! call mpi_barrier(subcomm_mpi,ierr)
+
+    end subroutine
+#endif
 end module mtl_bundle_mod

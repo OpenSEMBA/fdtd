@@ -3,6 +3,7 @@ module mtln_solver_mod
     use mtl_bundle_mod
     use network_manager_mod
     use preprocess_mod
+    use FDETYPES, only: XYZlimit_t
     implicit none
 
 
@@ -42,15 +43,27 @@ module mtln_solver_mod
 
 contains
 
-    function mtlnCtor(parsed) result(res)
+    function mtlnCtor(parsed, alloc) result(res)
         type(parsed_mtln_t) :: parsed
+        type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         type(mtln_t) :: res
         integer :: i
         type(preprocess_t) :: pre
 
-        pre = preprocess(parsed)
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr
+#endif
+
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+        
+#endif
+
+        pre = preprocess(parsed, alloc)
+
         if (size(pre%bundles) == 0) then
             res%number_of_bundles = 0
+            res%network_manager%has_networks = .false.
             return
         end if
 
@@ -61,8 +74,9 @@ contains
         res%final_time = pre%final_time
 
         res%bundles = pre%bundles
-        res%network_manager = pre%network_manager
         res%number_of_bundles = size(res%bundles)
+        
+        res%network_manager = pre%network_manager
         res%probes = pre%probes
         call res%updateBundlesTimeStep(res%dt)
         call res%initNodes()
@@ -88,19 +102,20 @@ contains
         call this%setExternalLongitudinalField()
 
         call this%advanceBundlesVoltage()
+
         call this%advanceNWVoltage()
+
         call this%advanceBundlesCurrent()
 
         call this%advanceTime()
-        call this%updateProbes()
 
+        call this%updateProbes()
 
     end subroutine
 
     subroutine step_alone(this)
         class(mtln_t) :: this
         integer :: i 
-
 
         call this%advanceBundlesVoltage()
         call this%advanceNWVoltage()
@@ -123,6 +138,7 @@ contains
     subroutine advanceBundlesVoltage(this)
         class(mtln_t) :: this
         integer :: i
+
         do i = 1, this%number_of_bundles
             call this%bundles(i)%updateSources(this%time, this%dt)
             call this%bundles(i)%advanceVoltage()
@@ -135,30 +151,32 @@ contains
         integer :: i,j
         integer ::b, c, v_idx, i_idx
             
-        do i = 1, size(this%network_manager%networks)
-            do j = 1, size(this%network_manager%networks(i)%nodes)
-                b = this%network_manager%networks(i)%nodes(j)%bundle_number
-                c = this%network_manager%networks(i)%nodes(j)%conductor_number
-                v_idx = this%network_manager%networks(i)%nodes(j)%v_index
-                i_idx = this%network_manager%networks(i)%nodes(j)%i_index
+        ! left_end, right_end
+        if (this%number_of_bundles /= 0) then 
+            do i = 1, size(this%network_manager%networks)
+                do j = 1, size(this%network_manager%networks(i)%nodes)
+                    b = this%network_manager%networks(i)%nodes(j)%bundle_number
+                    c = this%network_manager%networks(i)%nodes(j)%conductor_number
+                    v_idx = this%network_manager%networks(i)%nodes(j)%v_index
+                    i_idx = this%network_manager%networks(i)%nodes(j)%i_index
 
-                this%network_manager%networks(i)%nodes(j)%i = this%bundles(b)%i(c, i_idx)
+                    this%network_manager%networks(i)%nodes(j)%i = this%bundles(b)%i(c, i_idx)
+                end do
             end do
-        end do
 
-        call this%network_manager%advanceVoltage()
+            call this%network_manager%advanceVoltage()
 
-        do i = 1, size(this%network_manager%networks)
-            do j = 1, size(this%network_manager%networks(i)%nodes)
-                b = this%network_manager%networks(i)%nodes(j)%bundle_number
-                c = this%network_manager%networks(i)%nodes(j)%conductor_number
-                v_idx = this%network_manager%networks(i)%nodes(j)%v_index
-                i_idx = this%network_manager%networks(i)%nodes(j)%i_index
+            do i = 1, size(this%network_manager%networks)
+                do j = 1, size(this%network_manager%networks(i)%nodes)
+                    b = this%network_manager%networks(i)%nodes(j)%bundle_number
+                    c = this%network_manager%networks(i)%nodes(j)%conductor_number
+                    v_idx = this%network_manager%networks(i)%nodes(j)%v_index
+                    i_idx = this%network_manager%networks(i)%nodes(j)%i_index
 
-                this%bundles(b)%v(c, v_idx) = this%network_manager%networks(i)%nodes(j)%v
+                    this%bundles(b)%v(c, v_idx) = this%network_manager%networks(i)%nodes(j)%v
+                end do
             end do
-        end do
-
+        end if
     end subroutine
 
     subroutine advanceBundlesCurrent(this)

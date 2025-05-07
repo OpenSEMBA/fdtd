@@ -240,6 +240,7 @@ contains
       !
       TYPE (tiempo_t) :: time_out2
        real (kind=RKIND) :: pscale_alpha
+       integer :: rank
       !*******************************************************************************
       !*******************************************************************************
       !*******************************************************************************
@@ -807,12 +808,12 @@ contains
       endif
       !!!
 !!
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
 
       if (use_mtln_wires) then
 #ifdef CompileWithMTLN
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
          call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
 #else
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
@@ -828,7 +829,10 @@ contains
       l_auxinput=thereare%Anisotropic.or.ThereAre%ThinSlot
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
+      call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+      ! write(*,*) 'rank ', rank,' before barrier comm: ', SUBCOMM_MPI,' ierr : ', ierr
       call MPI_Barrier(SUBCOMM_MPI,ierr)
+      ! write(*,*) 'rank ', rank,' after barrier comm: ', SUBCOMM_MPI,' ierr : ', ierr
       call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
 #endif   
       if (l_auxoutput) then
@@ -1062,7 +1066,8 @@ contains
          !this modifies the initwires stuff and must be called after initwires (typically at the end)
          !llamalo siempre aunque no HAYA WIRES!!! para que no se quede colgado en hilos terminales
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
-             (trim(adjustl(wiresflavor))=='transition')) then
+             (trim(adjustl(wiresflavor))=='transition') .or. & 
+              use_mtln_wires) then
             write(dubuf,*) 'Init MPI Holland Wires...';  call print11(layoutnumber,dubuf)
             call newInitWiresMPI(layoutnumber,thereare%wires,size,resume,sgg%sweep)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1459,11 +1464,16 @@ contains
          !!!!!!!!!!!!!!!!!!
 
 #ifdef CompileWithMPI
+
          !call it always (only needed now by anisotropic, but may be needed in a future for other modules)
+         ! call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+         ! write(*,*)'rank ', rank, ' size: ', size
+
          if (size>1) then
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call   FlushMPI_E_Cray
          endif
+         ! write(*,*)'AFTER: rank ', rank, ' size: ', size
 #endif
 
 
@@ -2025,6 +2035,7 @@ contains
          call CloseObservationFiles(sgg,layoutnumber,size,singlefilewrite,initialtimestep,lastexecutedtime,resume) !dump the remaining to disk
 #ifdef CompileWithMTLN      
          if (use_mtln_wires) then
+            ! call GatherMPI_MTL()
             call FlushMTLNObservationFiles(nEntradaRoot)
          end if
 #endif

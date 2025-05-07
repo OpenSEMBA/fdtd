@@ -1,13 +1,12 @@
 module preprocess_mod
 
+    use FDETYPES
     use mtln_types_mod, parsed_probe_t => probe_t, parsed_mtln_t => mtln_t
     use mtl_bundle_mod
     use network_manager_mod
     use mtl_mod!, only: mtl_t, mtl_array_t, line_bundle_t,
 
     use fhash, only: fhash_tbl_t, key=>fhash_key, fhash_key_t
-
-    
     implicit none
 
 
@@ -28,7 +27,11 @@ module preprocess_mod
         procedure :: connectNodesToSubcircuit
         procedure :: addNodeWithId
         procedure :: addProbesWithId
-    end type
+    end type preprocess_t
+
+    interface preprocess_t
+        module procedure preprocess
+    end interface
 
     type, public :: cable_ptr_t
         type(cable_t), pointer :: p
@@ -42,26 +45,48 @@ module preprocess_mod
         type(cable_array_t), dimension(:), allocatable :: levels
     end type
 
-    interface preprocess_t
-        module procedure preprocess
-    end interface
 
 contains
 
 
-    function preprocess(parsed) result(res)
+    function preprocess(parsed, alloc) result(res)
         type(parsed_mtln_t), intent(in):: parsed
+        type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         type(preprocess_t) :: res
         type(fhash_tbl_t) :: cable_name_to_bundle_id
         type(line_bundle_t), dimension(:), allocatable :: line_bundles
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr
+#endif
 
         res%final_time = parsed%time_step * parsed%number_of_steps
         res%dt = parsed%time_step
-
+        
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+    
+#endif
         cable_bundles = buildCableBundles(parsed%cables)
-        line_bundles = buildLineBundles(cable_bundles, res%dt)
+
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+#endif
+        line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
+        ! line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
+
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+#endif
         res%bundles = res%buildMTLBundles(line_bundles)
+        if (size(res%bundles) == 0) then 
+            res%network_manager%has_networks = .false.
+            return
+        end if
+
+! #ifdef CompileWithMPI
+!         call mpi_barrier(subcomm_mpi, ierr)
+! #endif
         res%cable_name_to_bundle_id = mapCablesToBundlesId(line_bundles, res%bundles)
         if (size(parsed%probes) /= 0) then
             res%probes = res%addProbesWithId(parsed%probes)
@@ -69,30 +94,8 @@ contains
             allocate(res%probes(0))
         end if
         res%network_manager = res%buildNetworkManager(parsed%networks)
-        
     end function
 
-    subroutine addInitialConnector(line, connector)
-        type(mtl_t), intent(inout) :: line
-        type(connector_t) :: connector
-        integer :: i
-        do i = 1, line%number_of_conductors
-            line%rpul(1, i, i) = connector%resistances(i)/line%du(1, i, i)
-        end do
-        line%initial_connector_transfer_impedance = connector%transfer_impedance_per_meter
-
-    end subroutine
-
-    subroutine addEndConnector(line, connector)
-        type(mtl_t), intent(inout) :: line
-        type(connector_t) :: connector
-        integer :: i
-        do i = 1, line%number_of_conductors
-            line%rpul(size(line%du,1), i, i) = connector%resistances(i)/line%du(size(line%du,1), i, i)
-        end do
-        line%end_connector_transfer_impedance = connector%transfer_impedance_per_meter
-
-    end subroutine
 
     function conductorsInLevel(line) result(res)
         type(line_bundle_t), intent(in) :: line
@@ -202,6 +205,13 @@ contains
         type(mtl_bundle_t), dimension(:), allocatable :: res
         type(fhash_tbl_t) :: conductors_before_cable
         integer :: i
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr
+#endif
+
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi, ierr)
+#endif
 
         allocate(res(size(lines)))
         do i = 1, size(lines)
@@ -215,9 +225,10 @@ contains
         this%conductors_before_cable = conductors_before_cable
     end function    
 
-    function buildLineFromCable(cable, dt) result(res)
+    function buildLineFromCable(cable, dt, n_segments) result(res)
         type(cable_t), intent(in) :: cable
         real, intent(in) :: dt
+        integer, dimension(1:2), optional :: n_segments
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
@@ -225,6 +236,8 @@ contains
             parent_name = cable%parent_cable%name
             conductor_in_parent = cable%conductor_in_parent
         end if  
+
+        ! res = mtlHomogeneous(cable, dt)
 
         res = mtlHomogeneous(lpul = cable%inductance_per_meter, &
                              cpul = cable%capacitance_per_meter, &
@@ -237,7 +250,8 @@ contains
                              conductor_in_parent = conductor_in_parent, & 
                              transfer_impedance = cable%transfer_impedance, &
                              external_field_segments = cable%external_field_segments, &
-                             isPassthrough = cable%isPassthrough)
+                             isPassthrough = cable%isPassthrough,&
+                             n_segments = n_segments)
 
         if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
         if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
@@ -254,30 +268,102 @@ contains
         !     end if
         ! end if
 
-                
+    contains
+        subroutine addInitialConnector(line, connector)
+            type(mtl_t), intent(inout) :: line
+            type(connector_t) :: connector
+            integer :: i
+            do i = 1, line%number_of_conductors
+                line%rpul(1, i, i) = connector%resistances(i)/line%du(1, i, i)
+            end do
+            line%initial_connector_transfer_impedance = connector%transfer_impedance_per_meter
+
+        end subroutine
+
+        subroutine addEndConnector(line, connector)
+            type(mtl_t), intent(inout) :: line
+            type(connector_t) :: connector
+            integer :: i
+            do i = 1, line%number_of_conductors
+                line%rpul(size(line%du,1), i, i) = connector%resistances(i)/line%du(size(line%du,1), i, i)
+            end do
+            line%end_connector_transfer_impedance = connector%transfer_impedance_per_meter
+
+        end subroutine
 
     end function
 
-    function buildLineBundles(cable_bundles, dt) result(res)
+    function buildLineBundles(cable_bundles, dt, alloc) result(res)
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
         type(line_bundle_t), dimension(:), allocatable :: res
         real, intent(in) :: dt
+        type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
-        nb = size(cable_bundles)
+        integer, dimension(1:2) :: n_segments
+        logical :: buildLine = .true.
+
+        nb = 0
+        ! count bundles in layer
+        do i = 1, size(cable_bundles)
+            n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+            if (n_segments(1) /= -1 .and. n_segments(2) /= -1) nb = nb + 1
+        end do
 
         allocate(res(nb))
-        do i = 1, nb
-            nl = size(cable_bundles(i)%levels)
-            allocate(res(i)%levels(nl))
-            do j = 1, nl
-                nc = size(cable_bundles(i)%levels(j)%cables)
-                allocate(res(i)%levels(j)%lines(nc))
-                do k = 1, nc
-                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt)
+        nb = 0
+        do i = 1, size(cable_bundles)
+            if (present(alloc)) then 
+                n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+                if (n_segments(1) == -1 .and. n_segments(2) == -1) buildLine = .false.
+            end if
+            if (buildLine) then 
+                nb = nb + 1
+                nl = size(cable_bundles(i)%levels)
+                allocate(res(nb)%levels(nl))
+
+                do j = 1, nl
+                    nc = size(cable_bundles(i)%levels(j)%cables)
+                    allocate(res(nb)%levels(j)%lines(nc))
+                    do k = 1, nc
+                        res(nb)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, n_segments)
+                    end do
                 end do
-            end do
+            end if
         end do
+
+    contains
+
+        function countSegmentsInLayer(cable, alloc) result(res)
+            type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
+            type (cable_t), intent(in) :: cable
+            integer, dimension(1:2) :: res
+            integer :: i, direction, position(1:3)
+            logical :: in_layer
+            in_layer = .false.
+            res = (-1,-1)
+            do i = 1, size(cable%external_field_segments)
+                direction = abs(cable%external_field_segments(i)%direction)
+                position = cable%external_field_segments(i)%position
+                if ((position(1) >= Alloc(direction)%XI).and. &
+                    (position(1) <= Alloc(direction)%XE).and. &
+                    (position(2) >= Alloc(direction)%YI).and. &
+                    (position(2) <= Alloc(direction)%YE).and. &
+                    (position(3) >= Alloc(direction)%ZI).and. &
+                    (position(3) <= Alloc(direction)%ZE)) then
+                        if (.not. in_layer) then 
+                            res(1) = i
+                            in_layer = .true.
+                        end if
+                else
+                    if (in_layer) then 
+                        res(2) = i-1
+                        in_layer = .false.
+                    end if
+                end if
+            end do
+            if (in_layer) res(2) = i - 1
+        end function
 
     end function
 
@@ -294,6 +380,7 @@ contains
         level%cables(1)%p => parent%p
         
         res%levels(1) = level
+
 
         do while (findNextLevel(level, cables) /= 0)
             call appendLevel(res%levels, level)
@@ -349,7 +436,13 @@ contains
         type(cable_ptr_t), dimension(:), allocatable :: res
         integer :: i
         integer, dimension(:), allocatable :: parent_ids
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr
+#endif
 
+#ifdef CompileWithMPI
+        call mpi_barrier(subcomm_mpi,ierr)
+#endif
         allocate(parent_ids(0))
         do i = 1, size(cables)
             if (associated(cables(i)%parent_cable) .eqv. .false.) then 
@@ -762,6 +855,7 @@ contains
         conductor_number = conductor_number + node%conductor_in_cable
         
         call this%cable_name_to_bundle_id%get(key(node%belongs_to_cable%name), d, stat)
+        
         if (stat /= 0) return
         write(sConductor,'(I0)') node%conductor_in_cable
         res%name = trim(node%belongs_to_cable%name)//"_"//trim(sConductor)//"_"//nodeSideToString(node%side)
@@ -1122,11 +1216,41 @@ contains
         type(network_manager_t) :: res
         character(256), dimension(:), allocatable :: description
         character(256) :: buff
-        integer :: i
+        integer :: i, n
+        logical, dimension(:), allocatable :: network_in_MPIslice
 
-        allocate(networks(size(terminal_networks)))
+#ifdef CompileWithMPI
+        integer :: j,k,d, stat
+#endif
+        allocate(network_in_MPIslice(size(terminal_networks)), source = .true.)
+        n = size(terminal_networks)
+#ifdef CompileWithMPI
+        
         do i = 1, size(terminal_networks)
-            networks(i) = this%buildNetwork(terminal_networks(i))
+            do j = 1, size(terminal_networks(i)%connections)
+                do k = 1, size(terminal_networks(i)%connections(j)%nodes)
+                    if(associated(terminal_networks(i)%connections(j)%nodes(k)%belongs_to_cable)) then
+                        call this%cable_name_to_bundle_id%get( &
+                            key = key(terminal_networks(i)%connections(j)%nodes(k)%belongs_to_cable%name), &
+                            value = d, &
+                            stat=stat)
+                            if (stat /= 0) network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
+                    else 
+                        network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
+                    end if
+                end do
+            end do
+        end do
+        n = count(network_in_MPIslice)
+#endif
+        
+        allocate(networks(n))
+        n = 0
+        do i = 1, size(network_in_MPIslice)
+            if (network_in_MPIslice(i)) then 
+                n = n + 1
+                networks(n) = this%buildNetwork(terminal_networks(i))
+            end if
         end do
         
         allocate(description(0))

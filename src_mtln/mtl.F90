@@ -3,7 +3,7 @@ module mtl_mod
     ! use NFDETypes
     use utils_mod
     use dispersive_mod
-    use mtln_types_mod, only: external_field_segment_t
+    use mtln_types_mod, only: external_field_segment_t, cable_t
 
     implicit none
 
@@ -15,6 +15,9 @@ module mtl_mod
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         type(lumped_t) :: lumped_elements
         real :: time = 0.0, dt = 0.0
+
+        logical :: is_left_end = .true.
+        logical :: is_right_end = .true.
 
         character (len=:), allocatable :: parent_name
         integer :: conductor_in_parent
@@ -45,7 +48,7 @@ module mtl_mod
 
     interface mtl_t
         module procedure mtlHomogeneous
-        module procedure mtlInHomogeneous
+        module procedure mtlInhomogeneous
     end interface
 
     type, public :: mtl_array_t
@@ -88,7 +91,7 @@ contains
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
                             external_field_segments, &
-                            isPassthrough) result(res)
+                            isPassthrough, n_segments) result(res)
         type(mtl_t) :: res
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -101,10 +104,16 @@ contains
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
         logical, optional :: isPassthrough
+        integer, dimension(1:2), optional :: n_segments
         integer :: j 
 
         res%name = name
-        res%step_size =  step_size
+        write(*,*) n_segments
+        if (present(n_segments)) then 
+            res%step_size =  step_size(n_segments(1):n_segments(2))
+        else 
+            res%step_size =  step_size
+        end if
         call checkPULDimensionsHomogeneous(lpul, cpul, rpul, gpul)
         res%number_of_conductors = size(lpul, 1)
 
@@ -112,6 +121,9 @@ contains
         call res%initLCHomogeneous(lpul, cpul)
         call res%initRGHomogeneous(rpul, gpul)
         
+        if (n_segments(1) /= 1) res%is_left_end = .false.
+        if (n_segments(2) /= size(step_size)) res%is_right_end = .false.
+
         if (present(dt)) then 
             if (lpul(1,1) /= 0.0) then 
                 max_dt = res%getMaxTimeStep() 
@@ -131,7 +143,7 @@ contains
         end if
 
      
-        res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)
+        res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
         if (present(parent_name)) then
             res%parent_name = parent_name
         end if
@@ -143,7 +155,11 @@ contains
         end if
 
         if (present(external_field_segments)) then 
-            res%external_field_segments = external_field_segments
+            if (present(n_segments)) then 
+                res%external_field_segments = external_field_segments(n_segments(1):n_segments(2))
+            else
+                res%external_field_segments = external_field_segments
+            end if
         end if
 
         if (present(isPassthrough)) then 
