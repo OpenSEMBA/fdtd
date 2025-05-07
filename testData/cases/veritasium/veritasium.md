@@ -293,8 +293,8 @@ import matplotlib.pyplot as plt
 
 # Load current data from different regions (filenames anonymized)
 data1 = np.loadtxt('resistance_current.dat', skiprows=1)
-data2 = np.loadtxt('left_wire_current_region2.dat', skiprows=1)
-data3 = np.loadtxt('source_current_region3.dat', skiprows=1)
+data2 = np.loadtxt('left_wire_current.dat', skiprows=1)
+data3 = np.loadtxt('source_current.dat', skiprows=1)
 
 # Plot the results
 plt.figure(figsize=(8, 9))
@@ -312,3 +312,6 @@ plt.legend()
 plt.xlim(right=1e-7)
 plt.show()
 ```
+
+![Current vs time](./veritasium.png)
+
