@@ -24,6 +24,7 @@ MODULE Preprocess_m
    USE CONFORMAL_TYPES
    USE Conformal_TimeSteps_m
 #endif
+   USE conformal_mod, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    IMPLICIT NONE
 !!!variables globales del modulo
    REAL (KIND=RKIND), save           ::  cluz,zvac
@@ -56,7 +57,7 @@ CONTAINS
       type(taglist_t) :: tag_numbers
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) :: tama, tama2, tama3, tama4, tama5, tama6, i, j, k, tipotemp, tamaSonda,  &
-      &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones
+      &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones,ci
       CHARACTER (LEN=*), INTENT (IN) :: fichin
       !
       CHARACTER (LEN=BUFSIZE) :: probenumber
@@ -106,7 +107,8 @@ CONTAINS
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
-!
+      !
+      type(ConformalMedia_t) :: conformal_media
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       cluz=1.0_RKIND/sqrt(eps0*mu0)
       zvac=sqrt(mu0/eps0)
@@ -139,6 +141,12 @@ CONTAINS
       sgg%EShared%Conta = 0
       sgg%EShared%MaxConta = 10
       ALLOCATE (sgg%EShared%elem(1:sgg%EShared%MaxConta))
+
+
+      if (associated(this%conformalRegs%volumes)) then 
+         conformal_media = buildConformalMedia(this%conformalRegs)
+         sgg%dt = sgg%dt*conformal_media%cfl
+      end if
 
 
       ! Cuenta los medios
@@ -186,6 +194,10 @@ CONTAINS
       contamedia = contamedia+2 !para acomodar los no_use no_use_notouch
       !!!!!!!!!!!!!
       contamedia = contamedia +1 !para acomodar los nodal sources como caso especial de linea vacia
+
+      ! contamedia = contamedia + this%conformalRegs%nEdges + this%conformalRegs%nFaces
+      contamedia = contamedia + conformal_media%n_edges_media + conformal_media%n_faces_media
+
       sgg%NumMedia = contamedia
       sgg%AllocMed = contamedia
       !reserva espacio
@@ -435,6 +447,7 @@ CONTAINS
       sgg%Med%Is%SlantedWire = .FALSE.
       sgg%Med%Is%ThinSlot = .FALSE.
       sgg%Med%Is%PEC = .FALSE.
+      sgg%Med%Is%ConformalPEC = .FALSE.
       sgg%Med%Is%PMC = .FALSE.
       sgg%Med%Is%PML = .FALSE.
       sgg%Med%Is%Volume = .FALSE.
@@ -2529,6 +2542,10 @@ CONTAINS
          end do
       end do
       !END SLANTED WIRES
+
+      call addConformalMedia(sgg, conformal_media, contamedia)
+
+
 
       !reporta el bounding box
 
@@ -4722,6 +4739,85 @@ CONTAINS
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      subroutine addConformalMedia(sgg, conformal_media, contamedia)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(inout) :: contamedia
+         call addConformalEdgeMedia(sgg, conformal_media, contamedia)
+         call addConformalFaceMedia(sgg, conformal_media, contamedia)
+      end subroutine
+
+      subroutine addConformalFaceMedia(sgg, conformal_media, contamedia)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(inout) :: contamedia
+         integer (kind=4) :: cell_i, cell_j, cell_k
+         integer :: j, k
+         do j = 1, conformal_media%n_faces_media
+            contamedia = contamedia + 1
+            sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
+            sgg%Med(contamedia)%Is%Needed = .TRUE.
+            sgg%Med(contamedia)%Priority = prior_PEC
+            sgg%Med(contamedia)%Epr = this%mats%mats(1)%eps / Eps0
+            sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
+            sgg%Med(contamedia)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
+            sgg%Med(contamedia)%SigmaM = 0.0_RKIND
+            ! funcion al healer para tener en cuenta la prioridad
+            do k = 1, conformal_media%face_media(j)%size
+               cell_i = conformal_media%face_media(j)%faces(k)%cell(1)
+               cell_j = conformal_media%face_media(j)%faces(k)%cell(2)
+               cell_k = conformal_media%face_media(j)%faces(k)%cell(3)
+               select case(conformal_media%face_media(j)%faces(k)%direction)
+               case(F_X)
+                  sggMiHx(cell_i, cell_j, cell_k) = contamedia
+               case(F_Y)
+                  sggMiHy(cell_i, cell_j, cell_k) = contamedia
+               case(F_Z)
+                  sggMiHz(cell_i, cell_j, cell_k) = contamedia
+               end select
+            end do
+         end do
+   
+      end subroutine
+
+      subroutine addConformalEdgeMedia(sgg, conformal_media, contamedia)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(inout) :: contamedia
+         integer (kind=4) :: edge_media
+         integer (kind=4) :: cell_i, cell_j, cell_k
+         integer :: j, k
+         do j = 1, conformal_media%n_edges_media
+            if (conformal_media%edge_media(j)%ratio /= 0) then 
+               contamedia = contamedia + 1
+               sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
+               sgg%Med(contamedia)%Is%Needed = .TRUE.
+               sgg%Med(contamedia)%Priority = prior_PEC
+               sgg%Med(contamedia)%Epr = (this%mats%mats(1)%eps / conformal_media%edge_media(j)%ratio ) / Eps0
+               sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
+               sgg%Med(contamedia)%Mur = this%mats%mats(1)%mu / Mu0
+               sgg%Med(contamedia)%SigmaM = 0.0_RKIND
+               edge_media = contamedia
+            else
+               edge_media = 0
+            end if
+            ! funcion al healer para tener en cuenta la prioridad
+            do k = 1, conformal_media%edge_media(j)%size
+               cell_i = conformal_media%edge_media(j)%edges(k)%cell(1)
+               cell_j = conformal_media%edge_media(j)%edges(k)%cell(2)
+               cell_k = conformal_media%edge_media(j)%edges(k)%cell(3)
+               select case(conformal_media%edge_media(j)%edges(k)%direction)
+               case(E_X)
+                  sggMiEx(cell_i, cell_j, cell_k) = edge_media
+               case(E_Y)
+                  sggMiEy(cell_i, cell_j, cell_k) = edge_media
+               case(E_Z)
+                  sggMiEz(cell_i, cell_j, cell_k) = edge_media
+               end select
+            end do
+         end do
+      end subroutine
 
       subroutine read_TIMEFRECTRANSFsourcefiles(simu_devia)
          logical :: simu_devia

@@ -158,6 +158,11 @@ contains
       allocate(pD%mtln%connectors(0))
 #endif
 
+      allocate(pD%conformalRegs)
+      allocate(pD%conformalRegs%volumes(0))
+      allocate(pD%conformalRegs%surfaces(0))
+
+
    end subroutine
 
    elemental logical function parseador_eq(a, b)
