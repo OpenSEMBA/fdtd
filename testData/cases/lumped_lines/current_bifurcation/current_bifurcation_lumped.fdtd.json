@@ -1,8 +1,8 @@
 {
     "_format": "FDTD Input file",
     "general": {
-        "timeStep": 1.0e-12,
-        "numberOfSteps": 8000
+        "timeStep": 1.5407e-12,
+        "numberOfSteps": 25962
     },
     "boundary": {
         "all": {
@@ -224,12 +224,12 @@
                         [
                             18,
                             18,
-                            35
+                            28
                         ],
                         [
                             23,
                             23,
-                            35
+                            28
                         ]
                     ]
                 ]
@@ -432,12 +432,36 @@
                 "intervals": [
                     [
                         [
+                            30,
+                            20,
+                            50
+                        ],
+                        [
+                            30,
+                            20,
+                            50
+                        ]
+                    ],
+                    [
+                        [
                             35,
                             20,
                             50
                         ],
                         [
                             35,
+                            20,
+                            50
+                        ]
+                    ],
+                    [
+                        [
+                            30,
+                            20,
+                            50
+                        ],
+                        [
+                            30,
                             20,
                             50
                         ]
@@ -488,36 +512,6 @@
             },
             {
                 "id": 14,
-                "type": "cell",
-                "intervals": [
-                    [
-                        [
-                            30,
-                            20,
-                            50
-                        ],
-                        [
-                            30,
-                            20,
-                            50
-                        ]
-                    ],
-                    [
-                        [
-                            30,
-                            20,
-                            50
-                        ],
-                        [
-                            30,
-                            20,
-                            50
-                        ]
-                    ]
-                ]
-            },
-            {
-                "id": 15,
                 "type": "polyline",
                 "coordinateIds": [
                     12,
@@ -530,7 +524,7 @@
                 ]
             },
             {
-                "id": 16,
+                "id": 15,
                 "type": "polyline",
                 "coordinateIds": [
                     18,
@@ -538,7 +532,7 @@
                 ]
             },
             {
-                "id": 17,
+                "id": 16,
                 "type": "polyline",
                 "coordinateIds": [
                     19,
@@ -552,7 +546,7 @@
             "id": 1,
             "type": "pec"
         },
-        { "id": 2, "name": "100ohm_resistor", "type": "lumped", "model": "resistor", "resistance": 100.0 },
+        { "id": 2, "name": "100ohm_resistor", "type": "lumped", "model": "resistor", "resistance": 1000.0 },
         {
             "name": "Terminal_R",
             "id": 3,
@@ -626,6 +620,7 @@
     ],
     "materialAssociations": [
         {
+            "type": "surface",
             "materialId": 1,
             "elementIds": [
                 5,
@@ -634,12 +629,18 @@
                 8
             ]
         },
-        { "materialId": 2, "elementIds": [ 9 ] },
+        {
+            "type": "surface",
+            "materialId": 2,
+            "elementIds": [
+                9
+            ]
+        },
         {
             "name": "Cable_E",
             "type": "cable",
             "elementIds": [
-                15
+                14
             ],
             "materialId": 4,
             "initialTerminalId": 10,
@@ -649,7 +650,7 @@
             "name": "Cable_T1",
             "type": "cable",
             "elementIds": [
-                16
+                15
             ],
             "materialId": 7,
             "initialTerminalId": 10,
@@ -659,10 +660,10 @@
             "name": "Cable_T2",
             "type": "cable",
             "elementIds": [
-                17
+                16
             ],
             "materialId": 8,
-            "initialTerminalId": 3,
+            "initialTerminalId": 10,
             "endTerminalId": 10
         }
     ],
