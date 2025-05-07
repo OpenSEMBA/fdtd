@@ -39,7 +39,7 @@ np.savetxt('./step.exc', data)
 # %%
 # SIGMOID PULSE
 
-t = np.linspace(0, 5e-8, 1000)
+t = np.linspace(0, 10e-8, 2000)
 
 A = 10     
 k = 30e7
@@ -86,7 +86,7 @@ data = np.loadtxt('closedCircuit.fdtd_source_current_Jy_109_150_99__110_150_100.
 x2 = data[:, 0]
 y2 = data[:, 1]
 
-data = np.loadtxt('closedCircuit.fdtd_cube_wave_current_Jx_100_149_99__100_150_100.dat', skiprows=1)
+data = np.loadtxt('closedCircuit.fdtd_cube_current_Jy_98_150_98__101_150_101.dat', skiprows=1)
 
 x3 = data[:, 0]
 y3 = data[:, 1]
@@ -96,8 +96,8 @@ plt.figure(figsize=(8, 9))
 plt.plot(x, y, color = 'red',label = 'left wire medition' )
 plt.plot(x2, y2, color = 'green',label = 'source medition' )
 
-#plt.plot(x1, -y1, color = 'blue', label = 'resistance medition')
-plt.plot(x3, -y3, color = 'blue', label = 'perpendicular resistance medition')
+plt.plot(x1, -y1, color = 'blue', label = 'resistance medition')
+#plt.plot(x3, -y3, color = 'blue', label = 'perpendicular resistance medition')
 
 plt.axvline(x=0.3e-8, color='orange', linestyle='-', label='1/c')
 plt.axvline(x=3.6e-8, color='orange', linestyle='-', label='11/c')
