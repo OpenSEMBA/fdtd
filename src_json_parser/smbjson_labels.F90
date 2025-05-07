@@ -34,6 +34,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TYPE_SLOT = "thinSlot"
    character (len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
    character (len=*), parameter :: J_MAT_TYPE_MULTIWIRE = "multiwire"
+   character (len=*), parameter :: J_MAT_TYPE_UNSHIELDED_MULTIWIRE = "unshieldedMultiwire"
    character (len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"
    character (len=*), parameter :: J_MAT_TYPE_CONNECTOR = "connector"
    
@@ -45,7 +46,6 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC = "dielectric"
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_RADIUS = "radius"
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_PERMITTIVITY = "relativePermittivity"
-   character (len=*), parameter :: J_MAT_WIRE_PASS = "isPassthrough"
    
    character (len=*), parameter :: J_MAT_TERM_TERMINATIONS = "terminations"
    character (len=*), parameter :: J_MAT_TERM_TYPE_OPEN = "open"

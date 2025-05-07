@@ -46,13 +46,15 @@
             {"id": 1, "type": "node", "coordinateIds": [2]},
             {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
             {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [19, 19, 21]]] },
-            {"id": 4, "type": "node", "coordinateIds": [4]}
+            {"id": 4, "type": "node", "coordinateIds": [4]},
+            {"id": 5, "type": "node", "coordinateIds": [1]},
+            {"id": 6, "type": "node", "coordinateIds": [3]}
         ]
     },
 
     "materialAssociations": [
         { 
-                        "name" : "single_wire",
+            "name" : "single_wire",
             "materialId": 1,
             "initialTerminalId": 2,
             "endTerminalId": 2,
@@ -78,10 +80,24 @@
 
     "probes": [
         {
+            "name": "start_point",
+            "type": "wire",
+            "field": "voltage",
+            "elementIds": [5],
+            "domain": { "type": "time" }
+        },
+        {
             "name": "mid_point",
             "type": "wire",
             "field": "current",
             "elementIds": [1],
+            "domain": { "type": "time" }
+        },
+        {
+            "name": "end_point",
+            "type": "wire",
+            "field": "voltage",
+            "elementIds": [6],
             "domain": { "type": "time" }
         }
     ]
