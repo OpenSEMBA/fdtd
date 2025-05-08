@@ -104,6 +104,7 @@ contains
     subroutine mtln_step(this)
         class(mtln_t) :: this
 
+        
         call this%setExternalLongitudinalField()
         call this%advanceBundlesVoltage()
         call this%advanceNWVoltage()
@@ -130,7 +131,7 @@ contains
         class(mtln_t) :: this
         integer :: i
         do i = 1, this%number_of_bundles
-            call this%bundles(i)%setExternalLongitudinalField()
+            if (this%bundles(i)%buildLine) call this%bundles(i)%setExternalLongitudinalField()
         end do
 
     end subroutine
@@ -140,8 +141,10 @@ contains
         integer :: i
 
         do i = 1, this%number_of_bundles
-            call this%bundles(i)%updateSources(this%time, this%dt)
-            call this%bundles(i)%advanceVoltage()
+            if (this%bundles(i)%buildLine) then 
+                call this%bundles(i)%updateSources(this%time, this%dt)
+                call this%bundles(i)%advanceVoltage()
+            end if
         end do
 
     end subroutine
@@ -159,8 +162,7 @@ contains
                     c = this%network_manager%networks(i)%nodes(j)%conductor_number
                     v_idx = this%network_manager%networks(i)%nodes(j)%v_index
                     i_idx = this%network_manager%networks(i)%nodes(j)%i_index
-
-                    this%network_manager%networks(i)%nodes(j)%i = this%bundles(b)%i(c, i_idx)
+                    if (this%bundles(b)%buildLine) this%network_manager%networks(i)%nodes(j)%i = this%bundles(b)%i(c, i_idx)
                 end do
             end do
 
@@ -173,7 +175,7 @@ contains
                     v_idx = this%network_manager%networks(i)%nodes(j)%v_index
                     i_idx = this%network_manager%networks(i)%nodes(j)%i_index
 
-                    this%bundles(b)%v(c, v_idx) = this%network_manager%networks(i)%nodes(j)%v
+                    if (this%bundles(b)%buildLine) this%bundles(b)%v(c, v_idx) = this%network_manager%networks(i)%nodes(j)%v
                 end do
             end do
         end if
@@ -183,7 +185,7 @@ contains
         class(mtln_t) :: this
         integer :: i
         do i = 1, this%number_of_bundles
-            call this%bundles(i)%advanceCurrent()
+            if (this%bundles(i)%buildLine) call this%bundles(i)%advanceCurrent()
 
         end do
     end subroutine
@@ -197,7 +199,7 @@ contains
         class(mtln_t) :: this
         integer :: i, j
         do i = 1, this%number_of_bundles
-            if (size(this%bundles(i)%probes) /= 0) then 
+            if (size(this%bundles(i)%probes) /= 0 .and. this%bundles(i)%buildLine) then 
                 do j = 1, size(this%bundles(i)%probes)
                     if (this%bundles(i)%probes(j)%in_layer) call this%bundles(i)%probes(j)%update(this%time, this%bundles(i)%v, this%bundles(i)%i)
                 end do 
@@ -229,12 +231,14 @@ contains
         class(mtln_t) :: this
         integer :: i, j 
         do i = 1, this%number_of_bundles
-            call this%bundles(i)%updateLRTerms()
-            call this%bundles(i)%updateCGTerms()
-            do j = 1, size(this%bundles(i)%probes)
-                call this%bundles(i)%probes(j)%resizeFrames(this%getTimeRange(this%final_time), & 
-                                                            this%bundles(i)%number_of_conductors)
-            end do
+            if (this%bundles(i)%buildLine) then
+                call this%bundles(i)%updateLRTerms()
+                call this%bundles(i)%updateCGTerms()
+                do j = 1, size(this%bundles(i)%probes)
+                    call this%bundles(i)%probes(j)%resizeFrames(this%getTimeRange(this%final_time), & 
+                                                                this%bundles(i)%number_of_conductors)
+                end do
+            end if
         end do
    
     end subroutine

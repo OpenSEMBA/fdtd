@@ -33,6 +33,7 @@ module mtl_mod
         logical :: isPassthrough = .false.
 
         integer (kind=4), dimension(1:2) :: layer_segments = (-1,-1)
+        logical :: buildLine = .false.
     contains
         procedure :: setTimeStep
         procedure :: initLCHomogeneous
@@ -96,7 +97,7 @@ contains
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
                             external_field_segments, &
-                            isPassthrough, n_segments) result(res)
+                            isPassthrough, n_segments, buildLine) result(res)
         type(mtl_t) :: res
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -110,6 +111,7 @@ contains
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
         logical, optional :: isPassthrough
         integer (kind=4), dimension(1:2), optional :: n_segments
+        logical, optional :: buildLine
         integer :: j 
 #ifdef CompileWithMPI
         integer :: rank, ierr
@@ -130,6 +132,7 @@ contains
         else
             res%step_size =  step_size
         end if
+        if (present(buildLine)) res%buildLine = buildLine
         call checkPULDimensionsHomogeneous(lpul, cpul, rpul, gpul)
         res%number_of_conductors = size(lpul, 1)
 

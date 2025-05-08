@@ -225,10 +225,11 @@ contains
         this%conductors_before_cable = conductors_before_cable
     end function    
 
-    function buildLineFromCable(cable, dt, n_segments) result(res)
+    function buildLineFromCable(cable, dt, n_segments, buildLine) result(res)
         type(cable_t), intent(in) :: cable
         real, intent(in) :: dt
         integer (kind=4), dimension(1:2), optional :: n_segments
+        logical, optional :: buildLine
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
@@ -251,7 +252,8 @@ contains
                              transfer_impedance = cable%transfer_impedance, &
                              external_field_segments = cable%external_field_segments, &
                              isPassthrough = cable%isPassthrough,&
-                             n_segments = n_segments)
+                             n_segments = n_segments, & 
+                             buildLine = buildLine)
 
         if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
         if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
@@ -305,19 +307,20 @@ contains
 
        
         n_segments = (-1,-1)
-        nb = 0
-        ! count bundles in layer
-        if (present(alloc)) then 
-            do i = 1, size(cable_bundles)
-                n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
-                if (n_segments(1) /= n_segments(2)) nb = nb + 1
-                ! if (n_segments(1) /= -1 .and. n_segments(2) /= -1) nb = nb + 1
-            end do
-        else 
-            nb = size(cable_bundles)
-        end if
+        ! nb = 0
+        ! ! count bundles in layer
+        ! if (present(alloc)) then 
+        !     do i = 1, size(cable_bundles)
+        !         n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+        !         if (n_segments(1) /= n_segments(2)) nb = nb + 1
+        !         ! if (n_segments(1) /= -1 .and. n_segments(2) /= -1) nb = nb + 1
+        !     end do
+        ! else 
+        !     nb = size(cable_bundles)
+        ! end if
 
-        allocate(res(nb))
+        ! allocate(res(nb))
+        allocate(res(size(cable_bundles)))
         nb = 0
         do i = 1, size(cable_bundles)
             buildLine = .true.
@@ -329,19 +332,19 @@ contains
                 n_segments(1) = 1
                 n_segments(2) = size(cable_bundles(i)%levels(1)%cables(1)%p%step_size)
             end if
-            if (buildLine) then 
-                nb = nb + 1
-                nl = size(cable_bundles(i)%levels)
-                allocate(res(nb)%levels(nl))
+            ! if (buildLine) then 
+            nb = nb + 1
+            nl = size(cable_bundles(i)%levels)
+            allocate(res(nb)%levels(nl))
 
-                do j = 1, nl
-                    nc = size(cable_bundles(i)%levels(j)%cables)
-                    allocate(res(nb)%levels(j)%lines(nc))
-                    do k = 1, nc
-                        res(nb)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, n_segments)
-                    end do
+            do j = 1, nl
+                nc = size(cable_bundles(i)%levels(j)%cables)
+                allocate(res(nb)%levels(j)%lines(nc))
+                do k = 1, nc
+                    res(nb)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, n_segments, buildLine)
                 end do
-            end if
+            end do
+            ! end if
         end do
 
     contains

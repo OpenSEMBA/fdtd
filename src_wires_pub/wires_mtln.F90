@@ -90,18 +90,20 @@ contains
       subroutine pointSegmentsToFields()
          integer (kind=4) :: i, j, k, m, n, direction
          do m = 1, mtln_solver%number_of_bundles
-            do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
-               call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
-               direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-               select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))
-                  case(1)                                
-                  mtln_solver%bundles(m)%external_field_segments(n)%field => Ex(i, j, k) 
-                  case(2)     
-                  mtln_solver%bundles(m)%external_field_segments(n)%field => Ey(i, j, k) 
-                  case(3)     
-                  mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k) 
-                  end select
-            end do
+            if (mtln_solver%bundles(m)%buildLine) then 
+               do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
+                  call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
+                  direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
+                  select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))
+                     case(1)                                
+                     mtln_solver%bundles(m)%external_field_segments(n)%field => Ex(i, j, k) 
+                     case(2)     
+                     mtln_solver%bundles(m)%external_field_segments(n)%field => Ey(i, j, k) 
+                     case(3)     
+                     mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k) 
+                     end select
+               end do
+            end if
          end do
       end subroutine
 
@@ -113,20 +115,22 @@ contains
 ! #endif
 
          do m = 1, mtln_solver%number_of_bundles
-            do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
-               l = hwires%CurrentSegment(indexMap(m,n))%Lind
-               c = mu0*eps0/l
-               if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
-               ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0 .and. mtln_solver%bundles(m)%isPassthrough .eqv. .false.) then 
-                  mtln_solver%bundles(m)%lpul(n,1,1) = l 
-                  mtln_solver%bundles(m)%cpul(n,1,1) = c 
-                  if (mtln_solver%bundles(m)%external_field_segments(n)%has_dielectric) then
-                     mtln_solver%bundles(m)%external_field_segments(n)%dielectric%effective_relative_permittivity = computeEffectivePermittivity(m,n,l,c)
+            if (mtln_solver%bundles(m)%buildLine) then 
+               do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
+                  l = hwires%CurrentSegment(indexMap(m,n))%Lind
+                  c = mu0*eps0/l
+                  if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
+                  ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0 .and. mtln_solver%bundles(m)%isPassthrough .eqv. .false.) then 
+                     mtln_solver%bundles(m)%lpul(n,1,1) = l 
+                     mtln_solver%bundles(m)%cpul(n,1,1) = c 
+                     if (mtln_solver%bundles(m)%external_field_segments(n)%has_dielectric) then
+                        mtln_solver%bundles(m)%external_field_segments(n)%dielectric%effective_relative_permittivity = computeEffectivePermittivity(m,n,l,c)
+                     end if
                   end if
-               end if
-            end do
-            mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1,1) = &
-               mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1,1)
+               end do
+               mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1,1) = &
+                  mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1,1)
+         end if
          end do
       end subroutine
 
@@ -168,17 +172,18 @@ contains
       subroutine updateNetworksLineCapacitors()
          integer(kind=4) :: m,init, end, sep
          do m = 1, mtln_solver%number_of_bundles
-            init = lbound(mtln_solver%bundles(m)%cpul,1)
-            end = ubound(mtln_solver%bundles(m)%cpul,1)
-            sep = index(mtln_solver%bundles(m)%name,"_")
-            call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
-               trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_initial",&
-               mtln_solver%bundles(m)%cpul(init,1,1)*mtln_solver%bundles(m)%step_size(init)*0.5 )
+            if (mtln_solver%bundles(m)%buildLine) then 
+               init = lbound(mtln_solver%bundles(m)%cpul,1)
+               end = ubound(mtln_solver%bundles(m)%cpul,1)
+               sep = index(mtln_solver%bundles(m)%name,"_")
+               call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
+                  trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_initial",&
+                  mtln_solver%bundles(m)%cpul(init,1,1)*mtln_solver%bundles(m)%step_size(init)*0.5 )
 
-            call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
-               trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_end",&
-               mtln_solver%bundles(m)%cpul(end,1,1)*mtln_solver%bundles(m)%step_size(end-1)*0.5)
-
+               call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
+                  trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_end",&
+                  mtln_solver%bundles(m)%cpul(end,1,1)*mtln_solver%bundles(m)%step_size(end-1)*0.5)
+            end if
          end do   
       end subroutine
 
@@ -197,16 +202,18 @@ contains
          allocate(res(mtln_solver%number_of_bundles,nmax))
          res(:,:) = 0
          do m = 1, mtln_solver%number_of_bundles
-            do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
-               call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))                          
-               do iw = 1, wires%NumCurrentSegments
-                  if ((i == wires%CurrentSegment(iw)%i) .and. &
-                     (j == wires%CurrentSegment(iw)%j) .and. &
-                     (k == wires%CurrentSegment(iw)%k)) then
-                        res(m,n) = iw
-                  end if
+            if (mtln_solver%bundles(m)%buildLine) then 
+               do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
+                  call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))                          
+                  do iw = 1, wires%NumCurrentSegments
+                     if ((i == wires%CurrentSegment(iw)%i) .and. &
+                        (j == wires%CurrentSegment(iw)%j) .and. &
+                        (k == wires%CurrentSegment(iw)%k)) then
+                           res(m,n) = iw
+                     end if
+                  end do
                end do
-            end do
+            end if
          end do
       end function
    endsubroutine InitWires_mtln
@@ -230,11 +237,13 @@ contains
       
       hwires => GetHwires()
       do m = 1, mtln_solver%number_of_bundles
-         do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
-            punt => mtln_solver%bundles(m)%external_field_segments(n)%field
-            punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
-            hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent(m,n)
-         end do
+         if (mtln_solver%bundles(m)%buildLine) then 
+            do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
+               punt => mtln_solver%bundles(m)%external_field_segments(n)%field
+               punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
+               hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent(m,n)
+            end do
+         end if
       end do
 
 #ifdef CompileWithMPI      
