@@ -228,7 +228,7 @@ contains
     function buildLineFromCable(cable, dt, n_segments) result(res)
         type(cable_t), intent(in) :: cable
         real, intent(in) :: dt
-        integer, dimension(1:2), optional :: n_segments
+        integer (kind=4), dimension(1:2), optional :: n_segments
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
@@ -300,8 +300,10 @@ contains
         type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
-        integer, dimension(1:2) :: n_segments
+        integer (kind=4), dimension(1:2) :: n_segments
         logical :: buildLine = .true.
+
+       
         n_segments = (-1,-1)
         nb = 0
         ! count bundles in layer
@@ -347,7 +349,7 @@ contains
         function countSegmentsInLayer(cable, alloc) result(res)
             type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
             type (cable_t), intent(in) :: cable
-            integer, dimension(1:2) :: res
+            integer (kind=4), dimension(1:2) :: res
             integer :: i, direction, position(1:3)
             logical :: in_layer
             in_layer = .false.
@@ -1300,7 +1302,8 @@ contains
                                                probe_type = parsed_probes(i)%probe_type,&
                                                name = probe_name,&
                                                position =parsed_probes(i)%probe_position, &
-                                               layer_segments = this%bundles(d)%layer_segments)
+                                               layer_segments = this%bundles(d)%segments(3:4))
+                                            !    layer_segments = this%bundles(d)%layer_segments)
 
         end do
     end function

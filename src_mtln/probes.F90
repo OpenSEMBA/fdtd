@@ -33,7 +33,7 @@ contains
         integer, intent(in) :: probe_type
         real, intent(in) :: dt
         real, dimension(3), optional :: position
-        integer, dimension(1:2), intent(in) :: layer_segments
+        integer (kind=4), dimension(1:2), intent(in) :: layer_segments
         character (len=:), allocatable, optional :: name
 
         res%type = probe_type

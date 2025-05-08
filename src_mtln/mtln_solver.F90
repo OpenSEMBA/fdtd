@@ -82,6 +82,11 @@ contains
         call res%initNodes()
 
         res%step_i = 0
+#ifdef CompileWithMPI
+        do i = 1, size(res%bundles)
+            call res%bundles(i)%Comm_MPI_Layers()
+        end do
+#endif
 
     end function
 
@@ -98,10 +103,6 @@ contains
 
     subroutine mtln_step(this)
         class(mtln_t) :: this
-
-        ! if (this%time > 5.5e-9) then
-        !     call sleep(1)
-        ! end if
 
         call this%setExternalLongitudinalField()
         call this%advanceBundlesVoltage()

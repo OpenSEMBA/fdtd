@@ -4,6 +4,9 @@ module mtl_mod
     use utils_mod
     use dispersive_mod
     use mtln_types_mod, only: external_field_segment_t, cable_t
+#ifdef CompileWithMPI
+        use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
+#endif
 
     implicit none
 
@@ -29,7 +32,7 @@ module mtl_mod
         type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
         logical :: isPassthrough = .false.
 
-        integer, dimension(1:2) :: layer_segments = (-1,-1)
+        integer (kind=4), dimension(1:2) :: layer_segments = (-1,-1)
     contains
         procedure :: setTimeStep
         procedure :: initLCHomogeneous
@@ -106,12 +109,20 @@ contains
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
         logical, optional :: isPassthrough
-        integer, dimension(1:2), optional :: n_segments
+        integer (kind=4), dimension(1:2), optional :: n_segments
         integer :: j 
-
+#ifdef CompileWithMPI
+        integer :: rank, ierr
+#endif
         res%name = name
         if (present(n_segments)) then
-        write(*,*) n_segments
+
+#ifdef CompileWithMPI
+            call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+            write(*,*) 'rank: ',rank
+#endif
+
+            write(*,*) n_segments
             res%step_size =  step_size(n_segments(1):n_segments(2))
             if (n_segments(1) /= 1) res%is_left_end = .false.
             if (n_segments(2) /= size(step_size)) res%is_right_end = .false.
