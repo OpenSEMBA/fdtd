@@ -91,7 +91,6 @@ Elements are assigned to the coordinates defined above or by specifying interval
     {"id": 5, "type": "cell", "name": "source-plane", "intervals": [ [ [109, 150, 99], [111, 150, 101] ] ]},
     {"id": 6, "type": "cell", "name": "cube-plane", "intervals": [ [ [98, 150, 98], [102, 150, 102] ] ]},
     {"id": 7, "type": "cell", "name": "movie-domain", "intervals": [ [ [80, 80, 80], [130, 220, 120] ] ]},
-    {"id": 8, "type": "cell", "name": "cube-wave-plane", "intervals": [ [ [100, 149, 99], [100, 151, 101] ] ]}
 ]
 ```
 
