@@ -92,6 +92,7 @@ contains
         call res%mergeDispersiveMatrices(levels)
 
         ! res%layer_segments = levels(1)%lines(1)%layer_segments
+        res%segments = -1
         res%segments(3:4) = levels(1)%lines(1)%layer_segments
         res%buildLine = levels(1)%lines(1)%buildLine
 
@@ -472,6 +473,7 @@ contains
         !cambia para 1 segmento
 
         if (this%is_left_end) then 
+            !comm with prev
             if (this%segments(3) == this%segments(1) .and. this%segments(1) /= this%segments(2)) then 
                 do i = 1, number_of_conductors
                     call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 3000*(rank-1)+i,  SUBCOMM_MPI, ierr)
@@ -480,6 +482,8 @@ contains
                     call MPI_send(this%e_L(i,2), 1, REALSIZE, rank-1, 4000*(rank-1)+i,  SUBCOMM_MPI, ierr)
                     call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 400*rank+i,  SUBCOMM_MPI, status, ierr)
                 end do
+            ! short left end
+            ! comm with next
             else if  (this%segments(3) == this%segments(5)  .and. this%segments(3) /= this%segments(4)) then 
                 do i = 1, number_of_conductors
                     call MPI_send(this%v(i,1), 1, REALSIZE, rank+1, 300*(rank+1)+i, SUBCOMM_MPI, ierr)
@@ -493,6 +497,8 @@ contains
     
 
         if (this%is_right_end) then 
+            ! short right end
+            ! comm with prev
             if (this%segments(4) == this%segments(2) .and. this%segments(3) /= this%segments(4)) then 
                 do i = 1, number_of_conductors
                     call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 5000*(rank-1)+i,  SUBCOMM_MPI, ierr)
@@ -501,6 +507,7 @@ contains
                     call MPI_send(this%e_L(i,2), 1, REALSIZE, rank-1, 6000*(rank-1)+i,  SUBCOMM_MPI, ierr)
                     call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 600*rank+i,  SUBCOMM_MPI, status, ierr)
                 end do
+            ! comm with next
             else if  (this%segments(4) == this%segments(6)  .and. this%segments(5) /= this%segments(6)) then 
                 do i = 1, number_of_conductors
                     call MPI_send(this%v(i,this%number_of_divisions - 1), 1, REALSIZE, rank+1, 500*(rank+1)+i, SUBCOMM_MPI, ierr)
@@ -512,11 +519,9 @@ contains
             end if
         end if
     
-
-        if (.not. this%is_left_end .and. (this%segments(3) /= this%segments(1))) then 
+        ! comm with prev
+        if (.not. this%is_left_end .and. (this%segments(4) /= this%segments(2))) then 
             do i = 1, number_of_conductors
-                ! MPI_Send(buf, count, datatype, dest, tag, comm, ierror)
-                ! MPI_Recv(buf, count, datatype, source, tag, comm, status, ierror)
                 call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 1000*(rank-1)+i,  SUBCOMM_MPI, ierr)
                 call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 100*rank+i,  SUBCOMM_MPI, status, ierr)
 
@@ -524,10 +529,9 @@ contains
                 call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 200*rank+i,  SUBCOMM_MPI, status, ierr)
             end do
         end if
+        ! comm with next
         if (.not. this%is_right_end .and. (this%segments(3) /= this%segments(5))) then 
             do i = 1, number_of_conductors
-                ! MPI_Send(buf, count, datatype, dest, tag, comm, ierror)
-                ! MPI_Recv(buf, count, datatype, source, tag, comm, status, ierror)
                 call MPI_send(this%v(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 100*(rank+1)+i, SUBCOMM_MPI, ierr)
                 call MPI_recv(this%v(i,number_of_divisions + 1), 1, REALSIZE, rank+1, 1000*rank+i, SUBCOMM_MPI, status, ierr)
 
