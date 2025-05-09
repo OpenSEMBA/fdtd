@@ -27,13 +27,13 @@ module probes_mod
 
 contains
 
-    function probeCtor(index, probe_type, dt, layer_segments, name, position) result(res)
+    function probeCtor(index, probe_type, dt, layer_indices, name, position) result(res)
         type(probe_t) :: res
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
         real, intent(in) :: dt
         real, dimension(3), optional :: position
-        integer (kind=4), dimension(1:2), intent(in) :: layer_segments
+        integer (kind=4), dimension(1:2), intent(in) :: layer_indices
         character (len=:), allocatable, optional :: name
 
         res%type = probe_type
@@ -41,8 +41,8 @@ contains
         res%dt = dt
         res%current_frame = 1
 
-        if (index < layer_segments(1) .or. index > layer_segments(2)+1) res%in_layer = .false.
-        res%layer_index = index -(layer_segments(1)-1)            
+        if (index < layer_indices(1) .or. index > layer_indices(2)+1) res%in_layer = .false.
+        res%layer_index = index -(layer_indices(1)-1)            
 
         if (present(name)) then
             res%name = res%name//name//"_"

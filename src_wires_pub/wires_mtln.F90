@@ -72,16 +72,8 @@ contains
       hwires => GetHwires()
       indexMap = mapFieldToCurrentSegments(hwires, mtln_solver%bundles)
 
-! #ifdef CompileWithMPI
-!       call mpi_barrier(subcomm_mpi,ierr)
-! #endif
-
       call pointSegmentsToFields()
-
       call assignLCToExternalConductor()
-! #ifdef CompileWithMPI
-      ! call mpi_barrier(subcomm_mpi,ierr)
-! #endif
       call updateNetworksLineCapacitors()
       call mtln_solver%updatePULTerms()
 
@@ -90,7 +82,7 @@ contains
       subroutine pointSegmentsToFields()
          integer (kind=4) :: i, j, k, m, n, direction
          do m = 1, mtln_solver%number_of_bundles
-            if (mtln_solver%bundles(m)%buildLine) then 
+            if (mtln_solver%bundles(m)%bundle_in_layer) then 
                do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
                   call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
                   direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
@@ -110,12 +102,9 @@ contains
       subroutine assignLCToExternalConductor()
          integer(kind=4) :: m, n
          real (kind=rkind) :: l,c
-! #ifdef CompileWithMPI
-!          call mpi_barrier(subcomm_mpi,ierr)
-! #endif
 
          do m = 1, mtln_solver%number_of_bundles
-            if (mtln_solver%bundles(m)%buildLine) then 
+            if (mtln_solver%bundles(m)%bundle_in_layer) then 
                do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
                   l = hwires%CurrentSegment(indexMap(m,n))%Lind
                   c = mu0*eps0/l
@@ -172,7 +161,7 @@ contains
       subroutine updateNetworksLineCapacitors()
          integer(kind=4) :: m,init, end, sep
          do m = 1, mtln_solver%number_of_bundles
-            if (mtln_solver%bundles(m)%buildLine) then 
+            if (mtln_solver%bundles(m)%bundle_in_layer) then 
                init = lbound(mtln_solver%bundles(m)%cpul,1)
                end = ubound(mtln_solver%bundles(m)%cpul,1)
                sep = index(mtln_solver%bundles(m)%name,"_")
@@ -202,7 +191,7 @@ contains
          allocate(res(mtln_solver%number_of_bundles,nmax))
          res(:,:) = 0
          do m = 1, mtln_solver%number_of_bundles
-            if (mtln_solver%bundles(m)%buildLine) then 
+            if (mtln_solver%bundles(m)%bundle_in_layer) then 
                do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
                   call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))                          
                   do iw = 1, wires%NumCurrentSegments
@@ -237,7 +226,7 @@ contains
       
       hwires => GetHwires()
       do m = 1, mtln_solver%number_of_bundles
-         if (mtln_solver%bundles(m)%buildLine) then 
+         if (mtln_solver%bundles(m)%bundle_in_layer) then 
             do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
                punt => mtln_solver%bundles(m)%external_field_segments(n)%field
                punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
@@ -246,16 +235,6 @@ contains
          end if
       end do
 
-#ifdef CompileWithMPI      
-!       call mpi_barrier(subcomm_mpi,ierr)
-! if (mtln_solver%number_of_bundles /= 0) then 
-      ! call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
-      ! write(*,*) 'rank ', rank, ' mtln_solver%step()'
-      ! call mtln_solver%step()
-! else
-!    call mtln_solver%advanceTime()
-! end if
-#endif
    call mtln_solver%step()
 
 

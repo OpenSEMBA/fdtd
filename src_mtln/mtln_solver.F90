@@ -51,7 +51,7 @@ contains
         type(preprocess_t) :: pre
 
 #ifdef CompileWithMPI
-        integer (kind=4) :: ierr
+        integer (kind=4) :: sizeof, ierr
 #endif
 
 #ifdef CompileWithMPI
@@ -83,9 +83,12 @@ contains
 
         res%step_i = 0
 #ifdef CompileWithMPI
-        do i = 1, size(res%bundles)
-            call res%bundles(i)%Comm_MPI_Layers()
-        end do
+        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+        if (sizeof > 1) then 
+            do i = 1, size(res%bundles)
+                call res%bundles(i)%Comm_MPI_Layers()
+            end do
+        end if
 #endif
 
     end function
@@ -131,7 +134,7 @@ contains
         class(mtln_t) :: this
         integer :: i
         do i = 1, this%number_of_bundles
-            if (this%bundles(i)%buildLine) call this%bundles(i)%setExternalLongitudinalField()
+            if (this%bundles(i)%bundle_in_layer) call this%bundles(i)%setExternalLongitudinalField()
         end do
 
     end subroutine
@@ -141,7 +144,7 @@ contains
         integer :: i
 
         do i = 1, this%number_of_bundles
-            if (this%bundles(i)%buildLine) then 
+            if (this%bundles(i)%bundle_in_layer) then 
                 call this%bundles(i)%updateSources(this%time, this%dt)
                 call this%bundles(i)%advanceVoltage()
             end if
@@ -162,7 +165,7 @@ contains
                     c = this%network_manager%networks(i)%nodes(j)%conductor_number
                     v_idx = this%network_manager%networks(i)%nodes(j)%v_index
                     i_idx = this%network_manager%networks(i)%nodes(j)%i_index
-                    if (this%bundles(b)%buildLine) this%network_manager%networks(i)%nodes(j)%i = this%bundles(b)%i(c, i_idx)
+                    if (this%bundles(b)%bundle_in_layer) this%network_manager%networks(i)%nodes(j)%i = this%bundles(b)%i(c, i_idx)
                 end do
             end do
 
@@ -175,7 +178,7 @@ contains
                     v_idx = this%network_manager%networks(i)%nodes(j)%v_index
                     i_idx = this%network_manager%networks(i)%nodes(j)%i_index
 
-                    if (this%bundles(b)%buildLine) this%bundles(b)%v(c, v_idx) = this%network_manager%networks(i)%nodes(j)%v
+                    if (this%bundles(b)%bundle_in_layer) this%bundles(b)%v(c, v_idx) = this%network_manager%networks(i)%nodes(j)%v
                 end do
             end do
         end if
@@ -185,7 +188,7 @@ contains
         class(mtln_t) :: this
         integer :: i
         do i = 1, this%number_of_bundles
-            if (this%bundles(i)%buildLine) call this%bundles(i)%advanceCurrent()
+            if (this%bundles(i)%bundle_in_layer) call this%bundles(i)%advanceCurrent()
 
         end do
     end subroutine
@@ -199,7 +202,7 @@ contains
         class(mtln_t) :: this
         integer :: i, j
         do i = 1, this%number_of_bundles
-            if (size(this%bundles(i)%probes) /= 0 .and. this%bundles(i)%buildLine) then 
+            if (size(this%bundles(i)%probes) /= 0 .and. this%bundles(i)%bundle_in_layer) then 
                 do j = 1, size(this%bundles(i)%probes)
                     if (this%bundles(i)%probes(j)%in_layer) call this%bundles(i)%probes(j)%update(this%time, this%bundles(i)%v, this%bundles(i)%i)
                 end do 
@@ -231,7 +234,7 @@ contains
         class(mtln_t) :: this
         integer :: i, j 
         do i = 1, this%number_of_bundles
-            if (this%bundles(i)%buildLine) then
+            if (this%bundles(i)%bundle_in_layer) then
                 call this%bundles(i)%updateLRTerms()
                 call this%bundles(i)%updateCGTerms()
                 do j = 1, size(this%bundles(i)%probes)

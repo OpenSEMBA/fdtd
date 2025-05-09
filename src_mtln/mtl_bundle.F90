@@ -32,12 +32,9 @@ module mtl_bundle_mod
         type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
         logical :: isPassthrough = .false.
 
-        integer (kind=4), dimension(6) :: segments
-        logical :: buildLine
+        integer (kind=4), dimension(6) :: layers_indices
+        logical :: bundle_in_layer
 
-        ! integer (kind=4), dimension(1:2) :: layer_segments = (-1,-1)
-        ! integer (kind=4), dimension(1:2) :: next_segments = (-1,-1)
-        ! integer (kind=4), dimension(1:2) :: prev_segments = (-1,-1)
     contains
         procedure :: mergePULMatrices
         procedure :: mergeDispersiveMatrices
@@ -92,9 +89,9 @@ contains
         call res%mergeDispersiveMatrices(levels)
 
         ! res%layer_segments = levels(1)%lines(1)%layer_segments
-        res%segments = -1
-        res%segments(3:4) = levels(1)%lines(1)%layer_segments
-        res%buildLine = levels(1)%lines(1)%buildLine
+        res%layers_indices = -1
+        res%layers_indices(3:4) = levels(1)%lines(1)%layer_indices
+        res%bundle_in_layer = levels(1)%lines(1)%bundle_in_layer
 
     end function
 
@@ -197,11 +194,11 @@ contains
 
     end subroutine
 
-    type(probe_t) function addProbe(this, index, probe_type, layer_segments, name, position) result(res)
+    type(probe_t) function addProbe(this, index, probe_type, layer_indices, name, position) result(res)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        integer (kind=4), dimension(1:2), intent(in) :: layer_segments
+        integer (kind=4), dimension(1:2), intent(in) :: layer_indices
         real, dimension(3), optional :: position
         character (len=:), allocatable, optional :: name
         type(probe_t), allocatable, dimension(:) :: aux_probes
@@ -211,13 +208,13 @@ contains
         allocate(this%probes(size(aux_probes)+1))
 
         if (present(position) .and. present(name)) then
-            res = probeCtor(index, probe_type, this%dt, layer_segments, name=name, position=position)
+            res = probeCtor(index, probe_type, this%dt, layer_indices, name=name, position=position)
         else if (present(name) .and. .not. present(position)) then 
-            res = probeCtor(index, probe_type, this%dt, layer_segments, name=name)
+            res = probeCtor(index, probe_type, this%dt, layer_indices, name=name)
         else if (.not. present(name) .and. present(position)) then 
-            res = probeCtor(index, probe_type, this%dt, layer_segments, position=position)
+            res = probeCtor(index, probe_type, this%dt, layer_indices, position=position)
         else
-            res = probeCtor(index, probe_type, this%dt, layer_segments)
+            res = probeCtor(index, probe_type, this%dt, layer_indices)
         end if
 
         this%probes(1:size(this%probes)-1) = aux_probes
@@ -348,11 +345,13 @@ contains
         real, dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
         real :: eps_r
-
 #ifdef CompileWithMPI
-        call this%Comm_MPI_MTL()
+        integer (kind=4) :: sizeof, ierr
 #endif
-        ! write(*,*)'advance'
+#ifdef CompileWithMPI
+        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+        if (sizeof > 1) call this%Comm_MPI_MTL()
+#endif
         call this%transfer_impedance%updateQ3Phi()
         i_prev = this%i
 
@@ -392,29 +391,15 @@ contains
         class(mtl_bundle_t) :: this
         integer :: ierr, rank, sizeof,status(MPI_STATUS_SIZE)
         integer (kind=4) :: buff1_prev, buff2_prev, buff1_next, buff2_next
-        ! integer (kind=4) :: r1, r2, l1,l2
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
 
         call MPI_Barrier(subcomm_mpi,ierr)
-        ! this%next_segments = this%layer_segments
-        ! this%prev_segments = this%layer_segments
-        buff1_prev = this%segments(3)
-        buff2_prev = this%segments(4)
-        buff1_next = this%segments(3)
-        buff2_next = this%segments(4)
+        buff1_prev = this%layers_indices(3)
+        buff2_prev = this%layers_indices(4)
+        buff1_next = this%layers_indices(3)
+        buff2_next = this%layers_indices(4)
         if ((rank /= 0 .and. rank /= sizeof-1)) then 
-
-            ! call MPI_send(buff1_next, 1, INTEGERSIZE, rank-1, 602*rank,  SUBCOMM_MPI, ierr)
-            ! call MPI_send(buff2_next, 1, INTEGERSIZE, rank-1, 603*rank,  SUBCOMM_MPI, ierr)
-
-            ! call MPI_send(buff1_next, 1, INTEGERSIZE, rank+1, 600*(rank+1),  SUBCOMM_MPI, ierr)
-            ! call MPI_send(buff2_next, 1, INTEGERSIZE, rank+1, 601*(rank+1),  SUBCOMM_MPI, ierr)
-
-            ! call MPI_recv(buff1_prev, 1, INTEGERSIZE, rank+1, 602*(rank+1),  SUBCOMM_MPI, status, ierr)
-            ! call MPI_recv(buff2_prev, 1, INTEGERSIZE, rank+1, 603*(rank+1),  SUBCOMM_MPI, status, ierr)
-            ! call MPI_recv(buff1_next, 1, INTEGERSIZE, rank-1, 600*rank,  SUBCOMM_MPI, status, ierr)
-            ! call MPI_recv(buff2_next, 1, INTEGERSIZE, rank-1, 601*rank,  SUBCOMM_MPI, status, ierr)
             call MPI_send(buff1_next, 1, INTEGERSIZE, rank-1, 502*rank,  SUBCOMM_MPI, ierr)
             call MPI_send(buff2_next, 1, INTEGERSIZE, rank-1, 503*rank,  SUBCOMM_MPI, ierr)
 
@@ -427,35 +412,25 @@ contains
             call MPI_recv(buff1_next, 1, INTEGERSIZE, rank+1, 502*(rank+1),  SUBCOMM_MPI, status, ierr)
             call MPI_recv(buff2_next, 1, INTEGERSIZE, rank+1, 503*(rank+1),  SUBCOMM_MPI, status, ierr)
 
-            this%segments(1) = buff1_prev
-            this%segments(2) = buff2_prev
-            this%segments(5) = buff1_next
-            this%segments(6) = buff2_next
-            write(*,*) 'rank: ', rank
-            write(*,*) 'prev segments : ', this%segments(1:2)
-            write(*,*) 'layer segments: ', this%segments(3:4)
-            write(*,*) 'next segments : ', this%segments(5:6)
+            this%layers_indices(1) = buff1_prev
+            this%layers_indices(2) = buff2_prev
+            this%layers_indices(5) = buff1_next
+            this%layers_indices(6) = buff2_next
 
         else if (rank == 0) then 
             call MPI_send(buff1_prev, 1, INTEGERSIZE, rank+1, 500*(rank+1),  SUBCOMM_MPI, ierr)
             call MPI_send(buff2_prev, 1, INTEGERSIZE, rank+1, 501*(rank+1),  SUBCOMM_MPI, ierr)
             call MPI_recv(buff1_next, 1, INTEGERSIZE, rank+1, 502*(rank+1),  SUBCOMM_MPI, status, ierr)
             call MPI_recv(buff2_next, 1, INTEGERSIZE, rank+1, 503*(rank+1),  SUBCOMM_MPI, status, ierr)
-            this%segments(5) = buff1_next
-            this%segments(6) = buff2_next
-            write(*,*) 'rank: ', rank
-            write(*,*) 'layer segments: ', this%segments(3:4)
-            write(*,*) 'next segments : ', this%segments(5:6)
+            this%layers_indices(5) = buff1_next
+            this%layers_indices(6) = buff2_next
         else if (rank == sizeof-1) then 
             call MPI_send(buff1_next, 1, INTEGERSIZE, rank-1, 502*rank,  SUBCOMM_MPI, ierr)
             call MPI_send(buff2_next, 1, INTEGERSIZE, rank-1, 503*rank,  SUBCOMM_MPI, ierr)
             call MPI_recv(buff1_prev, 1, INTEGERSIZE, rank-1, 500*rank,  SUBCOMM_MPI, status, ierr)
             call MPI_recv(buff2_prev, 1, INTEGERSIZE, rank-1, 501*rank,  SUBCOMM_MPI, status, ierr)
-            this%segments(1) = buff1_prev
-            this%segments(2) = buff2_prev
-            write(*,*) 'rank: ', rank
-            write(*,*) 'prev segments : ', this%segments(1:2)
-            write(*,*) 'layer segments: ', this%segments(3:4)
+            this%layers_indices(1) = buff1_prev
+            this%layers_indices(2) = buff2_prev
         end if
 
     end subroutine
@@ -464,17 +439,15 @@ contains
         class(mtl_bundle_t) :: this
         integer :: number_of_divisions, number_of_conductors, i
         integer :: ierr, rank, sizeof,status(MPI_STATUS_SIZE)
-        integer (kind=4), dimension(1:2) :: comm_segments_prev, comm_segments_next
-        ! call mpi_barrier(subcomm_mpi,ierr)
+
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
-        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
         number_of_conductors = size(this%v,1)
         number_of_divisions = size(this%v,2)-1
         !cambia para 1 segmento
 
         if (this%is_left_end) then 
             !comm with prev
-            if (this%segments(3) == this%segments(1) .and. this%segments(1) /= this%segments(2)) then 
+            if (this%layers_indices(3) == this%layers_indices(1) .and. this%layers_indices(1) /= this%layers_indices(2)) then 
                 do i = 1, number_of_conductors
                     call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 3000*(rank-1)+i,  SUBCOMM_MPI, ierr)
                     call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 300*rank+i,  SUBCOMM_MPI, status, ierr)
@@ -484,7 +457,7 @@ contains
                 end do
             ! short left end
             ! comm with next
-            else if  (this%segments(3) == this%segments(5)  .and. this%segments(3) /= this%segments(4)) then 
+            else if  (this%layers_indices(3) == this%layers_indices(5)  .and. this%layers_indices(3) /= this%layers_indices(4)) then 
                 do i = 1, number_of_conductors
                     call MPI_send(this%v(i,1), 1, REALSIZE, rank+1, 300*(rank+1)+i, SUBCOMM_MPI, ierr)
                     call MPI_recv(this%v(i,3), 1, REALSIZE, rank+1, 3000*rank+i, SUBCOMM_MPI, status, ierr)
@@ -499,7 +472,7 @@ contains
         if (this%is_right_end) then 
             ! short right end
             ! comm with prev
-            if (this%segments(4) == this%segments(2) .and. this%segments(3) /= this%segments(4)) then 
+            if (this%layers_indices(4) == this%layers_indices(2) .and. this%layers_indices(3) /= this%layers_indices(4)) then 
                 do i = 1, number_of_conductors
                     call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 5000*(rank-1)+i,  SUBCOMM_MPI, ierr)
                     call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 500*rank+i,  SUBCOMM_MPI, status, ierr)
@@ -508,7 +481,7 @@ contains
                     call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 600*rank+i,  SUBCOMM_MPI, status, ierr)
                 end do
             ! comm with next
-            else if  (this%segments(4) == this%segments(6)  .and. this%segments(5) /= this%segments(6)) then 
+            else if  (this%layers_indices(4) == this%layers_indices(6)  .and. this%layers_indices(5) /= this%layers_indices(6)) then 
                 do i = 1, number_of_conductors
                     call MPI_send(this%v(i,this%number_of_divisions - 1), 1, REALSIZE, rank+1, 500*(rank+1)+i, SUBCOMM_MPI, ierr)
                     call MPI_recv(this%v(i,this%number_of_divisions + 1), 1, REALSIZE, rank+1, 5000*rank+i, SUBCOMM_MPI, status, ierr)
@@ -520,7 +493,7 @@ contains
         end if
     
         ! comm with prev
-        if (.not. this%is_left_end .and. (this%segments(4) /= this%segments(2))) then 
+        if (.not. this%is_left_end .and. (this%layers_indices(4) /= this%layers_indices(2))) then 
             do i = 1, number_of_conductors
                 call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 1000*(rank-1)+i,  SUBCOMM_MPI, ierr)
                 call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 100*rank+i,  SUBCOMM_MPI, status, ierr)
@@ -530,7 +503,7 @@ contains
             end do
         end if
         ! comm with next
-        if (.not. this%is_right_end .and. (this%segments(3) /= this%segments(5))) then 
+        if (.not. this%is_right_end .and. (this%layers_indices(3) /= this%layers_indices(5))) then 
             do i = 1, number_of_conductors
                 call MPI_send(this%v(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 100*(rank+1)+i, SUBCOMM_MPI, ierr)
                 call MPI_recv(this%v(i,number_of_divisions + 1), 1, REALSIZE, rank+1, 1000*rank+i, SUBCOMM_MPI, status, ierr)
@@ -540,7 +513,6 @@ contains
             end do
         end if
 
-        ! call mpi_barrier(subcomm_mpi,ierr)
 
     end subroutine
     

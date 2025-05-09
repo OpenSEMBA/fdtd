@@ -84,9 +84,6 @@ contains
             return
         end if
 
-! #ifdef CompileWithMPI
-!         call mpi_barrier(subcomm_mpi, ierr)
-! #endif
         res%cable_name_to_bundle_id = mapCablesToBundlesId(line_bundles, res%bundles)
         if (size(parsed%probes) /= 0) then
             res%probes = res%addProbesWithId(parsed%probes)
@@ -225,11 +222,11 @@ contains
         this%conductors_before_cable = conductors_before_cable
     end function    
 
-    function buildLineFromCable(cable, dt, n_segments, buildLine) result(res)
+    function buildLineFromCable(cable, dt, layer_indices, bundle_in_layer) result(res)
         type(cable_t), intent(in) :: cable
         real, intent(in) :: dt
-        integer (kind=4), dimension(1:2), optional :: n_segments
-        logical, optional :: buildLine
+        integer (kind=4), dimension(1:2), optional :: layer_indices
+        logical, optional :: bundle_in_layer
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
@@ -252,8 +249,8 @@ contains
                              transfer_impedance = cable%transfer_impedance, &
                              external_field_segments = cable%external_field_segments, &
                              isPassthrough = cable%isPassthrough,&
-                             n_segments = n_segments, & 
-                             buildLine = buildLine)
+                             layer_indices = layer_indices, & 
+                             bundle_in_layer = bundle_in_layer)
 
         if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
         if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
@@ -302,37 +299,22 @@ contains
         type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
-        integer (kind=4), dimension(1:2) :: n_segments
-        logical :: buildLine = .true.
+        integer (kind=4), dimension(1:2) :: layer_indices
+        logical :: bundle_in_layer = .true.
 
        
-        n_segments = (-1,-1)
-        ! nb = 0
-        ! ! count bundles in layer
-        ! if (present(alloc)) then 
-        !     do i = 1, size(cable_bundles)
-        !         n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
-        !         if (n_segments(1) /= n_segments(2)) nb = nb + 1
-        !         ! if (n_segments(1) /= -1 .and. n_segments(2) /= -1) nb = nb + 1
-        !     end do
-        ! else 
-        !     nb = size(cable_bundles)
-        ! end if
-
-        ! allocate(res(nb))
+        layer_indices = [-1,-1]
         allocate(res(size(cable_bundles)))
         nb = 0
         do i = 1, size(cable_bundles)
-            buildLine = .true.
+            bundle_in_layer = .true.
             if (present(alloc)) then 
-                n_segments = countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
-                if (n_segments(1) ==  n_segments(2) ) buildLine = .false.
-                ! if (n_segments(1) == -1 .and. n_segments(2) == -1) buildLine = .false.
+                layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+                if (layer_indices(1) ==  layer_indices(2) ) bundle_in_layer = .false.
             else
-                n_segments(1) = 1
-                n_segments(2) = size(cable_bundles(i)%levels(1)%cables(1)%p%step_size)
+                layer_indices(1) = 1
+                layer_indices(2) = size(cable_bundles(i)%levels(1)%cables(1)%p%step_size)
             end if
-            ! if (buildLine) then 
             nb = nb + 1
             nl = size(cable_bundles(i)%levels)
             allocate(res(nb)%levels(nl))
@@ -341,22 +323,21 @@ contains
                 nc = size(cable_bundles(i)%levels(j)%cables)
                 allocate(res(nb)%levels(j)%lines(nc))
                 do k = 1, nc
-                    res(nb)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, n_segments, buildLine)
+                    res(nb)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, layer_indices, bundle_in_layer)
                 end do
             end do
-            ! end if
         end do
 
     contains
 
-        function countSegmentsInLayer(cable, alloc) result(res)
+        function findIndicesInLayer(cable, alloc) result(res)
             type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
             type (cable_t), intent(in) :: cable
             integer (kind=4), dimension(1:2) :: res
             integer :: i, direction, position(1:3)
             logical :: in_layer
             in_layer = .false.
-            res = (-1,-1)
+            res = [-1,-1]
             do i = 1, size(cable%external_field_segments)
                 direction = abs(cable%external_field_segments(i)%direction)
                 position = cable%external_field_segments(i)%position
@@ -1299,14 +1280,12 @@ contains
             if (stat /= 0) return
             probe_name = parsed_probes(i)%probe_name//"_"//this%bundles(d)%name
 
-            ! countSegmentsInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
 
             res(i) =  this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
                                                probe_type = parsed_probes(i)%probe_type,&
                                                name = probe_name,&
                                                position =parsed_probes(i)%probe_position, &
-                                               layer_segments = this%bundles(d)%segments(3:4))
-                                            !    layer_segments = this%bundles(d)%layer_segments)
+                                               layer_indices = this%bundles(d)%layers_indices(3:4))
 
         end do
     end function

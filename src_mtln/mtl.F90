@@ -32,8 +32,8 @@ module mtl_mod
         type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
         logical :: isPassthrough = .false.
 
-        integer (kind=4), dimension(1:2) :: layer_segments = (-1,-1)
-        logical :: buildLine = .false.
+        integer (kind=4), dimension(1:2) :: layer_indices = [-1,-1]
+        logical :: bundle_in_layer = .false.
     contains
         procedure :: setTimeStep
         procedure :: initLCHomogeneous
@@ -97,7 +97,7 @@ contains
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
                             external_field_segments, &
-                            isPassthrough, n_segments, buildLine) result(res)
+                            isPassthrough, layer_indices, bundle_in_layer) result(res)
         type(mtl_t) :: res
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -110,29 +110,29 @@ contains
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
         logical, optional :: isPassthrough
-        integer (kind=4), dimension(1:2), optional :: n_segments
-        logical, optional :: buildLine
+        integer (kind=4), dimension(1:2), optional :: layer_indices
+        logical, optional :: bundle_in_layer
         integer :: j 
 #ifdef CompileWithMPI
         integer :: rank, ierr
 #endif
         res%name = name
-        if (present(n_segments)) then
+        if (present(layer_indices)) then
 
 #ifdef CompileWithMPI
             call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
             write(*,*) 'rank: ',rank
 #endif
 
-            write(*,*) n_segments
-            res%step_size =  step_size(n_segments(1):n_segments(2))
-            if (n_segments(1) /= 1) res%is_left_end = .false.
-            if (n_segments(2) /= size(step_size)) res%is_right_end = .false.
-            res%layer_segments = n_segments
+            write(*,*) layer_indices
+            res%step_size =  step_size(layer_indices(1):layer_indices(2))
+            if (layer_indices(1) /= 1) res%is_left_end = .false.
+            if (layer_indices(2) /= size(step_size)) res%is_right_end = .false.
+            res%layer_indices = layer_indices
         else
             res%step_size =  step_size
         end if
-        if (present(buildLine)) res%buildLine = buildLine
+        if (present(bundle_in_layer)) res%bundle_in_layer = bundle_in_layer
         call checkPULDimensionsHomogeneous(lpul, cpul, rpul, gpul)
         res%number_of_conductors = size(lpul, 1)
 
@@ -172,8 +172,8 @@ contains
         end if
 
         if (present(external_field_segments)) then 
-            if (present(n_segments)) then 
-                res%external_field_segments = external_field_segments(n_segments(1):n_segments(2))
+            if (present(layer_indices)) then 
+                res%external_field_segments = external_field_segments(layer_indices(1):layer_indices(2))
             else
                 res%external_field_segments = external_field_segments
             end if
