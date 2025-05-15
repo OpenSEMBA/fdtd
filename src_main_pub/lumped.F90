@@ -231,7 +231,7 @@ contains
          if (sgg%med(lumped_%jmed)%lumped(1)%inductor) then
              lumped_%EfieldPrevPrev = lumped_%EfieldPrev
              lumped_%EfieldPrev     = lumped_%Efield
-             !!! La evolución de la corriente debe ser modificada por un coeficiente contrario a lo mostrado en Mittra.
+             !!! The evolution of the current must be modified by a coefficient different from that shown in Mittra pag65.
              lumped_%Jcur = lumped_%currentCoeff * lumped_%Jcur + lumped_%sigmaEffResistInduct * (lumped_%EfieldPrev + lumped_%EfieldPrevPrev)
          else
              lumped_%Jcur=0.0_RKIND
@@ -350,8 +350,8 @@ contains
             lumped_%g1=g1 
             lumped_%G2a= G2 / transversalDeltaHa 
             lumped_%G2b= G2 / transversalDeltaHb
-            !!! El despeje de la corriente en la página 65 de Mittra es incorrecto y conduce a resultados que implican saturación. 
-            !!! El coeficiente correcto es el que se muestra aquí.
+            !!! The current derivation on page 65 of Mittra is incorrect and leads to saturation. 
+            !!! The correct coefficient is the one shown here.
             lumped_%GJ = G2 * (1 + currentCoeff) / 2 !!!!Mittra pag65
             lumped_%sigmaEffResistInduct = sigmaEffResistInduct
             lumped_%currentCoeff = currentCoeff
