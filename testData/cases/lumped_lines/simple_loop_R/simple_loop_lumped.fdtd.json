@@ -2,7 +2,7 @@
     "_format": "FDTD Input file",
     "general": {
         "timeStep": 1e-12,
-        "numberOfSteps": 8000
+        "numberOfSteps": 20000
     },
     "boundary": {
         "all": {
@@ -173,7 +173,7 @@
                             45.0
                         ],
                         [
-                            30.0,
+                            35.0,
                             22.0,
                             45.0
                         ]
@@ -186,7 +186,7 @@
                 "intervals": [
                     [
                         [
-                            40.0,
+                            36.0,
                             22.0,
                             45.0
                         ],
@@ -204,12 +204,12 @@
                 "intervals": [
                     [
                         [
-                            30.0,
+                            35.0,
                             22.0,
                             45.0
                         ],
                         [
-                            40.0,
+                            36.0,
                             22.0,
                             45.0
                         ]
@@ -280,6 +280,60 @@
                     1,
                     11
                 ]
+            },
+            {
+                "id": 9,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            40,
+                            21,
+                            44
+                        ],
+                        [
+                            40,
+                            23,
+                            46
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 10,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            30,
+                            21,
+                            44
+                        ],
+                        [
+                            30,
+                            23,
+                            46
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 11,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            36,
+                            21,
+                            44
+                        ],
+                        [
+                            36,
+                            23,
+                            46
+                        ]
+                    ]
+                ]
             }
         ]
     },
@@ -288,7 +342,7 @@
             "id": 1,
             "type": "pec"
         },
-        { "id": 2, "name": "100ohm_resistor", "type": "lumped", "model": "resistor", "resistance": 1000.0 },
+        { "id": 2, "name": "100ohm_resistor", "type": "lumped", "model": "resistor", "resistance": 50.0 },
         {
             "name": "Wirematerial",
             "id": 3,
@@ -339,7 +393,7 @@
         {
             "name": "Generator on line",
             "type": "generator",
-            "magnitudeFile": "predefinedExcitation.1.exc",
+            "magnitudeFile": "rampExcitation.exc",
             "elementIds": [
                 1
             ],
@@ -359,11 +413,44 @@
             }
         },
         {
-            "name": "Material current",
+            "name": "Start Material current",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
                 3
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "End Material current",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                11
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "After Material current",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                9
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "Before Material current",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                10
             ],
             "domain": {
                 "type": "time"

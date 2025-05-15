@@ -2,7 +2,7 @@
     "_format": "FDTD Input file",
     "general": {
         "timeStep": 1e-12,
-        "numberOfSteps": 8000
+        "numberOfSteps": 20000
     },
     "boundary": {
         "all": {
@@ -38,9 +38,25 @@
                 ]
             },
             {
+                "id": 2,
+                "relativePosition": [
+                    25.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
                 "id": 3,
                 "relativePosition": [
-                    35.0,
+                    30.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 4,
+                "relativePosition": [
+                    40.0,
                     22.0,
                     45.0
                 ]
@@ -54,7 +70,31 @@
                 ]
             },
             {
+                "id": 6,
+                "relativePosition": [
+                    30.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
                 "id": 7,
+                "relativePosition": [
+                    40.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 8,
+                "relativePosition": [
+                    45.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 9,
                 "relativePosition": [
                     45.0,
                     22.0,
@@ -62,7 +102,7 @@
                 ]
             },
             {
-                "id": 8,
+                "id": 10,
                 "relativePosition": [
                     25.0,
                     22.0,
@@ -70,9 +110,17 @@
                 ]
             },
             {
-                "id": 9,
+                "id": 11,
                 "relativePosition": [
                     25.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 12,
+                "relativePosition": [
+                    35.0,
                     22.0,
                     45.0
                 ]
@@ -294,27 +342,117 @@
                 "id": 8,
                 "type": "polyline",
                 "coordinateIds": [
-                    9,
-                    3
+                    3,
+                    12
                 ]
             },
             {
                 "id": 9,
                 "type": "polyline",
                 "coordinateIds": [
-                    3,
-                    5
+                    12,
+                    4
                 ]
             },
             {
                 "id": 10,
                 "type": "polyline",
                 "coordinateIds": [
-                    5,
-                    7,
                     8,
+                    9,
+                    10,
                     1,
-                    9
+                    11
+                ]
+            },
+            {
+                "id": 11,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            40,
+                            21,
+                            44
+                        ],
+                        [
+                            40,
+                            23,
+                            46
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 12,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            30,
+                            21,
+                            44
+                        ],
+                        [
+                            30,
+                            23,
+                            46
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 13,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            25.0,
+                            22.0,
+                            45.0
+                        ],
+                        [
+                            30.0,
+                            22.0,
+                            45.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 14,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            40.0,
+                            22.0,
+                            45.0
+                        ],
+                        [
+                            45.0,
+                            22.0,
+                            45.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 15,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            36,
+                            21,
+                            44
+                        ],
+                        [
+                            36,
+                            23,
+                            46
+                        ]
+                    ]
                 ]
             }
         ]
@@ -351,7 +489,7 @@
             "terminations": [
                 {
                     "type": "series",
-                    "resistance": 1000.0,
+                    "resistance": 50.0,
                     "capacitance": 1e+22
                 }
             ]
@@ -365,6 +503,10 @@
                     "type": "short"
                 }
             ]
+        },
+        {
+            "id": 6,
+            "type": "pec"
         }
     ],
     "materialAssociations": [
@@ -397,13 +539,21 @@
             "materialId": 1,
             "initialTerminalId": 5,
             "endTerminalId": 5
+        },
+        {
+            "type": "surface",
+            "materialId": 6,
+            "elementIds": [
+                13,
+                14
+            ]
         }
     ],
     "sources": [
         {
             "name": "Generator on line",
             "type": "generator",
-            "magnitudeFile": "predefinedExcitation.1.exc",
+            "magnitudeFile": "rampExcitation.exc",
             "elementIds": [
                 1
             ],
@@ -423,11 +573,44 @@
             }
         },
         {
-            "name": "Material current",
+            "name": "Start Material current",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
                 3
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "End Material current",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                15
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "After Material current",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                11
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "Before Material current",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                12
             ],
             "domain": {
                 "type": "time"

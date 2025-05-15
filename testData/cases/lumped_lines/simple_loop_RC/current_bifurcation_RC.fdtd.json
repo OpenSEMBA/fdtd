@@ -1,7 +1,7 @@
 {
     "_format": "FDTD Input file",
     "general": {
-        "timeStep": 1.5407e-12,
+        "timeStep": 1e-12,
         "numberOfSteps": 20000
     },
     "boundary": {
@@ -74,39 +74,39 @@
                 "relativePosition": [
                     25.0,
                     20.0,
-                    40.0
+                    30.0
                 ]
             },
             {
                 "id": 7,
                 "relativePosition": [
-                    25.0,
+                    29.0,
                     20.0,
-                    50.0
+                    30.0
                 ]
             },
             {
                 "id": 8,
                 "relativePosition": [
-                    35.0,
-                    20.0,
-                    50.0
-                ]
-            },
-            {
-                "id": 9,
-                "relativePosition": [
-                    35.0,
+                    25.0,
                     20.0,
                     40.0
                 ]
             },
             {
-                "id": 10,
+                "id": 9,
                 "relativePosition": [
                     25.0,
                     20.0,
-                    30.0
+                    50.0
+                ]
+            },
+            {
+                "id": 10,
+                "relativePosition": [
+                    35.0,
+                    20.0,
+                    50.0
                 ]
             },
             {
@@ -114,11 +114,27 @@
                 "relativePosition": [
                     35.0,
                     20.0,
-                    30.0
+                    40.0
                 ]
             },
             {
                 "id": 12,
+                "relativePosition": [
+                    30.0,
+                    20.0,
+                    30.0
+                ]
+            },
+            {
+                "id": 13,
+                "relativePosition": [
+                    35.0,
+                    20.0,
+                    30.0
+                ]
+            },
+            {
+                "id": 14,
                 "relativePosition": [
                     35.0,
                     20.0,
@@ -126,39 +142,39 @@
                 ]
             },
             {
-                "id": 13,
+                "id": 15,
                 "relativePosition": [
                     40.0,
                     20.0,
                     40.0
-                ]
-            },
-            {
-                "id": 14,
-                "relativePosition": [
-                    40.0,
-                    20.0,
-                    20.0
-                ]
-            },
-            {
-                "id": 15,
-                "relativePosition": [
-                    20.0,
-                    20.0,
-                    20.0
                 ]
             },
             {
                 "id": 16,
                 "relativePosition": [
+                    40.0,
+                    20.0,
+                    20.0
+                ]
+            },
+            {
+                "id": 17,
+                "relativePosition": [
+                    20.0,
+                    20.0,
+                    20.0
+                ]
+            },
+            {
+                "id": 18,
+                "relativePosition": [
                     20.0,
                     20.0,
                     40.0
                 ]
             },
             {
-                "id": 17,
+                "id": 19,
                 "relativePosition": [
                     25.0,
                     20.0,
@@ -166,7 +182,7 @@
                 ]
             },
             {
-                "id": 18,
+                "id": 20,
                 "relativePosition": [
                     25.0,
                     20.0,
@@ -174,7 +190,7 @@
                 ]
             },
             {
-                "id": 19,
+                "id": 21,
                 "relativePosition": [
                     30.0,
                     20.0,
@@ -182,7 +198,7 @@
                 ]
             },
             {
-                "id": 21,
+                "id": 23,
                 "relativePosition": [
                     35.0,
                     20.0,
@@ -204,14 +220,14 @@
                 "intervals": [
                     [
                         [
-                            30,
-                            18,
-                            28
+                            38,
+                            19,
+                            39
                         ],
                         [
-                            30,
-                            23,
-                            33
+                            38,
+                            21,
+                            41
                         ]
                     ]
                 ]
@@ -222,14 +238,14 @@
                 "intervals": [
                     [
                         [
-                            18,
-                            18,
-                            28
+                            22,
+                            19,
+                            39
                         ],
                         [
-                            23,
-                            23,
-                            28
+                            22,
+                            21,
+                            41
                         ]
                     ]
                 ]
@@ -240,14 +256,14 @@
                 "intervals": [
                     [
                         [
-                            30,
-                            18,
-                            48
+                            19,
+                            19,
+                            25
                         ],
                         [
-                            30,
-                            23,
-                            53
+                            21,
+                            21,
+                            25
                         ]
                     ]
                 ]
@@ -296,12 +312,12 @@
                         [
                             25.0,
                             20.0,
-                            40.0
+                            30.0
                         ],
                         [
-                            25.0,
+                            29.0,
                             20.0,
-                            50.0
+                            30.0
                         ]
                     ]
                 ]
@@ -312,14 +328,14 @@
                 "intervals": [
                     [
                         [
-                            35.0,
-                            20.0,
-                            50.0
+                            29,
+                            11,
+                            28
                         ],
                         [
-                            35.0,
-                            20.0,
-                            40.0
+                            29,
+                            30,
+                            31
                         ]
                     ]
                 ]
@@ -330,14 +346,14 @@
                 "intervals": [
                     [
                         [
-                            25.0,
-                            20.0,
-                            30.0
+                            30,
+                            11,
+                            28
                         ],
                         [
-                            35.0,
-                            20.0,
-                            30.0
+                            30,
+                            30,
+                            31
                         ]
                     ]
                 ]
@@ -348,50 +364,14 @@
                 "intervals": [
                     [
                         [
-                            35,
-                            20,
-                            40
+                            25.0,
+                            20.0,
+                            40.0
                         ],
                         [
-                            35,
-                            20,
-                            40
-                        ]
-                    ],
-                    [
-                        [
-                            25,
-                            20,
-                            40
-                        ],
-                        [
-                            25,
-                            20,
-                            40
-                        ]
-                    ],
-                    [
-                        [
-                            35,
-                            20,
-                            40
-                        ],
-                        [
-                            35,
-                            20,
-                            40
-                        ]
-                    ],
-                    [
-                        [
-                            25,
-                            20,
-                            40
-                        ],
-                        [
-                            25,
-                            20,
-                            40
+                            25.0,
+                            20.0,
+                            50.0
                         ]
                     ]
                 ]
@@ -402,26 +382,14 @@
                 "intervals": [
                     [
                         [
-                            25,
-                            20,
-                            50
+                            35.0,
+                            20.0,
+                            50.0
                         ],
                         [
-                            25,
-                            20,
-                            50
-                        ]
-                    ],
-                    [
-                        [
-                            25,
-                            20,
-                            50
-                        ],
-                        [
-                            25,
-                            20,
-                            50
+                            35.0,
+                            20.0,
+                            40.0
                         ]
                     ]
                 ]
@@ -434,6 +402,144 @@
                         [
                             30,
                             20,
+                            30
+                        ],
+                        [
+                            30,
+                            20,
+                            30
+                        ]
+                    ],
+                    [
+                        [
+                            35,
+                            20,
+                            30
+                        ],
+                        [
+                            35,
+                            20,
+                            30
+                        ]
+                    ],
+                    [
+                        [
+                            30,
+                            20,
+                            30
+                        ],
+                        [
+                            30,
+                            20,
+                            30
+                        ]
+                    ],
+                    [
+                        [
+                            35,
+                            20,
+                            30
+                        ],
+                        [
+                            35,
+                            20,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 13,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            35,
+                            20,
+                            40
+                        ],
+                        [
+                            35,
+                            20,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            25,
+                            20,
+                            40
+                        ],
+                        [
+                            25,
+                            20,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            35,
+                            20,
+                            40
+                        ],
+                        [
+                            35,
+                            20,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            25,
+                            20,
+                            40
+                        ],
+                        [
+                            25,
+                            20,
+                            40
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 14,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            25,
+                            20,
+                            50
+                        ],
+                        [
+                            25,
+                            20,
+                            50
+                        ]
+                    ],
+                    [
+                        [
+                            25,
+                            20,
+                            50
+                        ],
+                        [
+                            25,
+                            20,
+                            50
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 15,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            30,
+                            20,
                             50
                         ],
                         [
@@ -481,7 +587,7 @@
                 ]
             },
             {
-                "id": 13,
+                "id": 16,
                 "type": "cell",
                 "intervals": [
                     [
@@ -511,32 +617,40 @@
                 ]
             },
             {
-                "id": 14,
+                "id": 17,
                 "type": "polyline",
                 "coordinateIds": [
                     12,
-                    13,
-                    14,
-                    15,
-                    1,
-                    16,
-                    17
+                    13
                 ]
             },
             {
-                "id": 15,
+                "id": 18,
                 "type": "polyline",
                 "coordinateIds": [
+                    14,
+                    15,
+                    16,
+                    17,
+                    1,
                     18,
                     19
                 ]
             },
             {
-                "id": 16,
+                "id": 19,
                 "type": "polyline",
                 "coordinateIds": [
-                    19,
+                    20,
                     21
+                ]
+            },
+            {
+                "id": 20,
+                "type": "polyline",
+                "coordinateIds": [
+                    21,
+                    23
                 ]
             }
         ]
@@ -546,7 +660,10 @@
             "id": 1,
             "type": "pec"
         },
-        { "id": 2, "name": "100ohm_resistor", "type": "lumped", "model": "resistor", "resistance": 1000.0 },
+        {
+            "id": 2,
+            "type": "pmc"
+        },
         {
             "name": "Terminal_R",
             "id": 3,
@@ -626,21 +743,27 @@
                 5,
                 6,
                 7,
-                8
+                8,
+                9,
+                10,
+                11
             ]
         },
         {
-            "type": "surface",
-            "materialId": 2,
+            "name": "Cable_B2",
+            "type": "cable",
             "elementIds": [
-                9
-            ]
+                17
+            ],
+            "materialId": 6,
+            "initialTerminalId": 10,
+            "endTerminalId": 10
         },
         {
             "name": "Cable_E",
             "type": "cable",
             "elementIds": [
-                14
+                18
             ],
             "materialId": 4,
             "initialTerminalId": 10,
@@ -650,7 +773,7 @@
             "name": "Cable_T1",
             "type": "cable",
             "elementIds": [
-                15
+                19
             ],
             "materialId": 7,
             "initialTerminalId": 10,
@@ -660,7 +783,7 @@
             "name": "Cable_T2",
             "type": "cable",
             "elementIds": [
-                16
+                20
             ],
             "materialId": 8,
             "initialTerminalId": 10,
@@ -671,7 +794,7 @@
         {
             "name": "Generator on line",
             "type": "generator",
-            "magnitudeFile": "predefinedExcitation.1.exc",
+            "magnitudeFile": "rampExcitation.exc",
             "elementIds": [
                 1
             ],
@@ -680,18 +803,7 @@
     ],
     "probes": [
         {
-            "name": "Bulk Top probe",
-            "type": "bulkCurrent",
-            "field": "electric",
-            "elementIds": [
-                4
-            ],
-            "domain": {
-                "type": "time"
-            }
-        },
-        {
-            "name": "Bulk Bottom probe",
+            "name": "After Material current",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
@@ -702,11 +814,22 @@
             }
         },
         {
-            "name": "Bulk Initial probe",
+            "name": "Before Material current",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
                 3
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "Initial current",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                4
             ],
             "domain": {
                 "type": "time"
