@@ -2,6 +2,7 @@ from utils import *
 from typing import Dict
 import os
 from sys import platform
+from scipy import signal
 
 @no_mtln_skip
 @pytest.mark.mtln
@@ -450,4 +451,120 @@ def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_p
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
     assert (solver.getVTKMap()[0] is not None)
+
+def test_lumped_resistor(tmp_path):
+    fn_lumped = CASES_FOLDER + 'lumped_lines/simple_loop_R/simple_loop_lumped.fdtd.json'
+    fn_terminal = CASES_FOLDER + 'lumped_lines/simple_loop_R/simple_loop_terminal.fdtd.json'
     
+    solver_lumped = FDTD(fn_lumped, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_terminal = FDTD(fn_terminal, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver_lumped.run()
+    solver_terminal.run()
+
+    StartTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Start Material current")[0])
+    StartLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Start Material current")[0])
+
+    EndTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("End Material current")[0])
+    EndLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("End Material current")[0])
+
+    AfterLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("After Material current")[0])
+    AfterTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("After Material current")[0])
+
+    BeforeLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Before Material current")[0])
+    BeforeTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Before Material current")[0])
+
+    np.testing.assert_almost_equal(StartLumped_probe['current'].to_numpy(), StartTerminal_probe['current'].to_numpy(), decimal=3)
+    np.testing.assert_almost_equal(EndLumped_probe['current'].to_numpy(), EndTerminal_probe['current'].to_numpy(), decimal=3)
+    np.testing.assert_almost_equal(AfterLumped_probe['current'].to_numpy(), AfterTerminal_probe['current'].to_numpy(), decimal=3)
+    np.testing.assert_almost_equal(BeforeLumped_probe['current'].to_numpy(), BeforeTerminal_probe['current'].to_numpy(), decimal=3)
+
+    R = solver_lumped["materials"][1]["resistance"]
+    L = 1.65e-7
+
+    num = [1]
+    den = [L, R]
+    system = signal.TransferFunction(num, den)
+    tout, I_out, _ = signal.lsim(system, 
+                                 U=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1), 
+                                 T=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0))
+    
+    I_teo = np.interp(BeforeLumped_probe['time'], tout, I_out)
+    
+    np.testing.assert_almost_equal(AfterLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(BeforeLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(StartLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(EndLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+
+def test_lumped_capacitor(tmp_path):
+    fn_lumped = CASES_FOLDER + 'lumped_lines/simple_loop_RC/simple_loop_lumped.fdtd.json'
+    solver_lumped = FDTD(fn_lumped, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_lumped.run()
+
+
+    StartLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Start Material current")[0])
+    EndLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("End Material current")[0])
+    AfterLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("After Material current")[0])
+    BeforeLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Before Material current")[0])
+
+    R = solver_lumped["materials"][1]["resistance"]
+    C = solver_lumped["materials"][1]["capacitance"]
+    L = 1.65e-7
+
+    num = [R*C, 1]
+    den = [L*R*C, L, R]
+    system = signal.TransferFunction(num, den)
+    tout, I_out, _ = signal.lsim(system, 
+                                 U=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1), 
+                                 T=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0))
+    
+    I_teo = np.interp(BeforeLumped_probe['time'], tout, I_out)
+    
+    np.testing.assert_almost_equal(AfterLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(BeforeLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(StartLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(EndLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+
+def test_lumped_inductor(tmp_path):
+    fn_lumped = CASES_FOLDER + 'lumped_lines/simple_loop_RL/simple_loop_lumped.fdtd.json'
+    fn_terminal = CASES_FOLDER + 'lumped_lines/simple_loop_RL/simple_loop_terminal.fdtd.json'
+    
+    solver_lumped = FDTD(fn_lumped, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_terminal = FDTD(fn_terminal, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver_lumped.run()
+    solver_terminal.run()
+
+    StartTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Start Material current")[0])
+    StartLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Start Material current")[0])
+
+    EndTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("End Material current")[0])
+    EndLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("End Material current")[0])
+
+    AfterLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("After Material current")[0])
+    AfterTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("After Material current")[0])
+
+    BeforeLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Before Material current")[0])
+    BeforeTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Before Material current")[0])
+
+    np.testing.assert_almost_equal(StartLumped_probe['current'].to_numpy(), StartTerminal_probe['current'].to_numpy(), decimal=4)
+    np.testing.assert_almost_equal(EndLumped_probe['current'].to_numpy(), EndTerminal_probe['current'].to_numpy(), decimal=4)
+    np.testing.assert_almost_equal(AfterLumped_probe['current'].to_numpy(), AfterTerminal_probe['current'].to_numpy(), decimal=4)
+    np.testing.assert_almost_equal(BeforeLumped_probe['current'].to_numpy(), BeforeTerminal_probe['current'].to_numpy(), decimal=4)
+
+    R = solver_lumped["materials"][1]["resistance"]
+    L = solver_lumped["materials"][1]["inductance"] + 1.65e-7
+
+    num = [1]
+    den = [L, R]
+    system = signal.TransferFunction(num, den)
+    tout, I_out, _ = signal.lsim(system, 
+                                 U=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1), 
+                                 T=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0))
+    
+    I_teo = np.interp(BeforeLumped_probe['time'], tout, I_out)
+    
+    np.testing.assert_almost_equal(AfterLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(BeforeLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(StartLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(EndLumped_probe['current'].to_numpy(), I_teo, decimal=4)
