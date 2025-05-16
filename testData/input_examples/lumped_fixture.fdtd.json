@@ -207,7 +207,7 @@
             "hardness": "soft",
             "magnitudeFile": "predefinedExcitation.1.exc",
             "elementIds": [ 1 ],
-            "field": "electric"
+            "field": "current"
         }
     ],
     "probes": [
