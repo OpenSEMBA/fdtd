@@ -568,3 +568,30 @@ def test_lumped_inductor(tmp_path):
     np.testing.assert_almost_equal(BeforeLumped_probe['current'].to_numpy(), I_teo, decimal=4)
     np.testing.assert_almost_equal(StartLumped_probe['current'].to_numpy(), I_teo, decimal=4)
     np.testing.assert_almost_equal(EndLumped_probe['current'].to_numpy(), I_teo, decimal=4)
+
+def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
+    fn = CASES_FOLDER + 'lumped_lines/current_bifurcation/current_bifurcation_lumped.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+
+    InitialBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Initial probe")[0])
+    TopBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Top probe")[0])
+    BottomBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Bottom probe")[0])
+
+    R_lumped = solver["materials"][1]["resistance"]
+    R_terminal = solver["materials"][2]["terminations"][0]["resistance"]
+    R = 1/(1/R_lumped + 1/R_terminal)  
+    L = 1.65e-7
+
+    num = [1]
+    den = [L, R]
+    system = signal.TransferFunction(num, den)
+    tout, I_out, _ = signal.lsim(system, 
+                                 U=np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1), 
+                                 T=np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0))
+    
+    I_teo = np.interp(InitialBulk_probe['time'], tout, I_out)
+    
+    np.testing.assert_almost_equal(TopBulk_probe['current'].to_numpy() + BottomBulk_probe['current'].to_numpy(), I_teo, decimal=4)
+    np.testing.assert_almost_equal(InitialBulk_probe['current'], I_teo, decimal=4)
