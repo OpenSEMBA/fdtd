@@ -15,13 +15,13 @@ from pyWrapper import *
 # %% Generate excitation and visualize
 def generateRampExcitation():
     dt = 0.8e-12
-    t_final = 8e-9 
+    t_final = 20e-9 
     t = np.arange(0, t_final, dt)
 
     f = np.zeros_like(t)
 
     t1 = 1e-9
-    t2 = 5e-9
+    t2 = 15e-9
 
     ramp_region = (t >= t1) & (t < t2)
     f[ramp_region] = (t[ramp_region] - t1) / (t2 - t1)
@@ -45,8 +45,8 @@ solver_lumped.run()
 
 # %% Visualizing initial values of currents and voltages
 
-V_in = np.loadtxt("rampExcitation.exc", usecols=1)
-time = np.loadtxt("rampExcitation.exc", usecols=0)
+V_in = np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1)
+time = np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0)
 plt.figure()
 plt.plot(time, V_in, label='Initial excitation voltage')    
 plt.grid(which='both')
@@ -57,8 +57,8 @@ plt.show()
 
 I_teo = np.zeros_like(time)
 t1 = 1e-9
-t2 = 5e-9
-R = 50
+t2 = 15e-9
+R = solver_lumped["materials"][1]["resistance"]
 L = 1.65e-7
 
 ramp_region = (time >= t1) & (time < t2)

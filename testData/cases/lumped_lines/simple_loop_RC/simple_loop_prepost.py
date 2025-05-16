@@ -26,13 +26,13 @@ def generateGaussExcitation():
 # %% Generate excitation and visualize
 def generateRampExcitation():
     dt = 0.8e-12
-    t_final = 1e-8 
+    t_final = 2e-8 
     t = np.arange(0, t_final, dt)
 
     f = np.zeros_like(t)
 
     t1 = 2e-9
-    t2 = 6e-9
+    t2 = 16e-9
 
     ramp_region = (t >= t1) & (t < t2)
     f[ramp_region] = (t[ramp_region] - t1) / (t2 - t1)
@@ -56,8 +56,8 @@ solver_lumped.run()
 
 # %% Visualizing initial values of currents and voltages
 
-V_in = np.loadtxt("rampExcitation.exc", usecols=1)
-time = np.loadtxt("rampExcitation.exc", usecols=0)
+V_in = np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1)
+time = np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0)
 plt.figure()
 plt.plot(time, V_in, label='Initial excitation voltage')    
 plt.grid(which='both')
@@ -68,8 +68,8 @@ plt.show()
 # InitialTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Initial current")[0])
 InitialLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Initial current")[0])
 
-R = 1000
-C = 1e-12
+R = solver_lumped["materials"][1]["resistance"]
+C = solver_lumped["materials"][1]["capacitance"]
 L = 1.65e-7
 
 num = [R*C, 1]
