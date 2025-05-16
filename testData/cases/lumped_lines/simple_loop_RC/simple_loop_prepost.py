@@ -26,7 +26,7 @@ def generateGaussExcitation():
 # %% Generate excitation and visualize
 def generateRampExcitation():
     dt = 0.8e-12
-    t_final = 2e-8 
+    t_final = 1e-8 
     t = np.arange(0, t_final, dt)
 
     f = np.zeros_like(t)
@@ -43,15 +43,15 @@ def generateRampExcitation():
     np.savetxt('rampExcitation.exc', data)
 
 # %% Run solver
-fterminal = 'current_bifurcation_RC.fdtd.json'
+# fterminal = 'current_bifurcation_RC.fdtd.json'
 flumped = 'simple_loop_lumped.fdtd.json'
 # generateGaussExcitation()
 generateRampExcitation()
-solver_terminal = FDTD(input_filename = fterminal, path_to_exe=SEMBA_EXE)
+# solver_terminal = FDTD(input_filename = fterminal, path_to_exe=SEMBA_EXE)
 solver_lumped = FDTD(input_filename = flumped, path_to_exe=SEMBA_EXE)
 solver_lumped.cleanUp()
 
-solver_terminal.run()
+# solver_terminal.run()
 solver_lumped.run()
 
 # %% Visualizing initial values of currents and voltages
@@ -65,7 +65,7 @@ plt.legend()
 plt.show()
 
 #%%  Theoretical initial current
-InitialTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Initial current")[0])
+# InitialTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Initial current")[0])
 InitialLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Initial current")[0])
 
 R = 1000
@@ -92,10 +92,10 @@ StartLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Start Material 
 EndLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("End Material current")[0])
 
 AfterLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("After Material current")[0])
-AfterTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("After Material current")[0])
+# AfterTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("After Material current")[0])
 
 BeforeLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Before Material current")[0])
-BeforeTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Before Material current")[0])
+# BeforeTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Before Material current")[0])
 
 plt.figure()
 # plt.plot(BeforeTerminal_probe['time'].to_numpy(), BeforeTerminal_probe['current'].to_numpy(), label='Before the terminal', color='green')

@@ -15,7 +15,7 @@ from pyWrapper import *
 # %% Generate excitation and visualize
 def generateRampExcitation():
     dt = 0.8e-12
-    t_final = 20e-9 
+    t_final = 8e-9 
     t = np.arange(0, t_final, dt)
 
     f = np.zeros_like(t)
@@ -78,7 +78,7 @@ InitialLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Initial curre
 
 # time_probe = InitialTerminal_probe['time'].to_numpy()
 # V_in_interp_func = interp1d(time, V_in, bounds_error=False, fill_value="extrapolate")
-# V_in_interp = V_in_interp_func(time_probe)  # Ahora está alineado con current
+# V_in_interp = V_in_interp_func(time_probe)  
 # mask = (InitialTerminal_probe['time'] >= t1) & (InitialTerminal_probe['time'] <= t2)
 # current_slice = InitialTerminal_probe['current'][mask]
 # time_slice = InitialTerminal_probe['time'][mask]
