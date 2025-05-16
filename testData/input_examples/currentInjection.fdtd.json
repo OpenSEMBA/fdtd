@@ -35,7 +35,7 @@
             "type": "nodalSource", 
             "magnitudeFile": "gauss.exc", 
             "elementIds": [1],
-            "field": "electric"
+            "field": "current"
         }
     ],
 

@@ -916,11 +916,9 @@ contains
          character (len=BUFSIZE) :: nodalSourceName
          type(coords_scaled), dimension(:), allocatable :: coordsFromLinels
 
-         select case (this%getStrAt(jns, J_FIELD, default=J_FIELD_ELECTRIC))
-          case (J_FIELD_ELECTRIC)
+         select case (this%getStrAt(jns, J_FIELD, default=J_FIELD_CURRENT))
+          case (J_FIELD_CURRENT)
             res%isElec = .true.
-          case (J_FIELD_MAGNETIC)
-            res%isElec = .false.
           case default
             write(error_unit, *) 'Error reading current field source. Field label not recognized.'
          end select
@@ -1314,7 +1312,7 @@ contains
          res%j2  = cs(1)%ye
          res%k1  = cs(1)%zi
          res%k2  = cs(1)%ze
-         res%nml = cs(1)%Or
+         res%nml = abs(cs(1)%Or)
 
          res%outputrequest = trim(adjustl(this%getStrAt(bp, J_NAME)))
          call setDomain(res, this%getDomain(bp, J_PR_DOMAIN))
