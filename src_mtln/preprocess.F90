@@ -225,7 +225,7 @@ contains
     function buildLineFromCable(cable, dt, layer_indices, bundle_in_layer) result(res)
         type(cable_t), intent(in) :: cable
         real, intent(in) :: dt
-        integer (kind=4), dimension(1:2), optional :: layer_indices
+        integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
@@ -299,21 +299,22 @@ contains
         type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
-        integer (kind=4), dimension(1:2) :: layer_indices
+        integer (kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .true.
 
        
-        layer_indices = [-1,-1]
+        ! layer_indices = [-1,-1]
         allocate(res(size(cable_bundles)))
         nb = 0
         do i = 1, size(cable_bundles)
             bundle_in_layer = .true.
             if (present(alloc)) then 
                 layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
-                if (layer_indices(1) ==  layer_indices(2) ) bundle_in_layer = .false.
+                if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
             else
-                layer_indices(1) = 1
-                layer_indices(2) = size(cable_bundles(i)%levels(1)%cables(1)%p%step_size)
+                allocate(layer_indices(1,2))
+                layer_indices(1,1) = 1
+                layer_indices(1,2) = size(cable_bundles(i)%levels(1)%cables(1)%p%step_size)
             end if
             nb = nb + 1
             nl = size(cable_bundles(i)%levels)
@@ -333,32 +334,60 @@ contains
         function findIndicesInLayer(cable, alloc) result(res)
             type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
             type (cable_t), intent(in) :: cable
-            integer (kind=4), dimension(1:2) :: res
-            integer :: i, direction, position(1:3)
+            integer (kind=4), allocatable, dimension(:,:) :: res
+            integer :: n, i, direction, position(1:3)
             logical :: in_layer
             in_layer = .false.
-            res = [-1,-1]
+            ! precount
+            n = 0
             do i = 1, size(cable%external_field_segments)
-                direction = abs(cable%external_field_segments(i)%direction)
+                direction = cable%external_field_segments(i)%direction
                 position = cable%external_field_segments(i)%position
-                if ((position(1) >= Alloc(direction)%XI).and. &
-                    (position(1) <= Alloc(direction)%XE).and. &
-                    (position(2) >= Alloc(direction)%YI).and. &
-                    (position(2) <= Alloc(direction)%YE).and. &
-                    (position(3) >= Alloc(direction)%ZI).and. &
-                    (position(3) <= Alloc(direction)%ZE)) then
+                if ((position(1) >= Alloc(abs(direction))%XI).and. &
+                    (position(1) <= Alloc(abs(direction))%XE).and. &
+                    (position(2) >= Alloc(abs(direction))%YI).and. &
+                    (position(2) <= Alloc(abs(direction))%YE).and. &
+                    (position(3) >= Alloc(abs(direction))%ZI).and. &
+                    (position(3) <= Alloc(abs(direction))%ZE)) then
                         if (.not. in_layer) then 
-                            res(1) = i
                             in_layer = .true.
                         end if
                 else
                     if (in_layer) then 
-                        res(2) = i-1
                         in_layer = .false.
+                        n = n + 1
                     end if
                 end if
             end do
-            if (in_layer) res(2) = i - 1
+            if (in_layer) n = n + 1
+
+            allocate(res(n,2))
+            n = 1 
+            in_layer = .false.
+            do i = 1, size(cable%external_field_segments)
+                direction = cable%external_field_segments(i)%direction
+                position = cable%external_field_segments(i)%position
+                if ((position(1) >= Alloc(abs(direction))%XI).and. &
+                    (position(1) <= Alloc(abs(direction))%XE).and. &
+                    (position(2) >= Alloc(abs(direction))%YI).and. &
+                    (position(2) <= Alloc(abs(direction))%YE).and. &
+                    (position(3) >= Alloc(abs(direction))%ZI).and. &
+                    (position(3) <= Alloc(abs(direction))%ZE)) then
+                        if (.not. in_layer) then 
+                            res(n,1) = i - merge(1,0,direction < 0)
+                            in_layer = .true.
+                        end if
+                else
+                    if (in_layer) then 
+                        res(n, 2) = i-1  - merge(1,0,direction < 0)
+                        in_layer = .false.
+                        n = n + 1
+                    end if
+                end if
+            end do
+            if (in_layer) then 
+                res(n, 2) = i - 1  - merge(1,0,direction < 0)
+            end if
         end function
 
     end function

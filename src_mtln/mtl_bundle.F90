@@ -90,7 +90,7 @@ contains
 
         ! res%layer_segments = levels(1)%lines(1)%layer_segments
         res%layers_indices = -1
-        res%layers_indices(3:4) = levels(1)%lines(1)%layer_indices
+        !!!! res%layers_indices(3:4) = levels(1)%lines(1)%layer_indices
         res%bundle_in_layer = levels(1)%lines(1)%bundle_in_layer
 
     end function

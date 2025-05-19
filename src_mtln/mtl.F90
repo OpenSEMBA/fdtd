@@ -32,7 +32,8 @@ module mtl_mod
         type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
         logical :: isPassthrough = .false.
 
-        integer (kind=4), dimension(1:2) :: layer_indices = [-1,-1]
+        integer (kind=4), allocatable, dimension(:,:) :: layer_indices
+        ! integer (kind=4), dimension(1,2) :: layer_indices = [-1,-1]
         logical :: bundle_in_layer = .false.
     contains
         procedure :: setTimeStep
@@ -110,9 +111,9 @@ contains
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
         logical, optional :: isPassthrough
-        integer (kind=4), dimension(1:2), optional :: layer_indices
+        integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
-        integer :: j 
+        integer :: j, n
 #ifdef CompileWithMPI
         integer :: rank, ierr
 #endif
@@ -125,13 +126,28 @@ contains
 #endif
 
             write(*,*) layer_indices
-            res%step_size =  step_size(layer_indices(1):layer_indices(2))
-            if (layer_indices(1) /= 1) res%is_left_end = .false.
-            if (layer_indices(2) /= size(step_size)) res%is_right_end = .false.
+            n =  0
+            do j = 1, size(layer_indices, 1)
+                n = n + layer_indices(j,2) - layer_indices(j,1) + 1
+            end do
+            allocate(res%step_size(n))
+            allocate(res%external_field_segments(n))
+            n = 1
+            do j = 1, size(layer_indices, 1)
+                res%step_size(n: n + layer_indices(j,2) - layer_indices(j,1)) = step_size(layer_indices(j, 1):layer_indices(j, 2))
+                res%external_field_segments(n: n + layer_indices(j,2) - layer_indices(j,1)) = external_field_segments(layer_indices(j, 1):layer_indices(j, 2))
+                n = n + layer_indices(j,2) - layer_indices(j,1) + 1
+            end do
+
+            ! if (layer_indices(1) /= 1) res%is_left_end = .false.
+            ! if (layer_indices(2) /= size(step_size)) res%is_right_end = .false.
             res%layer_indices = layer_indices
         else
             res%step_size =  step_size
+            res%external_field_segments = external_field_segments
         end if
+
+
         if (present(bundle_in_layer)) res%bundle_in_layer = bundle_in_layer
         call checkPULDimensionsHomogeneous(lpul, cpul, rpul, gpul)
         res%number_of_conductors = size(lpul, 1)
@@ -169,14 +185,6 @@ contains
         end if
         if (present(transfer_impedance)) then
             res%transfer_impedance = transfer_impedance
-        end if
-
-        if (present(external_field_segments)) then 
-            if (present(layer_indices)) then 
-                res%external_field_segments = external_field_segments(layer_indices(1):layer_indices(2))
-            else
-                res%external_field_segments = external_field_segments
-            end if
         end if
 
         if (present(isPassthrough)) then 
