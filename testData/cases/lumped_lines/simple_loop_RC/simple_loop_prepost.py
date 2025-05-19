@@ -42,13 +42,18 @@ def generateRampExcitation():
     data = np.column_stack((t, f))
     np.savetxt('rampExcitation.exc', data)
 
-# %% Run solver
-# fterminal = 'current_bifurcation_RC.fdtd.json'
-flumped = 'simple_loop_lumped.fdtd.json'
+# %% Run solver. 
+# The file current_bifurcation_RC.fdtd.json contains an equivalent case to comparison but not effective.
+
 # generateGaussExcitation()
 generateRampExcitation()
+
+# fterminal = 'current_bifurcation_RC.fdtd.json'
 # solver_terminal = FDTD(input_filename = fterminal, path_to_exe=SEMBA_EXE)
+
+flumped = 'simple_loop_lumped.fdtd.json'
 solver_lumped = FDTD(input_filename = flumped, path_to_exe=SEMBA_EXE)
+
 solver_lumped.cleanUp()
 
 # solver_terminal.run()
@@ -70,7 +75,7 @@ InitialLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Initial curre
 
 R = solver_lumped.getMaterialProperties("lumped_RC")["resistance"]
 C = solver_lumped.getMaterialProperties("lumped_RC")["capacitance"]
-L = 1.65e-7
+L = 1.65e-7     # Parasitic inductance of the system. See calculation at the lumped resistor prepost.
 
 num = [R*C, 1]
 den = [L*R*C, L, R]
@@ -98,10 +103,10 @@ AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedC
 # AdjacentPreTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PreTerminalCell")[0])
 
 plt.figure()
-# plt.plot(AdjacentPreTerminalProbe['time'].to_numpy(), AdjacentPreTerminalProbe['current'].to_numpy(), label='Before the terminal', color='green')
-plt.plot(AdjacentPreLumpedProbe['time'].to_numpy(), AdjacentPreLumpedProbe['current'].to_numpy(), '--', label='Before the lumped line', color='red')
+# plt.plot(AdjacentPreTerminalProbe['time'].to_numpy(), AdjacentPreTerminalProbe['current'].to_numpy(), label='PreTerminalCell', color='green')
+plt.plot(AdjacentPreLumpedProbe['time'].to_numpy(), AdjacentPreLumpedProbe['current'].to_numpy(), '--', label='PreLumpedCell', color='red')
 plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
-plt.title('Current on the circuit')
+plt.title('Current on the circuit before the lumped/terminal cell')
 plt.xlabel('Time')
 plt.legend()
 plt.grid(which='both')
@@ -109,10 +114,10 @@ plt.tight_layout()
 plt.show()
 
 plt.figure()
-plt.plot(StartLumpedProbe['time'].to_numpy(), StartLumpedProbe['current'].to_numpy(), label='Start of the lumped line cell', color='blue')
-plt.plot(EndLumpedProbe['time'].to_numpy(), EndLumpedProbe['current'].to_numpy(), '--', label='End of the lumped line cell', color='red')
+plt.plot(StartLumpedProbe['time'].to_numpy(), StartLumpedProbe['current'].to_numpy(), '--', label='LumpedCellStart', color='red')
+plt.plot(EndLumpedProbe['time'].to_numpy(), EndLumpedProbe['current'].to_numpy(), '--', label='LumpedCellEnd', color='red')
 plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
-plt.title('Current on the circuit')
+plt.title('Current on the circuit at the start/end of the lumped cell')
 plt.xlabel('Time')
 plt.legend()
 plt.grid(which='both')
@@ -120,10 +125,10 @@ plt.tight_layout()
 plt.show()
 
 plt.figure()
-# plt.plot(AdjacentPostTerminalProbe['time'].to_numpy(), AdjacentPostTerminalProbe['current'].to_numpy(), label='After the terminal', color='green')
-plt.plot(AdjacentPostLumpedProbe['time'].to_numpy(), AdjacentPostLumpedProbe['current'].to_numpy(), '--', label='After the lumped line', color='red')
+# plt.plot(AdjacentPostTerminalProbe['time'].to_numpy(), AdjacentPostTerminalProbe['current'].to_numpy(), label='PostTerminalCell', color='green')
+plt.plot(AdjacentPostLumpedProbe['time'].to_numpy(), AdjacentPostLumpedProbe['current'].to_numpy(), '--', label='PostLumpedCell', color='red')
 plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
-plt.title('Current on the circuit')
+plt.title('Current on the circuit after the lumped/terminal cell')
 plt.xlabel('Time')
 plt.legend()
 plt.grid(which='both')

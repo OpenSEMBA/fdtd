@@ -56,8 +56,9 @@ plt.show()
 # %% Comparing initial current with theoretical
 
 R = solver_lumped.getMaterialProperties("lumped_line")["resistance"]
-L = 1.65e-7
+L = 1.65e-7     # Parasitic inductance of the system. See calculation at the end. 
 
+# # Theoretical current. Analytic solution.
 # I_theo = np.zeros_like(time)
 # t1 = 1e-9
 # t2 = 15e-9
@@ -65,36 +66,20 @@ L = 1.65e-7
 # I_theo[ramp_region] = (time[ramp_region] - t1) / (t2 - t1)/R  + (L/R**2)*(np.exp(-R*(time[ramp_region] - t1)/L) - 1)/(t2 - t1)
 # I_theo[time >= t2] = 1/R + (L/R**2)*(np.exp(-R*(time[time >= t2] - t1)/L) - np.exp(-R*(time[time >= t2] - t2)/L))/(t2 - t1)
 
-# Equivalent result for theoretical current but using scipy
+# Theoretical current using the transfer function and the initial voltage by laplace transform.
 num = [1]
 den = [L, R]
 system = signal.TransferFunction(num, den)
-tout, I_out, _ = signal.lsim(system, U=V_in, T=time)
+tout, I_theo, _ = signal.lsim(system, U=V_in, T=time)
 
 InitialTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Initial current")[0])
 InitialLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Initial current")[0])
 
-# # Calculation of the proper inductance of the system in case of R=0.
-
-# time_probe = InitialTerminal_probe['time'].to_numpy()
-# V_in_interp_func = interp1d(time, V_in, bounds_error=False, fill_value="extrapolate")
-# V_in_interp = V_in_interp_func(time_probe)  
-# mask = (InitialTerminal_probe['time'] >= t1) & (InitialTerminal_probe['time'] <= t2)
-# current_slice = InitialTerminal_probe['current'][mask]
-# time_slice = InitialTerminal_probe['time'][mask]
-# vin_slice = V_in_interp[mask]
-# dI_dt = np.gradient(current_slice, time_slice)
-
-# with np.errstate(divide='ignore', invalid='ignore'):
-#     L_estimated = np.where(dI_dt != 0, vin_slice / dI_dt, np.nan)
-
-# L_mean = np.nanmean(L_estimated)
-
 plt.figure()
-plt.plot(InitialTerminal_probe['time'].to_numpy(), InitialTerminal_probe['current'].to_numpy(), label='On terminal case', color='green')
-plt.plot(InitialLumped_probe['time'].to_numpy(), InitialLumped_probe['current'].to_numpy(), '--', label='On lumped case', color='red')
-plt.plot(time, I_out, '--', label='Theoretical current', color='black')
-plt.title('Initial current')
+plt.plot(InitialTerminal_probe['time'].to_numpy(), InitialTerminal_probe['current'].to_numpy(), label='Terminal case', color='green')
+plt.plot(InitialLumped_probe['time'].to_numpy(), InitialLumped_probe['current'].to_numpy(), '--', label='Lumped case', color='red')
+plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
+plt.title('Initial current at the source')
 plt.xlabel('Time')
 plt.ylabel('Current')
 plt.legend()
@@ -114,9 +99,9 @@ AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedC
 AdjacentPreTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PreTerminalCell")[0])
 
 plt.figure()
-plt.plot(AdjacentPreTerminalProbe['time'].to_numpy(), AdjacentPreTerminalProbe['current'].to_numpy(), label='Before the terminal', color='green')
-plt.plot(AdjacentPreLumpedProbe['time'].to_numpy(), AdjacentPreLumpedProbe['current'].to_numpy(), '--', label='Before the lumped line', color='red')
-plt.title('Current on the circuit')
+plt.plot(AdjacentPreTerminalProbe['time'].to_numpy(), AdjacentPreTerminalProbe['current'].to_numpy(), label='PreTerminalCell', color='green')
+plt.plot(AdjacentPreLumpedProbe['time'].to_numpy(), AdjacentPreLumpedProbe['current'].to_numpy(), '--', label='PreLumpedCell', color='red')
+plt.title('Current on the circuit before the lumped/terminal cell')
 plt.xlabel('Time')
 plt.legend()
 plt.grid(which='both')
@@ -124,10 +109,10 @@ plt.tight_layout()
 plt.show()
 
 plt.figure()
-plt.plot(StartTerminalProbe['time'].to_numpy(), StartTerminalProbe['current'].to_numpy(), label='Start of the terminal cell', color='green')
-plt.plot(StartLumpedProbe['time'].to_numpy(), StartLumpedProbe['current'].to_numpy(), '--', label='Start of the lumped line cell', color='red')
-# plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
-plt.title('Current on the circuit')
+plt.plot(StartTerminalProbe['time'].to_numpy(), StartTerminalProbe['current'].to_numpy(), label='TerminalCellStart', color='green')
+plt.plot(StartLumpedProbe['time'].to_numpy(), StartLumpedProbe['current'].to_numpy(), '--', label='LumpedCellStart', color='red')
+plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
+plt.title('Current on the circuit at the start of the lumped/terminal cell')
 plt.xlabel('Time')
 plt.legend()
 plt.grid(which='both')
@@ -135,10 +120,10 @@ plt.tight_layout()
 plt.show()
 
 plt.figure()
-plt.plot(EndTerminalProbe['time'].to_numpy(), EndTerminalProbe['current'].to_numpy(), label='End of the terminal cell', color='green')
-plt.plot(EndLumpedProbe['time'].to_numpy(), EndLumpedProbe['current'].to_numpy(), '--', label='End of the lumped line cell', color='red')
-# plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
-plt.title('Current on the circuit')
+plt.plot(EndTerminalProbe['time'].to_numpy(), EndTerminalProbe['current'].to_numpy(), label='TerminalCellEnd', color='green')
+plt.plot(EndLumpedProbe['time'].to_numpy(), EndLumpedProbe['current'].to_numpy(), '--', label='LumpedCellEnd', color='red')
+plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
+plt.title('Current on the circuit at the end of the lumped/terminal cell')
 plt.xlabel('Time')
 plt.legend()
 plt.grid(which='both')
@@ -146,12 +131,30 @@ plt.tight_layout()
 plt.show()
 
 plt.figure()
-plt.plot(AdjacentPostTerminalProbe['time'].to_numpy(), AdjacentPostTerminalProbe['current'].to_numpy(), label='After the terminal', color='green')
-plt.plot(AdjacentPostLumpedProbe['time'].to_numpy(), AdjacentPostLumpedProbe['current'].to_numpy(), '--', label='After the lumped line', color='red')
-plt.title('Current on the circuit')
+plt.plot(AdjacentPostTerminalProbe['time'].to_numpy(), AdjacentPostTerminalProbe['current'].to_numpy(), label='PostTerminalCell', color='green')
+plt.plot(AdjacentPostLumpedProbe['time'].to_numpy(), AdjacentPostLumpedProbe['current'].to_numpy(), '--', label='PostLumpedCell', color='red')
+plt.title('Current on the circuit after the lumped/terminal cell')
 plt.xlabel('Time')
 plt.legend()
 plt.grid(which='both')
 plt.tight_layout()
 plt.show()
+# %% Calculation of the proper/parasitic inductance of the system. Only valid for the terminal case with R=0.
+
+t1 = 1e-9       # Start of the ramp
+t2 = 15e-9      # End of the ramp
+
+time_probe = InitialTerminal_probe['time'].to_numpy()
+V_in_interp_func = interp1d(time, V_in, bounds_error=False, fill_value="extrapolate")
+V_in_interp = V_in_interp_func(time_probe)  
+mask = (InitialTerminal_probe['time'] >= t1) & (InitialTerminal_probe['time'] <= t2)
+current_slice = InitialTerminal_probe['current'][mask]
+time_slice = InitialTerminal_probe['time'][mask]
+vin_slice = V_in_interp[mask]
+dI_dt = np.gradient(current_slice, time_slice)
+
+with np.errstate(divide='ignore', invalid='ignore'):
+    L_estimated = np.where(dI_dt != 0, vin_slice / dI_dt, np.nan)
+
+L_mean = np.nanmean(L_estimated)
 # %%
