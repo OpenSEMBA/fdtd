@@ -573,7 +573,7 @@
             }
         },
         {
-            "name": "Start Material current",
+            "name": "TerminalCellStart",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
@@ -584,7 +584,7 @@
             }
         },
         {
-            "name": "End Material current",
+            "name": "TerminalCellEnd",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
@@ -595,7 +595,7 @@
             }
         },
         {
-            "name": "After Material current",
+            "name": "PostTerminalCell",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
@@ -606,7 +606,7 @@
             }
         },
         {
-            "name": "Before Material current",
+            "name": "PreTerminalCell",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [

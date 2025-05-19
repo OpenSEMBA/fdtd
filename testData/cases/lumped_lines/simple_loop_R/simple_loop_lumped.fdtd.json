@@ -342,7 +342,7 @@
             "id": 1,
             "type": "pec"
         },
-        { "id": 2, "name": "100ohm_resistor", "type": "lumped", "model": "resistor", "resistance": 50.0 },
+        { "id": 2, "name": "lumped_line", "type": "lumped", "model": "resistor", "resistance": 50.0 },
         {
             "name": "Wirematerial",
             "id": 3,
@@ -413,7 +413,7 @@
             }
         },
         {
-            "name": "Start Material current",
+            "name": "LumpedCellStart",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
@@ -424,7 +424,7 @@
             }
         },
         {
-            "name": "End Material current",
+            "name": "LumpedCellEnd",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
@@ -435,7 +435,7 @@
             }
         },
         {
-            "name": "After Material current",
+            "name": "PostLumpedCell",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
@@ -446,7 +446,7 @@
             }
         },
         {
-            "name": "Before Material current",
+            "name": "PreLumpedCell",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [

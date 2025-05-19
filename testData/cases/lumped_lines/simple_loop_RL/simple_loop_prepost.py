@@ -70,28 +70,25 @@ plt.show()
 InitialTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Initial current")[0])
 InitialLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Initial current")[0])
 
-I_teo = np.zeros_like(time)
-t1 = 0.5e-9
-t2 = 19.5e-9
-R = solver_lumped["materials"][1]["resistance"]
-L = solver_lumped["materials"][1]["inductance"] + 1.65e-7
-C = -2.4e-9
+R = solver_lumped.getMaterialProperties("lumped_RL")["resistance"]
+L = solver_lumped.getMaterialProperties("lumped_RL")["inductance"] + 1.65e-7
 
-ramp_region = (time >= t1) & (time < t2)
-I_teo[ramp_region] = (time[ramp_region] - t1) / (t2 - t1)/R  + (L/R**2)*(np.exp(-R*(time[ramp_region] - t1)/L) - 1)/(t2 - t1)
-I_teo[time >= t2] = 1/R + (L/R**2)*(np.exp(-R*(time[time >= t2] - t1)/L) - np.exp(-R*(time[time >= t2] - t2)/L))/(t2 - t1)
 
-# # Equivalent result for theoretical current but using scipy
-# num = [C, 0]
-# den = [L*C, R*C, 1]
-# system = signal.TransferFunction(num, den)
-# tout, I_out, _ = signal.lsim(system, U=V_in, T=time)
+# Equivalent result for theoretical current but using scipy
+num = [1]
+den = [L, R]
+system = signal.TransferFunction(num, den)
+tout, I_out, _ = signal.lsim(system, U=V_in, T=time)
+
+# system_C = signal.TransferFunction([C, 0], [1e-6, 1])
+# t_out, I_C, _ = signal.lsim(system_C, U=V_in, T=time)
+
+# I_theo = I_out + I_C
 
 plt.figure()
 plt.plot(InitialTerminal_probe['time'].to_numpy(), InitialTerminal_probe['current'].to_numpy(), label='On terminal case', color='green')
 plt.plot(InitialLumped_probe['time'].to_numpy(), InitialLumped_probe['current'].to_numpy(), '--', label='On lumped case', color='red')
-plt.plot(time, I_teo, '--', label='Theoretical current', color='black')
-# plt.xlim((0, 1.5e-8))
+plt.plot(time, I_out, '--', label='Theoretical current', color='black')
 plt.title('Initial current')
 plt.xlabel('Time')
 plt.ylabel('Current')
@@ -99,21 +96,21 @@ plt.legend()
 plt.grid(which='both')
 
 #%% Comparison of currents between terminals and lumped
-StartTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Start Material current")[0])
-StartLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Start Material current")[0])
+StartTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellStart")[0])
+StartLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellStart")[0])
 
-EndTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("End Material current")[0])
-EndLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("End Material current")[0])
+EndTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellEnd")[0])
+EndLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellEnd")[0])
 
-AfterLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("After Material current")[0])
-AfterTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("After Material current")[0])
+AdjacentPostLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PostLumpedCell")[0])
+AdjacentPostTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PostTerminalCell")[0])
 
-BeforeLumped_probe = Probe(solver_lumped.getSolvedProbeFilenames("Before Material current")[0])
-BeforeTerminal_probe = Probe(solver_terminal.getSolvedProbeFilenames("Before Material current")[0])
+AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedCell")[0])
+AdjacentPreTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PreTerminalCell")[0])
 
 plt.figure()
-plt.plot(BeforeTerminal_probe['time'].to_numpy(), BeforeTerminal_probe['current'].to_numpy(), label='Before the terminal', color='green')
-plt.plot(BeforeLumped_probe['time'].to_numpy(), BeforeLumped_probe['current'].to_numpy(), '--', label='Before the lumped line', color='red')
+plt.plot(AdjacentPreTerminalProbe['time'].to_numpy(), AdjacentPreTerminalProbe['current'].to_numpy(), label='Before the terminal', color='green')
+plt.plot(AdjacentPreLumpedProbe['time'].to_numpy(), AdjacentPreLumpedProbe['current'].to_numpy(), '--', label='Before the lumped line', color='red')
 plt.title('Current on the circuit')
 plt.xlabel('Time')
 plt.legend()
@@ -122,9 +119,9 @@ plt.tight_layout()
 plt.show()
 
 plt.figure()
-plt.plot(StartTerminal_probe['time'].to_numpy(), StartTerminal_probe['current'].to_numpy(), label='Start of the terminal cell', color='green')
-plt.plot(StartLumped_probe['time'].to_numpy(), StartLumped_probe['current'].to_numpy(), '--', label='Start of the lumped line cell', color='red')
-# plt.plot(time, I_teo, '--', label='Theoretical current', color='black')
+plt.plot(StartTerminalProbe['time'].to_numpy(), StartTerminalProbe['current'].to_numpy(), label='Start of the terminal cell', color='green')
+plt.plot(StartLumpedProbe['time'].to_numpy(), StartLumpedProbe['current'].to_numpy(), '--', label='Start of the lumped line cell', color='red')
+# plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
 plt.title('Current on the circuit')
 plt.xlabel('Time')
 plt.legend()
@@ -133,9 +130,9 @@ plt.tight_layout()
 plt.show()
 
 plt.figure()
-plt.plot(EndTerminal_probe['time'].to_numpy(), EndTerminal_probe['current'].to_numpy(), label='End of the terminal cell', color='green')
-plt.plot(EndLumped_probe['time'].to_numpy(), EndLumped_probe['current'].to_numpy(), '--', label='End of the lumped line cell', color='red')
-# plt.plot(time, I_teo, '--', label='Theoretical current', color='black')
+plt.plot(EndTerminalProbe['time'].to_numpy(), EndTerminalProbe['current'].to_numpy(), label='End of the terminal cell', color='green')
+plt.plot(EndLumpedProbe['time'].to_numpy(), EndLumpedProbe['current'].to_numpy(), '--', label='End of the lumped line cell', color='red')
+# plt.plot(time, I_theo, '--', label='Theoretical current', color='black')
 plt.title('Current on the circuit')
 plt.xlabel('Time')
 plt.legend()
@@ -144,8 +141,8 @@ plt.tight_layout()
 plt.show()
 
 plt.figure()
-plt.plot(AfterTerminal_probe['time'].to_numpy(), AfterTerminal_probe['current'].to_numpy(), label='After the terminal', color='green')
-plt.plot(AfterLumped_probe['time'].to_numpy(), AfterLumped_probe['current'].to_numpy(), '--', label='After the lumped line', color='red')
+plt.plot(AdjacentPostTerminalProbe['time'].to_numpy(), AdjacentPostTerminalProbe['current'].to_numpy(), label='After the terminal', color='green')
+plt.plot(AdjacentPostLumpedProbe['time'].to_numpy(), AdjacentPostLumpedProbe['current'].to_numpy(), '--', label='After the lumped line', color='red')
 plt.title('Current on the circuit')
 plt.xlabel('Time')
 plt.legend()

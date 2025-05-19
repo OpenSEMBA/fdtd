@@ -803,7 +803,7 @@
     ],
     "probes": [
         {
-            "name": "After Material current",
+            "name": "PostTerminalCell",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [
@@ -814,7 +814,7 @@
             }
         },
         {
-            "name": "Before Material current",
+            "name": "PreTerminalCell",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [

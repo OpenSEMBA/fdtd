@@ -546,7 +546,7 @@
             "id": 1,
             "type": "pec"
         },
-        { "id": 2, "name": "100ohm_resistor", "type": "lumped", "model": "resistor", "resistance": 10.0 },
+        { "id": 2, "name": "lumped_resistor", "type": "lumped", "model": "resistor", "resistance": 10.0 },
         {
             "name": "Terminal_R",
             "id": 3,
