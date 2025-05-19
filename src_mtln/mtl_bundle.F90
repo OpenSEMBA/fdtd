@@ -347,6 +347,7 @@ contains
         real :: eps_r
 #ifdef CompileWithMPI
         integer (kind=4) :: sizeof, ierr
+
 #endif
 #ifdef CompileWithMPI
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
@@ -416,6 +417,10 @@ contains
             this%layers_indices(2) = buff2_prev
             this%layers_indices(5) = buff1_next
             this%layers_indices(6) = buff2_next
+            write(*,*) 'rank: ', rank
+            write(*,*) 'prev segments : ', this%layers_indices(1:2)
+            write(*,*) 'layer segments: ', this%layers_indices(3:4)
+            write(*,*) 'next segments : ', this%layers_indices(5:6)
 
         else if (rank == 0) then 
             call MPI_send(buff1_prev, 1, INTEGERSIZE, rank+1, 500*(rank+1),  SUBCOMM_MPI, ierr)
@@ -424,6 +429,9 @@ contains
             call MPI_recv(buff2_next, 1, INTEGERSIZE, rank+1, 503*(rank+1),  SUBCOMM_MPI, status, ierr)
             this%layers_indices(5) = buff1_next
             this%layers_indices(6) = buff2_next
+            write(*,*) 'rank: ', rank
+            write(*,*) 'layer segments: ', this%layers_indices(3:4)
+            write(*,*) 'next segments : ', this%layers_indices(5:6)
         else if (rank == sizeof-1) then 
             call MPI_send(buff1_next, 1, INTEGERSIZE, rank-1, 502*rank,  SUBCOMM_MPI, ierr)
             call MPI_send(buff2_next, 1, INTEGERSIZE, rank-1, 503*rank,  SUBCOMM_MPI, ierr)
@@ -431,6 +439,9 @@ contains
             call MPI_recv(buff2_prev, 1, INTEGERSIZE, rank-1, 501*rank,  SUBCOMM_MPI, status, ierr)
             this%layers_indices(1) = buff1_prev
             this%layers_indices(2) = buff2_prev
+            write(*,*) 'rank: ', rank
+            write(*,*) 'prev segments : ', this%layers_indices(1:2)
+            write(*,*) 'layer segments: ', this%layers_indices(3:4)
         end if
 
     end subroutine

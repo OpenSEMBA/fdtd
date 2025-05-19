@@ -5,6 +5,7 @@ import json
 
 import sys, os
 sys.path.append(os.path.join(os.path.dirname(__file__), '../../../', 'src_pyWrapper'))
+SEMBA_EXE_MPI = '../../../build-mpi/bin/semba-fdtd'
 SEMBA_EXE = '../../../build/bin/semba-fdtd'
 
 from pyWrapper import *
@@ -13,10 +14,23 @@ from pyWrapper import *
 #####################################################
 # %% Run solver
 fn = 'holland1981.fdtd.json'
-# solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, mpi_command='mpirun -np 2')
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'],mpi_command='mpirun -np 2')
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE_MPI, flags=['-mtlnwires'])
 solver.cleanUp()
 solver.run()
+probe_names = solver.getSolvedProbeFilenames("mid_point")
+mid = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE_MPI, flags=['-mtlnwires'],mpi_command='mpirun -np 2')
+solver.cleanUp()
+solver.run()
+probe_names = solver.getSolvedProbeFilenames("mid_point")
+mid_mpi2 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE_MPI, flags=['-mtlnwires'],mpi_command='mpirun -np 3')
+solver.cleanUp()
+solver.run()
+probe_names = solver.getSolvedProbeFilenames("mid_point")
+mid_mpi3 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 
 #####################################################
@@ -28,25 +42,17 @@ for data in jpaper12['datasetColl'][0]['data']:
     tp12 = np.append(tp12, float(data['value'][0]))    
     ip12 = np.append(ip12, float(data['value'][1]))    
 
-# probe_names = solver.getSolvedProbeFilenames("start_point")
-# start = Probe(list(filter(lambda x: '_V_' in x, probe_names))[0])
-# probe_names = solver.getSolvedProbeFilenames("end_point")
-# end = Probe(list(filter(lambda x: '_V_' in x, probe_names))[0])
-
-probe_names = solver.getSolvedProbeFilenames("mid_point")
-mid = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 plt.figure()
-plt.plot(mid['time']*1e9 - 3.05, mid['current_0'], label = 'mltnwires, mid')
-# plt.plot(start['time']*1e9 - 3.05, start['voltage_0'], label = 'mltnwires, start')
-# plt.plot(end['time']*1e9 - 3.05, end['voltage_0'], label = 'mltnwires, end')
+plt.plot(mid['time']*1e9 - 3.05, mid['current_0'], label = 'No MPI')
+# plt.plot(mid_mpi2['time']*1e9 - 3.05, mid_mpi2['current_0'], '--', label = 'MPI np=2')
+plt.plot(mid_mpi3['time']*1e9 - 3.05, mid_mpi3['current_0'], '-.', label = 'MPI np=3')
 plt.plot(tp12*1e9, ip12, 'k--', label = 'holland fig.12')
 plt.grid(which='both')
 plt.legend()
 plt.title('mid')
 plt.xlabel('Time (ns)')
 plt.xlim(0,20)
-# plt.ylim(-5e-3,5e-3)
 plt.ylabel('I (A)')
 plt.show()
 
