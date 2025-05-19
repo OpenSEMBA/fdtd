@@ -86,7 +86,7 @@ contains
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
         if (sizeof > 1) then 
             do i = 1, size(res%bundles)
-                call res%bundles(i)%Comm_MPI_Layers()
+                ! call res%bundles(i)%Comm_MPI_Layers()
             end do
         end if
 #endif

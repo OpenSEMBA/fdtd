@@ -34,6 +34,9 @@ module mtl_bundle_mod
 
         integer (kind=4), dimension(6) :: layers_indices
         logical :: bundle_in_layer
+#ifdef CompileWithMPI
+        type(comm_t) :: mpi_comm
+#endif
 
     contains
         procedure :: mergePULMatrices
@@ -92,6 +95,9 @@ contains
         res%layers_indices = -1
         !!!! res%layers_indices(3:4) = levels(1)%lines(1)%layer_indices
         res%bundle_in_layer = levels(1)%lines(1)%bundle_in_layer
+#ifdef CompileWithMPI
+        res%mpi_comm = levels(1)%lines(1)%mpi_comm
+#endif
 
     end function
 
@@ -450,79 +456,104 @@ contains
         class(mtl_bundle_t) :: this
         integer :: number_of_divisions, number_of_conductors, i
         integer :: ierr, rank, sizeof,status(MPI_STATUS_SIZE)
-
+        integer :: c, comm_rank, index
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+        
         number_of_conductors = size(this%v,1)
         number_of_divisions = size(this%v,2)-1
         !cambia para 1 segmento
 
-        if (this%is_left_end) then 
-            !comm with prev
-            if (this%layers_indices(3) == this%layers_indices(1) .and. this%layers_indices(1) /= this%layers_indices(2)) then 
-                do i = 1, number_of_conductors
-                    call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 3000*(rank-1)+i,  SUBCOMM_MPI, ierr)
-                    call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 300*rank+i,  SUBCOMM_MPI, status, ierr)
+        ! if (this%is_left_end) then 
+        !     !comm with prev
+        !     if (this%layers_indices(3) == this%layers_indices(1) .and. this%layers_indices(1) /= this%layers_indices(2)) then 
+        !         do i = 1, number_of_conductors
+        !             call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 3000*(rank-1)+i,  SUBCOMM_MPI, ierr)
+        !             call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 300*rank+i,  SUBCOMM_MPI, status, ierr)
 
-                    call MPI_send(this%e_L(i,2), 1, REALSIZE, rank-1, 4000*(rank-1)+i,  SUBCOMM_MPI, ierr)
-                    call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 400*rank+i,  SUBCOMM_MPI, status, ierr)
-                end do
-            ! short left end
-            ! comm with next
-            else if  (this%layers_indices(3) == this%layers_indices(5)  .and. this%layers_indices(3) /= this%layers_indices(4)) then 
-                do i = 1, number_of_conductors
-                    call MPI_send(this%v(i,1), 1, REALSIZE, rank+1, 300*(rank+1)+i, SUBCOMM_MPI, ierr)
-                    call MPI_recv(this%v(i,3), 1, REALSIZE, rank+1, 3000*rank+i, SUBCOMM_MPI, status, ierr)
+        !             call MPI_send(this%e_L(i,2), 1, REALSIZE, rank-1, 4000*(rank-1)+i,  SUBCOMM_MPI, ierr)
+        !             call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 400*rank+i,  SUBCOMM_MPI, status, ierr)
+        !         end do
+        !     ! short left end
+        !     ! comm with next
+        !     else if  (this%layers_indices(3) == this%layers_indices(5)  .and. this%layers_indices(3) /= this%layers_indices(4)) then 
+        !         do i = 1, number_of_conductors
+        !             call MPI_send(this%v(i,1), 1, REALSIZE, rank+1, 300*(rank+1)+i, SUBCOMM_MPI, ierr)
+        !             call MPI_recv(this%v(i,3), 1, REALSIZE, rank+1, 3000*rank+i, SUBCOMM_MPI, status, ierr)
 
-                    call MPI_send(this%e_L(i,1), 1, REALSIZE, rank+1, 400*(rank+1)+i, SUBCOMM_MPI, ierr)
-                    call MPI_recv(this%e_L(i,2), 1, REALSIZE, rank+1, 4000*rank+i, SUBCOMM_MPI, status, ierr)
-                end do
-            end if
-        end if
+        !             call MPI_send(this%e_L(i,1), 1, REALSIZE, rank+1, 400*(rank+1)+i, SUBCOMM_MPI, ierr)
+        !             call MPI_recv(this%e_L(i,2), 1, REALSIZE, rank+1, 4000*rank+i, SUBCOMM_MPI, status, ierr)
+        !         end do
+        !     end if
+        ! end if
     
 
-        if (this%is_right_end) then 
-            ! short right end
-            ! comm with prev
-            if (this%layers_indices(4) == this%layers_indices(2) .and. this%layers_indices(3) /= this%layers_indices(4)) then 
-                do i = 1, number_of_conductors
-                    call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 5000*(rank-1)+i,  SUBCOMM_MPI, ierr)
-                    call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 500*rank+i,  SUBCOMM_MPI, status, ierr)
+        ! if (this%is_right_end) then 
+        !     ! short right end
+        !     ! comm with prev
+        !     if (this%layers_indices(4) == this%layers_indices(2) .and. this%layers_indices(3) /= this%layers_indices(4)) then 
+        !         do i = 1, number_of_conductors
+        !             call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 5000*(rank-1)+i,  SUBCOMM_MPI, ierr)
+        !             call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 500*rank+i,  SUBCOMM_MPI, status, ierr)
 
-                    call MPI_send(this%e_L(i,2), 1, REALSIZE, rank-1, 6000*(rank-1)+i,  SUBCOMM_MPI, ierr)
-                    call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 600*rank+i,  SUBCOMM_MPI, status, ierr)
-                end do
-            ! comm with next
-            else if  (this%layers_indices(4) == this%layers_indices(6)  .and. this%layers_indices(5) /= this%layers_indices(6)) then 
-                do i = 1, number_of_conductors
-                    call MPI_send(this%v(i,this%number_of_divisions - 1), 1, REALSIZE, rank+1, 500*(rank+1)+i, SUBCOMM_MPI, ierr)
-                    call MPI_recv(this%v(i,this%number_of_divisions + 1), 1, REALSIZE, rank+1, 5000*rank+i, SUBCOMM_MPI, status, ierr)
+        !             call MPI_send(this%e_L(i,2), 1, REALSIZE, rank-1, 6000*(rank-1)+i,  SUBCOMM_MPI, ierr)
+        !             call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 600*rank+i,  SUBCOMM_MPI, status, ierr)
+        !         end do
+        !     ! comm with next
+        !     else if  (this%layers_indices(4) == this%layers_indices(6)  .and. this%layers_indices(5) /= this%layers_indices(6)) then 
+        !         do i = 1, number_of_conductors
+        !             call MPI_send(this%v(i,this%number_of_divisions - 1), 1, REALSIZE, rank+1, 500*(rank+1)+i, SUBCOMM_MPI, ierr)
+        !             call MPI_recv(this%v(i,this%number_of_divisions + 1), 1, REALSIZE, rank+1, 5000*rank+i, SUBCOMM_MPI, status, ierr)
 
-                    call MPI_send(this%e_L(i,this%number_of_divisions - 1), 1, REALSIZE, rank+1, 600*(rank+1)+i, SUBCOMM_MPI, ierr)
-                    call MPI_recv(this%e_L(i,this%number_of_divisions    ), 1, REALSIZE, rank+1, 6000*rank+i, SUBCOMM_MPI, status, ierr)
+        !             call MPI_send(this%e_L(i,this%number_of_divisions - 1), 1, REALSIZE, rank+1, 600*(rank+1)+i, SUBCOMM_MPI, ierr)
+        !             call MPI_recv(this%e_L(i,this%number_of_divisions    ), 1, REALSIZE, rank+1, 6000*rank+i, SUBCOMM_MPI, status, ierr)
+        !         end do
+        !     end if
+        ! end if
+    
+        ! ! comm with prev
+        ! if (.not. this%is_left_end .and. (this%layers_indices(4) /= this%layers_indices(2))) then 
+        !     do i = 1, number_of_conductors
+        !         call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 1000*(rank-1)+i,  SUBCOMM_MPI, ierr)
+        !         call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 100*rank+i,  SUBCOMM_MPI, status, ierr)
+
+        !         call MPI_send(this%e_L(i,2), 1, REALSIZE, rank-1, 2000*(rank-1)+i,  SUBCOMM_MPI, ierr)
+        !         call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 200*rank+i,  SUBCOMM_MPI, status, ierr)
+        !     end do
+        ! end if
+        ! ! comm with next
+        ! if (.not. this%is_right_end .and. (this%layers_indices(3) /= this%layers_indices(5))) then 
+        !     do i = 1, number_of_conductors
+        !         call MPI_send(this%v(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 100*(rank+1)+i, SUBCOMM_MPI, ierr)
+        !         call MPI_recv(this%v(i,number_of_divisions + 1), 1, REALSIZE, rank+1, 1000*rank+i, SUBCOMM_MPI, status, ierr)
+
+        !         call MPI_send(this%e_L(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 200*(rank+1)+i, SUBCOMM_MPI, ierr)
+        !         call MPI_recv(this%e_L(i,number_of_divisions    ), 1, REALSIZE, rank+1, 2000*rank+i, SUBCOMM_MPI, status, ierr)
+        !     end do
+        ! end if
+
+        ! falta la comprobacion que se usa para TL que coinciden con extremos de slice (above)
+        do c = 1, size(this%mpi_comm%comms)
+            if (.not. this%mpi_comm%comms(c)%left%is_end) then 
+                index = this%mpi_comm%comms(c)%left%index
+                comm_rank = this%mpi_comm%comms(c)%left%comm_rank
+                do i = 1, number_of_conductors
+                    call MPI_send(this%v(i,index+1), 1, REALSIZE, comm_rank, 1000*(rank+1)+i,  SUBCOMM_MPI, ierr) !rank - 1 -> comm_rank
+                    call MPI_recv(this%v(i,index-1), 1, REALSIZE, comm_rank, 100*(comm_rank+1)+i,  SUBCOMM_MPI, status, ierr)
+                    call MPI_send(this%e_L(i,index), 1, REALSIZE, comm_rank, 2000*(rank+1)+i,  SUBCOMM_MPI, ierr)
+                    call MPI_recv(this%e_L(i,index-1), 1, REALSIZE, comm_rank, 200*(comm_rank+1)+i,  SUBCOMM_MPI, status, ierr)
                 end do
             end if
-        end if
-    
-        ! comm with prev
-        if (.not. this%is_left_end .and. (this%layers_indices(4) /= this%layers_indices(2))) then 
-            do i = 1, number_of_conductors
-                call MPI_send(this%v(i,3), 1, REALSIZE, rank-1, 1000*(rank-1)+i,  SUBCOMM_MPI, ierr)
-                call MPI_recv(this%v(i,1), 1, REALSIZE, rank-1, 100*rank+i,  SUBCOMM_MPI, status, ierr)
-
-                call MPI_send(this%e_L(i,2), 1, REALSIZE, rank-1, 2000*(rank-1)+i,  SUBCOMM_MPI, ierr)
-                call MPI_recv(this%e_L(i,1), 1, REALSIZE, rank-1, 200*rank+i,  SUBCOMM_MPI, status, ierr)
-            end do
-        end if
-        ! comm with next
-        if (.not. this%is_right_end .and. (this%layers_indices(3) /= this%layers_indices(5))) then 
-            do i = 1, number_of_conductors
-                call MPI_send(this%v(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 100*(rank+1)+i, SUBCOMM_MPI, ierr)
-                call MPI_recv(this%v(i,number_of_divisions + 1), 1, REALSIZE, rank+1, 1000*rank+i, SUBCOMM_MPI, status, ierr)
-
-                call MPI_send(this%e_L(i,number_of_divisions - 1), 1, REALSIZE, rank+1, 200*(rank+1)+i, SUBCOMM_MPI, ierr)
-                call MPI_recv(this%e_L(i,number_of_divisions    ), 1, REALSIZE, rank+1, 2000*rank+i, SUBCOMM_MPI, status, ierr)
-            end do
-        end if
+            if (.not. this%mpi_comm%comms(c)%right%is_end) then 
+                index = this%mpi_comm%comms(c)%right%index
+                comm_rank = this%mpi_comm%comms(c)%right%comm_rank
+                do i = 1, number_of_conductors
+                    call MPI_send(this%v(i,index-1), 1, REALSIZE, comm_rank, 100*(rank+1)+i,  SUBCOMM_MPI, ierr) !rank - 1 -> comm_rank
+                    call MPI_recv(this%v(i,index+1), 1, REALSIZE, comm_rank, 1000*(comm_rank+1)+i,  SUBCOMM_MPI, status, ierr)
+                    call MPI_send(this%e_L(i,index-1), 1, REALSIZE, comm_rank, 200*(rank+1)+i,  SUBCOMM_MPI, ierr)
+                    call MPI_recv(this%e_L(i,index), 1, REALSIZE, comm_rank, 2000*(comm_rank+1)+i,  SUBCOMM_MPI, status, ierr)
+                end do
+            end if
+        end do
 
 
     end subroutine

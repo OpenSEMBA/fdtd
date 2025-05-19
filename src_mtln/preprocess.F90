@@ -374,19 +374,22 @@ contains
                     (position(3) >= Alloc(abs(direction))%ZI).and. &
                     (position(3) <= Alloc(abs(direction))%ZE)) then
                         if (.not. in_layer) then 
-                            res(n,1) = i - merge(1,0,direction < 0)
+                            res(n,1) = i
+                            ! res(n,1) = i - merge(1,0,direction < 0)
                             in_layer = .true.
                         end if
                 else
                     if (in_layer) then 
-                        res(n, 2) = i-1  - merge(1,0,direction < 0)
+                        res(n, 2) = i-1
+                        ! res(n, 2) = i-1  - merge(1,0,direction < 0)
                         in_layer = .false.
                         n = n + 1
                     end if
                 end if
             end do
             if (in_layer) then 
-                res(n, 2) = i - 1  - merge(1,0,direction < 0)
+                ! res(n, 2) = i - 1  - merge(1,0,direction < 0)
+                res(n, 2) = i - 1
             end if
         end function
 

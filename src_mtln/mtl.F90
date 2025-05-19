@@ -9,6 +9,28 @@ module mtl_mod
 #endif
 
     implicit none
+#ifdef CompileWithMPI
+
+    integer, parameter :: COMM_UNDEFINED = 0 
+    integer, parameter :: COMM_NEXT = 1
+    integer, parameter :: COMM_PREV = -1
+
+    type, public :: side_communicator_t
+        logical :: is_end = .true.
+        integer :: index = -1
+        integer :: comm_rank = -1
+        integer :: direction = COMM_UNDEFINED
+    end type
+
+    type, public :: communicator_t
+        type(side_communicator_t) :: left, right
+    end type
+
+    type, public :: comm_t
+        type(communicator_t), dimension(:), allocatable :: comms
+        integer :: rank
+    end type
+#endif
 
     type, public :: mtl_t
         character (len=:), allocatable :: name
@@ -35,6 +57,10 @@ module mtl_mod
         integer (kind=4), allocatable, dimension(:,:) :: layer_indices
         ! integer (kind=4), dimension(1,2) :: layer_indices = [-1,-1]
         logical :: bundle_in_layer = .false.
+#ifdef CompileWithMPI
+        type(comm_t) :: mpi_comm
+#endif
+
     contains
         procedure :: setTimeStep
         procedure :: initLCHomogeneous
@@ -50,6 +76,9 @@ module mtl_mod
         ! procedure :: setConductanceInRegion
         ! procedure :: setConductanceAtPoint
         ! procedure :: addDispersiveConnector
+#ifdef CompileWithMPI
+        procedure :: initCommunicators
+#endif
 
     end type mtl_t
 
@@ -113,38 +142,16 @@ contains
         logical, optional :: isPassthrough
         integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
-        integer :: j, n
-#ifdef CompileWithMPI
-        integer :: rank, ierr
-#endif
+
         res%name = name
         if (present(layer_indices)) then
-
 #ifdef CompileWithMPI
-            call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
-            write(*,*) 'rank: ',rank
-#endif
-
-            write(*,*) layer_indices
-            n =  0
-            do j = 1, size(layer_indices, 1)
-                n = n + layer_indices(j,2) - layer_indices(j,1) + 1
-            end do
-            allocate(res%step_size(n))
-            allocate(res%external_field_segments(n))
-            n = 1
-            do j = 1, size(layer_indices, 1)
-                res%step_size(n: n + layer_indices(j,2) - layer_indices(j,1)) = step_size(layer_indices(j, 1):layer_indices(j, 2))
-                res%external_field_segments(n: n + layer_indices(j,2) - layer_indices(j,1)) = external_field_segments(layer_indices(j, 1):layer_indices(j, 2))
-                n = n + layer_indices(j,2) - layer_indices(j,1) + 1
-            end do
-
-            ! if (layer_indices(1) /= 1) res%is_left_end = .false.
-            ! if (layer_indices(2) /= size(step_size)) res%is_right_end = .false.
-            res%layer_indices = layer_indices
-        else
+            call res%initCommunicators(step_size, external_field_segments, layer_indices)
+#else
             res%step_size =  step_size
             res%external_field_segments = external_field_segments
+#endif
+          res%layer_indices = layer_indices
         end if
 
 
@@ -359,5 +366,75 @@ contains
         this%dt = finalTime/numberOfSteps
     end subroutine
 
+
+#ifdef CompileWithMPI
+    subroutine initCommunicators(this, step_size, external_field_segments, layer_indices)
+        class(mtl_t) :: this
+        real, intent(in), dimension(:) :: step_size
+        type(external_field_segment_t), intent(in), dimension(:) :: external_field_segments
+        integer (kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
+        integer :: j, n
+        integer :: rank, ierr, inter
+
+            call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+            write(*,*) 'rank: ',rank
+            this%mpi_comm%rank = rank
+            allocate(this%mpi_comm%comms(size(layer_indices,1)))
+            write(*,*) layer_indices
+            n =  0
+            do j = 1, size(layer_indices, 1)
+                n = n + layer_indices(j,2) - layer_indices(j,1) + 1
+            end do
+            n = n + size(layer_indices, 1) -1
+            allocate(this%step_size(n))
+            allocate(this%external_field_segments(n))
+
+            n = 1
+            inter = 0
+            do j = 1, size(layer_indices, 1)
+                this%step_size(n: n + layer_indices(j,2) - layer_indices(j,1)) = step_size(layer_indices(j, 1):layer_indices(j, 2))
+                this%external_field_segments(n: n + layer_indices(j,2) - layer_indices(j,1)) = external_field_segments(layer_indices(j, 1):layer_indices(j, 2))
+                
+                ! if (layer_indices(j, 1) + inter /= 1) then 
+                if (layer_indices(j, 1)  /= 1) then 
+                    this%mpi_comm%comms(j)%left%is_end = .false.
+                    this%mpi_comm%comms(j)%left%index = n + 1
+                end if
+                ! if (layer_indices(j, 2) + inter /= size(step_size)) then 
+                if (layer_indices(j, 2)  /= size(step_size)) then 
+                    this%mpi_comm%comms(j)%right%is_end = .false.
+                    this%mpi_comm%comms(j)%right%index = n + layer_indices(j,2) - layer_indices(j,1)
+
+                end if
+                if (.not. this%mpi_comm%comms(j)%left%is_end) then 
+                    if (external_field_segments(layer_indices(j, 1))%direction > 0) then 
+                        this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank - 1
+                        this%mpi_comm%comms(j)%left%direction = COMM_PREV
+                    else 
+                        this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank + 1
+                        this%mpi_comm%comms(j)%left%direction = COMM_NEXT
+                    end if
+                end if
+                if (.not. this%mpi_comm%comms(j)%right%is_end) then 
+                    if (external_field_segments(layer_indices(j, 2))%direction > 0) then 
+                        this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank + 1
+                        this%mpi_comm%comms(j)%right%direction = COMM_NEXT
+                    else
+                        this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank - 1
+                        this%mpi_comm%comms(j)%right%direction = COMM_PREV
+                    end if
+                end if
+
+                if (j /= size(layer_indices,1)) then 
+                    this%step_size(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%step_size(n + layer_indices(j,2) - layer_indices(j,1))
+                    this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1)) 
+                    n = n + 1
+                    inter = inter + 1
+                end if
+
+                n = n + layer_indices(j,2) - layer_indices(j,1) + 1
+            end do
+    end subroutine
+#endif
 
 end module
