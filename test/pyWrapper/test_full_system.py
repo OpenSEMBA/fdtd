@@ -2,6 +2,7 @@ from utils import *
 from typing import Dict
 import os
 from sys import platform
+from scipy import signal
 
 @no_mtln_skip
 @pytest.mark.mtln
@@ -450,7 +451,7 @@ def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_p
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("outside")[0]) is not None)
     assert (solver.getVTKMap()[0] is not None)
-    
+
 
 def test_nodal_source(tmp_path):
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
@@ -495,3 +496,205 @@ def testCanAssignSameDielectricMaterialToMultipleGeometries(tmp_path):
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
+
+def test_lumped_resistor(tmp_path):
+    # This test validates the behavior of lumped resistor materials in a simplified circuit.
+    # The circuit consists of a 40mm x 40mm simple loop with a lumped resistor line inserted along one edge.
+    # Due to the geometry, the circuit naturally exhibits a parasitic inductance of approximately 1.65e-7 H.
+    #
+    # Current probes are placed at the start and end of the lumped line, as well as a few cells before and after it.
+    # These measurements are used to evaluate the accuracy of the lumped material model.
+    #
+    # For validation, the results are compared against two reference cases:
+    # 1. A simple loop circuit with the same dimensions where a terminal  is inserted in place of the lumped line, 
+    #    using the same resistance of the lumped line.
+    # 2. Theoretical current response calculated using Laplace transforms from the initial pulse excitation.
+    #
+    # For better interaction with the case, the user can go to the file: testData/cases/lumped_lines/simple_loop_R/simple_loop_prepost.py
+
+    fn_lumped = CASES_FOLDER + 'lumped_lines/simple_loop_R/simple_loop_lumped.fdtd.json'
+    fn_terminal = CASES_FOLDER + 'lumped_lines/simple_loop_R/simple_loop_terminal.fdtd.json'
+    
+    solver_lumped = FDTD(fn_lumped, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_terminal = FDTD(fn_terminal, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver_lumped.run()
+    solver_terminal.run()
+
+    StartTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellStart")[0])
+    StartLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellStart")[0])
+
+    EndTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellEnd")[0])
+    EndLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellEnd")[0])
+
+    AdjacentPostLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PostLumpedCell")[0])
+    AdjacentPostTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PostTerminalCell")[0])
+
+    AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedCell")[0])
+    AdjacentPreTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PreTerminalCell")[0])
+
+    assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), StartTerminalProbe['current'].to_numpy())[0, 1] > 0.999
+    assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), EndTerminalProbe['current'].to_numpy())[0, 1] > 0.999
+    assert np.corrcoef(AdjacentPostLumpedProbe['current'].to_numpy(), AdjacentPostTerminalProbe['current'].to_numpy())[0, 1] > 0.999
+    assert np.corrcoef(AdjacentPreLumpedProbe['current'].to_numpy(), AdjacentPreTerminalProbe['current'].to_numpy())[0, 1] > 0.999
+
+    R = solver_lumped.getMaterialProperties("lumped_line")["resistance"]
+    L = 1.65e-7     # parasitic inductance mentioned above
+
+    num = [1]
+    den = [L, R]
+    system = signal.TransferFunction(num, den)
+    tout, I_out, _ = signal.lsim(system, 
+                                 U=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1), 
+                                 T=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0))
+    
+    I_theo = np.interp(AdjacentPreLumpedProbe['time'], tout, I_out)
+    
+    assert np.corrcoef(AdjacentPostLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(AdjacentPreLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+
+def test_lumped_capacitor(tmp_path):
+    # This test validates the behavior of lumped capacitor materials in a simplified circuit. The lumped capacitor 
+    # can be modeled as a capacitor in parallel with a resistor.
+    # The circuit consists of a 40mm x 40mm simple loop with a lumped capacitor line inserted along one edge.
+    # Due to the geometry, the circuit naturally exhibits a parasitic inductance of approximately 1.65e-7 H.
+    #
+    # Current probes are placed at the start and end of the lumped line, as well as a few cells before and after it.
+    # These measurements are used to evaluate the accuracy of the lumped material model.
+    #
+    # For validation, the results are compared against only one reference case:
+    # 1. Theoretical current response calculated using Laplace transforms from the initial pulse excitation.
+    #
+    # For better interaction with the case, the user can go to the file: testData/cases/lumped_lines/simple_loop_RC/simple_loop_prepost.py
+
+    fn_lumped = CASES_FOLDER + 'lumped_lines/simple_loop_RC/simple_loop_lumped.fdtd.json'
+    solver_lumped = FDTD(fn_lumped, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_lumped.run()
+
+
+    StartLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellStart")[0])
+    EndLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellEnd")[0])
+    AdjacentPostLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PostLumpedCell")[0])
+    AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedCell")[0])
+
+    R = solver_lumped.getMaterialProperties("lumped_RC")["resistance"]
+    C = solver_lumped.getMaterialProperties("lumped_RC")["capacitance"]
+    L = 1.65e-7 # parasitic inductance mentioned above
+
+    num = [R*C, 1]
+    den = [L*R*C, L, R]
+    system = signal.TransferFunction(num, den)
+    tout, I_out, _ = signal.lsim(system, 
+                                 U=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1), 
+                                 T=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0))
+    
+    I_theo = np.interp(AdjacentPreLumpedProbe['time'], tout, I_out)
+    
+    assert np.corrcoef(AdjacentPostLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(AdjacentPreLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+
+def test_lumped_inductor(tmp_path):
+    # This test validates the behavior of lumped inductor materials in a simplified circuit. The lumped inductor
+    # can be modeled as an inductor in series with a resistor.
+    # The circuit consists of a 40mm x 40mm simple loop with a lumped resistor line inserted along one edge.
+    # Due to the geometry, the circuit naturally exhibits a parasitic inductance of approximately 1.65e-7 H.
+    #
+    # Current probes are placed at the start and end of the lumped line, as well as a few cells before and after it.
+    # These measurements are used to evaluate the accuracy of the lumped material model.
+    #
+    # For validation, the results are compared against two reference cases:
+    # 1. A simple loop circuit with the same dimensions where a terminal  is inserted in place of the lumped line, 
+    #    using the same resistance and inductance of the lumped line.
+    # 2. Theoretical current response calculated using Laplace transforms from the initial pulse excitation.
+    #
+    # For better interaction with the case, the user can go to the file: testData/cases/lumped_lines/simple_loop_RL/simple_loop_prepost.py
+
+    fn_lumped = CASES_FOLDER + 'lumped_lines/simple_loop_RL/simple_loop_lumped.fdtd.json'
+    fn_terminal = CASES_FOLDER + 'lumped_lines/simple_loop_RL/simple_loop_terminal.fdtd.json'
+    
+    solver_lumped = FDTD(fn_lumped, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_terminal = FDTD(fn_terminal, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver_lumped.run()
+    solver_terminal.run()
+
+    StartTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellStart")[0])
+    StartLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellStart")[0])
+
+    EndTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("TerminalCellEnd")[0])
+    EndLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("LumpedCellEnd")[0])
+
+    AdjacentPostLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PostLumpedCell")[0])
+    AdjacentPostTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PostTerminalCell")[0])
+
+    AdjacentPreLumpedProbe = Probe(solver_lumped.getSolvedProbeFilenames("PreLumpedCell")[0])
+    AdjacentPreTerminalProbe = Probe(solver_terminal.getSolvedProbeFilenames("PreTerminalCell")[0])
+
+    assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), StartTerminalProbe['current'].to_numpy())[0, 1] > 0.999
+    assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), EndTerminalProbe['current'].to_numpy())[0, 1] > 0.999
+    assert np.corrcoef(AdjacentPostLumpedProbe['current'].to_numpy(), AdjacentPostTerminalProbe['current'].to_numpy())[0, 1] > 0.999
+    assert np.corrcoef(AdjacentPreLumpedProbe['current'].to_numpy(), AdjacentPreTerminalProbe['current'].to_numpy())[0, 1] > 0.999
+
+    R = solver_lumped.getMaterialProperties("lumped_RL")["resistance"]
+    L = solver_lumped.getMaterialProperties("lumped_RL")["inductance"] + 1.65e-7 # inductance of the lumped line + parasitic inductance mentioned above
+
+    num = [1]
+    den = [L, R]
+    system = signal.TransferFunction(num, den)
+    tout, I_out, _ = signal.lsim(system, 
+                                 U=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=1), 
+                                 T=np.loadtxt(solver_lumped["sources"][0]["magnitudeFile"], usecols=0))
+    
+    I_theo = np.interp(AdjacentPreLumpedProbe['time'], tout, I_out)
+    
+    assert np.corrcoef(AdjacentPostLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(AdjacentPreLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+
+def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
+    # This test verifies current splitting behavior in a parallel resistive configuration.
+    # The setup consists of a 40mm x 40mm circuit with two parallel elements:
+    # - A lumped resistor line
+    # - A terminal with the same resistance
+    #
+    # Current measurements are taken at three key locations:
+    # 1. At the source (input) (Bulk Initial probe)
+    # 2. At the terminal branch (Bulk Top probe)
+    # 3. At the lumped resistor line branch (Bulk Bottom probe)
+    #
+    # The goal is to validate that the current divides between the two parallel resistive paths, i.e., the
+    # current at the terminal branch plus the lumped resistor line branch should be equal to the current at the source.
+    # The test also compares the current at the source with the theoretical current response calculated using Laplace transforms.
+    #
+    # For better interaction with the case, the user can go to the file: testData/cases/lumped_lines/current_bifurcation/current_bifurcation_lumped_prepost.py
+
+    fn = CASES_FOLDER + 'lumped_lines/current_bifurcation/current_bifurcation_lumped.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+
+    InitialBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Initial probe")[0])
+    TopBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Top probe")[0])
+    BottomBulk_probe = Probe(solver.getSolvedProbeFilenames("Bulk Bottom probe")[0])
+
+    R_lumped = solver.getMaterialProperties("lumped_resistor")["resistance"]
+    R_terminal = solver.getMaterialProperties("Terminal_R")["terminations"][0]["resistance"]
+    R = 1/(1/R_lumped + 1/R_terminal)  
+    L = 1.65e-7 # parasitic inductance mentioned above
+
+    num = [1]
+    den = [L, R]
+    system = signal.TransferFunction(num, den)
+    tout, I_out, _ = signal.lsim(system, 
+                                 U=np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1), 
+                                 T=np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0))
+    
+    I_theo = np.interp(InitialBulk_probe['time'], tout, I_out)
+    
+    assert np.corrcoef(TopBulk_probe['current'].to_numpy() + BottomBulk_probe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+    assert np.corrcoef(InitialBulk_probe['current'].to_numpy(), I_theo)[0, 1] > 0.999

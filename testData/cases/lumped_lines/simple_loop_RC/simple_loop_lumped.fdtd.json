@@ -1,0 +1,460 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 1e-12,
+        "numberOfSteps": 20000
+    },
+    "boundary": {
+        "all": {
+            "type": "mur"
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                70,
+                40,
+                70
+            ],
+            "steps": {
+                "x": [
+                    0.002
+                ],
+                "y": [
+                    0.002
+                ],
+                "z": [
+                    0.002
+                ]
+            }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    25.0,
+                    22.0,
+                    30.0
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    25.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 3,
+                "relativePosition": [
+                    30.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 4,
+                "relativePosition": [
+                    40.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 5,
+                "relativePosition": [
+                    45.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 6,
+                "relativePosition": [
+                    30.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 7,
+                "relativePosition": [
+                    40.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 8,
+                "relativePosition": [
+                    45.0,
+                    22.0,
+                    45.0
+                ]
+            },
+            {
+                "id": 9,
+                "relativePosition": [
+                    45.0,
+                    22.0,
+                    25.0
+                ]
+            },
+            {
+                "id": 10,
+                "relativePosition": [
+                    25.0,
+                    22.0,
+                    25.0
+                ]
+            },
+            {
+                "id": 11,
+                "relativePosition": [
+                    25.0,
+                    22.0,
+                    45.0
+                ]
+            }
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "type": "node",
+                "coordinateIds": [
+                    1
+                ]
+            },
+            {
+                "id": 2,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            24,
+                            21,
+                            30
+                        ],
+                        [
+                            26,
+                            23,
+                            30
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            35,
+                            21,
+                            44
+                        ],
+                        [
+                            35,
+                            23,
+                            46
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 4,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            25.0,
+                            22.0,
+                            45.0
+                        ],
+                        [
+                            35.0,
+                            22.0,
+                            45.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 5,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            36.0,
+                            22.0,
+                            45.0
+                        ],
+                        [
+                            45.0,
+                            22.0,
+                            45.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 6,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            35.0,
+                            22.0,
+                            45.0
+                        ],
+                        [
+                            36.0,
+                            22.0,
+                            45.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 7,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            45,
+                            22,
+                            45
+                        ],
+                        [
+                            45,
+                            22,
+                            45
+                        ]
+                    ],
+                    [
+                        [
+                            25,
+                            22,
+                            45
+                        ],
+                        [
+                            25,
+                            22,
+                            45
+                        ]
+                    ],
+                    [
+                        [
+                            45,
+                            22,
+                            45
+                        ],
+                        [
+                            45,
+                            22,
+                            45
+                        ]
+                    ],
+                    [
+                        [
+                            25,
+                            22,
+                            45
+                        ],
+                        [
+                            25,
+                            22,
+                            45
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 8,
+                "type": "polyline",
+                "coordinateIds": [
+                    8,
+                    9,
+                    10,
+                    1,
+                    11
+                ]
+            },
+            {
+                "id": 9,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            40,
+                            21,
+                            44
+                        ],
+                        [
+                            40,
+                            23,
+                            46
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 10,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            30,
+                            21,
+                            44
+                        ],
+                        [
+                            30,
+                            23,
+                            46
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 11,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            36,
+                            21,
+                            44
+                        ],
+                        [
+                            36,
+                            23,
+                            46
+                        ]
+                    ]
+                ]
+            }
+        ]
+    },
+    "materials": [
+        {
+            "id": 1,
+            "type": "pec"
+        },
+        { "id": 2, "name": "lumped_RC", "type": "lumped", "model": "capacitor", "capacitance": 1e-12, "resistance": 1000.0},
+        {
+            "name": "Wirematerial",
+            "id": 3,
+            "type": "wire",
+            "radius": 0.0001,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "name": "Short",
+            "id": 4,
+            "type": "terminal",
+            "terminations": [
+                {
+                    "type": "short"
+                }
+            ]
+        }
+    ],
+    "materialAssociations": [
+        {
+            "type": "surface",
+            "materialId": 1,
+            "elementIds": [
+                4,
+                5
+            ]
+        },
+        {
+            "type": "surface",
+            "materialId": 2,
+            "elementIds": [
+                6
+            ]
+        },
+        {
+            "name": "Cable_E",
+            "type": "cable",
+            "elementIds": [
+                8
+            ],
+            "materialId": 3,
+            "initialTerminalId": 4,
+            "endTerminalId": 4
+        }
+    ],
+    "sources": [
+        {
+            "name": "Generator on line",
+            "type": "generator",
+            "magnitudeFile": "rampExcitation.exc",
+            "elementIds": [
+                1
+            ],
+            "field": "voltage"
+        }
+    ],
+    "probes": [
+        {
+            "name": "Initial current",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                2
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "LumpedCellStart",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                3
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "LumpedCellEnd",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                11
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "PostLumpedCell",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                9
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "PreLumpedCell",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                10
+            ],
+            "domain": {
+                "type": "time"
+            }
+        }
+    ]
+}

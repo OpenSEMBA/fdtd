@@ -390,7 +390,7 @@ class FDTD():
     def getMaterialProperties(self, materialName):
         if 'materials' in self._input:
             for idx, element in enumerate(self._input['materials']):
-                if element["name"] == materialName:
+                if element.get("name") == materialName:
                     return self._input['materials'][idx]
 
 
