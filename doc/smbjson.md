@@ -269,13 +269,54 @@ A `material` with `type` `isotropic` represents an isotropic material with const
 
 ```json
 {
-    "name": "teflon"
+    "name": "teflon",
     "id": 1, 
     "type": "isotropic",
     "relativePermittivity": 2.5,
     "electricConducitivity": 1e-6
 } 
 ```
+
+### `lumped`
+
+A `material` with `type` `lumped` represents a lumped circuit `model`, e.g a resistor. Lumped materials can only be assigned to `cell` `elements` with `intervals` describing oriented lines. If multiple cells are assigned to a lumped element, only the first one of them will be treated as a lumped by the solver, the other cells will be treated as a PEC material.
+The specific behavior is described using the `<model>` keyword, described below. `resistor`, `inductor` and `capacitor` are based, with some additions, on the following reference
+
+```
+    Liu, Y., Mittra, R., Su, T., Yang, X., & Yu, W. (2006). Parallel finite-difference time-domain method. Artech.
+    Chapter 3, Section 5.
+```
+
+#### `resistor` model
+
+Defined by:
++ `<resistance>` a positive real number.
++ `[startingTime]` and `[endTime]` are the times in which the resistor will be active. Default to $0.0$ and $1.0$ seconds, respectively. When deactivated, the backgroung material properties will be used, i.e. the edge will be equivalent to an open circuit at low frequencies.
+
+**Example:**
+
+```json
+{
+    "name": "100_ohm_resistor",
+    "id": 1, 
+    "type": "lumped",
+    "model": "resistor",
+    "resistance": 100,
+    "startingTime": 0.0,
+    "endTime": 1.0
+} 
+```
+
+#### `inductor` model
+A series $LR$ circuit, $R$ is optional:
++ `<inductance>` a positive real number
++ `[resistance]` a positive or zero real number. Defaults to $0.0$.
+
+#### `capacitor` model
+A parallel $CR$ circuit:
++ `<capacitance>` a positive real number
++ `<resistance>` a positive real number.
+
 
 ### `multilayeredSurface`
 

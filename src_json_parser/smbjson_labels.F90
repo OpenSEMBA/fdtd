@@ -30,6 +30,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TYPE_PEC = "pec"
    character (len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
    character (len=*), parameter :: J_MAT_TYPE_ISOTROPIC = "isotropic"
+   character (len=*), parameter :: J_MAT_TYPE_LUMPED = "lumped"
    character (len=*), parameter :: J_MAT_TYPE_MULTILAYERED_SURFACE = "multilayeredSurface"
    character (len=*), parameter :: J_MAT_TYPE_SLOT = "thinSlot"
    character (len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
@@ -46,7 +47,17 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_RADIUS = "radius"
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_PERMITTIVITY = "relativePermittivity"
    character (len=*), parameter :: J_MAT_WIRE_PASS = "isPassthrough"
-   
+
+   character (len=*), parameter :: J_MAT_LUMPED_MODEL = "model"
+   character (len=*), parameter :: J_MAT_LUMPED_MODEL_RESISTOR = "resistor"
+   character (len=*), parameter :: J_MAT_LUMPED_MODEL_INDUCTOR = "inductor"
+   character (len=*), parameter :: J_MAT_LUMPED_MODEL_CAPACITOR = "capacitor"
+   character (len=*), parameter :: J_MAT_LUMPED_RESISTANCE = "resistance"
+   character (len=*), parameter :: J_MAT_LUMPED_STARTING_TIME = "startingTime"
+   character (len=*), parameter :: J_MAT_LUMPED_END_TIME = "endTime"
+   character (len=*), parameter :: J_MAT_LUMPED_INDUCTANCE = "inductance"
+   character (len=*), parameter :: J_MAT_LUMPED_CAPACITANCE = "capacitance" 
+      
    character (len=*), parameter :: J_MAT_TERM_TERMINATIONS = "terminations"
    character (len=*), parameter :: J_MAT_TERM_TYPE_OPEN = "open"
    character (len=*), parameter :: J_MAT_TERM_TYPE_SHORT = "short"
