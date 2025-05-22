@@ -224,11 +224,12 @@ contains
         this%conductors_before_cable = conductors_before_cable
     end function    
 
-    function buildLineFromCable(cable, dt, layer_indices, bundle_in_layer) result(res)
+    function buildLineFromCable(cable, dt, layer_indices, bundle_in_layer, alloc_z) result(res)
         type(cable_t), intent(in) :: cable
         real, intent(in) :: dt
         integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
+        integer(kind=4), dimension (1:6), intent(in), optional :: alloc_z
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
@@ -252,7 +253,8 @@ contains
                              external_field_segments = cable%external_field_segments, &
                              isPassthrough = cable%isPassthrough,&
                              layer_indices = layer_indices, & 
-                             bundle_in_layer = bundle_in_layer)
+                             bundle_in_layer = bundle_in_layer, &
+                             alloc_z = alloc_z)
 
         if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
         if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
@@ -303,8 +305,14 @@ contains
         integer :: nb, nl, nc
         integer (kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .true.
-
+        integer (kind=4), dimension(1:6) :: alloc_z
        
+        alloc_z(1) = alloc(3)%xi
+        alloc_z(2) = alloc(3)%xe
+        alloc_z(3) = alloc(3)%yi
+        alloc_z(4) = alloc(3)%ye
+        alloc_z(5) = alloc(3)%zi
+        alloc_z(6) = alloc(3)%ze
         ! layer_indices = [-1,-1]
         allocate(res(size(cable_bundles)))
         nb = 0
@@ -326,7 +334,7 @@ contains
                 nc = size(cable_bundles(i)%levels(j)%cables)
                 allocate(res(nb)%levels(j)%lines(nc))
                 do k = 1, nc
-                    res(nb)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, layer_indices, bundle_in_layer)
+                    res(nb)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, layer_indices, bundle_in_layer, alloc_z)
                 end do
             end do
         end do

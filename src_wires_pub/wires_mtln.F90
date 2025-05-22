@@ -100,11 +100,11 @@ contains
                      case(3)        
                      mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k)
 
-                     if (mtln_solver%bundles(m)%external_field_segments(n)%position(3) == sgg%alloc(3)%ze -1) then 
-                        mtln_solver%bundles(m)%external_field_segments(n)%comm = COMM_E_SEND
-                     else if (mtln_solver%bundles(m)%external_field_segments(n)%position(3) == sgg%alloc(3)%zi) then 
-                        mtln_solver%bundles(m)%external_field_segments(n)%comm = COMM_E_RECV
-                     end if
+                     ! if (mtln_solver%bundles(m)%external_field_segments(n)%position(3) == sgg%alloc(3)%ze -1) then 
+                     !    mtln_solver%bundles(m)%external_field_segments(n)%comm = COMM_E_SEND
+                     ! else if (mtln_solver%bundles(m)%external_field_segments(n)%position(3) == sgg%alloc(3)%zi) then 
+                     !    mtln_solver%bundles(m)%external_field_segments(n)%comm = COMM_E_RECV
+                     ! end if
 
                      end select
                end do
