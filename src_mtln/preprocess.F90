@@ -57,7 +57,9 @@ contains
         type(line_bundle_t), dimension(:), allocatable :: line_bundles
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
 #ifdef CompileWithMPI
-        integer (kind=4) :: ierr
+        integer (kind=4) :: ierr, rank
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+
 #endif
 
         res%final_time = parsed%time_step * parsed%number_of_steps
@@ -1317,7 +1319,7 @@ contains
                                                probe_type = parsed_probes(i)%probe_type,&
                                                name = probe_name,&
                                                position =parsed_probes(i)%probe_position, &
-                                               layer_indices = this%bundles(d)%layers_indices(3:4))
+                                               layer_indices = this%bundles(d)%layers_indices(:,3:4))
 
         end do
     end function

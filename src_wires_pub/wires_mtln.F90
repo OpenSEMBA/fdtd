@@ -71,7 +71,7 @@ contains
 
       hwires => GetHwires()
       indexMap = mapFieldToCurrentSegments(hwires, mtln_solver%bundles)
-
+ 
       call pointSegmentsToFields()
       call assignLCToExternalConductor()
       call updateNetworksLineCapacitors()
@@ -81,18 +81,30 @@ contains
 
       subroutine pointSegmentsToFields()
          integer (kind=4) :: i, j, k, m, n, direction
+#ifdef CompileWithMPI      
+         integer(kind=4) :: ierr, rank
+         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+
+#endif
+
          do m = 1, mtln_solver%number_of_bundles
             if (mtln_solver%bundles(m)%bundle_in_layer) then 
                do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
                   call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))
-                  direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
+                  direction = abs(mtln_solver%bundles(m)%external_field_segments(n)%direction)
                   select case (abs(mtln_solver%bundles(m)%external_field_segments(n)%direction))
                      case(1)                                
                      mtln_solver%bundles(m)%external_field_segments(n)%field => Ex(i, j, k) 
                      case(2)     
                      mtln_solver%bundles(m)%external_field_segments(n)%field => Ey(i, j, k) 
-                     case(3)     
-                     mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k) 
+                     case(3)        
+                     mtln_solver%bundles(m)%external_field_segments(n)%field => Ez(i, j, k)
+                     if (mtln_solver%bundles(m)%external_field_segments(n)%position(3) == sgg%alloc(3)%ze -1) then 
+                        mtln_solver%bundles(m)%external_field_segments(n)%comm = COMM_E_SEND
+                     else if (mtln_solver%bundles(m)%external_field_segments(n)%position(3) == sgg%alloc(3)%zi) then 
+                        mtln_solver%bundles(m)%external_field_segments(n)%comm = COMM_E_RECV
+                     end if
+
                      end select
                end do
             end if
@@ -217,9 +229,6 @@ contains
       integer (kind=4) :: m, n
       REAL (KIND=RKIND),pointer:: punt
       type(Thinwires_t), pointer  ::  hwires
-#ifdef CompileWithMPI      
-      integer(kind=4) :: ierr, rank
-#endif
 
       eps0 = eps00 
       mu0 = mu00

@@ -4,6 +4,9 @@ module mtln_solver_mod
     use network_manager_mod
     use preprocess_mod
     use FDETYPES, only: XYZlimit_t
+#ifdef CompileWithMPI
+    use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+#endif
     implicit none
 
 
@@ -86,7 +89,7 @@ contains
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
         if (sizeof > 1) then 
             do i = 1, size(res%bundles)
-                ! call res%bundles(i)%Comm_MPI_Layers()
+                call res%bundles(i)%Comm_MPI_Layers()
             end do
         end if
 #endif
@@ -106,9 +109,17 @@ contains
 
     subroutine mtln_step(this)
         class(mtln_t) :: this
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr, rank
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+#endif
 
-        
+
+
         call this%setExternalLongitudinalField()
+        ! write(*,*) this%time,' ', rank
+        ! write(*,*) this%time,' ', rank,' eL: ', this%bundles(1)%e_L(1,:), ' ', this%bundles(1)%external_field_segments(5)%field
+        ! write(*,*) this%time,' ', rank,' v: ',this%bundles(1)%v(1,:), ' i: ', this%bundles(1)%i(1,:),' eL: ', this%bundles(1)%e_L(1,:), ' ', this%bundles(1)%external_field_segments(5)%field
         call this%advanceBundlesVoltage()
         call this%advanceNWVoltage()
         call this%advanceBundlesCurrent()

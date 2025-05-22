@@ -1,6 +1,9 @@
 module probes_mod
 
     use mtln_types_mod, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
+! #ifdef CompileWithMPI
+!     use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+! #endif
 
     implicit none
 
@@ -33,16 +36,30 @@ contains
         integer, intent(in) :: probe_type
         real, intent(in) :: dt
         real, dimension(3), optional :: position
-        integer (kind=4), dimension(1:2), intent(in) :: layer_indices
+        integer (kind=4), dimension(:,:), intent(in) :: layer_indices
         character (len=:), allocatable, optional :: name
+        integer :: i, slice
 
         res%type = probe_type
         res%index = index
         res%dt = dt
         res%current_frame = 1
 
-        if (index < layer_indices(1) .or. index > layer_indices(2)+1) res%in_layer = .false.
-        res%layer_index = index -(layer_indices(1)-1)            
+        res%in_layer = .false.
+        do i = 1, size(layer_indices,1) 
+            if (index >= layer_indices(i, 1) .and. index <= layer_indices(i,2)+1) then 
+                res%in_layer = .true.
+                slice = i
+            end if
+        end do
+
+        res%layer_index = 0
+        if (res%in_layer) then 
+            do i = 1, slice - 1
+                res%layer_index = res%layer_index + layer_indices(i,2) + 1 - (layer_indices(i,1) - 1)
+            end do
+            res%layer_index = res%layer_index + res%index - layer_indices(i,1) + 1
+        end if
 
         if (present(name)) then
             res%name = res%name//name//"_"
@@ -98,7 +115,11 @@ contains
         class(probe_t) :: this
         real, intent(in) :: time
         real, intent(in), dimension(:) :: values
-
+! #ifdef CompileWithMPI
+!         integer (kind=4) :: ierr, rank
+!         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+! #endif
+!         if (rank == 1) write(*,*) time, ' ', values(1)
         this%t(this%current_frame) = time
         this%val(this%current_frame,:) = values
         this%current_frame = this%current_frame + 1
