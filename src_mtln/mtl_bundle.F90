@@ -404,38 +404,52 @@ contains
 
     subroutine Comm_MPI_Layers(this)
         class(mtl_bundle_t) :: this
-        integer :: ierr, rank, sizeof,status(MPI_STATUS_SIZE), i, left_comm_rank, right_comm_rank
+        integer :: ierr, rank, sizeof,status(MPI_STATUS_SIZE), i, left_comm_rank, right_comm_rank, prev_comm_rank, next_comm_rank
         integer (kind=4) :: buff1_prev, buff2_prev, buff1_next, buff2_next
-        logical :: comm_left, comm_right
+        logical :: prev, next
+        ! logical :: comm_left, comm_right
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
         write(*,*) '(rank, sizeof):, ', rank, sizeof
         call MPI_Barrier(subcomm_mpi,ierr)
         do i = 1 , size(this%layers_indices,1)
-            left_comm_rank = this%mpi_comm%comms(i)%left%comm_rank
-            right_comm_rank = this%mpi_comm%comms(i)%right%comm_rank
-            comm_left = .false.
-            comm_right = .false.
-            if (left_comm_rank /= -1) comm_left = .true.
-            if (right_comm_rank /= -1) comm_right = .true.
+            ! left_comm_rank = this%mpi_comm%comms(i)%left%comm_rank
+            ! right_comm_rank = this%mpi_comm%comms(i)%right%comm_rank
+            prev = .false.
+            next = .false.
+            ! comm_left = .false.
+            ! comm_right = .false.
+
+            if (this%mpi_comm%comms(i)%left%direction == COMM_PREV .or. &
+                this%mpi_comm%comms(i)%right%direction == COMM_PREV) prev = .true.
+            if (this%mpi_comm%comms(i)%left%direction == COMM_NEXT .or. &
+                this%mpi_comm%comms(i)%right%direction == COMM_NEXT) next = .true.
+            if (this%mpi_comm%comms(i)%left%direction == COMM_PREV)  prev_comm_rank = this%mpi_comm%comms(i)%left%comm_rank
+            if (this%mpi_comm%comms(i)%right%direction == COMM_PREV) prev_comm_rank = this%mpi_comm%comms(i)%right%comm_rank
+            if (this%mpi_comm%comms(i)%left%direction == COMM_NEXT)  next_comm_rank = this%mpi_comm%comms(i)%left%comm_rank
+            if (this%mpi_comm%comms(i)%right%direction == COMM_NEXT) next_comm_rank = this%mpi_comm%comms(i)%right%comm_rank
+            ! if (left_comm_rank /= -1) comm_left = .true.
+            ! if (right_comm_rank /= -1) comm_right = .true.
+             
             buff1_prev = this%layers_indices(i,3)
             buff2_prev = this%layers_indices(i,4)
             buff1_next = this%layers_indices(i,3)
             buff2_next = this%layers_indices(i,4)
             ! if ((rank /= 0 .and. rank /= sizeof-1)) then 
-            if (comm_left .and. comm_right) then 
+            ! if (comm_left .and. comm_right) then 
+            if (prev .and. next) then 
 
-                call MPI_send(buff1_next, 1, INTEGERSIZE, left_comm_rank, 502*(rank+1),  SUBCOMM_MPI, ierr)
-                call MPI_send(buff2_next, 1, INTEGERSIZE, left_comm_rank, 503*(rank+1),  SUBCOMM_MPI, ierr)
+                call MPI_send(buff1_next, 1, INTEGERSIZE, prev_comm_rank, 502*(rank+1),  SUBCOMM_MPI, ierr)
+                call MPI_send(buff2_next, 1, INTEGERSIZE, prev_comm_rank, 503*(rank+1),  SUBCOMM_MPI, ierr)
                 
-                call MPI_recv(buff1_next, 1, INTEGERSIZE, right_comm_rank, 502*(right_comm_rank+1),  SUBCOMM_MPI, status, ierr)
-                call MPI_recv(buff2_next, 1, INTEGERSIZE, right_comm_rank, 503*(right_comm_rank+1),  SUBCOMM_MPI, status, ierr)
+                call MPI_recv(buff1_next, 1, INTEGERSIZE, next_comm_rank, 502*(next_comm_rank+1),  SUBCOMM_MPI, status, ierr)
+                call MPI_recv(buff2_next, 1, INTEGERSIZE, next_comm_rank, 503*(next_comm_rank+1),  SUBCOMM_MPI, status, ierr)
 
-                call MPI_send(buff1_prev, 1, INTEGERSIZE, right_comm_rank, 500*(rank+1),  SUBCOMM_MPI, ierr)
-                call MPI_send(buff2_prev, 1, INTEGERSIZE, right_comm_rank, 501*(rank+1),  SUBCOMM_MPI, ierr)
+                call MPI_send(buff1_prev, 1, INTEGERSIZE, next_comm_rank, 500*(rank+1),  SUBCOMM_MPI, ierr)
+                call MPI_send(buff2_prev, 1, INTEGERSIZE, next_comm_rank, 501*(rank+1),  SUBCOMM_MPI, ierr)
 
-                call MPI_recv(buff1_prev, 1, INTEGERSIZE, left_comm_rank, 500*(left_comm_rank+1),  SUBCOMM_MPI, status, ierr)
-                call MPI_recv(buff2_prev, 1, INTEGERSIZE, left_comm_rank, 501*(left_comm_rank+1),  SUBCOMM_MPI, status, ierr)
+                call MPI_recv(buff1_prev, 1, INTEGERSIZE, prev_comm_rank, 500*(prev_comm_rank+1),  SUBCOMM_MPI, status, ierr)
+                call MPI_recv(buff2_prev, 1, INTEGERSIZE, prev_comm_rank, 501*(prev_comm_rank+1),  SUBCOMM_MPI, status, ierr)
 
 
                 this%layers_indices(i,1) = buff1_prev
@@ -448,11 +462,12 @@ contains
                 write(*,*) 'next segments : ', this%layers_indices(i,5:6)
 
             ! else if (rank == 0) then 
-            else if (comm_right .and. .not. comm_left) then 
-                call MPI_send(buff1_prev, 1, INTEGERSIZE, right_comm_rank, 500*(rank+1),  SUBCOMM_MPI, ierr)
-                call MPI_send(buff2_prev, 1, INTEGERSIZE, right_comm_rank, 501*(rank+1),  SUBCOMM_MPI, ierr)
-                call MPI_recv(buff1_next, 1, INTEGERSIZE, right_comm_rank, 502*(right_comm_rank+1),  SUBCOMM_MPI, status, ierr)
-                call MPI_recv(buff2_next, 1, INTEGERSIZE, right_comm_rank, 503*(right_comm_rank+1),  SUBCOMM_MPI, status, ierr)
+            ! else if (comm_right .and. .not. comm_left) then 
+            else if (next .and. .not. prev) then 
+                call MPI_send(buff1_prev, 1, INTEGERSIZE, next_comm_rank, 500*(rank+1),  SUBCOMM_MPI, ierr)
+                call MPI_send(buff2_prev, 1, INTEGERSIZE, next_comm_rank, 501*(rank+1),  SUBCOMM_MPI, ierr)
+                call MPI_recv(buff1_next, 1, INTEGERSIZE, next_comm_rank, 502*(next_comm_rank+1),  SUBCOMM_MPI, status, ierr)
+                call MPI_recv(buff2_next, 1, INTEGERSIZE, next_comm_rank, 503*(next_comm_rank+1),  SUBCOMM_MPI, status, ierr)
 
                 ! call MPI_send(buff1_prev, 1, INTEGERSIZE, rank+1, 500*(rank+1),  SUBCOMM_MPI, ierr)
                 ! call MPI_send(buff2_prev, 1, INTEGERSIZE, rank+1, 501*(rank+1),  SUBCOMM_MPI, ierr)
@@ -465,11 +480,12 @@ contains
                 write(*,*) 'next segments : ', this%layers_indices(i,5:6)
             ! end if
             ! else if (rank == sizeof-1) then 
-            else if (comm_left .and. .not. comm_right ) then 
-                call MPI_send(buff1_next, 1, INTEGERSIZE, left_comm_rank, 502*(rank+1),  SUBCOMM_MPI, ierr)
-                call MPI_send(buff2_next, 1, INTEGERSIZE, left_comm_rank, 503*(rank+1),  SUBCOMM_MPI, ierr)
-                call MPI_recv(buff1_prev, 1, INTEGERSIZE, left_comm_rank, 500*(left_comm_rank+1),  SUBCOMM_MPI, status, ierr)
-                call MPI_recv(buff2_prev, 1, INTEGERSIZE, left_comm_rank, 501*(left_comm_rank+1),  SUBCOMM_MPI, status, ierr)
+            ! else if (comm_left .and. .not. comm_right ) then 
+            else if (prev .and. .not. next ) then 
+                call MPI_send(buff1_next, 1, INTEGERSIZE, prev_comm_rank, 502*(rank+1),  SUBCOMM_MPI, ierr)
+                call MPI_send(buff2_next, 1, INTEGERSIZE, prev_comm_rank, 503*(rank+1),  SUBCOMM_MPI, ierr)
+                call MPI_recv(buff1_prev, 1, INTEGERSIZE, prev_comm_rank, 500*(prev_comm_rank+1),  SUBCOMM_MPI, status, ierr)
+                call MPI_recv(buff2_prev, 1, INTEGERSIZE, prev_comm_rank, 501*(prev_comm_rank+1),  SUBCOMM_MPI, status, ierr)
 
                 ! call MPI_send(buff1_next, 1, INTEGERSIZE, rank-1, 502*rank,  SUBCOMM_MPI, ierr)
                 ! call MPI_send(buff2_next, 1, INTEGERSIZE, rank-1, 503*rank,  SUBCOMM_MPI, ierr)

@@ -184,21 +184,10 @@ contains
 
      
         res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
-        if (present(parent_name)) then
-            res%parent_name = parent_name
-        end if
-        if (present(conductor_in_parent)) then
-            res%conductor_in_parent = conductor_in_parent
-        end if
-        if (present(transfer_impedance)) then
-            res%transfer_impedance = transfer_impedance
-        end if
-
-        if (present(isPassthrough)) then 
-            res%isPassthrough = isPassthrough
-        else
-            res%isPassthrough = .false.
-        end if
+        if (present(parent_name)) res%parent_name = parent_name
+        if (present(conductor_in_parent)) res%conductor_in_parent = conductor_in_parent
+        if (present(transfer_impedance)) res%transfer_impedance = transfer_impedance
+        if (present(isPassthrough)) res%isPassthrough = isPassthrough
 
     end function
 
@@ -248,25 +237,11 @@ contains
         end if
 
         res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)
-        if (present(parent_name)) then
-            res%parent_name = parent_name
-        end if
-        if (present(conductor_in_parent)) then
-            res%conductor_in_parent = conductor_in_parent
-        end if
-        if (present(transfer_impedance)) then
-            res%transfer_impedance = transfer_impedance
-        end if
-
-        if (present(external_field_segments)) then 
-            res%external_field_segments = external_field_segments
-        end if
-
-        if (present(isPassthrough)) then 
-            res%isPassthrough = isPassthrough
-        else
-            res%isPassthrough = .false.
-        end if
+        if (present(parent_name)) res%parent_name = parent_name
+        if (present(conductor_in_parent)) res%conductor_in_parent = conductor_in_parent
+        if (present(transfer_impedance))  res%transfer_impedance = transfer_impedance
+        if (present(external_field_segments)) res%external_field_segments = external_field_segments
+        if (present(isPassthrough)) res%isPassthrough = isPassthrough
 
     end function
 
@@ -374,9 +349,11 @@ contains
         type(external_field_segment_t), intent(in), dimension(:) :: external_field_segments
         integer (kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
         integer :: j, n
-        integer :: rank, ierr, inter
+        integer :: rank, ierr, inter, sizeof
 
             call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+            call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+
             write(*,*) 'rank: ',rank
             this%mpi_comm%rank = rank
             allocate(this%mpi_comm%comms(size(layer_indices,1)))
@@ -398,14 +375,15 @@ contains
                 ! if (layer_indices(j, 1) + inter /= 1) then 
                 if (layer_indices(j, 1)  /= 1) then 
                     this%mpi_comm%comms(j)%left%is_end = .false.
-                    this%mpi_comm%comms(j)%left%index = n + 1
                 end if
+                this%mpi_comm%comms(j)%left%index = n + 1
                 ! if (layer_indices(j, 2) + inter /= size(step_size)) then 
+                
                 if (layer_indices(j, 2)  /= size(step_size)) then 
                     this%mpi_comm%comms(j)%right%is_end = .false.
-                    this%mpi_comm%comms(j)%right%index = n + layer_indices(j,2) - layer_indices(j,1)
-
                 end if
+                this%mpi_comm%comms(j)%right%index = n + layer_indices(j,2) - layer_indices(j,1)
+
                 if (.not. this%mpi_comm%comms(j)%left%is_end) then 
                     if (external_field_segments(layer_indices(j, 1))%direction > 0) then 
                         this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank - 1
@@ -414,7 +392,25 @@ contains
                         this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank + 1
                         this%mpi_comm%comms(j)%left%direction = COMM_NEXT
                     end if
+                else 
+                    if (rank == sizeof -1) then 
+                        this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank - 1
+                        this%mpi_comm%comms(j)%left%direction = COMM_PREV
+                    else if (rank == 0) then
+                        this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank + 1
+                        this%mpi_comm%comms(j)%left%direction = COMM_NEXT
+                    else
+                        if (external_field_segments(layer_indices(j, 2))%direction > 0) then 
+                            this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank - 1
+                            this%mpi_comm%comms(j)%left%direction = COMM_PREV
+                        else
+                            this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank + 1
+                            this%mpi_comm%comms(j)%left%direction = COMM_NEXT
+                        end if
+                    end if
                 end if
+
+                
                 if (.not. this%mpi_comm%comms(j)%right%is_end) then 
                     if (external_field_segments(layer_indices(j, 2))%direction > 0) then 
                         this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank + 1
@@ -422,6 +418,22 @@ contains
                     else
                         this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank - 1
                         this%mpi_comm%comms(j)%right%direction = COMM_PREV
+                    end if
+                else 
+                    if (rank == sizeof -1) then 
+                        this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank - 1
+                        this%mpi_comm%comms(j)%right%direction = COMM_PREV
+                    else if (rank == 0) then
+                        this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank + 1
+                        this%mpi_comm%comms(j)%right%direction = COMM_NEXT
+                    else
+                        if (external_field_segments(layer_indices(j, 2))%direction > 0) then 
+                            this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank + 1
+                            this%mpi_comm%comms(j)%right%direction = COMM_NEXT
+                        else
+                            this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank - 1
+                            this%mpi_comm%comms(j)%right%direction = COMM_PREV
+                        end if
                     end if
                 end if
 
