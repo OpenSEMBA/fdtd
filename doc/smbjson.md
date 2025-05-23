@@ -269,13 +269,54 @@ A `material` with `type` `isotropic` represents an isotropic material with const
 
 ```json
 {
-    "name": "teflon"
+    "name": "teflon",
     "id": 1, 
     "type": "isotropic",
     "relativePermittivity": 2.5,
     "electricConducitivity": 1e-6
 } 
 ```
+
+### `lumped`
+
+A `material` with `type` `lumped` represents a lumped circuit `model`, e.g a resistor. Lumped materials can only be assigned to `cell` `elements` with `intervals` describing oriented lines. If multiple cells are assigned to a lumped element, only the first one of them will be treated as a lumped by the solver, the other cells will be treated as a PEC material.
+The specific behavior is described using the `<model>` keyword, described below. `resistor`, `inductor` and `capacitor` are based, with some additions, on the following reference
+
+```
+    Liu, Y., Mittra, R., Su, T., Yang, X., & Yu, W. (2006). Parallel finite-difference time-domain method. Artech.
+    Chapter 3, Section 5.
+```
+
+#### `resistor` model
+
+Defined by:
++ `<resistance>` a positive real number.
++ `[startingTime]` and `[endTime]` are the times in which the resistor will be active. Default to $0.0$ and $1.0$ seconds, respectively. When deactivated, the backgroung material properties will be used, i.e. the edge will be equivalent to an open circuit at low frequencies.
+
+**Example:**
+
+```json
+{
+    "name": "100_ohm_resistor",
+    "id": 1, 
+    "type": "lumped",
+    "model": "resistor",
+    "resistance": 100,
+    "startingTime": 0.0,
+    "endTime": 1.0
+} 
+```
+
+#### `inductor` model
+A series $LR$ circuit, $R$ is optional:
++ `<inductance>` a positive real number
++ `[resistance]` a positive or zero real number. Defaults to $0.0$.
+
+#### `capacitor` model
+A parallel $CR$ circuit:
++ `<capacitance>` a positive real number
++ `<resistance>` a positive real number.
+
 
 ### `multilayeredSurface`
 
@@ -576,9 +617,9 @@ Performs a loop integral along on the contour of the surface reference in the `e
 
 + If it is a point or a volume, `direction` must be present.
 + For an oriented line, `direction` is optional and the orientation of the line will be used as default.
-+ For an oriented surface, `direction` is also optional, and if not value is given it is assumed to be the normal of the surface.
++ For an oriented surface, `direction` is also optional, and if not value is given it is assumed to be the the positive axis of the surface normal.
 
-Due to Ampere's law, the loop integral of the magnetic field is equal to the total electric current passing through the surfaces. `[field]`, can be `electric` or `magnetic`. Defaults to `electric`, which gives the total current passing through the surface.
+Due to Ampere's law, the loop integral of the magnetic field is equal to the total electric current passing through the surfaces. `[field]`, can be `electric` or `magnetic`. Defaults to `electric`, which returns the total current passing through the surface.
 
 In the following example `elementId` points an element describing a single oriented surface, therefore `direction` does not need to be stated explicitly.
 
@@ -704,7 +745,7 @@ An example of a planewave propagating towards $\hat{z}$ and polarized in the $+\
 
 This object represents a time-varying vector field applied along an oriented line with the same orientation of the line. Therefore, the `elementIds` within must contain only elements of type `cell` with `intervals` describing a collection of oriented lines. Additionally, it may contain:
 
-+ `[field]` with a `electric` or `magnetic` label which indicates the vector field which will be applied. If not present, it defaults to `electric`.
++ `[field]` with a `current` label which indicates the vector field which will be applied. If not present, it defaults to `current`.
 + `[hardness]` with `soft` or `hard` label. A `soft` hardness indicated that the magnitude will be **added** to the field this situation is typical for a waveport. `hard` sources mean that the field is **substituted** by the value established by the `magnitudeFile`, which for an electric field `nodalSource` would be equivalent to a `pec` material if the magnitude is zero.
 
 **Example:**

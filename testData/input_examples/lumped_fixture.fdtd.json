@@ -1,0 +1,230 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 7.7033e-12,
+        "numberOfSteps": 389
+    },
+    "boundary": {
+        "all": {
+            "type": "mur"
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [ 20, 8, 9 ],
+            "steps": { "x": [0.005], "y": [0.005], "z": [0.005] }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    9.0,
+                    4.0,
+                    2.0
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    11.0,
+                    4.0,
+                    2.0
+                ]
+            },
+            {
+                "id": 3,
+                "relativePosition": [
+                    10.0,
+                    3.0,
+                    7.0
+                ]
+            },
+            {
+                "id": 4,
+                "relativePosition": [
+                    9.0,
+                    4.0,
+                    7.0
+                ]
+            },
+            {
+                "id": 5,
+                "relativePosition": [
+                    11.0,
+                    4.0,
+                    7.0
+                ]
+            }
+        ],
+        "elements": [
+            { "id": 1, "name": "nodal_source_line", "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            9.0,
+                            4.0,
+                            2.0
+                        ],
+                        [
+                            11.0,
+                            4.0,
+                            2.0
+                        ]
+                    ]
+                ]
+            },
+            { "id": 2, "name": "bulk_current_surface", "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            6,
+                            1,
+                            6
+                        ],
+                        [
+                            6,
+                            7,
+                            8
+                        ]
+                    ]
+                ]
+            },
+            { "id": 3, "name": "probe_point", "type": "node",
+                "coordinateIds": [
+                    3
+                ]
+            },
+            { "id": 4, "name": "left_side", "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            2,
+                            2,
+                            2
+                        ],
+                        [
+                            2,
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        [
+                            2,
+                            2,
+                            2
+                        ],
+                        [
+                            9,
+                            6,
+                            2
+                        ]
+                    ],
+                    [
+                        [
+                            2,
+                            2,
+                            7
+                        ],
+                        [
+                            9,
+                            6,
+                            7
+                        ]
+                    ]
+                ]
+            },
+            { "id": 5, "name": "lumped_line", "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            9.0,
+                            4.0,
+                            7.0
+                        ],
+                        [
+                            11.0,
+                            4.0,
+                            7.0
+                        ]
+                    ]
+                ]
+            },
+            { "id": 6, "name": "right_side", "type": "cell", 
+                "intervals": [
+                    [
+                        [
+                            11,
+                            2,
+                            2
+                        ],
+                        [
+                            18,
+                            6,
+                            2
+                        ]
+                    ],
+                    [
+                        [
+                            11,
+                            2,
+                            7
+                        ],
+                        [
+                            18,
+                            6,
+                            7
+                        ]
+                    ],
+                    [
+                        [
+                            18,
+                            2,
+                            2
+                        ],
+                        [
+                            18,
+                            6,
+                            7
+                        ]
+                    ]
+                ]
+            }
+        ]
+    },
+    "materials": [
+        { "id": 1, "name": "pec", "type": "pec" },
+        { "id": 2, "name": "100ohm_resistor", "type": "lumped", "model": "resistor", "resistance": 100 } 
+    ],
+    "materialAssociations": [
+        { "materialId": 1, "elementIds": [ 4, 6 ] },
+        { "materialId": 2, "elementIds": [ 5 ] }
+    ],
+    "sources": [
+        {
+            "name": "nodal_source",
+            "type": "nodalSource",
+            "hardness": "soft",
+            "magnitudeFile": "predefinedExcitation.1.exc",
+            "elementIds": [ 1 ],
+            "field": "current"
+        }
+    ],
+    "probes": [
+        {
+            "name": "e_probe",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [ 3 ],
+            "directions": [ "x", "y", "z" ],
+            "domain": { "type": "time" }
+        },
+        {
+            "name": "Bulk probe",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [ 2 ],
+            "domain": { "type": "time" }
+        }
+    ]
+}

@@ -10,6 +10,7 @@ import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 from itertools import product
 import copy
+import matplotlib.pyplot as plt
 
 DEFAULT_SEMBA_FDTD_PATH = '/build/bin/semba-fdtd'
 
@@ -194,6 +195,19 @@ class Probe():
     def _getFieldAndDirection(tag: str):
         return tag[1], tag[2]
 
+class ExcitationFile():
+    def __init__(self, excitation_filename):
+        if isinstance(excitation_filename, os.PathLike):
+            self.filename = excitation_filename.as_posix()
+        else:
+            self.filename = excitation_filename
+        assert os.path.isfile(self.filename)
+
+        self.data = pd.read_csv(self.filename, sep='\\s+', names=['time', 'value'])
+
+    def __getitem__(self, key):
+        return self.data[key]
+    
 
 class FDTD():
     def __init__(self, input_filename, path_to_exe=None,
@@ -335,6 +349,19 @@ class FDTD():
 
         return sorted(probeFiles)
 
+    def getExcitationFile(self, excitation_file_name):
+        file_extensions =('*.1.exc',)
+        excitationFile = []
+        for ext in file_extensions:
+            newExcitationFile = [x for x in glob.glob(ext) if re.match(excitation_file_name, x)]
+            excitationFile.extend(newExcitationFile)
+        
+        if ((len(excitationFile)) != 1):
+            raise "Unexpected number of excitation Files found: {}".format(excitationFile)
+
+        return excitationFile
+
+
     def getVTKMap(self):
         current_path = os.getcwd()
         folders = [item for item in os.listdir(
@@ -363,7 +390,7 @@ class FDTD():
     def getMaterialProperties(self, materialName):
         if 'materials' in self._input:
             for idx, element in enumerate(self._input['materials']):
-                if element["name"] == materialName:
+                if element.get("name") == materialName:
                     return self._input['materials'][idx]
 
 

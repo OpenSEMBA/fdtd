@@ -5,7 +5,7 @@ module lumped_vars
    use fdetypes   
    
    TYPE, public  ::  Nodes_t
-      REAL (KIND=RKIND) :: EfieldPrev,EfieldPrevPrev,Jcur,sigmaEffResistInduct,alignedDeltaE ,transversalDeltaHa ,transversalDeltaHb 
+      REAL (KIND=RKIND) :: EfieldPrev,EfieldPrevPrev,Jcur,sigmaEffResistInduct,alignedDeltaE ,transversalDeltaHa ,transversalDeltaHb, currentCoeff 
       REAL (KIND=RKIND) :: diodepreA,diodeB
       REAL (KIND=RKIND), pointer ::  Efield,Ha_Plus,Ha_Minu,Hb_Plus,Hb_Minu
       REAL (KIND=RKIND)          ::  g1
