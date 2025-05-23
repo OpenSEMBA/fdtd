@@ -237,9 +237,6 @@ contains
             parent_name = cable%parent_cable%name
             conductor_in_parent = cable%conductor_in_parent
         end if  
-
-        ! res = mtlHomogeneous(cable, dt)
-
         res = mtlHomogeneous(lpul = cable%inductance_per_meter, &
                              cpul = cable%capacitance_per_meter, &
                              rpul = cable%resistance_per_meter, &
@@ -251,11 +248,13 @@ contains
                              conductor_in_parent = conductor_in_parent, & 
                              transfer_impedance = cable%transfer_impedance, &
                              external_field_segments = cable%external_field_segments, &
-                             isPassthrough = cable%isPassthrough,&
-                             layer_indices = layer_indices, & 
+                             isPassthrough = cable%isPassthrough &
+#ifdef CompileWithMPI
+                             ,layer_indices = layer_indices, & 
                              bundle_in_layer = bundle_in_layer, &
-                             alloc_z = alloc_z)
-
+                             alloc_z = alloc_z &
+#endif
+)
         if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
         if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
         
@@ -303,33 +302,33 @@ contains
         type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
+#ifdef CompileWithMPI
         integer (kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .true.
         integer (kind=4), dimension(2) :: alloc_z
-       
         alloc_z(1) = alloc(3)%zi
         alloc_z(2) = alloc(3)%ze
-        allocate(res(size(cable_bundles)))
-        nb = 0
-        do i = 1, size(cable_bundles)
-            bundle_in_layer = .true.
-            if (present(alloc)) then 
-                layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
-                if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
-            else
-                allocate(layer_indices(1,2))
-                layer_indices(1,1) = 1
-                layer_indices(1,2) = size(cable_bundles(i)%levels(1)%cables(1)%p%step_size)
-            end if
-            nb = nb + 1
-            nl = size(cable_bundles(i)%levels)
-            allocate(res(nb)%levels(nl))
+#endif       
+        nb = size(cable_bundles)
+        allocate(res(nb))
+        do i = 1, nb
 
+#ifdef CompileWithMPI
+            bundle_in_layer = .true.
+            layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
+            if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
+#endif
+            nl = size(cable_bundles(i)%levels)
+            allocate(res(i)%levels(nl))
             do j = 1, nl
                 nc = size(cable_bundles(i)%levels(j)%cables)
-                allocate(res(nb)%levels(j)%lines(nc))
+                allocate(res(i)%levels(j)%lines(nc))
                 do k = 1, nc
-                    res(nb)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, layer_indices, bundle_in_layer, alloc_z)
+#ifdef CompileWithMPI
+                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, layer_indices, bundle_in_layer, alloc_z)
+#else
+                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt)
+#endif
                 end do
             end do
         end do
@@ -1318,9 +1317,11 @@ contains
             res(i) =  this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
                                                probe_type = parsed_probes(i)%probe_type,&
                                                name = probe_name,&
-                                               position =parsed_probes(i)%probe_position, &
-                                               layer_indices = this%bundles(d)%layer_indices)
-
+                                               position =parsed_probes(i)%probe_position &
+#ifdef CompileWithMPI                                               
+                                               ,layer_indices = this%bundles(d)%layer_indices & 
+#endif                        
+                                              )
         end do
     end function
 

@@ -27,10 +27,10 @@ module mtl_bundle_mod
 
         type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
         logical :: isPassthrough = .false.
-        integer (kind=4), allocatable, dimension(:,:) :: layer_indices
-        logical :: bundle_in_layer
-
+        logical :: bundle_in_layer = .true.
+        
 #ifdef CompileWithMPI
+        integer (kind=4), allocatable, dimension(:,:) :: layer_indices
         type(comm_t) :: mpi_comm
 #endif
 
@@ -84,9 +84,9 @@ contains
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
 
-        res%layer_indices = levels(1)%lines(1)%layer_indices
-        res%bundle_in_layer = levels(1)%lines(1)%bundle_in_layer
 #ifdef CompileWithMPI
+        res%bundle_in_layer = levels(1)%lines(1)%bundle_in_layer
+        res%layer_indices = levels(1)%lines(1)%layer_indices
         res%mpi_comm = levels(1)%lines(1)%mpi_comm
 #endif
 
@@ -191,29 +191,24 @@ contains
 
     end subroutine
 
-    type(probe_t) function addProbe(this, index, probe_type, layer_indices, name, position) result(res)
+    type(probe_t) function addProbe(this, index, probe_type, name, position, layer_indices) result(res)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        integer (kind=4), dimension(:,:), intent(in) :: layer_indices
-        real, dimension(3), optional :: position
-        character (len=:), allocatable, optional :: name
+        real, dimension(3) :: position
+        character (len=:), allocatable :: name
+        integer (kind=4), dimension(:,:), intent(in), optional :: layer_indices
         type(probe_t), allocatable, dimension(:) :: aux_probes
 
         aux_probes = this%probes
         deallocate(this%probes)
         allocate(this%probes(size(aux_probes)+1))
 
-        if (present(position) .and. present(name)) then
-            res = probeCtor(index, probe_type, this%dt, layer_indices, name=name, position=position)
-        else if (present(name) .and. .not. present(position)) then 
-            res = probeCtor(index, probe_type, this%dt, layer_indices, name=name)
-        else if (.not. present(name) .and. present(position)) then 
-            res = probeCtor(index, probe_type, this%dt, layer_indices, position=position)
-        else
-            res = probeCtor(index, probe_type, this%dt, layer_indices)
-        end if
-
+#ifdef CompileWithMPI
+        res = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
+#else
+        res = probeCtor(index, probe_type, this%dt, name, position)
+#endif
         this%probes(1:size(this%probes)-1) = aux_probes
         this%probes(size(aux_probes)+1) = res
     end function

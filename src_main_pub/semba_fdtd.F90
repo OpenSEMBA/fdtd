@@ -116,8 +116,6 @@ PROGRAM SEMBA_FDTD_launcher
    INTEGER (KIND=4) ::  verdadero_mpidir
    logical :: newrotate !300124 tiramos con el rotador antiguo
 
-   call sleep(5)
-
    newrotate=.false.       !!ojo tocar luego                     
 !!200918 !!!si se lanza con -pscal se overridea esto
    Eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12

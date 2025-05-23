@@ -101,17 +101,7 @@ contains
 
     subroutine mtln_step(this)
         class(mtln_t) :: this
-#ifdef CompileWithMPI
-        integer (kind=4) :: ierr, rank
-        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
-#endif
-
-
-
         call this%setExternalLongitudinalField()
-        ! write(*,*) this%time,' ', rank
-        ! write(*,*) this%time,' ', rank,' eL: ', this%bundles(1)%e_L(1,:), ' ', this%bundles(1)%external_field_segments(5)%field
-        ! write(*,*) this%time,' ', rank,' v: ',this%bundles(1)%v(1,:), ' i: ', this%bundles(1)%i(1,:),' eL: ', this%bundles(1)%e_L(1,:), ' ', this%bundles(1)%external_field_segments(5)%field
         call this%advanceBundlesVoltage()
         call this%advanceNWVoltage()
         call this%advanceBundlesCurrent()
@@ -278,7 +268,6 @@ contains
             call this%advanceBundlesCurrent()
             call this%advanceTime()
             call this%updateProbes()
-            ! if (modulo(i, 1000) == 0) write(*,*) i
         end do
 
     end subroutine
