@@ -229,7 +229,7 @@ contains
         real, intent(in) :: dt
         integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
-        integer(kind=4), dimension (1:6), intent(in), optional :: alloc_z
+        integer(kind=4), dimension (2), intent(in), optional :: alloc_z
         type(mtl_t) :: res
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
@@ -305,15 +305,10 @@ contains
         integer :: nb, nl, nc
         integer (kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .true.
-        integer (kind=4), dimension(1:6) :: alloc_z
+        integer (kind=4), dimension(2) :: alloc_z
        
-        alloc_z(1) = alloc(3)%xi
-        alloc_z(2) = alloc(3)%xe
-        alloc_z(3) = alloc(3)%yi
-        alloc_z(4) = alloc(3)%ye
-        alloc_z(5) = alloc(3)%zi
-        alloc_z(6) = alloc(3)%ze
-        ! layer_indices = [-1,-1]
+        alloc_z(1) = alloc(3)%zi
+        alloc_z(2) = alloc(3)%ze
         allocate(res(size(cable_bundles)))
         nb = 0
         do i = 1, size(cable_bundles)
@@ -385,20 +380,17 @@ contains
                     (position(3) <= Alloc(abs(direction))%ZE)) then
                         if (.not. in_layer) then 
                             res(n,1) = i
-                            ! res(n,1) = i - merge(1,0,direction < 0)
                             in_layer = .true.
                         end if
                 else
                     if (in_layer) then 
                         res(n, 2) = i-1
-                        ! res(n, 2) = i-1  - merge(1,0,direction < 0)
                         in_layer = .false.
                         n = n + 1
                     end if
                 end if
             end do
             if (in_layer) then 
-                ! res(n, 2) = i - 1  - merge(1,0,direction < 0)
                 res(n, 2) = i - 1
             end if
         end function
@@ -1327,7 +1319,7 @@ contains
                                                probe_type = parsed_probes(i)%probe_type,&
                                                name = probe_name,&
                                                position =parsed_probes(i)%probe_position, &
-                                               layer_indices = this%bundles(d)%layers_indices(:,3:4))
+                                               layer_indices = this%bundles(d)%layer_indices)
 
         end do
     end function

@@ -6,39 +6,22 @@ module mtl_mod
     use mtln_types_mod, only: external_field_segment_t, cable_t
 #ifdef CompileWithMPI
     use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
-    use mtln_types_mod, only: COMM_E_RECV, COMM_E_SEND, COMM_E_NONE
 #endif
 
     implicit none
 #ifdef CompileWithMPI
 
-    integer, parameter :: COMM_UNDEFINED = 0 
-    integer, parameter :: COMM_NEXT = 1
-    integer, parameter :: COMM_PREV = -1
-
-    type, public :: side_communicator_t
-        logical :: is_end = .true.
-        integer :: index = -1
-        integer :: comm_rank = -1
-        integer :: direction = COMM_UNDEFINED
-    end type
+    integer, parameter :: COMM_SEND = 1
+    integer, parameter :: COMM_RECV = -1
+    integer, parameter :: COMM_NONE = 0
 
     type, public :: communicator_t
-        type(side_communicator_t) :: left, right
+        integer :: field_index = -1, v_index = -1
+        integer :: comm_task = COMM_NONE
+        integer :: delta_rank = 0
     end type
-
     type, public :: comm_t
         type(communicator_t), dimension(:), allocatable :: comms
-        integer :: rank
-    end type
-
-    type, public :: ncommunicator_t
-        integer :: field_index, v_index
-        integer :: comm_task = COMM_E_NONE
-        integer :: delta_rank
-    end type
-    type, public :: ncomm_t
-        type(ncommunicator_t), dimension(:), allocatable :: comms
         integer :: rank
     end type
 
@@ -55,9 +38,6 @@ module mtl_mod
         type(lumped_t) :: lumped_elements
         real :: time = 0.0, dt = 0.0
 
-        logical :: is_left_end = .true.
-        logical :: is_right_end = .true.
-
         character (len=:), allocatable :: parent_name
         integer :: conductor_in_parent
 
@@ -69,11 +49,9 @@ module mtl_mod
         logical :: isPassthrough = .false.
 
         integer (kind=4), allocatable, dimension(:,:) :: layer_indices
-        ! integer (kind=4), dimension(1,2) :: layer_indices = [-1,-1]
         logical :: bundle_in_layer = .false.
 #ifdef CompileWithMPI
         type(comm_t) :: mpi_comm
-        type(comm_t) :: mpi_ncomm
 #endif
 
     contains
@@ -157,7 +135,7 @@ contains
         logical, optional :: isPassthrough
         integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
-        integer(kind=4), dimension (1:6), intent(in), optional :: alloc_z
+        integer(kind=4), dimension (2), intent(in), optional :: alloc_z
 
 
         res%name = name
@@ -365,23 +343,12 @@ contains
         real, intent(in), dimension(:) :: step_size
         type(external_field_segment_t), intent(in), dimension(:) :: external_field_segments
         integer (kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
-        integer (kind =4), dimension(1:6) :: alloc_z
+        integer (kind =4), dimension(2) :: alloc_z
         integer :: j, n
-        integer :: rank, ierr, inter, sizeof
+        integer :: rank, ierr
         integer (kind =4) :: direction, z, zi, ze
-        type(ncommunicator_t), dimension(:), allocatable :: aux_comm
+        type(communicator_t), dimension(:), allocatable :: aux_comm
 
-            zi = alloc(5)
-            ze = alloc(6)
-            allocate(this%mpi_ncomm%comms(0))
-            allocate(aux_comm(0))
-            call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
-            call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
-
-            write(*,*) 'rank: ',rank
-            this%mpi_comm%rank = rank
-            allocate(this%mpi_comm%comms(size(layer_indices,1)))
-            write(*,*) layer_indices
             n =  0
             do j = 1, size(layer_indices, 1)
                 n = n + layer_indices(j,2) - layer_indices(j,1) + 1
@@ -391,138 +358,121 @@ contains
             allocate(this%external_field_segments(n))
 
             n = 1
-            inter = 0
             do j = 1, size(layer_indices, 1)
                 this%step_size(n: n + layer_indices(j,2) - layer_indices(j,1)) = step_size(layer_indices(j, 1):layer_indices(j, 2))
                 this%external_field_segments(n: n + layer_indices(j,2) - layer_indices(j,1)) = external_field_segments(layer_indices(j, 1):layer_indices(j, 2))
-                
-                ! ! if (layer_indices(j, 1) + inter /= 1) then 
-                ! if (layer_indices(j, 1)  /= 1) then 
-                !     this%mpi_comm%comms(j)%left%is_end = .false.
-                ! end if
-                ! this%mpi_comm%comms(j)%left%index = n + 1
-                ! ! if (layer_indices(j, 2) + inter /= size(step_size)) then 
-                
-                ! if (layer_indices(j, 2)  /= size(step_size)) then 
-                !     this%mpi_comm%comms(j)%right%is_end = .false.
-                ! end if
-                ! this%mpi_comm%comms(j)%right%index = n + layer_indices(j,2) - layer_indices(j,1)
-
-                ! if (.not. this%mpi_comm%comms(j)%left%is_end) then 
-                !     if (external_field_segments(layer_indices(j, 1))%direction > 0) then 
-                !         this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank - 1
-                !         this%mpi_comm%comms(j)%left%direction = COMM_PREV
-                !     else 
-                !         this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank + 1
-                !         this%mpi_comm%comms(j)%left%direction = COMM_NEXT
-                !     end if
-                ! else 
-                !     if (rank == sizeof -1) then 
-                !         this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank - 1
-                !         this%mpi_comm%comms(j)%left%direction = COMM_PREV
-                !     else if (rank == 0) then
-                !         this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank + 1
-                !         this%mpi_comm%comms(j)%left%direction = COMM_NEXT
-                !     else
-                !         if (external_field_segments(layer_indices(j, 2))%direction > 0) then 
-                !             this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank - 1
-                !             this%mpi_comm%comms(j)%left%direction = COMM_PREV
-                !         else
-                !             this%mpi_comm%comms(j)%left%comm_rank = this%mpi_comm%rank + 1
-                !             this%mpi_comm%comms(j)%left%direction = COMM_NEXT
-                !         end if
-                !     end if
-                ! end if
-
-                
-                ! if (.not. this%mpi_comm%comms(j)%right%is_end) then 
-                !     if (external_field_segments(layer_indices(j, 2))%direction > 0) then 
-                !         this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank + 1
-                !         this%mpi_comm%comms(j)%right%direction = COMM_NEXT
-                !     else
-                !         this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank - 1
-                !         this%mpi_comm%comms(j)%right%direction = COMM_PREV
-                !     end if
-                ! else 
-                !     if (rank == sizeof -1) then 
-                !         this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank - 1
-                !         this%mpi_comm%comms(j)%right%direction = COMM_PREV
-                !     else if (rank == 0) then
-                !         this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank + 1
-                !         this%mpi_comm%comms(j)%right%direction = COMM_NEXT
-                !     else
-                !         if (external_field_segments(layer_indices(j, 2))%direction > 0) then 
-                !             this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank + 1
-                !             this%mpi_comm%comms(j)%right%direction = COMM_NEXT
-                !         else
-                !             this%mpi_comm%comms(j)%right%comm_rank = this%mpi_comm%rank - 1
-                !             this%mpi_comm%comms(j)%right%direction = COMM_PREV
-                !         end if
-                !     end if
-                ! end if
 
                 if (j /= size(layer_indices,1)) then 
                     this%step_size(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%step_size(n + layer_indices(j,2) - layer_indices(j,1))
                     this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1)) 
                     n = n + 1
-                    inter = inter + 1
                 end if
 
                 n = n + layer_indices(j,2) - layer_indices(j,1) + 1
             end do
 
+            call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+            this%mpi_comm%rank = rank
+            allocate(this%mpi_comm%comms(0))
+            allocate(aux_comm(0))
+            zi = alloc_z(1)
+            ze = alloc_z(2)
+
             do j = 1, size(this%external_field_segments) 
                 direction = this%external_field_segments(j)%direction
                 z = this%external_field_segments(j)%position(3)
-
-                if (z == ze-1) then 
-                    n = size(this%mpi_ncomm%comms)
-                    deallocate(aux_comm)
-                    allocate(aux_comm(n+1))
-                    aux_comm(1:n) = this%mpi_ncomm%comms
-
-                    aux_comm(n+1)%field_index = j
-                    aux_comm(n+1)%v_index = j
-                    aux_comm(n+1)%comm_task = COMM_E_SEND
-                    if (direction > 0) then 
+                if (abs(direction) == 3) then
+                    if (abs(z-ze)<= 1) then 
+                        n = size(this%mpi_comm%comms)
+                        deallocate(aux_comm)
+                        allocate(aux_comm(n+1))
+                        aux_comm(1:n) = this%mpi_comm%comms
+                        aux_comm(n+1)%field_index = j
                         aux_comm(n+1)%delta_rank = 1
-                    else if (direction < 0) then 
+                        if (z==ze-1) then 
+                            aux_comm(n+1)%comm_task = COMM_SEND
+                            if (direction > 0) then 
+                                aux_comm(n+1)%v_index = j
+                            else 
+                                aux_comm(n+1)%v_index = j+1
+                            end if
+                        else if (z==ze) then 
+                            aux_comm(n+1)%comm_task = COMM_RECV
+                            if (direction > 0) then 
+                                aux_comm(n+1)%v_index = j+1
+                            else 
+                                aux_comm(n+1)%v_index = j
+                            end if
+                        end if
+
+                        ! if (direction > 0) then 
+                        !     if (z==ze-1) then 
+                        !         aux_comm(n+1)%comm_task = COMM_SEND
+                        !         aux_comm(n+1)%v_index = j
+                        !     else if (z==ze) then 
+                        !         aux_comm(n+1)%comm_task = COMM_RECV
+                        !         aux_comm(n+1)%v_index = j+1
+                        !     end if
+                        ! else if (direction < 0) then 
+                        !     if (z==ze) then 
+                        !         aux_comm(n+1)%comm_task = COMM_RECV
+                        !         aux_comm(n+1)%v_index = j
+                        !     else if (z==ze-1) then 
+                        !         aux_comm(n+1)%comm_task = COMM_SEND
+                        !         aux_comm(n+1)%v_index = j+1
+                        !     end if
+                        ! end if
+                        deallocate(this%mpi_comm%comms)
+                        allocate(this%mpi_comm%comms(n+1))
+                        this%mpi_comm%comms = aux_comm
+
+                    else if  ((z-zi-1) <= 1) then 
+                        n = size(this%mpi_comm%comms)
+                        deallocate(aux_comm)
+                        allocate(aux_comm(n+1))
+                        aux_comm(1:n) = this%mpi_comm%comms
+                        aux_comm(n+1)%field_index = j
                         aux_comm(n+1)%delta_rank = -1
-                    end if
-                    deallocate(this%mpi_comm%comms)
-                    allocate(this%mpi_comm%comms(n+1))
-                    this%mpi_comm%comms = aux_comm
-                else if (z == ze) then 
-                    this%mpi_ncomm%comms()%field_index = j
-                    this%mpi_ncomm%comms()%v_index = j+1
-                    this%mpi_ncomm%comms()%comm_task = COMM_E_RECV
-                    if (direction > 0) then 
-                        this%mpi_ncomm%comms()%delta_rank = -1
-                    else if (direction < 0) then 
-                        this%mpi_ncomm%comms()%delta_rank = +1
-                    end if
-                else if (z == zi) then 
-                    this%mpi_ncomm%comms()%field_index = j
-                    this%mpi_ncomm%comms()%v_index = j
-                    this%mpi_ncomm%comms()%comm_task = COMM_E_RECV
-                    if (direction > 0) then 
-                        this%mpi_ncomm%comms()%delta_rank = 1
-                    else if (direction < 0) then 
-                        this%mpi_ncomm%comms()%delta_rank = -1
-                    end if
-                else if (z == zi+1) then 
-                    this%mpi_ncomm%comms()%field_index = j
-                    this%mpi_ncomm%comms()%v_index = j+1
-                    this%mpi_ncomm%comms()%comm_task = COMM_E_SEND
-                    if (direction > 0) then 
-                        this%mpi_ncomm%comms()%delta_rank = -1
-                    else if (direction < 0) then 
-                        this%mpi_ncomm%comms()%delta_rank = 1
-                    end if
+                        if (z==zi) then 
+                            aux_comm(n+1)%comm_task = COMM_RECV
+                            if (direction > 0) then 
+                                aux_comm(n+1)%v_index = j
+                            else
+                                aux_comm(n+1)%v_index = j+1
+                            end if
+                        else if (z==zi+1) then 
+                            aux_comm(n+1)%comm_task = COMM_SEND
+                            if (direction > 0) then 
+                                aux_comm(n+1)%v_index = j+1
+                            else
+                                aux_comm(n+1)%v_index = j
+                            end if
+                        end if
+
+
+                        ! if (direction > 0) then 
+                        !     if (z==zi) then 
+                        !         aux_comm(n+1)%comm_task = COMM_RECV
+                        !         aux_comm(n+1)%v_index = j
+                        !     else if (z==zi+1) then 
+                        !         aux_comm(n+1)%comm_task = COMM_SEND
+                        !         aux_comm(n+1)%v_index = j+1
+                        !     end if
+                        ! else if (direction < 0) then 
+                        !     if (z==zi) then 
+                        !         aux_comm(n+1)%comm_task = COMM_RECV
+                        !         aux_comm(n+1)%v_index = j+1
+                        !     else if (z==zi+1) then 
+                        !         aux_comm(n+1)%comm_task = COMM_SEND
+                        !         aux_comm(n+1)%v_index = j
+                        !     end if
+                        ! end if
+                        deallocate(this%mpi_comm%comms)
+                        allocate(this%mpi_comm%comms(n+1))
+                        this%mpi_comm%comms = aux_comm
+
+                    end  if
                 end if
-
-
-
             end do
 
     end subroutine

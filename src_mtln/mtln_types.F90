@@ -33,9 +33,6 @@ module mtln_types_mod
    integer, parameter :: DIRECTION_Z_POS   =  3
    integer, parameter :: DIRECTION_Z_NEG   =  -3
 
-   integer, parameter :: COMM_E_SEND = 1
-   integer, parameter :: COMM_E_RECV = -1
-   integer, parameter :: COMM_E_NONE = 0
    type :: external_dielectric_t
       real :: radius = 0.0 
       real :: relative_permittivity = 1.0
@@ -49,7 +46,6 @@ module mtln_types_mod
       logical :: has_dielectric = .false.
       type(external_dielectric_t) :: dielectric
       real (kind=rkind) , pointer  ::  field => null()
-      integer :: comm = COMM_E_NONE
    contains
       private
       procedure :: external_field_segments_eq 
