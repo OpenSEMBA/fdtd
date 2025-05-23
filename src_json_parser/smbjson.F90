@@ -178,7 +178,7 @@ contains
       res%tSlots = this%readThinSlots()
 
 #ifdef CompileWithMTLN
-      res%mtln = this%readMTLN(res%despl)
+      res%mtln = this%readMTLN()
 #endif
 
    end function
@@ -2155,12 +2155,13 @@ contains
    end function
 
 #ifdef CompileWithMTLN
-   function readMTLN(this, grid) result (mtln_res)
+   function readMTLN(this) result (mtln_res)
       class(parser_t) :: this
-      type(Desplazamiento), intent(in) :: grid
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
       type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, cables
+      type(cable_t) :: read_cable
+      integer :: i
 
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
@@ -2179,68 +2180,79 @@ contains
       if (size(multiwires) /= 0) mtln_res%has_multiwires = .true.
 
       allocate (mtln_res%cables(size(wires) + size(multiwires)))
-      block
-         logical :: is_read
-         integer :: i, j, ncc
-         type(cable_t) :: read_cable
-         ncc = 0
-         do i = 1, size(cables)
-            is_read = .true.
-            read_cable = readMTLNCable(cables(i), is_read)
-            if (.not. isCableNameUnique(read_cable, mtln_res%cables, ncc)) then
-               error stop 'Cable name "'//read_cable%name//'" has already been used'
-            end if
-            ncc = ncc + 1
-            mtln_res%cables(ncc) = read_cable
-            call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, ncc)
-            call addElemIdToPositionMap(elemIdToPosition, cables(i)%elementIds)
-         end do
-      end block
+      do i = 1, size(cables)
+         read_cable = readMTLNCable(cables(i))
+         call stopOnRepeteadName(read_cable, mtln_res%cables, i - 1)
+         mtln_res%cables(i) = read_cable
+         call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, i)
+         call addElemIdToPositionMap(elemIdToPosition, cables(i)%elementIds)
+      end do
 
-      block
-         integer :: i, j, parentId, index
-         type(json_value_ptr) :: mat
-         j = 1
-         do i = 1, size(cables)
-            mat = this%matTable%getId(cables(i)%materialId)
-            if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
-               parentId = cables(i)%containedWithinElementId
-               if (parentId == -1) then
-                  mtln_res%cables(j)%parent_cable => null()
-                  mtln_res%cables(j)%conductor_in_parent = 0
-               else 
-                  call elemIdToCable%get(key(parentId), value=index)
-                  mtln_res%cables(j)%parent_cable => mtln_res%cables(index)
-                  mtln_res%cables(j)%conductor_in_parent = getParentPositionInMultiwire(parentId)
-               end if
-            else if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
-               mtln_res%cables(j)%parent_cable => null()
-               mtln_res%cables(j)%conductor_in_parent = 0
-            else
-               write(error_unit, *) 'ERROR: Material type not recognized'
-            end if
-            j = j + 1
-         end do
-      end block
+      do i = 1, size(cables)
+         mtln_res%cables(i)%parent_cable => assignParentCable(cables(i), mtln_res%cables)
+         mtln_res%cables(i)%conductor_in_parent = assignConductorInParent(cables(i), mtln_res%cables)
+      end do
 
       mtln_res%probes = readWireProbes()
       mtln_res%networks = buildNetworks()
 
    contains
 
-      function isCableNameUnique(cable, cables, n) result(res)
+      function assignParentCable(cable, cables) result(res)
+         type(materialAssociation_t) :: cable
+         type(cable_t), dimension(:), pointer :: cables
+         type(json_value_ptr) :: mat
+         integer :: parentId, index
+         type(cable_t), pointer :: res
+         mat = this%matTable%getId(cable%materialId)
+         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
+            parentId = cable%containedWithinElementId
+            if (parentId == -1) then
+               res => null()
+            else 
+               res => getPointerToParentCable(cables, parentId)
+            end if
+         else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
+            res => null()
+         else
+            write(error_unit, *) 'ERROR: Material type not recognized'
+         end if
+      end function
+
+      function assignConductorInParent(cable, cables) result(res)
+         type(materialAssociation_t) :: cable
+         type(cable_t), dimension(:), pointer :: cables
+         type(json_value_ptr) :: mat
+         integer :: parentId
+         integer :: res
+         mat = this%matTable%getId(cable%materialId)
+         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
+            parentId = cable%containedWithinElementId
+            if (parentId == -1) then
+               res = 0
+            else 
+               res = getParentPositionInMultiwire(parentId)
+            end if
+         else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
+            res = 0
+         else
+            write(error_unit, *) 'ERROR: Material type not recognized'
+         end if
+      end function
+
+      subroutine stopOnRepeteadName(cable, cables, n)
          type(cable_t) :: cable
          type(cable_t), dimension(:), pointer :: cables
          integer :: n, i
-         logical :: res
-         res = .true.
+         logical :: unique
+         unique = .true.
          do i = 1, n
             if (cable%name == cables(i)%name) then
-               res = .false.
-               exit
+               unique = .false.
             end if
          end do
-      end function
+         if (.not. unique) error stop 'Cable name "'//cable%name//'" has already been used'
+      end subroutine
 
       function readConnectors() result(res)
          type(connector_t), dimension(:), pointer :: res
@@ -2833,27 +2845,20 @@ contains
 
       end function
 
-      function getCableContainingElemId(id) result(res)
+      function getPointerToParentCable(cables, id) result(res)
+         type(cable_t), dimension(:), pointer :: cables
          integer, intent(in) :: id
          integer :: mStat
-         class(*), pointer :: d
+         integer :: index
          type(cable_t), pointer :: res
 
-         nullify(res)
+
          call elemIdToCable%check_key(key(id), mStat)
          if (mStat /= 0) then
-            return
+            res => null()
          end if
-
-         call elemIdToCable%get_raw_ptr(key(id), d, mStat)
-         if (mStat /= 0) then
-            return
-         end if
-         select type(d)
-          type is (cable_t)
-
-            res => d
-         end select
+         call elemIdToCable%get(key(id), value=index)
+         res => cables(index)
       end function
 
       function findConnectorWithId(conn_Id) result(res)
@@ -2868,29 +2873,29 @@ contains
          end if
       end function
 
-      function getConnectorWithIdFromMap(id) result(res)
-         integer, intent(in) :: id
-         integer :: mStat
-         class(*), pointer :: d
-         type(connector_t), pointer :: res
+      ! function getConnectorWithIdFromMap(id) result(res)
+      !    integer, intent(in) :: id
+      !    integer :: mStat
+      !    class(*), pointer :: d
+      !    type(connector_t), pointer :: res
 
-         nullify(res)
-         call connIdToConnector%check_key(key(id), mStat)
-         if (mStat /= 0) then
-            res => null()
-            return
-         end if
+      !    nullify(res)
+      !    call connIdToConnector%check_key(key(id), mStat)
+      !    if (mStat /= 0) then
+      !       res => null()
+      !       return
+      !    end if
 
-         call connIdToConnector%get_raw_ptr(key(id), d, mStat)
-         if (mStat /= 0) then
-            res => null()
-            return
-         end if
-         select type(d)
-          type is (connector_t)
-            res => d
-         end select
-      end function
+      !    call connIdToConnector%get_raw_ptr(key(id), d, mStat)
+      !    if (mStat /= 0) then
+      !       res => null()
+      !       return
+      !    end if
+      !    select type(d)
+      !     type is (connector_t)
+      !       res => d
+      !    end select
+      ! end function
 
       function getParentPositionInMultiwire(id) result(res)
          integer, intent(in) :: id
@@ -2946,11 +2951,10 @@ contains
       end function
 
 
-      function readMTLNCable(j_cable, is_read) result(res)
+      function readMTLNCable(j_cable) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
          type(cable_t) :: res
          type(json_value_ptr) :: material
-         logical, intent(inout) :: is_read
          integer :: nConductors
          logical :: found
          character(:), allocatable :: materialType

@@ -157,8 +157,8 @@ integer function test_json_to_solver_input_shielded_pair() bind (C) result(err)
 
       !PROBES
       allocate(expected%probes(2))
-      expected%probes(1) = expected%bundles(1)%addProbe(index = 19, probe_type = PROBE_TYPE_VOLTAGE)
-      expected%probes(2) = expected%bundles(1)%addProbe(index = 19, probe_type = PROBE_TYPE_CURRENT)
+      expected%probes(1) = expected%bundles(1)%addProbe(index = 19, probe_type = PROBE_TYPE_VOLTAGE, layer_indices=[1,18])
+      expected%probes(2) = expected%bundles(1)%addProbe(index = 19, probe_type = PROBE_TYPE_CURRENT, layer_indices=[1,18])
       !MAPS
       call expected%conductors_before_cable%set(key('line_1'), value = 1)
       call expected%cable_name_to_bundle_id%set(key('line_0'), value = 1)
