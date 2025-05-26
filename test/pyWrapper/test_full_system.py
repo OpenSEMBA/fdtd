@@ -855,3 +855,40 @@ def test_offset_perpendicular_in_x(tmp_path):
     assert np.corrcoef(probe3_positive['current'].to_numpy(), I_3_interp)[0, 1] > 0.999
     assert np.allclose(probe1_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
     assert np.allclose(probe2_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
+
+def test_negative_offset_in_x(tmp_path):
+    # Following the previous test, we have seen that the bulk surfaces has negative offsets in the directions
+    # perpendicular to the normal vector of the bulk surface. The previous test checks the negative offset in the
+    # y and z directions when the normal vector is in the x-direction. Now we check the negative offset in the
+    # x-direction when the normal vector is in the y-direction.
+    # The setup consists in a nodal source placed in a line defined by [(0 mm,0 mm,0 mm), (0 mm,50 mm,0 mm)]. 
+    # The nodal source is a Gaussian pulse with 1 A amplitude. And three bulk planes defined at:
+    #  - Plane at y=36 mm, (-4 mm, -2 mm) and (0 mm, 2 mm) in x and z directions.
+    #  - Plane at y=38 mm, (0 mm, -2 mm) and (4 mm, 2 mm) in x and z directions.
+    #  - Plane at y=40 mm, (-2 mm, -2 mm) and (2 mm, 2 mm) in x and z directions.
+    #
+    # All the bulk planes measure the current values of the nodal source, however, the first only captures the
+    # current values at the right edge of the plane, similarly, the second captures the current values at the
+    # left edge of the plane. This test checks that the second and third bulk planes measure correctly the current values
+    # while the first bulk plane has zero current values. This proves that the bulk have a negative offset in the x-direction.
+
+    fn = CASES_FOLDER + 'bulk_current_tests/negative_offSet_x/offSet_negative_x.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
+    time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    
+    probeR = Probe(solver.getSolvedProbeFilenames("Bulk_right")[0])
+    probeL = Probe(solver.getSolvedProbeFilenames("Bulk_left")[0])
+    probeTotal = Probe(solver.getSolvedProbeFilenames("BulkTotal")[0])
+    
+    I_interp = np.interp(
+        probeTotal['time'].to_numpy(),
+        time,
+        I_in
+    )
+
+    assert np.corrcoef(probeTotal['current'].to_numpy(), I_interp)[0, 1] > 0.999
+    assert np.corrcoef(probeL['current'].to_numpy(), I_interp)[0, 1] > 0.999
+    assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
