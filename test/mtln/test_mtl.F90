@@ -18,7 +18,6 @@ end function
 integer function test_mtl_init_homogeneous() bind(C) result(error_cnt) 
     use mtl_mod
     use mtln_testingTools_mod
-
     implicit none
 
     character(len=*), parameter :: name = 'line0'

@@ -137,16 +137,15 @@ contains
         integer(kind=4), dimension (2), intent(in), optional :: alloc_z
 #ifdef CompileWithMPI
         integer (kind=4) :: sizeof, ierr
-        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
-        if (sizeof > 1) then
+        if (present(layer_indices)) then 
             call res%initStepSizeAndFieldSegments(step_size, external_field_segments, layer_indices)
             call res%initCommunicators(alloc_z)
+            res%layer_indices = layer_indices
+            res%bundle_in_layer = bundle_in_layer
         else
             res%step_size =  step_size
             res%external_field_segments = external_field_segments
         end if
-        res%layer_indices = layer_indices
-        res%bundle_in_layer = bundle_in_layer
 #else
         res%step_size =  step_size
         res%external_field_segments = external_field_segments

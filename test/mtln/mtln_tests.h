@@ -40,9 +40,7 @@ extern "C" int test_termination_rcp();
 // extern "C" int test_wire_panel();
 extern "C" int test_load_codemodels();
 
-#ifndef CompileWithMPI
 TEST(mtln, mtl_homogeneous)   { EXPECT_EQ(0, test_mtl_init_homogeneous()); }
-#endif
 TEST(mtln, mtl_inhomogeneous) { EXPECT_EQ(0, test_mtl_init_inhomogeneous()); }
 TEST(mtln, mtl_time_step) { EXPECT_EQ(0, test_mtl_time_step()); }
 TEST(mtln, mtl_wrong_dt) { EXPECT_EQ(0, test_mtl_wrong_dt()); }
