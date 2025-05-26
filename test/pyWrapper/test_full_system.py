@@ -782,3 +782,76 @@ def test_offset_normal_in_z(tmp_path):
     assert np.corrcoef(probe_at_z_18['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.allclose(probe_at_z_20['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_z_22['current'].to_numpy(), 0.0, atol=1.5e-3)
+
+def test_offset_perpendicular_in_x(tmp_path):
+    # This test verifies the negative offset presented in the y and z directions when the bulk plane is defined
+    # with a normal vector in the x-direction.
+    # The setup consists in three nodal sources defined as follow:
+    #   - Line [(0 mm,18 mm,20 mm), (50 mm,18 mm,20 mm)]. Gaussian pulse with 1 A amplitude.
+    #   - Line [(0 mm,20 mm,20 mm), (50 mm,20 mm,20 mm)]. Gaussian pulse with 2 A amplitude.
+    #   - Line [(0 mm,18 mm,18 mm), (50 mm,18 mm,18 mm)]. Gaussian pulse with 3 A amplitude.
+    #
+    # The nodal lines are separeted by one cell in y and z directions. We define four bulk planes:
+    #   - Plane at x=30 mm, (16 mm, 20 mm) and (20 mm, 24 mm) in y and z directions. For nodal source 1.
+    #   - Plane at x=30 mm, (20 mm, 24 mm) and (20 mm, 24 mm) in y and z directions. For nodal source 2.
+    #   - Plane at x=30 mm, (16 mm, 20 mm) and (16 mm, 20 mm) in y and z directions. For nodal source 3.
+    #   - Plane at x=30 mm, (16 mm, 24 mm) and (16 mm, 24 mm) in y and z directions. For the total current.
+    #
+    # The test checks that the bulk planes only measure the current values of the respective nodal sources
+    # and if we move one negative cell in the y and z directions, the current values are zero for the bulk planes
+    # 1 and 3 respectively; similar behavior if we move one positive cell in the y and z directions for  
+    # the bulk planes 1 and 2. This proves that the bulk have a negative offset in the y and z directions.
+
+    fn = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLines.fdtd.json'
+    fn_negative = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLinesNegative.fdtd.json'
+    fn_positive = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLinesPositive.fdtd.json'
+    
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_negative = FDTD(input_filename = fn_negative, path_to_exe=SEMBA_EXE)
+    solver_positive = FDTD(input_filename = fn_positive, path_to_exe=SEMBA_EXE)
+
+    solver.run()
+    solver_negative.run()
+    solver_positive.run()
+
+    probe1 = Probe(solver.getSolvedProbeFilenames("Bulk probe1")[0])
+    probe2 = Probe(solver.getSolvedProbeFilenames("Bulk probe2")[0])
+    probe3 = Probe(solver.getSolvedProbeFilenames("Bulk probe3")[0])
+    probeTotal = Probe(solver.getSolvedProbeFilenames("Bulk probe total")[0])
+
+    assert np.corrcoef(probe1['current'].to_numpy() + probe2['current'].to_numpy() + probe3['current'].to_numpy(),
+                          probeTotal['current'].to_numpy())[0, 1] > 0.999
+    
+    probe1_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe1")[0])
+    probe2_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe2")[0])
+    probe3_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe3")[0])
+
+    I_in_2 = np.loadtxt(solver["sources"][1]["magnitudeFile"], usecols=1)
+    time_2 = np.loadtxt(solver["sources"][1]["magnitudeFile"], usecols=0)
+
+    I_2_interp = np.interp(
+        probe2_negative['time'].to_numpy(),
+        time_2,
+        I_in_2
+    )
+
+    assert np.corrcoef(probe2_negative['current'].to_numpy(), I_2_interp)[0, 1] > 0.999
+    assert np.allclose(probe1_negative['current'].to_numpy(), 0.0, atol=1.5e-2)
+    assert np.allclose(probe3_negative['current'].to_numpy(), 0.0, atol=1.5e-2)
+
+    probe1_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe1")[0])
+    probe2_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe2")[0])
+    probe3_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe3")[0])
+
+    I_in_3 = np.loadtxt(solver["sources"][2]["magnitudeFile"], usecols=1)
+    time_3 = np.loadtxt(solver["sources"][2]["magnitudeFile"], usecols=0)
+
+    I_3_interp = np.interp(
+        probe3_positive['time'].to_numpy(),
+        time_3,
+        I_in_3
+    )
+
+    assert np.corrcoef(probe3_positive['current'].to_numpy(), I_3_interp)[0, 1] > 0.999
+    assert np.allclose(probe1_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
+    assert np.allclose(probe2_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
