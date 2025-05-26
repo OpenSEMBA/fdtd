@@ -186,10 +186,10 @@ def test_planewave_in_box(tmp_path):
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
 
-    np.allclose(inbox.data['field'], inbox.data['incident'])
+    assert np.corrcoef(inbox.data['field'].to_numpy(), inbox.data['incident'].to_numpy())[0, 1] > 0.999
     zeros = np.zeros_like(before.data['field'])
-    np.allclose(before.data['field'], zeros)
-    np.allclose(after.data['field'], zeros)
+    assert np.allclose(before.data['field'].to_numpy(), zeros, atol=5e-4)
+    assert np.allclose(after.data['field'].to_numpy(), zeros, atol=5e-4)
 
 
 def test_planewave_with_periodic_boundaries(tmp_path):
@@ -202,10 +202,10 @@ def test_planewave_with_periodic_boundaries(tmp_path):
     inbox = Probe(solver.getSolvedProbeFilenames("inbox")[0])
     after = Probe(solver.getSolvedProbeFilenames("after")[0])
 
-    np.allclose(inbox.data['field'], inbox.data['incident'])
+    assert np.corrcoef(inbox.data['field'].to_numpy(), inbox.data['incident'].to_numpy())[0, 1] > 0.999
     zeros = np.zeros_like(before.data['field'])
-    np.allclose(before.data['field'], zeros)
-    np.allclose(after.data['field'], zeros)
+    assert np.allclose(before.data['field'].to_numpy(), zeros, atol=1.5e-3)
+    assert np.allclose(after.data['field'].to_numpy(), zeros, atol=1.5e-3)
 
 
 def test_sgbc_shielding_effectiveness(tmp_path):
