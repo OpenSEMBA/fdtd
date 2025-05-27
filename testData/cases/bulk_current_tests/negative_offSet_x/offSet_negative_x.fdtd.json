@@ -131,7 +131,7 @@
             "elementIds": [
                 1
             ],
-            "field": "electric"
+            "field": "current"
         }
     ],
     "probes": [
