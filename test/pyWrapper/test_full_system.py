@@ -698,3 +698,197 @@ def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
     
     assert np.corrcoef(TopBulk_probe['current'].to_numpy() + BottomBulk_probe['current'].to_numpy(), I_theo)[0, 1] > 0.999
     assert np.corrcoef(InitialBulk_probe['current'].to_numpy(), I_theo)[0, 1] > 0.999
+
+def test_offset_normal_in_x(tmp_path):
+    # This test verifies the positive offset along the normal vector (in x-direction) respect to the bulk plane
+    # used to measure the current values of the system.
+    # The setup consists in a polyline with points [(0 mm,0 mm,0 mm), (20 mm,0 mm,0 mm), (20 mm,-20 mm,0 mm)]
+    # as nodal source and three bulk planes defined at x=18 mm, x=20 mm and x=22 mm.
+    # The test checks that only the plane defined at x=18 mm has non-zero current values.
+
+    fn = CASES_FOLDER + 'bulk_current_tests/offSet_x/offSet_x.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
+    time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    
+    probe_at_x_18 = Probe(solver.getSolvedProbeFilenames("BulkCurrent1")[0])
+    probe_at_x_20 = Probe(solver.getSolvedProbeFilenames("BulkCurrent2")[0])
+    probe_at_x_22 = Probe(solver.getSolvedProbeFilenames("BulkCurrent3")[0])
+    
+    I_interp = np.interp(
+        probe_at_x_18['time'].to_numpy(),
+        time,
+        I_in
+    )
+
+    assert np.corrcoef(probe_at_x_18['current'].to_numpy(), I_interp)[0, 1] > 0.999
+    assert np.allclose(probe_at_x_20['current'].to_numpy(), 0.0, atol=1.5e-3)
+    assert np.allclose(probe_at_x_22['current'].to_numpy(), 0.0, atol=1.5e-3)
+
+def test_offset_normal_in_y(tmp_path):
+    # This test verifies the positive offset along the normal vector (in y-direction) respect to the bulk plane
+    # used to measure the current values of the system.
+    # The setup consists in a polyline with points [(0 mm,0 mm,0 mm), (0 mm,0 mm,20 mm), (0 mm,-20 mm,20 mm)]
+    # as nodal source and three bulk planes defined at y=-2 mm, y=0 mm and y=2 mm.
+    # The test checks that only the plane defined at y=-2 mm has non-zero current values.
+
+    fn = CASES_FOLDER + 'bulk_current_tests/offSet_y/offSet_y.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
+    time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    
+    probe_at_y_m2 = Probe(solver.getSolvedProbeFilenames("BulkCurrent1")[0])
+    probe_at_y_0 = Probe(solver.getSolvedProbeFilenames("BulkCurrent2")[0])
+    probe_at_y_2 = Probe(solver.getSolvedProbeFilenames("BulkCurrent3")[0])
+    
+    I_interp = np.interp(
+        probe_at_y_m2['time'].to_numpy(),
+        time,
+        I_in
+    )
+
+    assert np.corrcoef(np.abs(probe_at_y_m2['current'].to_numpy()), I_interp)[0, 1] > 0.999
+    assert np.allclose(probe_at_y_0['current'].to_numpy(), 0.0, atol=1.5e-3)
+    assert np.allclose(probe_at_y_2['current'].to_numpy(), 0.0, atol=1.5e-3)
+
+def test_offset_normal_in_z(tmp_path):
+    # This test verifies the positive offset along the normal vector (in z-direction) respect to the bulk plane
+    # used to measure the current values of the system.
+    # The setup consists in a polyline with points [(0 mm,0 mm,0 mm), (0 mm,0 mm,20 mm), (0 mm,-20 mm,20 mm)]
+    # as nodal source and three bulk planes defined at z=18 mm, z=20 mm and z=22 mm.
+    # The test checks that only the plane defined at z=18 mm has non-zero current values.
+
+    fn = CASES_FOLDER + 'bulk_current_tests/offSet_z/offSet_z.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
+    time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    
+    probe_at_z_18 = Probe(solver.getSolvedProbeFilenames("BulkCurrent1")[0])
+    probe_at_z_20 = Probe(solver.getSolvedProbeFilenames("BulkCurrent2")[0])
+    probe_at_z_22 = Probe(solver.getSolvedProbeFilenames("BulkCurrent3")[0])
+    
+    I_interp = np.interp(
+        probe_at_z_18['time'].to_numpy(),
+        time,
+        I_in
+    )
+
+    assert np.corrcoef(probe_at_z_18['current'].to_numpy(), I_interp)[0, 1] > 0.999
+    assert np.allclose(probe_at_z_20['current'].to_numpy(), 0.0, atol=1.5e-3)
+    assert np.allclose(probe_at_z_22['current'].to_numpy(), 0.0, atol=1.5e-3)
+
+def test_offset_perpendicular_in_x(tmp_path):
+    # This test verifies the negative offset presented in the y and z directions when the bulk plane is defined
+    # with a normal vector in the x-direction.
+    # The setup consists in three nodal sources defined as follow:
+    #   - Line [(0 mm,18 mm,20 mm), (50 mm,18 mm,20 mm)]. Gaussian pulse with 1 A amplitude.
+    #   - Line [(0 mm,20 mm,20 mm), (50 mm,20 mm,20 mm)]. Gaussian pulse with 2 A amplitude.
+    #   - Line [(0 mm,18 mm,18 mm), (50 mm,18 mm,18 mm)]. Gaussian pulse with 3 A amplitude.
+    #
+    # The nodal lines are separeted by one cell in y and z directions. We define four bulk planes:
+    #   - Plane at x=30 mm, (16 mm, 20 mm) and (20 mm, 24 mm) in y and z directions. For nodal source 1.
+    #   - Plane at x=30 mm, (20 mm, 24 mm) and (20 mm, 24 mm) in y and z directions. For nodal source 2.
+    #   - Plane at x=30 mm, (16 mm, 20 mm) and (16 mm, 20 mm) in y and z directions. For nodal source 3.
+    #   - Plane at x=30 mm, (16 mm, 24 mm) and (16 mm, 24 mm) in y and z directions. For the total current.
+    #
+    # The test checks that the bulk planes only measure the current values of the respective nodal sources
+    # and if we move one negative cell in the y and z directions, the current values are zero for the bulk planes
+    # 1 and 3 respectively; similar behavior if we move one positive cell in the y and z directions for  
+    # the bulk planes 1 and 2. This proves that the bulk have a negative offset in the y and z directions.
+
+    fn = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLines.fdtd.json'
+    fn_negative = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLinesNegative.fdtd.json'
+    fn_positive = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLinesPositive.fdtd.json'
+    
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_negative = FDTD(input_filename = fn_negative, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_positive = FDTD(input_filename = fn_positive, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    solver.run()
+    solver_negative.run()
+    solver_positive.run()
+
+    probe1 = Probe(solver.getSolvedProbeFilenames("Bulk probe1")[0])
+    probe2 = Probe(solver.getSolvedProbeFilenames("Bulk probe2")[0])
+    probe3 = Probe(solver.getSolvedProbeFilenames("Bulk probe3")[0])
+    probeTotal = Probe(solver.getSolvedProbeFilenames("Bulk probe total")[0])
+
+    assert np.corrcoef(probe1['current'].to_numpy() + probe2['current'].to_numpy() + probe3['current'].to_numpy(),
+                          probeTotal['current'].to_numpy())[0, 1] > 0.999
+    
+    probe1_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe1")[0])
+    probe2_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe2")[0])
+    probe3_negative = Probe(solver_negative.getSolvedProbeFilenames("Bulk probe3")[0])
+
+    I_in_2 = np.loadtxt(solver["sources"][1]["magnitudeFile"], usecols=1)
+    time_2 = np.loadtxt(solver["sources"][1]["magnitudeFile"], usecols=0)
+
+    I_2_interp = np.interp(
+        probe2_negative['time'].to_numpy(),
+        time_2,
+        I_in_2
+    )
+
+    assert np.corrcoef(probe2_negative['current'].to_numpy(), I_2_interp)[0, 1] > 0.999
+    assert np.allclose(probe1_negative['current'].to_numpy(), 0.0, atol=1.5e-2)
+    assert np.allclose(probe3_negative['current'].to_numpy(), 0.0, atol=1.5e-2)
+
+    probe1_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe1")[0])
+    probe2_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe2")[0])
+    probe3_positive = Probe(solver_positive.getSolvedProbeFilenames("Bulk probe3")[0])
+
+    I_in_3 = np.loadtxt(solver["sources"][2]["magnitudeFile"], usecols=1)
+    time_3 = np.loadtxt(solver["sources"][2]["magnitudeFile"], usecols=0)
+
+    I_3_interp = np.interp(
+        probe3_positive['time'].to_numpy(),
+        time_3,
+        I_in_3
+    )
+
+    assert np.corrcoef(probe3_positive['current'].to_numpy(), I_3_interp)[0, 1] > 0.999
+    assert np.allclose(probe1_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
+    assert np.allclose(probe2_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
+
+def test_negative_offset_in_x(tmp_path):
+    # Following the previous test, we have seen that the bulk surfaces has negative offsets in the directions
+    # perpendicular to the normal vector of the bulk surface. The previous test checks the negative offset in the
+    # y and z directions when the normal vector is in the x-direction. Now we check the negative offset in the
+    # x-direction when the normal vector is in the y-direction.
+    # The setup consists in a nodal source placed in a line defined by [(0 mm,0 mm,0 mm), (0 mm,50 mm,0 mm)]. 
+    # The nodal source is a Gaussian pulse with 1 A amplitude. And three bulk planes defined at:
+    #  - Plane at y=36 mm, (-4 mm, -2 mm) and (0 mm, 2 mm) in x and z directions.
+    #  - Plane at y=38 mm, (0 mm, -2 mm) and (4 mm, 2 mm) in x and z directions.
+    #  - Plane at y=40 mm, (-2 mm, -2 mm) and (2 mm, 2 mm) in x and z directions.
+    #
+    # All the bulk planes measure the current values of the nodal source, however, the first only captures the
+    # current values at the right edge of the plane, similarly, the second captures the current values at the
+    # left edge of the plane. This test checks that the second and third bulk planes measure correctly the current values
+    # while the first bulk plane has zero current values. This proves that the bulk have a negative offset in the x-direction.
+
+    fn = CASES_FOLDER + 'bulk_current_tests/negative_offSet_x/offSet_negative_x.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    I_in = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
+    time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    
+    probeR = Probe(solver.getSolvedProbeFilenames("Bulk_right")[0])
+    probeL = Probe(solver.getSolvedProbeFilenames("Bulk_left")[0])
+    probeTotal = Probe(solver.getSolvedProbeFilenames("BulkTotal")[0])
+    
+    I_interp = np.interp(
+        probeTotal['time'].to_numpy(),
+        time,
+        I_in
+    )
+
+    assert np.corrcoef(probeTotal['current'].to_numpy(), I_interp)[0, 1] > 0.999
+    assert np.corrcoef(probeL['current'].to_numpy(), I_interp)[0, 1] > 0.999
+    assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
