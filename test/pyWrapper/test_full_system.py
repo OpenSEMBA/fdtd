@@ -807,8 +807,8 @@ def test_offset_perpendicular_in_x(tmp_path):
     fn_positive = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLinesPositive.fdtd.json'
     
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver_negative = FDTD(input_filename = fn_negative, path_to_exe=SEMBA_EXE)
-    solver_positive = FDTD(input_filename = fn_positive, path_to_exe=SEMBA_EXE)
+    solver_negative = FDTD(input_filename = fn_negative, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver_positive = FDTD(input_filename = fn_positive, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     solver.run()
     solver_negative.run()
