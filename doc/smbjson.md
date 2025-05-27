@@ -642,20 +642,20 @@ In this example `elementId` points to a volume element, therefore `direction` mu
 }
 ```
 
-One important aspect to keep in mind when working with `bulkCurrent` is its natural offset. This arises from the fact that electric current is actually defined on the **dual mesh** of the inserted grid—i.e., the mesh corresponding to the magnetic field. The **dual mesh** is constructed by placing a point at the center of each cell in the original (primal) mesh and connecting these points
+One important aspect to keep in mind when working with `bulkCurrent` with `electric field type` is its natural offset. This arises from the fact that to measure the electric current it is necessary to calculate the closed path integral of the magnetic field, then, the electric current is defined on the **dual mesh** of the inserted grid—i.e., the mesh corresponding to the magnetic field. The **dual mesh** is constructed by placing a point at the center of each cell in the original (primal) mesh and connecting these points.
 
 Because of this, the code internally shifts the `bulkCurrent` you define to align with the dual mesh, causing a **half-cell offset**. In the case of surfaces, the coordinates **perpendicular** to the current flowing through the surface experience a **negative offset**, as shown in the figure below:
 
 
 ![Negative offset](fig/grid-negativeOffSet.svg)
 
-If the current is flowing out of the page and the defined `bulkCurrent` corresponds to the blue surface, the code will actually evaluate the current on the green surface. Mathematically, this can be interpreted as follows: if the `bulkCurrent` is defined as a rectangle with bounds `[a, b] × [c, d]`, the measurement is performed on the **half-open domain** `[a, b) × [c, d)`.
+If the current is flowing out of the page and the defined `bulkCurrent` corresponds to the blue surface, the algorithm will actually evaluate the current on the green surface. Mathematically, this can be interpreted as follows: if the `bulkCurrent` is defined as a rectangle with bounds `[a, b] × [c, d]`, the measurement is performed on the **half-open domain** `[a, b) × [c, d)`.
 
 On the other hand, the coordinate **parallel** to the current also experiences a **half-cell offset**, but this time in the **positive direction**, as illustrated in the figure below:
 
 ![Positive offset](fig/grid-positiveOffSet.svg)
 
-Again, with the current flowing out of the page, the blue line represents a cross-sectional view of the plane where the `bulkCurrent` is defined, while the green line shows the actual location used for current evaluation by the code.
+Again, with the current flowing in the direction of the red line, the blue line represents a cross-sectional view of the plane where the `bulkCurrent` is defined, while the green line shows the actual location used for current evaluation by the method.
 
 #### `farField`
 
