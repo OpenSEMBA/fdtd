@@ -13,11 +13,6 @@
 	url = https://github.com/Reference-LAPACK/lapack.git
 	ignore = dirty
 
-[submodule "external/ngspice"]
-	path = external/ngspice
-	url = https://github.com/OpenSEMBA/ngspice.git
-	ignore = dirty
-	
 [submodule "external/googletest"]
 	path = external/googletest
 	url = https://github.com/google/googletest.git

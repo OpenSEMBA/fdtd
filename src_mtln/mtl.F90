@@ -144,6 +144,8 @@ contains
             res%bundle_in_layer = bundle_in_layer
         else
             res%step_size =  step_size
+            allocate(res%layer_indices(0,0))
+            allocate(res%mpi_comm%comms(0))
             res%external_field_segments = external_field_segments
         end if
 #else
@@ -374,64 +376,127 @@ contains
         integer (kind =4), dimension(2) :: alloc_z
         integer :: j, n
         integer :: rank, ierr
-        integer (kind =4) :: direction, z, zi, ze
+        integer (kind =4) :: z_init, z_end
         type(communicator_t), dimension(:), allocatable :: aux_comm
+
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         this%mpi_comm%rank = rank
         allocate(this%mpi_comm%comms(0))
         allocate(aux_comm(0))
-        zi = alloc_z(1)
-        ze = alloc_z(2)
+        z_init = alloc_z(1)
+        z_end = alloc_z(2)
 
         do j = 1, size(this%external_field_segments)
-            direction = this%external_field_segments(j)%direction
-            z = this%external_field_segments(j)%position(3)
-            if (abs(direction) == 3 .and. (abs(z-ze)<= 1 .or. abs(z-zi-1) <= 1)) then
+            
+            if (isSegmentZOriented(j) .and. &
+               (isSegmentNextToLayerEnd(j,z_end) .or. isSegmentNextToLayerInit(j,z_init))) then
+                
                 n = size(this%mpi_comm%comms)
                 deallocate(aux_comm)
                 allocate(aux_comm(n+1))
                 aux_comm(1:n) = this%mpi_comm%comms
                 aux_comm(n+1)%field_index = j
-                if (abs(z-ze)<= 1) then 
+
+                if (isSegmentNextToLayerEnd(j,z_end)) then 
                     aux_comm(n+1)%delta_rank = 1
-                    if (z==ze-1) then 
+
+                    if (isSegmentBeforeLayerEnd(j,z_end)) then 
                         aux_comm(n+1)%comm_task = COMM_SEND
-                        if (direction > 0) then 
+                        if (isSegmentZPositive(j)) then 
                             aux_comm(n+1)%v_index = j
                         else 
                             aux_comm(n+1)%v_index = j+1
                         end if
-                    else if (z==ze) then 
+                    else if (isSegmentAfterLayerEnd(j,z_end)) then 
                         aux_comm(n+1)%comm_task = COMM_RECV
-                        if (direction > 0) then 
+                        if (isSegmentZPositive(j)) then 
                             aux_comm(n+1)%v_index = j+1
                         else 
                             aux_comm(n+1)%v_index = j
                         end if
                     end if
-                else if  (abs(z-zi-1) <= 1) then 
+
+                else if  (isSegmentNextToLayerInit(j,z_init)) then 
                     aux_comm(n+1)%delta_rank = -1
-                    if (z==zi) then 
+
+                    if (isSegmentBeforeLayerInit(j,z_init)) then 
                         aux_comm(n+1)%comm_task = COMM_RECV
-                        if (direction > 0) then 
+                        if (isSegmentZPositive(j)) then 
                             aux_comm(n+1)%v_index = j
                         else
                             aux_comm(n+1)%v_index = j+1
                         end if
-                    else if (z==zi+1) then 
+                    else if (isSegmentAfterLayerInit(j,z_init)) then 
                         aux_comm(n+1)%comm_task = COMM_SEND
-                        if (direction > 0) then 
+                        if (isSegmentZPositive(j)) then 
                             aux_comm(n+1)%v_index = j+1
                         else
                             aux_comm(n+1)%v_index = j
                         end if
                     end if
+
                 end  if
                 deallocate(this%mpi_comm%comms)
                 allocate(this%mpi_comm%comms(n+1))
                 this%mpi_comm%comms = aux_comm
             end if
         end do
+
+    contains    
+
+    logical function isSegmentZOriented(j)
+        integer, intent(in) :: j
+        isSegmentZOriented = (abs(this%external_field_segments(j)%direction) == 3)
+    end function
+
+    logical function isSegmentZPositive(j)
+        integer, intent(in) :: j
+        isSegmentZPositive = (this%external_field_segments(j)%direction > 0)
+    end function
+
+    logical function isSegmentBeforeLayerEnd(j, z_end)
+        integer, intent(in) :: j, z_end
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentBeforeLayerEnd = (z==z_end-1)
+    end function
+
+    logical function isSegmentAfterLayerEnd(j, z_end)
+        integer, intent(in) :: j, z_end
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentAfterLayerEnd = (z==z_end)
+    end function
+    
+    logical function isSegmentBeforeLayerInit(j, z_init)
+        integer, intent(in) :: j, z_init
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentBeforeLayerInit = (z==z_init)
+    end function
+    
+    logical function isSegmentAfterLayerInit(j, z_init)
+        integer, intent(in) :: j, z_init
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentAfterLayerInit = (z==z_init+1)
+    end function
+
+    logical function isSegmentNextToLayerEnd(j, z_end)
+        integer, intent(in) :: j, z_end
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentNextToLayerEnd = (abs(z-z_end)<= 1)
+    end function
+
+    logical function isSegmentNextToLayerInit(j, z_init)
+        integer, intent(in) :: j, z_init
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentNextToLayerInit = (abs(z-z_init-1) <= 1)
+    end function
+
+
 
     end subroutine
 #endif
