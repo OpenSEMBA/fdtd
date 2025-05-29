@@ -73,10 +73,13 @@ contains
 
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
-        line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
-#else
-        line_bundles = buildLineBundles(cable_bundles, res%dt)
 #endif
+        if (present(alloc)) then 
+            line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
+        else 
+            line_bundles = buildLineBundles(cable_bundles, res%dt)
+        end if
+
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
@@ -302,33 +305,33 @@ contains
         type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
-#ifdef CompileWithMPI
         integer (kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .true.
         integer (kind=4), dimension(2) :: alloc_z
-        alloc_z(1) = alloc(3)%zi
-        alloc_z(2) = alloc(3)%ze
-#endif       
+        if (present(alloc)) then
+            alloc_z(1) = alloc(3)%zi
+            alloc_z(2) = alloc(3)%ze
+        end if
         nb = size(cable_bundles)
         allocate(res(nb))
         do i = 1, nb
 
-#ifdef CompileWithMPI
+        if (present(alloc)) then
             bundle_in_layer = .true.
             layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%p, alloc)
             if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
-#endif
+        endif
             nl = size(cable_bundles(i)%levels)
             allocate(res(i)%levels(nl))
             do j = 1, nl
                 nc = size(cable_bundles(i)%levels(j)%cables)
                 allocate(res(i)%levels(j)%lines(nc))
                 do k = 1, nc
-#ifdef CompileWithMPI
-                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, layer_indices, bundle_in_layer, alloc_z)
-#else
-                    res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt)
-#endif
+                    if (present(alloc)) then 
+                        res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt, layer_indices, bundle_in_layer, alloc_z)
+                    else
+                        res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%p, dt)
+                    endif
                 end do
             end do
         end do

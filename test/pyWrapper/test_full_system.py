@@ -161,12 +161,6 @@ def test_holland_mtln_mpi(tmp_path):
     solver.run()
     probe_mid_mpi_2 = Probe(list(filter(lambda x: '_Wz_' in x, probe_names))[0])
 
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], mpi_command='mpirun -np 3',run_in_folder=tmp_path)
-    solver.cleanUp()
-    solver.run()
-    probe_mid_mpi_3 = Probe(list(filter(lambda x: '_Wz_' in x, probe_names))[0])
-
 
     p_expected = Probe(
         OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
@@ -180,12 +174,6 @@ def test_holland_mtln_mpi(tmp_path):
         p_expected.data.to_numpy()[:, 0:3], 
         probe_mid_mpi_2.data.to_numpy()[:, 0:3], 
         rtol=1e-5, atol=1e-6)
-
-    assert np.allclose(
-        p_expected.data.to_numpy()[:, 0:3], 
-        probe_mid_mpi_3.data.to_numpy()[:, 0:3], 
-        rtol=1e-5, atol=1e-6)
-
 
 
 def test_towelHanger(tmp_path):

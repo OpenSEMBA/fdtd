@@ -61,8 +61,11 @@ contains
         call mpi_barrier(subcomm_mpi, ierr)
         
 #endif
-
-        pre = preprocess(parsed, alloc)
+        if (present(alloc)) then 
+            pre = preprocess(parsed, alloc)
+        else  
+            pre = preprocess(parsed)
+        endif
 
         if (size(pre%bundles) == 0) then
             res%number_of_bundles = 0
