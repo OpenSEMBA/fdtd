@@ -8,6 +8,7 @@ module network_manager_mod
 
     type network_manager_t
         type(network_t), dimension(:), allocatable :: networks
+        logical :: has_networks = .true.
         type(circuit_t) :: circuit
         real :: time, dt
     contains

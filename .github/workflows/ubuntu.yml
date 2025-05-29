@@ -21,7 +21,7 @@ jobs:
       matrix: 
         os: [ubuntu-latest]
         compiler: [
-          {name: 'intel', version: '2025.0'},
+          {name: 'intel', version: '2025.1'},
           {name: 'gcc', version: 11}
         ]
         build-type: ["Release"]
@@ -56,7 +56,7 @@ jobs:
             double-precision: "No"
 
           - os: ubuntu-latest # This is the only test with double precision.
-            compiler: {name: 'intel', version: '2025.0'}
+            compiler: {name: 'intel', version: '2025.1'}
             build-type: "Release"
             mpi: "Yes"
             mtln: "No"

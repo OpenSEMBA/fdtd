@@ -4,6 +4,9 @@ module mtl_bundle_mod
     use probes_mod
     use dispersive_mod
     use mtl_mod
+#ifdef CompileWithMPI
+    use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+#endif
     implicit none
 
     type, public :: mtl_bundle_t
@@ -14,6 +17,7 @@ module mtl_bundle_mod
         real, allocatable, dimension(:,:) :: v, i, e_L
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         real :: time = 0.0, dt = 1e10
+
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
         integer, dimension(:), allocatable :: conductors_in_level
@@ -23,6 +27,12 @@ module mtl_bundle_mod
 
         type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
         logical :: isPassthrough = .false.
+        logical :: bundle_in_layer = .true.
+        
+#ifdef CompileWithMPI
+        integer (kind=4), allocatable, dimension(:,:) :: layer_indices
+        type(comm_t) :: mpi_comm
+#endif
 
     contains
         procedure :: mergePULMatrices
@@ -38,6 +48,11 @@ module mtl_bundle_mod
         procedure :: addTransferImpedance => bundle_addTransferImpedance
         procedure :: setConnectorTransferImpedance => bundle_setConnectorTransferImpedance
         procedure :: setExternalLongitudinalField => bundle_setExternalLongitudinalField
+#ifdef CompileWithMPI
+        procedure :: Comm_MPI_V
+        procedure :: Comm_MPI_Fields
+#endif
+
 
     end type mtl_bundle_t
 
@@ -51,7 +66,7 @@ contains
         type(mtl_bundle_t) :: res
         type(mtl_array_t), dimension(:), intent(in) :: levels
         character(len=*), intent(in), optional :: name
-        
+       
         res%name = ""
         if (present(name)) then
             res%name = name
@@ -60,6 +75,7 @@ contains
 
         res%number_of_conductors = countNumberOfConductors(levels)
         res%dt = levels(1)%lines(1)%dt
+
         res%step_size = levels(1)%lines(1)%step_size
         res%number_of_divisions = size(res%step_size,1)
         res%external_field_segments = levels(1)%lines(1)%external_field_segments
@@ -68,6 +84,11 @@ contains
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
 
+#ifdef CompileWithMPI
+        res%bundle_in_layer = levels(1)%lines(1)%bundle_in_layer
+        res%layer_indices = levels(1)%lines(1)%layer_indices
+        res%mpi_comm = levels(1)%lines(1)%mpi_comm
+#endif
 
     end function
 
@@ -170,28 +191,24 @@ contains
 
     end subroutine
 
-    type(probe_t) function addProbe(this, index, probe_type, name, position) result(res)
+    type(probe_t) function addProbe(this, index, probe_type, name, position, layer_indices) result(res)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        real, dimension(3), optional :: position
-        character (len=:), allocatable, optional :: name
+        real, dimension(3) :: position
+        character (len=:), allocatable :: name
+        integer (kind=4), dimension(:,:), intent(in), optional :: layer_indices
         type(probe_t), allocatable, dimension(:) :: aux_probes
 
         aux_probes = this%probes
         deallocate(this%probes)
         allocate(this%probes(size(aux_probes)+1))
 
-        if (present(position) .and. present(name)) then
-            res = probeCtor(index, probe_type, this%dt, name, position)
-        else if (present(name) .and. .not. present(position)) then 
-            res = probeCtor(index, probe_type, this%dt, name=name)
-        else if (.not. present(name) .and. present(position)) then 
-            res = probeCtor(index, probe_type, this%dt, position=position)
-        else
-            res = probeCtor(index, probe_type, this%dt)
-        end if
-
+#ifdef CompileWithMPI
+        res = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
+#else
+        res = probeCtor(index, probe_type, this%dt, name, position)
+#endif
         this%probes(1:size(this%probes)-1) = aux_probes
         this%probes(size(aux_probes)+1) = res
     end function
@@ -306,7 +323,9 @@ contains
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
         integer :: i
-        do i = 2, this%number_of_divisions
+
+
+        do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
         end do
@@ -318,6 +337,14 @@ contains
         real, dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
         real :: eps_r
+#ifdef CompileWithMPI
+        integer (kind=4) :: sizeof, ierr
+
+#endif
+#ifdef CompileWithMPI
+        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+        if (sizeof > 1) call this%Comm_MPI_V()
+#endif
         call this%transfer_impedance%updateQ3Phi()
         i_prev = this%i
 
@@ -335,6 +362,12 @@ contains
     subroutine bundle_setExternalLongitudinalField(this)
         class(mtl_bundle_t) :: this
         integer :: i, j
+#ifdef CompileWithMPI
+        integer :: sizeof, ierr
+
+        call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+        if (sizeof > 1) call this%Comm_MPI_Fields()
+#endif
 
         if (this%isPassthrough) then 
             do j = 2, 1 + this%conductors_in_level(2)
@@ -351,4 +384,54 @@ contains
         end if
     end subroutine
 
+#ifdef CompileWithMPI
+    subroutine Comm_MPI_V(this)
+        class(mtl_bundle_t) :: this
+        integer :: number_of_conductors, i, c
+        integer :: ierr, rank, status(MPI_STATUS_SIZE)
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+        number_of_conductors = size(this%v,1)
+        do i = 1, size(this%mpi_comm%comms)
+                if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then 
+                    do c = 1, number_of_conductors
+                        call MPI_send(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, & 
+                                      rank+this%mpi_comm%comms(i)%delta_rank, & 
+                                      200*(rank+this%mpi_comm%comms(i)%delta_rank+1)+c, & 
+                                      SUBCOMM_MPI, ierr)
+                    end do
+                end if
+                if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then 
+                    do c = 1, number_of_conductors
+                        call MPI_recv(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, & 
+                                      rank+this%mpi_comm%comms(i)%delta_rank, & 
+                                      200*(rank+1)+c, & 
+                                      SUBCOMM_MPI, status, ierr)
+                    end do
+                end if
+        end do
+
+
+    end subroutine
+
+        subroutine Comm_MPI_Fields(this)
+        class(mtl_bundle_t) :: this
+        integer :: i, ierr, rank, status(MPI_STATUS_SIZE)
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+        do i = 1, size(this%mpi_comm%comms)
+            if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then 
+                call MPI_send(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field, 1, REALSIZE, & 
+                              rank+this%mpi_comm%comms(i)%delta_rank, & 
+                              100*(rank+this%mpi_comm%comms(i)%delta_rank+1), & 
+                              SUBCOMM_MPI, ierr)
+            end if
+            if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then 
+                call MPI_recv(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field,1, REALSIZE, & 
+                              rank+this%mpi_comm%comms(i)%delta_rank, &
+                              100*(rank+1), &
+                              SUBCOMM_MPI, status, ierr)
+            end if
+        end do
+    end subroutine
+
+#endif
 end module mtl_bundle_mod
