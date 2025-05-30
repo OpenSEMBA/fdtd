@@ -657,6 +657,10 @@ On the other hand, the coordinate **parallel** to the current also experiences a
 
 Again, with the current flowing in the direction of the red line, the blue line represents a cross-sectional view of the plane where the `bulkCurrent` is defined, while the green line shows the actual location used for current evaluation by the method.
 
+#### `lineIntegral`
+
+A `lineIntegral` probe computes the electric field line integral along a given line. At low frequencies, this quantity is equivalent to a DC voltage difference between the extremes of the line. At higher frequencies, "voltage" is no longer a proper name
+
 #### `farField`
 
 Probes of type `farField` perform a near to far field transformation of the electric and magnetic vector fields and are typically located in the scattered field region which is defined by a total/scatterd field excitation, e.g. [a planewave](#planewave). 
