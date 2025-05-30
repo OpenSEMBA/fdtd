@@ -1,0 +1,133 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Test of the implementation of lineIntegral (DC voltage) probes",
+
+    "general": {
+        "timeStep": 2e-10,
+        "numberOfSteps": 1000
+    },
+  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 3, 
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+
+    "materials": [
+        {
+            "id": 1,
+            "type": "wire",
+            "radius": 0.005,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "id": 2,
+            "type": "terminal",
+            "terminations": [{"type": "open"}]
+        },
+        {
+            "id": 3,
+            "type": "terminal",
+            "terminations": [{"type": "series", "resistance" : 50 }]
+        },
+        {
+            "id": 4,
+            "type": "terminal",
+            "terminations": [{"type": "short"}]
+        },
+        {
+            "id": 5,
+            "type": "pec"
+        }
+    ],
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [20, 20, 20],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [7,  10, 10]},
+            {"id": 2, "relativePosition": [7,  10, 13]},
+            {"id": 3, "relativePosition": [10, 10, 13]},
+            {"id": 4, "relativePosition": [12, 10, 13]},
+            {"id": 5, "relativePosition": [13, 10, 13]},
+            {"id": 6, "relativePosition": [13, 10, 10]},
+
+            {"id": 7, "relativePosition": [9,  10, 10]},
+            {"id": 8, "relativePosition": [9,  10, 11]},
+            {"id": 9, "relativePosition": [9,  10, 12]},
+
+            {"id": 10, "relativePosition": [12,  10, 10]},
+            {"id": 11, "relativePosition": [12,  10, 11]},
+            {"id": 12, "relativePosition": [12,  10, 12]},
+            
+            {"id": 13, "relativePosition": [10,  10, 12]},
+            {"id": 14, "relativePosition": [11,  10, 12]}
+
+        ],
+        "elements": [
+            {"id": 1, "type": "polyline", "coordinateIds": [1, 2, 3] },
+            {"id": 2, "type": "polyline", "coordinateIds": [3, 4, 5, 6] },
+            {"id": 3, "type": "cell", "intervals": [[[0, 0, 10], [20, 20, 10]]] },
+            {"id": 4, "type": "node", "coordinateIds": [1]},
+            {"id": 5, "type": "node", "coordinateIds": [4]},
+            {"id": 6, "type": "node", "coordinateIds":  [7]},
+            {"id": 7, "type": "node", "coordinateIds":  [8]},
+            {"id": 8, "type": "node", "coordinateIds":  [9]},
+            {"id": 9, "type": "node", "coordinateIds":  [10]},
+            {"id": 10, "type": "node", "coordinateIds": [11]},
+            {"id": 11, "type": "node", "coordinateIds": [12]},
+            {"id": 12, "type": "node", "coordinateIds": [13]},
+            {"id": 13, "type": "node", "coordinateIds": [14]}
+        ]
+    },
+
+    "materialAssociations": [
+        { 
+            "name" : "wire1",
+            "materialId": 1,
+            "initialTerminalId": 3,
+            "endTerminalId": 3,
+            "elementIds": [1]
+        },
+        { 
+            "name" : "wire2",
+            "materialId": 1,
+            "initialTerminalId": 4,
+            "endTerminalId": 4,
+            "elementIds": [2]
+        },
+        {
+            "name" : "ground", 
+            "materialId" : 5,
+            "elementIds" : [3]
+        }
+    ],
+
+    "sources": [
+        {
+            "name": "voltage_source",
+            "type": "generator",
+            "field": "voltage",
+            "magnitudeFile": "lineIntegralProbe.exc", 
+            "elementIds": [4]
+        }    
+    ],
+
+    "probes": [
+        {"name": "current","type": "wire","field": "current", "elementIds": [5],"domain": { "type": "time" }},
+        {"name": "field_prev_1","type": "point","field": "electric", "directions": ["z"], "elementIds": [6],"domain": { "type": "time" }},
+        {"name": "field_prev_2","type": "point","field": "electric", "directions": ["z"], "elementIds": [7],"domain": { "type": "time" }},
+        {"name": "field_prev_3","type": "point","field": "electric", "directions": ["x","z"], "elementIds": [8],"domain": { "type": "time" }},
+        {"name": "field_post_1","type": "point","field": "electric", "directions": ["z"], "elementIds": [9],"domain": { "type": "time" }},
+        {"name": "field_post_2","type": "point","field": "electric", "directions": ["z"], "elementIds": [10],"domain": { "type": "time" }},
+        {"name": "field_post_3","type": "point","field": "electric", "directions": ["z"], "elementIds": [11],"domain": { "type": "time" }},
+        {"name": "field_u_2","type": "point","field": "electric", "directions": ["x"], "elementIds": [12],"domain": { "type": "time" }},
+        {"name": "field_u_3","type": "point","field": "electric", "directions": ["x"], "elementIds": [13],"domain": { "type": "time" }}
+    ]
+}
