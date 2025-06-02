@@ -4,6 +4,15 @@ import os
 from sys import platform
 from scipy import signal
 
+def test_lineIntegralProbe(tmp_path):
+    fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    
+    probe_names = solver.getSolvedProbeFilenames("lineIntegral")
+    li_probe = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+    np.allclose(li_probe['lineIntegral'][-10:], 10*np.ones(10), rtol =0.01 , atol=0.1)
+
 @no_mtln_skip
 @pytest.mark.mtln
 def test_shieldedPair(tmp_path):
