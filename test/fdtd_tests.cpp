@@ -6,6 +6,10 @@
 #ifdef CompileWithSMBJSON
     #include "smbjson/smbjson_tests.h"
 #endif
+#ifdef CompileWithMPI
+    #include "rotate/rotate_tests.h"
+#endif
+
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);

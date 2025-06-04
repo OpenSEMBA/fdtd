@@ -15,8 +15,10 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     add_subdirectory(smbjson)
     set(SMBJSON_TESTS_LIBRARY smbjson_tests)
 endif()
-add_subdirectory(rotate)
-set(ROTATE_TESTS_LIBRARY rotate_tests)
+if (SEMBA_FDTD_ENABLE_MPI)
+    add_subdirectory(rotate)
+    set(ROTATE_TESTS_LIBRARY rotate_tests)
+endif()
 
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"

@@ -1,4 +1,5 @@
 module rotate_testingTools
+
    implicit none
 
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'
@@ -16,4 +17,12 @@ contains
       character (len=*), intent(in), optional :: msg
       if (ex /= pr) call testFails(err, msg)
    end subroutine
+
+   subroutine testFails(err, msg)
+      integer, intent(inout) :: err
+      character(len=*), intent(in), optional :: msg
+      err = err + 1
+      if (present(msg)) write(*, *)  "FAIL: "// msg
+   end subroutine
+
 end module
