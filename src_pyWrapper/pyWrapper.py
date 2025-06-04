@@ -18,7 +18,7 @@ DEFAULT_SEMBA_FDTD_PATH = '/build/bin/semba-fdtd'
 class Probe():
     MTLN_PROBE_TAGS = ['_V_', '_I_']
     CURRENT_PROBE_TAGS = ['_Wx_', '_Wy_', '_Wz_']
-    BULK_CURRENT_PROBE_TAGS = ['_Jx_', '_Jy_', '_Jz_']
+    BULK_CURRENT_PROBE_TAGS = ['_Jx_', '_Jy_', '_Jz_','_Mx_', '_My_', '_Mz_']
     POINT_PROBE_TAGS = ['_Ex_', '_Ey_', '_Ez_', '_Hx_', '_Hy_', '_Hz_']
     FAR_FIELD_TAG = ['_FF_']
     MOVIE_TAGS = ['_ExC_', '_EyC_', '_EzC_',

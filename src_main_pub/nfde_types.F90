@@ -607,6 +607,7 @@ MODULE NFDETypes
       LOGICAL :: t
       CHARACTER (LEN=BUFSIZE) :: outputrequest
       CHARACTER (LEN=BUFSIZE) :: tag
+      CHARACTER (LEN=BUFSIZE) :: fieldTag
    END TYPE BloqueProbe
    ! Object made for the collection of defined Bloque probes
    TYPE, PUBLIC :: BloqueProbes

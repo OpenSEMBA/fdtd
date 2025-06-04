@@ -1319,7 +1319,16 @@ contains
 
          res%skip = 1
          res%tag = trim(adjustl(this%getStrAt(bp, J_NAME, default=" ")))
-         res%t = BcELECT
+
+         res%fieldTag = trim(adjustl(this%getStrAt(bp, J_FIELD, default=J_FIELD_ELECTRIC)))
+
+         select case (res%fieldTag)
+         case (J_FIELD_ELECTRIC)
+            res%t = BcELECT
+         case (J_FIELD_MAGNETIC)
+            res%t = BcMAGNE
+         end select
+         
 
       end function
 
