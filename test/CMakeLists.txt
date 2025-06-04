@@ -15,6 +15,8 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     add_subdirectory(smbjson)
     set(SMBJSON_TESTS_LIBRARY smbjson_tests)
 endif()
+add_subdirectory(rotate)
+set(ROTATE_TESTS_LIBRARY rotate_tests)
 
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"
@@ -23,6 +25,7 @@ add_executable(fdtd_tests
 target_link_libraries(fdtd_tests
     ${MTLN_TESTS_LIBRARY}
     ${SMBJSON_TESTS_LIBRARY}
+    ${ROTATE_TESTS_LIBRARY}
     ${HDF_TESTS_LIBRARY}
     GTest::gtest_main
 )
