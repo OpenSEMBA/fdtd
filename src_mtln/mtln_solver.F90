@@ -152,8 +152,8 @@ contains
         class(mtln_t) :: this
         integer :: i,j
         integer ::b, c, v_idx, i_idx
-            
-        ! left_end, right_end
+        integer :: n
+
         if (this%number_of_bundles /= 0) then 
             do i = 1, size(this%network_manager%networks)
                 do j = 1, size(this%network_manager%networks(i)%nodes)
@@ -171,10 +171,18 @@ contains
                 do j = 1, size(this%network_manager%networks(i)%nodes)
                     b = this%network_manager%networks(i)%nodes(j)%bundle_number
                     c = this%network_manager%networks(i)%nodes(j)%conductor_number
-                    v_idx = this%network_manager%networks(i)%nodes(j)%v_index
-                    i_idx = this%network_manager%networks(i)%nodes(j)%i_index
-
-                    if (this%bundles(b)%bundle_in_layer) this%bundles(b)%v(c, v_idx) = this%network_manager%networks(i)%nodes(j)%v
+                    if (.not. this%network_manager%networks(i)%nodes(j)%open) then 
+                        v_idx = this%network_manager%networks(i)%nodes(j)%v_index
+                        i_idx = this%network_manager%networks(i)%nodes(j)%i_index
+                        if (this%bundles(b)%bundle_in_layer) this%bundles(b)%v(c, v_idx) = this%network_manager%networks(i)%nodes(j)%v
+                    else 
+                        if (this%network_manager%networks(i)%nodes(j)%side == TERMINAL_NODE_SIDE_INI) then 
+                            this%bundles(b)%v(c,1) = this%bundles(b)%v(c,1) - 2*dot_product(this%bundles(b)%i_diff(1,c,:), this%bundles(b)%i(:,1))
+                        else if (this%network_manager%networks(i)%nodes(j)%side == TERMINAL_NODE_SIDE_END) then 
+                            n = this%bundles(b)%number_of_divisions
+                            this%bundles(b)%v(c,n+1) = this%bundles(b)%v(c,n+1) + 2*dot_product(this%bundles(b)%i_diff(n,c,:), this%bundles(b)%i(:,n))
+                        end if
+                    end if
                 end do
             end do
         end if

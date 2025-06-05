@@ -922,6 +922,7 @@ contains
             res%step = step
         end block
 
+        if (node%termination%termination_type == TERMINATION_open) res%open = .true.
         res%source = node%termination%source
 
     contains
@@ -1216,7 +1217,7 @@ contains
         write(sDelta, '(E10.2)') dt/200
         write(sPrint, '(E10.2)') final_time/print_step
 
-        buff = trim(".option reltol = 0.005")
+        buff = trim(".option reltol = 0.005 gmin=1e-50")
         call appendToStringArray(description, buff)       
         buff = trim(".tran "//sdt//" "//sTime//" 0 "//sDelta)
         call appendToStringArray(description, buff)       
