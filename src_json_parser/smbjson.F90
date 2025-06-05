@@ -2016,10 +2016,10 @@ contains
          ! if (res%containedWithinElementId == -1) then
          !    write(error_unit, *) errorMsgInit, "multiwire associations must include: ", J_MAT_ASS_CAB_CONTAINED_WITHIN_ID
          ! end if
-         if (.not. (this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)) .and. &
-            (this%mesh%checkElementId(res%containedWithinElementId) /= 0)) then
-            write(error_unit, *) errorMsgInit, "element with id ", res%containedWithinElementId, " not found."
-         end if
+         ! if (.not. (this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)) .and. &
+         !    (this%mesh%checkElementId(res%containedWithinElementId) /= 0)) then
+         !    write(error_unit, *) errorMsgInit, "element with id ", res%containedWithinElementId, " not found."
+         ! end if
       end if
       
    contains 
@@ -2749,7 +2749,8 @@ contains
 
          call this%core%get(this%root, J_MESH//'.'//J_ELEMENTS, elements)
          polylines = this%jsonValueFilterByKeyValue(elements, J_TYPE, J_ELEM_TYPE_POLYLINE)
-         wire_probes = this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_WIRE)
+         ! wire_probes = this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_WIRE)
+         wire_probes = this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_MULTIWIRE)
 
          n_probes = countProbes(wire_probes, polylines)
 
@@ -2973,9 +2974,9 @@ contains
                call assignDielectricProperties(res, material)
             end if
 
-            if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
-               res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
-            end if
+            ! if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
+            !    res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
+            ! end if
 
          else if (materialType == J_MAT_TYPE_MULTIWIRE) then
             call assignPULProperties(res, material, size(j_cable%elementIds))

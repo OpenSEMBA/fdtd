@@ -70,10 +70,10 @@ contains
       endif
 
       hwires => GetHwires()
-      indexMap = mapFieldToCurrentSegments(hwires, mtln_solver%bundles)
+      ! indexMap = mapFieldToCurrentSegments(hwires, mtln_solver%bundles)
  
       call pointSegmentsToFields()
-      call assignLCToExternalConductor()
+      call assignLCToExternalLevel()
       call updateNetworksLineCapacitors()
       call mtln_solver%updatePULTerms()
 
@@ -105,29 +105,53 @@ contains
          end do
       end subroutine
 
-      subroutine assignLCToExternalConductor()
+      subroutine assignLCToExternalLevel()
          integer(kind=4) :: m, n
-         real (kind=rkind) :: l,c
+         real (kind=rkind), dimension(:,:), allocatable :: l,c
 
          do m = 1, mtln_solver%number_of_bundles
             if (mtln_solver%bundles(m)%bundle_in_layer) then 
-               do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
-                  l = hwires%CurrentSegment(indexMap(m,n))%Lind
-                  c = mu0*eps0/l
-                  if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
-                  ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0 .and. mtln_solver%bundles(m)%isPassthrough .eqv. .false.) then 
-                     mtln_solver%bundles(m)%lpul(n,1,1) = l 
-                     mtln_solver%bundles(m)%cpul(n,1,1) = c 
-                     if (mtln_solver%bundles(m)%external_field_segments(n)%has_dielectric) then
-                        mtln_solver%bundles(m)%external_field_segments(n)%dielectric%effective_relative_permittivity = computeEffectivePermittivity(m,n,l,c)
-                     end if
-                  end if
+               l = readLFromTULIP()
+               c = readCFromTULIP()
+               do n = 1, mtln_solver%bundles(m)%number_of_divisions
+                  mtln_solver%bundles(m)%lpul(n,1:size(l,1),1:size(l,2)) = l 
+                  mtln_solver%bundles(m)%cpul(n,1:size(c,1),1:size(c,2)) = c 
+                  ! l = hwires%CurrentSegment(indexMap(m,n))%Lind
+                  ! c = mu0*eps0/l
+                  ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
+                  ! ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0 .and. mtln_solver%bundles(m)%isPassthrough .eqv. .false.) then 
+                  !    mtln_solver%bundles(m)%lpul(n,1,1) = l 
+                  !    mtln_solver%bundles(m)%cpul(n,1,1) = c 
+                  !    if (mtln_solver%bundles(m)%external_field_segments(n)%has_dielectric) then
+                  !       mtln_solver%bundles(m)%external_field_segments(n)%dielectric%effective_relative_permittivity = computeEffectivePermittivity(m,n,l,c)
+                  !    end if
+                  ! end if
                end do
-               mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1,1) = &
-                  mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1,1)
+               mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1:size(c,1),1:size(c,2)) = &
+                  mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1:size(c,1),1:size(c,2))
          end if
          end do
       end subroutine
+
+      function readLFromTULIP() result(res)
+         real(kind=rkind), dimension(:,:), allocatable :: res
+         allocate(res(2,2))
+         ! res(:,:) = 1e-7
+         res(1,1) = 8.474362419147366e-07
+         res(1,2) = 2.532943838463675e-07
+         res(2,1) = 2.532943838463675e-07
+         res(2,2) = 3.876967674976909e-07
+
+      end function
+      function readCFromTULIP() result(res)
+         real(kind=rkind), dimension(:,:), allocatable :: res
+         allocate(res(2,2))
+         ! res(:,:) = 1e-11
+         res(1,1) =   1.6307969274691786e-11
+         res(1,2) =   -1.0654504694169652e-11
+         res(2,1) =   -1.065450469416965e-11
+         res(2,2) =   3.5646322987431435e-11
+      end function
 
       function computeEffectivePermittivity(m,n,l0,c0) result(res)
          integer (kind=4) :: i, j, k, direction
@@ -222,18 +246,18 @@ contains
       real(KIND=RKIND) :: cte,eps00,mu00
       integer (kind=4) :: m, n
       REAL (KIND=RKIND),pointer:: punt
-      type(Thinwires_t), pointer  ::  hwires
+      ! type(Thinwires_t), pointer  ::  hwires
 
       eps0 = eps00 
       mu0 = mu00
       
-      hwires => GetHwires()
+      ! hwires => GetHwires()
       do m = 1, mtln_solver%number_of_bundles
          if (mtln_solver%bundles(m)%bundle_in_layer) then 
             do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
                punt => mtln_solver%bundles(m)%external_field_segments(n)%field
                punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
-               hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent(m,n)
+               ! hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent(m,n)
             end do
          end if
       end do
@@ -249,15 +273,11 @@ contains
          real(kind=rkind) :: curr
          integer (kind=4) :: direction, i
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-         if (mtln_solver%bundles(m)%isPassthrough) then 
-            curr = 0
-            do i = 2, 1 + mtln_solver%bundles(m)%conductors_in_level(2)
-               curr = curr + mtln_solver%bundles(m)%i(i, n)
-            end do
-            mtln_solver%bundles(m)%i(1, n) = curr
-         end if
-         
-         res = mtln_solver%bundles(m)%i(1, n) * sign(1.0, real(direction))
+         curr = 0
+         do i = 1, mtln_solver%bundles(m)%conductors_in_level(1)
+            curr = curr + mtln_solver%bundles(m)%i(i, n)
+         end do
+         res = curr * sign(1.0, real(direction))
       end function
 
       function computeFieldFromCurrent(m, n) result(res)

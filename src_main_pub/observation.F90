@@ -427,6 +427,18 @@ contains
             if (field/=nothing) ThereAreObservation=.true.
          end do
       end do
+      block
+         type(mtln_solver_t), pointer :: mtln_solver
+         integer :: i,j
+         mtln_solver => GetSolverPtr()
+         write(*,*) 'a'
+         do i = 1, ubound(mtln_solver%bundles, 1)
+            if (ubound(mtln_solver%bundles(i)%probes,1) /= 0) then 
+               ThereAreObservation=.true.
+            end if
+         end do
+      end block
+
       !
       memo=0
       !

@@ -257,7 +257,7 @@ contains
                              bundle_in_layer = bundle_in_layer, &
                              alloc_z = alloc_z &
 #endif
-)
+                            )
         if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
         if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
         

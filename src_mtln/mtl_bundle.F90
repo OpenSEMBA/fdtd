@@ -350,9 +350,9 @@ contains
 
         do i = 1, this%number_of_divisions 
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
-                        matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
-                                                    this%e_L(:,i) * this%step_size(i)) - &
-                        matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
+                          matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
+                                                      this%e_L(:,i) * this%step_size(i)) - &
+                          matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
         !TODO - revisar
         i_now = this%i
@@ -369,19 +369,26 @@ contains
         if (sizeof > 1) call this%Comm_MPI_Fields()
 #endif
 
-        if (this%isPassthrough) then 
-            do j = 2, 1 + this%conductors_in_level(2)
-                do i = 1, size(this%e_L,2)
+        do j = 1, this%conductors_in_level(1)
+            do i = 1, size(this%e_L,2)
                     this%e_L(j,i) = this%external_field_segments(i)%field * &
                                     this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
-                end do
             end do
-        else
-            do i = 1, size(this%e_L,2)
-                this%e_L(1,i) = this%external_field_segments(i)%field * &
-                                this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
-            end do
-        end if
+        end do
+
+        ! if (this%isPassthrough) then 
+        !     do j = 2, 1 + this%conductors_in_level(2)
+        !         do i = 1, size(this%e_L,2)
+        !             this%e_L(j,i) = this%external_field_segments(i)%field * &
+        !                             this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+        !         end do
+        !     end do
+        ! else
+        !     do i = 1, size(this%e_L,2)
+        !         this%e_L(1,i) = this%external_field_segments(i)%field * &
+        !                         this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+        !     end do
+        ! end if
     end subroutine
 
 #ifdef CompileWithMPI
