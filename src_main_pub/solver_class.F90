@@ -10,7 +10,7 @@ module solver_mod
 
 
     type, public :: solver_t
-        ! real (kind=rkind), pointer, dimension (:,:,:)  ::  Ex,Ey,Ez,Hx,Hy,Hz
+        real (kind=rkind), pointer, dimension (:,:,:)  ::  Ex,Ey,Ez,Hx,Hy,Hz
         integer(kind=4) :: numberOfSteps
         type (bounds_t)  ::  bounds
 
