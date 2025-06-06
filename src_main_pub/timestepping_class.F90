@@ -84,9 +84,7 @@ module timestepping_mod
         private
 
     contains
-        procedure :: preStep => stepper_preStep
-        procedure :: step => atepper_step
-        procedure :: endStepping => stepper_endStepping
+        procedure :: step => stepper_step
         procedure :: advanceE
         procedure :: advanceH
         procedure :: advanceEx
@@ -115,12 +113,6 @@ contains
 
     end function
 
-    ! 
-    subroutine stepper_preStep(this)
-        class(stepper_t) :: this
-
-
-    end subroutine
 
     ! this is the time stepping process
     subroutine stepper_step(this)
@@ -153,18 +145,6 @@ contains
         ! advance magnetic MUR
     end subroutine
 
-    ! the following is not part of the timestepping process
-    subroutine endStepping(this)
-        class(stepper_t) :: this
-
-        ! end confornal simulation
-        ! timing
-        ! flush observation files
-        ! close observation files
-        ! postprocess
-        ! create vtk
-        ! create xdmf
-    end subroutine
 
     subroutine advanceE(this)
         class(stepper_t) :: this
