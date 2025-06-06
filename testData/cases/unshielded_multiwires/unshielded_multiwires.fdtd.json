@@ -318,7 +318,7 @@
     "probes" : [
         {
             "name": "test",
-            "type": "multiwire",
+            "type": "wire",
             "field": "current",
             "elementIds": [1]
         }

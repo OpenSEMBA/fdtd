@@ -44,11 +44,6 @@ print(L)
 # %% Run solver
 fn = 'unshielded_multiwires.fdtd.json'
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'])
-
-# solver["materialAssociations"][0]["materialId"] = 12
-# solver["materialAssociations"][0]["initialTerminalId"] = 4
-# solver["materialAssociations"][0]["endTerminalId"] = 4
-# solver["materialAssociations"][0]["elementIds"] = [5,6]
 solver.cleanUp()
 solver.run()
 
@@ -69,26 +64,18 @@ for data in j2['datasetColl'][0]['data']:
 
 probe_names = solver.getSolvedProbeFilenames("test_bundle")
 mid_I = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
-# probe_names = solver.getSolvedProbeFilenames("tmp_point")
-# tmp = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 
 plt.figure()
 plt.plot(mid_I['time']*1e9, mid_I['current_0'], label='material 12 - wire 1')
 plt.plot(mid_I['time']*1e9, mid_I['current_1'], label='material 12 - wire 2')
-# plt.plot(tmp['time']*1e9, tmp['current_1'], '--',label='material 12 - wire 1 - tmp')
-# plt.plot(tmp['time']*1e9, tmp['current_2'], '--',label='material 12 - wire 2 - tmp')
 plt.plot(jt1*1e9+1, ji1, 'g.', label = 'wire1 - integral eq')
 plt.plot(jt2*1e9+1, ji2, 'k.', label = 'wire2 - integral eq')
 plt.grid(which='both')
-# plt.xlim(0.0,1.1)
-# plt.ylim(-1e-3,1e-3)
-plt.legend()
 plt.title('mid')
 plt.xlabel('Time (ns)')
 plt.ylabel('I (A)')
-plt.show()
-plt.figure()
+plt.legend()
 
 
 # %%
