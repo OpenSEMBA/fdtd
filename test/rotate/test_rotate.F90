@@ -1,22 +1,17 @@
-integer function test_simple_rotate() bind(C) result(err)
+integer function test_rotate_spacesteps() bind(C) result(err)
     use smbjson
     use rotate_testingTools
     use nfde_rotate_m
-    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'asimetricPlanewave.fdtd.json'
-    type(parser_t) :: parser
-    type(Parseador) :: parsed
 
-    parser = parser_t(filename)
-    parsed = parser%readProblemDescription()
-    if (parser%isInitialized) then
-        err = 0
-    else 
-        err = 1
-    end if
+    type(Desplazamiento) :: des, oldDes
+    type(Parseador) :: parser
+    call createDemoDesplazamiento(des)
+    oldDes = des
+    parser%despl=des
 
+    call rotate_generateSpaceSteps (parser, 1)
 
-
-    call nfde_rotate(parsed, 1)
-    call expect_eq_int(err, 20, parsed%matriz%totalZ)
+    err = 0
+    call expect_eq_real_vect(err, oldDes%desY, parser%despl%desX)
 
 end function
