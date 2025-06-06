@@ -154,7 +154,6 @@ contains
       !!!!!!!!esta feo pero funciona
       logical :: simu_devia,stochastic,verbose,dummylog,dontwritevtk
       !
-
       type (tagtype_t) :: tagtype
 
       !!for tuning
