@@ -88,7 +88,7 @@ plt.show()
 # %% DTFT for mutual inductance estimation
 
 R_1 = 50
-L_1 = 80e-9  # Inductance of the inductor in port 1.
+L_1 = 23e-9  # Inductance of the inductor in port 1.
 
 new_freqs = np.geomspace(1e4, 1e9, num=500)
 t = probeWire["time"].to_numpy()
@@ -104,21 +104,20 @@ M_f = np.abs((R_1 + 1j * 2 * np.pi * new_freqs[mask_I_2_f_neq_0] * L_1) * I_1_f[
 low_freqs_mask = new_freqs[mask_I_2_f_neq_0] < 1e6
 
 M_mean = np.mean(M_f[low_freqs_mask])
-print(f"Estimated mutual inductance: {M_mean * 1e9:.2f} nH")
+print(f"Estimated mutual inductance: {M_mean * 1e12:.2f} pH")
 
 # %% Theoretical value of current on port 1 using the estimated mutual inductance
 
-num = [2.03e-9, 0]
-den = [80e-9, 50]
+num = [449e-12, 0]
+den = [23e-9, 50]
 system = signal.TransferFunction(num, den)
 tout, I_theo_port1, _ = signal.lsim(system, U=I_2_in, T=time)
 
 plt.figure()
-plt.plot(tout, -I_theo_port1, label='Theoretical current on port 1', color='green')
+plt.plot(tout, I_theo_port1, label='Theoretical current on port 1', color='green')
 plt.plot(probeWire["time"].to_numpy(), I_1, label='Current on wire. Port 1', color='blue')
 plt.xlabel('Time [s]')
 plt.ylabel('Ampere [A]')
-plt.xlim((0, 3e-9))
 plt.grid(which='both')
 plt.legend()
 plt.show()
@@ -128,19 +127,73 @@ plt.show()
 magneticCurrent = Probe(solver.getSolvedProbeFilenames("Magnetic_Bulk")[0])
 
 mu_0 = 4 * np.pi * 1e-7
-l = 20e-3
+l = 5e-3
+thickness = 5e-3
 
-theoretical_flux = mu_0 * l * I_2_in * np.log(2) / (2 * np.pi)
+theoretical_flux = mu_0 * l * I_2 * np.log( (thickness+l) / thickness ) / (2 * np.pi)
+
+# plt.figure()
+# plt.plot(magneticCurrent["time"].to_numpy(), magneticCurrent["current"].to_numpy(), label='Magnetic current on bulk probe', color='orange')
+# plt.plot(t, np.gradient(theoretical_flux, t), '--', label='Theoretical magnetic current', color='red')
+# plt.xlabel('Time [s]')
+# plt.xlim((0, 3e-9))
+# plt.grid(which='both')
+# plt.legend()
+# plt.show()
+
+MagneticCurrent_f = np.array([np.sum(magneticCurrent["current"].to_numpy() * np.exp(-1j * 2 * np.pi * f * magneticCurrent["time"].to_numpy())) for f in new_freqs])
+theoretical_flux_f = mu_0 * l * I_2_f * np.log( (thickness+l) / thickness ) / (2 * np.pi)
 
 plt.figure()
-plt.plot(magneticCurrent["time"].to_numpy(), magneticCurrent["current"].to_numpy(), label='Magnetic current on bulk probe', color='orange')
-plt.plot(time, np.gradient(theoretical_flux, time), '--', label='Theoretical magnetic current', color='red')
-plt.xlabel('Time [s]')
-plt.xlim((0, 3e-9))
+plt.plot(new_freqs, np.abs(MagneticCurrent_f), label='Magnetic current on bulk probe', color='orange')
+plt.plot(new_freqs, np.abs(1j * 2 * np.pi * new_freqs * theoretical_flux_f), '--', label='Theoretical magnetic current', color='red')
+plt.xscale('log')
+plt.xlabel('Frequency [Hz]')
+plt.ylabel('Magnetic current')
 plt.grid(which='both')
 plt.legend()
 plt.show()
 
+# %% ProbePoints for magnetic field
+
+probe_names = [
+    "Point probe_T_L",
+    "Point probe_T_R",
+    "Point probe_B_L",
+    "Point probe_B_R"
+]
+coords = ['x', 'y', 'z']
+
+probes = {}
+for name in probe_names:
+    for i, coord in enumerate(coords):
+        var_name = f"{name.split(' ')[1]}_{coord}"
+        probes[var_name] = Probe(solver.getSolvedProbeFilenames(name)[i])
+
+# Acceso: probes['probeT_L_x'], probes['probeT_L_y'], etc.
+
+fig, axs = plt.subplots(3, 1, figsize=(10, 8), sharex=True)
+
+dimensions = ['x', 'y', 'z']
+colors = ['tab:blue', 'tab:orange', 'tab:green']
+probe_labels = ['T_L', 'T_R', 'B_L', 'B_R']
+
+for i, dim in enumerate(dimensions):
+    for label in probe_labels:
+        probe_key = f'probe_{label}_{dim}'
+        axs[i].plot(
+            probes[probe_key]["time"].to_numpy(),
+            probes[probe_key]["field"].to_numpy(),
+            label=f'{label}'
+        )
+    axs[i].set_ylabel(f'Magnetic field {dim}')
+    axs[i].legend()
+    axs[i].grid(True)
+
+axs[-1].set_xlabel('Time [s]')
+plt.suptitle('Comparison of Magnetic probe points in x, y, z Dimensions')
+plt.tight_layout(rect=[0, 0.03, 1, 0.95])
+plt.show()
 
 
 # %% Analysis for Port 1
@@ -170,13 +223,13 @@ probeWire_p1 = Probe(solver_p1.getSolvedProbeFilenames("Wire probe_port1")[0])
 I_1_p1 = probeWire_p1["current"].to_numpy()
 
 num = [1]
-den = [80e-9, 50]
+den = [23e-9, 50]
 system = signal.TransferFunction(num, den)
 tout, I_theo, _ = signal.lsim(system, U=V_in, T=time_p1)
 
 plt.figure()
 plt.plot(probeWire_p1["time"].to_numpy(), I_1_p1, '--', label='Current on wire. Port 1', color='blue')
-plt.plot(tout, I_theo, label='Theoretical current on wire. Port 1', color='green')
+plt.plot(tout, -I_theo, label='Theoretical current on wire. Port 1', color='green')
 plt.grid(which='both')
 plt.xlabel('Time [s]')
 plt.ylabel('Ampere [A]')

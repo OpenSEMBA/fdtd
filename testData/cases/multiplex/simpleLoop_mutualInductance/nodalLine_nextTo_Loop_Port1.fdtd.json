@@ -1,8 +1,8 @@
 {
     "_format": "FDTD Input file",
     "general": {
-        "timeStep": 1.5407e-12,
-        "numberOfSteps": 10500
+        "timeStep": 2e-12,
+        "numberOfSteps": 4000
     },
     "boundary": {
         "all": {
@@ -32,49 +32,49 @@
             {
                 "id": 1,
                 "relativePosition": [
+                    10.0,
                     20.0,
-                    20.0,
-                    20.0
+                    18.0
                 ]
             },
             {
                 "id": 2,
                 "relativePosition": [
-                    30.0,
+                    15.0,
                     20.0,
-                    20.0
+                    18.0
                 ]
             },
             {
-                "id": 5,
+                "id": 6,
                 "relativePosition": [
-                    30.0,
+                    15.0,
                     20.0,
-                    10.0
+                    15.0
                 ]
             },
             {
                 "id": 7,
                 "relativePosition": [
+                    10.0,
                     20.0,
-                    20.0,
-                    10.0
+                    15.0
                 ]
             },
             {
                 "id": 8,
                 "relativePosition": [
+                    10.0,
                     20.0,
-                    20.0,
-                    30.0
+                    20.0
                 ]
             },
             {
                 "id": 9,
                 "relativePosition": [
-                    30.0,
+                    15.0,
                     20.0,
-                    30.0
+                    20.0
                 ]
             }
         ],
@@ -92,12 +92,12 @@
                 "intervals": [
                     [
                         [
-                            9,
+                            4,
                             19,
                             20
                         ],
                         [
-                            11,
+                            6,
                             21,
                             20
                         ]
@@ -106,63 +106,27 @@
             },
             {
                 "id": 3,
-                "type": "node",
-                "coordinateIds": [
-                    2
-                ]
-            },
-            {
-                "id": 4,
                 "type": "cell",
                 "intervals": [
                     [
                         [
-                            30,
+                            10,
                             20,
-                            10
+                            15
                         ],
                         [
-                            30,
+                            15,
                             20,
-                            10
-                        ]
-                    ],
-                    [
-                        [
-                            30,
-                            20,
-                            30
-                        ],
-                        [
-                            30,
-                            20,
-                            30
-                        ]
-                    ],
-                    [
-                        [
-                            30,
-                            20,
-                            10
-                        ],
-                        [
-                            30,
-                            20,
-                            10
-                        ]
-                    ],
-                    [
-                        [
-                            30,
-                            20,
-                            30
-                        ],
-                        [
-                            30,
-                            20,
-                            30
+                            20
                         ]
                     ]
+                ]
+            },
+            {
+                "id": 4,
+                "type": "node",
+                "coordinateIds": [
+                    2
                 ]
             },
             {
@@ -171,26 +135,50 @@
                 "intervals": [
                     [
                         [
-                            30,
+                            35,
                             20,
-                            30
+                            18
                         ],
                         [
-                            30,
+                            35,
                             20,
-                            30
+                            18
                         ]
                     ],
                     [
                         [
-                            30,
+                            35,
                             20,
-                            30
+                            15
                         ],
                         [
-                            30,
+                            35,
                             20,
-                            30
+                            15
+                        ]
+                    ],
+                    [
+                        [
+                            35,
+                            20,
+                            18
+                        ],
+                        [
+                            35,
+                            20,
+                            18
+                        ]
+                    ],
+                    [
+                        [
+                            35,
+                            20,
+                            15
+                        ],
+                        [
+                            35,
+                            20,
+                            15
                         ]
                     ]
                 ]
@@ -201,50 +189,50 @@
                 "intervals": [
                     [
                         [
-                            30,
+                            35,
+                            20,
+                            15
+                        ],
+                        [
+                            35,
+                            20,
+                            15
+                        ]
+                    ],
+                    [
+                        [
+                            35,
                             20,
                             20
                         ],
                         [
-                            30,
+                            35,
                             20,
                             20
                         ]
                     ],
                     [
                         [
-                            30,
+                            35,
                             20,
-                            10
+                            15
                         ],
                         [
-                            30,
+                            35,
                             20,
-                            10
+                            15
                         ]
                     ],
                     [
                         [
-                            30,
+                            35,
                             20,
                             20
                         ],
                         [
-                            30,
+                            35,
                             20,
                             20
-                        ]
-                    ],
-                    [
-                        [
-                            30,
-                            20,
-                            10
-                        ],
-                        [
-                            30,
-                            20,
-                            10
                         ]
                     ]
                 ]
@@ -255,24 +243,24 @@
                 "intervals": [
                     [
                         [
-                            30,
+                            35,
                             20,
                             20
                         ],
                         [
-                            30,
+                            35,
                             20,
                             20
                         ]
                     ],
                     [
                         [
-                            30,
+                            35,
                             20,
                             20
                         ],
                         [
-                            30,
+                            35,
                             20,
                             20
                         ]
@@ -281,6 +269,36 @@
             },
             {
                 "id": 8,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            35,
+                            20,
+                            18
+                        ],
+                        [
+                            35,
+                            20,
+                            18
+                        ]
+                    ],
+                    [
+                        [
+                            35,
+                            20,
+                            18
+                        ],
+                        [
+                            35,
+                            20,
+                            18
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 9,
                 "type": "polyline",
                 "coordinateIds": [
                     9,
@@ -288,18 +306,18 @@
                 ]
             },
             {
-                "id": 9,
-                "type": "polyline",
-                "coordinateIds": [
-                    2,
-                    5
-                ]
-            },
-            {
                 "id": 10,
                 "type": "polyline",
                 "coordinateIds": [
-                    5,
+                    2,
+                    6
+                ]
+            },
+            {
+                "id": 11,
+                "type": "polyline",
+                "coordinateIds": [
+                    6,
                     7,
                     1,
                     8,
@@ -361,7 +379,7 @@
             "name": "Cable001",
             "type": "cable",
             "elementIds": [
-                8
+                9
             ],
             "materialId": 2,
             "initialTerminalId": 5,
@@ -371,7 +389,7 @@
             "name": "Cable002",
             "type": "cable",
             "elementIds": [
-                9
+                10
             ],
             "materialId": 3,
             "initialTerminalId": 5,
@@ -381,7 +399,7 @@
             "name": "Cable",
             "type": "cable",
             "elementIds": [
-                10
+                11
             ],
             "materialId": 1,
             "initialTerminalId": 5,
@@ -405,7 +423,7 @@
             "type": "wire",
             "field": "current",
             "elementIds": [
-                3
+                4
             ],
             "domain": {
                 "type": "time"
@@ -417,6 +435,17 @@
             "field": "electric",
             "elementIds": [
                 2
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "Magnetic_Bulk",
+            "type": "bulkCurrent",
+            "field": "magnetic",
+            "elementIds": [
+                3
             ],
             "domain": {
                 "type": "time"

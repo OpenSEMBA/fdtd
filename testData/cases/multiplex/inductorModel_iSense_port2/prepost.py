@@ -72,16 +72,16 @@ plt.legend()
 plt.show()
 # %% Calculation of mutual inductance without the DTFT
 
-R_1 = 50
-L_1 = 243e-9  # Inductance of the inductor in port 1.
-i_1 = probeWire["current"].to_numpy()
-i_2 = bulkProbe["current"].to_numpy()
+# R_1 = 50
+# L_1 = 243e-9  # Inductance of the inductor in port 1.
+# i_1 = probeWire["current"].to_numpy()
+# i_2 = bulkProbe["current"].to_numpy()
 
-mask_dI_2_neq_0 = np.abs(np.gradient(i_2, bulkProbe['time'])) != 0
+# mask_dI_2_neq_0 = np.abs(np.gradient(i_2, bulkProbe['time'])) != 0
 
-M_theo = (R_1 * i_1[mask_dI_2_neq_0] + L_1 * np.gradient(i_1, probeWire['time'])[mask_dI_2_neq_0]) / np.gradient(i_2, bulkProbe['time'])[mask_dI_2_neq_0]
+# M_theo = (R_1 * i_1[mask_dI_2_neq_0] + L_1 * np.gradient(i_1, probeWire['time'])[mask_dI_2_neq_0]) / np.gradient(i_2, bulkProbe['time'])[mask_dI_2_neq_0]
 
-print(f"Estimated mutual inductance: {np.mean(M_theo) * 1e9:.2f} nH")
+# print(f"Estimated mutual inductance: {np.mean(M_theo) * 1e9:.2f} nH")
 
 # %% Theoretical value of current on port 1 using the estimated mutual inductance
 
@@ -103,7 +103,7 @@ print(f"Estimated mutual inductance: {np.mean(M_theo) * 1e9:.2f} nH")
 
 # %% DTFT for mutual inductance estimation
 
-R_1 = 0
+R_1 = 50
 L_1 = 243e-9  # Inductance of the inductor in port 1. Check the prepost on inductorModel_iSense_port1 for the value.
 
 new_freqs = np.geomspace(1e4, 1e9, num=500)
@@ -115,7 +115,7 @@ I_2_f = np.array([np.sum(I_2 * np.exp(-1j * 2 * np.pi * f * t)) for f in new_fre
 
 mask_I_2_f_neq_0 = I_2_f != 0
 
-M_f = (R_1 + 1j * 2 * np.pi * new_freqs[mask_I_2_f_neq_0] * L_1) * I_1_f[mask_I_2_f_neq_0] / ( -1j * 2 * np.pi * new_freqs[mask_I_2_f_neq_0] * I_2_f[mask_I_2_f_neq_0] )
+M_f = (R_1 + 1j * 2 * np.pi * new_freqs[mask_I_2_f_neq_0] * L_1) * I_1_f[mask_I_2_f_neq_0] / ( 1j * 2 * np.pi * new_freqs[mask_I_2_f_neq_0] * I_2_f[mask_I_2_f_neq_0] )
 
 plt.figure()
 plt.plot(new_freqs[mask_I_2_f_neq_0], np.abs(M_f), label='Mutual Inductance')
@@ -126,7 +126,7 @@ plt.grid(which='both')
 plt.legend()
 plt.show()
 
-M_mean = np.mean(np.abs(M_f[new_freqs < 1e6]))
+M_mean = np.mean(np.real(M_f[new_freqs < 1e6]))
 print(f"Estimated mutual inductance: {M_mean * 1e9:.2f} nH")
 
 

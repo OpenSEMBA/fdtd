@@ -1,8 +1,8 @@
 {
     "_format": "FDTD Input file",
     "general": {
-        "timeStep": 1e-13,
-        "numberOfSteps": 30000
+        "timeStep": 2e-12,
+        "numberOfSteps": 10000
     },
     "boundary": {
         "xLower": {
@@ -20506,7 +20506,7 @@
         {
             "name": "nodalSource",
             "type": "nodalSource",
-            "magnitudeFile": "predefinedExcitation.1.exc",
+            "magnitudeFile": "smoothRampExcitation.exc",
             "elementIds": [
                 1
             ],
