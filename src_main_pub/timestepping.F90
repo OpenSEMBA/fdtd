@@ -424,7 +424,7 @@ contains
          !In case of resuming, the fields are read from disk
          if (resume_fromold) then
             open (14,file=trim(adjustl(nresumeable2))//'.old',form='unformatted')
-         else6
+         else
             open (14,file=trim(adjustl(nresumeable2)),form='unformatted')
          endif
          call ReadFields(sgg%alloc,lastexecutedtimestep,lastexecutedtime,ultimodt,eps0,mu0,Ex,Ey,Ez,Hx,Hy,Hz)

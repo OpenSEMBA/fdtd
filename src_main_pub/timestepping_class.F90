@@ -6,7 +6,7 @@
 
 module timestepping_mod
 
-!    use fdetypes
+    use fdetypes
 !    use report
 !    use PostProcessing
 !    use Ilumina
@@ -80,8 +80,9 @@ module timestepping_mod
 
     type, public :: stepper_t
         real (kind=rkind), pointer, dimension (:,:,:)  ::  Ex,Ey,Ez,Hx,Hy,Hz
-        
-        private
+        real (kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
+        real (kind=rkind), pointer, dimension (:) :: Idxh, Idyh, Idzh
+        type (bounds_t) :: bounds
 
     contains
         procedure :: step => stepper_step
@@ -109,6 +110,16 @@ contains
 
     function stepper_ctor() result(res)
         type(stepper_t) :: res
+        ! bounds are defined in solver%findbounds
+        ! no need to pass sgg
+
+        ! type(sggfdtdinfo) :: sgg
+        ! allocate(this%Idxh(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE), &
+        !          this%Idyh(sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE), &
+        !          this%Idzh(sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE))
+        allocate(this%Idxh(this%bounds%dxh%XI:this%bounds%dxh%XE), &
+                 this%Idyh(this%bounds%dyh%YI:this%bounds%dyh%YE), &
+                 this%Idzh(this%bounds%dzh%ZI:this%bounds%dzh%ZE))
 
 
     end function
@@ -160,4 +171,43 @@ contains
         call this%advanceHZ()
     end subroutine
 
-end module stepper_mod
+    ! index shifting is needed for MPI
+    ! in each slice arrays start on 1
+    ! global indexing is lost
+    subroutine advanceEx(this)
+        class(stepper_t) :: this
+        integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
+        integer(kind=4) :: i, j, k
+        real (kind=rkind), dimension(:,:,:), pointer  ::  Ex
+        real (kind=rkind), dimension(:,:,:), pointer  ::  Hy
+        real (kind=rkind), dimension(:,:,:), pointer  ::  Hz
+        real (kind=rkind), dimension(:), pointer  ::  Idyh
+        real (kind=rkind), dimension(:), pointer  ::  Idzh
+        real (kind=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), pointer  ::  sggmiEx
+        
+        allocate(this%Ex(0:this%bounds%Ex%NX-1 , 0:this%bounds%Ex%NY-1 , 0:this%bounds%Ex%NZ-1))
+        allocate(this%Hy(0:this%bounds%Hy%NX-1 , 0:this%bounds%Hy%NY-1 , 0:this%bounds%Hy%NZ-1))
+        allocate(this%Hz(0:this%bounds%Hz%NX-1 , 0:this%bounds%Hz%NY-1 , 0:this%bounds%Hz%NZ-1))
+        allocate(Idyh(0:this%bounds%dyh%NY-1))
+        allocate(Idzh(0:this%bounds%dzh%NZ-1))
+        allocate(sggmiEx(0:this%bounds%sggMiEx%NX-1,0:this%bounds%sggMiEx%NY-1,0:this%bounds%sggMiEx%NZ-1 ))
+        Ex => this%Ex
+        Hy => this%Hy
+        Hz => this%Hz
+        Idhy => this%Idhy
+        Idhz => this%Idhz
+        sggmiEx => this%
+        do k=1,this%bounds%sweepEx%NZ
+            do j=1,this%bounds%sweepEx%NY
+                do i=1,this%bounds%sweepEx%NX
+                    medio = sggMiEx(i,j,k)
+                    Ex(i,j,k) = this%g1(medio)*Ex(i,j,k) + & 
+                                this%g2(medio)*((Hz(i,j,k)-Hz(i,j-1,k))*Idyh(j) - & 
+                                                (Hy(i,j,k)-Hy(i,j,k-1))*Idzh(k))
+                end do
+            end do
+        end do
+
+    end subroutine
+
+end module timestepping_mod
