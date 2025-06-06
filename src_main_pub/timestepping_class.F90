@@ -203,5 +203,65 @@ contains
 
     end subroutine
 
+    subroutine advanceEy(this, Ey, Hz, Hx)
+        class(stepper_t) :: this
+        integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
+        integer(kind=4) :: i, j, k
+        real (kind=rkind), dimension(0:this%bounds%Ey%NX-1 , 0:this%bounds%Ey%NY-1 , 0:this%bounds%Ey%NZ-1), intent(inout) :: Ey
+        real (kind=rkind), dimension(0:this%bounds%Hz%NX-1 , 0:this%bounds%Hz%NY-1 , 0:this%bounds%Hz%NZ-1), intent(inout) :: Hz
+        real (kind=rkind), dimension(0:this%bounds%Hx%NX-1 , 0:this%bounds%Hx%NY-1 , 0:this%bounds%Hx%NZ-1), intent(inout) :: Hx
+        real (kind=rkind), dimension(:), pointer  ::  Idzh
+        real (kind=rkind), dimension(:), pointer  ::  Idxh
+        real (kind=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), pointer  ::  sggmiEy
+        
+        allocate(Idzh(0:this%bounds%dzh%NZ-1))
+        allocate(Idyh(0:this%bounds%dxh%NX-1))
+        allocate(sggmiEy(0:this%bounds%sggMiEy%NX-1,0:this%bounds%sggMiEy%NY-1,0:this%bounds%sggMiEy%NZ-1 ))
+        Idhz => this%Idhz
+        Idhx => this%Idhx
+        sggmiEy => this%sggmiEy
+        do k=1,this%bounds%sweepEy%NZ
+            do j=1,this%bounds%sweepEy%NY
+                do i=1,this%bounds%sweepEy%NX
+                    medio = sggMiEy(i,j,k)
+                    Ey(i,j,k) = this%g1(medio)*Ey(i,j,k) + & 
+                                this%g2(medio)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzh(k) - & 
+                                                (Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
+                end do
+            end do
+        end do
+
+    end subroutine
+
+    subroutine advanceEz(this, Ez, Hx, Hy)
+        class(stepper_t) :: this
+        integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
+        integer(kind=4) :: i, j, k
+        real (kind=rkind), dimension(0:this%bounds%Ez%NX-1 , 0:this%bounds%Ez%NY-1 , 0:this%bounds%Ez%NZ-1), intent(inout) :: Ez
+        real (kind=rkind), dimension(0:this%bounds%Hx%NX-1 , 0:this%bounds%Hx%NY-1 , 0:this%bounds%Hx%NZ-1), intent(inout) :: Hx
+        real (kind=rkind), dimension(0:this%bounds%Hy%NX-1 , 0:this%bounds%Hy%NY-1 , 0:this%bounds%Hy%NZ-1), intent(inout) :: Hy
+        real (kind=rkind), dimension(:), pointer  ::  Idxh
+        real (kind=rkind), dimension(:), pointer  ::  Idzy
+        real (kind=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), pointer  ::  sggmiEz
+        
+        allocate(Idyh(0:this%bounds%dxh%NX-1))
+        allocate(Idzh(0:this%bounds%dyh%NY-1))
+        allocate(sggmiEz(0:this%bounds%sggMiEz%NX-1,0:this%bounds%sggMiEz%NY-1,0:this%bounds%sggMiEz%NZ-1 ))
+        Idhx => this%Idhx
+        Idhy => this%Idhy
+        sggmiEz => this%sggmiEz
+        do k=1,this%bounds%sweepEz%NZ
+            do j=1,this%bounds%sweepEz%NY
+                do i=1,this%bounds%sweepEz%NX
+                    medio = sggMiEz(i,j,k)
+                    Ez(i,j,k) = this%g1(medio)*Ez(i,j,k) + & 
+                                this%g2(medio)*((Hy(i,j,k)-Hy(i-1,j,k))*Idzx(i) - & 
+                                                (Hx(i,j,k)-Hx(i,j-1,k))*Idyh(j))
+                end do
+            end do
+        end do
+
+    end subroutine
+
 
 end module timestepping_mod
