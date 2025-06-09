@@ -138,88 +138,176 @@ contains
     subroutine stepper_step(this)
         class(stepper_t) :: this
 
-        ! flush planewave off
-        if (Thereare%Anisotropic) call advanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-        call this%advanceE()
-        if (planewavecorr) call this%advanceFreeSpaceE()
-#ifdef CompileWithConformal
-        if(input_conformal_flag) call conformal_advance_E()
-#endif
-        call this%advanceWires()
-        call this%advancePMLE()
-#ifdef CompileWithNIBC
-        IF (Thereare%Multiports.and.(mibc)) call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
-#endif
-        IF (Thereare%sgbcs.and.(sgbc))  then
-            call AdvancesgbcE(real(sgg%dt,RKIND),sgbcDispersive,simu_devia,stochastic)
-        endif
-        if (ThereAre%Lumpeds) call AdvanceLumpedE(sgg,n,simu_devia,stochastic)
-        if (Thereare%Edispersives) call AdvanceEDispersiveE(sgg)
-        call this%advancePlaneWaveE()
-        If (Thereare%NodalE) call AdvanceNodalE(sgg,sggMiEx,sggMiEy,sggMiEz,sgg%NumMedia,n, b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,simu_devia)
-
+        call this%advanceFieldsE()
 #ifdef CompileWithMPI
         if (size>1) then
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call   FlushMPI_E_Cray
         endif
 #endif
+        call this%advanceFieldsH()
+        ! there is another if condition for MPI flushing
+    end subroutine
 
-
-        IF (Thereare%Anisotropic) call AdvanceAnisotropicH(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-        call this%advanceH()
-        if (planewavecorr) call this%advanceFreeSpaceH()
-        call this%advancePMLH()
-        call this%advancePMC()
-        if (Thereare%sgbcs.and.(sgbc)) call AdvancesgbcH()
-        if (Thereare%Mdispersives) call AdvanceMDispersiveH(sgg)
-#ifdef CompileWithNIBC
-         !Multiports H-field advancing
-         IF (Thereare%Multiports    .and.(mibc))  &
-         call AdvanceMultiportH    (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,sggMiHx,sggMiHy,sggMiHz,gm2,sgg%nummedia,conformalskin)
+    subroutine advanceFieldsE(this)
+        class(stepper_t)
+        ! flush planewave off
+        call this%stepAnisotropicE()
+        call this%stepE()
+        call this%stepFreeSpaceE()
+#ifdef CompileWithConformal
+        call this%stepConformalE()
 #endif
-        call this%AdvancePlaneWaveH()
-        If (Thereare%NodalH) call AdvanceNodalH(sgg,sggMiHx,sggMiHy,sggMiHz,sgg%NumMedia,n, b ,GM2,Idxe,Idye,Idze,Hx,Hy,Hz,simu_devia)
+        call this%stepWires()
+        call this%stepPMLE()
+        call this%stepMultiportE()
+        call this%stepSGBCE()
+        call this%stepLumpedE()
+        call this%stepDispersiveE()
+        call this%stepPlaneWaveE()
+        call this%stepNodalE()
+    end subroutine
 
+    subroutine advanceFieldsH(this)
+        class(stepper_t)
+        call this%stepAnisotropicH()
+        call this%stepH()
+        call this%stepFreeSpaceH()
+        call this%stepPMLH()
+        call this%stepPMC()
+        call this%stepSGBCH()
+        call this%stepDispersiveH()
+        call this%stepMultiportH()
+        call this%stepPlaneWaveH()
+        call this%stepNodalH()
         ! advance wires H: no hace nada salvo thick wires, y no implementado
-        call this%advancePMC()
-
-#ifdef CompileWithConformal                      
-        if(input_conformal_flag) call conformal_advance_H()
+        call this%stepPMC()
+#ifdef CompileWithConformal
+        call this%stepConformalH()
 #endif
         ! advance magnetic MUR
     end subroutine
 
+    subroutine stepAnisotropicE(this)
+        class(stepper_t) :: this
+        if (Thereare%Anisotropic) then 
+            call advanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
+        end if
+    end subroutine
 
-    subroutine advanceE(this, Ex, Ey, Ez, Hx, Hy, Hz)
+    subroutine stepAnisotropicH(this)
+        class(stepper_t) :: this
+        if (Thereare%Anisotropic) then 
+            call AdvanceAnisotropicH(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
+        end if
+    end subroutine
+
+
+
+#ifdef CompileWithConformal
+    subroutine stepConformalE(this)
+        class(stepper_t) :: this
+        if(input_conformal_flag) call conformal_advance_E()
+    end subroutine
+#endif
+
+#ifdef CompileWithConformal
+    subroutine stepConformalH(this)
+        class(stepper_t) :: this
+        if(input_conformal_flag) call conformal_advance_H()
+    end subroutine
+#endif
+
+    subroutine stepMultiportE(this)
+    class(stepper_t) :: this
+#ifdef CompileWithNIBC
+        if (Thereare%Multiports.and.(mibc)) call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
+#endif
+    end subroutine
+
+    subroutine stepMultiportH(this)
+    class(stepper_t) :: this
+#ifdef CompileWithNIBC
+        if (Thereare%Multiports .and.(mibc)) then 
+            call AdvanceMultiportH(sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,& 
+                                   sggMiHx,sggMiHy,sggMiHz,gm2,sgg%nummedia,conformalskin)
+        endif
+#endif
+    end subroutine
+
+    subroutine stepSGBCE(this)
+        class(stepper_t) :: this
+        if (Thereare%sgbcs.and.(sgbc))  then
+            call AdvancesgbcE(real(sgg%dt,RKIND),sgbcDispersive,simu_devia,stochastic)
+        endif
+    end subroutine
+    
+    subroutine stepSGBCH(this)
+        class(stepper_t) :: this
+        if (Thereare%sgbcs.and.(sgbc))  then
+            call AdvancesgbcH()
+        endif
+    end subroutine
+    
+    subroutine stepLumpedE(this)
+        class(stepper_t) :: this
+        if (ThereAre%Lumpeds) call AdvanceLumpedE(sgg,n,simu_devia,stochastic)
+    end subroutine
+
+    subroutine stepDispersiveE(this)
+        class(stepper_t) :: this
+        if (Thereare%Edispersives) call AdvanceEDispersiveE(sgg)
+    end subroutine
+
+    subroutine stepDispersiveH(this)
+        class(stepper_t) :: this
+        if (Thereare%Mdispersives) call AdvanceMDispersiveH(sgg)
+    end subroutine
+
+    subroutine stepNodalE(this)
+        class(stepper_t) :: this
+        If (Thereare%NodalE) call AdvanceNodalE(sgg,sggMiEx,sggMiEy,sggMiEz,sgg%NumMedia,n, b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,simu_devia)
+    end subroutine
+
+    subroutine stepNodalH(this)
+        class(stepper_t) :: this
+        If (Thereare%NodalH) call AdvanceNodalH(sgg,sggMiHx,sggMiHy,sggMiHz,sgg%NumMedia,n, b ,GM2,Idxe,Idye,Idze,Hx,Hy,Hz,simu_devia)
+    end subroutine
+
+
+    subroutine stepE(this, Ex, Ey, Ez, Hx, Hy, Hz)
         class(stepper_t) :: this
         call this%advanceEx(Ex, Hy, Hz)
         call this%advanceEy(Ey, Hz, Hx)
         call this%advanceEZ(Ez, Hx, Hy)
     end subroutine
 
-    subroutine advanceH(this, Ex, Ey, Ez, Hx, Hy, Hz)
+    subroutine stepH(this, Ex, Ey, Ez, Hx, Hy, Hz)
         class(stepper_t) :: this
         call this%advanceHx(Hx, Ey, Ez)
         call this%advanceHy(Hy, Ez, Ex)
         call this%advanceHZ(Hz, Ex, Ey)
     end subroutine
 
-    subroutine advanceFreeSpaceE(this)
+    subroutine stepFreeSpaceE(this)
         class(stepper_t) :: this
-        call FreeSpace_Advance_Ex()
-        call FreeSpace_Advance_Ey()
-        call FreeSpace_Advance_Ez()
+        if (planewavecorr) then
+            call FreeSpace_Advance_Ex()
+            call FreeSpace_Advance_Ey()
+            call FreeSpace_Advance_Ez()
+        endif
+        end subroutine
+
+    subroutine stepFreeSpaceH(this)
+        class(stepper_t) :: this
+        if (planewavecorr) then 
+            call FreeSpace_Advance_Hx()
+            call FreeSpace_Advance_Hy()
+            call FreeSpace_Advance_Hz()
+        endif
     end subroutine
 
-    subroutine advanceFreeSpaceH(this)
-        class(stepper_t) :: this
-        call FreeSpace_Advance_Hx()
-        call FreeSpace_Advance_Hy()
-        call FreeSpace_Advance_Hz()
-    end subroutine
-
-    subroutine advanceWires(this)
+    subroutine stepWires(this)
         class(stepper_t) :: this
 
         if (((trim(adjustl(wiresflavor))=='holland') .or. &
@@ -257,7 +345,7 @@ contains
         endif
     end subroutine
 
-    subroutine advancePMLE(this)
+    subroutine stepPMLE(this)
         class(stepper_t) :: this
         If (Thereare%PMLbodies) call AdvancePMLbodyE()
         If (Thereare%PMLBorders) then
@@ -270,7 +358,7 @@ contains
         endif
     end subroutine
 
-    subroutine advancePMLH(this)
+    subroutine stepPMLH(this)
         class(stepper_t) :: this
         if (Thereare%PMLbodies) call AdvancePMLbodyH
         If (Thereare%PMLBorders) then
@@ -287,13 +375,13 @@ contains
         endif
     end subroutine
 
-    subroutine advancePMC(this)
+    subroutine stepPMC(this)
         class(stepper_t) :: this
         if (Thereare%PMCBorders) call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
         If (Thereare%PeriodicBorders) call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
     end subroutine
 
-    subroutine advancePlaneWaveE(this)
+    subroutine stepPlaneWaveE(this)
         class(stepper_t) :: this
         !check logic is the same
         if (Thereare%PlaneWaveBoxes.and.still_planewave_time .and. .not.simu_devia) then
@@ -302,7 +390,7 @@ contains
         endif
     end subroutine
 
-    subroutine advancePlaneWaveH(this)
+    subroutine stepPlaneWaveH(this)
         class(stepper_t) :: this
         If (Thereare%PlaneWaveBoxes.and.still_planewave_time .and. .not.simu_devia)  then
             call AdvancePlaneWaveH(sgg,n, b, GM2, Idxe,Idye, Idze, Hx, Hy, Hz,still_planewave_time)
