@@ -40,15 +40,17 @@ CONTAINS
    SUBROUTINE rotate_generateSpaceSteps (this, mpidir)
       TYPE (Parseador), INTENT (INOUT) :: this          
       INTEGER (KIND=4) ::  mpidir
-      TYPE (Desplazamiento), POINTER ::        old_despl => NULL ()      
-      TYPE (MatrizMedios), POINTER ::          old_matriz => NULL ()
+      TYPE (Desplazamiento), POINTER :: old_despl => NULL ()      
+      TYPE (MatrizMedios), POINTER :: old_matriz => NULL ()
       integer (kind=4) :: oxi,oyi,ozi
       REAL (KIND=RK) :: roxi,royi,rozi
+      REAL (KIND=RK), dimension(:),POINTER :: poxi, poyi, pozi
       
       !!! MPI ROTATE           
       allocate(old_despl,source=this%despl)
       allocate(old_matriz,source=this%matriz)
-      
+
+      !X->Y->Z->X
       IF (MPIDIR==2 ) THEN
          OXI=old_matriz%totalX
          OYI=old_matriz%totalY
@@ -90,9 +92,14 @@ CONTAINS
          this%despl%originY=rOXI
          this%despl%originZ=rOYI
          !         
-         this%despl%desX = old_despl%desz
-         this%despl%desY = old_despl%desx
-         this%despl%desZ = old_despl%desy
+         poxi => old_despl%desX 
+         poyi => old_despl%desY 
+         pozi => old_despl%desZ 
+         !                  
+         this%despl%desX => pozi
+         this%despl%desY => poxi
+         this%despl%desZ => poyi
+      !X->Z->Y->X
       ELSEIF (MPIDIR==1 ) THEN
          OXI=old_matriz%totalX
          OYI=old_matriz%totalY
@@ -134,9 +141,14 @@ CONTAINS
          this%despl%originY=rOZI
          this%despl%originZ=rOXI
          !
-         this%despl%desX = old_despl%desY
-         this%despl%desY = old_despl%desZ
-         this%despl%desZ = old_despl%desX
+         poxi => old_despl%desX 
+         poyi => old_despl%desY 
+         pozi => old_despl%desZ 
+         !
+         this%despl%desX => poyi
+         this%despl%desY => pozi
+         this%despl%desZ => poxi
+
       ENDIF
       !!!!!!!!! fin rotacion
       deallocate (old_despl,old_matriz)
