@@ -8,17 +8,54 @@ module solver_mod
     use fdetypes
     implicit none
 
+    type :: sim_flags_t
+        logical :: simu_devia, resume,saveall,makeholes,& 
+                   connectendings,isolategroupgroups,createmap, & 
+                   groundwires,noSlantedcrecepelo, SGBC, & 
+                   SGBCDispersive,mibc,ADE,conformalskin,& 
+                   NOcompomur,strictOLD,TAPARRABOS, & 
+                   noconformalmapvtk, hopf,experimentalVideal, &
+                   forceresampled, mur_second,MurAfterPML, &
+                   stableradholland,singlefilewrite,NF2FFDecim, &
+                   sgbccrank,fieldtotl,finishedwithsuccess, &
+                   permitscaling,mtlnberenger,niapapostprocess,planewavecorr, &
+                   nonconformalvtk, stochastic, verbose, dontwritevtk, &
+                   use_mtln_wires, resume_fromold
+    end type sim_flags_t
 
     type, public :: solver_t
         real (kind=rkind), pointer, dimension (:,:,:)  ::  Ex,Ey,Ez,Hx,Hy,Hz
-        integer(kind=4) :: numberOfSteps
-        type (bounds_t)  ::  bounds
+        ! things from l (entrada_t)
+        integer (kind=4) :: precision
+        integer(kind=4) :: numberOfSteps, wirethickness, layoutnumber,& 
+                           size,mpidir
+
+        type (bounds_t) ::  bounds
+        type(sim_flags_t) :: flags
+        type (tagtype_t) :: tagtype
+        type(taglist_t) :: tag_numbers
+        integer (kind=ikindmtag), dimension(:,:,:), allocatable :: sggMtag
+        integer (kind=integersizeofmediamatrices), dimension(:,:,:), allocatable :: sggMiNo, sggMiEx,sggMiEy,sggMiEz, & 
+                                                                                    sggMiHx,sggMiHy,sggMiHz
+        type (EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters     
+        type (nf2ff_T) :: facesNF2FF
+
+        real(kind=rkind) :: cfl, alphamaxpar,alphaOrden,&
+                            kappamaxpar, mindistwires,sgbcFreq, &
+                            sgbcresol, maxSourceValue
+
+        real(kind=8) :: time_desdelanzamiento
+        character (len=*) :: nEntradaRoot, inductance_model, wiresFlavor
+        character (len=bufsize) :: ficherohopf
+
+        integer (kind=4) ::  finaltimestep
 
 
     contains
         procedure :: init => solver_init
         procedure :: run => solver_run
         procedure :: end => solver_end
+        procedure :: fillMtag
     end type
 
     interface solver_t
@@ -27,9 +64,12 @@ module solver_mod
 
 contains
 
-    function solver_ctor(sgg) result(res)
+    function solver_ctor(sgg, input) result(res)
         type(solver_t) :: res
+        type(entrada_t) :: input
         type(sggfdtdinfo) :: sgg
+
+
 
         call findBounds(sgg, res%bounds)
     end function
@@ -63,9 +103,20 @@ contains
         class(solver_t) :: this
         integer :: i
         do i = 1, this%numberOfSteps
-            ! call step from timeStepping class?
-            ! call this%stepper%step()
-            ! call this%step()
+            call this%stepper%step()
+#ifdef compileWithMPI
+            call this%flushMPI()
+            call this%stepper%advanceMURBorders()
+            if (there%observation) then
+                call updateObservation()
+                ! ...
+            end if
+#endif
+            if (call_timing) then 
+                call timing()
+                ! Flush, among other things
+            end if
+            call updateconstants()
         end do
 
     end subroutine

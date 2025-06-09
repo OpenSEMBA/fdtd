@@ -93,6 +93,16 @@ module timestepping_mod
         procedure :: advanceHx
         procedure :: advanceHy
         procedure :: advanceHz
+        procedure :: advanceFreeSpaceE
+        procedure :: advanceWires
+        procedure :: advancePlaneWaveE
+        
+        procedure :: FreeSpace_Advance_Ex
+        procedure :: FreeSpace_Advance_Ey
+        procedure :: FreeSpace_Advance_Ez
+        procedure :: FreeSpace_Advance_Hx
+        procedure :: FreeSpace_Advance_Hy
+        procedure :: FreeSpace_Advance_Hz
     end type
 
     interface stepper_t
@@ -129,45 +139,175 @@ contains
         class(stepper_t) :: this
 
         ! flush planewave off
-        ! advance anisotropic E
+        if (Thereare%Anisotropic) call advanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
         call this%advanceE()
-        ! advance conformal E
-        ! freespace advance E
-        ! advance wires
-        ! advance PML E
-        ! advance multiports E
-        ! advance sgbc E
-        ! advance lumped E
-        ! advance dispersives E
-        ! advance planewave E
-        ! advance nodalE
-        ! advance anisotropic H
+        if (planewavecorr) call this%advanceFreeSpaceE()
+#ifdef CompileWithConformal
+        if(input_conformal_flag) call conformal_advance_E()
+#endif
+        call this%advanceWires()
+        call this%advancePMLE()
+#ifdef CompileWithNIBC
+        IF (Thereare%Multiports.and.(mibc)) call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
+#endif
+        IF (Thereare%sgbcs.and.(sgbc))  then
+            call AdvancesgbcE(real(sgg%dt,RKIND),sgbcDispersive,simu_devia,stochastic)
+        endif
+        if (ThereAre%Lumpeds) call AdvanceLumpedE(sgg,n,simu_devia,stochastic)
+        if (Thereare%Edispersives) call AdvanceEDispersiveE(sgg)
+        call this%advancePlaneWaveE()
+        If (Thereare%NodalE) call AdvanceNodalE(sgg,sggMiEx,sggMiEy,sggMiEz,sgg%NumMedia,n, b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,simu_devia)
+
+#ifdef CompileWithMPI
+        if (size>1) then
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+            call   FlushMPI_E_Cray
+        endif
+#endif
+
+
+        IF (Thereare%Anisotropic) call AdvanceAnisotropicH(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
         call this%advanceH()
-        ! freespace advance H
-        ! advance magnetic PML
-        ! advance sgbc H
-        ! advance dispersives H
-        ! advance multiports H
-        ! advance planewave H
-        ! advance nodal H
-        ! advance wires H
-        ! advance conformal H
+        if (planewavecorr) call this%advanceFreeSpaceH()
+        call this%advancePMLH()
+        call this%advancePMC()
+        if (Thereare%sgbcs.and.(sgbc)) call AdvancesgbcH()
+        if (Thereare%Mdispersives) call AdvanceMDispersiveH(sgg)
+#ifdef CompileWithNIBC
+         !Multiports H-field advancing
+         IF (Thereare%Multiports    .and.(mibc))  &
+         call AdvanceMultiportH    (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,sggMiHx,sggMiHy,sggMiHz,gm2,sgg%nummedia,conformalskin)
+#endif
+        call this%AdvancePlaneWaveH()
+        If (Thereare%NodalH) call AdvanceNodalH(sgg,sggMiHx,sggMiHy,sggMiHz,sgg%NumMedia,n, b ,GM2,Idxe,Idye,Idze,Hx,Hy,Hz,simu_devia)
+
+        ! advance wires H: no hace nada salvo thick wires, y no implementado
+        call this%advancePMC()
+
+#ifdef CompileWithConformal                      
+        if(input_conformal_flag) call conformal_advance_H()
+#endif
         ! advance magnetic MUR
     end subroutine
 
 
-    subroutine advanceE(this)
+    subroutine advanceE(this, Ex, Ey, Ez, Hx, Hy, Hz)
         class(stepper_t) :: this
-        call this%advanceEx()
-        call this%advanceEy()
-        call this%advanceEZ()
+        call this%advanceEx(Ex, Hy, Hz)
+        call this%advanceEy(Ey, Hz, Hx)
+        call this%advanceEZ(Ez, Hx, Hy)
     end subroutine
 
-    subroutine advanceH(this)
+    subroutine advanceH(this, Ex, Ey, Ez, Hx, Hy, Hz)
         class(stepper_t) :: this
-        call this%advanceHx()
-        call this%advanceHy()
-        call this%advanceHZ()
+        call this%advanceHx(Hx, Ey, Ez)
+        call this%advanceHy(Hy, Ez, Ex)
+        call this%advanceHZ(Hz, Ex, Ey)
+    end subroutine
+
+    subroutine advanceFreeSpaceE(this)
+        class(stepper_t) :: this
+        call FreeSpace_Advance_Ex()
+        call FreeSpace_Advance_Ey()
+        call FreeSpace_Advance_Ez()
+    end subroutine
+
+    subroutine advanceFreeSpaceH(this)
+        class(stepper_t) :: this
+        call FreeSpace_Advance_Hx()
+        call FreeSpace_Advance_Hy()
+        call FreeSpace_Advance_Hz()
+    end subroutine
+
+    subroutine advanceWires(this)
+        class(stepper_t) :: this
+
+        if (((trim(adjustl(wiresflavor))=='holland') .or. &
+              (trim(adjustl(wiresflavor))=='transition')) .and. .not. use_mtln_wires) then
+            if (Thereare%Wires) then
+                if (wirecrank) then
+                    call AdvanceWiresEcrank(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic)
+                else
+#ifdef CompileWithMTLN
+                    if (mtln_parsed%has_multiwires) then
+                        write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
+                        call WarnErrReport(buff)
+                    end if
+#endif
+                    call AdvanceWiresE(sgg,n, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)                 
+                endif
+            endif
+        endif
+#ifdef CompileWithBerengerWires
+        if (trim(adjustl(wiresflavor))=='berenger' .and. Thereare%Wires) then
+            call AdvanceWiresE_Berenger(sgg,n)
+        endif
+#endif
+#ifdef CompileWithSlantedWires
+        if((trim(adjustl(wiresflavor))=='slanted').or.(trim(adjustl(wiresflavor))=='semistructured')) then
+            call AdvanceWiresE_Slanted(sgg,n) 
+        endif
+#endif
+        if (use_mtln_wires) then
+#ifdef CompileWithMTLN
+            call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
+#else
+            write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
+#endif   
+        endif
+    end subroutine
+
+    subroutine advancePMLE(this)
+        class(stepper_t) :: this
+        If (Thereare%PMLbodies) call AdvancePMLbodyE()
+        If (Thereare%PMLBorders) then
+            call AdvanceelectricCPML(sgg%NumMedia, b       ,sggMiEx,sggMiEy,sggMiEz,G2,Ex,Ey,Ez,Hx,Hy,Hz)
+        endif
+        if (planewavecorr) then
+            If (Thereare%PMLBorders) then
+                call AdvanceelectricCPML_freespace (sgg%NumMedia, b       ,sggMiEx,sggMiEy,sggMiEz,G2,Exvac,Eyvac,Ezvac,Hxvac,Hyvac,Hzvac)
+            endif
+        endif
+    end subroutine
+
+    subroutine advancePMLH(this)
+        class(stepper_t) :: this
+        if (Thereare%PMLbodies) call AdvancePMLbodyH
+        If (Thereare%PMLBorders) then
+            call AdvanceMagneticCPML(sgg%NumMedia, b, sggMiHx, sggMiHy, sggMiHz, gm2, Hx, Hy, Hz, Ex, Ey, Ez)
+        endif
+        if (planewavecorr) then
+            If (Thereare%PMLBorders) then
+                if (sgg%therearePMLMagneticMedia) then
+                    call AdvanceMagneticCPML_freespace(sgg%NumMedia, b, sggMiHx, sggMiHy, sggMiHz, gm2, Hxvac, Hyvac, Hzvac, Exvac, Eyvac, Ezvac)
+                else
+                    continue
+                endif
+            endif
+        endif
+    end subroutine
+
+    subroutine advancePMC(this)
+        class(stepper_t) :: this
+        if (Thereare%PMCBorders) call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
+        If (Thereare%PeriodicBorders) call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
+    end subroutine
+
+    subroutine advancePlaneWaveE(this)
+        class(stepper_t) :: this
+        !check logic is the same
+        if (Thereare%PlaneWaveBoxes.and.still_planewave_time .and. .not.simu_devia) then
+            call AdvancePlaneWaveE(sgg,n,b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,still_planewave_time)
+            if (planewavecorr) call AdvancePlaneWaveE(sgg,n, b,G2,Idxh,Idyh,Idzh,Exvac,Eyvac,Ezvac,still_planewave_time)
+        endif
+    end subroutine
+
+    subroutine advancePlaneWaveH(this)
+        class(stepper_t) :: this
+        If (Thereare%PlaneWaveBoxes.and.still_planewave_time .and. .not.simu_devia)  then
+            call AdvancePlaneWaveH(sgg,n, b, GM2, Idxe,Idye, Idze, Hx, Hy, Hz,still_planewave_time)
+            if (planewavecorr) call AdvancePlaneWaveH(sgg,n, b , GM2, Idxe,Idye, Idze, Hxvac, Hyvac, Hzvac,still_planewave_time)
+        endif
     end subroutine
 
     ! index shifting is needed for MPI
@@ -183,7 +323,10 @@ contains
         real (kind=rkind), dimension(:), pointer  ::  Idyh
         real (kind=rkind), dimension(:), pointer  ::  Idzh
         real (kind=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), pointer  ::  sggmiEx
-        
+
+#ifdef CompileWithProfiling
+        call nvtxStartRange("Antes del bucle EX")
+#endif        
         allocate(Idyh(0:this%bounds%dyh%NY-1))
         allocate(Idzh(0:this%bounds%dzh%NZ-1))
         allocate(sggmiEx(0:this%bounds%sggMiEx%NX-1,0:this%bounds%sggMiEx%NY-1,0:this%bounds%sggMiEx%NZ-1 ))
@@ -200,6 +343,9 @@ contains
                 end do
             end do
         end do
+#ifdef CompileWithProfiling
+        call nvtxEndRange
+#endif
 
     end subroutine
 
@@ -213,7 +359,10 @@ contains
         real (kind=rkind), dimension(:), pointer  ::  Idzh
         real (kind=rkind), dimension(:), pointer  ::  Idxh
         real (kind=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), pointer  ::  sggmiEy
-        
+
+#ifdef CompileWithProfiling
+        call nvtxStartRange("Antes del bucle EY")
+#endif        
         allocate(Idzh(0:this%bounds%dzh%NZ-1))
         allocate(Idyh(0:this%bounds%dxh%NX-1))
         allocate(sggmiEy(0:this%bounds%sggMiEy%NX-1,0:this%bounds%sggMiEy%NY-1,0:this%bounds%sggMiEy%NZ-1 ))
@@ -230,7 +379,9 @@ contains
                 end do
             end do
         end do
-
+#ifdef CompileWithProfiling
+        call nvtxEndRange
+#endif
     end subroutine
 
     subroutine advanceEz(this, Ez, Hx, Hy)
@@ -243,7 +394,9 @@ contains
         real (kind=rkind), dimension(:), pointer  ::  Idxh
         real (kind=rkind), dimension(:), pointer  ::  Idzy
         real (kind=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), pointer  ::  sggmiEz
-        
+#ifdef CompileWithProfiling
+        call nvtxStartRange("Antes del bucle EZ")
+#endif        
         allocate(Idyh(0:this%bounds%dxh%NX-1))
         allocate(Idzh(0:this%bounds%dyh%NY-1))
         allocate(sggmiEz(0:this%bounds%sggMiEz%NX-1,0:this%bounds%sggMiEz%NY-1,0:this%bounds%sggMiEz%NZ-1 ))
@@ -260,7 +413,9 @@ contains
                 end do
             end do
         end do
-
+#ifdef CompileWithProfiling
+        call nvtxEndRange
+#endif
     end subroutine
 
 

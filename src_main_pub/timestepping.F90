@@ -1577,6 +1577,7 @@ contains
          !NO Wire advancing in the H-field part
          !PMC BORDERS  H-field advancing (duplicates the H-fields at the interface changing their sign)
 
+         
          If (Thereare%PMCBorders)     then
             call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,layoutnumber,size)
          endif
