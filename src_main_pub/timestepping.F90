@@ -204,7 +204,7 @@ module Solver_mod
    subroutine launch_simulation(this, sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
    SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
 !!!los del tipo l%
-   cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
+   cfl,nEntradaRoot,finaltimestep,resume,saveall,  &
    connectendings,isolategroupgroups,stableradholland,flushsecondsFields,mtlnberenger, &
    flushsecondsData,layoutnumber,size,createmap, &
    inductance_model, inductance_order, wirethickness, maxCPUtime,time_desdelanzamiento, &
@@ -222,7 +222,7 @@ module Solver_mod
    subroutine launch_simulation(this, sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
       SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
    !!!los del tipo l%
-      cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
+      cfl,nEntradaRoot,finaltimestep,resume,saveall,  &
       connectendings,isolategroupgroups,stableradholland,flushsecondsFields,mtlnberenger, &
       flushsecondsData,layoutnumber,size,createmap, &
       inductance_model, inductance_order, wirethickness, maxCPUtime,time_desdelanzamiento, &
@@ -307,7 +307,7 @@ module Solver_mod
       type (bounds_t)  ::  b
 
       integer (kind=4), intent(inout)                     ::  finaltimestep
-      logical, intent(in)           ::  resume,saveall,makeholes,connectendings,isolategroupgroups,createmap,groundwires,noSlantedcrecepelo, &
+      logical, intent(in)           ::  resume,saveall,connectendings,isolategroupgroups,createmap,groundwires,noSlantedcrecepelo, &
       SGBC,SGBCDispersive,mibc,ADE,conformalskin,NOcompomur,strictOLD,TAPARRABOS
       CHARACTER (LEN=BUFSIZE), intent(in) :: opcionestotales
       logical, intent(inout)           ::  resume_fromold
@@ -660,7 +660,7 @@ module Solver_mod
          endif
          write(buff,*) 'saveall=',saveall,', flushsecondsFields=',flushsecondsFields,', flushsecondsData=',flushsecondsData,', maxCPUtime=',maxCPUtime,', singlefilewrite=',singlefilewrite
          call WarnErrReport(buff)
-         write(buff,*) 'TAPARRABOS=',TAPARRABOS,', wiresflavor=',trim(adjustl(wiresflavor)),', mindistwires=',mindistwires,', wirecrank=',wirecrank , 'makeholes=',makeholes
+         write(buff,*) 'TAPARRABOS=',TAPARRABOS,', wiresflavor=',trim(adjustl(wiresflavor)),', mindistwires=',mindistwires,', wirecrank=',wirecrank , 'makeholes=',this%flags%makeholes
          call WarnErrReport(buff)
          write(buff,*) 'use_mtln_wires=', use_mtln_wires
          write(buff,*) 'connectendings=',connectendings,', isolategroupgroups=',isolategroupgroups
@@ -777,7 +777,7 @@ module Solver_mod
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Holland Wires...';  call print11(layoutnumber,dubuf)
-         call InitWires       (sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,this%thereAre%Wires,resume,makeholes,connectendings,isolategroupgroups,stableradholland,fieldtotl, &
+         call InitWires       (sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,this%thereAre%Wires,resume,this%flags%makeholes,connectendings,isolategroupgroups,stableradholland,fieldtotl, &
                                Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
                                inductance_model,wirethickness,groundwires,strictOLD,TAPARRABOS,g2,wiresflavor,SINPML_fullsize,fullsize,wirecrank,dtcritico,eps0,mu0,this%flags%simu_devia,stochastic,verbose,factorradius,factordelta)
          l_auxinput=this%thereAre%Wires
@@ -800,7 +800,7 @@ module Solver_mod
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Multi-Wires...';  call print11(layoutnumber,dubuf)
-         call InitWires_Berenger(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,this%thereAre%Wires,resume,makeholes, &
+         call InitWires_Berenger(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,this%thereAre%Wires,resume,this%flags%makeholes, &
          isolategroupgroups,mtlnberenger,mindistwires, &
          groundwires,taparrabos,Ex,Ey,Ez, &
          Idxe,Idye,Idze,Idxh,Idyh,Idzh,inductance_model,g2,SINPML_fullsize,fullsize,dtcritico,eps0,mu0,verbose)
