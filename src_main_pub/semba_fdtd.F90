@@ -745,11 +745,12 @@ PROGRAM SEMBA_FDTD_launcher
       call solver%init(l)
 
       if ((l%finaltimestep >= 0).and.(.not.l%skindepthpre)) then
+#ifdef CompileWithMTLN
          CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
 !los del tipo l%             
            l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall, &
-           l%isolategroupgroups,l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
+           l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
            l%flushsecondsData, l%layoutnumber, l%size, l%createmap, &
            l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
            l%nresumeable2, l%resume_fromold,l%groundwires,l%noSlantedcrecepelo,l%sgbc,l%sgbcDispersive,l%mibc,l%attfactorc,l%attfactorw,&
@@ -762,6 +763,24 @@ PROGRAM SEMBA_FDTD_launcher
            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess, &
            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
            mtln_parsed, l%use_mtln_wires)
+#else
+            CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
+         !los del tipo l%             
+            l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall, &
+            l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
+            l%flushsecondsData, l%layoutnumber, l%size, l%createmap, &
+            l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
+            l%nresumeable2, l%resume_fromold,l%groundwires,l%noSlantedcrecepelo,l%sgbc,l%sgbcDispersive,l%mibc,l%attfactorc,l%attfactorw,&
+            l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%mur_second,l%MurAfterPML,l%MEDIOEXTRA,&
+            l%singlefilewrite,maxSourceValue,l%NOcompomur,l%ade, &
+            l%conformalskin,l%strictOLD,l%TAPARRABOS,l%wiresflavor,l%mindistwires,l%facesNF2FF,l%NF2FFDecim,l%vtkindex,&
+            l%createh5bin,l%wirecrank, &
+            l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbccrank,l%sgbcdepth,l%fatalerror,l%fieldtotl,l%permitscaling, &
+            l%EpsMuTimeScale_input_parameters, &
+            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess, &
+            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk,l%use_mtln_wires)
+#endif
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else
 #ifdef CompileWithMPI
@@ -1210,15 +1229,13 @@ subroutine NFDE2sgg
          CALL read_geomData (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, l%fichin, l%layoutnumber, l%size, SINPML_fullsize, fullsize, parser, &
          l%groundwires,l%attfactorc,l%mibc,l%sgbc,l%sgbcDispersive,l%MEDIOEXTRA,maxSourceValue,l%skindepthpre,l%createmapvtk,l%input_conformal_flag,l%CLIPREGION,l%boundwireradius,l%maxwireradius,l%updateshared,l%run_with_dmma, &
          eps0,mu0,.false.,l%hay_slanted_wires,l%verbose,l%ignoresamplingerrors,tagtype,l%wiresflavor)
-
+#ifdef CompileWithMTLN
          if (trim(adjustl(l%extension))=='.json')  then 
-            if (associated(parser%mtln)) then 
-               mtln_parsed = parser%mtln
-               mtln_parsed%time_step = sgg%dt
-            end if
+            mtln_parsed = parser%mtln
+            mtln_parsed%time_step = sgg%dt
          end if
          ! if (trim(adjustl(l%extension))=='.json')  mtln_solver = mtlnCtor(parser%mtln)   
-
+#endif
          WRITE (dubuf,*) '[OK] ENDED NFDE --------> GEOM'
          CALL print11 (l%layoutnumber, dubuf)
          !writing
@@ -1294,14 +1311,12 @@ subroutine NFDE2sgg
          !wait until everything comes out
          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
-
+#ifdef CompileWithMTLN
          if (trim(adjustl(l%extension))=='.json')  then 
-            if (associated(parser%mtln)) then 
-               mtln_parsed = parser%mtln
-               mtln_parsed%time_step = sgg%dt
-            end if
+            mtln_parsed = parser%mtln
+            mtln_parsed%time_step = sgg%dt
          end if
-
+#endif
          WRITE (dubuf,*) '[OK] ENDED NFDE --------> GEOM'
          CALL print11 (l%layoutnumber, dubuf)
          !restore back the indexes
