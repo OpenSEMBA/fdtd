@@ -749,7 +749,7 @@ PROGRAM SEMBA_FDTD_launcher
          CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
 !los del tipo l%             
-           l%simu_devia,l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
+           l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
            l%connectendings, l%isolategroupgroups,l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
            l%flushsecondsData, l%layoutnumber, l%size, l%createmap, &
            l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
@@ -767,7 +767,7 @@ PROGRAM SEMBA_FDTD_launcher
             CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
             SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
          !los del tipo l%             
-            l%simu_devia,l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
+            l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
             l%connectendings, l%isolategroupgroups,l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
             l%flushsecondsData, l%layoutnumber, l%size, l%createmap, &
             l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
