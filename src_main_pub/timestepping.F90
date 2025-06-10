@@ -88,8 +88,23 @@ module Solver_mod
 #endif
    implicit none
 
+   type :: sim_flags_t
+      logical :: simu_devia, resume,saveall,makeholes,& 
+                 connectendings,isolategroupgroups,createmap, & 
+                 groundwires,noSlantedcrecepelo, SGBC, & 
+                 SGBCDispersive,mibc,ADE,conformalskin,& 
+                 NOcompomur,strictOLD,TAPARRABOS, & 
+                 noconformalmapvtk, hopf,experimentalVideal, &
+                 forceresampled, mur_second,MurAfterPML, &
+                 stableradholland,singlefilewrite,NF2FFDecim, &
+                 sgbccrank,fieldtotl,finishedwithsuccess, &
+                 permitscaling,mtlnberenger,niapapostprocess,planewavecorr, &
+                 nonconformalvtk, stochastic, verbose, dontwritevtk, &
+                 use_mtln_wires, resume_fromold
+   end type sim_flags_t
+
    type, public :: solver_t
-      logical :: simu_devia
+      type(sim_flags_t) :: flags
    contains
       procedure :: init => solver_init
       procedure :: launch_simulation
@@ -110,7 +125,44 @@ module Solver_mod
    subroutine solver_init(this, input)
       class(solver_t) :: this
       type(entrada_t) :: input
-      this%simu_devia = input%simu_devia
+      this%flags%simu_devia = input%simu_devia
+      this%flags%resume = input%resume
+      this%flags%saveall = input%saveall
+      this%flags%makeholes = input%makeholes
+      this%flags%connectendings = input%connectendings
+      this%flags%isolategroupgroups = input%isolategroupgroups
+      this%flags%createmap  = input%createmap
+      this%flags%groundwires = input%groundwires
+      this%flags%noSlantedcrecepelo = input%noSlantedcrecepelo
+      this%flags%SGBC  = input%SGBC
+      this%flags%SGBCDispersive = input%SGBCDispersive
+      this%flags%mibc = input%mibc
+      this%flags%ADE = input%ADE
+      this%flags%conformalskin  = input%conformalskin
+      this%flags%NOcompomur = input%NOcompomur
+      this%flags%strictOLD = input%strictOLD
+      this%flags%TAPARRABOS  = input%TAPARRABOS
+      this%flags%noconformalmapvtk = input%noconformalmapvtk
+      this%flags%hopf = input%hopf
+      this%flags%experimentalVideal = input%experimentalVideal
+      this%flags%forceresampled = input%forceresampled
+      this%flags%mur_second = input%mur_second
+      this%flags%MurAfterPML = input%MurAfterPML
+      this%flags%stableradholland = input%stableradholland
+      this%flags%singlefilewrite = input%singlefilewrite
+      this%flags%NF2FFDecim = input%NF2FFDecim
+      this%flags%sgbccrank = input%sgbccrank
+      this%flags%fieldtotl = input%fieldtotl
+      ! this%flags%finishedwithsuccess = 
+      this%flags%permitscaling = input%permitscaling
+      this%flags%mtlnberenger = input%mtlnberenger
+      this%flags%niapapostprocess = input%niapapostprocess
+      this%flags%noconformalmapvtk = input%noconformalmapvtk
+      this%flags%stochastic = input%stochastic
+      this%flags%verbose = input%verbose
+      this%flags%dontwritevtk = input%dontwritevtk
+      this%flags%use_mtln_wires = input%use_mtln_wires
+      this%flags%resume_fromold = input%resume_fromold
    end subroutine
 
 
@@ -146,7 +198,7 @@ module Solver_mod
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
    mtln_parsed, use_mtln_wires)
 #else
-   subroutine launch_simulation(sthis, gg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
+   subroutine launch_simulation(this, gg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
       SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
    !!!los del tipo l%
       simu_devia,cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
@@ -703,7 +755,7 @@ module Solver_mod
 
       !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
       write(dubuf,*) 'Init Lumped Elements...';  call print11(layoutnumber,dubuf)
-      CALL InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size,ThereAre%Lumpeds,resume,this%simu_devia,stochastic,eps0,mu0)
+      CALL InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size,ThereAre%Lumpeds,resume,this%flags%simu_devia,stochastic,eps0,mu0)
       l_auxinput=ThereAre%Lumpeds
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -726,7 +778,7 @@ module Solver_mod
          write(dubuf,*) 'Init Holland Wires...';  call print11(layoutnumber,dubuf)
          call InitWires       (sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,Thereare%Wires,resume,makeholes,connectendings,isolategroupgroups,stableradholland,fieldtotl, &
                                Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
-                               inductance_model,wirethickness,groundwires,strictOLD,TAPARRABOS,g2,wiresflavor,SINPML_fullsize,fullsize,wirecrank,dtcritico,eps0,mu0,this%simu_devia,stochastic,verbose,factorradius,factordelta)
+                               inductance_model,wirethickness,groundwires,strictOLD,TAPARRABOS,g2,wiresflavor,SINPML_fullsize,fullsize,wirecrank,dtcritico,eps0,mu0,this%flags%simu_devia,stochastic,verbose,factorradius,factordelta)
          l_auxinput=thereare%Wires
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -863,7 +915,7 @@ module Solver_mod
 #endif
             write(dubuf,*) 'Init Multi sgbc...';  call print11(layoutnumber,dubuf)
             call Initsgbcs(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size, &
-                 G1,G2,GM1,GM2,ThereAre%sgbcs,resume,sgbccrank,sgbcFreq,sgbcresol,sgbcDepth,sgbcDispersive,eps0,mu0,this%simu_devia,stochastic)
+                 G1,G2,GM1,GM2,ThereAre%sgbcs,resume,sgbccrank,sgbcFreq,sgbcresol,sgbcDepth,sgbcDispersive,eps0,mu0,this%flags%simu_devia,stochastic)
       l_auxinput= ThereAre%sgbcs
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
