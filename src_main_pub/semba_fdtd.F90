@@ -5,7 +5,7 @@ PROGRAM SEMBA_FDTD_launcher
    USE Getargs
    !
    USE fdetypes
-   USE Solver         
+   USE Solver_mod         
    USE Resuming
    !nfde parser stuff
    USE NFDETypes                
@@ -115,6 +115,7 @@ PROGRAM SEMBA_FDTD_launcher
    
    INTEGER (KIND=4) ::  verdadero_mpidir
    logical :: newrotate !300124 tiramos con el rotador antiguo
+   type(solver_t) :: solver 
 
    newrotate=.false.       !!ojo tocar luego                     
 !!200918 !!!si se lanza con -pscal se overridea esto
@@ -351,7 +352,7 @@ PROGRAM SEMBA_FDTD_launcher
 
 #ifdef CompileWithMTLN   
    if (parser%general%mtlnProblem) then 
-      call launch_mtln_simulation(parser%mtln, l%nEntradaRoot, l%layoutnumber) 
+      call solver%launch_mtln_simulation(parser%mtln, l%nEntradaRoot, l%layoutnumber) 
       STOP
    end if
 #endif
@@ -740,9 +741,12 @@ PROGRAM SEMBA_FDTD_launcher
       CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
       finishedwithsuccess=.false.
+
+      call solver%init(l)
+
       if ((l%finaltimestep >= 0).and.(.not.l%skindepthpre)) then
 #ifdef CompileWithMTLN
-         CALL launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+         CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
 !los del tipo l%             
            l%simu_devia,l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
@@ -756,11 +760,11 @@ PROGRAM SEMBA_FDTD_launcher
            l%createh5bin,l%wirecrank, &
            l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbccrank,l%sgbcdepth,l%fatalerror,l%fieldtotl,l%permitscaling, &
            l%EpsMuTimeScale_input_parameters, &
-           l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
+           l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess, &
            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
            mtln_parsed, l%use_mtln_wires)
 #else
-            CALL launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+            CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
             SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
          !los del tipo l%             
             l%simu_devia,l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall,l%makeholes, &
@@ -774,7 +778,7 @@ PROGRAM SEMBA_FDTD_launcher
             l%createh5bin,l%wirecrank, &
             l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbccrank,l%sgbcdepth,l%fatalerror,l%fieldtotl,l%permitscaling, &
             l%EpsMuTimeScale_input_parameters, &
-            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess,l%planewavecorr, &
+            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess, &
             l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk,l%use_mtln_wires)
 #endif
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)

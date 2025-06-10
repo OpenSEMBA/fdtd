@@ -14,7 +14,7 @@
 !---> MinusCloneMagneticPMC
 !________________________________________________________________________________________
 
-module Solver
+module Solver_mod
 
    use fdetypes
    use report
@@ -30,6 +30,7 @@ module Solver
    use PMLbodies
    use xdmf
    use vtk
+   use interpreta_switches_m, only: entrada_t
 #ifdef CompileWithMPI
    use MPIcomm
 #endif
@@ -86,16 +87,36 @@ module Solver
    use nvtx
 #endif
    implicit none
-   private
 
-   public launch_simulation
+   type, public :: solver_t
+      logical :: simu_devia
+   contains
+      procedure :: init => solver_init
+      procedure :: launch_simulation
 #ifdef CompileWithMTLN
-   public launch_mtln_simulation
+      procedure :: launch_mtln_simulation
 #endif
-contains
+   end type
+
+!    private
+
+!    public launch_simulation
+! #ifdef CompileWithMTLN
+!    public launch_mtln_simulation
+! #endif
+
+   contains
+
+   subroutine solver_init(this, input)
+      class(solver_t) :: this
+      type(entrada_t) :: input
+      this%simu_devia = input%simu_devia
+   end subroutine
+
 
 #ifdef CompileWithMTLN
-   subroutine launch_mtln_simulation(mtln_parsed, nEntradaRoot, layoutnumber)
+   subroutine launch_mtln_simulation(this, mtln_parsed, nEntradaRoot, layoutnumber)
+      class(solver_t) :: this
       type (mtln_t) :: mtln_parsed
       character (len=*), intent(in)  ::  nEntradaRoot
       integer (kind=4), intent(in) ::  layoutnumber
@@ -107,7 +128,7 @@ contains
 #endif
 
 #ifdef CompileWithMTLN
-   subroutine launch_simulation(sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
+   subroutine launch_simulation(this, sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
    SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
 !!!los del tipo l%
    simu_devia,cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
@@ -121,11 +142,11 @@ contains
    createh5bin,wirecrank, &
    opcionestotales,sgbcFreq,sgbcresol,sgbccrank,sgbcDepth,fatalerror,fieldtotl,permitscaling, &
    EpsMuTimeScale_input_parameters, &
-   stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess,planewavecorr, &
+   stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess, &
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
    mtln_parsed, use_mtln_wires)
 #else
-   subroutine launch_simulation(sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
+   subroutine launch_simulation(sthis, gg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
       SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
    !!!los del tipo l%
       simu_devia,cfl,nEntradaRoot,finaltimestep,resume,saveall,makeholes,  &
@@ -139,11 +160,14 @@ contains
       createh5bin,wirecrank, &
       opcionestotales,sgbcFreq,sgbcresol,sgbccrank,sgbcDepth,fatalerror,fieldtotl,permitscaling, &
       EpsMuTimeScale_input_parameters, &
-      stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess,planewavecorr, &
+      stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess, &
       dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk,use_mtln_wires)
 #endif
 
-   !!!           
+   !!!
+      class(solver_t) :: this
+
+
 #ifdef CompileWithMTLN
       type (mtln_t) :: mtln_parsed
 #endif
@@ -203,7 +227,7 @@ contains
       !!!!!!!PML params!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       TYPE (MedioExtra_t), INTENT (IN) :: MEDIOEXTRA
-      logical :: mur_second,MurAfterPML,stableradholland,singlefilewrite,NF2FFDecim,sgbccrank,fieldtotl,finishedwithsuccess,permitscaling,mtlnberenger,niapapostprocess,planewavecorr
+      logical :: mur_second,MurAfterPML,stableradholland,singlefilewrite,NF2FFDecim,sgbccrank,fieldtotl,finishedwithsuccess,permitscaling,mtlnberenger,niapapostprocess
       REAL (KIND=RKIND), intent (in)  ::  alphamaxpar,alphaOrden,kappamaxpar, mindistwires,sgbcFreq,sgbcresol
       integer (kind=4), intent(in) :: wirethickness
       !!!!!!!
@@ -382,23 +406,21 @@ contains
       Hx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
       Hy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
       Hz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE))
-      !!!! para correccion onda plana 280120
-!      if (planewavecorr) then
-          ALLOCATE ( &
-          Exvac(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
-          Eyvac(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
-          Ezvac(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
-          Hxvac(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
-          Hyvac(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
-          Hzvac(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE))
-          ALLOCATE ( &
-          Excor(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
-          Eycor(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
-          Ezcor(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
-          Hxcor(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
-          Hycor(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
-          Hzcor(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE))
-!      endif
+
+      ALLOCATE ( &
+      Exvac(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
+      Eyvac(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
+      Ezvac(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
+      Hxvac(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
+      Hyvac(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
+      Hzvac(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE))
+      ALLOCATE ( &
+      Excor(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
+      Eycor(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
+      Ezcor(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
+      Hxcor(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
+      Hycor(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
+      Hzcor(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE))
       !!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Init the local variables and observation stuff needed by each module, taking into account resume status
@@ -407,11 +429,8 @@ contains
       dt0=sgg%dt !guardalo aqui para entrada pscale correcta si resume
       if (.not.resume) then
          Ex=0.0_RKIND; Ey=0.0_RKIND; Ez=0.0_RKIND; Hx=0.0_RKIND; Hy=0.0_RKIND; Hz=0.0_RKIND
-      !!!! para correccion onda plana 280120
-         !!!if (planewavecorr) then
-            Exvac=0.0_RKIND; Eyvac=0.0_RKIND; Ezvac=0.0_RKIND; Hxvac=0.0_RKIND; Hyvac=0.0_RKIND; Hzvac=0.0_RKIND
-            Excor=0.0_RKIND; Eycor=0.0_RKIND; Ezcor=0.0_RKIND; Hxcor=0.0_RKIND; Hycor=0.0_RKIND; Hzcor=0.0_RKIND
-         !!!endif
+         Exvac=0.0_RKIND; Eyvac=0.0_RKIND; Ezvac=0.0_RKIND; Hxvac=0.0_RKIND; Hyvac=0.0_RKIND; Hzvac=0.0_RKIND
+         Excor=0.0_RKIND; Eycor=0.0_RKIND; Ezcor=0.0_RKIND; Hxcor=0.0_RKIND; Hycor=0.0_RKIND; Hzcor=0.0_RKIND
       !!!!
   !!!!!!!!!!!!!!!!?!?!?!?!?!?!?        Ex=1.0_RKIND; Ey=2.0_RKIND; Ez=3.0_RKIND; Hx=4.0_RKIND; Hy=5.0_RKIND; Hz=6.0_RKIND
          initialtimestep=0 !vamos a empezar en 0 para escribir el tiempo 0 !sgg sept'16 !?
@@ -633,7 +652,7 @@ contains
 #endif
       write(dubuf,*) 'Init CPML Borders...';  call print11(layoutnumber,dubuf)
       call InitCPMLBorders     (sgg,layoutnumber,SINPML_Fullsize,Thereare%PMLBorders,resume, &
-                                dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,alphamaxpar,alphaOrden,kappamaxpar,eps0,mu0,planewavecorr)
+                                dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,alphamaxpar,alphaOrden,kappamaxpar,eps0,mu0)
       l_auxinput=Thereare%PMLBorders
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -684,7 +703,7 @@ contains
 
       !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
       write(dubuf,*) 'Init Lumped Elements...';  call print11(layoutnumber,dubuf)
-      CALL InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size,ThereAre%Lumpeds,resume,simu_devia,stochastic,eps0,mu0)
+      CALL InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size,ThereAre%Lumpeds,resume,this%simu_devia,stochastic,eps0,mu0)
       l_auxinput=ThereAre%Lumpeds
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -707,7 +726,7 @@ contains
          write(dubuf,*) 'Init Holland Wires...';  call print11(layoutnumber,dubuf)
          call InitWires       (sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,Thereare%Wires,resume,makeholes,connectendings,isolategroupgroups,stableradholland,fieldtotl, &
                                Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
-                               inductance_model,wirethickness,groundwires,strictOLD,TAPARRABOS,g2,wiresflavor,SINPML_fullsize,fullsize,wirecrank,dtcritico,eps0,mu0,simu_devia,stochastic,verbose,factorradius,factordelta)
+                               inductance_model,wirethickness,groundwires,strictOLD,TAPARRABOS,g2,wiresflavor,SINPML_fullsize,fullsize,wirecrank,dtcritico,eps0,mu0,this%simu_devia,stochastic,verbose,factorradius,factordelta)
          l_auxinput=thereare%Wires
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -844,7 +863,7 @@ contains
 #endif
             write(dubuf,*) 'Init Multi sgbc...';  call print11(layoutnumber,dubuf)
             call Initsgbcs(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size, &
-                 G1,G2,GM1,GM2,ThereAre%sgbcs,resume,sgbccrank,sgbcFreq,sgbcresol,sgbcDepth,sgbcDispersive,eps0,mu0,simu_devia,stochastic)
+                 G1,G2,GM1,GM2,ThereAre%sgbcs,resume,sgbccrank,sgbcFreq,sgbcresol,sgbcDepth,sgbcDispersive,eps0,mu0,this%simu_devia,stochastic)
       l_auxinput= ThereAre%sgbcs
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1309,11 +1328,6 @@ contains
 #ifdef CompileWithProfiling    
       call nvtxEndRange
 #endif
-         if (planewavecorr) then
-             call FreeSpace_Advance_Ex          (Exvac, Hyvac, Hzvac, Idyh, Idzh,       b,g1,g2)
-             call FreeSpace_Advance_Ey          (Eyvac, Hzvac, Hxvac, Idzh, Idxh,       b,g1,g2)
-             call FreeSpace_Advance_Ez          (Ezvac, Hxvac, Hyvac, Idxh, Idyh,       b,g1,g2)
-         endif
           
 !!! no se ganada nada de tiempo        Call Advance_ExEyEz(Ex,Ey,Ez,Hx,Hy,Hz,Idxh,Idyh,Idzh,sggMiEx,sggMiEy,sggMiEz,b,g1,g2)
 
@@ -1399,11 +1413,6 @@ contains
             call AdvanceelectricCPML          (sgg%NumMedia, b       ,sggMiEx,sggMiEy,sggMiEz,G2,Ex,Ey,Ez,Hx,Hy,Hz)
          endif
          
-         if (planewavecorr) then !.and.still_planewave_time) then
-             If (Thereare%PMLBorders) then
-                call AdvanceelectricCPML_freespace          (sgg%NumMedia, b       ,sggMiEx,sggMiEy,sggMiEz,G2,Exvac,Eyvac,Ezvac,Hxvac,Hyvac,Hzvac)
-             endif
-         endif
 
          !!for tuning
          !call get_secnds( time_ElecFin)
@@ -1439,13 +1448,6 @@ contains
               endif
           endif
       
-         if (planewavecorr.and.Thereare%PlaneWaveBoxes.and.still_planewave_time) then
-             If (Thereare%PlaneWaveBoxes.and.still_planewave_time) then
-                  if (.not.simu_devia) then
-                     call AdvancePlaneWaveE(sgg,n, b       ,G2,Idxh,Idyh,Idzh,Exvac,Eyvac,Ezvac,still_planewave_time)
-                  endif
-              endif
-         endif
 
          !Nodal sources  E-field advancing
          If (Thereare%NodalE) then
@@ -1524,11 +1526,6 @@ contains
          !   call FreeSpace_Advance_Hz(Hz, Ex, Ey, Idxe, Idye,           b,gm1,gm2)
          !endif
          
-         if (planewavecorr) then !.and.still_planewave_time) then
-            call FreeSpace_Advance_Hx           (Hxvac, Eyvac, Ezvac, Idye, Idze,      b,gm1,gm2)
-            call FreeSpace_Advance_Hy           (Hyvac, Ezvac, Exvac, Idze, Idxe,      b,gm1,gm2)
-            call FreeSpace_Advance_Hz           (Hzvac, Exvac, Eyvac, Idxe, Idye,      b,gm1,gm2)
-         endif
 
 !!! no se ganada nada de tiempo                 Call Advance_HxHyHz(Hx,Hy,Hz,Ex,Ey,Ez,IdxE,IdyE,IdzE,sggMiHx,sggMiHy,sggMiHz,b,gm1,gm2)
 
@@ -1550,16 +1547,6 @@ contains
             !!!endif
          endif
          
-         if (planewavecorr) then !.and.still_planewave_time) then
-             If (Thereare%PMLBorders) then
-                if (sgg%therearePMLMagneticMedia) then
-                   call AdvanceMagneticCPML_freespace          ( sgg%NumMedia, b, sggMiHx, sggMiHy, sggMiHz, gm2, Hxvac, Hyvac, Hzvac, Exvac, Eyvac, Ezvac)
-                else
-                   continue
-                endif
-             endif
-         
-         endif
 
          !!for tuning
          !call get_secnds( time_MagnetFin)
@@ -1607,13 +1594,6 @@ contains
               endif
          endif
        
-         if (planewavecorr.and.Thereare%PlaneWaveBoxes.and.still_planewave_time) then
-              if (.not.simu_devia) then
-                 call AdvancePlaneWaveH(sgg,n, b        , GM2, Idxe,Idye, Idze, Hxvac, Hyvac, Hzvac,still_planewave_time)
-                 !!!call corrigeondaplanaH(sgg,b,Hx,Hy,Hz,Hxvac, Hyvac, Hzvac)
-              endif
-         
-         endif  
 
          !Nodal sources  E-field advancing
          If (Thereare%NodalH) then
@@ -1723,7 +1703,7 @@ contains
          IF (Thereare%Observation) then
             !se le pasan los incrementos autenticos (bug que podia aparecer en NF2FF y Bloque currents 17/10/12)
             call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, n,ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_FULLSIZE,wirecrank, &
-                                   Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,planewavecorr,noconformalmapvtk,b)
+                                   Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,noconformalmapvtk,b)
 
             if (n>=ini_save+BuffObse)  then
                mindum=min(FinalTimeStep,ini_save+BuffObse)

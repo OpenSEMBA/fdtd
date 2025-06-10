@@ -2499,7 +2499,7 @@ contains
 
    subroutine UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, tag_numbers, &
       nTime,nInit, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_fullsize,wirecrank, &
-       Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,planewavecorr,noconformalmapvtk,b)
+       Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,noconformalmapvtk,b)
       !solo lo precisa de entrada farfield
       type (bounds_t)  ::  b
       logical :: noconformalmapvtk
@@ -2507,7 +2507,6 @@ contains
       INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
       !---------------------------> inputs <----------------------------------------------------------
-      logical :: planewavecorr
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
       integer, intent( IN)  ::  nTime,nInit
       REAL (KIND=RKIND)   , intent(in) , target     :: &
@@ -3197,13 +3196,7 @@ contains
                      endif
                      !!!!!!!!fin sondas corriente
                    case( FarField)
-                     if (planewavecorr) then
-                         Excor=Ex-Exvac; Eycor=Ey-Eyvac; Ezcor=Ez-Ezvac;
-                         Hxcor=Hx-Hxvac; Hycor=Hy-Hyvac; Hzcor=Hz-Hzvac;
-                         call UpdateFarField(ntime, b, Excor, Eycor, Ezcor,Hxcor,Hycor,Hzcor)
-                     else
-                         call UpdateFarField(ntime, b, Ex, Ey, Ez,Hx,Hy,Hz)
-                     endif
+                     call UpdateFarField(ntime, b, Ex, Ey, Ez,Hx,Hy,Hz)
                   endselect
                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FREQMAIN
                   !!!!!!!!!!!!!!!!!!!!

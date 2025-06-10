@@ -66,7 +66,7 @@ contains
    !!! Initializes PML data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitCPMLBorders(sgg,layoutnumber,temp_SINPML_Fullsize,ThereArePMLBorders,resume, &
-   temp_dxe,temp_dye,temp_dze,temp_dxh,temp_dyh,temp_dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,temp_alphamaxpar,temp_alphaOrden,temp_kappamaxpar,eps00,mu00,planewavecorr)
+   temp_dxe,temp_dye,temp_dze,temp_dxh,temp_dyh,temp_dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,temp_alphamaxpar,temp_alphaOrden,temp_kappamaxpar,eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       REAL (KIND=RKIND) , dimension (:)   ,  intent(in)    ::  &
@@ -87,7 +87,7 @@ contains
        type (limit_t), dimension(1:6),  intent(in)  ::  temp_SINPML_fullsize
       !!!
       !
-      logical  ::  ThereArePMLBorders,resume,planewavecorr
+      logical  ::  ThereArePMLBorders,resume
       integer (kind=4)  ::  i,j,k,region,field,layoutnumber
 !      character(len=BUFSIZE) :: buff
 !
@@ -310,19 +310,6 @@ contains
          PMLc(iHz)%YI(region) : PMLc(iHz)%YE(region), &
          PMLc(iHz)%ZI(region) : PMLc(iHz)%ZE(region)))
          
-         if (planewavecorr) then
-             allocate (&
-             regLR(region)%Psi_Exyvac(PMLc(iEx)%XI(region) : PMLc(iEx)%XE(region),PMLc(iEx)%YI(region) : PMLc(iEx)%YE(region),PMLc(iEx)%ZI(region) : PMLc(iEx)%ZE(region)),&
-             regLR(region)%Psi_Ezyvac(PMLc(iEz)%XI(region) : PMLc(iEz)%XE(region),PMLc(iEz)%YI(region) : PMLc(iEz)%YE(region),PMLc(iEz)%ZI(region) : PMLc(iEz)%ZE(region)),&
-             regLR(region)%Psi_Hxyvac(PMLc(iHx)%XI(region) : PMLc(iHx)%XE(region),PMLc(iHx)%YI(region) : PMLc(iHx)%YE(region),PMLc(iHx)%ZI(region) : PMLc(iHx)%ZE(region)),&
-             regLR(region)%Psi_Hzyvac(PMLc(iHz)%XI(region) : PMLc(iHz)%XE(region),PMLc(iHz)%YI(region) : PMLc(iHz)%YE(region),PMLc(iHz)%ZI(region) : PMLc(iHz)%ZE(region)))
-             regLR(region)%Psi_Exyvac=0.0_RKIND
-             regLR(region)%Psi_Ezyvac=0.0_RKIND
-             regLR(region)%Psi_Hxyvac=0.0_RKIND
-             regLR(region)%Psi_Hzyvac=0.0_RKIND
-         endif
-         
-         
          if (.not.resume) then
             regLR(REGION)%Psi_Exy=0.0_RKIND  ;  regLR(REGION)%Psi_Ezy=0.0_RKIND ;  regLR(REGION)%Psi_Hxy=0.0_RKIND ; regLR(REGION)%Psi_Hzy=0.0_RKIND ;
          else
@@ -361,17 +348,6 @@ contains
          regDU(region)%Psi_Hxz(PMLc(iHx)%XI(region) : PMLc(iHx)%XE(region), &
          PMLc(iHx)%YI(region) : PMLc(iHx)%YE(region), &
          PMLc(iHx)%ZI(region) : PMLc(iHx)%ZE(region)))
-         if (planewavecorr) then
-             allocate (&
-             regDU(region)%Psi_Eyzvac(PMLc(iEy)%XI(region) : PMLc(iEy)%XE(region),PMLc(iEy)%YI(region) : PMLc(iEy)%YE(region),PMLc(iEy)%ZI(region) : PMLc(iEy)%ZE(region)),&
-             regDU(region)%Psi_Exzvac(PMLc(iEx)%XI(region) : PMLc(iEx)%XE(region),PMLc(iEx)%YI(region) : PMLc(iEx)%YE(region),PMLc(iEx)%ZI(region) : PMLc(iEx)%ZE(region)),&
-             regDU(region)%Psi_Hyzvac(PMLc(iHy)%XI(region) : PMLc(iHy)%XE(region),PMLc(iHy)%YI(region) : PMLc(iHy)%YE(region),PMLc(iHy)%ZI(region) : PMLc(iHy)%ZE(region)),&
-             regDU(region)%Psi_Hxzvac(PMLc(iHx)%XI(region) : PMLc(iHx)%XE(region),PMLc(iHx)%YI(region) : PMLc(iHx)%YE(region),PMLc(iHx)%ZI(region) : PMLc(iHx)%ZE(region)))
-             regDU(region)%Psi_Eyzvac=0.0_RKIND
-             regDU(region)%Psi_Exzvac=0.0_RKIND
-             regDU(region)%Psi_Hyzvac=0.0_RKIND
-             regDU(region)%Psi_Hxzvac=0.0_RKIND
-         endif
          if (.not.resume) then
             regDU(REGION)%Psi_Eyz=0.0_RKIND  ;  regDU(REGION)%Psi_Exz=0.0_RKIND ;  regDU(REGION)%Psi_Hyz=0.0_RKIND ; regDU(REGION)%Psi_Hxz=0.0_RKIND ;
          else
@@ -410,17 +386,6 @@ contains
          regBF(region)%Psi_Hyx(PMLc(iHy)%XI(region) : PMLc(iHy)%XE(region), &
          PMLc(iHy)%YI(region) : PMLc(iHy)%YE(region), &
          PMLc(iHy)%ZI(region) : PMLc(iHy)%ZE(region)))
-         if (planewavecorr) then
-             allocate (&
-                 regBF(region)%Psi_Ezxvac(PMLc(iEz)%XI(region) : PMLc(iEz)%XE(region),PMLc(iEz)%YI(region) : PMLc(iEz)%YE(region),PMLc(iEz)%ZI(region) : PMLc(iEz)%ZE(region)),&
-                 regBF(region)%Psi_Eyxvac(PMLc(iEy)%XI(region) : PMLc(iEy)%XE(region),PMLc(iEy)%YI(region) : PMLc(iEy)%YE(region),PMLc(iEy)%ZI(region) : PMLc(iEy)%ZE(region)),&
-                 regBF(region)%Psi_Hzxvac(PMLc(iHz)%XI(region) : PMLc(iHz)%XE(region),PMLc(iHz)%YI(region) : PMLc(iHz)%YE(region),PMLc(iHz)%ZI(region) : PMLc(iHz)%ZE(region)),&
-                 regBF(region)%Psi_Hyxvac(PMLc(iHy)%XI(region) : PMLc(iHy)%XE(region),PMLc(iHy)%YI(region) : PMLc(iHy)%YE(region),PMLc(iHy)%ZI(region) : PMLc(iHy)%ZE(region)))
-                 regBF(region)%Psi_Ezxvac=0.0_RKIND 
-                 regBF(region)%Psi_Eyxvac=0.0_RKIND 
-                 regBF(region)%Psi_Hzxvac=0.0_RKIND 
-                 regBF(region)%Psi_Hyxvac=0.0_RKIND 
-         endif
          if (.not.resume) then
             regBF(REGION)%Psi_Ezx=0.0_RKIND  ;  regBF(REGION)%Psi_Eyx=0.0_RKIND ;  regBF(REGION)%Psi_Hzx=0.0_RKIND ; regBF(REGION)%Psi_Hyx=0.0_RKIND ;
          else
