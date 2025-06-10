@@ -179,6 +179,7 @@ contains
 
 #ifdef CompileWithMTLN
       res%mtln = this%readMTLN()
+      res%mtln%parsed = .true.
 #endif
 
    end function

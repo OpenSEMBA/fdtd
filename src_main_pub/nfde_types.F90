@@ -760,10 +760,10 @@ MODULE NFDETypes
       TYPE (ThinWires), POINTER ::             tWires => NULL ()
       TYPE (SlantedWires), POINTER ::          sWires => NULL ()
       TYPE (ThinSlots), POINTER ::             tSlots => NULL ()    
-#ifdef CompileWithMTLN
+      ! MTL
       TYPE (mtln_t), POINTER ::                mtln => NULL ()
-#endif
-   END TYPE Parseador
+
+      END TYPE Parseador
    
    !---> definicion de tipos
    TYPE, PUBLIC :: t_linea
