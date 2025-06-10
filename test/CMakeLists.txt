@@ -8,7 +8,6 @@ set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
 
 if (SEMBA_FDTD_ENABLE_MTLN)
     add_subdirectory(mtln)
-    add_subdirectory(system)
     set(MTLN_TESTS_LIBRARY mtln_tests)
     set(SYSTEM_TESTS_LIBRARY system_tests)
 endif()
@@ -24,7 +23,6 @@ add_executable(fdtd_tests
 target_link_libraries(fdtd_tests
     ${MTLN_TESTS_LIBRARY}
     ${SMBJSON_TESTS_LIBRARY}
-    ${SYSTEM_TESTS_LIBRARY}
     ${HDF_TESTS_LIBRARY}
     GTest::gtest_main
 )

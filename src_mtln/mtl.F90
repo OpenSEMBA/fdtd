@@ -4,8 +4,30 @@ module mtl_mod
     use utils_mod
     use dispersive_mod
     use mtln_types_mod, only: external_field_segment_t
+#ifdef CompileWithMPI
+    use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
+#endif
 
     implicit none
+#ifdef CompileWithMPI
+
+    integer, parameter :: COMM_SEND = 1
+    integer, parameter :: COMM_RECV = -1
+    integer, parameter :: COMM_NONE = 0
+
+    type, public :: communicator_t
+        integer :: field_index = -1, v_index = -1
+        integer :: comm_task = COMM_NONE
+        integer :: delta_rank = 0
+    end type
+    type, public :: comm_t
+        type(communicator_t), dimension(:), allocatable :: comms
+        integer :: rank
+    end type
+
+
+
+#endif
 
     type, public :: mtl_t
         character (len=:), allocatable :: name
@@ -18,13 +40,18 @@ module mtl_mod
 
         character (len=:), allocatable :: parent_name
         integer :: conductor_in_parent
-
         type(transfer_impedance_per_meter_t) :: transfer_impedance
         type(transfer_impedance_per_meter_t) :: initial_connector_transfer_impedance, end_connector_transfer_impedance
-
-
         type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
+
         logical :: isPassthrough = .false.
+
+#ifdef CompileWithMPI
+        type(comm_t) :: mpi_comm
+        integer (kind=4), allocatable, dimension(:,:) :: layer_indices
+        logical :: bundle_in_layer = .true.
+#endif
+
     contains
         procedure :: setTimeStep
         procedure :: initLCHomogeneous
@@ -40,12 +67,16 @@ module mtl_mod
         ! procedure :: setConductanceInRegion
         ! procedure :: setConductanceAtPoint
         ! procedure :: addDispersiveConnector
+#ifdef CompileWithMPI
+        procedure :: initCommunicators
+        procedure :: initStepSizeAndFieldSegments
+#endif
 
     end type mtl_t
 
     interface mtl_t
         module procedure mtlHomogeneous
-        module procedure mtlInHomogeneous
+        module procedure mtlInhomogeneous
     end interface
 
     type, public :: mtl_array_t
@@ -88,7 +119,7 @@ contains
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
                             external_field_segments, &
-                            isPassthrough) result(res)
+                            isPassthrough, layer_indices, bundle_in_layer, alloc_z) result(res)
         type(mtl_t) :: res
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -101,17 +132,35 @@ contains
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
         type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
         logical, optional :: isPassthrough
-        integer :: j 
+        integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
+        logical, optional :: bundle_in_layer
+        integer(kind=4), dimension (2), intent(in), optional :: alloc_z
+#ifdef CompileWithMPI
+        integer (kind=4) :: sizeof, ierr
+        if (present(layer_indices)) then 
+            call res%initStepSizeAndFieldSegments(step_size, external_field_segments, layer_indices)
+            call res%initCommunicators(alloc_z)
+            res%layer_indices = layer_indices
+            res%bundle_in_layer = bundle_in_layer
+        else
+            res%step_size =  step_size
+            allocate(res%layer_indices(0,0))
+            allocate(res%mpi_comm%comms(0))
+            res%external_field_segments = external_field_segments
+        end if
+#else
+        res%step_size =  step_size
+        res%external_field_segments = external_field_segments
+#endif
 
         res%name = name
-        res%step_size =  step_size
         call checkPULDimensionsHomogeneous(lpul, cpul, rpul, gpul)
         res%number_of_conductors = size(lpul, 1)
 
         call res%initDirections()
         call res%initLCHomogeneous(lpul, cpul)
         call res%initRGHomogeneous(rpul, gpul)
-        
+
         if (present(dt)) then 
             if (lpul(1,1) /= 0.0) then 
                 max_dt = res%getMaxTimeStep() 
@@ -131,26 +180,11 @@ contains
         end if
 
      
-        res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)
-        if (present(parent_name)) then
-            res%parent_name = parent_name
-        end if
-        if (present(conductor_in_parent)) then
-            res%conductor_in_parent = conductor_in_parent
-        end if
-        if (present(transfer_impedance)) then
-            res%transfer_impedance = transfer_impedance
-        end if
-
-        if (present(external_field_segments)) then 
-            res%external_field_segments = external_field_segments
-        end if
-
-        if (present(isPassthrough)) then 
-            res%isPassthrough = isPassthrough
-        else
-            res%isPassthrough = .false.
-        end if
+        res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
+        if (present(parent_name)) res%parent_name = parent_name
+        if (present(conductor_in_parent)) res%conductor_in_parent = conductor_in_parent
+        if (present(transfer_impedance)) res%transfer_impedance = transfer_impedance
+        if (present(isPassthrough)) res%isPassthrough = isPassthrough
 
     end function
 
@@ -200,25 +234,11 @@ contains
         end if
 
         res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)
-        if (present(parent_name)) then
-            res%parent_name = parent_name
-        end if
-        if (present(conductor_in_parent)) then
-            res%conductor_in_parent = conductor_in_parent
-        end if
-        if (present(transfer_impedance)) then
-            res%transfer_impedance = transfer_impedance
-        end if
-
-        if (present(external_field_segments)) then 
-            res%external_field_segments = external_field_segments
-        end if
-
-        if (present(isPassthrough)) then 
-            res%isPassthrough = isPassthrough
-        else
-            res%isPassthrough = .false.
-        end if
+        if (present(parent_name)) res%parent_name = parent_name
+        if (present(conductor_in_parent)) res%conductor_in_parent = conductor_in_parent
+        if (present(transfer_impedance))  res%transfer_impedance = transfer_impedance
+        if (present(external_field_segments)) res%external_field_segments = external_field_segments
+        if (present(isPassthrough)) res%isPassthrough = isPassthrough
 
     end function
 
@@ -318,5 +338,167 @@ contains
         this%dt = finalTime/numberOfSteps
     end subroutine
 
+
+#ifdef CompileWithMPI
+
+    subroutine initStepSizeAndFieldSegments(this, step_size, external_field_segments, layer_indices)
+        class(mtl_t) :: this
+        real, intent(in), dimension(:) :: step_size
+        type(external_field_segment_t), intent(in), dimension(:) :: external_field_segments
+        integer (kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
+        integer :: n, j
+        n =  0
+        do j = 1, size(layer_indices, 1)
+            n = n + layer_indices(j,2) - layer_indices(j,1) + 1
+        end do
+        n = n + size(layer_indices, 1) -1
+        allocate(this%step_size(n))
+        allocate(this%external_field_segments(n))
+
+        n = 1
+        do j = 1, size(layer_indices, 1)
+            this%step_size(n: n + layer_indices(j,2) - layer_indices(j,1)) = step_size(layer_indices(j, 1):layer_indices(j, 2))
+            this%external_field_segments(n: n + layer_indices(j,2) - layer_indices(j,1)) = external_field_segments(layer_indices(j, 1):layer_indices(j, 2))
+
+            if (j /= size(layer_indices,1)) then
+                this%step_size(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%step_size(n + layer_indices(j,2) - layer_indices(j,1))
+                this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1))
+                n = n + 1
+            end if
+            n = n + layer_indices(j,2) - layer_indices(j,1) + 1
+        end do
+
+    end subroutine
+
+
+    subroutine initCommunicators(this, alloc_z)
+        class(mtl_t) :: this
+        integer (kind =4), dimension(2) :: alloc_z
+        integer :: j, n
+        integer :: rank, ierr
+        integer (kind =4) :: z_init, z_end
+        type(communicator_t), dimension(:), allocatable :: aux_comm
+
+        call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+        this%mpi_comm%rank = rank
+        allocate(this%mpi_comm%comms(0))
+        allocate(aux_comm(0))
+        z_init = alloc_z(1)
+        z_end = alloc_z(2)
+
+        do j = 1, size(this%external_field_segments)
+            
+            if (isSegmentZOriented(j) .and. &
+               (isSegmentNextToLayerEnd(j,z_end) .or. isSegmentNextToLayerInit(j,z_init))) then
+                
+                n = size(this%mpi_comm%comms)
+                deallocate(aux_comm)
+                allocate(aux_comm(n+1))
+                aux_comm(1:n) = this%mpi_comm%comms
+                aux_comm(n+1)%field_index = j
+
+                if (isSegmentNextToLayerEnd(j,z_end)) then 
+                    aux_comm(n+1)%delta_rank = 1
+
+                    if (isSegmentBeforeLayerEnd(j,z_end)) then 
+                        aux_comm(n+1)%comm_task = COMM_SEND
+                        if (isSegmentZPositive(j)) then 
+                            aux_comm(n+1)%v_index = j
+                        else 
+                            aux_comm(n+1)%v_index = j+1
+                        end if
+                    else if (isSegmentAfterLayerEnd(j,z_end)) then 
+                        aux_comm(n+1)%comm_task = COMM_RECV
+                        if (isSegmentZPositive(j)) then 
+                            aux_comm(n+1)%v_index = j+1
+                        else 
+                            aux_comm(n+1)%v_index = j
+                        end if
+                    end if
+
+                else if  (isSegmentNextToLayerInit(j,z_init)) then 
+                    aux_comm(n+1)%delta_rank = -1
+
+                    if (isSegmentBeforeLayerInit(j,z_init)) then 
+                        aux_comm(n+1)%comm_task = COMM_RECV
+                        if (isSegmentZPositive(j)) then 
+                            aux_comm(n+1)%v_index = j
+                        else
+                            aux_comm(n+1)%v_index = j+1
+                        end if
+                    else if (isSegmentAfterLayerInit(j,z_init)) then 
+                        aux_comm(n+1)%comm_task = COMM_SEND
+                        if (isSegmentZPositive(j)) then 
+                            aux_comm(n+1)%v_index = j+1
+                        else
+                            aux_comm(n+1)%v_index = j
+                        end if
+                    end if
+
+                end  if
+                deallocate(this%mpi_comm%comms)
+                allocate(this%mpi_comm%comms(n+1))
+                this%mpi_comm%comms = aux_comm
+            end if
+        end do
+
+    contains    
+
+    logical function isSegmentZOriented(j)
+        integer, intent(in) :: j
+        isSegmentZOriented = (abs(this%external_field_segments(j)%direction) == 3)
+    end function
+
+    logical function isSegmentZPositive(j)
+        integer, intent(in) :: j
+        isSegmentZPositive = (this%external_field_segments(j)%direction > 0)
+    end function
+
+    logical function isSegmentBeforeLayerEnd(j, z_end)
+        integer, intent(in) :: j, z_end
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentBeforeLayerEnd = (z==z_end-1)
+    end function
+
+    logical function isSegmentAfterLayerEnd(j, z_end)
+        integer, intent(in) :: j, z_end
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentAfterLayerEnd = (z==z_end)
+    end function
+    
+    logical function isSegmentBeforeLayerInit(j, z_init)
+        integer, intent(in) :: j, z_init
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentBeforeLayerInit = (z==z_init)
+    end function
+    
+    logical function isSegmentAfterLayerInit(j, z_init)
+        integer, intent(in) :: j, z_init
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentAfterLayerInit = (z==z_init+1)
+    end function
+
+    logical function isSegmentNextToLayerEnd(j, z_end)
+        integer, intent(in) :: j, z_end
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentNextToLayerEnd = (abs(z-z_end)<= 1)
+    end function
+
+    logical function isSegmentNextToLayerInit(j, z_init)
+        integer, intent(in) :: j, z_init
+        integer :: z
+        z = this%external_field_segments(j)%position(3)
+        isSegmentNextToLayerInit = (abs(z-z_init-1) <= 1)
+    end function
+
+
+
+    end subroutine
+#endif
 
 end module

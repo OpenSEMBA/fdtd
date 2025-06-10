@@ -18,7 +18,6 @@ end function
 integer function test_mtl_init_homogeneous() bind(C) result(error_cnt) 
     use mtl_mod
     use mtln_testingTools_mod
-
     implicit none
 
     character(len=*), parameter :: name = 'line0'
@@ -34,10 +33,17 @@ integer function test_mtl_init_homogeneous() bind(C) result(error_cnt)
     real,dimension(2,2) :: gpul = reshape( &
         source = [ 0.0, 0.0, 0.0, 0.0 ], shape = [ 2,2 ] )
     real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
+    type(external_field_segment_t), dimension(5) :: external_field_segments
 
     type(mtl_t) :: line 
+    do i = 1, 5
+        external_field_segments(i)%position =(/i,1,1/)            
+        external_field_segments(i)%direction = DIRECTION_X_POS  
+        external_field_segments(i)%field => null()
+    end do
+
     error_cnt = 0
-    line = mtl_t(lpul, cpul, rpul, gpul, step_size, name)
+    line = mtl_t(lpul, cpul, rpul, gpul, step_size, name, external_field_segments=external_field_segments)
     call comparePULMatrices(error_cnt, line%lpul, lpul)
     call comparePULMatrices(error_cnt, line%cpul, cpul)
     call comparePULMatrices(error_cnt, line%rpul, rpul)
