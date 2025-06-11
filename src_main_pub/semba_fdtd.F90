@@ -749,35 +749,17 @@ PROGRAM SEMBA_FDTD_launcher
          CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
 !los del tipo l%             
-           l%cfl, l%nEntradaRoot, l%finaltimestep, &
-           l%flushsecondsFields, &
-           l%flushsecondsData, l%layoutnumber, l%size, &
-           l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
-           l%nresumeable2, l%attfactorc,l%attfactorw,&
-           l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%MEDIOEXTRA,&
+           l%size, &           
+           time_desdelanzamiento, &
            maxSourceValue, &
-           l%wiresflavor,l%mindistwires,l%facesNF2FF, &
-           l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbcdepth, &
-           l%EpsMuTimeScale_input_parameters, &
-           l%mpidir,l%precision,l%ficherohopf, &
-           l%factorradius,l%factordelta, &
            mtln_parsed)
 #else
             CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
             SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
-         !los del tipo l%             
-            l%cfl, l%nEntradaRoot, l%finaltimestep, &
-            l%flushsecondsFields, &
-            l%flushsecondsData, l%layoutnumber, l%size, &
-            l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
-            l%nresumeable2,l%attfactorc,l%attfactorw,&
-            l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%MEDIOEXTRA,&
-            maxSourceValue, &
-            l%wiresflavor,l%mindistwires,l%facesNF2FF, &
-            l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbcdepth, &
-            l%EpsMuTimeScale_input_parameters, &
-            l%mpidir,l%precision,l%ficherohopf, &
-            l%factorradius,l%factordelta)
+         !los del tipo l%  
+            l%size, &           
+            time_desdelanzamiento, &
+            maxSourceValue)
 #endif
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else
