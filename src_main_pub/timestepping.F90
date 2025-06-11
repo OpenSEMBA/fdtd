@@ -187,25 +187,7 @@ module Solver_mod
       this%control%facesNF2FF = input%facesNF2FF
       !this%control%EpsMuTimeScale_input_parameters = input%EpsMuTimeScale_input_parameters
 
-
-      this%thereAre%Wires = .false.
-      this%thereAre%MultiportS = .false.
-      this%thereAre%AnisMultiportS = .false.
-      this%thereAre%sgbcs = .false.
-      this%thereAre%Lumpeds = .false.
-      this%thereAre%EDispersives = .false.
-      this%thereAre%MDispersives = .false.
-      this%thereAre%PlaneWaveBoxes = .false.
-      this%thereAre%Observation = .false.
-      this%thereAre%PMCBorders = .false.
-      this%thereAre%PMLBorders = .false.
-      this%thereAre%MURBorders = .false.
-      this%thereAre%PECBorders = .false.
-      this%thereAre%Anisotropic = .false.
-      this%thereAre%ThinSlot = .false.
-      this%thereAre%NodalE = .false.
-      this%thereAre%NodalH = .false.
-      this%thereAre%PeriodicBorders = .false.
+      call this%thereAre%reset()
 
    end subroutine
 
@@ -298,8 +280,10 @@ module Solver_mod
       !Generic
       type (Logic_control)  ::  thereare
       integer (kind=4) :: ierr,ndummy
-      Logical  ::  parar,performflushFields,performflushData,performUnpack,performpostprocess,flushFF, &
-                   performflushXdmf,performflushVTK,everflushed,still_planewave_time,still_planewave_time_aux,planewave_switched_off,thereareplanewave,thereareplanewave_aux,l_aux
+      type (perform_t) :: perform, d_perform
+      
+      Logical  ::  parar,flushFF, &
+                   everflushed,still_planewave_time,still_planewave_time_aux,planewave_switched_off,thereareplanewave,thereareplanewave_aux,l_aux
 
       integer (kind=4)  ::  i,J,K,r,n,initialtimestep,lastexecutedtimestep,n_info,FIELD,dummyMin,dummyMax
       !
@@ -315,33 +299,11 @@ module Solver_mod
       planewave_switched_off=.false.
       this%control%fatalerror=.false.
       parar=.false.
-      performflushFields=.false.
-      performflushData=.false.
-      performUnpack=.false.
-      performpostprocess=.false.
+      call perform%reset()
+      call d_perform%reset()
       flushFF=.false.
-      performflushXdmf=.false.
-      performflushVTK=.false.
       everflushed=.false.
-      this%thereAre%Wires = .false.
-      this%thereAre%MultiportS = .false.
-      this%thereAre%AnisMultiportS = .false.
-      this%thereAre%sgbcs = .false.
-      this%thereAre%Lumpeds = .false.
-      this%thereAre%EDispersives = .false.
-      this%thereAre%MDispersives = .false.
-      this%thereAre%PlaneWaveBoxes = .false.
-      this%thereAre%Observation = .false.
-      this%thereAre%PMCBorders = .false.
-      this%thereAre%PMLBorders = .false.
-      this%thereAre%MURBorders = .false.
-      this%thereAre%PECBorders = .false.
-      this%thereAre%Anisotropic = .false.
-      this%thereAre%ThinSlot = .false.
-      this%thereAre%NodalE = .false.
-      this%thereAre%NodalH = .false.
-      this%thereAre%PeriodicBorders = .false.
-      !
+      call this%thereAre%reset()
       this%thereAre%MagneticMedia = sgg%thereareMagneticMedia
       this%thereAre%PMLMagneticMedia = sgg%therearePMLMagneticMedia
 
@@ -493,7 +455,7 @@ module Solver_mod
                close (14)
                write(DUbuf,*) 'Incoherence between MPI saved steps for resuming.', dummyMin,dummyMax,lastexecutedtimesteP
                call stoponerror (this%control%layoutnumber,this%control%size,BUFF,.true.) !para que retorne
-               call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,this%control%wiresflavor )
+               call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
                return
             else
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming. Retrying with -old....'
@@ -508,7 +470,7 @@ module Solver_mod
                if ((dummyMax /= lastexecutedtimestep).or.(dummyMin /= lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,lastexecutedtimestep
                   call stoponerror (this%control%layoutnumber,this%control%size,DUBUF,.true.) !para que retorne
-                  call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,this%control%wiresflavor )
+                  call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
                   return
                else
                   write(dubuf,*) 'SUCCESS: Restarting from .fields.old instead. From n=',lastexecutedtimestep
@@ -520,7 +482,7 @@ module Solver_mod
 
             write(dubuf,*) 'Incoherence between MPI saved steps for resuming.',dummyMin,dummyMax,lastexecutedtimestep
             call stoponerror (this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
-            call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,this%control%wiresflavor )
+            call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
             return
 #endif
          endif
@@ -532,7 +494,7 @@ module Solver_mod
       endif
       if (initialtimestep>this%control%finaltimestep) then
           call stoponerror (this%control%layoutnumber,this%control%size,'Initial time step greater than final one',.true.) !para que retorne
-          call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,this%control%wiresflavor )
+          call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
           return
       endif
 !!!incializa el vector de tiempos para permit scaling 191118
@@ -864,7 +826,7 @@ module Solver_mod
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-         call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
+         call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,this%thereAre%MTLNbundles)
 #else
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif
@@ -1191,7 +1153,7 @@ module Solver_mod
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
          call stoponerror(this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
-         call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,this%control%wiresflavor )
+         call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
          return
       endif
 
@@ -1765,9 +1727,14 @@ module Solver_mod
          
 !!!
          if (call_timing) then
+            ! call Timing(sgg,b,        n,n_info,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
+            ! this%control%finaltimestep,perform%flushFields,perform%flushData,perform%Unpack,perform%postprocess,perform%flushXdmf,perform%flushVTK,parar,.FALSE., &
+            ! Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
             call Timing(sgg,b,        n,n_info,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
-            this%control%finaltimestep,performflushFields,performflushData,performUnpack,performpostprocess,performflushXdmf,performflushVTK,parar,.FALSE., &
+            this%control%finaltimestep,perform,parar,.FALSE., &
             Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
+            ! call Timing(sgg,b, n,n_info,initialtimestep, perform,parar,.FALSE., Ex,Ey,Ez,everflushed,maxSourceValue)
+
 !!!!!!
 !!!!!!!!!
 
@@ -1775,33 +1742,33 @@ module Solver_mod
 !!!!! si esta hecho lo flushea todo pero poniendo de acuerdo a todos los mpi
                 do i=1,sgg%NumberRequest
                    if  (sgg%Observation(i)%done.and.(.not.sgg%Observation(i)%flushed)) then
-                      performflushXdmf=.true.
-                      performflushVTK=.true.
+                      perform%flushXdmf=.true.
+                      perform%flushVTK=.true.
                    endif
                 end do
 #ifdef CompileWithMPI
-                l_aux=performflushVTK
-                call MPI_AllReduce( l_aux, performflushVTK, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+                l_aux=perform%flushVTK
+                call MPI_AllReduce( l_aux, perform%flushVTK, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
                 !
-                l_aux=performflushXdmf
-                call MPI_AllReduce( l_aux, performflushXdmf, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+                l_aux=perform%flushXdmf
+                call MPI_AllReduce( l_aux, perform%flushXdmf, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
                 !
-                l_aux=performflushDATA
-                call MPI_AllReduce( l_aux, performflushDATA, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+                l_aux=perform%flushDATA
+                call MPI_AllReduce( l_aux, perform%flushDATA, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
                 !
-                l_aux=performflushFIELDS
-                call MPI_AllReduce( l_aux, performflushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+                l_aux=perform%flushFIELDS
+                call MPI_AllReduce( l_aux, perform%flushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
                 !
-                l_aux=performpostprocess
-                call MPI_AllReduce( l_aux, performpostprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+                l_aux=perform%postprocess
+                call MPI_AllReduce( l_aux, perform%postprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
 #endif
 !!!!!!!!!!!!
-                if (performflushFIELDS) then
+                if (perform%flushFIELDS) then
                    write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nentradaroot)),separador
                    call print11(this%control%layoutnumber,dubuf)
                    write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',N
                    call print11(this%control%layoutnumber,dubuf)
-                   call flush_and_save_resume(sgg, b, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, thereare, n,eps0,mu0, everflushed,  &
+                   call flush_and_save_resume(sgg, b, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, n,eps0,mu0, everflushed,  &
                    Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
 #ifdef CompileWithMPI
                    call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1813,9 +1780,9 @@ module Solver_mod
                    write(dubuf,*) SEPARADOR//separador//separador
                    call print11(this%control%layoutnumber,dubuf)
                 endif
-                if (performflushDATA.or.performflushFIELDS.or.performpostprocess.or.performflushXdmf.or.performflushVTK) then
+                if (perform%isFlush()) then
                       !
-                      flushFF=performpostprocess
+                      flushFF=perform%postprocess
                       if (this%thereAre%FarFields.and.flushFF) then
                           write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING and Near-to-Far field n= ',n
                       else
@@ -1839,7 +1806,7 @@ module Solver_mod
                       call print11(this%control%layoutnumber,dubuf)
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
     !
-                      if (performpostprocess) then
+                      if (perform%postprocess) then
                          write(dubuf,'(a,i9)') 'Postprocessing frequency domain probes, if any, at n= ',n
                          call print11(this%control%layoutnumber,dubuf)
                          write(dubuf,*) SEPARADOR//separador//separador
@@ -1865,7 +1832,7 @@ module Solver_mod
                          endif
                       endif
                   !!       
-                      if (performflushvtk) then   
+                      if (perform%flushvtk) then   
                          write(dubuf,'(a,i9)')  ' Post-processing .vtk files n= ',n
                          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                          call print11(this%control%layoutnumber,dubuf)
@@ -1889,7 +1856,7 @@ module Solver_mod
                                 call print11(this%control%layoutnumber,dubuf)
                           endif
                       endif  
-                         if (performflushXdmf) then
+                         if (perform%flushXdmf) then
                             write(dubuf,'(a,i9)')  ' Post-processing .xdmf files n= ',n
                             call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                             call print11(this%control%layoutnumber,dubuf)
@@ -1922,14 +1889,14 @@ module Solver_mod
 #endif
                  endif !del if (performflushDATA.or....
     !
-                 if (this%control%singlefilewrite.and.performUnpack) then
+                 if (this%control%singlefilewrite.and.perform%Unpack) then
                        call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                        write(dubuf,'(a,i9)')  ' Unpacking .bin files and prostprocessing them at n= ',n
                        call print11(this%control%layoutnumber,dubuf)
                        call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                        if (this%thereAre%Observation) call unpacksinglefiles(sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,initialtimestep,this%control%resume) !dump the remaining to disk
                        somethingdone=.false.
-                       if (this%control%singlefilewrite.and.performUnpack) then
+                       if (this%control%singlefilewrite.and.perform%Unpack) then
                            at=n*sgg%dt
                            if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%size,sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
                        endif
@@ -1944,7 +1911,7 @@ module Solver_mod
                        call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                     endif !del if (singlefilewrite....
 !!!si ha hecho algo reporta que va a continuar          
-                    if ((this%control%singlefilewrite.and.performUnpack).or.performflushFIELDS.or.performflushDATA.or.performpostprocess.or.performflushXdmf.or.performflushVTK) then
+                    if ((this%control%singlefilewrite.and.perform%Unpack).or.perform%isFlush()) then
                         write(dubuf,'(a,i9)')  ' Continuing simulation at n= ',n
                         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                         call print11(this%control%layoutnumber,dubuf)
@@ -1965,7 +1932,7 @@ module Solver_mod
             if ((sgg%tiempo(n)>=EpsMuTimeScale_input_parameters%tini).and.&
                 &(sgg%tiempo(n)<=EpsMuTimeScale_input_parameters%tend)) then
 #endif
-             call updateconstants(sgg,n,thereare,g1,g2,gM1,gM2, & 
+             call updateconstants(sgg,n,this%thereare,g1,g2,gM1,gM2, & 
                                Idxe,Idye,Idze,Idxh,Idyh,Idzh, &  !needed by  CPML to be updated
                                this%control%sgbc,this%control%mibc,input_conformal_flag, &
                                this%control%wiresflavor, this%control%wirecrank, this%control%fieldtotl,&
@@ -2012,15 +1979,18 @@ module Solver_mod
       lastexecutedtime=sgg%tiempo(this%control%finaltimestep)
       !se llama con dummylog para no perder los flags de parada
       call Timing(sgg,b,        n,ndummy,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
-            this%control%finaltimestep,dummylog,dummylog,dummylog,dummylog,dummylog,dummylog,dummylog,.FALSE., &
+            this%control%finaltimestep,d_perform,dummylog,.FALSE., &
             Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
+      ! call Timing(sgg,b,        n,ndummy,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
+      !       this%control%finaltimestep,dummylog,dummylog,dummylog,dummylog,dummylog,dummylog,dummylog,.FALSE., &
+      !       Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
       write(dubuf,*)'END FDTD time stepping. Beginning posprocessing at n= ',n
       call print11(this%control%layoutnumber,dubuf)
 
-      if ((this%control%flushsecondsFields/=0).or.performflushFIELDS) then
+      if ((this%control%flushsecondsFields/=0).or.perform%flushFIELDS) then
          write(dubuf,'(a,i9)')  ' INIT FINAL FLUSHING OF RESTARTING FIELDS n= ',n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-         call flush_and_save_resume(sgg, b, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, thereare, n,eps0,mu0, everflushed,  &
+         call flush_and_save_resume(sgg, b, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, n,eps0,mu0, everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
          write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
@@ -2140,7 +2110,7 @@ module Solver_mod
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       call Timing(sgg,b,        n,ndummy,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
-            this%control%finaltimestep,performflushFields,performflushData,performUnpack,performpostprocess,performflushXdmf,performflushVTK,parar,.FALSE., &
+            this%control%finaltimestep,perform,parar,.FALSE., &
             Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
       write(dubuf,*)'END FINAL POSTPROCESSING at n= ',n
       call print11(this%control%layoutnumber,dubuf)
@@ -2163,7 +2133,7 @@ module Solver_mod
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!  Tell each module to free-up memory
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,this%control%wiresflavor )
+      call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
       !
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)

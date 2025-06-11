@@ -256,7 +256,8 @@ module  FDETYPES
       PeriodicBorders, &
       MagneticMedia, PMLMagneticMedia, &
       MTLNbundles
-
+   contains 
+      procedure :: reset => logic_reset
    end type
 
 
@@ -617,6 +618,18 @@ module  FDETYPES
       logical :: tr,fr,iz,de,ab,ar
    end type
 
+   type :: perform_t
+      logical :: flushFields = .false.
+      logical :: flushData = .false.
+      logical :: unpack = .false.
+      logical :: postprocess = .false.
+      logical :: flushXdmf = .false.
+      logical :: flushVTK = .false.
+   contains
+      procedure :: isFlush
+      procedure :: reset => perform_reset
+   end type
+
    ! variables for timestepping solver control
    type :: sim_control_t
       logical :: simu_devia, resume,saveall,makeholes,& 
@@ -678,8 +691,47 @@ module  FDETYPES
 
 contains
 
+   logical function isFlush(this)
+      class(perform_t) :: this
+      isFlush = this%flushDATA.or.this%flushFIELDS.or.this%postprocess.or.this%flushXdmf.or.this%flushVTK
+   end function
 
+   subroutine perform_reset(this)
+      class(perform_t) :: this
+      this%flushFields = .false.
+      this%flushData = .false.
+      this%unpack = .false.
+      this%postprocess = .false.
+      this%flushXdmf = .false.
+      this%flushVTK = .false.
+   end subroutine 
 
+   subroutine logic_reset(this)
+      class(logic_control) :: this
+      this%Wires = .false.
+      this%PMLbodies = .false.
+      this%MultiportS = .false.
+      this%AnisMultiportS = .false.
+      this%SGBCs= .false.
+      this%Lumpeds= .false.
+      this%EDispersives = .false.
+      this%MDispersives = .false.
+      this%PlaneWaveBoxes = .false.
+      this%Observation = .false.
+      this%FarFields = .false.
+      this%PMCBorders = .false.
+      this%PMLBorders = .false.
+      this%MurBorders = .false.
+      this%PECBorders = .false.
+      this%Anisotropic = .false.
+      this%ThinSlot = .false.
+      this%NodalE = .false.
+      this%NodalH = .false.
+      this%PeriodicBorders = .false.
+      this%MagneticMedia = .false.
+      this%PMLMagneticMedia= .false.
+      this%MTLNbundles = .false.
+   end subroutine 
 
    subroutine setglobal(iu1,iu2)
        integer (kind=4) :: iu1,iu2
