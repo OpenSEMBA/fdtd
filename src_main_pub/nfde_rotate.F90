@@ -531,22 +531,24 @@ CONTAINS
    
    SUBROUTINE rotate_generateThinWires (this,mpidir)     
       TYPE (Parseador), INTENT (INOUT) :: this
-      INTEGER (KIND=4) ::  mpidir    
-      TYPE (ThinWires), POINTER :: old_tWires    
+      INTEGER (KIND=4) ::  mpidir     
       integer (kind=4) :: tama,tama2,i,ii
+      integer (kind=4) :: oldx, oldy, oldz
       
       tama = this%twires%n_tw
-      allocate(old_twires,source=this%twires)
       do i=1, tama       
          tama2 = this%twires%TW(i)%N_TWC
          DO ii = 1, tama2
       !!!ROTATE THINWIRE
              IF (MPIDIR==2 ) THEN
-                   this%twires%tw(i)%tWc(ii)%i = old_twires%tw(i)%twc(ii)%K
-                   this%twires%tw(i)%tWc(ii)%j = old_twires%tw(i)%twc(ii)%I
-                   this%twires%tw(i)%tWc(ii)%K = old_twires%tw(i)%twc(ii)%J
+                   oldx = this%twires%tw(i)%tWc(ii)%i
+                   oldy = this%twires%tw(i)%tWc(ii)%j
+                   oldz = this%twires%tw(i)%tWc(ii)%K
+                   this%twires%tw(i)%tWc(ii)%i = oldz
+                   this%twires%tw(i)%tWc(ii)%j = oldx
+                   this%twires%tw(i)%tWc(ii)%K = oldy
 
-                   SELECT CASE (old_twires%tw(i)%tWc(ii)%d)
+                   SELECT CASE (this%twires%tw(i)%tWc(ii)%d)
                     CASE (iEx)
                       this%twires%tw(i)%tWc(ii)%d = iEy
                     CASE (iEY)
@@ -555,11 +557,14 @@ CONTAINS
                       this%twires%tw(i)%tWc(ii)%d = iEx
                    END SELECT
             ELSEIF (MPIDIR==1 ) THEN
-                   this%twires%tw(i)%tWc(ii)%i = old_twires%tw(ii)%twc(i)%J
-                   this%twires%tw(i)%tWc(ii)%j = old_twires%tw(ii)%twc(i)%K
-                   this%twires%tw(i)%tWc(ii)%K = old_twires%tw(ii)%twc(i)%I
+                      oldx = this%twires%tw(i)%tWc(ii)%i
+                      oldy = this%twires%tw(i)%tWc(ii)%j
+                      oldz = this%twires%tw(i)%tWc(ii)%K
+                      this%twires%tw(i)%tWc(ii)%i = oldy
+                      this%twires%tw(i)%tWc(ii)%j = oldz
+                      this%twires%tw(i)%tWc(ii)%K = oldx
       
-                   SELECT CASE (old_twires%tw(i)%tWc(ii)%d)
+                   SELECT CASE (this%twires%tw(i)%tWc(ii)%d)
                     CASE (iEx)
                       this%twires%tw(i)%tWc(ii)%d = iEz
                     CASE (iEY)
@@ -571,8 +576,6 @@ CONTAINS
       !!!FIN  
          end do
       end do
-      
-      deallocate(old_twires)
      
       RETURN
    END SUBROUTINE rotate_generateThinWires
