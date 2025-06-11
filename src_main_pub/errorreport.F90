@@ -391,26 +391,24 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitTiming(layoutnumber,size,maxCPUtime,timedummy_desdelanzamiento, &
-                         flushsecondsFields,flushsecondsData,initialtimestep,finaltimestep,c,maxSourceValue,sgg)
-      type (SGGFDTDINFO), intent(IN)       :: sgg
-      TYPE (tiempo_t) :: time_out2,time_comienzo
-      type (XYZlimit_t), dimension(1:6)  ::  c
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4)  ::  maxCPUtime
-#ifdef CompileWithMPI
-      integer (kind=4)  ::  ierr
-#endif
-      integer (kind=4), intent(in)           ::  flushsecondsFields,flushsecondsData,initialtimestep,finaltimestep
+   subroutine InitTiming(sgg, control, t, initialtimestep, maxSourceValue)
+      type (SGGFDTDINFO), intent(IN) :: sgg
+      type(sim_control_t) , intent(in):: control
+      REAL (KIND=8), intent(in)   :: t
+      integer (kind=4), intent(in) :: initialtimestep
+      REAL (KIND=RKIND), intent(in)   ::  maxSourceValue
 
-      REAL (KIND=RKIND)   ::  MaxSourceValue
-      REAL (KIND=8)   :: timedummy_desdelanzamiento
+      TYPE (tiempo_t) :: time_out2,time_comienzo
+#ifdef CompileWithMPI
+      integer (kind=4) :: ierr
+#endif
+
 
       character (LEN=BUFSIZE)  ::  whoami
       character (LEN=BUFSIZE)     ::  dubuf
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
       
-      time_desdelanzamiento=timedummy_desdelanzamiento
+      time_desdelanzamiento=t
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       snapLevel=1.0e25_RKIND !*maxSourceValue
       snapStep=1
@@ -418,8 +416,8 @@ contains
       countersnap=0
       !
 
-      megaceldas=(1.0_RKIND*C(iEx)%ZE-1.0_RKIND*C(iEx)%ZI)*(1.0_RKIND*C(iEx)%YE-1.0_RKIND*C(iEx)%YI)* &
-                 (1.0_RKIND*C(iEy)%XE-1.0_RKIND*C(iEy)%XI)/1.0e6_RKIND
+      megaceldas=(1.0_RKIND*sgg%sweep(iEx)%ZE-1.0_RKIND*sgg%sweep(iEx)%ZI)*(1.0_RKIND*sgg%sweep(iEx)%YE-1.0_RKIND*sgg%sweep(iEx)%YI)* &
+                 (1.0_RKIND*sgg%sweep(iEy)%XE-1.0_RKIND*sgg%sweep(iEy)%XI)/1.0e6_RKIND
 
 
 #ifdef CompileWithMPI
@@ -431,41 +429,41 @@ contains
 
 
       write(dubuf,*)  'Total Mcells: ',megaceldastotales
-      call print11(layoutnumber,dubuf)
+      call print11(control%layoutnumber,dubuf)
 
 
-      IF (flushsecondsFIELDS/=0) then
-         write(dubuf,*)  'Flushing restarting FIELDS every ',int(flushsecondsFIELDS/60.0_RKIND),' minutes'
-         call print11(layoutnumber,dubuf)
+      IF (control%flushsecondsFIELDS/=0) then
+         write(dubuf,*)  'Flushing restarting FIELDS every ',int(control%flushsecondsFIELDS/60.0_RKIND),' minutes'
+         call print11(control%layoutnumber,dubuf)
       else
-         if (maxCPUtime == topCPUtime) then
-            call print11(layoutnumber,'NO flushing of restarting FIELDS scheduled')
+         if (control%maxCPUtime == topCPUtime) then
+            call print11(control%layoutnumber,'NO flushing of restarting FIELDS scheduled')
          else
-            write(dubuf,*)  'Flushing of restarting FIELDS at the end (mins) :',maxCPUtime
-            call print11(layoutnumber,dubuf)
+            write(dubuf,*)  'Flushing of restarting FIELDS at the end (mins) :',control%maxCPUtime
+            call print11(control%layoutnumber,dubuf)
          endif
       endif
-      IF (flushsecondsDATA/=0) then
-         write(dubuf,*)  'Flushing observation DATA every  ',int(flushsecondsDATA/60.0_RKIND),' minutes and every ', &
+      IF (control%flushsecondsDATA/=0) then
+         write(dubuf,*)  'Flushing observation DATA every  ',int(control%flushsecondsDATA/60.0_RKIND),' minutes and every ', &
                           BuffObse,' steps'
-         call print11(layoutnumber,dubuf)
+         call print11(control%layoutnumber,dubuf)
       else
-         call print11(layoutnumber,'WARNING: NO flushing of observation DATA scheduled')
+         call print11(control%layoutnumber,'WARNING: NO flushing of observation DATA scheduled')
       endif
       write(dubuf,*)  'Reporting simulation info every  ',int(reportingseconds/60.0_RKIND),' minutes '
-      call print11(layoutnumber,dubuf)
+      call print11(control%layoutnumber,dubuf)
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       call get_secnds(time_out2)
-      call print11(layoutnumber,SEPARADOR//separador//separador)
+      call print11(control%layoutnumber,SEPARADOR//separador//separador)
       write(dubuf,'(a,i7,a,e19.9e3,a,i9,a,e19.9e3)')  'Simulation from n=',initialtimestep,', t=',sgg%tiempo(initialtimestep),&
-                                                      ' to n=',finaltimestep,', t=',sgg%tiempo(finaltimestep)
-      call print11(layoutnumber,dubuf)
+                                                      ' to n=',control%finaltimestep,', t=',sgg%tiempo(control%finaltimestep)
+      call print11(control%layoutnumber,dubuf)
       write(dubuf,*)  'Date/time ', time_out2%fecha( 7: 8),'/',time_out2%fecha( 5: 6),'/',time_out2%fecha(1:4),'   ', &
                                     time_out2%hora( 1: 2), ':',time_out2%hora( 3: 4),':',time_out2%hora( 5: 6)
-      call print11(layoutnumber,dubuf)
+      call print11(control%layoutnumber,dubuf)
       time_begin_absoluto = time_out2%segundos
       time_begin = time_begin_absoluto
       time_begin2 = time_begin_absoluto

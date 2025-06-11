@@ -1177,7 +1177,7 @@ module Solver_mod
       !!! For Timing
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       write(dubuf,*) 'Init Timing...';  call print11(this%control%layoutnumber,dubuf)
-      call InitTiming(this%control%layoutnumber,this%control%size,this%control%maxCPUtime,time_desdelanzamiento,this%control%flushsecondsFields,this%control%flushsecondsData,Initialtimestep,this%control%finaltimestep,sgg%sweep,maxSourceValue,sgg)
+      call InitTiming(sgg, this%control, time_desdelanzamiento, Initialtimestep,maxSourceValue)
 
 
       !!!if (createmap) then
