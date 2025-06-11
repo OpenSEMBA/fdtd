@@ -623,6 +623,7 @@ CONTAINS
       INTEGER (KIND=4) ::  mpidir    
       TYPE (ThinSlots), POINTER :: old_tSlots    
       integer (kind=4) :: tama,tama2,i,ii
+      integer (kind=4) :: oldx, oldy, oldz
       
       tama = this%tSlots%n_Tg
       allocate(old_tSlots,source=this%tSlots)
@@ -631,9 +632,13 @@ CONTAINS
          DO ii = 1, tama2
               !!!ROTATE THIN SLOT
               IF (MPIDIR==2 ) THEN
-                       this%tSlots%Tg(i)%TgC(ii)%i = old_tsLots%Tg(i)%TgC(ii)%K
-                       this%tSlots%Tg(i)%TgC(ii)%j = old_tsLots%Tg(i)%TgC(ii)%I
-                       this%tSlots%Tg(i)%TgC(ii)%K = old_tsLots%Tg(i)%TgC(ii)%J
+                       oldx = this%tSlots%Tg(i)%TgC(ii)%i
+                       oldy = this%tSlots%Tg(i)%TgC(ii)%j
+                       oldz = this%tSlots%Tg(i)%TgC(ii)%K
+
+                       this%tSlots%Tg(i)%TgC(ii)%i = oldz
+                       this%tSlots%Tg(i)%TgC(ii)%j = oldx
+                       this%tSlots%Tg(i)%TgC(ii)%K = oldy
                        SELECT CASE (old_tsLots%Tg(i)%TgC(ii)%dir)
                         CASE (iEx)
                           this%tSlots%Tg(i)%TgC(ii)%dir = iEy
@@ -643,9 +648,13 @@ CONTAINS
                           this%tSlots%Tg(i)%TgC(ii)%dir = iEx
                        END SELECT
               ELSEIF (MPIDIR==1 ) THEN
-                       this%tSlots%Tg(i)%TgC(ii)%i = old_tsLots%Tg(i)%TgC(ii)%J
-                       this%tSlots%Tg(i)%TgC(ii)%j = old_tsLots%Tg(i)%TgC(ii)%K
-                       this%tSlots%Tg(i)%TgC(ii)%K = old_tsLots%Tg(i)%TgC(ii)%I
+                       oldx = this%tSlots%Tg(i)%TgC(ii)%i
+                       oldy = this%tSlots%Tg(i)%TgC(ii)%j
+                       oldz = this%tSlots%Tg(i)%TgC(ii)%K
+                       
+                       this%tSlots%Tg(i)%TgC(ii)%i = oldy
+                       this%tSlots%Tg(i)%TgC(ii)%j = oldz
+                       this%tSlots%Tg(i)%TgC(ii)%K = oldx
 
                        SELECT CASE (old_tsLots%Tg(i)%TgC(ii)%dir)
                         CASE (iEx)

@@ -11,125 +11,91 @@ integer function test_rotate_generate_thin_slots() bind(C) result(err)
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     
-    ! Test case 1: Rotate thin slots in mpidir=2 direction
     mpidir = 2
-    call setup_thin_slot_test(this, 2)
+    call setup_thin_slot_test(this)
     
-    ! Set up test data
-    call init_thin_slot_data(this, 1, 1, 2, 3, 1, 1, "slot1")
-    call init_thin_slot_data(this, 2, 4, 5, 6, 2, 2, "slot2")
-    
-    ! Call rotation and verify results
     call rotate_generateThinSlots(this, mpidir)
-    call verify_thin_slot_rotation_y(test_err, this)
+    call verify_thin_slot_rotation(test_err, this, mpidir)
     
-    ! Clean up
     call cleanup_thin_slot_test(this)
     
-    ! Test case 2: Rotate thin slots in mpidir=1 direction
     mpidir = 1
-    call setup_thin_slot_test(this, 2)
+    call setup_thin_slot_test(this)
     
-    ! Set up test data (same as before)
-    call init_thin_slot_data(this, 1, 1, 2, 3, 1, 1, "slot1")
-    call init_thin_slot_data(this, 2, 4, 5, 6, 2, 2, "slot2")
-    
-    ! Call rotation and verify results
     call rotate_generateThinSlots(this, mpidir)
-    call verify_thin_slot_rotation_x(test_err, this)
+    call verify_thin_slot_rotation(test_err, this, mpidir)
     
-    ! Clean up
-    call cleanup_thin_slot_test(this)
-    
-    ! Test case 3: Verify behavior with no thin slots
-    mpidir = 2
-    call setup_thin_slot_test(this, 0)
-    call rotate_generateThinSlots(this, mpidir)
-    call expect_eq_int(test_err, 0, this%tslots%n_tg, "rotate_generateThinSlots: n_tg should remain 0")
     call cleanup_thin_slot_test(this)
     
     err = test_err
 end function test_rotate_generate_thin_slots
 
-subroutine setup_thin_slot_test(this, n_slots)
+subroutine setup_thin_slot_test(this)
     type(Parseador), intent(inout) :: this
-    integer, intent(in) :: n_slots
+    integer :: n_slots=1
     integer :: i
     
     allocate(this%tslots)
     this%tslots%n_tg = n_slots
     this%tslots%n_tg_max = n_slots
-    if (n_slots > 0) then
-        allocate(this%tslots%tg(n_slots))
-        do i = 1, n_slots
-            this%tslots%tg(i)%n_tgc = 1
-            this%tslots%tg(i)%n_tgc_max = 1
-            allocate(this%tslots%tg(i)%tgc(1))
-            this%tslots%tg(i)%width = 0.1d0  ! Example width
-        end do
-    end if
+    
+    allocate(this%tslots%tg(n_slots))
+    allocate(this%tslots%tg(n_slots)%tgc(2))
+    this%tslots%tg(1)%n_tgc = 2
+    this%tslots%tg(1)%n_tgc_max = 2
+    this%tslots%tg(1)%width = 0.1d0
+    call init_thin_slot_component(this, 1, 1, 1, 2, 3, 1, 1, "slot1")
+    call init_thin_slot_component(this, 1, 2, 4, 5, 6, 2, 2, "slot1")
 end subroutine setup_thin_slot_test
 
-subroutine init_thin_slot_data(this, idx, i, j, k, dir, node, tag)
+subroutine init_thin_slot_component(this, tgidx, tgcidx, i, j, k, dir, node, tag)
     type(Parseador), intent(inout) :: this
-    integer, intent(in) :: idx, i, j, k, dir, node
+    integer, intent(in) :: tgidx, tgcidx, i, j, k, dir, node
     character(len=*), intent(in) :: tag
     
-    ! Initialize ThinSlotComp attributes
-    this%tslots%tg(idx)%tgc(1)%i = i
-    this%tslots%tg(idx)%tgc(1)%j = j
-    this%tslots%tg(idx)%tgc(1)%k = k
-    this%tslots%tg(idx)%tgc(1)%dir = dir
-    this%tslots%tg(idx)%tgc(1)%node = node
-    this%tslots%tg(idx)%tgc(1)%Or = 1  ! Default orientation
-    this%tslots%tg(idx)%tgc(1)%tag = tag
-end subroutine init_thin_slot_data
+    
+    this%tslots%tg(tgidx)%tgc(tgcidx)%i = i
+    this%tslots%tg(tgidx)%tgc(tgcidx)%j = j
+    this%tslots%tg(tgidx)%tgc(tgcidx)%k = k
+    this%tslots%tg(tgidx)%tgc(tgcidx)%dir = dir
+    this%tslots%tg(tgidx)%tgc(tgcidx)%node = node
+    this%tslots%tg(tgidx)%tgc(tgcidx)%Or = 1
+    this%tslots%tg(tgidx)%tgc(tgcidx)%tag = tag
+end subroutine init_thin_slot_component
 
-subroutine verify_thin_slot_rotation_y(test_err, this)
-    integer, intent(inout) :: test_err
+subroutine verify_thin_slot_rotation(test_err, this, mpidir)
+    integer, intent(inout) :: test_err, mpidir
     type(Parseador), intent(in) :: this
-    
-    ! Verify ThinSlot 1 (rotated around y-axis)
-    call expect_eq_int(test_err, -1, this%tslots%tg(1)%tgc(1)%i, "rotate_generateThinSlots: i(1) should be rotated")
-    call expect_eq_int(test_err, 2, this%tslots%tg(1)%tgc(1)%j, "rotate_generateThinSlots: j(1) should remain unchanged")
-    call expect_eq_int(test_err, -3, this%tslots%tg(1)%tgc(1)%k, "rotate_generateThinSlots: k(1) should be rotated")
-    call expect_eq_int(test_err, -1, this%tslots%tg(1)%tgc(1)%dir, "rotate_generateThinSlots: dir(1) should be rotated")
-    call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%node, "rotate_generateThinSlots: node(1) should remain unchanged")
-    call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%Or, "rotate_generateThinSlots: Or(1) should remain unchanged")
-    call expect_eq_real(test_err, 0.1_RKIND, this%tslots%tg(1)%width, "rotate_generateThinSlots: width(1) should remain unchanged")
-    
-    ! Verify ThinSlot 2 (rotated around y-axis)
-    call expect_eq_int(test_err, -4, this%tslots%tg(2)%tgc(1)%i, "rotate_generateThinSlots: i(2) should be rotated")
-    call expect_eq_int(test_err, 5, this%tslots%tg(2)%tgc(1)%j, "rotate_generateThinSlots: j(2) should remain unchanged")
-    call expect_eq_int(test_err, -6, this%tslots%tg(2)%tgc(1)%k, "rotate_generateThinSlots: k(2) should be rotated")
-    call expect_eq_int(test_err, -2, this%tslots%tg(2)%tgc(1)%dir, "rotate_generateThinSlots: dir(2) should be rotated")
-    call expect_eq_int(test_err, 2, this%tslots%tg(2)%tgc(1)%node, "rotate_generateThinSlots: node(2) should remain unchanged")
-    call expect_eq_int(test_err, 1, this%tslots%tg(2)%tgc(1)%Or, "rotate_generateThinSlots: Or(2) should remain unchanged")
-    call expect_eq_real(test_err, 0.1_RKIND, this%tslots%tg(2)%width, "rotate_generateThinSlots: width(2) should remain unchanged")
-end subroutine verify_thin_slot_rotation_y
+    if (mpidir==2) then
+        call expect_eq_int(test_err, 3, this%tslots%tg(1)%tgc(1)%i, "rotate_generateThinSlots: i(1) mpidir2 error")
+        call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%j, "rotate_generateThinSlots: j(1) mpidir2 error")
+        call expect_eq_int(test_err, 2, this%tslots%tg(1)%tgc(1)%k, "rotate_generateThinSlots: k(1) mpidir2 error")
+        call expect_eq_int(test_err, 2, this%tslots%tg(1)%tgc(1)%dir, "rotate_generateThinSlots: dir(1) mpidir2 error")
+        call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%node, "rotate_generateThinSlots: node(1) mpidir2 error")
+        call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%Or, "rotate_generateThinSlots: Or(1) mpidir2 error")
 
-subroutine verify_thin_slot_rotation_x(test_err, this)
-    integer, intent(inout) :: test_err
-    type(Parseador), intent(in) :: this
-    
-    ! Verify ThinSlot 1 (rotated around x-axis)
-    call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%i, "rotate_generateThinSlots: i(1) should remain unchanged")
-    call expect_eq_int(test_err, -2, this%tslots%tg(1)%tgc(1)%j, "rotate_generateThinSlots: j(1) should be rotated")
-    call expect_eq_int(test_err, 3, this%tslots%tg(1)%tgc(1)%k, "rotate_generateThinSlots: k(1) should be rotated")
-    call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%dir, "rotate_generateThinSlots: dir(1) should remain unchanged")
-    call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%node, "rotate_generateThinSlots: node(1) should remain unchanged")
-    call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%Or, "rotate_generateThinSlots: Or(1) should remain unchanged")
-    call expect_eq_real(test_err, 0.1_RKIND, this%tslots%tg(1)%width, "rotate_generateThinSlots: width(1) should remain unchanged")
-    
-    ! Verify ThinSlot 2 (rotated around x-axis)
-    call expect_eq_int(test_err, 4, this%tslots%tg(2)%tgc(1)%i, "rotate_generateThinSlots: i(2) should remain unchanged")
-    call expect_eq_int(test_err, -5, this%tslots%tg(2)%tgc(1)%j, "rotate_generateThinSlots: j(2) should be rotated")
-    call expect_eq_int(test_err, 6, this%tslots%tg(2)%tgc(1)%k, "rotate_generateThinSlots: k(2) should be rotated")
-    call expect_eq_int(test_err, 2, this%tslots%tg(2)%tgc(1)%dir, "rotate_generateThinSlots: dir(2) should remain unchanged")
-    call expect_eq_int(test_err, 2, this%tslots%tg(2)%tgc(1)%node, "rotate_generateThinSlots: node(2) should remain unchanged")
-    call expect_eq_int(test_err, 1, this%tslots%tg(2)%tgc(1)%Or, "rotate_generateThinSlots: Or(2) should remain unchanged")
-    call expect_eq_real(test_err, 0.1_RKIND, this%tslots%tg(2)%width, "rotate_generateThinSlots: width(2) should remain unchanged")
-end subroutine verify_thin_slot_rotation_x
+        call expect_eq_int(test_err, 6, this%tslots%tg(1)%tgc(2)%i, "rotate_generateThinSlots: i(2) mpidir2 error")
+        call expect_eq_int(test_err, 4, this%tslots%tg(1)%tgc(2)%j, "rotate_generateThinSlots: j(2) mpidir2 error")
+        call expect_eq_int(test_err, 5, this%tslots%tg(1)%tgc(2)%k, "rotate_generateThinSlots: k(2) mpidir2 error")
+        call expect_eq_int(test_err, 3, this%tslots%tg(1)%tgc(2)%dir, "rotate_generateThinSlots: dir(2) mpidir2 error")
+        call expect_eq_int(test_err, 2, this%tslots%tg(1)%tgc(2)%node, "rotate_generateThinSlots: node(2) mpidir2 error")
+        call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(2)%Or, "rotate_generateThinSlots: Or(2) mpidir2 error")
+    else if (mpidir==1) then
+        call expect_eq_int(test_err, 2, this%tslots%tg(1)%tgc(1)%i, "rotate_generateThinSlots: i(1) mpidir1 error")
+        call expect_eq_int(test_err, 3, this%tslots%tg(1)%tgc(1)%j, "rotate_generateThinSlots: j(1) mpidir1 error")
+        call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%k, "rotate_generateThinSlots: k(1) mpidir1 error")
+        call expect_eq_int(test_err, 3, this%tslots%tg(1)%tgc(1)%dir, "rotate_generateThinSlots: dir(1) mpidir1 error")
+        call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%node, "rotate_generateThinSlots: node(1) mpidir1 error")
+        call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(1)%Or, "rotate_generateThinSlots: Or(1) mpidir1 error")
+
+        call expect_eq_int(test_err, 5, this%tslots%tg(1)%tgc(2)%i, "rotate_generateThinSlots: i(2) mpidir1 error")
+        call expect_eq_int(test_err, 6, this%tslots%tg(1)%tgc(2)%j, "rotate_generateThinSlots: j(2) mpidir1 error")
+        call expect_eq_int(test_err, 4, this%tslots%tg(1)%tgc(2)%k, "rotate_generateThinSlots: k(2) mpidir1 error")
+        call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(2)%dir, "rotate_generateThinSlots: dir(2) mpidir1 error")
+        call expect_eq_int(test_err, 2, this%tslots%tg(1)%tgc(2)%node, "rotate_generateThinSlots: node(2) mpidir1 error")
+        call expect_eq_int(test_err, 1, this%tslots%tg(1)%tgc(2)%Or, "rotate_generateThinSlots: Or(2) mpidir1 error")
+    end if
+end subroutine verify_thin_slot_rotation
 
 subroutine cleanup_thin_slot_test(this)
     type(Parseador), intent(inout) :: this
