@@ -749,37 +749,35 @@ PROGRAM SEMBA_FDTD_launcher
          CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
 !los del tipo l%             
-           l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall, &
-           l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
+           l%cfl, l%nEntradaRoot, l%finaltimestep, &
+           l%flushsecondsFields, &
            l%flushsecondsData, l%layoutnumber, l%size, &
            l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
-           l%nresumeable2, l%resume_fromold,l%groundwires,l%noSlantedcrecepelo,l%sgbc,l%sgbcDispersive,l%mibc,l%attfactorc,l%attfactorw,&
-           l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%mur_second,l%MurAfterPML,l%MEDIOEXTRA,&
-           l%singlefilewrite,maxSourceValue,l%NOcompomur,l%ade, &
-           l%conformalskin,l%strictOLD,l%TAPARRABOS,l%wiresflavor,l%mindistwires,l%facesNF2FF,l%NF2FFDecim,l%vtkindex,&
-           l%createh5bin,l%wirecrank, &
-           l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbccrank,l%sgbcdepth,l%fatalerror,l%fieldtotl,l%permitscaling, &
+           l%nresumeable2, l%attfactorc,l%attfactorw,&
+           l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%MEDIOEXTRA,&
+           maxSourceValue, &
+           l%wiresflavor,l%mindistwires,l%facesNF2FF, &
+           l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbcdepth, &
            l%EpsMuTimeScale_input_parameters, &
-           l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess, &
-           l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk, &
-           mtln_parsed, l%use_mtln_wires)
+           l%mpidir,l%precision,l%ficherohopf, &
+           l%factorradius,l%factordelta, &
+           mtln_parsed)
 #else
             CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
             SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
          !los del tipo l%             
-            l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall, &
-            l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
+            l%cfl, l%nEntradaRoot, l%finaltimestep, &
+            l%flushsecondsFields, &
             l%flushsecondsData, l%layoutnumber, l%size, &
             l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
-            l%nresumeable2, l%resume_fromold,l%groundwires,l%noSlantedcrecepelo,l%sgbc,l%sgbcDispersive,l%mibc,l%attfactorc,l%attfactorw,&
-            l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%mur_second,l%MurAfterPML,l%MEDIOEXTRA,&
-            l%singlefilewrite,maxSourceValue,l%NOcompomur,l%ade, &
-            l%conformalskin,l%strictOLD,l%TAPARRABOS,l%wiresflavor,l%mindistwires,l%facesNF2FF,l%NF2FFDecim,l%vtkindex,&
-            l%createh5bin,l%wirecrank, &
-            l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbccrank,l%sgbcdepth,l%fatalerror,l%fieldtotl,l%permitscaling, &
+            l%nresumeable2,l%attfactorc,l%attfactorw,&
+            l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%MEDIOEXTRA,&
+            maxSourceValue, &
+            l%wiresflavor,l%mindistwires,l%facesNF2FF, &
+            l%opcionestotales,l%sgbcfreq,l%sgbcresol,l%sgbcdepth, &
             l%EpsMuTimeScale_input_parameters, &
-            l%stochastic,l%mpidir,l%verbose,l%precision,l%hopf,l%ficherohopf,l%niapapostprocess, &
-            l%dontwritevtk,l%experimentalVideal,l%forceresampled,l%factorradius,l%factordelta,l%noconformalmapvtk,l%use_mtln_wires)
+            l%mpidir,l%precision,l%ficherohopf, &
+            l%factorradius,l%factordelta)
 #endif
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else
