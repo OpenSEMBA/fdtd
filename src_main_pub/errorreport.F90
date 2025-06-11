@@ -2,7 +2,7 @@
  
 Module Report
    use FDETYPES
-
+   ! use Solver_mod, only: sim_control_t
    ! use snapxdmf
 
    implicit none
@@ -166,23 +166,16 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine InitReporting(sgg,nEntradaRoot,resume,layoutnumber,size,nresumeable2,resume_fromold)
-      !!!!!!!PML params!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      integer (kind=4), intent(in) :: layoutnumber,size
+   subroutine InitReporting(sgg,c)
       type (SGGFDTDINFO), intent(INout)         ::  sgg
-      !!!!!!!
-      character (len=*), INTENT(IN)  ::  nEntradaRoot
-      logical  ::  resume,resume_fromold
+      type(sim_control_t) :: c
 #ifdef CompileWithMPI
       integer (kind=4)  ::  ierr
 #endif
-      character (len=*), INTENT(IN)  ::  nresumeable2
       Logical  ::  errnofile
-      character(len=BUFSIZE) :: buff
+      character(len=BUFSIZE) :: buff, whoami
 
-      character (LEN=BUFSIZE)  ::  whoami
-
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%size,') '
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -192,11 +185,11 @@ contains
 
       !
 
-      IF (layoutnumber == 0) THEN  !only the master
-         if (resume) then
-            open (10,file=trim(adjustl(nEntradaRoot))//'_Energy.dat',form='formatted',position='append')
+      IF (c%layoutnumber == 0) THEN  !only the master
+         if (c%resume) then
+            open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted',position='append')
          else
-            open (10,file=trim(adjustl(nEntradaRoot))//'_Energy.dat',form='formatted')
+            open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted')
          endif
       endif
       file10isopen=.true.
@@ -208,7 +201,7 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-      call print11(layoutnumber,SEPARADOR//separador//separador)
+      call print11(c%layoutnumber,SEPARADOR//separador//separador)
 
 
 #ifndef CompileWithInt4
@@ -216,30 +209,30 @@ contains
 #endif
       !
 
-      if (resume) then
+      if (c%resume) then
          errnofile=.false.
-         if (resume_fromold) then
-            INQUIRE (FILE=trim(adjustl(nresumeable2))//'.old', EXIST=errnofile)
+         if (c%resume_fromold) then
+            INQUIRE (FILE=trim(adjustl(c%nresumeable2))//'.old', EXIST=errnofile)
          else
-            INQUIRE (FILE=trim(adjustl(nresumeable2)), EXIST=errnofile)
+            INQUIRE (FILE=trim(adjustl(c%nresumeable2)), EXIST=errnofile)
          endif
          if (.not.errnofile) then
-            if (resume_fromold) then
-               buff='FILE '//trim(adjustl(nresumeable2))//'.old DOES NOT EXIST'
-               call StopOnError(layoutnumber,size,buff)
+            if (c%resume_fromold) then
+               buff='FILE '//trim(adjustl(c%nresumeable2))//'.old DOES NOT EXIST'
+               call StopOnError(c%layoutnumber,c%size,buff)
             else
-               buff='FILE '//trim(adjustl(nresumeable2))//' DOES NOT EXIST'
-               call StopOnError(layoutnumber,size,buff)
+               buff='FILE '//trim(adjustl(c%nresumeable2))//' DOES NOT EXIST'
+               call StopOnError(c%layoutnumber,c%size,buff)
             endif
          endif
-         call print11(layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
-         call print11(layoutnumber,' ')
-         if (resume_fromold) then
-            call print11(layoutnumber,'Reading resuming data from '//trim(adjustl(nresumeable2))//'.old etc.')
+         call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
+         call print11(c%layoutnumber,' ')
+         if (c%resume_fromold) then
+            call print11(c%layoutnumber,'Reading resuming data from '//trim(adjustl(c%nresumeable2))//'.old etc.')
          else
-            call print11(layoutnumber,'Reading resuming data from '//trim(adjustl(nresumeable2))//' etc.')
+            call print11(c%layoutnumber,'Reading resuming data from '//trim(adjustl(c%nresumeable2))//' etc.')
          endif
-         call print11(layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
+         call print11(c%layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
       endif
 
 

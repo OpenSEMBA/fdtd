@@ -258,6 +258,9 @@ module  FDETYPES
       MTLNbundles
 
    end type
+
+
+
    !computational limits
    type Xlimit_t
       integer (kind=4)  :: XI,XE,NX
@@ -613,6 +616,37 @@ module  FDETYPES
    type nf2ff_t
       logical :: tr,fr,iz,de,ab,ar
    end type
+
+   ! variables for timestepping solver control
+   type :: sim_control_t
+      logical :: simu_devia, resume,saveall,makeholes,& 
+                 connectendings,isolategroupgroups,createmap, & 
+                 groundwires,noSlantedcrecepelo, & 
+                 mibc,ADE,conformalskin,sgbc, sgbcDispersive, sgbccrank, & 
+                 NOcompomur,strictOLD,TAPARRABOS, & 
+                 noconformalmapvtk, hopf,experimentalVideal, &
+                 forceresampled, mur_second,MurAfterPML, &
+                 stableradholland,singlefilewrite,NF2FFDecim, &
+                 fieldtotl,finishedwithsuccess, &
+                 permitscaling,mtlnberenger,niapapostprocess, &
+                 stochastic, verbose, dontwritevtk, &
+                 use_mtln_wires, resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
+
+      ! REAL (kind=8) :: time_desdelanzamiento
+      REAL (kind=rkind) :: cfl, attfactorc,attfactorw, alphamaxpar, &
+                           alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol
+      real (kind=rkind_wires) :: factorradius,factordelta !maxSourceValue
+      
+      character (len=BUFSIZE) :: nEntradaRoot, inductance_model,wiresflavor, nresumeable2
+      CHARACTER (LEN=BUFSIZE) :: opcionestotales, ficherohopf
+      
+      integer (kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
+                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, size
+      
+      TYPE (MedioExtra_t) :: MEDIOEXTRA
+      type (nf2ff_T) :: facesNF2FF
+
+   end type sim_control_t
 
    !!!!!!!!VARIABLES GLOBALES
    integer (kind=4), SAVE, PUBLIC ::  prior_BV     , &

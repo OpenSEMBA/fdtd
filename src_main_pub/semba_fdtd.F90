@@ -748,18 +748,11 @@ PROGRAM SEMBA_FDTD_launcher
 #ifdef CompileWithMTLN
          CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
-!los del tipo l%             
-           l%size, &           
-           time_desdelanzamiento, &
-           maxSourceValue, &
-           mtln_parsed)
+           time_desdelanzamiento, maxSourceValue, l%EpsMuTimeScale_input_parameters, mtln_parsed)
 #else
             CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
             SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
-         !los del tipo l%  
-            l%size, &           
-            time_desdelanzamiento, &
-            maxSourceValue)
+            time_desdelanzamiento, maxSourceValue, l%EpsMuTimeScale_input_parameters)
 #endif
          deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
       else
