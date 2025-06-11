@@ -206,7 +206,7 @@ module Solver_mod
 !!!los del tipo l%
    cfl,nEntradaRoot,finaltimestep,resume,saveall,  &
    stableradholland,flushsecondsFields,mtlnberenger, &
-   flushsecondsData,layoutnumber,size,createmap, &
+   flushsecondsData,layoutnumber,size, &
    inductance_model, inductance_order, wirethickness, maxCPUtime,time_desdelanzamiento, &
    nresumeable2,resume_fromold,groundwires,noSlantedcrecepelo, sgbc,sgbcDispersive,mibc,attfactorc,attfactorw, &
    alphamaxpar,alphaOrden,kappamaxpar,mur_second,murafterpml,MEDIOEXTRA, &
@@ -224,7 +224,7 @@ module Solver_mod
 !!!los del tipo l%
    cfl,nEntradaRoot,finaltimestep,resume,saveall,  &
    stableradholland,flushsecondsFields,mtlnberenger, &
-   flushsecondsData,layoutnumber,size,createmap, &
+   flushsecondsData,layoutnumber,size, &
    inductance_model, inductance_order, wirethickness, maxCPUtime,time_desdelanzamiento, &
    nresumeable2,resume_fromold,groundwires,noSlantedcrecepelo, sgbc,sgbcDispersive,mibc,attfactorc,attfactorw, &
    alphamaxpar,alphaOrden,kappamaxpar,mur_second,murafterpml,MEDIOEXTRA, &
@@ -241,7 +241,9 @@ module Solver_mod
       class(solver_t) :: this
 
 
+#ifdef CompileWithMTLN
       type (mtln_t) :: mtln_parsed
+#endif
    !!!
       logical :: noconformalmapvtk
       logical :: hopf,experimentalVideal,forceresampled
@@ -305,7 +307,7 @@ module Solver_mod
       type (bounds_t)  ::  b
 
       integer (kind=4), intent(inout)                     ::  finaltimestep
-      logical, intent(in)           ::  resume,saveall,createmap,groundwires,noSlantedcrecepelo, &
+      logical, intent(in)           ::  resume,saveall,groundwires,noSlantedcrecepelo, &
       SGBC,SGBCDispersive,mibc,ADE,conformalskin,NOcompomur,strictOLD,TAPARRABOS
       CHARACTER (LEN=BUFSIZE), intent(in) :: opcionestotales
       logical, intent(inout)           ::  resume_fromold
@@ -1423,11 +1425,12 @@ module Solver_mod
                if (wirecrank) then
                   call AdvanceWiresEcrank(sgg,n, layoutnumber,wiresflavor,this%flags%simu_devia,stochastic)
                else
+#ifdef CompileWithMTLN
                   if (mtln_parsed%has_multiwires) then
                      write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
                      call WarnErrReport(buff)
                   end if
-
+#endif
                   call AdvanceWiresE(sgg,n, layoutnumber,wiresflavor,this%flags%simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)                 
                endif
             endif

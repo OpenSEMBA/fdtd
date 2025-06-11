@@ -751,7 +751,7 @@ PROGRAM SEMBA_FDTD_launcher
 !los del tipo l%             
            l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall, &
            l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
-           l%flushsecondsData, l%layoutnumber, l%size, l%createmap, &
+           l%flushsecondsData, l%layoutnumber, l%size, &
            l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
            l%nresumeable2, l%resume_fromold,l%groundwires,l%noSlantedcrecepelo,l%sgbc,l%sgbcDispersive,l%mibc,l%attfactorc,l%attfactorw,&
            l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%mur_second,l%MurAfterPML,l%MEDIOEXTRA,&
@@ -769,7 +769,7 @@ PROGRAM SEMBA_FDTD_launcher
          !los del tipo l%             
             l%cfl, l%nEntradaRoot, l%finaltimestep, l%resume, l%saveall, &
             l%stableradholland, l%flushsecondsFields,l%mtlnberenger, &
-            l%flushsecondsData, l%layoutnumber, l%size, l%createmap, &
+            l%flushsecondsData, l%layoutnumber, l%size, &
             l%inductance_model, l%inductance_order, l%wirethickness, l%maxCPUtime,time_desdelanzamiento, &
             l%nresumeable2, l%resume_fromold,l%groundwires,l%noSlantedcrecepelo,l%sgbc,l%sgbcDispersive,l%mibc,l%attfactorc,l%attfactorw,&
             l%alphamaxpar,l%alphaOrden,l%kappamaxpar,l%mur_second,l%MurAfterPML,l%MEDIOEXTRA,&
