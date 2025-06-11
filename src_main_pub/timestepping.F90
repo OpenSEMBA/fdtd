@@ -200,11 +200,12 @@ module Solver_mod
    end subroutine
 #endif
 
+#ifdef CompileWithMTLN
    subroutine launch_simulation(this, sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
    SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
 !!!los del tipo l%
    cfl,nEntradaRoot,finaltimestep,resume,saveall,  &
-   isolategroupgroups,stableradholland,flushsecondsFields,mtlnberenger, &
+   stableradholland,flushsecondsFields,mtlnberenger, &
    flushsecondsData,layoutnumber,size,createmap, &
    inductance_model, inductance_order, wirethickness, maxCPUtime,time_desdelanzamiento, &
    nresumeable2,resume_fromold,groundwires,noSlantedcrecepelo, sgbc,sgbcDispersive,mibc,attfactorc,attfactorw, &
@@ -217,7 +218,25 @@ module Solver_mod
    stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess, &
    dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
    mtln_parsed, use_mtln_wires)
-
+#else
+   subroutine launch_simulation(this, sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
+   SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype,  &
+!!!los del tipo l%
+   cfl,nEntradaRoot,finaltimestep,resume,saveall,  &
+   stableradholland,flushsecondsFields,mtlnberenger, &
+   flushsecondsData,layoutnumber,size,createmap, &
+   inductance_model, inductance_order, wirethickness, maxCPUtime,time_desdelanzamiento, &
+   nresumeable2,resume_fromold,groundwires,noSlantedcrecepelo, sgbc,sgbcDispersive,mibc,attfactorc,attfactorw, &
+   alphamaxpar,alphaOrden,kappamaxpar,mur_second,murafterpml,MEDIOEXTRA, &
+   singlefilewrite,maxSourceValue,NOcompomur,ADE,&
+   conformalskin,strictOLD,TAPARRABOS,wiresflavor,mindistwires,facesNF2FF,NF2FFDecim,vtkindex, &
+   createh5bin,wirecrank, &
+   opcionestotales,sgbcFreq,sgbcresol,sgbccrank,sgbcDepth,fatalerror,fieldtotl,permitscaling, &
+   EpsMuTimeScale_input_parameters, &
+   stochastic,mpidir,verbose,precision,hopf,ficherohopf,niapapostprocess, &
+   dontwritevtk,experimentalVideal,forceresampled,factorradius,factordelta,noconformalmapvtk, &
+   use_mtln_wires)
+#endif
    !!!
       class(solver_t) :: this
 
@@ -286,7 +305,7 @@ module Solver_mod
       type (bounds_t)  ::  b
 
       integer (kind=4), intent(inout)                     ::  finaltimestep
-      logical, intent(in)           ::  resume,saveall,isolategroupgroups,createmap,groundwires,noSlantedcrecepelo, &
+      logical, intent(in)           ::  resume,saveall,createmap,groundwires,noSlantedcrecepelo, &
       SGBC,SGBCDispersive,mibc,ADE,conformalskin,NOcompomur,strictOLD,TAPARRABOS
       CHARACTER (LEN=BUFSIZE), intent(in) :: opcionestotales
       logical, intent(inout)           ::  resume_fromold
@@ -642,7 +661,7 @@ module Solver_mod
          write(buff,*) 'TAPARRABOS=',TAPARRABOS,', wiresflavor=',trim(adjustl(wiresflavor)),', mindistwires=',mindistwires,', wirecrank=',wirecrank , 'makeholes=',this%flags%makeholes
          call WarnErrReport(buff)
          write(buff,*) 'use_mtln_wires=', use_mtln_wires
-         write(buff,*) 'connectendings=',this%flags%connectendings,', isolategroupgroups=',isolategroupgroups
+         write(buff,*) 'connectendings=',this%flags%connectendings,', isolategroupgroups=',this%flags%isolategroupgroups
          call WarnErrReport(buff)
          write(buff,*) 'wirethickness ', wirethickness, 'stableradholland=',stableradholland,'mtlnberenger=',mtlnberenger,' inductance_model=',trim(adjustl(inductance_model)), &
                        ', inductance_order=',inductance_order,', groundwires=',groundwires,' ,fieldtotl=',fieldtotl,' noSlantedcrecepelo =',noSlantedcrecepelo 
@@ -756,7 +775,7 @@ module Solver_mod
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Holland Wires...';  call print11(layoutnumber,dubuf)
-         call InitWires       (sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,this%thereAre%Wires,resume,this%flags%makeholes,this%flags%connectendings,isolategroupgroups,stableradholland,fieldtotl, &
+         call InitWires       (sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,this%thereAre%Wires,resume,this%flags%makeholes,this%flags%connectendings,this%flags%isolategroupgroups,stableradholland,fieldtotl, &
                                Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
                                inductance_model,wirethickness,groundwires,strictOLD,TAPARRABOS,g2,wiresflavor,SINPML_fullsize,fullsize,wirecrank,dtcritico,eps0,mu0,this%flags%simu_devia,stochastic,verbose,factorradius,factordelta)
          l_auxinput=this%thereAre%Wires
@@ -780,7 +799,7 @@ module Solver_mod
 #endif
          write(dubuf,*) 'Init Multi-Wires...';  call print11(layoutnumber,dubuf)
          call InitWires_Berenger(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,this%thereAre%Wires,resume,this%flags%makeholes, &
-         isolategroupgroups,mtlnberenger,mindistwires, &
+         this%flags%isolategroupgroups,mtlnberenger,mindistwires, &
          groundwires,taparrabos,Ex,Ey,Ez, &
          Idxe,Idye,Idze,Idxh,Idyh,Idzh,inductance_model,g2,SINPML_fullsize,fullsize,dtcritico,eps0,mu0,verbose)
       l_auxinput= this%thereAre%Wires
@@ -858,17 +877,17 @@ module Solver_mod
       endif
       !!!
 !!
-
       if (use_mtln_wires) then
-         if (mtln_parsed%parsed) then 
+#ifdef CompileWithMTLN
 #ifdef CompileWithMPI
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-            call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,this%thereAre%MTLNbundles)
-         else
-            write(buff,'(a)') 'WIR_ERROR: -mtlnwires flag selected but no mtl parsed information.'
-         end if
+         call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,thereAre%MTLNbundles)
+#else
+         write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
+#endif
       endif
+
 
       !Anisotropic
 #ifdef CompileWithMPI
