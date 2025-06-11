@@ -584,6 +584,7 @@ CONTAINS
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) ::  mpidir    
       TYPE (SlantedWires), POINTER :: old_swires    
+      real (kind=8) :: oldx, oldy, oldz
       integer (kind=4) :: tama,tama2,i,ii
       
       tama = this%swires%n_sw
@@ -593,13 +594,21 @@ CONTAINS
          do ii=1,tama2
              !!!ROTATE THINWIRE
              IF (MPIDIR==2 ) THEN
-                      this%swires%sw(i)%swc(ii)%x = old_swires%sw(i)%swc(ii)%z
-                      this%swires%sw(i)%swc(ii)%y = old_swires%sw(i)%swc(ii)%x
-                      this%swires%sw(i)%swc(ii)%z = old_swires%sw(i)%swc(ii)%y
+                      oldx = this%swires%sw(i)%swc(ii)%x
+                      oldy = this%swires%sw(i)%swc(ii)%y
+                      oldz = this%swires%sw(i)%swc(ii)%z
+
+                      this%swires%sw(i)%swc(ii)%x = oldz
+                      this%swires%sw(i)%swc(ii)%y = oldx
+                      this%swires%sw(i)%swc(ii)%z = oldy
              ELSEIF (MPIDIR==1 ) THEN
-                      this%swires%sw(i)%swc(ii)%x = old_swires%sw(i)%swc(ii)%y
-                      this%swires%sw(i)%swc(ii)%y = old_swires%sw(i)%swc(ii)%z
-                      this%swires%sw(i)%swc(ii)%z = old_swires%sw(i)%swc(ii)%x
+                      oldx = this%swires%sw(i)%swc(ii)%x
+                      oldy = this%swires%sw(i)%swc(ii)%y
+                      oldz = this%swires%sw(i)%swc(ii)%z
+
+                      this%swires%sw(i)%swc(ii)%x = oldy
+                      this%swires%sw(i)%swc(ii)%y = oldz
+                      this%swires%sw(i)%swc(ii)%z = oldx
              ENDIF
          end do
          !!!FIN
