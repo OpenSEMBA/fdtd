@@ -731,6 +731,7 @@ CONTAINS
       TYPE (Electric_Sonda), POINTER :: old_Electric => NULL ()
       TYPE (Magnetic_Sonda), POINTER :: old_Magnetic => NULL ()
       REAL(KIND=RK) :: THETASTART,THETASTOP,PHISTART,PHISTOP
+      integer :: iox, ioy, ioz
       
       tama = this%oldSONDA%n_probes        
       ! tres posibilidades FarField, Electric,Magnetic
@@ -758,13 +759,21 @@ CONTAINS
             DO iii = 1, tama3
               !!!ROTATE MPI
               IF (MPIDIR==2 ) THEN
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = old_FarField%probe%K(iii)
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = old_FarField%probe%I(iii)
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = old_FarField%probe%J(iii)
+                  iox = this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = ioz
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = iox
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = ioy
               ELSEIF (MPIDIR==1 ) THEN                    
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = old_FarField%probe%J(iii)
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = old_FarField%probe%K(iii)
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = old_FarField%probe%I(iii)
+                 iox = this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = ioy
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = ioz
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = iox
               ENDIF
             end do             
             deallocate (old_FarField)
@@ -779,13 +788,21 @@ CONTAINS
             DO iii = 1, tama3
               !!!ROTATE MPI
               IF (MPIDIR==2 ) THEN
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = old_Electric%probe%K(iii)
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = old_Electric%probe%I(iii)
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = old_Electric%probe%J(iii)
+                 iox = this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = ioz
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = iox
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = ioy
               ELSEIF (MPIDIR==1 ) THEN                    
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = old_Electric%probe%J(iii)
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = old_Electric%probe%K(iii)
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = old_Electric%probe%I(iii)
+                 iox = this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = ioy
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = ioz
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = iox
               ENDIF
             end do             
             deallocate (old_Electric)
@@ -800,13 +817,21 @@ CONTAINS
             DO iii = 1, tama3
               !!!ROTATE MPI
               IF (MPIDIR==2 ) THEN
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = old_Magnetic%probe%K(iii)
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = old_Magnetic%probe%I(iii)
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = old_Magnetic%probe%J(iii)
+                 iox = this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = ioz
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = iox
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = ioy
               ELSEIF (MPIDIR==1 ) THEN                    
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = old_Magnetic%probe%J(iii)
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = old_Magnetic%probe%K(iii)
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = old_Magnetic%probe%I(iii)
+                 iox = this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = ioy
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = ioz
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = iox
               ENDIF
             end do             
             deallocate (old_Magnetic)
