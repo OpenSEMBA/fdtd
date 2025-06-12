@@ -5,17 +5,27 @@ module rotate_testingTools
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'
    character(len=*), parameter :: INPUT_EXAMPLES='input_examples/'
 contains
-    subroutine expect_eq_int(err, ex, pr, msg) 
-      integer, intent(inout) :: err
-      integer, intent(in) :: ex, pr
-      character (len=*), intent(in), optional :: msg
-      if (ex /= pr) call testFails(err, msg)
+    subroutine expect_eq_int(test_err, expected, actual, message) 
+      integer, intent(inout) :: test_err
+      integer, intent(in) :: expected, actual
+      character (len=*), intent(in), optional :: message
+      if (expected /= actual) then
+          test_err = test_err + 1
+          print *, "Error: ", message
+          print *, "Expected: ", expected
+          print *, "Actual:   ", actual
+      end if
    end subroutine
-   subroutine expect_eq_real(err, ex, pr, msg) 
-      integer , intent(inout) :: err
-      real (KIND=RK), intent(in) :: ex, pr
-      character (len=*), intent(in), optional :: msg
-      if (ex /= pr) call testFails(err, msg)
+   subroutine expect_eq_real(test_err, expected, actual, message) 
+      integer , intent(inout) :: test_err
+      real (KIND=RK), intent(in) :: expected, actual
+      character (len=*), intent(in), optional :: message
+      if (expected /= actual) then
+          test_err = test_err + 1
+          print *, "Error: ", message
+          print *, "Expected: ", expected
+          print *, "Actual:   ", actual
+      end if
    end subroutine
 
    subroutine expect_eq_real_vect(err, ex, pr, msg) 
@@ -37,6 +47,19 @@ contains
           print *, "Actual:   ", actual
       end if
   end subroutine expect_eq_double
+
+  subroutine expect_eq_complx(test_err, expected, actual, message)
+      integer, intent(inout) :: test_err
+      complex, intent(in) :: expected, actual
+      character(len=*), intent(in) :: message
+      
+      if (abs(expected - actual) > 1.0d-10) then
+          test_err = test_err + 1
+          print *, "Error: ", message
+          print *, "Expected: ", expected
+          print *, "Actual:   ", actual
+      end if
+  end subroutine expect_eq_complx
 
    subroutine testFails(err, msg)
       integer, intent(inout) :: err

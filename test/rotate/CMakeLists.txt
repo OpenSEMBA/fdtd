@@ -17,6 +17,7 @@ add_library(
     "test_rotate_generateSlantedWires.F90"
     "test_rotate_generateThinSlots.F90"
     "test_rotate_generateLossyThinSurface.F90"
+    "test_rotate_generateFDMs.F90"
     "test_rotate_generateSONDAs.F90"
     "test_rotate_generateMasSondas.F90"
     "test_rotate_generateBloqueProbes.F90"

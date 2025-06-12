@@ -699,6 +699,7 @@ CONTAINS
          DO ii = 1, tama2
             CALL ROTATEMPI(mpidir,this%FRQDEPMATS%Vols(i)%c(ii))  
          end do
+         call rotate_freq_depend_material_properties(mpidir,this%FRQDEPMATS%Vols(i))
       end do
       
       tama = (this%FRQDEPMATS%nsurfs)    
@@ -707,6 +708,7 @@ CONTAINS
          DO ii = 1, tama2
             CALL ROTATEMPI(mpidir,this%FRQDEPMATS%Surfs(i)%c(ii))   
          end do
+         call rotate_freq_depend_material_properties(mpidir,this%FRQDEPMATS%Surfs(i))
       end do
       
       tama = (this%FRQDEPMATS%nlins)
@@ -715,6 +717,7 @@ CONTAINS
          DO ii = 1, tama2
             CALL ROTATEMPI(mpidir,this%FRQDEPMATS%Lins(i)%c(ii))   
          end do
+         call rotate_freq_depend_material_properties(mpidir,this%FRQDEPMATS%Lins(i))
       end do
       RETURN
       
@@ -1156,7 +1159,316 @@ CONTAINS
       RETURN
    END SUBROUTINE ROTATEMPI_SCALED
      
+   subroutine rotate_freq_depend_material_properties(mpidir, freqDepMat)
+      integer (KIND=4), intent(in) ::  mpidir    
+      type (FreqDepenMaterial), intent(inout) :: freqDepMat
+      complex, dimension(:), pointer :: po11, po12, po13, po22, po23, po33
+      real(kind=RK) :: ro11, ro12, ro13, ro22, ro23, ro33
+      integer(kind=4) :: io11, io12, io13, io22, io23, io33
+!!    
+      if (mpidir==2) then
+         !Rotate a matrix
+         po11 => freqDepMat%a11
+         po12 => freqDepMat%a12
+         po13 => freqDepMat%a13
+         po22 => freqDepMat%a22
+         po23 => freqDepMat%a23
+         po33 => freqDepMat%a33
 
-!!   
+         freqDepMat%a11 => po33 
+         freqDepMat%a12 => po23 
+         freqDepMat%a13 => po12 
+         freqDepMat%a22 => po11 
+         freqDepMat%a23 => po13 
+         freqDepMat%a33 => po22
+         
+         !Rotate am matrix
+         po11 => freqDepMat%am11
+         po12 => freqDepMat%am12
+         po13 => freqDepMat%am13
+         po22 => freqDepMat%am22
+         po23 => freqDepMat%am23
+         po33 => freqDepMat%am33
+
+         freqDepMat%am11 => po33 
+         freqDepMat%am12 => po23 
+         freqDepMat%am13 => po12 
+         freqDepMat%am22 => po11 
+         freqDepMat%am23 => po13 
+         freqDepMat%am33 => po22
+
+         !Rotate b matrix
+         po11 => freqDepMat%b11
+         po12 => freqDepMat%b12
+         po13 => freqDepMat%b13
+         po22 => freqDepMat%b22
+         po23 => freqDepMat%b23
+         po33 => freqDepMat%b33
+
+         freqDepMat%b11 => po33 
+         freqDepMat%b12 => po23 
+         freqDepMat%b13 => po12 
+         freqDepMat%b22 => po11 
+         freqDepMat%b23 => po13 
+         freqDepMat%b33 => po22
+         
+         !Rotate bm matrix
+         po11 => freqDepMat%bm11
+         po12 => freqDepMat%bm12
+         po13 => freqDepMat%bm13
+         po22 => freqDepMat%bm22
+         po23 => freqDepMat%bm23
+         po33 => freqDepMat%bm33
+
+         freqDepMat%bm11 => po33 
+         freqDepMat%bm12 => po23 
+         freqDepMat%bm13 => po12 
+         freqDepMat%bm22 => po11 
+         freqDepMat%bm23 => po13 
+         freqDepMat%bm33 => po22
+
+         !Rotate eps matrix
+         ro11 = freqDepMat%eps11
+         ro12 = freqDepMat%eps12
+         ro13 = freqDepMat%eps13
+         ro22 = freqDepMat%eps22
+         ro23 = freqDepMat%eps23
+         ro33 = freqDepMat%eps33
+
+         freqDepMat%eps11 = ro33 
+         freqDepMat%eps12 = ro23 
+         freqDepMat%eps13 = ro12 
+         freqDepMat%eps22 = ro11 
+         freqDepMat%eps23 = ro13 
+         freqDepMat%eps33 = ro22
+
+         !Rotate mu matrix
+         ro11 = freqDepMat%mu11
+         ro12 = freqDepMat%mu12
+         ro13 = freqDepMat%mu13
+         ro22 = freqDepMat%mu22
+         ro23 = freqDepMat%mu23
+         ro33 = freqDepMat%mu33
+
+         freqDepMat%mu11 = ro33 
+         freqDepMat%mu12 = ro23 
+         freqDepMat%mu13 = ro12 
+         freqDepMat%mu22 = ro11 
+         freqDepMat%mu23 = ro13 
+         freqDepMat%mu33 = ro22
+
+         !Rotate sigma matrix
+         ro11 = freqDepMat%sigma11
+         ro12 = freqDepMat%sigma12
+         ro13 = freqDepMat%sigma13
+         ro22 = freqDepMat%sigma22
+         ro23 = freqDepMat%sigma23
+         ro33 = freqDepMat%sigma33
+
+         freqDepMat%sigma11 = ro33 
+         freqDepMat%sigma12 = ro23 
+         freqDepMat%sigma13 = ro12 
+         freqDepMat%sigma22 = ro11 
+         freqDepMat%sigma23 = ro13 
+         freqDepMat%sigma33 = ro22
+
+         !Rotate sigmam matrix
+         ro11 = freqDepMat%sigmam11
+         ro12 = freqDepMat%sigmam12
+         ro13 = freqDepMat%sigmam13
+         ro22 = freqDepMat%sigmam22
+         ro23 = freqDepMat%sigmam23
+         ro33 = freqDepMat%sigmam33
+
+         freqDepMat%sigmam11 = ro33 
+         freqDepMat%sigmam12 = ro23 
+         freqDepMat%sigmam13 = ro12 
+         freqDepMat%sigmam22 = ro11 
+         freqDepMat%sigmam23 = ro13 
+         freqDepMat%sigmam33 = ro22
+
+         !Rotate K matrix
+         io11 = freqDepMat%k11
+         io12 = freqDepMat%k12
+         io13 = freqDepMat%k13
+         io22 = freqDepMat%k22
+         io23 = freqDepMat%k23
+         io33 = freqDepMat%k33
+
+         freqDepMat%k11 = io33 
+         freqDepMat%k12 = io23 
+         freqDepMat%k13 = io12 
+         freqDepMat%k22 = io11 
+         freqDepMat%k23 = io13 
+         freqDepMat%k33 = io22
+         
+         !Rotate Km matrix
+         io11 = freqDepMat%km11
+         io12 = freqDepMat%km12
+         io13 = freqDepMat%km13
+         io22 = freqDepMat%km22
+         io23 = freqDepMat%km23
+         io33 = freqDepMat%km33
+
+         freqDepMat%km11 = io33 
+         freqDepMat%km12 = io23 
+         freqDepMat%km13 = io12 
+         freqDepMat%km22 = io11 
+         freqDepMat%km23 = io13 
+         freqDepMat%km33 = io22
+      endif 
+      if (mpidir==1) then
+         !Rotate a matrix
+         po11 => freqDepMat%a11
+         po12 => freqDepMat%a12
+         po13 => freqDepMat%a13
+         po22 => freqDepMat%a22
+         po23 => freqDepMat%a23
+         po33 => freqDepMat%a33
+
+         freqDepMat%a11 => po22
+         freqDepMat%a12 => po13 
+         freqDepMat%a13 => po23 
+         freqDepMat%a22 => po33 
+         freqDepMat%a23 => po12
+         freqDepMat%a33 => po11
+         
+         !Rotate am matrix
+         po11 => freqDepMat%am11
+         po12 => freqDepMat%am12
+         po13 => freqDepMat%am13
+         po22 => freqDepMat%am22
+         po23 => freqDepMat%am23
+         po33 => freqDepMat%am33
+
+         freqDepMat%am11 => po22 
+         freqDepMat%am12 => po13 
+         freqDepMat%am13 => po23 
+         freqDepMat%am22 => po33 
+         freqDepMat%am23 => po12 
+         freqDepMat%am33 => po11
+
+         !Rotate b matrix
+         po11 => freqDepMat%b11
+         po12 => freqDepMat%b12
+         po13 => freqDepMat%b13
+         po22 => freqDepMat%b22
+         po23 => freqDepMat%b23
+         po33 => freqDepMat%b33
+
+         freqDepMat%b11 => po22 
+         freqDepMat%b12 => po13 
+         freqDepMat%b13 => po23 
+         freqDepMat%b22 => po33 
+         freqDepMat%b23 => po12 
+         freqDepMat%b33 => po11
+         
+         !Rotate bm matrix
+         po11 => freqDepMat%bm11
+         po12 => freqDepMat%bm12
+         po13 => freqDepMat%bm13
+         po22 => freqDepMat%bm22
+         po23 => freqDepMat%bm23
+         po33 => freqDepMat%bm33
+
+         freqDepMat%bm11 => po22 
+         freqDepMat%bm12 => po13 
+         freqDepMat%bm13 => po23 
+         freqDepMat%bm22 => po33 
+         freqDepMat%bm23 => po12 
+         freqDepMat%bm33 => po11
+
+         !Rotate eps matrix
+         ro11 = freqDepMat%eps11
+         ro12 = freqDepMat%eps12
+         ro13 = freqDepMat%eps13
+         ro22 = freqDepMat%eps22
+         ro23 = freqDepMat%eps23
+         ro33 = freqDepMat%eps33
+
+         freqDepMat%eps11 = ro22 
+         freqDepMat%eps12 = ro13 
+         freqDepMat%eps13 = ro23 
+         freqDepMat%eps22 = ro33 
+         freqDepMat%eps23 = ro12 
+         freqDepMat%eps33 = ro11
+
+         !Rotate mu matrix
+         ro11 = freqDepMat%mu11
+         ro12 = freqDepMat%mu12
+         ro13 = freqDepMat%mu13
+         ro22 = freqDepMat%mu22
+         ro23 = freqDepMat%mu23
+         ro33 = freqDepMat%mu33
+
+         freqDepMat%mu11 = ro22 
+         freqDepMat%mu12 = ro13 
+         freqDepMat%mu13 = ro23 
+         freqDepMat%mu22 = ro33 
+         freqDepMat%mu23 = ro12 
+         freqDepMat%mu33 = ro11
+
+         !Rotate sigma matrix
+         ro11 = freqDepMat%sigma11
+         ro12 = freqDepMat%sigma12
+         ro13 = freqDepMat%sigma13
+         ro22 = freqDepMat%sigma22
+         ro23 = freqDepMat%sigma23
+         ro33 = freqDepMat%sigma33
+
+         freqDepMat%sigma11 = ro22 
+         freqDepMat%sigma12 = ro13 
+         freqDepMat%sigma13 = ro23 
+         freqDepMat%sigma22 = ro33 
+         freqDepMat%sigma23 = ro12 
+         freqDepMat%sigma33 = ro11
+
+         !Rotate sigmam matrix
+         ro11 = freqDepMat%sigmam11
+         ro12 = freqDepMat%sigmam12
+         ro13 = freqDepMat%sigmam13
+         ro22 = freqDepMat%sigmam22
+         ro23 = freqDepMat%sigmam23
+         ro33 = freqDepMat%sigmam33
+
+         freqDepMat%sigmam11 = ro22 
+         freqDepMat%sigmam12 = ro13 
+         freqDepMat%sigmam13 = ro23 
+         freqDepMat%sigmam22 = ro33 
+         freqDepMat%sigmam23 = ro12 
+         freqDepMat%sigmam33 = ro11
+
+         !Rotate K matrix
+         io11 = freqDepMat%k11
+         io12 = freqDepMat%k12
+         io13 = freqDepMat%k13
+         io22 = freqDepMat%k22
+         io23 = freqDepMat%k23
+         io33 = freqDepMat%k33
+
+         freqDepMat%k11 = io22 
+         freqDepMat%k12 = io13 
+         freqDepMat%k13 = io23 
+         freqDepMat%k22 = io33 
+         freqDepMat%k23 = io12 
+         freqDepMat%k33 = io11
+         
+         !Rotate Km matrix
+         io11 = freqDepMat%km11
+         io12 = freqDepMat%km12
+         io13 = freqDepMat%km13
+         io22 = freqDepMat%km22
+         io23 = freqDepMat%km23
+         io33 = freqDepMat%km33
+
+         freqDepMat%km11 = io22 
+         freqDepMat%km12 = io13 
+         freqDepMat%km13 = io23 
+         freqDepMat%km22 = io33 
+         freqDepMat%km23 = io12 
+         freqDepMat%km33 = io11
+      endif 
+   end subroutine
+
 
 END MODULE nfde_rotate_m
