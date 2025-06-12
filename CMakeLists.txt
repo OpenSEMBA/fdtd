@@ -222,7 +222,7 @@ if(SEMBA_FDTD_COMPONENTS_LIB)
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
 	)
-	target_link_libraries(semba-components semba-reports)
+	target_link_libraries(semba-components semba-types ${MTLN_LIBRARIES})
 endif()
 
 if(SEMBA_FDTD_OUTPUTS_LIB)
@@ -261,7 +261,7 @@ if (SEMBA_FDTD_EXECUTABLE)
 	add_executable(semba-fdtd 
 		"src_main_pub/semba_fdtd.F90"
 	)
-	target_link_libraries(semba-fdtd semba-main)
+	target_link_libraries(semba-fdtd semba-main semba-reports)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
 endif()
 
