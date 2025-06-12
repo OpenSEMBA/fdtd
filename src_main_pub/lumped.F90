@@ -32,12 +32,11 @@ contains
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,&
-                         IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size,&
-                         ThereAreLumped,resume,stochastic,eps00,mu00)
+                         IDxe,IDye,IDze,IDxh,IDyh,IDzh, control, &
+                         ThereAreLumped,eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
 
       type (SGGFDTDINFO), intent(IN)     ::  sgg
-      logical :: stochastic 
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
       sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
@@ -56,9 +55,8 @@ contains
                                                             Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
                                                             Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
-      integer (kind=4), intent(in) :: layoutnumber,size
-      logical, INTENT(IN)  :: resume
       logical, INTENT(OUT)  ::  ThereAreLumped
+      type(sim_control_t), intent(in) :: control
       integer (kind=4)  ::  jmed,j1,conta,k1,i1
       character(len=BUFSIZE) :: buff
       character (LEN=BUFSIZE)  ::  whoami
@@ -68,7 +66,7 @@ contains
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !
 !!!
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
       unstable=.false.
 !
 !
@@ -180,7 +178,7 @@ contains
       call calc_lumpedconstants(sgg,eps0,mu0)   
 
       !!!!!!!!!resuming
-      if (.not.resume) then  
+      if (.not.control%resume) then  
          do conta=1,LumpElem%numnodes
             lumped_ => LumpElem%Nodes(conta)
             lumped_%EfieldPrevPrev=0.0_RKIND
@@ -188,7 +186,7 @@ contains
             lumped_%Jcur          =0.0_RKIND
          end do
 #ifdef CompileWithStochastic
-         if (stochastic) then
+         if (control%stochastic) then
              do conta=1,LumpElem%numnodes
                 lumped_ => LumpElem%Nodes(conta)
             lumped_%EfieldPrevPrev_for_devia=0.0_RKIND
@@ -203,7 +201,7 @@ contains
             read(14) lumped_%EfieldPrevPrev,lumped_%EfieldPrev,lumped_%Jcur 
         end do  
 #ifdef CompileWithStochastic
-         if (stochastic) then
+         if (control%stochastic) then
              do conta=1,LumpElem%numnodes
                 lumped_ => LumpElem%Nodes(conta)
                 read(14) lumped_%EfieldPrevPrev_for_devia,lumped_%EfieldPrev_for_devia,lumped_%Jcur_for_devia
