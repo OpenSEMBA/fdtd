@@ -637,8 +637,10 @@ module Solver_mod
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       write(dubuf,*) 'Init CPML Borders...';  call print11(this%control%layoutnumber,dubuf)
-      call InitCPMLBorders     (sgg,this%control%layoutnumber,SINPML_Fullsize,this%thereAre%PMLBorders,this%control%resume, &
-                                dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%alphamaxpar,this%control%alphaOrden,this%control%kappamaxpar,eps0,mu0)
+      call InitCPMLBorders     (sgg,SINPML_Fullsize,this%thereAre%PMLBorders,this%control, &
+                                dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps0,mu0)
+      ! call InitCPMLBorders     (sgg,this%control%layoutnumber,SINPML_Fullsize,this%thereAre%PMLBorders,this%control%resume, &
+      !                           dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%alphamaxpar,this%control%alphaOrden,this%control%kappamaxpar,eps0,mu0)
       l_auxinput=this%thereAre%PMLBorders
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
