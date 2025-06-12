@@ -94,7 +94,6 @@ module Solver_mod
    contains
       procedure :: init => solver_init
       procedure :: launch_simulation
-      procedure :: flushPlanewaveOff
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
 #endif
@@ -1265,105 +1264,18 @@ module Solver_mod
 
       ciclo_temporal :  DO while (N <= this%control%finaltimestep)
       
-         !!Flush the plane-wave logical switching off variable (saves CPU!)
-         call this%flushPlanewaveOff(planewave_switched_off, still_planewave_time, thereareplanewave, N, dubuf)
-
+         !Flush the plane-wave logical switching off variable (saves CPU!)
+         call flushPlanewaveOff(planewave_switched_off, still_planewave_time, thereareplanewave)
          !Anisotropic
-         !Must be previous to the main stepping since the main stepping overrides the past components with the last and the
-         !lossy part of the anisotropic STILL requires the past info on adjacent components
+         !!Must be previous to the main stepping since the main stepping overrides the past components with the last and the
+         !!lossy part of the anisotropic STILL requires the past info on adjacent components
          IF (this%thereAre%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-
-         !!electric Fields Maxwell  AND CPML Zone
-         !!for tuning
-!!!!!!!#ifdef CompileWithMPI
-!!!!!!!      call MPI_Barrier(SUBCOMM_MPI,ierr)
-!!!!!!!#endif
-         !call get_secnds( time_ElecInit)
-         !!
-
-          call advanceE()
-!!! no se ganada nada de tiempo        Call Advance_ExEyEz(Ex,Ey,Ez,Hx,Hy,Hz,Idxh,Idyh,Idzh,sggMiEx,sggMiEy,sggMiEz,b,g1,g2)
-
-         
-!vuelta la burra al trigo a 140220. En consenso  traido aqui de donde estaba al final de toda la parte electrica, etc, para poder corregir lo already_YEEadvanced_byconformal=dont_yeeadvance
-!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) !?!?!?. Discutido a 140220 y no pasa nada
-         !**************************************************************************************************
-         !***[conformal]  *******************************************************************
-         !**************************************************************************************************
-         !conformal advance electric fields  ref: ##timeStepps_advance_E##
-          !NOTE: ene-2019 lo vuelvo a poner al final.
+         call advanceE()
 #ifdef CompileWithConformal
-          call advanceConformalE()
+         call advanceConformalE()
 #endif
-         
-!!!movido antes de hilos por coherencia. 171216 discutir  si esto afecta a algo (MPI, etc) !?!?!?
-         !**************************************************************************************************
-         !***[conformal]  *******************************************************************
-         !**************************************************************************************************
-         !conformal advance electric fields  ref: ##timeStepps_advance_E##
-          !NOTE: ene-2019 lo vuelvo a poner al final.
-! #ifdef CompileWithConformal
-!          if(input_conformal_flag)then
-!             call conformal_advance_E()
-!          endif
-! #endif
-         !**************************************************************************************************
-         !**************************************************************************************************
-         !**************************************************************************************************
-!!!finmovido antes de hilos por coherencia. 171216 discutir si esto afecta a algo (MPI, etc) !?!?!?
-
-         !*******************************************************************************
-         !*******************************************************************************
-         !*******************************************************************************
-!!!lamo aqui los hilos por coherencia con las PML que deben absorber los campos creados por los hilos
-         !Wires (only updated here. No need to update in the H-field part)
-         if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-               (trim(adjustl(this%control%wiresflavor))=='transition')) .and. .not. this%control%use_mtln_wires) then
-            IF (this%thereAre%Wires) then
-               if (this%control%wirecrank) then
-                  call AdvanceWiresEcrank(sgg,n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
-               else
-#ifdef CompileWithMTLN
-                  if (mtln_parsed%has_multiwires) then
-                     write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
-                     call WarnErrReport(buff)
-                  end if
-#endif
-                  call AdvanceWiresE(sgg,n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)                 
-               endif
-            endif
-         endif
-#ifdef CompileWithBerengerWires
-         if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-            IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(sgg,n)
-         endif
-#endif
-#ifdef CompileWithSlantedWires
-         if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
-            !!!! IF (this%thereAre%Wires) call AdvanceWiresE_Slanted(sgg,n) !aniadido this%thereAre%wires 141118 (no estaba pero funcionaba antes)!
-            !quitado this%thereAre%wires 220711 porque si no se atranca el mpi que lo llaman TODOS dentro!
-            call AdvanceWiresE_Slanted(sgg,n) 
-         endif
-#endif
-         if (this%control%use_mtln_wires) then
-#ifdef CompileWithMTLN
-            call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
-#else
-            write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
-#endif   
-         end if
-         If (this%thereAre%PMLbodies) then !waveport absorbers
-            call AdvancePMLbodyE
-         endif
-         !
-         !PML E-field advancing (IT IS IMPORTANT TO FIRST CALL THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
-         !ROUTINES INJECT THE POLARIZATION CURRENTS EVERYWHERE (PML INCLUDED)
-         !SO THAT DISPERSIVE MATERIALS CAN ALSO BE TRUNCATED BY CPML)
-
-         If (this%thereAre%PMLBorders) then
-            call AdvanceelectricCPML          (sgg%NumMedia, b       ,sggMiEx,sggMiEy,sggMiEz,G2,Ex,Ey,Ez,Hx,Hy,Hz)
-         endif
-         
+         call advanceWires()
+         call advancePMLE()
 
          !!for tuning
          !call get_secnds( time_ElecFin)
@@ -2088,6 +2000,29 @@ module Solver_mod
 
    contains
 
+      subroutine flushPlanewaveOff(pw_status, pw_still, pw_thereAre)
+         logical, intent(inout) :: pw_status, pw_still, pw_thereAre
+         logical :: pw_still_aux, pw_thereAre_aux
+         integer (kind=4) :: ierr
+         if (.not.pw_status) then
+            pw_still = pw_still.and.this%thereAre%PlaneWaveBoxes
+            pw_thereAre = this%thereAre%PlaneWaveBoxes
+#ifdef CompileWithMPI
+            if (this%control%size>1) then
+               pw_still_aux = pw_still
+               call MPI_AllReduce(pw_still_aux, pw_still, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+               pw_thereAre_aux = pw_thereAre
+               call MPI_AllReduce(pw_thereAre_aux, pw_thereAre, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+            endif
+#endif
+            if (.not.pw_still)  then
+               pw_status=.true.
+               write(dubuf,*) 'Switching plane-wave off at n=', N
+               if (pw_thereAre) call print11(this%control%layoutnumber,dubuf)
+            endif
+         endif
+      end subroutine 
+
       subroutine advanceE()
 #ifdef CompileWithProfiling
          call nvtxStartRange("Antes del bucle EX")
@@ -2360,6 +2295,57 @@ module Solver_mod
             call conformal_advance_E()
          endif
       end subroutine
+
+
+      subroutine advanceWires()
+         if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &
+               (trim(adjustl(this%control%wiresflavor))=='transition')) .and. .not. this%control%use_mtln_wires) then
+            IF (this%thereAre%Wires) then
+               if (this%control%wirecrank) then
+                  call AdvanceWiresEcrank(sgg, N, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+               else
+#ifdef CompileWithMTLN
+                  if (mtln_parsed%has_multiwires) then
+                     write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
+                     call WarnErrReport(buff)
+                  end if
+#endif
+                  call AdvanceWiresE(sgg,N, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)
+               endif
+            endif
+         endif
+#ifdef CompileWithBerengerWires
+         if (trim(adjustl(this%control%wiresflavor))=='berenger') then
+            IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(sgg,n)
+         endif
+#endif
+#ifdef CompileWithSlantedWires
+         if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
+            call AdvanceWiresE_Slanted(sgg,n) 
+         endif
+#endif
+         if (this%control%use_mtln_wires) then
+#ifdef CompileWithMTLN
+            call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
+#else
+            write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
+#endif   
+         end if
+
+      end subroutine
+
+      !PML E-field advancing (IT IS IMPORTANT TO FIRST CALL THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
+      !ROUTINES INJECT THE POLARIZATION CURRENTS EVERYWHERE (PML INCLUDED)
+      !SO THAT DISPERSIVE MATERIALS CAN ALSO BE TRUNCATED BY CPML)
+      subroutine advancePMLE()
+         If (this%thereAre%PMLbodies) then !waveport absorbers
+            call AdvancePMLbodyE
+         endif
+         If (this%thereAre%PMLBorders) then
+            call AdvanceelectricCPML(sgg%NumMedia, b,sggMiEx,sggMiEy,sggMiEz,G2,Ex,Ey,Ez,Hx,Hy,Hz)
+         endif
+      end subroutine
+
 
 
       !!!!!!!!!sgg 051214 fill in the magnetic walls after the wireframe info
@@ -2898,31 +2884,6 @@ module Solver_mod
 
    end subroutine launch_simulation
 
-   subroutine flushPlanewaveOff(this, pw_status, pw_still, pw_thereAre, iter, buf)
-      class(solver_t) :: this
-      logical, intent(inout) :: pw_status, pw_still, pw_thereAre
-      logical :: pw_still_aux, pw_thereAre_aux
-      integer (kind=4), intent(in) :: iter
-      character (len=bufsize) :: buf
-      integer (kind=4) :: ierr
-      if (.not.pw_status) then
-         pw_still = pw_still.and.this%thereAre%PlaneWaveBoxes
-         pw_thereAre = this%thereAre%PlaneWaveBoxes
-#ifdef CompileWithMPI
-         if (this%control%size>1) then
-            pw_still_aux = pw_still
-            call MPI_AllReduce(pw_still_aux, pw_still, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-            pw_thereAre_aux = pw_thereAre
-            call MPI_AllReduce(pw_thereAre_aux, pw_thereAre, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-         endif
-#endif
-         if (.not.pw_still)  then
-            pw_status=.true.
-            write(buf,*) 'Switching plane-wave off at n=', iter
-            if (pw_thereAre) call print11(this%control%layoutnumber,buf)
-         endif
-      endif
-   end subroutine 
 
 
 
