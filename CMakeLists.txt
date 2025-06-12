@@ -222,7 +222,7 @@ if(SEMBA_FDTD_COMPONENTS_LIB)
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
 	)
-	target_link_libraries(semba-components semba-types ${MTLN_LIBRARIES})
+	target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
 endif()
 
 if(SEMBA_FDTD_OUTPUTS_LIB)
