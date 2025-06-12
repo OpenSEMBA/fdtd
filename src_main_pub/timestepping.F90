@@ -1281,26 +1281,7 @@ module Solver_mod
          !call get_secnds( time_ElecInit)
          !!
 
-#ifdef CompileWithProfiling
-      call nvtxStartRange("Antes del bucle EX")
-#endif
-         call Advance_Ex          (Ex, Hy, Hz, Idyh, Idzh, sggMiEx, b,g1,g2)    
-#ifdef CompileWithProfiling
-      call nvtxEndRange
-      call nvtxStartRange("Antes del bucle EY")
-#endif
-         call Advance_Ey          (Ey, Hz, Hx, Idzh, Idxh, sggMiEy, b,g1,g2)
-         
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-      call nvtxStartRange("Antes del bucle EZ")
-#endif
-         call Advance_Ez          (Ez, Hx, Hy, Idxh, Idyh, sggMiEz, b,g1,g2)
-
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-#endif
-          
+          call advanceE()
 !!! no se ganada nada de tiempo        Call Advance_ExEyEz(Ex,Ey,Ez,Hx,Hy,Hz,Idxh,Idyh,Idzh,sggMiEx,sggMiEy,sggMiEz,b,g1,g2)
 
          
@@ -2113,6 +2094,31 @@ module Solver_mod
       !---------------------------------------------------->
 
    contains
+
+      subroutine advanceE()
+#ifdef CompileWithProfiling
+         call nvtxStartRange("Antes del bucle EX")
+#endif
+         call Advance_Ex          (Ex, Hy, Hz, Idyh, Idzh, sggMiEx, b,g1,g2)    
+#ifdef CompileWithProfiling
+         call nvtxEndRange
+
+         call nvtxStartRange("Antes del bucle EY")
+#endif
+         call Advance_Ey          (Ey, Hz, Hx, Idzh, Idxh, sggMiEy, b,g1,g2)
+         
+#ifdef CompileWithProfiling    
+         call nvtxEndRange
+
+         call nvtxStartRange("Antes del bucle EZ")
+#endif
+         call Advance_Ez          (Ez, Hx, Hy, Idxh, Idyh, sggMiEz, b,g1,g2)
+#ifdef CompileWithProfiling    
+         call nvtxEndRange
+#endif
+
+
+      end subroutine
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
