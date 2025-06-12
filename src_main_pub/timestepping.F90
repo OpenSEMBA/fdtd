@@ -2291,9 +2291,11 @@ module Solver_mod
       end subroutine Advance_Hz
 
       subroutine advanceConformalE()
+#ifdef CompileWithConformal
          if(input_conformal_flag)then
             call conformal_advance_E()
          endif
+#endif
       end subroutine
 
 
