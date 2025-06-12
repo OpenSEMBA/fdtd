@@ -712,14 +712,8 @@ module Solver_mod
 #endif
          write(dubuf,*) 'Init Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
          call InitWires       (sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, & 
-                               this%control%layoutnumber,this%control%size,this%thereAre%Wires, & 
-                               this%control%resume,this%control%makeholes,this%control%connectendings, & 
-                               this%control%isolategroupgroups,this%control%stableradholland,this%control%fieldtotl, &
-                               Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
-                               this%control%inductance_model,this%control%wirethickness,this%control%groundwires, & 
-                               this%control%strictOLD,this%control%TAPARRABOS,g2,this%control%wiresflavor,SINPML_fullsize, & 
-                               fullsize,this%control%wirecrank,dtcritico,eps0,mu0,this%control%simu_devia, & 
-                               this%control%stochastic,this%control%verbose,this%control%factorradius,this%control%factordelta)
+                               this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
+                               g2,SINPML_fullsize, fullsize,dtcritico,eps0,mu0,this%control)
          l_auxinput=this%thereAre%Wires
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI

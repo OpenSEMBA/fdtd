@@ -42,18 +42,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitWires(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,ThereAreWires,resume,makeholes,connectendings,isolategroupgroups,stableradholland,fieldtotl, &
-   Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
-   inductance_model,wirethickness,groundwires,strictOLD,TAPARRABOS,g2,wiresflavor,SINPML_fullsize,fullsize,wirecrank,dtcritico, &
-   eps00,mu00,simu_devia,stochastic,verbose,factorradius,factordelta)     
-      integer, intent(IN) :: wirethickness
-      logical :: simu_devia,stochastic,verbose
+   subroutine InitWires(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,ThereAreWires,&
+   Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, g2,SINPML_fullsize,fullsize, dtcritico, eps00,mu00, control)     
       REAL (KIND=RKIND), intent(in)           ::  eps00,mu00
       REAL (KIND=RKIND)           ::  eps000,mu000  !son dummies
-      integer (kind=4), intent(in) :: layoutnumber,size
       type (limit_t), dimension(1:6), intent(in)  :: SINPML_fullsize,fullsize
-      character(len=*), INTENT(in) :: inductance_model
-      character(len=*), INTENT(in) :: wiresflavor
       type (SGGFDTDINFO), intent(INOUT) , target    ::  sgg
       REAL (KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
       REAL (KIND=RKIND), intent(out) :: dtcritico
@@ -89,11 +82,10 @@ contains
       logical , dimension (:), pointer :: LindProb
 
       LOGICAL, INTENT(OUT)  ::  ThereAreWires
-      LOGICAL, INTENT(in)  ::  resume,makeholes,connectendings,isolategroupgroups,groundwires,stableradholland,strictOLD,TAPARRABOS,fieldtotl
       logical :: proceed,proceed1,proceed2,NodeExists,Is_LeftEnd,Is_RightEnd,IsEnd_norLeft_norRight,repetido,conectado,conectado1,conectado2,asignado
       logical ::  IsPEC , islossy ,IsLossyPlus,IsLossyMinu,IsPecPlus,IsPECminu
-      logical, intent (in) :: wirecrank
       real (kind=RKIND_wires) :: rlossy,newr0, factorradius,factordelta
+      type(sim_control_t), intent(in) :: control
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: med(0:11)=-1
 
       type (adyacc)  ::  adj
@@ -150,7 +142,7 @@ contains
       thereAreIsources=.false.
       thereAreMurConditions=.false.
 
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -317,13 +309,13 @@ contains
 
          do iwi=1,HWires%NumDifferentWires
             do iwj=1,sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
-               if (.not.strictOLD) then
+               if (.not.control%strictOLD) then
                   !
                   sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%ilibre = -1
                   sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%jlibre = -1
                   sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%klibre = -1
                   !(en formatos antiguas esta info solo viene bien si hay cargas (md me las pone al final y al principio) pero en general puede estar mal y hay que resetearla
-                  if (connectendings) then
+                  if (control%connectendings) then
                      !
                      if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos == 1) then
                         sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd = .true.
@@ -425,7 +417,7 @@ contains
                      endif
                   end do buskk
 
-                  if (connectendings) then
+                  if (control%connectendings) then
                      if ((.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).and. &
                      (.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd)) then
                         sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight = sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%IsEnd_norLeft_norRight .or. &
@@ -618,7 +610,7 @@ contains
 
          !preprocesa para eliminar multirabos luego se utiliza en repetido
 
-         if (strictOLD) then
+         if (control%strictOLD) then
             do iwi=1,HWires%NumDifferentWires
                do iwj=1,sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
                   if (.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo) then
@@ -722,7 +714,7 @@ contains
             !!!!!!!!!!!!!!!!!!
             !!!!!!!!!!!
 
-            if (TAPARRABOS) then
+            if (control%TAPARRABOS) then
                do iwi=1,HWires%NumDifferentWires
                   do iwj=1,sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
                      if (.NOT.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo) then
@@ -921,21 +913,21 @@ contains
                if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd.and.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd) then
                   write (buff,'(a,4I7,a,3I7,a,2i7)')  'wir0_INFO: Ending segment (LeftEnd_and_Right)',origIndex,i1,j1,k1,'-', &
                   i1libre,j1libre,k1libre,' '//dir(whatfield),LeftEnd_index,RightEnd_index
-                  if ((k1 >= ZI).and.(k1 <= ZE).and.verbose) call WarnErrReport(buff)
+                  if ((k1 >= ZI).and.(k1 <= ZE).and.control%verbose) call WarnErrReport(buff)
                elseif (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd) then
                   write (buff,'(a,4I7,a,3I7,a,i7)')  'wir0_INFO: Ending segment (LeftEnd   )',origIndex,i1,j1,k1,'-', &
                   i1libre,j1libre,k1libre,' '//dir(whatfield),LeftEnd_index
-                  if ((k1 >= ZI).and.(k1 <= ZE).and.verbose) call WarnErrReport(buff)
+                  if ((k1 >= ZI).and.(k1 <= ZE).and.control%verbose) call WarnErrReport(buff)
                elseif (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd) then
                   write (buff,'(a,4I7,a,3I7,a,i7)')  'wir0_INFO: Ending segment (RightEnd   )',origIndex,i1,j1,k1,'-', &
                   i1libre,j1libre,k1libre,' '//dir(whatfield),RightEnd_index
-                  if ((k1 >= ZI).and.(k1 <= ZE).and.verbose) call WarnErrReport(buff)
+                  if ((k1 >= ZI).and.(k1 <= ZE).and.control%verbose) call WarnErrReport(buff)
                endif
                if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight) then
-                  if (connectendings) then
+                  if (control%connectendings) then
                      write (buff,'(a,4I7,a,3I7,a)')  'wir0_INFO: Ending segment (other )',origIndex,i1,j1,k1,'-', &
                      i1libre,j1libre,k1libre,' '//dir(whatfield)
-                     if ((k1 >= ZI).and.(k1 <= ZE).and.verbose) call WarnErrReport(buff)
+                     if ((k1 >= ZI).and.(k1 <= ZE).and.control%verbose) call WarnErrReport(buff)
                   else
                      sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight =.false.
                      write (buff,'(a,4I7,a,3I7,a)')  'wir0_WARNING: Resetting Ending segment (other ) to NON-ENDING',origIndex,i1,j1,k1,'-', &
@@ -958,7 +950,7 @@ contains
          conta=0
          do iwi=1,HWires%NumDifferentWires
             do iwj=1,sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
-               if (((.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido).or.strictOLD).and.(.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo)) then
+               if (((.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido).or.control%strictOLD).and.(.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo)) then
                   i1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%i
                   j1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%j
                   k1=       sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%k
@@ -999,7 +991,7 @@ contains
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd  ) >= 1.0e-12_RKIND_wires)) ) then
                               if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%Is_RightEnd) then
                                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido=.true.
-                                 if (strictOLD) then
+                                 if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Keeping both', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
@@ -1008,11 +1000,11 @@ contains
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  endif
-                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.verbose) call WarnErrReport(buff)
-                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.verbose) call WarnErrReport(buff)
+                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
+                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
                               elseif (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd) then
                                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%repetido=.true.
-                                 if (strictOLD) then
+                                 if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Keeping both', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
@@ -1021,8 +1013,8 @@ contains
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  endif
-                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.verbose) call WarnErrReport(buff)
-                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.verbose) call WarnErrReport(buff)
+                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
+                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
                               endif
                            endif
 
@@ -1041,7 +1033,7 @@ contains
                            (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd  ) < 1.0e-12_RKIND_wires)) ) then
                               if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%Is_LeftEnd) then
                                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido=.true.
-                                 if (strictOLD) then
+                                 if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Keeping both', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
@@ -1050,11 +1042,11 @@ contains
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  endif
-                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.verbose) call WarnErrReport(buff)
-                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.verbose) call WarnErrReport(buff)
+                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
+                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
                               elseif (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd) then
                                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%repetido=.true.
-                                 if (strictOLD) then
+                                 if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment. Keeping both', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
@@ -1063,8 +1055,8 @@ contains
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  endif
-                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.verbose) call WarnErrReport(buff)
-                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.verbose) call WarnErrReport(buff)
+                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
+                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
                               endif
                            endif
                            !
@@ -1097,7 +1089,7 @@ contains
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Parallel_L_LeftEnd) < 1.0e-12_RKIND_wires).and. &
                               (abs(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_RightEnd -    &
                               sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%Series_L_LeftEnd  ) < 1.0e-12_RKIND_wires)) then
-                                 if (strictOLD) then
+                                 if (control%strictOLD) then
                                     write (buff,'(a,2i7,3i7)')  'wir0_INFO: Duplicate terminal LeftEnd and RightEnd Parallel segment with the same RLC. Keeping both', &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
@@ -1106,8 +1098,8 @@ contains
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
                                     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%origindex,i1,j1,k1
                                  endif
-                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.verbose) call WarnErrReport(buff)
-                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.verbose) call WarnErrReport(buff)
+                                 if ((k1 >  ZI).and.(k1 <= ZE).and.(whatfield /= iEz).and.control%verbose) call WarnErrReport(buff)
+                                 if ((k1 >= ZI).and.(k1 <= ZE).and.(whatfield == iEz).and.control%verbose) call WarnErrReport(buff)
                               else
                                  write (buff,'(a,2i7,3i7)')  'wir0_ERROR: Duplicate terminal LeftEnd and RightEnd Parallel segment with non-null different RLC', &
                                  sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%origindex, &
@@ -1143,14 +1135,14 @@ contains
                whatfield =sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%ori
                origindex= sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origIndex
                if ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido).and.(.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo)) then
-                  if (strictOLD) then
+                  if (control%strictOLD) then
                      write (buff,'(a,4i7,a)')  'wir0_WARNING: Keeping duplicate (Parallel) intra-WIRE segment', &
                      origindex,i1,j1,k1,' '//dir(whatfield)
                   else
                      write (buff,'(a,4i7,a)')  'wir0_WARNING: Removing duplicate (Parallel) intra-WIRE segment and voiding ASSOCIATED probes ', &
                      origindex,i1,j1,k1,' '//dir(whatfield)
                   endif
-                  if ((k1 >= ZI).and.(k1 <= ZE).and.verbose) call WarnErrReport(buff)
+                  if ((k1 >= ZI).and.(k1 <= ZE).and.control%verbose) call WarnErrReport(buff)
                endif
             end do
          end do
@@ -1228,7 +1220,7 @@ contains
                IsEnd_norLeft_norRight=     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%IsEnd_norLeft_norRight
                Is_LeftEnd=     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_LeftEnd
                Is_RightEnd=     sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%Is_RightEnd
-               if (((.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido)).or.strictOLD).and.(.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo)) then
+               if (((.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%repetido)).or.control%strictOLD).and.(.not.sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo)) then
                   !clipping: in case of direct .nfde reading the PREPROCESSor has not clipped this data
                   if ((i1 >= sgg%Alloc(whatfield)%XI).and. &
                   (i1 <= sgg%Alloc(whatfield)%XE).and. &
@@ -1255,7 +1247,7 @@ contains
                      HWires%CurrentSegment(conta)%TipoWire=>sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)
                      !!only for the observation sign to match (not used in this routine)
                      if (iwj < sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos) then
-                        if (.not.strictOLD) then
+                        if (.not.control%strictOLD) then
                            HWires%CurrentSegment(conta)%orientadoalreves = &
                            (i1 > sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj+1)%i).or. &
                            (j1 > sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj+1)%j).or. &
@@ -1265,7 +1257,7 @@ contains
                         endif
                      elseif     (iwj > 1 ) then
                         !only for the observation sign to match (not used in this routine)
-                        if (.not.strictOLD) then
+                        if (.not.control%strictOLD) then
                            HWires%CurrentSegment(conta)%orientadoalreves = &
                            (i1 < sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj-1)%i).or. &
                            (j1 < sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj-1)%j).or. &
@@ -1360,9 +1352,9 @@ contains
          (j < SINPML_fullsize(whatfield)%YE).and. &
          (k > SINPML_fullsize(whatfield)%ZI).and. &
          (k < SINPML_fullsize(whatfield)%ZE)) then
-            if (makeholes.and.(.not.IsEnd_norLeft_norRight).and.(.not.Is_LeftEnd).and.(.not.Is_RightEnd)) then
-                if (size==0) then 
-                    call stoponerror(layoutnumber,size,'Makeholes not available for MPI. Stoppping. ')
+            if (control%makeholes.and.(.not.IsEnd_norLeft_norRight).and.(.not.Is_LeftEnd).and.(.not.Is_RightEnd)) then
+                if (control%size==0) then 
+                    call stoponerror(control%layoutnumber,control%size,'Makeholes not available for MPI. Stoppping. ')
                 endif
                select case (whatfield)
                 case (iEx)
@@ -1590,9 +1582,9 @@ contains
          despT1=HWires%CurrentSegment(i1)%deltaTransv1
          despT2=HWires%CurrentSegment(i1)%deltaTransv2
          ! Esto no debe ser preciso. la hipotesis es que vuelve promediando a una celda
-         if (wirethickness>1) then        !solo tiene impacto en la %cte2 de acople y en la fuente de carga para que sea de voltaje
-           despT1=wirethickness*despT1
-           despT2=wirethickness*despT2
+         if (control%wirethickness>1) then        !solo tiene impacto en la %cte2 de acople y en la fuente de carga para que sea de voltaje
+           despT1=control%wirethickness*despT1
+           despT2=control%wirethickness*despT2
          endif
          r0=HWires%CurrentSegment(i1)%TipoWire%Radius   ! CON SU RADIO
          
@@ -1609,7 +1601,7 @@ contains
             'than half a space-step. Reduced to this limit',min(0.5_RKIND_wires *despT1,0.5_RKIND_wires *despT2)
             if ((HWires%CurrentSegment(i1)%k >= ZI).and.(HWires%CurrentSegment(i1)%k <= ZE)) call WarnErrReport(buff)
          endif
-         select case (trim(adjustl(inductance_model)))
+         select case (trim(adjustl(control%inductance_model)))
           case ('berenger')
             !---------------------------------------------------------------------------------
             !!Slanted=Berenger
@@ -1701,7 +1693,7 @@ contains
                fin=>HWires%CurrentSegment(j1)
                if ( (org%i == fin%i).and.(org%j == fin%j).and.(org%k == fin%k).and.(org%tipofield == fin%tipofield)) then
                   org%NumParallel=org%NumParallel + 1
-                  if (stableradholland) org%Lind_acum     = org%Lind_acum     + fin%Lind
+                  if (control%stableradholland) org%Lind_acum     = org%Lind_acum     + fin%Lind
                endif
             end do
             do j1=i1+1,HWires%NumCurrentSegments
@@ -1743,8 +1735,8 @@ contains
          !!!!!!!!!!!!correccion bruta 13/07/15
          deltadummy=dummy%inv_Lind_acum * dummy%HEUR_safety/0.9_RKIND_wires  !EL 0.9 ES POR MI TRANQUILIDAD
          if (deltadummy > 1.0_RKIND_wires) then
-            if (stableradholland) then
-               if (trim(adjustl(inductance_model))=='boutayeb') then
+            if (control%stableradholland) then
+               if (trim(adjustl(control%inductance_model))=='boutayeb') then
                   b= -4.0 * pi*InvMu(jmed) * (dummy%Lind*deltadummy) + log(despT1**2.0_RKIND+despT2**2.0_RKIND)+ despT1/despT2*atan(despT2/despT1)+ despT2/despT1*atan(despT1/despT2)-3.0_RKIND_wires
                   a= pi/(despT2*despT1)
                   if ((r0 < 0.3_RKIND_wires  *despT1).or.(r0 < 0.3_RKIND_wires *despT2)) then
@@ -1793,7 +1785,7 @@ contains
                segmento%HasAbsorbing_LeftEnd=.true.
                write (buff,'(a,5i7)')  'wir1_INFO: Absorbing conditions in terminal LeftEnd segment ', &
                segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
-               if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.verbose) call WarnErrReport(buff)
+               if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.control%verbose) call WarnErrReport(buff)
             endif
          endif
          if (segmento%TipoWire%HasAbsorbing_RightEnd) then
@@ -1986,7 +1978,7 @@ contains
                 if (isLossy) then
                    !rlossy=rlossy + 1.0_RKIND_wires/(2.0_RKIND_wires * pi*dummy%TipoWire%radius*sigt)/dummy%delta   !p.u.l.     !pruebas distintas 0223
                     !rlossy=rlossy + 1.0_RKIND_wires/(2.0_RKIND_wires * pi*dummy%DELTA          *sigt)/dummy%delta   !p.u.l.     !pruebas distintas 0223
-                    rlossy=rlossy ! + 1.0_RKIND_wires/(2.0_RKIND_wires * pi * (factordelta*dummy%DELTA +factorradius*dummy%TipoWire%radius) *sigt)/dummy%delta   !p.u.l. !comentado a 290323 porque no me fio de esto hasta que no se valide bien agb
+                    rlossy=rlossy ! + 1.0_RKIND_wires/(2.0_RKIND_wires * pi * (control%factordelta*dummy%DELTA +control%factorradius*dummy%TipoWire%radius) *sigt)/dummy%delta   !p.u.l. !comentado a 290323 porque no me fio de esto hasta que no se valide bien agb
                 endif
              endif
          endif !del esPML
@@ -2014,8 +2006,8 @@ contains
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Lossy material resistence to LeftEnd segment grounded through RLC ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
             endif
-            if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-            if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+            if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+            if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
          endif
          if ((dummy%Is_RightEnd).and.(isLossy.or.isLossy)) then
             !no tengo en cuenta el caso particularisimo de un solo segmento conectado a lossy por los dos extremos !habria que sumarle la resistencia dos veces pero la casuistica se enfollona !\E7
@@ -2028,8 +2020,8 @@ contains
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Lossy material resistence to RightEnd segment grounded through RLC ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
             endif
-            if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-            if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+            if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+            if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
          endif
          !!! lOS QUE NO TENGAN RESITENCIAS Y ESTEN EN ABIERTO NO LOS CONECTO A LOSSY. sI SE QUIEREN HACER CONEXIONES A LOSSY
          !!! HAY QUE ESPECIFICAR UNA RESISTENCIA LUMPED
@@ -2042,8 +2034,8 @@ contains
                resist=resist+rlossy
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Lossy material resistence to Ending segment (other) segment in contact with lossy without a terminal RLC ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             ELSE
                resist=resist+rlossy
                write (buff,'(a,4i7,a)')  'wir1_BUGGYERROR:  Lossy material resistence to Ending (other) segment grounded through RLC () ', &
@@ -2067,21 +2059,21 @@ contains
             if (dummy%TipoWire%Parallel_R_RightEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel RightEnd Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             else
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel RightEnd null-Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             endif
 
             !(ojo que es per unit length la intrinsea)
             if (dummy%TipoWire%Parallel_L_RightEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel RightEnd Inductance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             endif
             !aniado tambien al ultimo segmento la resistencia y peto si hay capacitancias
             if (dummy%TipoWire%Parallel_C_RightEnd >= 1.0e-12_RKIND_wires) then
@@ -2106,20 +2098,20 @@ contains
             if (dummy%TipoWire%Parallel_R_LeftEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel LeftEnd Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             else
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel LeftEnd null-Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             endif
 
             if (dummy%TipoWire%Parallel_L_LeftEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Parallel LeftEnd Inductance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             endif
             if (dummy%TipoWire%Parallel_C_LeftEnd >= 1.0e-12_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_ERROR: (Currently unsupported)  Capacitances in Parallel LeftEnd at segment ', &
@@ -2145,14 +2137,14 @@ contains
             if (dummy%TipoWire%Series_L_RightEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Series RightEnd Inductance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             endif
             if (dummy%TipoWire%Series_R_RightEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Series RightEnd Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             endif
             if (dummy%TipoWire%Series_C_RightEnd<= 1.0e7_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_ERROR: (Currently unsupported)  Capacitances smaller than 1.0e7_RKIND_wires (inf) in Series RightEnd at segment ', &
@@ -2177,14 +2169,14 @@ contains
             if (dummy%TipoWire%Series_L_LeftEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Series LeftEnd Inductance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             endif
             if (dummy%TipoWire%Series_R_LeftEnd /= 0.0_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_INFO: Adding Series LeftEnd Resistance in segment ', &
                dummy%origIndex,dummy%i,dummy%j,dummy%k,' '//dir(dummy%tipofield)
-               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.verbose) call WarnErrReport(buff)
-               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.verbose) call WarnErrReport(buff)
+               if ((dummy%k >  ZI).and.(dummy%k <= ZE).and.(dummy%tipofield /= iEz).and.control%verbose) call WarnErrReport(buff)
+               if ((dummy%k >= ZI).and.(dummy%k <= ZE).and.(dummy%tipofield == iEz).and.control%verbose) call WarnErrReport(buff)
             endif
             if (dummy%TipoWire%Series_C_LeftEnd <= 1.0e7_RKIND_wires) then
                write (buff,'(a,4i7,a)')  'wir1_ERROR: (Currently unsupported)  Capacitances  smaller than 1.0e7_RKIND_wires (inf) in Series LeftEnd atn segment ', &
@@ -2207,7 +2199,7 @@ contains
          dummy%givenautoin_devia =givenautoin_devia
               dummy%resist_devia =     resist_devia
 !!!ojooooo  acumulo en %lind toda la autoinduccion para que los calculos de capacidad la tengan en cuenta completa    
-         if (.not.fieldtotl) then
+         if (.not.control%fieldtotl) then
              dummy%Lind=dummy%Lind+givenautoin
 !
              dummy%Lind_devia=dummy%Lind_devia + givenautoin_devia
@@ -2219,7 +2211,7 @@ contains
              dummy%Lind_devia= givenautoin_devia
          endif !para el fieldtotl no tento en cuenta mas que la autoin y no devuelvo nada !100517
 
-         call wiresconstantes(fieldtotl,dummy,G2,sgg)
+         call wiresconstantes(control%fieldtotl,dummy,G2,sgg)
 
 
       end do
@@ -2227,7 +2219,7 @@ contains
       !!!!
       !!!copiado 23/04/2014
       !
-      if (trim(adjustl(wiresflavor))=='transition') then
+      if (trim(adjustl(control%wiresflavor))=='transition') then
          !contar multilines
          NumMultilines = 0
          do is1 = 1,HWires%NumCurrentSegments
@@ -2252,7 +2244,7 @@ contains
 
          HWires%NumMultilines = NumMultilines
          write (buff,*)  'wir1_INFO: Numero de multilineas ', NumMultilines
-         if (verbose) call WarnErrReport(buff)
+         if (control%verbose) call WarnErrReport(buff)
          allocate(HWires%Multilines(1:NumMultilines))
          !contar paralelos
          contmtln = 0
@@ -2380,7 +2372,7 @@ contains
                end do
             end do
             write(buff,*) 'wir1_INFO: Multihilo ', iw1, ' con numero de hilos paralelos ', NumParallel
-            if (verbose) call WarnErrReport(buff)
+            if (control%verbose) call WarnErrReport(buff)
             allocate(HWires%Multilines(iw1)%b1I(1:NumParallel,1:NumParallel))
             allocate(HWires%Multilines(iw1)%b2I(1:NumParallel,1:NumParallel))
             allocate(HWires%Multilines(iw1)%b3I(1:NumParallel,1:NumParallel))
@@ -2422,7 +2414,7 @@ contains
                   if ((segmento%HasSeries_RightEnd).or.(segmento%HasSeries_LeftEnd)) then
                      write (buff,'(a,5i7)')  'wir1_INFO: Voltage source with Series RL (C neglected if present) impedance in segment ', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
-                     if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.verbose) call WarnErrReport(buff)
+                     if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                   elseif ((segmento%HasParallel_RightEnd).or.(segmento%HasParallel_LeftEnd)) then
                      write (buff,'(a,5i7)')  'wir1_WARNING: Voltage source with Parallel RLC  in segment ', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
@@ -2436,7 +2428,7 @@ contains
                   else
                      write (buff,'(a,5i7)')  'wir1_INFO: Voltage source with null internal resistence in segment ', &
                      segmento%origIndex,segmento%i,segmento%j,segmento%k,segmento%tipofield
-                     if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.verbose) call WarnErrReport(buff)
+                     if ((segmento%k >= ZI).and.(segmento%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                   endif
                   if (segmento%Vsource%Fichero%DeltaSamples > sgg%dt) then
                      write (buff,'(a,a,a,e15.4e3)')  'wir1_WARNING: ',trim(adjustl(segmento%Vsource%Fichero%Name)), &
@@ -2538,7 +2530,7 @@ contains
             endif
             if (i1 /= j1) then
                !calls the adjacent routine to see wether the org and fin segments are connected (
-               Adj=TestAdjacency(org,i1,fin,j1,connectendings,isolategroupgroups,strictOLD,ZI,ZE,NUMESEG,orgmenos1,orgmas1,finmenos1,finmas1,verbose)
+               Adj=TestAdjacency(org,i1,fin,j1,control%connectendings,control%isolategroupgroups,control%strictOLD,ZI,ZE,NUMESEG,orgmenos1,orgmas1,finmenos1,finmas1,control%verbose)
                !
                If (Adj%Is) then
                   NodeExists=.false.
@@ -2978,7 +2970,7 @@ contains
             segmento%chargeMinus%Is_RightEnd =.true.
             asignado=.true.
             !bug OLD 060313 hilos de un solo segmento con RLC. Correcion en caso de formatos antiguos solo
-            if (connectendings) then
+            if (control%connectendings) then
                segmento%chargeplus%Is_LeftEnd  =.true.
                segmento%chargeplus%Is_RightEnd  =.true.
                segmento%chargeMinus%Is_RightEnd =.true.
@@ -2996,14 +2988,14 @@ contains
                      segmento%chargeplus%Is_LeftEnd =.true.
                      write (buff,'(a,4i7)')  'wir1_INFO: Forcing non-terminal node to LeftEnd to attach RLC ', &
                      segmento%chargeplus%i,segmento%chargeplus%j,segmento%chargeplus%k
-                     if ((segmento%chargeplus%k >  ZI).and.(segmento%chargeplus%k <= ZE).and.verbose) call WarnErrReport(buff)
+                     if ((segmento%chargeplus%k >  ZI).and.(segmento%chargeplus%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                   endif
                elseif (segmento%chargeminus%isPEC .or. segmento%chargeminus%isLossy .or. segmento%chargeminus%isLossy .or. segmento%chargeminus%isLossy) then
                   if ((.not. segmento%chargeminus%Is_LeftEnd).and.(.not. segmento%chargeminus%Is_RightEnd)) then
                      segmento%chargeminus%Is_LeftEnd =.true.
                      write (buff,'(a,4i7)')  'wir1_INFO: Forcing non-terminal node to LeftEnd to attach RLC ', &
                      segmento%chargeminus%i,segmento%chargeminus%j,segmento%chargeminus%k
-                     if ((segmento%chargeminus%k >  ZI).and.(segmento%chargeminus%k <= ZE).and.verbose) call WarnErrReport(buff)
+                     if ((segmento%chargeminus%k >  ZI).and.(segmento%chargeminus%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                   endif
                else
                   if (segmento%TipoWire%Series_C_LeftEnd < 1.0e7_RKIND_wires) then
@@ -3032,14 +3024,14 @@ contains
                      segmento%chargeplus%Is_RightEnd =.true.
                      write (buff,'(a,4i7)')  'wir1_INFO: Forcing non-terminal node to RightEnd to attach RLC ', &
                      segmento%chargeplus%i,segmento%chargeplus%j,segmento%chargeplus%k
-                     if ((segmento%chargeplus%k >  ZI).and.(segmento%chargeplus%k <= ZE).and.verbose) call WarnErrReport(buff)
+                     if ((segmento%chargeplus%k >  ZI).and.(segmento%chargeplus%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                   endif
                elseif (segmento%chargeminus%isPEC .or. segmento%chargeminus%isLossy .or. segmento%chargeminus%isLossy .or. segmento%chargeminus%isLossy) then
                   if ((.not. segmento%chargeminus%Is_LeftEnd).and.(.not. segmento%chargeminus%Is_RightEnd)) then
                      segmento%chargeminus%Is_RightEnd =.true.
                      write (buff,'(a,4i7)')  'wir1_INFO: Forcing non-terminal node to RightEnd to attach RLC ', &
                      segmento%chargeminus%i,segmento%chargeminus%j,segmento%chargeminus%k
-                     if ((segmento%chargeminus%k >  ZI).and.(segmento%chargeminus%k <= ZE).and.verbose) call WarnErrReport(buff)
+                     if ((segmento%chargeminus%k >  ZI).and.(segmento%chargeminus%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                   endif
                else
                   if (segmento%TipoWire%Series_C_RightEnd < 1.0e7_RKIND_wires) then
@@ -3383,7 +3375,7 @@ contains
                if ((nodo%Is_LeftEnd).or.(nodo%Is_RightEnd).or.(nodo%NumCurrentPlus + nodo%NumCurrentMinus < 2)) then !es un nodo terminal
                     continue
                else !no es un nodo terminal LeftEnd o RightEnd o abierto pero Si es un nodo material
-                     if (.not.groundwires) then
+                     if (.not.control%groundwires) then
                          if (nodo%IsPec) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_BUGGYERROR: NON-terminal node lying on PEC ()', &
                         nodo%indexnode, nodo%i,nodo%j,nodo%k, &
                         ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
@@ -3404,7 +3396,7 @@ contains
                          if (nodo%IsLossy) write (buff,'(a,i7,3i7,a,2i3,a,a)')  'wir1_INFO: Leaving grounded a  NON-Terminal node lying on Lossy (LAUNCHED WITH -groundwires) ', &
                         nodo%indexnode, nodo%i,nodo%j,nodo%k, &
                         ' (',nodo%numcurrentminus,nodo%numcurrentplus,')'
-                        if ((nodo%k >=  ZI).and.(nodo%k <= ZE).and.verbose) call WarnErrReport(buff)
+                        if ((nodo%k >=  ZI).and.(nodo%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                      endif
                endif
             endif
@@ -3703,7 +3695,7 @@ contains
                      thereareIsources=.true.
                      write (buff,'(a,i7,3i7)')  'wir1_INFO: Current source at node ', &
                      nodo%indexnode, nodo%i,nodo%j,nodo%k
-                     if ((HWires%ChargeNode(i1)%k > ZI).and.(HWires%ChargeNode(i1)%k <= ZE).and.verbose) call WarnErrReport(buff)
+                     if ((HWires%ChargeNode(i1)%k > ZI).and.(HWires%ChargeNode(i1)%k <= ZE).and.control%verbose) call WarnErrReport(buff)
                      !
                      if (HWires%ChargeNode(i1)%Isource%Fichero%DeltaSamples > sgg%dt) then
                         write (buff,'(a,e15.4e3)') 'wir1_WARNING: '//trim(adjustl(HWires%ChargeNode(i1)%Isource%Fichero%Name))// &
@@ -3724,21 +3716,21 @@ contains
     
       !!!!!!!!find crank-nicolson coefficients
        
-      if (wirecrank) then
+      if (control%wirecrank) then
           call init_wirecrank
       endif
 
 
 !!!!Se arregla lo del resuming permit scaling 221118 pero realmente no se por que. deberia ser lo mismo. Es redundante, pero....
        eps000=eps0;mu000=mu0; !niapa para evitar lo del rkind 020719
-       call calc_wirehollandconstants(sgg,G2,fieldtotl,wiresflavor,mu000,eps000,simu_devia)
+       call calc_wirehollandconstants(sgg,G2,control%fieldtotl,control%wiresflavor,mu000,eps000,control%simu_devia)
        
 #ifdef CompileWithThickWires
 !!!init extra thick stuff !hay que hacerlo aqui al final con toda la info
 !!!ojo si permittivity scaling y si mpi.... habra que rehacer
       do conta=1,HWires%NumCurrentSegments
-            if (wirethickness>1) &
-                call init_thick(sgg,eps000,mu000,Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh,HWires%CurrentSegment(conta),wirethickness)
+            if (control%wirethickness>1) &
+                call init_thick(sgg,eps000,mu000,Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh,HWires%CurrentSegment(conta),control%wirethickness)
       end do
 #endif      
       !!
@@ -3770,7 +3762,7 @@ contains
                    if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff,.true.)
         elseif ((sgg%Med(sggmiE)%Is%already_YEEadvanced_byconformal).and. &  !!!!!!!!!!!!already_YEEadvanced_byconformal
                 .not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then   !NO NO NO ES UN TERMINAL                    
-                if (.not.fieldtotl) then
+                if (.not.control%fieldtotl) then
                          HWires%CurrentSegment(conta)%cte5 = sgg%dt /eps0 /(HWires%CurrentSegment(conta)%deltaTransv1*HWires%CurrentSegment(conta)%deltaTransv2)
                         !  HWires%CurrentSegment(conta)%cte5 = HWires%CurrentSegment(conta)%cte5/3.5
                 else
@@ -3782,7 +3774,7 @@ contains
                    if ((k1 >= ZI).and.(k1 <= ZE)) call WarnErrReport(buff)
         elseif ((sgg%Med(sggmiE)%Is%already_YEEadvanced_byconformal).and. &
                 (IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then  !SI SI SI ES UN TERMINAL                    
-                if (.not.fieldtotl) then
+                if (.not.control%fieldtotl) then
                          HWires%CurrentSegment(conta)%cte5 = sgg%dt /eps0 /(HWires%CurrentSegment(conta)%deltaTransv1*HWires%CurrentSegment(conta)%deltaTransv2)
                         !  HWires%CurrentSegment(conta)%cte5 = HWires%CurrentSegment(conta)%cte5/3.5
                 else
@@ -3841,7 +3833,7 @@ contains
    
                 !AJUSTAR LA CONSTANTE !no se precisa realmente porque luego se iran su campos a cero (ver nota antes) 180220
                     
-                if (.not.fieldtotl) then
+                if (.not.control%fieldtotl) then
                          HWires%CurrentSegment(conta)%cte5=sgg%dt /eps0 /(HWires%CurrentSegment(conta)%deltaTransv1*HWires%CurrentSegment(conta)%deltaTransv2)
                         !  HWires%CurrentSegment(conta)%cte5=HWires%CurrentSegment(conta)%cte5/3.5
                 else
@@ -4183,7 +4175,7 @@ subroutine resume_casuistics
 
       !In case of resuming a problem, re-starting currents and charges must be read instead of initialized
       !resuming
-      if (.not.resume) then
+      if (.not.control%resume) then
          do i1=1,HWires%NumChargeNodes
             HWires%ChargeNode(i1)%ChargePresent      =0.0_RKIND_wires
             HWires%ChargeNode(i1)%ChargePast         =0.0_RKIND_wires
@@ -4231,7 +4223,7 @@ subroutine resume_casuistics
    
     subroutine  init_wirecrank
     
-         if (layoutnumber /=0) then
+         if (control%layoutnumber /=0) then
             buff='Unsupported crank in MPI'
             call WarnErrReport(buff,.true.)
          endif
