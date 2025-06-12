@@ -33,11 +33,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,&
                          IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size,&
-                         ThereAreLumped,resume,simu_devia,stochastic,eps00,mu00)
+                         ThereAreLumped,resume,stochastic,eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
 
       type (SGGFDTDINFO), intent(IN)     ::  sgg
-      logical :: simu_devia,stochastic 
+      logical :: stochastic 
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
       sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &

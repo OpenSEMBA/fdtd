@@ -639,8 +639,7 @@ module Solver_mod
       write(dubuf,*) 'Init CPML Borders...';  call print11(this%control%layoutnumber,dubuf)
       call InitCPMLBorders     (sgg,SINPML_Fullsize,this%thereAre%PMLBorders,this%control, &
                                 dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps0,mu0)
-      ! call InitCPMLBorders     (sgg,this%control%layoutnumber,SINPML_Fullsize,this%thereAre%PMLBorders,this%control%resume, &
-      !                           dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%alphamaxpar,this%control%alphaOrden,this%control%kappamaxpar,eps0,mu0)
+
       l_auxinput=this%thereAre%PMLBorders
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -657,7 +656,7 @@ module Solver_mod
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       write(dubuf,*) 'Init PML Bodies...';  call print11(this%control%layoutnumber,dubuf)
-      call InitPMLbodies(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size,g2,Gm2,this%thereAre%PMLbodies,this%control%resume,eps0,mu0)
+      call InitPMLbodies(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
       l_auxinput=this%thereAre%PMLbodies
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -691,7 +690,7 @@ module Solver_mod
 
       !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
       write(dubuf,*) 'Init Lumped Elements...';  call print11(this%control%layoutnumber,dubuf)
-      CALL InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size,this%thereAre%Lumpeds,this%control%resume,this%control%simu_devia,this%control%stochastic,eps0,mu0)
+      CALL InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size,this%thereAre%Lumpeds,this%control%resume,this%control%stochastic,eps0,mu0)
       l_auxinput=this%thereAre%Lumpeds
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
