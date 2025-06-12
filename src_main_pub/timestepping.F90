@@ -94,6 +94,7 @@ module Solver_mod
    contains
       procedure :: init => solver_init
       procedure :: launch_simulation
+      procedure :: flushPlanewaveOff
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
 #endif
@@ -280,7 +281,7 @@ module Solver_mod
       type (perform_t) :: perform, d_perform
       
       Logical  ::  parar,flushFF, &
-                   everflushed,still_planewave_time,still_planewave_time_aux,planewave_switched_off,thereareplanewave,thereareplanewave_aux,l_aux
+                   everflushed,still_planewave_time,planewave_switched_off,thereareplanewave,l_aux
 
       integer (kind=4)  ::  i,J,K,r,n,initialtimestep,lastexecutedtimestep,n_info,FIELD,dummyMin,dummyMax
       !
@@ -1264,24 +1265,8 @@ module Solver_mod
 
       ciclo_temporal :  DO while (N <= this%control%finaltimestep)
       
-      !!Flush the plane-wave logical switching off variable (saves CPU!)
-          if (.not.planewave_switched_off) then
-            still_planewave_time=still_planewave_time.and.this%thereAre%PlaneWaveBoxes
-            thereareplanewave=this%thereAre%PlaneWaveBoxes
-#ifdef CompileWithMPI
-             if (this%control%size>1) then
-                still_planewave_time_aux=still_planewave_time
-                call MPI_AllReduce(still_planewave_time_aux, still_planewave_time, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-                thereareplanewave_aux=thereareplanewave
-                call MPI_AllReduce(thereareplanewave_aux, thereareplanewave, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-             endif
-#endif
-             if (.not.still_planewave_time)  then
-                 planewave_switched_off=.true.
-                 write(dubuf,*) 'Switching plane-wave off at n=',n
-                 if (thereareplanewave) call print11(this%control%layoutnumber,dubuf)
-             endif
-          endif
+         !!Flush the plane-wave logical switching off variable (saves CPU!)
+         call this%flushPlanewaveOff(planewave_switched_off, still_planewave_time, thereareplanewave, N, dubuf)
 
          !Anisotropic
          !Must be previous to the main stepping since the main stepping overrides the past components with the last and the
@@ -3144,6 +3129,32 @@ module Solver_mod
 
 
    end subroutine launch_simulation
+
+   subroutine flushPlanewaveOff(this, pw_status, pw_still, pw_thereAre, iter, buf)
+      class(solver_t) :: this
+      logical, intent(inout) :: pw_status, pw_still, pw_thereAre
+      logical :: pw_still_aux, pw_thereAre_aux
+      integer (kind=4), intent(in) :: iter
+      character (len=bufsize) :: buf
+      integer (kind=4) :: ierr
+      if (.not.pw_status) then
+         pw_still = pw_still.and.this%thereAre%PlaneWaveBoxes
+         pw_thereAre = this%thereAre%PlaneWaveBoxes
+#ifdef CompileWithMPI
+         if (this%control%size>1) then
+            pw_still_aux = pw_still
+            call MPI_AllReduce(pw_still_aux, pw_still, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+            pw_thereAre_aux = pw_thereAre
+            call MPI_AllReduce(pw_thereAre_aux, pw_thereAre, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+         endif
+#endif
+         if (.not.pw_still)  then
+            pw_status=.true.
+            write(buf,*) 'Switching plane-wave off at n=', iter
+            if (pw_thereAre) call print11(this%control%layoutnumber,buf)
+         endif
+      endif
+   end subroutine 
 
 
 
