@@ -221,10 +221,7 @@ module Solver_mod
 #endif
 
 
-   !!!
-      !!!!!!!!esta feo pero funciona
       logical :: dummylog
-      !
       type (tagtype_t) :: tagtype
 
       !!for tuning
@@ -623,7 +620,7 @@ module Solver_mod
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
-      call InitOtherBorders    (sgg,this%thereAre%PECBorders,this%thereAre%PMCBorders,this%thereAre%PeriodicBorders)
+      call InitOtherBorders    (sgg,this%thereAre)
       l_auxinput=this%thereAre%PECBorders.or.this%thereAre%PMCBorders.or.this%thereAre%PeriodicBorders
       l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1727,9 +1724,6 @@ module Solver_mod
          
 !!!
          if (call_timing) then
-            ! call Timing(sgg,b,        n,n_info,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
-            ! this%control%finaltimestep,perform%flushFields,perform%flushData,perform%Unpack,perform%postprocess,perform%flushXdmf,perform%flushVTK,parar,.FALSE., &
-            ! Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
             call Timing(sgg,b,        n,n_info,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
             this%control%finaltimestep,perform,parar,.FALSE., &
             Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
@@ -1981,9 +1975,7 @@ module Solver_mod
       call Timing(sgg,b,        n,ndummy,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
             this%control%finaltimestep,d_perform,dummylog,.FALSE., &
             Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
-      ! call Timing(sgg,b,        n,ndummy,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
-      !       this%control%finaltimestep,dummylog,dummylog,dummylog,dummylog,dummylog,dummylog,dummylog,.FALSE., &
-      !       Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
+
       write(dubuf,*)'END FDTD time stepping. Beginning posprocessing at n= ',n
       call print11(this%control%layoutnumber,dubuf)
 

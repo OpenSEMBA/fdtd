@@ -249,11 +249,11 @@ module  FDETYPES
       PMLBorders  , &
       MurBorders  , &
       PECBorders  , &
+      PeriodicBorders, &
       Anisotropic  , &
       ThinSlot  , &
       NodalE  , &
       NodalH  , &
-      PeriodicBorders, &
       MagneticMedia, PMLMagneticMedia, &
       MTLNbundles
    contains 
