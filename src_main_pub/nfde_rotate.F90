@@ -987,10 +987,10 @@ CONTAINS
       integer (kind=4) :: oxi,oyi,ozi,oxe,oye,oze,oor,TXI,TYI,TZI  
       TYPE (Coords), POINTER :: old_Coordinates => NULL ()
       
-      tama = this%Sonda%length       
+      tama = this%VolPrb%length
       ! tres posibilidades FarField, Electric,Magnetic
       DO i = 1, tama      
-         tama2 = (this%Sonda%collection(i)%len_cor)    
+         tama2 = (this%VolPrb%collection(i)%len_cor)    
          DO ii = 1, tama2                                               
               allocate (old_Coordinates,source=this%VolPrb%collection(i)%cordinates(ii))    
               OXI=old_Coordinates%XI
