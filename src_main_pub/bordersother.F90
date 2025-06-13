@@ -15,21 +15,21 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes PEC and PML data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitOtherBorders(sgg,ThereArePECBorders,ThereArePMCBorders,ThereArePeriodicBorders)
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
-      logical  ::  ThereArePECBorders,ThereArePMCBorders,ThereArePeriodicBorders
+   subroutine InitOtherBorders(sgg,thereAre)
+      type (SGGFDTDINFO), intent(IN) ::  sgg
+      type (Logic_control), intent(inout) :: thereAre
 
-      ThereArePeriodicBorders=.false.
+      thereAre%PeriodicBorders=.false.
       if (sgg%Border%IsBackPeriodic.or.sgg%Border%IsFrontPeriodic.or.sgg%Border%IsLeftPeriodic.or.sgg%Border%IsRightPeriodic.or. &
-      sgg%Border%IsUpPeriodic.or.sgg%Border%IsDownPeriodic) ThereArePeriodicBorders=.true.
+      sgg%Border%IsUpPeriodic.or.sgg%Border%IsDownPeriodic) thereAre%PeriodicBorders=.true.
 
-      ThereArePMCBorders=.false.
+      thereAre%PMCBorders=.false.
       if (sgg%Border%IsBackPMC.or.sgg%Border%IsFrontPMC.or.sgg%Border%IsLeftPMC.or.sgg%Border%IsRightPMC.or. &
-      sgg%Border%IsUpPMC.or.sgg%Border%IsDownPMC) ThereArePMCBorders=.true.
+      sgg%Border%IsUpPMC.or.sgg%Border%IsDownPMC) thereAre%PMCBorders=.true.
 
-      ThereArePECBorders=.false.
+      thereAre%PECBorders=.false.
       if (sgg%Border%IsBackPEC.or.sgg%Border%IsFrontPEC.or.sgg%Border%IsLeftPEC.or.sgg%Border%IsRightPEC.or. &
-      sgg%Border%IsUpPEC.or.sgg%Border%IsDownPEC) ThereArePECBorders=.true.
+      sgg%Border%IsUpPEC.or.sgg%Border%IsDownPEC) thereAre%PECBorders=.true.
       return
    end subroutine
 

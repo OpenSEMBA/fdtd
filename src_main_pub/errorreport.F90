@@ -164,23 +164,16 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine InitReporting(sgg,nEntradaRoot,resume,layoutnumber,size,nresumeable2,resume_fromold)
-      !!!!!!!PML params!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      integer (kind=4), intent(in) :: layoutnumber,size
+   subroutine InitReporting(sgg,c)
       type (SGGFDTDINFO), intent(INout)         ::  sgg
-      !!!!!!!
-      character (len=*), INTENT(IN)  ::  nEntradaRoot
-      logical  ::  resume,resume_fromold
+      type(sim_control_t) :: c
 #ifdef CompileWithMPI
       integer (kind=4)  ::  ierr
 #endif
-      character (len=*), INTENT(IN)  ::  nresumeable2
       Logical  ::  errnofile
-      character(len=BUFSIZE) :: buff
+      character(len=BUFSIZE) :: buff, whoami
 
-      character (LEN=BUFSIZE)  ::  whoami
-
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%size,') '
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -190,11 +183,11 @@ contains
 
       !
 
-      IF (layoutnumber == 0) THEN  !only the master
-         if (resume) then
-            open (10,file=trim(adjustl(nEntradaRoot))//'_Energy.dat',form='formatted',position='append')
+      IF (c%layoutnumber == 0) THEN  !only the master
+         if (c%resume) then
+            open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted',position='append')
          else
-            open (10,file=trim(adjustl(nEntradaRoot))//'_Energy.dat',form='formatted')
+            open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted')
          endif
       endif
       file10isopen=.true.
@@ -206,7 +199,7 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-      call print11(layoutnumber,SEPARADOR//separador//separador)
+      call print11(c%layoutnumber,SEPARADOR//separador//separador)
 
 
 #ifndef CompileWithInt4
@@ -214,30 +207,30 @@ contains
 #endif
       !
 
-      if (resume) then
+      if (c%resume) then
          errnofile=.false.
-         if (resume_fromold) then
-            INQUIRE (FILE=trim(adjustl(nresumeable2))//'.old', EXIST=errnofile)
+         if (c%resume_fromold) then
+            INQUIRE (FILE=trim(adjustl(c%nresumeable2))//'.old', EXIST=errnofile)
          else
-            INQUIRE (FILE=trim(adjustl(nresumeable2)), EXIST=errnofile)
+            INQUIRE (FILE=trim(adjustl(c%nresumeable2)), EXIST=errnofile)
          endif
          if (.not.errnofile) then
-            if (resume_fromold) then
-               buff='FILE '//trim(adjustl(nresumeable2))//'.old DOES NOT EXIST'
-               call StopOnError(layoutnumber,size,buff)
+            if (c%resume_fromold) then
+               buff='FILE '//trim(adjustl(c%nresumeable2))//'.old DOES NOT EXIST'
+               call StopOnError(c%layoutnumber,c%size,buff)
             else
-               buff='FILE '//trim(adjustl(nresumeable2))//' DOES NOT EXIST'
-               call StopOnError(layoutnumber,size,buff)
+               buff='FILE '//trim(adjustl(c%nresumeable2))//' DOES NOT EXIST'
+               call StopOnError(c%layoutnumber,c%size,buff)
             endif
          endif
-         call print11(layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
-         call print11(layoutnumber,' ')
-         if (resume_fromold) then
-            call print11(layoutnumber,'Reading resuming data from '//trim(adjustl(nresumeable2))//'.old etc.')
+         call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
+         call print11(c%layoutnumber,' ')
+         if (c%resume_fromold) then
+            call print11(c%layoutnumber,'Reading resuming data from '//trim(adjustl(c%nresumeable2))//'.old etc.')
          else
-            call print11(layoutnumber,'Reading resuming data from '//trim(adjustl(nresumeable2))//' etc.')
+            call print11(c%layoutnumber,'Reading resuming data from '//trim(adjustl(c%nresumeable2))//' etc.')
          endif
-         call print11(layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
+         call print11(c%layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
       endif
 
 
@@ -396,35 +389,29 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitTiming(layoutnumber,size,maxCPUtime,timedummy_desdelanzamiento, &
-                         flushsecondsFields,flushsecondsData,initialtimestep,finaltimestep,c,maxSourceValue,sgg)
-      type (SGGFDTDINFO), intent(IN)       :: sgg
+   subroutine InitTiming(sgg, c, t, initialtimestep, maxSourceValue)
+      type (SGGFDTDINFO), intent(IN) :: sgg
+      type(sim_control_t) , intent(in):: c
+      REAL (KIND=8), intent(in)   :: t
+      integer (kind=4), intent(in) :: initialtimestep
+      REAL (KIND=RKIND), intent(in)   ::  maxSourceValue
       TYPE (tiempo_t) :: time_out2,time_comienzo
-      type (XYZlimit_t), dimension(1:6)  ::  c
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4)  ::  maxCPUtime
 #ifdef CompileWithMPI
-      integer (kind=4)  ::  ierr
+      integer (kind=4) :: ierr
 #endif
-      integer (kind=4), intent(in)           ::  flushsecondsFields,flushsecondsData,initialtimestep,finaltimestep
-
-      REAL (KIND=RKIND)   ::  MaxSourceValue
-      REAL (KIND=8)   :: timedummy_desdelanzamiento
-
       character (LEN=BUFSIZE)  ::  whoami
       character (LEN=BUFSIZE)     ::  dubuf
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%size,') '
       
-      time_desdelanzamiento=timedummy_desdelanzamiento
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+      time_desdelanzamiento=t
       snapLevel=1.0e25_RKIND !*maxSourceValue
       snapStep=1
       snapHowMany=1
       countersnap=0
-      !
 
-      megaceldas=(1.0_RKIND*C(iEx)%ZE-1.0_RKIND*C(iEx)%ZI)*(1.0_RKIND*C(iEx)%YE-1.0_RKIND*C(iEx)%YI)* &
-                 (1.0_RKIND*C(iEy)%XE-1.0_RKIND*C(iEy)%XI)/1.0e6_RKIND
+      megaceldas = (1.0_RKIND*sgg%sweep(iEx)%ZE-1.0_RKIND*sgg%sweep(iEx)%ZI)* &
+                   (1.0_RKIND*sgg%sweep(iEx)%YE-1.0_RKIND*sgg%sweep(iEx)%YI)* &
+                   (1.0_RKIND*sgg%sweep(iEy)%XE-1.0_RKIND*sgg%sweep(iEy)%XI)/1.0e6_RKIND
 
 
 #ifdef CompileWithMPI
@@ -436,41 +423,40 @@ contains
 
 
       write(dubuf,*)  'Total Mcells: ',megaceldastotales
-      call print11(layoutnumber,dubuf)
+      call print11(c%layoutnumber,dubuf)
 
-
-      IF (flushsecondsFIELDS/=0) then
-         write(dubuf,*)  'Flushing restarting FIELDS every ',int(flushsecondsFIELDS/60.0_RKIND),' minutes'
-         call print11(layoutnumber,dubuf)
+      IF (c%flushsecondsFIELDS/=0) then
+         write(dubuf,*)  'Flushing restarting FIELDS every ',int(c%flushsecondsFIELDS/60.0_RKIND),' minutes'
+         call print11(c%layoutnumber,dubuf)
       else
-         if (maxCPUtime == topCPUtime) then
-            call print11(layoutnumber,'NO flushing of restarting FIELDS scheduled')
+         if (c%maxCPUtime == topCPUtime) then
+            call print11(c%layoutnumber,'NO flushing of restarting FIELDS scheduled')
          else
-            write(dubuf,*)  'Flushing of restarting FIELDS at the end (mins) :',maxCPUtime
-            call print11(layoutnumber,dubuf)
+            write(dubuf,*)  'Flushing of restarting FIELDS at the end (mins) :',c%maxCPUtime
+            call print11(c%layoutnumber,dubuf)
          endif
       endif
-      IF (flushsecondsDATA/=0) then
-         write(dubuf,*)  'Flushing observation DATA every  ',int(flushsecondsDATA/60.0_RKIND),' minutes and every ', &
+      IF (c%flushsecondsDATA/=0) then
+         write(dubuf,*)  'Flushing observation DATA every  ',int(c%flushsecondsDATA/60.0_RKIND),' minutes and every ', &
                           BuffObse,' steps'
-         call print11(layoutnumber,dubuf)
+         call print11(c%layoutnumber,dubuf)
       else
-         call print11(layoutnumber,'WARNING: NO flushing of observation DATA scheduled')
+         call print11(c%layoutnumber,'WARNING: NO flushing of observation DATA scheduled')
       endif
       write(dubuf,*)  'Reporting simulation info every  ',int(reportingseconds/60.0_RKIND),' minutes '
-      call print11(layoutnumber,dubuf)
+      call print11(c%layoutnumber,dubuf)
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       call get_secnds(time_out2)
-      call print11(layoutnumber,SEPARADOR//separador//separador)
+      call print11(c%layoutnumber,SEPARADOR//separador//separador)
       write(dubuf,'(a,i7,a,e19.9e3,a,i9,a,e19.9e3)')  'Simulation from n=',initialtimestep,', t=',sgg%tiempo(initialtimestep),&
-                                                      ' to n=',finaltimestep,', t=',sgg%tiempo(finaltimestep)
-      call print11(layoutnumber,dubuf)
+                                                      ' to n=',c%finaltimestep,', t=',sgg%tiempo(c%finaltimestep)
+      call print11(c%layoutnumber,dubuf)
       write(dubuf,*)  'Date/time ', time_out2%fecha( 7: 8),'/',time_out2%fecha( 5: 6),'/',time_out2%fecha(1:4),'   ', &
                                     time_out2%hora( 1: 2), ':',time_out2%hora( 3: 4),':',time_out2%hora( 5: 6)
-      call print11(layoutnumber,dubuf)
+      call print11(c%layoutnumber,dubuf)
       time_begin_absoluto = time_out2%segundos
       time_begin = time_begin_absoluto
       time_begin2 = time_begin_absoluto
@@ -559,8 +545,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !**************************************************************************************************
    subroutine Timing(sgg, b, n, n_info, layoutnumber, size, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
-   finaltimestep, performflushFields, performflushData,performUnpack, performpostprocess,performflushXdmf,performflushVTK, &
+   finaltimestep, perform, &
    parar, forcetiming,Ex,Ey,Ez,everflushed, nentradaroot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
+   ! subroutine Timing(sgg, b, n, n_info, layoutnumber, size, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
+   ! finaltimestep, &
+   ! parar, forcetiming,Ex,Ey,Ez,everflushed, nentradaroot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
    
       logical :: simu_devia,dontwritevtk,stopdontwritevtk,stopflushingdontwritevtk,flushdontwritevtk,stoponlydontwritevtk
       !---------------------------> inputs <----------------------------------------------------------
@@ -585,8 +574,9 @@ contains
       integer (kind=4), intent( INOUT)  ::  n_info
       logical, intent( INOUT)  ::  parar
       !---------------------------> outputS <---------------------------------------------------------
-      logical, intent( OUT)  ::  performflushFIELDS, performflushDATA,performUnpack,performpostprocess,&
-                                 performflushXdmf,performflushVTK
+      type(perform_t), intent(out) :: perform
+      ! logical, intent( OUT)  ::  performflushFIELDS, performflushDATA,performUnpack,performpostprocess,&
+                                 ! performflushXdmf,performflushVTK
       !---------------------------> variables locales <-----------------------------------------------
       real (kind=rKIND)  ::  valor,maxSourceValue,LA,LV,LB
       logical  ::  hay_timing, l_aux, hay_flushFIELDS, hay_flushDATA, mustflushFIELDS, mustflushDATA,mustUnpack, &
@@ -650,23 +640,18 @@ contains
 #endif
       n_info = n + 5 !after replaced depending on the speed
       !--->
+      call perform%reset()
       mustflushFIELDS = .FALSE.
-      performflushFIELDS = .FALSE.
       mustflushDATA = .FALSE.
-      performflushDATA = .FALSE.
       mustUnpack = .false.
-      performUnpack = .FALSE.
       mustPostprocess = .false.
-      performpostprocess = .false.
       mustflushXdmf=.false.
       mustflushVTK=.false.
-      performflushXdmf=.false.
-      performflushVTK=.false.
       energy=0.0_RKIND
       !--->
       if ( hay_timing) then !no calculation of time until at least 300 seconds lapse
-         performflushFIELDS = .FALSE.
-         performflushDATA = .FALSE.
+         perform%flushFIELDS = .FALSE.
+         perform%flushDATA = .FALSE.
          if (abs(time_end - time_begin_absoluto) < 1.0_RKIND) time_end = 60.0_RKIND+time_begin_absoluto
          if (abs(time_end - time_begin         ) < 1.0_RKIND) time_end = 60.0_RKIND+time_begin
          speedInst = ((N - reportedinstant + 1) * megaceldas / (time_end - time_begin))
@@ -1393,7 +1378,7 @@ contains
 #endif
          call get_secnds(time_out2)
          time_begin2=time_out2%segundos
-         performflushFIELDS=.true.
+         perform%flushFIELDS=.true.
          !  Clear the flushing signaling file
          IF (layoutnumber == 0) THEN !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
@@ -1407,7 +1392,7 @@ contains
 #endif
          call get_secnds(time_out2)
          time_begin3=time_out2%segundos
-         performflushDATA=.true.
+         perform%flushDATA=.true.
          !  Clear the flushing signaling file
          IF (layoutnumber == 0) THEN !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
@@ -1416,7 +1401,7 @@ contains
       if (mustunpack) then
          !
          mustunpack=.false.
-         performunpack=.true.
+         perform%unpack=.true.
          !  Clear the flushing signaling file
          IF (layoutnumber == 0) THEN !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
@@ -1425,7 +1410,7 @@ contains
       if (mustpostprocess) then
          !
          mustpostprocess=.false.
-         performpostprocess=.true.
+         perform%postprocess=.true.
          !  Clear the flushing signaling file
          IF (layoutnumber == 0) THEN !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
@@ -1434,7 +1419,7 @@ contains
       if (mustflushXdmf) then
          !
          mustflushXdmf=.false.
-         performflushXdmf=.true.
+         perform%flushXdmf=.true.
          !  Clear the flushing signaling file
          IF (layoutnumber == 0) THEN !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
@@ -1443,7 +1428,7 @@ contains
       if (mustflushVTK) then
          !
          mustflushVTK=.false.
-         performflushVTK=.true.
+         perform%flushVTK=.true.
          IF (layoutnumber == 0) THEN !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
