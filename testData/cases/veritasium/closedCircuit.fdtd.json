@@ -37,9 +37,9 @@
             {"id": 2, "type": "node", "coordinateIds": [4]},
             {"id": 3, "type": "cell", "name": "cube", "intervals": [ [ [99, 149, 99], [101, 151, 101] ] ]},
             {"id": 4, "type": "cell", "name": "wire-plane", "intervals": [ [ [105, 99, 99], [105, 101, 101] ] ]},
-            {"id": 5 , "type": "cell", "name": "source-plane", "intervals": [ [ [109, 150, 99], [111, 150, 101] ] ]},
-            {"id": 6 , "type": "cell", "name": "cube-plane", "intervals": [ [ [98, 150, 98], [102, 150, 102] ] ]},
-            {"id": 7 , "type": "cell", "name": "movie-domain", "intervals": [ [ [80, 80, 80], [130, 220, 120] ] ]}
+            {"id": 5, "type": "cell", "name": "source-plane", "intervals": [ [ [109, 150, 99], [111, 150, 101] ] ]},
+            {"id": 6, "type": "cell", "name": "cube-plane", "intervals": [ [ [98, 150, 98], [102, 150, 102] ] ]},
+            {"id": 7, "type": "cell", "name": "movie-domain", "intervals": [ [ [80, 80, 80], [130, 220, 120] ] ]}
         ]
     },
 
@@ -113,9 +113,11 @@
             "field": "electric",
             "component": "magnitude",
             "elementIds": [7],
-            "initialTime": 0.0, 
-            "finalTime": 2e-7, 
-            "samplingPeriod": 2e-8
+            "domain": {
+                "initialTime": 0.0, 
+                "finalTime": 2e-7, 
+                "samplingPeriod": 1.5e-10
+            }
         }
     ]
 }
