@@ -976,13 +976,19 @@ subroutine initialize_MPI_process(filename)
    character(LEN=BUFSIZE), intent(in) :: filename
    integer (kind=4) :: mpi_t_linea_t,longitud4
    integer(KIND=8) :: rawInfoBuffer, numeroLineasFichero, i8, longitud8
+   TYPE (t_NFDE_FILE), POINTER :: rawFileInfo
 
    write (dubuf,*) 'INIT Reading file '//trim (adjustl(whoami))//' ', trim (adjustl(filename))
 
    call print11 (l%layoutnumber, dubuf)
 
    if (l%layoutnumber==0) then
+#ifdef CompilePrivateVersion
         NFDE_FILE => cargar_NFDE_FILE (filename)
+#else
+        call carga_raw_info(rawFileInfo, filename)
+        NFDE_FILE => rawFileInfo
+#endif
    else
         ALLOCATE (NFDE_FILE)
    endif
@@ -1018,21 +1024,22 @@ subroutine initialize_MPI_process(filename)
           call MPI_BCAST(NFDE_FILE%lineas(i8),longitud4,mpi_t_linea_t,0_4,SUBCOMM_MPI,l%ierr)    
           CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
           !!! Bloque de código para debugueo !!!
-          if (l%layoutnumber==1) print *,'l%layoutnumber-->',l%layoutnumber, i8,i8+longitud8-1 
-          if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8)%dato)) 
-          if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8+longitud8-1)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8+longitud8-1)%dato))
-          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+          !!!if (l%layoutnumber==1) print *,'l%layoutnumber-->',l%layoutnumber, i8,i8+longitud8-1 
+          !!!if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8)%dato)) 
+          !!!if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8+longitud8-1)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8+longitud8-1)%dato))
+          !!!CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
           !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    end do
    !!! Bloque de código para debugueo !!!
-   open(6729,file='comprob_'//trim(adjustl(dubuf))//'.nfde',form='formatted')
-   write(6729,'(2i12)') NFDE_FILE%numero,NFDE_FILE%targ
-   do i=1,numeroLineasFichero
-      write(6729,'(i6,a)') NFDE_FILE%lineas(i)%len,trim(adjustl(NFDE_FILE%lineas(i)%dato))
-   end do
-   close (6729)
+   !!!open(6729,file='comprob_'//trim(adjustl(dubuf))//'.nfde',form='formatted')
+   !!!write(6729,'(2i12)') NFDE_FILE%numero,NFDE_FILE%targ
+   !!!do i=1,numeroLineasFichero
+   !!!   write(6729,'(i6,a)') NFDE_FILE%lineas(i)%len,trim(adjustl(NFDE_FILE%lineas(i)%dato))
+   !!!end do
+   !!!close (6729)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 end subroutine initialize_MPI_process
+
 #endif
 subroutine data_loader(filename, parsedProblem)
    type(Parseador), pointer :: parsedProblem
@@ -1090,6 +1097,68 @@ subroutine data_loader(filename, parsedProblem)
 #endif
    return
 end subroutine data_loader
+
+subroutine carga_raw_info (rawFileInfo, filename)
+      CHARACTER (LEN=*), INTENT (IN) :: filename
+      TYPE (t_NFDE_FILE), POINTER :: rawFileInfo
+      
+      TYPE (t_linea), POINTER :: linea
+      LOGICAL :: ok
+      CHARACTER (LEN=BUFSIZE) :: l_aux
+      character(len=BUFSIZE) :: buffer
+      INTEGER (KIND=4) :: i,tamanio,i0,ascii,offset,ascii_menos1,j,k
+      Character (Len=:), Allocatable :: fichero
+      INTEGER (KIND=4), PARAMETER :: UNIT_EF = 10
+      ALLOCATE (rawFileInfo)
+      rawFileInfo%numero = 0
+      rawFileInfo%targ = 1
+
+      OPEN (UNIT=UNIT_EF, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
+      DO
+         READ (UNIT_EF, '(A)', end=1010) l_aux
+         rawFileInfo%numero = rawFileInfo%numero + 1
+         IF (len_trim (adjustl(l_aux))>=BUFSIZE) then
+              WRITE (buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
+              call warnerrreport(buffer,.TRUE.) !ABORTA
+         endif
+      END DO
+1010   CLOSE (UNIT_EF)
+      ALLOCATE (rawFileInfo%lineas(rawFileInfo%numero))
+      rawFileInfo%numero = 0
+      OPEN (UNIT=UNIT_EF, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
+      DO
+         READ (UNIT_EF, '(A)', end=2010) l_aux
+         IF (len_trim (adjustl(l_aux))>=BUFSIZE) then
+              WRITE (buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
+              call warnerrreport(buffer,.TRUE.) !ABORTA
+         endif
+         rawFileInfo%numero = rawFileInfo%numero + 1
+         linea => rawFileInfo%lineas (rawFileInfo%numero)
+         linea%dato = adjustl(l_aux)
+         linea%LEN=len_trim (linea%dato)
+      END DO
+2010   CLOSE (UNIT_EF)
+
+      do k=1,rawFileInfo%numero
+          linea => rawFileInfo%lineas (k)
+          do j=1,linea%len
+              i=j
+              buscaespa: do while ((ichar(linea%dato(i:i))==32).or.(ichar(linea%dato(i:i))==9))
+                 if ((ichar(linea%dato(i+1:i+1))==32).or.(ichar(linea%dato(i+1:i+1))==9)) then
+                     linea%dato = trim (adjustl(linea%dato(1:i)))//' '//trim (adjustl(linea%dato(i+2:linea%len)))
+                 endif
+                 i=i+1
+                 if (i>linea%len) exit buscaespa
+              end do buscaespa
+          end do
+          !update
+          linea%dato =  trim (adjustl(linea%dato))
+          linea%LEN=len_trim (adjustl(linea%dato))   
+     end do
+
+
+      return
+end subroutine carga_raw_info
 !!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
