@@ -188,6 +188,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_PR_TYPE_BULK_CURRENT = "bulkCurrent"
    character (len=*), parameter :: J_PR_TYPE_FARFIELD = "farField"
    character (len=*), parameter :: J_PR_TYPE_MOVIE = "movie"
+   character (len=*), parameter :: J_PR_TYPE_LINE = "line"
    
    character (len=*), parameter :: J_PR_POINT_DIRECTIONS = "directions"
 

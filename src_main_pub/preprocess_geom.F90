@@ -3378,6 +3378,8 @@ CONTAINS
                   write(buff,'(a,i9)') 'ERROR: Voltage probe in gaps only available under -dmma flag '
                   call StopOnError(layoutnumber,size,buff)
                endif !del run_with_dmma
+            else if (abs(tipotemp) == NP_COR_LINE) then
+               sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
             END IF
          END DO
       END DO
@@ -3808,6 +3810,31 @@ CONTAINS
                         END IF
                      END DO
                   END DO do_loop_busquedatg
+               else if (abs(this%Sonda%collection(i)%cordinates(j)%or) == NP_COR_LINE) then 
+                  block
+                     integer (kind=4) :: line_size, obs_size, idx
+                     !intrinsic size function coopted by size global variable...
+                     line_size = ubound(this%Sonda%collection(i)%cordinates,1)-lbound(this%Sonda%collection(i)%cordinates,1)+1
+                     sgg%observation(i)%nP = sgg%observation(i)%nP + 1
+                     obs_size =  sgg%observation(i)%nP
+                     allocate(sgg%observation(i)%P(obs_size)%line(line_size))
+                     sgg%observation(i)%P(obs_size)%What = lineIntegral
+                     do idx = 1, line_size
+                        sgg%observation(i)%P(obs_size)%line(idx)%x = this%Sonda%collection(i)%cordinates(idx)%Xi
+                        sgg%observation(i)%P(obs_size)%line(idx)%y = this%Sonda%collection(i)%cordinates(idx)%Yi
+                        sgg%observation(i)%P(obs_size)%line(idx)%z = this%Sonda%collection(i)%cordinates(idx)%Zi
+                        if (this%Sonda%collection(i)%cordinates(idx)%Xe /= -1) then 
+                           sgg%observation(i)%P(obs_size)%line(idx)%orientation = sign(1, this%Sonda%collection(i)%cordinates(idx)%or)
+                        else if (this%Sonda%collection(i)%cordinates(idx)%Ye /= -1) then 
+                           sgg%observation(i)%P(obs_size)%line(idx)%orientation = sign(2, this%Sonda%collection(i)%cordinates(idx)%or)
+                        else if (this%Sonda%collection(i)%cordinates(idx)%Ze /= -1) then 
+                           sgg%observation(i)%P(obs_size)%line(idx)%orientation = sign(3, this%Sonda%collection(i)%cordinates(idx)%or)
+                        end if
+                     end do
+                     sgg%observation(i)%P(obs_size)%XI = sgg%observation(i)%P(obs_size)%line(1)%x
+                     sgg%observation(i)%P(obs_size)%YI = sgg%observation(i)%P(obs_size)%line(1)%y
+                     sgg%observation(i)%P(obs_size)%ZI = sgg%observation(i)%P(obs_size)%line(1)%z
+                  end block
                END IF
             END DO
          END DO

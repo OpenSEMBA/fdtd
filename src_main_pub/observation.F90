@@ -580,7 +580,7 @@ contains
                field=sgg%observation(ii)%P(i)%what
                select case(field)
                   !
-               case (iEx,iEy,iEz,iVx,iVy,iVz,iJx,iJy,iJz,iHx,iHy,iHz)
+               case (iEx,iEy,iEz,iVx,iVy,iVz,iJx,iJy,iJz,iHx,iHy,iHz, lineIntegral)
                   !
                   if (((field == iEx).or.(field == iEy).or.(field == iEz).or. &
                   (field == iHx).or.(field == iHy).or.(field == iHz)).and. &
@@ -2765,6 +2765,33 @@ contains
                         (Ey( i1_m, JJJ_m, k1_m) - Ey( i2_m+1, JJJ_m, k1_m)) * dye( JJJ_m )
                      enddo
 
+                   case (lineIntegral)
+                     block
+                        integer (kind=4) :: lidx, lx, ly, lz, lor
+                        type(direction_t), dimension(:), allocatable :: line
+                        line = sgg%observation(ii)%P(i)%line
+                        output( ii)%item( i)%valor(nTime-nInit) = 0.0_RKIND !wipe value
+
+                        do lidx = 1, ubound(line,1)-lbound(line,1)+1
+                           lor = line(lidx)%orientation
+                           lx = line(lidx)%x
+                           ly = line(lidx)%y
+                           lz = line(lidx)%z
+                           select case(abs(lor))
+                           case(iEx)
+                              output( ii)%item( i)%valor(nTime-nInit) = output( ii)%item( i)%valor(nTime-nInit) + &
+                                                                       Ex(lx, ly, lz)*sign(1,lor)*dxe(lx)
+                           case(iEy)
+                              output( ii)%item( i)%valor(nTime-nInit) = output( ii)%item( i)%valor(nTime-nInit) + &
+                                                                       Ey(lx, ly, lz)*sign(1,lor)*dye(ly)
+                           case(iEz)
+                              output( ii)%item( i)%valor(nTime-nInit) = output( ii)%item( i)%valor(nTime-nInit) + &
+                                                                       Ez(lx, ly, lz)*sign(1,lor)*dze(lz)
+                           end select
+                        end do
+                     end block
+
+
                    case( iJx, iJy, iJz)
                      if ((trim(adjustl(wiresflavor))=='holland') .or. &
                          (trim(adjustl(wiresflavor))=='transition')) then
@@ -3780,7 +3807,7 @@ contains
             field=sgg%observation(ii)%P(i)%what
             if (SGG%Observation(ii)%TimeDomain) then
                select case(field)
-                case (iEx,iEy,iEz,iJx,iJy,iJz,iHx,iHy,iHz)
+                case (iEx,iEy,iEz,iJx,iJy,iJz,iHx,iHy,iHz, lineIntegral)
                   I1=sgg%OBSERVATION(ii)%P(i)%XI
                   J1=sgg%OBSERVATION(ii)%P(i)%YI
                   K1=sgg%OBSERVATION(ii)%P(i)%ZI
@@ -3791,7 +3818,7 @@ contains
                         select case(field)
                          case (iHx,iHy,iHz)
                            at=sgg%tiempo(N)+sgg%dt/2.0_RKIND_tiempo
-                         case(iEx,iEy,iEz,iJx,iJy,iJz)
+                         case(iEx,iEy,iEz,iJx,iJy,iJz, lineIntegral)
                            at=sgg%tiempo(N)
                         end select
                         if ( ((at >= sgg%OBSERVATION(ii)%InitialTime).and.(at <= sgg%OBSERVATION(ii)%FinalTime+sgg%dt/2.0_RKIND)).or. &
@@ -3878,6 +3905,15 @@ contains
                                                         output(ii)%item(i)%valor3(n-nInit) , & ! VPLUS 
                                                         output(ii)%item(i)%valor4(n-nInit) , & ! Vminus 
                                                         output(ii)%item(i)%valor5(n-nInit) ! vplus-vminus
+                              endif
+                            case(lineIntegral)
+                              if (singlefilewrite) then
+                                 unidad=output(ii)%item(i)%unitmaster
+                                 WRITE (unidad) output(ii)%item(i)%unit,at, &
+                                                output(ii)%item(i)%valor(n-nInit) ! e*dl sum along line
+                              else
+                                 unidad=output(ii)%item(i)%unit
+                                 WRITE (unidad,fmt) at, output(ii)%item(i)%valor(n-nInit) ! e*dl sum along line
                               endif
                            end select
                         endif
@@ -4181,6 +4217,8 @@ contains
                deallocate (output(ii)%item(i)%valor2,output(ii)%item(i)%valor3,output(ii)%item(i)%valor4,output(ii)%item(i)%valor5)  !en caso de hilos se necesitan
              case (iBloqueJx,iBloqueJy,iBloqueMx,iBloqueMy)
                deallocate (output(ii)%item(i)%valor)
+             case (lineIntegral)
+               deallocate (output(ii)%item(i)%valor)
 #ifdef CompileWithMPI
                if (output(ii)%item(i)%MPISubComm /= -1) then
                   call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)
@@ -4308,6 +4346,8 @@ contains
          ext='BCZ_'
        case (farfield)
          ext='FF_'
+       case(lineIntegral)
+         ext='LI_'
       end select
 
       return
