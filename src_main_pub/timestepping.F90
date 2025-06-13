@@ -2000,23 +2000,23 @@ module Solver_mod
 
    contains
 
-      subroutine flushPlanewaveOff(pw_status, pw_still, pw_thereAre)
-         logical, intent(inout) :: pw_status, pw_still, pw_thereAre
-         logical :: pw_still_aux, pw_thereAre_aux
+      subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
+         logical, intent(inout) :: pw_switched_off, pw_still_time, pw_thereAre
+         logical :: pw_still_time_aux, pw_thereAre_aux
          integer (kind=4) :: ierr
-         if (.not.pw_status) then
-            pw_still = pw_still.and.this%thereAre%PlaneWaveBoxes
+         if (.not.pw_switched_off) then
+            pw_still_time = pw_still_time.and.this%thereAre%PlaneWaveBoxes
             pw_thereAre = this%thereAre%PlaneWaveBoxes
 #ifdef CompileWithMPI
             if (this%control%size>1) then
-               pw_still_aux = pw_still
-               call MPI_AllReduce(pw_still_aux, pw_still, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+               pw_still_time_aux = pw_still_time
+               call MPI_AllReduce(pw_still_time_aux, pw_still_time, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
                pw_thereAre_aux = pw_thereAre
                call MPI_AllReduce(pw_thereAre_aux, pw_thereAre, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
             endif
 #endif
-            if (.not.pw_still)  then
-               pw_status=.true.
+            if (.not.pw_still_time)  then
+               pw_switched_off=.true.
                write(dubuf,*) 'Switching plane-wave off at n=', N
                if (pw_thereAre) call print11(this%control%layoutnumber,dubuf)
             endif

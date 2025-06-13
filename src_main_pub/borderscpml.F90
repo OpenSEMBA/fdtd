@@ -85,7 +85,7 @@ contains
       Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
        type (limit_t), dimension(1:6),  intent(in)  ::  temp_SINPML_fullsize
       !!!
-      type(sim_control_t) :: control
+      type(sim_control_t), intent(in) :: control
       logical  ::  ThereArePMLBorders
       integer (kind=4)  ::  i,j,k,region,field
 !      character(len=BUFSIZE) :: buff
