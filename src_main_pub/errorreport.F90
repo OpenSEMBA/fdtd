@@ -1,4 +1,4 @@
-Module Report
+module Report
    use FDETYPES
 
    use snapxdmf
@@ -135,7 +135,7 @@ contains
       call MPI_FINALIZE(ierr)
 #endif
       call CloseReportingFiles
-
+ 
 
 
       STOP
@@ -1040,7 +1040,7 @@ contains
             endif
          endif
 #ifdef CompileWithMPI
-         call MPI_Barrier(MPI_COMM_WORLD,ierr)
+         call MPI_Barrier(MPI_COMM_WORLD,ierr) 
          call MPI_BCast( mustSnap, 1_4, MPI_LOGICAL, 0_4, MPI_COMM_WORLD, ierr)
          call MPI_BCast( snapLevel, 1_4, REALSIZE, 0_4, MPI_COMM_WORLD, ierr)
          call MPI_BCast( snapStep, 1_4, MPI_INTEGER, 0_4, MPI_COMM_WORLD, ierr)
