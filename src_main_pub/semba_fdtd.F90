@@ -90,7 +90,7 @@ PROGRAM SEMBA_FDTD_launcher
    TYPE (XYZlimit_t), DIMENSION (1:6) :: tempalloc
 #endif
    TYPE (tiempo_t) :: time_comienzo
-   CHARACTER (LEN=BUFSIZE) :: buff, DEBUGSTOP
+   CHARACTER (LEN=BUFSIZE) :: buff
    REAL (KIND=8) time_desdelanzamiento
    CHARACTER (LEN=BUFSIZE) :: filename_h5bin ! File name
 
@@ -115,8 +115,10 @@ PROGRAM SEMBA_FDTD_launcher
    
    INTEGER (KIND=4) ::  verdadero_mpidir
    logical :: newrotate !300124 tiramos con el rotador antiguo
-   read(*,*) DEBUGSTOP
-   newrotate=.true.       !!ojo tocar luego                     
+   newrotate=.false.       !!ojo tocar luego                     
+#ifdef CompileWithSMBJSON
+   newrotate=.true.
+#endif
 !!200918 !!!si se lanza con -pscal se overridea esto
    Eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
    Mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
@@ -318,6 +320,8 @@ PROGRAM SEMBA_FDTD_launcher
 
 #ifdef CompileWithMPI
    call initialize_MPI_process(l%filefde)
+#else
+   allocate (NFDE_FILE)
 #endif
 
    call data_loader(l%filefde, parser)
