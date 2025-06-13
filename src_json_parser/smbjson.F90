@@ -3,6 +3,8 @@ module smbjson
 #ifdef CompileWithSMBJSON
    use NFDETypes
 
+   use Report
+
    use NFDETypes_extension
    use smbjson_labels_mod
    use mesh_mod
@@ -250,7 +252,7 @@ contains
                      call mesh%addCellRegion(id, cR)
                   end block
                 case default
-                  write (error_unit, *) 'Invalid element type'
+                  call WarnErrReport('Invalid element type', .true.)
                end select
             end do
          end if
@@ -339,11 +341,10 @@ contains
          vec= this%getRealsAt(this%root, path, found)
 
          if (.not. found) then
-            write(error_unit, *) 'Error reading grid: steps not found.'
+            call WarnErrReport('Error reading grid: steps not found.', .true.)
          endif
          if (size(vec) /= 1 .and. size(vec) /= numberOfCells) then
-            write(error_unit, *) &
-               'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.'
+            call WarnErrReport( 'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.', .true.)
          end if
 
          allocate(dest(0 : numberOfCells-1))
@@ -365,7 +366,7 @@ contains
       
       call this%core%get(this%root, J_BOUNDARY, bdrs, found)
       if (.not. found) then
-         write(error_unit, * ) errorMsgInit, J_BOUNDARY, " object not found."
+         call WarnErrReport("Error reading boundary: " // J_BOUNDARY // " not found.", .true.)
       end if
       
       block
@@ -386,7 +387,7 @@ contains
          do i = 1, 6
             bdrType = this%getStrAt(bdrs, placeLabels(i)//"."//J_TYPE, found)
             if (.not. found) then
-               write(error_unit, *) errorMsgInit, placeLabels(i), " or ", J_BND_ALL, " not found."
+               call WarnErrReport(errorMsgInit // placeLabels(i) // " or " // J_BND_ALL // " not found.", .true.)
             end if
             j = labelToBoundaryPlace(placeLabels(i))
             res%tipoFrontera(j) = labelToBoundaryType(bdrType)
@@ -628,8 +629,7 @@ contains
          ! Get the model type
          model = this%getStrAt(matPtr%p, J_MAT_LUMPED_MODEL, found)
          if (.not. found) then
-            write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " model not found."
-            stop
+            call WarnErrReport("ERROR reading lumped material: " // mA%materialId // " model not found.", .true.)
          end if
          
          ! Not really needed for resistor, inductor, or capacitor. 
@@ -646,8 +646,7 @@ contains
             res%resistor = .true.
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
             if (.not. found) then
-               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " resistance not found."
-               stop
+               call WarnErrReport("ERROR reading lumped material: " // mA%materialId // " resistance not found.", .true.)
             end if
             res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0)
             res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0)
@@ -655,25 +654,21 @@ contains
             res%inductor = .true.
             res%L = this%getRealAt(matPtr%p, J_MAT_LUMPED_INDUCTANCE, found)
             if (.not. found) then
-               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " inductance not found."
-               stop
+               call WarnErrReport("ERROR reading lumped material: " // mA%materialId // " inductance not found.", .true.)
             end if
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, default=0.0)
           case (J_MAT_LUMPED_MODEL_CAPACITOR)
             res%capacitor = .true.
             res%C = this%getRealAt(matPtr%p, J_MAT_LUMPED_CAPACITANCE, found)
             if (.not. found) then
-               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " capacitance not found."
-               stop
+               call WarnErrReport("ERROR reading lumped material: " // mA%materialId // " capacitance not found.", .true.)
             end if
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
             if (.not. found) then
-               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " resistance not found."
-               stop
+               call WarnErrReport("ERROR reading lumped material: " // mA%materialId // " resistance not found.", .true.)
             end if
           case default
-            write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " invalid model."
-            stop
+            call WarnErrReport("ERROR reading lumped material: " // mA%materialId // " invalid model.", .true.)
           end select
 
       end function
@@ -802,7 +797,7 @@ contains
             res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0) * MU_VACUUM
             res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
             if (.not. found) then
-               write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_THICKNESS, " in layer not found."
+               call WarnErrReport(errorMsgInit // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
             end if
             res%sigma_devia(i) = 0.0
             res%eps_devia(i) = 0.0
@@ -920,7 +915,7 @@ contains
           case (J_FIELD_CURRENT)
             res%isElec = .true.
           case default
-            write(error_unit, *) 'Error reading current field source. Field label not recognized.'
+            call WarnErrReport('Error reading current field source. Field label not recognized.', .true.)
          end select
          
          select case (this%getStrAt(jns, J_SRC_NS_HARDNESS, default=J_SRC_NS_HARDNESS_SOFT))
@@ -929,7 +924,7 @@ contains
           case (J_SRC_NS_HARDNESS_HARD)
             res%isHard = .true.
           case default
-            write(error_unit, *) 'Error reading current field source. Hardness label not recognized.'
+            call WarnErrReport('Error reading current field source. Hardness label not recognized.', .true.)
           end select
          
          res%isInitialValue = .false.
@@ -996,7 +991,7 @@ contains
          ! Far fields only accept frequency domains.
          domain = this%getDomain(p, J_PR_DOMAIN)
          if (domain%type2 /= NP_T2_FREQ) then
-            write(error_unit, *) "ERROR at far field probe: Only accepted domain is frequency."
+            call WarnErrReport("Only frequency domain is accepted for far field probes.", .true.)
          end if
          ff%tstart = 0.0
          ff%tstop = 0.0
@@ -1136,7 +1131,7 @@ contains
 
          outputName = this%getStrAt(p, J_NAME, found=nameFound)
          if (.not. nameFound) then 
-            write(error_unit, *) "ERROR: name entry not found for probe."
+            call WarnErrReport("Point probes must define a name.", .true.)
          end if
          res%outputrequest = trim(adjustl(outputName))
 
@@ -1144,17 +1139,17 @@ contains
 
          elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
          if (.not. elementIdsFound) then
-            write(error_unit, *) "ERROR: element ids entry not found for probe."
+            call WarnErrReport("Element ids entry not found for probe.", .true.)
          end if
          if (size(elemIds) /= 1) then
-            write(error_unit, *) "ERROR: point probe must contain a single element id."
+            call WarnErrReport("Point probe must contain a single element id.", .true.)
          end if
 
          pixel = getPixelFromElementId(this%mesh, elemIds(1))
 
          typeLabel = this%getStrAt(p, J_TYPE, found=typeLabelFound)
          if (.not. typeLabelFound) then
-            write(error_unit, *) "ERROR: Point probe type label not found."
+            call WarnErrReport("Point probe type label not found.", .true.)
          end if
          select case (typeLabel)
           case (J_PR_TYPE_WIRE)
@@ -1230,7 +1225,7 @@ contains
          select case (fieldLabel)
           case (J_FIELD_ELECTRIC)
             if (.not. present(dirLabel)) then
-               write(error_unit, *) "Dir label must be present"
+               call WarnErrReport("Dir label must be present for electric field probes.", .true.)
             end if
             select case (dirLabel)
              case (J_DIR_X)
@@ -1240,11 +1235,11 @@ contains
              case (J_DIR_Z)
                res = NP_COR_EZ
              case default
-               write(error_unit, *) "Invalid dir label"
+               call WarnErrReport("Invalid dir label for electric field probe.", .true.)
             end select
           case (J_FIELD_MAGNETIC)
             if (.not. present(dirLabel)) then
-               write(error_unit, *) "Dir label must be present"
+               call WarnErrReport("Dir label must be present for magnetic field probes.", .true.)
             end if
             select case (dirLabel)
              case (J_DIR_X)
@@ -1254,16 +1249,15 @@ contains
              case (J_DIR_Z)
                res = NP_COR_HZ
              case default
-               write(error_unit, *) "Invalid dir label"
+               call WarnErrReport("Invalid dir label for magnetic field probe.", .true.)
             end select
           case (J_FIELD_CURRENT)
             res = NP_COR_WIRECURRENT
           case (J_FIELD_VOLTAGE)
             res = NP_COR_DDP
           case default
-            write(error_unit,*) "Invalid field label for point/wire probe."
+            call WarnErrReport("Invalid field label for point/wire probe.", .true.)
          end select
-
       end function
    end function
 
@@ -1301,9 +1295,13 @@ contains
          type(cell_region_t), dimension(:), allocatable :: cRs
 
          cRs = this%mesh%getCellRegions(this%getIntsAt(bp, J_ELEMENTIDS))
-         if (size(cRs) /= 1) write(error_unit, *) "Bulk current probe must be defined by a single cell region."
+         if (size(cRs) /= 1) then
+            call WarnErrReport("Bulk current probe must be defined by a single cell region.", .true.)
+         end if
 
-         if (size(cRs(1)%intervals) /= 1) write(error_unit, *) "Bulk current probe must be defined by a single cell interval."
+         if (size(cRs(1)%intervals) /= 1) then
+            call WarnErrReport("Bulk current probe must be defined by a single cell interval.", .true.)
+         end if 
          cs = cellIntervalsToCoords(cRs(1)%intervals)
 
          res%i1  = cs(1)%xi
@@ -1395,11 +1393,11 @@ contains
 
          cRs = this%mesh%getCellRegions(this%getIntsAt(p, J_ELEMENTIDS))
          if (size(cRs) /= 1) then
-            write(error_unit, *) "Movie probe must be defined over a single cell region."
+            call WarnErrReport("Movie probe must be defined over a single cell region.", .true.)
          end if
 
          if (size(cRs(1)%intervals) /= 1) then
-            write(error_unit, *) "Movie probe must be defined by a single cell interval."
+            call WarnErrReport("Movie probe must be defined by a single cell interval.", .true.)
          end if
          cs = cellIntervalsToCoords(cRs(1)%intervals)
 
@@ -1457,7 +1455,7 @@ contains
                res = iCur
             end select
          case default
-            write(error_unit,*) "ERROR Determining vol probe type: invalid field type."
+            call WarnErrReport("Invalid field type for movie probe.", .true.)
          end select
       end function
 
@@ -1519,8 +1517,7 @@ contains
          mat = this%matTable%getId(mA%materialId)
          res%width = this%getRealAt(mat%p, J_MAT_THINSLOT_WIDTH, found)
          if (.not. found) then
-            write(error_unit, *) "ERROR reading thin slot: ", &
-               J_MAT_THINSLOT_WIDTH, "not found"
+            call WarnErrReport("Unable to read thin slot: " // J_MAT_THINSLOT_WIDTH // " not found.", .true.)
          end if
 
          call this%matAssToCoords(cs, mA, CELL_TYPE_LINEL)
@@ -1736,8 +1733,7 @@ contains
                position = findSourcePositionInLinels(sourceElemIds, linels)
 
                if (.not. this%existsAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)) then
-                  write(error_unit, *) 'magnitudeFile of source missing'
-                  return
+                  call WarnErrReport('magnitudeFile of source missing', .true.)
                end if
 
                select case(this%getStrAt(genSrcs(i)%p, J_FIELD))
@@ -1750,7 +1746,7 @@ contains
                   res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
                   res(position)%multiplier = 1.0
                 case default
-                  write(error_unit, *) 'Field block of source of type generator must be current or voltage'
+                  call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
 
             end do
@@ -1764,6 +1760,7 @@ contains
          type(pixel_t) :: pixel
          integer :: res
          integer :: i
+         
          pixel = this%mesh%nodeToPixel(this%mesh%getNode(srcElemIds(1)))
          do i = 1, size(linels)
             if (linels(i)%tag == pixel%tag) then
@@ -1771,7 +1768,8 @@ contains
                return
             end if
          end do
-         write (error_unit, * ) "ERROR: Source could not be found in linels."
+
+         call WarnErrReport("Source could not be found in linels.", .true.)
 
       end function
 
@@ -1784,10 +1782,10 @@ contains
          call this%core%get(terminal, J_MAT_TERM_TERMINATIONS, tms, found)
 
          if (.not. found) then
-            write(error_unit, *) "Error reading wire terminal. terminations not found."
+            call WarnErrReport("Error reading wire terminal. terminations not found.", .true.)
          end if
          if (this%core%count(tms) /= 1) then
-            write(error_unit, *) "Only terminals with a single termination are allowed for a wire."
+            call WarnErrReport("Only terminals with a single termination are allowed for a wire.",  .true.)
          end if
 
          call this%core%get_child(tms, 1, tm)
@@ -1795,7 +1793,7 @@ contains
          label = this%getStrAt(tm, J_TYPE, found)
          res%terminationType = strToTerminationType(label)
          if (.not. found) then
-            write(error_unit, *) "Error reading wire terminal. termination must specify a type."
+            call WarnErrReport("Error reading wire terminal. termination must specify a type.", .true.)
          end if
 
          select case(label)
