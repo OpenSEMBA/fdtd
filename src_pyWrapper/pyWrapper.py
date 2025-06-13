@@ -19,6 +19,7 @@ class Probe():
     MTLN_PROBE_TAGS = ['_V_', '_I_']
     CURRENT_PROBE_TAGS = ['_Wx_', '_Wy_', '_Wz_']
     BULK_CURRENT_PROBE_TAGS = ['_Jx_', '_Jy_', '_Jz_']
+    LINE_INTEGRAL_PROBE_TAG = ['_LI_']
     POINT_PROBE_TAGS = ['_Ex_', '_Ey_', '_Ez_', '_Hx_', '_Hy_', '_Hz_']
     FAR_FIELD_TAG = ['_FF_']
     MOVIE_TAGS = ['_ExC_', '_EyC_', '_EzC_',
@@ -27,6 +28,7 @@ class Probe():
     ALL_TAGS = MTLN_PROBE_TAGS \
         + CURRENT_PROBE_TAGS \
         + BULK_CURRENT_PROBE_TAGS \
+        + LINE_INTEGRAL_PROBE_TAG \
         + POINT_PROBE_TAGS \
         + FAR_FIELD_TAG \
         + MOVIE_TAGS
@@ -78,6 +80,15 @@ class Probe():
                     self.data.columns[0]: 'frequency',
                     self.data.columns[1]: 'magnitude',
                     self.data.columns[2]: 'phase'
+                })
+        elif tag in Probe.LINE_INTEGRAL_PROBE_TAG:
+            self.type = 'lineIntegral'
+            self.field, self.direction = Probe._getFieldAndDirection(tag)
+            self.cell = self._positionStrToCell(position_str)
+            if self.domainType == 'time':
+                self.data = self.data.rename(columns={
+                    't': 'time',
+                    self.data.columns[1]: 'lineIntegral'
                 })
         elif tag in Probe.POINT_PROBE_TAGS:
             self.type = 'point'
