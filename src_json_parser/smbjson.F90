@@ -2233,7 +2233,7 @@ contains
          else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
             res => null()
          else
-            write(errorMsg, *) 'ERROR: Material type not recognized'
+            call WarnErrReport('ERROR: Material type not recognized', .true.)
          end if
       end function
 
@@ -2254,7 +2254,7 @@ contains
          else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
             res = 0
          else
-            write(errorMsg, *) 'ERROR: Material type not recognized'
+            call WarnErrReport('ERROR: Material type not recognized', .true.)
          end if
       end function
 
