@@ -1,9 +1,7 @@
-
- 
 Module Report
    use FDETYPES
-   ! use Solver_mod, only: sim_control_t
-   ! use snapxdmf
+
+   use snapxdmf
 
    implicit none
    private
@@ -1121,12 +1119,10 @@ contains
 #ifdef CompileWithHDF
             ficherito=trim(adjustl(fichsnap))//'.h5' 
             call openclosedelete(ficherito)
-            !
-            ! call write_xdmfsnap(n,fichsnap,ini_ibox + b%Ex%XI , ini_ibox + dimxsnap + b%Ex%XI , &
-            ! ini_jbox + b%Ex%YI , ini_jbox + dimysnap + b%Ex%YI , &
-            ! ini_kbox + b%Ex%ZI , ini_kbox + dimzsnap + b%Ex%ZI , snap)
-            ! write_xdmfsnap disabled by Luis to try to reorganize compilation.
-            stop 'xdmfsnap has been disabled by Luis to try to reorganize compilation.'
+            
+            call write_xdmfsnap(n,fichsnap,ini_ibox + b%Ex%XI , ini_ibox + dimxsnap + b%Ex%XI , &
+            ini_jbox + b%Ex%YI , ini_jbox + dimysnap + b%Ex%YI , &
+            ini_kbox + b%Ex%ZI , ini_kbox + dimzsnap + b%Ex%ZI , snap)
             
 #endif
             !             open (35,file=trim(adjustl(fichsnap))//'.bin')
