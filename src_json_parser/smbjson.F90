@@ -11,11 +11,10 @@ module smbjson
    use parser_tools_mod
    use idchildtable_mod
 
+   use Report
+
    use json_module
    use json_kinds
-
-
-   use, intrinsic :: iso_fortran_env , only: error_unit
 
    implicit none
 
@@ -124,13 +123,13 @@ contains
       allocate(res%jsonfile)
       call res%jsonfile%initialize()
       if (res%jsonfile%failed()) then
-         call res%jsonfile%print_error_message(error_unit)
+         call WarnErrReport("Failed to initialize JSONfile", .true.)
          return
       end if
 
       call res%jsonfile%load(filename = res%filename)
       if (res%jsonfile%failed()) then
-         call res%jsonfile%print_error_message(error_unit)
+         call WarnErrReport("Failed to load JSON file: "//res%filename, .true.)
          return
       end if
 
