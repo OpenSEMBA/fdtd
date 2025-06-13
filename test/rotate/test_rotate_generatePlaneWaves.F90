@@ -5,15 +5,15 @@ integer function test_rotate_generate_plane_waves() bind(C) result(err)
     type(Parseador) :: this
     integer(kind=4) :: mpidir
     real(kind=RKIND) :: theta, phi, alpha, beta
-    integer :: test_err = 0  ! Error counter for expect_eq calls
+    integer :: test_err = 0  
     
-    ! Test case 1: X->Y->Z->X rotation (mpidir=2)
+    
     mpidir = 2
     allocate(this%plnSrc)
     this%plnSrc%nc = 1
     allocate(this%plnSrc%collection(1))
     
-    ! Initialize test data
+    
     this%plnSrc%collection(1)%coor1(1) = 1
     this%plnSrc%collection(1)%coor1(2) = 2
     this%plnSrc%collection(1)%coor1(3) = 3
@@ -21,7 +21,7 @@ integer function test_rotate_generate_plane_waves() bind(C) result(err)
     this%plnSrc%collection(1)%coor2(2) = 5
     this%plnSrc%collection(1)%coor2(3) = 6
     
-    ! Set angles in radians
+    
     theta = 0.5_RKIND
     phi = 0.3_RKIND
     alpha = 0.7_RKIND
@@ -32,10 +32,10 @@ integer function test_rotate_generate_plane_waves() bind(C) result(err)
     this%plnSrc%collection(1)%alpha = alpha
     this%plnSrc%collection(1)%beta = beta
     
-    ! Call the routine
+    
     call rotate_generatePlaneWaves(this, mpidir)
     
-    ! Verify results
+    
     call expect_eq_int(test_err, 3, this%plnSrc%collection(1)%coor1(1), "rotate_generatePlaneWaves: coor1(1) should be 3")
     call expect_eq_int(test_err, 1, this%plnSrc%collection(1)%coor1(2), "rotate_generatePlaneWaves: coor1(2) should be 1")
     call expect_eq_int(test_err, 2, this%plnSrc%collection(1)%coor1(3), "rotate_generatePlaneWaves: coor1(3) should be 2")
@@ -44,7 +44,7 @@ integer function test_rotate_generate_plane_waves() bind(C) result(err)
     call expect_eq_int(test_err, 4, this%plnSrc%collection(1)%coor2(2), "rotate_generatePlaneWaves: coor2(2) should be 4")
     call expect_eq_int(test_err, 5, this%plnSrc%collection(1)%coor2(3), "rotate_generatePlaneWaves: coor2(3) should be 5")
     
-    ! Verify angles (using approximate equality due to floating point)
+    
     call expect_eq_real(test_err, &
         atan2(sqrt(cos(theta)**2.0_RKIND + cos(phi)**2*sin(theta)**2), sin(phi)*sin(theta)), &
         this%plnSrc%collection(1)%theta, &
@@ -68,13 +68,13 @@ integer function test_rotate_generate_plane_waves() bind(C) result(err)
     deallocate(this%plnSrc%collection)
     deallocate(this%plnSrc)
     
-    ! Test case 2: X->Z->Y->X rotation (mpidir=1)
+    
     mpidir = 1
     allocate(this%plnSrc)
     this%plnSrc%nc = 1
     allocate(this%plnSrc%collection(1))
     
-    ! Initialize test data
+    
     this%plnSrc%collection(1)%coor1(1) = 1
     this%plnSrc%collection(1)%coor1(2) = 2
     this%plnSrc%collection(1)%coor1(3) = 3
@@ -87,10 +87,10 @@ integer function test_rotate_generate_plane_waves() bind(C) result(err)
     this%plnSrc%collection(1)%alpha = alpha
     this%plnSrc%collection(1)%beta = beta
     
-    ! Call the routine
+    
     call rotate_generatePlaneWaves(this, mpidir)
     
-    ! Verify results
+    
     call expect_eq_int(test_err, 2, this%plnSrc%collection(1)%coor1(1), "rotate_generatePlaneWaves: coor1(1) should be 2")
     call expect_eq_int(test_err, 3, this%plnSrc%collection(1)%coor1(2), "rotate_generatePlaneWaves: coor1(2) should be 3")
     call expect_eq_int(test_err, 1, this%plnSrc%collection(1)%coor1(3), "rotate_generatePlaneWaves: coor1(3) should be 1")
@@ -99,7 +99,7 @@ integer function test_rotate_generate_plane_waves() bind(C) result(err)
     call expect_eq_int(test_err, 6, this%plnSrc%collection(1)%coor2(2), "rotate_generatePlaneWaves: coor2(2) should be 6")
     call expect_eq_int(test_err, 4, this%plnSrc%collection(1)%coor2(3), "rotate_generatePlaneWaves: coor2(3) should be 4")
     
-    ! Verify angles
+    
     call expect_eq_real(test_err, &
         atan2(sqrt(cos(theta)**2.0_RKIND + sin(phi)**2*sin(theta)**2), cos(phi)*sin(theta)), &
         this%plnSrc%collection(1)%theta, &
@@ -123,5 +123,5 @@ integer function test_rotate_generate_plane_waves() bind(C) result(err)
     deallocate(this%plnSrc%collection)
     deallocate(this%plnSrc)
     
-    err = test_err  ! Set the function result to the accumulated error count
+    err = test_err  
 end function

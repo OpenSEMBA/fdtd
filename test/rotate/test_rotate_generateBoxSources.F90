@@ -4,15 +4,13 @@ integer function test_rotate_generate_box_sources() bind(C) result(err)
     use rotate_testingTools
     type(Parseador) :: this
     integer(kind=4) :: mpidir
-    integer :: test_err = 0  ! Error counter for expect_eq calls
+    integer :: test_err = 0
     
-    ! Test case 1: X->Y->Z->X rotation (mpidir=2)
     mpidir = 2
     allocate(this%boxSrc)
     this%boxSrc%nvols = 1
     allocate(this%boxSrc%vols(1))
     
-    ! Initialize test data
     this%boxSrc%vols(1)%coor1(1) = 1
     this%boxSrc%vols(1)%coor1(2) = 2
     this%boxSrc%vols(1)%coor1(3) = 3
@@ -20,10 +18,8 @@ integer function test_rotate_generate_box_sources() bind(C) result(err)
     this%boxSrc%vols(1)%coor2(2) = 5
     this%boxSrc%vols(1)%coor2(3) = 6
     
-    ! Call the routine
     call rotate_generateBoxSources(this, mpidir)
     
-    ! Verify results
     call expect_eq_int(test_err, 3, this%boxSrc%vols(1)%coor1(1), "rotate_generateBoxSources: coor1(1) should be 3")
     call expect_eq_int(test_err, 1, this%boxSrc%vols(1)%coor1(2), "rotate_generateBoxSources: coor1(2) should be 1")
     call expect_eq_int(test_err, 2, this%boxSrc%vols(1)%coor1(3), "rotate_generateBoxSources: coor1(3) should be 2")
@@ -35,13 +31,11 @@ integer function test_rotate_generate_box_sources() bind(C) result(err)
     deallocate(this%boxSrc%vols)
     deallocate(this%boxSrc)
     
-    ! Test case 2: X->Z->Y->X rotation (mpidir=1)
     mpidir = 1
     allocate(this%boxSrc)
     this%boxSrc%nvols = 1
     allocate(this%boxSrc%vols(1))
     
-    ! Initialize test data
     this%boxSrc%vols(1)%coor1(1) = 1
     this%boxSrc%vols(1)%coor1(2) = 2
     this%boxSrc%vols(1)%coor1(3) = 3
@@ -49,10 +43,8 @@ integer function test_rotate_generate_box_sources() bind(C) result(err)
     this%boxSrc%vols(1)%coor2(2) = 5
     this%boxSrc%vols(1)%coor2(3) = 6
     
-    ! Call the routine
     call rotate_generateBoxSources(this, mpidir)
     
-    ! Verify results
     call expect_eq_int(test_err, 2, this%boxSrc%vols(1)%coor1(1), "rotate_generateBoxSources: coor1(1) should be 2")
     call expect_eq_int(test_err, 3, this%boxSrc%vols(1)%coor1(2), "rotate_generateBoxSources: coor1(2) should be 3")
     call expect_eq_int(test_err, 1, this%boxSrc%vols(1)%coor1(3), "rotate_generateBoxSources: coor1(3) should be 1")
@@ -64,5 +56,5 @@ integer function test_rotate_generate_box_sources() bind(C) result(err)
     deallocate(this%boxSrc%vols)
     deallocate(this%boxSrc)
     
-    err = test_err  ! Set the function result to the accumulated error count
+    err = test_err
 end function
