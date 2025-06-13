@@ -41,14 +41,8 @@ module  FDETYPES
 
 
 #ifdef CompileWithMPI
-#ifdef CompileWithIncludeMpifh
-   implicit none
-   include 'mpif.h'
-#else
    use MPI
    implicit none
-#endif
-#else
 #endif
 
    !Every type and parameter is public
