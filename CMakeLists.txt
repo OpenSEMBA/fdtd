@@ -178,7 +178,7 @@ add_library(semba-reports
 	"src_main_pub/errorreport.F90"
 	"src_main_pub/snapxdmf.F90"
 )
-target_link_libraries(semba-reports semba-types)
+target_link_libraries(semba-reports semba-types ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_subdirectory(src_json_parser)
