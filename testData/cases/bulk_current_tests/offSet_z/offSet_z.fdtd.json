@@ -146,6 +146,7 @@
     "sources": [
         {
             "name": "nodalSource",
+            "type": "nodalSource",
             "magnitudeFile": "predefinedExcitation.1.exc",
             "elementIds": [
                 1

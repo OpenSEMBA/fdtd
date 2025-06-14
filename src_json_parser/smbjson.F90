@@ -3557,12 +3557,18 @@ contains
       character (kind=JSON_CK, len=:), allocatable :: typeStr
       integer :: i, j, n
       logical :: found
+      character (len=BUFSIZE) :: errorMsg
 
+      ! Precounting.
       n = 0
       do i = 1, this%core%count(place)
          call this%core%get_child(place, i, src)
          typeStr = this%getStrAt(src, key, found)
          call this%core%get(src, key, typeStr, found)
+         if(.not. found) then
+            write(errorMsg, *) "Key: ", key, " not found while doing value filter."
+            call WarnErrReport(errorMsg, .true.)
+         end if
          if(found .and. typeStr == trim(value)) then
             n = n + 1
          end if
