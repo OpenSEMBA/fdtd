@@ -206,8 +206,7 @@
             "type": "nodalSource",
             "hardness": "soft",
             "magnitudeFile": "predefinedExcitation.1.exc",
-            "elementIds": [ 1 ],
-            "field": "current"
+            "elementIds": [ 1 ]
         }
     ],
     "probes": [
