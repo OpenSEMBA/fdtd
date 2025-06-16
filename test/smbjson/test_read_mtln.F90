@@ -326,7 +326,7 @@ contains
       expected%mtln%cables(1)%initial_connector => expected%mtln%connectors(1)
       expected%mtln%cables(1)%end_connector => null()
 
-      ! cable 2 - multiwire
+      ! cable 2 - shieldedMultiwire
       expected%mtln%cables(2)%name = "line_1_0"
       allocate(expected%mtln%cables(2)%inductance_per_meter(1,1))
       allocate(expected%mtln%cables(2)%capacitance_per_meter(1,1))
@@ -358,7 +358,7 @@ contains
       expected%mtln%cables(2)%initial_connector => expected%mtln%connectors(3)
       expected%mtln%cables(2)%end_connector => null()
 
-      ! cable 3 - multiwire
+      ! cable 3 - shieldedMultiwire
       expected%mtln%cables(3)%name = "line_2_0"
       allocate(expected%mtln%cables(3)%inductance_per_meter(8,8), source = 0.0)
       allocate(expected%mtln%cables(3)%capacitance_per_meter(8,8), source = 0.0)
@@ -441,7 +441,7 @@ contains
       expected%mtln%cables(4)%initial_connector => expected%mtln%connectors(2)
       expected%mtln%cables(4)%end_connector => null()
 
-      ! cable 5 - multiwire
+      ! cable 5 - shieldedMultiwire
       expected%mtln%cables(5)%name = "line_1_1"
       allocate(expected%mtln%cables(5)%inductance_per_meter(1,1))
       allocate(expected%mtln%cables(5)%capacitance_per_meter(1,1))
@@ -473,7 +473,7 @@ contains
       expected%mtln%cables(5)%initial_connector => expected%mtln%connectors(4)
       expected%mtln%cables(5)%end_connector => null()
 
-      ! cable 6 - multiwire
+      ! cable 6 - shieldedMultiwire
       expected%mtln%cables(6)%name = "line_2_4"
       allocate(expected%mtln%cables(6)%inductance_per_meter(2,2), source = 0.0)
       allocate(expected%mtln%cables(6)%capacitance_per_meter(2,2), source = 0.0)
@@ -543,7 +543,7 @@ contains
       expected%mtln%cables(7)%initial_connector => null()
       expected%mtln%cables(7)%end_connector => null()
 
-      ! cable 8 - multiwire
+      ! cable 8 - shieldedMultiwire
       expected%mtln%cables(8)%name = "line_1_2"
       allocate(expected%mtln%cables(8)%inductance_per_meter(1,1))
       allocate(expected%mtln%cables(8)%capacitance_per_meter(1,1))
@@ -574,7 +574,7 @@ contains
       expected%mtln%cables(8)%initial_connector => null()
       expected%mtln%cables(8)%end_connector => null()
 
-      ! cable 9 - multiwire
+      ! cable 9 - shieldedMultiwire
       expected%mtln%cables(9)%name = "line_2_5"
       allocate(expected%mtln%cables(9)%inductance_per_meter(6,6), source = 0.0)
       allocate(expected%mtln%cables(9)%capacitance_per_meter(6,6), source = 0.0)

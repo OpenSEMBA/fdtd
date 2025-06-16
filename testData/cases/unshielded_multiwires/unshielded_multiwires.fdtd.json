@@ -22,7 +22,7 @@
         },
         {
             "id": 12,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "name": "L_Cinv_C_Pinv",
             "inductancePerMeter": [
                 [
@@ -47,7 +47,7 @@
         },
         {
             "id": 13,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "name": "L_Cinv_C_Pinv",
             "inductancePerMeter": [
                 [

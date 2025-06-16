@@ -40,7 +40,7 @@
 		{
 			"name": "Bundle_1_level_1",
 			"id": 2,
-			"type": "multiwire",
+			"type": "shieldedMultiwire",
 			"resistancePerMeter": [3.9e-3],
 			"inductancePerMeter":  [[8.802075200000001e-08]],
 			"capacitancePerMeter": [[5.5840010E-10]],
@@ -52,7 +52,7 @@
 		{
 			"name": "Bundle_2_level_1",
 			"id": 3,
-			"type": "multiwire",
+			"type": "shieldedMultiwire",
 			"resistancePerMeter": [12.2e-3],
 			"inductancePerMeter": [[1.37228e-07]],
 			"capacitancePerMeter":[[3.2310005E-10]],
@@ -64,7 +64,7 @@
 		{
 			"name": "Bundle_3_level_1",
 			"id": 4,
-			"type": "multiwire",
+			"type": "shieldedMultiwire",
 			"resistancePerMeter": [6.5e-3],
 			"inductancePerMeter":  [[9.1890502e-08]],
 			"capacitancePerMeter": [[4.7190007E-10]],
@@ -76,7 +76,7 @@
 		{
 			"name": "Bundle_1_level_2",
 			"id": 61,
-			"type": "multiwire",
+			"type": "shieldedMultiwire",
 			"resistancePerMeter" : [62.0e-3,62.0e-3,62.0e-3,62.0e-3,62.0e-3,62.0e-3,62.0e-3,62.0e-3],
 			"inductancePerMeter": [
 				[2.4382084E-07, 4.7377505E-08, 0.0,0.0, 0.0, 0.0, 0.0, 0.0 ],
@@ -107,7 +107,7 @@
 		{
 			"id": 62,
 			"name": "Bundle_2_level_2",
-			"type": "multiwire",
+			"type": "shieldedMultiwire",
 			"resistancePerMeter" : [62.0e-3,62.0e-3],
 			"inductancePerMeter": [
 				[2.4382084E-07, 4.7377505E-08],
@@ -125,7 +125,7 @@
 		{
 			"id": 63,
 			"name": "Bundle_3_level_2",
-			"type": "multiwire",
+			"type": "shieldedMultiwire",
 			"resistancePerMeter" : [62.0e-3,62.0e-3,62.0e-3,62.0e-3,62.0e-3,62.0e-3],
 			"inductancePerMeter": [
 				[2.4382084E-07, 4.7377505E-08, 0.0,0.0, 0.0, 0.0],

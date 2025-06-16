@@ -226,7 +226,7 @@ contains
       expected%mtln%cables(1)%initial_connector => null()
       expected%mtln%cables(1)%end_connector => null()
 
-      ! cable 2 - multiwire
+      ! cable 2 - shieldedMultiwire
       expected%mtln%cables(2)%name = "line_1"
       allocate(expected%mtln%cables(2)%inductance_per_meter(2,2))
       allocate(expected%mtln%cables(2)%capacitance_per_meter(2,2))

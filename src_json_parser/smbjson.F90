@@ -1999,7 +1999,9 @@ contains
       end block
 
       mat = this%matTable%getId(res%materialId)
-      isMultiwire = this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE
+      isMultiwire = &
+         this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_SHIELDED_MULTIWIRE .or. &
+         this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_UNSHIELDED_MULTIWIRE
       isWireOrMultiwire = &
          this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE .or. isMultiwire 
       
@@ -2189,11 +2191,12 @@ contains
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
       wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
-      multiwires = this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE])
+      multiwires = this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE])
       cables = this%getMaterialAssociations(&
-               [J_MAT_TYPE_WIRE//'     ',&
-                J_MAT_TYPE_MULTIWIRE    ]) 
-      ! 5 spaces are needed to make strings have same length. 
+               [J_MAT_TYPE_WIRE//'               ',&
+                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  '&
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ]) 
+      ! spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
       mtln_res%connectors => readConnectors()
@@ -2227,7 +2230,7 @@ contains
          integer :: parentId, index
          type(cable_t), pointer :: res
          mat = this%matTable%getId(cable%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
+         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_SHIELDED_MULTIWIRE) then
             parentId = cable%containedWithinElementId
             if (parentId == -1) then
                res => null()
@@ -2248,7 +2251,7 @@ contains
          integer :: parentId
          integer :: res
          mat = this%matTable%getId(cable%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
+         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_SHIELDED_MULTIWIRE) then
             parentId = cable%containedWithinElementId
             if (parentId == -1) then
                res = 0
@@ -2350,7 +2353,7 @@ contains
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
          cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
-                     this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE]) ]
+                     this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds
             terminations_ini => getTerminationsOnSide(cables(i)%initialTerminalId)
@@ -2777,7 +2780,7 @@ contains
          call this%core%get(this%root, J_MESH//'.'//J_ELEMENTS, elements)
          polylines = this%jsonValueFilterByKeyValue(elements, J_TYPE, J_ELEM_TYPE_POLYLINE)
          ! wire_probes = this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_WIRE)
-         wire_probes = this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_MULTIWIRE)
+         wire_probes = this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_SHIELDED_MULTIWIRE)
 
          n_probes = countProbes(wire_probes, polylines)
 
@@ -3009,11 +3012,11 @@ contains
             !    res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
             ! end if
 
-         case (J_MAT_TYPE_MULTIWIRE)
+         case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
             call assignPULProperties(res, material, size(j_cable%elementIds))
          
          case default
-            call WarnErrReport("Error reading cable: is neither wire nor multiwire", .true.)
+            call WarnErrReport("Error reading cable: material type is not valid", .true.)
 
          end select
 
@@ -3146,7 +3149,7 @@ contains
          integer, intent(in) :: n
          real, dimension(:,:), allocatable :: null_matrix
          logical :: found
-         
+
          allocate(null_matrix(n,n), source = 0.0)
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
