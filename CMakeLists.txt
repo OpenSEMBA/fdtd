@@ -56,7 +56,6 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 		message(STATUS "Using GNU flags")
 
-		add_definitions(-DCompileWithIncludeMpifh)
 		set(CMAKE_CXX_FLAGS "-fopenmp")
 		set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
 		
@@ -233,7 +232,10 @@ if(SEMBA_FDTD_OUTPUTS_LIB)
 		"src_main_pub/xdmf.F90"
 		"src_main_pub/xdmf_h5.F90"
 	)
-	target_link_libraries(semba-outputs semba-components ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+	target_link_libraries(semba-outputs 
+		semba-components 
+		${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES} 
+		${MPI_Fortran_LIBRARIES})
 endif()
 
 if(SEMBA_FDTD_MAIN_LIB)
