@@ -2690,21 +2690,33 @@ contains
          integer :: res
          character(:), allocatable :: type
          type = this%getStrAt(termination, J_TYPE)
-         if (type == J_MAT_TERM_TYPE_OPEN) then
+
+         if (type == J_MAT_TERM_TYPE_OPEN) then 
             res = TERMINATION_OPEN
-         else if (type == J_MAT_TERM_TYPE_SHORT) then
+         else if (type == J_MAT_TERM_TYPE_SHORT) then 
             res = TERMINATION_SHORT
-         else if (type == J_MAT_TERM_TYPE_SERIES) then
+         else if (type == J_MAT_TERM_TYPE_SERIES) then 
             res = TERMINATION_SERIES
-         else if (type == J_MAT_TERM_TYPE_LCpRs) then
-            res = TERMINATION_LCpRs
-         else if (type == J_MAT_TERM_TYPE_RLsCp) then
-            res = TERMINATION_RLsCp
+         else if (type == J_MAT_TERM_TYPE_PARALLEL) then 
+            res = TERMINATION_PARALLEL
+         else if (type == J_MAT_TERM_TYPE_sRpLC) then 
+            res = TERMINATION_sRpLC
+         else if (type == J_MAT_TERM_TYPE_sLpRC) then 
+            res = TERMINATION_sLpRC
+         else if (type == J_MAT_TERM_TYPE_sCpLR) then 
+            res = TERMINATION_sCpLR
+         else if (type == J_MAT_TERM_TYPE_sRCpL) then 
+            res = TERMINATION_sRCpL
+         else if (type == J_MAT_TERM_TYPE_sLCpR) then 
+            res = TERMINATION_sLCpR
+         else if (type == J_MAT_TERM_TYPE_sRLpC) then 
+            res = TERMINATION_sRLpC
          else if (type == J_MAT_TERM_TYPE_CIRCUIT) then 
             res = TERMINATION_CIRCUIT
          else
             res = TERMINATION_UNDEFINED
          end if
+
       end function
 
       function readTerminationModel(termination) result(res)

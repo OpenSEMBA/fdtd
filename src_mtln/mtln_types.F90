@@ -6,9 +6,14 @@ module mtln_types_mod
    integer, parameter :: TERMINATION_SHORT      =  1
    integer, parameter :: TERMINATION_OPEN       =  2
    integer, parameter :: TERMINATION_SERIES     =  3
-   integer, parameter :: TERMINATION_LCpRs      =  4
-   integer, parameter :: TERMINATION_RLsCp      =  5
-   integer, parameter :: TERMINATION_CIRCUIT      =  6
+   integer, parameter :: TERMINATION_PARALLEL   =  4
+   integer, parameter :: TERMINATION_sRpLC      =  5
+   integer, parameter :: TERMINATION_sLpRC      =  6
+   integer, parameter :: TERMINATION_sCpLR      =  7
+   integer, parameter :: TERMINATION_sRCpL      =  8
+   integer, parameter :: TERMINATION_sLCpR      =  9
+   integer, parameter :: TERMINATION_sRLpC      =  10
+   integer, parameter :: TERMINATION_CIRCUIT    =  11
 
    integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1

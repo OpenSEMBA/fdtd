@@ -259,7 +259,7 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCp
+    node_right%termination%termination_type = TERMINATION_sRLpC
     node_right%termination%resistance = 0.1 
     node_right%termination%inductance = 0.0 
     node_right%termination%capacitance = 100e-12
@@ -576,7 +576,7 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
     node_right%belongs_to_cable => cable
     node_right%conductor_in_cable = 1
     node_right%side = TERMINAL_NODE_SIDE_END
-    node_right%termination%termination_type = TERMINATION_RLsCp
+    node_right%termination%termination_type = TERMINATION_sRLpC
     node_right%termination%resistance = 10
     node_right%termination%inductance = 0.0
     node_right%termination%capacitance = 100e-12
@@ -1038,7 +1038,7 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
     node_right_1%belongs_to_cable => cable
     node_right_1%conductor_in_cable = 1
     node_right_1%side = TERMINAL_NODE_SIDE_END
-    node_right_1%termination%termination_type = TERMINATION_RLsCp
+    node_right_1%termination%termination_type = TERMINATION_sRLpC
     node_right_1%termination%resistance = 50
     node_right_1%termination%inductance = 0.0
     node_right_1%termination%capacitance = 50e-12

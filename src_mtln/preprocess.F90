@@ -857,9 +857,9 @@ contains
 
         if (termination%termination_type == TERMINATION_SERIES) then 
             res = writeSeriesNode(node, termination, end_node)
-        else if (termination%termination_type == TERMINATION_LCpRs) then 
+        else if (termination%termination_type == TERMINATION_sRpLC) then 
             res = writeLCpRsNode(node, termination, end_node)
-        else if (termination%termination_type == TERMINATION_RLsCp) then 
+        else if (termination%termination_type == TERMINATION_sRLpC) then 
             res = writeRLsCpNode(node, termination, end_node)
         else if (termination%termination_type == TERMINATION_SHORT) then 
             res = writeShortNode(node, termination , end_node)
