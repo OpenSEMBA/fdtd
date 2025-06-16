@@ -746,12 +746,12 @@ CONTAINS
             !!!mpirotate angulos farfield .... las coordenadas se rotan luego
             IF (MPIDIR==2 ) THEN
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Cos(phistart)**2*Sin(thetastart)**2),Sin(phistart)*Sin(thetastart))
-                   this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart   = atan2(Cos(phistart)*Sin(thetastart),Cos(thetastart))      
+                   this%oldSONDA%probes(i)%FarField(ii)%probe%phistart = atan2(Cos(phistart)*Sin(thetastart),Cos(thetastart))      
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Cos(phistop)**2*Sin(thetastop)**2),Sin(phistop)*Sin(thetastop))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistop   = atan2(Cos(phistop)*Sin(thetastop),Cos(thetastop))
             ELSEIF (MPIDIR==1 ) THEN
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Sin(phistart)**2*Sin(thetastart)**2),Cos(phistart)*Sin(thetastart))
-                   this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart   = atan2(Cos(thetastart),Sin(phistart)*Sin(thetastart))    
+                   this%oldSONDA%probes(i)%FarField(ii)%probe%phistart   = atan2(Cos(thetastart),Sin(phistart)*Sin(thetastart))    
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Sin(phistop)**2*Sin(thetastop)**2),Cos(phistop)*Sin(thetastop))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistop   = atan2(Cos(thetastop),Sin(phistop)*Sin(thetastop))
             ENDIF        

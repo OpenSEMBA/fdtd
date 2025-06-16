@@ -1058,6 +1058,7 @@ subroutine data_loader(filename, parsedProblem)
    if (trim(adjustl(l%extension))=='.nfde') then 
 #ifdef CompilePrivateVersion   
          parsedProblem => newparser (NFDE_FILE)
+         l%thereare_stoch=NFDE_FILE%thereare_stoch
 #else
          print *,'Not compiled with cargaNFDEINDEX'
          stop
@@ -1088,7 +1089,7 @@ subroutine data_loader(filename, parsedProblem)
        CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
 
-   l%thereare_stoch=NFDE_FILE%thereare_stoch
+   
    l%mpidir=NFDE_FILE%mpidir
 
    write(dubuf,*) '[OK] '//trim(adjustl(whoami))//' Parser still working ';  call print11(l%layoutnumber,dubuf)       

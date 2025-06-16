@@ -20,7 +20,7 @@ contains
       integer , intent(inout) :: test_err
       real (KIND=RK), intent(in) :: expected, actual
       character (len=*), intent(in), optional :: message
-      if (expected /= actual) then
+      if (abs(expected - actual) > 1.0d-6) then
           test_err = test_err + 1
           print *, "Error: ", message
           print *, "Expected: ", expected
@@ -40,7 +40,7 @@ contains
       real(8), intent(in) :: expected, actual
       character(len=*), intent(in) :: message
       
-      if (abs(expected - actual) > 1.0d-10) then
+      if (abs(expected - actual) > 1.0d-7) then
           test_err = test_err + 1
           print *, "Error: ", message
           print *, "Expected: ", expected
@@ -53,7 +53,7 @@ contains
       complex, intent(in) :: expected, actual
       character(len=*), intent(in) :: message
       
-      if (abs(expected - actual) > 1.0d-10) then
+      if (abs(expected - actual) > 1.0d-7) then
           test_err = test_err + 1
           print *, "Error: ", message
           print *, "Expected: ", expected

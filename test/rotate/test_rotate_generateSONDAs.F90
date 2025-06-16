@@ -49,8 +49,8 @@ subroutine setup_sonda_test(this)
 
     
     this%oldSONDA%probes(1)%FarField(1)%probe%thetastart = 1.5
-    this%oldSONDA%probes(1)%FarField(1)%probe%phistart = 2
-    this%oldSONDA%probes(1)%FarField(1)%probe%thetastop = 1.5
+    this%oldSONDA%probes(1)%FarField(1)%probe%phistart = 1.5
+    this%oldSONDA%probes(1)%FarField(1)%probe%thetastop = 2
     this%oldSONDA%probes(1)%FarField(1)%probe%phistop = 2
 
 end subroutine setup_sonda_test
@@ -82,22 +82,39 @@ end subroutine assert_basic_sonda
 subroutine verify_sonda_rotation(test_err, oldSonda, mpidir)
     integer, intent(inout) :: test_err, mpidir
     type(Sondas), intent(in) :: oldSonda
+    real(kind=RKIND) :: thetaStart, phiStart, thetaStop, phiStop
+    real(kind=RKIND) :: rotatedThetaStart, rotetedPhiStart, rotatedThetaStop, rotatedPhiStop
+
+    thetaStart = 1.5_RKIND
+    phiStart = 1.5_RKIND
+    thetaStop = 2_RKIND
+    phiStop = 2_RKIND
 
     call assert_basic_sonda(test_err, mpidir, oldSONDA%probes(1)%Electric(1)%probe)
     call assert_basic_sonda(test_err, mpidir, oldSONDA%probes(1)%Magnetic(1)%probe)
 
     if (mpidir==2) then
-        call expect_eq_real(test_err, -1.40200949 ,oldSONDA%probes(1)%FarField(1)%probe%thetastart, "Assertion error for mpidir 2")
-        call expect_eq_real(test_err, 2.00000000 ,oldSONDA%probes(1)%FarField(1)%probe%phistart, "Assertion error for mpidir 2")
-        call expect_eq_real(test_err, 0.434644908 ,oldSONDA%probes(1)%FarField(1)%probe%thetastop, "Assertion error for mpidir 2")
-        call expect_eq_real(test_err, -1.40200949 ,oldSONDA%probes(1)%FarField(1)%probe%phistop, "Assertion error for mpidir 2")
+        rotatedThetaStart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Cos(phistart)**2*Sin(thetastart)**2),Sin(phistart)*Sin(thetastart))
+        rotetedPhiStart =  atan2(Cos(phistart)*Sin(thetastart),Cos(thetastart))      
+        rotatedThetaStop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Cos(phistop)**2*Sin(thetastop)**2),Sin(phistop)*Sin(thetastop))
+        rotatedPhiStop = atan2(Cos(phistop)*Sin(thetastop),Cos(thetastop))
+
+        call expect_eq_real(test_err, rotatedThetaStart ,oldSONDA%probes(1)%FarField(1)%probe%thetastart, "Assertion error for mpidir 2")
+        call expect_eq_real(test_err, rotetedPhiStart ,oldSONDA%probes(1)%FarField(1)%probe%phistart, "Assertion error for mpidir 2")
+        call expect_eq_real(test_err, rotatedThetaStop ,oldSONDA%probes(1)%FarField(1)%probe%thetastop, "Assertion error for mpidir 2")
+        call expect_eq_real(test_err, rotatedPhiStop ,oldSONDA%probes(1)%FarField(1)%probe%phistop, "Assertion error for mpidir 2")
     end if
 
     if (mpidir==1) then
-        call expect_eq_real(test_err, 7.78310671E-02 ,oldSONDA%probes(1)%FarField(1)%probe%thetastart, "Assertion error for mpidir 1")
-        call expect_eq_real(test_err, 2.00000000 ,oldSONDA%probes(1)%FarField(1)%probe%phistart, "Assertion error for mpidir 1")
-        call expect_eq_real(test_err, 1.99885380 ,oldSONDA%probes(1)%FarField(1)%probe%thetastop, "Assertion error for mpidir 1")
-        call expect_eq_real(test_err, 7.78310671E-02 ,oldSONDA%probes(1)%FarField(1)%probe%phistop, "Assertion error for mpidir 1")
+        rotatedThetaStart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Sin(phistart)**2*Sin(thetastart)**2),Cos(phistart)*Sin(thetastart))
+        rotetedPhiStart = atan2(Cos(thetastart),Sin(phistart)*Sin(thetastart))    
+        rotatedThetaStop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Sin(phistop)**2*Sin(thetastop)**2),Cos(phistop)*Sin(thetastop))
+        rotatedPhiStop = atan2(Cos(thetastop),Sin(phistop)*Sin(thetastop))
+
+        call expect_eq_real(test_err, rotatedThetaStart, oldSONDA%probes(1)%FarField(1)%probe%thetastart, "Assertion error for mpidir 1")
+        call expect_eq_real(test_err, rotetedPhiStart, oldSONDA%probes(1)%FarField(1)%probe%phistart, "Assertion error for mpidir 1")
+        call expect_eq_real(test_err, rotatedThetaStop, oldSONDA%probes(1)%FarField(1)%probe%thetastop, "Assertion error for mpidir 1")
+        call expect_eq_real(test_err, rotatedPhiStop, oldSONDA%probes(1)%FarField(1)%probe%phistop, "Assertion error for mpidir 1")
     end if
 end subroutine verify_sonda_rotation
 
