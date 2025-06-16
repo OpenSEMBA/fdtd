@@ -3,8 +3,8 @@
     "__comments": "Test of the implementation of lineIntegral (DC voltage) probes",
 
     "general": {
-        "timeStep": 2e-10,
-        "numberOfSteps": 3000
+        "timeStep": 1e-10,
+        "numberOfSteps": 6000
     },
   
     "boundary": {
@@ -97,7 +97,8 @@
             {"id": 30, "type": "node", "coordinateIds": [29]},
             {"id": 31, "type": "node", "coordinateIds": [30]},
             {"id": 32, "type": "node", "coordinateIds": [31]},
-            {"id": 33, "type": "node", "coordinateIds": [1]}
+            {"id": 33, "type": "node", "coordinateIds": [1]},
+            {"id": 34, "type": "polyline", "coordinateIds": [1,2,5,6]}
         ]
     },
 
@@ -161,13 +162,7 @@
             "name" : "ground", 
             "materialId" : 5,
             "elementIds" : [3]
-        },
-        {
-            "name" : "ground", 
-            "materialId" : 5,
-            "elementIds" : [3]
         }
-
     ],
 
     "sources": [
@@ -181,38 +176,12 @@
     ],
 
     "probes": [
-        {"name": "current_12_10_13_x","type": "wire","field": "current", "elementIds": [5],"domain": { "type": "time" }},
-        {"name": "current_7_10_12_z","type": "wire","field": "current", "elementIds": [22],"domain": { "type": "time" }},
-        {"name": "current_7_10_11_z","type": "wire","field": "current", "elementIds": [21],"domain": { "type": "time" }},
-        {"name": "field_9_10_10_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [6],"domain": { "type": "time" }},
-        {"name": "field_9_10_11_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [7],"domain": { "type": "time" }},
-        {"name": "field_9_10_12_xz","type": "point","field": "electric", "directions": ["x","z"], "elementIds": [8],"domain": { "type": "time" }},
-        {"name": "field_12_10_10_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [9],"domain": { "type": "time" }},
-        {"name": "field_12_10_11_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [10],"domain": { "type": "time" }},
-        {"name": "field_12_10_12_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [11],"domain": { "type": "time" }},
-        {"name": "field_10_10_12_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [12],"domain": { "type": "time" }},
-        {"name": "field_11_10_12_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [13],"domain": { "type": "time" }},
-
-        {"name": "field_7_10_13_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [19],"domain": { "type": "time" }},
-        {"name": "field_8_10_13_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [14],"domain": { "type": "time" }},
-        {"name": "field_9_10_13_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [15],"domain": { "type": "time" }},
-        {"name": "field_10_10_13_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [16],"domain": { "type": "time" }},
-        {"name": "field_11_10_13_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [17],"domain": { "type": "time" }},
-        {"name": "field_12_10_13_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [18],"domain": { "type": "time" }},
-
-        {"name": "field_7_10_10_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [20],"domain": { "type": "time" }},
-        {"name": "field_7_10_11_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [21],"domain": { "type": "time" }},
-        {"name": "field_7_10_12_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [22],"domain": { "type": "time" }},
-        {"name": "field_13_10_10_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [23],"domain": { "type": "time" }},
-        {"name": "field_13_10_11_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [24],"domain": { "type": "time" }},
-        {"name": "field_13_10_12_z","type": "point","field": "electric", "directions": ["z"], "elementIds": [25],"domain": { "type": "time" }},
-
-        {"name": "field_7_10_10_x", "type": "point","field": "electric", "directions": ["x"], "elementIds": [27],"domain": { "type": "time" }},
-        {"name": "field_8_10_10_x", "type": "point","field": "electric", "directions": ["x"], "elementIds": [28],"domain": { "type": "time" }},
-        {"name": "field_9_10_10_x", "type": "point","field": "electric", "directions": ["x"], "elementIds": [29],"domain": { "type": "time" }},
-        {"name": "field_10_10_10_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [30],"domain": { "type": "time" }},
-        {"name": "field_11_10_10_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [31],"domain": { "type": "time" }},
-        {"name": "field_12_10_10_x","type": "point","field": "electric", "directions": ["x"], "elementIds": [32],"domain": { "type": "time" }}
+        {
+            "name" : "vprobe",
+            "type" : "line",
+            "elementIds" : [34],
+            "field" : "electric"
+        }
 
     ]
 }

@@ -9,13 +9,17 @@ SEMBA_EXE = '../../../build/bin/semba-fdtd'
 
 from pyWrapper import *
 
+# %% Generate excitation and visualize
+fmin = 2e6; fmax = 6e9
+
 #####################################################
 # %% Generate excitation and visualize
-dt = 1e-10
+dt = 0.25e-10
 tf = 600e-9
+
 t = np.arange(0, tf, dt)
 v = 1/(1 + np.exp(0.03*(-t*1e9+250)))
-v2 = 0*(t<=100e-9) + ((t*1e9-100)/300) * (t>=100e-9)*(t<=400e-9) + 1*(t>=400e-9)
+# v2 = 0*(t<=100e-9) + ((t*1e9-100)/300) * (t>=100e-9)*(t<=400e-9) + 1*(t>=400e-9)
 # vder = -t*1e9*0.5*np.exp(0.5*(-t*1e9+20))/(1 + np.exp(0.5*(-t*1e9+20)))**2
 plt.figure()
 plt.plot(t*1e9,v)
@@ -36,9 +40,7 @@ np.savetxt('lineIntegralProbe.exc', data)
 dt = t[1] - t[0]
 fq  = fftfreq(len(t))/dt
 vf1 = fft(v)
-vf2 = fft(v2)
-fmin = 1e6
-fmax = 1e9
+# vf2 = fft(v2)
 idx_min = (np.abs(fq - fmin)).argmin()
 idx_max = (np.abs(fq - fmax)).argmin()
 fv = fq[idx_min:idx_max]
@@ -57,6 +59,14 @@ solver.cleanUp()
 solver.run()
 
 #####################################################
+# %% Plot results
+lineInt  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_7_10_10")[0])
+plt.figure()
+plt.plot(lineInt['time']*1e9, lineInt['lineIntegral'], '-', label = 'line integral')
+# plt.plot(f7_10_10_z['time']*1e9, groundField, '-', label = 'ground field')
+plt.grid(which='both')
+plt.legend()
+
 # %% Plot results
 
 # fprev1  = Probe(solver.getSolvedProbeFilenames("field_prev_1")[0])
@@ -97,7 +107,7 @@ f12_10_10_x  = Probe(solver.getSolvedProbeFilenames("field_12_10_10_x")[0])
 fieldSum =  f7_10_10_z['field'] + f7_10_11_z['field'] + f7_10_12_z['field']\
           + f7_10_13_x['field'] + f8_10_13_x['field'] + f9_10_13_x['field']\
           + f10_10_13_x['field']+ f11_10_13_x['field']+ f12_10_13_x['field']\
-          + f13_10_10_z['field']+ f13_10_11_z['field'] + f13_10_12_z['field']\
+          - (f13_10_10_z['field']+ f13_10_11_z['field'] + f13_10_12_z['field'])\
         #   + f7_10_10_x['field']+  f8_10_10_x['field']+ f9_10_10_x['field']\
         #   + f10_10_10_x['field']+ f11_10_10_x['field']+ f12_10_10_x['field']\
 
@@ -143,7 +153,7 @@ plt.figure()
 plt.plot(iprobe_12_10_13['time']*1e9, iprobe_12_10_13['current'], '--', label = 'I(12,10,13)x')
 plt.plot(iprobe_7_10_12['time']*1e9, -iprobe_7_10_12['current'], '--', label = 'I(7,10,12)z')
 plt.plot(iprobe_7_10_11['time']*1e9, iprobe_7_10_11['current'], '-.', label = 'I(7,10,11)z')
-plt.axhline(y=1/(1*150), color='r', linestyle='-')
+plt.axhline(y=1/(1*400), color='r', linestyle='-')
 plt.xlabel('t [ns]')
 plt.ylabel('I [A]')
 plt.grid(which='both')
@@ -153,28 +163,28 @@ plt.legend()
 dt = iprobe_7_10_11['time'][1] - iprobe_7_10_11['time'][0]
 fq  = fftfreq(len(iprobe_7_10_11['time']))/dt
 If = fft(iprobe_7_10_11['current'])
-fmin = 1e6
-fmax = 1e9
 idx_min = (np.abs(fq - fmin)).argmin()
 idx_max = (np.abs(fq - fmax)).argmin()
 f = fq[idx_min:idx_max]
 Iff = If[idx_min:idx_max]
+Iff_v = np.interp(fv, f, Iff)
 plt.figure()
 plt.semilogx((f), np.abs(Iff),'-*')
+plt.semilogx((f), np.abs(Iff_v),'--')
 plt.show()
 
 # %%
-Iff_v = np.interp(fv, f, Iff)
 
 w = np.logspace(6,10,1000)
 C = 0.65e-12
-R = 200
+R = 150
 Z = 1/(1/R + 1j*w*C)
 plt.figure()
 # plt.loglog((fv), np.abs(vff),'-.', label= 'V')
 # plt.loglog((fv),  np.abs(Iff_v),'-.', label= 'I')
-plt.loglog((fv),  np.abs(vff1/Iff_v),'-.', label= 'Z')
-plt.loglog((w),  np.abs(Z),'-.', label= 'Z test')
+plt.semilogx((fv),  np.abs(vff1/Iff_v),'-.', label= 'Z')
+# plt.loglog((w),  np.abs(Z),'-.', label= 'Z test')
+plt.ylim(100,200)
 plt.grid()
 plt.legend()
 plt.show()
