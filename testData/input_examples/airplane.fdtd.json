@@ -10733,8 +10733,7 @@
             "magnitudeFile": "gauss.exc",
             "elementIds": [
                 1
-            ],
-            "field": "current"
+            ]
         }
     ],
     "probes": [

@@ -68,7 +68,6 @@ module interpreta_switches_m
             noSlantedcrecepelo              , &
             forcecfl                        , &
             niapapostprocess                , &
-            planewavecorr                   , &
             permitscaling                   , &
             stochastic                      , &
             chosenyesornostochastic         , &
@@ -904,9 +903,6 @@ CONTAINS
             l%noconformalmapvtk=.true.
           CASE ('-niapapostprocess')
             l%niapapostprocess=.true.
-          CASE ('-planewavecorr')
-            l%planewavecorr=.true.
-            l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
 #ifdef CompileWithPrescale
 !!!!210918 permit scaling
           CASE ('-pscale')
@@ -2012,7 +2008,6 @@ CONTAINS
       l%createh5filefromsinglebin=.false.
       l%permitscaling=.false.
       l%niapapostprocess=.false.
-      l%planewavecorr=.false.
       l%prioritizeCOMPOoverPEC=.false.  !pec has default more priority than compo (para siva hay que cambiarlo)
       l%prioritizeTHINWIRE=.false. !solo para visualizacion y experimentacion 231024
       l%prioritizeISOTROPICBODYoverall=.FALSE. !PARA EL SIVA SE CAMBIA POR LINEA DE COMANDO

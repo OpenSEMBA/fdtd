@@ -408,6 +408,12 @@ class CaseMaker():
 
         self.input['general']['numberOfSteps'] = steps
 
+    def setTimeStep(self, time):
+        if 'general' not in self.input:
+            self.input['general'] = {}
+
+        self.input['general']['timeStep'] = time
+
     def setGridFromVTK(self, path_to_grid):
         assert os.path.isfile(path_to_grid)
 
@@ -440,7 +446,9 @@ class CaseMaker():
 
     def setAllBoundaries(self, boundary_type):
         self.input['boundary'] = {
-            "all": boundary_type
+            "all": {
+                "type": boundary_type
+            }
         }
 
     def addCellElementsFromVTK(self, path_to_vtk):

@@ -395,7 +395,6 @@
 		{
 			"name": "DistributedSource",
 			"type": "nodalSource",
-			"field": "current",
 			"magnitudeFile": "gauss.exc",
 			"elementIds": [33]
 		}

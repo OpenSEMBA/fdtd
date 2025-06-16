@@ -1,10 +1,5 @@
-
-    
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  Module to handle the MPI part of a problem
-!  Date :  April, 8, 2010
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module MPIcomm
+
 #ifdef CompileWithMPI
    !
    Use Report
@@ -70,9 +65,6 @@ module MPIcomm
 
    public InitExtraFlushMPI_Cray
 
-
-
-
 contains
 
 
@@ -89,7 +81,7 @@ contains
    end subroutine
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! DIVIDES DE COMPUTATIONAL REGION INTO LAYOUTS AND READS GEOM DATA
+   ! DIVIDES COMPUTATIONAL REGION INTO LAYOUTS AND READS GEOM DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIdivide(sgg,fullsize,SINPML_FULLSIZE,layoutnumber,size,forcing,forced,slicesoriginales,resume,fatalerror)
 
@@ -140,9 +132,7 @@ contains
          cZE(ilay)=ZE(index(1))
          cZI(ilay+1)=cZE(ilay)
       end do
-     
-      
-     !one of them can be adjusted by hand for debugging rehecho 160620 solo para mpi de 2 deprecando lo comentado posteriormente
+ 
      if (forcing) then
         if (size==2) then
             write(dubuf,*) 'Forcing MPI cut at ',forced
@@ -168,20 +158,6 @@ contains
          trancos(ilay)=int(cZE(ilay)-cZI(0))
       enddo
       !end PML CPU overhead tunning
-
-      !!!!este forcing no funciona. hago el forcing solo para mpi de 2 mas arriba. 180620
-   !!!!!  !
-   !!!!!  !one of them can be adjusted by hand for debugging
-   !!!!!  if (forcing) then
-   !!!!!     write(dubuf,*) 'Forcing MPI cut at ',forced
-   !!!!!     call print11(layoutnumber,dubuf)
-   !!!!!     forc: do ilay=1,size-1 !the first layout begin Cannot be enforced
-   !!!!!        if (forced < fullsize(iHz)%ZI+trancos(ilay-1)) then
-   !!!!!           trancos(ilay-1)= forced - fullsize(iHz)%ZI
-   !!!!!           exit forc
-   !!!!!        endif
-   !!!!!     end do forc
-   !!!!!  endif
 
       allocate (mpiZcom(0:size-1),mpiZfin(0:size-1))
       mpiZcom(0)=fullsize(iHz)%ZI
@@ -255,10 +231,8 @@ contains
          sgg%alloc(1:6)%ZI=sgg%Sweep(1:6)%ZI - padding
          sgg%alloc(1:6)%ZE=sgg%Sweep(1:6)%ZE+1   !I use this extra length in the global boundaries
       endif
-      !
 
       !ARRANGE PML BORDERS
-
       if (layoutnumber == 0) then
          sgg%Border%IsUpPML=.false.
          sgg%Border%IsUpmur=.false.
@@ -382,9 +356,8 @@ contains
    end subroutine
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! fORCES THE TIME STEP TO BE EQUAL BY EVERY LAYER
+   ! FORCES THE TIME STEP TO BE EQUAL BY EVERY LAYER
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
    subroutine MPIupdateMin(dtlay,dt)
       real (kind=RKIND), intent(in)  ::  dtlay
       real (kind=RKIND), intent(out)  ::  dt
@@ -396,24 +369,19 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Sync the Bloque current data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
    subroutine MPIupdateBloques(layoutnumber,valores,newvalores,SubComm)
       integer (kind=4)  ::  ierr,sizeofvalores,SubComm
       real (kind=RKIND), intent(in), dimension( 0:BuffObse )  ::  valores
       real (kind=RKIND), intent(out), dimension( 0:BuffObse )  ::  newvalores
       integer :: layoutnumber
+      
       sizeofvalores=BuffObse+1
-      !wrong!!! call MPI_Reduce(valores, newvalores, sizeofvalores, REALSIZE, MPI_SUM, 0,SubComm, ierr)
-      !print *,'layoutnumber+1,pre reducing subcomm valores, newvalores',layoutnumber+1,subcomm,valores,newvalores
       call MPI_AllReduce(valores, newvalores, sizeofvalores, REALSIZE, MPI_SUM, SubComm, ierr)
-      !print *,'layoutnumber+1,post reducing subcomm valores, newvalores',layoutnumber+1,subcomm,valores,newvalores
-      return
    end subroutine
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Init the sync the Bloque current data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
    subroutine MPIinitSubcomm(layoutnumber,size,SubComm,Root,group1)
       integer (kind=4), intent(in) :: layoutnumber,size
       integer (kind=4)  ::  count,i
@@ -846,14 +814,8 @@ contains
    subroutine newFlushWiresMPIorigindexInfo(layoutnumber,size)
       integer (kind=4), intent(in) :: layoutnumber,size
       integer (kind=4)  ::  ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
-#ifdef CompileWithGfortranMPIfix      
-!untested
-      integer (kind=4)  ::  status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
-#else
-!works with intel. does not compile with gfortran
-      integer (kind=4)  ::  status1(MPI_STATUS_SIZE,1 : 2),status2(MPI_STATUS_SIZE,1 : 2)
-#endif
-      integer (kind=4)  ::  req1,req2,req11,req21
+      integer  ::  status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
+      integer  ::  req1,req2,req11,req21
       character (LEN=BUFSIZE)  ::  whoami
       character(len=BUFSIZE) :: buff
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
@@ -907,14 +869,8 @@ contains
    subroutine newFlushWiresMPI(layoutnumber,size)
       integer (kind=4), intent(in) :: layoutnumber,size
       integer (kind=4)  ::  ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0,i
-#ifdef CompileWithGfortranMPIfix      
-!untested
-      integer (kind=4)  ::  status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
-#else
-!works with intel. does not compile with gfortran
-      integer (kind=4)  ::  status1(MPI_STATUS_SIZE,1 : 2),status2(MPI_STATUS_SIZE,1 : 2)
-#endif
-      integer (kind=4)  ::  req1,req2,req11,req21
+      integer ::  status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
+      integer ::  req1,req2,req11,req21
       character (LEN=BUFSIZE)  ::  whoami
       character(len=BUFSIZE) :: buff
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
@@ -983,14 +939,8 @@ contains
    subroutine FlushWiresMPIorigindexInfo(layoutnumber,size)
       integer (kind=4), intent(in) :: layoutnumber,size
       integer (kind=4)  ::  ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0,i
-#ifdef CompileWithGfortranMPIfix      
-!untested
-      integer (kind=4)  ::  status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
-#else
-!works with intel. does not compile with gfortran
-      integer (kind=4)  ::  status1(MPI_STATUS_SIZE,1 : 2),status2(MPI_STATUS_SIZE,1 : 2)
-#endif
-      integer (kind=4)  ::  req1,req2,req11,req21
+      integer :: status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
+      integer :: req1,req2,req11,req21
       character (LEN=BUFSIZE)  ::  whoami
       character(len=BUFSIZE) :: buff
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '

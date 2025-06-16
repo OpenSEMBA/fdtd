@@ -3,17 +3,18 @@ module smbjson
 #ifdef CompileWithSMBJSON
    use NFDETypes
 
+   use Report
+
    use NFDETypes_extension
    use smbjson_labels_mod
    use mesh_mod
    use parser_tools_mod
    use idchildtable_mod
 
+   use Report
+
    use json_module
    use json_kinds
-
-
-   use, intrinsic :: iso_fortran_env , only: error_unit
 
    implicit none
 
@@ -122,13 +123,13 @@ contains
       allocate(res%jsonfile)
       call res%jsonfile%initialize()
       if (res%jsonfile%failed()) then
-         call res%jsonfile%print_error_message(error_unit)
+         call WarnErrReport("Failed to initialize JSONfile", .true.)
          return
       end if
 
       call res%jsonfile%load(filename = res%filename)
       if (res%jsonfile%failed()) then
-         call res%jsonfile%print_error_message(error_unit)
+         call WarnErrReport("Failed to load JSON file: "//res%filename, .true.)
          return
       end if
 
@@ -250,7 +251,7 @@ contains
                      call mesh%addCellRegion(id, cR)
                   end block
                 case default
-                  write (error_unit, *) 'Invalid element type'
+                  call WarnErrReport('Invalid element type', .true.)
                end select
             end do
          end if
@@ -339,11 +340,10 @@ contains
          vec= this%getRealsAt(this%root, path, found)
 
          if (.not. found) then
-            write(error_unit, *) 'Error reading grid: steps not found.'
+            call WarnErrReport('Error reading grid: steps not found.', .true.)
          endif
          if (size(vec) /= 1 .and. size(vec) /= numberOfCells) then
-            write(error_unit, *) &
-               'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.'
+            call WarnErrReport( 'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.', .true.)
          end if
 
          allocate(dest(0 : numberOfCells-1))
@@ -365,7 +365,7 @@ contains
       
       call this%core%get(this%root, J_BOUNDARY, bdrs, found)
       if (.not. found) then
-         write(error_unit, * ) errorMsgInit, J_BOUNDARY, " object not found."
+         call WarnErrReport("Error reading boundary: " // J_BOUNDARY // " not found.", .true.)
       end if
       
       block
@@ -386,7 +386,7 @@ contains
          do i = 1, 6
             bdrType = this%getStrAt(bdrs, placeLabels(i)//"."//J_TYPE, found)
             if (.not. found) then
-               write(error_unit, *) errorMsgInit, placeLabels(i), " or ", J_BND_ALL, " not found."
+               call WarnErrReport(errorMsgInit // placeLabels(i) // " or " // J_BND_ALL // " not found.", .true.)
             end if
             j = labelToBoundaryPlace(placeLabels(i))
             res%tipoFrontera(j) = labelToBoundaryType(bdrType)
@@ -617,6 +617,8 @@ contains
          integer :: e, j
          character(len=:), allocatable :: model
          logical :: found
+         character(len=*), parameter :: errorMsgInit = "ERROR reading lumped material: "
+         character(len=BUFSIZE) :: errorMsg
 
          allocate(res%c1P(0))
          res%n_c1p = 0
@@ -628,8 +630,8 @@ contains
          ! Get the model type
          model = this%getStrAt(matPtr%p, J_MAT_LUMPED_MODEL, found)
          if (.not. found) then
-            write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " model not found."
-            stop
+            write(errorMsg, '(A)') errorMsgInit, mA%materialId, " model not found."
+            call WarnErrReport(errorMsg, .true.)
          end if
          
          ! Not really needed for resistor, inductor, or capacitor. 
@@ -646,8 +648,8 @@ contains
             res%resistor = .true.
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
             if (.not. found) then
-               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " resistance not found."
-               stop
+               write(errorMsg, '(A)') errorMsgInit, mA%materialId, " resistance not found."
+               call WarnErrReport(errorMsg, .true.)
             end if
             res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0)
             res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0)
@@ -655,25 +657,25 @@ contains
             res%inductor = .true.
             res%L = this%getRealAt(matPtr%p, J_MAT_LUMPED_INDUCTANCE, found)
             if (.not. found) then
-               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " inductance not found."
-               stop
+               write(errorMsg, '(A)') errorMsgInit, mA%materialId, " inductance not found."
+               call WarnErrReport(errorMsg, .true.)
             end if
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, default=0.0)
           case (J_MAT_LUMPED_MODEL_CAPACITOR)
             res%capacitor = .true.
             res%C = this%getRealAt(matPtr%p, J_MAT_LUMPED_CAPACITANCE, found)
             if (.not. found) then
-               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " capacitance not found."
-               stop
+               write(errorMsg, '(A)') errorMsgInit, mA%materialId, " capacitance not found."
+               call WarnErrReport(errorMsg, .true.)
             end if
             res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, found)
             if (.not. found) then
-               write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " resistance not found."
-               stop
+               write(errorMsg, '(A)') errorMsgInit, mA%materialId, " resistance not found."
+               call WarnErrReport(errorMsg, .true.)
             end if
           case default
-            write(error_unit, *) "ERROR reading lumped material: ", mA%materialId, " invalid model."
-            stop
+            write(errorMsg, '(A)') errorMsgInit, mA%materialId, " invalid model."
+            call WarnErrReport(errorMsg, .true.)
           end select
 
       end function
@@ -802,7 +804,7 @@ contains
             res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0) * MU_VACUUM
             res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
             if (.not. found) then
-               write(error_unit, *) errorMsgInit, J_MAT_MULTILAYERED_SURF_THICKNESS, " in layer not found."
+               call WarnErrReport(errorMsgInit // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
             end if
             res%sigma_devia(i) = 0.0
             res%eps_devia(i) = 0.0
@@ -920,7 +922,7 @@ contains
           case (J_FIELD_CURRENT)
             res%isElec = .true.
           case default
-            write(error_unit, *) 'Error reading current field source. Field label not recognized.'
+            call WarnErrReport('Error reading current field source. Field label not recognized.', .true.)
          end select
          
          select case (this%getStrAt(jns, J_SRC_NS_HARDNESS, default=J_SRC_NS_HARDNESS_SOFT))
@@ -929,7 +931,7 @@ contains
           case (J_SRC_NS_HARDNESS_HARD)
             res%isHard = .true.
           case default
-            write(error_unit, *) 'Error reading current field source. Hardness label not recognized.'
+            call WarnErrReport('Error reading current field source. Hardness label not recognized.', .true.)
           end select
          
          res%isInitialValue = .false.
@@ -996,7 +998,7 @@ contains
          ! Far fields only accept frequency domains.
          domain = this%getDomain(p, J_PR_DOMAIN)
          if (domain%type2 /= NP_T2_FREQ) then
-            write(error_unit, *) "ERROR at far field probe: Only accepted domain is frequency."
+            call WarnErrReport("Only frequency domain is accepted for far field probes.", .true.)
          end if
          ff%tstart = 0.0
          ff%tstop = 0.0
@@ -1067,8 +1069,9 @@ contains
          real (kind=rkind), intent(inout) :: initial, final, step
 
          call this%core%get(p, label, dir, found=found)
-         if (.not. found) &
-            write (error_unit, *) "Error reading far field probe. Direction label not found."
+         if (.not. found) then
+            call WarnErrReport("Error reading far field probe. Direction label not found.", .true.)
+         end if
          initial = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_INITIAL)
          final   = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_FINAL)
          step    = this%getRealAt(dir, J_PR_FAR_FIELD_DIR_STEP)
@@ -1136,7 +1139,7 @@ contains
 
          outputName = this%getStrAt(p, J_NAME, found=nameFound)
          if (.not. nameFound) then 
-            write(error_unit, *) "ERROR: name entry not found for probe."
+            call WarnErrReport("Point probes must define a name.", .true.)
          end if
          res%outputrequest = trim(adjustl(outputName))
 
@@ -1144,17 +1147,17 @@ contains
 
          elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
          if (.not. elementIdsFound) then
-            write(error_unit, *) "ERROR: element ids entry not found for probe."
+            call WarnErrReport("Element ids entry not found for probe.", .true.)
          end if
          if (size(elemIds) /= 1) then
-            write(error_unit, *) "ERROR: point probe must contain a single element id."
+            call WarnErrReport("Point probe must contain a single element id.", .true.)
          end if
 
          pixel = getPixelFromElementId(this%mesh, elemIds(1))
 
          typeLabel = this%getStrAt(p, J_TYPE, found=typeLabelFound)
          if (.not. typeLabelFound) then
-            write(error_unit, *) "ERROR: Point probe type label not found."
+            call WarnErrReport("Point probe type label not found.", .true.)
          end if
          select case (typeLabel)
           case (J_PR_TYPE_WIRE)
@@ -1230,7 +1233,7 @@ contains
          select case (fieldLabel)
           case (J_FIELD_ELECTRIC)
             if (.not. present(dirLabel)) then
-               write(error_unit, *) "Dir label must be present"
+               call WarnErrReport("Dir label must be present for electric field probes.", .true.)
             end if
             select case (dirLabel)
              case (J_DIR_X)
@@ -1240,11 +1243,11 @@ contains
              case (J_DIR_Z)
                res = NP_COR_EZ
              case default
-               write(error_unit, *) "Invalid dir label"
+               call WarnErrReport("Invalid dir label for electric field probe.", .true.)
             end select
           case (J_FIELD_MAGNETIC)
             if (.not. present(dirLabel)) then
-               write(error_unit, *) "Dir label must be present"
+               call WarnErrReport("Dir label must be present for magnetic field probes.", .true.)
             end if
             select case (dirLabel)
              case (J_DIR_X)
@@ -1254,16 +1257,15 @@ contains
              case (J_DIR_Z)
                res = NP_COR_HZ
              case default
-               write(error_unit, *) "Invalid dir label"
+               call WarnErrReport("Invalid dir label for magnetic field probe.", .true.)
             end select
           case (J_FIELD_CURRENT)
             res = NP_COR_WIRECURRENT
           case (J_FIELD_VOLTAGE)
             res = NP_COR_DDP
           case default
-            write(error_unit,*) "Invalid field label for point/wire probe."
+            call WarnErrReport("Invalid field label for point/wire probe.", .true.)
          end select
-
       end function
    end function
 
@@ -1301,9 +1303,13 @@ contains
          type(cell_region_t), dimension(:), allocatable :: cRs
 
          cRs = this%mesh%getCellRegions(this%getIntsAt(bp, J_ELEMENTIDS))
-         if (size(cRs) /= 1) write(error_unit, *) "Bulk current probe must be defined by a single cell region."
+         if (size(cRs) /= 1) then
+            call WarnErrReport("Bulk current probe must be defined by a single cell region.", .true.)
+         end if
 
-         if (size(cRs(1)%intervals) /= 1) write(error_unit, *) "Bulk current probe must be defined by a single cell interval."
+         if (size(cRs(1)%intervals) /= 1) then
+            call WarnErrReport("Bulk current probe must be defined by a single cell interval.", .true.)
+         end if 
          cs = cellIntervalsToCoords(cRs(1)%intervals)
 
          res%i1  = cs(1)%xi
@@ -1395,11 +1401,11 @@ contains
 
          cRs = this%mesh%getCellRegions(this%getIntsAt(p, J_ELEMENTIDS))
          if (size(cRs) /= 1) then
-            write(error_unit, *) "Movie probe must be defined over a single cell region."
+            call WarnErrReport("Movie probe must be defined over a single cell region.", .true.)
          end if
 
          if (size(cRs(1)%intervals) /= 1) then
-            write(error_unit, *) "Movie probe must be defined by a single cell interval."
+            call WarnErrReport("Movie probe must be defined by a single cell interval.", .true.)
          end if
          cs = cellIntervalsToCoords(cRs(1)%intervals)
 
@@ -1457,7 +1463,7 @@ contains
                res = iCur
             end select
          case default
-            write(error_unit,*) "ERROR Determining vol probe type: invalid field type."
+            call WarnErrReport("Invalid field type for movie probe.", .true.)
          end select
       end function
 
@@ -1519,8 +1525,7 @@ contains
          mat = this%matTable%getId(mA%materialId)
          res%width = this%getRealAt(mat%p, J_MAT_THINSLOT_WIDTH, found)
          if (.not. found) then
-            write(error_unit, *) "ERROR reading thin slot: ", &
-               J_MAT_THINSLOT_WIDTH, "not found"
+            call WarnErrReport("Unable to read thin slot: " // J_MAT_THINSLOT_WIDTH // " not found.", .true.)
          end if
 
          call this%matAssToCoords(cs, mA, CELL_TYPE_LINEL)
@@ -1736,8 +1741,7 @@ contains
                position = findSourcePositionInLinels(sourceElemIds, linels)
 
                if (.not. this%existsAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)) then
-                  write(error_unit, *) 'magnitudeFile of source missing'
-                  return
+                  call WarnErrReport('magnitudeFile of source missing', .true.)
                end if
 
                select case(this%getStrAt(genSrcs(i)%p, J_FIELD))
@@ -1750,7 +1754,7 @@ contains
                   res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
                   res(position)%multiplier = 1.0
                 case default
-                  write(error_unit, *) 'Field block of source of type generator must be current or voltage'
+                  call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
 
             end do
@@ -1764,6 +1768,7 @@ contains
          type(pixel_t) :: pixel
          integer :: res
          integer :: i
+         
          pixel = this%mesh%nodeToPixel(this%mesh%getNode(srcElemIds(1)))
          do i = 1, size(linels)
             if (linels(i)%tag == pixel%tag) then
@@ -1771,7 +1776,8 @@ contains
                return
             end if
          end do
-         write (error_unit, * ) "ERROR: Source could not be found in linels."
+
+         call WarnErrReport("Source could not be found in linels.", .true.)
 
       end function
 
@@ -1784,10 +1790,10 @@ contains
          call this%core%get(terminal, J_MAT_TERM_TERMINATIONS, tms, found)
 
          if (.not. found) then
-            write(error_unit, *) "Error reading wire terminal. terminations not found."
+            call WarnErrReport("Error reading wire terminal. terminations not found.", .true.)
          end if
          if (this%core%count(tms) /= 1) then
-            write(error_unit, *) "Only terminals with a single termination are allowed for a wire."
+            call WarnErrReport("Only terminals with a single termination are allowed for a wire.",  .true.)
          end if
 
          call this%core%get_child(tms, 1, tm)
@@ -1795,7 +1801,7 @@ contains
          label = this%getStrAt(tm, J_TYPE, found)
          res%terminationType = strToTerminationType(label)
          if (.not. found) then
-            write(error_unit, *) "Error reading wire terminal. termination must specify a type."
+            call WarnErrReport("Error reading wire terminal. termination must specify a type.", .true.)
          end if
 
          select case(label)
@@ -1832,12 +1838,12 @@ contains
          isThinWire = .false.
 
          if (size(mA%elementIds) /= 1) then
-            write(error_unit, *) "ERROR: Thin wires must be defined by a single element id."
+            call WarnErrReport("Thin wires must be defined by a single element id.", .true.)
          end if
 
          pl = this%mesh%getPolyline(mA%elementIds(1))
          if (.not. this%mesh%arePolylineSegmentsStructured(pl)) then
-            write(error_unit, *) "ERROR: Thin wires must be defined by a structured polyline."
+            call WarnErrReport("Thin wires must be defined by a structured polyline.", .true.)
          end if
       
          isThinWire = .true.
@@ -1900,6 +1906,8 @@ contains
          character (len=:), intent(in), allocatable :: typeLabel
          logical, intent(in) :: hasTransferFunction
          logical :: isTime, isFrequency
+         character(BUFSIZE) :: errorMsg
+
          select case(typeLabel)
           case (J_PR_DOMAIN_TYPE_TIME)
             isTime = .true.
@@ -1935,7 +1943,9 @@ contains
             return
          end if
 
-         write(error_unit, *) "Error parsing domain."
+         write(errorMsg, '(A)') "Invalid domain type: ", trim(typeLabel)
+         call WarnErrReport(errorMsg, .true.)
+
       end function
    end function
 
@@ -1947,6 +1957,7 @@ contains
       character (len=*), parameter :: errorMsgInit = "ERROR reading material association: "
       logical :: found
       logical :: isMultiwire, isWireOrMultiwire
+      character (len=BUFSIZE) :: errorMsg
       
       ! Fills material association.
       res%materialId = this%getIntAt(matAss, J_MATERIAL_ID, found)
@@ -1969,17 +1980,20 @@ contains
 
       ! Checks validity of associations.
       if (this%matTable%checkId(res%materialId) /= 0) then
-         write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " not found."
+         write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " not found."
+         call WarnErrReport(errorMsg, .true.)
       endif
       
       if (size(res%elementIds) == 0) then
-         write(error_unit, *) errorMsgInit, J_ELEMENTIDS, "must not be empty."
+         write(errorMsg, *) errorMsgInit, J_ELEMENTIDS, "must not be empty."
+         call WarnErrReport(errorMsg, .true.)
       end if
       block
          integer :: i
          do i = 1, size(res%elementIds)
             if (this%mesh%checkElementId(res%elementIds(i)) /= 0) then
-               write(error_unit, *) errorMsgInit, "element with id ", res%elementIds(i), " not found."
+               write(errorMsg, *) errorMsgInit, "element with id ", res%elementIds(i), " not found."
+               call WarnErrReport(errorMsg, .true.)
             end if
          end do
       end block
@@ -1991,22 +2005,27 @@ contains
       
       if (isWireOrMultiwire) then
          if (res%initialTerminalId == -1 .or. res%endTerminalId == -1) then
-            write(error_unit, *), errorMsgInit, "wire associations must include terminals."
+            write(errorMsg, *), errorMsgInit, "wire associations must include terminals."
+            call WarnErrReport(errorMsg, .true.)
          end if
          if (.not. isMaterialIdOfType(res%initialTerminalId, J_MAT_TYPE_TERMINAL)) then
-            write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
+            write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
+            call WarnErrReport(errorMsg, .true.)
          end if
          if (.not. isMaterialIdOfType(res%endTerminalId, J_MAT_TYPE_TERMINAL)) then
-            write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
+            write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " must be a terminal."
+            call WarnErrReport(errorMsg, .true.)
          end if
          if (res%initialConnectorId /= -1) then
             if (.not. isMaterialIdOfType(res%initialConnectorId, J_MAT_TYPE_CONNECTOR)) then
-               write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
+               write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
+               call WarnErrReport(errorMsg, .true.)
             end if
          end if 
          if (res%endConnectorId /= -1) then
             if (.not. isMaterialIdOfType(res%endConnectorId, J_MAT_TYPE_CONNECTOR)) then
-               write(error_unit, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
+               write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " must be a connector."
+               call WarnErrReport(errorMsg, .true.)
             end if
          end if
       end if
@@ -2029,7 +2048,8 @@ contains
          type(json_value_ptr) :: mat
          logical :: materialFound
          if (this%matTable%checkId(matId) /= 0) then
-            write(error_unit, *) "Material with id ", matId, " not found."
+            write(errorMsg, *) "Material with id ", matId, " not found."
+            call WarnErrReport(errorMsg, .true.)
          end if
          mat = this%matTable%getId(matId)
          isMaterialIdOfType = this%getStrAt(mat%p, J_TYPE) == matType
@@ -2100,6 +2120,7 @@ contains
       character(len=BUFSIZE) :: res
       character(len=:), allocatable :: matName, layerName
       logical :: found
+      character (len=BUFSIZE) :: errorMsg
       
       block
          type(json_value_ptr) :: mat
@@ -2135,8 +2156,9 @@ contains
          integer :: i
          do i = 1, len((notAllowedChars))
             if (index(str, notAllowedChars(i:i)) /= 0) then
-               write(error_unit, *) "ERROR in name: ", str, &
+               write(errorMsg, *) "ERROR in name: ", str, &
                   " contains invalid character ", notAllowedChars(i:i)
+               call WarnErrReport(errorMsg, .true.)
             end if 
          end do
       end subroutine
@@ -2215,7 +2237,7 @@ contains
          else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
             res => null()
          else
-            write(error_unit, *) 'ERROR: Material type not recognized'
+            call WarnErrReport('ERROR: Material type not recognized', .true.)
          end if
       end function
 
@@ -2236,7 +2258,7 @@ contains
          else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
             res = 0
          else
-            write(error_unit, *) 'ERROR: Material type not recognized'
+            call WarnErrReport('ERROR: Material type not recognized', .true.)
          end if
       end function
 
@@ -2368,8 +2390,9 @@ contains
 
                id = this%getIntAt(ckt,J_MATERIAL_ID)
                m = this%matTable%getId(this%getIntAt(ckt, J_MATERIAL_ID, found))
-               if (.not. found) &
-                  write(error_unit, *) "Error reading material region: materialId label not found."
+               if (.not. found) then
+                  call WarnErrReport("Error reading material region: materialId label not found.", .true.)
+               end if
                res_ckt(i)%model_file = this%getStrAt(m%p, J_SUBCKT_FILE)
                res_ckt(i)%model_name = this%getStrAt(m%p, J_SUBCKT_NAME)
                res_ckt(i)%numberOfPorts = this%getIntAt(m%p, J_SUBCKT_PORTS)
@@ -2520,13 +2543,13 @@ contains
          type(json_value), pointer :: res
 
          if (terminationId == -1) then
-            write(error_unit, *) 'Error: missing terminal on cable side'
+            call WarnErrReport('Error: missing terminal on cable side', .true.)
             res => null()
             return
          end if
          terminal = this%matTable%getId(terminationId)
          if (.not. this%existsAt(terminal%p, J_MAT_TERM_TERMINATIONS)) then
-            write(error_unit, *) 'Error: missing terminations on terminal'
+            call WarnErrReport('Error: missing terminations on terminal', .true.)
             res => null()
             return
          end if
@@ -2605,20 +2628,20 @@ contains
             poly = this%mesh%getPolyline(id)
             do i = 1, size(genSrcs)
                if (.not. this%existsAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)) then
-                  write(error_unit, *) 'magnitudeFile of source missing'
+                  call WarnErrReport('magnitudeFile of source missing', .true.)
                   res%path_to_excitation = trim("")
                   res%source_type = SOURCE_TYPE_UNDEFINED
                   return
                end if
                if (.not. this%existsAt(genSrcs(i)%p, J_FIELD)) then
-                  write(error_unit, *) 'Type of generator is ambigous'
+                  call WarnErrReport('Type of generator is ambigous', .true.)
                   res%path_to_excitation = trim("")
                   res%source_type = SOURCE_TYPE_UNDEFINED
                   return
                end if
                if (this%getStrAt(genSrcs(i)%p, J_FIELD) /= J_FIELD_VOLTAGE .and. &
                    this%getStrAt(genSrcs(i)%p, J_FIELD) /= J_FIELD_CURRENT) then 
-                  write(error_unit, *) 'Only voltage and current generators are supported'
+                  call WarnErrReport('Only voltage and current generators are supported', .true.)
                   res%path_to_excitation = trim("")
                   res%source_type = SOURCE_TYPE_UNDEFINED
                   return
@@ -2810,13 +2833,16 @@ contains
          type(json_value), pointer :: probe
          character(:), allocatable :: probe_type
          integer :: res
+         character(len=BUFSIZE) :: errorMsg
+
          probe_type = this%getStrAt(probe, J_FIELD)
          if (probe_type == J_FIELD_VOLTAGE) then
             res = PROBE_TYPE_VOLTAGE
          else if (probe_type == J_FIELD_CURRENT) then
             res = PROBE_TYPE_CURRENT
          else
-            write(error_unit,*) 'probe type '//probe_type//' not supported'
+            write(errorMsg,*) 'probe type '//probe_type//' not supported'
+            call WarnErrReport(errorMsg, .true.)
             res = PROBE_TYPE_UNDEFINED
          end if
       end function
@@ -2947,7 +2973,7 @@ contains
             res = this%getIntsAt(cable, J_ELEMENTIDS)
          else
             allocate(res(0))
-            write(error_unit,*) 'Error reading materialAssociation region: elementIds label not found'
+            call WarnErrReport('Error reading materialAssociation region: elementIds label not found', .true.)
          end if
       end function
 
@@ -2967,7 +2993,8 @@ contains
 
          material = this%matTable%getId(j_cable%materialId)
          materialType = this%getStrAt(material%p, J_TYPE)
-         if (materialType == J_MAT_TYPE_WIRE) then
+         select case (materialType)
+         case (J_MAT_TYPE_WIRE)
             call assignReferenceProperties(res, material)
             call assignExternalRadius(res, material)
             if (this%existsAt(material%p, J_MAT_WIRE_DIELECTRIC)) then
@@ -2978,11 +3005,13 @@ contains
             !    res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
             ! end if
 
-         else if (materialType == J_MAT_TYPE_MULTIWIRE) then
+         case (J_MAT_TYPE_MULTIWIRE)
             call assignPULProperties(res, material, size(j_cable%elementIds))
-         else
-            write(error_unit, *) "Error reading cable: is neither wire nor multiwire"
-         end if
+         
+         case default
+            call WarnErrReport("Error reading cable: is neither wire nor multiwire", .true.)
+
+         end select
 
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
@@ -3001,7 +3030,7 @@ contains
                res%external_field_segments(i)%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS)
             end do
          else
-            write(error_unit, *) "Wire radius is missing"
+            call WarnErrReport("Wire radius is missing", .true.)
          end if
 
       end subroutine
@@ -3022,7 +3051,7 @@ contains
                res%external_field_segments(i)%dielectric%radius = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)
             end do
          else
-            write(error_unit, *) "Dielectric permittivity and/of radius is missing"
+            call WarnErrReport("Dielectric permittivity and/or radius are missing", .true.)
          end if
 
       end subroutine
@@ -3060,7 +3089,7 @@ contains
                res_conn%resistances = this%getRealsAt(conn%p, J_MAT_CONN_RESISTANCES)
             else
                allocate(res_conn%resistances(0))
-               write(error_unit, *) "Error reading connector: no resistances label found"
+               call WarnErrReport("Error reading connector: no resistances label found")
             end if
 
             if (this%existsAt(conn%p, J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE)) then
@@ -3068,7 +3097,7 @@ contains
                res_conn%transfer_impedance_per_meter = readTransferImpedance(z)
             else
                res_conn%transfer_impedance_per_meter = noTransferImpedance()
-               write(error_unit, *) "Error reading connector: no transferImpedancePerMeter label found"
+               call WarnErrReport("Error reading connector: no transferImpedancePerMeter label found")
             end if
             res => res_conn
          else
@@ -3088,14 +3117,14 @@ contains
          if (this%existsAt(mat%p, J_MAT_WIRE_REF_CAPACITANCE)) then
             res%capacitance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_REF_CAPACITANCE)
          else
-            write(error_unit, *) "Capacitance per meter will be assigned in module Wire_bundles_mtln"
+            call WarnErrReport("Capacitance per meter was not found during parsing and will be assigned in module Wire_bundles_mtln")
             res%capacitance_per_meter(1,1) = 0.0
          end if
          
          if (this%existsAt(mat%p, J_MAT_WIRE_REF_INDUCTANCE)) then
             res%inductance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_REF_INDUCTANCE)
          else
-            write(error_unit, *) "Inductance per meter will be assigned in module Wire_bundles_mtln"
+            call WarnErrReport("Inductance per meter was not found during parsing will be assigned in module Wire_bundles_mtln")
             res%inductance_per_meter(1,1) = 0.0
          end if
 
@@ -3117,14 +3146,14 @@ contains
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
          else
-            write(error_unit, *) "Error reading material region: inductancePerMeter label not found."
+            call WarnErrReport("Error reading material region: inductancePerMeter label not found.", .true.)
             res%inductance_per_meter = null_matrix
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)) then
             res%capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
          else
-            write(error_unit, *) "Error reading material region: capacitancePerMeter label not found."
+            call WarnErrReport("Error reading material region: capacitancePerMeter label not found.", .true.)
             res%capacitance_per_meter = null_matrix
          end if
 
@@ -3166,7 +3195,7 @@ contains
                else if (findOrientation(c2-c1) < 0) then
                   res = [res, mapNegativeSegment(c1,c2)]
                else
-                  write(error_unit, *) 'Error: polyline first and last coordinate are identical'
+                  call WarnErrReport('Error: polyline first and last coordinate are identical', .true.)
                end if
             end do
          end block
@@ -3265,7 +3294,7 @@ contains
          if (this%existsAt(z, J_MAT_TRANSFER_IMPEDANCE_DIRECTION)) then
             direction = trim(adjustl(this%getStrAt(z,J_MAT_TRANSFER_IMPEDANCE_DIRECTION)))
          else
-            write(error_unit,*) 'Error reading material: direction of transferImpedancePerMeter missing'
+            call WarnErrReport('Error reading material: direction of transferImpedancePerMeter missing', .true.)
          end if
 
          if (direction == "inwards") then
@@ -3361,8 +3390,10 @@ contains
       character(len=*), intent(in) :: path
       logical, intent(in) :: found
       logical, intent(in) :: defaultPresent
+      character(len=BUFSIZE) :: errorMsg
       if (.not. found .and. .not. defaultPresent) then
-         write(error_unit,*) 'ERROR expecting a value at: '//path
+         write(errorMsg,*) 'ERROR expecting a value at: '//path
+         call WarnErrReport(errorMsg, .true.)
       end if
    end subroutine
 
@@ -3531,12 +3562,18 @@ contains
       character (kind=JSON_CK, len=:), allocatable :: typeStr
       integer :: i, j, n
       logical :: found
+      character (len=BUFSIZE) :: errorMsg
 
+      ! Precounting.
       n = 0
       do i = 1, this%core%count(place)
          call this%core%get_child(place, i, src)
          typeStr = this%getStrAt(src, key, found)
          call this%core%get(src, key, typeStr, found)
+         if(.not. found) then
+            write(errorMsg, *) "Key: ", key, " not found while doing value filter."
+            call WarnErrReport(errorMsg, .true.)
+         end if
          if(found .and. typeStr == trim(value)) then
             n = n + 1
          end if
@@ -3561,21 +3598,25 @@ contains
       integer, dimension(:), allocatable :: elemIds
       type(cell_interval_t), dimension(:), allocatable :: res
       logical :: found
+      character(len=BUFSIZE) :: errorMsg
 
       elemIds = this%getIntsAt(pw, J_ELEMENTIDS, found=found)
       if (.not. found) then
-         write(error_unit, *) "Error reading single volume elementIds label not found."
+         call WarnErrReport("Error reading single volume elementIds label not found.", .true.)
       end if
       if (size(elemIds) /= 1) then
-         write(error_unit, *) "Entity must contain a single elementId."
+         call WarnErrReport("Entity must contain a single elementId.", .true.)
       end if
       cellRegion = this%mesh%getCellRegion(elemIds(1), found)
       if (.not. found) then
-         write(error_unit, *) "Entity elementId ", elemIds(1), " not found."
+         write(errorMsg, *) "Entity elementId ", elemIds(1), " not found."
+         call WarnErrReport(errorMsg, .true.)
       end if
       res = cellRegion%getIntervalsOfType(CELL_TYPE_VOXEL)
-      if (size(res) /= 1) &
-         write(error_unit, *) "Entity must contain a single cell region defining a volume."
+      if (size(res) /= 1) then
+         write(errorMsg, *) "Entity must contain a single cell region defining a volume."
+         call WarnErrReport(errorMsg, .true.)
+      end if
    end function
 
 #endif   
