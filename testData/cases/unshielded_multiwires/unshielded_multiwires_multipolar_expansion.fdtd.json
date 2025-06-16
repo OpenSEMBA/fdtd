@@ -14,7 +14,7 @@
     },
     "materials": [
         {
-            "name": "berenger_wire",
+            "name": "berenger_wires",
             "id": 1,
             "type": "unshieldedMultiwire",
             "multipolarExpansion": {

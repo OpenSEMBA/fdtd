@@ -2267,13 +2267,17 @@ contains
          type(cable_t), dimension(:), pointer :: cables
          integer :: n, i
          logical :: unique
+         character (len=BUFSIZE) :: errorMsg
          unique = .true.
          do i = 1, n
             if (cable%name == cables(i)%name) then
                unique = .false.
             end if
          end do
-         if (.not. unique) error stop 'Cable name "'//cable%name//'" has already been used'
+         if (.not. unique) then
+            write (errorMsg, *) "Cable name ", cable%name, " has already been used"
+            call WarnErrReport(errorMsg, .true.)
+         end if
       end subroutine
 
       function readConnectors() result(res)
@@ -3142,6 +3146,7 @@ contains
          integer, intent(in) :: n
          real, dimension(:,:), allocatable :: null_matrix
          logical :: found
+         
          allocate(null_matrix(n,n), source = 0.0)
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)

@@ -147,14 +147,17 @@ module mtln_types_mod
    end type
 
    type, public :: fieldReconstruction_t
+      ! This data allows reconstructing the potential for a set of conductors
+      ! in which each conductor has a different potential.
+   
       ! Average potential within the inner region.
-      real :: innerRegionAveragePotential
+      real :: inner_region_average_potential
       ! Expansion center for the field reconstruction using the multipolar expansion
-      real, dimension(2) :: expansionCenter
+      real, dimension(2) :: expansion_center
       ! Multipolar expansion coefficients. Size of the multipolar expansion order.
-      type(multipolarCoefficients_t), dimension(:), allocatable :: ab      
+      type(multipolarCoefficient_t), dimension(:), allocatable :: ab      
       ! Potentials on each conductor. size of the number of conductors.
-      real, dimension(:) :: conductorPotentials  
+      real, dimension(:), allocatable :: conductor_potentials  
    end type
 
    type, public :: crossSectionBox_t
@@ -164,7 +167,7 @@ module mtln_types_mod
    type, public :: multipolarExpansion_t
       ! Inner region is assumed to be in meters.
       ! A 2D box defining the inner region which contains all the conductors.
-      type(crossSectionBox_t) :: innerRegion
+      type(crossSectionBox_t) :: inner_region
    
       ! Size of the number of conductors. 
       type(fieldReconstruction_t), dimension(:), allocatable :: electric, magnetic     
@@ -173,9 +176,13 @@ module mtln_types_mod
    type, public :: cable_t
       character (len=:), allocatable :: name
       real, allocatable, dimension(:,:) :: resistance_per_meter
-      real, allocatable, dimension(:,:) :: capacitance_per_meter
-      real, allocatable, dimension(:,:) :: inductance_per_meter
       real, allocatable, dimension(:,:) :: conductance_per_meter
+
+      real, allocatable, dimension(:,:) :: inductance_per_meter
+      real, allocatable, dimension(:,:) :: capacitance_per_meter
+
+      type(multipolarExpansion_t), pointer :: multipolar_expansion
+            
       real, allocatable, dimension(:) :: step_size
       type(transfer_impedance_per_meter_t) :: transfer_impedance
       type(cable_t), pointer :: parent_cable => null()
@@ -184,7 +191,6 @@ module mtln_types_mod
       type(connector_t), pointer :: end_connector => null()
       type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
       logical :: isPassthrough = .false.
-      type(multipolarExpansion_t), pointer :: multipolar_expansion
    contains
       private
       procedure :: cable_eq
