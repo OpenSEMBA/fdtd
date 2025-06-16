@@ -139,6 +139,37 @@ module mtln_types_mod
       generic, public :: operator(==) => connector_eq
    end type
 
+   type, public :: multipolarCoefficient_t
+      ! Coefficients are assumed to be provided in natural units. 
+      ! To use them as a charge they must be multiplied by epsilon_0.
+      ! To use them as a current they must be divided by mu_0.
+      real :: a, b
+   end type
+
+   type, public :: fieldReconstruction_t
+      ! Average potential within the inner region.
+      real :: innerRegionAveragePotential
+      ! Expansion center for the field reconstruction using the multipolar expansion
+      real, dimension(2) :: expansionCenter
+      ! Multipolar expansion coefficients. Size of the multipolar expansion order.
+      type(multipolarCoefficients_t), dimension(:), allocatable :: ab      
+      ! Potentials on each conductor. size of the number of conductors.
+      real, dimension(:) :: conductorPotentials  
+   end type
+
+   type, public :: crossSectionBox_t
+      real, dimension(2) :: min, max
+   end type
+
+   type, public :: multipolarExpansion_t
+      ! Inner region is assumed to be in meters.
+      ! A 2D box defining the inner region which contains all the conductors.
+      type(crossSectionBox_t) :: innerRegion
+   
+      ! Size of the number of conductors. 
+      type(fieldReconstruction_t), dimension(:), allocatable :: electric, magnetic     
+   end type
+
    type, public :: cable_t
       character (len=:), allocatable :: name
       real, allocatable, dimension(:,:) :: resistance_per_meter
@@ -153,7 +184,7 @@ module mtln_types_mod
       type(connector_t), pointer :: end_connector => null()
       type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
       logical :: isPassthrough = .false.
-
+      type(multipolarExpansion_t), pointer :: multipolar_expansion
    contains
       private
       procedure :: cable_eq
