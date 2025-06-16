@@ -404,14 +404,9 @@ A `shieldedMultiwire`, models $N+1$ electrical wires inside a bundled. The volta
 `shieldedMultiwire` materials are assumed to be contained within a `wire` or another `shieldedMultiwire` which is the external domain and is used as voltage reference. 
 They must contain the following entries:
 
-+ `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$.
-+ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero.
++ `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]` 
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
 + `[transferImpedancePerMeter]` which represents the coupling with the external domain, described below. If not present, it defaults to zero, i.e. perfect shielding.
-
-If the number of wires of the `shieldedMultiwire` is equal to 1, none of the properties above are scalars:
-
-+ `<inductancePerMeter>` and `<capacitancePerMeter>` will be a $1 \times 1$ matrix, i.e `[[1e-7]]` 
-+ `[resistancePerMeter]` and `[conductancePerMeter]` will be arrays of size $1$, i.e `[50]`
 
 `transferImpedancePerMeter` can contain:
 
@@ -441,6 +436,22 @@ If the number of wires of the `shieldedMultiwire` is equal to 1, none of the pro
     }
 }
 ```
+
+### `unshieldedMultiwire`
+
+A `unshieldedMultiwire`, models a bundle of $N$ electrical wires. The charges and currents on these wires are solved using the model described in:
+
+    Berenger, J. P. A Multiwire formalism for the FDTD Method. IEEE Transactions on Electromagnetic Compatability. August, 2000.
+
+They must contain the following entries:
+
++ `<inCellParameters>` which can be defined in two ways:
+    - By fixed values defined in `inductancePerMeter` and `capacitancePerMeter` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]`.
+    - By a `multipolarExpansion` which contains the following information:
+        - TODO TODO TODO
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
+
+
 
 ### `terminal`
 

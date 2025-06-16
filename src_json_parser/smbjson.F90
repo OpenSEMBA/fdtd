@@ -3014,6 +3014,9 @@ contains
 
          case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
             call assignPULProperties(res, material, size(j_cable%elementIds))
+
+         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
+            call assignInCellProperties(res, material, size(j_cable%elementIds))
          
          case default
             call WarnErrReport("Error reading cable: material type is not valid", .true.)
@@ -3144,6 +3147,41 @@ contains
       end subroutine
 
       subroutine assignPULProperties(res, mat, n)
+         type(cable_t), intent(inout) :: res
+         type(json_value_ptr) :: mat
+         integer, intent(in) :: n
+         real, dimension(:,:), allocatable :: null_matrix
+         logical :: found
+
+         allocate(null_matrix(n,n), source = 0.0)
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
+            res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
+         else
+            call WarnErrReport("Error reading material region: inductancePerMeter label not found.", .true.)
+            res%inductance_per_meter = null_matrix
+         end if
+
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)) then
+            res%capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
+         else
+            call WarnErrReport("Error reading material region: capacitancePerMeter label not found.", .true.)
+            res%capacitance_per_meter = null_matrix
+         end if
+
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
+            res%resistance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
+         else
+            res%resistance_per_meter = null_matrix
+         end if
+
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)) then
+            res%conductance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
+         else
+            res%conductance_per_meter = null_matrix
+         end if
+      end subroutine
+
+      subroutine assignInCellProperties(res, mat, n)
          type(cable_t), intent(inout) :: res
          type(json_value_ptr) :: mat
          integer, intent(in) :: n
