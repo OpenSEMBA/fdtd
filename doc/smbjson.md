@@ -771,8 +771,7 @@ This object represents a time-varying vector field applied along an oriented lin
     "type": "nodalSource", 
     "magnitudeFile": "gauss.exc", 
     "elementIds": [1],
-    "hardness": "soft",
-    "field": "electric"
+    "hardness": "soft"
 }
 ```
 

@@ -1,4 +1,4 @@
-Module Report
+module Report
    use FDETYPES
 
    use snapxdmf
@@ -135,7 +135,7 @@ contains
       call MPI_FINALIZE(ierr)
 #endif
       call CloseReportingFiles
-
+ 
 
 
       STOP
@@ -1040,7 +1040,7 @@ contains
             endif
          endif
 #ifdef CompileWithMPI
-         call MPI_Barrier(MPI_COMM_WORLD,ierr)
+         call MPI_Barrier(MPI_COMM_WORLD,ierr) 
          call MPI_BCast( mustSnap, 1_4, MPI_LOGICAL, 0_4, MPI_COMM_WORLD, ierr)
          call MPI_BCast( snapLevel, 1_4, REALSIZE, 0_4, MPI_COMM_WORLD, ierr)
          call MPI_BCast( snapStep, 1_4, MPI_INTEGER, 0_4, MPI_COMM_WORLD, ierr)
@@ -1509,32 +1509,26 @@ contains
       character(len=*), intent(in) :: bufff
       character(len=BUFSIZE) :: buff2,buff3
 
-
-      if (present(error)) fatalerror=error .or. fatalerror
+      if (present(error)) then
+         fatalerror = error .or. fatalerror
+      end if
 
       !
 
       buff3=trim(adjustl(whoami))//' '//trim(adjustl(bufff))
       call trimnullchar(buff3)
 
-      !buff2=CHAR(13)//CHAR(10)//trim(adjustl(bufff(1:bufsize-24)))//CHAR(13)//CHAR(10)
       buff2=CHAR(13)//CHAR(10)//trim(adjustl(buff3))
       call trimnullchar(buff2)
-      !!!#ifdef CompileWithMPI
-      !!!    CONTADORDEMENSAJES = CONTADORDEMENSAJES +1
-      !!!    IF (CONTADORDEMENSAJES > maxmessages) call StopOnError(0,0,'ERROR: Relaunch with -maxmessages ', &
-      !!!               CONTADORDEMENSAJES*10 )
-      !!!    call MPI_FILE_WRITE(thefile, buff2  , BUFSIZE, MPI_CHARACTER, MPI_STATUS_IGNORE, ierr)
-      !!!#else
+
       write (17,'(a)',err=154) trim(adjustl(buff3))
-      !!!#endif
-      !
-      !!! elimino lo de sacarlo por pantalla 06/03/15
-      !!!!!! if ((verbose).or.((present(error)).and.(error))) write (*,'(a)')  trim(adjustl(buff3))
+
       goto 155
 154   inquire(unit=17, opened=itsopen) 
+
       print *,itsopen,'- Cannot write into warning file the message: ',trim(adjustl(buff3))
 155   return
+
    end subroutine WarnErrReport
 
 

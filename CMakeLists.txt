@@ -172,6 +172,7 @@ add_library(semba-types
 	"src_wires_pub/wires_types.F90"
 	"src_main_pub/lumped_types.F90"
 )
+target_link_libraries(semba-types ${MPI_Fortran_LIBRARIES})
 
 add_library(semba-reports
 	"src_main_pub/errorreport.F90"

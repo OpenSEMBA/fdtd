@@ -401,13 +401,11 @@ PROGRAM SEMBA_FDTD_launcher
       l%fatalerror=l%fatalerror.or.l%fatalerrornfde2sgg
       !!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
-      !wait until everything comes out
       CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
       CALL print11 (l%layoutnumber, '[OK] Ended conversion internal ASCII => Binary')
       !release memory created by newPARSER
       if (l%fatalerror) then
-!!intenta recuperarte
          if (allocated(sggMiEx)) deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
          CALL stoponerror (l%layoutnumber, l%size, 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any',.true.); goto 652
       endif

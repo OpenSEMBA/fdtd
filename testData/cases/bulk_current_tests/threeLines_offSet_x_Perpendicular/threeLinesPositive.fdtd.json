@@ -184,8 +184,7 @@
             "magnitudeFile": "predefinedExcitation.1.exc",
             "elementIds": [
                 1
-            ],
-            "field": "current"
+            ]
         },
         {
             "name": "nodalSource2",
@@ -193,8 +192,7 @@
             "magnitudeFile": "predefinedExcitation.2.exc",
             "elementIds": [
                 6
-            ],
-            "field": "current"
+            ]
         },
         {
             "name": "nodalSource3",
@@ -202,8 +200,7 @@
             "magnitudeFile": "predefinedExcitation.3.exc",
             "elementIds": [
                 7
-            ],
-            "field": "current"
+            ]
         }
     ],
     "probes": [
