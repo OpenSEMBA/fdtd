@@ -427,6 +427,7 @@ contains
             if (field/=nothing) ThereAreObservation=.true.
          end do
       end do
+#ifdef CompileWithMTLN
       block
          type(mtln_solver_t), pointer :: mtln_solver
          integer :: i,j
@@ -438,7 +439,7 @@ contains
             end if
          end do
       end block
-
+#endif
       !
       memo=0
       !

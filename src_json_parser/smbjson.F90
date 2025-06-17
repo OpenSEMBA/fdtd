@@ -3264,11 +3264,29 @@ contains
          function readFieldReconstruction(ptr) result(res)
             type(json_value), pointer, intent(in) :: ptr
             type(field_reconstruction_t) :: res
+            real, dimension(:), allocatable :: auxAB
+            type(json_value), pointer :: abPtr
             
+            integer :: i
             logical :: found
 
-            res%inner_region_average_potential = this%getRealAt(ptr, J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL)
-            
+            res%inner_region_average_potential = &
+               this%getRealAt(ptr, J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL)
+            res%expansion_center = &
+               this%getRealsAt(pt, J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER)
+            res%conductor_potentials = &
+               this%getRealsAt(pt, J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS)
+
+            call this%core%get(ptr, J_MAT_MULTIWIRE_MEFR_AB, abPtr, found)
+            if (.not. found) then
+               call WarnErrReport("Error reading multipolar expansion: ab label not found", .true.)
+            end if
+            allocate(res%ab(this%core%count(abPtr)))
+            do i = 1, size(res%ab)
+               auxAB = this%getReals(res%ab(i))
+               res%ab(i)%a = auxAB(1)
+               res%ab(i)%b = auxAB(2)
+            end do
 
          end function
       end function
