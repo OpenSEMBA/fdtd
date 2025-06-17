@@ -115,8 +115,10 @@ PROGRAM SEMBA_FDTD_launcher
    
    INTEGER (KIND=4) ::  verdadero_mpidir
    logical :: newrotate !300124 tiramos con el rotador antiguo
-
    newrotate=.false.       !!ojo tocar luego                     
+#ifdef CompileWithSMBJSON
+   newrotate=.true.
+#endif
 !!200918 !!!si se lanza con -pscal se overridea esto
    Eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
    Mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
@@ -315,23 +317,14 @@ PROGRAM SEMBA_FDTD_launcher
 !!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!
    call print_credits(l)
-   if (trim(adjustl(l%extension))=='.nfde') then   
-#ifdef CompilePrivateVersion   
-       call cargaNFDE(l%filefde,parser)
-#else
-       print *,'Not compiled with cargaNFDEINDEX'
-       stop
-#endif
-#ifdef CompileWithSMBJSON
-   elseif (trim(adjustl(l%extension))=='.json') then
-        call cargaFDTDJSON(l%fichin, parser)
-#endif
-   else
-       print *, 'Neither .nfde nor .json files used as input after -i'
-       stop
-   endif
-   
 
+#ifdef CompileWithMPI
+   call initialize_MPI_process(l%filefde)
+#else
+   allocate (NFDE_FILE)
+#endif
+
+   call data_loader(l%filefde, parser)
 
 !!!!!!!!!!!!!!!!!!!!!!!
    sgg%extraswitches=parser%switches
@@ -978,131 +971,195 @@ contains
 !!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!
 
-
-#ifdef CompilePrivateVersion 
-subroutine cargaNFDE(local_nfde,local_parser)
-   CHARACTER (LEN=BUFSIZE) :: local_nfde
-   TYPE (Parseador), POINTER :: local_parser
-   INTEGER (KIND=8) :: numero,i8,troncho,longitud
-   integer (kind=4) :: mpi_t_linea_t,longitud4
-   IF (l%existeNFDE) THEN
-       WRITE (dubuf,*) 'INIT Reading file '//trim (adjustl(whoami))//' ', trim (adjustl(local_nfde))
-       CALL print11 (l%layoutnumber, dubuf)
-!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
-      CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-      if (l%layoutnumber==0) then
-           NFDE_FILE => cargar_NFDE_FILE (local_nfde)
-      !!!ya se allocatea dentro
-      else
-           ALLOCATE (NFDE_FILE)
-      endif
-      !
-      write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
-      !--->
-      WRITE (dubuf,*) 'INIT Sharing file through MPI'; CALL print11 (l%layoutnumber, dubuf)
-      !
-      CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-      !
-      numero=NFDE_FILE%numero
-      call MPI_BCAST(numero, 1_4, MPI_INTEGER8, 0_4, SUBCOMM_MPI, l%ierr)      
-      if (l%layoutnumber/=0) then
-          NFDE_FILE%targ = 1
-          NFDE_FILE%numero=numero
-          ALLOCATE (NFDE_FILE%lineas(NFDE_FILE%numero))
-      endif
-      CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-      !CREAMOS EL DERIVED TYPE y lo enviamos !para evitar el error de Marconi asociado a PSM2_MQ_RECVREQS_MAX 100617
+subroutine initialize_MPI_process(filename)
+   character(LEN=BUFSIZE), intent(in) :: filename
+   integer (kind=4) :: mpi_t_linea_t,longitud4
+   integer(KIND=8) :: rawInfoBuffer, numeroLineasFichero, i8, longitud8
+   TYPE (t_NFDE_FILE), POINTER :: rawFileInfo
 
-      CALL build_derived_t_linea(mpi_t_linea_t)
+   write (dubuf,*) 'INIT Reading file '//trim (adjustl(whoami))//' ', trim (adjustl(filename))
 
-      !problema del limite de mandar mas de 2^29 bytes con MPI!!!  Los soluciono partiendo en maxmpibytes (2^27) (algo menos por prudencia)! 040716
-      troncho=ceiling(maxmpibytes*1.0_8/(BUFSIZE*1.0_8+8.0_8),8)
-     !!! print *,'numero,troncho ',numero,troncho
-      do i8=1,numero,troncho
-          longitud=min(troncho,numero-i8+1)
+   call print11 (l%layoutnumber, dubuf)
+
+   if (l%layoutnumber==0) then
+#ifdef CompilePrivateVersion
+        NFDE_FILE => cargar_NFDE_FILE (filename)
+#else
+        call carga_raw_info(rawFileInfo, filename)
+        NFDE_FILE => rawFileInfo
+#endif
+   else
+        ALLOCATE (NFDE_FILE)
+   endif
+
+   write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
+
+   WRITE (dubuf,*) 'INIT Sharing file through MPI'; CALL print11 (l%layoutnumber, dubuf)
+   !
+   CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+   !
+   numeroLineasFichero=NFDE_FILE%numero
+   call MPI_BCAST(numeroLineasFichero, 1_4, MPI_INTEGER8, 0_4, SUBCOMM_MPI, l%ierr)      
+   if (l%layoutnumber/=0) then
+       NFDE_FILE%targ = 1
+       NFDE_FILE%numero=numeroLineasFichero
+       ALLOCATE (NFDE_FILE%lineas(NFDE_FILE%numero))
+   endif
+   CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+
+   CALL build_derived_t_linea(mpi_t_linea_t)
+
+   rawInfoBuffer=ceiling(maxmpibytes*1.0_8/(BUFSIZE*1.0_8+8.0_8),8)
+
+   do i8=1, numeroLineasFichero, rawInfoBuffer
+                longitud8=min(rawInfoBuffer, numeroLineasFichero - i8 + 1)
           CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-          if ((longitud>huge(1_4)).or.(longitud>maxmpibytes)) then
+          if ((longitud8>huge(1_4)).or.(longitud8>maxmpibytes)) then
               print *,'Stop. Buggy error: MPI longitud greater that greatest integer*4'
               stop
           else
-              longitud4=int(longitud,4)
+              longitud4=int(longitud8,4)
           endif
           call MPI_BCAST(NFDE_FILE%lineas(i8),longitud4,mpi_t_linea_t,0_4,SUBCOMM_MPI,l%ierr)    
           CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-       !!!  if (l%layoutnumber==1) print *,'l%layoutnumber-->',l%layoutnumber, i8,i8+longitud-1 
-       !!!  if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8)%dato)) 
-       !!!  if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8+longitud-1)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8+longitud-1)%dato))
-          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-         !      do i=1,numero
-    !          call MPI_BCAST(NFDE_FILE%lineas(i)%len, 1_4, MPI_INTEGER4, 0_4, SUBCOMM_MPI, l%ierr)
-    !          call MPI_BCAST(NFDE_FILE%lineas(i)%dato, BUFSIZE, MPI_CHARACTER, 0_4, SUBCOMM_MPI, l%ierr)
-    !          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr) !para evitar el error de Marconi asociado a PSM2_MQ_RECVREQS_MAX 100617
-         !      end do
-      end do
-      !solo para debugeo
-            !!!open(6729,file='comprob_'//trim(adjustl(dubuf))//'.nfde',form='formatted')
-            !!!write(6729,'(2i12)') NFDE_FILE%numero,NFDE_FILE%targ
-            !!!do i=1,numero
-            !!!   write(6729,'(i6,a)') NFDE_FILE%lineas(i)%len,trim(adjustl(NFDE_FILE%lineas(i)%dato))
-            !!!end do
-            !!!close (6729)
-      !!!!!!
-#else
-    NFDE_FILE => cargar_NFDE_FILE (local_nfde)
+          !!! Bloque de código para debugueo !!!
+          !!!if (l%layoutnumber==1) print *,'l%layoutnumber-->',l%layoutnumber, i8,i8+longitud8-1 
+          !!!if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8)%dato)) 
+          !!!if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8+longitud8-1)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8+longitud8-1)%dato))
+          !!!CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   end do
+   !!! Bloque de código para debugueo !!!
+   !!!open(6729,file='comprob_'//trim(adjustl(dubuf))//'.nfde',form='formatted')
+   !!!write(6729,'(2i12)') NFDE_FILE%numero,NFDE_FILE%targ
+   !!!do i=1,numeroLineasFichero
+   !!!   write(6729,'(i6,a)') NFDE_FILE%lineas(i)%len,trim(adjustl(NFDE_FILE%lineas(i)%dato))
+   !!!end do
+   !!!close (6729)
+   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+end subroutine initialize_MPI_process
+
 #endif
-      write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
-      !--->
-   END IF    
+subroutine data_loader(filename, parsedProblem)
+   type(Parseador), pointer :: parsedProblem
+   type(fdtdjson_parser_t) :: parsed_t
+   character(len=1024), intent(in) :: filename
+
    NFDE_FILE%mpidir=l%mpidir
-!!!!!!!!!!!!!!!!!!!
-   WRITE (dubuf,*) 'INIT interpreting geometrical data from ', trim (adjustl(local_nfde))
-   CALL print11 (l%layoutnumber, dubuf)
-!!!!!!!!!!
+   write (dubuf,*) 'INIT interpreting geometrical data from ', trim (adjustl(filename))
+   call print11 (l%layoutnumber, dubuf)
+
    if(newrotate) then
        verdadero_mpidir=NFDE_FILE%mpidir
-       NFDE_FILE%mpidir=3     !no lo rota el parseador antiguo
+       NFDE_FILE%mpidir=3 !mpdir value is temporaly set to 3.This disables old rotation worflow inside newparser's call
    endif
-   local_parser => newparser (NFDE_FILE)         
+ 
+   if (trim(adjustl(l%extension))=='.nfde') then 
+#ifdef CompilePrivateVersion   
+         parsedProblem => newparser (NFDE_FILE)
+         l%thereare_stoch=NFDE_FILE%thereare_stoch
+#else
+         print *,'Not compiled with cargaNFDEINDEX'
+         stop
+#endif
+      
+#ifdef CompileWithSMBJSON
+   elseif (trim(adjustl(l%extension))=='.json') then
+      parsed_t = fdtdjson_parser_t(filename)   
+      allocate(parsedProblem)
+      parsedProblem = parsed_t%readProblemDescription()
+#endif
+
+   else
+       print *, 'Neither .nfde nor .json files used as input after -i'
+       stop
+   endif
+
 #ifdef CompileWithMPI            
    CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
+
    if(newrotate) then      
-       NFDE_FILE%mpidir=verdadero_mpidir   !restorealo
-       call nfde_rotate (local_parser,NFDE_FILE%mpidir)   !lo rota el parseador nuevo  
+       NFDE_FILE%mpidir=verdadero_mpidir   
+       call nfde_rotate (parsedProblem,NFDE_FILE%mpidir)
+   endif 
+
 #ifdef CompileWithMPI            
        CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
-   endif
-   l%thereare_stoch=NFDE_FILE%thereare_stoch
-   l%mpidir=NFDE_FILE%mpidir !bug 100419
-!!!!!!!!!!!                             
-  ! write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
-   write(dubuf,*) '[OK] '//trim(adjustl(whoami))//' newparser (NFDE_FILE)';  call print11(l%layoutnumber,dubuf)       
+
+   
+   l%mpidir=NFDE_FILE%mpidir
+
+   write(dubuf,*) '[OK] '//trim(adjustl(whoami))//' Parser still working ';  call print11(l%layoutnumber,dubuf)       
 #ifdef CompileWithMPI            
        CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
    return
+end subroutine data_loader
 
-end subroutine cargaNFDE
-#endif
+subroutine carga_raw_info (rawFileInfo, filename)
+      CHARACTER (LEN=*), INTENT (IN) :: filename
+      TYPE (t_NFDE_FILE), POINTER :: rawFileInfo
+      
+      TYPE (t_linea), POINTER :: linea
+      LOGICAL :: ok
+      CHARACTER (LEN=BUFSIZE) :: l_aux
+      character(len=BUFSIZE) :: buffer
+      INTEGER (KIND=4) :: i,tamanio,i0,ascii,offset,ascii_menos1,j,k
+      Character (Len=:), Allocatable :: fichero
+      INTEGER (KIND=4), PARAMETER :: UNIT_EF = 10
+      ALLOCATE (rawFileInfo)
+      rawFileInfo%numero = 0
+      rawFileInfo%targ = 1
 
-#ifdef CompileWithSMBJSON
-   subroutine cargaFDTDJSON(filename, parsed)
-      character(len=1024), intent(in) :: filename
-      type(Parseador), pointer :: parsed
-      
-      character(len=:), allocatable :: usedFilename    
-      type(fdtdjson_parser_t) :: parser
-      
-      usedFilename = adjustl(trim(filename)) // ".json"
-      parser = fdtdjson_parser_t(usedFilename)
-      
-      allocate(parsed)
-      parsed = parser%readProblemDescription()
-   end subroutine cargaFDTDJSON
-#endif
+      OPEN (UNIT=UNIT_EF, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
+      DO
+         READ (UNIT_EF, '(A)', end=1010) l_aux
+         rawFileInfo%numero = rawFileInfo%numero + 1
+         IF (len_trim (adjustl(l_aux))>=BUFSIZE) then
+              WRITE (buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
+              call warnerrreport(buffer,.TRUE.) !ABORTA
+         endif
+      END DO
+1010   CLOSE (UNIT_EF)
+      ALLOCATE (rawFileInfo%lineas(rawFileInfo%numero))
+      rawFileInfo%numero = 0
+      OPEN (UNIT=UNIT_EF, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
+      DO
+         READ (UNIT_EF, '(A)', end=2010) l_aux
+         IF (len_trim (adjustl(l_aux))>=BUFSIZE) then
+              WRITE (buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
+              call warnerrreport(buffer,.TRUE.) !ABORTA
+         endif
+         rawFileInfo%numero = rawFileInfo%numero + 1
+         linea => rawFileInfo%lineas (rawFileInfo%numero)
+         linea%dato = adjustl(l_aux)
+         linea%LEN=len_trim (linea%dato)
+      END DO
+2010   CLOSE (UNIT_EF)
 
+      do k=1,rawFileInfo%numero
+          linea => rawFileInfo%lineas (k)
+          do j=1,linea%len
+              i=j
+              buscaespa: do while ((ichar(linea%dato(i:i))==32).or.(ichar(linea%dato(i:i))==9))
+                 if ((ichar(linea%dato(i+1:i+1))==32).or.(ichar(linea%dato(i+1:i+1))==9)) then
+                     linea%dato = trim (adjustl(linea%dato(1:i)))//' '//trim (adjustl(linea%dato(i+2:linea%len)))
+                 endif
+                 i=i+1
+                 if (i>linea%len) exit buscaespa
+              end do buscaespa
+          end do
+          !update
+          linea%dato =  trim (adjustl(linea%dato))
+          linea%LEN=len_trim (adjustl(linea%dato))   
+     end do
+
+
+      return
+end subroutine carga_raw_info
 !!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

@@ -1,7 +1,5 @@
 message(STATUS "Creating build system for test/smbjson")
 
-set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
-
 add_library (smbjson_test_fortran 
     "smbjson_testingTools.F90" 
     "test_idchildtable.F90"

@@ -1,0 +1,64 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Planewave passing through an empty box.",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 2000
+    },
+    
+    "boundary": {
+        "all": {"type": "mur"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 20, 30],
+            "steps": { "x": [0.6], "y": [0.3], "z": [0.2] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [4, 5, 6]},
+            {"id": 2, "relativePosition": [7, 8, 8]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [1]},
+            {"id": 2, "type": "node", "coordinateIds": [2]},
+            {"id": 10, "type": "cell", "intervals": [ [ [1, 1, 1], [15, 16, 17] ] ]}
+        ]
+    },
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [10],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5708,
+                "phi": 0.0
+            }
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "electric_field_point_probe",
+            "type": "point",
+            "elementIds": [1],
+            "directions": ["x", "y", "z"],
+            "domain": { 
+                "type": "time" 
+            }
+        },
+        {
+            "name": "magnetic_field_point_probe",
+            "type": "point",
+            "field": "magnetic",
+            "elementIds": [2],
+            "directions": ["x"]
+        }
+    ]
+}
