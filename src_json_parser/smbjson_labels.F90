@@ -80,6 +80,20 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_MULTIWIRE_INDUCTANCE = "inductancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_RESISTANCE = "resistancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_CONDUCTANCE = "conductancePerMeter"
+   
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION = "multipolarExpansion"
+   ! ME = Multipolar Expansion
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX = "innerRegionBox"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX = "max"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN = "min"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_ELECTRIC = "electric"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_MAGNETIC = "magnetic"
+   ! MEFR = Multipolar Expansion Field Reconstruction
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_AB = "ab"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS = "conductorPotentials"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER = "expansionCenter"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL = "innerRegionAveragePotential"
+
 
    character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_LAYERS = "layers"
    character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_THICKNESS = "thickness"

@@ -3184,23 +3184,37 @@ contains
       subroutine assignInCellProperties(res, mat, n)
          type(cable_t), intent(inout) :: res
          type(json_value_ptr) :: mat
+         type(json_value), pointer :: multipolarExpansionPtr
          integer, intent(in) :: n
          real, dimension(:,:), allocatable :: null_matrix
          logical :: found
-
+         logical :: areFixedInCell
+         logical :: areMultipolarInCell
+         
          allocate(null_matrix(n,n), source = 0.0)
-         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
-            res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
-         else
-            call WarnErrReport("Error reading material region: inductancePerMeter label not found.", .true.)
-            res%inductance_per_meter = null_matrix
+
+         areFixedInCell = &
+            this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE) .and. &
+            this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)
+         areMultipolarInCell = 
+            this%existsAt(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION)
+
+         if ((areFixedInCell .and. areMultipolarInCell) .or. &
+             (.not. areFixedInCell .and. .not areMultipolarInCell) ) then
+            call WarnErrReport( &
+               "Unshielded multiwires in cell properties must be defined by fixed OR multipolarExpansions, but not both.", .true.)
          end if
 
-         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)) then
+         if (areFixedInCell) then
+            res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
             res%capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
-         else
-            call WarnErrReport("Error reading material region: capacitancePerMeter label not found.", .true.)
+            nullify(res%multipolar_expansion)
+         else 
+            res%inductance_per_meter = null_matrix
             res%capacitance_per_meter = null_matrix
+            call this%core%get(mat, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, multipolarExpansionPtr)
+            allocate(res%multipolar_expansion)         
+            res%multipolar_expansion = readMultipolarExpansion(multipolarExpansionPtr)
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
@@ -3214,9 +3228,51 @@ contains
          else
             res%conductance_per_meter = null_matrix
          end if
-
-
       end subroutine
+
+      function readMultipolarExpansion(multipolarExpansionPtr) result (res)
+         type(json_value), pointer :: multipolarExpansionPtr
+         type(multipolar_expansion_t) :: res
+         type(json_value), pointer :: jvPtr
+         logical :: found
+         
+         call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX, jvPtr, found)
+         if (.not. found) then
+            call WarnErrReport("Error reading multipolar expansion: innerRegionBox label not found", .true.)
+         end if   
+         this%inner_region = readInnnerRegionBox(jvPtr)
+
+         call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_ELECTRIC, jvPtr, found)
+         if (.not. found) then
+            call WarnErrReport("Error reading multipolar expansion electric reconstruction not found", .true.)
+         end if
+         this%electric = readFieldReconstruction(jvPtr)
+
+         call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_MAGNETIC, jvPtr, found)
+         if (.not. found) then
+            call WarnErrReport("Error reading multipolar expansion magnetic reconstruction not found", .true.)
+         end if
+         this%magnetic = realdFieldReconstruction(jvPtr)
+         
+      contains
+         function readInnnerRegionBox(ptr) result(inner_region)
+            type(json_value), pointer, intent(in) :: ptr
+            res%inner_region%min = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN)
+            res%inner_region%max = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX)
+         end function
+         
+         function readFieldReconstruction(ptr) result(res)
+            type(json_value), pointer, intent(in) :: ptr
+            type(field_reconstruction_t) :: res
+            
+            logical :: found
+
+            res%inner_region_average_potential = this%getRealAt(ptr, J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL)
+            
+
+         end function
+      end function
+
 
       function mapSegmentsToGridCoordinates(j_cable) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
