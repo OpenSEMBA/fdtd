@@ -1316,6 +1316,8 @@ contains
             res = NP_COR_WIRECURRENT
           case (J_FIELD_VOLTAGE)
             res = NP_COR_DDP
+          case (J_FIELD_CHARGE)
+            res = NP_COR_CHARGE
           case default
             write(error_unit,*) "Invalid field label for point/wire probe."
          end select

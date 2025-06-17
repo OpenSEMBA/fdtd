@@ -3301,7 +3301,7 @@ CONTAINS
             &   ((tipotemp == NP_COR_EX) .OR. (tipotemp == NP_COR_EY) .OR. (tipotemp == NP_COR_EZ) .OR.   &
             &     (tipotemp == NP_COR_HX) .OR. (tipotemp ==  NP_COR_HY) .OR. (tipotemp == NP_COR_HZ))) THEN
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-            ELSE IF (tipotemp == NP_COR_WIRECURRENT) THEN
+            ELSE IF (tipotemp == NP_COR_WIRECURRENT .or. tipotemp == NP_COR_CHARGE) THEN
                nodo_cazado=.false.
                loop_busqueda1: DO j1 = 1, this%twires%n_tw
                   DO i1 = 1, this%twires%TW(j1)%N_TWC
@@ -3699,7 +3699,8 @@ CONTAINS
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZI = punto%ZI
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iHz
                   END IF
-               ELSE IF (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) THEN
+               ELSE IF (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT .or. &
+                        this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) THEN
                   nodo_cazado=.false.
                   do_loop_busqueda: DO j1 = 1, this%twires%n_tw
                      DO i1 = 1, this%twires%TW(j1)%N_TWC
@@ -3719,7 +3720,12 @@ CONTAINS
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJx
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJx
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = iQx
+                                 end if
+
                                  !se nota con un indice distinto
                                  !
                                CASE (iEy)
@@ -3728,14 +3734,22 @@ CONTAINS
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJy
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJy
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = iQy
+                                 end if
                                CASE (iEz)
                                  sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%node = this%twires%TW(j1)%TWC(i1)%nd
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = punto%XI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = punto%YI
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = punto%ZI
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJz
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJz
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = iQz
+                                 end if
                               END SELECT
                               EXIT do_loop_busqueda
                            END IF

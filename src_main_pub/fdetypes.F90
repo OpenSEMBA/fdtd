@@ -183,6 +183,7 @@ module  FDETYPES
    integer (kind=4),  parameter  :: lineIntegral=68
    ! do not change
    integer (kind=4),  parameter  ::  iJx=10*iEx,iJy=10*iEy,iJz=10*iEz
+   integer (kind=4),  parameter  ::  iQx=10000*iEx,iQy=10000*iEy,iQz=10000*iEz
    integer (kind=4),  parameter  ::  iVx=1000*iEx,iVy=1000*iEy,iVz=1000*iEz
    integer (kind=4),  parameter  ::  iBloqueJx=100*iEx,iBloqueJy=100*iEy,iBloqueJz=100*iEz
    integer (kind=4),  parameter  ::  iBloqueMx=100*iHx,iBloqueMy=100*iHy,iBloqueMz=100*iHz

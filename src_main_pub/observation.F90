@@ -330,7 +330,7 @@ contains
 #else
                endif
 #endif
-             case (iEx,iVx,iEy,iVy,iHz,iBloqueMz,iJx,iJy) !in case of MPI the flushing is only cared by one of the sharing layouts
+             case (iEx,iVx,iEy,iVy,iHz,iBloqueMz,iJx,iJy, iQx, iQy) !in case of MPI the flushing is only cared by one of the sharing layouts
                !in case of MPI the flushing is only cared by one of the sharing layouts
                !este es el unico caso en el que un punto es susceptible de ser escrito por dos layouts. Por eso se lo echo
                ! solo a uno de ellos: al de abajo (a menos que que sea el layout de mas arriba, en cuyo caso tiene que tratarlo el) !bug del itc2 con el pathx hasta el borde
@@ -338,7 +338,7 @@ contains
                (sgg%observation(ii)%P(i)%ZI <  sgg%Sweep(fieldo(field,'Z'))%ZI)                             ) then
                   sgg%observation(ii)%P(i)%What=Nothing !do not observe anything
                endif
-             case (iEz,iVz,iJz,iBloqueJz,iHx,iHy)
+             case (iEz,iVz,iJz,iQz,iBloqueJz,iHx,iHy)
                if ((sgg%Observation(ii)%P(i)%ZI > sgg%Sweep(fieldo(field,'Z'))%ZE).or. &
                (sgg%Observation(ii)%P(i)%ZI < sgg%Sweep(fieldo(field,'Z'))%ZI)) then
                   sgg%observation(ii)%P(i)%What=Nothing !do not observe anything
@@ -580,7 +580,7 @@ contains
                field=sgg%observation(ii)%P(i)%what
                select case(field)
                   !
-               case (iEx,iEy,iEz,iVx,iVy,iVz,iJx,iJy,iJz,iHx,iHy,iHz, lineIntegral)
+               case (iEx,iEy,iEz,iVx,iVy,iVz,iJx,iJy,iJz,iQx,iQy,iQz, iHx,iHy,iHz, lineIntegral)
                   !
                   if (((field == iEx).or.(field == iEy).or.(field == iEz).or. &
                   (field == iHx).or.(field == iHy).or.(field == iHz)).and. &
@@ -609,6 +609,12 @@ contains
                         prefix_field=prefix(iJy)
                       case (iJz)
                         prefix_field=prefix(iJz)
+                      case (iQx)
+                        prefix_field=prefix(iQx)
+                      case (iQy)
+                        prefix_field=prefix(iQy)
+                      case (iQz)
+                        prefix_field=prefix(iQz)
                       case (iVx)
                         prefix_field=prefix(iVx)
                       case (iVy)
@@ -639,6 +645,12 @@ contains
                         prefix_field=prefix(iJx)
                       case (iJz)
                         prefix_field=prefix(iJy)
+                      case (iQx)
+                        prefix_field=prefix(iQz)
+                      case (iQy)
+                        prefix_field=prefix(iQx)
+                      case (iQz)
+                        prefix_field=prefix(iQy)
                       case (iVx)
                         prefix_field=prefix(iVz)
                       case (iVy)
@@ -669,6 +681,12 @@ contains
                         prefix_field=prefix(iJz)
                       case (iJz)
                         prefix_field=prefix(iJx)
+                      case (iQx)
+                        prefix_field=prefix(iQy)
+                      case (iQy)
+                        prefix_field=prefix(iQz)
+                      case (iQz)
+                        prefix_field=prefix(iQx)
                       case (iVx)
                         prefix_field=prefix(iVy)
                       case (iVy)
@@ -689,6 +707,11 @@ contains
                   endif
                   !     
                   if ((field == iJx).or.(field == iJy).or.(field == iJz)) then
+                     write(charNO,'(i7)') NO
+                     !append the number of the segment
+                     extpoint=trim(adjustl(extpoint))//'_s'//trim(adjustl(charNO))
+                  endif
+                  if ((field == iQx).or.(field == iQy).or.(field == iQz)) then
                      write(charNO,'(i7)') NO
                      !append the number of the segment
                      extpoint=trim(adjustl(extpoint))//'_s'//trim(adjustl(charNO))
@@ -2792,6 +2815,11 @@ contains
                      end block
 
 
+                   case( iQx, iQy, iQz)
+                        output( ii)%item( i)%valor(nTime-nInit) = 0.0_RKIND !wipe value
+                        SegmDumm => output( ii)%item( i)%Segmento
+                        output( ii)%item(i)%valor(nTime-nInit)= SegmDumm%ChargeMinus%ChargePresent
+
                    case( iJx, iJy, iJz)
                      if ((trim(adjustl(wiresflavor))=='holland') .or. &
                          (trim(adjustl(wiresflavor))=='transition')) then
@@ -3807,7 +3835,7 @@ contains
             field=sgg%observation(ii)%P(i)%what
             if (SGG%Observation(ii)%TimeDomain) then
                select case(field)
-                case (iEx,iEy,iEz,iJx,iJy,iJz,iHx,iHy,iHz, lineIntegral)
+                case (iEx,iEy,iEz,iJx,iJy,iJz,iQx,iQy,iQz,iHx,iHy,iHz, lineIntegral)
                   I1=sgg%OBSERVATION(ii)%P(i)%XI
                   J1=sgg%OBSERVATION(ii)%P(i)%YI
                   K1=sgg%OBSERVATION(ii)%P(i)%ZI
@@ -3818,7 +3846,7 @@ contains
                         select case(field)
                          case (iHx,iHy,iHz)
                            at=sgg%tiempo(N)+sgg%dt/2.0_RKIND_tiempo
-                         case(iEx,iEy,iEz,iJx,iJy,iJz, lineIntegral)
+                         case(iEx,iEy,iEz,iJx,iJy,iJz,iQx,iQy,iQz, lineIntegral)
                            at=sgg%tiempo(N)
                         end select
                         if ( ((at >= sgg%OBSERVATION(ii)%InitialTime).and.(at <= sgg%OBSERVATION(ii)%FinalTime+sgg%dt/2.0_RKIND)).or. &
@@ -3906,6 +3934,16 @@ contains
                                                         output(ii)%item(i)%valor4(n-nInit) , & ! Vminus 
                                                         output(ii)%item(i)%valor5(n-nInit) ! vplus-vminus
                               endif
+                            case(iQx,iQy,iQz)
+                              if (singlefilewrite) then
+                                 unidad=output(ii)%item(i)%unitmaster
+                                 WRITE (unidad) output(ii)%item(i)%unit,at, &
+                                                output(ii)%item(i)%valor(n-nInit) ! node charge
+                              else
+                                 unidad=output(ii)%item(i)%unit
+                                 WRITE (unidad,fmt) at, output(ii)%item(i)%valor(n-nInit) ! node charge
+                              endif
+
                             case(lineIntegral)
                               if (singlefilewrite) then
                                  unidad=output(ii)%item(i)%unitmaster
@@ -3922,6 +3960,7 @@ contains
                   if (singlefilewrite.and.((field==iEx).or.(field==iEy).or.(field==iEz).or. &
                   (field==iVx).or.(field==iVy).or.(field==iVz).or. &
                   (field==iJx).or.(field==iJy).or.(field==iJz).or. &
+                  (field==iQx).or.(field==iQy).or.(field==iQz).or. &
                   (field==iHx).or.(field==iHy).or.(field==iHz))) then
                      unidad=output(ii)%item(i)%unitmaster
                   else
@@ -4130,6 +4169,8 @@ contains
                   !    output(ii)%item(i)%Serialized%valor = 0.0_RKIND
                   !case (iMHC,iHxC,iHyC,iHzC,iMEC,iExC,iEyC,iEzC)
                   !    output(ii)%item(i)%valor3D = 0.0_RKIND
+                case (iQx,iQy,iQz)
+                  output(ii)%item(i)%valor(0:BuffObse)=0.0_RKIND
                 case (iJx,iJy,iJz)
                   output(ii)%item(i)%valor(0:BuffObse)=0.0_RKIND
                   output(ii)%item(i)%valor2(0:BuffObse)=0.0_RKIND   
@@ -4212,6 +4253,8 @@ contains
          DO i=1,sgg%Observation(ii)%nP
             field=sgg%observation(ii)%P(i)%what
             select case(field)
+             case (iQx,iQy,iQz)
+               deallocate (output(ii)%item(i)%valor)
              case (iJx,iJy,iJz)
                deallocate (output(ii)%item(i)%valor)
                deallocate (output(ii)%item(i)%valor2,output(ii)%item(i)%valor3,output(ii)%item(i)%valor4,output(ii)%item(i)%valor5)  !en caso de hilos se necesitan
@@ -4318,6 +4361,12 @@ contains
          ext='Wy_'
        case (iJz)
          ext='Wz_'
+       case (iQx)
+         ext='Qx_'
+       case (iQy)
+         ext='Qy_'
+       case (iQz)
+         ext='Qz_'
        case (iExC)
          ext='ExC_'
        case (iEyC)
@@ -4381,11 +4430,11 @@ contains
       select case(field)
        case(iEx,iEy,iEz,iHx,iHy,iHz)
          fieldo2=field
-       case (iJx,iVx,iBloqueJx,iExC)
+       case (iJx,iVx,iBloqueJx,iExC, iQx)
          fieldo2=iEx
-       case (iJy,iVy,iBloqueJy,iEyC)
+       case (iJy,iVy,iBloqueJy,iEyC, iQy)
          fieldo2=iEy
-       case (iJz,iVz,iBloqueJz,iEzC)
+       case (iJz,iVz,iBloqueJz,iEzC, iQz)
          fieldo2=iEz
        case (iBloqueMx,iHxC)
          fieldo2=iHx

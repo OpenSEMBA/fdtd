@@ -19,6 +19,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_FIELD_VOLTAGE = "voltage"
    character (len=*), parameter :: J_FIELD_CURRENT = "current"
    character (len=*), parameter :: J_FIELD_CURRENT_DENSITY = "currentDensity"
+   character (len=*), parameter :: J_FIELD_CHARGE = "charge"
 
    ! -- materials
    character (len=*), parameter :: J_MATERIALS = "materials"
