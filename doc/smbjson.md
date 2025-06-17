@@ -447,10 +447,23 @@ They must contain the following entries:
 
 + `<inCellParameters>` which can be defined in two ways:
     - By fixed values defined in `inductancePerMeter` and `capacitancePerMeter` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]`.
-    - By a `multipolarExpansion` which contains the following information:
-        - TODO TODO TODO
+    - By a `multipolarExpansion` object which allows to calculate the in-cell inductances and capacitances. This object can be obtained using the [_opensemba/pulmtln_ ](https://github.com/OpenSEMBA/pulmtln) tool containing:
+        - An `<innerRegionBox>` object, containing two pairs of real numbers, named `min` and `max` which describe a cross sectional bounding box. This box must contain all the conductors and dielectrics which form the bundle cross section. It also must be smaller or equal than the minimum side of the FDTD dual cells which are crossed by the bundle.
+        - Two arrays, `<electric>` and `<magnetic>` in which each contain a [field reconstruction object](#field-reconstruction) described below. They must contain a $N$ multipolar expansions, one for each conductor. Each entry assumes that the $n$-th conductor has a prescribed potential of $1 \, \text{V}$ and the rest are floating.
 + `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
 
+#### Field reconstruction
+
+The field reconstruction objects contains information necessary to calculate the in-cell parameters for an `unshieldedMultiwire` with $N$ conductors. The `electric` and `magnetic`potentials are used to compute the in-cell capacitances and in-cell inductances, respectively. Each contains information to perform a multipolar expansion based on
+
+    Tsogtgerel Gantumur. Multipole Expansions in the plane. 2016, lecture notes. 
+
+and which must contain
+
++ `<conductorPotentials>` is an array of size $N$ indicating the potentials for each conductor. The $n$-th entry of this array should be equal to $1$, for the active conductor, and less than one for the rest (floating conductors).
++ `<ab>` which is an array of $P$ pairs of real numbers $(a_p, b_p)$, which are the pole coefficients of the field expansion when the $n$-th conductor is active. 
++ `<expansionCenter>` is an pair of real numbers indicating the place in which the dipole moment is zero, a concept similar to the _center of charge_. 
++ `<innerRegionAveragePotential>` is the potential averaged within the `innerRegionBox`. The multipolar expansion only valid outside the inner region.
 
 
 ### `terminal`
