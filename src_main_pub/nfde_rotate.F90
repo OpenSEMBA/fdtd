@@ -12,7 +12,6 @@ CONTAINS
    SUBROUTINE nfde_rotate (this,mpidir) 
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) ::  mpidir
-      print *,'-----> Warning novel 2024 rotate routine......'
       call  rotate_generateSpaceSteps                (this, mpidir)
       call  rotate_generateCurrent_Field_Sources     (this, mpidir)
       call  rotate_generatePlaneWaves                (this, mpidir)
