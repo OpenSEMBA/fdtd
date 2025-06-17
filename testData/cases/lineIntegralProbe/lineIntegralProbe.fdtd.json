@@ -3,8 +3,8 @@
     "__comments": "Test of the implementation of lineIntegral (DC voltage) probes",
 
     "general": {
-        "timeStep": 1e-10,
-        "numberOfSteps": 6000
+        "timeStep": 0.25e-11,
+        "numberOfSteps": 23500
     },
   
     "boundary": {
@@ -19,86 +19,48 @@
     "mesh": {
         "grid": {
             "numberOfCells": [20, 20, 20],
-            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+            "steps": { "x": [0.01], "y": [0.01], "z": [0.01] }
         },
         "coordinates": [
-            {"id": 1, "relativePosition": [7,  10, 10]},
-            {"id": 2, "relativePosition": [7,  10, 13]},
-            {"id": 3, "relativePosition": [10, 10, 13]},
-            {"id": 4, "relativePosition": [12, 10, 13]},
-            {"id": 5, "relativePosition": [13, 10, 13]},
-            {"id": 6, "relativePosition": [13, 10, 10]},
-
-            {"id": 7, "relativePosition": [9,  10, 10]},
-            {"id": 8, "relativePosition": [9,  10, 11]},
-            {"id": 9, "relativePosition": [9,  10, 12]},
-
-            {"id": 10, "relativePosition": [12,  10, 10]},
-            {"id": 11, "relativePosition": [12,  10, 11]},
-            {"id": 12, "relativePosition": [12,  10, 12]},
-            
-            {"id": 13, "relativePosition": [10,  10, 12]},
-            {"id": 14, "relativePosition": [11,  10, 12]},
-
-            {"id": 15, "relativePosition": [8,  10, 13]},
-            {"id": 16, "relativePosition": [9,  10, 13]},
-            {"id": 17, "relativePosition": [10,  10, 13]},
-            {"id": 18, "relativePosition": [11,  10, 13]},
-            {"id": 19, "relativePosition": [12,  10, 13]}, 
-            
-            {"id": 20, "relativePosition": [7,  10, 10]}, 
-            {"id": 21, "relativePosition": [7,  10, 11]}, 
-            {"id": 22, "relativePosition": [7,  10, 12]}, 
-            {"id": 23, "relativePosition": [13,  10, 10]}, 
-            {"id": 24, "relativePosition": [13,  10, 11]}, 
-            {"id": 25, "relativePosition": [13,  10, 12]},
-
-            {"id": 26, "relativePosition": [7,   10, 10]}, 
-            {"id": 27, "relativePosition": [8,   10, 10]}, 
-            {"id": 28, "relativePosition": [9,   10, 10]}, 
-            {"id": 29, "relativePosition": [10,  10, 10]}, 
-            {"id": 30, "relativePosition": [11,  10, 10]}, 
-            {"id": 31, "relativePosition": [12,  10, 10]}
-
+            {"id": 1,  "relativePosition": [7,  10, 10]},
+            {"id": 2,  "relativePosition": [7,  10, 11]},
+            {"id": 3,  "relativePosition": [7,  10, 12]},
+            {"id": 4,  "relativePosition": [7,  10, 13]},
+            {"id": 5,  "relativePosition": [8,  10, 13]},
+            {"id": 6,  "relativePosition": [9,  10, 13]},
+            {"id": 7,  "relativePosition": [10, 10, 13]},
+            {"id": 8,  "relativePosition": [11, 10, 13]},
+            {"id": 9,  "relativePosition": [12, 10, 13]},
+            {"id": 10, "relativePosition": [13, 10, 13]},
+            {"id": 11, "relativePosition": [13, 10, 12]},
+            {"id": 12, "relativePosition": [13, 10, 11]},
+            {"id": 13, "relativePosition": [13, 10, 10]},
+            {"id": 14, "relativePosition": [7,  10, 15]},
+            {"id": 15, "relativePosition": [13,  10, 15]}
 
         ],
         "elements": [
-            {"id": 1, "type": "polyline", "coordinateIds": [1, 21 ,22,2, 3] },
-            {"id": 2, "type": "polyline", "coordinateIds": [3, 4, 5, 6] },
+            {"id": 1, "type": "polyline", "coordinateIds": [1, 2 ,3, 4, 5, 6, 7] },
+            {"id": 2, "type": "polyline", "coordinateIds": [7, 8 ,9, 10, 11, 12, 13] },
             {"id": 3, "type": "cell", "intervals": [[[2, 2, 10], [18, 18, 10]]] },
-            {"id": 4, "type": "node", "coordinateIds": [2]},
-            {"id": 5, "type": "node", "coordinateIds": [4]},
-            {"id": 6, "type": "node", "coordinateIds":  [7]},
-            {"id": 7, "type": "node", "coordinateIds":  [8]},
-            {"id": 8, "type": "node", "coordinateIds":  [9]},
-            {"id": 9, "type": "node", "coordinateIds":  [10]},
-            {"id": 10, "type": "node", "coordinateIds": [11]},
-            {"id": 11, "type": "node", "coordinateIds": [12]},
-            {"id": 12, "type": "node", "coordinateIds": [13]},
-            {"id": 13, "type": "node", "coordinateIds": [14]},
-            
-            {"id": 14, "type": "node", "coordinateIds": [15]},
-            {"id": 15, "type": "node", "coordinateIds": [16]},
-            {"id": 16, "type": "node", "coordinateIds": [17]},
-            {"id": 17, "type": "node", "coordinateIds": [18]},
-            {"id": 18, "type": "node", "coordinateIds": [19]},
-            {"id": 19, "type": "node", "coordinateIds": [2]},
-            
-            {"id": 20, "type": "node", "coordinateIds": [20]},
-            {"id": 21, "type": "node", "coordinateIds": [21]},
-            {"id": 22, "type": "node", "coordinateIds": [22]},
-            {"id": 23, "type": "node", "coordinateIds": [23]},
-            {"id": 24, "type": "node", "coordinateIds": [24]},
-            {"id": 25, "type": "node", "coordinateIds": [25]},
-            {"id": 26, "type": "cell", "intervals": [[[10, 10, 13], [11, 10, 13]]] },
-            {"id": 27, "type": "node", "coordinateIds": [26]},
-            {"id": 28, "type": "node", "coordinateIds": [27]},
-            {"id": 29, "type": "node", "coordinateIds": [28]},
-            {"id": 30, "type": "node", "coordinateIds": [29]},
-            {"id": 31, "type": "node", "coordinateIds": [30]},
-            {"id": 32, "type": "node", "coordinateIds": [31]},
-            {"id": 33, "type": "node", "coordinateIds": [1]},
-            {"id": 34, "type": "polyline", "coordinateIds": [1,2,5,6]}
+            {"id": 4, "type": "node", "coordinateIds":  [1]},
+            {"id": 5, "type": "node", "coordinateIds":  [2]},
+            {"id": 6, "type": "node", "coordinateIds":  [3]},
+            {"id": 7, "type": "node", "coordinateIds":  [4]},
+            {"id": 8, "type": "node", "coordinateIds":  [5]},
+            {"id": 9, "type": "node", "coordinateIds":  [6]},
+            {"id": 10, "type": "node", "coordinateIds": [7]},
+            {"id": 11, "type": "node", "coordinateIds": [8]},
+            {"id": 12, "type": "node", "coordinateIds": [9]},
+            {"id": 13, "type": "node", "coordinateIds": [10]},
+            {"id": 14, "type": "node", "coordinateIds": [11]},
+            {"id": 15, "type": "node", "coordinateIds": [12]},
+            {"id": 16, "type": "node", "coordinateIds": [13]},
+            {"id": 17, "type": "polyline", "coordinateIds": [1,4,10,13]},
+            {"id": 18, "type": "polyline", "coordinateIds": [4,14,15,10]},
+            {"id": 19, "type": "polyline", "coordinateIds": [1,2,3,4]},
+            {"id": 20, "type": "polyline", "coordinateIds": [10,11,12,13]},
+            {"id": 21, "type": "polyline", "coordinateIds": [1,13]}
         ]
     },
 
@@ -130,14 +92,7 @@
             "type": "pec"
         },
         {
-            "name": "lumped_resistor",
-            "id": 6, 
-            "type": "lumped",
-            "model": "resistor",
-            "resistance": 50
-        },
-        {
-            "id": 7,
+            "id": 6,
             "type": "terminal",
             "terminations": [{"type": "series", "resistance" : 100 }]
         }
@@ -147,8 +102,8 @@
         { 
             "name" : "wire1",
             "materialId": 1,
-            "initialTerminalId": 3,
-            "endTerminalId": 7,
+            "initialTerminalId": 4,
+            "endTerminalId": 4,
             "elementIds": [1]
         },
         { 
@@ -171,7 +126,7 @@
             "type": "generator",
             "field": "voltage",
             "magnitudeFile": "lineIntegralProbe.exc", 
-            "elementIds": [21]
+            "elementIds": [7]
         }    
     ],
 
@@ -179,9 +134,40 @@
         {
             "name" : "vprobe",
             "type" : "line",
-            "elementIds" : [34],
+            "elementIds" : [17],
             "field" : "electric"
+        },
+        {
+            "name" : "vprobe_Rabove",
+            "type" : "line",
+            "elementIds" : [18],
+            "field" : "electric"
+        },
+        {
+            "name" : "vprobe_left_side",
+            "type" : "line",
+            "elementIds" : [19],
+            "field" : "electric"
+        },
+        {
+            "name" : "vprobe_right_side",
+            "type" : "line",
+            "elementIds" : [20],
+            "field" : "electric"
+        },
+        {
+            "name" : "vprobe_ground",
+            "type" : "line",
+            "elementIds" : [21],
+            "field" : "electric"
+        },
+        {
+            "name" : "current",
+            "type" : "wire",
+            "elementIds" : [13],
+            "field" : "current"
         }
+        
 
     ]
 }
