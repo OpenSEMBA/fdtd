@@ -744,6 +744,27 @@ contains
                   allocate (output(ii)%item(i)%valor(0 : BuffObse))
                   output(ii)%item(i)%valor(0 : BuffObse)=0.0_RKIND
 
+                  if (field == iQx .or. field == iQy .or. field == iQz) then 
+                     found = .false.
+                     do n=1,HWireslocal%NumCurrentSegments
+                        if ((HWireslocal%CurrentSegment(n)%origindex==no).and. &
+                        (HWireslocal%CurrentSegment(n)%i==i1).and. &
+                        (HWireslocal%CurrentSegment(n)%j==j1).and. &
+                        (HWireslocal%CurrentSegment(n)%k==k1).and. &
+                        (HWireslocal%CurrentSegment(n)%tipofield*10000==field))  then
+                           output(ii)%item(i)%segmento => HWireslocal%CurrentSegment(n)
+                           if (output(ii)%item(i)%segmento%orientadoalreves) output(ii)%item(i)%valorsigno=-1
+                           found=.true.
+                        endif
+                     end do
+                     if ((.not.found).and. ((field==iQx).or.(field==iQy).or.(field==iQz))) then
+                        sgg%Observation(ii)%P(i)%What=nothing
+                        write(buff,'(a,4i7,a)') 'ERROR: CHARGE probe ',no,i1,j1,k1,' DOES NOT EXIST'
+                        CALL WarnErrReport (buff,.true.)
+                     endif
+
+                  end if
+
                   if ((trim(adjustl(wiresflavor))=='holland') .or. &
                       (trim(adjustl(wiresflavor))=='transition')) then
                      found=.false.

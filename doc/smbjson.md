@@ -597,7 +597,9 @@ Records a vector field a single position referenced by `elementIds` which must c
 
 Records a scalar field at a single position referenced by `elementIds`. `elementIds` must contain a single `id` referencing an element of type `node`. Additionally, this `node` must point to a `coordinateId` belonging to at least one `polyline`. 
 If the node's `coordinateId` is shared by more than one `polyline` a probe will be defined for each one of them
-The `[field]` can be `voltage` or `current`. Defaults to `current`. When `current` is selected, the orientation of the `polyline` on which the probe is located indicates the direction of the current. Voltages are well defined at polyline points. However, currents are defined over segments so:
+The `[field]` can be `voltage`, `current` or `charge`  (defaults to `current`). Voltage probes are properly defined only when used placed on MTL bundles. The voltage on a conductor will be referred to the shield surrounding that conductor. In an unshielded wire, there is not a well defined reference, and thus the probe is not reliable. Charge probes are implemented only for wires not treated with the MLT module.
+
+When `current` is selected, the orientation of the `polyline` on which the probe is located indicates the direction of the current. Voltages are well defined at polyline points. However, currents are defined over segments so:
 
 - If the point is in the interior of the wire, the output will be an average on the currents of the segments which are contiguous to it.
 - If the point is at one wire end, the current will be the output of the last segment.
@@ -657,9 +659,17 @@ On the other hand, the coordinate **parallel** to the current also experiences a
 
 Again, with the current flowing in the direction of the red line, the blue line represents a cross-sectional view of the plane where the `bulkCurrent` is defined, while the green line shows the actual location used for current evaluation by the method.
 
-#### `lineIntegral`
+#### `line`
 
-A `lineIntegral` probe computes the electric field line integral along a given line. At low frequencies, this quantity is equivalent to a DC voltage difference between the extremes of the line. At higher frequencies, "voltage" is no longer a proper name
+A `line` probe computes the electric field line integral along a given `polyline`. At low frequencies, this quantity can be equivalent to a DC voltage difference between the extremes of the line. At higher frequencies, "voltage" is no longer a proper name. The integral is performed along a geometric line, hence the `polyline` does not have to be associated with any material. 
+
+```json
+    {
+        "name" : "vprobe",
+        "type" : "line",
+        "elementIds" : [4]
+    }
+```
 
 #### `farField`
 

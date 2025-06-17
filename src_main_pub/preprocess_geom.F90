@@ -3772,7 +3772,11 @@ CONTAINS
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%XI = floor(this%swires%SW(j1)%SWC(i1)%x)
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%YI = floor(this%swires%SW(j1)%SWC(i1)%y)
                                  sgg%observation(i)%P(sgg%observation(i)%nP)%ZI = floor(this%swires%SW(j1)%SWC(i1)%z)
-                                 sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJx
+                                 if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_WIRECURRENT) then 
+                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = iJx
+                                 else if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_CHARGE) then 
+                                    sgg%observation(i)%P(sgg%observation(i)%nP)%What = iQx
+                                 end if
                                  EXIT do_loop_busqueda3
                               END IF
                            END IF
