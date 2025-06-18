@@ -1066,8 +1066,8 @@ contains
 
         if (termination%termination_type == TERMINATION_SERIES) then 
             res = writeSeriesNode(node, termination, end_node)
-        if (termination%termination_type == TERMINATION_PARALLEL) then 
-            res = writeParallelNode(node, termination, end_node)
+        else if (termination%termination_type == TERMINATION_PARALLEL) then 
+            res = writeParallelRLCNode(node, termination, end_node)
         else if (termination%termination_type == TERMINATION_LCpRs) then 
             res = writeLCpRsNode(node, termination, end_node)
         else if (termination%termination_type == TERMINATION_RLsCp) then 
