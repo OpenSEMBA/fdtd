@@ -62,6 +62,12 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TERM_TYPE_OPEN = "open"
    character (len=*), parameter :: J_MAT_TERM_TYPE_SHORT = "short"
    character (len=*), parameter :: J_MAT_TERM_TYPE_SERIES = "series"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_PARELLEL = "parallel"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_LsRCp = "LsRCp"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_CsLRp = "CsLRp"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_RCsLp = "RCsLp"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_LCsRp = "LCsRp"
+
    character (len=*), parameter :: J_MAT_TERM_TYPE_LCpRs = "LCpRs"
    character (len=*), parameter :: J_MAT_TERM_TYPE_RLsCp = "RLsCp"
    character (len=*), parameter :: J_MAT_TERM_TYPE_CIRCUIT = "circuit"

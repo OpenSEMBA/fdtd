@@ -800,6 +800,26 @@ contains
 
     end function
 
+    ! function writeLsRCpNode(node, termination, end_node) result(res)
+    ! function writeCsLRpNode(node, termination, end_node) result(res)
+    ! function writeRCsLpNode(node, termination, end_node) result(res)
+    ! function writeLCsRpNode(node, termination, end_node) result(res)
+    !     type(nw_node_t), intent(in) :: node
+    !     type(termination_t), intent(in) :: termination
+    !     character(len=*), intent(in) :: end_node
+    !     character(len=256), allocatable :: res(:)
+    !     character(len=256) :: buff
+    !     character(len=:), allocatable :: node_name
+    !     character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+        
+    !     write(termination_r, *) termination%resistance
+    !     write(termination_l, *) termination%inductance
+    !     write(termination_c, *) termination%capacitance
+    !     write(line_c, *) node%line_c_per_meter * node%step/2
+       
+    !     allocate(res(0))
+    ! end function
+
     function writeLCpRsNode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
@@ -861,6 +881,14 @@ contains
             res = writeLCpRsNode(node, termination, end_node)
         else if (termination%termination_type == TERMINATION_RLsCp) then 
             res = writeRLsCpNode(node, termination, end_node)
+        else if (termination%termination_type == TERMINATION_LsRCp) then 
+            res = writeLsRCpNode(node, termination, end_node)
+        else if (termination%termination_type == TERMINATION_CsLRp) then 
+            res = writeCsLRpNode(node, termination, end_node)
+        else if (termination%termination_type == TERMINATION_RCsLp) then 
+            res = writeRCsLpNode(node, termination, end_node)
+        else if (termination%termination_type == TERMINATION_LCsRp) then 
+            res = writeLCsRpNode(node, termination, end_node)
         else if (termination%termination_type == TERMINATION_SHORT) then 
             res = writeShortNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_OPEN) then 

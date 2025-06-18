@@ -8,7 +8,11 @@ module mtln_types_mod
    integer, parameter :: TERMINATION_SERIES     =  3
    integer, parameter :: TERMINATION_LCpRs      =  4
    integer, parameter :: TERMINATION_RLsCp      =  5
-   integer, parameter :: TERMINATION_CIRCUIT      =  6
+   integer, parameter :: TERMINATION_LsRCp      =  6
+   integer, parameter :: TERMINATION_CsLRp      =  7
+   integer, parameter :: TERMINATION_RCsLp      =  8
+   integer, parameter :: TERMINATION_LCsRp      =  9
+   integer, parameter :: TERMINATION_CIRCUIT    =  10
 
    integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
