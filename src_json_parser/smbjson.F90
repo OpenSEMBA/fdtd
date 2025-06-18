@@ -2696,6 +2696,8 @@ contains
             res = TERMINATION_SHORT
          else if (type == J_MAT_TERM_TYPE_SERIES) then
             res = TERMINATION_SERIES
+         else if (type == J_MAT_TERM_TYPE_PARALLEL) then
+            res = TERMINATION_PARALLEL
          else if (type == J_MAT_TERM_TYPE_LCpRs) then
             res = TERMINATION_LCpRs
          else if (type == J_MAT_TERM_TYPE_LsRCp) then

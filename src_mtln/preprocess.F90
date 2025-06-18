@@ -535,7 +535,7 @@ contains
 
     end function
 
-    function writeSeriesRLCnode(node, termination, end_node) result(res)
+    function writeParallelRLCnode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
@@ -549,23 +549,42 @@ contains
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
-        buff = trim(trim("R" // node%name) // " " // trim(node%name) // " "   // trim(node%name) //"_R " // trim(termination_r))
-        call appendToStringArray(res, buff)
-        buff = trim(trim("L" // node%name) // " " // trim(node%name) // "_R " // trim(node%name) //"_L " // trim(termination_l))
-        call appendToStringArray(res, buff)
+    end function
+
+    function writeSeriesRLCnode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+
+        write(termination_c, *) termination%capacitance
+        write(termination_r, *) termination%resistance
+        write(termination_l, *) termination%inductance
+        write(line_c, *) node%line_c_per_meter * node%step/2
+        allocate(res(0))
         if (termination%source%path_to_excitation /= "") then
-            buff = trim(trim("C" // node%name) // " " // trim(node%name) // "_L " // trim(node%name) //"_S "// trim(termination_c))
-            call appendToStringArray(res, buff)
+            buff = trim(trim("R" // node%name) // " " // trim(node%name) // " "   //   trim(node%name) //"_S " // trim(termination_r))
+            call appendToStringArray(res, buff) 
+            buff = trim(trim("L" // node%name) // " " // trim(node%name) // " "   //   trim(node%name) //"_S " // trim(termination_l))
+            call appendToStringArray(res, buff) 
+            buff = trim(trim("C" // node%name) // " " // trim(node%name) // " "   //   trim(node%name) //"_S " // trim(termination_c))
+            call appendToStringArray(res, buff) 
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim(trim("V" // node%name) // "_s " // trim(node%name) // "_S " // trim(end_node) //" dc 0" )
+                buff = trim(trim("V" // node%name) // "_S " // trim(node%name) // "_S " // trim(end_node) //" dc 0" )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                buff = trim(trim("I" // node%name) // "_s " // trim(end_node) // " " //trim(node%name) // "_S  dc 0" )
+                buff = trim(trim("I" // node%name) // "_S " // trim(end_node) // " " //trim(node%name) // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
             end if
         else
-            buff = trim("C" // trim(node%name) // " " // trim(node%name) // "_L " // trim(end_node) //" "// termination_c)
-            call appendToStringArray(res, buff)
+            buff = trim(trim("R" // node%name) // " " // trim(node%name) // " "   // end_node // trim(termination_r))
+            call appendToStringArray(res, buff) 
+            buff = trim(trim("L" // node%name) // " " // trim(node%name) // " "   // end_node // trim(termination_l))
+            call appendToStringArray(res, buff) 
+            buff = trim(trim("C" // node%name) // " " // trim(node%name) // " "   // end_node // trim(termination_c))
+            call appendToStringArray(res, buff) 
         end if
         buff = trim(trim("I" // node%name) // " " // trim(node%name)// " 0 " // " dc 0")
         call appendToStringArray(res, buff)
@@ -634,10 +653,10 @@ contains
             buff = trim("L" // node%name // " " // node%name // "_R " // node%name //"_S")//" "//trim(termination_l)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_s " // node%name // "_S " // end_node //" dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // end_node //" dc 0" )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                buff = trim("I" // node%name // "_s " // end_node // " " //node%name // "_S  dc 0" )
+                buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
             end if
         else
@@ -680,10 +699,10 @@ contains
             buff = trim("C" // node%name // " " // node%name // " " // node%name //"_S " // termination_c)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_s " // node%name // "_S " // end_node //" dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // end_node //" dc 0" )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                buff = trim("I" // node%name // "_s " // end_node // " " //node%name // "_S  dc 0" )
+                buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
             end if
         else 
@@ -751,10 +770,10 @@ contains
             buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
             call appendToStringArray(res, buff)
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_s " // node%name // "_S " // trim(end_node) //" dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // trim(end_node) //" dc 0" )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                buff = trim("I" // node%name // "_s " // trim(end_node) // " " // node%name // "_S  dc 0" )
+                buff = trim("I" // node%name // "_S " // trim(end_node) // " " // node%name // "_S  dc 0" )
                 call appendToStringArray(res, buff) 
             end if
         else
@@ -800,25 +819,195 @@ contains
 
     end function
 
-    ! function writeLsRCpNode(node, termination, end_node) result(res)
-    ! function writeCsLRpNode(node, termination, end_node) result(res)
-    ! function writeRCsLpNode(node, termination, end_node) result(res)
-    ! function writeLCsRpNode(node, termination, end_node) result(res)
-    !     type(nw_node_t), intent(in) :: node
-    !     type(termination_t), intent(in) :: termination
-    !     character(len=*), intent(in) :: end_node
-    !     character(len=256), allocatable :: res(:)
-    !     character(len=256) :: buff
-    !     character(len=:), allocatable :: node_name
-    !     character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+    function writeLsRCpNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        character(len=:), allocatable :: node_name
+        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
         
-    !     write(termination_r, *) termination%resistance
-    !     write(termination_l, *) termination%inductance
-    !     write(termination_c, *) termination%capacitance
-    !     write(line_c, *) node%line_c_per_meter * node%step/2
+        write(termination_r, *) termination%resistance
+        write(termination_l, *) termination%inductance
+        write(termination_c, *) termination%capacitance
+        write(line_c, *) node%line_c_per_meter * node%step/2
+
+        allocate(res(0))
+        res = [trim("L" // node%name // " " // node%name // " "   // node%name //"_p " // termination_l)]
+        if (termination%source%path_to_excitation /= "") then
+            buff = trim("C" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_c)
+            call appendToStringArray(res, buff)
+            buff = trim("R" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_r)
+            call appendToStringArray(res, buff)
+
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_S " // node%name // "_V " // end_node //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_S " //end_node // " "// node%name // "_V dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
+        else
+            buff =  trim("C" // node%name // " " // node%name // "_p " // end_node //" "// termination_c)
+            call appendToStringArray(res, buff)
+            buff =  trim("R" // node%name // " " // node%name // "_p " // end_node //" "// termination_r)
+            call appendToStringArray(res, buff)
+        end if
+        buff =  trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
+
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+    end function
+
+    function writeCsLRpNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        character(len=:), allocatable :: node_name
+        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+        
+        write(termination_r, *) termination%resistance
+        write(termination_l, *) termination%inductance
+        write(termination_c, *) termination%capacitance
+        write(line_c, *) node%line_c_per_meter * node%step/2
+
+        allocate(res(0))
+        res = [trim("C" // node%name // " " // node%name // " "   // node%name //"_p " // termination_c)]
+        if (termination%source%path_to_excitation /= "") then
+            buff = trim("L" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_l)
+            call appendToStringArray(res, buff)
+            buff = trim("R" // node%name // " " // node%name // "_p " // node%name //"_V "// termination_r)
+            call appendToStringArray(res, buff)
+
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_S " // node%name // "_V " // end_node //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_S " //end_node // " "// node%name // "_V dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
+        else
+            buff =  trim("L" // node%name // " " // node%name // "_p " // end_node //" "// termination_l)
+            call appendToStringArray(res, buff)
+            buff =  trim("R" // node%name // " " // node%name // "_p " // end_node //" "// termination_r)
+            call appendToStringArray(res, buff)
+        end if
+        buff =  trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
+
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+
+    end function
+
+    function writeRCsLpNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        character(len=:), allocatable :: node_name
+        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+        
+        write(termination_r, *) termination%resistance
+        write(termination_l, *) termination%inductance
+        write(termination_c, *) termination%capacitance
+        write(line_c, *) node%line_c_per_meter * node%step/2
        
-    !     allocate(res(0))
-    ! end function
+        allocate(res(0))
+        buff = trim("C" // node%name // " " // node%name // " "   // node%name //"_C " // termination_c)
+        call appendToStringArray(res, buff)
+        if (termination%source%path_to_excitation /= "") then
+            buff = trim("R" // node%name // " " // node%name // "_C " // node%name //"_S " // termination_r)
+            call appendToStringArray(res, buff)
+            buff = trim("L" // node%name // " " // node%name // " " // node%name //"_S " // termination_l)
+            call appendToStringArray(res, buff)
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // end_node //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
+        else 
+            buff = trim("R" // node%name // " " // node%name // "_C " // end_node //" "// termination_r)
+            call appendToStringArray(res, buff)
+            buff = trim("L" // node%name // " " // node%name // " " // end_node //" "// termination_l)
+            call appendToStringArray(res, buff)
+        end if
+        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
+
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+    end function
+    
+    function writeLCsRpNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        character(len=:), allocatable :: node_name
+        character(20) :: termination_r, termination_l, termination_c, line_c, line_g
+        
+        write(termination_r, *) termination%resistance
+        write(termination_l, *) termination%inductance
+        write(termination_c, *) termination%capacitance
+        write(line_c, *) node%line_c_per_meter * node%step/2
+       
+        allocate(res(0))
+        buff = trim("C" // node%name // " " // node%name // " "   // node%name //"_C " // termination_c)
+        call appendToStringArray(res, buff)
+        if (termination%source%path_to_excitation /= "") then
+            buff = trim("L" // node%name // " " // node%name // "_C " // node%name //"_S " // termination_l)
+            call appendToStringArray(res, buff)
+            buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S " // termination_r)
+            call appendToStringArray(res, buff)
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // end_node //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_S " // end_node // " " //node%name // "_S  dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
+        else 
+            buff = trim("L" // node%name // " " // node%name // "_C " // end_node //" "// termination_l)
+            call appendToStringArray(res, buff)
+            buff = trim("R" // node%name // " " // node%name // " " // end_node //" "// termination_r)
+            call appendToStringArray(res, buff)
+        end if
+        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
+
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+
+    end function
 
     function writeLCpRsNode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
@@ -843,10 +1032,10 @@ contains
             call appendToStringArray(res, buff)
 
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_s " // node%name // "_L " // end_node //" dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // "_V " // end_node //" dc 0" )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                buff = trim("I" // node%name // "_s " //end_node // " "// node%name // "_L dc 0" )
+                buff = trim("I" // node%name // "_S " //end_node // " "// node%name // "_V dc 0" )
                 call appendToStringArray(res, buff) 
             end if
         else
@@ -877,6 +1066,8 @@ contains
 
         if (termination%termination_type == TERMINATION_SERIES) then 
             res = writeSeriesNode(node, termination, end_node)
+        if (termination%termination_type == TERMINATION_PARALLEL) then 
+            res = writeParallelNode(node, termination, end_node)
         else if (termination%termination_type == TERMINATION_LCpRs) then 
             res = writeLCpRsNode(node, termination, end_node)
         else if (termination%termination_type == TERMINATION_RLsCp) then 
