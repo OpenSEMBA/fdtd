@@ -7,7 +7,7 @@ module mtln_types_mod
    integer, parameter :: TERMINATION_OPEN       =  2
    integer, parameter :: TERMINATION_SERIES     =  3
    integer, parameter :: TERMINATION_PARALLEL   =  4
-   integer, parameter :: TERMINATION_LCpRs      =  5
+   integer, parameter :: TERMINATION_RsLCp      =  5
    integer, parameter :: TERMINATION_RLsCp      =  6
    integer, parameter :: TERMINATION_LsRCp      =  7
    integer, parameter :: TERMINATION_CsLRp      =  8

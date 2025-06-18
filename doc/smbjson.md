@@ -456,7 +456,7 @@ Each entry in `terminations` is specified by a `type`
 + Different configurations of passive circuit elements R, L, and C can be defined:
   + `series` (for RLC series circuits), 
   + `parallel` (for RLC parallel circuits), 
-  + `LCpRs` (LC parallel in series with R), 
+  + `RsLCp` (LC parallel in series with R), 
   + `RLsCp` (RL series in parallel with C), 
   + `LsRCp` (RC parallel in series with L), 
   + `CsLRp` (LR parallel in parallel with C),

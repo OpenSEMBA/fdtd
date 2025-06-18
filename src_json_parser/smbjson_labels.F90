@@ -68,7 +68,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TERM_TYPE_RCsLp = "RCsLp"
    character (len=*), parameter :: J_MAT_TERM_TYPE_LCsRp = "LCsRp"
 
-   character (len=*), parameter :: J_MAT_TERM_TYPE_LCpRs = "LCpRs"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_RsLCp = "RsLCp"
    character (len=*), parameter :: J_MAT_TERM_TYPE_RLsCp = "RLsCp"
    character (len=*), parameter :: J_MAT_TERM_TYPE_CIRCUIT = "circuit"
 

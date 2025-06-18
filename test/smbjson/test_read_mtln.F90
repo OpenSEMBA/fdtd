@@ -703,22 +703,22 @@ contains
       expected%mtln%networks(1)%connections(10)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(1)%connections(10)%nodes(1)%termination%resistance = 1e10
 
-      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%termination_type = TERMINATION_LCpRs
+      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%resistance = 50.0
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%inductance = 30e-12
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%capacitance = 60e-9
 
-      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%termination_type = TERMINATION_LCpRs
+      expected%mtln%networks(1)%connections(5)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%resistance = 50.0
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%inductance = 30e-12
       expected%mtln%networks(1)%connections(5)%nodes(1)%termination%capacitance = 60e-9
 
-      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%termination_type = TERMINATION_LCpRs
+      expected%mtln%networks(1)%connections(7)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%resistance = 50.0
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%inductance = 30e-12
       expected%mtln%networks(1)%connections(7)%nodes(1)%termination%capacitance = 60e-9
 
-      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%termination_type = TERMINATION_LCpRs
+      expected%mtln%networks(1)%connections(9)%nodes(1)%termination%termination_type = TERMINATION_RsLCp
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%resistance = 50.0
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%inductance = 30e-12
       expected%mtln%networks(1)%connections(9)%nodes(1)%termination%capacitance = 60e-9
