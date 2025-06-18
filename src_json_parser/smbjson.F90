@@ -3208,13 +3208,14 @@ contains
          if (areFixedInCell) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
             res%capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
+            allocate(res%multipolar_expansion(0))
          else 
             res%inductance_per_meter = null_matrix
             res%capacitance_per_meter = null_matrix
-            
+
             call this%core%get(mat, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, multipolarExpansionPtr)
-            allocate(res%multipolar_expansion)         
-            res%multipolar_expansion = readMultipolarExpansion(multipolarExpansionPtr)
+            allocate(res%multipolar_expansion(1))         
+            res%multipolar_expansion(1) = readMultipolarExpansion(multipolarExpansionPtr)
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then

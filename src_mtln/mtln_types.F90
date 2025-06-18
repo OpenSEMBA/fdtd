@@ -198,7 +198,7 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: inductance_per_meter
       real, allocatable, dimension(:,:) :: capacitance_per_meter
 
-      type(multipolarExpansion_t), allocatable :: multipolar_expansion
+      type(multipolarExpansion_t), dimension(:), allocatable :: multipolar_expansion
 
       real, allocatable, dimension(:) :: step_size
       type(transfer_impedance_per_meter_t) :: transfer_impedance
@@ -303,13 +303,14 @@ contains
 
    elemental function fieldReconstruction_eq(lhs, rhs) result (res)
       class(fieldReconstruction_t), intent(in) :: lhs, rhs
-      logical :: res = .true.
+      logical :: res
 
+      res = .true.
       res = res .and. &
          lhs%inner_region_average_potential == rhs%inner_region_average_potential
 
       res = res .and. all(lhs%expansion_center == rhs%expansion_center)
-      res = res .and. (allocated(lhs%ab) .and. allocated(rhs%ab)
+      res = res .and. (allocated(lhs%ab) .and. allocated(rhs%ab))
       res = res .and. all(lhs%ab == rhs%ab)
       res = res .and. (allocated(lhs%conductor_potentials) .and. allocated(rhs%conductor_potentials))
       res = res .and. all(lhs%conductor_potentials == rhs%conductor_potentials)
@@ -323,7 +324,9 @@ contains
 
    elemental function multipolarExpansion_eq(a, b) result(res)
       class(multipolarExpansion_t), intent(in) :: a, b
-      logical :: res = .true.
+      logical :: res
+      
+      res = .true.
 
       res = res .and. (a%inner_region == b%inner_region)
       res = res .and. allocated(a%electric) .and. allocated(b%electric))
@@ -340,7 +343,7 @@ contains
       cable_eq = cable_eq .and.  all(a%capacitance_per_meter == b%capacitance_per_meter)
       cable_eq = cable_eq .and.  all(a%resistance_per_meter == b%resistance_per_meter)
       cable_eq = cable_eq .and.  all(a%conductance_per_meter == b%conductance_per_meter)
-      cable_eq = cable_eq .and.  a%multipolar_expansion == b%multipolar_expansion
+      cable_eq = cable_eq .and.  all(a%multipolar_expansion == b%multipolar_expansion)
       cable_eq = cable_eq .and.  all(a%step_size == b%step_size)
       cable_eq = cable_eq .and.  (a%transfer_impedance == b%transfer_impedance)
 
@@ -351,7 +354,7 @@ contains
       cable_eq = cable_eq .and.  (a%conductor_in_parent == b%conductor_in_parent)
 
       cable_eq = cable_eq .and.  all(a%external_field_segments == b%external_field_segments)
-      cable_eq = cable_eq .and. a%isPassthrough == b%isPassthrough
+      cable_eq = cable_eq .and. a%isPassthrough .eqv. b%isPassthrough
 
 
       if (.not. cable_eq) then
