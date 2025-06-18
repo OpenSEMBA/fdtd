@@ -1085,12 +1085,12 @@ contains
       type(json_value_ptr), dimension(:), allocatable :: ps
 
       integer :: i
-      character (len=*), dimension(2), parameter :: validTypes = &
-         [J_PR_TYPE_POINT, J_PR_TYPE_WIRE]
+      character (len=*), dimension(3), parameter :: validTypes = &
+         [J_PR_TYPE_POINT, J_PR_TYPE_WIRE, J_PR_TYPE_LINE]
       character (len=*), dimension(1), parameter :: validFields = &
          [J_FIELD_CURRENT]
       logical :: found
-      character (len=:), allocatable :: fieldLbl
+      character (len=:), allocatable :: fieldLbl, probeLbl
       integer :: filtered_size, n
 
       call this%core%get(this%root, J_PROBES, allProbes, found)
@@ -1117,8 +1117,14 @@ contains
       do i=1, size(ps)
          fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
          if (fieldLbl /= J_FIELD_VOLTAGE) then 
-            res%collection(n) = readPointProbe(ps(i)%p)
-            n = n + 1
+            probeLbl = this%getStrAt(ps(i)%p, J_TYPE, default=J_FIELD_ELECTRIC)
+            if (probeLbl == J_PR_TYPE_WIRE .or. probeLbl == J_PR_TYPE_POINT) then 
+               res%collection(n) = readPointProbe(ps(i)%p)
+               n = n + 1
+            else if (probeLbl == J_PR_TYPE_LINE) then
+               res%collection(n) = readLineProbe(ps(i)%p)
+               n = n + 1
+            end if
          end if
       end do
 
@@ -1126,6 +1132,56 @@ contains
       res%length_max = size(res%collection)
       res%len_cor_max = 0
    contains
+      function readLineProbe(p) result (res)
+         type(MasSonda) :: res
+         type(json_value), pointer :: p
+         integer :: i
+         character (len=:), allocatable :: outputName
+         type(linel_t), dimension(:), allocatable :: linels
+         type(polyline_t) :: polyline
+
+         integer, dimension(:), allocatable :: elemIds
+         logical :: elementIdsFound, nameFound
+
+         outputName = this%getStrAt(p, J_NAME, found=nameFound)
+         if (.not. nameFound) then 
+            write(error_unit, *) "ERROR: name entry not found for probe."
+         end if
+         res%outputrequest = trim(adjustl(outputName))
+
+         call setDomain(res, this%getDomain(p, J_PR_DOMAIN))
+
+         elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
+         if (.not. elementIdsFound) then
+            write(error_unit, *) "ERROR: element ids entry not found for probe."
+         end if
+         if (size(elemIds) /= 1) then
+            write(error_unit, *) "ERROR: point probe must contain a single element id."
+         end if
+
+         polyline = this%mesh%getPolyline(elemIds(1))
+         linels = this%mesh%polylineToLinels(polyline)
+         allocate(res%cordinates(size(linels)))
+         do i = 1, size(linels)
+            res%cordinates(i)%Xi = linels(i)%cell(1)
+            res%cordinates(i)%Yi = linels(i)%cell(2)
+            res%cordinates(i)%Zi = linels(i)%cell(3)
+            select case(abs(linels(i)%orientation))
+            case(1)
+               res%cordinates(i)%Xe = linels(i)%cell(1)+1
+            case(2)
+               res%cordinates(i)%Ye = linels(i)%cell(2)+1
+            case(3)
+               res%cordinates(i)%Ze = linels(i)%cell(3)+1
+            end select
+            res%cordinates(i)%or = sign(NP_COR_LINE, linels(i)%orientation)
+            res%cordinates(i)%tag = trim(adjustl(outputName))
+         end do
+
+         res%len_cor = 1
+
+      end function
+
       function readPointProbe(p) result (res)
          type(MasSonda) :: res
          type(json_value), pointer :: p, dirLabelPtr
@@ -1263,6 +1319,8 @@ contains
             res = NP_COR_WIRECURRENT
           case (J_FIELD_VOLTAGE)
             res = NP_COR_DDP
+          case (J_FIELD_CHARGE)
+            res = NP_COR_CHARGE
           case default
             call WarnErrReport("Invalid field label for point/wire probe.", .true.)
          end select

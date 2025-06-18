@@ -19,6 +19,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_FIELD_VOLTAGE = "voltage"
    character (len=*), parameter :: J_FIELD_CURRENT = "current"
    character (len=*), parameter :: J_FIELD_CURRENT_DENSITY = "currentDensity"
+   character (len=*), parameter :: J_FIELD_CHARGE = "charge"
 
    ! -- materials
    character (len=*), parameter :: J_MATERIALS = "materials"
@@ -188,6 +189,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_PR_TYPE_BULK_CURRENT = "bulkCurrent"
    character (len=*), parameter :: J_PR_TYPE_FARFIELD = "farField"
    character (len=*), parameter :: J_PR_TYPE_MOVIE = "movie"
+   character (len=*), parameter :: J_PR_TYPE_LINE = "line"
    
    character (len=*), parameter :: J_PR_POINT_DIRECTIONS = "directions"
 
