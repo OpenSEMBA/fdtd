@@ -339,15 +339,6 @@
                 ]
             },
             {
-                "id": 10,
-                "type": "polyline",
-                "coordinateIds": [
-                    10,
-                    11,
-                    12
-                ]
-            },
-            {
                 "id": 3,
                 "type": "cell",
                 "intervals": [
@@ -390,7 +381,7 @@
     },
     "materialAssociations": [
         {
-            "name": "single_inner_wire",
+            "name": "unshielded_pair",
             "materialId": 1,
             "initialTerminalId": 4,
             "endTerminalId": 4,

@@ -34,7 +34,7 @@ module mtln_types_mod
    integer, parameter :: DIRECTION_Z_NEG   =  -3
 
    type :: external_dielectric_t
-      real :: radius = 0.0 
+      real :: radius = 0.0
       real :: relative_permittivity = 1.0
       real :: effective_relative_permittivity = 1.0
    end type
@@ -48,7 +48,7 @@ module mtln_types_mod
       real (kind=rkind) , pointer  ::  field => null()
    contains
       private
-      procedure :: external_field_segments_eq 
+      procedure :: external_field_segments_eq
       generic, public :: operator(==) => external_field_segments_eq
    end type
 
@@ -96,7 +96,7 @@ module mtln_types_mod
       integer :: numberOfPorts
       integer :: nodeId
    end type
-      
+
    type :: terminal_connection_t
       type(terminal_node_t), dimension(:), allocatable :: nodes
       type(subcircuit_t) :: subcircuit
@@ -140,37 +140,54 @@ module mtln_types_mod
    end type
 
    type, public :: multipolarCoefficient_t
-      ! Coefficients are assumed to be provided in natural units. 
+      ! Coefficients are assumed to be provided in natural units.
       ! To use them as a charge they must be multiplied by epsilon_0.
       ! To use them as a current they must be divided by mu_0.
       real :: a, b
+   contains
+      private
+      procedure :: multipolarCoefficient_eq
+      generic, public :: operator(==) => multipolarCoefficient_eq
    end type
 
    type, public :: fieldReconstruction_t
       ! This data allows reconstructing the potential for a set of conductors
       ! in which each conductor has a different potential.
-   
+
       ! Average potential within the inner region.
       real :: inner_region_average_potential
       ! Expansion center for the field reconstruction using the multipolar expansion
       real, dimension(2) :: expansion_center
       ! Multipolar expansion coefficients. Size of the multipolar expansion order.
-      type(multipolarCoefficient_t), dimension(:), allocatable :: ab      
+      type(multipolarCoefficient_t), dimension(:), allocatable :: ab
       ! Potentials on each conductor. size of the number of conductors.
-      real, dimension(:), allocatable :: conductor_potentials  
+      real, dimension(:), allocatable :: conductor_potentials
+   contains
+      private
+      procedure :: fieldReconstruction_eq
+      generic, public :: operator(==) => fieldReconstruction_eq
    end type
 
    type, public :: crossSectionBox_t
       real, dimension(2) :: min, max
+   contains
+      private
+      procedure :: crossSectionBox_eq
+      generic, public :: operator(==) => crossSectionBox_eq
    end type
 
    type, public :: multipolarExpansion_t
       ! Inner region is assumed to be in meters.
       ! A 2D box defining the inner region which contains all the conductors.
       type(crossSectionBox_t) :: inner_region
-   
-      ! Size of the number of conductors. 
-      type(fieldReconstruction_t), dimension(:), allocatable :: electric, magnetic     
+
+      ! Size of the number of conductors.
+      type(fieldReconstruction_t), dimension(:), allocatable :: electric, magnetic
+
+   contains
+      private
+      procedure :: multipolarExpansion_eq
+      generic, public :: operator(==) => multipolarExpansion_eq
    end type
 
    type, public :: cable_t
@@ -181,8 +198,8 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: inductance_per_meter
       real, allocatable, dimension(:,:) :: capacitance_per_meter
 
-      type(multipolarExpansion_t), pointer :: multipolar_expansion
-            
+      type(multipolarExpansion_t), allocatable :: multipolar_expansion
+
       real, allocatable, dimension(:) :: step_size
       type(transfer_impedance_per_meter_t) :: transfer_impedance
       type(cable_t), pointer :: parent_cable => null()
@@ -229,7 +246,7 @@ contains
    logical function mtln_eq(a,b)
       class(mtln_t), intent(in) :: a,b
       integer :: i
-         
+
       if (size(a%cables) /= size(b%cables)) then
          mtln_eq = .false.
          return
@@ -276,18 +293,65 @@ contains
          (a%direction == b%direction)
    end function
 
+   elemental function multipolarCoefficient_eq(a, b) result(res)
+      class(multipolarCoefficient_t), intent(in) :: a, b
+      logical :: res
+      res = .true.
+      res = res .and. (a%a == b%a)
+      res = res .and. (a%b == b%b)
+   end function
+
+   elemental function fieldReconstruction_eq(lhs, rhs) result (res)
+      class(fieldReconstruction_t), intent(in) :: lhs, rhs
+      logical :: res = .true.
+
+      res = res .and. &
+         lhs%inner_region_average_potential == rhs%inner_region_average_potential
+
+      res = res .and. all(lhs%expansion_center == rhs%expansion_center)
+      res = res .and. (allocated(lhs%ab) .and. allocated(rhs%ab)
+      res = res .and. all(lhs%ab == rhs%ab)
+      res = res .and. (allocated(lhs%conductor_potentials) .and. allocated(rhs%conductor_potentials))
+      res = res .and. all(lhs%conductor_potentials == rhs%conductor_potentials)
+
+   end function
+
+   elemental logical function crossSectionBox_eq(a, b)
+      class(crossSectionBox_t), intent(in) :: a, b
+      crossSectionBox_eq = all(a%min == b%min) .and. all(a%max == b%max)
+   end function
+
+   elemental function multipolarExpansion_eq(a, b) result(res)
+      class(multipolarExpansion_t), intent(in) :: a, b
+      logical :: res = .true.
+
+      res = res .and. (a%inner_region == b%inner_region)
+      res = res .and. allocated(a%electric) .and. allocated(b%electric))
+      res = res .and. all(a%electric == b%electric)
+      res = res .and. allocated(a%magnetic) .and. allocated(b%magnetic))
+      res = res .and. all(a%magnetic == b%magnetic)
+   end function
+   
    recursive logical function cable_eq(a,b)
       class(cable_t), intent(in) :: a, b
       cable_eq = .true.
-      cable_eq = cable_eq .and.  (a%name == b%name) 
+      cable_eq = cable_eq .and.  (a%name == b%name)
       cable_eq = cable_eq .and.  all(a%inductance_per_meter == b%inductance_per_meter)
       cable_eq = cable_eq .and.  all(a%capacitance_per_meter == b%capacitance_per_meter)
       cable_eq = cable_eq .and.  all(a%resistance_per_meter == b%resistance_per_meter)
       cable_eq = cable_eq .and.  all(a%conductance_per_meter == b%conductance_per_meter)
+      cable_eq = cable_eq .and.  a%multipolar_expansion == b%multipolar_expansion
       cable_eq = cable_eq .and.  all(a%step_size == b%step_size)
       cable_eq = cable_eq .and.  (a%transfer_impedance == b%transfer_impedance)
+
+      cable_eq = cable_eq .and. (a%parent_cable == b%parent_cable)
+      cable_eq = cable_eq .and. (a%initial_connector == b%initial_connector)
+      cable_eq = cable_eq .and. (a%end_connector == b%end_connector)
+
       cable_eq = cable_eq .and.  (a%conductor_in_parent == b%conductor_in_parent)
+
       cable_eq = cable_eq .and.  all(a%external_field_segments == b%external_field_segments)
+      cable_eq = cable_eq .and. a%isPassthrough == b%isPassthrough
 
 
       if (.not. cable_eq) then
@@ -445,7 +509,7 @@ contains
          external_field_segments_eq = external_field_segments_eq .and. .true.
       else if ((associated(a%field) .and. .not. associated(b%field)) .or. &
          (.not. associated(a%field) .and. associated(b%field))) then
-            external_field_segments_eq = external_field_segments_eq .and. .false.
+         external_field_segments_eq = external_field_segments_eq .and. .false.
       else
          external_field_segments_eq = external_field_segments_eq .and. (a%field == b%field)
       end if
@@ -471,7 +535,7 @@ contains
       class(transfer_impedance_per_meter_t) :: this
       logical :: res
       res = (this%resistive_term /= 0) .and. (this%inductive_term /= 0) .and. &
-                               (size(this%poles) /= 0) .and. (size(this%residues) /= 0)
+         (size(this%poles) /= 0) .and. (size(this%residues) /= 0)
    end function
 
    subroutine terminal_network_add_connection(this, connection)
@@ -479,9 +543,9 @@ contains
       type(terminal_connection_t) :: connection
       type(terminal_connection_t), dimension(:), allocatable :: newConnections
       integer :: newConnectionsSize
-      
+
       if (.not. allocated(this%connections))  allocate(this%connections(0))
-      
+
       allocate(newConnections( size(this%connections) + 1 ) )
       newConnectionsSize = size(newConnections)
       newConnections(1:newConnectionsSize-1) = this%connections

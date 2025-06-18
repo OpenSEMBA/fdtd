@@ -23,6 +23,8 @@ contains
    function expectedProblemDescription() result (ex)
       type(Parseador) :: ex
 
+      integer :: i
+
       call initializeProblemDescription(ex)
 
       ! Expected general info.
@@ -64,7 +66,7 @@ contains
       allocate(ex%pecRegs%Surfs(1))
       ! -- specific surfs not included DO NOT use comparison --
 
-      ! Expected sources.
+      ! ex sources.
       allocate(ex%plnSrc%collection(1))
       ex%plnSrc%collection(1)%nombre_fichero = "unshielded_50ns.exc"
       ex%plnSrc%collection(1)%atributo = ""
@@ -81,13 +83,41 @@ contains
       ex%plnSrc%nC_max = 1
 
       ! Expected Probe
-      deallocate(expected%mtln%probes)
-      allocate(expected%mtln%probes(1))
-      expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)
-      expected%mtln%probes(1)%index = 5
-      expected%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
-      expected%mtln%probes(1)%probe_name = "test"
-      expected%mtln%probes(1)%probe_position = [2,11,14]
+      deallocate(ex%mtln%probes)
+      allocate(ex%mtln%probes(1))
+      ex%mtln%probes(1)%attached_to_cable => ex%mtln%cables(1)
+      ex%mtln%probes(1)%index = 5
+      ex%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
+      ex%mtln%probes(1)%probe_name = "test"
+      ex%mtln%probes(1)%probe_position = [2,11,14]
+
+      ! ex mtln type
+      allocate(ex%mtln%cables(1))
+      ! cable 1 - wire
+      ex%mtln%cables(1)%name = "unshielded_pair"
+      allocate(ex%mtln%cables(1)%inductance_per_meter(0,0))
+      allocate(ex%mtln%cables(1)%capacitance_per_meter(0,0))
+      allocate(ex%mtln%cables(1)%resistance_per_meter(0,0))
+      allocate(ex%mtln%cables(1)%conductance_per_meter(0,0))
+      allocate(ex%mtln%cables(1)%step_size(15))
+      ex%mtln%cables(1)%step_size(:) =  0.2
+
+      allocate(ex%mtln%cables(1)%external_field_segments(15))
+      do i = 0, 14
+         ex%mtln%cables(1)%external_field_segments(i)%position = (/2,11,7+i/)
+         ex%mtln%cables(1)%external_field_segments(i)%direction = DIRECTION_Z_POS
+         ex%mtln%cables(1)%external_field_segments(i)%field => null()
+         ex%mtln%cables(1)%external_field_segments(i)%radius = 0.0
+         ex%mtln%cables(1)%external_field_segments(i)%has_dielectric = .false.
+      end do
+
+      allocate(ex%mtln%cables(1)%transfer_impedance%poles(0))
+      allocate(ex%mtln%cables(1)%transfer_impedance%residues(0))
+
+      ex%mtln%cables(1)%parent_cable => null()
+      ex%mtln%cables(1)%conductor_in_parent = 0
+      ex%mtln%cables(1)%initial_connector => null()
+      ex%mtln%cables(1)%end_connector => null()
    end function
 end function
 
