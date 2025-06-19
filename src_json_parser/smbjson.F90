@@ -2193,8 +2193,8 @@ contains
       wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
       multiwires = this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE])
       cables = this%getMaterialAssociations(&
-               [J_MAT_TYPE_WIRE//'               ',&
-                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  '&
+               [J_MAT_TYPE_WIRE//'               ' ,&
+                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
                 J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ]) 
       ! spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
@@ -3196,11 +3196,11 @@ contains
          areFixedInCell = &
             this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE) .and. &
             this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)
-         areMultipolarInCell = 
+         areMultipolarInCell = & 
             this%existsAt(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION)
 
          if ((areFixedInCell .and. areMultipolarInCell) .or. &
-             (.not. areFixedInCell .and. .not areMultipolarInCell) ) then
+             (.not. areFixedInCell .and. .not. areMultipolarInCell) ) then
             call WarnErrReport( &
                "Unshielded multiwires in cell properties must be defined by fixed OR multipolarExpansions, but not both.", .true.)
          end if
@@ -3213,13 +3213,14 @@ contains
             res%inductance_per_meter = null_matrix
             res%capacitance_per_meter = null_matrix
 
-            call this%core%get(mat, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, multipolarExpansionPtr)
+            call this%core%get(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, multipolarExpansionPtr)
             allocate(res%multipolar_expansion(1))         
             res%multipolar_expansion(1) = readMultipolarExpansion(multipolarExpansionPtr)
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
-            res%resistance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
+            res%resistance_per_meter = &
+               vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
          else
             res%resistance_per_meter = null_matrix
          end if
@@ -3241,58 +3242,58 @@ contains
          if (.not. found) then
             call WarnErrReport("Error reading multipolar expansion: innerRegionBox label not found", .true.)
          end if   
-         this%inner_region = readInnnerRegionBox(jvPtr)
+         res%inner_region = readInnnerRegionBox(jvPtr)
 
          call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_ELECTRIC, jvPtr, found)
          if (.not. found) then
             call WarnErrReport("Error reading multipolar expansion electric reconstruction not found", .true.)
          end if
-         this%electric = readFieldReconstruction(jvPtr)
+         res%electric = readFieldReconstruction(jvPtr)
 
          call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_MAGNETIC, jvPtr, found)
          if (.not. found) then
             call WarnErrReport("Error reading multipolar expansion magnetic reconstruction not found", .true.)
          end if
-         this%magnetic = realdFieldReconstruction(jvPtr)
-         
-      contains
-         function readInnnerRegionBox(ptr) result(inner_region)
-            type(json_value), pointer, intent(in) :: ptr
-            res%inner_region%min = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN)
-            res%inner_region%max = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX)
-         end function
-         
-         function readFieldReconstruction(ptr) result(res)
-            type(json_value), pointer, intent(in) :: ptr
-            type(field_reconstruction_t) :: res
-            real, dimension(:), allocatable :: auxAB
-            type(json_value), pointer :: abPtr
-            
-            integer :: i
-            logical :: found
-
-            res%inner_region_average_potential = &
-               this%getRealAt(ptr, J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL)
-            res%expansion_center = &
-               this%getRealsAt(pt, J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER)
-            res%conductor_potentials = &
-               this%getRealsAt(pt, J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS)
-
-            call this%core%get(ptr, J_MAT_MULTIWIRE_MEFR_AB, abPtr, found)
-            if (.not. found) then
-               call WarnErrReport("Error reading multipolar expansion: ab label not found", .true.)
-            end if
-            allocate(res%ab(this%core%count(abPtr)))
-            do i = 1, size(res%ab)
-               auxAB = this%getReals(res%ab(i))
-               res%ab(i)%a = auxAB(1)
-               res%ab(i)%b = auxAB(2)
-            end do
-
-         end function
+         res%magnetic = readFieldReconstruction(jvPtr)
       end function
+      
+      function readInnnerRegionBox(ptr) result(inner_region)
+         type(json_value), pointer, intent(in) :: ptr
+         type(box_2d_t) :: inner_region
+         inner_region%min = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN)
+         inner_region%max = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX)
+      end function
+      
+      function readFieldReconstruction(ptr) result(res)
+         type(json_value), pointer, intent(in) :: ptr
+         type(field_reconstruction_t) :: res
+         real, dimension(:), allocatable :: auxAB
+         type(json_value), pointer :: absPtr
+         type(json_value), pointer :: abPtr
+         
+         integer :: i
+         logical :: found
 
+         res%inner_region_average_potential = &
+            this%getRealAt(ptr, J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL)
+         res%expansion_center = &
+            this%getRealsAt(ptr, J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER)
+         res%conductor_potentials = &
+            this%getRealsAt(ptr, J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS)
 
+         call this%core%get(ptr, J_MAT_MULTIWIRE_MEFR_AB, absPtr, found)
+         if (.not. found) then
+            call WarnErrReport("Error reading multipolar expansion: ab label not found", .true.)
+         end if
+         allocate(res%ab(this%core%count(absPtr)))
+         do i = 1, size(res%ab)
+            call this%core%get_child(absPtr, i, abPtr)           
+            call this%core%get(abPtr, '(1)', res%ab(i)%a)
+            call this%core%get(abPtr, '(2)', res%ab(i)%b)
+         end do
+
+      end function
+   
       function mapSegmentsToGridCoordinates(j_cable) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
          type(external_field_segment_t), dimension(:), allocatable :: res

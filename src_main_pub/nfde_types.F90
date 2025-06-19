@@ -1,5 +1,3 @@
-
-    
 MODULE NFDETypes
    !
    USE FDETYPES
@@ -761,7 +759,7 @@ MODULE NFDETypes
       TYPE (SlantedWires), POINTER ::          sWires => NULL ()
       TYPE (ThinSlots), POINTER ::             tSlots => NULL ()    
 #ifdef CompileWithMTLN
-      TYPE (mtln_t), POINTER ::                mtln => NULL ()
+      TYPE (mtln_t), POINTER ::                mtln => NULL () 
 #endif
    END TYPE Parseador
    

@@ -47,8 +47,7 @@ TEST(smbjson, read_sgbc)                 { EXPECT_EQ(0, test_read_sgbc()); }
 TEST(smbjson, read_sphere)               { EXPECT_EQ(0, test_read_sphere()); }
 TEST(smbjson, read_airplane)             { EXPECT_EQ(0, test_read_airplane()); }
 TEST(smbjson, read_lumped_fixture)       { EXPECT_EQ(0, test_read_lumped_fixture()); }
-TEST(smbjson, read_unshielded_multiwires_multipolar_expansion) {
-                                           EXPECT_EQ(0,  test_read_unshielded_multiwires_multipolar_expansion()); }
+
 
 #ifdef CompileWithMTLN
 TEST(smbjson, read_towelhanger)          { EXPECT_EQ(0, test_read_towelhanger()); }
@@ -58,4 +57,6 @@ TEST(smbjson, read_currentinjection)     { EXPECT_EQ(0, test_read_currentinjecti
 TEST(smbjson, read_shieldedpair)         { EXPECT_EQ(0, test_read_shieldedpair()); }
 TEST(smbjson, read_mtln)                 { EXPECT_EQ(0, test_read_mtln()); }
 TEST(smbjson, read_large_airplane_mtln)  { EXPECT_EQ(0, test_read_large_airplane_mtln()); }
+TEST(smbjson, read_unshielded_multiwires_multipolar_expansion) {
+                                           EXPECT_EQ(0,  test_read_unshielded_multiwires_multipolar_expansion()); }
 #endif

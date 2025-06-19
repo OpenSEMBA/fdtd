@@ -139,18 +139,18 @@ module mtln_types_mod
       generic, public :: operator(==) => connector_eq
    end type
 
-   type, public :: multipolarCoefficient_t
+   type, public :: multipolar_coefficient_t
       ! Coefficients are assumed to be provided in natural units.
       ! To use them as a charge they must be multiplied by epsilon_0.
       ! To use them as a current they must be divided by mu_0.
       real :: a, b
    contains
       private
-      procedure :: multipolarCoefficient_eq
-      generic, public :: operator(==) => multipolarCoefficient_eq
+      procedure :: multipolar_coefficient_eq
+      generic, public :: operator(==) => multipolar_coefficient_eq
    end type
 
-   type, public :: fieldReconstruction_t
+   type, public :: field_reconstruction_t
       ! This data allows reconstructing the potential for a set of conductors
       ! in which each conductor has a different potential.
 
@@ -159,35 +159,35 @@ module mtln_types_mod
       ! Expansion center for the field reconstruction using the multipolar expansion
       real, dimension(2) :: expansion_center
       ! Multipolar expansion coefficients. Size of the multipolar expansion order.
-      type(multipolarCoefficient_t), dimension(:), allocatable :: ab
+      type(multipolar_coefficient_t), dimension(:), allocatable :: ab
       ! Potentials on each conductor. size of the number of conductors.
       real, dimension(:), allocatable :: conductor_potentials
    contains
       private
-      procedure :: fieldReconstruction_eq
-      generic, public :: operator(==) => fieldReconstruction_eq
+      procedure :: field_reconstruction_eq
+      generic, public :: operator(==) => field_reconstruction_eq
    end type
 
-   type, public :: crossSectionBox_t
+   type, public :: box_2d_t
       real, dimension(2) :: min, max
    contains
       private
-      procedure :: crossSectionBox_eq
-      generic, public :: operator(==) => crossSectionBox_eq
+      procedure :: box_2d_eq
+      generic, public :: operator(==) => box_2d_eq
    end type
 
-   type, public :: multipolarExpansion_t
+   type, public :: multipolar_expansion_t
       ! Inner region is assumed to be in meters.
       ! A 2D box defining the inner region which contains all the conductors.
-      type(crossSectionBox_t) :: inner_region
+      type(box_2d_t) :: inner_region
 
       ! Size of the number of conductors.
-      type(fieldReconstruction_t), dimension(:), allocatable :: electric, magnetic
+      type(field_reconstruction_t), dimension(:), allocatable :: electric, magnetic
 
    contains
       private
-      procedure :: multipolarExpansion_eq
-      generic, public :: operator(==) => multipolarExpansion_eq
+      procedure :: multipolar_expansion_eq
+      generic, public :: operator(==) => multipolar_expansion_eq
    end type
 
    type, public :: cable_t
@@ -198,7 +198,7 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: inductance_per_meter
       real, allocatable, dimension(:,:) :: capacitance_per_meter
 
-      type(multipolarExpansion_t), dimension(:), allocatable :: multipolar_expansion
+      type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
 
       real, allocatable, dimension(:) :: step_size
       type(transfer_impedance_per_meter_t) :: transfer_impedance
@@ -293,16 +293,16 @@ contains
          (a%direction == b%direction)
    end function
 
-   elemental function multipolarCoefficient_eq(a, b) result(res)
-      class(multipolarCoefficient_t), intent(in) :: a, b
+   elemental function multipolar_coefficient_eq(a, b) result(res)
+      class(multipolar_coefficient_t), intent(in) :: a, b
       logical :: res
       res = .true.
       res = res .and. (a%a == b%a)
       res = res .and. (a%b == b%b)
    end function
 
-   elemental function fieldReconstruction_eq(lhs, rhs) result (res)
-      class(fieldReconstruction_t), intent(in) :: lhs, rhs
+   elemental function field_reconstruction_eq(lhs, rhs) result (res)
+      class(field_reconstruction_t), intent(in) :: lhs, rhs
       logical :: res
 
       res = .true.
@@ -317,21 +317,21 @@ contains
 
    end function
 
-   elemental logical function crossSectionBox_eq(a, b)
-      class(crossSectionBox_t), intent(in) :: a, b
-      crossSectionBox_eq = all(a%min == b%min) .and. all(a%max == b%max)
+   elemental logical function box_2d_eq(a, b) result(res)
+      class(box_2d_t), intent(in) :: a, b
+      res = all(a%min == b%min) .and. all(a%max == b%max)
    end function
 
-   elemental function multipolarExpansion_eq(a, b) result(res)
-      class(multipolarExpansion_t), intent(in) :: a, b
+   elemental function multipolar_expansion_eq(a, b) result(res)
+      class(multipolar_expansion_t), intent(in) :: a, b
       logical :: res
       
       res = .true.
 
       res = res .and. (a%inner_region == b%inner_region)
-      res = res .and. allocated(a%electric) .and. allocated(b%electric))
+      res = res .and. allocated(a%electric) .and. allocated(b%electric)
       res = res .and. all(a%electric == b%electric)
-      res = res .and. allocated(a%magnetic) .and. allocated(b%magnetic))
+      res = res .and. allocated(a%magnetic) .and. allocated(b%magnetic)
       res = res .and. all(a%magnetic == b%magnetic)
    end function
    
