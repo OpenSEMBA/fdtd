@@ -309,6 +309,8 @@ contains
       expected%mtln%cables(1)%resistance_per_meter =  reshape(source=[22.9e-3], shape=[1,1])
       expected%mtln%cables(1)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
       
+      allocate(expected%mtln%cables(1)%multipolar_expansion(0))
+
       allocate(expected%mtln%cables(1)%step_size(9))
       expected%mtln%cables(1)%step_size = [(0.1, i = 1, 9)]
       allocate(expected%mtln%cables(1)%external_field_segments(9))
@@ -336,6 +338,8 @@ contains
       expected%mtln%cables(2)%capacitance_per_meter = reshape(source=[5.5840010E-10], shape=[1,1])
       expected%mtln%cables(2)%resistance_per_meter = reshape(source=[3.9e-3], shape=[1,1])
       expected%mtln%cables(2)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
+      allocate(expected%mtln%cables(2)%multipolar_expansion(0))
+
       allocate(expected%mtln%cables(2)%step_size(9))
       expected%mtln%cables(2)%step_size =  [(0.1, i = 1, 9)]
 
@@ -344,7 +348,6 @@ contains
          expected%mtln%cables(2)%external_field_segments(i)%position = (/i,9,1/)
          expected%mtln%cables(2)%external_field_segments(i)%direction = DIRECTION_X_POS
          expected%mtln%cables(2)%external_field_segments(i)%field => null()
-
       end do
 
       expected%mtln%cables(2)%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
@@ -381,6 +384,8 @@ contains
          reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
       expected%mtln%cables(3)%capacitance_per_meter(7:8,7:8) = &
          reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+
+      allocate(expected%mtln%cables(3)%multipolar_expansion(0))
 
       do i = 1, 8
          expected%mtln%cables(3)%resistance_per_meter(i,i) =  62.0e-3
@@ -422,6 +427,8 @@ contains
       expected%mtln%cables(4)%resistance_per_meter =  reshape(source=[11.8e-3], shape=[1,1])
       expected%mtln%cables(4)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
       
+      allocate(expected%mtln%cables(4)%multipolar_expansion(0))
+
       allocate(expected%mtln%cables(4)%step_size(8))
       expected%mtln%cables(4)%step_size = [(0.1, i = 1, 8)]
 
@@ -451,6 +458,9 @@ contains
       expected%mtln%cables(5)%capacitance_per_meter = reshape(source=[3.2310005E-10], shape=[1,1])
       expected%mtln%cables(5)%resistance_per_meter = reshape(source=[12.2e-3], shape=[1,1])
       expected%mtln%cables(5)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
+
+      allocate(expected%mtln%cables(5)%multipolar_expansion(0))
+
       allocate(expected%mtln%cables(5)%step_size(8))
       expected%mtln%cables(5)%step_size =  [(0.1, i = 1, 8)]
 
@@ -484,6 +494,8 @@ contains
 
       expected%mtln%cables(6)%capacitance_per_meter(1:2,1:2) = &
          reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+
+      allocate(expected%mtln%cables(6)%multipolar_expansion(0))
 
       do i = 1, 2
          expected%mtln%cables(6)%resistance_per_meter(i,i) = 62.0e-3
@@ -524,6 +536,8 @@ contains
       expected%mtln%cables(7)%resistance_per_meter =  reshape(source=[17.3e-3], shape=[1,1])
       expected%mtln%cables(7)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
       
+      allocate(expected%mtln%cables(7)%multipolar_expansion(0))
+
       allocate(expected%mtln%cables(7)%step_size(7))
       expected%mtln%cables(7)%step_size = [(0.1, i = 1, 7)]
 
@@ -553,6 +567,9 @@ contains
       expected%mtln%cables(8)%capacitance_per_meter = reshape(source=[4.7190007E-10], shape=[1,1])
       expected%mtln%cables(8)%resistance_per_meter = reshape(source=[6.5e-3], shape=[1,1])
       expected%mtln%cables(8)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
+
+      allocate(expected%mtln%cables(8)%multipolar_expansion(0))
+
       allocate(expected%mtln%cables(8)%step_size(7))
       expected%mtln%cables(8)%step_size =  [(0.1, i = 1, 7)]
 
@@ -593,6 +610,8 @@ contains
          reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
       expected%mtln%cables(9)%capacitance_per_meter(5:6,5:6) = &
          reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+
+      allocate(expected%mtln%cables(9)%multipolar_expansion(0))
 
       do i = 1, 6
          expected%mtln%cables(9)%resistance_per_meter(i,i) = 62.0e-3

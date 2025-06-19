@@ -347,56 +347,31 @@ contains
       cable_eq = cable_eq .and.  all(a%step_size == b%step_size)
       cable_eq = cable_eq .and.  (a%transfer_impedance == b%transfer_impedance)
 
-      cable_eq = cable_eq .and. (a%parent_cable == b%parent_cable)
-      cable_eq = cable_eq .and. (a%initial_connector == b%initial_connector)
-      cable_eq = cable_eq .and. (a%end_connector == b%end_connector)
+      if (associated(a%parent_cable) .and. associated(b%parent_cable)) then
+         cable_eq = cable_eq .and. (a%parent_cable == b%parent_cable)
+      else if (.not. associated(a%parent_cable) .and. .not. associated(b%parent_cable)) then
+         cable_eq = cable_eq .and. .true.
+      else
+         cable_eq = cable_eq .and. .false.
+      end if
+      if (associated(a%initial_connector) .and. associated(b%initial_connector)) then
+         cable_eq = cable_eq .and. (a%initial_connector == b%initial_connector)
+      else if (.not. associated(a%initial_connector) .and. .not. associated(b%initial_connector)) then
+         cable_eq = cable_eq .and. .true.
+      else
+         cable_eq = cable_eq .and. .false.
+      end if
+      if (associated(a%end_connector) .and. associated(b%end_connector)) then
+         cable_eq = cable_eq .and. (a%end_connector == b%end_connector)
+      else if (.not. associated(a%end_connector) .and. .not. associated(b%end_connector)) then
+         cable_eq = cable_eq .and. .true.
+      else
+         cable_eq = cable_eq .and. .false.
+      end if
 
       cable_eq = cable_eq .and.  (a%conductor_in_parent == b%conductor_in_parent)
-
       cable_eq = cable_eq .and.  all(a%external_field_segments == b%external_field_segments)
       cable_eq = cable_eq .and. a%isPassthrough .eqv. b%isPassthrough
-
-
-      if (.not. cable_eq) then
-         cable_eq = .false.
-      end if
-
-      if (.not. associated(a%parent_cable) .and. .not. associated(b%parent_cable)) then
-         cable_eq = cable_eq .and. .true.
-      else if ((associated(a%parent_cable) .and. .not. associated(b%parent_cable)) .or. &
-         (.not. associated(a%parent_cable) .and. associated(b%parent_cable))) then
-         cable_eq = cable_eq .and. .false.
-      else
-         cable_eq = cable_eq .and. (a%parent_cable == b%parent_cable)
-      end if
-
-      if (.not. cable_eq) then
-         cable_eq = .false.
-      end if
-
-      if (.not. associated(a%initial_connector) .and. .not. associated(b%initial_connector)) then
-         cable_eq = cable_eq .and. .true.
-      else if ((associated(a%initial_connector) .and. .not. associated(b%initial_connector)) .or. &
-         (.not. associated(a%initial_connector) .and. associated(b%initial_connector))) then
-         cable_eq = cable_eq .and. .false.
-      else
-         cable_eq = cable_eq .and. (a%initial_connector == b%initial_connector)
-      end if
-      if (.not. cable_eq) then
-         cable_eq = .false.
-      end if
-
-      if (.not. associated(a%end_connector) .and. .not. associated(b%end_connector)) then
-         cable_eq = cable_eq .and. .true.
-      else if ((associated(a%end_connector) .and. .not. associated(b%end_connector)) .or. &
-         (.not. associated(a%end_connector) .and. associated(b%end_connector))) then
-         cable_eq = cable_eq .and. .false.
-      else
-         cable_eq = cable_eq .and. (a%end_connector == b%end_connector)
-      end if
-      if (.not. cable_eq) then
-         cable_eq = .false.
-      end if
 
    end function
 

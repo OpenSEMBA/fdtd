@@ -194,6 +194,7 @@ contains
       expected%mtln%cables(1)%capacitance_per_meter = reshape(source=[0.0], shape=[1,1])
       expected%mtln%cables(1)%resistance_per_meter = reshape(source=[22.9e-3], shape=[1,1])
       expected%mtln%cables(1)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
+      allocate(expected%mtln%cables(1)%multipolar_expansion(0))
       allocate(expected%mtln%cables(1)%step_size(5))
       expected%mtln%cables(1)%step_size(1) =  0.0504
       expected%mtln%cables(1)%step_size(2:4) =  [(0.180, i = 2, 4)]
@@ -240,6 +241,7 @@ contains
       expected%mtln%cables(2)%resistance_per_meter =  reshape(source=[0.0, 0.0, 0.0, 0.0], shape=[2,2])
       expected%mtln%cables(2)%conductance_per_meter = reshape(source=[0.0, 0.0, 0.0, 0.0], shape=[2,2])
       
+      allocate(expected%mtln%cables(2)%multipolar_expansion(0))
       allocate(expected%mtln%cables(2)%step_size(5))
       expected%mtln%cables(2)%step_size(1) =  0.0504
       expected%mtln%cables(2)%step_size(2:4) =  [(0.180, i = 2, 4)]

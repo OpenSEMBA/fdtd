@@ -99,6 +99,34 @@ contains
       allocate(ex%mtln%cables(1)%capacitance_per_meter(0,0))
       allocate(ex%mtln%cables(1)%resistance_per_meter(0,0))
       allocate(ex%mtln%cables(1)%conductance_per_meter(0,0))
+
+      allocate(ex%mtln%cables(1)%multipolar_expansion(1))
+      ex%mtln%cables(1)%multipolar_expansion(1)%inner_region%min = &
+         [-0.0265000002, -0.0310000002] 
+      ex%mtln%cables(1)%multipolar_expansion(1)%inner_region%max =  &
+         [ 0.03550000020000001, 0.0310000002] 
+      allocate(ex%mtln%cables(1)%multipolar_expansion(1)%electric(2))
+      ! First conductor.
+      allocate(ex%mtln%cables(1)%multipolar_expansion(1)%electric(1)%conductor_potentials(2))
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(1)%conductor_potentials = [ 1.0, 0.5909272203987278 ]
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(1)%expansion_center = [ -0.004970886788455953, 6.610694092023349e-07 ]
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(1)%inner_region_average_potential = 0.5608636261599323
+      allocate(ex%mtln%cables(1)%multipolar_expansion(1)%electric(1)%ab(1))
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(1)%ab(1)%a = 0.9488836986256424
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(1)%ab(1)%b = 0.0
+      ! Second conductor
+      allocate(ex%mtln%cables(1)%multipolar_expansion(1)%electric(2)%conductor_potentials(2))
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(2)%conductor_potentials = [  0.8497110567446987, 1.0 ]
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(2)%expansion_center = [ 0.009920513440028656, 6.949869591535922e-07 ]
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(2)%inner_region_average_potential = 0.8070848243572611
+      allocate(ex%mtln%cables(1)%multipolar_expansion(1)%electric(2)%ab(1))
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(2)%ab(1)%a = 1.3644011168458479
+      ex%mtln%cables(1)%multipolar_expansion(1)%electric(2)%ab(1)%b = 0.0
+      
+      allocate(ex%mtln%cables(1)%multipolar_expansion(1)%magnetic(2))
+      ex%mtln%cables(1)%multipolar_expansion(1)%magnetic = &
+         ex%mtln%cables(1)%multipolar_expansion(1)%electric
+
       allocate(ex%mtln%cables(1)%step_size(15))
       ex%mtln%cables(1)%step_size(:) =  0.2
 

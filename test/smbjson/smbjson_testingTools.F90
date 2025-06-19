@@ -68,4 +68,19 @@ contains
       err = err + 1
       if (present(msg)) write(*, *)  "FAIL: "// msg
    end subroutine
+
+#ifdef CompileWithMTLN
+   subroutine initializeCablePULParameters(cable)
+      type(cable_t), intent(inout) :: cable
+      allocate(cable%inductance_per_meter(1,1))
+      allocate(cable%capacitance_per_meter(1,1))
+      allocate(cable%resistance_per_meter(1,1))
+      allocate(cable%conductance_per_meter(1,1))
+      allocate(cable%multipolar_expansion(0))
+      cable%inductance_per_meter  = 0.0
+      cable%capacitance_per_meter = 0.0
+      cable%resistance_per_meter  = 0.0
+      cable%conductance_per_meter = 0.0
+   end subroutine
+#endif
 end module

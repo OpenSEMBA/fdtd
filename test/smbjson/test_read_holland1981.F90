@@ -130,14 +130,7 @@ contains
       allocate(expected%mtln%cables(1))
 
       expected%mtln%cables(1)%name = "single_wire"
-      allocate(expected%mtln%cables(1)%inductance_per_meter(1,1))
-      allocate(expected%mtln%cables(1)%capacitance_per_meter(1,1))
-      allocate(expected%mtln%cables(1)%resistance_per_meter(1,1))
-      allocate(expected%mtln%cables(1)%conductance_per_meter(1,1))
-      expected%mtln%cables(1)%inductance_per_meter  = 0.0
-      expected%mtln%cables(1)%capacitance_per_meter = 0.0
-      expected%mtln%cables(1)%resistance_per_meter  = 0.0
-      expected%mtln%cables(1)%conductance_per_meter = 0.0
+      call initializeCablePULParameters(expected%mtln%cables(1))
       allocate(expected%mtln%cables(1)%step_size(10))
       expected%mtln%cables(1)%step_size =  [(0.1, i = 1, 10)]
       allocate(expected%mtln%cables(1)%external_field_segments(10))

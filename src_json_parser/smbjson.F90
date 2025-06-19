@@ -2191,7 +2191,9 @@ contains
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
       wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
-      multiwires = this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE])
+      multiwires = this%getMaterialAssociations([ &
+                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
       cables = this%getMaterialAssociations(&
                [J_MAT_TYPE_WIRE//'               ' ,&
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
@@ -2229,19 +2231,24 @@ contains
          type(json_value_ptr) :: mat
          integer :: parentId, index
          type(cable_t), pointer :: res
+
          mat = this%matTable%getId(cable%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_SHIELDED_MULTIWIRE) then
+
+         select case (this%getStrAt(mat%p, J_TYPE))
+         case (J_MAT_TYPE_SHIELDED_MULTIWIRE) 
             parentId = cable%containedWithinElementId
             if (parentId == -1) then
                res => null()
             else 
                res => getPointerToParentCable(cables, parentId)
             end if
-         else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
+         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
             res => null()
-         else
+         case (J_MAT_TYPE_WIRE)
+            res => null()
+         case default
             call WarnErrReport('ERROR: Material type not recognized', .true.)
-         end if
+         end select
       end function
 
       function assignConductorInParent(cable, cables) result(res)
@@ -2250,19 +2257,24 @@ contains
          type(json_value_ptr) :: mat
          integer :: parentId
          integer :: res
+
          mat = this%matTable%getId(cable%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_SHIELDED_MULTIWIRE) then
+
+         select case (this%getStrAt(mat%p, J_TYPE) )
+         case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
             parentId = cable%containedWithinElementId
             if (parentId == -1) then
                res = 0
             else 
                res = getParentPositionInMultiwire(parentId)
             end if
-         else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
+         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
             res = 0
-         else
+         case (J_MAT_TYPE_WIRE)
+            res = 0
+         case default
             call WarnErrReport('ERROR: Material type not recognized', .true.)
-         end if
+         end select
       end function
 
       subroutine stopOnRepeteadName(cable, cables, n)
@@ -2353,7 +2365,8 @@ contains
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
          cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
-                     this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]) ]
+                    this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
+                    this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds
             terminations_ini => getTerminationsOnSide(cables(i)%initialTerminalId)
@@ -2779,8 +2792,10 @@ contains
 
          call this%core%get(this%root, J_MESH//'.'//J_ELEMENTS, elements)
          polylines = this%jsonValueFilterByKeyValue(elements, J_TYPE, J_ELEM_TYPE_POLYLINE)
-         ! wire_probes = this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_WIRE)
-         wire_probes = this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_SHIELDED_MULTIWIRE)
+         wire_probes = [ &
+            this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_WIRE), &
+            this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_UNSHIELDED_MULTIWIRE), &
+            this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_SHIELDED_MULTIWIRE) ]
 
          n_probes = countProbes(wire_probes, polylines)
 
@@ -2800,9 +2815,13 @@ contains
                      res(k)%probe_position = node_coord%position
                      call elemIdToCable%get(key(this%getIntAt(polylines(j)%p, J_ID)), value=index)
                      cable_ptr => mtln_res%cables(index)
-                     do while (associated(cable_ptr%parent_cable))
-                        cable_ptr => cable_ptr%parent_cable
-                     end do
+                     if (associated(cable_ptr%parent_cable)) then
+                        do while (associated(cable_ptr%parent_cable))
+                           cable_ptr => cable_ptr%parent_cable
+                        end do
+                     else
+                        cable_ptr%parent_cable => null()
+                     end if   
                      res(k)%attached_to_cable => cable_ptr
                      res(k)%index = findProbeIndex(polylinecIds, position)
                      k = k + 1
@@ -3138,6 +3157,8 @@ contains
             res%inductance_per_meter(1,1) = 0.0
          end if
 
+         allocate(res%multipolar_expansion(0))
+
          if (this%existsAt(mat%p, J_MAT_WIRE_RESISTANCE)) then
             res%resistance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_RESISTANCE)
          else
@@ -3167,6 +3188,8 @@ contains
             call WarnErrReport("Error reading material region: capacitancePerMeter label not found.", .true.)
             res%capacitance_per_meter = null_matrix
          end if
+
+         allocate(res%multipolar_expansion(0))
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
             res%resistance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
@@ -3266,30 +3289,33 @@ contains
       
       function readFieldReconstruction(ptr) result(res)
          type(json_value), pointer, intent(in) :: ptr
-         type(field_reconstruction_t) :: res
+         type(field_reconstruction_t), dimension(:), allocatable :: res
          real, dimension(:), allocatable :: auxAB
+         type(json_value), pointer :: frPtr
          type(json_value), pointer :: absPtr
          type(json_value), pointer :: abPtr
          
-         integer :: i
+         integer :: i, j
          logical :: found
 
-         res%inner_region_average_potential = &
-            this%getRealAt(ptr, J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL)
-         res%expansion_center = &
-            this%getRealsAt(ptr, J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER)
-         res%conductor_potentials = &
-            this%getRealsAt(ptr, J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS)
+         allocate(res(this%core%count(ptr)))
+         do j = 1, size(res)
+            call this%core%get_child(ptr, j, frPtr)
 
-         call this%core%get(ptr, J_MAT_MULTIWIRE_MEFR_AB, absPtr, found)
-         if (.not. found) then
-            call WarnErrReport("Error reading multipolar expansion: ab label not found", .true.)
-         end if
-         allocate(res%ab(this%core%count(absPtr)))
-         do i = 1, size(res%ab)
-            call this%core%get_child(absPtr, i, abPtr)           
-            call this%core%get(abPtr, '(1)', res%ab(i)%a)
-            call this%core%get(abPtr, '(2)', res%ab(i)%b)
+            res(j)%inner_region_average_potential = this%getRealAt(frPtr, J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL)
+            res(j)%expansion_center = this%getRealsAt(frPtr, J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER)
+            res(j)%conductor_potentials = this%getRealsAt(frPtr, J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS)
+
+            call this%core%get(frPtr, J_MAT_MULTIWIRE_MEFR_AB, absPtr, found)
+            if (.not. found) then
+               call WarnErrReport("Error reading multipolar expansion: ab label not found", .true.)
+            end if
+            allocate(res(j)%ab(this%core%count(absPtr)))
+            do i = 1, size(res(j)%ab)
+               call this%core%get_child(absPtr, i, abPtr)           
+               call this%core%get(abPtr, '(1)', res(j)%ab(i)%a)
+               call this%core%get(abPtr, '(2)', res(j)%ab(i)%b)
+            end do
          end do
 
       end function

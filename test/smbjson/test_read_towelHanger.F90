@@ -199,14 +199,7 @@ contains
       allocate(expected%mtln%cables(1))
 
       expected%mtln%cables(1)%name = "wire"
-      allocate(expected%mtln%cables(1)%inductance_per_meter(1,1))
-      allocate(expected%mtln%cables(1)%capacitance_per_meter(1,1))
-      allocate(expected%mtln%cables(1)%resistance_per_meter(1,1))
-      allocate(expected%mtln%cables(1)%conductance_per_meter(1,1))
-      expected%mtln%cables(1)%inductance_per_meter  = 0.0
-      expected%mtln%cables(1)%capacitance_per_meter = 0.0
-      expected%mtln%cables(1)%resistance_per_meter  = 0.0
-      expected%mtln%cables(1)%conductance_per_meter = 0.0
+      call initializeCablePulParameters(expected%mtln%cables(1))
       allocate(expected%mtln%cables(1)%step_size(20))
       expected%mtln%cables(1)%step_size =  [(0.01, i = 1, 20)]
       allocate(expected%mtln%cables(1)%external_field_segments(20))
@@ -260,6 +253,7 @@ contains
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(2)%probe_name = "wire_end"
       expected%mtln%probes(2)%probe_position = [43, 25, 30]
+
       expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)
       expected%mtln%probes(3)%index = 11
       expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
