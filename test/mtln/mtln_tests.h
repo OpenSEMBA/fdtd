@@ -10,6 +10,7 @@ extern "C" int test_derived_type_submodule();
 extern "C" int test_fhash();
 extern "C" int test_math_eigvals();
 extern "C" int test_math_matmul_broadcast();
+extern "C" int test_multipolar_expansion_of_dipole();
 extern "C" int test_dispersive_init_1_pole();
 extern "C" int test_dispersive_init_2_poles();
 extern "C" int test_dispersive_init_1_pole_3_levels();
@@ -37,7 +38,6 @@ extern "C" int test_termination_resistive_capacitive();
 extern "C" int test_termination_rls_cp();
 extern "C" int test_termination_rls_cp_ns();
 extern "C" int test_termination_rcp();
-// extern "C" int test_wire_panel();
 extern "C" int test_load_codemodels();
 
 TEST(mtln, mtl_homogeneous)   { EXPECT_EQ(0, test_mtl_init_homogeneous()); }
@@ -58,6 +58,7 @@ TEST(mtln, preprocess_zt_conductor_ranges) { EXPECT_EQ(0, test_preprocess_zt_con
 
 TEST(mtln, math_eigvals) { EXPECT_EQ(0, test_math_eigvals()); }
 TEST(mtln, math_matmul_broadcast) { EXPECT_EQ(0, test_math_matmul_broadcast()); }
+TEST(mtln, multipolar_expansion_of_dipole) { EXPECT_EQ(0, test_multipolar_expansion_of_dipole()); }
 
 TEST(mtln, dispersive_init_1_pole) { EXPECT_EQ(0, test_dispersive_init_1_pole()); }
 TEST(mtln, dispersive_init_2_poles) { EXPECT_EQ(0, test_dispersive_init_2_poles()); }

@@ -69,6 +69,12 @@ contains
       if (present(msg)) write(*, *)  "FAIL: "// msg
    end subroutine
 
+   logical function expect_near(a, b, tol)
+      real, intent(in) :: a, b, tol
+
+      expect_near = abs(a - b) < tol
+   end function
+
 #ifdef CompileWithMTLN
    subroutine initializeCablePULParameters(cable)
       type(cable_t), intent(inout) :: cable
