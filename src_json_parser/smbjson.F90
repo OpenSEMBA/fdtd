@@ -1087,8 +1087,6 @@ contains
       integer :: i
       character (len=*), dimension(2), parameter :: validTypes = &
          [J_PR_TYPE_POINT, J_PR_TYPE_WIRE]
-      character (len=*), dimension(1), parameter :: validFields = &
-         [J_FIELD_CURRENT]
       logical :: found
       character (len=:), allocatable :: fieldLbl
       integer :: filtered_size, n
@@ -1107,7 +1105,7 @@ contains
       filtered_size = 0
       do i=1, size(ps)
          fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
-         if (fieldLbl /= J_FIELD_VOLTAGE) then 
+         if (isMoreProbe(ps(i)%p)) then 
             filtered_size = filtered_size + 1
          end if
       end do
@@ -1116,7 +1114,7 @@ contains
       allocate(res%collection(filtered_size))
       do i=1, size(ps)
          fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
-         if (fieldLbl /= J_FIELD_VOLTAGE) then 
+         if (isMoreProbe(ps(i)%p)) then 
             res%collection(n) = readPointProbe(ps(i)%p)
             n = n + 1
          end if
@@ -1126,6 +1124,72 @@ contains
       res%length_max = size(res%collection)
       res%len_cor_max = 0
    contains
+      logical function isMoreProbe(p)
+         type(json_value), pointer :: p
+         isMoreProbe = isPointProbe(p) .or. isCurrentProbeDefinedOnWire(p)
+      end function
+
+      logical function isCurrentProbeDefinedOnWire(p)
+         type(json_value), pointer :: p
+         character (len=:), allocatable :: fieldLabel
+         logical :: found
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j
+         integer :: cId
+         type(polyline_t) :: polyline
+         
+         fieldLabel = this%getStrAt(p, J_FIELD, found=found)
+         if (.not. found .or. fieldLabel /= J_FIELD_CURRENT) then
+            isCurrentProbeDefinedOnWire = .false.
+            return
+         end if
+         
+         block
+            type(pixel_t) :: pixel
+            integer, dimension(:), allocatable :: eIds
+            eIds = this%getIntsAt(p, J_ELEMENTIDS)
+            pixel = getPixelFromElementId(this%mesh, eIds(1))
+            cId = pixel%tag
+         end block
+
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
+         do i = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+            do j = 1, size(polyline%coordIds)
+               if (polyline%coordIds(j) == cId) then
+                  isCurrentProbeDefinedOnWire = .true.
+                  return
+               end if
+            end do
+         end do
+
+         isCurrentProbeDefinedOnWire = .false.
+      end function
+
+      logical function isPointProbe(p)
+         type(json_value), pointer :: p
+         character (len=:), allocatable :: typeLabel, fieldLabel
+         logical :: found
+
+         typeLabel = this%getStrAt(p, J_TYPE, found=found)
+         if (.not. found) then
+            call WarnErrReport("Point probe type label not found.", .true.)
+         end if
+         if (typeLabel /= J_PR_TYPE_POINT) then
+            isPointProbe = .false.
+            return
+         end if
+
+         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC)
+         if (fieldLabel == J_FIELD_ELECTRIC .or. &
+               fieldLabel == J_FIELD_MAGNETIC) then
+            isPointProbe = .true.
+         else
+            isPointProbe = .false.
+         end if
+      end function
+
+
       function readPointProbe(p) result (res)
          type(MasSonda) :: res
          type(json_value), pointer :: p, dirLabelPtr
@@ -1167,7 +1231,7 @@ contains
             res%cordinates(1)%Xi = pixel%tag
             res%cordinates(1)%Yi = 0
             res%cordinates(1)%Zi = 0
-            res%cordinates(1)%Or = strToFieldType(fieldLabel)
+            res%cordinates(1)%Or = strToFieldType(fieldLabel)            
           case (J_PR_TYPE_POINT)
             call this%core%get(p, J_PR_POINT_DIRECTIONS, dirLabelPtr, found=dirLabelsFound)
             if(dirLabelsFound) then
@@ -2819,8 +2883,6 @@ contains
                         do while (associated(cable_ptr%parent_cable))
                            cable_ptr => cable_ptr%parent_cable
                         end do
-                     else
-                        cable_ptr%parent_cable => null()
                      end if   
                      res(k)%attached_to_cable => cable_ptr
                      res(k)%index = findProbeIndex(polylinecIds, position)

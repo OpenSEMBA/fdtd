@@ -31,7 +31,7 @@ contains
       ex%general%dt = 3e-11
       ex%general%nmax = 1100
 
-      ! Excected media matrix.
+      ! Expected media matrix.
       ex%matriz%totalX = 30
       ex%matriz%totalY = 30
       ex%matriz%totalZ = 30
@@ -81,15 +81,6 @@ contains
       ex%plnSrc%collection(1)%INCERTMAX=0.0
       ex%plnSrc%nc = 1
       ex%plnSrc%nC_max = 1
-
-      ! Expected Probe
-      deallocate(ex%mtln%probes)
-      allocate(ex%mtln%probes(1))
-      ex%mtln%probes(1)%attached_to_cable => ex%mtln%cables(1)
-      ex%mtln%probes(1)%index = 5
-      ex%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
-      ex%mtln%probes(1)%probe_name = "test"
-      ex%mtln%probes(1)%probe_position = [2,11,14]
 
       ! ex mtln type
       allocate(ex%mtln%cables(1))
@@ -146,6 +137,15 @@ contains
       ex%mtln%cables(1)%conductor_in_parent = 0
       ex%mtln%cables(1)%initial_connector => null()
       ex%mtln%cables(1)%end_connector => null()
+
+      ! Expected Probe
+      deallocate(ex%mtln%probes)
+      allocate(ex%mtln%probes(1))
+      ex%mtln%probes(1)%attached_to_cable => ex%mtln%cables(1)
+      ex%mtln%probes(1)%index = 8
+      ex%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
+      ex%mtln%probes(1)%probe_name = "test"
+      ex%mtln%probes(1)%probe_position = [2,11,14]
    end function
 end function
 
