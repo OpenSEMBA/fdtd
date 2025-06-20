@@ -174,8 +174,10 @@ module  FDETYPES
    integer (kind=4),  parameter  :: iHyC=65
    integer (kind=4),  parameter  :: iHzC=66
    integer (kind=4),  parameter  :: farfield=67
+   integer (kind=4),  parameter  :: lineIntegral=68
    ! do not change
    integer (kind=4),  parameter  ::  iJx=10*iEx,iJy=10*iEy,iJz=10*iEz
+   integer (kind=4),  parameter  ::  iQx=10000*iEx,iQy=10000*iEy,iQz=10000*iEz
    integer (kind=4),  parameter  ::  iVx=1000*iEx,iVy=1000*iEy,iVz=1000*iEz
    integer (kind=4),  parameter  ::  iBloqueJx=100*iEx,iBloqueJy=100*iEy,iBloqueJz=100*iEz
    integer (kind=4),  parameter  ::  iBloqueMx=100*iHx,iBloqueMy=100*iHy,iBloqueMz=100*iHz
@@ -480,9 +482,16 @@ module  FDETYPES
       IsDownMUR
    end type
    !
+
+   type :: direction_t
+      integer (kind=4) :: x,y,z, orientation
+   end type
+
    type  ::  observable_t
       integer (kind=4)  ::  XI,YI,ZI,XE,YE,ZE,What,Node  !los valores finales XE,YE,ZE solo se precisan para las CurrentProbes
       integer (kind=4)  ::  Xtrancos,Ytrancos,Ztrancos
+      type(direction_t), dimension(:), allocatable :: line
+      
    end type observable_t
    !
    type  ::  Obses_t
