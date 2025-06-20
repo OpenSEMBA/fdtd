@@ -1126,7 +1126,14 @@ contains
    contains
       logical function isMoreProbe(p)
          type(json_value), pointer :: p
-         isMoreProbe = isPointProbe(p) .or. isCurrentProbeDefinedOnWire(p)
+         isMoreProbe = isPointProbe(p) &
+            .or. isCurrentProbeDefinedOnWire(p) &
+            .or. isLineProbe(p)
+      end function
+
+      logical function isLineProbe(p)
+         type(json_value), pointer :: p
+         isLineProbe = this%getStrAt(p, J_TYPE) == J_PR_TYPE_LINE
       end function
 
       logical function isCurrentProbeDefinedOnWire(p)
@@ -1202,7 +1209,7 @@ contains
 
          outputName = this%getStrAt(p, J_NAME, found=nameFound)
          if (.not. nameFound) then 
-            write(error_unit, *) "ERROR: name entry not found for probe."
+            call WarnErrReport("ERROR: name entry not found for probe.", .true.)
          end if
          res%outputrequest = trim(adjustl(outputName))
 
@@ -1210,10 +1217,10 @@ contains
 
          elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
          if (.not. elementIdsFound) then
-            write(error_unit, *) "ERROR: element ids entry not found for probe."
+            call WarnErrReport("ERROR: element ids entry not found for probe.", .true.)
          end if
          if (size(elemIds) /= 1) then
-            write(error_unit, *) "ERROR: point probe must contain a single element id."
+            call WarnErrReport("ERROR: point probe must contain a single element id.", .true.)
          end if
 
          polyline = this%mesh%getPolyline(elemIds(1))
