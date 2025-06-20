@@ -146,6 +146,37 @@ contains
       ex%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
       ex%mtln%probes(1)%probe_name = "test"
       ex%mtln%probes(1)%probe_position = [2,11,14]
+
+
+      ! networks
+      deallocate(ex%mtln%networks)
+      allocate(ex%mtln%networks(2))
+
+      allocate(ex%mtln%networks(1)%connections(2))
+      allocate(ex%mtln%networks(1)%connections(1)%nodes(1))
+      allocate(ex%mtln%networks(1)%connections(2)%nodes(1))
+      ex%mtln%networks(1)%connections(1)%nodes(1)%conductor_in_cable = 1
+      ex%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
+      ex%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  ex%mtln%cables(1)
+      ex%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_OPEN
+      ex%mtln%networks(1)%connections(2)%nodes(1)%conductor_in_cable = 2
+      ex%mtln%networks(1)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
+      ex%mtln%networks(1)%connections(2)%nodes(1)%belongs_to_cable =>  ex%mtln%cables(1)
+      ex%mtln%networks(1)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_OPEN
+
+      allocate(ex%mtln%networks(2)%connections(2))
+      allocate(ex%mtln%networks(2)%connections(1)%nodes(1))
+      allocate(ex%mtln%networks(2)%connections(2)%nodes(1))
+      ex%mtln%networks(2)%connections(1)%nodes(1)%conductor_in_cable = 1
+      ex%mtln%networks(2)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
+      ex%mtln%networks(2)%connections(1)%nodes(1)%belongs_to_cable =>  ex%mtln%cables(1)
+      ex%mtln%networks(2)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_OPEN
+      ex%mtln%networks(2)%connections(2)%nodes(1)%conductor_in_cable = 2
+      ex%mtln%networks(2)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_END
+      ex%mtln%networks(2)%connections(2)%nodes(1)%belongs_to_cable =>  ex%mtln%cables(1)
+      ex%mtln%networks(2)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_OPEN
+
+
    end function
 end function
 
