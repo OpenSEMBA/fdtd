@@ -2305,6 +2305,7 @@ contains
       class(parser_t) :: this
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
+      type(fhash_tbl_t) :: elemIdToMultiwire
       type(materialAssociation_t), dimension(:), allocatable :: wires, shielded_multiwires, unshielded_multiwires, cables
       type(cable_t) :: read_cable
       integer :: i
@@ -2312,21 +2313,21 @@ contains
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
-      wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
+      ! wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
 
-      multiwires = this%getMaterialAssociations([ &
-                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
-                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+      ! multiwires = this%getMaterialAssociations([ &
+      !           J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+      !           J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
 
-      shielded_multiwires = this%getMaterialAssociations([ &
-                J_MAT_TYPE_SHIELDED_MULTIWIRE])
-      ushielded_multiwires = this%getMaterialAssociations([ &
-                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+      mShielded_multiwires = this%getMaterialAssociations([ &
+                                 J_MAT_TYPE_SHIELDED_MULTIWIRE])
+      mUshielded_multiwires = this%getMaterialAssociations([ &
+                                 J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
 
-      cables = this%getMaterialAssociations(&
-               [J_MAT_TYPE_WIRE//'               ' ,&
-                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
-                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ]) 
+      ! cables = this%getMaterialAssociations(&
+      !          [J_MAT_TYPE_WIRE//'               ' ,&
+      !           J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+      !           J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ]) 
       ! spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
@@ -2335,26 +2336,25 @@ contains
 
       if (size(multiwires) /= 0) mtln_res%has_multiwires = .true.
 
-      allocate (mtln_res%shielded_multiwires(size(shielded_multiwires)))
-      do i = 1, size(shielded_multiwires)
-         mtln_res%shielded_multiwires(i) = readShieldedMultiwire(shielded_multiwires(i))
-         call addElemIdToMultiwireMap(elemIdToCable, shielded_multiwires(i)%elementIds, i)
-         call addElemIdToPositionMap(elemIdToPosition, shielded_multiwires(i)%elementIds)
+      allocate (mtln_res%shielded_multiwires(size(mShielded_multiwires)))
+      do i = 1, size(mShielded_multiwires)
+         mtln_res%shielded_multiwires(i) = readShieldedMultiwire(mShielded_multiwires(i))
+         call addElemIdToMultiwireMap(elemIdToMultiwire, mShielded_multiwires(i)%elementIds, mtln_res%shielded_multiwires(i))
+         call addElemIdToPositionMap(elemIdToPosition, mShielded_multiwires(i)%elementIds)
       end do      
-      allocate (mtln_res%unshielded_multiwires(size(unshielded_multiwires)))
-      do i = 1, size(unshielded_multiwires)
-         mtln_res%unshielded_multiwires(i) = readUnshieldedMultiwire(unshielded_multiwires(i))
-         call addElemIdToMultiwireMap(elemIdToCable, unshielded_multiwires(i)%elementIds, i)
-         call addElemIdToPositionMap(elemIdToPosition, unshielded_multiwires(i)%elementIds)
+
+      allocate (mtln_res%unshielded_multiwires(size(mUnshielded_multiwires)))
+      do i = 1, size(mat_unshielded_multiwires)
+         mtln_res%unshielded_multiwires(i) = readUnshieldedMultiwire(mUnshielded_multiwires(i))
+         call addElemIdToMultiwireMap(elemIdToMultiwire, mUnshielded_multiwires(i)%elementIds, mtln_res%unshielded_multiwires(i))
+         call addElemIdToPositionMap(elemIdToPosition, mUnshielded_multiwires(i)%elementIds)
       end do
       
       call checkRepeteadNames(mtln_res%shielded_multiwires, mtln_res%unshielded_multiwires)
 
-      do i = 1, size(shielded_multiwires)
-         mtln_res%shielded_multiwires(i)%parent_cable => assignParentMultiwire(shielded_multiwires(i), mtln_res%cables)
-         ! mtln_res%shielded_multiwires(i)%parent_cable => assignParentCable(cables(i), mtln_res%cables)
-         mtln_res%shielded_multiwires(i)%conductor_in_parent = assignConductorInParent(cables(i), mtln_res%cables)
-         ! mtln_res%shielded_multiwires(i)%conductor_in_parent = assignConductorInParent(cables(i), mtln_res%cables)
+      do i = 1, size(mat_shielded_multiwires)
+         mtln_res%shielded_multiwires(i)%parent_cable => assignParentMultiwire(mShielded_multiwires(i))
+         mtln_res%shielded_multiwires(i)%conductor_in_parent = assignConductorInParent(mShielded_multiwires(i))
       end do
 
       mtln_res%probes = readWireProbes()
@@ -2362,22 +2362,21 @@ contains
 
    contains
 
-      function assignParentCable(shielded_multiwire, cables) result(res)
-         type(materialAssociation_t) :: shielded_multiwire
-         type(cable_t), dimension(:), pointer :: cables
+      function assignParentMultiwire(mShielded_multiwire) result(res)
+         type(materialAssociation_t) :: mShielded_multiwire
          type(json_value_ptr) :: mat
          integer :: parentId, index
          type(cable_t), pointer :: res
 
-         mat = this%matTable%getId(shielded_multiwire%materialId)
+         mat = this%matTable%getId(mShielded_multiwire%materialId)
 
          select case (this%getStrAt(mat%p, J_TYPE))
          case (J_MAT_TYPE_SHIELDED_MULTIWIRE) 
-            parentId = shielded_multiwire%containedWithinElementId
+            parentId = mShielded_multiwire%containedWithinElementId
             if (parentId == -1) then
                res => null()
             else 
-               res => getPointerToParentCable(cables, parentId)
+               res => getPointerToParentMultiwire(parentId)
             end if
          ! case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
          !    res => null()
@@ -2388,30 +2387,53 @@ contains
          end select
       end function
 
-      function assignConductorInParent(cable, cables) result(res)
-         type(materialAssociation_t) :: cable
-         type(cable_t), dimension(:), pointer :: cables
+      function getPointerToParentMultiwire(id) result(res)
+         integer, intent(in) :: id
+         class(*), dimension(:), pointer :: multiwire
+         integer :: mStat
+         integer :: index
+         type(cable_t), pointer :: res
+
+         call elemIdToMultiwire%check_key(key(id), mStat)
+         if (mStat /= 0) then
+            res => null()
+         end if
+         call elemIdToMultiwire%get(key(id), value=multiwire)
+         res => multiwire
+      end function
+
+
+      function assignConductorInParent(mShielded_multiwire) result(res)
+         type(materialAssociation_t) :: mShielded_multiwire
          type(json_value_ptr) :: mat
          integer :: parentId
          integer :: res
 
-         mat = this%matTable%getId(cable%materialId)
+         mat = this%matTable%getId(mShielded_multiwire%materialId)
 
          select case (this%getStrAt(mat%p, J_TYPE) )
          case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
-            parentId = cable%containedWithinElementId
+            parentId = mShielded_multiwire%containedWithinElementId
             if (parentId == -1) then
                res = 0
             else 
                res = getParentPositionInMultiwire(parentId)
             end if
-         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
-            res = 0
-         case (J_MAT_TYPE_WIRE)
-            res = 0
          case default
             call WarnErrReport('ERROR: Material type not recognized', .true.)
          end select
+      end function
+
+      function getParentPositionInMultiwire(id) result(res)
+         integer, intent(in) :: id
+         integer :: mStat
+         integer :: res
+
+         call elemIdToPosition%check_key(key(id), mStat)
+         if (mStat /= 0) then
+            return
+         end if
+         call elemIdToPosition%get(key(id), value=res)
       end function
 
       subroutine checkRepeteadNames(shielded_mws, unshielded_mws)
@@ -3070,21 +3092,6 @@ contains
 
       end function
 
-      function getPointerToParentCable(cables, id) result(res)
-         type(cable_t), dimension(:), pointer :: cables
-         integer, intent(in) :: id
-         integer :: mStat
-         integer :: index
-         type(cable_t), pointer :: res
-
-
-         call elemIdToCable%check_key(key(id), mStat)
-         if (mStat /= 0) then
-            res => null()
-         end if
-         call elemIdToCable%get(key(id), value=index)
-         res => cables(index)
-      end function
 
       function findConnectorWithId(conn_Id) result(res)
          integer, intent(in) :: conn_id
@@ -3122,17 +3129,6 @@ contains
       !    end select
       ! end function
 
-      function getParentPositionInMultiwire(id) result(res)
-         integer, intent(in) :: id
-         integer :: mStat
-         integer :: res
-
-         call elemIdToPosition%check_key(key(id), mStat)
-         if (mStat /= 0) then
-            return
-         end if
-         call elemIdToPosition%get(key(id), value=res)
-      end function
 
       subroutine addConnIdToConnectorMap(map, conn)
          type(fhash_tbl_t), intent(inout) :: map
@@ -3152,6 +3148,16 @@ contains
          integer :: i
          do i = 1, size(elemIds)
             call map%set(key(elemIds(i)), index)
+         end do
+      end subroutine
+
+      subroutine addElemIdToMultiwireMap(map, elemIds, multiwire)
+         type(fhash_tbl_t), intent(inout) :: map
+         integer, dimension(:), intent(in) :: elemIds
+         class(*), pointer :: multiwire
+         integer :: i
+         do i = 1, size(elemIds)
+            call map%set(key(elemIds(i)), multiwire)
          end do
       end subroutine
 
@@ -3175,6 +3181,11 @@ contains
          end if
       end function
 
+      function readShieldedMultiwire(j_shielded) result(res)
+      end function
+      
+      function readUnshieldedMultiwire(j_unshielded) result(res)
+      end function
 
       function readMTLNCable(j_cable) result(res)
          type(materialAssociation_t), intent(in) :: j_cable

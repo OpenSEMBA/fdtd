@@ -197,7 +197,7 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: inductance_per_meter
       real, allocatable, dimension(:,:) :: capacitance_per_meter
       type(transfer_impedance_per_meter_t) :: transfer_impedance
-      type(cable_t), pointer :: parent_cable => null()
+      type(*), pointer :: parent_cable => null()
       integer :: conductor_in_parent = -1
    end type
 
