@@ -178,17 +178,20 @@ module mtln_types_mod
       type(direction_t), dimension(:), allocatable :: segments
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
-   contains
-      private
-      procedure :: cable_eq
-      generic, public :: operator(==) => cable_eq
+   ! contains
+   !    private
+   !    procedure :: cable_eq
+   !    generic, public :: operator(==) => cable_eq
    end type
 
    type, extends(cable_t), public :: unshielded_multiwire_t 
       real, allocatable, dimension(:,:) :: cell_inductance_per_meter
       real, allocatable, dimension(:,:) :: cell_capacitance_per_meter
-   
       type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
+   contains
+      private
+      procedure :: unshielded_multiwire_eq
+      generic, public :: operator(==) => unshielded_multiwire_eq
    end type
 
    type, extends(cable_t), public :: shielded_multiwire_t 
@@ -197,12 +200,16 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: inductance_per_meter
       real, allocatable, dimension(:,:) :: capacitance_per_meter
       type(transfer_impedance_per_meter_t) :: transfer_impedance
-      type(*), pointer :: parent_cable => null()
+      class(*), pointer :: parent_cable => null()
       integer :: conductor_in_parent = -1
+   contains
+      private
+      procedure :: shielded_multiwire_eq
+      generic, public :: operator(==) => shielded_multiwire_eq
    end type
 
    type :: probe_t
-      type(cable_t), pointer :: attached_to_cable => null()
+      class(*), pointer :: attached_to_cable => null()
       integer :: index
       integer :: probe_type = PROBE_TYPE_UNDEFINED
       character (len=:), allocatable :: probe_name
@@ -214,7 +221,7 @@ module mtln_types_mod
    end type
 
    type, public :: mtln_t
-      type(shielded_multiwire_t_t), dimension(:), pointer :: shielded_multiwires
+      type(shielded_multiwire_t), dimension(:), pointer :: shielded_multiwires
       type(unshielded_multiwire_t), dimension(:), pointer :: unshielded_multiwires
       type(terminal_network_t), dimension(:), allocatable :: networks
       type(probe_t), dimension(:), allocatable :: probes
@@ -235,12 +242,22 @@ contains
       class(mtln_t), intent(in) :: a,b
       integer :: i
 
-      if (size(a%cables) /= size(b%cables)) then
+      if (size(a%shielded_multiwires) /= size(b%shielded_multiwires)) then
          mtln_eq = .false.
          return
       end if
-      do i = 1, size(a%cables)
-         if (.not. a%cables(i) == b%cables(i)) then
+      if (size(a%unshielded_multiwires) /= size(b%unshielded_multiwires)) then
+         mtln_eq = .false.
+         return
+      end if
+      do i = 1, size(a%shielded_multiwires)
+         if (.not. a%shielded_multiwires(i) == b%shielded_multiwires(i)) then
+            mtln_eq = .false.
+            return
+         end if
+      end do
+      do i = 1, size(a%unshielded_multiwires)
+         if (.not. a%unshielded_multiwires(i) == b%unshielded_multiwires(i)) then
             mtln_eq = .false.
             return
          end if
@@ -323,45 +340,141 @@ contains
       res = res .and. all(a%magnetic == b%magnetic)
    end function
    
-   recursive logical function cable_eq(a,b)
-      class(cable_t), intent(in) :: a, b
-      cable_eq = .true.
-      cable_eq = cable_eq .and.  (a%name == b%name)
-      cable_eq = cable_eq .and.  all(a%inductance_per_meter == b%inductance_per_meter)
-      cable_eq = cable_eq .and.  all(a%capacitance_per_meter == b%capacitance_per_meter)
-      cable_eq = cable_eq .and.  all(a%resistance_per_meter == b%resistance_per_meter)
-      cable_eq = cable_eq .and.  all(a%conductance_per_meter == b%conductance_per_meter)
-      cable_eq = cable_eq .and.  all(a%multipolar_expansion == b%multipolar_expansion)
-      cable_eq = cable_eq .and.  all(a%step_size == b%step_size)
-      cable_eq = cable_eq .and.  (a%transfer_impedance == b%transfer_impedance)
+   recursive logical function shielded_multiwire_eq(a,b)
+      class(shielded_multiwire_t), intent(in) :: a, b
+      class(*), pointer :: multiwire_a, multiwire_b
+      integer :: i
+      shielded_multiwire_eq = .true.
+      shielded_multiwire_eq = shielded_multiwire_eq .and. (a%name == b%name)
+      shielded_multiwire_eq = shielded_multiwire_eq .and. all(a%step_size == b%step_size)
+
+      shielded_multiwire_eq = shielded_multiwire_eq .and. size(a%segments) == size(b%segments)
+      do i = 1, size(a%segments)
+         shielded_multiwire_eq = shielded_multiwire_eq .and. a%segments(i) == b%segments(i)
+      end do
+      shielded_multiwire_eq = shielded_multiwire_eq .and. all(a%resistance_per_meter == b%resistance_per_meter)
+      shielded_multiwire_eq = shielded_multiwire_eq .and. all(a%conductance_per_meter == b%conductance_per_meter)
+      shielded_multiwire_eq = shielded_multiwire_eq .and. all(a%inductance_per_meter == b%inductance_per_meter)
+      shielded_multiwire_eq = shielded_multiwire_eq .and. all(a%capacitance_per_meter == b%capacitance_per_meter)
+      shielded_multiwire_eq = shielded_multiwire_eq .and. (a%transfer_impedance == b%transfer_impedance)
+      shielded_multiwire_eq = shielded_multiwire_eq .and. (a%conductor_in_parent == b%conductor_in_parent)
+      
+      if (associated(a%initial_connector) .and. associated(b%initial_connector)) then
+         shielded_multiwire_eq = shielded_multiwire_eq .and. (a%initial_connector == b%initial_connector)
+      else if (.not. associated(a%initial_connector) .and. .not. associated(b%initial_connector)) then
+         shielded_multiwire_eq = shielded_multiwire_eq .and. .true.
+      else
+         shielded_multiwire_eq = shielded_multiwire_eq .and. .false.
+      end if
+      
+      if (associated(a%end_connector) .and. associated(b%end_connector)) then
+         shielded_multiwire_eq = shielded_multiwire_eq .and. (a%end_connector == b%end_connector)
+      else if (.not. associated(a%end_connector) .and. .not. associated(b%end_connector)) then
+         shielded_multiwire_eq = shielded_multiwire_eq .and. .true.
+      else
+         shielded_multiwire_eq = shielded_multiwire_eq .and. .false.
+      end if
+
+       
 
       if (associated(a%parent_cable) .and. associated(b%parent_cable)) then
-         cable_eq = cable_eq .and. (a%parent_cable == b%parent_cable)
+         multiwire_a => a%parent_cable
+         multiwire_b => b%parent_cable
+         select type(multiwire_a)
+         type is(shielded_multiwire_t)
+            select type(multiwire_b)
+            type is(shielded_multiwire_t)
+               shielded_multiwire_eq = shielded_multiwire_eq .and. (multiwire_a == multiwire_b) 
+            type is(unshielded_multiwire_t)
+               shielded_multiwire_eq = shielded_multiwire_eq .and. .false.
+            end select      
+         type is(unshielded_multiwire_t)
+            select type(multiwire_b)
+            type is(unshielded_multiwire_t)
+               shielded_multiwire_eq = shielded_multiwire_eq .and. (multiwire_a == multiwire_b) 
+            type is(shielded_multiwire_t)
+               shielded_multiwire_eq = shielded_multiwire_eq .and. .false.
+            end select      
+         end select
       else if (.not. associated(a%parent_cable) .and. .not. associated(b%parent_cable)) then
-         cable_eq = cable_eq .and. .true.
+         shielded_multiwire_eq = shielded_multiwire_eq .and. .true.
       else
-         cable_eq = cable_eq .and. .false.
+         shielded_multiwire_eq = shielded_multiwire_eq .and. .false.
       end if
+   end function
+
+   logical function unshielded_multiwire_eq(a,b)
+      class(unshielded_multiwire_t), intent(in) :: a,b
+      integer :: i
+      unshielded_multiwire_eq = .true.
+      unshielded_multiwire_eq = unshielded_multiwire_eq .and. (a%name == b%name)
+      unshielded_multiwire_eq = unshielded_multiwire_eq .and. all(a%step_size == b%step_size)
+      unshielded_multiwire_eq = unshielded_multiwire_eq .and. size(a%segments) == size(b%segments)
+      do i = 1, size(a%segments)
+         unshielded_multiwire_eq = unshielded_multiwire_eq .and. a%segments(i) == b%segments(i)
+      end do
+      unshielded_multiwire_eq = unshielded_multiwire_eq .and. all(a%cell_inductance_per_meter == b%cell_inductance_per_meter)
+      unshielded_multiwire_eq = unshielded_multiwire_eq .and. all(a%cell_capacitance_per_meter == b%cell_capacitance_per_meter)
+      unshielded_multiwire_eq = unshielded_multiwire_eq .and. all(a%multipolar_expansion == b%multipolar_expansion)
+      
       if (associated(a%initial_connector) .and. associated(b%initial_connector)) then
-         cable_eq = cable_eq .and. (a%initial_connector == b%initial_connector)
+         unshielded_multiwire_eq = unshielded_multiwire_eq .and. (a%initial_connector == b%initial_connector)
       else if (.not. associated(a%initial_connector) .and. .not. associated(b%initial_connector)) then
-         cable_eq = cable_eq .and. .true.
+         unshielded_multiwire_eq = unshielded_multiwire_eq .and. .true.
       else
-         cable_eq = cable_eq .and. .false.
+         unshielded_multiwire_eq = unshielded_multiwire_eq .and. .false.
       end if
+      
       if (associated(a%end_connector) .and. associated(b%end_connector)) then
-         cable_eq = cable_eq .and. (a%end_connector == b%end_connector)
+         unshielded_multiwire_eq = unshielded_multiwire_eq .and. (a%end_connector == b%end_connector)
       else if (.not. associated(a%end_connector) .and. .not. associated(b%end_connector)) then
-         cable_eq = cable_eq .and. .true.
+         unshielded_multiwire_eq = unshielded_multiwire_eq .and. .true.
       else
-         cable_eq = cable_eq .and. .false.
+         unshielded_multiwire_eq = unshielded_multiwire_eq .and. .false.
       end if
 
-      cable_eq = cable_eq .and.  (a%conductor_in_parent == b%conductor_in_parent)
-      cable_eq = cable_eq .and.  all(a%external_field_segments == b%external_field_segments)
-      cable_eq = cable_eq .and. a%isPassthrough .eqv. b%isPassthrough
 
    end function
+
+   ! recursive logical function cable_eq(a,b)
+   !    class(cable_t), intent(in) :: a, b
+   !    cable_eq = .true.
+   !    cable_eq = cable_eq .and.  (a%name == b%name)
+   !    cable_eq = cable_eq .and.  all(a%inductance_per_meter == b%inductance_per_meter)
+   !    cable_eq = cable_eq .and.  all(a%capacitance_per_meter == b%capacitance_per_meter)
+   !    cable_eq = cable_eq .and.  all(a%resistance_per_meter == b%resistance_per_meter)
+   !    cable_eq = cable_eq .and.  all(a%conductance_per_meter == b%conductance_per_meter)
+   !    cable_eq = cable_eq .and.  all(a%multipolar_expansion == b%multipolar_expansion)
+   !    cable_eq = cable_eq .and.  all(a%step_size == b%step_size)
+   !    cable_eq = cable_eq .and.  (a%transfer_impedance == b%transfer_impedance)
+
+   !    if (associated(a%parent_cable) .and. associated(b%parent_cable)) then
+   !       cable_eq = cable_eq .and. (a%parent_cable == b%parent_cable)
+   !    else if (.not. associated(a%parent_cable) .and. .not. associated(b%parent_cable)) then
+   !       cable_eq = cable_eq .and. .true.
+   !    else
+   !       cable_eq = cable_eq .and. .false.
+   !    end if
+   !    if (associated(a%initial_connector) .and. associated(b%initial_connector)) then
+   !       cable_eq = cable_eq .and. (a%initial_connector == b%initial_connector)
+   !    else if (.not. associated(a%initial_connector) .and. .not. associated(b%initial_connector)) then
+   !       cable_eq = cable_eq .and. .true.
+   !    else
+   !       cable_eq = cable_eq .and. .false.
+   !    end if
+   !    if (associated(a%end_connector) .and. associated(b%end_connector)) then
+   !       cable_eq = cable_eq .and. (a%end_connector == b%end_connector)
+   !    else if (.not. associated(a%end_connector) .and. .not. associated(b%end_connector)) then
+   !       cable_eq = cable_eq .and. .true.
+   !    else
+   !       cable_eq = cable_eq .and. .false.
+   !    end if
+
+   !    cable_eq = cable_eq .and.  (a%conductor_in_parent == b%conductor_in_parent)
+   !    cable_eq = cable_eq .and.  all(a%external_field_segments == b%external_field_segments)
+   !    cable_eq = cable_eq .and. a%isPassthrough .eqv. b%isPassthrough
+
+   ! end function
 
    elemental logical function connector_eq(a,b)
       class(connector_t), intent(in) :: a, b
@@ -386,6 +499,7 @@ contains
 
    logical function probe_eq(a,b)
       class(probe_t), intent(in) :: a,b
+      class(*), pointer :: multiwire_a, multiwire_b
       probe_eq = &
          (a%index == b%index) .and. &
          (a%probe_type == b%probe_type) .and. &
@@ -399,7 +513,24 @@ contains
          (.not. associated(a%attached_to_cable) .and. associated(b%attached_to_cable))) then
          probe_eq = probe_eq .and. .false.
       else
-         probe_eq = probe_eq .and. (a%attached_to_cable == b%attached_to_cable)
+         multiwire_a => a%attached_to_cable
+         multiwire_b => b%attached_to_cable
+         select type(multiwire_a)
+         type is(shielded_multiwire_t)
+            select type(multiwire_b)
+            type is(shielded_multiwire_t)
+               probe_eq = probe_eq .and. (multiwire_a == multiwire_b)
+            type is(unshielded_multiwire_t)
+               probe_eq = probe_eq .and. .false.
+            end select
+         type is(unshielded_multiwire_t)
+            select type(multiwire_b)
+            type is(unshielded_multiwire_t)
+               probe_eq = probe_eq .and. (multiwire_a == multiwire_b)
+            type is(shielded_multiwire_t)
+               probe_eq = probe_eq .and. .false.
+            end select
+         end select
       end if
       if (probe_eq .eqv. .false.) then
          probe_eq = .false.
@@ -414,14 +545,14 @@ contains
          (a%side == b%side) .and. &
          (a%termination == b%termination)
 
-      if (.not. associated(a%belongs_to_cable) .and. .not. associated(b%belongs_to_cable)) then
-         terminal_node_eq = terminal_node_eq .and. .true.
-      else if ((associated(a%belongs_to_cable) .and. .not. associated(b%belongs_to_cable)) .or. &
-         (.not. associated(a%belongs_to_cable) .and. associated(b%belongs_to_cable))) then
-         terminal_node_eq = terminal_node_eq .and. .false.
-      else
-         terminal_node_eq = terminal_node_eq .and. (a%belongs_to_cable == b%belongs_to_cable)
-      end if
+      ! if (.not. associated(a%belongs_to_cable) .and. .not. associated(b%belongs_to_cable)) then
+      !    terminal_node_eq = terminal_node_eq .and. .true.
+      ! else if ((associated(a%belongs_to_cable) .and. .not. associated(b%belongs_to_cable)) .or. &
+      !    (.not. associated(a%belongs_to_cable) .and. associated(b%belongs_to_cable))) then
+      !    terminal_node_eq = terminal_node_eq .and. .false.
+      ! else
+      !    terminal_node_eq = terminal_node_eq .and. (a%belongs_to_cable == b%belongs_to_cable)
+      ! end if
 
    end function
 
@@ -457,29 +588,29 @@ contains
       terminal_network_eq = .true.
    end function
 
-   elemental logical function external_field_segments_eq(a,b)
-      class(external_field_segment_t), intent(in) :: a,b
-      external_field_segments_eq = &
-         all(a%position == b%position) .and. &
-         a%direction == b%direction .and. &
-         a%radius == b%radius .and. &
-         a%has_dielectric .eqv. b%has_dielectric
+   ! elemental logical function external_field_segments_eq(a,b)
+   !    class(external_field_segment_t), intent(in) :: a,b
+   !    external_field_segments_eq = &
+   !       all(a%position == b%position) .and. &
+   !       a%direction == b%direction .and. &
+   !       a%radius == b%radius .and. &
+   !       a%has_dielectric .eqv. b%has_dielectric
 
-      external_field_segments_eq = external_field_segments_eq .and. &
-         a%dielectric%effective_relative_permittivity == b%dielectric%effective_relative_permittivity .and. &
-         a%dielectric%radius == b%dielectric%radius  .and. &
-         a%dielectric%relative_permittivity == b%dielectric%relative_permittivity
+   !    external_field_segments_eq = external_field_segments_eq .and. &
+   !       a%dielectric%effective_relative_permittivity == b%dielectric%effective_relative_permittivity .and. &
+   !       a%dielectric%radius == b%dielectric%radius  .and. &
+   !       a%dielectric%relative_permittivity == b%dielectric%relative_permittivity
 
 
-      if (.not. associated(a%field) .and. .not. associated(b%field)) then
-         external_field_segments_eq = external_field_segments_eq .and. .true.
-      else if ((associated(a%field) .and. .not. associated(b%field)) .or. &
-         (.not. associated(a%field) .and. associated(b%field))) then
-         external_field_segments_eq = external_field_segments_eq .and. .false.
-      else
-         external_field_segments_eq = external_field_segments_eq .and. (a%field == b%field)
-      end if
-   end function
+   !    if (.not. associated(a%field) .and. .not. associated(b%field)) then
+   !       external_field_segments_eq = external_field_segments_eq .and. .true.
+   !    else if ((associated(a%field) .and. .not. associated(b%field)) .or. &
+   !       (.not. associated(a%field) .and. associated(b%field))) then
+   !       external_field_segments_eq = external_field_segments_eq .and. .false.
+   !    else
+   !       external_field_segments_eq = external_field_segments_eq .and. (a%field == b%field)
+   !    end if
+   ! end function
 
    subroutine terminal_connection_add_node(this, node)
       class(terminal_connection_t) :: this

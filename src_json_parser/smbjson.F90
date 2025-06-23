@@ -3182,9 +3182,11 @@ contains
       end function
 
       function readShieldedMultiwire(j_shielded) result(res)
+         type(materialAssociation_t), intent(in) :: j_shielded
       end function
       
       function readUnshieldedMultiwire(j_unshielded) result(res)
+         type(materialAssociation_t), intent(in) :: j_unshielded
       end function
 
       function readMTLNCable(j_cable) result(res)
