@@ -358,7 +358,6 @@ PROGRAM SEMBA_FDTD_launcher
 #endif
 
 #ifdef CompileWithHDF
-!!!!tunel a lo bestia para crear el .h5 a 021219
    if (l%createh5filefromsinglebin) then
      if (l%layoutnumber==0) then
        inquire(file=trim(adjustl(sgg%nEntradaRoot))//'_h5bin.txt',exist=lexis)
@@ -375,7 +374,6 @@ PROGRAM SEMBA_FDTD_launcher
 9083   CALL stoponerror (0, l%size, 'Invalid _h5bin.txt file',.true.); statuse=-1; !return
      endif
 #ifdef CompileWithMPI
-      !wait until everything comes out
       CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
 #endif
       stop

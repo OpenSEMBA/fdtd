@@ -1,5 +1,5 @@
 module mtln_types_mod
-   use fdetypes, ONLY: RKIND   !sggmtln
+   use fdetypes, ONLY: RKIND, direction_t   
    implicit none
 
    integer, parameter :: TERMINATION_UNDEFINED  = -1
@@ -33,24 +33,7 @@ module mtln_types_mod
    integer, parameter :: DIRECTION_Z_POS   =  3
    integer, parameter :: DIRECTION_Z_NEG   =  -3
 
-   type :: external_dielectric_t
-      real :: radius = 0.0
-      real :: relative_permittivity = 1.0
-      real :: effective_relative_permittivity = 1.0
-   end type
 
-   type :: external_field_segment_t
-      integer, dimension(3) ::position
-      integer :: direction = 0
-      real :: radius = 0.0
-      logical :: has_dielectric = .false.
-      type(external_dielectric_t) :: dielectric
-      real (kind=rkind) , pointer  ::  field => null()
-   contains
-      private
-      procedure :: external_field_segments_eq
-      generic, public :: operator(==) => external_field_segments_eq
-   end type
 
    type node_source_t
       character(len=256) :: path_to_excitation = ""
@@ -75,7 +58,6 @@ module mtln_types_mod
       procedure :: termination_eq
       generic, public :: operator(==) => termination_eq
    end type
-
 
    type :: terminal_node_t
       type(cable_t), pointer :: belongs_to_cable => null()
@@ -192,26 +174,31 @@ module mtln_types_mod
 
    type, public :: cable_t
       character (len=:), allocatable :: name
-      real, allocatable, dimension(:,:) :: resistance_per_meter
-      real, allocatable, dimension(:,:) :: conductance_per_meter
-
-      real, allocatable, dimension(:,:) :: inductance_per_meter
-      real, allocatable, dimension(:,:) :: capacitance_per_meter
-
-      type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
-
       real, allocatable, dimension(:) :: step_size
-      type(transfer_impedance_per_meter_t) :: transfer_impedance
-      type(cable_t), pointer :: parent_cable => null()
-      integer :: conductor_in_parent = -1
+      type(direction_t), dimension(:), allocatable :: segments
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
-      type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
-      logical :: isPassthrough = .false.
    contains
       private
       procedure :: cable_eq
       generic, public :: operator(==) => cable_eq
+   end type
+
+   type, extends(cable_t), public :: unshielded_multiwire_t 
+      real, allocatable, dimension(:,:) :: cell_inductance_per_meter
+      real, allocatable, dimension(:,:) :: cell_capacitance_per_meter
+   
+      type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
+   end type
+
+   type, extends(cable_t), public :: shielded_multiwire_t 
+      real, allocatable, dimension(:,:) :: resistance_per_meter
+      real, allocatable, dimension(:,:) :: conductance_per_meter
+      real, allocatable, dimension(:,:) :: inductance_per_meter
+      real, allocatable, dimension(:,:) :: capacitance_per_meter
+      type(transfer_impedance_per_meter_t) :: transfer_impedance
+      type(cable_t), pointer :: parent_cable => null()
+      integer :: conductor_in_parent = -1
    end type
 
    type :: probe_t

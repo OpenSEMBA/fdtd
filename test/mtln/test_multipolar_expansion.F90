@@ -32,3 +32,25 @@ integer function test_multipolar_expansion_of_dipole() bind(C) result(error_cnt)
     end block
 
 end function
+
+integer function test_multipolar_expansion_for_single_wire_with_dielectric() bind(C) result(error_cnt)
+! type :: external_dielectric_t
+!     real :: radius = 0.0
+!     real :: relative_permittivity = 1.0
+!     real :: effective_relative_permittivity = 1.0
+! end type
+
+! type :: external_field_segment_t
+!     integer, dimension(3) :: position
+!     integer :: direction = 0
+!     real :: radius = 0.0
+!     logical :: has_dielectric = .false.
+!     type(external_dielectric_t) :: dielectric
+!     real (kind=rkind) , pointer  ::  field => null()
+! contains
+!     private
+!     procedure :: external_field_segments_eq
+!     generic, public :: operator(==) => external_field_segments_eq
+! end type
+    error_cnt = 1
+end function
