@@ -214,7 +214,8 @@ module mtln_types_mod
    end type
 
    type, public :: mtln_t
-      type(cable_t), dimension(:), pointer :: cables
+      type(shielded_multiwire_t_t), dimension(:), pointer :: shielded_multiwires
+      type(unshielded_multiwire_t), dimension(:), pointer :: unshielded_multiwires
       type(terminal_network_t), dimension(:), allocatable :: networks
       type(probe_t), dimension(:), allocatable :: probes
       type(connector_t), dimension(:), pointer :: connectors

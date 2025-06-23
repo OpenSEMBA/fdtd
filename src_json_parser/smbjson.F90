@@ -2305,7 +2305,7 @@ contains
       class(parser_t) :: this
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
-      type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, cables
+      type(materialAssociation_t), dimension(:), allocatable :: wires, shielded_multiwires, unshielded_multiwires, cables
       type(cable_t) :: read_cable
       integer :: i
 
@@ -2313,9 +2313,16 @@ contains
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
       wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
+
       multiwires = this%getMaterialAssociations([ &
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
                 J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+
+      shielded_multiwires = this%getMaterialAssociations([ &
+                J_MAT_TYPE_SHIELDED_MULTIWIRE])
+      ushielded_multiwires = this%getMaterialAssociations([ &
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+
       cables = this%getMaterialAssociations(&
                [J_MAT_TYPE_WIRE//'               ' ,&
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
@@ -2328,18 +2335,26 @@ contains
 
       if (size(multiwires) /= 0) mtln_res%has_multiwires = .true.
 
-      allocate (mtln_res%cables(size(wires) + size(multiwires)))
-      do i = 1, size(cables)
-         read_cable = readMTLNCable(cables(i))
-         call stopOnRepeteadName(read_cable, mtln_res%cables, i - 1)
-         mtln_res%cables(i) = read_cable
-         call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, i)
-         call addElemIdToPositionMap(elemIdToPosition, cables(i)%elementIds)
+      allocate (mtln_res%shielded_multiwires(size(shielded_multiwires)))
+      do i = 1, size(shielded_multiwires)
+         mtln_res%shielded_multiwires(i) = readShieldedMultiwire(shielded_multiwires(i))
+         call addElemIdToMultiwireMap(elemIdToCable, shielded_multiwires(i)%elementIds, i)
+         call addElemIdToPositionMap(elemIdToPosition, shielded_multiwires(i)%elementIds)
+      end do      
+      allocate (mtln_res%unshielded_multiwires(size(unshielded_multiwires)))
+      do i = 1, size(unshielded_multiwires)
+         mtln_res%unshielded_multiwires(i) = readUnshieldedMultiwire(unshielded_multiwires(i))
+         call addElemIdToMultiwireMap(elemIdToCable, unshielded_multiwires(i)%elementIds, i)
+         call addElemIdToPositionMap(elemIdToPosition, unshielded_multiwires(i)%elementIds)
       end do
+      
+      call checkRepeteadNames(mtln_res%shielded_multiwires, mtln_res%unshielded_multiwires)
 
-      do i = 1, size(cables)
-         mtln_res%cables(i)%parent_cable => assignParentCable(cables(i), mtln_res%cables)
-         mtln_res%cables(i)%conductor_in_parent = assignConductorInParent(cables(i), mtln_res%cables)
+      do i = 1, size(shielded_multiwires)
+         mtln_res%shielded_multiwires(i)%parent_cable => assignParentMultiwire(shielded_multiwires(i), mtln_res%cables)
+         ! mtln_res%shielded_multiwires(i)%parent_cable => assignParentCable(cables(i), mtln_res%cables)
+         mtln_res%shielded_multiwires(i)%conductor_in_parent = assignConductorInParent(cables(i), mtln_res%cables)
+         ! mtln_res%shielded_multiwires(i)%conductor_in_parent = assignConductorInParent(cables(i), mtln_res%cables)
       end do
 
       mtln_res%probes = readWireProbes()
@@ -2347,29 +2362,29 @@ contains
 
    contains
 
-      function assignParentCable(cable, cables) result(res)
-         type(materialAssociation_t) :: cable
+      function assignParentCable(shielded_multiwire, cables) result(res)
+         type(materialAssociation_t) :: shielded_multiwire
          type(cable_t), dimension(:), pointer :: cables
          type(json_value_ptr) :: mat
          integer :: parentId, index
          type(cable_t), pointer :: res
 
-         mat = this%matTable%getId(cable%materialId)
+         mat = this%matTable%getId(shielded_multiwire%materialId)
 
          select case (this%getStrAt(mat%p, J_TYPE))
          case (J_MAT_TYPE_SHIELDED_MULTIWIRE) 
-            parentId = cable%containedWithinElementId
+            parentId = shielded_multiwire%containedWithinElementId
             if (parentId == -1) then
                res => null()
             else 
                res => getPointerToParentCable(cables, parentId)
             end if
-         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
-            res => null()
-         case (J_MAT_TYPE_WIRE)
-            res => null()
+         ! case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
+         !    res => null()
+         ! case (J_MAT_TYPE_WIRE)
+         !    res => null()
          case default
-            call WarnErrReport('ERROR: Material type not recognized', .true.)
+            call WarnErrReport('ERROR: Material type should be unshieldedMultiwire', .true.)
          end select
       end function
 
@@ -2398,6 +2413,43 @@ contains
             call WarnErrReport('ERROR: Material type not recognized', .true.)
          end select
       end function
+
+      subroutine checkRepeteadNames(shielded_mws, unshielded_mws)
+         type(shielded_multiwres_t), dimension(:), pointer :: shielded_mws
+         type(unshielded_multiwres_t), dimension(:), pointer :: unshielded_mws
+         integer :: i,j
+         logical :: unique
+         character (len=BUFSIZE) :: errorMsg
+         unique = .true.
+
+         do i = 1, size(shielded_mws)-1
+            do j = 1+1, size(shielded_mws)
+               if (shielded_mws(i)%name == shielded_mws(j)%name) then 
+                  write (errorMsg, *) "Shielded multiwire name ", shielded_mws(i)%name, " has already been used"
+                  call WarnErrReport(errorMsg, .true.)
+               end if
+            end do
+         end do
+
+         do i = 1, size(unshielded_mws)-1
+            do j = 1+1, size(unshielded_mws)
+               if (unshielded_mws(i)%name == unshielded_mws(j)%name) then 
+                  write (errorMsg, *) "Unshielded multiwire name ", unshielded_mws(i)%name, " has already been used"
+                  call WarnErrReport(errorMsg, .true.)
+               end if
+            end do
+         end do
+
+         do i = 1, size(shielded_mws)
+            do j = 1, size(unshielded_mws)
+               if (shielded_mws(i)%name == unshielded_mws(j)%name) then 
+                  write (errorMsg, *) "Shielded multiwire name ", shielded_mws(i)%name, " has already been used"
+                  call WarnErrReport(errorMsg, .true.)
+               end if
+            end do
+         end do
+
+      end subroutine
 
       subroutine stopOnRepeteadName(cable, cables, n)
          type(cable_t) :: cable
