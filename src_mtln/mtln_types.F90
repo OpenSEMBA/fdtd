@@ -176,7 +176,7 @@ module mtln_types_mod
 
    type, public :: cable_t
       character (len=:), allocatable :: name
-      real, allocatable, dimension(:) :: step_size
+      ! real, allocatable, dimension(:) :: step_size
       type(direction_t), dimension(:), allocatable :: segments
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
@@ -202,7 +202,7 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: inductance_per_meter
       real, allocatable, dimension(:,:) :: capacitance_per_meter
       type(transfer_impedance_per_meter_t) :: transfer_impedance
-      class(*), pointer :: parent_cable => null()
+      class(cable_t), pointer :: parent_cable => null()
       integer :: conductor_in_parent = -1
    contains
       private
@@ -211,7 +211,7 @@ module mtln_types_mod
    end type
 
    type :: probe_t
-      class(*), pointer :: attached_to_cable => null()
+      class(cable_t), pointer :: attached_to_cable => null()
       ! type(cable_t), pointer :: attached_to_cable => null()
       integer :: index
       integer :: probe_type = PROBE_TYPE_UNDEFINED
@@ -349,8 +349,7 @@ contains
       integer :: i
       shielded_multiwire_eq = .true.
       shielded_multiwire_eq = shielded_multiwire_eq .and. (a%name == b%name)
-      shielded_multiwire_eq = shielded_multiwire_eq .and. all(a%step_size == b%step_size)
-
+      ! shielded_multiwire_eq = shielded_multiwire_eq .and. all(a%step_size == b%step_size)
       shielded_multiwire_eq = shielded_multiwire_eq .and. size(a%segments) == size(b%segments)
       do i = 1, size(a%segments)
          shielded_multiwire_eq = shielded_multiwire_eq .and. a%segments(i) == b%segments(i)
@@ -377,8 +376,6 @@ contains
       else
          shielded_multiwire_eq = shielded_multiwire_eq .and. .false.
       end if
-
-       
 
       if (associated(a%parent_cable) .and. associated(b%parent_cable)) then
          multiwire_a => a%parent_cable
@@ -411,7 +408,7 @@ contains
       integer :: i
       unshielded_multiwire_eq = .true.
       unshielded_multiwire_eq = unshielded_multiwire_eq .and. (a%name == b%name)
-      unshielded_multiwire_eq = unshielded_multiwire_eq .and. all(a%step_size == b%step_size)
+      ! unshielded_multiwire_eq = unshielded_multiwire_eq .and. all(a%step_size == b%step_size)
       unshielded_multiwire_eq = unshielded_multiwire_eq .and. size(a%segments) == size(b%segments)
       do i = 1, size(a%segments)
          unshielded_multiwire_eq = unshielded_multiwire_eq .and. a%segments(i) == b%segments(i)
@@ -502,7 +499,7 @@ contains
 
    logical function probe_eq(a,b)
       class(probe_t), intent(in) :: a,b
-      class(*), pointer :: multiwire_a, multiwire_b
+      class(cable_t), pointer :: multiwire_a, multiwire_b
       probe_eq = &
          (a%index == b%index) .and. &
          (a%probe_type == b%probe_type) .and. &
