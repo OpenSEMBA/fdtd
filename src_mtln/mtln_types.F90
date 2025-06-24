@@ -1,5 +1,5 @@
 module mtln_types_mod
-   use fdetypes, ONLY: RKIND, direction_t   
+   use fdetypes, ONLY: direction_t   
    implicit none
 
    integer, parameter :: TERMINATION_UNDEFINED  = -1

@@ -153,40 +153,40 @@ contains
          res(2,2) =   3.5646322987431435e-11
       end function
 
-      function computeEffectivePermittivity(m,n,l0,c0) result(res)
-         integer (kind=4) :: i, j, k, direction
-         integer (kind=4) :: m,n
-         real(kind=rkind) :: dS_inverse
-         real(kind=rkind) :: l0, c0
-         real(kind=rkind) :: shield_inductance, external_inductance
-         real(kind=rkind) :: shield_capacitance, external_capacitance, effective_capacitance
-         real(kind=rkind) :: r, r_diel
-         real(kind=rkind) :: res
+      ! function computeEffectivePermittivity(m,n,l0,c0) result(res)
+      !    integer (kind=4) :: i, j, k, direction
+      !    integer (kind=4) :: m,n
+      !    real(kind=rkind) :: dS_inverse
+      !    real(kind=rkind) :: l0, c0
+      !    real(kind=rkind) :: shield_inductance, external_inductance
+      !    real(kind=rkind) :: shield_capacitance, external_capacitance, effective_capacitance
+      !    real(kind=rkind) :: r, r_diel
+      !    real(kind=rkind) :: res
 
-         call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
-         direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-         select case (abs(direction))  
-         case(1)   
-            dS_inverse = (idyh(j)*idzh(k))
-         case(2)     
-            dS_inverse = (idxh(i)*idzh(k))
-         case(3)   
-            dS_inverse = (idxh(i)*idyh(j))
-         end select
+      !    call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
+      !    direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
+      !    select case (abs(direction))  
+      !    case(1)   
+      !       dS_inverse = (idyh(j)*idzh(k))
+      !    case(2)     
+      !       dS_inverse = (idxh(i)*idzh(k))
+      !    case(3)   
+      !       dS_inverse = (idxh(i)*idyh(j))
+      !    end select
 
-         r = mtln_solver%bundles(m)%external_field_segments(n)%radius
-         r_diel = mtln_solver%bundles(m)%external_field_segments(n)%dielectric%radius
+      !    r = mtln_solver%bundles(m)%external_field_segments(n)%radius
+      !    r_diel = mtln_solver%bundles(m)%external_field_segments(n)%dielectric%radius
 
-         shield_inductance = (0.5*mu0/pi)*log(r_diel/r)*(1-pi*r**2*dS_inverse)
-         external_inductance = l0 - shield_inductance
+      !    shield_inductance = (0.5*mu0/pi)*log(r_diel/r)*(1-pi*r**2*dS_inverse)
+      !    external_inductance = l0 - shield_inductance
 
-         shield_capacitance = mu0*eps0*mtln_solver%bundles(m)%external_field_segments(n)%dielectric%relative_permittivity/shield_inductance
-         external_capacitance = mu0*eps0/external_inductance
+      !    shield_capacitance = mu0*eps0*mtln_solver%bundles(m)%external_field_segments(n)%dielectric%relative_permittivity/shield_inductance
+      !    external_capacitance = mu0*eps0/external_inductance
 
-         effective_capacitance = shield_capacitance*external_capacitance/(shield_capacitance+external_capacitance)
-         res = effective_capacitance/c0
+      !    effective_capacitance = shield_capacitance*external_capacitance/(shield_capacitance+external_capacitance)
+      !    res = effective_capacitance/c0
 
-      end function
+      ! end function
 
       subroutine updateNetworksLineCapacitors()
          integer(kind=4) :: m,init, end, sep

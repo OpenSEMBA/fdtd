@@ -5,7 +5,9 @@ module mtl_bundle_mod
     use dispersive_mod
     use mtl_mod
 #ifdef CompileWithMPI
-    use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+    use fdetypes, only: RKIND, SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+#else
+    use fdetypes, only: RKIND
 #endif
     implicit none
 
@@ -25,7 +27,7 @@ module mtl_bundle_mod
         real, dimension(:,:,:), allocatable :: v_term, i_term
         real, dimension(:,:,:), allocatable :: v_diff, i_diff
 
-        ! type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
+        type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
         logical :: isPassthrough = .false.
         logical :: bundle_in_layer = .true.
         
@@ -59,6 +61,12 @@ module mtl_bundle_mod
     interface mtl_bundle_t
         module procedure mtldCtor
     end interface
+
+    type :: external_field_segment_t
+        integer, dimension(3) ::position
+        integer :: direction = 0
+        real (kind=rkind) , pointer  ::  field => null()      
+    end type
 
 contains
 
