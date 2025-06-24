@@ -152,8 +152,7 @@ contains
 
 #ifdef CompileWithMTLN
       allocate(pD%mtln)
-      allocate(pD%mtln%shielded_multiwires(0))
-      allocate(pD%mtln%unshielded_multiwires(0))
+      allocate(pD%mtln%cables(0))
       allocate(pD%mtln%probes(0))
       allocate(pD%mtln%networks(0))
       allocate(pD%mtln%connectors(0))
