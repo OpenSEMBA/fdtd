@@ -39,7 +39,7 @@ contains
          end if
       end do
 
-      res = res / (2.0 * pi())
+      res = res / (2.0 * pi)
    end function
 
    function buildIntegrationGridForBox(integrationBox, innerRegionBox) result(res)
@@ -95,8 +95,14 @@ contains
       res = (box%max(1) - box%min(1)) * (box%max(2) - box%min(2))
    end function
 
+   logical function isWithinBox(box, point) result(res)
+      type(box_2d_t), intent(in) :: box
+      real, dimension(2), intent(in) :: point
+      res = all(point >= box%min) .and. all(point <= box%max)
+   end function
+
    function getAveragePotential(potential, innerBox, outerBox) result(avVj)
-      type(fieldReconstruction_t), intent(in) :: potential
+      type(field_reconstruction_t), intent(in) :: potential
       type(box_2d_t), intent(in) :: innerBox, outerBox
       real :: avVj
 
@@ -111,10 +117,10 @@ contains
       outerV = 0.0
       do m = 2, size(integrationGrid%x)
          do n = 2, size(integrationGrid%y)
-            xMin = integrationPlanes%x(m - 1)
-            xMax = integrationPlanes%x(m)
-            yMin = integrationPlanes%y(n - 1)
-            yMax = integrationPlanes%y(n)
+            xMin = integrationGrid%x(m - 1)
+            xMax = integrationGrid%x(m)
+            yMin = integrationGrid%y(n - 1)
+            yMax = integrationGrid%y(n)
 
             midPoint = [0.5 * (xMin + xMax), 0.5 * (yMin + yMax)]
             area = (xMax - xMin) * (yMax - yMin)
@@ -150,9 +156,9 @@ contains
             Qj = multipolarExpansionParameters%electric(j)%ab(1)%a
             avVj = getAveragePotential(&
                multipolarExpansionParameters%electric(j), &
-               multipolarExpansionParameters%innerRegionBox, &
+               multipolarExpansionParameters%inner_region, &
                cellBox)
-            ViWhenPrescribedVj = multipolarExpansionParameter%selectric(j)%conductor_potentials(i)
+            ViWhenPrescribedVj = multipolarExpansionParameters%electric(j)%conductor_potentials(i)
             avVj = -avVj + ViWhenPrescribedVj
 
             res(i,j) = Qj / avVj * EPSILON_VACUUM
@@ -179,9 +185,9 @@ contains
             Ij = multipolarExpansionParameters%magnetic(j)%ab(1)%a
             avAj = getAveragePotential(&
                multipolarExpansionParameters%magnetic(j), &
-               multipolarExpansionParameters%innerRegionBox, &
+               multipolarExpansionParameters%inner_region, &
                cellBox)
-            ViWhenPrescribedVj = multipolarExpansionParameter%selectric(j)%conductor_potentials(i)
+            ViWhenPrescribedVj = multipolarExpansionParameters%magnetic(j)%conductor_potentials(i)
             avAj = -avAj + ViWhenPrescribedVj
 
             res(i,j) = avAj / Ij * MU_VACUUM
