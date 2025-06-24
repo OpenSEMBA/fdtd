@@ -2306,7 +2306,7 @@ contains
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
       type(fhash_tbl_t) :: elemIdToMultiwire
-      type(materialAssociation_t), dimension(:), allocatable :: wires, shielded_multiwires, unshielded_multiwires, cables
+      type(materialAssociation_t), dimension(:), allocatable :: wires, mshielded_multiwires, munshielded_multiwires, cables
       type(cable_t) :: read_cable
       integer :: i
 
@@ -2437,8 +2437,8 @@ contains
       end function
 
       subroutine checkRepeteadNames(shielded_mws, unshielded_mws)
-         type(shielded_multiwres_t), dimension(:), pointer :: shielded_mws
-         type(unshielded_multiwres_t), dimension(:), pointer :: unshielded_mws
+         type(shielded_multiwire_t), dimension(:), pointer :: shielded_mws
+         type(unshielded_multiwire_t), dimension(:), pointer :: unshielded_mws
          integer :: i,j
          logical :: unique
          character (len=BUFSIZE) :: errorMsg
@@ -2779,6 +2779,8 @@ contains
          type(json_value), pointer :: termination_list, termination
          integer, intent(in) :: label
          integer, intent(in) :: index, id
+         ! for elemIdToMultiwire
+         class(*), dimension(:), pointer :: multiwire
          type(polyline_t) :: polyline
          type(aux_node_t) :: res
          integer :: cable_index
@@ -2795,8 +2797,11 @@ contains
          res%node%side = label
          res%node%conductor_in_cable = index
 
-         call elemIdToCable%get(key(id), value=cable_index)
-         res%node%belongs_to_cable => mtln_res%cables(cable_index)
+         ! call elemIdToCable%get(key(id), value=cable_index)
+         call elemIdToMultiwire%get(key(id), value=multiwire)
+         res%node%belongs_to_cable => multiwire
+         ! res%node%belongs_to_cable => mtln_res%cables(cable_index)
+
 
          polyline = this%mesh%getPolyline(id)
 
@@ -2976,7 +2981,8 @@ contains
          integer :: i,j, position, n_probes, k
          integer, dimension(:), allocatable :: elemIds, polylinecIds
          type(node_t) :: node
-         type(cable_t), pointer :: cable_ptr
+         class(*), pointer :: cable_ptr
+         ! type(cable_t), pointer :: cable_ptr
          integer :: index
          type(coordinate_t) :: node_coord
          if (this%existsAt(this%root, J_PROBES)) then
@@ -3009,13 +3015,29 @@ contains
                      res(k)%probe_type = readProbeType(wire_probes(i)%p)
                      res(k)%probe_name = readProbeName(wire_probes(i)%p)
                      res(k)%probe_position = node_coord%position
-                     call elemIdToCable%get(key(this%getIntAt(polylines(j)%p, J_ID)), value=index)
-                     cable_ptr => mtln_res%cables(index)
-                     if (associated(cable_ptr%parent_cable)) then
-                        do while (associated(cable_ptr%parent_cable))
+                     call elemIdToMultiwire%get(key(this%getIntAt(polylines(j)%p, J_ID)), cable_ptr)
+                     ! cable_ptr => mtln_res%cables(index)
+                     ! call elemIdToCable%get(key(this%getIntAt(polylines(j)%p, J_ID)), value=index)
+                     ! cable_ptr => mtln_res%cables(index)
+                     select type(cable_ptr)
+                     type is(shielded_multiwire_t)
+
+                        if (associated(cable_ptr%parent_cable)) then
                            cable_ptr => cable_ptr%parent_cable
-                        end do
-                     end if   
+
+                           do while (associated(cable_ptr%parent_cable))
+
+                              cable_ptr => cable_ptr%parent_cable
+                              select type(cable_ptr)
+                              type is(unshielded_multiwire_t)
+                                 exit
+                              end select
+
+                           end do
+
+                        end if   
+
+                     end select
                      res(k)%attached_to_cable => cable_ptr
                      res(k)%index = findProbeIndex(polylinecIds, position)
                      k = k + 1
@@ -3183,6 +3205,46 @@ contains
 
       function readShieldedMultiwire(j_shielded) result(res)
          type(materialAssociation_t), intent(in) :: j_shielded
+         type(cable_t) :: res
+         type(json_value_ptr) :: material
+         integer :: nConductors
+         logical :: found
+         character(:), allocatable :: materialType
+
+         res%name = j_cable%name
+
+         res%step_size = buildStepSize(j_cable)
+         ! res%external_field_segments = mapSegmentsToGridCoordinates(j_cable) 
+
+         material = this%matTable%getId(j_cable%materialId)
+         materialType = this%getStrAt(material%p, J_TYPE)
+         select case (materialType)
+         case (J_MAT_TYPE_WIRE)
+            call assignReferenceProperties(res, material)
+            call assignExternalRadius(res, material)
+            if (this%existsAt(material%p, J_MAT_WIRE_DIELECTRIC)) then
+               call assignDielectricProperties(res, material)
+            end if
+
+            ! if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
+            !    res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
+            ! end if
+
+         case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
+            call assignPULProperties(res, material, size(j_cable%elementIds))
+
+         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
+            call assignInCellProperties(res, material, size(j_cable%elementIds))
+         
+         case default
+            call WarnErrReport("Error reading cable: material type is not valid", .true.)
+
+         end select
+
+         res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
+         res%end_connector => findConnectorWithId(j_cable%endConnectorId)
+         res%transfer_impedance = buildTransferImpedance(material)
+
       end function
       
       function readUnshieldedMultiwire(j_unshielded) result(res)
@@ -3200,7 +3262,7 @@ contains
          res%name = j_cable%name
 
          res%step_size = buildStepSize(j_cable)
-         res%external_field_segments = mapSegmentsToGridCoordinates(j_cable)
+         ! res%external_field_segments = mapSegmentsToGridCoordinates(j_cable) 
 
          material = this%matTable%getId(j_cable%materialId)
          materialType = this%getStrAt(material%p, J_TYPE)

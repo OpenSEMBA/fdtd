@@ -60,7 +60,9 @@ module mtln_types_mod
    end type
 
    type :: terminal_node_t
-      type(cable_t), pointer :: belongs_to_cable => null()
+      ! shielded_multiwire_t or unshielded_multiwire_t
+      class(*), pointer :: belongs_to_cable => null()
+      ! type(cable_t), pointer :: belongs_to_cable => null()
       integer :: conductor_in_cable
       integer :: side = TERMINAL_NODE_SIDE_UNDEFINED
       type(termination_t) :: termination
@@ -210,6 +212,7 @@ module mtln_types_mod
 
    type :: probe_t
       class(*), pointer :: attached_to_cable => null()
+      ! type(cable_t), pointer :: attached_to_cable => null()
       integer :: index
       integer :: probe_type = PROBE_TYPE_UNDEFINED
       character (len=:), allocatable :: probe_name
