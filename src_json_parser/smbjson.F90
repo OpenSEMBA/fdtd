@@ -2326,9 +2326,9 @@ contains
 
       allocate (mtln_res%cables(size(cables)))
       do i = 1, size(cables)
-         read_cable = readMTLNCable(cables(i))
+         read_cable => readMTLNCable(cables(i))
          call stopOnRepeteadName(read_cable, mtln_res%cables, i - 1)
-         mtln_res%cables(i)%ptr = read_cable
+         mtln_res%cables(i)%ptr => read_cable
          call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, i)
          call addElemIdToPositionMap(elemIdToPosition, cables(i)%elementIds)
       end do
@@ -2338,7 +2338,7 @@ contains
          select type(ptr)
          type is(shielded_multiwire_t)
             ptr%parent_cable => assignParentCable(cables(i), mtln_res%cables)
-            ptr%conductor_in_parent = assignConductorInParent(cables(i), mtln_res%cables)
+            ptr%conductor_in_parent = assignConductorInParent(cables(i))
          end select
       end do
 
@@ -2396,13 +2396,13 @@ contains
 
       subroutine stopOnRepeteadName(cable, cables, n)
          type(cable_t) :: cable
-         type(cable_t), dimension(:), pointer :: cables
+         type(cable_abstract_t), dimension(:), allocatable :: cables
          integer :: n, i
          logical :: unique
          character (len=BUFSIZE) :: errorMsg
          unique = .true.
          do i = 1, n
-            if (cable%name == cables(i)%name) then
+            if (cable%name == cables(i)%ptr%name) then
                unique = .false.
             end if
          end do
@@ -2717,7 +2717,7 @@ contains
          res%node%conductor_in_cable = index
 
          call elemIdToCable%get(key(id), value=cable_index)
-         res%node%belongs_to_cable => mtln_res%cables(cable_index)
+         res%node%belongs_to_cable => mtln_res%cables(cable_index)%ptr
 
          polyline = this%mesh%getPolyline(id)
 
@@ -3123,7 +3123,7 @@ contains
 
       function readMTLNCable(j_cable) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
-         class(cable_t), allocatable :: res
+         class(cable_t), pointer :: res
          type(json_value_ptr) :: material
          integer :: nConductors
          logical :: found
