@@ -77,16 +77,28 @@ contains
 
 #ifdef CompileWithMTLN
    subroutine initializeCablePULParameters(cable)
-      type(cable_t), intent(inout) :: cable
-      allocate(cable%inductance_per_meter(1,1))
-      allocate(cable%capacitance_per_meter(1,1))
-      allocate(cable%resistance_per_meter(1,1))
-      allocate(cable%conductance_per_meter(1,1))
-      allocate(cable%multipolar_expansion(0))
-      cable%inductance_per_meter  = 0.0
-      cable%capacitance_per_meter = 0.0
-      cable%resistance_per_meter  = 0.0
-      cable%conductance_per_meter = 0.0
-   end subroutine
+      class(cable_t), pointer, intent(inout) :: cable
+      select type(cable)
+      type is(shielded_multiwire_t)
+         allocate(cable%inductance_per_meter(1,1))
+         allocate(cable%capacitance_per_meter(1,1))
+         allocate(cable%resistance_per_meter(1,1))
+         allocate(cable%conductance_per_meter(1,1))
+         cable%inductance_per_meter  = 0.0
+         cable%capacitance_per_meter = 0.0
+         cable%resistance_per_meter  = 0.0
+         cable%conductance_per_meter = 0.0
+      type is (unshielded_multiwire_t)
+         allocate(cable%cell_inductance_per_meter(1,1))
+         allocate(cable%cell_capacitance_per_meter(1,1))
+         allocate(cable%resistance_per_meter(1,1))
+         allocate(cable%conductance_per_meter(1,1))
+         cable%cell_inductance_per_meter  = 0.0
+         cable%cell_capacitance_per_meter = 0.0
+         cable%resistance_per_meter  = 0.0
+         cable%conductance_per_meter = 0.0
+         allocate(cable%multipolar_expansion(0))
+      end select
+      end subroutine
 #endif
 end module

@@ -123,57 +123,7 @@ contains
       ex%tWires%n_tw = 1
       ex%tWires%n_tw_max = 1
   
-      ex%mtln%time_step = 30e-12
-      ex%mtln%number_of_steps = 1000
 
-      allocate(ex%mtln%cables(1))
-
-      ex%mtln%cables(1)%name = "single_wire"
-      call initializeCablePULParameters(ex%mtln%cables(1))
-      allocate(ex%mtln%cables(1)%step_size(10))
-      ex%mtln%cables(1)%step_size =  [(0.1, i = 1, 10)]
-      allocate(ex%mtln%cables(1)%external_field_segments(10))
-      do i = 1, 10
-         ex%mtln%cables(1)%external_field_segments(i)%position = (/11,11,i+6/)
-         ex%mtln%cables(1)%external_field_segments(i)%direction = DIRECTION_Z_POS
-         ex%mtln%cables(1)%external_field_segments(i)%field => null()
-
-      end do
-
-      allocate(ex%mtln%cables(1)%transfer_impedance%poles(0))
-      allocate(ex%mtln%cables(1)%transfer_impedance%residues(0))
-
-      ex%mtln%cables(1)%parent_cable => null()
-      ex%mtln%cables(1)%conductor_in_parent = 0
-      ex%mtln%cables(1)%initial_connector => null()
-      ex%mtln%cables(1)%end_connector => null()
-
-      ! probes
-      deallocate(ex%mtln%probes)
-      allocate(ex%mtln%probes(1))
-      ex%mtln%probes(1)%attached_to_cable => ex%mtln%cables(1)
-      ex%mtln%probes(1)%index = 6
-      ex%mtln%probes(1)%probe_type = PROBE_TYPE_CURRENT
-      ex%mtln%probes(1)%probe_name = "mid_point"
-      ex%mtln%probes(1)%probe_position = [11,11,12]
-
-      ! networks
-      deallocate(ex%mtln%networks)
-      allocate(ex%mtln%networks(2))
-
-      allocate(ex%mtln%networks(1)%connections(1))
-      allocate(ex%mtln%networks(1)%connections(1)%nodes(1))
-      ex%mtln%networks(1)%connections(1)%nodes(1)%conductor_in_cable = 1
-      ex%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
-      ex%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  ex%mtln%cables(1)
-      ex%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_OPEN
-
-      allocate(ex%mtln%networks(2)%connections(1))
-      allocate(ex%mtln%networks(2)%connections(1)%nodes(1))
-      ex%mtln%networks(2)%connections(1)%nodes(1)%conductor_in_cable = 1
-      ex%mtln%networks(2)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-      ex%mtln%networks(2)%connections(1)%nodes(1)%belongs_to_cable =>  ex%mtln%cables(1)
-      ex%mtln%networks(2)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_OPEN
 
 
    end function

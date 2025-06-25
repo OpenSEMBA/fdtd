@@ -2306,8 +2306,8 @@ contains
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
       type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, cables
-      class(cable_t), pointer :: read_cable
-      class(cable_t), pointer :: ptr
+      ! class(cable_t), allocatable, target :: read_cable
+      class(cable_t), pointer :: ptr, read_cable
       integer :: i
 
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
@@ -2326,7 +2326,7 @@ contains
 
       allocate (mtln_res%cables(size(cables)))
       do i = 1, size(cables)
-         read_cable => readMTLNCable(cables(i))
+         read_cable => readMTLNCable(cables(i), this%readGrid())
          call stopOnRepeteadName(read_cable, mtln_res%cables, i - 1)
          mtln_res%cables(i)%ptr => read_cable
          call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, i)
@@ -2342,7 +2342,7 @@ contains
          end select
       end do
 
-      mtln_res%probes = readWireProbes()
+      mtln_res%probes = readMultiwireProbes()
       mtln_res%networks = buildNetworks()
 
    contains
@@ -2890,99 +2890,182 @@ contains
 
       end function
 
-      function readWireProbes() result(res)
+      function readMultiwireProbes() result(res)
          type(probe_t), dimension(:), allocatable :: res
          type(json_value_ptr), dimension(:), allocatable :: wire_probes, polylines
          type(json_value), pointer :: probes, elements
-         integer :: i,j, k, position, n_probes, index
-         integer, dimension(:), allocatable :: elemIds, polylinecIds
-         type(node_t) :: node
+         integer :: i,j, k, position, n, index
+         integer, dimension(:), allocatable :: polylinecIds
          class(cable_t), pointer :: cable_ptr, aux_ptr
-         type(coordinate_t) :: node_coord
-         logical :: parent_found = .false.
+         logical :: parent_found = .false., found
          
-         if (this%existsAt(this%root, J_PROBES)) then
-            call this%core%get(this%root, J_PROBES, probes)
-         else
+         call this%core%get(this%root, J_PROBES, probes, found)
+         if (.not. found) then 
             allocate(res(0))
             return
          end if
+         
+         wire_probes = [this%jsonValueFilterByKeyValue(probes, J_TYPE, J_PR_TYPE_WIRE)]
+         n = 0
+         do i = 1, size(wire_probes)
+            if (isCurrentProbeDefinedOnMultiwire(wire_probes(i)%p)) n = n + 1
+         end do
 
          call this%core%get(this%root, J_MESH//'.'//J_ELEMENTS, elements)
+         
          polylines = this%jsonValueFilterByKeyValue(elements, J_TYPE, J_ELEM_TYPE_POLYLINE)
-         wire_probes = [ &
-            this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_UNSHIELDED_MULTIWIRE), &
-            this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_SHIELDED_MULTIWIRE) ]
 
-         n_probes = countProbes(wire_probes, polylines)
-
-         allocate(res(n_probes))
-         if (n_probes /= 0) then
-            k = 1
+         allocate(res(n))
+         if (n /= 0) then
+            n = 1
             do i = 1, size(wire_probes)
-               elemIds = this%getIntsAt(wire_probes(i)%p, J_ELEMENTIDS)
-               node = this%mesh%getNode(elemIds(1))
-               node_coord = this%mesh%getCoordinate(node%coordIds(1))
-               do j = 1, size(polylines)
-                  polylinecIds = this%getIntsAt(polylines(j)%p, J_COORDINATE_IDS)
-                  position = findloc(polylinecIds, node%coordIds(1), dim=1)
-                  if (position /= 0) then ! polyline found
-                     res(k)%probe_type = readProbeType(wire_probes(i)%p)
-                     res(k)%probe_name = readProbeName(wire_probes(i)%p)
-                     res(k)%probe_position = node_coord%position
-                     call elemIdToCable%get(key(this%getIntAt(polylines(j)%p, J_ID)), value=index)
-
-                     ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
-                     ! Outside, cable_t does not have the parent_cable member
-                     ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable   
-                     cable_ptr => mtln_res%cables(index)%ptr
-                     do while (.not. parent_found)
-                        select type(cable_ptr)
-                        type is(shielded_multiwire_t)
-                           if (associated(cable_ptr%parent_cable)) then
-                              aux_ptr => cable_ptr%parent_cable   
-                           else
-                              parent_found = .true.
-                           end if
-                        type is(unshielded_multiwire_t)
+               if (isCurrentProbeDefinedOnMultiwire(wire_probes(i)%p)) then 
+                  res(n)%probe_name = readProbeName(wire_probes(i)%p)
+                  res(n)%probe_type = readProbeType(wire_probes(i)%p)
+                  block
+                     integer, dimension(:), allocatable :: elemIds
+                     type(coordinate_t) :: node_coord
+                     type(node_t) :: node
+                     integer :: id
+                     elemIds = this%getIntsAt(wire_probes(i)%p, J_ELEMENTIDS)
+                     node = this%mesh%getNode(elemIds(1))
+                     node_coord = this%mesh%getCoordinate(node%coordIds(1))
+                     res(n)%probe_position = node_coord%position
+                     id = getPolylineIdOfMultiwireProbe(wire_probes(i)%p)
+                     call elemIdToCable%get(key(id), value=index)
+                  end block
+                  ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
+                  ! Outside, cable_t does not have the parent_cable member
+                  ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable   
+                  cable_ptr => mtln_res%cables(index)%ptr
+                  do while (.not. parent_found)
+                     select type(cable_ptr)
+                     type is(shielded_multiwire_t)
+                        if (associated(cable_ptr%parent_cable)) then
+                           aux_ptr => cable_ptr%parent_cable   
+                        else
                            parent_found = .true.
-                        end select
-                        if (.not. parent_found) then 
-                           cable_ptr => aux_ptr
                         end if
-                     end do
+                     type is(unshielded_multiwire_t)
+                        parent_found = .true.
+                     end select
+                     if (.not. parent_found) then 
+                        cable_ptr => aux_ptr
+                     end if
+                  end do
 
-                     res(k)%attached_to_cable => cable_ptr
-                     res(k)%index = findProbeIndex(polylinecIds, position)
-                     k = k + 1
-                  end if
-               end do
+                  res(n)%attached_to_cable => cable_ptr
+                  res(n)%index = findProbeIndex(polylinecIds, position)
+                  n = n + 1
+
+               end if
+               ! do j = 1, size(polylines)
+               !    polylinecIds = this%getIntsAt(polylines(j)%p, J_COORDINATE_IDS)
+               !    position = findloc(polylinecIds, node%coordIds(1), dim=1)
+               !    if (position /= 0) then ! polyline found
+               !       res(k)%probe_type = readProbeType(wire_probes(i)%p)
+               !       res(k)%probe_name = readProbeName(wire_probes(i)%p)
+               !       res(k)%probe_position = node_coord%position
+               !       call elemIdToCable%get(key(this%getIntAt(polylines(j)%p, J_ID)), value=index)
+
+               !       ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
+               !       ! Outside, cable_t does not have the parent_cable member
+               !       ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable   
+               !       cable_ptr => mtln_res%cables(index)%ptr
+               !       do while (.not. parent_found)
+               !          select type(cable_ptr)
+               !          type is(shielded_multiwire_t)
+               !             if (associated(cable_ptr%parent_cable)) then
+               !                aux_ptr => cable_ptr%parent_cable   
+               !             else
+               !                parent_found = .true.
+               !             end if
+               !          type is(unshielded_multiwire_t)
+               !             parent_found = .true.
+               !          end select
+               !          if (.not. parent_found) then 
+               !             cable_ptr => aux_ptr
+               !          end if
+               !       end do
+
+               !       res(k)%attached_to_cable => cable_ptr
+               !       res(k)%index = findProbeIndex(polylinecIds, position)
+               !       k = k + 1
+               !    end if
+               ! end do
             end do
          end if
-
-
       end function
 
-      function countProbes(probes, lines) result(res)
-         type(json_value_ptr), dimension(:), allocatable :: probes, lines
-         integer :: res
-         integer, dimension(:), allocatable :: ids, lines_ids
-         type(node_t) :: node
-         integer :: i, j, position
-         res = 0
-         if (size(probes) /= 0) then
-            do i = 1, size(probes)
-               ids = this%getIntsAt(probes(i)%p, J_ELEMENTIDS)
-               node = this%mesh%getNode(ids(1))
-               do j = 1, size(lines)
-                  lines_ids = this%getIntsAt(lines(j)%p, J_COORDINATE_IDS)
-                  position = findloc(lines_ids, node%coordIds(1), dim=1)
-                  if (position /= 0) then ! polyline found
-                     res = res + 1
-                  end if
-               end do
-            end do
+      logical function isCurrentProbeDefinedOnMultiwire(p)
+         type(json_value), pointer :: p
+         character (len=:), allocatable :: fieldLabel
+         logical :: found
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j
+         integer :: cId
+         type(polyline_t) :: polyline
+         
+         fieldLabel = this%getStrAt(p, J_FIELD, found=found)
+         if (.not. found .or. fieldLabel /= J_FIELD_CURRENT) then
+            isCurrentProbeDefinedOnMultiwire = .false.
+            return
          end if
+         
+         block
+            type(pixel_t) :: pixel
+            integer, dimension(:), allocatable :: eIds
+            eIds = this%getIntsAt(p, J_ELEMENTIDS)
+            pixel = getPixelFromElementId(this%mesh, eIds(1))
+            cId = pixel%tag
+         end block
+
+         mAs = this%getMaterialAssociations([ &
+                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+
+         do i = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+            do j = 1, size(polyline%coordIds)
+               if (polyline%coordIds(j) == cId) then
+                  isCurrentProbeDefinedOnMultiwire = .true.
+                  return
+               end if
+            end do
+         end do
+
+         isCurrentProbeDefinedOnMultiwire = .false.
+      end function
+
+      function getPolylineIdOfMultiwireProbe(p) result(res)
+         type(json_value), pointer :: p
+         type(polyline_t) :: polyline
+         integer :: res
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j
+         integer :: cId
+         
+         block
+            type(pixel_t) :: pixel
+            integer, dimension(:), allocatable :: eIds
+            eIds = this%getIntsAt(p, J_ELEMENTIDS)
+            pixel = getPixelFromElementId(this%mesh, eIds(1))
+            cId = pixel%tag
+         end block
+
+         mAs = this%getMaterialAssociations([ &
+                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+
+         do i = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+            do j = 1, size(polyline%coordIds)
+               if (polyline%coordIds(j) == cId) then
+                  res = mAs(i)%elementIds(1)
+                  return
+               end if
+            end do
+         end do
       end function
 
       function readProbeType(probe) result(res)
@@ -3135,34 +3218,18 @@ contains
       end function
 
 
-      function readMTLNCable(j_cable) result(res)
+      function readMTLNCable(j_cable, despl) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
+         type(Desplazamiento), intent(in) :: despl
          class(cable_t), pointer :: res
          type(json_value_ptr) :: material
          integer :: nConductors
          logical :: found
          character(:), allocatable :: materialType
 
-
-         res%name = j_cable%name
-
-         ! res%step_size = buildStepSize(j_cable)
-         ! res%external_field_segments = mapSegmentsToGridCoordinates(j_cable)
-
          material = this%matTable%getId(j_cable%materialId)
          materialType = this%getStrAt(material%p, J_TYPE)
          select case (materialType)
-         ! case (J_MAT_TYPE_WIRE)
-         !    call assignReferenceProperties(res, material)
-         !    call assignExternalRadius(res, material)
-         !    if (this%existsAt(material%p, J_MAT_WIRE_DIELECTRIC)) then
-         !       call assignDielectricProperties(res, material)
-         !    end if
-
-         !    ! if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
-         !    !    res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
-         !    ! end if
-
          case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
             allocate(shielded_multiwire_t :: res)
             select type(res)
@@ -3182,7 +3249,9 @@ contains
 
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
-
+         res%name = j_cable%name
+         res%segments = buildSegments(j_cable)
+         res%step_size = buildStepSize(res%segments, despl)
 
       end function
 
@@ -3455,6 +3524,44 @@ contains
 
       end function
    
+      function buildSegments(j_cable) result(res)
+         type(materialAssociation_t), intent(in) :: j_cable
+         type(direction_t), dimension(:), allocatable :: res
+         integer, dimension(:), allocatable :: elemIds
+         type(linel_t), dimension(:), allocatable :: linels
+         type(polyline_t) :: polyline
+         integer :: i
+         elemIds = j_cable%elementIds
+         polyline = this%mesh%getPolyline(elemIds(1))
+         linels = this%mesh%polylineToLinels(polyline)
+         allocate(res(size(linels)))
+         do i = 1, size(linels)
+            res(i)%x = linels(i)%cell(1)
+            res(i)%y = linels(i)%cell(2)
+            res(i)%z = linels(i)%cell(3)
+            res(i)%orientation = linels(i)%orientation
+         end do
+      end function
+
+      function buildStepSize(segments, despl) result(res)
+         type(direction_t), dimension(:), allocatable :: segments
+         type(Desplazamiento), intent(in) :: despl
+         real, allocatable, dimension(:) :: res
+         integer :: i, or
+         allocate(res(size(segments)))
+         do i = 1, size(segments)
+            or = abs(segments(i)%orientation)
+            select case(or)
+            case(DIR_X)
+               res(i) = despl%desX(segments(i)%x)
+            case(DIR_Y)
+               res(i) = despl%desX(segments(i)%y)
+            case(DIR_Z)
+               res(i) = despl%desX(segments(i)%z)
+            end select
+         end do
+      end function
+
       ! function mapSegmentsToGridCoordinates(j_cable) result(res)
       !    type(materialAssociation_t), intent(in) :: j_cable
       !    type(external_field_segment_t), dimension(:), allocatable :: res
