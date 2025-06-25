@@ -86,7 +86,7 @@ contains
 
         res%step_size = levels(1)%lines(1)%step_size
         res%number_of_divisions = size(res%step_size,1)
-        ! res%external_field_segments = levels(1)%lines(1)%external_field_segments
+        res%external_field_segments = buildExternalFieldSegments(levels)
         res%isPassthrough = levels(1)%lines(1)%isPassthrough
         call res%initialAllocation()
         call res%mergePULMatrices(levels)
@@ -198,6 +198,21 @@ contains
         end do
 
     end subroutine
+
+    function buildExternalFieldSegments(levels) result(res)
+        type(mtl_array_t), dimension(:), intent(in) :: levels
+        type(external_field_segment_t), dimension(:), allocatable :: res
+        type(direction_t), dimension(:), allocatable :: segments
+        integer :: i
+        segments = levels(1)%lines(1)%segments
+        allocate(res(size(segments)))
+        do i = 1, size(segments)
+            res(i)%position(1) = segments(i)%x
+            res(i)%position(2) = segments(i)%y
+            res(i)%position(3) = segments(i)%z
+            res(i)%direction   = segments(i)%orientation
+        end do
+    end function
 
     type(probe_t) function addProbe(this, index, probe_type, name, position, layer_indices) result(res)
         class(mtl_bundle_t) :: this

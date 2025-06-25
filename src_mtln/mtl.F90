@@ -5,9 +5,10 @@ module mtl_mod
     use dispersive_mod
     ! use mtln_types_mod, only: external_field_segment_t
 #ifdef CompileWithMPI
-    use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
+    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, direction_t
+#else
+    use fdetypes, only: direction_t
 #endif
-
     implicit none
 #ifdef CompileWithMPI
 
@@ -43,7 +44,7 @@ module mtl_mod
         type(transfer_impedance_per_meter_t) :: transfer_impedance
         type(transfer_impedance_per_meter_t) :: initial_connector_transfer_impedance, end_connector_transfer_impedance
         ! type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
-
+        type(direction_t), dimension(:), allocatable :: segments
         logical :: isPassthrough = .false.
 
 #ifdef CompileWithMPI

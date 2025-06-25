@@ -151,10 +151,6 @@ contains
 
     end function
     
-    ! subroutine setExternalFieldSegments()
-
-    ! end subroutine
-
     subroutine setBundleTransferImpedance(bundle, line)
         type(mtl_bundle_t), intent(inout) :: bundle
         type(line_bundle_t), intent(in) :: line
@@ -229,7 +225,6 @@ contains
             end if
             call setBundleTransferImpedance(res(i), lines(i))
             call mapConductorsBeforeCable(conductors_before_cable, lines(i))
-            ! call setExternalFieldSegments()
         end do  
         this%conductors_before_cable = conductors_before_cable
     end function    
@@ -244,12 +239,10 @@ contains
         integer(kind=4), dimension (2), intent(in), optional :: alloc_z
         type(mtl_t) :: res
         
-        class(cable_t), pointer :: ptr
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
 
-        ptr => cable
-        select type (ptr)
+        select type (cable)
         type is (shielded_multiwire_t)
 !         if (associated(cable%parent_cable)) then 
 !             parent_name = cable%parent_cable%name

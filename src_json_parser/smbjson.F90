@@ -2352,7 +2352,7 @@ contains
          type(cable_abstract_t), dimension(:), allocatable :: cables
          type(json_value_ptr) :: mat
          integer :: parentId, index
-         type(cable_t), pointer :: res
+         class(cable_t), pointer :: res
 
          mat = this%matTable%getId(cable%materialId)
 
@@ -2395,7 +2395,7 @@ contains
       end function
 
       subroutine stopOnRepeteadName(cable, cables, n)
-         type(cable_t) :: cable
+         class(cable_t) :: cable
          type(cable_abstract_t), dimension(:), allocatable :: cables
          integer :: n, i
          logical :: unique
@@ -2894,12 +2894,13 @@ contains
          type(probe_t), dimension(:), allocatable :: res
          type(json_value_ptr), dimension(:), allocatable :: wire_probes, polylines
          type(json_value), pointer :: probes, elements
-         integer :: i,j, position, n_probes, k
+         integer :: i,j, k, position, n_probes, index
          integer, dimension(:), allocatable :: elemIds, polylinecIds
          type(node_t) :: node
-         type(cable_t), pointer :: cable_ptr
-         integer :: index
+         class(cable_t), pointer :: cable_ptr, aux_ptr
          type(coordinate_t) :: node_coord
+         logical :: parent_found = .false.
+         
          if (this%existsAt(this%root, J_PROBES)) then
             call this%core%get(this%root, J_PROBES, probes)
          else
@@ -2910,7 +2911,6 @@ contains
          call this%core%get(this%root, J_MESH//'.'//J_ELEMENTS, elements)
          polylines = this%jsonValueFilterByKeyValue(elements, J_TYPE, J_ELEM_TYPE_POLYLINE)
          wire_probes = [ &
-            this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_WIRE), &
             this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_UNSHIELDED_MULTIWIRE), &
             this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_SHIELDED_MULTIWIRE) ]
 
@@ -2931,14 +2931,28 @@ contains
                      res(k)%probe_name = readProbeName(wire_probes(i)%p)
                      res(k)%probe_position = node_coord%position
                      call elemIdToCable%get(key(this%getIntAt(polylines(j)%p, J_ID)), value=index)
-                     !!!!! fix later
-                     ! cable_ptr => mtln_res%cables(index)
-                     ! if (associated(cable_ptr%parent_cable)) then
-                     !    do while (associated(cable_ptr%parent_cable))
-                     !       cable_ptr => cable_ptr%parent_cable
-                     !    end do
-                     ! end if   
-                     ! res(k)%attached_to_cable => cable_ptr
+
+                     ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
+                     ! Outside, cable_t does not have the parent_cable member
+                     ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable   
+                     cable_ptr => mtln_res%cables(index)%ptr
+                     do while (.not. parent_found)
+                        select type(cable_ptr)
+                        type is(shielded_multiwire_t)
+                           if (associated(cable_ptr%parent_cable)) then
+                              aux_ptr => cable_ptr%parent_cable   
+                           else
+                              parent_found = .true.
+                           end if
+                        type is(unshielded_multiwire_t)
+                           parent_found = .true.
+                        end select
+                        if (.not. parent_found) then 
+                           cable_ptr => aux_ptr
+                        end if
+                     end do
+
+                     res(k)%attached_to_cable => cable_ptr
                      res(k)%index = findProbeIndex(polylinecIds, position)
                      k = k + 1
                   end if
@@ -3020,7 +3034,7 @@ contains
          integer, intent(in) :: id
          integer :: mStat
          integer :: index
-         type(cable_t), pointer :: res
+         class(cable_t), pointer :: res
 
 
          call elemIdToCable%check_key(key(id), mStat)
