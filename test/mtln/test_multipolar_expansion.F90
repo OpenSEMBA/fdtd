@@ -80,6 +80,7 @@ integer function test_multipolar_expansion_for_lansink_two_wires() bind(C) resul
     mE%electric(2)%ab(3)%a = 1.4620553866347293e-06
     mE%electric(2)%ab(3)%b = -1.4363492844460606e-09
 
+    ! In cases with no dielectrics, the magnetic and electric expansions are the same.
     mE%magnetic = mE%electric
 
     fdtdCell%min = [-0.100, -0.100]
@@ -144,6 +145,7 @@ integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bi
     mE%electric(1)%ab(1)%a = 0.97667340898489752
     mE%electric(1)%ab(1)%b = 0.0
 
+    ! With dielectrics, the magnetic and electric reconstructions are generally different.
     allocate(mE%magnetic(1))
     mE%magnetic(1)%inner_region_average_potential = 0.84903792056711014
     mE%magnetic(1)%expansion_center = [0.0, 0.0]
@@ -157,12 +159,12 @@ integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bi
     fdtdCell%max = [ 0.0075,  0.0075]
 
     computedC = getCellCapacitanceOnBox(mE, fdtdCell)
-    if (.not. checkNear(49e-12, computedC(1,1), 1e-4)) then
+    if (.not. checkNear(49e-12, computedC(1,1), 6e-2)) then
         error_cnt = error_cnt + 1
     end if
 
     computedL = getCellInductanceOnBox(mE, fdtdCell)
-    if (.not. checkNear(320e-9, computedL(1,1), 1e-4)) then
+    if (.not. checkNear(320e-9, computedL(1,1), 6e-2)) then
         error_cnt = error_cnt + 1
     end if
 

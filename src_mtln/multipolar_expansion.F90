@@ -54,32 +54,44 @@ contains
       real, allocatable :: allPoints(:)
       integer :: i, j
 
+      ! Preconditions
       if (any(integrationBox%min >= innerRegionBox%min) .or. &
           any(integrationBox%max <= innerRegionBox%max)) then       
          call WarnErrReport( &
-            "buildIntegrationGridForBox: integrationBox is not valid with respect to innerRegionBox")
+            "Error in mutipolar expansion innerRegion must be fully contained within the integration Box")
          return
       end if
 
-      do x = 1, 2 
-         allocate(controlPoints(4))
-         if (x == 1) then
-            controlPoints = [integrationBox%min(1), integrationBox%max(1), innerRegionBox%min(1), innerRegionBox%max(1)]
-         else
-            controlPoints = [integrationBox%min(2), integrationBox%max(2), innerRegionBox%min(2), innerRegionBox%max(2)]
+      block
+         real, dimension(2) :: innerRegionSize, integrationBoxSize         
+         innerRegionSize = innerRegionBox%max - innerRegionBox%min
+         integrationBoxSize = integrationBox%max - integrationBox%min
+         if (any(integrationBoxSize < innerRegionSize * 1.25)) then
+            call WarnErrReport( &
+               "Error in multipolar expansion: integration box is too small for the inner region")
+            return
          end if
+      end block
 
-         allocate(allPoints( GRID_INTEGRATION_SAMPLING_POINTS * 3 + 1))
-         allPoints(1) = controlPoints(1)
+      ! Builds grid
+      allocate(allPoints( GRID_INTEGRATION_SAMPLING_POINTS * 3 + 1))
+      do x = 1, 2 
+         ! control points are ordered from min to max.
+         controlPoints = [&
+            integrationBox%min(x), &
+            innerRegionBox%min(x), &
+            innerRegionBox%max(x), &
+            integrationBox%max(x)]
+         
          do i = 2, size(controlPoints)
             minval = controlPoints(i-1)
             maxval = controlPoints(i)
             step = (maxval - minval) / GRID_INTEGRATION_SAMPLING_POINTS
             do k = 1, GRID_INTEGRATION_SAMPLING_POINTS
-               allPoints((i-2)*GRID_INTEGRATION_SAMPLING_POINTS+k) = minval + k*step
+               allPoints((i-2)*GRID_INTEGRATION_SAMPLING_POINTS+k) = minval + (k-1)*step
             end do
          end do
-         allPoints(size(allPoints)) = maxval 
+         allPoints(size(allPoints)) = controlPoints(size(controlPoints))
 
          if (x == 1) then
             res%x = allPoints
