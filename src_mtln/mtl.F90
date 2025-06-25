@@ -114,7 +114,7 @@ contains
     end subroutine
 
     function mtlHomogeneous(lpul, cpul, rpul, gpul, &
-                            step_size, name, &
+                            step_size, name, segments, &
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
                             layer_indices, bundle_in_layer, alloc_z) result(res)
@@ -122,6 +122,7 @@ contains
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
         character(len=*), intent(in) :: name
+        type(direction_t), dimension(:), allocatable, intent(in) :: segments
 
         real, intent(in), optional :: dt
         real :: max_dt
@@ -135,6 +136,7 @@ contains
         integer (kind=4) :: sizeof, ierr
         if (present(layer_indices)) then 
             ! call res%initStepSizeAndFieldSegments(step_size, external_field_segments, layer_indices)
+            ! => call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
             call res%initCommunicators(alloc_z)
             res%layer_indices = layer_indices
             res%bundle_in_layer = bundle_in_layer
@@ -146,6 +148,7 @@ contains
         end if
 #else
         res%step_size =  step_size
+        res%segments = segments
         ! res%external_field_segments = external_field_segments
 #endif
 

@@ -254,6 +254,7 @@ contains
                                 gpul = cable%conductance_per_meter, &
                                 step_size = cable%step_size, &
                                 name = cable%name, &
+                                segments = cable%segments,&
                                 dt = dt, &
                                 parent_name = parent_name, &
                                 conductor_in_parent = conductor_in_parent, & 
@@ -272,6 +273,7 @@ contains
                                 gpul = cable%conductance_per_meter, &
                                 step_size = cable%step_size, &
                                 name = cable%name, &
+                                segments = cable%segments,&
                                 dt = dt &
 #ifdef CompileWithMPI
                                 ,layer_indices = layer_indices, & 
