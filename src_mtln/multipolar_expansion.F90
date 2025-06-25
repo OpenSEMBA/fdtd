@@ -1,7 +1,7 @@
 module multipolar_expansion_mod
 
    use mtln_types_mod
-
+   use Report
    use FDETypes
 
    type, private :: integration_grid_t
@@ -61,7 +61,7 @@ contains
          return
       end if
 
-      do x = 1, 2
+      do x = 1, 2 
          allocate(controlPoints(4))
          if (x == 1) then
             controlPoints = [integrationBox%min(1), integrationBox%max(1), innerRegionBox%min(1), innerRegionBox%max(1)]

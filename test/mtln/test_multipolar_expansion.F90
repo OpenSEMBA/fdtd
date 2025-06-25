@@ -1,23 +1,25 @@
-integer function test_multipolar_expansion_of_dipole() bind(C) result(error_cnt)    
+integer function test_multipolar_expansion_for_dipole() bind(C) result(error_cnt)    
     use mtln_types_mod
     use multipolar_expansion_mod
     use mtln_testingTools_mod
-
+    
     real, dimension(2) :: expansionCenter = [0.0, 0.0]
-    real :: d=0.1, r=1.0
+    real :: d=0.1, r=1.0 
     real :: vComputed, vExpected
     real, dimension(2) :: pos
     type(multipolar_coefficient_t), dimension(2) :: ab
+
+    error_cnt = 0
     
-    ab(1) = [0.0, d]
-    ab(2) = [0.0, 0.0]
+    ab(1)%a = 0.0; ab(1)%b = 0.0
+    ab(2)%a = d; ab(2)%b = 0.0
     
     ! First test
     block
         pos = [r, 0.0]
-        vComputed = multipolarExpansion(pos, ab, expansionCenter)
-        vExpected = 1.0 / (2.0 * pi()) * log((r + d / 2.0) / (r - d / 2.0))
-        if (.not. checkNear(vExpected, vComputed, 1e-4)) then
+        vComputed = multipolarExpansion2D(pos, ab, expansionCenter)
+        vExpected = 1.0 / (2.0 * pi) * log((r + d / 2.0) / (r - d / 2.0))
+        if (abs(vExpected - vComputed) > 1e-4) then
             error_cnt = error_cnt + 1
         end if
     end block
@@ -25,9 +27,9 @@ integer function test_multipolar_expansion_of_dipole() bind(C) result(error_cnt)
     ! Second test
     block
         pos = [0.0, r]
-        vComputed = multipolarExpansion(pos, ab, expansionCenter)
+        vComputed = multipolarExpansion2D(pos, ab, expansionCenter)
         vExpected = 0.0
-        if (.not. checkNear(vExpected, vComputed, 1e-4)) then
+        if (abs(vExpected - vComputed) > 1e-4) then
             error_cnt = error_cnt + 1
         end if
     end block
@@ -35,7 +37,7 @@ integer function test_multipolar_expansion_of_dipole() bind(C) result(error_cnt)
 end function
 
 
-integer function test_multipolar_expansion_for_lansink2024_two_wires() bind(C) result(error_cnt)
+integer function test_multipolar_expansion_for_lansink_two_wires() bind(C) result(error_cnt)
 	! From:
 	! Rotgerink, J.L. et al. (2024, September).
 	! Numerical Computation of In - cell Parameters for Multiwire Formalism in FDTD.
@@ -43,11 +45,14 @@ integer function test_multipolar_expansion_for_lansink2024_two_wires() bind(C) r
 	! EMC Europe(pp. 334 - 339). IEEE.
     use mtln_types_mod
     use multipolar_expansion_mod
+    use mtln_testingTools_mod
 
     type(multipolar_expansion_t) :: mE
     type(box_2d_t) :: fdtdCell
 
     real, dimension(:,:), allocatable :: computedL, computedC
+
+    error_cnt = 0
 
     mE%inner_region%min = [-0.0265, -0.031]
     mE%inner_region%max = [ 0.0355,  0.031]
@@ -111,7 +116,7 @@ integer function test_multipolar_expansion_for_lansink2024_two_wires() bind(C) r
 
 end function
 
-integer function test_multipolar_expansion_for_lansink2024_wire_with_dielectric() bind(C) result(error_cnt)
+integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bind(C) result(error_cnt)
 	! From:
 	! Rotgerink, J.L. et al. (2024, September).
 	! Numerical Computation of In - cell Parameters for Multiwire Formalism in FDTD.
@@ -119,11 +124,14 @@ integer function test_multipolar_expansion_for_lansink2024_wire_with_dielectric(
 	! EMC Europe(pp. 334 - 339). IEEE.
     use mtln_types_mod
     use multipolar_expansion_mod
+    use mtln_testingTools_mod
 
     type(multipolar_expansion_t) :: mE
     type(box_2d_t) :: fdtdCell
 
     real, dimension(:,:), allocatable :: computedL, computedC
+
+    error_cnt = 0
 
     mE%inner_region%min = [-0.004, -0.004]
     mE%inner_region%max = [ 0.004,  0.004]
@@ -149,12 +157,12 @@ integer function test_multipolar_expansion_for_lansink2024_wire_with_dielectric(
     fdtdCell%max = [ 0.0075,  0.0075]
 
     computedC = getCellCapacitanceOnBox(mE, fdtdCell)
-    if (.not. checkNear(49e-12, computedC, 1e-4)) then
+    if (.not. checkNear(49e-12, computedC(1,1), 1e-4)) then
         error_cnt = error_cnt + 1
     end if
 
     computedL = getCellInductanceOnBox(mE, fdtdCell)
-    if (.not. checkNear(320e-9, computedL, 1e-4)) then
+    if (.not. checkNear(320e-9, computedL(1,1), 1e-4)) then
         error_cnt = error_cnt + 1
     end if
 
