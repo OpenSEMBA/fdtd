@@ -28,7 +28,6 @@ module mtl_bundle_mod
         real, dimension(:,:,:), allocatable :: v_diff, i_diff
 
         type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
-        logical :: isPassthrough = .false.
         logical :: bundle_in_layer = .true.
         
 #ifdef CompileWithMPI
@@ -87,7 +86,6 @@ contains
         res%step_size = levels(1)%lines(1)%step_size
         res%number_of_divisions = size(res%step_size,1)
         res%external_field_segments = buildExternalFieldSegments(levels)
-        res%isPassthrough = levels(1)%lines(1)%isPassthrough
         call res%initialAllocation()
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)

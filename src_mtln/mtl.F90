@@ -43,9 +43,7 @@ module mtl_mod
         integer :: conductor_in_parent
         type(transfer_impedance_per_meter_t) :: transfer_impedance
         type(transfer_impedance_per_meter_t) :: initial_connector_transfer_impedance, end_connector_transfer_impedance
-        ! type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
         type(direction_t), dimension(:), allocatable :: segments
-        logical :: isPassthrough = .false.
 
 #ifdef CompileWithMPI
         type(comm_t) :: mpi_comm
@@ -119,9 +117,7 @@ contains
                             step_size, name, &
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
-
-                            ! external_field_segments, &
-                            isPassthrough, layer_indices, bundle_in_layer, alloc_z) result(res)
+                            layer_indices, bundle_in_layer, alloc_z) result(res)
         type(mtl_t) :: res
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -132,8 +128,6 @@ contains
         character(len=*), intent(in), optional :: parent_name
         integer, intent(in), optional :: conductor_in_parent
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
-        ! type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
-        logical, optional :: isPassthrough
         integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
         integer(kind=4), dimension (2), intent(in), optional :: alloc_z
@@ -186,17 +180,13 @@ contains
         if (present(parent_name)) res%parent_name = parent_name
         if (present(conductor_in_parent)) res%conductor_in_parent = conductor_in_parent
         if (present(transfer_impedance)) res%transfer_impedance = transfer_impedance
-        if (present(isPassthrough)) res%isPassthrough = isPassthrough
 
     end function
 
     function mtlInhomogeneous(lpul, cpul, rpul, gpul, &
                             step_size, name, &
                             dt, parent_name, conductor_in_parent, &
-                            transfer_impedance, &
-
-                            ! external_field_segments, &
-                            isPassthrough) result(res)
+                            transfer_impedance) result(res)
         type(mtl_t) :: res
         real, intent(in), dimension(:,:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -206,8 +196,6 @@ contains
         character(len=*), intent(in), optional :: parent_name
         integer, intent(in), optional :: conductor_in_parent
         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
-        ! type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
-        logical, optional :: isPassthrough
 
         res%name = name
         res%step_size = step_size
@@ -241,7 +229,6 @@ contains
         if (present(conductor_in_parent)) res%conductor_in_parent = conductor_in_parent
         if (present(transfer_impedance))  res%transfer_impedance = transfer_impedance
         ! if (present(external_field_segments)) res%external_field_segments = external_field_segments
-        if (present(isPassthrough)) res%isPassthrough = isPassthrough
 
     end function
 

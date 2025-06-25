@@ -244,34 +244,46 @@ contains
 
         select type (cable)
         type is (shielded_multiwire_t)
-!         if (associated(cable%parent_cable)) then 
-!             parent_name = cable%parent_cable%name
-!             conductor_in_parent = cable%conductor_in_parent
-!         end if  
-!         res = mtlHomogeneous(lpul = cable%inductance_per_meter, &
-!                              cpul = cable%capacitance_per_meter, &
-!                              rpul = cable%resistance_per_meter, &
-!                              gpul = cable%conductance_per_meter, &
-!                              step_size = cable%step_size, &
-!                              name = cable%name, &
-!                              dt = dt, &
-!                              parent_name = parent_name, &
-!                              conductor_in_parent = conductor_in_parent, & 
-!                              transfer_impedance = cable%transfer_impedance, &
-!                              external_field_segments = cable%external_field_segments, &
-!                              isPassthrough = cable%isPassthrough &
-! #ifdef CompileWithMPI
-!                              ,layer_indices = layer_indices, & 
-!                              bundle_in_layer = bundle_in_layer, &
-!                              alloc_z = alloc_z &
-! #endif
-!                             )
-        ! if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
-        ! if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
-
+            if (associated(cable%parent_cable)) then 
+                parent_name = cable%parent_cable%name
+                conductor_in_parent = cable%conductor_in_parent
+            end if  
+            res = mtlHomogeneous(lpul = cable%inductance_per_meter, &
+                                cpul = cable%capacitance_per_meter, &
+                                rpul = cable%resistance_per_meter, &
+                                gpul = cable%conductance_per_meter, &
+                                step_size = cable%step_size, &
+                                name = cable%name, &
+                                dt = dt, &
+                                parent_name = parent_name, &
+                                conductor_in_parent = conductor_in_parent, & 
+                                transfer_impedance = cable%transfer_impedance &
+#ifdef CompileWithMPI
+                                ,layer_indices = layer_indices, & 
+                                bundle_in_layer = bundle_in_layer, &
+                                alloc_z = alloc_z &
+#endif
+                                )
+                                
         type is (unshielded_multiwire_t)
-
+            res = mtlHomogeneous(lpul = cable%cell_inductance_per_meter, &
+                                cpul = cable%cell_capacitance_per_meter, &
+                                rpul = cable%resistance_per_meter, &
+                                gpul = cable%conductance_per_meter, &
+                                step_size = cable%step_size, &
+                                name = cable%name, &
+                                dt = dt &
+#ifdef CompileWithMPI
+                                ,layer_indices = layer_indices, & 
+                                bundle_in_layer = bundle_in_layer, &
+                                alloc_z = alloc_z &
+#endif
+                                )
+                                
+                            
         end select
+        if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
+        if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
 
         
     contains

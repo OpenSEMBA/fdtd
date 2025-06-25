@@ -3375,6 +3375,19 @@ contains
             allocate(res%multipolar_expansion(1))         
             res%multipolar_expansion(1) = readMultipolarExpansion(multipolarExpansionPtr)
          end if
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
+            res%resistance_per_meter = &
+               vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
+         else
+            res%resistance_per_meter = null_matrix
+         end if
+
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)) then
+            res%conductance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
+         else
+            res%conductance_per_meter = null_matrix
+         end if
+
       end subroutine
 
       function readMultipolarExpansion(multipolarExpansionPtr) result (res)

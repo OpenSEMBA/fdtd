@@ -187,7 +187,8 @@ module mtln_types_mod
    type, extends(cable_t), public :: unshielded_multiwire_t 
       real, allocatable, dimension(:,:) :: cell_inductance_per_meter
       real, allocatable, dimension(:,:) :: cell_capacitance_per_meter
-   
+      real, allocatable, dimension(:,:) :: resistance_per_meter
+      real, allocatable, dimension(:,:) :: conductance_per_meter
       type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
    end type
 
