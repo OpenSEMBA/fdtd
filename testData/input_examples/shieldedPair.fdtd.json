@@ -20,7 +20,7 @@
 	"materials": [
 		{
 			"name": "InnerCoaxial",
-			"id": 1,
+			"id": 2,
 			"type": "shieldedMultiwire",
 			"inductancePerMeter": [
 				[3.13182309e-07, 7.45674981e-08],
@@ -38,11 +38,11 @@
 		},
 		{
 			"name": "Shield",
-			"id": 2,
-			"type": "wire",
-			"radius": 6.538e-3,
-            "inductancePerMeter": 0.0,
-			"resistancePerMeter": 22.9e-3
+			"id": 1,
+			"type": "unshieldedMultiwire",
+            "inductancePerMeter": [[0.0]],
+            "capacitancePerMeter": [[0.0]],
+			"resistancePerMeter": [22.9e-3]
 		},
 		{
 			"name": "leftTerminal",
@@ -168,14 +168,14 @@
 		{
 			"name": "line_0",
 			"elementIds": [ 1 ],
-			"materialId": 2,
+			"materialId": 1,
 			"initialTerminalId": 6,
 			"endTerminalId": 6
 		},
 		{
 			"name": "line_1",
 			"elementIds": [ 6,7 ],
-			"materialId": 1,
+			"materialId": 2,
 			"initialTerminalId": 3,
 			"endTerminalId": 3,
 			"containedWithinElementId": 1
