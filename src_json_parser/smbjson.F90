@@ -2322,8 +2322,15 @@ contains
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
 
-      if (size(cables) /= 0) mtln_res%has_multiwires = .true.
+      if (size(cables) == 0) then 
+         mtln_res%has_multiwires = .false.
+         allocate(mtln_res%cables(0))
+         allocate(mtln_res%probes(0))
+         allocate(mtln_res%networks(0))
+         return
+      end if
 
+      mtln_res%has_multiwires = .true.
       allocate (mtln_res%cables(size(cables)))
       do i = 1, size(cables)
          read_cable => readMTLNCable(cables(i), this%readGrid())
@@ -2917,7 +2924,9 @@ contains
                   res(n)%probe_type = readProbeType(wire_probes(i)%p)
                   block
                      integer :: index, id
-                     res(n)%probe_position = getProbeNodeCoordinate(wire_probes(i)%p)
+                     type (coordinate_t) :: probe_node_coord
+                     probe_node_coord = getProbeNodeCoordinate(wire_probes(i)%p)
+                     res(n)%probe_position = probe_node_coord%position
 
                      id = getPolylineElemIdOfMultiwireProbe(wire_probes(i)%p)
                      call elemIdToCable%get(key(id), value=index)
@@ -2953,16 +2962,14 @@ contains
 
       function getProbeNodeCoordinate(probe) result (res)
          type(json_value), pointer, intent(in) :: probe
-         real, dimension(3) :: res
+         type(coordinate_t) :: res
 
          integer, dimension(:), allocatable :: elemIds
          type(node_t) :: node
-         type(coordinate_t) :: probe_node_coord
          
          elemIds = this%getIntsAt(probe, J_ELEMENTIDS)
          node = this%mesh%getNode(elemIds(1))
-         probe_node_coord = this%mesh%getCoordinate(node%coordIds(1))
-         res = probe_node_coord%position
+         res = this%mesh%getCoordinate(node%coordIds(1))
       end function
 
       function findProbeIndexInLinels(probe_coord, linels) result(res)

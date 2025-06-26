@@ -239,6 +239,19 @@ contains
       class(mtln_t), intent(in) :: a,b
       integer :: i
 
+      if (a%has_multiwires .neqv. b%has_multiwires) then 
+         mtln_eq = .false.
+         return
+      end if
+      if (a%time_step /= b%time_step) then 
+         mtln_eq = .false.
+         return
+      end if
+      if (a%number_of_steps /= b%number_of_steps) then 
+         mtln_eq = .false.
+         return
+      end if
+
       if (size(a%cables) /= size(b%cables)) then
          mtln_eq = .false.
          return
