@@ -1,10 +1,10 @@
-integer function test_read_holland1981_mtl() bind (C) result(err)
+integer function test_read_holland1981_unshielded() bind (C) result(err)
    use smbjson
    use smbjson_testingTools
 
    implicit none
 
-   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981_mtl.fdtd.json'
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981_unshielded.fdtd.json'
    type(Parseador) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
