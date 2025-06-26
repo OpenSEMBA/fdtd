@@ -4200,8 +4200,9 @@ contains
    end subroutine FlushObservationFiles
 
 #ifdef CompileWithMTLN
-   subroutine FlushMTLNObservationFiles(nEntradaRoot)
+   subroutine FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem)
       character (len=*), intent(in)  ::  nEntradaRoot
+      logical, intent(in) :: mtlnProblem
       type(mtln_solver_t), pointer :: mtln_solver
       integer :: i,j,k,n
       integer :: unit 

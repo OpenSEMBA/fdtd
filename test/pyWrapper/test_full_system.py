@@ -136,7 +136,7 @@ def test_holland(tmp_path):
 @no_mtln_skip
 @pytest.mark.mtln
 def test_holland_mtln(tmp_path):
-    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   flags=['-mtlnwires'], run_in_folder=tmp_path)
 
@@ -146,7 +146,7 @@ def test_holland_mtln(tmp_path):
     probe_files = [probe_current]
 
     p_expected = Probe(
-        OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+        OUTPUTS_FOLDER+'holland1981_unshielded.fdtd_mid_point_Wz_11_11_12_s2.dat')
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(

@@ -124,6 +124,7 @@ contains
       ! ex%tWires%n_tw_max = 1
   
 
+      ex%mtln%has_multiwires = .true.
       ex%mtln%time_step = 30e-12
       ex%mtln%number_of_steps = 1000
 

@@ -2310,8 +2310,6 @@ contains
       class(cable_t), pointer :: ptr, read_cable
       integer :: i
 
-      mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
-      mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
       cables = this%getMaterialAssociations([ &
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
@@ -2324,6 +2322,8 @@ contains
 
       if (size(cables) == 0) then 
          mtln_res%has_multiwires = .false.
+         mtln_res%time_step = 0
+         mtln_res%number_of_steps = 0
          allocate(mtln_res%cables(0))
          allocate(mtln_res%probes(0))
          allocate(mtln_res%networks(0))
@@ -2331,6 +2331,9 @@ contains
       end if
 
       mtln_res%has_multiwires = .true.
+      mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
+      mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
+
       allocate (mtln_res%cables(size(cables)))
       do i = 1, size(cables)
          read_cable => readMTLNCable(cables(i), this%readGrid())
@@ -2913,13 +2916,13 @@ contains
          wire_probes = [this%jsonValueFilterByKeyValue(probes, J_TYPE, J_PR_TYPE_WIRE)]
          n = 0
          do i = 1, size(wire_probes)
-            if (isCurrentProbeDefinedOnMultiwire(wire_probes(i)%p)) n = n + 1
+            if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) n = n + 1
          end do
          allocate(res(n))
          if (n /= 0) then
             n = 1
             do i = 1, size(wire_probes)
-               if (isCurrentProbeDefinedOnMultiwire(wire_probes(i)%p)) then 
+               if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) then 
                   res(n)%probe_name = readProbeName(wire_probes(i)%p)
                   res(n)%probe_type = readProbeType(wire_probes(i)%p)
                   block
@@ -2975,17 +2978,34 @@ contains
       function findProbeIndexInLinels(probe_coord, linels) result(res)
          type(coordinate_t) :: probe_coord
          type(linel_t), dimension(:), allocatable :: linels
-         integer :: i, m(1), res
+         type(coordinate_t), dimension(:), allocatable :: linelCoords
+
+         integer :: i, m(1), res, or
          real, dimension(:), allocatable :: distance_to_linel_cell
-         allocate(distance_to_linel_cell(size(linels)))
+
+         allocate(linelCoords(size(linels)+1))
          do i = 1, size(linels)
-            distance_to_linel_cell(i) = norm2(linels(i)%cell-probe_coord%position)
+            linelCoords(i)%position(1) = linels(i)%cell(1)
+            linelCoords(i)%position(2) = linels(i)%cell(2)
+            linelCoords(i)%position(3) = linels(i)%cell(3)
+            if (linels(i)%orientation < 0) then
+               or = abs(linels(i)%orientation) 
+               linelCoords(i)%position(or) = linelCoords(i)%position(or) + 1
+            end if
+         end do
+         or = linels(size(linels))%orientation
+         linelCoords(size(linels)+1)%position = linelCoords(size(linels))%position
+         linelCoords(size(linels)+1)%position(abs(or)) = linelCoords(i)%position(abs(or)) + merge(1,-1,or>0)
+         
+         allocate(distance_to_linel_cell(size(linelCoords)))
+         do i = 1, size(linelCoords)
+            distance_to_linel_cell(i) = norm2(linelCoords(i)%position-probe_coord%position)
          end do
          m = minloc(distance_to_linel_cell)
          res = m(1)
       end function
 
-      logical function isCurrentProbeDefinedOnMultiwire(p)
+      logical function isProbeDefinedOnMultiwire(p)
          type(json_value), pointer :: p
          character (len=:), allocatable :: fieldLabel
          logical :: found
@@ -2995,8 +3015,8 @@ contains
          type(polyline_t) :: polyline
          
          fieldLabel = this%getStrAt(p, J_FIELD, found=found)
-         if (.not. found .or. fieldLabel /= J_FIELD_CURRENT) then
-            isCurrentProbeDefinedOnMultiwire = .false.
+         if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
+            isProbeDefinedOnMultiwire = .false.
             return
          end if
          
@@ -3016,13 +3036,13 @@ contains
             polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
             do j = 1, size(polyline%coordIds)
                if (polyline%coordIds(j) == cId) then
-                  isCurrentProbeDefinedOnMultiwire = .true.
+                  isProbeDefinedOnMultiwire = .true.
                   return
                end if
             end do
          end do
 
-         isCurrentProbeDefinedOnMultiwire = .false.
+         isProbeDefinedOnMultiwire = .false.
       end function
 
       function getPolylineElemIdOfMultiwireProbe(p) result(res)
@@ -3528,9 +3548,9 @@ contains
             case(DIR_X)
                res(i) = despl%desX(segments(i)%x)
             case(DIR_Y)
-               res(i) = despl%desX(segments(i)%y)
+               res(i) = despl%desY(segments(i)%y)
             case(DIR_Z)
-               res(i) = despl%desX(segments(i)%z)
+               res(i) = despl%desZ(segments(i)%z)
             end select
          end do
       end function

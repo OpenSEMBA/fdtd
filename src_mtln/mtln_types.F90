@@ -223,9 +223,9 @@ module mtln_types_mod
       type(terminal_network_t), dimension(:), allocatable :: networks
       type(probe_t), dimension(:), allocatable :: probes
       type(connector_t), dimension(:), pointer :: connectors
-      real :: time_step
-      integer :: number_of_steps
-      logical :: has_multiwires
+      real :: time_step = 0.0
+      integer :: number_of_steps = 0
+      logical :: has_multiwires = .false.
    contains
       private
       procedure :: mtln_eq
@@ -438,9 +438,6 @@ contains
          probe_eq = probe_eq .and. .false.
       else
          probe_eq = probe_eq .and. (a%attached_to_cable == b%attached_to_cable)
-      end if
-      if (probe_eq .eqv. .false.) then
-         probe_eq = .false.
       end if
    end function
 

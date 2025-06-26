@@ -201,7 +201,7 @@ module Solver_mod
 
       call solveMTLNProblem(mtln_parsed)
       call reportSimulationEnd(layoutnumber)
-      call FlushMTLNObservationFiles(nEntradaRoot)
+      call FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem = .true.)
    end subroutine
 #endif
 
@@ -1871,7 +1871,7 @@ module Solver_mod
 #ifdef CompileWithMTLN      
          if (this%control%use_mtln_wires) then
             ! call GatherMPI_MTL()
-            call FlushMTLNObservationFiles(this%control%nentradaroot)
+            call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
          end if
 #endif
       endif

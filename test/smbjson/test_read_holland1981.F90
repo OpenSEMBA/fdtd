@@ -123,16 +123,6 @@ contains
       ex%tWires%n_tw = 1
       ex%tWires%n_tw_max = 1
   
-      ex%mtln%has_multiwires = .false.
-      ex%mtln%time_step = 30e-12
-      ex%mtln%number_of_steps = 1000
-      deallocate(ex%mtln%cables)
-      deallocate(ex%mtln%probes)
-      deallocate(ex%mtln%networks)
-      allocate(ex%mtln%cables(0))
-      allocate(ex%mtln%probes(0))
-      allocate(ex%mtln%networks(0))
-
 
    end function
 end function
