@@ -56,7 +56,6 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 	if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
 		message(STATUS "Using GNU flags")
 
-		add_definitions(-DCompileWithIncludeMpifh)
 		set(CMAKE_CXX_FLAGS "-fopenmp")
 		set(CMAKE_Fortran_FLAGS "-fopenmp -ffree-form -ffree-line-length-none -fdec -fallow-argument-mismatch")
 		
@@ -173,6 +172,13 @@ add_library(semba-types
 	"src_wires_pub/wires_types.F90"
 	"src_main_pub/lumped_types.F90"
 )
+target_link_libraries(semba-types ${MPI_Fortran_LIBRARIES})
+
+add_library(semba-reports
+	"src_main_pub/errorreport.F90"
+	"src_main_pub/snapxdmf.F90"
+)
+target_link_libraries(semba-reports semba-types ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
 
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_subdirectory(src_json_parser)
@@ -200,7 +206,6 @@ endif()
 
 if(SEMBA_FDTD_COMPONENTS_LIB)
 	add_library(semba-components
-		"src_main_pub/errorreport.F90"
 		"src_main_pub/anisotropic.F90"
 		"src_main_pub/borderscpml.F90"
 		"src_main_pub/bordersmur.F90"
@@ -217,7 +222,7 @@ if(SEMBA_FDTD_COMPONENTS_LIB)
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
 	)
-	target_link_libraries(semba-components semba-types ${MTLN_LIBRARIES})
+	target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
 endif()
 
 if(SEMBA_FDTD_OUTPUTS_LIB)
@@ -225,11 +230,13 @@ if(SEMBA_FDTD_OUTPUTS_LIB)
 		"src_main_pub/mpicomm.F90"
 		"src_main_pub/observation.F90"
 		"src_main_pub/vtk.F90"
-		"src_main_pub/snapxdmf.F90"
 		"src_main_pub/xdmf.F90"
 		"src_main_pub/xdmf_h5.F90"
 	)
-	target_link_libraries(semba-outputs semba-components ${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES})
+	target_link_libraries(semba-outputs 
+		semba-components 
+		${HDF5_LIBRARIES} ${HDF5_HL_LIBRARIES} 
+		${MPI_Fortran_LIBRARIES})
 endif()
 
 if(SEMBA_FDTD_MAIN_LIB)
@@ -247,14 +254,17 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/resuming.F90"	
 		"src_main_pub/timestepping.F90"
 	)
-	target_link_libraries(semba-main semba-outputs ${SMBJSON_LIBRARIES} ${MTLN_LIBRARIES})
+	target_link_libraries(semba-main
+		semba-outputs 
+		${SMBJSON_LIBRARIES} 
+		${MTLN_LIBRARIES})
 endif()
 
 if (SEMBA_FDTD_EXECUTABLE)
 	add_executable(semba-fdtd 
 		"src_main_pub/semba_fdtd.F90"
 	)
-	target_link_libraries(semba-fdtd semba-main)
+	target_link_libraries(semba-fdtd semba-main semba-reports)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
 endif()
 

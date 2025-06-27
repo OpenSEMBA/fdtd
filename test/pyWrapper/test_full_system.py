@@ -4,6 +4,17 @@ import os
 from sys import platform
 from scipy import signal
 
+def test_lineIntegralProbe(tmp_path):
+    fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+    
+    pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
+    li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
+    expected  = Probe(OUTPUTS_FOLDER+pf)
+    np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
+
+
 @no_mtln_skip
 @pytest.mark.mtln
 def test_shieldedPair(tmp_path):

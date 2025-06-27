@@ -453,7 +453,17 @@ Each entry in `terminations` is specified by a `type`
 
 + `short` if the wire is short-circuited with another wire or with any surface which might be present.
 + `open` if the wire does not end in an ohmic contact with any other structure.
-+ Different configurations of passive circuit elements R, L, and C can be defined with `series` (for RLC series circuits), `LCpRs` (LC parallel in series with a resistance) and `RLsCp` (for series RL in parallel with C). The are defined as follows:
++ Different configurations of passive circuit elements R, L, and C can be defined:
+  + `series` (for RLC series circuits), 
+  + `parallel` (for RLC parallel circuits), 
+  + `RsLCp` (LC parallel in series with R), 
+  + `RLsCp` (RL series in parallel with C), 
+  + `LsRCp` (RC parallel in series with L), 
+  + `CsLRp` (LR parallel in parallel with C),
+  + `RCsLp` (RC series in parallel with L), and 
+  + `LCsRp` (LC series in parallel with R). 
+
+The values are defined defined as follows:
   + `[resistance]` which defaults to `0.0`,
   + `[inductance]` which defaults to `0.0`,
   + `[capacitance]` which defaults to `1e22`.
@@ -597,7 +607,9 @@ Records a vector field a single position referenced by `elementIds` which must c
 
 Records a scalar field at a single position referenced by `elementIds`. `elementIds` must contain a single `id` referencing an element of type `node`. Additionally, this `node` must point to a `coordinateId` belonging to at least one `polyline`. 
 If the node's `coordinateId` is shared by more than one `polyline` a probe will be defined for each one of them
-The `[field]` can be `voltage` or `current`. Defaults to `current`. When `current` is selected, the orientation of the `polyline` on which the probe is located indicates the direction of the current. Voltages are well defined at polyline points. However, currents are defined over segments so:
+The `[field]` can be `voltage`, `current` or `charge`  (defaults to `current`). Voltage probes are properly defined only when used placed on `shieldedMultiwires`. The voltage on a conductor will be referred to the shield surrounding that conductor. In an unshielded wire, there is not a well defined reference, and thus the probe is not reliable. Charge probes are implemented only for wires not treated with the MTL module.
+
+When `current` is selected, the orientation of the `polyline` on which the probe is located indicates the direction of the current. Voltages are well defined at polyline points. However, currents are defined over segments so:
 
 - If the point is in the interior of the wire, the output will be an average on the currents of the segments which are contiguous to it.
 - If the point is at one wire end, the current will be the output of the last segment.
@@ -656,6 +668,19 @@ On the other hand, the coordinate **parallel** to the current also experiences a
 ![Positive offset](fig/grid-positiveOffSet.svg)
 
 Again, with the current flowing in the direction of the red line, the blue line represents a cross-sectional view of the plane where the `bulkCurrent` is defined, while the green line shows the actual location used for current evaluation by the method.
+
+#### `line`
+
+A `line` probe computes the electric field line integral along a given `polyline`. At low frequencies, this quantity can be equivalent to a DC voltage difference between the extremes of the line. At higher frequencies, "voltage" is no longer a proper name. The integral is performed along a geometric line, hence the `polyline` does not have to be associated with any material. `[field]` defaults to `electric`, the only field supported at this point. The probe is only valid in the time domain.
+
+```json
+    {
+        "name" : "vprobe",
+        "type" : "line",
+        "elementIds" : [4],
+        "field" : "electric"
+    }
+```
 
 #### `farField`
 
@@ -771,8 +796,7 @@ This object represents a time-varying vector field applied along an oriented lin
     "type": "nodalSource", 
     "magnitudeFile": "gauss.exc", 
     "elementIds": [1],
-    "hardness": "soft",
-    "field": "electric"
+    "hardness": "soft"
 }
 ```
 

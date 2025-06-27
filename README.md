@@ -39,6 +39,8 @@ In a nutshell, semba-fdtd capabilities are
 
 Compilation and debugging instructions can be found [here](doc/development.md).
 
+A short tutorial on usage can be found [here](doc/tutorials/veritasium/veritasium.md).
+
 The main binary is `semba-fdtd` which uses [the SMBJSON format](doc/smbjson.md) as input files.
 It can be run with
 
@@ -47,6 +49,7 @@ It can be run with
 ```
 
 Tests must be run from the root folder. `python` wrapper test assumes that `semba-fdtd` has been compiled successfully and is located in folder `build/bin/`. For intel compilation it also assumes that the intel runtime libraries are accessible.
+
 
 # License
 

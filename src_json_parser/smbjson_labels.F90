@@ -19,6 +19,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_FIELD_VOLTAGE = "voltage"
    character (len=*), parameter :: J_FIELD_CURRENT = "current"
    character (len=*), parameter :: J_FIELD_CURRENT_DENSITY = "currentDensity"
+   character (len=*), parameter :: J_FIELD_CHARGE = "charge"
 
    ! -- materials
    character (len=*), parameter :: J_MATERIALS = "materials"
@@ -62,7 +63,13 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TERM_TYPE_OPEN = "open"
    character (len=*), parameter :: J_MAT_TERM_TYPE_SHORT = "short"
    character (len=*), parameter :: J_MAT_TERM_TYPE_SERIES = "series"
-   character (len=*), parameter :: J_MAT_TERM_TYPE_LCpRs = "LCpRs"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_PARALLEL = "parallel"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_LsRCp = "LsRCp"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_CsLRp = "CsLRp"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_RCsLp = "RCsLp"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_LCsRp = "LCsRp"
+
+   character (len=*), parameter :: J_MAT_TERM_TYPE_RsLCp = "RsLCp"
    character (len=*), parameter :: J_MAT_TERM_TYPE_RLsCp = "RLsCp"
    character (len=*), parameter :: J_MAT_TERM_TYPE_CIRCUIT = "circuit"
 
@@ -188,6 +195,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_PR_TYPE_BULK_CURRENT = "bulkCurrent"
    character (len=*), parameter :: J_PR_TYPE_FARFIELD = "farField"
    character (len=*), parameter :: J_PR_TYPE_MOVIE = "movie"
+   character (len=*), parameter :: J_PR_TYPE_LINE = "line"
    
    character (len=*), parameter :: J_PR_POINT_DIRECTIONS = "directions"
 
