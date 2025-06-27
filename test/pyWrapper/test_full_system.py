@@ -136,7 +136,7 @@ def test_holland(tmp_path):
 @no_mtln_skip
 @pytest.mark.mtln
 def test_holland_mtln(tmp_path):
-    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   flags=['-mtlnwires'], run_in_folder=tmp_path)
 
@@ -146,7 +146,7 @@ def test_holland_mtln(tmp_path):
     probe_files = [probe_current]
 
     p_expected = Probe(
-        OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
+        OUTPUTS_FOLDER+'holland1981_unshielded.fdtd_mid_point_Wz_11_11_12_s2.dat')
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
@@ -185,6 +185,26 @@ def test_holland_mtln_mpi(tmp_path):
         p_expected.data.to_numpy()[:, 0:3], 
         probe_mid_mpi_2.data.to_numpy()[:, 0:3], 
         rtol=1e-5, atol=1e-6)
+
+@no_mtln_skip
+@pytest.mark.mtln
+def test_unshielded_multiwires(tmp_path):
+    fn = CASES_FOLDER + 'unshielded_multiwires/unshielded_multiwires.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  flags=['-mtlnwires'], run_in_folder=tmp_path)
+
+    solver.run()
+
+    probe_names = solver.getSolvedProbeFilenames("mid_point")
+    p_solved = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+
+    p_expected = Probe(
+        OUTPUTS_FOLDER+'unshielded_multiwires.fdtd_mid_point_bundle_single_inner_wire_passthrough_I_2_11_14.dat')
+
+    assert np.allclose(
+        p_expected.data.to_numpy()[:, 2:4], 
+        p_solved.data.to_numpy()[:, 2:4], 
+        rtol=1e-3, atol=0.01)
 
 
 def test_towelHanger(tmp_path):

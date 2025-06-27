@@ -14,17 +14,19 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
 
     integer :: i
     real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
-    type(external_field_segment_t), dimension(5) :: external_field_segments
+    type(direction_t), allocatable, dimension(:) :: segments
 
     error_cnt = 0
+    allocate(segments(5))
     do i = 1, 5
-        external_field_segments(i)%position = (/i, 1, 1/)
-        external_field_segments(i)%direction = 1
-        external_field_segments(i)%field => null()
+        segments(i)%x = i
+        segments(i)%y = 1 
+        segments(i)%z = 1
+        segments(i)%orientation = 1
     end do
 
-    mtl_in   =  mtl_t(l1, c1, r1, g1, step_size, "line_in", conductor_in_parent = 1, external_field_segments = external_field_segments)
-    mtl_out   = mtl_t(l1, c1, r1, g1, step_size, "line_out", external_field_segments = external_field_segments)
+    mtl_in   =  mtl_t(l1, c1, r1, g1, step_size, "line_in", conductor_in_parent = 1, segments = segments)
+    mtl_out   = mtl_t(l1, c1, r1, g1, step_size, "line_out", segments = segments)
 
     allocate(levels(1)%lines(1))
     allocate(levels(2)%lines(1))

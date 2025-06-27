@@ -46197,7 +46197,7 @@
         {
             "name": "InnerMaterial_Cable000",
             "id": 4,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46256,7 +46256,7 @@
         {
             "name": "InnerMaterial_Cable001",
             "id": 7,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46315,7 +46315,7 @@
         {
             "name": "InnerMaterial_Cable002",
             "id": 10,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46374,7 +46374,7 @@
         {
             "name": "InnerMaterial_Cable003",
             "id": 13,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46433,7 +46433,7 @@
         {
             "name": "InnerMaterial_Cable004",
             "id": 16,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46492,7 +46492,7 @@
         {
             "name": "InnerMaterial_Cable005",
             "id": 19,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46551,7 +46551,7 @@
         {
             "name": "InnerMaterial_Cable006",
             "id": 22,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46610,7 +46610,7 @@
         {
             "name": "InnerMaterial_Cable007",
             "id": 25,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46669,7 +46669,7 @@
         {
             "name": "InnerMaterial_Cable008",
             "id": 28,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46728,7 +46728,7 @@
         {
             "name": "InnerMaterial_Cable009",
             "id": 31,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0
@@ -46787,7 +46787,7 @@
         {
             "name": "InnerMaterial_Cable010",
             "id": 34,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "resistancePerMeter": [
                 0.0,
                 0.0

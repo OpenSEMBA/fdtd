@@ -35,7 +35,8 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TYPE_MULTILAYERED_SURFACE = "multilayeredSurface"
    character (len=*), parameter :: J_MAT_TYPE_SLOT = "thinSlot"
    character (len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
-   character (len=*), parameter :: J_MAT_TYPE_MULTIWIRE = "multiwire"
+   character (len=*), parameter :: J_MAT_TYPE_SHIELDED_MULTIWIRE = "shieldedMultiwire"
+   character (len=*), parameter :: J_MAT_TYPE_UNSHIELDED_MULTIWIRE = "unshieldedMultiwire"
    character (len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"
    character (len=*), parameter :: J_MAT_TYPE_CONNECTOR = "connector"
    
@@ -47,7 +48,6 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC = "dielectric"
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_RADIUS = "radius"
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_PERMITTIVITY = "relativePermittivity"
-   character (len=*), parameter :: J_MAT_WIRE_PASS = "isPassthrough"
 
    character (len=*), parameter :: J_MAT_LUMPED_MODEL = "model"
    character (len=*), parameter :: J_MAT_LUMPED_MODEL_RESISTOR = "resistor"
@@ -86,6 +86,20 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_MULTIWIRE_INDUCTANCE = "inductancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_RESISTANCE = "resistancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_CONDUCTANCE = "conductancePerMeter"
+   
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION = "multipolarExpansion"
+   ! ME = Multipolar Expansion
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX = "innerRegionBox"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX = "max"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN = "min"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_ELECTRIC = "electric"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_MAGNETIC = "magnetic"
+   ! MEFR = Multipolar Expansion Field Reconstruction
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_AB = "ab"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS = "conductorPotentials"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER = "expansionCenter"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL = "innerRegionAveragePotential"
+
 
    character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_LAYERS = "layers"
    character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_THICKNESS = "thickness"

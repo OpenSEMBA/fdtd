@@ -68,4 +68,32 @@ contains
       err = err + 1
       if (present(msg)) write(*, *)  "FAIL: "// msg
    end subroutine
+
+   logical function expect_near(a, b, tol)
+      real, intent(in) :: a, b, tol
+
+      expect_near = abs(a - b) < tol
+   end function
+
+#ifdef CompileWithMTLN
+   subroutine initializeCablePULParameters(cable, n)
+      class(cable_t), pointer, intent(inout) :: cable
+      integer :: dim = 1
+      integer, optional, intent(in) :: n
+      if (present(n)) dim = n
+      select type(cable)
+      type is(shielded_multiwire_t)
+         allocate(cable%inductance_per_meter(dim,dim), source = 0.0)
+         allocate(cable%capacitance_per_meter(dim,dim), source = 0.0)
+         allocate(cable%resistance_per_meter(dim,dim), source = 0.0)
+         allocate(cable%conductance_per_meter(dim,dim), source = 0.0)
+      type is (unshielded_multiwire_t)
+         allocate(cable%cell_inductance_per_meter(dim,dim), source = 0.0)
+         allocate(cable%cell_capacitance_per_meter(dim,dim), source = 0.0)
+         allocate(cable%resistance_per_meter(dim,dim), source = 0.0)
+         allocate(cable%conductance_per_meter(dim,dim), source = 0.0)
+         allocate(cable%multipolar_expansion(0))
+      end select
+      end subroutine
+#endif
 end module

@@ -25,6 +25,7 @@ if(SEMBA_FDTD_ENABLE_MTLN)
         "test_read_shieldedPair.F90"
         "test_read_mtln.F90"
         "test_read_large_airplane_mtln.F90"
+        "test_read_unshielded_multiwires_multipolar_expansion.F90"
     )
 endif()
 

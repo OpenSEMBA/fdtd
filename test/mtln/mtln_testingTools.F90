@@ -10,47 +10,6 @@ module mtln_testingTools_mod
 contains
     
     
-
-    type(network_t) function buildNetwork(name, r1, c1, r2, c2, target_v_nodes, target_i_nodes) result(res)
-        character(len=*), intent(in) :: name, r1, c1, r2, c2
-        character(100), dimension(:), allocatable :: description
-        type(nw_node_t), dimension(3) :: nodes
-        type(nw_node_t) :: node_int, node_out, node_in
-        real, dimension(:),intent(in), target :: target_v_nodes, target_i_nodes
-
-        ! node_int%values%v => target_v_nodes(1)
-        ! node_int%values%i => target_i_nodes(1)
-        ! node_in%values%v  => target_v_nodes(2)
-        ! node_in%values%i  => target_i_nodes(2)
-        ! node_out%values%v => target_v_nodes(3)
-        ! node_out%values%i => target_i_nodes(3)
-
-        ! node_int%name = name//"_int"
-        ! node_int%values%v = 0.0
-        ! node_int%values%i = 0.0
-        ! node_int%line_c_per_meter = 0.0
-    
-        ! node_in%name = name//"_in"
-        ! node_in%values%v = 0.0
-        ! node_in%values%i = 0.0
-        ! node_in%line_c_per_meter = 0.0
-    
-        ! node_out%name = name//"_out"
-        ! node_out%values%v = 0.0
-        ! node_out%values%i = 0.0
-        ! node_out%line_c_per_meter = 0.0
-
-        ! nodes = [node_in, node_int, node_out]
-        ! allocate(description(0))
-        ! description = [description, trim("R_"//name//"_1 "//name//"_int "//name//"_in "//r1)]
-        ! description = [description, trim("V_"//name//"_1 "//name//"_in 0 dc 0 PULSE (0 5 1u 1u 1u 1 1)")]
-        ! description = [description, trim("R_"//name//"_2 "//name//"_out "//name//"_int "//r2)]
-        ! description = [description, trim("C_"//name//"_1 "//name//"_int 0 "//c1)]
-        ! description = [description, trim("C_"//name//"_2 "//name//"_out 0 "//c2)]
-        ! res = networkCtor(nodes, description)
-    
-    end function    
-
     type(mtl_t) function buildLineWithNConductors(n,name, parent_name, conductor_in_parent, dt) result(res)
     
         integer, intent(in) :: n
@@ -60,18 +19,19 @@ contains
         integer, intent(in), optional :: conductor_in_parent
         real, allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
         real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
-        type(external_field_segment_t), dimension(5) :: external_field_segments
+        type(direction_t), allocatable, dimension(:) :: segments
         integer :: i,j
 
         allocate(lpul(n,n), source = 0.0)
         allocate(cpul(n,n), source = 0.0)
         allocate(gpul(n,n), source = 0.0)
         allocate(rpul(n,n), source = 0.0)
-
+        allocate(segments(5))
         do i = 1, 5
-            external_field_segments(i)%position =(/i,1,1/)            
-            external_field_segments(i)%direction = DIRECTION_X_POS  
-            external_field_segments(i)%field => null()
+            segments(i)%x = 1
+            segments(i)%y = i
+            segments(i)%z = i
+            segments(i)%orientation = DIRECTION_X_POS  
         end do
 
         do i = 1, n
@@ -88,21 +48,18 @@ contains
             end do
         end do
         if (present(dt) .and. .not.present(parent_name)) then
-            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, dt = dt, &
-                        external_field_segments = external_field_segments)
+            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, segments = segments, dt = dt)
         else if (.not.present(dt) .and. present(parent_name) ) then
-            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, & 
+            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, segments = segments, & 
                         parent_name= parent_name, &
-                        conductor_in_parent=conductor_in_parent, &
-                        external_field_segments = external_field_segments)
+                        conductor_in_parent=conductor_in_parent)
         else if (present(dt) .and. present(parent_name) ) then
-            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, & 
+            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, segments = segments, & 
                         parent_name= parent_name, &
                         conductor_in_parent=conductor_in_parent, &
-                        dt = dt, external_field_segments = external_field_segments)
+                        dt = dt)
         else 
-            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, &
-                        external_field_segments = external_field_segments)
+            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, segments = segments)
         end if
     end function    
 

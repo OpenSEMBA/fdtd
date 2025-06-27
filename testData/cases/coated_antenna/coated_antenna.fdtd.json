@@ -25,7 +25,7 @@
         },
         {
             "id": 5,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "inductancePerMeter": [[1.4824688299999999e-07]],
             "capacitancePerMeter": [[7.5053859e-11]]
         },

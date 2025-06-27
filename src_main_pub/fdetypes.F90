@@ -483,8 +483,12 @@ module  FDETYPES
    end type
    !
 
-   type :: direction_t
+   type, public :: direction_t
       integer (kind=4) :: x,y,z, orientation
+   contains
+      private
+      procedure :: direction_eq
+      generic, public :: operator(==) => direction_eq
    end type
 
    type  ::  observable_t
@@ -813,7 +817,15 @@ contains
       end select
    end function
 
+   logical function direction_eq(a,b)
+      class(direction_t), intent(in) :: a,b 
+      direction_eq = .true.
+      direction_eq = direction_eq .and. (a%x == b%x)
+      direction_eq = direction_eq .and. (a%y == b%y)
+      direction_eq = direction_eq .and. (a%z == b%z)
+      direction_eq = direction_eq .and. (a%orientation == b%orientation)
 
+   end function
 end module FDETYPES
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

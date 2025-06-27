@@ -21,7 +21,7 @@
 		{
 			"name": "InnerCoaxial",
 			"id": 1,
-			"type": "multiwire",
+			"type": "shieldedMultiwire",
 			"inductancePerMeter": [
 				[3.13182309e-07, 7.45674981e-08],
 				[7.45674981e-08, 3.13182309e-07]
