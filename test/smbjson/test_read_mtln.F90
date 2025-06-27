@@ -17,7 +17,7 @@ integer function test_read_mtln() bind (C) result(err)
 contains
    function expectedProblemDescription() result (expected)
       type(Parseador) :: expected
-
+      class(cable_t), pointer :: ptr
       integer :: i, j
 
       call initializeProblemDescription(expected)
@@ -68,8 +68,8 @@ contains
       allocate(expected%nodSrc%NodalSource(1)%c2P(1))
       expected%nodSrc%NodalSource(1)%c2P(1)%xi = 2
       expected%nodSrc%NodalSource(1)%c2P(1)%xe = 3
-      expected%nodSrc%NodalSource(1)%c2P(1)%yi = 9
-      expected%nodSrc%NodalSource(1)%c2P(1)%ye = 9
+      expected%nodSrc%NodalSource(1)%c2P(1)%yi = 7
+      expected%nodSrc%NodalSource(1)%c2P(1)%ye = 7
       expected%nodSrc%NodalSource(1)%c2P(1)%zi = 1
       expected%nodSrc%NodalSource(1)%c2P(1)%ze = 1
       expected%nodSrc%NodalSource(1)%c2P(1)%xc = 1
@@ -79,98 +79,14 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%tag = "DistributedSource"
       
             
-      ! Expected thin wires
-      allocate(expected%tWires%tw(3))
-      ! wire 1
-      expected%tWires%tw(1)%rad=0.0001
-      expected%tWires%tw(1)%res=22.9e-3
-      expected%tWires%tw(1)%dispfile = trim(adjustl(" "))
-      expected%tWires%tw(1)%dispfile_LeftEnd = trim(adjustl(" "))
-      expected%tWires%tw(1)%dispfile_RightEnd = trim(adjustl(" "))
-      expected%tWires%tw(1)%n_twc=9
-      expected%tWires%tw(1)%n_twc_max=9
-      allocate(expected%tWires%tw(1)%twc(9))
-      expected%tWires%tw(1)%twc(1:9)%srcfile = 'None'
-      expected%tWires%tw(1)%twc(1:9)%srctype = 'None'
-      expected%tWires%tw(1)%twc(1:9)%i = [(i, i=1, 9)]
-      expected%tWires%tw(1)%twc(1:9)%j = 9
-      expected%tWires%tw(1)%twc(1:9)%k = 1
-      expected%tWires%tw(1)%twc(1:9)%d = DIR_X
-      expected%tWires%tw(1)%twc(1)%nd  = 1
-      expected%tWires%tw(1)%twc(2:8)%nd = NO_TAG
-      expected%tWires%tw(1)%twc(9)%nd  = 2
-      
-      expected%tWires%tw(1)%twc(1:9)%tag = trim(adjustl("1"))   ! The polyline id is used as tag.
-      
-      expected%tWires%tw(1)%tl = SERIES_CONS
-      expected%tWires%tw(1)%R_LeftEnd = 0.7e-3
-      expected%tWires%tw(1)%C_LeftEnd = 1e22
-      expected%tWires%tw(1)%tr = SERIES_CONS
-      expected%tWires%tw(1)%R_RightEnd = 1e-6
-      expected%tWires%tw(1)%C_RightEnd = 1e22
-
-      ! wire 2
-      expected%tWires%tw(2)%rad=0.0001
-      expected%tWires%tw(2)%res=11.8e-3
-      expected%tWires%tw(2)%dispfile = trim(adjustl(" "))
-      expected%tWires%tw(2)%dispfile_LeftEnd = trim(adjustl(" "))
-      expected%tWires%tw(2)%dispfile_RightEnd = trim(adjustl(" "))
-      expected%tWires%tw(2)%n_twc=8
-      expected%tWires%tw(2)%n_twc_max=8
-      allocate(expected%tWires%tw(2)%twc(8))
-      expected%tWires%tw(2)%twc(1:8)%srcfile = 'None'
-      expected%tWires%tw(2)%twc(1:8)%srctype = 'None'
-      expected%tWires%tw(2)%twc(1:8)%i = [(i, i=10, 17)]
-      expected%tWires%tw(2)%twc(1:8)%j = 9
-      expected%tWires%tw(2)%twc(1:8)%k = 1
-      expected%tWires%tw(2)%twc(1:8)%d = DIR_X
-      expected%tWires%tw(2)%twc(1)%nd  = 2
-      expected%tWires%tw(2)%twc(2:7)%nd = NO_TAG
-      expected%tWires%tw(2)%twc(8)%nd  = 5
-      
-      expected%tWires%tw(2)%twc(1:8)%tag = trim(adjustl("2"))   ! The polyline id is used as tag.
-      
-      expected%tWires%tw(2)%tl = SERIES_CONS
-      expected%tWires%tw(2)%R_LeftEnd = 1e-6
-      expected%tWires%tw(2)%C_LeftEnd = 1e22
-      expected%tWires%tw(2)%tr = SERIES_CONS
-      expected%tWires%tw(2)%R_RightEnd = 1.0
-      expected%tWires%tw(2)%C_RightEnd = 1e22
-
-      ! wire 3
-      expected%tWires%tw(3)%rad=0.0001
-      expected%tWires%tw(3)%res= 17.3e-3
-      expected%tWires%tw(3)%dispfile = trim(adjustl(" "))
-      expected%tWires%tw(3)%dispfile_LeftEnd = trim(adjustl(" "))
-      expected%tWires%tw(3)%dispfile_RightEnd = trim(adjustl(" "))
-      expected%tWires%tw(3)%n_twc=7
-      expected%tWires%tw(3)%n_twc_max=7
-      allocate(expected%tWires%tw(3)%twc(7))
-      expected%tWires%tw(3)%twc(1:7)%srcfile = 'None'
-      expected%tWires%tw(3)%twc(1:7)%srctype = 'None'
-      expected%tWires%tw(3)%twc(1:7)%i = 10
-      expected%tWires%tw(3)%twc(1:7)%j = [(i, i=8, 2, -1)]
-      expected%tWires%tw(3)%twc(1:7)%k = 1
-      expected%tWires%tw(3)%twc(1:7)%d = DIR_Y
-      expected%tWires%tw(3)%twc(1)%nd  = 2
-      expected%tWires%tw(3)%twc(2:6)%nd = NO_TAG
-      expected%tWires%tw(3)%twc(7)%nd  = 6
-      
-      expected%tWires%tw(3)%twc(1:7)%tag = trim(adjustl("3"))   ! The polyline id is used as tag.
-      
-      expected%tWires%tw(3)%tl = SERIES_CONS
-      expected%tWires%tw(3)%R_LeftEnd = 1e-6
-      expected%tWires%tw(3)%C_LeftEnd = 1e22
-      expected%tWires%tw(3)%tr = SERIES_CONS
-      expected%tWires%tw(3)%R_RightEnd = 0.7e-3
-      expected%tWires%tw(3)%C_RightEnd = 1e22
-
-      expected%tWires%n_tw = 3
-      expected%tWires%n_tw_max = 3
 
       ! Expected mtln type
       !connectors
       ! id = 24
+      expected%mtln%has_multiwires = .true.
+      expected%mtln%time_step = 1e-12
+      expected%mtln%number_of_steps = 1000
+
       allocate(expected%mtln%connectors(4))
 
       allocate(expected%mtln%connectors(1)%resistances(1))
@@ -209,393 +125,379 @@ contains
       allocate(expected%mtln%connectors(4)%transfer_impedance_per_meter%residues(0))
 
       !cables
+      deallocate(expected%mtln%cables)
       allocate(expected%mtln%cables(9))
       ! level 0
       ! cable 1 - wire
-      expected%mtln%cables(1)%name = "line_0_0"
-      allocate(expected%mtln%cables(1)%inductance_per_meter(1,1))
-      allocate(expected%mtln%cables(1)%capacitance_per_meter(1,1))
-      allocate(expected%mtln%cables(1)%resistance_per_meter(1,1))
-      allocate(expected%mtln%cables(1)%conductance_per_meter(1,1))
+      allocate(unshielded_multiwire_t :: expected%mtln%cables(1)%ptr)
+      ptr => expected%mtln%cables(1)%ptr
+      call initializeCablePULParameters(ptr)
+      select type(ptr)
+      type is (unshielded_multiwire_t)
+         ptr%name = "line_0_0"
+         ptr%cell_inductance_per_meter = reshape( source = [5.481553487168089e-07], shape = [ 1,1 ] )
+         ptr%cell_capacitance_per_meter = reshape( source = [2.0270004E-11], shape = [ 1,1 ] )
+         ptr%resistance_per_meter =  reshape(source=[22.9e-3], shape=[1,1])
+         
+         deallocate(ptr%multipolar_expansion)
+         allocate(ptr%multipolar_expansion(0))
 
-      expected%mtln%cables(1)%inductance_per_meter = reshape( source = [5.481553487168089e-07], shape = [ 1,1 ] )
-      expected%mtln%cables(1)%capacitance_per_meter = reshape( source = [2.0270004E-11], shape = [ 1,1 ] )
-      expected%mtln%cables(1)%resistance_per_meter =  reshape(source=[22.9e-3], shape=[1,1])
-      expected%mtln%cables(1)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
-      
-      allocate(expected%mtln%cables(1)%multipolar_expansion(0))
+         allocate(ptr%step_size(9))
+         ptr%step_size = [(0.1, i = 1, 9)]
+         allocate(ptr%segments(9))
+         do i = 1, 9
+            ptr%segments(i)%x = i
+            ptr%segments(i)%y = 7
+            ptr%segments(i)%z = 1
+            ptr%segments(i)%orientation = DIRECTION_X_POS
+         end do
 
-      allocate(expected%mtln%cables(1)%step_size(9))
-      expected%mtln%cables(1)%step_size = [(0.1, i = 1, 9)]
-      allocate(expected%mtln%cables(1)%external_field_segments(9))
-      do i = 1, 9
-         expected%mtln%cables(1)%external_field_segments(i)%position = (/i,9,1/)
-         expected%mtln%cables(1)%external_field_segments(i)%direction = DIRECTION_X_POS
-         expected%mtln%cables(1)%external_field_segments(i)%field => null()
-      end do
-
-      allocate(expected%mtln%cables(1)%transfer_impedance%poles(0))
-      allocate(expected%mtln%cables(1)%transfer_impedance%residues(0))
-
-      expected%mtln%cables(1)%parent_cable => null()
-      expected%mtln%cables(1)%conductor_in_parent = 0
-      expected%mtln%cables(1)%initial_connector => expected%mtln%connectors(1)
-      expected%mtln%cables(1)%end_connector => null()
-
+         ptr%initial_connector => expected%mtln%connectors(1)
+         ptr%end_connector => null()
+      end select
       ! cable 2 - shieldedMultiwire
-      expected%mtln%cables(2)%name = "line_1_0"
-      allocate(expected%mtln%cables(2)%inductance_per_meter(1,1))
-      allocate(expected%mtln%cables(2)%capacitance_per_meter(1,1))
-      allocate(expected%mtln%cables(2)%resistance_per_meter(1,1))
-      allocate(expected%mtln%cables(2)%conductance_per_meter(1,1))
-      expected%mtln%cables(2)%inductance_per_meter = reshape(source=[8.802075200000001e-08], shape=[1,1])
-      expected%mtln%cables(2)%capacitance_per_meter = reshape(source=[5.5840010E-10], shape=[1,1])
-      expected%mtln%cables(2)%resistance_per_meter = reshape(source=[3.9e-3], shape=[1,1])
-      expected%mtln%cables(2)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
-      allocate(expected%mtln%cables(2)%multipolar_expansion(0))
+      allocate(shielded_multiwire_t :: expected%mtln%cables(2)%ptr)
+      ptr => expected%mtln%cables(2)%ptr
+      call initializeCablePULParameters(ptr)
+      select type(ptr)
+      type is (shielded_multiwire_t)
+         ptr%name = "line_1_0"
+         ptr%inductance_per_meter = reshape(source=[8.802075200000001e-08], shape=[1,1])
+         ptr%capacitance_per_meter = reshape(source=[5.5840010E-10], shape=[1,1])
+         ptr%resistance_per_meter = reshape(source=[3.9e-3], shape=[1,1])
 
-      allocate(expected%mtln%cables(2)%step_size(9))
-      expected%mtln%cables(2)%step_size =  [(0.1, i = 1, 9)]
+         allocate(ptr%step_size(9))
+         ptr%step_size =  [(0.1, i = 1, 9)]
 
-      allocate(expected%mtln%cables(2)%external_field_segments(9))
-      do i = 1, 9
-         expected%mtln%cables(2)%external_field_segments(i)%position = (/i,9,1/)
-         expected%mtln%cables(2)%external_field_segments(i)%direction = DIRECTION_X_POS
-         expected%mtln%cables(2)%external_field_segments(i)%field => null()
-      end do
+         allocate(ptr%segments(9))
+         do i = 1, 9
+            ptr%segments(i)%x = i
+            ptr%segments(i)%y = 7
+            ptr%segments(i)%z = 1
+            ptr%segments(i)%orientation = DIRECTION_X_POS
+         end do
 
-      expected%mtln%cables(2)%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%cables(2)%transfer_impedance%resistive_term = 0.0
-      expected%mtln%cables(2)%transfer_impedance%inductive_term = 8.9e-9
-      allocate(expected%mtln%cables(2)%transfer_impedance%poles(0))
-      allocate(expected%mtln%cables(2)%transfer_impedance%residues(0))
+         ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
+         ptr%transfer_impedance%resistive_term = 0.0
+         ptr%transfer_impedance%inductive_term = 8.9e-9
+         allocate(ptr%transfer_impedance%poles(0))
+         allocate(ptr%transfer_impedance%residues(0))
 
-      expected%mtln%cables(2)%parent_cable => expected%mtln%cables(1)
-      expected%mtln%cables(2)%conductor_in_parent = 1
-      expected%mtln%cables(2)%initial_connector => expected%mtln%connectors(3)
-      expected%mtln%cables(2)%end_connector => null()
-
+         ptr%parent_cable => expected%mtln%cables(1)%ptr
+         ptr%conductor_in_parent = 1
+         ptr%initial_connector => expected%mtln%connectors(3)
+         ptr%end_connector => null()
+      end select
       ! cable 3 - shieldedMultiwire
-      expected%mtln%cables(3)%name = "line_2_0"
-      allocate(expected%mtln%cables(3)%inductance_per_meter(8,8), source = 0.0)
-      allocate(expected%mtln%cables(3)%capacitance_per_meter(8,8), source = 0.0)
-      allocate(expected%mtln%cables(3)%resistance_per_meter(8,8), source = 0.0)
-      allocate(expected%mtln%cables(3)%conductance_per_meter(8,8), source = 0.0)
-      expected%mtln%cables(3)%inductance_per_meter(1:2,1:2) = & 
-         reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
-      expected%mtln%cables(3)%inductance_per_meter(3:4,3:4) = & 
-         reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
-      expected%mtln%cables(3)%inductance_per_meter(5:6,5:6) = & 
-         reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
-      expected%mtln%cables(3)%inductance_per_meter(7:8,7:8) = & 
-         reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+      allocate(shielded_multiwire_t :: expected%mtln%cables(3)%ptr)
+      ptr => expected%mtln%cables(3)%ptr
+      call initializeCablePULParameters(ptr,8)
+      select type(ptr)
+      type is (shielded_multiwire_t)
+         ptr%name = "line_2_0"
+         ptr%inductance_per_meter(1:2,1:2) = & 
+            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+         ptr%inductance_per_meter(3:4,3:4) = & 
+            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+         ptr%inductance_per_meter(5:6,5:6) = & 
+            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+         ptr%inductance_per_meter(7:8,7:8) = & 
+            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
 
-      expected%mtln%cables(3)%capacitance_per_meter(1:2,1:2) = &
-         reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
-      expected%mtln%cables(3)%capacitance_per_meter(3:4,3:4) = &
-         reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
-      expected%mtln%cables(3)%capacitance_per_meter(5:6,5:6) = &
-         reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
-      expected%mtln%cables(3)%capacitance_per_meter(7:8,7:8) = &
-         reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
-
-      allocate(expected%mtln%cables(3)%multipolar_expansion(0))
-
-      do i = 1, 8
-         expected%mtln%cables(3)%resistance_per_meter(i,i) =  62.0e-3
-      end do
-
-      allocate(expected%mtln%cables(3)%step_size(9))
-      expected%mtln%cables(3)%step_size =  [(0.1, i = 1, 9)]      
-
-      allocate(expected%mtln%cables(3)%external_field_segments(9))
-      do i = 1, 9
-         expected%mtln%cables(3)%external_field_segments(i)%position = (/i,9,1/)
-         expected%mtln%cables(3)%external_field_segments(i)%direction = DIRECTION_X_POS
-         expected%mtln%cables(3)%external_field_segments(i)%field => null()
-
-      end do
+         ptr%capacitance_per_meter(1:2,1:2) = &
+            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+         ptr%capacitance_per_meter(3:4,3:4) = &
+            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+         ptr%capacitance_per_meter(5:6,5:6) = &
+            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+         ptr%capacitance_per_meter(7:8,7:8) = &
+            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
 
 
-      expected%mtln%cables(3)%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%cables(3)%transfer_impedance%resistive_term = 0.0
-      expected%mtln%cables(3)%transfer_impedance%inductive_term = 4.2e-9
-      allocate(expected%mtln%cables(3)%transfer_impedance%poles(0))
-      allocate(expected%mtln%cables(3)%transfer_impedance%residues(0))
+         do i = 1, 8
+            ptr%resistance_per_meter(i,i) =  62.0e-3
+         end do
 
-      expected%mtln%cables(3)%parent_cable => expected%mtln%cables(2)
-      expected%mtln%cables(3)%conductor_in_parent = 1
-      expected%mtln%cables(3)%initial_connector => null()
-      expected%mtln%cables(3)%end_connector => null()
+         allocate(ptr%step_size(9))
+         ptr%step_size =  [(0.1, i = 1, 9)]      
 
+         allocate(ptr%segments(9))
+         do i = 1, 9
+            ptr%segments(i)%x = i
+            ptr%segments(i)%y = 7
+            ptr%segments(i)%z = 1
+            ptr%segments(i)%orientation = DIRECTION_X_POS
+
+         end do
+
+
+         ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
+         ptr%transfer_impedance%resistive_term = 0.0
+         ptr%transfer_impedance%inductive_term = 4.2e-9
+         allocate(ptr%transfer_impedance%poles(0))
+         allocate(ptr%transfer_impedance%residues(0))
+
+         ptr%parent_cable => expected%mtln%cables(2)%ptr
+         ptr%conductor_in_parent = 1
+         ptr%initial_connector => null()
+         ptr%end_connector => null()
+      end select
 
       ! cable 4 - wire
-      expected%mtln%cables(4)%name = "line_0_1"
-      allocate(expected%mtln%cables(4)%inductance_per_meter(1,1))
-      allocate(expected%mtln%cables(4)%capacitance_per_meter(1,1))
-      allocate(expected%mtln%cables(4)%resistance_per_meter(1,1))
-      allocate(expected%mtln%cables(4)%conductance_per_meter(1,1))
+      allocate(unshielded_multiwire_t :: expected%mtln%cables(4)%ptr)
+      ptr => expected%mtln%cables(4)%ptr
+      call initializeCablePULParameters(ptr)
+      select type(ptr)
+      type is (unshielded_multiwire_t)
+         ptr%name = "line_0_1"
 
-      expected%mtln%cables(4)%inductance_per_meter = reshape( source = [6.482560773828984e-07], shape = [ 1,1 ] )
-      expected%mtln%cables(4)%capacitance_per_meter = reshape( source = [1.7140003E-11], shape = [ 1,1 ] )
-      expected%mtln%cables(4)%resistance_per_meter =  reshape(source=[11.8e-3], shape=[1,1])
-      expected%mtln%cables(4)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
-      
-      allocate(expected%mtln%cables(4)%multipolar_expansion(0))
+         ptr%cell_inductance_per_meter = reshape( source = [6.482560773828984e-07], shape = [ 1,1 ] )
+         ptr%cell_capacitance_per_meter = reshape( source = [1.7140003E-11], shape = [ 1,1 ] )
+         ptr%resistance_per_meter =  reshape(source=[11.8e-3], shape=[1,1])
+         
+         deallocate(ptr%multipolar_expansion)
+         allocate(ptr%multipolar_expansion(0))
 
-      allocate(expected%mtln%cables(4)%step_size(8))
-      expected%mtln%cables(4)%step_size = [(0.1, i = 1, 8)]
+         allocate(ptr%step_size(8))
+         ptr%step_size = [(0.1, i = 1, 8)]
 
-      allocate(expected%mtln%cables(4)%external_field_segments(8))
-      do i = 1, 8
-         expected%mtln%cables(4)%external_field_segments(i)%position = (/9+i,9,1/)
-         expected%mtln%cables(4)%external_field_segments(i)%direction = DIRECTION_X_POS
-         expected%mtln%cables(4)%external_field_segments(i)%field => null()
-      end do
-
-
-      allocate(expected%mtln%cables(4)%transfer_impedance%poles(0))
-      allocate(expected%mtln%cables(4)%transfer_impedance%residues(0))
-
-      expected%mtln%cables(4)%parent_cable => null()
-      expected%mtln%cables(4)%conductor_in_parent = 0
-      expected%mtln%cables(4)%initial_connector => expected%mtln%connectors(2)
-      expected%mtln%cables(4)%end_connector => null()
-
+         allocate(ptr%segments(8))
+         do i = 1, 8
+            ptr%segments(i)%x = 9+i
+            ptr%segments(i)%y = 7
+            ptr%segments(i)%z = 1
+            ptr%segments(i)%orientation = DIRECTION_X_POS
+         end do
+         ptr%initial_connector => expected%mtln%connectors(2)
+         ptr%end_connector => null()
+      end select
       ! cable 5 - shieldedMultiwire
-      expected%mtln%cables(5)%name = "line_1_1"
-      allocate(expected%mtln%cables(5)%inductance_per_meter(1,1))
-      allocate(expected%mtln%cables(5)%capacitance_per_meter(1,1))
-      allocate(expected%mtln%cables(5)%resistance_per_meter(1,1))
-      allocate(expected%mtln%cables(5)%conductance_per_meter(1,1))
-      expected%mtln%cables(5)%inductance_per_meter = reshape(source=[1.37228e-07], shape=[1,1])
-      expected%mtln%cables(5)%capacitance_per_meter = reshape(source=[3.2310005E-10], shape=[1,1])
-      expected%mtln%cables(5)%resistance_per_meter = reshape(source=[12.2e-3], shape=[1,1])
-      expected%mtln%cables(5)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
+      allocate(shielded_multiwire_t :: expected%mtln%cables(5)%ptr)
+      ptr => expected%mtln%cables(5)%ptr
+      call initializeCablePULParameters(ptr)
+      select type(ptr)
+      type is (shielded_multiwire_t)
+         ptr%name = "line_1_1"
+         ptr%inductance_per_meter = reshape(source=[1.37228e-07], shape=[1,1])
+         ptr%capacitance_per_meter = reshape(source=[3.2310005E-10], shape=[1,1])
+         ptr%resistance_per_meter = reshape(source=[12.2e-3], shape=[1,1])
+         ptr%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
 
-      allocate(expected%mtln%cables(5)%multipolar_expansion(0))
+         allocate(ptr%step_size(8))
+         ptr%step_size =  [(0.1, i = 1, 8)]
 
-      allocate(expected%mtln%cables(5)%step_size(8))
-      expected%mtln%cables(5)%step_size =  [(0.1, i = 1, 8)]
+         allocate(ptr%segments(8))
+         do i = 1, 8
+            ptr%segments(i)%x = 9+i
+            ptr%segments(i)%y = 7
+            ptr%segments(i)%z = 1
+            ptr%segments(i)%orientation = DIRECTION_X_POS
+         end do
 
-      allocate(expected%mtln%cables(5)%external_field_segments(8))
-      do i = 1, 8
-         expected%mtln%cables(5)%external_field_segments(i)%position = (/9+i,9,1/)
-         expected%mtln%cables(5)%external_field_segments(i)%direction = DIRECTION_X_POS
-         expected%mtln%cables(5)%external_field_segments(i)%field => null()
-      end do
+         ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
+         ptr%transfer_impedance%resistive_term = 0.0
+         ptr%transfer_impedance%inductive_term = 7.4e-9
+         allocate(ptr%transfer_impedance%poles(0))
+         allocate(ptr%transfer_impedance%residues(0))
 
-
-      expected%mtln%cables(5)%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%cables(5)%transfer_impedance%resistive_term = 0.0
-      expected%mtln%cables(5)%transfer_impedance%inductive_term = 7.4e-9
-      allocate(expected%mtln%cables(5)%transfer_impedance%poles(0))
-      allocate(expected%mtln%cables(5)%transfer_impedance%residues(0))
-
-      expected%mtln%cables(5)%parent_cable => expected%mtln%cables(4)
-      expected%mtln%cables(5)%conductor_in_parent = 1
-      expected%mtln%cables(5)%initial_connector => expected%mtln%connectors(4)
-      expected%mtln%cables(5)%end_connector => null()
-
+         ptr%parent_cable => expected%mtln%cables(4)%ptr
+         ptr%conductor_in_parent = 1
+         ptr%initial_connector => expected%mtln%connectors(4)
+         ptr%end_connector => null()
+      end select
       ! cable 6 - shieldedMultiwire
-      expected%mtln%cables(6)%name = "line_2_4"
-      allocate(expected%mtln%cables(6)%inductance_per_meter(2,2), source = 0.0)
-      allocate(expected%mtln%cables(6)%capacitance_per_meter(2,2), source = 0.0)
-      allocate(expected%mtln%cables(6)%resistance_per_meter(2,2), source = 0.0)
-      allocate(expected%mtln%cables(6)%conductance_per_meter(2,2), source = 0.0)
-      expected%mtln%cables(6)%inductance_per_meter(1:2,1:2) = & 
-         reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+      allocate(shielded_multiwire_t :: expected%mtln%cables(6)%ptr)
+      ptr => expected%mtln%cables(6)%ptr
+      call initializeCablePULParameters(ptr,2)
+      select type(ptr)
+      type is (shielded_multiwire_t)
+         ptr%name = "line_2_4"
+         ptr%inductance_per_meter(1:2,1:2) = & 
+            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
 
-      expected%mtln%cables(6)%capacitance_per_meter(1:2,1:2) = &
-         reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+         ptr%capacitance_per_meter(1:2,1:2) = &
+            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
 
-      allocate(expected%mtln%cables(6)%multipolar_expansion(0))
+         do i = 1, 2
+            ptr%resistance_per_meter(i,i) = 62.0e-3
+         end do
 
-      do i = 1, 2
-         expected%mtln%cables(6)%resistance_per_meter(i,i) = 62.0e-3
-      end do
+         allocate(ptr%step_size(8))
+         ptr%step_size =  [(0.1, i = 1, 8)]
 
-      allocate(expected%mtln%cables(6)%step_size(8))
-      expected%mtln%cables(6)%step_size =  [(0.1, i = 1, 8)]
-
-      allocate(expected%mtln%cables(6)%external_field_segments(8))
-      do i = 1, 8
-         expected%mtln%cables(6)%external_field_segments(i)%position = (/9+i,9,1/)
-         expected%mtln%cables(6)%external_field_segments(i)%direction = DIRECTION_X_POS
-         expected%mtln%cables(6)%external_field_segments(i)%field => null()
-      end do
-
-
-      expected%mtln%cables(6)%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%cables(6)%transfer_impedance%resistive_term = 0.0
-      expected%mtln%cables(6)%transfer_impedance%inductive_term = 4.2e-9
-      allocate(expected%mtln%cables(6)%transfer_impedance%poles(0))
-      allocate(expected%mtln%cables(6)%transfer_impedance%residues(0))
-
-      expected%mtln%cables(6)%parent_cable => expected%mtln%cables(5)
-      expected%mtln%cables(6)%conductor_in_parent = 1
-      expected%mtln%cables(6)%initial_connector => null()
-      expected%mtln%cables(6)%end_connector => null()
+         allocate(ptr%segments(8))
+         do i = 1, 8
+            ptr%segments(i)%x = 9+i
+            ptr%segments(i)%y = 7
+            ptr%segments(i)%z = 1
+            ptr%segments(i)%orientation = DIRECTION_X_POS
+         end do
 
 
+         ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
+         ptr%transfer_impedance%resistive_term = 0.0
+         ptr%transfer_impedance%inductive_term = 4.2e-9
+         allocate(ptr%transfer_impedance%poles(0))
+         allocate(ptr%transfer_impedance%residues(0))
+
+         ptr%parent_cable => expected%mtln%cables(5)%ptr
+         ptr%conductor_in_parent = 1
+         ptr%initial_connector => null()
+         ptr%end_connector => null()
+      end select
       ! cable 7 - wire
-      expected%mtln%cables(7)%name = "line_0_2"
-      allocate(expected%mtln%cables(7)%inductance_per_meter(1,1))
-      allocate(expected%mtln%cables(7)%capacitance_per_meter(1,1))
-      allocate(expected%mtln%cables(7)%resistance_per_meter(1,1))
-      allocate(expected%mtln%cables(7)%conductance_per_meter(1,1))
+      allocate(unshielded_multiwire_t :: expected%mtln%cables(7)%ptr)
+      ptr => expected%mtln%cables(7)%ptr
+      call initializeCablePULParameters(ptr)
+      select type(ptr)
+      type is (unshielded_multiwire_t)
+         ptr%name = "line_0_2"
+         ptr%cell_inductance_per_meter = reshape( source = [5.802145885361537e-07], shape = [ 1,1 ] )
+         ptr%cell_capacitance_per_meter = reshape( source = [1.9150003E-11], shape = [ 1,1 ] )
+         ptr%resistance_per_meter =  reshape(source=[17.3e-3], shape=[1,1])
+         
+         deallocate(ptr%multipolar_expansion)
+         allocate(ptr%multipolar_expansion(0))
 
-      expected%mtln%cables(7)%inductance_per_meter = reshape( source = [5.802145885361537e-07], shape = [ 1,1 ] )
-      expected%mtln%cables(7)%capacitance_per_meter = reshape( source = [1.9150003E-11], shape = [ 1,1 ] )
-      expected%mtln%cables(7)%resistance_per_meter =  reshape(source=[17.3e-3], shape=[1,1])
-      expected%mtln%cables(7)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
-      
-      allocate(expected%mtln%cables(7)%multipolar_expansion(0))
+         allocate(ptr%step_size(7))
+         ptr%step_size = [(0.1, i = 1, 7)]
 
-      allocate(expected%mtln%cables(7)%step_size(7))
-      expected%mtln%cables(7)%step_size = [(0.1, i = 1, 7)]
+         allocate(ptr%segments(7))
+         do i = 1,7
+            ptr%segments(i)%x = 10
+            ptr%segments(i)%y = 7-i
+            ptr%segments(i)%z = 1
+            ptr%segments(i)%orientation = DIRECTION_Y_NEG
+         end do
 
-      allocate(expected%mtln%cables(7)%external_field_segments(7))
-      do i = 1,7
-         expected%mtln%cables(7)%external_field_segments(i)%position = (/10,9-i,1/)
-         expected%mtln%cables(7)%external_field_segments(i)%direction = DIRECTION_Y_NEG
-         expected%mtln%cables(7)%external_field_segments(i)%field => null()
-      end do
-
-
-      allocate(expected%mtln%cables(7)%transfer_impedance%poles(0))
-      allocate(expected%mtln%cables(7)%transfer_impedance%residues(0))
-
-      expected%mtln%cables(7)%parent_cable => null()
-      expected%mtln%cables(7)%conductor_in_parent = 0
-      expected%mtln%cables(7)%initial_connector => null()
-      expected%mtln%cables(7)%end_connector => null()
-
+         ptr%initial_connector => null()
+         ptr%end_connector => null()
+      end select
       ! cable 8 - shieldedMultiwire
-      expected%mtln%cables(8)%name = "line_1_2"
-      allocate(expected%mtln%cables(8)%inductance_per_meter(1,1))
-      allocate(expected%mtln%cables(8)%capacitance_per_meter(1,1))
-      allocate(expected%mtln%cables(8)%resistance_per_meter(1,1))
-      allocate(expected%mtln%cables(8)%conductance_per_meter(1,1))
-      expected%mtln%cables(8)%inductance_per_meter = reshape(source=[9.1890502e-08], shape=[1,1])
-      expected%mtln%cables(8)%capacitance_per_meter = reshape(source=[4.7190007E-10], shape=[1,1])
-      expected%mtln%cables(8)%resistance_per_meter = reshape(source=[6.5e-3], shape=[1,1])
-      expected%mtln%cables(8)%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
+      allocate(shielded_multiwire_t :: expected%mtln%cables(8)%ptr)
+      ptr => expected%mtln%cables(8)%ptr
+      call initializeCablePULParameters(ptr)
+      select type(ptr)
+      type is (shielded_multiwire_t)
+         ptr%name = "line_1_2"
+         ptr%inductance_per_meter = reshape(source=[9.1890502e-08], shape=[1,1])
+         ptr%capacitance_per_meter = reshape(source=[4.7190007E-10], shape=[1,1])
+         ptr%resistance_per_meter = reshape(source=[6.5e-3], shape=[1,1])
+         ptr%conductance_per_meter = reshape(source=[0.0], shape=[1,1])
 
-      allocate(expected%mtln%cables(8)%multipolar_expansion(0))
+         allocate(ptr%step_size(7))
+         ptr%step_size =  [(0.1, i = 1, 7)]
 
-      allocate(expected%mtln%cables(8)%step_size(7))
-      expected%mtln%cables(8)%step_size =  [(0.1, i = 1, 7)]
+         allocate(ptr%segments(7))
+         do i = 1,7
+            ptr%segments(i)%x = 10
+            ptr%segments(i)%y = 7-i
+            ptr%segments(i)%z = 1
+            ptr%segments(i)%orientation = DIRECTION_Y_NEG
+         end do
 
-      allocate(expected%mtln%cables(8)%external_field_segments(7))
-      do i = 1,7
-         expected%mtln%cables(8)%external_field_segments(i)%position = (/10,9-i,1/)
-         expected%mtln%cables(8)%external_field_segments(i)%direction = DIRECTION_Y_NEG
-         expected%mtln%cables(8)%external_field_segments(i)%field => null()
-      end do
+         ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
+         ptr%transfer_impedance%resistive_term = 0.0
+         ptr%transfer_impedance%inductive_term = 3.0e-9
+         allocate(ptr%transfer_impedance%poles(0))
+         allocate(ptr%transfer_impedance%residues(0))
 
-      expected%mtln%cables(8)%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%cables(8)%transfer_impedance%resistive_term = 0.0
-      expected%mtln%cables(8)%transfer_impedance%inductive_term = 3.0e-9
-      allocate(expected%mtln%cables(8)%transfer_impedance%poles(0))
-      allocate(expected%mtln%cables(8)%transfer_impedance%residues(0))
-
-      expected%mtln%cables(8)%parent_cable => expected%mtln%cables(7)
-      expected%mtln%cables(8)%conductor_in_parent = 1
-      expected%mtln%cables(8)%initial_connector => null()
-      expected%mtln%cables(8)%end_connector => null()
-
+         ptr%parent_cable => expected%mtln%cables(7)%ptr
+         ptr%conductor_in_parent = 1
+         ptr%initial_connector => null()
+         ptr%end_connector => null()
+      end select
       ! cable 9 - shieldedMultiwire
-      expected%mtln%cables(9)%name = "line_2_5"
-      allocate(expected%mtln%cables(9)%inductance_per_meter(6,6), source = 0.0)
-      allocate(expected%mtln%cables(9)%capacitance_per_meter(6,6), source = 0.0)
-      allocate(expected%mtln%cables(9)%resistance_per_meter(6,6), source = 0.0)
-      allocate(expected%mtln%cables(9)%conductance_per_meter(6,6), source = 0.0)
-      expected%mtln%cables(9)%inductance_per_meter(1:2,1:2) = & 
-         reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
-      expected%mtln%cables(9)%inductance_per_meter(3:4,3:4) = & 
-         reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
-      expected%mtln%cables(9)%inductance_per_meter(5:6,5:6) = & 
-         reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+      allocate(shielded_multiwire_t :: expected%mtln%cables(9)%ptr)
+      ptr => expected%mtln%cables(9)%ptr
+      call initializeCablePULParameters(ptr,6)
+      select type(ptr)
+      type is (shielded_multiwire_t)
+         ptr%name = "line_2_5"
+         ptr%inductance_per_meter(1:2,1:2) = & 
+            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+         ptr%inductance_per_meter(3:4,3:4) = & 
+            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
+         ptr%inductance_per_meter(5:6,5:6) = & 
+            reshape(source=[2.4382084E-07, 4.7377505E-08, 4.7377508E-08, 2.4382081E-07], shape=[2,2], order =[2,1])
 
-      expected%mtln%cables(9)%capacitance_per_meter(1:2,1:2) = &
-         reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
-      expected%mtln%cables(9)%capacitance_per_meter(3:4,3:4) = &
-         reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
-      expected%mtln%cables(9)%capacitance_per_meter(5:6,5:6) = &
-         reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+         ptr%capacitance_per_meter(1:2,1:2) = &
+            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+         ptr%capacitance_per_meter(3:4,3:4) = &
+            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
+         ptr%capacitance_per_meter(5:6,5:6) = &
+            reshape(source=[105.5e-12, -20.5e-12, -20.5e-12, 105.5e-12], shape=[2,2], order =[2,1])
 
-      allocate(expected%mtln%cables(9)%multipolar_expansion(0))
+         do i = 1, 6
+            ptr%resistance_per_meter(i,i) = 62.0e-3
+         end do
+         allocate(ptr%step_size(7))
+         ptr%step_size =  [(0.1, i = 1, 7)]
 
-      do i = 1, 6
-         expected%mtln%cables(9)%resistance_per_meter(i,i) = 62.0e-3
-      end do
-      allocate(expected%mtln%cables(9)%step_size(7))
-      expected%mtln%cables(9)%step_size =  [(0.1, i = 1, 7)]
+         allocate(ptr%segments(7))
+         do i = 1,7
+            ptr%segments(i)%x = 10
+            ptr%segments(i)%y = 7-i
+            ptr%segments(i)%z = 1
+            ptr%segments(i)%orientation = DIRECTION_Y_NEG
+         end do
 
-      allocate(expected%mtln%cables(9)%external_field_segments(7))
-      do i = 1,7
-         expected%mtln%cables(9)%external_field_segments(i)%position = (/10,9-i,1/)
-         expected%mtln%cables(9)%external_field_segments(i)%direction = DIRECTION_Y_NEG
-         expected%mtln%cables(9)%external_field_segments(i)%field => null()
-      end do
+         ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
+         ptr%transfer_impedance%resistive_term = 0.0
+         ptr%transfer_impedance%inductive_term = 4.2e-9
+         allocate(ptr%transfer_impedance%poles(0))
+         allocate(ptr%transfer_impedance%residues(0))
 
-      expected%mtln%cables(9)%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%cables(9)%transfer_impedance%resistive_term = 0.0
-      expected%mtln%cables(9)%transfer_impedance%inductive_term = 4.2e-9
-      allocate(expected%mtln%cables(9)%transfer_impedance%poles(0))
-      allocate(expected%mtln%cables(9)%transfer_impedance%residues(0))
-
-      expected%mtln%cables(9)%parent_cable => expected%mtln%cables(8)
-      expected%mtln%cables(9)%conductor_in_parent = 1
-      expected%mtln%cables(9)%initial_connector => null()
-      expected%mtln%cables(9)%end_connector => null()
-
+         ptr%parent_cable => expected%mtln%cables(8)%ptr
+         ptr%conductor_in_parent = 1
+         ptr%initial_connector => null()
+         ptr%end_connector => null()
+      end select
 
       ! probes
       deallocate(expected%mtln%probes)
       allocate(expected%mtln%probes(7))
-      expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1) ! to which cable is the probe attached in mtln?
+      expected%mtln%probes(1)%attached_to_cable => expected%mtln%cables(1)%ptr ! to which cable is the probe attached in mtln?
       expected%mtln%probes(1)%index = 1
       expected%mtln%probes(1)%probe_type = PROBE_TYPE_VOLTAGE
       expected%mtln%probes(1)%probe_name = "b1_terminal_voltage"
-      expected%mtln%probes(1)%probe_position = [1,9,1]
+      expected%mtln%probes(1)%probe_position = [1,7,1]
 
-      expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)
+      expected%mtln%probes(2)%attached_to_cable => expected%mtln%cables(1)%ptr
       expected%mtln%probes(2)%index = 1
       expected%mtln%probes(2)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(2)%probe_name = "b1_terminal_current"
-      expected%mtln%probes(2)%probe_position = [1,9,1]
+      expected%mtln%probes(2)%probe_position = [1,7,1]
 
-      expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)
+      expected%mtln%probes(3)%attached_to_cable => expected%mtln%cables(1)%ptr
       expected%mtln%probes(3)%index = 10
       expected%mtln%probes(3)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(3)%probe_name = "junction_current"
-      expected%mtln%probes(3)%probe_position = [10, 9, 1]
+      expected%mtln%probes(3)%probe_position = [10, 7, 1]
 
-      expected%mtln%probes(4)%attached_to_cable => expected%mtln%cables(4)
+      expected%mtln%probes(4)%attached_to_cable => expected%mtln%cables(4)%ptr
       expected%mtln%probes(4)%index = 1
       expected%mtln%probes(4)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(4)%probe_name = "junction_current"
-      expected%mtln%probes(4)%probe_position = [10, 9, 1]
+      expected%mtln%probes(4)%probe_position = [10, 7, 1]
 
-      expected%mtln%probes(5)%attached_to_cable => expected%mtln%cables(7)
+      expected%mtln%probes(5)%attached_to_cable => expected%mtln%cables(7)%ptr
       expected%mtln%probes(5)%index = 1
       expected%mtln%probes(5)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(5)%probe_name = "junction_current"
-      expected%mtln%probes(5)%probe_position = [10, 9, 1]
+      expected%mtln%probes(5)%probe_position = [10, 7, 1]
 
-      expected%mtln%probes(6)%attached_to_cable => expected%mtln%cables(4)
+      expected%mtln%probes(6)%attached_to_cable => expected%mtln%cables(4)%ptr
       expected%mtln%probes(6)%index = 9
       expected%mtln%probes(6)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(6)%probe_name = "b2_terminal_current"
-      expected%mtln%probes(6)%probe_position = [ 18, 9, 1]
+      expected%mtln%probes(6)%probe_position = [ 18, 7, 1]
 
-      expected%mtln%probes(7)%attached_to_cable => expected%mtln%cables(7)
+      expected%mtln%probes(7)%attached_to_cable => expected%mtln%cables(7)%ptr
       expected%mtln%probes(7)%index = 8
       expected%mtln%probes(7)%probe_type = PROBE_TYPE_CURRENT
       expected%mtln%probes(7)%probe_name = "b3_terminal_current"
-      expected%mtln%probes(7)%probe_position = [10, 2, 1]
+      expected%mtln%probes(7)%probe_position = [10, 0, 1]
 
 
 
@@ -609,21 +511,21 @@ contains
       allocate(expected%mtln%networks(1)%connections(1)%nodes(1))
       expected%mtln%networks(1)%connections(1)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
-      expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)
+      expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)%ptr
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 0.7e-3
 
       allocate(expected%mtln%networks(1)%connections(2)%nodes(1))
       expected%mtln%networks(1)%connections(2)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(1)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
-      expected%mtln%networks(1)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(2)
+      expected%mtln%networks(1)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(2)%ptr
       expected%mtln%networks(1)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(1)%connections(2)%nodes(1)%termination%resistance = 1e-6
 
       do i = 3, 10
          allocate(expected%mtln%networks(1)%connections(i)%nodes(1))
          expected%mtln%networks(1)%connections(i)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
-         expected%mtln%networks(1)%connections(i)%nodes(1)%belongs_to_cable => expected%mtln%cables(3)
+         expected%mtln%networks(1)%connections(i)%nodes(1)%belongs_to_cable => expected%mtln%cables(3)%ptr
          expected%mtln%networks(1)%connections(i)%nodes(1)%conductor_in_cable = i-2
       end do
 
@@ -661,15 +563,15 @@ contains
       allocate(expected%mtln%networks(2)%connections(1)%nodes(3))
       expected%mtln%networks(2)%connections(1)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(2)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-      expected%mtln%networks(2)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)
+      expected%mtln%networks(2)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)%ptr
 
       expected%mtln%networks(2)%connections(1)%nodes(2)%conductor_in_cable = 1
       expected%mtln%networks(2)%connections(1)%nodes(2)%side = TERMINAL_NODE_SIDE_INI
-      expected%mtln%networks(2)%connections(1)%nodes(2)%belongs_to_cable =>  expected%mtln%cables(4)
+      expected%mtln%networks(2)%connections(1)%nodes(2)%belongs_to_cable =>  expected%mtln%cables(4)%ptr
 
       expected%mtln%networks(2)%connections(1)%nodes(3)%conductor_in_cable = 1
       expected%mtln%networks(2)%connections(1)%nodes(3)%side = TERMINAL_NODE_SIDE_INI
-      expected%mtln%networks(2)%connections(1)%nodes(3)%belongs_to_cable =>  expected%mtln%cables(7)
+      expected%mtln%networks(2)%connections(1)%nodes(3)%belongs_to_cable =>  expected%mtln%cables(7)%ptr
 
       do i = 1, 3
          expected%mtln%networks(2)%connections(1)%nodes(i)%termination%termination_type = TERMINATION_SERIES
@@ -679,15 +581,15 @@ contains
       allocate(expected%mtln%networks(2)%connections(2)%nodes(3))
       expected%mtln%networks(2)%connections(2)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(2)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-      expected%mtln%networks(2)%connections(2)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(2)
+      expected%mtln%networks(2)%connections(2)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(2)%ptr
 
       expected%mtln%networks(2)%connections(2)%nodes(2)%conductor_in_cable = 1
       expected%mtln%networks(2)%connections(2)%nodes(2)%side = TERMINAL_NODE_SIDE_INI
-      expected%mtln%networks(2)%connections(2)%nodes(2)%belongs_to_cable =>  expected%mtln%cables(5)
+      expected%mtln%networks(2)%connections(2)%nodes(2)%belongs_to_cable =>  expected%mtln%cables(5)%ptr
 
       expected%mtln%networks(2)%connections(2)%nodes(3)%conductor_in_cable = 1
       expected%mtln%networks(2)%connections(2)%nodes(3)%side = TERMINAL_NODE_SIDE_INI
-      expected%mtln%networks(2)%connections(2)%nodes(3)%belongs_to_cable =>  expected%mtln%cables(8)
+      expected%mtln%networks(2)%connections(2)%nodes(3)%belongs_to_cable =>  expected%mtln%cables(8)%ptr
 
       do i = 1, 3
          expected%mtln%networks(2)%connections(2)%nodes(i)%termination%termination_type = TERMINATION_SERIES
@@ -700,11 +602,11 @@ contains
 
          expected%mtln%networks(2)%connections(i)%nodes(1)%conductor_in_cable = i-2
          expected%mtln%networks(2)%connections(i)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-         expected%mtln%networks(2)%connections(i)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(3)
+         expected%mtln%networks(2)%connections(i)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(3)%ptr
    
          expected%mtln%networks(2)%connections(i)%nodes(2)%conductor_in_cable = i-2
          expected%mtln%networks(2)%connections(i)%nodes(2)%side = TERMINAL_NODE_SIDE_INI
-         expected%mtln%networks(2)%connections(i)%nodes(2)%belongs_to_cable =>  expected%mtln%cables(9)
+         expected%mtln%networks(2)%connections(i)%nodes(2)%belongs_to_cable =>  expected%mtln%cables(9)%ptr
 
          do j = 1, 2
             expected%mtln%networks(2)%connections(i)%nodes(j)%termination%termination_type = TERMINATION_SERIES
@@ -718,11 +620,11 @@ contains
 
          expected%mtln%networks(2)%connections(i)%nodes(1)%conductor_in_cable = i-2
          expected%mtln%networks(2)%connections(i)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-         expected%mtln%networks(2)%connections(i)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(3)
+         expected%mtln%networks(2)%connections(i)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(3)%ptr
    
          expected%mtln%networks(2)%connections(i)%nodes(2)%conductor_in_cable = i-8
          expected%mtln%networks(2)%connections(i)%nodes(2)%side = TERMINAL_NODE_SIDE_INI
-         expected%mtln%networks(2)%connections(i)%nodes(2)%belongs_to_cable =>  expected%mtln%cables(6)
+         expected%mtln%networks(2)%connections(i)%nodes(2)%belongs_to_cable =>  expected%mtln%cables(6)%ptr
 
          do j = 1, 2
             expected%mtln%networks(2)%connections(i)%nodes(j)%termination%termination_type = TERMINATION_SERIES
@@ -738,21 +640,21 @@ contains
       allocate(expected%mtln%networks(3)%connections(1)%nodes(1))
       expected%mtln%networks(3)%connections(1)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(3)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-      expected%mtln%networks(3)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(4)
+      expected%mtln%networks(3)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(4)%ptr
       expected%mtln%networks(3)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(3)%connections(1)%nodes(1)%termination%resistance = 1
 
       allocate(expected%mtln%networks(3)%connections(2)%nodes(1))
       expected%mtln%networks(3)%connections(2)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(3)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-      expected%mtln%networks(3)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(5)
+      expected%mtln%networks(3)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(5)%ptr
       expected%mtln%networks(3)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(3)%connections(2)%nodes(1)%termination%resistance = 1e-6
 
       do i = 3, 4
          allocate(expected%mtln%networks(3)%connections(i)%nodes(1))
          expected%mtln%networks(3)%connections(i)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-         expected%mtln%networks(3)%connections(i)%nodes(1)%belongs_to_cable => expected%mtln%cables(6)
+         expected%mtln%networks(3)%connections(i)%nodes(1)%belongs_to_cable => expected%mtln%cables(6)%ptr
          expected%mtln%networks(3)%connections(i)%nodes(1)%conductor_in_cable = i-2
       end do
 
@@ -768,21 +670,21 @@ contains
       allocate(expected%mtln%networks(4)%connections(1)%nodes(1))
       expected%mtln%networks(4)%connections(1)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(4)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-      expected%mtln%networks(4)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(7)
+      expected%mtln%networks(4)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(7)%ptr
       expected%mtln%networks(4)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(4)%connections(1)%nodes(1)%termination%resistance = 0.7e-3
 
       allocate(expected%mtln%networks(4)%connections(2)%nodes(1))
       expected%mtln%networks(4)%connections(2)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(4)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-      expected%mtln%networks(4)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(8)
+      expected%mtln%networks(4)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(8)%ptr
       expected%mtln%networks(4)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_SERIES
       expected%mtln%networks(4)%connections(2)%nodes(1)%termination%resistance = 1e-6
 
       do i = 3, 8
          allocate(expected%mtln%networks(4)%connections(i)%nodes(1))
          expected%mtln%networks(4)%connections(i)%nodes(1)%side = TERMINAL_NODE_SIDE_END
-         expected%mtln%networks(4)%connections(i)%nodes(1)%belongs_to_cable => expected%mtln%cables(9)
+         expected%mtln%networks(4)%connections(i)%nodes(1)%belongs_to_cable => expected%mtln%cables(9)%ptr
          expected%mtln%networks(4)%connections(i)%nodes(1)%conductor_in_cable = i-2
       end do
 
