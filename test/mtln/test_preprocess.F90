@@ -5,7 +5,7 @@ integer function test_preprocess_conductors_before_cable() bind(C) result(error_
     use mtln_testingTools_mod
 
     type(mtl_t) :: line1, line2, line3_1, line3_2, line4
-    type(line_bundle_t) :: line_bundle
+    type(transmission_line_bundle_t) :: line_bundle
     error_cnt = 0
   
     line1   = buildLineWithNConductors(1, "line1")
@@ -42,7 +42,7 @@ integer function test_preprocess_conductors_in_level() bind(C) result(error_cnt)
     use mtln_testingTools_mod
 
     type(mtl_t) :: line1, line2, line3_1, line3_2, line4
-    type(line_bundle_t) :: line_bundle
+    type(transmission_line_bundle_t) :: line_bundle
 
     error_cnt = 0
     
@@ -77,7 +77,7 @@ integer function test_preprocess_zt_conductor_ranges() bind(C) result(error_cnt)
     end type
 
     type(mtl_t) :: line1, line2, line3_1, line3_2, line4
-    type(line_bundle_t) :: line_bundle
+    type(transmission_line_bundle_t) :: line_bundle
     type(mtl_bundle_t) :: mtl_bundle
 
     integer, dimension(4) :: conductors_in_level
@@ -149,7 +149,7 @@ integer function test_preprocess_zt_conductor_ranges_2() bind(C) result(error_cn
     end type
 
     type(mtl_t) :: line1, line2, line3_1, line3_2, line3_3, line4_1, line4_2, line4_3
-    type(line_bundle_t) :: line_bundle
+    type(transmission_line_bundle_t) :: line_bundle
     type(mtl_bundle_t) :: mtl_bundle
 
     integer, dimension(4) :: conductors_in_level

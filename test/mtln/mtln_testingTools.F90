@@ -19,7 +19,7 @@ contains
         integer, intent(in), optional :: conductor_in_parent
         real, allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
         real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
-        type(direction_t), allocatable, dimension(:) :: segments
+        type(segment_t), allocatable, dimension(:) :: segments
         integer :: i,j
 
         allocate(lpul(n,n), source = 0.0)

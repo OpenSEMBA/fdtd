@@ -1,5 +1,5 @@
 module mtln_types_mod
-   use fdetypes, ONLY: direction_t   
+   use fdetypes, ONLY: direction_t
    implicit none
 
    integer, parameter :: TERMINATION_UNDEFINED  = -1
@@ -172,10 +172,15 @@ module mtln_types_mod
       generic, public :: operator(==) => multipolar_expansion_eq
    end type
 
+   type, extends(direction_t) :: segment_t
+      type(box_2d_t) :: dualBox
+   end type
+
+
    type, public :: cable_t
       character (len=:), allocatable :: name
       real, allocatable, dimension(:) :: step_size
-      type(direction_t), dimension(:), allocatable :: segments
+      type(segment_t), dimension(:), allocatable :: segments
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
    contains
@@ -189,6 +194,8 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: cell_capacitance_per_meter
       real, allocatable, dimension(:,:) :: resistance_per_meter
       real, allocatable, dimension(:,:) :: conductance_per_meter
+      ! should multipolar expansion be always present, instead of allocatable,  
+      ! but check if it is being used using the size of the field_reconstruction?
       type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
    end type
 

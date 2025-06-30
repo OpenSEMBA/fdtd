@@ -9,9 +9,9 @@ integer function test_dispersive_init_1_pole() bind(C) result(error_cnt)
     type(pol_res_t):: connector
     type(mtl_t) :: line_out, line_in
 
-    type(mtl_array_t), dimension(2) :: levels
-    type(mtl_array_t) :: level1
-    type(mtl_array_t) :: level2
+    type(transmission_line_level_t), dimension(2) :: levels
+    type(transmission_line_level_t) :: level1
+    type(transmission_line_level_t) :: level2
     type(mtl_bundle_t) :: bundle
     
     integer :: ndiv, nc, npoles
@@ -103,9 +103,9 @@ integer function test_dispersive_init_1_pole_lines_with_lumped() bind(C) result(
     type(pol_res_t):: connector
     type(mtl_t) :: line_out, line_in
 
-    type(mtl_array_t), dimension(2) :: levels
-    type(mtl_array_t) :: level1
-    type(mtl_array_t) :: level2
+    type(transmission_line_level_t), dimension(2) :: levels
+    type(transmission_line_level_t) :: level1
+    type(transmission_line_level_t) :: level2
     type(mtl_bundle_t) :: bundle
     
     integer :: ndiv, nc, npoles
@@ -218,9 +218,9 @@ integer function test_dispersive_init_2_poles() bind(C) result(error_cnt)
     type(pol_res_t):: connector
     type(mtl_t) :: line_out, line_in
 
-    type(mtl_array_t), dimension(2) :: levels
-    type(mtl_array_t) :: level1
-    type(mtl_array_t) :: level2
+    type(transmission_line_level_t), dimension(2) :: levels
+    type(transmission_line_level_t) :: level1
+    type(transmission_line_level_t) :: level2
     type(mtl_bundle_t) :: bundle
     
     integer :: ndiv, nc, npoles
@@ -311,8 +311,8 @@ integer function test_dispersive_init_1_pole_3_levels() bind(C) result(error_cnt
     type(pol_res_t):: connector
     type(mtl_t) :: line_out, line_in, line_in_2
 
-    type(mtl_array_t), dimension(3) :: levels
-    type(mtl_array_t) :: level1, level2, level3
+    type(transmission_line_level_t), dimension(3) :: levels
+    type(transmission_line_level_t) :: level1, level2, level3
     type(mtl_bundle_t) :: bundle
     
     integer :: ndiv, nc, npoles

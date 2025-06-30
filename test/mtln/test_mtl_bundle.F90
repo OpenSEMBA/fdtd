@@ -5,7 +5,7 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
 
     type(mtl_t) :: mtl_out, mtl_in
     type(mtl_bundle_t) :: bundle
-    type(mtl_array_t), dimension(2) :: levels
+    type(transmission_line_level_t), dimension(2) :: levels
 
     real,dimension(1,1) :: l1 = reshape( source = [ 4.4712610E-07 ], shape = [ 1,1 ] )
     real,dimension(1,1) :: c1 = reshape( source = [ 2.242e-10 ], shape = [ 1,1 ] )
@@ -14,7 +14,7 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
 
     integer :: i
     real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
-    type(direction_t), allocatable, dimension(:) :: segments
+    type(segment_t), allocatable, dimension(:) :: segments
 
     error_cnt = 0
     allocate(segments(5))

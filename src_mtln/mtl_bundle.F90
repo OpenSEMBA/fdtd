@@ -71,7 +71,7 @@ contains
 
     function mtldCtor(levels, name) result(res)
         type(mtl_bundle_t) :: res
-        type(mtl_array_t), dimension(:), intent(in) :: levels
+        type(transmission_line_level_t), dimension(:), intent(in) :: levels
         character(len=*), intent(in), optional :: name
        
         res%name = ""
@@ -87,6 +87,9 @@ contains
         res%number_of_divisions = size(res%step_size,1)
         res%external_field_segments = buildExternalFieldSegments(levels)
         call res%initialAllocation()
+
+        ! call res%getCellPULParameters()
+
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
 
@@ -119,7 +122,7 @@ contains
     end subroutine
 
     function countNumberOfConductors(levels) result(res)
-        type(mtl_array_t), dimension(:), intent(in) :: levels
+        type(transmission_line_level_t), dimension(:), intent(in) :: levels
         integer :: i,j, res
         res = 0
         do i = 1, size(levels)
@@ -131,7 +134,7 @@ contains
 
     subroutine mergePULMatrices(this, levels)
         class(mtl_bundle_t) :: this
-        type(mtl_array_t), dimension(:), intent(in) :: levels
+        type(transmission_line_level_t), dimension(:), intent(in) :: levels
         integer :: i, j, n, n_sum
         n_sum = 0
         do i = 1, size(levels)
@@ -149,7 +152,7 @@ contains
 
     subroutine mergeDispersiveMatrices(this, levels)
         class(mtl_bundle_t) :: this
-        type(mtl_array_t), dimension(:), intent(in) :: levels
+        type(transmission_line_level_t), dimension(:), intent(in) :: levels
         integer :: i, j, n, n_sum, number_of_poles
         n_sum = 0
         number_of_poles = 0
@@ -198,9 +201,9 @@ contains
     end subroutine
 
     function buildExternalFieldSegments(levels) result(res)
-        type(mtl_array_t), dimension(:), intent(in) :: levels
+        type(transmission_line_level_t), dimension(:), intent(in) :: levels
         type(external_field_segment_t), dimension(:), allocatable :: res
-        type(direction_t), dimension(:), allocatable :: segments
+        type(segment_t), dimension(:), allocatable :: segments
         integer :: i
         segments = levels(1)%lines(1)%segments
         allocate(res(size(segments)))

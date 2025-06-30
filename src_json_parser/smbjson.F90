@@ -3281,7 +3281,7 @@ contains
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
          res%name = j_cable%name
-         res%segments = buildSegments(j_cable)
+         res%segments = buildSegments(j_cable, despl)
          res%step_size = buildStepSize(res%segments, despl)
 
       end function
@@ -3555,27 +3555,104 @@ contains
 
       end function
    
-      function buildSegments(j_cable) result(res)
+      function buildSegments(j_cable, despl) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
-         type(direction_t), dimension(:), allocatable :: res
+         type(Desplazamiento), intent(in) :: despl
+         type(segment_t), dimension(:), allocatable :: res
+
          integer, dimension(:), allocatable :: elemIds
          type(linel_t), dimension(:), allocatable :: linels
-         type(polyline_t) :: polyline
-         integer :: i
+         type(coordinate_t) :: coord
+         integer :: i,j, prevOr
          elemIds = j_cable%elementIds
-         polyline = this%mesh%getPolyline(elemIds(1))
-         linels = this%mesh%polylineToLinels(polyline)
+         linels = this%mesh%polylineToLinels(this%mesh%getPolyline(elemIds(1)))
+         prevOr = 0
          allocate(res(size(linels)))
          do i = 1, size(linels)
             res(i)%x = linels(i)%cell(1)
             res(i)%y = linels(i)%cell(2)
             res(i)%z = linels(i)%cell(3)
             res(i)%orientation = linels(i)%orientation
+            if (prevOr == abs(res(i)%orientation)) then 
+               res(i)%dualBox = res(i-1)%dualBox
+            else 
+               select case(abs(res(i)%orientation))
+               case(DIR_X)
+                  res(i)%dualBox = getdualBoxYZ(res(i), despl)
+               case(DIR_Y)
+                  res(i)%dualBox = getdualBoxZX(res(i), despl)
+               case(DIR_Z)
+                  res(i)%dualBox = getdualBoxXY(res(i), despl)
+               end select
+            end if
+            prevOr = abs(res(i)%orientation)
          end do
       end function
 
+      function getdualBoxYZ(segment, despl) result (res)
+         type(Desplazamiento), intent(in) :: despl
+         type(segment_t), intent(in) :: segment
+         type(box_2d_t) :: res
+         integer :: j
+         res%min = [0.0,0.0]
+         res%max = [0.0,0.0]
+         do j = 1, segment%y - 1
+            res%min(1) = res%min(1) + despl%desY(j)
+         end do
+         res%min(1) = 0.5*(res%min(1) + despl%desY(segment%y))
+         res%max(1) = 0.5*(res%min(1) + despl%desY(segment%y) + despl%desY(segment%y) + 1)
+
+         do j = 1, segment%z - 1
+            res%min(2) = res%min(2) + despl%desZ(j)
+         end do
+         res%min(2) = 0.5*(res%min(2) + despl%desZ(segment%z))
+         res%max(2) = 0.5*(res%min(2) + despl%desZ(segment%z) + despl%desZ(segment%z) + 1)
+      end function
+
+      function getdualBoxXY(segment, despl) result (res)
+         type(Desplazamiento), intent(in) :: despl
+         type(segment_t), intent(in) :: segment
+         type(box_2d_t) :: res
+         integer :: j
+         res%min = [0.0,0.0]
+         res%max = [0.0,0.0]
+         do j = 1, segment%x - 1
+            res%min(1) = res%min(1) + despl%desX(j)
+         end do
+         res%min(1) = 0.5*(res%min(1) + despl%desX(segment%x))
+         res%max(1) = 0.5*(res%min(1) + despl%desX(segment%x) + despl%desX(segment%x) + 1)
+
+         do j = 1, segment%y - 1
+            res%min(2) = res%min(2) + despl%desY(j)
+         end do
+         res%min(2) = 0.5*(res%min(2) + despl%desY(segment%y))
+         res%max(2) = 0.5*(res%min(2) + despl%desY(segment%y) + despl%desY(segment%y) + 1)
+
+      end function
+
+      function getdualBoxZX(segment, despl) result (res)
+         type(Desplazamiento), intent(in) :: despl
+         type(segment_t), intent(in) :: segment
+         type(box_2d_t) :: res
+         integer :: j
+         res%min = [0.0,0.0]
+         res%max = [0.0,0.0]
+         do j = 1, segment%z - 1
+            res%min(1) = res%min(1) + despl%desZ(j)
+         end do
+         res%min(1) = 0.5*(res%min(1) + despl%desZ(segment%z))
+         res%max(1) = 0.5*(res%min(1) + despl%desZ(segment%z) + despl%desZ(segment%z) + 1)
+
+         do j = 1, segment%x - 1
+            res%min(2) = res%min(2) + despl%desX(j)
+         end do
+         res%min(2) = 0.5*(res%min(2) + despl%desX(segment%X))
+         res%max(2) = 0.5*(res%min(2) + despl%desX(segment%X) + despl%desX(segment%x) + 1)
+
+      end function
+
       function buildStepSize(segments, despl) result(res)
-         type(direction_t), dimension(:), allocatable :: segments
+         type(segment_t), dimension(:), allocatable :: segments
          type(Desplazamiento), intent(in) :: despl
          real, allocatable, dimension(:) :: res
          integer :: i, or

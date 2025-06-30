@@ -107,25 +107,20 @@ contains
 
       subroutine assignLCToExternalLevel()
          integer(kind=4) :: m, n
+         ! real (kind=rkind) :: l,c
          real (kind=rkind), dimension(:,:), allocatable :: l,c
 
          do m = 1, mtln_solver%number_of_bundles
             if (mtln_solver%bundles(m)%bundle_in_layer) then 
-               l = readLFromTULIP()
-               c = readCFromTULIP()
                do n = 1, mtln_solver%bundles(m)%number_of_divisions
-                  mtln_solver%bundles(m)%lpul(n,1:size(l,1),1:size(l,2)) = l 
-                  mtln_solver%bundles(m)%cpul(n,1:size(c,1),1:size(c,2)) = c 
-                  ! l = hwires%CurrentSegment(indexMap(m,n))%Lind
-                  ! c = mu0*eps0/l
-                  ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
-                  ! ! if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0 .and. mtln_solver%bundles(m)%isPassthrough .eqv. .false.) then 
-                  !    mtln_solver%bundles(m)%lpul(n,1,1) = l 
-                  !    mtln_solver%bundles(m)%cpul(n,1,1) = c 
-                  !    if (mtln_solver%bundles(m)%external_field_segments(n)%has_dielectric) then
-                  !       mtln_solver%bundles(m)%external_field_segments(n)%dielectric%effective_relative_permittivity = computeEffectivePermittivity(m,n,l,c)
-                  !    end if
-                  ! end if
+                  ! mtln_solver%bundles(m)%lpul(n,1:size(l,1),1:size(l,2)) = l 
+                  ! mtln_solver%bundles(m)%cpul(n,1:size(c,1),1:size(c,2)) = c 
+                  l = hwires%CurrentSegment(indexMap(m,n))%Lind ! 3.94244466e-07
+                  c = mu0*eps0/l ! 2.82223377e-11!
+                  if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
+                     mtln_solver%bundles(m)%lpul(n,1,1) = 3.94244466e-07
+                     mtln_solver%bundles(m)%cpul(n,1,1) = 2.82223377e-11
+                  end if
                end do
                mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1:size(c,1),1:size(c,2)) = &
                   mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1:size(c,1),1:size(c,2))
@@ -133,25 +128,6 @@ contains
          end do
       end subroutine
 
-      function readLFromTULIP() result(res)
-         real(kind=rkind), dimension(:,:), allocatable :: res
-         allocate(res(2,2))
-         ! res(:,:) = 1e-7
-         res(1,1) = 8.474362419147366e-07
-         res(1,2) = 2.532943838463675e-07
-         res(2,1) = 2.532943838463675e-07
-         res(2,2) = 3.876967674976909e-07
-
-      end function
-      function readCFromTULIP() result(res)
-         real(kind=rkind), dimension(:,:), allocatable :: res
-         allocate(res(2,2))
-         ! res(:,:) = 1e-11
-         res(1,1) =   1.6307969274691786e-11
-         res(1,2) =   -1.0654504694169652e-11
-         res(2,1) =   -1.065450469416965e-11
-         res(2,2) =   3.5646322987431435e-11
-      end function
 
       ! function computeEffectivePermittivity(m,n,l0,c0) result(res)
       !    integer (kind=4) :: i, j, k, direction
