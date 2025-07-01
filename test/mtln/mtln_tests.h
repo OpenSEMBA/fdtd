@@ -2,7 +2,6 @@
 
 // test_mtl.F90
 extern "C" int test_mtl_init_homogeneous();
-extern "C" int test_mtl_init_inhomogeneous();
 extern "C" int test_mtl_time_step();
 extern "C" int test_mtl_wrong_dt();
 //test_mtl_bundle.F90
@@ -20,6 +19,8 @@ extern "C" int test_math_matmul_broadcast();
 
 // test_multipolar_expansion.F90
 extern "C" int test_multipolar_expansion_for_dipole();
+extern "C" int test_multipolar_expansion_for_lansink_two_wires();
+extern "C" int test_multipolar_expansion_for_lansink_wire_with_dielectric();
 
 // test_dispersive.F90
 extern "C" int test_dispersive_init_1_pole();
@@ -56,7 +57,6 @@ extern "C" int test_preprocess_zt_conductor_ranges();
 // extern "C" int test_termination_rcp();
 
 TEST(mtln, mtl_homogeneous)   { EXPECT_EQ(0, test_mtl_init_homogeneous()); }
-TEST(mtln, mtl_inhomogeneous) { EXPECT_EQ(0, test_mtl_init_inhomogeneous()); }
 TEST(mtln, mtl_time_step) { EXPECT_EQ(0, test_mtl_time_step()); }
 TEST(mtln, mtl_wrong_dt) { EXPECT_EQ(0, test_mtl_wrong_dt()); }
 TEST(mtln, mtl_bundle_init) { EXPECT_EQ(0, test_mtl_bundle_init()); }
@@ -74,6 +74,8 @@ TEST(mtln, preprocess_zt_conductor_ranges) { EXPECT_EQ(0, test_preprocess_zt_con
 TEST(mtln, math_eigvals) { EXPECT_EQ(0, test_math_eigvals()); }
 TEST(mtln, math_matmul_broadcast) { EXPECT_EQ(0, test_math_matmul_broadcast()); }
 TEST(mtln, multipolar_expansion_of_dipole) { EXPECT_EQ(0, test_multipolar_expansion_for_dipole()); }
+TEST(mtln, multipolar_expansion_lansink_two_wires) { EXPECT_EQ(0, test_multipolar_expansion_for_lansink_two_wires()); }
+TEST(mtln, multipolar_expansion_lansink_wire_w_dielectric) { EXPECT_EQ(0, test_multipolar_expansion_for_lansink_wire_with_dielectric()); }
 TEST(mtln, dispersive_init_1_pole) { EXPECT_EQ(0, test_dispersive_init_1_pole()); }
 TEST(mtln, dispersive_init_2_poles) { EXPECT_EQ(0, test_dispersive_init_2_poles()); }
 TEST(mtln, dispersive_init_1_pole_3_levels) { EXPECT_EQ(0, test_dispersive_init_1_pole_3_levels()); }

@@ -20,12 +20,13 @@ solver.run()
 probe_names = solver.getSolvedProbeFilenames("wire_start")
 mid_nompi = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
+# %% Run solver
 fn = 'shieldedPair.fdtd.json'
 solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'],mpi_command='mpirun -np 2')
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("wire_start")
-mid_mpi2 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+mid_mpi2 = Probe(list(filter(lambda x: '_I_75_74_74' in x, probe_names))[0])
 
 # %% Run solver
 fn = 'shieldedPair.fdtd.json'
@@ -40,9 +41,17 @@ mid_mpi3 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 # %% Plot results
 pf = "shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat"
 expected = Probe(OUTPUTS_FOLDER+pf)
+
+probe_names = solver.getSolvedProbeFilenames("wire_start")
+i_start = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+probe_names = solver.getSolvedProbeFilenames("wire_end")
+i_end   = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+
 plt.figure()
-plt.plot(mid_nompi['time'], -mid_nompi['current_0'], '.',label = 'no mpi')
-plt.plot(mid_mpi2['time'], -mid_mpi2['current_0'], '-.',label = 'mpi 2')
+plt.plot(i_start['time'], -i_start['current_0'], '.',label = 'start')
+plt.plot(i_end['time'], -i_end['current_0'], '.',label = 'end')
+# plt.plot(mid_nompi['time'], -mid_nompi['current_0'], '.',label = 'no mpi')
+# plt.plot(mid_mpi2['time'], -mid_mpi2['current_0'], '-.',label = 'mpi 2')
 plt.plot(expected['time'], -expected['current'], '--',label = 'expected')
 
 plt.grid(which='both')

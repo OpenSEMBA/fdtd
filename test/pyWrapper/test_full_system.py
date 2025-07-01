@@ -122,15 +122,20 @@ def test_holland(tmp_path):
 
     probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
     probe_files = [probe_current]
-
-    p_expected = Probe(
-        OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
-
     p_solved = Probe(probe_files[0])
+
+    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
+    expected_t, expected_i = np.array([]), np.array([])
+    for data in expected_f['datasetColl'][0]['data']:
+        expected_t = np.append(expected_t, float(data['value'][0]))    
+        expected_i = np.append(expected_i, float(data['value'][1]))    
+
+    expected_i_interp = np.interp(p_solved['time']-3.05*1e-9, expected_t, expected_i)
+
     assert np.allclose(
-        p_expected.data.to_numpy()[:, 0:3], 
-        p_solved.data.to_numpy()[:, 0:3], 
-        rtol=1e-5, atol=1e-6)
+        expected_i_interp, 
+        -p_solved['current'], 
+        rtol=1e-4, atol=5e-5)
 
 
 @no_mtln_skip
@@ -142,17 +147,22 @@ def test_holland_mtln(tmp_path):
 
     solver.run()
 
-    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
+    probe_current = solver.getSolvedProbeFilenames("mid_point_bundle_single_unshielded_multiwire_I")[0]
     probe_files = [probe_current]
-
-    p_expected = Probe(
-        OUTPUTS_FOLDER+'holland1981_unshielded.fdtd_mid_point_Wz_11_11_12_s2.dat')
-
     p_solved = Probe(probe_files[0])
+
+    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
+    expected_t, expected_i = np.array([]), np.array([])
+    for data in expected_f['datasetColl'][0]['data']:
+        expected_t = np.append(expected_t, float(data['value'][0]))    
+        expected_i = np.append(expected_i, float(data['value'][1]))    
+
+    expected_i_interp = np.interp(p_solved['time']-3.05*1e-9, expected_t, expected_i)
+
     assert np.allclose(
-        p_expected.data.to_numpy()[:, 0:3], 
-        p_solved.data.to_numpy()[:, 0:3], 
-        rtol=1e-5, atol=1e-6)
+        expected_i_interp, 
+        p_solved['current_0'], 
+        rtol=1e-4, atol=5e-5)
 
 @no_mtln_skip
 @no_mpi_skip

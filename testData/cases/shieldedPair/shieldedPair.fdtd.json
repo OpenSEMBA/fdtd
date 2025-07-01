@@ -39,18 +39,18 @@
 		{
 			"name": "Shield",
 			"id": 2,
-			"type": "wire",
-			"radius": 6.538e-3,
-            "inductancePerMeter": 0.0,
-			"resistancePerMeter": 22.9e-3
+			"type": "unshieldedMultiwire",
+            "inductancePerMeter":  [[3.94244466e-07]],
+            "capacitancePerMeter": [[2.82223377e-11]],
+			"resistancePerMeter": [22.9e-3]
 		},
 		{
 			"name": "leftTerminal",
 			"id": 3,
 			"type": "terminal",
 			"terminations" : [
-				{"type": "series", "resistance": 50},
-				{"type": "series", "resistance": 50}
+				{"type": "series", "resistance": 50.0},
+				{"type": "series", "resistance": 50.0}
 			]
 		},
 		{
@@ -66,7 +66,7 @@
 			"id": 6,
 			"type": "terminal",
 			"terminations": [
-				{"type": "series", "resistance": 50}
+				{"type": "series", "resistance": 50.0}
 			]
 		},
 		{
@@ -109,8 +109,8 @@
 			{ "id": 1, "type": "polyline", "coordinateIds": [1,2,3,4]},
 			{ "id": 2, "type": "node",     "coordinateIds": [1] },
 			{ "id": 3, "type": "node",     "coordinateIds": [4] },
-            { "id": 4, "type": "cell", "intervals": [[[10,10,10], [140,140,140]]] },
-            { "id": 5, "type": "cell", "intervals": [[[20,20,74], [130,130,74]]] },
+            { "id": 4, "type": "cell", 	   "intervals": [[[10,10,10], [140,140,140]]] },
+            { "id": 5, "type": "cell", 	   "intervals": [[[20,20,74], [130,130,74]]] },
 			{ "id": 6, "type": "polyline", "coordinateIds": [5,6,7,8]},
 			{ "id": 7, "type": "polyline", "coordinateIds": [9,10,11,12]}
 		]
@@ -166,22 +166,22 @@
 
 	"materialAssociations": [
 		{
-			"name": "line_0",
-						"elementIds": [ 1 ],
+			"name": "line_out",
+			"elementIds": [ 1 ],
 			"materialId": 2,
 			"initialTerminalId": 6,
 			"endTerminalId": 6
 		},
 		{
-			"name": "line_1",
-						"elementIds": [ 6,7 ],
+			"name": "line_in",
+			"elementIds": [ 6,7 ],
 			"materialId": 1,
 			"initialTerminalId": 3,
 			"endTerminalId": 3,
 			"containedWithinElementId": 1
 		},
 		{
-						"materialId" : 5,
+			"materialId" : 5,
 			"elementIds": [5]
 
 		}

@@ -3593,40 +3593,46 @@ contains
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
+         real :: center_pos
          integer :: j
          res%min = [0.0,0.0]
          res%max = [0.0,0.0]
-         do j = 1, segment%y - 1
-            res%min(1) = res%min(1) + despl%desY(j)
+         center_pos = 0.0
+         do j = 1, segment%y
+            center_pos = center_pos + despl%desY(j)
          end do
-         res%min(1) = 0.5*(res%min(1) + despl%desY(segment%y))
-         res%max(1) = 0.5*(res%min(1) + despl%desY(segment%y) + despl%desY(segment%y) + 1)
+         res%min(1) = 0.5*(center_pos + (center_pos - despl%desY(segment%y-1)))
+         res%max(1) = 0.5*(center_pos + (center_pos + despl%desY(segment%y)))
 
-         do j = 1, segment%z - 1
-            res%min(2) = res%min(2) + despl%desZ(j)
+         center_pos = 0.0
+         do j = 1, segment%z
+            center_pos = center_pos + despl%desZ(j)
          end do
-         res%min(2) = 0.5*(res%min(2) + despl%desZ(segment%z))
-         res%max(2) = 0.5*(res%min(2) + despl%desZ(segment%z) + despl%desZ(segment%z) + 1)
+         res%min(2) = 0.5*(center_pos + (center_pos - despl%desZ(segment%z-1)))
+         res%max(2) = 0.5*(center_pos + (center_pos + despl%desZ(segment%z)))
       end function
 
       function getdualBoxXY(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
+         real :: center_pos
          integer :: j
          res%min = [0.0,0.0]
          res%max = [0.0,0.0]
-         do j = 1, segment%x - 1
-            res%min(1) = res%min(1) + despl%desX(j)
+         center_pos = 0.0
+         do j = 1, segment%x
+            center_pos = center_pos + despl%desX(j)
          end do
-         res%min(1) = 0.5*(res%min(1) + despl%desX(segment%x))
-         res%max(1) = 0.5*(res%min(1) + despl%desX(segment%x) + despl%desX(segment%x) + 1)
+         res%min(1) = 0.5*(center_pos + (center_pos - despl%desX(segment%x-1)))
+         res%max(1) = 0.5*(center_pos + (center_pos + despl%desX(segment%x)))
 
-         do j = 1, segment%y - 1
-            res%min(2) = res%min(2) + despl%desY(j)
+         center_pos = 0.0
+         do j = 1, segment%y
+            center_pos = center_pos + despl%desY(j)
          end do
-         res%min(2) = 0.5*(res%min(2) + despl%desY(segment%y))
-         res%max(2) = 0.5*(res%min(2) + despl%desY(segment%y) + despl%desY(segment%y) + 1)
+         res%min(2) = 0.5*(center_pos + (center_pos - despl%desY(segment%y-1)))
+         res%max(2) = 0.5*(center_pos + (center_pos + despl%desY(segment%y)))
 
       end function
 
@@ -3634,20 +3640,23 @@ contains
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
+         real :: center_pos
          integer :: j
          res%min = [0.0,0.0]
          res%max = [0.0,0.0]
-         do j = 1, segment%z - 1
-            res%min(1) = res%min(1) + despl%desZ(j)
+         center_pos = 0.0
+         do j = 1, segment%z
+            center_pos = center_pos + despl%desZ(j)
          end do
-         res%min(1) = 0.5*(res%min(1) + despl%desZ(segment%z))
-         res%max(1) = 0.5*(res%min(1) + despl%desZ(segment%z) + despl%desZ(segment%z) + 1)
+         res%min(1) = 0.5*(center_pos + (center_pos - despl%desZ(segment%z-1)))
+         res%max(1) = 0.5*(center_pos + (center_pos + despl%desZ(segment%z)))
 
-         do j = 1, segment%x - 1
-            res%min(2) = res%min(2) + despl%desX(j)
+         center_pos = 0.0
+         do j = 1, segment%x
+            center_pos = center_pos + despl%desX(j)
          end do
-         res%min(2) = 0.5*(res%min(2) + despl%desX(segment%X))
-         res%max(2) = 0.5*(res%min(2) + despl%desX(segment%X) + despl%desX(segment%x) + 1)
+         res%min(2) = 0.5*(center_pos + (center_pos - despl%desX(segment%x-1)))
+         res%max(2) = 0.5*(center_pos + (center_pos + despl%desX(segment%x)))
 
       end function
 

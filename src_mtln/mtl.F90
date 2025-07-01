@@ -76,7 +76,6 @@ module mtl_mod
     interface mtl_t
         module procedure mtl_shielded
         module procedure mtl_unshielded
-        ! module procedure mtlCtor
     end interface
 
     type, public :: transmission_line_level_t

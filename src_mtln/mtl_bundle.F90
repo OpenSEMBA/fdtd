@@ -393,12 +393,12 @@ contains
         if (sizeof > 1) call this%Comm_MPI_Fields()
 #endif
 
-        ! do j = 1, this%conductors_in_level(1)
-        !     do i = 1, size(this%e_L,2)
-        !             this%e_L(j,i) = this%external_field_segments(i)%field * &
-        !                             this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
-        !     end do
-        ! end do
+        do j = 1, this%conductors_in_level(1)
+            do i = 1, size(this%e_L,2)
+                    this%e_L(j,i) = this%external_field_segments(i)%field * &
+                                    this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+            end do
+        end do
 
     end subroutine
 

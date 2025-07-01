@@ -247,7 +247,10 @@ contains
             if (associated(cable%parent_cable)) then 
                 parent_name = cable%parent_cable%name
                 conductor_in_parent = cable%conductor_in_parent
-            end if  
+            else 
+                parent_name = "unassigned_parent"
+                conductor_in_parent = -1
+            end if
             res = mtl_shielded( lpul = cable%inductance_per_meter, cpul = cable%capacitance_per_meter, &
                                 rpul = cable%resistance_per_meter, gpul = cable%conductance_per_meter, &
                                 step_size = cable%step_size, name = cable%name, segments = cable%segments,&
@@ -347,13 +350,10 @@ contains
             ! precount
             n = 0
             do i = 1, size(cable%segments)
-            ! do i = 1, size(cable%external_field_segments)
                 direction = cable%segments(i)%orientation
-                ! direction = cable%external_field_segments(i)%direction
                 position(1) = cable%segments(i)%x
                 position(2) = cable%segments(i)%y
                 position(3) = cable%segments(i)%z
-                ! position = cable%external_field_segments(i)%position
                 if ((position(1) >= Alloc(abs(direction))%XI).and. &
                     (position(1) <= Alloc(abs(direction))%XE).and. &
                     (position(2) >= Alloc(abs(direction))%YI).and. &
@@ -376,13 +376,10 @@ contains
             n = 1 
             in_layer = .false.
             do i = 1, size(cable%segments)
-            ! do i = 1, size(cable%external_field_segments)
                 direction = cable%segments(i)%orientation
-                ! direction = cable%external_field_segments(i)%direction
                 position(1) = cable%segments(i)%x
                 position(2) = cable%segments(i)%y
                 position(3) = cable%segments(i)%z
-                ! position = cable%external_field_segments(i)%position
                 if ((position(1) >= Alloc(abs(direction))%XI).and. &
                     (position(1) <= Alloc(abs(direction))%XE).and. &
                     (position(2) >= Alloc(abs(direction))%YI).and. &
@@ -419,7 +416,6 @@ contains
 
         allocate(level%cables(1))
         level%cables(1)%ptr => parent%ptr
-        ! level%cables(1)%ptr => parent%ptr
         
         res%levels(1) = level
 

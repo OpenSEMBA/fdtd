@@ -46,7 +46,7 @@ contains
    
       type(mtln_t) :: mtln_parsed
       logical :: thereAreMTLNbundles
-      type(Thinwires_t), pointer  ::  hwires
+      ! type(Thinwires_t), pointer  ::  hwires
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -69,11 +69,11 @@ contains
            return
       endif
 
-      hwires => GetHwires()
+      ! hwires => GetHwires()
       ! indexMap = mapFieldToCurrentSegments(hwires, mtln_solver%bundles)
  
       call pointSegmentsToFields()
-      call assignLCToExternalLevel()
+      ! call assignLCToExternalLevel()
       call updateNetworksLineCapacitors()
       call mtln_solver%updatePULTerms()
 
@@ -105,28 +105,28 @@ contains
          end do
       end subroutine
 
-      subroutine assignLCToExternalLevel()
-         integer(kind=4) :: m, n
-         ! real (kind=rkind) :: l,c
-         real (kind=rkind), dimension(:,:), allocatable :: l,c
+      ! subroutine ()
+      !    integer(kind=4) :: m, n
+      !    ! real (kind=rkind) :: l,c
+      !    real (kind=rkind), dimension(:,:), allocatable :: l,c
 
-         do m = 1, mtln_solver%number_of_bundles
-            if (mtln_solver%bundles(m)%bundle_in_layer) then 
-               do n = 1, mtln_solver%bundles(m)%number_of_divisions
-                  ! mtln_solver%bundles(m)%lpul(n,1:size(l,1),1:size(l,2)) = l 
-                  ! mtln_solver%bundles(m)%cpul(n,1:size(c,1),1:size(c,2)) = c 
-                  l = hwires%CurrentSegment(indexMap(m,n))%Lind ! 3.94244466e-07
-                  c = mu0*eps0/l ! 2.82223377e-11!
-                  if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
-                     mtln_solver%bundles(m)%lpul(n,1,1) = 3.94244466e-07
-                     mtln_solver%bundles(m)%cpul(n,1,1) = 2.82223377e-11
-                  end if
-               end do
-               mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1:size(c,1),1:size(c,2)) = &
-                  mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1:size(c,1),1:size(c,2))
-         end if
-         end do
-      end subroutine
+      !    do m = 1, mtln_solver%number_of_bundles
+      !       if (mtln_solver%bundles(m)%bundle_in_layer) then 
+      !          do n = 1, mtln_solver%bundles(m)%number_of_divisions
+      !             ! mtln_solver%bundles(m)%lpul(n,1:size(l,1),1:size(l,2)) = l 
+      !             ! mtln_solver%bundles(m)%cpul(n,1:size(c,1),1:size(c,2)) = c 
+      !             l = hwires%CurrentSegment(indexMap(m,n))%Lind ! 3.94244466e-07
+      !             c = mu0*eps0/l ! 2.82223377e-11!
+      !             if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
+      !                mtln_solver%bundles(m)%lpul(n,1,1) = 3.94244466e-07
+      !                mtln_solver%bundles(m)%cpul(n,1,1) = 2.82223377e-11
+      !             end if
+      !          end do
+      !          mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1:size(c,1),1:size(c,2)) = &
+      !             mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1:size(c,1),1:size(c,2))
+      !    end if
+      !    end do
+      ! end subroutine
 
 
       ! function computeEffectivePermittivity(m,n,l0,c0) result(res)

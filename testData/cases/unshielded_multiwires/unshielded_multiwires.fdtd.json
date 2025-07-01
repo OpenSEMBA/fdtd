@@ -14,16 +14,9 @@
     },
     "materials": [
         {
-            "name": "Shield",
-            "id": 14,
-            "type": "wire",
-            "radius": 0.0001,
-            "resistancePerMeter": 22.9e-3
-        },
-        {
-            "id": 12,
-            "type": "shieldedMultiwire",
-            "name": "L_Cinv_C_Pinv",
+            "id": 1,
+            "type": "unshieldedMultiwire",
+            "name": "berenger_wires",
             "inductancePerMeter": [
                 [
                     8.474362419147366e-07,
@@ -42,31 +35,6 @@
                 [
                     -1.065450469416965e-11,
                     3.5646322987431435e-11
-                ]
-            ]
-        },
-        {
-            "id": 13,
-            "type": "shieldedMultiwire",
-            "name": "L_Cinv_C_Pinv",
-            "inductancePerMeter": [
-                [
-                    0.0,
-                    0.0
-                ],
-                [
-                    0.0,
-                    0.0
-                ]
-            ],
-            "capacitancePerMeter": [
-                [
-                    0.0,
-                    0.0
-                ],
-                [
-                    0.0,
-                    0.0
                 ]
             ]
         },
@@ -288,8 +256,8 @@
     "materialAssociations": [
         {
             "type": "cable",
-            "name": "single_inner_wire",
-            "materialId": 12,
+            "name": "unshielded_two_wire",
+            "materialId": 1,
             "initialTerminalId": 4,
             "endTerminalId": 4,
             "elementIds": [
