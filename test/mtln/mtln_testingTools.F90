@@ -6,21 +6,37 @@ module mtln_testingTools_mod
     implicit none
     
     character(len=*, kind=c_char), parameter :: PATH_TO_TEST_DATA = c_char_'./testData/'
+    character(len=*), parameter :: MTL_TYPE_SHIELDED = "shielded"
+    character(len=*), parameter :: MTL_TYPE_UNSHIELDED = "unshielded"
 
 contains
     
     
-    type(mtl_t) function buildLineWithNConductors(n,name, parent_name, conductor_in_parent, dt) result(res)
+    type(mtl_t) function buildLineWithNConductors(n,name, parent_name, conductor_in_parent, dt, type) result(res)
     
         integer, intent(in) :: n
         character(len=*), intent(in) :: name
         real, intent(in), optional :: dt
         character(len=*), intent(in), optional :: parent_name
         integer, intent(in), optional :: conductor_in_parent
+        character(len=*), intent(in) :: type
+        
         real, allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
         real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
         type(segment_t), allocatable, dimension(:) :: segments
         integer :: i,j
+        
+        real :: time_step
+        integer :: conductor
+        character(len=:), allocatable :: parent
+
+        type(transfer_impedance_per_meter_t):: Zt
+        type(multipolar_expansion_t), dimension(:), allocatable:: mE
+
+        Zt%inductive_term = 0.0
+        Zt%resistive_term = 0.0
+        allocate(Zt%poles(0), Zt%residues(0))
+        allocate(mE(0))
 
         allocate(lpul(n,n), source = 0.0)
         allocate(cpul(n,n), source = 0.0)
@@ -47,20 +63,30 @@ contains
                 end if
             end do
         end do
-        if (present(dt) .and. .not.present(parent_name)) then
-            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, segments = segments, dt = dt)
-        else if (.not.present(dt) .and. present(parent_name) ) then
-            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, segments = segments, & 
-                        parent_name= parent_name, &
-                        conductor_in_parent=conductor_in_parent)
-        else if (present(dt) .and. present(parent_name) ) then
-            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, segments = segments, & 
-                        parent_name= parent_name, &
-                        conductor_in_parent=conductor_in_parent, &
-                        dt = dt)
+        if (.not. present(dt)) then 
+            time_step = 1e-12
         else 
-            res = mtl_t(lpul, cpul, rpul, gpul, step_size, name, segments = segments)
+            time_step = dt
         end if
+        
+        if (type == MTL_TYPE_SHIELDED) then 
+            if (.not. present(parent_name)) then 
+                parent = "p" 
+            else
+                parent = parent_name
+            end if
+            if (.not. present(conductor_in_parent)) then 
+                conductor = -1
+            else 
+                conductor = conductor_in_parent
+            end if
+            res = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, parent, conductor, Zt)
+        else if (type == MTL_TYPE_UNSHIELDED) then 
+            res = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, mE)
+        else
+            write(*,*) 'Unrecognized line type'
+        end if
+
     end function    
 
     subroutine comparePULMatrices(error_cnt, m_line, m_input)

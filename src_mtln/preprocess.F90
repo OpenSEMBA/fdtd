@@ -248,78 +248,26 @@ contains
                 parent_name = cable%parent_cable%name
                 conductor_in_parent = cable%conductor_in_parent
             end if  
-            res = mtl_shielded( lpul = cable%inductance_per_meter, &
-                                cpul = cable%capacitance_per_meter, &
-                                rpul = cable%resistance_per_meter, &
-                                gpul = cable%conductance_per_meter, &
-                                step_size = cable%step_size, &
-                                name = cable%name, &
-                                segments = cable%segments,&
-                                dt = dt, &
-                                parent_name = parent_name, &
-                                conductor_in_parent = conductor_in_parent, & 
+            res = mtl_shielded( lpul = cable%inductance_per_meter, cpul = cable%capacitance_per_meter, &
+                                rpul = cable%resistance_per_meter, gpul = cable%conductance_per_meter, &
+                                step_size = cable%step_size, name = cable%name, segments = cable%segments,&
+                                dt = dt, parent_name = parent_name, conductor_in_parent = conductor_in_parent, & 
                                 transfer_impedance = cable%transfer_impedance &
 #ifdef CompileWithMPI
-                                ,layer_indices = layer_indices, & 
-                                bundle_in_layer = bundle_in_layer, &
-                                alloc_z = alloc_z &
+                                ,layer_indices = layer_indices, bundle_in_layer = bundle_in_layer, alloc_z = alloc_z &
 #endif
                                 )
 
         type is(unshielded_multiwire_t)
-            res = mtl_unshielded( lpul = cable%cell_inductance_per_meter, &
-                                  cpul = cable%cell_capacitance_per_meter, &
-                                  rpul = cable%resistance_per_meter, &
-                                  gpul = cable%conductance_per_meter, &
-                                  step_size = cable%step_size, &
-                                  name = cable%name, &
-                                  segments = cable%segments,&
-                                  dt = dt, &
-                                  multipolar_expansion = cable%multipolar_expansion &
+            res = mtl_unshielded( lpul = cable%cell_inductance_per_meter, cpul = cable%cell_capacitance_per_meter, &
+                                  rpul = cable%resistance_per_meter, gpul = cable%conductance_per_meter, &
+                                  step_size = cable%step_size, name = cable%name, segments = cable%segments,&
+                                  dt = dt, multipolar_expansion = cable%multipolar_expansion &
 #ifdef CompileWithMPI
-                                 ,layer_indices = layer_indices, & 
-                                 bundle_in_layer = bundle_in_layer, &
-                                 alloc_z = alloc_z &
+                                 ,layer_indices = layer_indices, bundle_in_layer = bundle_in_layer, alloc_z = alloc_z &
 #endif
                                 )
         end select
-
-!             res = mtlCtor(      lpul = cable%inductance_per_meter, &
-!                                 cpul = cable%capacitance_per_meter, &
-!                                 rpul = cable%resistance_per_meter, &
-!                                 gpul = cable%conductance_per_meter, &
-!                                 step_size = cable%step_size, &
-!                                 name = cable%name, &
-!                                 segments = cable%segments,&
-!                                 dt = dt, &
-!                                 parent_name = parent_name, &
-!                                 conductor_in_parent = conductor_in_parent, & 
-!                                 transfer_impedance = cable%transfer_impedance &
-! #ifdef CompileWithMPI
-!                                 ,layer_indices = layer_indices, & 
-!                                 bundle_in_layer = bundle_in_layer, &
-!                                 alloc_z = alloc_z &
-! #endif
-!                                 )
-                                
-!         type is (unshielded_multiwire_t)
-!             res = mtlCtor(lpul = cable%cell_inductance_per_meter, &
-!                                 cpul = cable%cell_capacitance_per_meter, &
-!                                 rpul = cable%resistance_per_meter, &
-!                                 gpul = cable%conductance_per_meter, &
-!                                 step_size = cable%step_size, &
-!                                 name = cable%name, &
-!                                 segments = cable%segments,&
-!                                 dt = dt &
-! #ifdef CompileWithMPI
-!                                 ,layer_indices = layer_indices, & 
-!                                 bundle_in_layer = bundle_in_layer, &
-!                                 alloc_z = alloc_z &
-! #endif
-!                                 )
-                                
-                            
-        ! end select
         if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
         if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
 

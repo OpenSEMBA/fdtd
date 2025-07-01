@@ -212,88 +212,6 @@ contains
         res%lumped_elements = dispersive_lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
     end function
 
-
-!     function mtlCtor(lpul, cpul, rpul, gpul, &
-!                             step_size, name, segments, &
-!                             multipolar_expansion, &
-!                             dt, parent_name, conductor_in_parent, &
-!                             transfer_impedance, &
-!                             layer_indices, bundle_in_layer, alloc_z) result(res)
-!         type(mtl_t) :: res
-!         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
-!         real, intent(in), dimension(:) :: step_size
-!         character(len=*), intent(in) :: name
-!         type(segment_t), dimension(:), allocatable, intent(in) :: segments
-!         type(multipolar_expansion_t), intent(in), optional :: multipolar_expansion
-!         real, intent(in), optional :: dt
-!         real :: max_dt
-!         character(len=*), intent(in), optional :: parent_name
-!         integer, intent(in), optional :: conductor_in_parent
-!         type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
-!         integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
-!         logical, optional :: bundle_in_layer
-!         integer(kind=4), dimension (2), intent(in), optional :: alloc_z
-! #ifdef CompileWithMPI
-!         integer (kind=4) :: sizeof, ierr
-!         if (present(layer_indices)) then 
-!             ! call res%initStepSizeAndFieldSegments(step_size, external_field_segments, layer_indices)
-!             ! => call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
-!             call res%initCommunicators(alloc_z)
-!             res%layer_indices = layer_indices
-!             res%bundle_in_layer = bundle_in_layer
-!         else
-!             res%step_size =  step_size
-!             allocate(res%layer_indices(0,0))
-!             allocate(res%mpi_comm%comms(0))
-!             ! res%external_field_segments = external_field_segments
-!         end if
-! #else
-!         res%step_size =  step_size
-!         res%segments = segments
-!         ! res%external_field_segments = external_field_segments
-! #endif
-
-!         res%name = name
-!         call checkPULDimensions(lpul, cpul, rpul, gpul)
-!         res%number_of_conductors = size(lpul, 1)
-
-!         call res%initDirections()
-
-!         call res%allocatePULMatrices()
-!         if (present(multipolar_expansion)) then 
-!             call res%computeLCParameters(multipolar_expansion)
-!         else
-!             call res%initLC(lpul, cpul)
-!         end if
-!         call res%initRG(rpul, gpul)
-
-!         ! call res%checkTimeStep(dt)
-!         if (present(dt)) then 
-!             if (lpul(1,1) /= 0.0) then 
-!                 max_dt = res%getMaxTimeStep() 
-!                 if (dt > max_dt) then
-!                     res%dt = max_dt
-!                     write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
-!                 else 
-!                     res%dt = dt
-!                 end if
-!             else 
-!                 res%dt = dt
-!             end if
-!         else
-!             if (lpul(1,1) /= 0.0) then 
-!                 res%dt = res%getMaxTimeStep() 
-!             end if
-!         end if
-
-     
-!         res%lumped_elements = dispersive_lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
-!         if (present(parent_name)) res%parent_name = parent_name
-!         if (present(conductor_in_parent)) res%conductor_in_parent = conductor_in_parent
-!         if (present(transfer_impedance)) res%transfer_impedance = transfer_impedance
-
-!     end function
-
     subroutine checkTimeStep(this, dt)
         class(mtl_t) :: this
         real, intent(in), optional :: dt
@@ -315,8 +233,6 @@ contains
                 this%dt = this%getMaxTimeStep() 
             end if
         end if
-
-
     end subroutine
 
     subroutine allocatePULMatrices(this)

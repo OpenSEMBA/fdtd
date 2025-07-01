@@ -16,6 +16,13 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
     real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
     type(segment_t), allocatable, dimension(:) :: segments
 
+    type(transfer_impedance_per_meter_t):: Zt
+    type(multipolar_expansion_t), dimension(:), allocatable:: mE
+    Zt%inductive_term = 0.0
+    Zt%resistive_term = 0.0
+    allocate(Zt%poles(0), Zt%residues(0))
+    allocate(mE(0))
+
     error_cnt = 0
     allocate(segments(5))
     do i = 1, 5
@@ -25,8 +32,11 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
         segments(i)%orientation = 1
     end do
 
-    mtl_in   =  mtl_t(l1, c1, r1, g1, step_size, "line_in", conductor_in_parent = 1, segments = segments)
-    mtl_out   = mtl_t(l1, c1, r1, g1, step_size, "line_out", segments = segments)
+    mtl_in   =  mtl_shielded(l1, c1, r1, g1, step_size, name = "line_in", segments = segments, dt = 1e-11, & 
+                            parent_name = "line_out", conductor_in_parent = 1, &
+                            transfer_impedance = Zt)
+    mtl_out   = mtl_unshielded(l1, c1, r1, g1, step_size, name = "line_out", segments = segments, dt = 1e-11, &
+                            multipolar_expansion = mE )
 
     allocate(levels(1)%lines(1))
     allocate(levels(2)%lines(1))
