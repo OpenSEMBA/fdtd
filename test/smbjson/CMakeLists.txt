@@ -21,6 +21,7 @@ if(SEMBA_FDTD_ENABLE_MTLN)
     target_sources(smbjson_test_fortran PRIVATE
         "test_read_towelHanger.F90"
         "test_read_holland1981.F90"
+        "test_read_holland1981_unshielded.F90"
         "test_read_connectedWires.F90"
         "test_read_shieldedPair.F90"
         "test_read_mtln.F90"
