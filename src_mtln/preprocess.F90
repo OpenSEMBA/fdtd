@@ -87,7 +87,7 @@ contains
 #endif
         res%bundles = res%buildMTLBundles(line_bundles)
         if (size(res%bundles) == 0) then 
-            res%network_manager%has_networks = .false.
+            ! res%network_manager%has_networks = .false.
             return
         end if
 
@@ -317,12 +317,11 @@ contains
         nb = size(cable_bundles)
         allocate(res(nb))
         do i = 1, nb
-
-        if (present(alloc)) then
-            bundle_in_layer = .true.
-            layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc)
-            if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
-        endif
+            if (present(alloc)) then
+                bundle_in_layer = .true.
+                layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc)
+                if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
+            endif
             nl = size(cable_bundles(i)%levels)
             allocate(res(i)%levels(nl))
             do j = 1, nl

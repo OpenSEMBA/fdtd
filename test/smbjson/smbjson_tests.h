@@ -25,7 +25,7 @@ extern "C" int test_read_holland1981();
 extern "C" int test_read_holland1981_unshielded();
 extern "C" int test_read_connectedwires();
 extern "C" int test_read_shieldedpair();
-// extern "C" int test_read_large_airplane_mtln();
+extern "C" int test_read_large_airplane_mtln();
 extern "C" int test_read_lumped_fixture();
 extern "C" int test_read_unshielded_multiwires_multipolar_expansion();
 
@@ -57,7 +57,7 @@ TEST(smbjson, read_connectedwires)          { EXPECT_EQ(0, test_read_connectedwi
 TEST(smbjson, read_currentinjection)     { EXPECT_EQ(0, test_read_currentinjection()); }
 TEST(smbjson, read_shieldedpair)         { EXPECT_EQ(0, test_read_shieldedpair()); }
 TEST(smbjson, read_mtln)                 { EXPECT_EQ(0, test_read_mtln()); }
-// TEST(smbjson, read_large_airplane_mtln)  { EXPECT_EQ(0, test_read_large_airplane_mtln()); }
+TEST(smbjson, read_large_airplane_mtln)  { EXPECT_EQ(0, test_read_large_airplane_mtln()); }
 TEST(smbjson, read_unshielded_multiwires_multipolar_expansion) {
                                            EXPECT_EQ(0,  test_read_unshielded_multiwires_multipolar_expansion()); }
 #endif

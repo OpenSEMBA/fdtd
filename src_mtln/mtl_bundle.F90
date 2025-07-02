@@ -332,10 +332,7 @@ contains
             order=[2,3,1])
         this%i_diff = IF1
 
-        ! do i = 2, this%number_of_divisions
-        !     this%i_diff(i,1,1) = this%i_diff(i,1,1)/this%external_field_segments(i)%dielectric%effective_relative_permittivity
-        ! end do
-         
+       
     end subroutine
 
     subroutine bundle_updateSources(this, time, dt)
@@ -347,8 +344,6 @@ contains
     subroutine bundle_advanceVoltage(this)
         class(mtl_bundle_t) ::this
         integer :: i
-
-
         do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
@@ -436,18 +431,18 @@ contains
         integer :: i, ierr, rank, status(MPI_STATUS_SIZE)
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         do i = 1, size(this%mpi_comm%comms)
-            ! if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then 
-            !     call MPI_send(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field, 1, REALSIZE, & 
-            !                   rank+this%mpi_comm%comms(i)%delta_rank, & 
-            !                   100*(rank+this%mpi_comm%comms(i)%delta_rank+1), & 
-            !                   SUBCOMM_MPI, ierr)
-            ! end if
-            ! if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then 
-            !     call MPI_recv(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field,1, REALSIZE, & 
-            !                   rank+this%mpi_comm%comms(i)%delta_rank, &
-            !                   100*(rank+1), &
-            !                   SUBCOMM_MPI, status, ierr)
-            ! end if
+            if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then 
+                call MPI_send(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field, 1, REALSIZE, & 
+                              rank+this%mpi_comm%comms(i)%delta_rank, & 
+                              100*(rank+this%mpi_comm%comms(i)%delta_rank+1), & 
+                              SUBCOMM_MPI, ierr)
+            end if
+            if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then 
+                call MPI_recv(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field,1, REALSIZE, & 
+                              rank+this%mpi_comm%comms(i)%delta_rank, &
+                              100*(rank+1), &
+                              SUBCOMM_MPI, status, ierr)
+            end if
         end do
     end subroutine
 

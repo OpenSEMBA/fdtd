@@ -1115,8 +1115,14 @@ contains
       do i=1, size(ps)
          fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
          if (isMoreProbe(ps(i)%p)) then 
-            res%collection(n) = readPointProbe(ps(i)%p)
-            n = n + 1
+            probeLbl = this%getStrAt(ps(i)%p, J_TYPE, default=J_FIELD_ELECTRIC)
+            if (probeLbl == J_PR_TYPE_WIRE .or. probeLbl == J_PR_TYPE_POINT) then 
+               res%collection(n) = readPointProbe(ps(i)%p)
+               n = n + 1
+            else if (probeLbl == J_PR_TYPE_LINE) then
+               res%collection(n) = readLineProbe(ps(i)%p)
+               n = n + 1
+            end if
          end if
       end do
 
@@ -2306,7 +2312,6 @@ contains
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
       type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, cables
-      ! class(cable_t), allocatable, target :: read_cable
       class(cable_t), pointer :: ptr, read_cable
       integer :: i
 
@@ -3171,30 +3176,6 @@ contains
          end if
       end function
 
-      ! function getConnectorWithIdFromMap(id) result(res)
-      !    integer, intent(in) :: id
-      !    integer :: mStat
-      !    class(*), pointer :: d
-      !    type(connector_t), pointer :: res
-
-      !    nullify(res)
-      !    call connIdToConnector%check_key(key(id), mStat)
-      !    if (mStat /= 0) then
-      !       res => null()
-      !       return
-      !    end if
-
-      !    call connIdToConnector%get_raw_ptr(key(id), d, mStat)
-      !    if (mStat /= 0) then
-      !       res => null()
-      !       return
-      !    end if
-      !    select type(d)
-      !     type is (connector_t)
-      !       res => d
-      !    end select
-      ! end function
-
       function getParentPositionInMultiwire(id) result(res)
          integer, intent(in) :: id
          integer :: mStat
@@ -3286,42 +3267,6 @@ contains
 
       end function
 
-      ! subroutine assignExternalRadius(res, mat)
-      !    type(cable_t), intent(inout) :: res
-      !    type(json_value_ptr) :: mat
-      !    integer :: i
-
-      !    if (this%existsAt(mat%p, J_MAT_WIRE_RADIUS)) then
-      !       do i = 1, size(res%external_field_segments(:))
-      !          res%external_field_segments(i)%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS)
-      !       end do
-      !    else
-      !       call WarnErrReport("Wire radius is missing", .true.)
-      !    end if
-
-      ! end subroutine
-
-      ! subroutine assignDielectricProperties(res, mat)
-      !    type(cable_t), intent(inout) :: res
-      !    type(json_value_ptr) :: mat, diel
-      !    type(json_value), pointer :: diel_ptr
-      !    integer :: i
-
-      !    call this%core%get(mat%p, J_MAT_WIRE_DIELECTRIC, diel_ptr)
-      !    if (this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY) .and. & 
-      !        this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)) then
-
-      !       do i = 1, size(res%external_field_segments(:))
-      !          res%external_field_segments(i)%has_dielectric = .true.
-      !          res%external_field_segments(i)%dielectric%relative_permittivity = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY)
-      !          res%external_field_segments(i)%dielectric%radius = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)
-      !       end do
-      !    else
-      !       call WarnErrReport("Dielectric permittivity and/or radius are missing", .true.)
-      !    end if
-
-      ! end subroutine
-
       function buildTransferImpedance(mat) result(res)
          type(json_value_ptr):: mat
          type(transfer_impedance_per_meter_t) :: res
@@ -3370,39 +3315,6 @@ contains
             res => null()
          end if
       end function
-
-      ! subroutine assignReferenceProperties(res, mat)
-      !    type(cable_t), intent(inout) :: res
-      !    type(json_value_ptr) :: mat
-      !    real, dimension(1,1) :: val
-      !    allocate(res%capacitance_per_meter(1,1), source = 0.0)
-      !    allocate(res%inductance_per_meter(1,1), source = 0.0)
-      !    allocate(res%resistance_per_meter(1,1), source = 0.0)
-      !    allocate(res%conductance_per_meter(1,1), source = 0.0)
-
-      !    if (this%existsAt(mat%p, J_MAT_WIRE_REF_CAPACITANCE)) then
-      !       res%capacitance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_REF_CAPACITANCE)
-      !    else
-      !       call WarnErrReport("Capacitance per meter was not found during parsing and will be assigned in module Wire_bundles_mtln")
-      !       res%capacitance_per_meter(1,1) = 0.0
-      !    end if
-         
-      !    if (this%existsAt(mat%p, J_MAT_WIRE_REF_INDUCTANCE)) then
-      !       res%inductance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_REF_INDUCTANCE)
-      !    else
-      !       call WarnErrReport("Inductance per meter was not found during parsing will be assigned in module Wire_bundles_mtln")
-      !       res%inductance_per_meter(1,1) = 0.0
-      !    end if
-
-      !    allocate(res%multipolar_expansion(0))
-
-      !    if (this%existsAt(mat%p, J_MAT_WIRE_RESISTANCE)) then
-      !       res%resistance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_RESISTANCE)
-      !    else
-      !       res%resistance_per_meter(1,1) = 0.0
-      !    end if
-
-      ! end subroutine
 
       subroutine assignPULProperties(res, mat, n)
          type(shielded_multiwire_t), intent(inout) :: res
@@ -3593,70 +3505,24 @@ contains
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         real :: center_pos
-         integer :: j
-         res%min = [0.0,0.0]
-         res%max = [0.0,0.0]
-         center_pos = 0.0
-         do j = 1, segment%y
-            center_pos = center_pos + despl%desY(j)
-         end do
-         res%min(1) = 0.5*(center_pos + (center_pos - despl%desY(segment%y-1)))
-         res%max(1) = 0.5*(center_pos + (center_pos + despl%desY(segment%y)))
-
-         center_pos = 0.0
-         do j = 1, segment%z
-            center_pos = center_pos + despl%desZ(j)
-         end do
-         res%min(2) = 0.5*(center_pos + (center_pos - despl%desZ(segment%z-1)))
-         res%max(2) = 0.5*(center_pos + (center_pos + despl%desZ(segment%z)))
+         res%min = [-0.5*despl%desY(segment%y-1),-0.5*despl%desZ(segment%z-1)]
+         res%max = [ 0.5*despl%desY(segment%y),   0.5*despl%desZ(segment%z)]
       end function
 
       function getdualBoxXY(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         real :: center_pos
-         integer :: j
-         res%min = [0.0,0.0]
-         res%max = [0.0,0.0]
-         center_pos = 0.0
-         do j = 1, segment%x
-            center_pos = center_pos + despl%desX(j)
-         end do
-         res%min(1) = 0.5*(center_pos + (center_pos - despl%desX(segment%x-1)))
-         res%max(1) = 0.5*(center_pos + (center_pos + despl%desX(segment%x)))
-
-         center_pos = 0.0
-         do j = 1, segment%y
-            center_pos = center_pos + despl%desY(j)
-         end do
-         res%min(2) = 0.5*(center_pos + (center_pos - despl%desY(segment%y-1)))
-         res%max(2) = 0.5*(center_pos + (center_pos + despl%desY(segment%y)))
-
+         res%min = [-0.5*despl%desX(segment%x-1),-0.5*despl%desY(segment%y-1)]
+         res%max = [ 0.5*despl%desX(segment%x),   0.5*despl%desY(segment%y)]
       end function
 
       function getdualBoxZX(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         real :: center_pos
-         integer :: j
-         res%min = [0.0,0.0]
-         res%max = [0.0,0.0]
-         center_pos = 0.0
-         do j = 1, segment%z
-            center_pos = center_pos + despl%desZ(j)
-         end do
-         res%min(1) = 0.5*(center_pos + (center_pos - despl%desZ(segment%z-1)))
-         res%max(1) = 0.5*(center_pos + (center_pos + despl%desZ(segment%z)))
-
-         center_pos = 0.0
-         do j = 1, segment%x
-            center_pos = center_pos + despl%desX(j)
-         end do
-         res%min(2) = 0.5*(center_pos + (center_pos - despl%desX(segment%x-1)))
-         res%max(2) = 0.5*(center_pos + (center_pos + despl%desX(segment%x)))
+         res%min = [-0.5*despl%desZ(segment%z-1),-0.5*despl%desX(segment%x-1)]
+         res%max = [ 0.5*despl%desZ(segment%z),   0.5*despl%desX(segment%x)]
 
       end function
 
@@ -3678,113 +3544,6 @@ contains
             end select
          end do
       end function
-
-      ! function mapSegmentsToGridCoordinates(j_cable) result(res)
-      !    type(materialAssociation_t), intent(in) :: j_cable
-      !    type(external_field_segment_t), dimension(:), allocatable :: res
-      !    integer, dimension(:), allocatable :: elemIds
-      !    type(polyline_t) :: p_line
-
-      !    elemIds = j_cable%elementIds
-      !    if (size(elemIds) == 0) return
-
-      !    p_line = this%mesh%getPolyline(elemIds(1))
-      !    allocate(res(0))
-      !    block
-      !       type(coordinate_t) :: c1, c2
-      !       integer :: i
-      !       do i = 2, size(p_line%coordIds)
-      !          c2 = this%mesh%getCoordinate(p_line%coordIds(i))
-      !          c1 = this%mesh%getCoordinate(p_line%coordIds(i-1))
-
-      !          if (findOrientation(c2-c1) > 0) then
-      !             res = [res, mapPositiveSegment(c1,c2)]
-      !          else if (findOrientation(c2-c1) < 0) then
-      !             res = [res, mapNegativeSegment(c1,c2)]
-      !          else
-      !             call WarnErrReport('Error: polyline first and last coordinate are identical', .true.)
-      !          end if
-      !       end do
-      !    end block
-      ! end function
-
-      ! function mapNegativeSegment(c1, c2) result(res)
-      !    type(coordinate_t), intent(in) :: c1, c2
-      !    type(external_field_segment_t) :: curr_pos
-      !    integer :: axis, i, n_segments
-      !    type(external_field_segment_t), dimension(:), allocatable :: res
-
-      !    axis = findDirection(c2-c1)
-      !    n_segments = abs(ceiling(c2%position(axis)) - floor(c1%position(axis)))
-      !    allocate(res(n_segments))
-      !    curr_pos%position = [(c1%position(i), i = 1, 3)]
-      !    curr_pos%field => null()
-      !    curr_pos%radius = 0.0
-
-      !    res = [(curr_pos, i = 1, n_segments)]
-      !    res(:)%position(axis) = [(res(i)%position(axis) - i, i = 1, n_segments)]
-      !    res(:)%direction = -axis
-      ! end function
-
-      ! function mapPositiveSegment(c1, c2) result(res)
-      !    type(coordinate_t), intent(in) :: c1, c2
-      !    type(external_field_segment_t) :: curr_pos
-      !    integer :: axis, orientation, i, n_segments
-      !    type(external_field_segment_t), dimension(:), allocatable :: res
-
-      !    axis = findDirection(c2-c1)
-
-      !    n_segments = abs(floor(c2%position(axis)) - ceiling(c1%position(axis)))
-      !    allocate(res(n_segments))
-      !    curr_pos%position = [(c1%position(i), i = 1, 3)]
-      !    curr_pos%field => null()
-
-      !    res = [(curr_pos, i = 1, n_segments)]
-      !    res(:)%position(axis) = [(res(i)%position(axis) + (i-1), i = 1, n_segments)]
-      !    res(:)%direction = axis
-      ! end function
-
-      ! function buildStepSize(j_cable) result(res)
-      !    type(materialAssociation_t), intent(in) :: j_cable
-      !    real, dimension(:), allocatable :: res
-      !    integer, dimension(:), allocatable :: elemIds
-      !    type(polyline_t) :: p_line
-      !    type(Desplazamiento) :: desp
-
-      !    desp = this%readGrid()
-
-      !    elemIds = j_cable%elementIds
-      !    if (size(elemIds) == 0) return
-
-      !    p_line = this%mesh%getPolyline(elemIds(1))
-      !    allocate(res(0))
-      !    block
-      !       type(coordinate_t) :: c1, c2
-      !       integer :: axis, i, j
-      !       integer :: index_1, index_2
-      !       real :: f1, f2
-      !       real, dimension(:), allocatable :: displacement
-      !       do j = 2, size(p_line%coordIds)
-      !          c2 = this%mesh%getCoordinate(p_line%coordIds(j))
-      !          c1 = this%mesh%getCoordinate(p_line%coordIds(j-1))
-      !          axis = findDirection(c2-c1)
-      !          f1 = abs(ceiling(c1%position(axis))-c1%position(axis))
-      !          f2 = abs(c2%position(axis)-floor(c2%position(axis)))
-      !          displacement = assignDisplacement(desp, axis)
-      !          if (f1 /= 0) then
-      !             res = [res, f1*displacement(floor(c1%position(axis)))]
-      !          end if
-      !          index_1 = ceiling(min(abs(c1%position(axis)), abs(c2%position(axis))))
-      !          index_2 = floor(max(abs(c1%position(axis)), abs(c2%position(axis))))
-      !          do i = 1, index_2 - index_1
-      !             res = [res, displacement(i)]
-      !          enddo
-      !          if (f2 /= 0) then
-      !             res = [res, f2*displacement(floor(c2%position(axis)))]
-      !          end if
-      !       end do
-      !    end block
-      ! end function
 
       function readTransferImpedance(z) result(res)
          type(json_value), pointer :: z
@@ -3844,9 +3603,6 @@ contains
       function noTransferImpedance() result(res)
          type(transfer_impedance_per_meter_t) :: res
          character(len=:), allocatable :: direction
-         ! res%resistive_term = 0.0
-         ! res%inductive_term = 0.0
-         ! res%direction = 0
          allocate(res%poles(0), res%residues(0))
       end function
 

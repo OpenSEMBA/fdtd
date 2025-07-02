@@ -432,7 +432,6 @@ contains
          type(mtln_solver_t), pointer :: mtln_solver
          integer :: i,j
          mtln_solver => GetSolverPtr()
-         write(*,*) 'a'
          do i = 1, ubound(mtln_solver%bundles, 1)
             if (ubound(mtln_solver%bundles(i)%probes,1) /= 0) then 
                ThereAreObservation=.true.
@@ -4209,6 +4208,9 @@ contains
       character (len=bufsize)  ::  temp
       character (len=bufsize)  ::  path
       character (len=:), allocatable :: buffer
+#ifdef CompileWithMPI
+      integer (kind=4) :: ierr
+#endif
 
       mtln_solver => GetSolverPtr()
       unit = 2000
@@ -4226,6 +4228,9 @@ contains
             write(unit,*) trim(buffer)
             do k = 1, size(mtln_solver%bundles(i)%probes(j)%t)
                buffer = ""
+#ifdef CompileWithMPI
+               call MPI_Barrier(subcomm_mpi, ierr)
+#endif
                write(temp,*) mtln_solver%bundles(i)%probes(j)%t(k)
                buffer = buffer//trim(temp)
                do n = 1, size(mtln_solver%bundles(i)%probes(j)%val,2)

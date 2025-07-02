@@ -46,7 +46,6 @@ contains
    
       type(mtln_t) :: mtln_parsed
       logical :: thereAreMTLNbundles
-      ! type(Thinwires_t), pointer  ::  hwires
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -69,11 +68,7 @@ contains
            return
       endif
 
-      ! hwires => GetHwires()
-      ! indexMap = mapFieldToCurrentSegments(hwires, mtln_solver%bundles)
- 
       call pointSegmentsToFields()
-      ! call assignLCToExternalLevel()
       call updateNetworksLineCapacitors()
       call mtln_solver%updatePULTerms()
 
@@ -105,65 +100,6 @@ contains
          end do
       end subroutine
 
-      ! subroutine ()
-      !    integer(kind=4) :: m, n
-      !    ! real (kind=rkind) :: l,c
-      !    real (kind=rkind), dimension(:,:), allocatable :: l,c
-
-      !    do m = 1, mtln_solver%number_of_bundles
-      !       if (mtln_solver%bundles(m)%bundle_in_layer) then 
-      !          do n = 1, mtln_solver%bundles(m)%number_of_divisions
-      !             ! mtln_solver%bundles(m)%lpul(n,1:size(l,1),1:size(l,2)) = l 
-      !             ! mtln_solver%bundles(m)%cpul(n,1:size(c,1),1:size(c,2)) = c 
-      !             l = hwires%CurrentSegment(indexMap(m,n))%Lind ! 3.94244466e-07
-      !             c = mu0*eps0/l ! 2.82223377e-11!
-      !             if (mtln_solver%bundles(m)%lpul(n,1,1) == 0.0) then 
-      !                mtln_solver%bundles(m)%lpul(n,1,1) = 3.94244466e-07
-      !                mtln_solver%bundles(m)%cpul(n,1,1) = 2.82223377e-11
-      !             end if
-      !          end do
-      !          mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1),1:size(c,1),1:size(c,2)) = &
-      !             mtln_solver%bundles(m)%cpul(ubound(mtln_solver%bundles(m)%cpul,1)-1,1:size(c,1),1:size(c,2))
-      !    end if
-      !    end do
-      ! end subroutine
-
-
-      ! function computeEffectivePermittivity(m,n,l0,c0) result(res)
-      !    integer (kind=4) :: i, j, k, direction
-      !    integer (kind=4) :: m,n
-      !    real(kind=rkind) :: dS_inverse
-      !    real(kind=rkind) :: l0, c0
-      !    real(kind=rkind) :: shield_inductance, external_inductance
-      !    real(kind=rkind) :: shield_capacitance, external_capacitance, effective_capacitance
-      !    real(kind=rkind) :: r, r_diel
-      !    real(kind=rkind) :: res
-
-      !    call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
-      !    direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
-      !    select case (abs(direction))  
-      !    case(1)   
-      !       dS_inverse = (idyh(j)*idzh(k))
-      !    case(2)     
-      !       dS_inverse = (idxh(i)*idzh(k))
-      !    case(3)   
-      !       dS_inverse = (idxh(i)*idyh(j))
-      !    end select
-
-      !    r = mtln_solver%bundles(m)%external_field_segments(n)%radius
-      !    r_diel = mtln_solver%bundles(m)%external_field_segments(n)%dielectric%radius
-
-      !    shield_inductance = (0.5*mu0/pi)*log(r_diel/r)*(1-pi*r**2*dS_inverse)
-      !    external_inductance = l0 - shield_inductance
-
-      !    shield_capacitance = mu0*eps0*mtln_solver%bundles(m)%external_field_segments(n)%dielectric%relative_permittivity/shield_inductance
-      !    external_capacitance = mu0*eps0/external_inductance
-
-      !    effective_capacitance = shield_capacitance*external_capacitance/(shield_capacitance+external_capacitance)
-      !    res = effective_capacitance/c0
-
-      ! end function
-
       subroutine updateNetworksLineCapacitors()
          integer(kind=4) :: m,init, end, sep
          do m = 1, mtln_solver%number_of_bundles
@@ -182,35 +118,6 @@ contains
          end do   
       end subroutine
 
-      function mapFieldToCurrentSegments(wires, bundles) result (res)
-         type(Thinwires_t), pointer  ::  wires
-         type(mtl_bundle_t), allocatable, dimension(:) :: bundles
-         integer, dimension(:,:), allocatable :: res
-         integer :: m, n, nmax, iw
-         integer :: i, j, k
-         nmax = 0
-         do m = 1, mtln_solver%number_of_bundles
-            if (ubound(mtln_solver%bundles(m)%lpul,1) > nmax) then 
-               nmax = ubound(mtln_solver%bundles(m)%lpul,1)
-            end if 
-         end do
-         allocate(res(mtln_solver%number_of_bundles,nmax))
-         res(:,:) = 0
-         do m = 1, mtln_solver%number_of_bundles
-            if (mtln_solver%bundles(m)%bundle_in_layer) then 
-               do n = 1, ubound(mtln_solver%bundles(m)%lpul,1)
-                  call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))                          
-                  do iw = 1, wires%NumCurrentSegments
-                     if ((i == wires%CurrentSegment(iw)%i) .and. &
-                        (j == wires%CurrentSegment(iw)%j) .and. &
-                        (k == wires%CurrentSegment(iw)%k)) then
-                           res(m,n) = iw
-                     end if
-                  end do
-               end do
-            end if
-         end do
-      end function
    endsubroutine InitWires_mtln
 
    subroutine AdvanceWiresE_mtln(sgg,Idxh, Idyh, Idzh, eps00,mu00)  
@@ -222,18 +129,14 @@ contains
       real(KIND=RKIND) :: cte,eps00,mu00
       integer (kind=4) :: m, n
       REAL (KIND=RKIND),pointer:: punt
-      ! type(Thinwires_t), pointer  ::  hwires
-
       eps0 = eps00 
       mu0 = mu00
       
-      ! hwires => GetHwires()
       do m = 1, mtln_solver%number_of_bundles
          if (mtln_solver%bundles(m)%bundle_in_layer) then 
             do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
                punt => mtln_solver%bundles(m)%external_field_segments(n)%field
                punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
-               ! hwires%CurrentSegment(indexMap(m,n))%CurrentPast = getOrientedCurrent(m,n)
             end do
          end if
       end do

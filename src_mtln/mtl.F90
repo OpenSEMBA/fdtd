@@ -126,8 +126,7 @@ contains
 #ifdef CompileWithMPI
         integer (kind=4) :: sizeof, ierr
         if (present(layer_indices)) then 
-            ! call res%initStepSizeAndFieldSegments(step_size, external_field_segments, layer_indices)
-            ! => call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
+            call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
             call res%initCommunicators(alloc_z)
             res%layer_indices = layer_indices
             res%bundle_in_layer = bundle_in_layer
@@ -135,12 +134,11 @@ contains
             res%step_size =  step_size
             allocate(res%layer_indices(0,0))
             allocate(res%mpi_comm%comms(0))
-            ! res%external_field_segments = external_field_segments
+            res%segments = segments
         end if
 #else
         res%step_size =  step_size
         res%segments = segments
-        ! res%external_field_segments = external_field_segments
 #endif
 
         call checkPULDimensions(lpul, cpul, rpul, gpul)
@@ -179,8 +177,7 @@ contains
 #ifdef CompileWithMPI
         integer (kind=4) :: sizeof, ierr
         if (present(layer_indices)) then 
-            ! call res%initStepSizeAndFieldSegments(step_size, external_field_segments, layer_indices)
-            ! => call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
+            call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
             call res%initCommunicators(alloc_z)
             res%layer_indices = layer_indices
             res%bundle_in_layer = bundle_in_layer
@@ -188,12 +185,11 @@ contains
             res%step_size =  step_size
             allocate(res%layer_indices(0,0))
             allocate(res%mpi_comm%comms(0))
-            ! res%external_field_segments = external_field_segments
+            res%segments = segments
         end if
 #else
         res%step_size =  step_size
         res%segments = segments
-        ! res%external_field_segments = external_field_segments
 #endif
 
         call checkPULDimensions(lpul, cpul, rpul, gpul)
@@ -218,7 +214,7 @@ contains
         if (present(dt)) then 
             if (this%lpul(1,1,1) /= 0.0) then 
                 max_dt = this%getMaxTimeStep() 
-                if (dt > max_dt) then
+                if (dt > max_dt .and. max_dt > 0) then
                     this%dt = max_dt
                     write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
                 else 
@@ -247,10 +243,14 @@ contains
     subroutine computeLCParameters(this, multipolar_expansion)
         class(mtl_t) :: this
         type(multipolar_expansion_t), intent(in) :: multipolar_expansion
-        integer :: i
+        integer :: i, j, k, n
+        real, dimension(:,:), allocatable :: ppul
+        allocate(ppul(size(this%cpul,2),size(this%cpul,3)))
         do i = 1, size(this%segments)
             this%lpul(i,:,:) = getCellInductanceOnBox(multipolar_expansion, this%segments(i)%dualBox)
             this%cpul(i,:,:) = getCellCapacitanceOnBox(multipolar_expansion, this%segments(i)%dualBox)
+            ppul(:,:) = element_wise_invert(size(this%cpul,2), this%cpul(i,:,:))
+            this%cpul(i,:,:) = inv(ppul)
         end do
         this%cpul(size(this%segments)+1, :,:) = this%cpul(size(this%segments), :,:)
     end subroutine
@@ -326,11 +326,10 @@ contains
 
 #ifdef CompileWithMPI
 
-    subroutine initStepSizeAndFieldSegments(this, step_size, layer_indices)
-    ! subroutine initStepSizeAndFieldSegments(this, step_size, external_field_segments, layer_indices)
+    subroutine initStepSizeAndFieldSegments(this, step_size, segments, layer_indices)
         class(mtl_t) :: this
         real, intent(in), dimension(:) :: step_size
-        ! type(external_field_segment_t), intent(in), dimension(:) :: external_field_segments
+        type(segment_t), intent(in), dimension(:) :: segments
         integer (kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
         integer :: n, j
         n =  0
@@ -339,16 +338,16 @@ contains
         end do
         n = n + size(layer_indices, 1) -1
         allocate(this%step_size(n))
-        ! allocate(this%external_field_segments(n))
+        allocate(this%segments(n))
 
         n = 1
         do j = 1, size(layer_indices, 1)
             this%step_size(n: n + layer_indices(j,2) - layer_indices(j,1)) = step_size(layer_indices(j, 1):layer_indices(j, 2))
-            ! this%external_field_segments(n: n + layer_indices(j,2) - layer_indices(j,1)) = external_field_segments(layer_indices(j, 1):layer_indices(j, 2))
+            this%segments(n: n + layer_indices(j,2) - layer_indices(j,1)) = segments(layer_indices(j, 1):layer_indices(j, 2))
 
             if (j /= size(layer_indices,1)) then
                 this%step_size(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%step_size(n + layer_indices(j,2) - layer_indices(j,1))
-                ! this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1))
+                this%segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%segments(n + layer_indices(j,2) - layer_indices(j,1))
                 n = n + 1
             end if
             n = n + layer_indices(j,2) - layer_indices(j,1) + 1
@@ -372,115 +371,115 @@ contains
         z_init = alloc_z(1)
         z_end = alloc_z(2)
 
-        ! do j = 1, size(this%external_field_segments)
+        do j = 1, size(this%segments)
             
-        !     if (isSegmentZOriented(j) .and. &
-        !        (isSegmentNextToLayerEnd(j,z_end) .or. isSegmentNextToLayerInit(j,z_init))) then
+            if (isSegmentZOriented(j) .and. &
+               (isSegmentNextToLayerEnd(j,z_end) .or. isSegmentNextToLayerInit(j,z_init))) then
                 
-        !         n = size(this%mpi_comm%comms)
-        !         deallocate(aux_comm)
-        !         allocate(aux_comm(n+1))
-        !         aux_comm(1:n) = this%mpi_comm%comms
-        !         aux_comm(n+1)%field_index = j
+                n = size(this%mpi_comm%comms)
+                deallocate(aux_comm)
+                allocate(aux_comm(n+1))
+                aux_comm(1:n) = this%mpi_comm%comms
+                aux_comm(n+1)%field_index = j
 
-        !         if (isSegmentNextToLayerEnd(j,z_end)) then 
-        !             aux_comm(n+1)%delta_rank = 1
+                if (isSegmentNextToLayerEnd(j,z_end)) then 
+                    aux_comm(n+1)%delta_rank = 1
 
-        !             if (isSegmentBeforeLayerEnd(j,z_end)) then 
-        !                 aux_comm(n+1)%comm_task = COMM_SEND
-        !                 if (isSegmentZPositive(j)) then 
-        !                     aux_comm(n+1)%v_index = j
-        !                 else 
-        !                     aux_comm(n+1)%v_index = j+1
-        !                 end if
-        !             else if (isSegmentAfterLayerEnd(j,z_end)) then 
-        !                 aux_comm(n+1)%comm_task = COMM_RECV
-        !                 if (isSegmentZPositive(j)) then 
-        !                     aux_comm(n+1)%v_index = j+1
-        !                 else 
-        !                     aux_comm(n+1)%v_index = j
-        !                 end if
-        !             end if
+                    if (isSegmentBeforeLayerEnd(j,z_end)) then 
+                        aux_comm(n+1)%comm_task = COMM_SEND
+                        if (isSegmentZPositive(j)) then 
+                            aux_comm(n+1)%v_index = j
+                        else 
+                            aux_comm(n+1)%v_index = j+1
+                        end if
+                    else if (isSegmentAfterLayerEnd(j,z_end)) then 
+                        aux_comm(n+1)%comm_task = COMM_RECV
+                        if (isSegmentZPositive(j)) then 
+                            aux_comm(n+1)%v_index = j+1
+                        else 
+                            aux_comm(n+1)%v_index = j
+                        end if
+                    end if
 
-        !         else if  (isSegmentNextToLayerInit(j,z_init)) then 
-        !             aux_comm(n+1)%delta_rank = -1
+                else if  (isSegmentNextToLayerInit(j,z_init)) then 
+                    aux_comm(n+1)%delta_rank = -1
 
-        !             if (isSegmentBeforeLayerInit(j,z_init)) then 
-        !                 aux_comm(n+1)%comm_task = COMM_RECV
-        !                 if (isSegmentZPositive(j)) then 
-        !                     aux_comm(n+1)%v_index = j
-        !                 else
-        !                     aux_comm(n+1)%v_index = j+1
-        !                 end if
-        !             else if (isSegmentAfterLayerInit(j,z_init)) then 
-        !                 aux_comm(n+1)%comm_task = COMM_SEND
-        !                 if (isSegmentZPositive(j)) then 
-        !                     aux_comm(n+1)%v_index = j+1
-        !                 else
-        !                     aux_comm(n+1)%v_index = j
-        !                 end if
-        !             end if
+                    if (isSegmentBeforeLayerInit(j,z_init)) then 
+                        aux_comm(n+1)%comm_task = COMM_RECV
+                        if (isSegmentZPositive(j)) then 
+                            aux_comm(n+1)%v_index = j
+                        else
+                            aux_comm(n+1)%v_index = j+1
+                        end if
+                    else if (isSegmentAfterLayerInit(j,z_init)) then 
+                        aux_comm(n+1)%comm_task = COMM_SEND
+                        if (isSegmentZPositive(j)) then 
+                            aux_comm(n+1)%v_index = j+1
+                        else
+                            aux_comm(n+1)%v_index = j
+                        end if
+                    end if
 
-        !         end  if
-        !         deallocate(this%mpi_comm%comms)
-        !         allocate(this%mpi_comm%comms(n+1))
-        !         this%mpi_comm%comms = aux_comm
-        !     end if
-        ! end do
+                end  if
+                deallocate(this%mpi_comm%comms)
+                allocate(this%mpi_comm%comms(n+1))
+                this%mpi_comm%comms = aux_comm
+            end if
+        end do
 
-    ! contains    
+    contains    
 
-    ! logical function isSegmentZOriented(j)
-    !     integer, intent(in) :: j
-    !     isSegmentZOriented = (abs(this%external_field_segments(j)%direction) == 3)
-    ! end function
+    logical function isSegmentZOriented(j)
+        integer, intent(in) :: j
+        isSegmentZOriented = (abs(this%segments(j)%orientation) == 3)
+    end function
 
-    ! logical function isSegmentZPositive(j)
-    !     integer, intent(in) :: j
-    !     isSegmentZPositive = (this%external_field_segments(j)%direction > 0)
-    ! end function
+    logical function isSegmentZPositive(j)
+        integer, intent(in) :: j
+        isSegmentZPositive = (this%segments(j)%orientation > 0)
+    end function
 
-    ! logical function isSegmentBeforeLayerEnd(j, z_end)
-    !     integer, intent(in) :: j, z_end
-    !     integer :: z
-    !     z = this%external_field_segments(j)%position(3)
-    !     isSegmentBeforeLayerEnd = (z==z_end-1)
-    ! end function
+    logical function isSegmentBeforeLayerEnd(j, z_end)
+        integer, intent(in) :: j, z_end
+        integer :: z
+        z = this%segments(j)%z
+        isSegmentBeforeLayerEnd = (z==z_end-1)
+    end function
 
-    ! logical function isSegmentAfterLayerEnd(j, z_end)
-    !     integer, intent(in) :: j, z_end
-    !     integer :: z
-    !     z = this%external_field_segments(j)%position(3)
-    !     isSegmentAfterLayerEnd = (z==z_end)
-    ! end function
+    logical function isSegmentAfterLayerEnd(j, z_end)
+        integer, intent(in) :: j, z_end
+        integer :: z
+        z = this%segments(j)%z
+        isSegmentAfterLayerEnd = (z==z_end)
+    end function
     
-    ! logical function isSegmentBeforeLayerInit(j, z_init)
-    !     integer, intent(in) :: j, z_init
-    !     integer :: z
-    !     z = this%external_field_segments(j)%position(3)
-    !     isSegmentBeforeLayerInit = (z==z_init)
-    ! end function
+    logical function isSegmentBeforeLayerInit(j, z_init)
+        integer, intent(in) :: j, z_init
+        integer :: z
+        z = this%segments(j)%z
+        isSegmentBeforeLayerInit = (z==z_init)
+    end function
     
-    ! logical function isSegmentAfterLayerInit(j, z_init)
-    !     integer, intent(in) :: j, z_init
-    !     integer :: z
-    !     z = this%external_field_segments(j)%position(3)
-    !     isSegmentAfterLayerInit = (z==z_init+1)
-    ! end function
+    logical function isSegmentAfterLayerInit(j, z_init)
+        integer, intent(in) :: j, z_init
+        integer :: z
+        z = this%segments(j)%z
+        isSegmentAfterLayerInit = (z==z_init+1)
+    end function
 
-    ! logical function isSegmentNextToLayerEnd(j, z_end)
-    !     integer, intent(in) :: j, z_end
-    !     integer :: z
-    !     z = this%external_field_segments(j)%position(3)
-    !     isSegmentNextToLayerEnd = (abs(z-z_end)<= 1)
-    ! end function
+    logical function isSegmentNextToLayerEnd(j, z_end)
+        integer, intent(in) :: j, z_end
+        integer :: z
+        z = this%segments(j)%z
+        isSegmentNextToLayerEnd = (abs(z-z_end)<= 1)
+    end function
 
-    ! logical function isSegmentNextToLayerInit(j, z_init)
-    !     integer, intent(in) :: j, z_init
-    !     integer :: z
-    !     z = this%external_field_segments(j)%position(3)
-    !     isSegmentNextToLayerInit = (abs(z-z_init-1) <= 1)
-    ! end function
+    logical function isSegmentNextToLayerInit(j, z_init)
+        integer, intent(in) :: j, z_init
+        integer :: z
+        z = this%segments(j)%z
+        isSegmentNextToLayerInit = (abs(z-z_init-1) <= 1)
+    end function
 
 
 

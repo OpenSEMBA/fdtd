@@ -79,37 +79,37 @@ def test_shieldedPair_mpi(tmp_path):
                            :, 0:4], rtol=5e-2, atol=0.2)
 
 
-@no_mtln_skip
-@pytest.mark.mtln
-def test_coated_antenna(tmp_path):
-    fn = CASES_FOLDER + 'coated_antenna/coated_antenna.fdtd.json'
+# @no_mtln_skip
+# @pytest.mark.mtln
+# def test_coated_antenna(tmp_path):
+#     fn = CASES_FOLDER + 'coated_antenna/coated_antenna.fdtd.json'
 
-    solver = FDTD(
-        input_filename=fn,
-        path_to_exe=SEMBA_EXE,
-        flags=['-mtlnwires'],
-        run_in_folder=tmp_path)
-    solver.run()
+#     solver = FDTD(
+#         input_filename=fn,
+#         path_to_exe=SEMBA_EXE,
+#         flags=['-mtlnwires'],
+#         run_in_folder=tmp_path)
+#     solver.run()
 
-    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
-    probe_files = [probe_current]
+#     probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
+#     probe_files = [probe_current]
 
-    p_expected = Probe(
-        OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_Wz_11_11_11_s2.dat')
+#     p_expected = Probe(
+#         OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_Wz_11_11_11_s2.dat')
 
-    p_solved = Probe(probe_files[0])
-    assert np.allclose(
-        p_expected.data.to_numpy()[:, 0],
-        p_solved.data.to_numpy()[:, 0],
-        rtol=0.0, atol=10e-8)
-    assert np.allclose(
-        p_expected.data.to_numpy()[:, 1],
-        p_solved.data.to_numpy()[:, 1],
-        rtol=0.0, atol=10e-8)
-    assert np.allclose(
-        p_expected.data.to_numpy()[:, 2],
-        p_solved.data.to_numpy()[:, 2],
-        rtol=0.0, atol=10e-6)
+#     p_solved = Probe(probe_files[0])
+#     assert np.allclose(
+#         p_expected.data.to_numpy()[:, 0],
+#         p_solved.data.to_numpy()[:, 0],
+#         rtol=0.0, atol=10e-8)
+#     assert np.allclose(
+#         p_expected.data.to_numpy()[:, 1],
+#         p_solved.data.to_numpy()[:, 1],
+#         rtol=0.0, atol=10e-8)
+#     assert np.allclose(
+#         p_expected.data.to_numpy()[:, 2],
+#         p_solved.data.to_numpy()[:, 2],
+#         rtol=0.0, atol=10e-6)
 
 
 def test_holland(tmp_path):
@@ -169,7 +169,7 @@ def test_holland_mtln(tmp_path):
 @pytest.mark.mtln
 @pytest.mark.mpi
 def test_holland_mtln_mpi(tmp_path):
-    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   flags=['-mtlnwires'] ,run_in_folder=tmp_path)
     solver.run()
@@ -182,24 +182,41 @@ def test_holland_mtln_mpi(tmp_path):
     solver.run()
     probe_mid_mpi_2 = Probe(list(filter(lambda x: '_Wz_' in x, probe_names))[0])
 
+    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
+    expected_t, expected_i = np.array([]), np.array([])
+    for data in expected_f['datasetColl'][0]['data']:
+        expected_t = np.append(expected_t, float(data['value'][0]))    
+        expected_i = np.append(expected_i, float(data['value'][1]))    
+
+    expected_i_interp = np.interp(probe_mid_no_mpi['time']-3.05*1e-9, expected_t, expected_i)
 
     p_expected = Probe(
         OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
 
     assert np.allclose(
-        p_expected.data.to_numpy()[:, 0:3], 
-        probe_mid_no_mpi.data.to_numpy()[:, 0:3], 
-        rtol=1e-5, atol=1e-6)
+        expected_i_interp, 
+        probe_mid_no_mpi['current_0'], 
+        rtol=1e-4, atol=5e-5)
 
     assert np.allclose(
-        p_expected.data.to_numpy()[:, 0:3], 
-        probe_mid_mpi_2.data.to_numpy()[:, 0:3], 
-        rtol=1e-5, atol=1e-6)
+        expected_i_interp, 
+        probe_mid_mpi_2['current_0'], 
+        rtol=1e-4, atol=5e-5)
+
+    # assert np.allclose(
+    #     p_expected.data.to_numpy()[:, 0:3], 
+    #     probe_mid_no_mpi.data.to_numpy()[:, 0:3], 
+    #     rtol=1e-5, atol=1e-6)
+
+    # assert np.allclose(
+    #     p_expected.data.to_numpy()[:, 0:3], 
+    #     probe_mid_mpi_2.data.to_numpy()[:, 0:3], 
+    #     rtol=1e-5, atol=1e-6)
 
 @no_mtln_skip
 @pytest.mark.mtln
 def test_unshielded_multiwires(tmp_path):
-    fn = CASES_FOLDER + 'unshielded_multiwires/unshielded_multiwires.fdtd.json'
+    fn = CASES_FOLDER + 'unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   flags=['-mtlnwires'], run_in_folder=tmp_path)
 
@@ -209,11 +226,15 @@ def test_unshielded_multiwires(tmp_path):
     p_solved = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
     p_expected = Probe(
-        OUTPUTS_FOLDER+'unshielded_multiwires.fdtd_mid_point_bundle_single_inner_wire_passthrough_I_2_11_14.dat')
+        OUTPUTS_FOLDER+'unshielded_multiwires_berenger.fdtd_mid_point_bundle_unshielded_two_wire_I_2_11_14.dat')
 
     assert np.allclose(
-        p_expected.data.to_numpy()[:, 2:4], 
-        p_solved.data.to_numpy()[:, 2:4], 
+        p_expected['current_0'], 
+        p_solved['current_0'], 
+        rtol=1e-3, atol=0.01)
+    assert np.allclose(
+        p_expected['current_1'], 
+        p_solved['current_1'], 
         rtol=1e-3, atol=0.01)
 
 

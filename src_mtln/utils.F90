@@ -96,4 +96,12 @@ contains
       if (info.ne.0) stop 'Matrix inversion failed!'
    end function inv
 
+   function element_wise_invert(n, x) result(y)
+      integer :: n 
+      real, intent(in) :: x(n,n)
+      real :: y(n,n)
+      y = 1/x
+   end function
+
+
 end module utils_mod
