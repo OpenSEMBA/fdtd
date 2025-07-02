@@ -2,7 +2,7 @@ module multipolar_expansion_mod
 
    use mtln_types_mod
    use Report
-   use FDETypes, only: pi
+   use FDETypes, only: pi, EPSILON_VACUUM, MU_VACUUM
 
    type, private :: integration_grid_t
       real, dimension(:), allocatable :: x, y
