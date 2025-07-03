@@ -148,7 +148,7 @@ contains
         call res%allocatePULMatrices()
         call res%initLC(lpul, cpul)
         call res%initRG(rpul, gpul)
-        call res%checkTimeStep(dt)
+        call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
     
         res%parent_name = parent_name
         res%conductor_in_parent = conductor_in_parent
@@ -203,16 +203,18 @@ contains
             call res%initLC(lpul, cpul)
         end if
         call res%initRG(rpul, gpul)
-        call res%checkTimeStep(dt)
+        call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
         res%lumped_elements = dispersive_lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
     end function
 
-    subroutine checkTimeStep(this, dt)
+    subroutine checkTimeStep(this, getMax, dt)
         class(mtl_t) :: this
+        logical, intent(in) :: getMax
         real, intent(in), optional :: dt
+        
         real :: max_dt
         if (present(dt)) then 
-            if (this%lpul(1,1,1) /= 0.0) then 
+            if (getMax) then 
                 max_dt = this%getMaxTimeStep() 
                 if (dt > max_dt .and. max_dt > 0) then
                     this%dt = max_dt
@@ -224,7 +226,7 @@ contains
                 this%dt = dt
             end if
         else
-            if (this%lpul(1,1,1) /= 0.0) then 
+            if (getMax) then 
                 this%dt = this%getMaxTimeStep() 
             end if
         end if

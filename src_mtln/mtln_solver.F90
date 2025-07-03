@@ -59,7 +59,6 @@ contains
 
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
-        
 #endif
         if (present(alloc)) then 
             pre = preprocess(parsed, alloc)
@@ -69,7 +68,6 @@ contains
 
         if (size(pre%bundles) == 0) then
             res%number_of_bundles = 0
-            res%network_manager%has_networks = .false.
             return
         end if
 
@@ -153,7 +151,10 @@ contains
         integer :: i,j
         integer ::b, c, v_idx, i_idx
         integer :: n
-
+#ifdef CompileWithMPI
+        integer (kind=4) :: ierr
+        call mpi_barrier(subcomm_mpi, ierr)
+#endif
         if (this%number_of_bundles /= 0) then 
             do i = 1, size(this%network_manager%networks)
                 do j = 1, size(this%network_manager%networks(i)%nodes)
@@ -164,7 +165,7 @@ contains
                     if (this%bundles(b)%bundle_in_layer) this%network_manager%networks(i)%nodes(j)%i = this%bundles(b)%i(c, i_idx)
                 end do
             end do
-
+            
             call this%network_manager%advanceVoltage()
 
             do i = 1, size(this%network_manager%networks)

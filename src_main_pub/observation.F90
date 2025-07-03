@@ -434,7 +434,9 @@ contains
          mtln_solver => GetSolverPtr()
          do i = 1, ubound(mtln_solver%bundles, 1)
             if (ubound(mtln_solver%bundles(i)%probes,1) /= 0) then 
-               ThereAreObservation=.true.
+               do j = 1, ubound(mtln_solver%bundles(i)%probes,1)
+                  if (mtln_solver%bundles(i)%probes(j)%in_layer) ThereAreObservation=.true.
+               end do
             end if
          end do
       end block
@@ -4228,9 +4230,6 @@ contains
             write(unit,*) trim(buffer)
             do k = 1, size(mtln_solver%bundles(i)%probes(j)%t)
                buffer = ""
-#ifdef CompileWithMPI
-               call MPI_Barrier(subcomm_mpi, ierr)
-#endif
                write(temp,*) mtln_solver%bundles(i)%probes(j)%t(k)
                buffer = buffer//trim(temp)
                do n = 1, size(mtln_solver%bundles(i)%probes(j)%val,2)
