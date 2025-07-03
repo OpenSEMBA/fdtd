@@ -3,7 +3,7 @@
 
     "general": {
         "timeStep": 5e-12,
-        "numberOfSteps": 6000,
+        "numberOfSteps": 5950,
         "mtlnProblem" : false
     },
   
