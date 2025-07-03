@@ -2324,7 +2324,6 @@ contains
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
-
       if (size(cables) == 0) then 
          mtln_res%has_multiwires = .false.
          mtln_res%time_step = 0
@@ -2347,7 +2346,6 @@ contains
          call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, i)
          call addElemIdToPositionMap(elemIdToPosition, cables(i)%elementIds)
       end do
-
       do i = 1, size(cables)
          ptr => mtln_res%cables(i)%ptr
          select type(ptr)
@@ -2356,7 +2354,7 @@ contains
             ptr%conductor_in_parent = assignConductorInParent(cables(i))
          end select
       end do
-
+      
       mtln_res%probes = readMultiwireProbes()
       mtln_res%networks = buildNetworks()
 
@@ -2922,7 +2920,8 @@ contains
          integer :: i, j, index, n
          integer, dimension(:), allocatable :: ids
          type (coordinate_t) :: probe_node_coord
-
+         type(linel_t), dimension(:), allocatable :: linels
+         type(polyline_t) :: pl
          class(cable_t), pointer :: cable_ptr, aux_ptr
          logical :: parent_cable_found = .false., found
 
@@ -2947,7 +2946,9 @@ contains
                   res(n)%probe_position = probe_node_coord%position
                   
                   call elemIdToCable%get(key(ids(j)), value=index)
-                  res(n)%index = findProbeIndexInLinels(probe_node_coord, this%mesh%polylineToLinels(this%mesh%getPolyline(ids(j))))
+                  pl = this%mesh%getPolyline(ids(j))
+                  linels = this%mesh%polylineToLinels(pl)
+                  res(n)%index = findProbeIndexInLinels(probe_node_coord, linels)
 
                   cable_ptr => mtln_res%cables(index)%ptr
                   ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
@@ -3248,7 +3249,6 @@ contains
          integer :: nConductors
          logical :: found
          character(:), allocatable :: materialType
-
          material = this%matTable%getId(j_cable%materialId)
          materialType = this%getStrAt(material%p, J_TYPE)
          select case (materialType)

@@ -46176,11 +46176,11 @@
         },
         {
             "name": "Wirematerial",
+            "type": "unshieldedMultiwire",
             "id": 2,
-            "type": "wire",
-            "radius": 0.001,
-            "resistancePerMeter": 1.68e-09,
-            "inductancePerMeter": 0.0
+            "resistancePerMeter": [1.68e-09],
+            "inductancePerMeter": [[0.0]],
+            "capacitancePerMeter": [[0.0]]
         },
         {
             "name": "Terminal50Ohm",
