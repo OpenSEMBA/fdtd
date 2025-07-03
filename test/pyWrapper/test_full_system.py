@@ -82,6 +82,12 @@ def test_shieldedPair_mpi(tmp_path):
 @no_mtln_skip
 @pytest.mark.mtln
 def test_coated_antenna(tmp_path):
+    """ Test for a coated antenna with MTLN wires reproducing Fig. 2 in:
+        A. Rubio Bretones, R. Gomez Martin, A. Salinas and I. Sanchez, 
+        "Time domain analysis of dielectric coated wire scatterers and antennas," 
+        Proceedings of MELECON '94. Mediterranean Electrotechnical Conference,
+        Antalya, Turkey, 1994, pp. 1174-1176 vol.3, doi: 10.1109/MELCON.1994.380859.
+    """
     fn = CASES_FOLDER + 'coated_antenna/coated_antenna.fdtd.json'
 
     solver = FDTD(
@@ -91,25 +97,21 @@ def test_coated_antenna(tmp_path):
         run_in_folder=tmp_path)
     solver.run()
 
-    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
+    probe_current = solver.getSolvedProbeFilenames("mid_point")[0]
     probe_files = [probe_current]
 
     p_expected = Probe(
-        OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_Wz_11_11_11_s2.dat')
+        OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_bundle_half_1_I_11_11_12.dat')
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
-        p_expected.data.to_numpy()[:, 0],
-        p_solved.data.to_numpy()[:, 0],
+        p_expected['time'].to_numpy(),
+        p_solved['time'].to_numpy(),
         rtol=0.0, atol=10e-8)
     assert np.allclose(
-        p_expected.data.to_numpy()[:, 1],
-        p_solved.data.to_numpy()[:, 1],
+        p_expected['current_0'].to_numpy(),
+        p_solved['current_0'].to_numpy(),
         rtol=0.0, atol=10e-8)
-    assert np.allclose(
-        p_expected.data.to_numpy()[:, 2],
-        p_solved.data.to_numpy()[:, 2],
-        rtol=0.0, atol=10e-6)
 
 
 def test_holland(tmp_path):
