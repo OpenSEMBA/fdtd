@@ -93,7 +93,10 @@ contains
     subroutine GenerateInputFieldsBasis(b, FieldList)
 
         type (bounds_t), intent( IN)  ::  b
+        type(field_array_t), allocatable, intent(OUT) :: FieldList(:)
+        allocate(FieldList(66))
 
+        ! Generating the basis for the electical fields
         real (kind = RKIND), dimension    ( 0 :      b%Ex%NX-1 , 0 :      b%Ex%NY-1 , 0 :      b%Ex%NZ-1 ) ::  Ex
         real (kind = RKIND), dimension    ( 0 :      b%Ey%NX-1 , 0 :      b%Ey%NY-1 , 0 :      b%Ey%NZ-1 ) ::  Ey
         real (kind = RKIND), dimension    ( 0 :      b%Ez%NX-1 , 0 :      b%Ez%NY-1 , 0 :      b%Ez%NZ-1 ) ::  Ez
@@ -106,21 +109,7 @@ contains
         call GenerateElectricalInputBasis(Ey, 1, 3, Ey_ee, Ey_eo, Ey_oe, Ey_oo)
         call GenerateElectricalInputBasis(Ez, 1, 2, Ez_ee, Ez_eo, Ez_oe, Ez_oo)
 
-        real (kind = RKIND), dimension    ( 0 :      b%HX%NX-1 , 0 :      b%HX%NY-1 , 0 :      b%HX%NZ-1 ) ::  Hx
-        real (kind = RKIND), dimension    ( 0 :      b%Hy%NX-1 , 0 :      b%Hy%NY-1 , 0 :      b%Hy%NZ-1 ) ::  Hy
-        real (kind = RKIND), dimension    ( 0 :      b%Hz%NX-1 , 0 :      b%Hz%NY-1 , 0 :      b%Hz%NZ-1 ) ::  Hz
-
-        Hx = 0.0_RKIND
-        Hy = 0.0_RKIND
-        Hz = 0.0_RKIND
-
-        call GenerateMagneticalInputBasis(Hx, 2, 3, 3, Hx_m)
-        call GenerateMagneticalInputBasis(Hy, 3, 2, 3, Hy_m)
-        call GenerateMagneticalInputBasis(Hz, 3, 3, 2, Hz_m)
-
-        type(field_array_t), allocatable, intent(OUT) :: FieldList(:)
-        allocate(FieldList(66))
-
+        ! Storing the electrical fields in the FieldList
         FieldList(1)%data => Ex_ee
         FieldList(2)%data => Ex_eo
         FieldList(3)%data => Ex_oe
@@ -136,19 +125,48 @@ contains
         FieldList(11)%data => Ez_oe
         FieldList(12)%data => Ez_oo
 
-        ! Hx_m
-        do i = 1, 18
-            FieldList(12 + i)%data => Hx_m(i,:,:,:)
+        ! Generating the basis for the magnetical fields
+        real (kind = RKIND), dimension    ( 0 :      b%HX%NX-1 , 0 :      b%HX%NY-1 , 0 :      b%HX%NZ-1 ) ::  Hx
+        real (kind = RKIND), dimension    ( 0 :      b%Hy%NX-1 , 0 :      b%Hy%NY-1 , 0 :      b%Hy%NZ-1 ) ::  Hy
+        real (kind = RKIND), dimension    ( 0 :      b%Hz%NX-1 , 0 :      b%Hz%NY-1 , 0 :      b%Hz%NZ-1 ) ::  Hz
+
+        Hx = 0.0_RKIND
+        Hy = 0.0_RKIND
+        Hz = 0.0_RKIND
+
+        call GenerateMagneticalInputBasis(Hx, 2, 3, 3, Hx_m)
+        call GenerateMagneticalInputBasis(Hy, 3, 2, 3, Hy_m)
+        call GenerateMagneticalInputBasis(Hz, 3, 3, 2, Hz_m)
+
+        ! Storing the magnetical fields in the FieldList
+        integer :: idx, i1, i2, i3
+
+        idx = 12
+        do i1 = 1, 2
+            do i2 = 1, 3
+                do i3 = 1, 3
+                    idx = idx + 1
+                    FieldList(idx)%data => Hx_m(i1, i2, i3, :, :, :)
+                end do
+            end do
         end do
 
-        ! Hy_m
-        do i = 1, 18
-            FieldList(30 + i)%data => Hy_m(i,:,:,:)
+        do i1 = 1, 3
+            do i2 = 1, 2
+                do i3 = 1, 3
+                    idx = idx + 1
+                    FieldList(idx)%data => Hy_m(i1, i2, i3, :, :, :)
+                end do
+            end do
         end do
 
-        ! Hz_m
-        do i = 1, 18
-            FieldList(48 + i)%data => Hz_m(i,:,:,:)
+        do i1 = 1, 3
+            do i2 = 1, 3
+                do i3 = 1, 2
+                    idx = idx + 1
+                    FieldList(idx)%data => Hz_m(i1, i2, i3, :, :, :)
+                end do
+            end do
         end do
 
     end subroutine 
