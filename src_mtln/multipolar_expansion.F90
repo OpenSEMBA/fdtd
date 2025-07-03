@@ -58,7 +58,7 @@ contains
       if (any(integrationBox%min >= innerRegionBox%min) .or. &
           any(integrationBox%max <= innerRegionBox%max)) then       
          call WarnErrReport( &
-            "Error in mutipolar expansion innerRegion must be fully contained within the integration Box")
+            "Error in mutipolar expansion innerRegion must be fully contained within the integration Box", .true.)
          return
       end if
 
@@ -68,7 +68,7 @@ contains
          integrationBoxSize = integrationBox%max - integrationBox%min
          if (any(integrationBoxSize < innerRegionSize * 1.25)) then
             call WarnErrReport( &
-               "Error in multipolar expansion: integration box is too small for the inner region")
+               "Error in multipolar expansion: integration box is too small for the inner region", .true.)
             return
          end if
       end block
