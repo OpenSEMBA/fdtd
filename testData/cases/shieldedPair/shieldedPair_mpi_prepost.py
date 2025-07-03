@@ -39,20 +39,13 @@ mid_mpi3 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 #####################################################
 # %% Plot results
-pf = "shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat"
+pf = "shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat"
 expected = Probe(OUTPUTS_FOLDER+pf)
 
-probe_names = solver.getSolvedProbeFilenames("wire_start")
-i_start = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
-probe_names = solver.getSolvedProbeFilenames("wire_end")
-i_end   = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
-
 plt.figure()
-plt.plot(i_start['time'], -i_start['current_0'], '.',label = 'start')
-plt.plot(i_end['time'], -i_end['current_0'], '.',label = 'end')
-# plt.plot(mid_nompi['time'], -mid_nompi['current_0'], '.',label = 'no mpi')
-# plt.plot(mid_mpi2['time'], -mid_mpi2['current_0'], '-.',label = 'mpi 2')
-plt.plot(expected['time'], -expected['current'], '--',label = 'expected')
+plt.plot(mid_nompi['time'], -mid_nompi['current_1'], '.',label = 'no mpi')
+plt.plot(mid_mpi2['time'], -mid_mpi2['current_1'], '-.',label = 'mpi 2')
+plt.plot(expected['time'], -expected['current_1'], '--',label = 'expected')
 
 plt.grid(which='both')
 plt.legend()

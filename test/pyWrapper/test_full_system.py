@@ -25,22 +25,16 @@ def test_shieldedPair(tmp_path):
                   run_in_folder=tmp_path)
     solver.run()
 
-    probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_0_V_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat',
-                   'shieldedPair.fdtd_wire_end_Wz_75_71_74_s1.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_0_I_75_71_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_0_V_75_71_74.dat']
+    probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_out_V_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_start_bundle_line_out_I_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_end_bundle_line_out_I_75_71_74.dat',
+                   'shieldedPair.fdtd_wire_end_bundle_line_out_V_75_71_74.dat']
 
     p_expected = []
     for pf in probe_files:
         p_expected.append(Probe(OUTPUTS_FOLDER+pf))
 
-    for i in [2, 3]:
-        p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].data.to_numpy()[:, 0:3], p_solved.data.to_numpy()[
-                           :, 0:3], rtol=5e-2, atol=0.2)
-    for i in [0, 1, 4, 5]:
+    for i in [0, 1, 2, 3]:
         p_solved = Probe(probe_files[i])
         assert np.allclose(p_expected[i].data.to_numpy()[:, 0:4], p_solved.data.to_numpy()[
                            :, 0:4], rtol=5e-2, atol=0.2)
@@ -58,22 +52,16 @@ def test_shieldedPair_mpi(tmp_path):
                   run_in_folder=tmp_path)
     solver.run()
 
-    probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_0_V_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_start_bundle_line_0_I_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_start_Wz_75_74_74_s4.dat',
-                   'shieldedPair.fdtd_wire_end_Wz_75_71_74_s1.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_0_I_75_71_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_0_V_75_71_74.dat']
+    probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_out_V_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_start_bundle_line_out_I_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_end_bundle_line_out_I_75_71_74.dat',
+                   'shieldedPair.fdtd_wire_end_bundle_line_out_V_75_71_74.dat']
 
     p_expected = []
     for pf in probe_files:
         p_expected.append(Probe(OUTPUTS_FOLDER+pf))
 
-    for i in [2, 3]:
-        p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].data.to_numpy()[:, 0:3], p_solved.data.to_numpy()[
-                           :, 0:3], rtol=5e-2, atol=0.2)
-    for i in [0, 1, 4, 5]:
+    for i in [0, 1, 2, 3]:
         p_solved = Probe(probe_files[i])
         assert np.allclose(p_expected[i].data.to_numpy()[:, 0:4], p_solved.data.to_numpy()[
                            :, 0:4], rtol=5e-2, atol=0.2)

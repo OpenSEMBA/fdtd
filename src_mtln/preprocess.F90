@@ -33,14 +33,8 @@ module preprocess_mod
         module procedure preprocess
     end interface
 
-    ! cable_abstract_t
-    ! type, public :: cable_ptr_t
-    !     type(cable_t), pointer :: p
-    ! end type
-
     type, public :: cable_level_t
         type(cable_abstract_t), dimension(:), allocatable :: cables
-        ! type(cable_ptr_t), dimension(:), allocatable :: cables
     end type
 
     type, public :: cable_bundle_t
@@ -87,7 +81,6 @@ contains
 #endif
         res%bundles = res%buildMTLBundles(line_bundles)
         if (size(res%bundles) == 0) then 
-            ! res%network_manager%has_networks = .false.
             return
         end if
 

@@ -49,8 +49,6 @@ contains
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
-
-
       eps0 = eps00
       mu0 = mu00
 
@@ -69,7 +67,6 @@ contains
       endif
 
       call pointSegmentsToFields()
-      call updateNetworksLineCapacitors()
       call mtln_solver%updatePULTerms()
 
    contains
@@ -81,7 +78,6 @@ contains
          call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
 
 #endif
-
          do m = 1, mtln_solver%number_of_bundles
             if (mtln_solver%bundles(m)%bundle_in_layer) then 
                do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
@@ -98,24 +94,6 @@ contains
                end do
             end if
          end do
-      end subroutine
-
-      subroutine updateNetworksLineCapacitors()
-         integer(kind=4) :: m,init, end, sep
-         do m = 1, mtln_solver%number_of_bundles
-            if (mtln_solver%bundles(m)%bundle_in_layer) then 
-               init = lbound(mtln_solver%bundles(m)%cpul,1)
-               end = ubound(mtln_solver%bundles(m)%cpul,1)
-               sep = index(mtln_solver%bundles(m)%name,"_")
-               call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
-                  trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_initial",&
-                  mtln_solver%bundles(m)%cpul(init,1,1)*mtln_solver%bundles(m)%step_size(init)*0.5 )
-
-               call mtln_solver%network_manager%circuit%modifyLineCapacitorValue(&
-                  trim(mtln_solver%bundles(m)%name(sep+1:))//"_1_end",&
-                  mtln_solver%bundles(m)%cpul(end,1,1)*mtln_solver%bundles(m)%step_size(end-1)*0.5)
-            end if
-         end do   
       end subroutine
 
    endsubroutine InitWires_mtln
