@@ -170,17 +170,33 @@ def test_holland_mtln(tmp_path):
 @pytest.mark.mpi
 def test_holland_mtln_mpi(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
+    # no mpi
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   flags=['-mtlnwires'] ,run_in_folder=tmp_path)
     solver.run()
     probe_names = solver.getSolvedProbeFilenames("mid_point")
-    probe_mid_no_mpi = Probe(list(filter(lambda x: '_Wz_' in x, probe_names))[0])
+    probe_mid_no_mpi = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
+    # no mpi -np 1
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  flags=['-mtlnwires'], mpi_command='mpirun -np 1',run_in_folder=tmp_path)
+    solver.cleanUp()
+    solver.run()
+    probe_mid_mpi_1 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+
+    # no mpi -np 2
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   flags=['-mtlnwires'], mpi_command='mpirun -np 2',run_in_folder=tmp_path)
     solver.cleanUp()
     solver.run()
-    probe_mid_mpi_2 = Probe(list(filter(lambda x: '_Wz_' in x, probe_names))[0])
+    probe_mid_mpi_2 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
+
+    # no mpi -np 3
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  flags=['-mtlnwires'], mpi_command='mpirun -np 3',run_in_folder=tmp_path)
+    solver.cleanUp()
+    solver.run()
+    probe_mid_mpi_3 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
     expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
     expected_t, expected_i = np.array([]), np.array([])
@@ -200,7 +216,17 @@ def test_holland_mtln_mpi(tmp_path):
 
     assert np.allclose(
         expected_i_interp, 
+        probe_mid_mpi_1['current_0'], 
+        rtol=1e-4, atol=5e-5)
+
+    assert np.allclose(
+        expected_i_interp, 
         probe_mid_mpi_2['current_0'], 
+        rtol=1e-4, atol=5e-5)
+
+    assert np.allclose(
+        expected_i_interp, 
+        probe_mid_mpi_3['current_0'], 
         rtol=1e-4, atol=5e-5)
 
     # assert np.allclose(
