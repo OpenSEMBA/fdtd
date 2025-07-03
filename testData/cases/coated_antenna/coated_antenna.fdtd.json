@@ -19,15 +19,12 @@
     "materials": [
         {
             "id": 1,
-            "type": "wire",
-            "radius": 3.18e-3,
-            "dielectric" : {"radius": 6.36e-3,"relativePermittivity" : 3.2}
-        },
-        {
-            "id": 5,
-            "type": "shieldedMultiwire",
-            "inductancePerMeter": [[1.4824688299999999e-07]],
-            "capacitancePerMeter": [[7.5053859e-11]]
+            "type": "unshieldedMultiwire",
+            "multipolarExpansion": {
+                "electric":[{"ab":[[1.1908932479241314,0.0],[2.5211779180605047e-11,5.831966037346667e-12],[1.7454817098659186e-11,-6.477620078232993e-11],[8.104179120331067e-14,-4.693537707688455e-13],[-4.3005691524041117e-16,1.3871757361588798e-16],[-8.510309080592335e-19,1.1563742986123455e-18]],"conductorPotentials":[1.0],"expansionCenter":[1.6408457106634394e-07,3.795589548821064e-08],"innerRegionAveragePotential":0.883039000180624}],
+                "innerRegionBox":{"max":[0.0127200002,0.0127200002],"min":[-0.0127200002,-0.0127200002]},
+                "magnetic":[{"ab":[[1.0922126647809522,0.0],[-7.451469549355459e-12,-1.4373531424599021e-12],[8.906620829569139e-11,4.83362120648059e-11],[6.054124484040113e-14,1.1657587858416424e-13],[3.3126198676185715e-16,-1.3120271982054967e-16],[-1.6259627471196775e-19,9.851659206558228e-20]],"conductorPotentials":[1.0],"expansionCenter":[-5.333882429806352e-08,-1.02888074117391e-08],"innerRegionAveragePotential":0.8186694940089683}]
+            }
         },
         {
             "id": 2,
@@ -36,11 +33,6 @@
         },
         {
             "id": 3,
-            "type": "terminal",
-            "terminations": [{"type": "short"}]
-        },
-        {
-            "id": 4,
             "type": "terminal",
             "terminations": [{"type": "short"}]
         }
@@ -64,14 +56,14 @@
 
     "materialAssociations": [
         { 
-                        "name" : "half_1",
+            "name" : "half_1",
             "materialId": 1,
             "initialTerminalId": 2,
             "endTerminalId": 3,
             "elementIds": [2]
         },
         { 
-                        "name" : "half_2",
+            "name" : "half_2",
             "materialId": 1,
             "initialTerminalId": 3,
             "endTerminalId": 2,
