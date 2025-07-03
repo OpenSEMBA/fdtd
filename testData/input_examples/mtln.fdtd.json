@@ -220,13 +220,13 @@
 			"name": "T_2_n_short",
 			"type": "terminal",
 			"terminations": [
-				{"type": "LCpRs",  "resistance": 50, "inductance": 30e-12, "capacitance": 60e-9 },
+				{"type": "RsLCp",  "resistance": 50, "inductance": 30e-12, "capacitance": 60e-9 },
 				{"type": "series", "resistance": 1e10 },
-				{"type": "LCpRs",  "resistance": 50, "inductance": 30e-12, "capacitance": 60e-9 },
+				{"type": "RsLCp",  "resistance": 50, "inductance": 30e-12, "capacitance": 60e-9 },
 				{"type": "series", "resistance": 1e10 },
-				{"type": "LCpRs",  "resistance": 50, "inductance": 30e-12, "capacitance": 60e-9 },
+				{"type": "RsLCp",  "resistance": 50, "inductance": 30e-12, "capacitance": 60e-9 },
 				{"type": "series", "resistance": 1e10 },
-				{"type": "LCpRs",  "resistance": 50, "inductance": 30e-12, "capacitance": 60e-9 },
+				{"type": "RsLCp",  "resistance": 50, "inductance": 30e-12, "capacitance": 60e-9 },
 				{"type": "series", "resistance": 1e10 }
 			]
 		},

@@ -2852,8 +2852,18 @@ contains
             res = TERMINATION_SHORT
          else if (type == J_MAT_TERM_TYPE_SERIES) then
             res = TERMINATION_SERIES
-         else if (type == J_MAT_TERM_TYPE_LCpRs) then
-            res = TERMINATION_LCpRs
+         else if (type == J_MAT_TERM_TYPE_PARALLEL) then
+            res = TERMINATION_PARALLEL
+         else if (type == J_MAT_TERM_TYPE_RsLCp) then
+            res = TERMINATION_RsLCp
+         else if (type == J_MAT_TERM_TYPE_LsRCp) then
+            res = TERMINATION_LsRCp
+         else if (type == J_MAT_TERM_TYPE_CsLRp) then
+            res = TERMINATION_CsLRp
+         else if (type == J_MAT_TERM_TYPE_RCsLp) then
+            res = TERMINATION_RCsLp
+         else if (type == J_MAT_TERM_TYPE_LCsRp) then
+            res = TERMINATION_LCsRp
          else if (type == J_MAT_TERM_TYPE_RLsCp) then
             res = TERMINATION_RLsCp
          else if (type == J_MAT_TERM_TYPE_CIRCUIT) then 
