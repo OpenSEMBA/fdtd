@@ -62,21 +62,21 @@ for data in j2['datasetColl'][0]['data']:
     jt2 = np.append(jt2, float(data['value'][0]))    
     ji2 = np.append(ji2, float(data['value'][1]))    
 
-probe_names = solver.getSolvedProbeFilenames("test_bundle")
+probe_names = solver.getSolvedProbeFilenames("mid_point_bundle")
 mid_I = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 
 plt.figure()
-plt.plot(mid_I['time']*1e9, mid_I['current_0'], label='material 12 - wire 1')
-plt.plot(mid_I['time']*1e9, mid_I['current_1'], label='material 12 - wire 2')
+plt.plot(mid_I['time']*1e9, mid_I['current_0'], label='wire 1')
+plt.plot(mid_I['time']*1e9, mid_I['current_1'], label='wire 2')
 plt.plot(jt1*1e9+1, ji1, 'g.', label = 'wire1 - integral eq')
 plt.plot(jt2*1e9+1, ji2, 'k.', label = 'wire2 - integral eq')
 plt.grid(which='both')
-plt.title('mid')
+plt.title('Current at wire center')
 plt.ylim(-160,300)
 plt.xlim(0,35)
-plt.xlabel('Time (ns)')
-plt.ylabel('I (A)')
+plt.xlabel('Time [ns]')
+plt.ylabel('I [A]')
 plt.legend()
 
 
