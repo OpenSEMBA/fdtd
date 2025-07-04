@@ -20,7 +20,7 @@
 		{
 			"id": 1,
 			"name": "wire_panel",
-			"type": "multiwire",
+			"type": "shieldedMultiwire",
 			"resistancePerMeter" : [1e-3, 1e-3, 1e-3, 1e-3],
 			"inductancePerMeter": [
 				[1e-6, 1e-7, 1e-7, 1e-7],

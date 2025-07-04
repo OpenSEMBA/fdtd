@@ -395,23 +395,18 @@ A single wire might be surrounded by a dielectric material. In that case, the ra
 ```
 If the `dielectric` field is present but any of `radius` or `relativePermittivity` is absent, the parsing of the dielectric will fail.
 
-### `multiwire`
+### `shieldedMultiwire`
 
-A `multiwire`, models $N+1$ electrical wires inside a bundled. The voltages and currents on these wires are solved by a multiconductor transmission lines (MTLN) solver described in:
+A `shieldedMultiwire`, models $N+1$ electrical wires inside a bundled. The voltages and currents on these wires are solved by a multiconductor transmission lines (MTLN) solver described in:
 
     Paul, C. R. (2007). Analysis of multiconductor transmission lines. John Wiley & Sons.
 
-`multiwire` materials are assumed to be contained within a `wire` or another `multiwire` which is the external domain and is used as voltage reference. 
+`shieldedMultiwire` materials are assumed to be contained within a `wire` or another `shieldedMultiwire` which is the external domain and is used as voltage reference. 
 They must contain the following entries:
 
-+ `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$.
-+ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero.
++ `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]` 
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
 + `[transferImpedancePerMeter]` which represents the coupling with the external domain, described below. If not present, it defaults to zero, i.e. perfect shielding.
-
-If the number of wires of the `multiwire` is equal to 1, none of the properties above are scalars:
-
-+ `<inductancePerMeter>` and `<capacitancePerMeter>` will be a $1 \times 1$ matrix, i.e `[[1e-7]]` 
-+ `[resistancePerMeter]` and `[conductancePerMeter]` will be arrays of size $1$, i.e `[50]`
 
 `transferImpedancePerMeter` can contain:
 
@@ -425,7 +420,7 @@ If the number of wires of the `multiwire` is equal to 1, none of the properties 
 {
     "name": "Bundle_2_level_2",
     "id": 62,
-    "type": "multiwire",
+    "type": "shieldedMultiwire",
     "resistancePerMeter" : [62.0e-3,62.0e-3],
     "inductancePerMeter": [
         [2.4382084E-07, 4.7377505E-08],
@@ -442,12 +437,41 @@ If the number of wires of the `multiwire` is equal to 1, none of the properties 
 }
 ```
 
+### `unshieldedMultiwire`
+
+A `unshieldedMultiwire`, models a bundle of $N$ electrical wires. The charges and currents on these wires are solved using the model described in:
+
+    Berenger, J. P. A Multiwire formalism for the FDTD Method. IEEE Transactions on Electromagnetic Compatability. August, 2000.
+
+They must contain the following entries:
+
++ `<inCellParameters>` which can be defined in two ways:
+    - By fixed values defined in `inductancePerMeter` and `capacitancePerMeter` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]`.
+    - By a `multipolarExpansion` object which allows to calculate the in-cell inductances and capacitances. This object can be obtained using the [_opensemba/pulmtln_ ](https://github.com/OpenSEMBA/pulmtln) tool containing:
+        - An `<innerRegionBox>` object, containing two pairs of real numbers, named `min` and `max` which describe a cross sectional bounding box. This box must contain all the conductors and dielectrics which form the bundle cross section. It also must be smaller or equal than the minimum side of the FDTD dual cells which are crossed by the bundle.
+        - Two arrays, `<electric>` and `<magnetic>` in which each contain a [field reconstruction object](#field-reconstruction) described below. They must contain a $N$ multipolar expansions, one for each conductor. Each entry assumes that the $n$-th conductor has a prescribed potential of $1 \, \text{V}$ and the rest are floating.
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
+
+#### Field reconstruction
+
+The field reconstruction objects contains information necessary to calculate the in-cell parameters for an `unshieldedMultiwire` with $N$ conductors. The `electric` and `magnetic`potentials are used to compute the in-cell capacitances and in-cell inductances, respectively. Each contains information to perform a multipolar expansion based on
+
+    Tsogtgerel Gantumur. Multipole Expansions in the plane. 2016, lecture notes. 
+
+and which must contain
+
++ `<conductorPotentials>` is an array of size $N$ indicating the potentials for each conductor. The $n$-th entry of this array should be equal to $1$, for the active conductor, and less than one for the rest (floating conductors).
++ `<ab>` which is an array of $P$ pairs of real numbers $(a_p, b_p)$, which are the pole coefficients of the field expansion when the $n$-th conductor is active. 
++ `<expansionCenter>` is an pair of real numbers indicating the place in which the dipole moment is zero, a concept similar to the _center of charge_. 
++ `<innerRegionAveragePotential>` is the potential averaged within the `innerRegionBox`. The multipolar expansion only valid outside the inner region.
+
+
 ### `terminal`
 
-A `terminal` models a lumped circuit which is assumed to located at one end of a `wire` or `multiwire`. Terminals are assumed to be assigned on points and therefore have zero dimension.
+A `terminal` models a lumped circuit which is assumed to located at one end of a `wire`, `shieldedMultiwire` or `unshieldedMultiwire`. Terminals are assumed to be assigned on points and therefore have zero dimension.
 
-+ If the terminal is associated with a `wire`, the `terminations` array must contain a single `termination`.
-+ In the case it is associated with a $N+1$ conductors `multiwire`, the `terminations` array must contain $N$ entries.
++ If the terminal is associated with a `wire` or `unshieldedMultiwire`, the `terminations` array must contain a  `termination` for each conductor.
++ In the case it is associated with a $N+1$ conductors `shieldedMultiwire`, the `terminations` array must contain $N$ entries.
 
 Each entry in `terminations` is specified by a `type`
 
@@ -502,11 +526,11 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
 
 ### `connector`
 
-The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire` or a `multiwire`. 
+The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire`, a `shieldedMultiwire` or an `unshieldedMultiwire`. 
 This `wire` can be either a single wire or the outermost conductor of a `cable` bundle. The `conector`  can have the following properties:
 
-+ `[resistances]`, an array of $N$ real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment of the multiwire
-+ `[transferImpedancePerMeter]`, described in the same way as explained in the [multiwire](#multiwire) section. Only valid in a `connector` associated with `multiwire`.
++ `[resistances]`, an array of $N$ real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment.
++ `[transferImpedancePerMeter]`, described in the same way as explained in the [shieldedMultiwire](#shieldedMultiwire) section. Only valid in a `connector` associated with `shieldedMultiwire`.
 
 
 
@@ -547,7 +571,7 @@ Associations with cables can contain the following inputs:
 
 + `<initialTerminalId>` and `<endTerminalId>` which must be present within the `materials` list of type. These entries indicate the lumped circuits connected at the ends of the cable.
 + `[initialConnectorId]` and `[endConnectorId]` entries which must point to materials of type `connector` and are assigned to the last segments of the corresponding ends of the cable.
-+ Its `materialId` must point to a [`wire`](#wire) or a [`multiwire`](#multiwire) material. If it points to a `multiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `multiwire` is embedded.
++ Its `materialId` must point to a [`wire`](#wire), a [`shieldedMultiwire`](#shieldedMultiwire) or an [`unshieldedMultiwire`](#unshieldedMultiwire) material. If it points to a `shieldedMultiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `shieldedMultiwire` is embedded.
 
 **Example:**
 
@@ -816,7 +840,7 @@ A `generator` source must be located on a single `node` whose `coordinateId` is 
 }
 ```
 
-In case the generator is located at the junction (connection point) of two of more lines, the  `node` shared by the lines will share the same  `coordinateId`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elemId` of the `polyline` the source is connected to. 
+In case the generator is located at the junction (connection point) of two of more lines, the  `node` shared by the lines will share the same  `coordinateId`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the source is connected to. 
 
 **Example:**
 

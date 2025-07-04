@@ -201,7 +201,7 @@ module Solver_mod
 
       call solveMTLNProblem(mtln_parsed)
       call reportSimulationEnd(layoutnumber)
-      call FlushMTLNObservationFiles(nEntradaRoot)
+      call FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem = .true.)
    end subroutine
 #endif
 
@@ -818,6 +818,7 @@ module Solver_mod
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
+         write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
          call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,this%thereAre%MTLNbundles)
 #else
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
@@ -1871,7 +1872,7 @@ module Solver_mod
 #ifdef CompileWithMTLN      
          if (this%control%use_mtln_wires) then
             ! call GatherMPI_MTL()
-            call FlushMTLNObservationFiles(this%control%nentradaroot)
+            call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
          end if
 #endif
       endif

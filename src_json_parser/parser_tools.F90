@@ -24,9 +24,9 @@ module parser_tools_mod
       type(coordinate_t) :: relPos
    end type
 
-   type :: cable_ptr_t
-      type(cable_t), pointer :: p
-   end type
+   ! type :: cable_ptr_t
+   !    type(cable_t), pointer :: p
+   ! end type
 #endif
 
 contains

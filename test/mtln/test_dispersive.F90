@@ -9,9 +9,9 @@ integer function test_dispersive_init_1_pole() bind(C) result(error_cnt)
     type(pol_res_t):: connector
     type(mtl_t) :: line_out, line_in
 
-    type(mtl_array_t), dimension(2) :: levels
-    type(mtl_array_t) :: level1
-    type(mtl_array_t) :: level2
+    type(transmission_line_level_t), dimension(2) :: levels
+    type(transmission_line_level_t) :: level1
+    type(transmission_line_level_t) :: level2
     type(mtl_bundle_t) :: bundle
     
     integer :: ndiv, nc, npoles
@@ -34,8 +34,8 @@ integer function test_dispersive_init_1_pole() bind(C) result(error_cnt)
     zt%residues = residues
     
     
-    line_out = buildLineWithNConductors(1, 'line_out')
-    line_in = buildLineWithNConductors(1, 'line_in', parent_name = "line_out", conductor_in_parent = 1)
+    line_out = buildLineWithNConductors(1, 'line_out', type = "unshielded")
+    line_in = buildLineWithNConductors(1, 'line_in', parent_name = "line_out", conductor_in_parent = 1, type = "shielded")
     level1%lines = [line_out]
     level2%lines = [line_in]
     levels = [level1, level2]
@@ -103,9 +103,9 @@ integer function test_dispersive_init_1_pole_lines_with_lumped() bind(C) result(
     type(pol_res_t):: connector
     type(mtl_t) :: line_out, line_in
 
-    type(mtl_array_t), dimension(2) :: levels
-    type(mtl_array_t) :: level1
-    type(mtl_array_t) :: level2
+    type(transmission_line_level_t), dimension(2) :: levels
+    type(transmission_line_level_t) :: level1
+    type(transmission_line_level_t) :: level2
     type(mtl_bundle_t) :: bundle
     
     integer :: ndiv, nc, npoles
@@ -129,8 +129,8 @@ integer function test_dispersive_init_1_pole_lines_with_lumped() bind(C) result(
     zt%residues = residues
     
     
-    line_out = buildLineWithNConductors(1, 'line_out')
-    line_in = buildLineWithNConductors(1, 'line_in', parent_name = "line_out", conductor_in_parent = 1)
+    line_out = buildLineWithNConductors(1, 'line_out', type = "unshielded")
+    line_in = buildLineWithNConductors(1, 'line_in', parent_name = "line_out", conductor_in_parent = 1, type = "shielded")
 
     call line_out%lumped_elements%addDispersiveLumped(1, 1, zt)
     call line_in%lumped_elements%addDispersiveLumped(5, 1, zt)
@@ -218,9 +218,9 @@ integer function test_dispersive_init_2_poles() bind(C) result(error_cnt)
     type(pol_res_t):: connector
     type(mtl_t) :: line_out, line_in
 
-    type(mtl_array_t), dimension(2) :: levels
-    type(mtl_array_t) :: level1
-    type(mtl_array_t) :: level2
+    type(transmission_line_level_t), dimension(2) :: levels
+    type(transmission_line_level_t) :: level1
+    type(transmission_line_level_t) :: level2
     type(mtl_bundle_t) :: bundle
     
     integer :: ndiv, nc, npoles
@@ -243,8 +243,8 @@ integer function test_dispersive_init_2_poles() bind(C) result(error_cnt)
     zt%residues = residues
     
     
-    line_out = buildLineWithNConductors(1, 'line_out')
-    line_in = buildLineWithNConductors(3, 'line_in', parent_name = "line_out", conductor_in_parent = 1)
+    line_out = buildLineWithNConductors(1, 'line_out', type = "unshielded")
+    line_in = buildLineWithNConductors(3, 'line_in', parent_name = "line_out", conductor_in_parent = 1, type = "shielded")
     level1%lines = [line_out]
     level2%lines = [line_in]
     levels = [level1, level2]
@@ -311,8 +311,8 @@ integer function test_dispersive_init_1_pole_3_levels() bind(C) result(error_cnt
     type(pol_res_t):: connector
     type(mtl_t) :: line_out, line_in, line_in_2
 
-    type(mtl_array_t), dimension(3) :: levels
-    type(mtl_array_t) :: level1, level2, level3
+    type(transmission_line_level_t), dimension(3) :: levels
+    type(transmission_line_level_t) :: level1, level2, level3
     type(mtl_bundle_t) :: bundle
     
     integer :: ndiv, nc, npoles
@@ -330,9 +330,9 @@ integer function test_dispersive_init_1_pole_3_levels() bind(C) result(error_cnt
     zt%residues = residues
     
     
-    line_out = buildLineWithNConductors(1, 'line_out')
-    line_in = buildLineWithNConductors(2, 'line_in', parent_name = "line_out", conductor_in_parent = 1)
-    line_in_2 = buildLineWithNConductors(2, 'line_in_2', parent_name = "line_in", conductor_in_parent = 1)
+    line_out = buildLineWithNConductors(1, 'line_out', type = "unshielded")
+    line_in = buildLineWithNConductors(2, 'line_in', parent_name = "line_out", conductor_in_parent = 1, type = "shielded")
+    line_in_2 = buildLineWithNConductors(2, 'line_in_2', parent_name = "line_in", conductor_in_parent = 1, type = "shielded")
     level1%lines = [line_out]
     level2%lines = [line_in]
     level3%lines = [line_in_2]

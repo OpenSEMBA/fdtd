@@ -1087,8 +1087,6 @@ contains
       integer :: i
       character (len=*), dimension(3), parameter :: validTypes = &
          [J_PR_TYPE_POINT, J_PR_TYPE_WIRE, J_PR_TYPE_LINE]
-      character (len=*), dimension(1), parameter :: validFields = &
-         [J_FIELD_CURRENT]
       logical :: found
       character (len=:), allocatable :: fieldLbl, probeLbl
       integer :: filtered_size, n
@@ -1107,7 +1105,7 @@ contains
       filtered_size = 0
       do i=1, size(ps)
          fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
-         if (fieldLbl /= J_FIELD_VOLTAGE) then 
+         if (isMoreProbe(ps(i)%p)) then 
             filtered_size = filtered_size + 1
          end if
       end do
@@ -1116,7 +1114,7 @@ contains
       allocate(res%collection(filtered_size))
       do i=1, size(ps)
          fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
-         if (fieldLbl /= J_FIELD_VOLTAGE) then 
+         if (isMoreProbe(ps(i)%p)) then 
             probeLbl = this%getStrAt(ps(i)%p, J_TYPE, default=J_FIELD_ELECTRIC)
             if (probeLbl == J_PR_TYPE_WIRE .or. probeLbl == J_PR_TYPE_POINT) then 
                res%collection(n) = readPointProbe(ps(i)%p)
@@ -1132,6 +1130,78 @@ contains
       res%length_max = size(res%collection)
       res%len_cor_max = 0
    contains
+      logical function isMoreProbe(p)
+         type(json_value), pointer :: p
+         isMoreProbe = isPointProbe(p) &
+            .or. isCurrentProbeDefinedOnWire(p) &
+            .or. isLineProbe(p)
+      end function
+
+      logical function isLineProbe(p)
+         type(json_value), pointer :: p
+         isLineProbe = this%getStrAt(p, J_TYPE) == J_PR_TYPE_LINE
+      end function
+
+      logical function isCurrentProbeDefinedOnWire(p)
+         type(json_value), pointer :: p
+         character (len=:), allocatable :: fieldLabel
+         logical :: found
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j
+         integer :: cId
+         type(polyline_t) :: polyline
+         
+         fieldLabel = this%getStrAt(p, J_FIELD, found=found)
+         if (.not. found .or. fieldLabel /= J_FIELD_CURRENT) then
+            isCurrentProbeDefinedOnWire = .false.
+            return
+         end if
+         
+         block
+            type(pixel_t) :: pixel
+            integer, dimension(:), allocatable :: eIds
+            eIds = this%getIntsAt(p, J_ELEMENTIDS)
+            pixel = getPixelFromElementId(this%mesh, eIds(1))
+            cId = pixel%tag
+         end block
+
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
+         do i = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+            do j = 1, size(polyline%coordIds)
+               if (polyline%coordIds(j) == cId) then
+                  isCurrentProbeDefinedOnWire = .true.
+                  return
+               end if
+            end do
+         end do
+
+         isCurrentProbeDefinedOnWire = .false.
+      end function
+
+      logical function isPointProbe(p)
+         type(json_value), pointer :: p
+         character (len=:), allocatable :: typeLabel, fieldLabel
+         logical :: found
+
+         typeLabel = this%getStrAt(p, J_TYPE, found=found)
+         if (.not. found) then
+            call WarnErrReport("Point probe type label not found.", .true.)
+         end if
+         if (typeLabel /= J_PR_TYPE_POINT) then
+            isPointProbe = .false.
+            return
+         end if
+
+         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_ELECTRIC)
+         if (fieldLabel == J_FIELD_ELECTRIC .or. &
+               fieldLabel == J_FIELD_MAGNETIC) then
+            isPointProbe = .true.
+         else
+            isPointProbe = .false.
+         end if
+      end function
+
       function readLineProbe(p) result (res)
          type(MasSonda) :: res
          type(json_value), pointer :: p
@@ -1145,7 +1215,7 @@ contains
 
          outputName = this%getStrAt(p, J_NAME, found=nameFound)
          if (.not. nameFound) then 
-            write(error_unit, *) "ERROR: name entry not found for probe."
+            call WarnErrReport("ERROR: name entry not found for probe.", .true.)
          end if
          res%outputrequest = trim(adjustl(outputName))
 
@@ -1153,10 +1223,10 @@ contains
 
          elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
          if (.not. elementIdsFound) then
-            write(error_unit, *) "ERROR: element ids entry not found for probe."
+            call WarnErrReport("ERROR: element ids entry not found for probe.", .true.)
          end if
          if (size(elemIds) /= 1) then
-            write(error_unit, *) "ERROR: point probe must contain a single element id."
+            call WarnErrReport("ERROR: point probe must contain a single element id.", .true.)
          end if
 
          polyline = this%mesh%getPolyline(elemIds(1))
@@ -1223,7 +1293,7 @@ contains
             res%cordinates(1)%Xi = pixel%tag
             res%cordinates(1)%Yi = 0
             res%cordinates(1)%Zi = 0
-            res%cordinates(1)%Or = strToFieldType(fieldLabel)
+            res%cordinates(1)%Or = strToFieldType(fieldLabel)            
           case (J_PR_TYPE_POINT)
             call this%core%get(p, J_PR_POINT_DIRECTIONS, dirLabelPtr, found=dirLabelsFound)
             if(dirLabelsFound) then
@@ -2057,7 +2127,9 @@ contains
       end block
 
       mat = this%matTable%getId(res%materialId)
-      isMultiwire = this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE
+      isMultiwire = &
+         this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_SHIELDED_MULTIWIRE .or. &
+         this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_UNSHIELDED_MULTIWIRE
       isWireOrMultiwire = &
          this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE .or. isMultiwire 
       
@@ -2088,11 +2160,15 @@ contains
          end if
       end if
       if (isMultiwire) then
-         if (.not. (this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)) .and. &
-            (this%mesh%checkElementId(res%containedWithinElementId) /= 0)) then
-            write(errorMsg, *) errorMsgInit, "element with id ", res%containedWithinElementId, " not found."
-            call WarnErrReport(errorMsg, .true.)
-         end if
+         ! Not defininign a containedWithinElementId is an error if the simulation is a 3D-FDTD one. 
+         ! For pure MTLN mode it is not an error.
+         ! if (res%containedWithinElementId == -1) then
+         !    write(error_unit, *) errorMsgInit, "multiwire associations must include: ", J_MAT_ASS_CAB_CONTAINED_WITHIN_ID
+         ! end if
+         ! if (.not. (this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)) .and. &
+         !    (this%mesh%checkElementId(res%containedWithinElementId) /= 0)) then
+         !    write(error_unit, *) errorMsgInit, "element with id ", res%containedWithinElementId, " not found."
+         ! end if
       end if
       
    contains 
@@ -2236,98 +2312,117 @@ contains
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
       type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, cables
-      type(cable_t) :: read_cable
+      class(cable_t), pointer :: ptr, read_cable
       integer :: i
 
-      mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
-      mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
-      wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
-      multiwires = this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE])
-      cables = this%getMaterialAssociations(&
-               [J_MAT_TYPE_WIRE//'     ',&
-                J_MAT_TYPE_MULTIWIRE    ]) 
-      ! 5 spaces are needed to make strings have same length. 
+      cables = this%getMaterialAssociations([ &
+                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+      ! spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
+      if (size(cables) == 0) then 
+         mtln_res%has_multiwires = .false.
+         mtln_res%time_step = 0
+         mtln_res%number_of_steps = 0
+         allocate(mtln_res%cables(0))
+         allocate(mtln_res%probes(0))
+         allocate(mtln_res%networks(0))
+         return
+      end if
 
-      if (size(multiwires) /= 0) mtln_res%has_multiwires = .true.
+      mtln_res%has_multiwires = .true.
+      mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
+      mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
-      allocate (mtln_res%cables(size(wires) + size(multiwires)))
+      allocate (mtln_res%cables(size(cables)))
       do i = 1, size(cables)
-         read_cable = readMTLNCable(cables(i))
+         read_cable => readMTLNCable(cables(i), this%readGrid())
          call stopOnRepeteadName(read_cable, mtln_res%cables, i - 1)
-         mtln_res%cables(i) = read_cable
+         mtln_res%cables(i)%ptr => read_cable
          call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, i)
          call addElemIdToPositionMap(elemIdToPosition, cables(i)%elementIds)
       end do
-
       do i = 1, size(cables)
-         mtln_res%cables(i)%parent_cable => assignParentCable(cables(i), mtln_res%cables)
-         mtln_res%cables(i)%conductor_in_parent = assignConductorInParent(cables(i), mtln_res%cables)
+         ptr => mtln_res%cables(i)%ptr
+         select type(ptr)
+         type is(shielded_multiwire_t)
+            ptr%parent_cable => assignParentCable(cables(i), mtln_res%cables)
+            ptr%conductor_in_parent = assignConductorInParent(cables(i))
+         end select
       end do
-
-      mtln_res%probes = readWireProbes()
+      
+      mtln_res%probes = readMultiwireProbes()
       mtln_res%networks = buildNetworks()
 
    contains
 
       function assignParentCable(cable, cables) result(res)
          type(materialAssociation_t) :: cable
-         type(cable_t), dimension(:), pointer :: cables
+         type(cable_abstract_t), dimension(:), allocatable :: cables
          type(json_value_ptr) :: mat
          integer :: parentId, index
-         type(cable_t), pointer :: res
+         class(cable_t), pointer :: res
+
          mat = this%matTable%getId(cable%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
+
+         select case (this%getStrAt(mat%p, J_TYPE))
+         case (J_MAT_TYPE_SHIELDED_MULTIWIRE) 
             parentId = cable%containedWithinElementId
             if (parentId == -1) then
                res => null()
             else 
                res => getPointerToParentCable(cables, parentId)
             end if
-         else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
+         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
             res => null()
-         else
+         case default
             call WarnErrReport('ERROR: Material type not recognized', .true.)
-         end if
+         end select
       end function
 
-      function assignConductorInParent(cable, cables) result(res)
+      function assignConductorInParent(cable) result(res)
          type(materialAssociation_t) :: cable
-         type(cable_t), dimension(:), pointer :: cables
          type(json_value_ptr) :: mat
          integer :: parentId
          integer :: res
+
          mat = this%matTable%getId(cable%materialId)
-         if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_MULTIWIRE) then
+
+         select case (this%getStrAt(mat%p, J_TYPE) )
+         case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
             parentId = cable%containedWithinElementId
             if (parentId == -1) then
                res = 0
             else 
                res = getParentPositionInMultiwire(parentId)
             end if
-         else  if (this%getStrAt(mat%p, J_TYPE) == J_MAT_TYPE_WIRE) then 
+         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
             res = 0
-         else
+         case default
             call WarnErrReport('ERROR: Material type not recognized', .true.)
-         end if
+         end select
       end function
 
       subroutine stopOnRepeteadName(cable, cables, n)
-         type(cable_t) :: cable
-         type(cable_t), dimension(:), pointer :: cables
+         class(cable_t) :: cable
+         type(cable_abstract_t), dimension(:), allocatable :: cables
          integer :: n, i
          logical :: unique
+         character (len=BUFSIZE) :: errorMsg
          unique = .true.
          do i = 1, n
-            if (cable%name == cables(i)%name) then
+            if (cable%name == cables(i)%ptr%name) then
                unique = .false.
             end if
          end do
-         if (.not. unique) error stop 'Cable name "'//cable%name//'" has already been used'
+         if (.not. unique) then
+            write (errorMsg, *) "Cable name ", cable%name, " has already been used"
+            call WarnErrReport(errorMsg, .true.)
+         end if
       end subroutine
 
       function readConnectors() result(res)
@@ -2400,7 +2495,8 @@ contains
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
          cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
-                     this%getMaterialAssociations([J_MAT_TYPE_MULTIWIRE]) ]
+                    this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
+                    this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds
             terminations_ini => getTerminationsOnSide(cables(i)%initialTerminalId)
@@ -2634,7 +2730,7 @@ contains
          res%node%conductor_in_cable = index
 
          call elemIdToCable%get(key(id), value=cable_index)
-         res%node%belongs_to_cable => mtln_res%cables(cable_index)
+         res%node%belongs_to_cable => mtln_res%cables(cable_index)%ptr
 
          polyline = this%mesh%getPolyline(id)
 
@@ -2817,79 +2913,221 @@ contains
 
       end function
 
-      function readWireProbes() result(res)
+      function readMultiwireProbes() result(res)
          type(probe_t), dimension(:), allocatable :: res
-         type(json_value_ptr), dimension(:), allocatable :: wire_probes, polylines
-         type(json_value), pointer :: probes, elements
-         integer :: i,j, position, n_probes, k
-         integer, dimension(:), allocatable :: elemIds, polylinecIds
-         type(node_t) :: node
-         type(cable_t), pointer :: cable_ptr
-         integer :: index
-         type(coordinate_t) :: node_coord
-         if (this%existsAt(this%root, J_PROBES)) then
-            call this%core%get(this%root, J_PROBES, probes)
-         else
+         type(json_value_ptr), dimension(:), allocatable :: wire_probes
+         type(json_value), pointer :: probes
+         integer :: i, j, index, n
+         integer, dimension(:), allocatable :: ids
+         type (coordinate_t) :: probe_node_coord
+         type(linel_t), dimension(:), allocatable :: linels
+         type(polyline_t) :: pl
+         class(cable_t), pointer :: cable_ptr, aux_ptr
+         logical :: parent_cable_found = .false., found
+
+         call this%core%get(this%root, J_PROBES, probes, found)
+         if (.not. found) then 
             allocate(res(0))
             return
          end if
+         wire_probes = [this%jsonValueFilterByKeyValue(probes, J_TYPE, J_PR_TYPE_WIRE)]
+         n = countOutputProbes(wire_probes)
+         allocate(res(n))
+         if (n == 0) return
+         n = 1
+         do i = 1, size(wire_probes)
+            if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) then 
+               ids = getPolylineElemIdOfMultiwireProbe(wire_probes(i)%p)
+               probe_node_coord = getProbeNodeCoordinate(wire_probes(i)%p)
+               
+               do j = 1, size(ids)
+                  res(n)%probe_name = readProbeName(wire_probes(i)%p)
+                  res(n)%probe_type = readProbeType(wire_probes(i)%p)
+                  res(n)%probe_position = probe_node_coord%position
+                  
+                  call elemIdToCable%get(key(ids(j)), value=index)
+                  pl = this%mesh%getPolyline(ids(j))
+                  linels = this%mesh%polylineToLinels(pl)
+                  res(n)%index = findProbeIndexInLinels(probe_node_coord, linels)
 
-         call this%core%get(this%root, J_MESH//'.'//J_ELEMENTS, elements)
-         polylines = this%jsonValueFilterByKeyValue(elements, J_TYPE, J_ELEM_TYPE_POLYLINE)
-         wire_probes = this%jsonValueFilterByKeyValue(probes, J_TYPE, J_MAT_TYPE_WIRE)
-
-         n_probes = countProbes(wire_probes, polylines)
-
-         allocate(res(n_probes))
-         if (n_probes /= 0) then
-            k = 1
-            do i = 1, size(wire_probes)
-               elemIds = this%getIntsAt(wire_probes(i)%p, J_ELEMENTIDS)
-               node = this%mesh%getNode(elemIds(1))
-               node_coord = this%mesh%getCoordinate(node%coordIds(1))
-               do j = 1, size(polylines)
-                  polylinecIds = this%getIntsAt(polylines(j)%p, J_COORDINATE_IDS)
-                  position = findloc(polylinecIds, node%coordIds(1), dim=1)
-                  if (position /= 0) then ! polyline found
-                     res(k)%probe_type = readProbeType(wire_probes(i)%p)
-                     res(k)%probe_name = readProbeName(wire_probes(i)%p)
-                     res(k)%probe_position = node_coord%position
-                     call elemIdToCable%get(key(this%getIntAt(polylines(j)%p, J_ID)), value=index)
-                     cable_ptr => mtln_res%cables(index)
-                     do while (associated(cable_ptr%parent_cable))
-                        cable_ptr => cable_ptr%parent_cable
-                     end do
-                     res(k)%attached_to_cable => cable_ptr
-                     res(k)%index = findProbeIndex(polylinecIds, position)
-                     k = k + 1
-                  end if
+                  cable_ptr => mtln_res%cables(index)%ptr
+                  ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
+                  ! Outside, cable_t does not have the parent_cable member
+                  ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable  
+                  parent_cable_found = .false. 
+                  do while (.not. parent_cable_found)
+                     select type(cable_ptr)
+                     type is(shielded_multiwire_t)
+                        if (associated(cable_ptr%parent_cable)) then
+                           aux_ptr => cable_ptr%parent_cable   
+                        else
+                           parent_cable_found = .true.
+                        end if
+                     type is(unshielded_multiwire_t)
+                        parent_cable_found = .true.
+                     end select
+                     if (.not. parent_cable_found) then 
+                        cable_ptr => aux_ptr
+                     end if
+                  end do
+                  res(n)%attached_to_cable => cable_ptr
+                  n = n + 1
                end do
-            end do
-         end if
-
-
+            end if
+         end do
       end function
 
-      function countProbes(probes, lines) result(res)
-         type(json_value_ptr), dimension(:), allocatable :: probes, lines
-         integer :: res
-         integer, dimension(:), allocatable :: ids, lines_ids
+      function getProbeNodeCoordinate(probe) result (res)
+         type(json_value), pointer, intent(in) :: probe
+         type(coordinate_t) :: res
+
+         integer, dimension(:), allocatable :: elemIds
          type(node_t) :: node
-         integer :: i, j, position
+         
+         elemIds = this%getIntsAt(probe, J_ELEMENTIDS)
+         node = this%mesh%getNode(elemIds(1))
+         res = this%mesh%getCoordinate(node%coordIds(1))
+      end function
+
+      function findProbeIndexInLinels(probe_coord, linels) result(res)
+         type(coordinate_t) :: probe_coord
+         type(linel_t), dimension(:), allocatable :: linels
+         type(coordinate_t), dimension(:), allocatable :: linelCoords
+
+         integer :: i, m(1), res, or
+         real, dimension(:), allocatable :: distance_to_linel_cell
+
+         allocate(linelCoords(size(linels)+1))
+         do i = 1, size(linels)
+            linelCoords(i)%position(1) = linels(i)%cell(1)
+            linelCoords(i)%position(2) = linels(i)%cell(2)
+            linelCoords(i)%position(3) = linels(i)%cell(3)
+            if (linels(i)%orientation < 0) then
+               or = abs(linels(i)%orientation) 
+               linelCoords(i)%position(or) = linelCoords(i)%position(or) + 1
+            end if
+         end do
+         or = linels(size(linels))%orientation
+         linelCoords(size(linels)+1)%position = linelCoords(size(linels))%position
+         linelCoords(size(linels)+1)%position(abs(or)) = linelCoords(i)%position(abs(or)) + merge(1,-1,or>0)
+         
+         allocate(distance_to_linel_cell(size(linelCoords)))
+         do i = 1, size(linelCoords)
+            distance_to_linel_cell(i) = norm2(linelCoords(i)%position-probe_coord%position)
+         end do
+         m = minloc(distance_to_linel_cell)
+         res = m(1)
+      end function
+
+      function countOutputProbes(probes) result(res)
+         type(json_value_ptr), dimension(:), allocatable :: probes
+         integer :: res
+
+         character (len=:), allocatable :: fieldLabel
+         logical :: found
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j, k
+         integer :: cId
+         type(polyline_t) :: polyline
          res = 0
-         if (size(probes) /= 0) then
-            do i = 1, size(probes)
-               ids = this%getIntsAt(probes(i)%p, J_ELEMENTIDS)
-               node = this%mesh%getNode(ids(1))
-               do j = 1, size(lines)
-                  lines_ids = this%getIntsAt(lines(j)%p, J_COORDINATE_IDS)
-                  position = findloc(lines_ids, node%coordIds(1), dim=1)
-                  if (position /= 0) then ! polyline found
+         do k = 1, size(probes)
+            fieldLabel = this%getStrAt(probes(k)%p, J_FIELD, found=found)
+            if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
+               continue
+            end if
+
+            block
+               type(pixel_t) :: pixel
+               integer, dimension(:), allocatable :: eIds
+               eIds = this%getIntsAt(probes(k)%p, J_ELEMENTIDS)
+               pixel = getPixelFromElementId(this%mesh, eIds(1))
+               cId = pixel%tag
+            end block
+
+            mAs = this%getMaterialAssociations([ &
+                  J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                  J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+
+            do i = 1, size(mAs)
+               polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+               do j = 1, size(polyline%coordIds)
+                  if (polyline%coordIds(j) == cId) then
                      res = res + 1
                   end if
                end do
             end do
+         end do
+         
+      end function
+
+      logical function isProbeDefinedOnMultiwire(p)
+         type(json_value), pointer :: p
+         character (len=:), allocatable :: fieldLabel
+         logical :: found
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j
+         integer :: cId
+         type(polyline_t) :: polyline
+         
+         fieldLabel = this%getStrAt(p, J_FIELD, found=found)
+         if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
+            isProbeDefinedOnMultiwire = .false.
+            return
          end if
+         
+         block
+            type(pixel_t) :: pixel
+            integer, dimension(:), allocatable :: eIds
+            eIds = this%getIntsAt(p, J_ELEMENTIDS)
+            pixel = getPixelFromElementId(this%mesh, eIds(1))
+            cId = pixel%tag
+         end block
+
+         mAs = this%getMaterialAssociations([ &
+                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+
+         do i = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+            do j = 1, size(polyline%coordIds)
+               if (polyline%coordIds(j) == cId) then
+                  isProbeDefinedOnMultiwire = .true.
+                  return
+               end if
+            end do
+         end do
+
+         isProbeDefinedOnMultiwire = .false.
+      end function
+
+      function getPolylineElemIdOfMultiwireProbe(p) result(res)
+         type(json_value), pointer :: p
+         type(polyline_t) :: polyline
+         integer, dimension(:), allocatable :: res
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j
+         integer :: cId
+         
+         block
+            type(pixel_t) :: pixel
+            integer, dimension(:), allocatable :: eIds
+            eIds = this%getIntsAt(p, J_ELEMENTIDS)
+            pixel = getPixelFromElementId(this%mesh, eIds(1))
+            cId = pixel%tag
+         end block
+
+         mAs = this%getMaterialAssociations([ &
+                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+         allocate(res(0))
+         do i = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+            do j = 1, size(polyline%coordIds)
+               if (polyline%coordIds(j) == cId) then
+                  res = [res, mAs(i)%elementIds(1)]
+               end if
+            end do
+         end do
       end function
 
       function readProbeType(probe) result(res)
@@ -2920,27 +3158,13 @@ contains
          end if
       end function
 
-      function findProbeIndex(polyline_cIds, node_position) result(res)
-         integer, dimension(:), intent(in) :: polyline_cIds
-         integer, intent(in) :: node_position
-         integer :: k, res
-         type(coordinate_t) :: c1, c2, delta
-         res = 1
-         do k=2, node_position
-            c2 = this%mesh%getCoordinate(polyline_cIds(k))
-            c1 = this%mesh%getCoordinate(polyline_cIds(k-1))
-            delta = c2-c1
-            res = res + abs(delta%position(findDirection(delta)))
-         end do
-
-      end function
-
       function getPointerToParentCable(cables, id) result(res)
-         type(cable_t), dimension(:), pointer :: cables
+         ! type(cable_t), dimension(:), pointer :: cables
+         type(cable_abstract_t), dimension(:), allocatable :: cables
          integer, intent(in) :: id
          integer :: mStat
          integer :: index
-         type(cable_t), pointer :: res
+         class(cable_t), pointer :: res
 
 
          call elemIdToCable%check_key(key(id), mStat)
@@ -2948,7 +3172,7 @@ contains
             res => null()
          end if
          call elemIdToCable%get(key(id), value=index)
-         res => cables(index)
+         res => cables(index)%ptr
       end function
 
       function findConnectorWithId(conn_Id) result(res)
@@ -2962,30 +3186,6 @@ contains
             res => null()
          end if
       end function
-
-      ! function getConnectorWithIdFromMap(id) result(res)
-      !    integer, intent(in) :: id
-      !    integer :: mStat
-      !    class(*), pointer :: d
-      !    type(connector_t), pointer :: res
-
-      !    nullify(res)
-      !    call connIdToConnector%check_key(key(id), mStat)
-      !    if (mStat /= 0) then
-      !       res => null()
-      !       return
-      !    end if
-
-      !    call connIdToConnector%get_raw_ptr(key(id), d, mStat)
-      !    if (mStat /= 0) then
-      !       res => null()
-      !       return
-      !    end if
-      !    select type(d)
-      !     type is (connector_t)
-      !       res => d
-      !    end select
-      ! end function
 
       function getParentPositionInMultiwire(id) result(res)
          integer, intent(in) :: id
@@ -3041,83 +3241,41 @@ contains
       end function
 
 
-      function readMTLNCable(j_cable) result(res)
+      function readMTLNCable(j_cable, despl) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
-         type(cable_t) :: res
+         type(Desplazamiento), intent(in) :: despl
+         class(cable_t), pointer :: res
          type(json_value_ptr) :: material
          integer :: nConductors
          logical :: found
          character(:), allocatable :: materialType
-
-         res%name = j_cable%name
-
-         res%step_size = buildStepSize(j_cable)
-         res%external_field_segments = mapSegmentsToGridCoordinates(j_cable)
-
          material = this%matTable%getId(j_cable%materialId)
          materialType = this%getStrAt(material%p, J_TYPE)
          select case (materialType)
-         case (J_MAT_TYPE_WIRE)
-            call assignReferenceProperties(res, material)
-            call assignExternalRadius(res, material)
-            if (this%existsAt(material%p, J_MAT_WIRE_DIELECTRIC)) then
-               call assignDielectricProperties(res, material)
-            end if
-
-            if (this%existsAt(material%p, J_MAT_WIRE_PASS)) then 
-               res%isPassthrough = this%getLogicalAt(material%p, J_MAT_WIRE_PASS)
-            end if
-
-         case (J_MAT_TYPE_MULTIWIRE)
-            call assignPULProperties(res, material, size(j_cable%elementIds))
-         
+         case (J_MAT_TYPE_SHIELDED_MULTIWIRE)
+            allocate(shielded_multiwire_t :: res)
+            select type(res)
+            type is(shielded_multiwire_t)
+               res%transfer_impedance = buildTransferImpedance(material)
+               call assignPULProperties(res, material, size(j_cable%elementIds))
+            end select
+         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
+            allocate(unshielded_multiwire_t :: res)
+            select type(res)
+            type is(unshielded_multiwire_t)
+               call assignInCellProperties(res, material, size(j_cable%elementIds))
+            end select
          case default
-            call WarnErrReport("Error reading cable: is neither wire nor multiwire", .true.)
-
+            call WarnErrReport("Error reading cable: material type is not valid", .true.)
          end select
 
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
-         res%transfer_impedance = buildTransferImpedance(material)
-
+         res%name = j_cable%name
+         res%segments = buildSegments(j_cable, despl)
+         res%step_size = buildStepSize(res%segments, despl)
 
       end function
-
-      subroutine assignExternalRadius(res, mat)
-         type(cable_t), intent(inout) :: res
-         type(json_value_ptr) :: mat
-         integer :: i
-
-         if (this%existsAt(mat%p, J_MAT_WIRE_RADIUS)) then
-            do i = 1, size(res%external_field_segments(:))
-               res%external_field_segments(i)%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS)
-            end do
-         else
-            call WarnErrReport("Wire radius is missing", .true.)
-         end if
-
-      end subroutine
-
-      subroutine assignDielectricProperties(res, mat)
-         type(cable_t), intent(inout) :: res
-         type(json_value_ptr) :: mat, diel
-         type(json_value), pointer :: diel_ptr
-         integer :: i
-
-         call this%core%get(mat%p, J_MAT_WIRE_DIELECTRIC, diel_ptr)
-         if (this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY) .and. & 
-             this%existsAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)) then
-
-            do i = 1, size(res%external_field_segments(:))
-               res%external_field_segments(i)%has_dielectric = .true.
-               res%external_field_segments(i)%dielectric%relative_permittivity = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_PERMITTIVITY)
-               res%external_field_segments(i)%dielectric%radius = this%getRealAt(diel_ptr, J_MAT_WIRE_DIELECTRIC_RADIUS)
-            end do
-         else
-            call WarnErrReport("Dielectric permittivity and/or radius are missing", .true.)
-         end if
-
-      end subroutine
 
       function buildTransferImpedance(mat) result(res)
          type(json_value_ptr):: mat
@@ -3168,43 +3326,13 @@ contains
          end if
       end function
 
-      subroutine assignReferenceProperties(res, mat)
-         type(cable_t), intent(inout) :: res
-         type(json_value_ptr) :: mat
-         real, dimension(1,1) :: val
-         allocate(res%capacitance_per_meter(1,1), source = 0.0)
-         allocate(res%inductance_per_meter(1,1), source = 0.0)
-         allocate(res%resistance_per_meter(1,1), source = 0.0)
-         allocate(res%conductance_per_meter(1,1), source = 0.0)
-
-         if (this%existsAt(mat%p, J_MAT_WIRE_REF_CAPACITANCE)) then
-            res%capacitance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_REF_CAPACITANCE)
-         else
-            call WarnErrReport("Capacitance per meter was not found during parsing and will be assigned in module Wire_bundles_mtln")
-            res%capacitance_per_meter(1,1) = 0.0
-         end if
-         
-         if (this%existsAt(mat%p, J_MAT_WIRE_REF_INDUCTANCE)) then
-            res%inductance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_REF_INDUCTANCE)
-         else
-            call WarnErrReport("Inductance per meter was not found during parsing will be assigned in module Wire_bundles_mtln")
-            res%inductance_per_meter(1,1) = 0.0
-         end if
-
-         if (this%existsAt(mat%p, J_MAT_WIRE_RESISTANCE)) then
-            res%resistance_per_meter(1,1) = this%getRealAt(mat%p, J_MAT_WIRE_RESISTANCE)
-         else
-            res%resistance_per_meter(1,1) = 0.0
-         end if
-
-      end subroutine
-
       subroutine assignPULProperties(res, mat, n)
-         type(cable_t), intent(inout) :: res
+         type(shielded_multiwire_t), intent(inout) :: res
          type(json_value_ptr) :: mat
          integer, intent(in) :: n
          real, dimension(:,:), allocatable :: null_matrix
          logical :: found
+
          allocate(null_matrix(n,n), source = 0.0)
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
@@ -3231,115 +3359,200 @@ contains
          else
             res%conductance_per_meter = null_matrix
          end if
+      end subroutine
 
+      subroutine assignInCellProperties(res, mat, n)
+         type(unshielded_multiwire_t), intent(inout) :: res
+         type(json_value_ptr) :: mat
+         type(json_value), pointer :: multipolarExpansionPtr
+         integer, intent(in) :: n
+         real, dimension(:,:), allocatable :: null_matrix
+         logical :: found
+         logical :: areFixedInCell
+         logical :: areMultipolarInCell
+         
+         allocate(null_matrix(n,n), source = 0.0)
+
+         areFixedInCell = &
+            this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE) .and. &
+            this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)
+         areMultipolarInCell = & 
+            this%existsAt(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION)
+
+         if ((areFixedInCell .and. areMultipolarInCell) .or. &
+             (.not. areFixedInCell .and. .not. areMultipolarInCell) ) then
+            call WarnErrReport( &
+               "Unshielded multiwires in cell properties must be defined by fixed OR multipolarExpansions, but not both.", .true.)
+         end if
+
+         if (areFixedInCell) then
+            res%cell_inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
+            res%cell_capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
+            allocate(res%multipolar_expansion(0))
+         else 
+            res%cell_inductance_per_meter = null_matrix
+            res%cell_capacitance_per_meter = null_matrix
+
+            call this%core%get(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, multipolarExpansionPtr)
+            allocate(res%multipolar_expansion(1))         
+            res%multipolar_expansion(1) = readMultipolarExpansion(multipolarExpansionPtr)
+         end if
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
+            res%resistance_per_meter = &
+               vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
+         else
+            res%resistance_per_meter = null_matrix
+         end if
+
+         if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)) then
+            res%conductance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
+         else
+            res%conductance_per_meter = null_matrix
+         end if
 
       end subroutine
 
-      function mapSegmentsToGridCoordinates(j_cable) result(res)
-         type(materialAssociation_t), intent(in) :: j_cable
-         type(external_field_segment_t), dimension(:), allocatable :: res
-         integer, dimension(:), allocatable :: elemIds
-         type(polyline_t) :: p_line
+      function readMultipolarExpansion(multipolarExpansionPtr) result (res)
+         type(json_value), pointer :: multipolarExpansionPtr
+         type(multipolar_expansion_t) :: res
+         type(json_value), pointer :: jvPtr
+         logical :: found
+         
+         call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX, jvPtr, found)
+         if (.not. found) then
+            call WarnErrReport("Error reading multipolar expansion: innerRegionBox label not found", .true.)
+         end if   
+         res%inner_region = readInnnerRegionBox(jvPtr)
 
-         elemIds = j_cable%elementIds
-         if (size(elemIds) == 0) return
+         call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_ELECTRIC, jvPtr, found)
+         if (.not. found) then
+            call WarnErrReport("Error reading multipolar expansion electric reconstruction not found", .true.)
+         end if
+         res%electric = readFieldReconstruction(jvPtr)
 
-         p_line = this%mesh%getPolyline(elemIds(1))
-         allocate(res(0))
-         block
-            type(coordinate_t) :: c1, c2
-            integer :: i
-            do i = 2, size(p_line%coordIds)
-               c2 = this%mesh%getCoordinate(p_line%coordIds(i))
-               c1 = this%mesh%getCoordinate(p_line%coordIds(i-1))
+         call this%core%get(multipolarExpansionPtr, J_MAT_MULTIWIRE_ME_MAGNETIC, jvPtr, found)
+         if (.not. found) then
+            call WarnErrReport("Error reading multipolar expansion magnetic reconstruction not found", .true.)
+         end if
+         res%magnetic = readFieldReconstruction(jvPtr)
+      end function
+      
+      function readInnnerRegionBox(ptr) result(inner_region)
+         type(json_value), pointer, intent(in) :: ptr
+         type(box_2d_t) :: inner_region
+         inner_region%min = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN)
+         inner_region%max = this%getRealsAt(ptr, J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX)
+      end function
+      
+      function readFieldReconstruction(ptr) result(res)
+         type(json_value), pointer, intent(in) :: ptr
+         type(field_reconstruction_t), dimension(:), allocatable :: res
+         real, dimension(:), allocatable :: auxAB
+         type(json_value), pointer :: frPtr
+         type(json_value), pointer :: absPtr
+         type(json_value), pointer :: abPtr
+         
+         integer :: i, j
+         logical :: found
 
-               if (findOrientation(c2-c1) > 0) then
-                  res = [res, mapPositiveSegment(c1,c2)]
-               else if (findOrientation(c2-c1) < 0) then
-                  res = [res, mapNegativeSegment(c1,c2)]
-               else
-                  call WarnErrReport('Error: polyline first and last coordinate are identical', .true.)
-               end if
+         allocate(res(this%core%count(ptr)))
+         do j = 1, size(res)
+            call this%core%get_child(ptr, j, frPtr)
+
+            res(j)%inner_region_average_potential = this%getRealAt(frPtr, J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL)
+            res(j)%expansion_center = this%getRealsAt(frPtr, J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER)
+            res(j)%conductor_potentials = this%getRealsAt(frPtr, J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS)
+
+            call this%core%get(frPtr, J_MAT_MULTIWIRE_MEFR_AB, absPtr, found)
+            if (.not. found) then
+               call WarnErrReport("Error reading multipolar expansion: ab label not found", .true.)
+            end if
+            allocate(res(j)%ab(this%core%count(absPtr)))
+            do i = 1, size(res(j)%ab)
+               call this%core%get_child(absPtr, i, abPtr)           
+               call this%core%get(abPtr, '(1)', res(j)%ab(i)%a)
+               call this%core%get(abPtr, '(2)', res(j)%ab(i)%b)
             end do
-         end block
+         end do
+
       end function
-
-      function mapNegativeSegment(c1, c2) result(res)
-         type(coordinate_t), intent(in) :: c1, c2
-         type(external_field_segment_t) :: curr_pos
-         integer :: axis, i, n_segments
-         type(external_field_segment_t), dimension(:), allocatable :: res
-
-         axis = findDirection(c2-c1)
-         n_segments = abs(ceiling(c2%position(axis)) - floor(c1%position(axis)))
-         allocate(res(n_segments))
-         curr_pos%position = [(c1%position(i), i = 1, 3)]
-         curr_pos%field => null()
-         curr_pos%radius = 0.0
-
-         res = [(curr_pos, i = 1, n_segments)]
-         res(:)%position(axis) = [(res(i)%position(axis) - i, i = 1, n_segments)]
-         res(:)%direction = -axis
-      end function
-
-      function mapPositiveSegment(c1, c2) result(res)
-         type(coordinate_t), intent(in) :: c1, c2
-         type(external_field_segment_t) :: curr_pos
-         integer :: axis, orientation, i, n_segments
-         type(external_field_segment_t), dimension(:), allocatable :: res
-
-         axis = findDirection(c2-c1)
-
-         n_segments = abs(floor(c2%position(axis)) - ceiling(c1%position(axis)))
-         allocate(res(n_segments))
-         curr_pos%position = [(c1%position(i), i = 1, 3)]
-         curr_pos%field => null()
-
-         res = [(curr_pos, i = 1, n_segments)]
-         res(:)%position(axis) = [(res(i)%position(axis) + (i-1), i = 1, n_segments)]
-         res(:)%direction = axis
-      end function
-
-      function buildStepSize(j_cable) result(res)
+   
+      function buildSegments(j_cable, despl) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
-         real, dimension(:), allocatable :: res
+         type(Desplazamiento), intent(in) :: despl
+         type(segment_t), dimension(:), allocatable :: res
+
          integer, dimension(:), allocatable :: elemIds
-         type(polyline_t) :: p_line
-         type(Desplazamiento) :: desp
-
-         desp = this%readGrid()
-
+         type(linel_t), dimension(:), allocatable :: linels
+         type(coordinate_t) :: coord
+         integer :: i,j, prevOr
          elemIds = j_cable%elementIds
-         if (size(elemIds) == 0) return
+         linels = this%mesh%polylineToLinels(this%mesh%getPolyline(elemIds(1)))
+         prevOr = 0
+         allocate(res(size(linels)))
+         do i = 1, size(linels)
+            res(i)%x = linels(i)%cell(1)
+            res(i)%y = linels(i)%cell(2)
+            res(i)%z = linels(i)%cell(3)
+            res(i)%orientation = linels(i)%orientation
+            if (prevOr == abs(res(i)%orientation)) then 
+               res(i)%dualBox = res(i-1)%dualBox
+            else 
+               select case(abs(res(i)%orientation))
+               case(DIR_X)
+                  res(i)%dualBox = getdualBoxYZ(res(i), despl)
+               case(DIR_Y)
+                  res(i)%dualBox = getdualBoxZX(res(i), despl)
+               case(DIR_Z)
+                  res(i)%dualBox = getdualBoxXY(res(i), despl)
+               end select
+            end if
+            prevOr = abs(res(i)%orientation)
+         end do
+      end function
 
-         p_line = this%mesh%getPolyline(elemIds(1))
-         allocate(res(0))
-         block
-            type(coordinate_t) :: c1, c2
-            integer :: axis, i, j
-            integer :: index_1, index_2
-            real :: f1, f2
-            real, dimension(:), allocatable :: displacement
-            do j = 2, size(p_line%coordIds)
-               c2 = this%mesh%getCoordinate(p_line%coordIds(j))
-               c1 = this%mesh%getCoordinate(p_line%coordIds(j-1))
-               axis = findDirection(c2-c1)
-               f1 = abs(ceiling(c1%position(axis))-c1%position(axis))
-               f2 = abs(c2%position(axis)-floor(c2%position(axis)))
-               displacement = assignDisplacement(desp, axis)
-               if (f1 /= 0) then
-                  res = [res, f1*displacement(floor(c1%position(axis)))]
-               end if
-               index_1 = ceiling(min(abs(c1%position(axis)), abs(c2%position(axis))))
-               index_2 = floor(max(abs(c1%position(axis)), abs(c2%position(axis))))
-               do i = 1, index_2 - index_1
-                  res = [res, displacement(i)]
-               enddo
-               if (f2 /= 0) then
-                  res = [res, f2*displacement(floor(c2%position(axis)))]
-               end if
-            end do
-         end block
+      function getdualBoxYZ(segment, despl) result (res)
+         type(Desplazamiento), intent(in) :: despl
+         type(segment_t), intent(in) :: segment
+         type(box_2d_t) :: res
+         res%min = [-0.5*despl%desY(segment%y-1),-0.5*despl%desZ(segment%z-1)]
+         res%max = [ 0.5*despl%desY(segment%y),   0.5*despl%desZ(segment%z)]
+      end function
+
+      function getdualBoxXY(segment, despl) result (res)
+         type(Desplazamiento), intent(in) :: despl
+         type(segment_t), intent(in) :: segment
+         type(box_2d_t) :: res
+         res%min = [-0.5*despl%desX(segment%x-1),-0.5*despl%desY(segment%y-1)]
+         res%max = [ 0.5*despl%desX(segment%x),   0.5*despl%desY(segment%y)]
+      end function
+
+      function getdualBoxZX(segment, despl) result (res)
+         type(Desplazamiento), intent(in) :: despl
+         type(segment_t), intent(in) :: segment
+         type(box_2d_t) :: res
+         res%min = [-0.5*despl%desZ(segment%z-1),-0.5*despl%desX(segment%x-1)]
+         res%max = [ 0.5*despl%desZ(segment%z),   0.5*despl%desX(segment%x)]
+
+      end function
+
+      function buildStepSize(segments, despl) result(res)
+         type(segment_t), dimension(:), allocatable :: segments
+         type(Desplazamiento), intent(in) :: despl
+         real, allocatable, dimension(:) :: res
+         integer :: i, or
+         allocate(res(size(segments)))
+         do i = 1, size(segments)
+            or = abs(segments(i)%orientation)
+            select case(or)
+            case(DIR_X)
+               res(i) = despl%desX(segments(i)%x)
+            case(DIR_Y)
+               res(i) = despl%desY(segments(i)%y)
+            case(DIR_Z)
+               res(i) = despl%desZ(segments(i)%z)
+            end select
+         end do
       end function
 
       function readTransferImpedance(z) result(res)
@@ -3400,9 +3613,6 @@ contains
       function noTransferImpedance() result(res)
          type(transfer_impedance_per_meter_t) :: res
          character(len=:), allocatable :: direction
-         ! res%resistive_term = 0.0
-         ! res%inductive_term = 0.0
-         ! res%direction = 0
          allocate(res%poles(0), res%residues(0))
       end function
 

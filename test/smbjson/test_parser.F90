@@ -88,7 +88,7 @@ integer function test_parser_read_mesh() bind(C) result(err)
    mesh = parser%readMesh()
    
    ! call mesh%printCoordHashInfo() !! For debugging only
-   expected%position = [10,2,1]
+   expected%position = [10,0,1]
    
    obtained = mesh%getCoordinate(59, found)
    if (.not. found) err = err + 1
