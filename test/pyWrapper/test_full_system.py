@@ -183,7 +183,7 @@ def test_holland_mtln_mpi(tmp_path):
 
     # no mpi -np 3
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], mpi_command='mpirun -np 3',run_in_folder=tmp_path)
+                  flags=['-mtlnwires'], mpi_command='mpirun -np 3 --use-hwthread-cpus',run_in_folder=tmp_path)
     solver.cleanUp()
     solver.run()
     probe_mid_mpi_3 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
