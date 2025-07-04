@@ -2,6 +2,7 @@
 
 #ifdef CompileWithMTLN
     #include "mtln/mtln_tests.h"
+    #include "system/system_tests.h"
 #endif
 #ifdef CompileWithSMBJSON
     #include "smbjson/smbjson_tests.h"

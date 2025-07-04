@@ -241,6 +241,7 @@ endif()
 
 if(SEMBA_FDTD_MAIN_LIB)
 	add_library(semba-main
+		"src_main_pub/semba_fdtd.F90"
 		"src_main_pub/calc_constants.F90"
 		"src_main_pub/nfde_rotate.F90"
 		"src_main_pub/EpsMuTimeScale.F90"
@@ -262,11 +263,12 @@ endif()
 
 if (SEMBA_FDTD_EXECUTABLE)
 	add_executable(semba-fdtd 
-		"src_main_pub/semba_fdtd.F90"
+		"src_main_pub/launcher.F90"
 	)
 	target_link_libraries(semba-fdtd semba-main semba-reports)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
 endif()
+
 
 
 include_directories(${CMAKE_BINARY_DIR}/mod)
