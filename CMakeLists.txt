@@ -199,6 +199,11 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 endif()
 
+if (SEMBA_FDTD_ENABLE_TEST)
+	add_subdirectory(external/googletest/)
+	add_subdirectory(test)
+endif()
+
 if(SEMBA_FDTD_COMPONENTS_LIB)
 	add_library(semba-components
 		"src_main_pub/anisotropic.F90"
@@ -264,10 +269,6 @@ if (SEMBA_FDTD_EXECUTABLE)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
 endif()
 
-if (SEMBA_FDTD_ENABLE_TEST)
-	add_subdirectory(external/googletest/)
-	add_subdirectory(test)
-endif()
 
 
 include_directories(${CMAKE_BINARY_DIR}/mod)
