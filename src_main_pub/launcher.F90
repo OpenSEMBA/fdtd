@@ -3,8 +3,12 @@ program SEMBA_FDTD_launcher
    implicit none
 
    type(semba_fdtd_t) :: semba
+
    call semba%init()
-   write(*,*) 'solver'
+   ! call semba%launch()
+   ! call semba%end()
+
+
 end program SEMBA_FDTD_launcher
 
 

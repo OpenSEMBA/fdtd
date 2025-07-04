@@ -15,12 +15,12 @@ target_link_libraries(system_test_fortran
     ngspice_interface
     smbjson
     ${JSONFORTRAN_LIB}
+    semba-main
 )
 
 add_library(system_tests "system_tests.cpp")
 
 target_link_libraries(system_tests
-    semba-main
     system_test_fortran
     GTest::gtest
 )

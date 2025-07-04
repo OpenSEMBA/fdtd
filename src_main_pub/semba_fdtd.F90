@@ -48,110 +48,77 @@ module SEMBA_FDTD_mod
 
    type, public :: semba_fdtd_t 
    contains
-      procedure, public :: init => semba_init   
-      procedure, public :: launch => semba_launch   
+      procedure :: init => semba_init   
+      procedure :: launch => semba_launch   
    end type semba_fdtd_t 
-
-
-   REAL (KIND=RKIND)              ::  eps0,mu0,cluz
-   integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) ::  sggMtag
-   type(taglist_t) :: tag_numbers
-   integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
-   
-   LOGICAL :: dummylog,finishedwithsuccess,l_auxinput, l_auxoutput, ThereArethinslots
-   integer (KIND=4) :: myunit,jmed
-   REAL (KIND=RKIND) :: maxSourceValue
-   !
-   REAL (KIND=RKIND) :: dtantesdecorregir
-   integer (kind=4) :: finaltimestepantesdecorregir,NEWfinaltimestep,thefileno
-   TYPE (Parseador), POINTER :: parser
-   type (SGGFDTDINFO)   :: sgg
-   TYPE (limit_t), DIMENSION (1:6) :: fullsize, SINPML_fullsize
-   !
-   LOGICAL :: existe  
-   INTEGER (KIND=4) ::  status, i, field
-   CHARACTER (LEN=BUFSIZE) ::  f, chain, chain3,chain4, chaindummy, filenombre
-
-   CHARACTER (LEN=BUFSIZE_LONG) :: slices
-   CHARACTER (LEN=BUFSIZE) :: whoami, whoamishort
-   CHARACTER (LEN=BUFSIZE) :: dubuf
-   integer (kind=4) :: statuse
-
-   LOGICAL :: hayinput
-   !
-   TYPE (t_NFDE_FILE), POINTER :: NFDE_FILE
-
-   type (tagtype_t) :: tagtype
-   REAL (KIND=RKIND)   ::  dxmin,dymin,dzmin,dtlay
-      
-#ifdef CompileWithMPI
-   LOGICAL :: fatalerror_aux
-   TYPE (XYZlimit_t), DIMENSION (1:6) :: tempalloc
-#endif
-   TYPE (tiempo_t) :: time_comienzo
-   CHARACTER (LEN=BUFSIZE) :: buff
-   REAL (KIND=8) time_desdelanzamiento
-   CHARACTER (LEN=BUFSIZE) :: filename_h5bin ! File name
-
-   !****************************************************************************
-   !****************************************************************************
-   !conformal existence flags   ref: ##Confflag##
-   integer (kind=4) :: conf_err
-#ifdef CompileWithConformal
-   type (conf_conflicts_t), pointer  :: conf_conflicts
-#endif
-
-   !****************************************************************************
-   !****************************************************************************
-   !****************************************************************************
-
-   type (entrada_t) :: l    
-#ifdef CompileWithMTLN
-   type(mtln_t) :: mtln_parsed
-#endif
-   logical :: lexis
-   integer (kind=4) :: my_iostat
-   
-   INTEGER (KIND=4) ::  verdadero_mpidir
-   logical :: newrotate !300124 tiramos con el rotador antiguo
-   type(solver_t) :: solver 
 
    
 contains
 
    subroutine semba_init(this)
       class(semba_fdtd_t) :: this
-      write(*,*) '1'
-   end subroutine semba_init  
+      type(entrada_t) :: l
 
+      real (KIND=RKIND) ::  eps0,mu0,cluz
+      real (KIND=RKIND) :: maxSourceValue
+      real (KIND=RKIND) :: dtantesdecorregir
+      real (KIND=RKIND)   ::  dxmin,dymin,dzmin,dtlay
+      real (KIND=8) time_desdelanzamiento
+      
+      logical :: dummylog,finishedwithsuccess,l_auxinput, l_auxoutput, ThereArethinslots
+      logical :: existe  
+      logical :: hayinput
+      logical :: lexis
+      logical :: newrotate !300124 tiramos con el rotador antiguo
 
-   subroutine semba_launch(this)
-      class(semba_fdtd_t) :: this
+      character (LEN=BUFSIZE) ::  f= ' ', chain = ' ', chain3 = ' ',chain4 = ' ', chaindummy= ' ', filenombre= ' '
+      character (LEN=BUFSIZE_LONG) :: slices = ' '
+      character (LEN=BUFSIZE) :: whoami, whoamishort
+      character (LEN=BUFSIZE) :: dubuf
+      character (LEN=BUFSIZE) :: buff
+      character (LEN=BUFSIZE) :: filename_h5bin ! File name
 
+      integer (KIND=4) :: myunit,jmed
+      integer (kind=4) :: finaltimestepantesdecorregir,NEWfinaltimestep,thefileno
+      integer (kind=4) :: statuse
+      integer (KIND=4) ::  status, i, field
+      INTEGER (KIND=4) ::  verdadero_mpidir
+      integer (kind=4) :: my_iostat
+
+      integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
+
+      type (taglist_t) :: tag_numbers
+      type (Parseador), POINTER :: parser
+      type (SGGFDTDINFO)   :: sgg
+      type (limit_t), DIMENSION (1:6) :: fullsize, SINPML_fullsize
+      type (t_NFDE_FILE), POINTER :: NFDE_FILE
+      type (tagtype_t) :: tagtype
+      TYPE (tiempo_t) :: time_comienzo
+      type(solver_t) :: solver 
+         
+#ifdef CompileWithMPI
+      LOGICAL :: fatalerror_aux
+      TYPE (XYZlimit_t), DIMENSION (1:6) :: tempalloc
+#endif
+
+   integer (kind=4) :: conf_err
+#ifdef CompileWithConformal
+      type (conf_conflicts_t), pointer  :: conf_conflicts
+#endif
+
+#ifdef CompileWithMTLN
+      type(mtln_t) :: mtln_parsed
+#endif
+
+      call initEntrada(l) 
       newrotate=.false.       !!ojo tocar luego                     
    !!200918 !!!si se lanza con -pscal se overridea esto
       Eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
       Mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
       cluz=1.0_RKIND/sqrt(eps0*mu0)
-   !!!   
-#ifdef CompileWithConformal
-      l%conformal_file_input_name=char(0);  
-#endif
-      slices = ' '; chain3 = ' ';chain4 = ' ' ;chaindummy=' '
-      l%geomfile = ' '; filenombre = ' '
-   !!!   
-      l%prefix = ' ';l%fichin = ' '; f = ' '; chain = ' '; l%chain2 = ' '; l%opcionestotales = ' ' 
-      l%nEntradaRoot = ' '; l%fileFDE = ' '; l%fileH5 = ' '
-      l%prefixopci = ' '; l%prefixopci1 = ' ';l%opcionespararesumeo = ' '; l%opcionesoriginales = ' '
-      l%slicesoriginales = ' '; ; l%chdummy = ' '
-      l%flushsecondsFields=0.; l%flushsecondsData=0.; l%time_end=0. 
-      l%existeNFDE=.false.; l%existeconf=.false.; l%existecmsh=.false.; l%existeh5=.false.
-      l%creditosyaprinteados=.false.
-      !activate printing through screen
-      CALL OnPrint
-      !!!!!!!!!!!!
-      call l%EpsMuTimeScale_input_parameters%init0()
       
+      CALL OnPrint
 
 #ifdef CompileWithMPI
       CALL InitGeneralMPI (l%layoutnumber, l%size)
@@ -345,7 +312,6 @@ contains
       
 
 
-   !!!!!!!!!!!!!!!!!!!!!!!
       sgg%extraswitches=parser%switches
    !!!da preferencia a los switches por linea de comando
       CALL getcommandargument (l%chain2, 1, chaindummy, l%length, statuse)
@@ -397,8 +363,6 @@ contains
          call print11(l%layoutnumber,'Remove running and pause files. If error persists check switches for error.  '//l%chain2,.true.)
          call print11(l%layoutnumber,' '); call print11(l%layoutnumber,' '); call print11(l%layoutnumber,' '); call print11(l%layoutnumber,' '); call print11(l%layoutnumber,' '); call print11(l%layoutnumber,' ');  goto 652
       endif
-   !!!!!!!!!!!!!!!!!!!!
-   !!!!!!!!!!!!!!!!!!!!
 
       call set_priorities(l%prioritizeCOMPOoverPEC,l%prioritizeISOTROPICBODYoverall,l%prioritizeTHINWIRE) !!! asigna las prioridades
       if (l%finaltimestep /= -2) then
@@ -743,355 +707,7 @@ contains
          close(thefileno)
       endif
 
-      ! call each simulation   !ojo que los layoutnumbers empiezan en 0
-      IF (l%finaltimestep /= 0) THEN
-#ifdef CompileWithMPI
-         !wait until everything comes out
-         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-         finishedwithsuccess=.false.
-
-         call solver%init(l)
-
-         if ((l%finaltimestep >= 0).and.(.not.l%skindepthpre)) then
-#ifdef CompileWithMTLN
-            CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
-            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
-            time_desdelanzamiento, maxSourceValue, l%EpsMuTimeScale_input_parameters, mtln_parsed)
-#else
-               CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
-               SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
-               time_desdelanzamiento, maxSourceValue, l%EpsMuTimeScale_input_parameters)
-#endif
-            deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
-         else
-#ifdef CompileWithMPI
-         call MPI_Barrier(SUBCOMM_MPI,l%ierr)
-#endif
-         CALL get_secnds (l%time_out2)
-         IF (l%layoutnumber == 0) THEN
-            call print_credits(l)
-            WRITE (dubuf,*) 'BEGUN '//trim (adjustl(l%nEntradaRoot)),' at ', time_comienzo%fecha(7:8), &
-            & '/', time_comienzo%fecha(5:6), '/', time_comienzo%fecha(1:4),' , ',  &
-            & time_comienzo%hora(1:2), ':', time_comienzo%hora(3:4)
-            CALL print11 (l%layoutnumber, dubuf)
-            WRITE (dubuf,*) 'ENDED '//trim (adjustl(l%nEntradaRoot)),' at ', l%time_out2%fecha(7:8), &
-            & '/', l%time_out2%fecha(5:6), '/', l%time_out2%fecha(1:4),' , ',  &
-            & l%time_out2%hora(1:2), ':', l%time_out2%hora(3:4)
-            CALL print11 (l%layoutnumber, dubuf)
-            WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
-            CALL print11 (l%layoutnumber, dubuf)
-            CALL print11 (l%layoutnumber, dubuf)
-         ENDIF
-            !!!!!!!        CALL CLOSEdxfFILE(l%layoutnumber,l%size)
-            CALL CLOSEWARNINGFILE(l%layoutnumber,l%size,dummylog,l%stochastic,l%simu_devia) !aqui ya no se tiene en cuenta el l%fatalerror
-#ifdef CompileWithMPI
-            !wait until everything comes out
-            CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-#ifdef CompileWithMPI
-            CALL MPI_FINALIZE (l%ierr)
-#endif
-            stop
-         endif
-      END IF
-      !
-#ifdef CompileWithMPI
-      !wait until everything comes out
-      CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-      !
-      IF (l%layoutnumber == 0) THEN
-         if (l%run) then
-            OPEN (38, file='running')
-            WRITE (38, '(a)') '!END'
-            CLOSE (38,status='delete')
-         endif
-         WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
-         CALL print11 (l%layoutnumber, dubuf)
-         WRITE (dubuf,*) 'DONE :  ', trim (adjustl(l%nEntradaRoot)), ' UNTIL n=', l%finaltimestep
-         CALL print11 (l%layoutnumber, dubuf)
-         WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
-         CALL print11 (l%layoutnumber, dubuf)
-         call erasesignalingfiles(l%simu_devia)
-
-      END IF
-
-#ifdef CompileWithMPI
-      !wait until everything comes out
-      CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-      !
-      IF (l%deleteintermediates) THEN
-         WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
-         CALL print11 (l%layoutnumber, dubuf)
-         WRITE (dubuf,*) 'Attempting to delete all intermediate data files'
-         CALL print11 (l%layoutnumber, dubuf)
-         WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
-         CALL print11 (l%layoutnumber, dubuf)
-         INQUIRE (file=trim(adjustl(l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt', EXIST=existe)
-         IF (existe) THEN
-            OPEN (19, file=trim(adjustl(l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt')
-            buscafile: DO
-               READ (19, '(a)', end=76) filenombre
-               IF (trim(adjustl(filenombre)) == '!END') THEN
-                  EXIT buscafile
-               ELSE
-                  OPEN (34, file=trim(adjustl(filenombre)))
-                  WRITE (34,*) '!END'
-                  CLOSE (34, STATUS='delete')
-               END IF
-            END DO buscafile
-   76       CONTINUE
-            CLOSE (19, STATUS='delete')
-            IF (l%layoutnumber == 0) THEN
-               OPEN (33, file=trim(adjustl(l%nEntradaRoot))//'_Outputlists.dat')
-               WRITE (33,*) '!END'
-               CLOSE (33, STATUS='delete')
-            END IF
-         END IF
-      END IF
-      !
-
-      !**************************************************************************************************
-      !***[conformal] *******************************************************************
-      !**************************************************************************************************
-      !delete conformal memory   reff: ##Conf_end##
-#ifdef CompileWithConformal
-      if(l%input_conformal_flag)then
-         call conf_sMesh%delete
-         call conf_timeSteps%delete;
-         call delete_conf_tools();
-      end if
-#endif
-      !**************************************************************************************************
-      !**************************************************************************************************
-      !**************************************************************************************************
-
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,l%ierr)
-#endif
-      CALL get_secnds (l%time_out2)
-      IF (l%layoutnumber == 0) THEN
-         call print_credits(l)
-         WRITE (dubuf,*) 'BEGUN '//trim (adjustl(l%nEntradaRoot)),' at ', time_comienzo%fecha(7:8), &
-         & '/', time_comienzo%fecha(5:6), '/', time_comienzo%fecha(1:4),' , ',  &
-         & time_comienzo%hora(1:2), ':', time_comienzo%hora(3:4)
-         CALL print11 (l%layoutnumber, dubuf)
-         WRITE (dubuf,*) 'ENDED '//trim (adjustl(l%nEntradaRoot)),' at ', l%time_out2%fecha(7:8), &
-         & '/', l%time_out2%fecha(5:6), '/', l%time_out2%fecha(1:4),' , ',  &
-         & l%time_out2%hora(1:2), ':', l%time_out2%hora(3:4)
-         CALL print11 (l%layoutnumber, dubuf)
-         WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
-         CALL print11 (l%layoutnumber, dubuf)
-         CALL print11 (l%layoutnumber, dubuf)
-      ENDIF
-      INQUIRE (file='relaunch', EXIST=l%relaunching)
-#ifdef CompileWithMPI
-      CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-      ! Error reading check
-
-#ifdef keeppause
-      if (l%fatalerror) then
-         fatalerror_aux=.true.
-#ifdef CompileWithMPI
-         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-         call MPI_AllReduce(fatalerror_aux, l%fatalerror, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, l%ierr)
-#else
-         l%fatalerror = fatalerror_aux
-#endif
-      if (l%fatalerror) l%relaunching=.true.
-#ifdef CompileWithMPI
-      CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-   endif
-#endif
-
-      IF (l%relaunching.and.(.not.finishedwithsuccess)) THEN
-         IF (l%layoutnumber == 0) THEN
-            CALL print11 (l%layoutnumber, SEPARADOR//SEPARADOR)
-            CALL print11 (l%layoutnumber, 'Not finishing solicited either manually or by an error condition. Edit of create launch file and remove pause file ')
-            CALL print11 (l%layoutnumber, SEPARADOR//SEPARADOR)
-            OPEN (9, file='pause', FORM='formatted')
-            write (9, '(a)') ' '
-            CLOSE (9)
-            OPEN (9, file='relaunch', FORM='formatted')
-            write (9, '(a)') ' '
-            CLOSE (9,status='delete')
-         endif
-         !!!!!
-#ifdef CompileWithMPI
-         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-         IF (l%layoutnumber == 0) THEN
-            CALL CloseReportingFiles
-         endif
-         GO TO 652
-      END IF
-   !si ha acabado con exito sal borrando signal files
-      IF (finishedwithsuccess) THEN
-         IF (l%layoutnumber == 0) THEN
-            OPEN (9, file='pause', FORM='formatted')
-            write (9, '(a)') ' '
-            CLOSE (9,status='delete')
-            OPEN (9, file='relaunch', FORM='formatted')
-            write (9, '(a)') ' '
-            CLOSE (9,status='delete')
-            OPEN (9, file='running', FORM='formatted')
-            write (9, '(a)') ' '
-            CLOSE (9,status='delete')
-      endif
-      endif
-
-#ifdef CompileWithMPI
-         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-
-      IF (l%layoutnumber == 0) THEN
-         CALL CloseReportingFiles
-      endif
-      !**************************************************************************************************
-
-#ifdef CompileWithMPI
-      CALL MPI_FINALIZE (l%ierr)
-#endif
-      STOP
-      !
-
-   contains
-   !END PROGRAM SEMBA_FDTD_launcher
-   !!!!!!!!!!!!!!!!!!
-   !!!!!!!!!!!!!!!!!!
-
-
-#ifdef CompilePrivateVersion 
-   subroutine cargaNFDE(local_nfde,local_parser)
-      CHARACTER (LEN=BUFSIZE) :: local_nfde
-      TYPE (Parseador), POINTER :: local_parser
-      INTEGER (KIND=8) :: numero,i8,troncho,longitud
-      integer (kind=4) :: mpi_t_linea_t,longitud4
-      IF (l%existeNFDE) THEN
-         WRITE (dubuf,*) 'INIT Reading file '//trim (adjustl(whoami))//' ', trim (adjustl(local_nfde))
-         CALL print11 (l%layoutnumber, dubuf)
-   !!!!!!!!!!!!!!!!!!!!!!!
-#ifdef CompileWithMPI
-         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-         if (l%layoutnumber==0) then
-            NFDE_FILE => cargar_NFDE_FILE (local_nfde)
-         !!!ya se allocatea dentro
-         else
-            ALLOCATE (NFDE_FILE)
-         endif
-         !
-         write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
-         !--->
-         WRITE (dubuf,*) 'INIT Sharing file through MPI'; CALL print11 (l%layoutnumber, dubuf)
-         !
-         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-         !
-         numero=NFDE_FILE%numero
-         call MPI_BCAST(numero, 1_4, MPI_INTEGER8, 0_4, SUBCOMM_MPI, l%ierr)      
-         if (l%layoutnumber/=0) then
-            NFDE_FILE%targ = 1
-            NFDE_FILE%numero=numero
-            ALLOCATE (NFDE_FILE%lineas(NFDE_FILE%numero))
-         endif
-         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-         !CREAMOS EL DERIVED TYPE y lo enviamos !para evitar el error de Marconi asociado a PSM2_MQ_RECVREQS_MAX 100617
-
-         CALL build_derived_t_linea(mpi_t_linea_t)
-
-         !problema del limite de mandar mas de 2^29 bytes con MPI!!!  Los soluciono partiendo en maxmpibytes (2^27) (algo menos por prudencia)! 040716
-         troncho=ceiling(maxmpibytes*1.0_8/(BUFSIZE*1.0_8+8.0_8),8)
-      !!! print *,'numero,troncho ',numero,troncho
-         do i8=1,numero,troncho
-            longitud=min(troncho,numero-i8+1)
-            CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-            if ((longitud>huge(1_4)).or.(longitud>maxmpibytes)) then
-               print *,'Stop. Buggy error: MPI longitud greater that greatest integer*4'
-               stop
-            else
-               longitud4=int(longitud,4)
-            endif
-            call MPI_BCAST(NFDE_FILE%lineas(i8),longitud4,mpi_t_linea_t,0_4,SUBCOMM_MPI,l%ierr)    
-            CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-         !!!  if (l%layoutnumber==1) print *,'l%layoutnumber-->',l%layoutnumber, i8,i8+longitud-1 
-         !!!  if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8)%dato)) 
-         !!!  if (l%layoutnumber==1) print *,NFDE_FILE%lineas(i8+longitud-1)%len,' ',trim(adjustl(NFDE_FILE%lineas(i8+longitud-1)%dato))
-            CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-            !      do i=1,numero
-      !          call MPI_BCAST(NFDE_FILE%lineas(i)%len, 1_4, MPI_INTEGER4, 0_4, SUBCOMM_MPI, l%ierr)
-      !          call MPI_BCAST(NFDE_FILE%lineas(i)%dato, BUFSIZE, MPI_CHARACTER, 0_4, SUBCOMM_MPI, l%ierr)
-      !          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr) !para evitar el error de Marconi asociado a PSM2_MQ_RECVREQS_MAX 100617
-            !      end do
-         end do
-         !solo para debugeo
-               !!!open(6729,file='comprob_'//trim(adjustl(dubuf))//'.nfde',form='formatted')
-               !!!write(6729,'(2i12)') NFDE_FILE%numero,NFDE_FILE%targ
-               !!!do i=1,numero
-               !!!   write(6729,'(i6,a)') NFDE_FILE%lineas(i)%len,trim(adjustl(NFDE_FILE%lineas(i)%dato))
-               !!!end do
-               !!!close (6729)
-         !!!!!!
-#else
-      NFDE_FILE => cargar_NFDE_FILE (local_nfde)
-#endif
-         write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
-         !--->
-      END IF    
-      NFDE_FILE%mpidir=l%mpidir
-   !!!!!!!!!!!!!!!!!!!
-      WRITE (dubuf,*) 'INIT interpreting geometrical data from ', trim (adjustl(local_nfde))
-      CALL print11 (l%layoutnumber, dubuf)
-   !!!!!!!!!!
-      if(newrotate) then
-         verdadero_mpidir=NFDE_FILE%mpidir
-         NFDE_FILE%mpidir=3     !no lo rota el parseador antiguo
-      endif
-      local_parser => newparser (NFDE_FILE)         
-#ifdef CompileWithMPI            
-      CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-      if(newrotate) then      
-         NFDE_FILE%mpidir=verdadero_mpidir   !restorealo
-         call nfde_rotate (local_parser,NFDE_FILE%mpidir)   !lo rota el parseador nuevo  
-#ifdef CompileWithMPI            
-         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-      endif
-      l%thereare_stoch=NFDE_FILE%thereare_stoch
-      l%mpidir=NFDE_FILE%mpidir !bug 100419
-   !!!!!!!!!!!                             
-   ! write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
-      write(dubuf,*) '[OK] '//trim(adjustl(whoami))//' newparser (NFDE_FILE)';  call print11(l%layoutnumber,dubuf)       
-#ifdef CompileWithMPI            
-         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
-#endif
-      return
-
-   end subroutine cargaNFDE
-#endif
-
-#ifdef CompileWithSMBJSON
-      subroutine cargaFDTDJSON(filename, parsed)
-         character(len=1024), intent(in) :: filename
-         type(Parseador), pointer :: parsed
-         
-         character(len=:), allocatable :: usedFilename    
-         type(fdtdjson_parser_t) :: parser
-         
-         usedFilename = adjustl(trim(filename)) // ".json"
-         parser = fdtdjson_parser_t(usedFilename)
-         
-         allocate(parsed)
-         parsed = parser%readProblemDescription()
-      end subroutine cargaFDTDJSON
-#endif
-
-   !!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+contains 
    subroutine NFDE2sgg     
    !!!!!!!!!      
          real (kind=rkind) :: dt,finaldt
@@ -1325,9 +941,365 @@ contains
          END DO
          return
       end subroutine
+
+   end subroutine semba_init  
+
+
+   subroutine semba_launch(this)
+      class(semba_fdtd_t) :: this
+
+
+!       ! call each simulation   !ojo que los layoutnumbers empiezan en 0
+!       IF (l%finaltimestep /= 0) THEN
+! #ifdef CompileWithMPI
+!          !wait until everything comes out
+!          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+! #endif
+!          finishedwithsuccess=.false.
+
+!          call solver%init(l)
+
+!          if ((l%finaltimestep >= 0).and.(.not.l%skindepthpre)) then
+! #ifdef CompileWithMTLN
+!             CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+!             SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
+!             time_desdelanzamiento, maxSourceValue, l%EpsMuTimeScale_input_parameters, mtln_parsed)
+! #else
+!                CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+!                SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
+!                time_desdelanzamiento, maxSourceValue, l%EpsMuTimeScale_input_parameters)
+! #endif
+!             deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
+!          else
+! #ifdef CompileWithMPI
+!          call MPI_Barrier(SUBCOMM_MPI,l%ierr)
+! #endif
+!          CALL get_secnds (l%time_out2)
+!          IF (l%layoutnumber == 0) THEN
+!             call print_credits(l)
+!             WRITE (dubuf,*) 'BEGUN '//trim (adjustl(l%nEntradaRoot)),' at ', time_comienzo%fecha(7:8), &
+!             & '/', time_comienzo%fecha(5:6), '/', time_comienzo%fecha(1:4),' , ',  &
+!             & time_comienzo%hora(1:2), ':', time_comienzo%hora(3:4)
+!             CALL print11 (l%layoutnumber, dubuf)
+!             WRITE (dubuf,*) 'ENDED '//trim (adjustl(l%nEntradaRoot)),' at ', l%time_out2%fecha(7:8), &
+!             & '/', l%time_out2%fecha(5:6), '/', l%time_out2%fecha(1:4),' , ',  &
+!             & l%time_out2%hora(1:2), ':', l%time_out2%hora(3:4)
+!             CALL print11 (l%layoutnumber, dubuf)
+!             WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
+!             CALL print11 (l%layoutnumber, dubuf)
+!             CALL print11 (l%layoutnumber, dubuf)
+!          ENDIF
+!             !!!!!!!        CALL CLOSEdxfFILE(l%layoutnumber,l%size)
+!             CALL CLOSEWARNINGFILE(l%layoutnumber,l%size,dummylog,l%stochastic,l%simu_devia) !aqui ya no se tiene en cuenta el l%fatalerror
+! #ifdef CompileWithMPI
+!             !wait until everything comes out
+!             CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+! #endif
+! #ifdef CompileWithMPI
+!             CALL MPI_FINALIZE (l%ierr)
+! #endif
+!             stop
+!          endif
+!       END IF
+!       !
+! #ifdef CompileWithMPI
+!       !wait until everything comes out
+!       CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+! #endif
+!       !
+!       IF (l%layoutnumber == 0) THEN
+!          if (l%run) then
+!             OPEN (38, file='running')
+!             WRITE (38, '(a)') '!END'
+!             CLOSE (38,status='delete')
+!          endif
+!          WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
+!          CALL print11 (l%layoutnumber, dubuf)
+!          WRITE (dubuf,*) 'DONE :  ', trim (adjustl(l%nEntradaRoot)), ' UNTIL n=', l%finaltimestep
+!          CALL print11 (l%layoutnumber, dubuf)
+!          WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
+!          CALL print11 (l%layoutnumber, dubuf)
+!          call erasesignalingfiles(l%simu_devia)
+
+!       END IF
+
+! #ifdef CompileWithMPI
+!       !wait until everything comes out
+!       CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+! #endif
+!       !
+!       IF (l%deleteintermediates) THEN
+!          WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
+!          CALL print11 (l%layoutnumber, dubuf)
+!          WRITE (dubuf,*) 'Attempting to delete all intermediate data files'
+!          CALL print11 (l%layoutnumber, dubuf)
+!          WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
+!          CALL print11 (l%layoutnumber, dubuf)
+!          INQUIRE (file=trim(adjustl(l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt', EXIST=existe)
+!          IF (existe) THEN
+!             OPEN (19, file=trim(adjustl(l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt')
+!             buscafile: DO
+!                READ (19, '(a)', end=76) filenombre
+!                IF (trim(adjustl(filenombre)) == '!END') THEN
+!                   EXIT buscafile
+!                ELSE
+!                   OPEN (34, file=trim(adjustl(filenombre)))
+!                   WRITE (34,*) '!END'
+!                   CLOSE (34, STATUS='delete')
+!                END IF
+!             END DO buscafile
+!    76       CONTINUE
+!             CLOSE (19, STATUS='delete')
+!             IF (l%layoutnumber == 0) THEN
+!                OPEN (33, file=trim(adjustl(l%nEntradaRoot))//'_Outputlists.dat')
+!                WRITE (33,*) '!END'
+!                CLOSE (33, STATUS='delete')
+!             END IF
+!          END IF
+!       END IF
+!       !
+
+!       !**************************************************************************************************
+!       !***[conformal] *******************************************************************
+!       !**************************************************************************************************
+!       !delete conformal memory   reff: ##Conf_end##
+! #ifdef CompileWithConformal
+!       if(l%input_conformal_flag)then
+!          call conf_sMesh%delete
+!          call conf_timeSteps%delete;
+!          call delete_conf_tools();
+!       end if
+! #endif
+!       !**************************************************************************************************
+!       !**************************************************************************************************
+!       !**************************************************************************************************
+
+! #ifdef CompileWithMPI
+!       call MPI_Barrier(SUBCOMM_MPI,l%ierr)
+! #endif
+!       CALL get_secnds (l%time_out2)
+!       IF (l%layoutnumber == 0) THEN
+!          call print_credits(l)
+!          WRITE (dubuf,*) 'BEGUN '//trim (adjustl(l%nEntradaRoot)),' at ', time_comienzo%fecha(7:8), &
+!          & '/', time_comienzo%fecha(5:6), '/', time_comienzo%fecha(1:4),' , ',  &
+!          & time_comienzo%hora(1:2), ':', time_comienzo%hora(3:4)
+!          CALL print11 (l%layoutnumber, dubuf)
+!          WRITE (dubuf,*) 'ENDED '//trim (adjustl(l%nEntradaRoot)),' at ', l%time_out2%fecha(7:8), &
+!          & '/', l%time_out2%fecha(5:6), '/', l%time_out2%fecha(1:4),' , ',  &
+!          & l%time_out2%hora(1:2), ':', l%time_out2%hora(3:4)
+!          CALL print11 (l%layoutnumber, dubuf)
+!          WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
+!          CALL print11 (l%layoutnumber, dubuf)
+!          CALL print11 (l%layoutnumber, dubuf)
+!       ENDIF
+!       INQUIRE (file='relaunch', EXIST=l%relaunching)
+! #ifdef CompileWithMPI
+!       CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+! #endif
+!       ! Error reading check
+
+! #ifdef keeppause
+!       if (l%fatalerror) then
+!          fatalerror_aux=.true.
+! #ifdef CompileWithMPI
+!          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+!          call MPI_AllReduce(fatalerror_aux, l%fatalerror, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, l%ierr)
+! #else
+!          l%fatalerror = fatalerror_aux
+! #endif
+!       if (l%fatalerror) l%relaunching=.true.
+! #ifdef CompileWithMPI
+!       CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+! #endif
+!    endif
+! #endif
+
+!       IF (l%relaunching.and.(.not.finishedwithsuccess)) THEN
+!          IF (l%layoutnumber == 0) THEN
+!             CALL print11 (l%layoutnumber, SEPARADOR//SEPARADOR)
+!             CALL print11 (l%layoutnumber, 'Not finishing solicited either manually or by an error condition. Edit of create launch file and remove pause file ')
+!             CALL print11 (l%layoutnumber, SEPARADOR//SEPARADOR)
+!             OPEN (9, file='pause', FORM='formatted')
+!             write (9, '(a)') ' '
+!             CLOSE (9)
+!             OPEN (9, file='relaunch', FORM='formatted')
+!             write (9, '(a)') ' '
+!             CLOSE (9,status='delete')
+!          endif
+!          !!!!!
+! #ifdef CompileWithMPI
+!          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+! #endif
+!          IF (l%layoutnumber == 0) THEN
+!             CALL CloseReportingFiles
+!          endif
+!          GO TO 652
+!       END IF
+!    !si ha acabado con exito sal borrando signal files
+!       IF (finishedwithsuccess) THEN
+!          IF (l%layoutnumber == 0) THEN
+!             OPEN (9, file='pause', FORM='formatted')
+!             write (9, '(a)') ' '
+!             CLOSE (9,status='delete')
+!             OPEN (9, file='relaunch', FORM='formatted')
+!             write (9, '(a)') ' '
+!             CLOSE (9,status='delete')
+!             OPEN (9, file='running', FORM='formatted')
+!             write (9, '(a)') ' '
+!             CLOSE (9,status='delete')
+!       endif
+!       endif
+
+! #ifdef CompileWithMPI
+!          CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+! #endif
+
+!       IF (l%layoutnumber == 0) THEN
+!          CALL CloseReportingFiles
+!       endif
+!       !**************************************************************************************************
+
+! #ifdef CompileWithMPI
+!       CALL MPI_FINALIZE (l%ierr)
+! #endif
+!       STOP
+!       !
+
+!    contains
+!    !END PROGRAM SEMBA_FDTD_launcher
+!    !!!!!!!!!!!!!!!!!!
+!    !!!!!!!!!!!!!!!!!!
+
+
+
+
+!    !!!!!!!!!!!!!!!!!
+!       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+!       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !
+
    end subroutine semba_launch
 
-   
+   subroutine initEntrada(input)
+      type(entrada_t), intent(inout) :: input
+#ifdef CompileWithConformal
+      input%conformal_file_input_name=char(0);  
+#endif
+      input%geomfile = ' ';
+      input%prefix = ' ';input%fichin = ' '; input%chain2 = ' '; input%opcionestotales = ' ' 
+      input%nEntradaRoot = ' '; input%fileFDE = ' '; input%fileH5 = ' '
+      input%prefixopci = ' '; input%prefixopci1 = ' ';input%opcionespararesumeo = ' '; input%opcionesoriginales = ' '
+      input%slicesoriginales = ' '; ; input%chdummy = ' '
+      input%flushsecondsFields=0.; input%flushsecondsData=0.; input%time_end=0. 
+      input%existeNFDE=.false.; input%existeconf=.false.; input%existecmsh=.false.; input%existeh5=.false.
+      input%creditosyaprinteados=.false.
+      call input%EpsMuTimeScale_input_parameters%init0()
+
+   end subroutine
+
+#ifdef CompileWithSMBJSON
+   subroutine cargaFDTDJSON(filename, parsed)
+      character(len=1024), intent(in) :: filename
+      type(Parseador), pointer :: parsed
+      
+      character(len=:), allocatable :: usedFilename    
+      type(fdtdjson_parser_t) :: parser
+      
+      usedFilename = adjustl(trim(filename)) // ".json"
+      parser = fdtdjson_parser_t(usedFilename)
+      
+      allocate(parsed)
+      parsed = parser%readProblemDescription()
+   end subroutine cargaFDTDJSON
+#endif
+
+#ifdef CompilePrivateVersion 
+   subroutine cargaNFDE(local_nfde,local_parser)
+      CHARACTER (LEN=BUFSIZE) :: local_nfde
+      TYPE (Parseador), POINTER :: local_parser
+      INTEGER (KIND=8) :: numero,i8,troncho,longitud
+      integer (kind=4) :: mpi_t_linea_t,longitud4
+      IF (l%existeNFDE) THEN
+         WRITE (dubuf,*) 'INIT Reading file '//trim (adjustl(whoami))//' ', trim (adjustl(local_nfde))
+         CALL print11 (l%layoutnumber, dubuf)
+   !!!!!!!!!!!!!!!!!!!!!!!
+#ifdef CompileWithMPI
+         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+         if (l%layoutnumber==0) then
+            NFDE_FILE => cargar_NFDE_FILE (local_nfde)
+         !!!ya se allocatea dentro
+         else
+            ALLOCATE (NFDE_FILE)
+         endif
+         !
+         write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
+         !--->
+         WRITE (dubuf,*) 'INIT Sharing file through MPI'; CALL print11 (l%layoutnumber, dubuf)
+         !
+         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+         !
+         numero=NFDE_FILE%numero
+         call MPI_BCAST(numero, 1_4, MPI_INTEGER8, 0_4, SUBCOMM_MPI, l%ierr)      
+         if (l%layoutnumber/=0) then
+            NFDE_FILE%targ = 1
+            NFDE_FILE%numero=numero
+            ALLOCATE (NFDE_FILE%lineas(NFDE_FILE%numero))
+         endif
+         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+         !CREAMOS EL DERIVED TYPE y lo enviamos !para evitar el error de Marconi asociado a PSM2_MQ_RECVREQS_MAX 100617
+
+         CALL build_derived_t_linea(mpi_t_linea_t)
+
+         !problema del limite de mandar mas de 2^29 bytes con MPI!!!  Los soluciono partiendo en maxmpibytes (2^27) (algo menos por prudencia)! 040716
+         troncho=ceiling(maxmpibytes*1.0_8/(BUFSIZE*1.0_8+8.0_8),8)
+         do i8=1,numero,troncho
+            longitud=min(troncho,numero-i8+1)
+            CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+            if ((longitud>huge(1_4)).or.(longitud>maxmpibytes)) then
+               print *,'Stop. Buggy error: MPI longitud greater that greatest integer*4'
+               stop
+            else
+               longitud4=int(longitud,4)
+            endif
+            call MPI_BCAST(NFDE_FILE%lineas(i8),longitud4,mpi_t_linea_t,0_4,SUBCOMM_MPI,l%ierr)    
+            CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+            CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+         end do
+#else
+      NFDE_FILE => cargar_NFDE_FILE (local_nfde)
+#endif
+         write(dubuf,*) '[OK]';  call print11(l%layoutnumber,dubuf)
+         !--->
+      END IF    
+      NFDE_FILE%mpidir=l%mpidir
+      WRITE (dubuf,*) 'INIT interpreting geometrical data from ', trim (adjustl(local_nfde))
+      CALL print11 (l%layoutnumber, dubuf)
+      if(newrotate) then
+         verdadero_mpidir=NFDE_FILE%mpidir
+         NFDE_FILE%mpidir=3
+      endif
+      local_parser => newparser (NFDE_FILE)         
+#ifdef CompileWithMPI            
+      CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+#endif
+      if(newrotate) then      
+         NFDE_FILE%mpidir=verdadero_mpidir
+         call nfde_rotate (local_parser,NFDE_FILE%mpidir)
+#ifdef CompileWithMPI            
+         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+#endif
+      endif
+      l%thereare_stoch=NFDE_FILE%thereare_stoch
+      l%mpidir=NFDE_FILE%mpidir !bug 100419
+      write(dubuf,*) '[OK] '//trim(adjustl(whoami))//' newparser (NFDE_FILE)';  call print11(l%layoutnumber,dubuf)       
+#ifdef CompileWithMPI            
+         CALL MPI_Barrier (SUBCOMM_MPI, l%ierr)
+#endif
+      return
+
+   end subroutine cargaNFDE
+#endif
+
+
 end module SEMBA_FDTD_mod
 !
