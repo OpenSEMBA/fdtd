@@ -259,7 +259,6 @@ endif()
 if (SEMBA_FDTD_EXECUTABLE)
 	add_executable(semba-fdtd 
 		"src_main_pub/launcher.F90"
-		"src_main_pub/semba_fdtd.F90"
 	)
 	target_link_libraries(semba-fdtd semba-main semba-reports)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
