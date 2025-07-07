@@ -1,8 +1,3 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  Module to handle the creation of the evolution operator
-!  Date :  July, 3, 2025
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 module evolution_operator
 
     use Resuming
@@ -10,8 +5,11 @@ module evolution_operator
     use fdetypes
     use Report
 
+    use fhash, only: fhash_tbl, key => fhash_key
+
     type :: field_array_t
         real(RKIND), pointer, dimension(:,:,:) :: data
+        character(len=2) :: field_type  ! 'Ex', 'Ey', 'Ez', 'Hx', etc.
     end type
 
     implicit none
@@ -141,12 +139,24 @@ contains
         ! Storing the magnetical fields in the FieldList
         integer :: idx, i1, i2, i3
 
-        idx = 12
+        idx = 0
+
+        do idx = 1, 12
+            if (idx <= 4) then
+                FieldList(idx)%field_type = 'Ex'
+            else if (idx <= 8) then
+                FieldList(idx)%field_type = 'Ey'
+            else if (idx <= 12) then
+                FieldList(idx)%field_type = 'Ez'
+            end if
+        end do
+
         do i1 = 1, 2
             do i2 = 1, 3
                 do i3 = 1, 3
                     idx = idx + 1
                     FieldList(idx)%data => Hx_m(i1, i2, i3, :, :, :)
+                    FieldList(idx)%field_type = 'Hx'
                 end do
             end do
         end do
@@ -156,6 +166,7 @@ contains
                 do i3 = 1, 3
                     idx = idx + 1
                     FieldList(idx)%data => Hy_m(i1, i2, i3, :, :, :)
+                    FieldList(idx)%field_type = 'Hy'
                 end do
             end do
         end do
@@ -165,8 +176,133 @@ contains
                 do i3 = 1, 2
                     idx = idx + 1
                     FieldList(idx)%data => Hz_m(i1, i2, i3, :, :, :)
+                    
                 end do
             end do
         end do
 
     end subroutine 
+
+    subroutine GenerateOutputFields(b, FieldList)
+        
+        type (bounds_t), intent( IN)  ::  b
+        type(field_array_t), allocatable, intent(OUT) :: FieldListOutput(:) ! Aquí necesito cambiar el tipo de variable de los outputs para tener en cuenta que con el input i, se generan varios outputs
+        allocate(FieldListOutput(66))
+
+        call GenerateInputFieldsBasis(b, FieldListInput)
+
+        integer :: i
+
+        do i = 1, size(FieldListInput)
+        ! Acá es necesario realizar el paso temporal y extraer los campos usando el timestepping/resuming, en todo caso si la función es general, se llama fuera del case y se almacena dependiendo
+        ! del caso.
+            select case (trim(FieldListInput(i)%field_type))
+                case ("Ex")
+                    call Advance_Ex()
+                    call Advance_Hy()
+                    call Advance_Hz()
+                case ("Ey")
+                    call Advance_Ey()
+                    call Advance_Hx()
+                    call Advance_Hz()
+                case ("Ez")
+                    call Advance_Ez()
+                    call Advance_Hx()
+                    call Advance_Hy()
+                case ("Hx")
+                    call Advance_Ex()
+                    call Advance_Ey()
+                    Call Advance_Ez()
+                    call Advance_Hx()
+                case ("Hy")
+                    call Advance_Hy()
+                case ("Hz")
+                    call Advance_Hz()
+            end select
+        end do
+
+    end subroutine
+
+    subroutine GenerateRowIndexMap(b, RowIndexMap)
+
+        type(bounds_t), intent(IN) :: b
+        type(fhash_tbl), intent(OUT) :: RowIndexMap
+        integer :: shiftEx, shiftEy, shiftEz, shiftHx, shiftHy, shiftHz
+        integer :: i, j, k, m
+        integer, allocatable :: indexList(:)
+
+        shiftEx = 0
+        shiftEy = b%Ex%Nx * b%Ex%Ny * b%Ex%Nz
+        shiftEz = shiftEy + b%Ey%Nx * b%Ey%Ny * b%Ey%Nz
+        shiftHx = shiftEz + b%Ez%Nx * b%Ez%Ny * b%Ez%Nz
+        shiftHy = shiftHx + b%Hx%Nx * b%Hx%Ny * b%Hx%Nz
+        shiftHz = shiftHy + b%Hy%Nx * b%Hy%Ny * b%Hy%Nz
+
+        do i = 1, b%Ex%Nx-2
+            do j = 1, b%Ex%Ny-2
+                do k = 1, b%Ex%Nz-2
+                    m = (i*(b%Ex%Ny - 1) + j)*(b%Ex%Nz - 1) + k
+                    m_shift_j = (i*(b%Ex%Ny - 1) + (j - 1))*(b%Ex%Nz - 1) + k
+                    m_shift_k = (i*(b%Ex%Ny - 1) + j)*(b%Ex%Nz - 1) + (k - 1)
+
+                    allocate(indexList(5))
+                    indexList(1) = m
+                    indexList(2) = shiftHy + m
+                    indexList(3) = shiftHy + m_shift_k
+                    indexList(4) = shiftHz + m
+                    indexList(5) = shiftHz + m_shift_j
+
+                    call fhash_insert(RowIndexMap, m, indexList)
+
+                    deallocate(indexList)
+                    
+                end do
+            end do
+        end do
+
+        do i = 1, b%Ey%Nx-2
+            do j = 1, b%Ey%Ny-2
+                do k = 1, b%Ey%Nz-2
+                    m = (i*(b%Ey%Ny - 1) + j)*(b%Ey%Nz - 1) + k
+                    m_shift_i = ((i - 1)*(b%Ey%Ny - 1) + j)*(b%Ey%Nz - 1) + k
+                    m_shift_k = (i*(b%Ey%Ny - 1) + j)*(b%Ey%Nz - 1) + (k - 1)
+
+                    allocate(indexList(5))
+                    indexList(1) = shiftEy + m
+                    indexList(2) = shiftHx + m
+                    indexList(3) = shiftHx + m_shift_k
+                    indexList(4) = shiftHz + m
+                    indexList(5) = shiftHz + m_shift_i
+
+                    call fhash_insert(RowIndexMap, shiftEy + m, indexList)
+
+                    deallocate(indexList)
+                    
+                end do
+            end do
+        end do
+
+        do i = 1, b%Ez%Nx-2
+            do j = 1, b%Ez%Ny-2
+                do k = 1, b%Ez%Nz-2
+                    m = (i*(b%Ez%Ny - 1) + j)*(b%Ez%Nz - 1) + k
+                    m_shift_i = ((i - 1)*(b%Ez%Ny - 1) + j)*(b%Ez%Nz - 1) + k
+                    m_shift_j = (i*(b%Ez%Ny - 1) + (j - 1))*(b%Ez%Nz - 1) + k
+
+                    allocate(indexList(5))
+                    indexList(1) = shiftEz + m
+                    indexList(2) = shiftHx + m
+                    indexList(3) = shiftHx + m_shift_j
+                    indexList(4) = shiftHy + m
+                    indexList(5) = shiftHy + m_shift_i
+
+                    call fhash_insert(RowIndexMap, shiftEz + m, indexList)
+
+                    deallocate(indexList)
+                    
+                end do
+            end do
+        end do
+
+    end subroutine
+            
