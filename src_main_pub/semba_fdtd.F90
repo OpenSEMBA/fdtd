@@ -65,7 +65,7 @@ contains
       real (KIND=RKIND)   ::  dxmin,dymin,dzmin,dtlay
       real (KIND=8) time_desdelanzamiento
       
-      logical :: dummylog,finishedwithsuccess,l_auxinput, l_auxoutput, ThereArethinslots
+      logical :: dummylog,l_auxinput, l_auxoutput, ThereArethinslots
       logical :: existe  
       logical :: hayinput
       logical :: lexis
@@ -947,59 +947,59 @@ contains
 
    subroutine semba_launch(this)
       class(semba_fdtd_t) :: this
-
-
+      type(solver_t) :: solver
+      logical :: finishedwithsuccess
       ! call each simulation   !ojo que los layoutnumbers empiezan en 0
       IF (this%l%finaltimestep /= 0) THEN
 #ifdef CompileWithMPI
          !wait until everything comes out
          CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
-         ! finishedwithsuccess=.false.
+         finishedwithsuccess=.false.
 
-!          call solver%init(l)
+         call solver%init(this%l)
 
-!          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
-! #ifdef CompileWithMTLN
-!             CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
-!             SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
-!             time_desdelanzamiento, maxSourceValue, this%l%EpsMuTimeScale_input_parameters, mtln_parsed)
-! #else
-!                CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
-!                SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
-!                time_desdelanzamiento, maxSourceValue, this%l%EpsMuTimeScale_input_parameters)
-! #endif
-!             deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
-!          else
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
-! #endif
-!          CALL get_secnds (this%l%time_out2)
-!          IF (this%l%layoutnumber == 0) THEN
-!             call print_credits(l)
-!             WRITE (dubuf,*) 'BEGUN '//trim (adjustl(this%l%nEntradaRoot)),' at ', time_comienzo%fecha(7:8), &
-!             & '/', time_comienzo%fecha(5:6), '/', time_comienzo%fecha(1:4),' , ',  &
-!             & time_comienzo%hora(1:2), ':', time_comienzo%hora(3:4)
-!             CALL print11 (this%l%layoutnumber, dubuf)
-!             WRITE (dubuf,*) 'ENDED '//trim (adjustl(this%l%nEntradaRoot)),' at ', this%l%time_out2%fecha(7:8), &
-!             & '/', this%l%time_out2%fecha(5:6), '/', this%l%time_out2%fecha(1:4),' , ',  &
-!             & this%l%time_out2%hora(1:2), ':', this%l%time_out2%hora(3:4)
-!             CALL print11 (this%l%layoutnumber, dubuf)
-!             WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
-!             CALL print11 (this%l%layoutnumber, dubuf)
-!             CALL print11 (this%l%layoutnumber, dubuf)
-!          ENDIF
-!             !!!!!!!        CALL CLOSEdxfFILE(this%l%layoutnumber,this%l%size)
-!             CALL CLOSEWARNINGFILE(this%l%layoutnumber,this%l%size,dummylog,this%l%stochastic,this%l%simu_devia) !aqui ya no se tiene en cuenta el this%l%fatalerror
-! #ifdef CompileWithMPI
-!             !wait until everything comes out
-!             CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-! #endif
-! #ifdef CompileWithMPI
-!             CALL MPI_FINALIZE (this%l%ierr)
-! #endif
-!             stop
-!          endif
+         if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
+#ifdef CompileWithMTLN
+            CALL solver%launch_simulation (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+            SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
+            time_desdelanzamiento, maxSourceValue, this%l%EpsMuTimeScale_input_parameters, mtln_parsed)
+#else
+               CALL solver%launch_simulation (sgg,sggMtag,tag_numbers,sggMiNo, sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,&
+               SINPML_fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
+               time_desdelanzamiento, maxSourceValue, this%l%EpsMuTimeScale_input_parameters)
+#endif
+            deallocate (sggMiEx, sggMiEy, sggMiEz,sggMiHx, sggMiHy, sggMiHz,sggMiNo,sggMtag)
+         else
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
+#endif
+         CALL get_secnds (this%l%time_out2)
+         IF (this%l%layoutnumber == 0) THEN
+            call print_credits(l)
+            WRITE (dubuf,*) 'BEGUN '//trim (adjustl(this%l%nEntradaRoot)),' at ', time_comienzo%fecha(7:8), &
+            & '/', time_comienzo%fecha(5:6), '/', time_comienzo%fecha(1:4),' , ',  &
+            & time_comienzo%hora(1:2), ':', time_comienzo%hora(3:4)
+            CALL print11 (this%l%layoutnumber, dubuf)
+            WRITE (dubuf,*) 'ENDED '//trim (adjustl(this%l%nEntradaRoot)),' at ', this%l%time_out2%fecha(7:8), &
+            & '/', this%l%time_out2%fecha(5:6), '/', this%l%time_out2%fecha(1:4),' , ',  &
+            & this%l%time_out2%hora(1:2), ':', this%l%time_out2%hora(3:4)
+            CALL print11 (this%l%layoutnumber, dubuf)
+            WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
+            CALL print11 (this%l%layoutnumber, dubuf)
+            CALL print11 (this%l%layoutnumber, dubuf)
+         ENDIF
+            !!!!!!!        CALL CLOSEdxfFILE(this%l%layoutnumber,this%l%size)
+            CALL CLOSEWARNINGFILE(this%l%layoutnumber,this%l%size,dummylog,this%l%stochastic,this%l%simu_devia) !aqui ya no se tiene en cuenta el this%l%fatalerror
+#ifdef CompileWithMPI
+            !wait until everything comes out
+            CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#endif
+#ifdef CompileWithMPI
+            CALL MPI_FINALIZE (this%l%ierr)
+#endif
+            stop
+         endif
       END IF
       !
 ! #ifdef CompileWithMPI
