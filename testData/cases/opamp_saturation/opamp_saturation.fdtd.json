@@ -21,7 +21,7 @@
 		{
 			"id": 1,
 			"name": "coaxial_single_wire",
-			"type": "multiwire",
+			"type": "shieldedMultiwire",
 			"inductancePerMeter": [
                 [9.656499462314852e-07,0.0],
                 [0.0, 9.656499462314852e-07]
