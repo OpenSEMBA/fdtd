@@ -21,7 +21,7 @@
         {
             "id": 1,
             "name": "multi_wire",
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "inductancePerMeter": [ 
                 [4.4712610E-07, 1.4863653E-07],
                 [1.4863653E-07, 4.4712610E-07]
