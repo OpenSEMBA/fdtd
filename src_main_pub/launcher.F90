@@ -5,8 +5,8 @@ program SEMBA_FDTD_launcher
    type(semba_fdtd_t) :: semba
 
    call semba%init()
-   ! call semba%launch()
-   ! call semba%end()
+   call semba%launch()
+   call semba%end()
 
 
 end program SEMBA_FDTD_launcher

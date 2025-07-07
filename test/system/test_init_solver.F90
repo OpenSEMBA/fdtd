@@ -3,6 +3,8 @@ integer function test_init_solver() bind (C) result(err)
    
    implicit none
    type(semba_fdtd_t) :: semba
-   ! call semba%init()
+   call semba%init()
+   call semba%launch()
+   call semba%end()
 end function
 
