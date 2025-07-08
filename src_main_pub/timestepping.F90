@@ -530,21 +530,8 @@ module Solver_mod
       !debe ir aqui pq los gm1 y gm2 se obtienen aqui
       call updateSigmaM()
       call updateThinWiresSigma()
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!usa el modulo p_rescale para encontrar el g1, g2 etc con los parametros resumeados correctos
       call calc_G1G2Gm1Gm2(sgg,G1,G2,Gm1,Gm2,eps0,mu0)
-!!!Ojo este era el orden: findconstants y despues la correccion siguiente del attfactorw
-
-      if (abs(this%control%attfactorw-1.0_RKIND) > 1.0e-12_RKIND) then
-         do i=1,sgg%nummedia
-            !thin wires
-            if (sgg%Med(i)%Is%ThinWire) then
-               sgg%Med(i)%Sigma = 0.0_RKIND !revert!!! !necesario para no lo tome como un lossy luego en wires !solo se toca el g1,g2
-            endif
-         end do
-      endif
+      call revertThinWiresSigma()
  
       !
 #ifdef CompileWithMPI
@@ -1720,6 +1707,17 @@ module Solver_mod
             end do
          endif
       end subroutine updateThinWiresSigma
+
+      subroutine revertThinWiresSigma()
+         if (abs(this%control%attfactorw-1.0_RKIND) > 1.0e-12_RKIND) then
+            do i=1,sgg%nummedia
+               !thin wires
+               if (sgg%Med(i)%Is%ThinWire) then
+                  sgg%Med(i)%Sigma = 0.0_RKIND !revert!!! !necesario para no lo tome como un lossy luego en wires !solo se toca el g1,g2
+               endif
+            end do
+         endif
+      end subroutine
 
       subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
          logical, intent(inout) :: pw_switched_off, pw_still_time, pw_thereAre
