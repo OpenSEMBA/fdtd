@@ -271,9 +271,9 @@ module Solver_mod
       !!!REAL (KIND=RKIND)     , pointer, dimension ( : )      ::  dxe_orig,dye_orig,dze_orig !deprecado 28/04/2014
       REAL (KIND=RKIND)     , pointer, dimension ( : )      ::  g1,g2,gM1,gM2
       !for lossy paddings
-      REAL (KIND=RKIND)     :: Mur,epr,fmax,deltaespmax,Sigma,Epsilon,Mu,Sigmam,skin_depth,averagefactor,width,sigmatemp,eprtemp,murtemp,rdummy
+      REAL (KIND=RKIND)     :: Sigma,Epsilon,Mu,rdummy
       REAL (KIND=RKIND_tiempo)     :: at,rdummydt
-      logical :: hayattmedia = .false.,attinformado = .false., somethingdone,newsomethingdone,call_timing,l_auxoutput,l_auxinput
+      logical :: attinformado = .false. ,somethingdone,newsomethingdone,call_timing,l_auxoutput,l_auxinput
       character(len=BUFSIZE) :: buff   
       integer (kind=4)      :: group_conformalprobes_dummy
       !
@@ -523,8 +523,8 @@ module Solver_mod
 
 !fin lo cambio aqui
 
-      call updateSigmaM()
-      call updateThinWiresSigma()
+      call updateSigmaM(attinformado)
+      call updateThinWiresSigma(attinformado)
       call calc_G1G2Gm1Gm2(sgg,G1,G2,Gm1,Gm2,eps0,mu0)
       call revertThinWiresSigma()
  
@@ -544,71 +544,9 @@ module Solver_mod
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-      write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
-      call InitOtherBorders    (sgg,this%thereAre)
-      l_auxinput=this%thereAre%PECBorders.or.this%thereAre%PMCBorders.or.this%thereAre%PeriodicBorders
-      l_auxoutput=l_auxinput
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-      call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-#endif
-         if ( l_auxoutput) then
-             write (dubuf,*) '----> there are PEC, PMC or periodic Borders';  call print11(this%control%layoutnumber,dubuf)
-         else
-              write(dubuf,*) '----> no PEC, PMC or periodic Borders found';  call print11(this%control%layoutnumber,dubuf)
-         endif
-         
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
-      write(dubuf,*) 'Init CPML Borders...';  call print11(this%control%layoutnumber,dubuf)
-      call InitCPMLBorders     (sgg,SINPML_Fullsize,this%thereAre%PMLBorders,this%control, &
-                                dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps0,mu0)
 
-      l_auxinput=this%thereAre%PMLBorders
-      l_auxoutput=l_auxinput
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-      call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-#endif
-         if (l_auxoutput ) then
-             write (dubuf,*) '----> there are CPML Borders';  call print11(this%control%layoutnumber,dubuf)
-         else
-              write(dubuf,*) '----> no CPML Borders found';  call print11(this%control%layoutnumber,dubuf)
-        endif
+      call initBorders()
 
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
-      write(dubuf,*) 'Init PML Bodies...';  call print11(this%control%layoutnumber,dubuf)
-      call InitPMLbodies(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
-      l_auxinput=this%thereAre%PMLbodies
-      l_auxoutput=l_auxinput
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-      call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-#endif
-         if ( l_auxoutput) then
-             write (dubuf,*) '----> there are PML Bodies';  call print11(this%control%layoutnumber,dubuf)
-         else
-              write(dubuf,*) '----> no PML Bodies found';  call print11(this%control%layoutnumber,dubuf)
-        endif
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
-      write(dubuf,*) 'Init Mur Borders...';  call print11(this%control%layoutnumber,dubuf)
-      call InitMURBorders      (sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,eps0,mu0)
-      l_auxinput= this%thereAre%MURBorders
-      l_auxoutput=l_auxinput
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
-      call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-#endif
-      if (l_auxoutput) then
-             write (dubuf,*) '----> there are Mur Borders';  call print11(this%control%layoutnumber,dubuf)
-      else
-              write(dubuf,*) '----> no Mur Borders found';  call print11(this%control%layoutnumber,dubuf)
-      endif
 
       !Initborders must be called in first place . Double check that Idxe,h are not needed by other initialization modules
       !llamalo antes de sgbc y composites, porque overrideo nodos sgbc conectados a hilos
@@ -1619,17 +1557,22 @@ module Solver_mod
 
    contains
 
-      subroutine updateSigmaM()
+      subroutine updateSigmaM(att)
+         logical, intent(inout) :: att
+         real(kind=rkind) :: deltaespmax, fmax, skin_depth
+         logical :: hayattmedia = .false.
+         REAL (kind = rkind) :: mur,epr
+         character(len=BUFSIZE) :: buff   
+         integer :: i
          if (abs(this%control%attfactorc-1.0_RKIND) > 1.0e-12_RKIND) then
-            hayattmedia=.false.
-            attinformado=.false.
+            att=.false.
             do i=1,sgg%nummedia
                if (sgg%Med(i)%Is%MultiportPadding) then
                   sgg%Med(i)%SigmaM =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorc)*mu0)/((1 + this%control%attfactorc)*sgg%dt)
                   hayattmedia=.true.
                endif
                deltaespmax=max(max(maxval(sgg%dx),maxval(sgg%dy)),maxval(sgg%dz))
-               if (hayattmedia.and. .not. attinformado) then
+               if (hayattmedia.and. .not. att) then
                   !!!!info on stabilization
                   epr   =1.0_RKIND
                   mur   =1.0_RKIND
@@ -1654,23 +1597,23 @@ module Solver_mod
                      (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
                      if (this%control%layoutnumber == 0) call WarnErrReport(buff)
                   endif
-                  attinformado=.true.
+                  att=.true.
                endif
             end do
          endif
       end subroutine updateSigmaM
 
-      subroutine updateThinWiresSigma
-         !thin wires !
+      subroutine updateThinWiresSigma(att)
+         logical, intent(inout) :: att
          if (abs(this%control%attfactorw-1.0_RKIND) > 1.0e-12_RKIND) then
-            attinformado=.false.
+            att=.false.
             do i=1,sgg%nummedia
                if (sgg%Med(i)%Is%ThinWire) then
                   sgg%Med(i)%Sigma =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorw)*eps0)/((1 + this%control%attfactorw)*sgg%dt)
-                  if (.not.attinformado) then
+                  if (.not.att) then
                      write(buff,'(a,2e10.2e3)') ' WIREs stabilization att. factors=',this%control%attfactorw,sgg%Med(i)%Sigma
                      if (this%control%layoutnumber == 0) call WarnErrReport(buff)
-                     attinformado=.true.
+                     att=.true.
                   endif
                endif
             end do
@@ -1718,6 +1661,74 @@ module Solver_mod
          endif
       end subroutine
 
+      subroutine initBorders()
+         write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
+         call InitOtherBorders    (sgg,this%thereAre)
+         l_auxinput=this%thereAre%PECBorders.or.this%thereAre%PMCBorders.or.this%thereAre%PeriodicBorders
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if ( l_auxoutput) then
+               write (dubuf,*) '----> there are PEC, PMC or periodic Borders';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no PEC, PMC or periodic Borders found';  call print11(this%control%layoutnumber,dubuf)
+            endif
+            
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init CPML Borders...';  call print11(this%control%layoutnumber,dubuf)
+         call InitCPMLBorders     (sgg,SINPML_Fullsize,this%thereAre%PMLBorders,this%control, &
+                                 dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps0,mu0)
+
+         l_auxinput=this%thereAre%PMLBorders
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if (l_auxoutput ) then
+               write (dubuf,*) '----> there are CPML Borders';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no CPML Borders found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init PML Bodies...';  call print11(this%control%layoutnumber,dubuf)
+         call InitPMLbodies(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
+         l_auxinput=this%thereAre%PMLbodies
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if ( l_auxoutput) then
+               write (dubuf,*) '----> there are PML Bodies';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no PML Bodies found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init Mur Borders...';  call print11(this%control%layoutnumber,dubuf)
+         call InitMURBorders      (sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,eps0,mu0)
+         l_auxinput= this%thereAre%MURBorders
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+         if (l_auxoutput) then
+               write (dubuf,*) '----> there are Mur Borders';  call print11(this%control%layoutnumber,dubuf)
+         else
+               write(dubuf,*) '----> no Mur Borders found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+
+      end subroutine 
 
       subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
          logical, intent(inout) :: pw_switched_off, pw_still_time, pw_thereAre
