@@ -223,13 +223,154 @@ contains
 
     end subroutine
 
+    subroutine AddElectricFieldIndices(RowIndexMap, field, shiftE, shiftM1, shiftM2, dirM1, dirM2)
+        type(fhash_tbl), intent(inout) :: RowIndexMap
+        type(limit_t), intent(in) :: field
+        integer, intent(in) :: shiftE, shiftM1, shiftM2
+        character(len=1), intent(in) :: dirM1, dirM2  
+
+        integer :: i, j, k, m, m_shift1, m_shift2
+        integer, allocatable :: indexList(:)
+        integer :: Nx, Ny, Nz
+
+        Nx = field%Nx
+        Ny = field%Ny
+        Nz = field%Nz
+
+        do i = 1, Nx - 2
+            do j = 1, Ny - 2
+                do k = 1, Nz - 2
+                    m = (i * (Ny - 1) + j) * (Nz - 1) + k
+
+                    select case (dirM1)
+                        case ('i')
+                            m_shift1 = ((i - 1)*(Ny - 1) + j)*(Nz - 1) + k
+                        case ('j')
+                            m_shift1 = (i*(Ny - 1) + (j - 1))*(Nz - 1) + k
+                        case ('k')
+                            m_shift1 = (i*(Ny - 1) + j)*(Nz - 1) + (k - 1)
+                    end select
+
+                    select case (dirM2)
+                        case ('i')
+                            m_shift2 = ((i - 1)*(Ny - 1) + j)*(Nz - 1) + k
+                        case ('j')
+                            m_shift2 = (i*(Ny - 1) + (j - 1))*(Nz - 1) + k
+                        case ('k')
+                            m_shift2 = (i*(Ny - 1) + j)*(Nz - 1) + (k - 1)
+                    end select
+
+                    allocate(indexList(5))
+                    indexList(1) = shiftE + m
+                    indexList(2) = shiftM1 + m
+                    indexList(3) = shiftM1 + m_shift2
+                    indexList(4) = shiftM2 + m
+                    indexList(5) = shiftM2 + m_shift1
+
+                    call RowIndexMap%set(key(shiftE + m), value=indexList)
+
+                    deallocate(indexList)
+                end do
+            end do
+        end do
+    end subroutine 
+
+    subroutine AddMagneticFieldIndices(RowIndexMap, field, shiftH, shiftE1, shiftE2, dir1, dir2)
+        type(fhash_tbl), intent(inout) :: RowIndexMap
+        type(limit_t), intent(in) :: field
+        integer, intent(in) :: shiftH, shiftE1, shiftE2
+        character(len=1), intent(in) :: dir1, dir2
+
+        integer :: i, j, k, m, m_shift1, m_shift2
+        integer :: Nx, Ny, Nz
+        integer, allocatable :: temp(:), indexList(:)
+        integer, allocatable :: aux1(:), aux2(:), aux3(:), aux4(:)
+
+        Nx = field%Nx
+        Ny = field%Ny
+        Nz = field%Nz
+
+        do i = 0, Nx - 1
+            do j = 0, Ny - 1
+                do k = 0, Nz - 1
+                    m = (i*(Ny - 1) + j)*(Nz - 1) + k
+
+                    select case (dir1)
+                        case ('i')
+                            m_shift1 = ((i + 1)*(Ny - 1) + j)*(Nz - 1) + k
+                        case ('j')
+                            m_shift1 = (i*(Ny - 1) + (j + 1))*(Nz - 1) + k
+                        case ('k')
+                            m_shift1 = (i*(Ny - 1) + j)*(Nz - 1) + (k + 1)
+                    end select
+
+                    select case (dir2)
+                        case ('i')
+                            m_shift2 = ((i + 1)*(Ny - 1) + j)*(Nz - 1) + k
+                        case ('j')
+                            m_shift2 = (i*(Ny - 1) + (j + 1))*(Nz - 1) + k
+                        case ('k')
+                            m_shift2 = (i*(Ny - 1) + j)*(Nz - 1) + (k + 1)
+                    end select
+
+                    call RowIndexMap%get(key(shiftE1 + m), aux1)
+                    call RowIndexMap%get(key(shiftE1 + m_shift1), aux2)
+                    call RowIndexMap%get(key(shiftE2 + m), aux3)
+                    call RowIndexMap%get(key(shiftE2 + m_shift2), aux4)
+
+                    integer :: totalSize
+                    totalSize = size(aux1) + size(aux2) + size(aux3) + size(aux4)
+                    allocate(temp(totalSize))
+                    temp(1:size(aux1)) = aux1
+                    temp(size(aux1)+1:size(aux1)+size(aux2)) = aux2
+                    temp(size(aux1)+size(aux2)+1:size(aux1)+size(aux2)+size(aux3)) = aux3
+                    temp(size(aux1)+size(aux2)+size(aux3)+1:) = aux4
+
+                    call RemoveDuplicates(temp, indexList)
+
+
+                    call RowIndexMap%set(key(shiftH + m), value=indexList)
+
+                    deallocate(temp, indexList, aux1, aux2, aux3, aux4)
+                end do
+            end do
+        end do
+    end subroutine
+        
+    subroutine RemoveDuplicates(inputArray, outputArray)
+        integer, intent(in) :: inputArray(:)
+        integer, allocatable, intent(out) :: outputArray(:)
+        integer :: i, j, n
+        logical :: found
+        integer, allocatable :: temp(:)
+
+        allocate(temp(size(inputArray)))
+        n = 0
+
+        do i = 1, size(inputArray)
+            found = .false.
+            do j = 1, n
+                if (temp(j) == inputArray(i)) then
+                    found = .true.
+                    exit
+                end if
+            end do
+            if (.not. found) then
+                n = n + 1
+                temp(n) = inputArray(i)
+            end if
+        end do
+
+        allocate(outputArray(n))
+        outputArray = temp(1:n)
+        deallocate(temp)
+    end subroutine 
+
     subroutine GenerateRowIndexMap(b, RowIndexMap)
 
         type(bounds_t), intent(IN) :: b
         type(fhash_tbl), intent(OUT) :: RowIndexMap
         integer :: shiftEx, shiftEy, shiftEz, shiftHx, shiftHy, shiftHz
-        integer :: i, j, k, m
-        integer, allocatable :: indexList(:)
 
         shiftEx = 0
         shiftEy = b%Ex%Nx * b%Ex%Ny * b%Ex%Nz
@@ -238,71 +379,15 @@ contains
         shiftHy = shiftHx + b%Hx%Nx * b%Hx%Ny * b%Hx%Nz
         shiftHz = shiftHy + b%Hy%Nx * b%Hy%Ny * b%Hy%Nz
 
-        do i = 1, b%Ex%Nx-2
-            do j = 1, b%Ex%Ny-2
-                do k = 1, b%Ex%Nz-2
-                    m = (i*(b%Ex%Ny - 1) + j)*(b%Ex%Nz - 1) + k
-                    m_shift_j = (i*(b%Ex%Ny - 1) + (j - 1))*(b%Ex%Nz - 1) + k
-                    m_shift_k = (i*(b%Ex%Ny - 1) + j)*(b%Ex%Nz - 1) + (k - 1)
+        call AddElectricFieldIndices(RowIndexMap, b%Ex, shiftEx, shiftHy, shiftHz, 'k', 'j')
+        call AddElectricFieldIndices(RowIndexMap, b%Ey, shiftEy, shiftHx, shiftHz, 'k', 'i')
+        call AddElectricFieldIndices(RowIndexMap, b%Ez, shiftEz, shiftHx, shiftHy, 'j', 'i')
 
-                    allocate(indexList(5))
-                    indexList(1) = m
-                    indexList(2) = shiftHy + m
-                    indexList(3) = shiftHy + m_shift_k
-                    indexList(4) = shiftHz + m
-                    indexList(5) = shiftHz + m_shift_j
+        ! Before the magnetic fields, it is necessary to create the map of indices related to the boundary conditions
 
-                    call fhash_insert(RowIndexMap, m, indexList)
+        call AddMagneticFieldIndices(RowIndexMap, b%Hx, shiftHx, shiftEy, shiftEz, 'k', 'j')
+        call AddMagneticFieldIndices(RowIndexMap, b%Hy, shiftHy, shiftEx, shiftEz, 'k', 'i')
+        call AddMagneticFieldIndices(RowIndexMap, b%Hz, shiftHz, shiftEx, shiftEy, 'j', 'i')
 
-                    deallocate(indexList)
-                    
-                end do
-            end do
-        end do
-
-        do i = 1, b%Ey%Nx-2
-            do j = 1, b%Ey%Ny-2
-                do k = 1, b%Ey%Nz-2
-                    m = (i*(b%Ey%Ny - 1) + j)*(b%Ey%Nz - 1) + k
-                    m_shift_i = ((i - 1)*(b%Ey%Ny - 1) + j)*(b%Ey%Nz - 1) + k
-                    m_shift_k = (i*(b%Ey%Ny - 1) + j)*(b%Ey%Nz - 1) + (k - 1)
-
-                    allocate(indexList(5))
-                    indexList(1) = shiftEy + m
-                    indexList(2) = shiftHx + m
-                    indexList(3) = shiftHx + m_shift_k
-                    indexList(4) = shiftHz + m
-                    indexList(5) = shiftHz + m_shift_i
-
-                    call fhash_insert(RowIndexMap, shiftEy + m, indexList)
-
-                    deallocate(indexList)
-                    
-                end do
-            end do
-        end do
-
-        do i = 1, b%Ez%Nx-2
-            do j = 1, b%Ez%Ny-2
-                do k = 1, b%Ez%Nz-2
-                    m = (i*(b%Ez%Ny - 1) + j)*(b%Ez%Nz - 1) + k
-                    m_shift_i = ((i - 1)*(b%Ez%Ny - 1) + j)*(b%Ez%Nz - 1) + k
-                    m_shift_j = (i*(b%Ez%Ny - 1) + (j - 1))*(b%Ez%Nz - 1) + k
-
-                    allocate(indexList(5))
-                    indexList(1) = shiftEz + m
-                    indexList(2) = shiftHx + m
-                    indexList(3) = shiftHx + m_shift_j
-                    indexList(4) = shiftHy + m
-                    indexList(5) = shiftHy + m_shift_i
-
-                    call fhash_insert(RowIndexMap, shiftEz + m, indexList)
-
-                    deallocate(indexList)
-                    
-                end do
-            end do
-        end do
 
     end subroutine
-            
