@@ -528,62 +528,8 @@ module Solver_mod
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!correct possible paddings of Composites
       !debe ir aqui pq los gm1 y gm2 se obtienen aqui
-
-      if (abs(this%control%attfactorc-1.0_RKIND) > 1.0e-12_RKIND) then
-         hayattmedia=.false.
-         attinformado=.false.
-         do i=1,sgg%nummedia
-            if (sgg%Med(i)%Is%MultiportPadding) then
-               sgg%Med(i)%SigmaM =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorc)*mu0)/((1 + this%control%attfactorc)*sgg%dt)
-               hayattmedia=.true.
-            endif
-            deltaespmax=max(max(maxval(sgg%dx),maxval(sgg%dy)),maxval(sgg%dz))
-            if (hayattmedia.and. .not. attinformado) then
-               !!!!info on stabilization
-               epr   =1.0_RKIND
-               mur   =1.0_RKIND
-               !!
-               write(buff,'(a,2e10.2e3)') ' Composites stabilization att. factor=',this%control%attfactorc,sgg%Med(i)%SigmaM
-
-               call WarnErrReport(buff)
-               !!
-               fmax=1.0_RKIND / (10.0_RKIND * sgg%dt)
-               skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*fmax*Pi*(epr*Eps0**2*(4*mur*mu0**2.0_RKIND + sgg%Med(i)%Sigmam**2/(fmax**2*Pi**2.0_RKIND )))**0.25_RKIND * &
-               Sin(atan2(2*Pi*epr*Eps0*mur*mu0, - (epr*eps0*sgg%Med(i)%Sigmam)/fmax)/2.0_RKIND))
-               write(buff,'(a,e9.2e2,a,e10.2e3)') ' At 10 samp/per f=',fmax,',Max Att(dB)=', &
-               -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
-               8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
-               (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
-               if (this%control%layoutnumber == 0) call WarnErrReport(buff)
-               if (fmax > 3e9) then
-                  fmax=3e9
-                  write(buff,'(a,e9.2e2,a,e10.2e3)') '             At f=',fmax,',Max Att(dB)=', &
-                  -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
-                  8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
-                  (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
-                  if (this%control%layoutnumber == 0) call WarnErrReport(buff)
-               endif
-               attinformado=.true.
-            endif
-         end do
-      endif
-
-
-      !thin wires !
-      if (abs(this%control%attfactorw-1.0_RKIND) > 1.0e-12_RKIND) then
-         attinformado=.false.
-         do i=1,sgg%nummedia
-            if (sgg%Med(i)%Is%ThinWire) then
-               sgg%Med(i)%Sigma =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorw)*eps0)/((1 + this%control%attfactorw)*sgg%dt)
-               if (.not.attinformado) then
-                  write(buff,'(a,2e10.2e3)') ' WIREs stabilization att. factors=',this%control%attfactorw,sgg%Med(i)%Sigma
-                  if (this%control%layoutnumber == 0) call WarnErrReport(buff)
-                  attinformado=.true.
-               endif
-            endif
-         end do
-      endif
-
+      call updateSigmaM()
+      call updateThinWiresSigma()
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1716,6 +1662,64 @@ module Solver_mod
       !---------------------------------------------------->
 
    contains
+
+      subroutine updateSigmaM()
+         if (abs(this%control%attfactorc-1.0_RKIND) > 1.0e-12_RKIND) then
+            hayattmedia=.false.
+            attinformado=.false.
+            do i=1,sgg%nummedia
+               if (sgg%Med(i)%Is%MultiportPadding) then
+                  sgg%Med(i)%SigmaM =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorc)*mu0)/((1 + this%control%attfactorc)*sgg%dt)
+                  hayattmedia=.true.
+               endif
+               deltaespmax=max(max(maxval(sgg%dx),maxval(sgg%dy)),maxval(sgg%dz))
+               if (hayattmedia.and. .not. attinformado) then
+                  !!!!info on stabilization
+                  epr   =1.0_RKIND
+                  mur   =1.0_RKIND
+                  !!
+                  write(buff,'(a,2e10.2e3)') ' Composites stabilization att. factor=',this%control%attfactorc,sgg%Med(i)%SigmaM
+
+                  call WarnErrReport(buff)
+                  !!
+                  fmax=1.0_RKIND / (10.0_RKIND * sgg%dt)
+                  skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*fmax*Pi*(epr*Eps0**2*(4*mur*mu0**2.0_RKIND + sgg%Med(i)%Sigmam**2/(fmax**2*Pi**2.0_RKIND )))**0.25_RKIND * &
+                  Sin(atan2(2*Pi*epr*Eps0*mur*mu0, - (epr*eps0*sgg%Med(i)%Sigmam)/fmax)/2.0_RKIND))
+                  write(buff,'(a,e9.2e2,a,e10.2e3)') ' At 10 samp/per f=',fmax,',Max Att(dB)=', &
+                  -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
+                  8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
+                  (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
+                  if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                  if (fmax > 3e9) then
+                     fmax=3e9
+                     write(buff,'(a,e9.2e2,a,e10.2e3)') '             At f=',fmax,',Max Att(dB)=', &
+                     -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
+                     8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
+                     (1.124121310242e12 + 1.124121310242e12*this%control%attfactorc))*min(deltaespmax,skin_depth)))
+                     if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                  endif
+                  attinformado=.true.
+               endif
+            end do
+         endif
+      end subroutine updateSigmaM
+
+      subroutine updateThinWiresSigma
+         !thin wires !
+         if (abs(this%control%attfactorw-1.0_RKIND) > 1.0e-12_RKIND) then
+            attinformado=.false.
+            do i=1,sgg%nummedia
+               if (sgg%Med(i)%Is%ThinWire) then
+                  sgg%Med(i)%Sigma =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorw)*eps0)/((1 + this%control%attfactorw)*sgg%dt)
+                  if (.not.attinformado) then
+                     write(buff,'(a,2e10.2e3)') ' WIREs stabilization att. factors=',this%control%attfactorw,sgg%Med(i)%Sigma
+                     if (this%control%layoutnumber == 0) call WarnErrReport(buff)
+                     attinformado=.true.
+                  endif
+               endif
+            end do
+         endif
+      end subroutine updateThinWiresSigma
 
       subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
          logical, intent(inout) :: pw_switched_off, pw_still_time, pw_thereAre
