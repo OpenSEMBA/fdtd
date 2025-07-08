@@ -523,11 +523,6 @@ module Solver_mod
 
 !fin lo cambio aqui
 
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!! Updating Ca, Cbfficients calculation
-      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      !!!!!!!correct possible paddings of Composites
-      !debe ir aqui pq los gm1 y gm2 se obtienen aqui
       call updateSigmaM()
       call updateThinWiresSigma()
       call calc_G1G2Gm1Gm2(sgg,G1,G2,Gm1,Gm2,eps0,mu0)
@@ -539,33 +534,7 @@ module Solver_mod
 #endif
       write(dubuf,*) 'Init Reporting...';  call print11(this%control%layoutnumber,dubuf)
       call InitReporting(sgg,this%control)
-      if ((this%control%layoutnumber == 0).and.this%control%verbose) then
-         write(buff,'(a,3e9.2e2)') 'CPML  alpha, alphaorder, kappa factors= ', this%control%alphamaxpar,this%control%alphaOrden,this%control%kappamaxpar
-         call WarnErrReport(buff)
-         if (this%control%medioextra%exists) then
-            write(buff,'(a,i5,e9.2e2)') 'CPML correction size,factor to scale sigmamax = ', &
-            this%control%medioextra%size,this%control%medioextra%sigma
-            call WarnErrReport(buff)
-         endif
-         write(buff,*) 'saveall=',this%control%saveall,', flushsecondsFields=',this%control%flushsecondsFields,', flushsecondsData=',this%control%flushsecondsData,', maxCPUtime=',this%control%maxCPUtime,', singlefilewrite=',this%control%singlefilewrite
-         call WarnErrReport(buff)
-         write(buff,*) 'TAPARRABOS=',this%control%TAPARRABOS,', wiresflavor=',trim(adjustl(this%control%wiresflavor)),', mindistwires=',this%control%mindistwires,', wirecrank=',this%control%wirecrank , 'makeholes=',this%control%makeholes
-         call WarnErrReport(buff)
-         write(buff,*) 'use_mtln_wires=', this%control%use_mtln_wires
-         write(buff,*) 'connectendings=',this%control%connectendings,', isolategroupgroups=',this%control%isolategroupgroups
-         call WarnErrReport(buff)
-         write(buff,*) 'wirethickness ', this%control%wirethickness, 'stableradholland=',this%control%stableradholland,'mtlnberenger=',this%control%mtlnberenger,' inductance_model=',trim(adjustl(this%control%inductance_model)), &
-                       ', inductance_order=',this%control%inductance_order,', groundwires=',this%control%groundwires,' ,fieldtotl=',this%control%fieldtotl,' noSlantedcrecepelo =',this%control%noSlantedcrecepelo 
-         call WarnErrReport(buff)
-         write(buff,*) 'sgbc=',this%control%sgbc,', mibc=',this%control%mibc,', attfactorc=',this%control%attfactorc,', attfactorw=',this%control%attfactorw
-         call WarnErrReport(buff)
-         write(buff,*) 'NOcompomur=',this%control%NOcompomur,', ADE=',this%control%ADE,', conformalskin=',this%control%conformalskin,', sgbcFreq=',this%control%sgbcFreq,', sgbcresol=',this%control%sgbcresol,', sgbccrank=',this%control%sgbccrank,', sgbcDepth=',this%control%sgbcdepth
-         call WarnErrReport(buff)
-         write(buff,*) 'mur_second=',this%control%mur_second,', murafterpml=',this%control%murafterpml,', facesNF2FF%tr=',this%control%facesNF2FF%tr,', facesNF2FF%fr=',this%control%facesNF2FF%fr,', facesNF2FF%iz=',this%control%facesNF2FF%iz
-         call WarnErrReport(buff)
-         write(buff,*) 'facesNF2FF%de=',this%control%facesNF2FF%de,', facesNF2FF%ab=',this%control%facesNF2FF%ab,', facesNF2FF%ar=',this%control%facesNF2FF%ar,', NF2FFDecim=',this%control%NF2FFDecim
-         call WarnErrReport(buff)
-      endif
+      call reportSimulationOptions()
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1718,6 +1687,37 @@ module Solver_mod
             end do
          endif
       end subroutine
+
+      subroutine reportSimulationOptions()
+         if ((this%control%layoutnumber == 0).and.this%control%verbose) then
+            write(buff,'(a,3e9.2e2)') 'CPML  alpha, alphaorder, kappa factors= ', this%control%alphamaxpar,this%control%alphaOrden,this%control%kappamaxpar
+            call WarnErrReport(buff)
+            if (this%control%medioextra%exists) then
+               write(buff,'(a,i5,e9.2e2)') 'CPML correction size,factor to scale sigmamax = ', &
+               this%control%medioextra%size,this%control%medioextra%sigma
+               call WarnErrReport(buff)
+            endif
+            write(buff,*) 'saveall=',this%control%saveall,', flushsecondsFields=',this%control%flushsecondsFields,', flushsecondsData=',this%control%flushsecondsData,', maxCPUtime=',this%control%maxCPUtime,', singlefilewrite=',this%control%singlefilewrite
+            call WarnErrReport(buff)
+            write(buff,*) 'TAPARRABOS=',this%control%TAPARRABOS,', wiresflavor=',trim(adjustl(this%control%wiresflavor)),', mindistwires=',this%control%mindistwires,', wirecrank=',this%control%wirecrank , 'makeholes=',this%control%makeholes
+            call WarnErrReport(buff)
+            write(buff,*) 'use_mtln_wires=', this%control%use_mtln_wires
+            write(buff,*) 'connectendings=',this%control%connectendings,', isolategroupgroups=',this%control%isolategroupgroups
+            call WarnErrReport(buff)
+            write(buff,*) 'wirethickness ', this%control%wirethickness, 'stableradholland=',this%control%stableradholland,'mtlnberenger=',this%control%mtlnberenger,' inductance_model=',trim(adjustl(this%control%inductance_model)), &
+                        ', inductance_order=',this%control%inductance_order,', groundwires=',this%control%groundwires,' ,fieldtotl=',this%control%fieldtotl,' noSlantedcrecepelo =',this%control%noSlantedcrecepelo 
+            call WarnErrReport(buff)
+            write(buff,*) 'sgbc=',this%control%sgbc,', mibc=',this%control%mibc,', attfactorc=',this%control%attfactorc,', attfactorw=',this%control%attfactorw
+            call WarnErrReport(buff)
+            write(buff,*) 'NOcompomur=',this%control%NOcompomur,', ADE=',this%control%ADE,', conformalskin=',this%control%conformalskin,', sgbcFreq=',this%control%sgbcFreq,', sgbcresol=',this%control%sgbcresol,', sgbccrank=',this%control%sgbccrank,', sgbcDepth=',this%control%sgbcdepth
+            call WarnErrReport(buff)
+            write(buff,*) 'mur_second=',this%control%mur_second,', murafterpml=',this%control%murafterpml,', facesNF2FF%tr=',this%control%facesNF2FF%tr,', facesNF2FF%fr=',this%control%facesNF2FF%fr,', facesNF2FF%iz=',this%control%facesNF2FF%iz
+            call WarnErrReport(buff)
+            write(buff,*) 'facesNF2FF%de=',this%control%facesNF2FF%de,', facesNF2FF%ab=',this%control%facesNF2FF%ab,', facesNF2FF%ar=',this%control%facesNF2FF%ar,', NF2FFDecim=',this%control%NF2FFDecim
+            call WarnErrReport(buff)
+         endif
+      end subroutine
+
 
       subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
          logical, intent(inout) :: pw_switched_off, pw_still_time, pw_thereAre
