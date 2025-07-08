@@ -91,8 +91,10 @@ module Solver_mod
    type, public :: solver_t
       type(sim_control_t) :: control
       type(Logic_control) :: thereAre
+      REAL (kind=rkind), pointer, dimension ( : , : , : )  ::  Ex,Ey,Ez,Hx,Hy,Hz
    contains
       procedure :: init => solver_init
+      procedure :: allocate_fields => solver_allocate_fields
       procedure :: launch_simulation
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
@@ -204,6 +206,18 @@ module Solver_mod
       call FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem = .true.)
    end subroutine
 #endif
+
+   subroutine solver_allocate_fields(this, sgg)
+      class(solver_t) :: this
+      type (sggfdtdinfo), intent(in)   ::  sgg
+      allocate ( &
+      this%Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
+      this%Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
+      this%Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
+      this%Hx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
+      this%Hy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
+      this%Hz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE))
+   end subroutine
 
 #ifdef CompileWithMTLN
    subroutine launch_simulation(this, sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
@@ -402,13 +416,22 @@ module Solver_mod
       !!! Field matrices creation (an extra cell is padded at each limit and direction to deal with PMC imaging with no index errors)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !ojo las dimesniones deben ser giuales a las utlizadas en reallocate para las matrices sggmiEx, etc
-      ALLOCATE ( &
-      Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
-      Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
-      Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
-      Hx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
-      Hy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
-      Hz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE))
+
+      call this%allocate_fields(sgg)
+      Ex => this%Ex
+      Ey => this%Ey
+      Ez => this%Ez
+      Hx => this%Hx
+      Hy => this%Hy
+      Hz => this%Hz
+      ! ALLOCATE ( &
+      ! Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
+      ! Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
+      ! Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
+      ! Hx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
+      ! Hy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
+      ! Hz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE))
+
       !!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Init the local variables and observation stuff needed by each module, taking into account resume status
@@ -1265,319 +1288,16 @@ module Solver_mod
 
       ciclo_temporal :  DO while (N <= this%control%finaltimestep)
       
-         !Flush the plane-wave logical switching off variable (saves CPU!)
-         call flushPlanewaveOff(planewave_switched_off, still_planewave_time, thereareplanewave)
-         !Anisotropic
-         !!Must be previous to the main stepping since the main stepping overrides the past components with the last and the
-         !!lossy part of the anisotropic STILL requires the past info on adjacent components
-         IF (this%thereAre%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-         call advanceE()
-#ifdef CompileWithConformal
-         call advanceConformalE()
-#endif
-         call advanceWires()
-         call advancePMLE()
+         call step()
 
-         !!for tuning
-         !call get_secnds( time_ElecFin)
-         !time_elec=time_elec+time_ElecFin%segundos-time_ElecInit%segundos
-         !if(n == n_info) then
-         !    print *,whoami,n,'Time elec ',time_Elec
-         !    time_elec=0
-         !endif
-         !
-
-#ifdef CompileWithNIBC
-         !MultiportS  E-field advancing
-         IF (this%thereAre%Multiports.and.(this%control%mibc))      call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
-#endif
-
-         !MultiportS  H-field advancing
-         IF (this%thereAre%sgbcs.and.(this%control%sgbc))  then
-            call AdvancesgbcE(real(sgg%dt,RKIND),this%control%sgbcDispersive,this%control%simu_devia,this%control%stochastic)
-         endif
-!!!
-        if (this%thereAre%Lumpeds) call AdvanceLumpedE(sgg,n,this%control%simu_devia,this%control%stochastic)
-!!!
-         !EDispersives (only updated here. No need to update in the H-field part)
-         IF (this%thereAre%Edispersives)     call AdvanceEDispersiveE(sgg)
-
-         !PMC are only called in the H-field part (image theory method)
-
-
-         !Plane Waves  E-field advancing
-         If (this%thereAre%PlaneWaveBoxes.and.still_planewave_time) then
-              if (.not.this%control%simu_devia) then
-                 call AdvancePlaneWaveE(sgg,n, b       ,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,still_planewave_time)
-              endif
-          endif
-      
-
-         !Nodal sources  E-field advancing
-         If (this%thereAre%NodalE) then
-            !            if (.not.simu_devia) then  !bug! debe entrar en nodal y si son hard simplemente ponerlas a cero !mdrc 290323
-            call AdvanceNodalE(sgg,sggMiEx,sggMiEy,sggMiEz,sgg%NumMedia,n, b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%control%simu_devia)
-            !            endif
-         endif
-         
-
-
-         !!!!!!!!!!!!!!!!!!
-         !!!!!!!!!!end e field updating
-         !!!!!!!!!!!!!!!!!!
-
-#ifdef CompileWithMPI
-
-         !call it always (only needed now by anisotropic, but may be needed in a future for other modules)
-
-         if (this%control%size>1) then
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call   FlushMPI_E_Cray
-         endif
-#endif
-
-
-         !
-         !Magnetic Fields Maxwell AND CPML Zone
-
-         !Anisotropic
-         !Must be previous to the main stepping since the main stepping overrides the past components with the last and the
-         !lossy part of the anisotropic STILL requires the past info on adjacent components
-         IF (this%thereAre%Anisotropic) call AdvanceAnisotropicH(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-
-         !**************************************************************************************************
-         !***[conformal]  *******************************************************************
-         !**************************************************************************************************
-!vuelta la burra al trigo a 140220. En consenso, llevado a despues de call Advance_Ex, etc, para poder corregir lo already_YEEadvanced_byconformal=dont_yeeadvance
-!!!!!!!!me lo he llevado antes de hilos 171216. confirmar  que no hay problemas ni con MPI ni con PML ni con nada !?!?!?
-!!!          !NOTE: ene-2019 lo vuelvo a poner aqui
-!!!#ifdef CompileWithConformal
-!!!         if(input_conformal_flag)then
-!!!            call conformal_advance_E()
-!!!         endif
-!!!#endif
-         !**************************************************************************************************
-         !**************************************************************************************************
-         !**************************************************************************************************
-
-
-         !!for tuning
-         !call get_secnds( time_MagnetInit)
-         !!
-
-!         if (sgg%thereareMagneticMedia) then
-
-#ifdef CompileWithProfiling    
-      call nvtxStartRange("Antes del bucle HX")
-#endif
-            call Advance_Hx           (Hx, Ey, Ez, Idye, Idze, sggMiHx, b,gm1,gm2)        
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-      call nvtxStartRange("Antes del bucle HY")
-#endif
-            call Advance_Hy           (Hy, Ez, Ex, Idze, Idxe, sggMiHy, b,gm1,gm2)     
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-      call nvtxStartRange("Antes del bucle HZ")
-#endif
-            call Advance_Hz           (Hz, Ex, Ey, Idxe, Idye, sggMiHz, b,gm1,gm2)  
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-#endif
-         
-
-!!! no se ganada nada de tiempo                 Call Advance_HxHyHz(Hx,Hy,Hz,Ex,Ey,Ez,IdxE,IdyE,IdzE,sggMiHx,sggMiHy,sggMiHz,b,gm1,gm2)
-
-         ! call updateJ(sgg,Idxh,Idyh,Idzh,eps0,mu0, still_planewave_time)
-
-         If (this%thereAre%PMLbodies) then !waveport absorbers
-            call AdvancePMLbodyH
-         endif
-         !
-         !PML H-field advancing  (IT IS IMPORTANT TO FIRST CALL THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
-         !ROUTINES INJECT THE POLARIZATION CURRENTS EVERYWHERE (PML INCLUDED)
-         !SO THAT DISPERSIVE MATERIALS CAN ALSO BE TRUNCATED BY CPML)
-
-         If (this%thereAre%PMLBorders) then
-            !!!if (sgg%therearePMLMagneticMedia) then
-               call AdvanceMagneticCPML          ( sgg%NumMedia, b, sggMiHx, sggMiHy, sggMiHz, gm2, Hx, Hy, Hz, Ex, Ey, Ez)
-            !!!else
-            !!!   call FreeSpace_AdvanceMagneticCPML( sgg%NumMedia, b,                            gm2, Hx, Hy, Hz, Ex, Ey, Ez)
-            !!!endif
-         endif
-         
-
-         !!for tuning
-         !call get_secnds( time_MagnetFin)
-         !time_magnet=time_magnet+time_MagnetFin%segundos-time_MagnetInit%segundos
-         !if(n == n_info) then
-         !    print *,whoami,n,'Time magnet ',time_magnet
-         !    time_magnet=0
-         !endif
-         !!for tuning
-
-         !NO Wire advancing in the H-field part
-         !
-
-         !Must be called here and at the end to enforce any change in the PMC and perioric parts
-         !NO Wire advancing in the H-field part
-         !PMC BORDERS  H-field advancing (duplicates the H-fields at the interface changing their sign)
-
-         
-         If (this%thereAre%PMCBorders)     then
-            call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
-         endif
-         !Periodic BORDERS  H-field mirroring
-         If (this%thereAre%PeriodicBorders)     then
-            call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
-         endif
-         !
-         !MultiportS  H-field advancing
-         IF (this%thereAre%sgbcs.and.(this%control%sgbc))  then
-            call AdvancesgbcH
-         endif
-
-         !MDispersives (only updated here. No need to update in the E-field part)
-         IF (this%thereAre%Mdispersives)     call AdvanceMDispersiveH(sgg)
-
-#ifdef CompileWithNIBC
-         !Multiports H-field advancing
-         IF (this%thereAre%Multiports    .and.(this%control%mibc))  &
-         call AdvanceMultiportH    (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,sggMiHx,sggMiHy,sggMiHz,gm2,sgg%nummedia,this%control%conformalskin)
-#endif
-
-         !Plane Wave H-field advancing
-         If (this%thereAre%PlaneWaveBoxes.and.still_planewave_time)  then
-              if (.not.this%control%simu_devia) then
-                 call AdvancePlaneWaveH(sgg,n, b        , GM2, Idxe,Idye, Idze, Hx, Hy, Hz,still_planewave_time)
-              endif
-         endif
-       
-
-         !Nodal sources  E-field advancing
-         If (this%thereAre%NodalH) then
-          !!    if (.not.simu_devia) then  !bug! debe entrar en nodal y si son hard simplemente ponerlas a cero !mdrc 290323
-                 call AdvanceNodalH(sgg,sggMiHx,sggMiHy,sggMiHz,sgg%NumMedia,n, b       ,GM2,Idxe,Idye,Idze,Hx,Hy,Hz,this%control%simu_devia)
-          !!    endif
-        endif
-
-         !Must be called here again at the end to enforce any of the previous changes
-         !Posible Wire for thickwires advancing in the H-field part    
-         !Wires (only updated here. No need to update in the H-field part)
-         if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-            IF (this%thereAre%Wires) then
-               if (this%control%wirecrank) then
-                  continue
-               else
-                  call AdvanceWiresH(sgg,n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)
-               endif
-            endif
-         endif
-         !PMC BORDERS  H-field advancing (duplicates the H-fields at the interface changing their sign)
-         If (this%thereAre%PMCBorders)     call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
-         !Periodic BORDERS  H-field mirroring
-         If (this%thereAre%PeriodicBorders)     then
-            call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
-         endif
-         !
-         !**************************************************************************************************
-         !***[conformal]  *******************************************************************
-         !**************************************************************************************************
-         !conformal advance electric fields  ref: ##timeStepps_advance_H##
-
-#ifdef CompileWithConformal                      
-         if(input_conformal_flag)then     
-            call conformal_advance_H()
-         endif
-#endif
-         !**************************************************************************************************
-         !**************************************************************************************************
-         !**************************************************************************************************
-
-
-         !!!!!!!!!!end H advancing
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-#ifdef CompileWithMPI
-         !!Flush all the MPI (esto estaba justo al principo del bucle temporal diciendo que era necesario para correcto resuming)
-         !lo he movido aqui a 16/10/2012 porque el farfield necesita tener los campos magneticos correctos
-         !e intuyo que el Bloque current tambien a tenor del comentario siguiente
-         !Incluyo un flush inicial antes de entrar al bucle para que el resuming sea correcto
-         if (this%control%size>1) then
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call   FlushMPI_H_Cray
-         endif
-         if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-            if ((this%control%size>1).and.(this%thereAre%wires))   then
-                call newFlushWiresMPI(this%control%layoutnumber,this%control%size)
-            endif
-#ifdef CompileWithStochastic
-            if (this%control%stochastic) then
-                call syncstoch_mpi_wires(this%control%simu_devia,this%control%layoutnumber,this%control%size)
-            endif
-#endif
-         endif
-#ifdef CompileWithBerengerWires
-         if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-            if ((this%control%size>1).and.(this%thereAre%wires))   call FlushWiresMPI_Berenger(this%control%layoutnumber,this%control%size)
-         endif
-#endif
-#endif
-
-!!!no se si el orden wires - sgbcs del sync importa 150519
-#ifdef CompileWithMPI
-#ifdef CompileWithStochastic
-          if (this%control%stochastic)  then
-             call syncstoch_mpi_sgbcs(this%control%simu_devia,this%control%layoutnumber,this%control%size)
-          endif
-#endif    
-#endif
-
-#ifdef CompileWithMPI
-#ifdef CompileWithStochastic
-          if (this%control%stochastic)  then
-             call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%size)
-          endif
-#endif    
-#endif 
-         !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-         !la absorcion mur precisa que se hayan flusheado los H
-         If (this%thereAre%MURBorders) then
-            call AdvanceMagneticMUR              (b, sgg,sggMiHx, sggMiHy, sggMiHz, Hx, Hy, Hz,this%control%mur_second)
-            !y reflushear los nuevos H solo para segundo orden
-#ifdef CompileWithMPI
-            if (this%control%mur_second) then
-               if (this%control%size>1) then
-                  call MPI_Barrier(SUBCOMM_MPI,ierr)
-                  call   FlushMPI_H_Cray
-               endif
-            endif
-#endif
-         ENDIF
-
-         !Update observation matrices !MUST GO AFTER THE MPI EXCHANGING INFO, SINCE Bloque CURRENTS NEED UPDATED INFO
          IF (this%thereAre%Observation) then
-            !se le pasan los incrementos autenticos (bug que podia aparecer en NF2FF y Bloque currents 17/10/12)
             call UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, n,ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,SINPML_FULLSIZE,this%control%wirecrank, this%control%noconformalmapvtk,b)
-
             if (n>=ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,ini_save+BuffObse)
-               !write(dubuf,'(a,i9)')  ' INIT DATA FLUSHING n= ',n
-               !call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-               !call print11(this%control%layoutnumber,dubuf)
-               !call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                call FlushObservationFiles(sgg,ini_save,mindum,this%control%layoutnumber,this%control%size, dxe, dye, dze, dxh, dyh, dzh,b,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
-               !write(dubuf,'(a,i9)')  ' Done DATA FLUSHED n= ',n
-               !call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-               !call print11(this%control%layoutnumber,dubuf)
-               !call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
             endif
          endif
-         !
-         !Reporting,Timing, Partial flushing
+
          if(n >= n_info) then
              call_timing=.true.
          else
@@ -1594,10 +1314,6 @@ module Solver_mod
             call Timing(sgg,b,        n,n_info,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,initialtimestep, &
             this%control%finaltimestep,perform,parar,.FALSE., &
             Ex,Ey,Ez,everflushed,this%control%nentradaroot,maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
-            ! call Timing(sgg,b, n,n_info,initialtimestep, perform,parar,.FALSE., Ex,Ey,Ez,everflushed,maxSourceValue)
-
-!!!!!!
-!!!!!!!!!
 
             if (.not.parar) then !!! si es por parada se gestiona al final
 !!!!! si esta hecho lo flushea todo pero poniendo de acuerdo a todos los mpi
@@ -2023,6 +1739,169 @@ module Solver_mod
             endif
          endif
       end subroutine 
+
+      subroutine step()
+         call flushPlanewaveOff(planewave_switched_off, still_planewave_time, thereareplanewave)
+         IF (this%thereAre%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
+         call advanceE()
+#ifdef CompileWithConformal
+         call advanceConformalE()
+#endif
+         call advanceWires()
+         call advancePMLE()
+
+#ifdef CompileWithNIBC
+         IF (this%thereAre%Multiports.and.(this%control%mibc))      call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
+#endif
+         IF (this%thereAre%sgbcs.and.(this%control%sgbc))  then
+            call AdvancesgbcE(real(sgg%dt,RKIND),this%control%sgbcDispersive,this%control%simu_devia,this%control%stochastic)
+         endif
+         if (this%thereAre%Lumpeds) call AdvanceLumpedE(sgg,n,this%control%simu_devia,this%control%stochastic)
+         IF (this%thereAre%Edispersives)     call AdvanceEDispersiveE(sgg)
+         If (this%thereAre%PlaneWaveBoxes.and.still_planewave_time) then
+              if (.not.this%control%simu_devia) then
+                 call AdvancePlaneWaveE(sgg,n, b       ,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,still_planewave_time)
+              endif
+          endif
+         If (this%thereAre%NodalE) then
+            call AdvanceNodalE(sgg,sggMiEx,sggMiEy,sggMiEz,sgg%NumMedia,n, b,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%control%simu_devia)
+         endif
+
+#ifdef CompileWithMPI
+         if (this%control%size>1) then
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+            call   FlushMPI_E_Cray
+         endif
+#endif
+         IF (this%thereAre%Anisotropic) call AdvanceAnisotropicH(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
+#ifdef CompileWithProfiling    
+         call nvtxStartRange("Antes del bucle HX")
+#endif
+         call Advance_Hx           (Hx, Ey, Ez, Idye, Idze, sggMiHx, b,gm1,gm2)        
+#ifdef CompileWithProfiling    
+         call nvtxEndRange
+         call nvtxStartRange("Antes del bucle HY")
+#endif
+         call Advance_Hy           (Hy, Ez, Ex, Idze, Idxe, sggMiHy, b,gm1,gm2)     
+#ifdef CompileWithProfiling    
+         call nvtxEndRange
+         call nvtxStartRange("Antes del bucle HZ")
+#endif
+         call Advance_Hz           (Hz, Ex, Ey, Idxe, Idye, sggMiHz, b,gm1,gm2)  
+#ifdef CompileWithProfiling    
+         call nvtxEndRange
+#endif
+         
+         If (this%thereAre%PMLbodies) then !waveport absorbers
+            call AdvancePMLbodyH
+         endif
+         If (this%thereAre%PMLBorders) then
+               call AdvanceMagneticCPML          ( sgg%NumMedia, b, sggMiHx, sggMiHy, sggMiHz, gm2, Hx, Hy, Hz, Ex, Ey, Ez)
+         endif
+         
+         If (this%thereAre%PMCBorders)     then
+            call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
+         endif
+         If (this%thereAre%PeriodicBorders)     then
+            call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
+         endif
+         IF (this%thereAre%sgbcs.and.(this%control%sgbc))  then
+            call AdvancesgbcH()
+         endif
+         IF (this%thereAre%Mdispersives)     call AdvanceMDispersiveH(sgg)
+#ifdef CompileWithNIBC
+         IF (this%thereAre%Multiports    .and.(this%control%mibc))  &
+         call AdvanceMultiportH    (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,sggMiHx,sggMiHy,sggMiHz,gm2,sgg%nummedia,this%control%conformalskin)
+#endif
+         If (this%thereAre%PlaneWaveBoxes.and.still_planewave_time)  then
+              if (.not.this%control%simu_devia) then
+                 call AdvancePlaneWaveH(sgg,n, b        , GM2, Idxe,Idye, Idze, Hx, Hy, Hz,still_planewave_time)
+              endif
+         endif
+         If (this%thereAre%NodalH) then
+                 call AdvanceNodalH(sgg,sggMiHx,sggMiHy,sggMiHz,sgg%NumMedia,n, b       ,GM2,Idxe,Idye,Idze,Hx,Hy,Hz,this%control%simu_devia)
+         endif
+
+         if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
+             (trim(adjustl(this%control%wiresflavor))=='transition')) then
+            IF (this%thereAre%Wires) then
+               if (this%control%wirecrank) then
+                  continue
+               else
+                  call AdvanceWiresH(sgg,n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)
+               endif
+            endif
+         endif
+         If (this%thereAre%PMCBorders)     call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
+         If (this%thereAre%PeriodicBorders)     then
+            call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
+         endif
+
+#ifdef CompileWithConformal                      
+         if(input_conformal_flag)then     
+            call conformal_advance_H()
+         endif
+#endif
+
+#ifdef CompileWithMPI
+         !!Flush all the MPI (esto estaba justo al principo del bucle temporal diciendo que era necesario para correcto resuming)
+         !lo he movido aqui a 16/10/2012 porque el farfield necesita tener los campos magneticos correctos
+         !e intuyo que el Bloque current tambien a tenor del comentario siguiente
+         !Incluyo un flush inicial antes de entrar al bucle para que el resuming sea correcto
+         if (this%control%size>1) then
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+            call   FlushMPI_H_Cray
+         endif
+         if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
+             (trim(adjustl(this%control%wiresflavor))=='transition')) then
+            if ((this%control%size>1).and.(this%thereAre%wires))   then
+                call newFlushWiresMPI(this%control%layoutnumber,this%control%size)
+            endif
+#ifdef CompileWithStochastic
+            if (this%control%stochastic) then
+                call syncstoch_mpi_wires(this%control%simu_devia,this%control%layoutnumber,this%control%size)
+            endif
+#endif
+         endif
+#ifdef CompileWithBerengerWires
+         if (trim(adjustl(this%control%wiresflavor))=='berenger') then
+            if ((this%control%size>1).and.(this%thereAre%wires))   call FlushWiresMPI_Berenger(this%control%layoutnumber,this%control%size)
+         endif
+#endif
+#endif
+
+!!!no se si el orden wires - sgbcs del sync importa 150519
+#ifdef CompileWithMPI
+#ifdef CompileWithStochastic
+          if (this%control%stochastic)  then
+             call syncstoch_mpi_sgbcs(this%control%simu_devia,this%control%layoutnumber,this%control%size)
+          endif
+#endif    
+#endif
+
+#ifdef CompileWithMPI
+#ifdef CompileWithStochastic
+          if (this%control%stochastic)  then
+             call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%size)
+          endif
+#endif    
+#endif 
+         If (this%thereAre%MURBorders) then
+            call AdvanceMagneticMUR              (b, sgg,sggMiHx, sggMiHy, sggMiHz, Hx, Hy, Hz,this%control%mur_second)
+#ifdef CompileWithMPI
+            if (this%control%mur_second) then
+               if (this%control%size>1) then
+                  call MPI_Barrier(SUBCOMM_MPI,ierr)
+                  call   FlushMPI_H_Cray
+               endif
+            endif
+#endif
+         ENDIF
+
+
+      end subroutine
+
+
 
       subroutine advanceE()
 #ifdef CompileWithProfiling

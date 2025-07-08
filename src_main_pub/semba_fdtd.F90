@@ -75,8 +75,9 @@ module SEMBA_FDTD_mod
    
 contains
 
-   subroutine semba_init(this)
+   subroutine semba_init(this, input_flags)
       class(semba_fdtd_t) :: this
+      character (len=*), optional :: input_flags
 
       real (KIND=RKIND) :: dtantesdecorregir
       real (KIND=RKIND)   ::  dxmin,dymin,dzmin,dtlay
@@ -265,9 +266,15 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
 #endif
       CALL get_secnds (this%l%time_out2)
-      !
-      ! mira el command_line y el fichero launch 251022
-      CALL get_command (this%l%chain2, this%l%length, status)
+      
+      if (present(input_flags)) then 
+         this%l%read_command_line = .false.
+         this%l%chain2 = input_flags
+         this%l%length = len(input_flags)
+      else
+         ! mira el command_line y el fichero launch 251022
+         CALL get_command (this%l%chain2, this%l%length, status)
+      end if
       IF (status /= 0) then
          CALL stoponerror (this%l%layoutnumber, this%l%size, 'General error',.true.); goto 652
       endif

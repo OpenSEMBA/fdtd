@@ -89,7 +89,8 @@ module interpreta_switches_m
             noconformalmapvtk               , &
             createh5filefromsinglebin       , &
             creditosyaprinteados            , &
-            use_mtln_wires
+            use_mtln_wires                  , &
+            read_command_line
       
         integer (kind=4) ::                   &
             wirethickness                    ,&
@@ -2028,6 +2029,7 @@ CONTAINS
       l%facesNF2FF%ar=.true.
       !defaults
       l%use_mtln_wires = .false.
+      l%read_command_line = .true.
       l%hay_slanted_wires=.false.
       l%forcing = .FALSE.
       l%resume_fromold = .FALSE.
