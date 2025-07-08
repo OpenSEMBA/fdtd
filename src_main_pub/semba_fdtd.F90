@@ -970,7 +970,7 @@ contains
 #endif
          this%finishedwithsuccess=.false.
 
-         call solver%init(this%l)
+         call solver%init_control(this%l)
 
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
 #ifdef CompileWithMTLN
