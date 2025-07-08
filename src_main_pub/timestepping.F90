@@ -97,10 +97,17 @@ module Solver_mod
       REAL (KIND=RKIND), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       real (kind=RKIND_tiempo) :: lastexecutedtime
 
+      ! integer(kind=integersizeofmediamatrices), dimension(:,:,:) :: sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
+
       integer (kind=4) :: initialtimestep, lastexecutedtimestep
       type(bounds_t) :: bounds
 
       logical :: parar
+
+#ifdef CompileWithMTLN
+      type (mtln_t) :: mtln_parsed
+#endif
+
    contains
       procedure :: init => solver_init
       ! procedure :: run => solver_run
@@ -283,26 +290,49 @@ module Solver_mod
       this%Idzh=1.0_RKIND/this%dzh
    end subroutine
 
-   subroutine solver_init(this, sgg, eps0, mu0)
+   subroutine solver_init(this, sgg, eps0, mu0, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, sggMtag, sinPML_fullsize, fullsize, tag_numbers)
       class(solver_t) :: this
       type(sggfdtdinfo), intent(inout) :: sgg
+      real(kind=rkind), intent(inout) :: eps0,mu0
+
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(inout)   ::  &
+      sggMiNo(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE), &
+      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
+      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
+      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
+      sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
+      sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
+      sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      integer (KIND=IKINDMTAG), intent(inout)   ::  &
+      sggMtag(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+
+      type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize, fullsize
+      type(taglist_t) :: tag_numbers
+
       integer(kind=4) :: i, j, k, field
       character (len=bufsize)  ::  whoami, chari, layoutcharID
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
-      real(kind=rkind), intent(inout) :: eps0,mu0
 
       real(kind=RKIND_tiempo) :: ultimodt
       
       character (len=bufsize) :: dubuf
       logical :: attinformado = .false.
 
-#ifdef compileWithMPI
+! #ifdef compileWithMPI
       integer(kind=4) :: dummyMin,dummyMax, ierr
       real(kind=rkind) :: rdummy
-#endif
+! #endif
+
+      ! this%sggMiNo = sggMiNo
+      ! this%sggMiEx = sggMiEx
+      ! this%sggMiEy = sggMiEy
+      ! this%sggMiEz = sggMiEz
+      ! this%sggMiHx = sggMiHx
+      ! this%sggMiHy = sggMiHy
+      ! this%sggMiHz = sggMiHz
 
       this%control%fatalerror=.false.
 
@@ -453,20 +483,20 @@ module Solver_mod
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
 
-      ! call initializeBorders()
-!       call initializeLumped()
-!       call initializeWires()
-!       call initializeAnisotropic()
-!       call initializeSGBC()
-!       call initializeMultiports()
-!       call initializeConformalElements()
+      call initializeBorders()
+      call initializeLumped()
+      call initializeWires()
+      call initializeAnisotropic()
+      call initializeSGBC()
+      call initializeMultiports()
+      call initializeConformalElements()
       
-!       call initializeEDispersives()
-!       call initializeMDispersives()
-!       call initializePlanewave()
-!       call initializeNodalSources()
+      call initializeEDispersives()
+      call initializeMDispersives()
+      call initializePlanewave()
+      call initializeNodalSources()
 
-!       call fillMtag(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b, tag_numbers)
+      call fillMtag(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, this%bounds, tag_numbers)
 !       call initializeObservation()
 
 !       !!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aqui
@@ -914,455 +944,456 @@ contains
          endif
       end subroutine
 
-!       subroutine initializeBorders()
-!          character(len=BUFSIZE) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
-! #ifdef CompileWithMPI
-!          integer (kind=4) :: ierr
-! #endif
-!          write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
-!          call InitOtherBorders    (sgg,this%thereAre)
-!          l_auxinput=this%thereAre%PECBorders.or.this%thereAre%PMCBorders.or.this%thereAre%PeriodicBorders
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!             if ( l_auxoutput) then
-!                write (dubuf,*) '----> there are PEC, PMC or periodic Borders';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no PEC, PMC or periodic Borders found';  call print11(this%control%layoutnumber,dubuf)
-!             endif
+      subroutine initializeBorders()
+         character(len=BUFSIZE) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer (kind=4) :: ierr
+#endif
+         write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
+         call InitOtherBorders    (sgg,this%thereAre)
+         l_auxinput=this%thereAre%PECBorders.or.this%thereAre%PMCBorders.or.this%thereAre%PeriodicBorders
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if ( l_auxoutput) then
+               write (dubuf,*) '----> there are PEC, PMC or periodic Borders';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no PEC, PMC or periodic Borders found';  call print11(this%control%layoutnumber,dubuf)
+            endif
             
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!          write(dubuf,*) 'Init CPML Borders...';  call print11(this%control%layoutnumber,dubuf)
-!          call InitCPMLBorders     (sgg,SINPML_Fullsize,this%thereAre%PMLBorders,this%control, &
-!                                  dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps0,mu0)
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init CPML Borders...';  call print11(this%control%layoutnumber,dubuf)
+         call InitCPMLBorders     (sgg,SINPML_Fullsize,this%thereAre%PMLBorders,this%control, &
+                                 dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps0,mu0)
 
-!          l_auxinput=this%thereAre%PMLBorders
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!             if (l_auxoutput ) then
-!                write (dubuf,*) '----> there are CPML Borders';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no CPML Borders found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
+         l_auxinput=this%thereAre%PMLBorders
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if (l_auxoutput ) then
+               write (dubuf,*) '----> there are CPML Borders';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no CPML Borders found';  call print11(this%control%layoutnumber,dubuf)
+         endif
 
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!          write(dubuf,*) 'Init PML Bodies...';  call print11(this%control%layoutnumber,dubuf)
-!          call InitPMLbodies(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
-!          l_auxinput=this%thereAre%PMLbodies
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!             if ( l_auxoutput) then
-!                write (dubuf,*) '----> there are PML Bodies';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no PML Bodies found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!          write(dubuf,*) 'Init Mur Borders...';  call print11(this%control%layoutnumber,dubuf)
-!          call InitMURBorders      (sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,eps0,mu0)
-!          l_auxinput= this%thereAre%MURBorders
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!          if (l_auxoutput) then
-!                write (dubuf,*) '----> there are Mur Borders';  call print11(this%control%layoutnumber,dubuf)
-!          else
-!                write(dubuf,*) '----> no Mur Borders found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init PML Bodies...';  call print11(this%control%layoutnumber,dubuf)
+         call InitPMLbodies(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
+         l_auxinput=this%thereAre%PMLbodies
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if ( l_auxoutput) then
+               write (dubuf,*) '----> there are PML Bodies';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no PML Bodies found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init Mur Borders...';  call print11(this%control%layoutnumber,dubuf)
+         call InitMURBorders      (sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,eps0,mu0)
+         l_auxinput= this%thereAre%MURBorders
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+         if (l_auxoutput) then
+               write (dubuf,*) '----> there are Mur Borders';  call print11(this%control%layoutnumber,dubuf)
+         else
+               write(dubuf,*) '----> no Mur Borders found';  call print11(this%control%layoutnumber,dubuf)
+         endif
 
-!       end subroutine initializeBorders
+      end subroutine initializeBorders
 
-!       subroutine initializeLumped()
-!          character(len=BUFSIZE) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
-! #ifdef CompileWithMPI
-!          integer(kind=4) :: ierr
-! #endif
+      subroutine initializeLumped()
+         character(len=BUFSIZE) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
 
-!          !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
-!          write(dubuf,*) 'Init Lumped Elements...';  call print11(this%control%layoutnumber,dubuf)
-!          CALL InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,eps0,mu0)
-!          l_auxinput=this%thereAre%Lumpeds
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif   
-!          if (l_auxoutput ) then
-!              write (dubuf,*) '----> there are Structured lumped elements';  call print11(this%control%layoutnumber,dubuf)
-!          else
-!               write(dubuf,*) '----> no lumped Structured elements found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
-!       end subroutine initializeLumped
+         !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
+         write(dubuf,*) 'Init Lumped Elements...';  call print11(this%control%layoutnumber,dubuf)
+         CALL InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,eps0,mu0)
+         l_auxinput=this%thereAre%Lumpeds
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif   
+         if (l_auxoutput ) then
+             write (dubuf,*) '----> there are Structured lumped elements';  call print11(this%control%layoutnumber,dubuf)
+         else
+              write(dubuf,*) '----> no lumped Structured elements found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+      end subroutine initializeLumped
 
-!       subroutine initializeWires()
-!          real (kind=rkind) :: dtcritico, newdtcritico
-!          character(len=BUFSIZE) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
-! #ifdef CompileWithMPI
-!          integer(kind=4) :: ierr
-! #endif
+      subroutine initializeWires()
+         real (kind=rkind) :: dtcritico, newdtcritico
+         character(len=BUFSIZE) :: dubuf, buff
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
 
-!          dtcritico=sgg%dt
-!          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-!             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-! #ifdef CompileWithMPI
-!             call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!             write(dubuf,*) 'Init Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
-!             call InitWires       (sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, & 
-!                                  this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
-!                                  g2,SINPML_fullsize, fullsize,dtcritico,eps0,mu0,this%control)
-!             l_auxinput=this%thereAre%Wires
-!             l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!             if (l_auxoutput ) then
-!                write (dubuf,*) '----> there are Holland/transition wires';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no Holland/transition wires found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
-!          endif
+         dtcritico=sgg%dt
+         if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
+            (trim(adjustl(this%control%wiresflavor))=='transition')) then
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+            write(dubuf,*) 'Init Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
+            call InitWires       (sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, & 
+                                 this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
+                                 g2,SINPML_fullsize, fullsize,dtcritico,eps0,mu0,this%control)
+            l_auxinput=this%thereAre%Wires
+            l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if (l_auxoutput ) then
+               write (dubuf,*) '----> there are Holland/transition wires';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no Holland/transition wires found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+         endif
 
-! #ifdef CompileWithBerengerWires
-!          if (trim(adjustl(this%control%wiresflavor))=='berenger') then
+#ifdef CompileWithBerengerWires
+         if (trim(adjustl(this%control%wiresflavor))=='berenger') then
 
-! #ifdef CompileWithMPI
-!             call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!             write(dubuf,*) 'Init Multi-Wires...';  call print11(this%control%layoutnumber,dubuf)
-!             call InitWires_Berenger(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
-!             this%control%isolategroupgroups,this%control%mtlnberenger,this%control%mindistwires, &
-!             this%control%groundwires,this%control%taparrabos,Ex,Ey,Ez, &
-!             Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,g2,SINPML_fullsize,fullsize,dtcritico,eps0,mu0,this%control%verbose)
-!          l_auxinput= this%thereAre%Wires
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!             call MPI_Barrier(SUBCOMM_MPI,ierr)
-!             call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+            write(dubuf,*) 'Init Multi-Wires...';  call print11(this%control%layoutnumber,dubuf)
+            call InitWires_Berenger(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
+            this%control%isolategroupgroups,this%control%mtlnberenger,this%control%mindistwires, &
+            this%control%groundwires,this%control%taparrabos,Ex,Ey,Ez, &
+            Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,g2,SINPML_fullsize,fullsize,dtcritico,eps0,mu0,this%control%verbose)
+         l_auxinput= this%thereAre%Wires
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+            call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
          
-!             if (l_auxoutput) then
-!                write (dubuf,*) '----> there are Multi-wires';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no Multi-wires found';  call print11(this%control%layoutnumber,dubuf)
-!             endif
-!          endif
-! #endif
-! #ifdef CompileWithSlantedWires
-!          if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
+            if (l_auxoutput) then
+               write (dubuf,*) '----> there are Multi-wires';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no Multi-wires found';  call print11(this%control%layoutnumber,dubuf)
+            endif
+         endif
+#endif
+#ifdef CompileWithSlantedWires
+         if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
 
-! #ifdef CompileWithMPI
-!             call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!             write(dubuf,*) 'Init Slanted Wires...';  call print11(this%control%layoutnumber,dubuf)
-!             if ((trim(adjustl(this%control%wiresflavor))=='semistructured')) then
-!                write(dubuf,*) '...',this%control%precision;  call print11(this%control%layoutnumber,dubuf)
-!                call estructura_slanted(sgg,this%control%precision)
-!             else
-!                continue
-!             endif
-!             call InitWires_Slanted(sgg, this%control%layoutnumber,this%control%size, Ex, Ey, Ez,   & 
-!                                     Idxe, Idye, Idze, Idxh, Idyh, Idzh,   &
-!                                     sggMiNo,                              &
-!                                     sggMiEx, sggMiEy, sggMiEz,            &
-!                                     sggMiHx, sggMiHy, sggMiHz,            &
-!                                     this%thereAre%Wires, this%control%resume,               &
-!                                     this%control%mindistwires, this%control%groundwires,this%control%noSlantedcrecepelo ,     &
-!                                     this%control%inductance_model, this%control%inductance_order,   &
-!                                     g2, SINPML_fullsize, dtcritico,eps0,mu0,this%control%verbose)
-!             l_auxinput=this%thereAre%Wires
-!             l_auxoutput=l_auxinput
-! !check for MUR1 nodes sgg 230124
-!             call init_murABC_slanted(sgg,SINPML_Fullsize,eps0,mu0)
-! !!!!!!         
-! #ifdef CompileWithMPI
-!             call MPI_Barrier(SUBCOMM_MPI,ierr)
-!             call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+            write(dubuf,*) 'Init Slanted Wires...';  call print11(this%control%layoutnumber,dubuf)
+            if ((trim(adjustl(this%control%wiresflavor))=='semistructured')) then
+               write(dubuf,*) '...',this%control%precision;  call print11(this%control%layoutnumber,dubuf)
+               call estructura_slanted(sgg,this%control%precision)
+            else
+               continue
+            endif
+            call InitWires_Slanted(sgg, this%control%layoutnumber,this%control%size, Ex, Ey, Ez,   & 
+                                    Idxe, Idye, Idze, Idxh, Idyh, Idzh,   &
+                                    sggMiNo,                              &
+                                    sggMiEx, sggMiEy, sggMiEz,            &
+                                    sggMiHx, sggMiHy, sggMiHz,            &
+                                    this%thereAre%Wires, this%control%resume,               &
+                                    this%control%mindistwires, this%control%groundwires,this%control%noSlantedcrecepelo ,     &
+                                    this%control%inductance_model, this%control%inductance_order,   &
+                                    g2, SINPML_fullsize, dtcritico,eps0,mu0,this%control%verbose)
+            l_auxinput=this%thereAre%Wires
+            l_auxoutput=l_auxinput
+!check for MUR1 nodes sgg 230124
+            call init_murABC_slanted(sgg,SINPML_Fullsize,eps0,mu0)
+!!!!!!         
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+            call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
          
-!             if (l_auxoutput ) then
-!                write (dubuf,*) '----> there are Slanted wires';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no Slanted wires found';  call print11(this%control%layoutnumber,dubuf)
-!             endif
-!          endif
-! #endif
-!       !!!sincroniza el dtcritico
-! #ifdef CompileWithMPI
-!          call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
-!          dtcritico=newdtcritico
-! #endif
-!          if (sgg%dt <= dtcritico) then
-!             write(buff,'(a,e10.2e3)')  'WIR_INFO: deltat for stability OK: ',dtcritico
-!             if ((this%control%layoutnumber==0).and.this%control%verbose) call WarnErrReport(buff)
-!          else
-!             if (.not.(this%control%resume.and.this%control%permitscaling)) then !no abortasr solo advertir si permittivity scaling
-!                write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
-!                if (this%control%layoutnumber==0) call WarnErrReport(buff,.true.)
-!             else
-!                write(buff,'(a,e10.2e3)')  'WIR_WARNING: Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
-!                if (this%control%layoutnumber==0) call WarnErrReport(buff,.false.)
-!             endif
-!          endif
-!       !!!
-! !!
-!          if (this%control%use_mtln_wires) then
-! #ifdef CompileWithMTLN
-! #ifdef CompileWithMPI
-!             call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!             write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
-!             call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, mtln_parsed,this%thereAre%MTLNbundles)
-! #else
-!             write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
-! #endif
-!          endif
+            if (l_auxoutput ) then
+               write (dubuf,*) '----> there are Slanted wires';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no Slanted wires found';  call print11(this%control%layoutnumber,dubuf)
+            endif
+         endif
+#endif
+      !!!sincroniza el dtcritico
+#ifdef CompileWithMPI
+         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
+         dtcritico=newdtcritico
+#endif
+         if (sgg%dt <= dtcritico) then
+            write(buff,'(a,e10.2e3)')  'WIR_INFO: deltat for stability OK: ',dtcritico
+            if ((this%control%layoutnumber==0).and.this%control%verbose) call WarnErrReport(buff)
+         else
+            if (.not.(this%control%resume.and.this%control%permitscaling)) then !no abortasr solo advertir si permittivity scaling
+               write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
+               if (this%control%layoutnumber==0) call WarnErrReport(buff,.true.)
+            else
+               write(buff,'(a,e10.2e3)')  'WIR_WARNING: Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
+               if (this%control%layoutnumber==0) call WarnErrReport(buff,.false.)
+            endif
+         endif
+      !!!
+!!
+         if (this%control%use_mtln_wires) then
+#ifdef CompileWithMTLN
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+            write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
+            call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, this%mtln_parsed,this%thereAre%MTLNbundles)
+#else
+            write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
+#endif
+         endif
 
-!       end subroutine initializeWires
+      end subroutine initializeWires
 
-!       subroutine initializeAnisotropic()
-!          character(len=BUFSIZE) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
-! #ifdef CompileWithMPI
-!          integer(kind=4) :: ierr
-! #endif
+      subroutine initializeAnisotropic()
+         character(len=BUFSIZE) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+         integer :: rank
+#endif
       
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!          write(dubuf,*) 'Init Anisotropic...';  call print11(this%control%layoutnumber,dubuf)
-!          call InitAnisotropic(sgg,sggmiex,sggmiey,sggmiez,sggMiHx ,sggMiHy ,sggMiHz,this%thereAre%Anisotropic,this%thereAre%ThinSlot,eps0,mu0)
-!          l_auxinput=this%thereAre%Anisotropic.or.this%thereAre%ThinSlot
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif   
-!          if (l_auxoutput) then
-!                write (dubuf,*) '----> there are Structured anisotropic elements';  call print11(this%control%layoutnumber,dubuf)
-!          else
-!                write(dubuf,*) '----> no Structured anisotropic elements found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
-!       end subroutine initializeAnisotropic
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init Anisotropic...';  call print11(this%control%layoutnumber,dubuf)
+         call InitAnisotropic(sgg,sggmiex,sggmiey,sggmiez,sggMiHx ,sggMiHy ,sggMiHz,this%thereAre%Anisotropic,this%thereAre%ThinSlot,eps0,mu0)
+         l_auxinput=this%thereAre%Anisotropic.or.this%thereAre%ThinSlot
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif   
+         if (l_auxoutput) then
+               write (dubuf,*) '----> there are Structured anisotropic elements';  call print11(this%control%layoutnumber,dubuf)
+         else
+               write(dubuf,*) '----> no Structured anisotropic elements found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+      end subroutine initializeAnisotropic
 
-!       subroutine initializeSGBC()
-!          character(len=BUFSIZE) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
-! #ifdef CompileWithMPI
-!          integer(kind=4) :: ierr
-! #endif
+      subroutine initializeSGBC()
+         character(len=BUFSIZE) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
 
-!          IF (this%control%sgbc)  then
-! #ifdef CompileWithMPI
-!               call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!                write(dubuf,*) 'Init Multi sgbc...';  call print11(this%control%layoutnumber,dubuf)
-!                call Initsgbcs(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size, &
-!                   G1,G2,GM1,GM2,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
-!          l_auxinput= this%thereAre%sgbcs
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!             if (l_auxoutput) then
-!                write (dubuf,*) '----> there are Structured sgbc elements';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no Structured sgbc elements found';  call print11(this%control%layoutnumber,dubuf)
-!             endif
-!          endif
-!       end subroutine initializeSGBC
+         IF (this%control%sgbc)  then
+#ifdef CompileWithMPI
+              call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+               write(dubuf,*) 'Init Multi sgbc...';  call print11(this%control%layoutnumber,dubuf)
+               call Initsgbcs(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size, &
+                  G1,G2,GM1,GM2,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
+         l_auxinput= this%thereAre%sgbcs
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if (l_auxoutput) then
+               write (dubuf,*) '----> there are Structured sgbc elements';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no Structured sgbc elements found';  call print11(this%control%layoutnumber,dubuf)
+            endif
+         endif
+      end subroutine initializeSGBC
       
-!       subroutine initializeMultiports()
-!          character(len=BUFSIZE) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
+      subroutine initializeMultiports()
+         character(len=BUFSIZE) :: dubuf
+         logical :: l_auxinput, l_auxoutput
 
-! #ifdef CompileWithNIBC
-!          IF (this%control%mibc)  then
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!             write(dubuf,*) 'Init Multiports...';  call print11(this%control%layoutnumber,dubuf)
-!             call InitMultiports        (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx ,sggMiHy ,sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Multiports,this%control%resume, &
-!             Idxe,Idye,Idze,this%control%NOcompomur,this%control%AD,%this%control%cfl,eps0,mu0)
-!          l_auxinput= this%thereAre%Multiports
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!             if (l_auxoutput) then
-!                write (dubuf,*) '----> there are Structured  multiport elements';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no Structured multiport elements found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
-!          endif
-! #endif
-!       end subroutine initializeMultiports
+#ifdef CompileWithNIBC
+         IF (this%control%mibc)  then
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+            write(dubuf,*) 'Init Multiports...';  call print11(this%control%layoutnumber,dubuf)
+            call InitMultiports        (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx ,sggMiHy ,sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Multiports,this%control%resume, &
+            Idxe,Idye,Idze,this%control%NOcompomur,this%control%AD,%this%control%cfl,eps0,mu0)
+         l_auxinput= this%thereAre%Multiports
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if (l_auxoutput) then
+               write (dubuf,*) '----> there are Structured  multiport elements';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no Structured multiport elements found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+         endif
+#endif
+      end subroutine initializeMultiports
 
-!       subroutine initializeConformalElements()
-!          character(len=BUFSIZE) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
+      subroutine initializeConformalElements()
+         character(len=BUFSIZE) :: dubuf
+         logical :: l_auxinput, l_auxoutput
 
-! #ifdef CompileWithConformal
-!          if(input_conformal_flag)then
-! #ifdef CompileWithMPI
-!             call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!             write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
-! !WIP
-! !DEBUG
-!             call initialize_memory_FDTD_conf_fields (sgg,sggMiEx, &
-!             & sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,&
-!             & this%control%layoutnumber,this%control%size, this%control%verbose);
-!             l_auxinput=input_conformal_flag
-!             l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!             call MPI_Barrier(SUBCOMM_MPI,ierr)
-!             call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!          !       refactor JUN2015
+#ifdef CompileWithConformal
+         if(input_conformal_flag)then
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+            write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
+!WIP
+!DEBUG
+            call initialize_memory_FDTD_conf_fields (sgg,sggMiEx, &
+            & sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,&
+            & this%control%layoutnumber,this%control%size, this%control%verbose);
+            l_auxinput=input_conformal_flag
+            l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+            call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+         !       refactor JUN2015
 
-!          !!!!!!!sgg 051214 !rellena correctamente los campos magneticos. Necesario para construir los surfaces a partir del wireframe 
-!          !        call fillMagnetic(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, b)
-!          !!!!!!!ojo solo es valido para PEC!!!! cambiar luego !!?!?!?!?!?
-!             if (l_auxoutput ) then
-!                write (dubuf,*) '----> there are conformal elements';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no conformal elements found';  call print11(this%control%layoutnumber,dubuf)
-!             end if
-!       endif
-! #endif
-!       end subroutine initializeConformalElements
+         !!!!!!!sgg 051214 !rellena correctamente los campos magneticos. Necesario para construir los surfaces a partir del wireframe 
+         !        call fillMagnetic(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, b)
+         !!!!!!!ojo solo es valido para PEC!!!! cambiar luego !!?!?!?!?!?
+            if (l_auxoutput ) then
+               write (dubuf,*) '----> there are conformal elements';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no conformal elements found';  call print11(this%control%layoutnumber,dubuf)
+            end if
+      endif
+#endif
+      end subroutine initializeConformalElements
 
-!       subroutine initializeEDispersives()
-!          character (len=bufsize) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
-! #ifdef CompileWithMPI
-!          integer(kind=4) :: ierr
-! #endif
+      subroutine initializeEDispersives()
+         character (len=bufsize) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
 
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!          write(dubuf,*) 'Init EDispersives...';  call print11(this%control%layoutnumber,dubuf)
-!          call InitEDispersives(sgg,sggMiEx,sggMiEy,sggMiEz,this%thereAre%EDispersives,this%control%resume,g1,g2,ex,ey,ez)
-!          l_auxinput=this%thereAre%EDispersives
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!             if (l_auxoutput ) then
-!                write (dubuf,*) '----> there are Structured Electric dispersive elements';  call print11(this%control%layoutnumber,dubuf)
-!             else
-!                write(dubuf,*) '----> no Structured Electric dispersive elements found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
-!       end subroutine initializeEDispersives
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init EDispersives...';  call print11(this%control%layoutnumber,dubuf)
+         call InitEDispersives(sgg,sggMiEx,sggMiEy,sggMiEz,this%thereAre%EDispersives,this%control%resume,g1,g2,ex,ey,ez)
+         l_auxinput=this%thereAre%EDispersives
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+            if (l_auxoutput ) then
+               write (dubuf,*) '----> there are Structured Electric dispersive elements';  call print11(this%control%layoutnumber,dubuf)
+            else
+               write(dubuf,*) '----> no Structured Electric dispersive elements found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+      end subroutine initializeEDispersives
 
-!       subroutine initializeMDispersives()
-!          character (len=bufsize) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
-! #ifdef CompileWithMPI
-!          integer(kind=4) :: ierr
-! #endif
+      subroutine initializeMDispersives()
+         character (len=bufsize) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
 
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!          write(dubuf,*) 'Init MDispersives...';  call print11(this%control%layoutnumber,dubuf)
-!          call InitMDispersives(sgg,sggMiHx,sggMiHy,sggMiHz,this%thereAre%MDispersives,this%control%resume,gm1,gm2,hx,hy,hz)
-!          l_auxinput=this%thereAre%MDispersives
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!          if ( l_auxoutput) then
-!              write (dubuf,*) '----> there are Structured Magnetic dispersive elements';  call print11(this%control%layoutnumber,dubuf)
-!          else
-!               write(dubuf,*) '----> no Structured Magnetic dispersive elements found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
-!       end subroutine initializeMDispersives
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init MDispersives...';  call print11(this%control%layoutnumber,dubuf)
+         call InitMDispersives(sgg,sggMiHx,sggMiHy,sggMiHz,this%thereAre%MDispersives,this%control%resume,gm1,gm2,hx,hy,hz)
+         l_auxinput=this%thereAre%MDispersives
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+         if ( l_auxoutput) then
+             write (dubuf,*) '----> there are Structured Magnetic dispersive elements';  call print11(this%control%layoutnumber,dubuf)
+         else
+              write(dubuf,*) '----> no Structured Magnetic dispersive elements found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+      end subroutine initializeMDispersives
 
-!       subroutine initializePlanewave()
-!          character (len=bufsize) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
-! #ifdef CompileWithMPI
-!          integer(kind=4) :: ierr
-! #endif
+      subroutine initializePlanewave()
+         character (len=bufsize) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
 
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!          write(dubuf,*) 'Init Multi Plane-Waves...';  call print11(this%control%layoutnumber,dubuf)
-!          call InitPlaneWave   (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,this%control%layoutnumber,this%control%size,SINPML_fullsize,this%thereAre%PlaneWaveBoxes,this%control%resume,eps0,mu0)
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init Multi Plane-Waves...';  call print11(this%control%layoutnumber,dubuf)
+         call InitPlaneWave   (sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,this%control%layoutnumber,this%control%size,SINPML_fullsize,this%thereAre%PlaneWaveBoxes,this%control%resume,eps0,mu0)
 
-!          l_auxinput=this%thereAre%PlaneWaveBoxes
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!          if ( l_auxoutput) then
-!              write (dubuf,*) '----> there are Plane Wave';  call print11(this%control%layoutnumber,dubuf)
-!          else
-!               write(dubuf,*) '----> no Plane waves are found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
-!       end subroutine initializePlanewave
+         l_auxinput=this%thereAre%PlaneWaveBoxes
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+         if ( l_auxoutput) then
+             write (dubuf,*) '----> there are Plane Wave';  call print11(this%control%layoutnumber,dubuf)
+         else
+              write(dubuf,*) '----> no Plane waves are found';  call print11(this%control%layoutnumber,dubuf)
+         endif
+      end subroutine initializePlanewave
 
-!       subroutine initializeNodalSources()
-!          character (len=bufsize) :: dubuf
-!          logical :: l_auxinput, l_auxoutput
-! #ifdef CompileWithMPI
-!          integer(kind=4) :: ierr
-! #endif
+      subroutine initializeNodalSources()
+         character (len=bufsize) :: dubuf
+         logical :: l_auxinput, l_auxoutput
+#ifdef CompileWithMPI
+         integer(kind=4) :: ierr
+#endif
 
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!          write(dubuf,*) 'Init Nodal Sources...';  call print11(this%control%layoutnumber,dubuf)
-!          if (.not.this%control%hopf) then
-!             call InitNodalSources(sgg,this%control%layoutnumber,sgg%NumNodalSources,sgg%NodalSource,sgg%Sweep,this%thereAre%NodalE,this%thereAre%NodalH)
-!          else
-!             call InitHopf(sgg,sgg%NumNodalSources,sgg%NodalSource,sgg%Sweep,this%control%ficherohopf) !lo manejara antonio con las entradas que precise
-!             this%thereAre%NodalE=.false. !no habra mas nodales excepto la de Hopf
-!             this%thereAre%NodalH=.false. 
-!          endif
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init Nodal Sources...';  call print11(this%control%layoutnumber,dubuf)
+         if (.not.this%control%hopf) then
+            call InitNodalSources(sgg,this%control%layoutnumber,sgg%NumNodalSources,sgg%NodalSource,sgg%Sweep,this%thereAre%NodalE,this%thereAre%NodalH)
+         else
+            call InitHopf(sgg,sgg%NumNodalSources,sgg%NodalSource,sgg%Sweep,this%control%ficherohopf) !lo manejara antonio con las entradas que precise
+            this%thereAre%NodalE=.false. !no habra mas nodales excepto la de Hopf
+            this%thereAre%NodalH=.false. 
+         endif
          
-!          l_auxinput=this%thereAre%NodalH.or.this%thereAre%NodalE
-!          l_auxoutput=l_auxinput
-! #ifdef CompileWithMPI
-!          call MPI_Barrier(SUBCOMM_MPI,ierr)
-!          call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
-! #endif
-!          if ( l_auxoutput) then
-!              write (dubuf,*) '----> there are Structured Nodal sources';  call print11(this%control%layoutnumber,dubuf)
-!          else
-!               write(dubuf,*) '----> no Structured Nodal sources are found';  call print11(this%control%layoutnumber,dubuf)
-!          endif
+         l_auxinput=this%thereAre%NodalH.or.this%thereAre%NodalE
+         l_auxoutput=l_auxinput
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_AllReduce( l_auxinput, l_auxoutput, 1_4, MPI_LOGICAL, MPI_LOR, MPI_COMM_WORLD, ierr)
+#endif
+         if ( l_auxoutput) then
+             write (dubuf,*) '----> there are Structured Nodal sources';  call print11(this%control%layoutnumber,dubuf)
+         else
+              write(dubuf,*) '----> no Structured Nodal sources are found';  call print11(this%control%layoutnumber,dubuf)
+         endif
 
-!       end subroutine initializeNodalSources
+      end subroutine initializeNodalSources
 
 !       subroutine initializeObservation()
 !          character(len=bufsize) :: dubuf
@@ -1403,7 +1434,7 @@ contains
 !             write(dubuf,*) 'Init MPI MediaMatrix flush...';  call print11(this%control%layoutnumber,dubuf)
 !             call InitMPI(sgg%sweep,sgg%alloc)
 !             call MPI_Barrier(SUBCOMM_MPI,ierr)
-!             call InitExtraFlushMPI(this%control%layoutnumber,sgg%sweep,sgg%alloc,sgg%med,sgg%nummedia,sggmiEz,sggMiHz)
+!             call InitExtraFlushMPI(this %control%layoutnumber,sgg%sweep,sgg%alloc,sgg%med,sgg%nummedia,sggmiEz,sggMiHz)
 !             call MPI_Barrier(SUBCOMM_MPI,ierr)
 !             call FlushMPI_H(sgg%alloc,this%control%layoutnumber,this%control%size, sggmiHx,sggmiHy,sggmiHz)
 !             call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1531,7 +1562,98 @@ contains
 !             call print11(this%control%layoutnumber,dubuf)
 !          endif  
 !       end subroutine printSimulationStart
+      subroutine fillMtag(sgg,sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b, tag_numbers)
 
+         !------------------------>
+         type (SGGFDTDINFO), intent(IN)    ::  sgg
+         type (bounds_t), intent( IN)  ::  b
+         INTEGER(KIND = IKINDMTAG), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT)     ::  sggMtag
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( IN   )     ::  sggMiHx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( IN   )     ::  sggMiHy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( IN   )     ::  sggMiHz
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( IN   )     ::  sggMiEx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( IN   )     ::  sggMiEy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( IN   )     ::  sggMiEz
+         type (taglist_t) :: tag_numbers
+         !------------------------> Variables locales
+         integer(kind = 4)  ::  i, j, k
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio1,medio2,medio3,medio4,medio5
+         logical  ::  mediois1,mediois2,mediois3,mediois4
+         integer, dimension(3) :: lbx, lby, lbz
+         lbx = lbound(tag_numbers%face%x)
+         lby = lbound(tag_numbers%face%y)   
+         lbz = lbound(tag_numbers%face%z)
+
+         mediois3=.true.; mediois4=.true.
+#ifdef CompileWithOpenMP
+!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+#endif
+         Do k=1,b%sweepHx%NZ
+            Do j=1,b%sweepHx%NY
+               Do i=1,b%sweepHx%NX
+                  medio1 =sggMiEy(i,j,k)
+                  medio2 =sggMiEy(i,j,k+1)
+                  medio3 =sggMiEz(i,j,k)
+                  medio4 =sggMiEz(i,j+1,k)
+                  medio5 =sggMiHx(i,j,k)
+                  mediois1= (medio5==1).and.(medio1/=1).and.(medio2/=1).and.(medio3==1).and.(medio4==1)
+                  mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
+                  mediois3= .true. !.not.((medio5==1).and.(((sggMiHx(i-1,j,k)/=1).or.(sggMiHx(i+1,j,k)/=1)))) !esta condicion en realidad no detecta alabeos de una celda que siendo slots son acoples de un agujerito solo en el peor de los casos
+                  if ((mediois1.or.mediois2).and.(mediois3))  then
+                      !solo lo hace con celdas de vacio porque en particular el mismo medio sgbc con diferentes orientaciones tiene distintos indices de medio y lo activaria erroneamente si lo hago para todos los medios
+                      tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)=-ibset(iabs(tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)),3) 
+                      !ojo no cambiar: interacciona con observation tags 141020 !151020 a efectos de mapvtk el signo importa
+                  endif
+               End do
+            End do
+         End do
+#ifdef CompileWithOpenMP
+!$OMP  END PARALLEL DO
+!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+#endif
+         Do k=1,b%sweepHy%NZ
+            Do j=1,b%sweepHy%NY
+               Do i=1,b%sweepHy%NX
+                  medio1 =sggMiEz(i,j,k)
+                  medio2 =sggMiEz(i+1,j,k)
+                  medio3 =sggMiEx(i,j,k)
+                  medio4 =sggMiEx(i,j,k+1)
+                  medio5 =sggMiHy(i,j,k)
+                  mediois1= (medio5==1).and.(medio1/=1).and.(medio2/=1).and.(medio3==1).and.(medio4==1)
+                  mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
+                  mediois3= .true. !.not.((medio5==1).and.(((sggMiHy(i,j-1,k)/=1).or.(sggMiHy(i,j+1,k)/=1))))
+                  if ((mediois1.or.mediois2).and.(mediois3))  then
+                     tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)=-ibset(iabs(tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)),4) 
+                  endif
+               End do
+            End do
+         End do
+#ifdef CompileWithOpenMP
+!$OMP  END PARALLEL DO
+!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+#endif
+         Do k=1,b%sweepHz%NZ
+            Do j=1,b%sweepHz%NY
+               Do i=1,b%sweepHz%NX
+                  medio1 =sggMiEx(i,j,k)
+                  medio2 =sggMiEx(i,j+1,k)
+                  medio3 =sggMiEy(i,j,k)
+                  medio4 =sggMiEy(i+1,j,k)
+                  medio5 =sggMiHz(i,j,k)
+                  mediois1= (medio5==1).and.(medio1/=1).and.(medio2/=1).and.(medio3==1).and.(medio4==1)
+                  mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
+                  mediois3= .true. !.not.((medio5==1).and.(((sggMiHz(i,j,k-1)/=1).or.(sggMiHz(i,j,k+1)/=1))))
+                  if ((mediois1.or.mediois2).and.(mediois3))  then
+                     tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)=-ibset(iabs(tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)),5) 
+                  endif
+               End do
+            End do
+         End do
+#ifdef CompileWithOpenMP
+!$OMP  END PARALLEL DO
+#endif
+         return
+      end subroutine fillMtag
 
    end subroutine solver_init
 
@@ -2022,7 +2144,11 @@ contains
       !*******************************************************************************
       !*******************************************************************************
 
-      call this%init(sgg,eps0, mu0)
+#ifdef CompileWithMTLN
+      this%mtln_parsed =  mtln_parsed
+#endif
+
+      call this%init(sgg,eps0, mu0, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, sggMtag, SINPML_fullsize, fullsize, tag_numbers)
       ! call this%solver_run()
       ! call this%solver_end()
 
@@ -3467,98 +3593,6 @@ contains
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      subroutine fillMtag(sgg,sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b, tag_numbers)
-
-         !------------------------>
-         type (SGGFDTDINFO), intent(IN)    ::  sgg
-         type (bounds_t), intent( IN)  ::  b
-         INTEGER(KIND = IKINDMTAG), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT)     ::  sggMtag
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( IN   )     ::  sggMiHx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( IN   )     ::  sggMiHy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( IN   )     ::  sggMiHz
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( IN   )     ::  sggMiEx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( IN   )     ::  sggMiEy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( IN   )     ::  sggMiEz
-         type (taglist_t) :: tag_numbers
-         !------------------------> Variables locales
-         integer(kind = 4)  ::  i, j, k
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio1,medio2,medio3,medio4,medio5
-         logical  ::  mediois1,mediois2,mediois3,mediois4
-         integer, dimension(3) :: lbx, lby, lbz
-         lbx = lbound(tag_numbers%face%x)
-         lby = lbound(tag_numbers%face%y)   
-         lbz = lbound(tag_numbers%face%z)
-
-         mediois3=.true.; mediois4=.true.
-#ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
-#endif
-         Do k=1,b%sweepHx%NZ
-            Do j=1,b%sweepHx%NY
-               Do i=1,b%sweepHx%NX
-                  medio1 =sggMiEy(i,j,k)
-                  medio2 =sggMiEy(i,j,k+1)
-                  medio3 =sggMiEz(i,j,k)
-                  medio4 =sggMiEz(i,j+1,k)
-                  medio5 =sggMiHx(i,j,k)
-                  mediois1= (medio5==1).and.(medio1/=1).and.(medio2/=1).and.(medio3==1).and.(medio4==1)
-                  mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
-                  mediois3= .true. !.not.((medio5==1).and.(((sggMiHx(i-1,j,k)/=1).or.(sggMiHx(i+1,j,k)/=1)))) !esta condicion en realidad no detecta alabeos de una celda que siendo slots son acoples de un agujerito solo en el peor de los casos
-                  if ((mediois1.or.mediois2).and.(mediois3))  then
-                      !solo lo hace con celdas de vacio porque en particular el mismo medio sgbc con diferentes orientaciones tiene distintos indices de medio y lo activaria erroneamente si lo hago para todos los medios
-                      tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)=-ibset(iabs(tag_numbers%face%x(i+lbx(1)-1,j+lbx(2)-1,k+lbx(3)-1)),3) 
-                      !ojo no cambiar: interacciona con observation tags 141020 !151020 a efectos de mapvtk el signo importa
-                  endif
-               End do
-            End do
-         End do
-#ifdef CompileWithOpenMP
-!$OMP  END PARALLEL DO
-!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
-#endif
-         Do k=1,b%sweepHy%NZ
-            Do j=1,b%sweepHy%NY
-               Do i=1,b%sweepHy%NX
-                  medio1 =sggMiEz(i,j,k)
-                  medio2 =sggMiEz(i+1,j,k)
-                  medio3 =sggMiEx(i,j,k)
-                  medio4 =sggMiEx(i,j,k+1)
-                  medio5 =sggMiHy(i,j,k)
-                  mediois1= (medio5==1).and.(medio1/=1).and.(medio2/=1).and.(medio3==1).and.(medio4==1)
-                  mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
-                  mediois3= .true. !.not.((medio5==1).and.(((sggMiHy(i,j-1,k)/=1).or.(sggMiHy(i,j+1,k)/=1))))
-                  if ((mediois1.or.mediois2).and.(mediois3))  then
-                     tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)=-ibset(iabs(tag_numbers%face%y(i+lby(1)-1,j+lby(2)-1,k+lby(3)-1)),4) 
-                  endif
-               End do
-            End do
-         End do
-#ifdef CompileWithOpenMP
-!$OMP  END PARALLEL DO
-!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
-#endif
-         Do k=1,b%sweepHz%NZ
-            Do j=1,b%sweepHz%NY
-               Do i=1,b%sweepHz%NX
-                  medio1 =sggMiEx(i,j,k)
-                  medio2 =sggMiEx(i,j+1,k)
-                  medio3 =sggMiEy(i,j,k)
-                  medio4 =sggMiEy(i+1,j,k)
-                  medio5 =sggMiHz(i,j,k)
-                  mediois1= (medio5==1).and.(medio1/=1).and.(medio2/=1).and.(medio3==1).and.(medio4==1)
-                  mediois2= (medio5==1).and.(medio3/=1).and.(medio4/=1).and.(medio1==1).and.(medio2==1)
-                  mediois3= .true. !.not.((medio5==1).and.(((sggMiHz(i,j,k-1)/=1).or.(sggMiHz(i,j,k+1)/=1))))
-                  if ((mediois1.or.mediois2).and.(mediois3))  then
-                     tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)=-ibset(iabs(tag_numbers%face%z(i+lbz(1)-1,j+lbz(2)-1,k+lbz(3)-1)),5) 
-                  endif
-               End do
-            End do
-         End do
-#ifdef CompileWithOpenMP
-!$OMP  END PARALLEL DO
-#endif
-         return
-      end subroutine fillMtag
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
       
