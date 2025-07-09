@@ -651,11 +651,13 @@ module  FDETYPES
                  permitscaling,mtlnberenger,niapapostprocess, &
                  stochastic, verbose, dontwritevtk, &
                  use_mtln_wires, resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
-
-      ! REAL (kind=8) :: time_desdelanzamiento
-      REAL (kind=rkind) :: cfl, attfactorc,attfactorw, alphamaxpar, &
-                           alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol
-      real (kind=rkind_wires) :: factorradius,factordelta !maxSourceValue
+#ifdef CompileWithConformal
+      logical :: input_conformal_flag
+#endif
+      REAL (kind=8) :: time_desdelanzamiento
+      REAL (kind=RKIND) :: cfl, attfactorc,attfactorw, alphamaxpar, &
+                           alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue
+      real (kind=rkind_wires) :: factorradius,factordelta
       
       character (len=BUFSIZE) :: nEntradaRoot, inductance_model,wiresflavor, nresumeable2
       CHARACTER (LEN=BUFSIZE) :: opcionestotales, ficherohopf
