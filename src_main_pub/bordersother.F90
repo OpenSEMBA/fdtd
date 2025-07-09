@@ -81,7 +81,7 @@ contains
          if (layoutnumber == size-1) Hy( : , : ,C(iHy)%ZE+1)=-Hy( : , : ,C(iHy)%ZE)
       endif
       !
-      !Hz Down
+      !Hz Back
       if (sggBorder%IsBackPMC) then
          Hz(C(iHz)%XI-1, : , : )=-Hz(C(iHz)%XI, : , : )
       endif
