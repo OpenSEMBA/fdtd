@@ -115,6 +115,7 @@ contains
       type (conf_conflicts_t), pointer  :: conf_conflicts
 #endif
 
+      call sleep(5)
 
       call initEntrada(this%l) 
       newrotate=.false.       !!ojo tocar luego                     
@@ -971,17 +972,14 @@ contains
          this%finishedwithsuccess=.false.
 
          call solver%init_control(this%l,this%maxSourceValue, this%time_desdelanzamiento)
+#ifdef CompileWithMTLN
+         solver%mtln_parsed =  this%mtln_parsed
+#endif
 
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
-#ifdef CompileWithMTLN
-            CALL solver%launch_simulation (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,&
-            this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype, &
-            this%l%EpsMuTimeScale_input_parameters, this%mtln_parsed)
-#else
-               CALL solver%launch_simulation (this%sgg,this%sggMtag,this%tag_numbers,this%sggMiNo, this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,&
-               this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
-               this%l%EpsMuTimeScale_input_parameters)
-#endif
+            CALL solver%launch_simulation (this%sgg,this%sggMtag,this%tag_numbers,this%sggMiNo, this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,&
+                                           this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
+                                           this%l%EpsMuTimeScale_input_parameters)
             deallocate (this%sggMiEx, this%sggMiEy, this%sggMiEz,this%sggMiHx, this%sggMiHy, this%sggMiHz,this%sggMiNo,this%sggMtag)
          else
 #ifdef CompileWithMPI
