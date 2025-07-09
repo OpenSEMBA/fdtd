@@ -105,7 +105,7 @@ module Solver_mod
 
       type(bounds_t) :: bounds
 
-      logical :: parar
+      logical :: parar, everflushed = .false.
 
 #ifdef CompileWithMTLN
       type (mtln_t) :: mtln_parsed
@@ -114,7 +114,7 @@ module Solver_mod
    contains
       procedure :: init => solver_init
       procedure :: run => solver_run
-      ! procedure :: end => solver_end
+      procedure :: end => solver_end
       procedure :: init_control => solver_init_control
       procedure :: init_fields
       procedure :: init_distances
@@ -352,8 +352,6 @@ module Solver_mod
       this%parar=.false.
       call this%perform%reset()
       call this%d_perform%reset()
-      ! flushFF=.false.
-      ! everflushed=.false.
       call this%thereAre%reset()
       this%thereAre%MagneticMedia = sgg%thereareMagneticMedia
       this%thereAre%PMLMagneticMedia = sgg%therearePMLMagneticMedia
@@ -1702,7 +1700,7 @@ contains
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
 
-      logical :: still_planewave_time, call_timing, l_aux, everflushed, flushFF, somethingdone, newsomethingdone
+      logical :: still_planewave_time, call_timing, l_aux, flushFF, somethingdone, newsomethingdone
       integer :: i
       real (kind=rkind) :: pscale_alpha
       REAL (kind=rkind_tiempo) :: at
@@ -1720,7 +1718,6 @@ contains
 ! #endif  
 ! #endif
       still_planewave_time=.true. !inicializacion de la variable 
-      everflushed = .false.
       flushFF = .false.
       pscale_alpha=1.0 !se le entra con 1.0 
 
@@ -1752,7 +1749,7 @@ contains
          if (call_timing) then
             call Timing(sgg,this%bounds,this%n,this%n_info,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
             this%control%finaltimestep,this%perform,this%parar,.FALSE., &
-            Ex,Ey,Ez,everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
+            Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
             if (.not.this%parar) then !!! si es por parada se gestiona al final
 !!!!! si esta hecho lo flushea todo pero poniendo de acuerdo a todos los mpi
@@ -1784,7 +1781,7 @@ contains
                    call print11(this%control%layoutnumber,dubuf)
                    write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
                    call print11(this%control%layoutnumber,dubuf)
-                   call flush_and_save_resume(sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,eps0,mu0, everflushed,  &
+                   call flush_and_save_resume(sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,eps0,mu0, this%everflushed,  &
                    Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
 #ifdef CompileWithMPI
                    call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2604,173 +2601,186 @@ contains
 
    end subroutine solver_run
 
-!    subroutine solver_end(this)
-!       class(solver_t) :: this
-! #ifdef CompileWithMPI
-!       integer (kind=4) :: ndummy, ierr
-! #endif
+   subroutine solver_end(this, sgg, eps0, mu0, sggMtag, tagtype, finishedwithsuccess)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+      real(kind=rkind), intent(in) :: eps0,mu0
+      integer (KIND=IKINDMTAG), intent(in)   ::  &
+      sggMtag(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      type (tagtype_t), intent(in) :: tagtype
+      logical, intent(inout) :: finishedwithsuccess
       
+      real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+      real(kind=rkind), pointer, dimension (:) :: dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind_tiempo) :: at
+      integer (kind=4) :: ndummy
+      logical :: dummylog, somethingdone, newsomethingdone
+      character(len=bufsize) :: dubuf
 
+#ifdef CompileWithMPI
+      integer (kind=4) :: ierr
+#endif
+      Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz;
+      dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
-! #ifdef CompileWithProfiling
-!       call nvtxEndRange
-! #endif      
+#ifdef CompileWithProfiling
+      call nvtxEndRange
+#endif      
       
-! #ifdef CompileWithConformal
-!       if(input_conformal_flag)then
-!             call conformal_final_simulation  (conf_timeSteps, n)
-!       endif
-! #endif
+#ifdef CompileWithConformal
+      if(this%control%input_conformal_flag) call conformal_final_simulation  (conf_timeSteps, this%n)
+#endif
 
-! #ifdef CompileWithMPI
-!       call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!       if (n>this%control%finaltimestep) n=this%control%finaltimestep !readjust n since after finishing it is increased
-!       this%control%finaltimestep=n
-!       this%lastexecutedtime=sgg%tiempo(this%control%finaltimestep)
-!       !se llama con dummylog para no perder los flags de parada
-!       call Timing(sgg,b,        n,ndummy,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
-!             this%control%finaltimestep,this%d_perform,dummylog,.FALSE., &
-!             Ex,Ey,Ez,everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
+#ifdef CompileWithMPI
+      call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
 
-!       write(dubuf,*)'END FDTD time stepping. Beginning posprocessing at n= ',n
-!       call print11(this%control%layoutnumber,dubuf)
+      if (this%n>this%control%finaltimestep) this%n = this%control%finaltimestep !readjust n since after finishing it is increased
+      this%control%finaltimestep = this%n
+      this%lastexecutedtime=sgg%tiempo(this%control%finaltimestep)
+      !se llama con dummylog para no perder los flags de parada
+      call Timing(sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, this%control%size, & 
+                  this%control%maxCPUtime,this%control%flushsecondsFields, this%control%flushsecondsData, &
+                  this%initialtimestep, this%control%finaltimestep,this%d_perform,dummylog,.FALSE., &
+                  Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue, & 
+                  this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
-!       if ((this%control%flushsecondsFields/=0).or.this%perform%flushFIELDS) then
-!          write(dubuf,'(a,i9)')  ' INIT FINAL FLUSHING OF RESTARTING FIELDS n= ',n
-!          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-!          call flush_and_save_resume(sgg, b, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, n,eps0,mu0, everflushed,  &
-!          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
-!          write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',n
-!          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-!          call print11(this%control%layoutnumber,dubuf)
-!          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-!       endif
-! !
-!       if (this%thereAre%FarFields) then
-!           write(dubuf,'(a,i9)')  ' INIT FINAL OBSERVATION DATA FLUSHING and Near-to-Far field  n= ',n
-!       else
-!           write(dubuf,'(a,i9)')  ' INIT FINAL OBSERVATION DATA FLUSHING n= ',n
-!       endif
-!       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-!       call print11(this%control%layoutnumber,dubuf)
-!       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-!       if (this%thereAre%Observation) THEN
-!          !dump the remaining to disk
-!          call FlushObservationFiles(sgg,ini_save, n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,b,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
-!          call CloseObservationFiles(sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
-! #ifdef CompileWithMTLN      
-!          if (this%control%use_mtln_wires) then
-!             ! call GatherMPI_MTL()
-!             call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
-!          end if
-! #endif
-!       endif
+      write(dubuf,*)'END FDTD time stepping. Beginning posprocessing at n= ',this%n
+      call print11(this%control%layoutnumber,dubuf)
+
+      if ((this%control%flushsecondsFields/=0).or.this%perform%flushFIELDS) then
+         write(dubuf,'(a,i9)')  ' INIT FINAL FLUSHING OF RESTARTING FIELDS n= ',this%n
+         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+         call flush_and_save_resume(sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,eps0,mu0, this%everflushed,  &
+         Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+         write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',this%n
+         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+         call print11(this%control%layoutnumber,dubuf)
+         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+      endif
+
+      if (this%thereAre%FarFields) then
+          write(dubuf,'(a,i9)')  ' INIT FINAL OBSERVATION DATA FLUSHING and Near-to-Far field  n= ',this%n
+      else
+          write(dubuf,'(a,i9)')  ' INIT FINAL OBSERVATION DATA FLUSHING n= ',this%n
+      endif
+      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+      call print11(this%control%layoutnumber,dubuf)
+      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+      if (this%thereAre%Observation) THEN
+         call FlushObservationFiles(sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
+         call CloseObservationFiles(sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
+#ifdef CompileWithMTLN      
+         if (this%control%use_mtln_wires) then
+            call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
+         end if
+#endif
+      endif
       
-!       if (this%thereAre%FarFields) then
-!           write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',n
-!       else
-!          write(dubuf,'(a,i9)')    ' DONE FINAL OBSERVATION  DATA FLUSHED n= ',n
-!       endif
-!       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-!       call print11(this%control%layoutnumber,dubuf)
-!       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+      if (this%thereAre%FarFields) then
+         write(dubuf,'(a,i9)')   ' DONE FINAL OBSERVATION DATA FLUSHED and Near-to-Far field  n= ',this%n
+      else
+         write(dubuf,'(a,i9)')    ' DONE FINAL OBSERVATION  DATA FLUSHED n= ',this%n
+      endif
+      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+      call print11(this%control%layoutnumber,dubuf)
+      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
 
-! #ifdef CompileWithMPI
-!       call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
+#ifdef CompileWithMPI
+      call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
 
-!        write(dubuf,'(a,i9)') 'INIT FINAL Postprocessing frequency domain probes, if any, at n= ',n
-!        call print11(this%control%layoutnumber,dubuf)
-!        write(dubuf,*) SEPARADOR//separador//separador
-!        call print11(this%control%layoutnumber,dubuf)
-!        somethingdone=.false.
-!         at=n*sgg%dt
-!        if (this%thereAre%Observation) call PostProcess(this%control%layoutnumber,this%control%size,sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
-! #ifdef CompileWithMPI
-!        call MPI_Barrier(SUBCOMM_MPI,ierr)
-!        call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-!        somethingdone=newsomethingdone
-! #endif
-!       !!!!!!!!!!
-!       if (somethingdone) then
-!         write(dubuf,*) 'DONE FINAL Postprocessing frequency domain probes.'
-!         call print11(this%control%layoutnumber,dubuf)
-!         write(dubuf,*) SEPARADOR//separador//separador
-!         call print11(this%control%layoutnumber,dubuf)
-!       else
-!         write(dubuf,*) 'No FINAL frequency domain probes snapshots found to be postrocessed'
-!         call print11(this%control%layoutnumber,dubuf)
-!         write(dubuf,*) SEPARADOR//separador//separador
-!         call print11(this%control%layoutnumber,dubuf)
-!       endif
-! !
-!       write(dubuf,*)'INIT FINAL FLUSHING .vtk if any.'
-!       call print11(this%control%layoutnumber,dubuf)
-!       write(dubuf,*) SEPARADOR//separador//separador
-!       call print11(this%control%layoutnumber,dubuf)
-!       somethingdone=.false.
+      write(dubuf,'(a,i9)') 'INIT FINAL Postprocessing frequency domain probes, if any, at n= ',this%n
+      call print11(this%control%layoutnumber,dubuf)
+      write(dubuf,*) SEPARADOR//separador//separador
+      call print11(this%control%layoutnumber,dubuf)
+      somethingdone=.false.
+      at=this%n*sgg%dt
+      if (this%thereAre%Observation) call PostProcess(this%control%layoutnumber,this%control%size,sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
+#ifdef CompileWithMPI
+      call MPI_Barrier(SUBCOMM_MPI,ierr)
+      call MPI_AllReduce(somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+      somethingdone=newsomethingdone
+#endif
 
-!       if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%size,sgg,this%control%vtkindex,somethingdone,this%control%mpidir,tagtype,sggMtag,this%control%dontwritevtk)
+      if (somethingdone) then
+         write(dubuf,*) 'DONE FINAL Postprocessing frequency domain probes.'
+         call print11(this%control%layoutnumber,dubuf)
+         write(dubuf,*) SEPARADOR//separador//separador
+         call print11(this%control%layoutnumber,dubuf)
+      else
+         write(dubuf,*) 'No FINAL frequency domain probes snapshots found to be postrocessed'
+         call print11(this%control%layoutnumber,dubuf)
+         write(dubuf,*) SEPARADOR//separador//separador
+         call print11(this%control%layoutnumber,dubuf)
+      endif
 
-! #ifdef CompileWithMPI
-!       call MPI_Barrier(SUBCOMM_MPI,ierr)
-!       call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-!       somethingdone=newsomethingdone
-! #endif
-!       if (somethingdone) then
-!         write(dubuf,*) 'DONE FINAL FLUSHING .vtk snapshots'
-!         call print11(this%control%layoutnumber,dubuf)
-!         write(dubuf,*) SEPARADOR//separador//separador
-!         call print11(this%control%layoutnumber,dubuf)
-!       else
-!         write(dubuf,*) 'No FINAL .vtk snapshots found to be flushed'
-!         call print11(this%control%layoutnumber,dubuf)
-!         write(dubuf,*) SEPARADOR//separador//separador
-!         call print11(this%control%layoutnumber,dubuf)
-!       endif
-! !
-!       write(dubuf,*)'INIT FINAL FLUSHING .xdmf if any.'
-!       call print11(this%control%layoutnumber,dubuf)
-!       write(dubuf,*) SEPARADOR//separador//separador
-!       call print11(this%control%layoutnumber,dubuf)
-!       somethingdone=.false.
-!       if (this%thereAre%Observation) call createxdmf(sgg,this%control%layoutnumber,this%control%size,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)
-!       if (this%control%createh5bin) call createh5bintxt(sgg,this%control%layoutnumber,this%control%size) !lo deben llamar todos haya o no this%thereAre%observation
-!          !        call create_interpreted_mesh(sgg)
-! #ifdef CompileWithMPI
-!       call MPI_Barrier(SUBCOMM_MPI,ierr)
-!       call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-!       somethingdone=newsomethingdone
-! #endif
-!       if (somethingdone) then
-!             write(dubuf,*) 'DONE FINAL FLUSHING .xdmf snapshots'
-!             call print11(this%control%layoutnumber,dubuf)  
-!             write(dubuf,*) SEPARADOR//separador//separador
-!             call print11(this%control%layoutnumber,dubuf)
-!       else
-!             write(dubuf,*) 'No FINAL .xdmf snapshots found to be flushed'
-!             call print11(this%control%layoutnumber,dubuf)
-!             write(dubuf,*) SEPARADOR//separador//separador
-!             call print11(this%control%layoutnumber,dubuf)
-!       endif
+      write(dubuf,*)'INIT FINAL FLUSHING .vtk if any.'
+      call print11(this%control%layoutnumber,dubuf)
+      write(dubuf,*) SEPARADOR//separador//separador
+      call print11(this%control%layoutnumber,dubuf)
+      somethingdone=.false.
 
-! #ifdef CompileWithMPI
-!       call MPI_Barrier(SUBCOMM_MPI,ierr)
-! #endif
-!       call Timing(sgg,b,        n,ndummy,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
-!             this%control%finaltimestep,this%perform,this%parar,.FALSE., &
-!             Ex,Ey,Ez,everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
-!       write(dubuf,*)'END FINAL POSTPROCESSING at n= ',n
-!       call print11(this%control%layoutnumber,dubuf)
-!       finishedwithsuccess=.true.
+      if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%size,sgg,this%control%vtkindex,somethingdone,this%control%mpidir,tagtype,sggMtag,this%control%dontwritevtk)
 
-!       return
+#ifdef CompileWithMPI
+      call MPI_Barrier(SUBCOMM_MPI,ierr)
+      call MPI_AllReduce(somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+      somethingdone=newsomethingdone
+#endif
+      if (somethingdone) then
+        write(dubuf,*) 'DONE FINAL FLUSHING .vtk snapshots'
+        call print11(this%control%layoutnumber,dubuf)
+        write(dubuf,*) SEPARADOR//separador//separador
+        call print11(this%control%layoutnumber,dubuf)
+      else
+        write(dubuf,*) 'No FINAL .vtk snapshots found to be flushed'
+        call print11(this%control%layoutnumber,dubuf)
+        write(dubuf,*) SEPARADOR//separador//separador
+        call print11(this%control%layoutnumber,dubuf)
+      endif
 
-!    end subroutine
+      write(dubuf,*)'INIT FINAL FLUSHING .xdmf if any.'
+      call print11(this%control%layoutnumber,dubuf)
+      write(dubuf,*) SEPARADOR//separador//separador
+      call print11(this%control%layoutnumber,dubuf)
+      somethingdone=.false.
+      if (this%thereAre%Observation) call createxdmf(sgg,this%control%layoutnumber,this%control%size,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)
+      if (this%control%createh5bin) call createh5bintxt(sgg,this%control%layoutnumber,this%control%size) !lo deben llamar todos haya o no this%thereAre%observation
+!        call create_interpreted_mesh(sgg)
+#ifdef CompileWithMPI
+      call MPI_Barrier(SUBCOMM_MPI,ierr)
+      call MPI_AllReduce(somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+      somethingdone=newsomethingdone
+#endif
+      if (somethingdone) then
+         write(dubuf,*) 'DONE FINAL FLUSHING .xdmf snapshots'
+         call print11(this%control%layoutnumber,dubuf)  
+         write(dubuf,*) SEPARADOR//separador//separador
+         call print11(this%control%layoutnumber,dubuf)
+      else
+         write(dubuf,*) 'No FINAL .xdmf snapshots found to be flushed'
+         call print11(this%control%layoutnumber,dubuf)
+         write(dubuf,*) SEPARADOR//separador//separador
+         call print11(this%control%layoutnumber,dubuf)
+      endif
+
+#ifdef CompileWithMPI
+      call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+      call Timing(sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, &
+                  this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields, &
+                  this%control%flushsecondsData,this%initialtimestep, &
+                  this%control%finaltimestep,this%perform,this%parar,.FALSE., &
+                  Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales, & 
+                  this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
+      write(dubuf,*)'END FINAL POSTPROCESSING at n= ',this%n
+      call print11(this%control%layoutnumber,dubuf)
+      finishedwithsuccess=.true.
+
+      return
+
+   end subroutine
 
 #ifdef CompileWithMTLN
    subroutine launch_simulation(this, sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
@@ -2863,7 +2873,7 @@ contains
 
       call this%init(sgg,eps0, mu0, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, sggMtag, SINPML_fullsize, fullsize, tag_numbers)
       call this%run(sgg,eps0, mu0, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, sggMtag, SINPML_fullsize, fullsize, tag_numbers, tagtype)
-      ! call this%solver_end()
+      call this%end(sgg, eps0, mu0, sggMtag, tagtype, finishedwithsuccess)
 
 !       planewave_switched_off=.false.
 !       this%control%fatalerror=.false.
@@ -3459,7 +3469,6 @@ contains
 !          call CloseObservationFiles(sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
 ! #ifdef CompileWithMTLN      
 !          if (this%control%use_mtln_wires) then
-!             ! call GatherMPI_MTL()
 !             call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
 !          end if
 ! #endif
