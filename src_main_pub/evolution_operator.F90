@@ -233,31 +233,31 @@ contains
         integer, allocatable :: indexList(:)
         integer :: Nx, Ny, Nz
 
-        Nx = field%Nx
-        Ny = field%Ny
-        Nz = field%Nz
+        Nx = field%Nx + 2
+        Ny = field%Ny + 2
+        Nz = field%Nz + 2
 
-        do i = 1, Nx - 2
-            do j = 1, Ny - 2
-                do k = 1, Nz - 2
-                    m = (i * (Ny - 1) + j) * (Nz - 1) + k
+        do i = 1, Nx
+            do j = 1, Ny
+                do k = 1, Nz
+                    m = (i*Ny + j)*Nz  + k
 
                     select case (dirM1)
                         case ('i')
-                            m_shift1 = ((i - 1)*(Ny - 1) + j)*(Nz - 1) + k
+                            m_shift1 = ((i - 1)*Ny + j)*Nz + k
                         case ('j')
-                            m_shift1 = (i*(Ny - 1) + (j - 1))*(Nz - 1) + k
+                            m_shift1 = (i*Ny + (j - 1))*Nz + k
                         case ('k')
-                            m_shift1 = (i*(Ny - 1) + j)*(Nz - 1) + (k - 1)
+                            m_shift1 = (i*Ny + j)*Nz + (k - 1)
                     end select
 
                     select case (dirM2)
                         case ('i')
-                            m_shift2 = ((i - 1)*(Ny - 1) + j)*(Nz - 1) + k
+                            m_shift2 = ((i - 1)*Ny + j)*Nz + k
                         case ('j')
-                            m_shift2 = (i*(Ny - 1) + (j - 1))*(Nz - 1) + k
+                            m_shift2 = (i*Ny + (j - 1))*Nz + k
                         case ('k')
-                            m_shift2 = (i*(Ny - 1) + j)*(Nz - 1) + (k - 1)
+                            m_shift2 = (i*Ny + j)*Nz + (k - 1)
                     end select
 
                     allocate(indexList(5))
@@ -286,31 +286,31 @@ contains
         integer, allocatable :: temp(:), indexList(:)
         integer, allocatable :: aux1(:), aux2(:), aux3(:), aux4(:)
 
-        Nx = field%Nx
-        Ny = field%Ny
-        Nz = field%Nz
+        Nx = field%Nx + 2
+        Ny = field%Ny + 2
+        Nz = field%Nz + 2
 
-        do i = 0, Nx - 1
-            do j = 0, Ny - 1
-                do k = 0, Nz - 1
-                    m = (i*(Ny - 1) + j)*(Nz - 1) + k
+        do i = 1, Nx
+            do j = 1, Ny
+                do k = 1, Nz
+                    m = (i*Ny + j)*Nz + k
 
                     select case (dir1)
                         case ('i')
-                            m_shift1 = ((i + 1)*(Ny - 1) + j)*(Nz - 1) + k
+                            m_shift1 = ((i + 1)*Ny + j)*Nz + k
                         case ('j')
-                            m_shift1 = (i*(Ny - 1) + (j + 1))*(Nz - 1) + k
+                            m_shift1 = (i*Ny + (j + 1))*Nz + k
                         case ('k')
-                            m_shift1 = (i*(Ny - 1) + j)*(Nz - 1) + (k + 1)
+                            m_shift1 = (i*Ny + j)*Nz + (k + 1)
                     end select
 
                     select case (dir2)
                         case ('i')
-                            m_shift2 = ((i + 1)*(Ny - 1) + j)*(Nz - 1) + k
+                            m_shift2 = ((i + 1)*Ny + j)*Nz + k
                         case ('j')
-                            m_shift2 = (i*(Ny - 1) + (j + 1))*(Nz - 1) + k
+                            m_shift2 = (i*Ny + (j + 1))*Nz + k
                         case ('k')
-                            m_shift2 = (i*(Ny - 1) + j)*(Nz - 1) + (k + 1)
+                            m_shift2 = (i*Ny + j)*Nz + (k + 1)
                     end select
 
                     call RowIndexMap%get(key(shiftE1 + m), aux1)
@@ -373,21 +373,23 @@ contains
         integer :: shiftEx, shiftEy, shiftEz, shiftHx, shiftHy, shiftHz
 
         shiftEx = 0
-        shiftEy = b%Ex%Nx * b%Ex%Ny * b%Ex%Nz
-        shiftEz = shiftEy + b%Ey%Nx * b%Ey%Ny * b%Ey%Nz
-        shiftHx = shiftEz + b%Ez%Nx * b%Ez%Ny * b%Ez%Nz
-        shiftHy = shiftHx + b%Hx%Nx * b%Hx%Ny * b%Hx%Nz
-        shiftHz = shiftHy + b%Hy%Nx * b%Hy%Ny * b%Hy%Nz
+        shiftEy = b%sweepEx%Nx * b%sweepEx%Ny * b%sweepEx%Nz
+        shiftEz = shiftEy + b%sweepEy%Nx * b%sweepEy%Ny * b%sweepEy%Nz
+        shiftHx = shiftEz + b%sweepEz%Nx * b%sweepEz%Ny * b%sweepEz%Nz
+        shiftHy = shiftHx + b%sweepHx%Nx * b%sweepHx%Ny * b%sweepHx%Nz
+        shiftHz = shiftHy + b%sweepHy%Nx * b%sweepHy%Ny * b%sweepHy%Nz
 
-        call AddElectricFieldIndices(RowIndexMap, b%Ex, shiftEx, shiftHy, shiftHz, 'k', 'j')
-        call AddElectricFieldIndices(RowIndexMap, b%Ey, shiftEy, shiftHx, shiftHz, 'k', 'i')
-        call AddElectricFieldIndices(RowIndexMap, b%Ez, shiftEz, shiftHx, shiftHy, 'j', 'i')
+        call AddElectricFieldIndices(RowIndexMap, b%sweepEx, shiftEx, shiftHy, shiftHz, 'k', 'j')
+        call AddElectricFieldIndices(RowIndexMap, b%sweepEy, shiftEy, shiftHx, shiftHz, 'k', 'i')
+        call AddElectricFieldIndices(RowIndexMap, b%sweepEz, shiftEz, shiftHx, shiftHy, 'j', 'i')
 
         ! Before the magnetic fields, it is necessary to create the map of indices related to the boundary conditions
 
-        call AddMagneticFieldIndices(RowIndexMap, b%Hx, shiftHx, shiftEy, shiftEz, 'k', 'j')
-        call AddMagneticFieldIndices(RowIndexMap, b%Hy, shiftHy, shiftEx, shiftEz, 'k', 'i')
-        call AddMagneticFieldIndices(RowIndexMap, b%Hz, shiftHz, shiftEx, shiftEy, 'j', 'i')
+        call AddMagneticFieldIndices(RowIndexMap, b%sweepHx, shiftHx, shiftEy, shiftEz, 'k', 'j')
+        call AddMagneticFieldIndices(RowIndexMap, b%sweepHy, shiftHy, shiftEx, shiftEz, 'k', 'i')
+        call AddMagneticFieldIndices(RowIndexMap, b%sweepHz, shiftHz, shiftEx, shiftEy, 'j', 'i')
+
+        ! And also, it seems to be boundary conditions for the magnetic fields, so we need to add them as well
 
 
     end subroutine
