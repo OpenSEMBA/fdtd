@@ -1451,13 +1451,12 @@ contains
          endif
       end subroutine initializeObservation
 
+#ifdef CompileWithMPI
       subroutine initializeMPI()
          character(len=bufsize) :: dubuf      
          integer(kind=4) :: ierr
          if (this%control%size>1) then
-#ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
             write(dubuf,*) 'Init MPI MediaMatrix flush...';  call print11(this%control%layoutnumber,dubuf)
             call InitMPI(sgg%sweep,sgg%alloc)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1467,9 +1466,6 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call FlushMPI_E(sgg%alloc,this%control%layoutnumber,this%control%size, sggmiEx,sggmiEy,sggmiEz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
-#ifdef CompileWithMPI
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
             write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
          endif
 
@@ -1531,7 +1527,9 @@ contains
 #endif
       
       end subroutine initializeMPI
+#endif
 
+#ifdef CompileWithMPI
       subroutine flushMPIdata()
          integer(kind=4) :: ierr
          call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1558,6 +1556,7 @@ contains
          endif
 #endif
       end subroutine flushMPIdata
+#endif
 
       subroutine printSimulationStart()
          character(len=bufsize) :: dubuf
@@ -2481,6 +2480,7 @@ contains
          endif
       end subroutine
 
+#ifdef CompileWithMPI
       subroutine initMPIConformalProbes()
          integer (kind=4) :: group_conformalprobes_dummy, ierr
 !!!!sgg250424 niapa para que funcionen sondas conformal mpi
@@ -2498,7 +2498,7 @@ contains
          call MPI_BASRRIER(SUBCOMM_MPI, ierr)
          !!!no lo hago pero al salir deberia luego destruir el grupo call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)                   
       end subroutine initMPIConformalProbes
-
+#endif
    end subroutine solver_run
 
    subroutine solver_end(this, sgg, eps0, mu0, sggMtag, tagtype, finishedwithsuccess)
