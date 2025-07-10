@@ -115,6 +115,7 @@ PROGRAM SEMBA_FDTD_launcher
    
    INTEGER (KIND=4) ::  verdadero_mpidir
    logical :: newrotate !300124 tiramos con el rotador antiguo
+
    newrotate=.false.       !!ojo tocar luego                     
 #ifdef CompileWithSMBJSON
    newrotate=.true.
@@ -319,7 +320,7 @@ PROGRAM SEMBA_FDTD_launcher
    call print_credits(l)
 
 #ifdef CompileWithMPI
-   call initialize_MPI_process(l%filefde)
+   call initialize_MPI_process(l%filefde,l%extension)
 #else
    allocate (NFDE_FILE)
 #endif
@@ -972,8 +973,8 @@ contains
 !!!!!!!!!!!!!!!!!!
 
 #ifdef CompileWithMPI
-subroutine initialize_MPI_process(filename)
-   character(LEN=BUFSIZE), intent(in) :: filename
+subroutine initialize_MPI_process(filename, extension)
+   character(LEN=BUFSIZE), intent(in) :: filename, extension
    integer (kind=4) :: mpi_t_linea_t,longitud4
    integer(KIND=8) :: rawInfoBuffer, numeroLineasFichero, i8, longitud8
    TYPE (t_NFDE_FILE), POINTER :: rawFileInfo
@@ -986,7 +987,7 @@ subroutine initialize_MPI_process(filename)
 #ifdef CompilePrivateVersion
         NFDE_FILE => cargar_NFDE_FILE (filename)
 #else
-        call carga_raw_info(rawFileInfo, filename)
+        call carga_raw_info(rawFileInfo, filename, extension)
         NFDE_FILE => rawFileInfo
 #endif
    else
@@ -1099,8 +1100,89 @@ subroutine data_loader(filename, parsedProblem)
    return
 end subroutine data_loader
 
-subroutine carga_raw_info (rawFileInfo, filename)
-      CHARACTER (LEN=*), INTENT (IN) :: filename
+function countLinesInJSONOneLiner(filename, unit) result(res)
+   CHARACTER (LEN=*), INTENT (IN) :: filename
+   INTEGER (KIND=4), intent(in) :: unit
+   integer (kind=4) :: res
+   CHARACTER (LEN=BUFSIZE) :: l_aux
+   integer :: size_read, pos, d, io
+   res = 0
+   OPEN (UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
+   DO
+      READ (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
+      if (size_read == 0) exit
+      pos = 0
+      do
+         d = scan(l_aux(pos+1:),'}')
+         pos = pos + d
+         if (d == 0) exit
+         res = res + 1
+      end do
+   END DO
+   CLOSE (unit)
+
+end function
+
+subroutine readLines(rInfo, filename, unit)
+   TYPE (t_NFDE_FILE), POINTER :: rInfo
+   CHARACTER (LEN=*), INTENT (IN) :: filename
+   INTEGER (KIND=4), intent(in) :: unit
+
+   TYPE (t_linea), POINTER :: linea
+   CHARACTER (LEN=BUFSIZE) :: l_aux
+   character(len=BUFSIZE) :: buffer
+
+   ALLOCATE (rInfo%lineas(rInfo%numero))
+   rInfo%numero = 0
+   OPEN (UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
+   DO
+      READ (unit, '(A)', end=2010) l_aux
+      IF (len_trim (adjustl(l_aux))>=BUFSIZE) then
+         WRITE (buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
+         call warnerrreport(buffer,.TRUE.) !ABORTA
+      endif
+      rInfo%numero = rInfo%numero + 1
+      linea => rInfo%lineas (rInfo%numero)
+      linea%dato = adjustl(l_aux)
+      linea%LEN=len_trim (linea%dato)
+   END DO
+2010   CLOSE (unit)
+
+end subroutine
+
+subroutine readLinesFromOneLiner(rInfo, filename, unit)
+   TYPE (t_NFDE_FILE), POINTER :: rInfo
+   CHARACTER (LEN=*), INTENT (IN) :: filename
+   INTEGER (KIND=4), intent(in) :: unit
+
+   integer (kind=4) :: io, size_read, pos, d
+   TYPE (t_linea), POINTER :: linea
+   CHARACTER (LEN=BUFSIZE) :: l_aux
+   character(len=BUFSIZE) :: buffer
+
+   ALLOCATE (rInfo%lineas(rInfo%numero))
+   rInfo%numero = 0
+   OPEN (UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
+   DO
+      READ (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
+      if (size_read == 0) exit
+      pos = 0
+      do
+         d = scan(l_aux(pos+1:),'}')
+         pos = pos + d
+         if (d == 0) exit
+         rInfo%numero = rInfo%numero + 1
+         linea => rInfo%lineas (rInfo%numero)
+         linea%dato = adjustl(l_aux)
+         linea%LEN=len_trim (linea%dato)
+      end do
+   END DO
+   CLOSE (unit)
+
+end subroutine
+
+subroutine carga_raw_info (rawFileInfo, filename, extension)
+      CHARACTER (LEN=*), INTENT (IN) :: filename, extension
       TYPE (t_NFDE_FILE), POINTER :: rawFileInfo
       
       TYPE (t_linea), POINTER :: linea
@@ -1110,35 +1192,28 @@ subroutine carga_raw_info (rawFileInfo, filename)
       INTEGER (KIND=4) :: i,tamanio,i0,ascii,offset,ascii_menos1,j,k
       Character (Len=:), Allocatable :: fichero
       INTEGER (KIND=4), PARAMETER :: UNIT_EF = 10
+
+      integer (kind=4) :: prelines = 0
       ALLOCATE (rawFileInfo)
       rawFileInfo%numero = 0
       rawFileInfo%targ = 1
 
+      !precount
       OPEN (UNIT=UNIT_EF, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
       DO
-         READ (UNIT_EF, '(A)', end=1010) l_aux
-         rawFileInfo%numero = rawFileInfo%numero + 1
-         IF (len_trim (adjustl(l_aux))>=BUFSIZE) then
-              WRITE (buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
-              call warnerrreport(buffer,.TRUE.) !ABORTA
-         endif
+         READ (UNIT_EF, '(A)', iostat=io) l_aux
+         if (io/=0) exit
+         prelines = prelines + 1
       END DO
-1010   CLOSE (UNIT_EF)
-      ALLOCATE (rawFileInfo%lineas(rawFileInfo%numero))
-      rawFileInfo%numero = 0
-      OPEN (UNIT=UNIT_EF, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
-      DO
-         READ (UNIT_EF, '(A)', end=2010) l_aux
-         IF (len_trim (adjustl(l_aux))>=BUFSIZE) then
-              WRITE (buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
-              call warnerrreport(buffer,.TRUE.) !ABORTA
-         endif
-         rawFileInfo%numero = rawFileInfo%numero + 1
-         linea => rawFileInfo%lineas (rawFileInfo%numero)
-         linea%dato = adjustl(l_aux)
-         linea%LEN=len_trim (linea%dato)
-      END DO
-2010   CLOSE (UNIT_EF)
+      CLOSE (UNIT_EF)
+
+      if (prelines == 1 .and. trim(adjustl(extension))=='.json') then
+         rawFileInfo%numero = countLinesInJSONOneLiner(filename, UNIT_EF)      
+         call readLinesFromOneLiner(rawFileInfo, filename, UNIT_EF)
+      else 
+         rawFileInfo%numero = prelines
+         call readLines(rawFileInfo, filename, UNIT_EF)
+      endif
 
       do k=1,rawFileInfo%numero
           linea => rawFileInfo%lineas (k)
