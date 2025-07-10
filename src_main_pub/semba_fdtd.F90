@@ -1111,13 +1111,14 @@ function countLinesInJSONOneLiner(filename, unit) result(res)
    DO
       READ (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
       if (size_read == 0) exit
-      pos = 0
-      do
-         d = scan(l_aux(pos+1:),'}')
-         pos = pos + d
-         if (d == 0) exit
-         res = res + 1
-      end do
+
+      ! pos = 0
+      ! do
+      !    d = scan(l_aux(pos+1:),'}')
+      !    pos = pos + d
+      !    if (d == 0) exit
+      res = res + 1
+      ! end do
    END DO
    CLOSE (unit)
 
@@ -1166,16 +1167,16 @@ subroutine readLinesFromOneLiner(rInfo, filename, unit)
    DO
       READ (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
       if (size_read == 0) exit
-      pos = 0
-      do
-         d = scan(l_aux(pos+1:),'}')
-         pos = pos + d
-         if (d == 0) exit
-         rInfo%numero = rInfo%numero + 1
-         linea => rInfo%lineas (rInfo%numero)
-         linea%dato = adjustl(l_aux)
-         linea%LEN=len_trim (linea%dato)
-      end do
+      ! pos = 0
+      ! do
+      !    d = scan(l_aux(pos+1:),'}')
+      !    pos = pos + d
+      !    if (d == 0) exit
+      rInfo%numero = rInfo%numero + 1
+      linea => rInfo%lineas (rInfo%numero)
+      linea%dato = adjustl(l_aux)
+      linea%LEN=len_trim (linea%dato)
+      ! end do
    END DO
    CLOSE (unit)
 
@@ -1193,7 +1194,7 @@ subroutine carga_raw_info (rawFileInfo, filename, extension)
       Character (Len=:), Allocatable :: fichero
       INTEGER (KIND=4), PARAMETER :: UNIT_EF = 10
 
-      integer (kind=4) :: prelines = 0
+      integer (kind=4) :: prelines = 0, io
       ALLOCATE (rawFileInfo)
       rawFileInfo%numero = 0
       rawFileInfo%targ = 1
