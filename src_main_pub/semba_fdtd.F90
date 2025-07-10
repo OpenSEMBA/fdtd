@@ -1111,14 +1111,7 @@ function countLinesInJSONOneLiner(filename, unit) result(res)
    DO
       READ (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
       if (size_read == 0) exit
-
-      ! pos = 0
-      ! do
-      !    d = scan(l_aux(pos+1:),'}')
-      !    pos = pos + d
-      !    if (d == 0) exit
       res = res + 1
-      ! end do
    END DO
    CLOSE (unit)
 
@@ -1151,7 +1144,7 @@ subroutine readLines(rInfo, filename, unit)
 
 end subroutine
 
-subroutine readLinesFromOneLiner(rInfo, filename, unit)
+subroutine readLinesFromJSONOneLiner(rInfo, filename, unit)
    TYPE (t_NFDE_FILE), POINTER :: rInfo
    CHARACTER (LEN=*), INTENT (IN) :: filename
    INTEGER (KIND=4), intent(in) :: unit
@@ -1167,16 +1160,10 @@ subroutine readLinesFromOneLiner(rInfo, filename, unit)
    DO
       READ (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
       if (size_read == 0) exit
-      ! pos = 0
-      ! do
-      !    d = scan(l_aux(pos+1:),'}')
-      !    pos = pos + d
-      !    if (d == 0) exit
       rInfo%numero = rInfo%numero + 1
       linea => rInfo%lineas (rInfo%numero)
       linea%dato = adjustl(l_aux)
       linea%LEN=len_trim (linea%dato)
-      ! end do
    END DO
    CLOSE (unit)
 
@@ -1210,7 +1197,7 @@ subroutine carga_raw_info (rawFileInfo, filename, extension)
 
       if (prelines == 1 .and. trim(adjustl(extension))=='.json') then
          rawFileInfo%numero = countLinesInJSONOneLiner(filename, UNIT_EF)      
-         call readLinesFromOneLiner(rawFileInfo, filename, UNIT_EF)
+         call readLinesFromJSONOneLiner(rawFileInfo, filename, UNIT_EF)
       else 
          rawFileInfo%numero = prelines
          call readLines(rawFileInfo, filename, UNIT_EF)
