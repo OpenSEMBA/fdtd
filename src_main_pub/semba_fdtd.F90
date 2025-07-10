@@ -115,8 +115,6 @@ contains
       type (conf_conflicts_t), pointer  :: conf_conflicts
 #endif
 
-      call sleep(5)
-
       call initEntrada(this%l) 
       newrotate=.false.       !!ojo tocar luego                     
    !!200918 !!!si se lanza con -pscal se overridea esto
@@ -130,13 +128,13 @@ contains
       CALL InitGeneralMPI (this%l%layoutnumber, this%l%size)
       SUBCOMM_MPI=MPI_COMM_WORLD !default el this%l%stochastic es el global a menos que luego se divida
 #else
-         this%l%size = 1
-         this%l%layoutnumber = 0
+      this%l%size = 1
+      this%l%layoutnumber = 0
 #endif
-         call setglobal(this%l%layoutnumber,this%l%size) !para crear variables globales con info MPI
+      call setglobal(this%l%layoutnumber,this%l%size) !para crear variables globales con info MPI
          
-         WRITE (this%whoamishort, '(i5)') this%l%layoutnumber + 1
-         WRITE (this%whoami, '(a,i5,a,i5,a)') '(', this%l%layoutnumber + 1, '/', this%l%size, ') '
+      WRITE (this%whoamishort, '(i5)') this%l%layoutnumber + 1
+      WRITE (this%whoami, '(a,i5,a,i5,a)') '(', this%l%layoutnumber + 1, '/', this%l%size, ') '
          
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
@@ -268,14 +266,14 @@ contains
 #endif
       CALL get_secnds (this%l%time_out2)
       
-      if (present(input_flags)) then 
-         this%l%read_command_line = .false.
-         this%l%chain2 = input_flags
-         this%l%length = len(input_flags)
-      else
-         ! mira el command_line y el fichero launch 251022
-         CALL get_command (this%l%chain2, this%l%length, status)
-      end if
+   
+      ! if (present(input_flags)) then 
+      !    this%l%read_command_line = .false.
+      !    this%l%chain2 = input_flags
+      !    this%l%length = len(input_flags)
+      ! else
+      ! mira el command_line y el fichero launch 251022
+      CALL get_command (this%l%chain2, this%l%length, status)
       IF (status /= 0) then
          CALL stoponerror (this%l%layoutnumber, this%l%size, 'General error',.true.); goto 652
       endif
