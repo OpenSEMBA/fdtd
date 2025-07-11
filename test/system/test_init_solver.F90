@@ -4,10 +4,8 @@ integer function test_init_solver() bind (C) result(err)
    implicit none
    type(semba_fdtd_t) :: semba
    type(solver_t) :: solver
-   character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981.fdtd.json'
 
    err = 0
-
    call chdir("./test/system/")
 
    call semba%init("-i init_solver.fdtd.json")
