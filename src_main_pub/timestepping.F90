@@ -296,7 +296,7 @@ module Solver_mod
 
    subroutine launch_simulation(this, sgg,sggMtag,tag_numbers,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, &
                                 SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
-                                EpsMuTimeScale_input_parameters)
+                                input, maxSourceValue, time_desdelanzamiento)
       class(solver_t) :: this
       type (SGGFDTDINFO), intent(INOUT)   ::  sgg
       integer (KIND=IKINDMTAG)   ::  &
@@ -314,8 +314,11 @@ module Solver_mod
       logical :: finishedwithsuccess
       REAL (KIND=RKIND), intent(inout) :: eps0,mu0
       type (tagtype_t) :: tagtype
-      type (EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
+      type(entrada_t), intent(in) :: input
+      real (kind=RKIND), intent(in) :: maxSourceValue
+      REAL (kind=8), intent(in) :: time_desdelanzamiento
 
+      call this%init_control(input,maxSourceValue, time_desdelanzamiento)
       call this%init(sgg,eps0, mu0, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, sggMtag, SINPML_fullsize, fullsize, tag_numbers)
       call this%run(sgg,eps0, mu0, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, sggMtag, SINPML_fullsize, fullsize, tag_numbers, tagtype)
       call this%end(sgg, eps0, mu0, sggMtag, tagtype, finishedwithsuccess)
