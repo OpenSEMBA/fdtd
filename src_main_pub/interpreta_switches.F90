@@ -2108,6 +2108,7 @@ CONTAINS
       l%stableradholland=.false. !solo actua si se invoca con l%wiresflavor holland 
       l%fieldtotl=.false.
       l%experimentalVideal=.false.
+      l%thereare_stoch=.false.
       l%forceresampled=.false.
       l%factorradius=1.0e+30 !para evitar division por cero 120123
       l%factordelta=1.0e+30 !para evitar division por cero 120123
