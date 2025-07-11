@@ -20,4 +20,6 @@ integer function test_init_solver() bind (C) result(err)
    call solver%step(semba%sgg, semba%eps0, semba%mu0, semba%SINPML_FULLSIZE, semba%tag_numbers)
    if (solver%get_field_value(iHy, 2,2,2) == 0) err = err + 1
    if (solver%get_field_value(iHz, 2,2,2) == 0) err = err + 1
+
+   call chdir("../../")
 end function
