@@ -2092,6 +2092,10 @@ contains
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
 
+#ifdef CompileWithMPI
+      integer(kind=4) :: ierr
+#endif
+
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
       
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
@@ -2103,9 +2107,6 @@ contains
 
 
 
-#ifdef CompileWithMPI
-      integer(kind=4) :: ierr
-#endif
 
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       IF (this%thereAre%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)

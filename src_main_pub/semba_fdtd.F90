@@ -94,7 +94,7 @@ contains
       character (LEN=BUFSIZE) :: filename_h5bin ! File name
 
       integer (KIND=4) :: myunit,jmed
-      integer (kind=4) :: finaltimestepantesdecorregir,NlaunEWfinaltimestep,thefileno
+      integer (kind=4) :: finaltimestepantesdecorregir,NEWfinaltimestep,thefileno
       integer (kind=4) :: statuse
       integer (KIND=4) ::  status, i, field
       INTEGER (KIND=4) ::  verdadero_mpidir
