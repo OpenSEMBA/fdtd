@@ -94,7 +94,7 @@ contains
       character (LEN=BUFSIZE) :: filename_h5bin ! File name
 
       integer (KIND=4) :: myunit,jmed
-      integer (kind=4) :: finaltimestepantesdecorregir,NEWfinaltimestep,thefileno
+      integer (kind=4) :: finaltimestepantesdecorregir,NlaunEWfinaltimestep,thefileno
       integer (kind=4) :: statuse
       integer (KIND=4) ::  status, i, field
       INTEGER (KIND=4) ::  verdadero_mpidir
@@ -114,7 +114,7 @@ contains
 #ifdef CompileWithConformal
       type (conf_conflicts_t), pointer  :: conf_conflicts
 #endif
-
+      ! call sleep(5)
       call initEntrada(this%l) 
       newrotate=.false.       !!ojo tocar luego                     
    !!200918 !!!si se lanza con -pscal se overridea esto
@@ -267,16 +267,17 @@ contains
       CALL get_secnds (this%l%time_out2)
       
    
-      ! if (present(input_flags)) then 
-      !    this%l%read_command_line = .false.
-      !    this%l%chain2 = input_flags
-      !    this%l%length = len(input_flags)
-      ! else
+      if (present(input_flags)) then 
+         this%l%read_command_line = .false.
+         this%l%chain2 = input_flags
+         this%l%length = len(input_flags)
+      else
       ! mira el command_line y el fichero launch 251022
-      CALL get_command (this%l%chain2, this%l%length, status)
-      IF (status /= 0) then
-         CALL stoponerror (this%l%layoutnumber, this%l%size, 'General error',.true.); goto 652
-      endif
+         CALL get_command (this%l%chain2, this%l%length, status)
+         IF (status /= 0) then
+            CALL stoponerror (this%l%layoutnumber, this%l%size, 'General error',.true.); goto 652
+         endif
+      end if
 
       this%l%chain2=trim(adjustl(this%l%chain2))
       !concatena con lo que haya en launch
@@ -324,7 +325,7 @@ contains
 
       this%sgg%extraswitches=parser%switches
    !!!da preferencia a los switches por linea de comando
-      CALL getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse)
+      CALL getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse, getBinaryPath())
 
       this%l%chain2=trim(adjustl(this%l%chain2))
       chaindummy=trim(adjustl(chaindummy))
@@ -1180,7 +1181,7 @@ contains
 #ifdef CompileWithMPI
       CALL MPI_FINALIZE (this%l%ierr)
 #endif
-      STOP
+      ! STOP
       !
 
    end subroutine semba_end
