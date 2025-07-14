@@ -2,12 +2,12 @@ module mtl_mod
 
     ! use NFDETypes
     use utils_mod
-    use dispersive_mod
-    use mtln_types_mod, only: external_field_segment_t
+    use dispersive_mod, dispersive_lumped_t => lumped_t
+    use mtln_types_mod, only: segment_t, multipolar_expansion_t
+    use multipolar_expansion_mod, only: getCellCapacitanceOnBox, getCellInductanceOnBox
 #ifdef CompileWithMPI
-    use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
+    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
 #endif
-
     implicit none
 #ifdef CompileWithMPI
 
@@ -35,16 +35,14 @@ module mtl_mod
         real, allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
         real, allocatable, dimension(:) :: step_size
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
-        type(lumped_t) :: lumped_elements
+        type(dispersive_lumped_t) :: lumped_elements
         real :: time = 0.0, dt = 0.0
 
         character (len=:), allocatable :: parent_name
         integer :: conductor_in_parent
         type(transfer_impedance_per_meter_t) :: transfer_impedance
         type(transfer_impedance_per_meter_t) :: initial_connector_transfer_impedance, end_connector_transfer_impedance
-        type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
-
-        logical :: isPassthrough = .false.
+        type(segment_t), dimension(:), allocatable :: segments
 
 #ifdef CompileWithMPI
         type(comm_t) :: mpi_comm
@@ -54,10 +52,11 @@ module mtl_mod
 
     contains
         procedure :: setTimeStep
-        procedure :: initLCHomogeneous
-        procedure :: initLCInhomogeneous
-        procedure :: initRGHomogeneous
-        procedure :: initRGInhomogeneous
+        procedure :: checkTimeStep
+        procedure :: allocatePULMatrices
+        procedure :: computeLCParameters
+        procedure :: initLC
+        procedure :: initRG
         procedure :: initDirections
         procedure :: getMaxTimeStep
         procedure :: getPhaseVelocities
@@ -75,27 +74,25 @@ module mtl_mod
     end type mtl_t
 
     interface mtl_t
-        module procedure mtlHomogeneous
-        module procedure mtlInhomogeneous
+        module procedure mtl_shielded
+        module procedure mtl_unshielded
     end interface
 
-    type, public :: mtl_array_t
+    type, public :: transmission_line_level_t
         type(mtl_t), dimension(:), allocatable :: lines
     end type
 
-    type, public :: line_bundle_t
-        type(mtl_array_t), dimension(:), allocatable :: levels
+    type, public :: transmission_line_bundle_t
+        type(transmission_line_level_t), dimension(:), allocatable :: levels
     end type
 
 contains
 
 
-    subroutine initLCHomogeneous(this, lpul, cpul)
+    subroutine initLC(this, lpul, cpul)
         class(mtl_t) :: this
         real, intent(in), dimension(:,:) :: lpul, cpul
         integer :: i
-        allocate(this%lpul(size(this%step_size, 1), size(lpul, 1), size(lpul, 1)))
-        allocate(this%cpul(size(this%step_size, 1) + 1, size(cpul,1), size(cpul, 1)))
         do i = 1, size(this%lpul, 1)
             this%lpul(i,:,:) = lpul(:,:)
         enddo
@@ -104,41 +101,32 @@ contains
         enddo
     end subroutine
 
-    subroutine initLCInhomogeneous(this, lpul, cpul)
-        class(mtl_t) :: this
-        real, intent(in), dimension(:, :, :) :: lpul, cpul
-        ! integer :: i
-        allocate(this%lpul(size(this%step_size, 1), size(lpul, 2), size(lpul, 2)))
-        allocate(this%cpul(size(this%step_size, 1) + 1, size(cpul,2), size(cpul, 2)))
-        this%lpul(:,:,:) = lpul(:,:,:)
-        this%cpul(:,:,:) = cpul(:,:,:)
-    end subroutine
-
-    function mtlHomogeneous(lpul, cpul, rpul, gpul, &
-                            step_size, name, &
+    function mtl_shielded(lpul, cpul, rpul, gpul, &
+                            step_size, name, segments, &
                             dt, parent_name, conductor_in_parent, &
                             transfer_impedance, &
-                            external_field_segments, &
-                            isPassthrough, layer_indices, bundle_in_layer, alloc_z) result(res)
-        type(mtl_t) :: res
+                            layer_indices, bundle_in_layer, alloc_z) result(res)
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
         character(len=*), intent(in) :: name
+        type(segment_t), dimension(:), allocatable, intent(in) :: segments
+        real, intent(in) :: dt
+        character(len=*), intent(in) :: parent_name
+        integer, intent(in) :: conductor_in_parent
+        type(transfer_impedance_per_meter_t), intent(in) :: transfer_impedance
 
-        real, intent(in), optional :: dt
-        real :: max_dt
-        character(len=*), intent(in), optional :: parent_name
-        integer, intent(in), optional :: conductor_in_parent
-        type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
-        type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
-        logical, optional :: isPassthrough
         integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
         integer(kind=4), dimension (2), intent(in), optional :: alloc_z
+        
+        type(mtl_t) :: res
+
+        real :: max_dt
+
 #ifdef CompileWithMPI
         integer (kind=4) :: sizeof, ierr
         if (present(layer_indices)) then 
-            call res%initStepSizeAndFieldSegments(step_size, external_field_segments, layer_indices)
+            call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
             call res%initCommunicators(alloc_z)
             res%layer_indices = layer_indices
             res%bundle_in_layer = bundle_in_layer
@@ -146,101 +134,129 @@ contains
             res%step_size =  step_size
             allocate(res%layer_indices(0,0))
             allocate(res%mpi_comm%comms(0))
-            res%external_field_segments = external_field_segments
+            res%segments = segments
         end if
 #else
         res%step_size =  step_size
-        res%external_field_segments = external_field_segments
+        res%segments = segments
 #endif
 
+        call checkPULDimensions(lpul, cpul, rpul, gpul)
         res%name = name
-        call checkPULDimensionsHomogeneous(lpul, cpul, rpul, gpul)
         res%number_of_conductors = size(lpul, 1)
-
         call res%initDirections()
-        call res%initLCHomogeneous(lpul, cpul)
-        call res%initRGHomogeneous(rpul, gpul)
-
-        if (present(dt)) then 
-            if (lpul(1,1) /= 0.0) then 
-                max_dt = res%getMaxTimeStep() 
-                if (dt > max_dt) then
-                    res%dt = max_dt
-                    write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
-                else 
-                    res%dt = dt
-                end if
-            else 
-                res%dt = dt
-            end if
-        else
-            if (lpul(1,1) /= 0.0) then 
-                res%dt = res%getMaxTimeStep() 
-            end if
-        end if
-
-     
-        res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
-        if (present(parent_name)) res%parent_name = parent_name
-        if (present(conductor_in_parent)) res%conductor_in_parent = conductor_in_parent
-        if (present(transfer_impedance)) res%transfer_impedance = transfer_impedance
-        if (present(isPassthrough)) res%isPassthrough = isPassthrough
+        call res%allocatePULMatrices()
+        call res%initLC(lpul, cpul)
+        call res%initRG(rpul, gpul)
+        call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
+    
+        res%parent_name = parent_name
+        res%conductor_in_parent = conductor_in_parent
+        res%transfer_impedance = transfer_impedance
+        res%lumped_elements = dispersive_lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
 
     end function
 
-    function mtlInhomogeneous(lpul, cpul, rpul, gpul, &
-                            step_size, name, &
-                            dt, parent_name, conductor_in_parent, &
-                            transfer_impedance, &
-                            external_field_segments, &
-                            isPassthrough) result(res)
-        type(mtl_t) :: res
-        real, intent(in), dimension(:,:,:) :: lpul, cpul, rpul, gpul
+    function mtl_unshielded(lpul, cpul, rpul, gpul, &
+                            step_size, name, segments, &
+                            dt, multipolar_expansion, &
+                            layer_indices, bundle_in_layer, alloc_z) result(res)
+        real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
         character(len=*), intent(in) :: name
-        real, intent(in), optional :: dt
+        type(segment_t), dimension(:), allocatable, intent(in) :: segments
+        real, intent(in) :: dt
+        type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
+
+        integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
+        logical, optional :: bundle_in_layer
+        integer(kind=4), dimension (2), intent(in), optional :: alloc_z
+        
+        type(mtl_t) :: res
         real :: max_dt
-        character(len=*), intent(in), optional :: parent_name
-        integer, intent(in), optional :: conductor_in_parent
-        type(transfer_impedance_per_meter_t), intent(in), optional :: transfer_impedance
-        type(external_field_segment_t), intent(in), dimension(:), optional :: external_field_segments
-        logical, optional :: isPassthrough
+#ifdef CompileWithMPI
+        integer (kind=4) :: sizeof, ierr
+        if (present(layer_indices)) then 
+            call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
+            call res%initCommunicators(alloc_z)
+            res%layer_indices = layer_indices
+            res%bundle_in_layer = bundle_in_layer
+        else
+            res%step_size =  step_size
+            allocate(res%layer_indices(0,0))
+            allocate(res%mpi_comm%comms(0))
+            res%segments = segments
+        end if
+#else
+        res%step_size =  step_size
+        res%segments = segments
+#endif
 
+        call checkPULDimensions(lpul, cpul, rpul, gpul)
         res%name = name
-        res%step_size = step_size
-        call checkPULDimensionsInhomogeneous(lpul, cpul, rpul, gpul)
-        res%number_of_conductors = size(lpul, 2)
-
+        res%number_of_conductors = size(lpul, 1)
         call res%initDirections()
-        call res%initLCInhomogeneous(lpul, cpul)
-        call res%initRGInhomogeneous(rpul, gpul)
+        call res%allocatePULMatrices()
+        if (size(multipolar_expansion) /= 0) then 
+            call res%computeLCParameters(multipolar_expansion(1))
+        else
+            call res%initLC(lpul, cpul)
+        end if
+        call res%initRG(rpul, gpul)
+        call res%checkTimeStep(getMax = (lpul(1,1) /= 0.0), dt = dt)
+        res%lumped_elements = dispersive_lumped_t(res%number_of_conductors, 0, size(res%step_size), res%dt)
+    end function
 
+    subroutine checkTimeStep(this, getMax, dt)
+        class(mtl_t) :: this
+        logical, intent(in) :: getMax
+        real, intent(in), optional :: dt
+        
+        real :: max_dt
         if (present(dt)) then 
-            if (lpul(1,1,1) /= 0.0) then 
-                max_dt = res%getMaxTimeStep() 
-                if (dt > max_dt) then
-                    res%dt = max_dt
+            if (getMax) then 
+                max_dt = this%getMaxTimeStep() 
+                if (dt > max_dt .and. max_dt > 0) then
+                    this%dt = max_dt
                     write(*,*) 'dt larger than maximum permitted. Changed to dt = ', max_dt 
                 else 
-                    res%dt = dt
+                    this%dt = dt
                 end if
             else 
-                res%dt = dt
+                this%dt = dt
             end if
         else
-            if (lpul(1,1,1) /= 0.0) then 
-                res%dt = res%getMaxTimeStep() 
+            if (getMax) then 
+                this%dt = this%getMaxTimeStep() 
             end if
         end if
+    end subroutine
 
-        res%lumped_elements = lumped_t(res%number_of_conductors, 0, size(step_size), res%dt)
-        if (present(parent_name)) res%parent_name = parent_name
-        if (present(conductor_in_parent)) res%conductor_in_parent = conductor_in_parent
-        if (present(transfer_impedance))  res%transfer_impedance = transfer_impedance
-        if (present(external_field_segments)) res%external_field_segments = external_field_segments
-        if (present(isPassthrough)) res%isPassthrough = isPassthrough
+    subroutine allocatePULMatrices(this)
+        class(mtl_t) :: this
+        integer :: n
+        n = this%number_of_conductors
+        allocate(this%lpul(size(this%step_size, 1),     n, n))
+        allocate(this%cpul(size(this%step_size, 1) + 1, n, n))
+        allocate(this%rpul(size(this%step_size, 1),     n, n))
+        allocate(this%gpul(size(this%step_size, 1) + 1, n, n))
+    end subroutine
 
-    end function
+    subroutine computeLCParameters(this, multipolar_expansion)
+        class(mtl_t) :: this
+        type(multipolar_expansion_t), intent(in) :: multipolar_expansion
+        integer :: i, j, k, n
+        real, dimension(:,:), allocatable :: ppul
+        allocate(ppul(size(this%cpul,2),size(this%cpul,3)))
+        do i = 1, size(this%segments)
+            this%lpul(i,:,:) = getCellInductanceOnBox(multipolar_expansion, this%segments(i)%dualBox)
+            this%cpul(i,:,:) = getCellCapacitanceOnBox(multipolar_expansion, this%segments(i)%dualBox)
+            ppul(:,:) = element_wise_invert(size(this%cpul,2), this%cpul(i,:,:))
+            this%cpul(i,:,:) = inv(ppul)
+        end do
+        this%cpul(size(this%segments)+1, :,:) = this%cpul(size(this%segments), :,:)
+    end subroutine
+
 
     subroutine initDirections(this)
         class(mtl_t) :: this
@@ -251,7 +267,7 @@ contains
                               order=[2,3,1])
     end subroutine
 
-    subroutine checkPULDimensionsHomogeneous(lpul, cpul, rpul, gpul)
+    subroutine checkPULDimensions(lpul, cpul, rpul, gpul)
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
 
         if ((size(lpul, 1) /= size(lpul, dim = 2)).or.&
@@ -269,23 +285,6 @@ contains
 
     end subroutine
 
-    subroutine checkPULDimensionsInhomogeneous(lpul, cpul, rpul, gpul)
-        real, intent(in), dimension(:, :,:) :: lpul, cpul, rpul, gpul
-
-        if ((size(lpul, 2) /= size(lpul, dim = 3)).or.&
-            (size(cpul, 2) /= size(cpul, dim = 3)).or.&
-            (size(rpul, 2) /= size(rpul, dim = 3)).or.&
-            (size(gpul, 2) /= size(gpul, dim = 3))) then
-            error stop 'PUL matrices are not square'
-        endif
-
-        if ((size(lpul, 2) /= size(cpul, 2)).or.&
-            (size(lpul, 2) /= size(rpul, 2)).or.&
-            (size(lpul, 2) /= size(gpul, 2))) then
-            error stop 'PUL matrices do not have the same dimensions'
-        endif
-
-    end subroutine
 
     function getPhaseVelocities(this) result(res)
         class(mtl_t) :: this
@@ -306,28 +305,16 @@ contains
         res= minval(pack(this%du, this%du /= 0))/maxval(this%getPhaseVelocities())
     end function
 
-    subroutine initRGHomogeneous(this, rpul, gpul)
+    subroutine initRG(this, rpul, gpul)
         class(mtl_t) :: this
         real, intent(in), dimension(:,:) :: rpul, gpul
         integer :: i
-        allocate(this%rpul(size(this%step_size, 1), size(rpul, 1), size(rpul, 1)))
-        allocate(this%gpul(size(this%step_size, 1) + 1, size(gpul, 1), size(gpul, 1)))
-
         do i = 1, size(this%rpul, 1)
             this%rpul(i,:,:) = rpul(:,:)
         enddo
         do i = 1, size(this%gpul, 1)
             this%gpul(i,:,:) = gpul(:,:)
         enddo
-    end subroutine
-
-    subroutine initRGInhomogeneous(this, rpul, gpul)
-        class(mtl_t) :: this
-        real, intent(in), dimension(:, :,:) :: rpul, gpul
-        allocate(this%rpul(size(this%step_size, 1), size(rpul, 2), size(rpul, 2)))
-        allocate(this%gpul(size(this%step_size, 1) + 1, size(gpul, 2), size(gpul, 2)))
-        this%rpul(:,:,:) = rpul(:,:,:)
-        this%gpul(:,:,:) = gpul(:,:,:)
     end subroutine
 
 
@@ -341,10 +328,10 @@ contains
 
 #ifdef CompileWithMPI
 
-    subroutine initStepSizeAndFieldSegments(this, step_size, external_field_segments, layer_indices)
+    subroutine initStepSizeAndFieldSegments(this, step_size, segments, layer_indices)
         class(mtl_t) :: this
         real, intent(in), dimension(:) :: step_size
-        type(external_field_segment_t), intent(in), dimension(:) :: external_field_segments
+        type(segment_t), intent(in), dimension(:) :: segments
         integer (kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
         integer :: n, j
         n =  0
@@ -353,16 +340,16 @@ contains
         end do
         n = n + size(layer_indices, 1) -1
         allocate(this%step_size(n))
-        allocate(this%external_field_segments(n))
+        allocate(this%segments(n))
 
         n = 1
         do j = 1, size(layer_indices, 1)
             this%step_size(n: n + layer_indices(j,2) - layer_indices(j,1)) = step_size(layer_indices(j, 1):layer_indices(j, 2))
-            this%external_field_segments(n: n + layer_indices(j,2) - layer_indices(j,1)) = external_field_segments(layer_indices(j, 1):layer_indices(j, 2))
+            this%segments(n: n + layer_indices(j,2) - layer_indices(j,1)) = segments(layer_indices(j, 1):layer_indices(j, 2))
 
             if (j /= size(layer_indices,1)) then
                 this%step_size(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%step_size(n + layer_indices(j,2) - layer_indices(j,1))
-                this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%external_field_segments(n + layer_indices(j,2) - layer_indices(j,1))
+                this%segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%segments(n + layer_indices(j,2) - layer_indices(j,1))
                 n = n + 1
             end if
             n = n + layer_indices(j,2) - layer_indices(j,1) + 1
@@ -386,7 +373,7 @@ contains
         z_init = alloc_z(1)
         z_end = alloc_z(2)
 
-        do j = 1, size(this%external_field_segments)
+        do j = 1, size(this%segments)
             
             if (isSegmentZOriented(j) .and. &
                (isSegmentNextToLayerEnd(j,z_end) .or. isSegmentNextToLayerInit(j,z_init))) then
@@ -446,53 +433,53 @@ contains
 
     logical function isSegmentZOriented(j)
         integer, intent(in) :: j
-        isSegmentZOriented = (abs(this%external_field_segments(j)%direction) == 3)
+        isSegmentZOriented = (abs(this%segments(j)%orientation) == 3)
     end function
 
     logical function isSegmentZPositive(j)
         integer, intent(in) :: j
-        isSegmentZPositive = (this%external_field_segments(j)%direction > 0)
+        isSegmentZPositive = (this%segments(j)%orientation > 0)
     end function
 
     logical function isSegmentBeforeLayerEnd(j, z_end)
         integer, intent(in) :: j, z_end
         integer :: z
-        z = this%external_field_segments(j)%position(3)
+        z = this%segments(j)%z
         isSegmentBeforeLayerEnd = (z==z_end-1)
     end function
 
     logical function isSegmentAfterLayerEnd(j, z_end)
         integer, intent(in) :: j, z_end
         integer :: z
-        z = this%external_field_segments(j)%position(3)
+        z = this%segments(j)%z
         isSegmentAfterLayerEnd = (z==z_end)
     end function
     
     logical function isSegmentBeforeLayerInit(j, z_init)
         integer, intent(in) :: j, z_init
         integer :: z
-        z = this%external_field_segments(j)%position(3)
+        z = this%segments(j)%z
         isSegmentBeforeLayerInit = (z==z_init)
     end function
     
     logical function isSegmentAfterLayerInit(j, z_init)
         integer, intent(in) :: j, z_init
         integer :: z
-        z = this%external_field_segments(j)%position(3)
+        z = this%segments(j)%z
         isSegmentAfterLayerInit = (z==z_init+1)
     end function
 
     logical function isSegmentNextToLayerEnd(j, z_end)
         integer, intent(in) :: j, z_end
         integer :: z
-        z = this%external_field_segments(j)%position(3)
+        z = this%segments(j)%z
         isSegmentNextToLayerEnd = (abs(z-z_end)<= 1)
     end function
 
     logical function isSegmentNextToLayerInit(j, z_init)
         integer, intent(in) :: j, z_init
         integer :: z
-        z = this%external_field_segments(j)%position(3)
+        z = this%segments(j)%z
         isSegmentNextToLayerInit = (abs(z-z_init-1) <= 1)
     end function
 

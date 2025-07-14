@@ -20,7 +20,7 @@
 	"materials": [
         {
             "id": 1,
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "name" : "single_wire",
             "capacitancePerMeter": [[1.915e-10]],
             "inductancePerMeter":  [[4.8187e-7]]
@@ -28,7 +28,7 @@
         {
             "id": 2,
             "name": "multi_wire",
-            "type": "multiwire",
+            "type": "shieldedMultiwire",
             "inductancePerMeter": [ 
                 [4.4712610E-07, 1.4863653E-07],
                 [1.4863653E-07, 4.4712610E-07]

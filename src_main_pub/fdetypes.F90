@@ -483,8 +483,12 @@ module  FDETYPES
    end type
    !
 
-   type :: direction_t
+   type, public :: direction_t
       integer (kind=4) :: x,y,z, orientation
+   contains
+      private
+      procedure :: direction_eq
+      generic, public :: operator(==) => direction_eq
    end type
 
    type  ::  observable_t
@@ -647,11 +651,13 @@ module  FDETYPES
                  permitscaling,mtlnberenger,niapapostprocess, &
                  stochastic, verbose, dontwritevtk, &
                  use_mtln_wires, resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
-
-      ! REAL (kind=8) :: time_desdelanzamiento
-      REAL (kind=rkind) :: cfl, attfactorc,attfactorw, alphamaxpar, &
-                           alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol
-      real (kind=rkind_wires) :: factorradius,factordelta !maxSourceValue
+#ifdef CompileWithConformal
+      logical :: input_conformal_flag
+#endif
+      REAL (kind=8) :: time_desdelanzamiento
+      REAL (kind=RKIND) :: cfl, attfactorc,attfactorw, alphamaxpar, &
+                           alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue
+      real (kind=rkind_wires) :: factorradius,factordelta
       
       character (len=BUFSIZE) :: nEntradaRoot, inductance_model,wiresflavor, nresumeable2
       CHARACTER (LEN=BUFSIZE) :: opcionestotales, ficherohopf
@@ -813,7 +819,15 @@ contains
       end select
    end function
 
+   logical function direction_eq(a,b)
+      class(direction_t), intent(in) :: a,b 
+      direction_eq = .true.
+      direction_eq = direction_eq .and. (a%x == b%x)
+      direction_eq = direction_eq .and. (a%y == b%y)
+      direction_eq = direction_eq .and. (a%z == b%z)
+      direction_eq = direction_eq .and. (a%orientation == b%orientation)
 
+   end function
 end module FDETYPES
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
