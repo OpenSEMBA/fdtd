@@ -203,7 +203,7 @@ contains
           call this%core%get(this%root, J_MESH//'.'//J_COORDINATES, jcs, found=found)
           if (found) then
              numberOfCoordinates = this%core%count(jcs)
-             call res%allocateCoordinates(10*numberOfCoordinates)
+             call res%allocateCoordinates(50*numberOfCoordinates)
              do i = 1, numberOfCoordinates
                 call this%core%get_child(jcs, i, jc)
                 id = this%getIntAt(jc, J_ID)
@@ -227,7 +227,7 @@ contains
          
          call this%core%get(this%root, J_MESH//'.'//J_ELEMENTS, jes, found=found)
          numberOfElements = this%core%count(jes)
-         call res%allocateElements(10*numberOfElements)
+         call res%allocateElements(50*numberOfElements)
              
          if (found) then
             do i = 1, numberOfElements
