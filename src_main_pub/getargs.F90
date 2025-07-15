@@ -5,18 +5,23 @@ Module Getargs
    implicit none
    private 
 
-   public getcommandargument,commandargumentcount
+   public getBinaryPath, getcommandargument,commandargumentcount
 
 contains
 
-   subroutine getcommandargument(chain2,posic,argum,length,status)
+   function getBinaryPath() result(res)
+      character (LEN=BUFSIZE) :: res
+      CALL getarg(0, res)
+   end function
+
+   subroutine getcommandargument(chain2,posic,argum,length,status, binaryPath)
       character (LEN=BUFSIZE)  ::chain2, argum, argument, binaryPath
       integer (kind=4)  :: length, status, posic, binaryPathLenght, argumentStart, argumentEnd
       integer (kind=4) :: n, i, j
 
       CALL removeDoubleWhiteSpaces(chain2)
 
-      CALL getarg(0, binaryPath)
+      ! CALL getarg(0, binaryPath)
       binaryPathLenght = len(trim(adjustl(binaryPath)))
       
       !!Check if binary path is surrounded by double quotes. In that case, returns corrected binary path and lenght
@@ -80,13 +85,13 @@ contains
    
       end subroutine
 
-   function commandargumentcount(chain2)
+   function commandargumentcount(chain2, binaryPath)
       character (LEN=BUFSIZE)  ::  chain2, binaryPath
       integer (kind=4)  ::  status,n,commandargumentcount, binaryPathLenght, i
 
       CALL removeDoubleWhiteSpaces(chain2)
 
-      CALL getarg(0, binaryPath)
+      ! CALL getarg(0, binaryPath)
       binaryPathLenght = len(trim(adjustl(binaryPath)))
       
       !!Check if binary path is surrounded by double quotes. In that case, returns corrected binary path and lenght

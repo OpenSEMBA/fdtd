@@ -1,0 +1,430 @@
+{
+    "format": "FDTD Input file",
+    "general": {
+        "timeStep": 3e-11,
+        "numberOfSteps": 1100
+    },
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 8,
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+    "materials": [
+        {
+            "name": "berenger_wires",
+            "id": 1,
+            "type": "unshieldedMultiwire",
+            "multipolarExpansion": {
+                "electric": [
+                    {
+                        "ab": [
+                            [
+                                0.9488836986256424,
+                                0.0
+                            ],
+                            [
+                                -4.5026111057062017e-07,
+                                5.987942555872269e-11
+                            ],
+                            [
+                                7.122646648067261e-05,
+                                7.482668483059027e-09
+                            ],
+                            [
+                                7.097889809700513e-07,
+                                8.831664501859358e-12
+                            ],
+                            [
+                                9.747219384657904e-09,
+                                1.0398688544432336e-14
+                            ],
+                            [
+                                1.2377553776521575e-10,
+                                -5.501929503047715e-15
+                            ]
+                        ],
+                        "conductorPotentials": [
+                            1.0,
+                            0.5909272203987278
+                        ],
+                        "expansionCenter": [
+                            -0.004970886788455953,
+                            6.610694092023349e-07
+                        ],
+                        "innerRegionAveragePotential": 0.5608636261599323
+                    },
+                    {
+                        "ab": [
+                            [
+                                1.3644011168458479,
+                                0.0
+                            ],
+                            [
+                                1.791591210236417e-06,
+                                1.2551089589299055e-10
+                            ],
+                            [
+                                1.4620553866347293e-06,
+                                -1.4363492844460606e-09
+                            ],
+                            [
+                                -2.7707600893604828e-08,
+                                2.086520573039241e-12
+                            ],
+                            [
+                                5.442396836040079e-10,
+                                3.29969452674269e-14
+                            ],
+                            [
+                                -1.0787078655316123e-11,
+                                -7.177175730010405e-16
+                            ]
+                        ],
+                        "conductorPotentials": [
+                            0.8497110567446987,
+                            1.0
+                        ],
+                        "expansionCenter": [
+                            0.009920513440028656,
+                            6.949869591535922e-07
+                        ],
+                        "innerRegionAveragePotential": 0.8070848243572611
+                    }
+                ],
+                "magnetic": [
+                    {
+                        "ab": [
+                            [
+                                0.9488836986256424,
+                                0.0
+                            ],
+                            [
+                                -4.5026111057062017e-07,
+                                5.987942555872269e-11
+                            ],
+                            [
+                                7.122646648067261e-05,
+                                7.482668483059027e-09
+                            ],
+                            [
+                                7.097889809700513e-07,
+                                8.831664501859358e-12
+                            ],
+                            [
+                                9.747219384657904e-09,
+                                1.0398688544432336e-14
+                            ],
+                            [
+                                1.2377553776521575e-10,
+                                -5.501929503047715e-15
+                            ]
+                        ],
+                        "conductorPotentials": [
+                            1.0,
+                            0.5909272203987278
+                        ],
+                        "expansionCenter": [
+                            -0.004970886788455953,
+                            6.610694092023349e-07
+                        ],
+                        "innerRegionAveragePotential": 0.5608636261599323
+                    },
+                    {
+                        "ab": [
+                            [
+                                1.3644011168458479,
+                                0.0
+                            ],
+                            [
+                                1.791591210236417e-06,
+                                1.2551089589299055e-10
+                            ],
+                            [
+                                1.4620553866347293e-06,
+                                -1.4363492844460606e-09
+                            ],
+                            [
+                                -2.7707600893604828e-08,
+                                2.086520573039241e-12
+                            ],
+                            [
+                                5.442396836040079e-10,
+                                3.29969452674269e-14
+                            ],
+                            [
+                                -1.0787078655316123e-11,
+                                -7.177175730010405e-16
+                            ]
+                        ],
+                        "conductorPotentials": [
+                            0.8497110567446987,
+                            1.0
+                        ],
+                        "expansionCenter": [
+                            0.009920513440028656,
+                            6.949869591535922e-07
+                        ],
+                        "innerRegionAveragePotential": 0.8070848243572611
+                    }
+                ],
+                "innerRegionBox": {
+                    "max": [
+                        0.03550000020000001,
+                        0.0310000002
+                    ],
+                    "min": [
+                        -0.0265000002,
+                        -0.0310000002
+                    ]
+                }
+            }
+        },
+        {
+            "id": 4,
+            "type": "terminal",
+            "terminations": [
+                {
+                    "type": "open"
+                },
+                {
+                    "type": "open"
+                }
+            ]
+        }
+    ],
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                30,
+                30,
+                30
+            ],
+            "steps": {
+                "x": [
+                    0.2
+                ],
+                "y": [
+                    0.2
+                ],
+                "z": [
+                    0.2
+                ]
+            }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    2,
+                    11,
+                    7
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    2,
+                    11,
+                    14
+                ]
+            },
+            {
+                "id": 3,
+                "relativePosition": [
+                    2,
+                    11,
+                    22
+                ]
+            },
+            {
+                "id": 4,
+                "relativePosition": [
+                    2,
+                    11,
+                    7
+                ]
+            },
+            {
+                "id": 5,
+                "relativePosition": [
+                    2,
+                    11,
+                    14
+                ]
+            },
+            {
+                "id": 6,
+                "relativePosition": [
+                    2,
+                    11,
+                    22
+                ]
+            },
+            {
+                "id": 7,
+                "relativePosition": [
+                    2,
+                    11,
+                    7
+                ]
+            },
+            {
+                "id": 8,
+                "relativePosition": [
+                    2,
+                    11,
+                    14
+                ]
+            },
+            {
+                "id": 9,
+                "relativePosition": [
+                    2,
+                    11,
+                    22
+                ]
+            },
+            {
+                "id": 10,
+                "relativePosition": [
+                    2,
+                    11,
+                    7
+                ]
+            },
+            {
+                "id": 11,
+                "relativePosition": [
+                    2,
+                    11,
+                    14
+                ]
+            },
+            {
+                "id": 12,
+                "relativePosition": [
+                    2,
+                    11,
+                    22
+                ]
+            }
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "type": "node",
+                "coordinateIds": [
+                    5
+                ]
+            },
+            {
+                "id": 5,
+                "type": "polyline",
+                "coordinateIds": [
+                    4,
+                    5,
+                    6
+                ]
+            },
+            {
+                "id": 6,
+                "type": "polyline",
+                "coordinateIds": [
+                    7,
+                    8,
+                    9
+                ]
+            },
+            {
+                "id": 10,
+                "type": "polyline",
+                "coordinateIds": [
+                    10,
+                    11,
+                    12
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            1,
+                            1,
+                            1
+                        ],
+                        [
+                            29,
+                            29,
+                            29
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 7,
+                "type": "node",
+                "coordinateIds": [
+                    4
+                ]
+            },
+            {
+                "id": 8,
+                "type": "node",
+                "coordinateIds": [
+                    5
+                ]
+            },
+            {
+                "id": 9,
+                "type": "node",
+                "coordinateIds": [
+                    6
+                ]
+            }
+        ]
+    },
+    "materialAssociations": [
+        {
+            "name": "single_inner_wire",
+            "materialId": 1,
+            "initialTerminalId": 4,
+            "endTerminalId": 4,
+            "elementIds": [
+                5,
+                6
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "unshielded_50ns.exc",
+            "elementIds": [
+                3
+            ],
+            "direction": {
+                "theta": 1.5708,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 0.0,
+                "phi": 0.0
+            }
+        }
+    ],
+    "probes": [
+        {
+            "name": "test",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [
+                1
+            ]
+        }
+    ]
+}

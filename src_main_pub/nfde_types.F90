@@ -1,5 +1,3 @@
-
-    
 MODULE NFDETypes
    !
    USE FDETYPES
@@ -35,6 +33,8 @@ MODULE NFDETypes
    INTEGER (KIND=4), PARAMETER :: NP_COR_HZ = 5
    INTEGER (KIND=4), PARAMETER :: NP_COR_WIRECURRENT = 6
    INTEGER (KIND=4), PARAMETER :: NP_COR_DDP = 7
+   INTEGER (KIND=4), PARAMETER :: NP_COR_LINE = 8
+   INTEGER (KIND=4), PARAMETER :: NP_COR_CHARGE = 9
    LOGICAL, PARAMETER :: BcELECT = .TRUE.
    LOGICAL, PARAMETER :: BcMAGNE = .FALSE.
    ! THIN WIRES
@@ -761,7 +761,7 @@ MODULE NFDETypes
       TYPE (SlantedWires), POINTER ::          sWires => NULL ()
       TYPE (ThinSlots), POINTER ::             tSlots => NULL ()    
 #ifdef CompileWithMTLN
-      TYPE (mtln_t), POINTER ::                mtln => NULL ()
+      TYPE (mtln_t), POINTER ::                mtln => NULL () 
 #endif
    END TYPE Parseador
    

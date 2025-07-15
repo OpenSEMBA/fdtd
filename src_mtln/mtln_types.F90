@@ -1,14 +1,19 @@
 module mtln_types_mod
-   use fdetypes, ONLY: RKIND   !sggmtln
+   use fdetypes, ONLY: direction_t
    implicit none
 
    integer, parameter :: TERMINATION_UNDEFINED  = -1
    integer, parameter :: TERMINATION_SHORT      =  1
    integer, parameter :: TERMINATION_OPEN       =  2
    integer, parameter :: TERMINATION_SERIES     =  3
-   integer, parameter :: TERMINATION_LCpRs      =  4
-   integer, parameter :: TERMINATION_RLsCp      =  5
-   integer, parameter :: TERMINATION_CIRCUIT      =  6
+   integer, parameter :: TERMINATION_PARALLEL   =  4
+   integer, parameter :: TERMINATION_RsLCp      =  5
+   integer, parameter :: TERMINATION_RLsCp      =  6
+   integer, parameter :: TERMINATION_LsRCp      =  7
+   integer, parameter :: TERMINATION_CsLRp      =  8
+   integer, parameter :: TERMINATION_RCsLp      =  9
+   integer, parameter :: TERMINATION_LCsRp      =  10
+   integer, parameter :: TERMINATION_CIRCUIT    =  11
 
    integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
@@ -33,24 +38,7 @@ module mtln_types_mod
    integer, parameter :: DIRECTION_Z_POS   =  3
    integer, parameter :: DIRECTION_Z_NEG   =  -3
 
-   type :: external_dielectric_t
-      real :: radius = 0.0 
-      real :: relative_permittivity = 1.0
-      real :: effective_relative_permittivity = 1.0
-   end type
 
-   type :: external_field_segment_t
-      integer, dimension(3) ::position
-      integer :: direction = 0
-      real :: radius = 0.0
-      logical :: has_dielectric = .false.
-      type(external_dielectric_t) :: dielectric
-      real (kind=rkind) , pointer  ::  field => null()
-   contains
-      private
-      procedure :: external_field_segments_eq 
-      generic, public :: operator(==) => external_field_segments_eq
-   end type
 
    type node_source_t
       character(len=256) :: path_to_excitation = ""
@@ -76,9 +64,8 @@ module mtln_types_mod
       generic, public :: operator(==) => termination_eq
    end type
 
-
    type :: terminal_node_t
-      type(cable_t), pointer :: belongs_to_cable => null()
+      class(cable_t), pointer :: belongs_to_cable => null()
       integer :: conductor_in_cable
       integer :: side = TERMINAL_NODE_SIDE_UNDEFINED
       type(termination_t) :: termination
@@ -96,7 +83,7 @@ module mtln_types_mod
       integer :: numberOfPorts
       integer :: nodeId
    end type
-      
+
    type :: terminal_connection_t
       type(terminal_node_t), dimension(:), allocatable :: nodes
       type(subcircuit_t) :: subcircuit
@@ -139,29 +126,96 @@ module mtln_types_mod
       generic, public :: operator(==) => connector_eq
    end type
 
+   type, public :: multipolar_coefficient_t
+      ! Coefficients are assumed to be provided in natural units.
+      ! To use them as a charge they must be multiplied by epsilon_0.
+      ! To use them as a current they must be divided by mu_0.
+      real :: a, b
+   contains
+      private
+      procedure :: multipolar_coefficient_eq
+      generic, public :: operator(==) => multipolar_coefficient_eq
+   end type
+
+   type, public :: field_reconstruction_t
+      ! This data allows reconstructing the potential for a set of conductors
+      ! in which each conductor has a different potential.
+
+      ! Average potential within the inner region.
+      real :: inner_region_average_potential
+      ! Expansion center for the field reconstruction using the multipolar expansion
+      real, dimension(2) :: expansion_center
+      ! Multipolar expansion coefficients. Size of the multipolar expansion order.
+      type(multipolar_coefficient_t), dimension(:), allocatable :: ab
+      ! Potentials on each conductor. size of the number of conductors.
+      real, dimension(:), allocatable :: conductor_potentials
+   contains
+      private
+      procedure :: field_reconstruction_eq
+      generic, public :: operator(==) => field_reconstruction_eq
+   end type
+
+   type, public :: box_2d_t
+      real, dimension(2) :: min, max
+   contains
+      private
+      procedure :: box_2d_eq
+      generic, public :: operator(==) => box_2d_eq
+   end type
+
+   type, public :: multipolar_expansion_t
+      ! Inner region is assumed to be in meters.
+      ! A 2D box defining the inner region which contains all the conductors.
+      type(box_2d_t) :: inner_region
+
+      ! Size of the number of conductors.
+      type(field_reconstruction_t), dimension(:), allocatable :: electric, magnetic
+
+   contains
+      private
+      procedure :: multipolar_expansion_eq
+      generic, public :: operator(==) => multipolar_expansion_eq
+   end type
+
+   type, extends(direction_t) :: segment_t
+      type(box_2d_t) :: dualBox
+   end type
+
+
    type, public :: cable_t
       character (len=:), allocatable :: name
-      real, allocatable, dimension(:,:) :: resistance_per_meter
-      real, allocatable, dimension(:,:) :: capacitance_per_meter
-      real, allocatable, dimension(:,:) :: inductance_per_meter
-      real, allocatable, dimension(:,:) :: conductance_per_meter
       real, allocatable, dimension(:) :: step_size
-      type(transfer_impedance_per_meter_t) :: transfer_impedance
-      type(cable_t), pointer :: parent_cable => null()
-      integer :: conductor_in_parent = -1
+      type(segment_t), dimension(:), allocatable :: segments
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
-      type(external_field_segment_t), allocatable, dimension(:) :: external_field_segments
-      logical :: isPassthrough = .false.
-
    contains
       private
       procedure :: cable_eq
       generic, public :: operator(==) => cable_eq
    end type
 
+   type, extends(cable_t), public :: unshielded_multiwire_t 
+      real, allocatable, dimension(:,:) :: cell_inductance_per_meter
+      real, allocatable, dimension(:,:) :: cell_capacitance_per_meter
+      real, allocatable, dimension(:,:) :: resistance_per_meter
+      real, allocatable, dimension(:,:) :: conductance_per_meter
+      ! should multipolar expansion be always present, instead of allocatable,  
+      ! but check if it is being used using the size of the field_reconstruction?
+      type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
+   end type
+
+   type, extends(cable_t), public :: shielded_multiwire_t 
+      real, allocatable, dimension(:,:) :: resistance_per_meter
+      real, allocatable, dimension(:,:) :: conductance_per_meter
+      real, allocatable, dimension(:,:) :: inductance_per_meter
+      real, allocatable, dimension(:,:) :: capacitance_per_meter
+      type(transfer_impedance_per_meter_t) :: transfer_impedance
+      class(cable_t), pointer :: parent_cable => null()
+      integer :: conductor_in_parent = -1
+   end type
+
    type :: probe_t
-      type(cable_t), pointer :: attached_to_cable => null()
+      class(cable_t), pointer :: attached_to_cable => null()
       integer :: index
       integer :: probe_type = PROBE_TYPE_UNDEFINED
       character (len=:), allocatable :: probe_name
@@ -172,14 +226,18 @@ module mtln_types_mod
       generic, public :: operator(==) => probe_eq
    end type
 
+   type, public :: cable_abstract_t
+      class(cable_t), pointer :: ptr
+   end type
+
    type, public :: mtln_t
-      type(cable_t), dimension(:), pointer :: cables
+      type(cable_abstract_t), dimension(:), allocatable :: cables
       type(terminal_network_t), dimension(:), allocatable :: networks
       type(probe_t), dimension(:), allocatable :: probes
       type(connector_t), dimension(:), pointer :: connectors
-      real :: time_step
-      integer :: number_of_steps
-      logical :: has_multiwires
+      real :: time_step = 0.0
+      integer :: number_of_steps = 0
+      logical :: has_multiwires = .false.
    contains
       private
       procedure :: mtln_eq
@@ -192,13 +250,26 @@ contains
    logical function mtln_eq(a,b)
       class(mtln_t), intent(in) :: a,b
       integer :: i
-         
+
+      if (a%has_multiwires .neqv. b%has_multiwires) then 
+         mtln_eq = .false.
+         return
+      end if
+      if (a%time_step /= b%time_step) then 
+         mtln_eq = .false.
+         return
+      end if
+      if (a%number_of_steps /= b%number_of_steps) then 
+         mtln_eq = .false.
+         return
+      end if
+
       if (size(a%cables) /= size(b%cables)) then
          mtln_eq = .false.
          return
       end if
       do i = 1, size(a%cables)
-         if (.not. a%cables(i) == b%cables(i)) then
+         if (.not. a%cables(i)%ptr == b%cables(i)%ptr) then
             mtln_eq = .false.
             return
          end if
@@ -239,60 +310,106 @@ contains
          (a%direction == b%direction)
    end function
 
+   elemental function multipolar_coefficient_eq(a, b) result(res)
+      class(multipolar_coefficient_t), intent(in) :: a, b
+      logical :: res
+      res = .true.
+      res = res .and. (a%a == b%a)
+      res = res .and. (a%b == b%b)
+   end function
+
+   elemental function field_reconstruction_eq(lhs, rhs) result (res)
+      class(field_reconstruction_t), intent(in) :: lhs, rhs
+      logical :: res
+
+      res = .true.
+      res = res .and. &
+         lhs%inner_region_average_potential == rhs%inner_region_average_potential
+
+      res = res .and. all(lhs%expansion_center == rhs%expansion_center)
+      res = res .and. (allocated(lhs%ab) .and. allocated(rhs%ab))
+      res = res .and. all(lhs%ab == rhs%ab)
+      res = res .and. (allocated(lhs%conductor_potentials) .and. allocated(rhs%conductor_potentials))
+      res = res .and. all(lhs%conductor_potentials == rhs%conductor_potentials)
+
+   end function
+
+   elemental logical function box_2d_eq(a, b) result(res)
+      class(box_2d_t), intent(in) :: a, b
+      res = all(a%min == b%min) .and. all(a%max == b%max)
+   end function
+
+   elemental function multipolar_expansion_eq(a, b) result(res)
+      class(multipolar_expansion_t), intent(in) :: a, b
+      logical :: res
+      
+      res = .true.
+
+      res = res .and. (a%inner_region == b%inner_region)
+      res = res .and. allocated(a%electric) .and. allocated(b%electric)
+      res = res .and. all(a%electric == b%electric)
+      res = res .and. allocated(a%magnetic) .and. allocated(b%magnetic)
+      res = res .and. all(a%magnetic == b%magnetic)
+   end function
+   
    recursive logical function cable_eq(a,b)
       class(cable_t), intent(in) :: a, b
+      integer :: i
       cable_eq = .true.
-      cable_eq = cable_eq .and.  (a%name == b%name) 
-      cable_eq = cable_eq .and.  all(a%inductance_per_meter == b%inductance_per_meter)
-      cable_eq = cable_eq .and.  all(a%capacitance_per_meter == b%capacitance_per_meter)
-      cable_eq = cable_eq .and.  all(a%resistance_per_meter == b%resistance_per_meter)
-      cable_eq = cable_eq .and.  all(a%conductance_per_meter == b%conductance_per_meter)
+      cable_eq = cable_eq .and.  (a%name == b%name)
       cable_eq = cable_eq .and.  all(a%step_size == b%step_size)
-      cable_eq = cable_eq .and.  (a%transfer_impedance == b%transfer_impedance)
-      cable_eq = cable_eq .and.  (a%conductor_in_parent == b%conductor_in_parent)
-      cable_eq = cable_eq .and.  all(a%external_field_segments == b%external_field_segments)
+      cable_eq = cable_eq .and.  size(a%segments) == size(b%segments)
+      do i = 1, size(a%segments)
+         cable_eq = cable_eq .and.  a%segments(i) == b%segments(i)
+      end do
 
-
-      if (.not. cable_eq) then
-         cable_eq = .false.
-      end if
-
-      if (.not. associated(a%parent_cable) .and. .not. associated(b%parent_cable)) then
-         cable_eq = cable_eq .and. .true.
-      else if ((associated(a%parent_cable) .and. .not. associated(b%parent_cable)) .or. &
-         (.not. associated(a%parent_cable) .and. associated(b%parent_cable))) then
-         cable_eq = cable_eq .and. .false.
-      else
-         cable_eq = cable_eq .and. (a%parent_cable == b%parent_cable)
-      end if
-
-      if (.not. cable_eq) then
-         cable_eq = .false.
-      end if
-
-      if (.not. associated(a%initial_connector) .and. .not. associated(b%initial_connector)) then
-         cable_eq = cable_eq .and. .true.
-      else if ((associated(a%initial_connector) .and. .not. associated(b%initial_connector)) .or. &
-         (.not. associated(a%initial_connector) .and. associated(b%initial_connector))) then
-         cable_eq = cable_eq .and. .false.
-      else
+      if (associated(a%initial_connector) .and. associated(b%initial_connector)) then
          cable_eq = cable_eq .and. (a%initial_connector == b%initial_connector)
+      else if (.not. associated(a%initial_connector) .and. .not. associated(b%initial_connector)) then
+         cable_eq = cable_eq .and. .true.
+      else
+         cable_eq = cable_eq .and. .false.
       end if
-      if (.not. cable_eq) then
-         cable_eq = .false.
+      if (associated(a%end_connector) .and. associated(b%end_connector)) then
+         cable_eq = cable_eq .and. (a%end_connector == b%end_connector)
+      else if (.not. associated(a%end_connector) .and. .not. associated(b%end_connector)) then
+         cable_eq = cable_eq .and. .true.
+      else
+         cable_eq = cable_eq .and. .false.
       end if
 
-      if (.not. associated(a%end_connector) .and. .not. associated(b%end_connector)) then
-         cable_eq = cable_eq .and. .true.
-      else if ((associated(a%end_connector) .and. .not. associated(b%end_connector)) .or. &
-         (.not. associated(a%end_connector) .and. associated(b%end_connector))) then
-         cable_eq = cable_eq .and. .false.
-      else
-         cable_eq = cable_eq .and. (a%end_connector == b%end_connector)
-      end if
-      if (.not. cable_eq) then
-         cable_eq = .false.
-      end if
+      select type(a)
+      type is(shielded_multiwire_t)
+         select type(b)
+         type is(shielded_multiwire_t)
+            cable_eq = cable_eq .and.  all(a%inductance_per_meter == b%inductance_per_meter)
+            cable_eq = cable_eq .and.  all(a%capacitance_per_meter == b%capacitance_per_meter)
+            cable_eq = cable_eq .and.  all(a%resistance_per_meter == b%resistance_per_meter)
+            cable_eq = cable_eq .and.  all(a%conductance_per_meter == b%conductance_per_meter)
+            cable_eq = cable_eq .and.  (a%transfer_impedance == b%transfer_impedance)
+            cable_eq = cable_eq .and.  (a%conductor_in_parent == b%conductor_in_parent)
+            
+            if (associated(a%parent_cable) .and. associated(b%parent_cable)) then
+               cable_eq = cable_eq .and. (a%parent_cable == b%parent_cable)
+            else if (.not. associated(a%parent_cable) .and. .not. associated(b%parent_cable)) then
+               cable_eq = cable_eq .and. .true.
+            else
+               cable_eq = cable_eq .and. .false.
+            end if
+         type is(unshielded_multiwire_t)
+            cable_eq = .false.
+         end select
+      type is(unshielded_multiwire_t)
+         select type(b)
+         type is(unshielded_multiwire_t)
+            cable_eq = cable_eq .and.  all(a%multipolar_expansion == b%multipolar_expansion)
+            cable_eq = cable_eq .and.  all(a%cell_inductance_per_meter == b%cell_inductance_per_meter)
+            cable_eq = cable_eq .and.  all(a%cell_capacitance_per_meter == b%cell_capacitance_per_meter)
+         type is(shielded_multiwire_t)
+            cable_eq = .false.
+         end select
+      end select
+
 
    end function
 
@@ -333,9 +450,6 @@ contains
          probe_eq = probe_eq .and. .false.
       else
          probe_eq = probe_eq .and. (a%attached_to_cable == b%attached_to_cable)
-      end if
-      if (probe_eq .eqv. .false.) then
-         probe_eq = .false.
       end if
    end function
 
@@ -390,29 +504,6 @@ contains
       terminal_network_eq = .true.
    end function
 
-   elemental logical function external_field_segments_eq(a,b)
-      class(external_field_segment_t), intent(in) :: a,b
-      external_field_segments_eq = &
-         all(a%position == b%position) .and. &
-         a%direction == b%direction .and. &
-         a%radius == b%radius .and. &
-         a%has_dielectric .eqv. b%has_dielectric
-
-      external_field_segments_eq = external_field_segments_eq .and. &
-         a%dielectric%effective_relative_permittivity == b%dielectric%effective_relative_permittivity .and. &
-         a%dielectric%radius == b%dielectric%radius  .and. &
-         a%dielectric%relative_permittivity == b%dielectric%relative_permittivity
-
-
-      if (.not. associated(a%field) .and. .not. associated(b%field)) then
-         external_field_segments_eq = external_field_segments_eq .and. .true.
-      else if ((associated(a%field) .and. .not. associated(b%field)) .or. &
-         (.not. associated(a%field) .and. associated(b%field))) then
-            external_field_segments_eq = external_field_segments_eq .and. .false.
-      else
-         external_field_segments_eq = external_field_segments_eq .and. (a%field == b%field)
-      end if
-   end function
 
    subroutine terminal_connection_add_node(this, node)
       class(terminal_connection_t) :: this
@@ -434,7 +525,7 @@ contains
       class(transfer_impedance_per_meter_t) :: this
       logical :: res
       res = (this%resistive_term /= 0) .and. (this%inductive_term /= 0) .and. &
-                               (size(this%poles) /= 0) .and. (size(this%residues) /= 0)
+         (size(this%poles) /= 0) .and. (size(this%residues) /= 0)
    end function
 
    subroutine terminal_network_add_connection(this, connection)
@@ -442,9 +533,9 @@ contains
       type(terminal_connection_t) :: connection
       type(terminal_connection_t), dimension(:), allocatable :: newConnections
       integer :: newConnectionsSize
-      
+
       if (.not. allocated(this%connections))  allocate(this%connections(0))
-      
+
       allocate(newConnections( size(this%connections) + 1 ) )
       newConnectionsSize = size(newConnections)
       newConnections(1:newConnectionsSize-1) = this%connections

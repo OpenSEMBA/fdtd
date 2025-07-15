@@ -48,7 +48,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitPMLbodies(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size,g2,Gm2,ThereArePMLbodies,resume,eps00,mu00)
+   subroutine InitPMLbodies(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
 
       type (SGGFDTDINFO), intent(IN)     ::  sgg
@@ -75,9 +75,8 @@ contains
                                                             Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
       REAL (KIND=RKIND)  :: sigma
-      integer (kind=4), intent(in) :: layoutnumber,size
-      logical, INTENT(IN)  :: resume
       logical, INTENT(OUT)  ::  ThereArePMLbodies
+      type(sim_control_t), intent(in) :: control
       integer (kind=4)  ::  jmed,j1,conta,k1,i1,orient
       integer (kind=4), dimension(0:sgg%nummedia) ::maxx,minx,maxy,miny,maxz,minz
       character(len=BUFSIZE) :: buff
@@ -89,7 +88,7 @@ contains
         eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !         
 !!!
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
       unstable=.false.
 !
       ThereArePMLbodies=.FALSE.
@@ -474,7 +473,7 @@ contains
 !!!
 
       !!!!!!!!!resuming
-      if (.not.resume) then  
+      if (.not.control%resume) then  
          do conta=1,berpmlE%numnodes
             PML_ => berpmlE%Nodes(conta)
             PML_%Psi=0.0_RKIND

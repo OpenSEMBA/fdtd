@@ -68,7 +68,6 @@ module interpreta_switches_m
             noSlantedcrecepelo              , &
             forcecfl                        , &
             niapapostprocess                , &
-            planewavecorr                   , &
             permitscaling                   , &
             stochastic                      , &
             chosenyesornostochastic         , &
@@ -90,7 +89,8 @@ module interpreta_switches_m
             noconformalmapvtk               , &
             createh5filefromsinglebin       , &
             creditosyaprinteados            , &
-            use_mtln_wires
+            use_mtln_wires                  , &
+            read_command_line
       
         integer (kind=4) ::                   &
             wirethickness                    ,&
@@ -177,7 +177,7 @@ CONTAINS
    type (entrada_t), intent(INOUT) :: l
 !!!!!!!!!      
    
-   CHARACTER (LEN=BUFSIZE) :: chari,f,dubuf,buff
+   CHARACTER (LEN=BUFSIZE) :: chari,f,dubuf,buff, binaryPath
    logical :: existiarunningigual,mpidirset,resume3
    integer (kind=4) :: i,j,donde,n, newmpidir,statuse
    real (KIND=RKIND) :: pausetime
@@ -190,7 +190,8 @@ CONTAINS
    existiarunningigual=.false.
    statuse=0
    !!!!!!!!!!!!!!!
-   n = commandargumentcount (l%chaininput)
+   binaryPath = getBinaryPath()
+   n = commandargumentcount (l%chaininput, binaryPath)
    IF (n == 0) THEN
       call print_basic_help(l) 
       call stoponerror(l%layoutnumber,l%size,'Error: NO arguments neither command line nor in launch file. Correct and remove pause...',.true.)
@@ -199,7 +200,7 @@ CONTAINS
    END IF
    l%opcionestotales=''
    do i=1,n
-      CALL getcommandargument (l%chaininput,i,l%chain,l%length,statuse)
+      CALL getcommandargument (l%chaininput,i,l%chain,l%length, statuse, binaryPath)
       IF (statuse /= 0) THEN
          CALL stoponerror (l%layoutnumber, l%size, 'Reading input',.true.)
           statuse=-1
@@ -213,7 +214,7 @@ CONTAINS
    IF (n > 0) THEN
       i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
       DO while (i <= n)
-         CALL getcommandargument (l%chaininput, i, l%chain, l%length, statuse)
+         CALL getcommandargument (l%chaininput, i, l%chain, l%length, statuse, binaryPath)
          IF (statuse /= 0) THEN
             CALL stoponerror (l%layoutnumber, l%size, 'Reading input',.true.)
           statuse=-1
@@ -222,15 +223,15 @@ CONTAINS
          SELECT CASE (trim(adjustl(l%chain)))   
           CASE ('-i')
                i = i + 1
-               CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+               CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
              continue !ya interpretado
           case ('-a')
                i = i + 1
-               CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+               CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
              continue !ya interpretado
           CASE ('-mpidir')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             select case (trim (adjustl(f)))
              case ('x','X')
                newmpidir=1  !!!lo cambie por error !161018
@@ -256,7 +257,7 @@ CONTAINS
               
           case ('-pause')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to integer
             READ (f,*, ERR=7312) pausetime
             GO TO 8312
@@ -295,7 +296,7 @@ CONTAINS
 
             !!!        CASE ('-maxmessages')
             !!!            i = i + 1
-            !!!          CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            !!!          CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             !!!          READ (f,*, ERR=1012) maxmessages
             !!!          GO TO 2012
             !!!1012      CALL stoponerror (l%layoutnumber, l%size, 'Invalid Number of maxmessages',.true.)
@@ -308,7 +309,7 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
           CASE ('-noNF2FF')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             select case (trim (adjustl(f)))
              case ('back','BACK')
                l%facesNF2FF%TR=.FALSE.
@@ -335,7 +336,7 @@ CONTAINS
           CASE ('-force')      
             l%forcing = .TRUE. 
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             READ (f,*, ERR=412) l%forced
             GO TO 312
 412         CALL stoponerror (l%layoutnumber, l%size, 'Invalid cut',.true.)
@@ -384,7 +385,7 @@ CONTAINS
 #endif  
           CASE ('-cpumax')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to integer
             READ (f,*, ERR=712) l%maxCPUtime
             GO TO 812
@@ -401,7 +402,7 @@ CONTAINS
             l%freshstart = .TRUE.
           CASE ('-flush')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to integer
             READ (f,*, ERR=300) l%flushminutesFields
             GO TO 400
@@ -415,7 +416,7 @@ CONTAINS
             END IF
           CASE ('-flushdata')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to integer
             READ (f,*, ERR=301) l%flushminutesData
             GO TO 401
@@ -442,7 +443,7 @@ CONTAINS
             l%hopf=.true.
             i = i + 1;
             l%ficherohopf = char(0);
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             l%ficherohopf = trim(adjustl(f));
             INQUIRE (file=trim(adjustl(f)), EXIST=l%existeNFDE)
             IF ( .NOT. l%existeNFDE) THEN
@@ -489,7 +490,7 @@ CONTAINS
             l%input_conformal_flag = .true.;
             l%conformal_file_input_name = char(0);
 
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             l%conformal_file_input_name = trim(adjustl(f));
 
             INQUIRE (file=trim(adjustl(f)), EXIST=l%existeNFDE)
@@ -547,7 +548,7 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
           CASE ('-pmlalpha')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=7621) l%alphamaxpar
             GO TO 8621
@@ -561,7 +562,7 @@ CONTAINS
             END IF
             i = i + 1
             !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=7121) l%alphaOrden
             GO TO 8121
@@ -576,7 +577,7 @@ CONTAINS
             !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
           CASE ('-pmlkappa')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=7622) l%kappamaxpar
             GO TO 8622
@@ -592,7 +593,7 @@ CONTAINS
           CASE ('-pmlcorr')
             l%MEDIOEXTRA%exists=.true.
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=7672) l%MEDIOEXTRA%sigma
             GO TO 8672
@@ -607,7 +608,7 @@ CONTAINS
             l%MEDIOEXTRA%sigmam=-1.0_RKIND!voids it. later overriden
             !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=7662) l%MEDIOEXTRA%size
             GO TO 8662
@@ -620,7 +621,7 @@ CONTAINS
             !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
           CASE ('-attc')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=766) l%attfactorc
             GO TO 866
@@ -633,7 +634,7 @@ CONTAINS
             l%mibc=.false.
             l%sgbc=.true.
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=7466) l%sgbcdepth
             GO TO 8466
@@ -646,7 +647,7 @@ CONTAINS
             l%sgbc=.true.
             l%mibc=.false.
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=74616) l%sgbcfreq
             GO TO 84616
@@ -659,7 +660,7 @@ CONTAINS
             l%mibc=.false.
             l%sgbc=.true.
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=74626) l%sgbcresol
             GO TO 84626
@@ -694,7 +695,7 @@ CONTAINS
             l%saveall = .TRUE.
           CASE ('-attw')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=732) l%attfactorw
             GO TO 832
@@ -706,7 +707,7 @@ CONTAINS
           CASE ('-maxwireradius')
             l%boundwireradius=.true.
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=737) l%maxwireradius
             GO TO 837
@@ -717,7 +718,7 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
           CASE ('-mindistwires')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=1732) l%mindistwires
             GO TO 1832
@@ -765,7 +766,7 @@ CONTAINS
             l%use_mtln_wires = .true.
           CASE ('-wirethickness')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=7416) l%wirethickness
             GO TO 8416
@@ -776,7 +777,7 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))              
           CASE ('-wiresflavor')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
             READ (f, '(a)', ERR=3621) l%wiresflavor
             if (trim(adjustl(l%wiresflavor(1:1)))=='g') l%wiresflavor='slanted' 
@@ -793,7 +794,7 @@ CONTAINS
                 l%wiresflavor='semistructured'
                 !
                 i = i + 1
-                CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+                CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
                 l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(f))
             ! Converts the characters to real
                 READ (f,*, ERR=2561) l%precision
@@ -863,7 +864,7 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
           CASE ('-inductance')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             READ (f, '(a)', ERR=361) l%inductance_model
             GO TO 461
 361         CALL stoponerror (l%layoutnumber, l%size, 'Invalid inductance model',.true.); statuse=-1; !goto 668
@@ -874,19 +875,19 @@ CONTAINS
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
           CASE ('-inductanceorder')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             READ (f,*, ERR=179) l%inductance_order
             GO TO 180
 179         CALL stoponerror (l%layoutnumber, l%size, 'Invalid inductance order',.true.); statuse=-1; !goto 668
 180         l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
           CASE ('-prefix')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             l%prefix = '_' // trim (adjustl(f))
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
           CASE ('-cfl')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to real
             READ (f,*, ERR=3762) l%cfltemp
             GO TO 3862
@@ -904,9 +905,6 @@ CONTAINS
             l%noconformalmapvtk=.true.
           CASE ('-niapapostprocess')
             l%niapapostprocess=.true.
-          CASE ('-planewavecorr')
-            l%planewavecorr=.true.
-            l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
 #ifdef CompileWithPrescale
 !!!!210918 permit scaling
           CASE ('-pscale')
@@ -914,7 +912,7 @@ CONTAINS
             l%saveall=.true. !lo salvo todo en permit scaling para evitar errores
             i = i + 1
             buff=""
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             READ (f,*, ERR=33762) buff
             l%EpsMuTimeScale_input_parameters%electric=.False.
             l%EpsMuTimeScale_input_parameters%electric=.False.
@@ -930,16 +928,16 @@ CONTAINS
                GO TO 33862
             end select
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
             ! Converts the characters to real
             READ (f,*, ERR=33762) l%EpsMuTimeScale_input_parameters%tini
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(f))
             READ (f,*, ERR=33762) l%EpsMuTimeScale_input_parameters%tend
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(f))
             READ (f,*, ERR=33762) l%EpsMuTimeScale_input_parameters%alpha_max
             GO TO 33862
@@ -956,7 +954,7 @@ CONTAINS
           CASE ('-n')
             l%forcesteps = .TRUE.
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to integer
             READ (f,*, ERR=602) l%finaltimestep
             GO TO 702
@@ -967,7 +965,7 @@ CONTAINS
 !!!!!!     
           CASE ('-factorradius')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to integer
             READ (f,*, ERR=6032) l%factorradius
             GO TO 7032
@@ -975,7 +973,7 @@ CONTAINS
 7032         continue
           CASE ('-factordelta')
             i = i + 1
-            CALL getcommandargument (l%chaininput, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             ! Converts the characters to integer
             READ (f,*, ERR=6072) l%factordelta
             GO TO 7072
@@ -1769,7 +1767,7 @@ CONTAINS
    type (entrada_t), intent(INOUT) :: l
 !!!!!!!!!      
    
-   CHARACTER (LEN=BUFSIZE) :: dato,buff,f
+   CHARACTER (LEN=BUFSIZE) :: dato,buff,f, binaryPath
    integer (kind=4) :: i,n,statuse, NUM_NFDES,TEMP_NUMNFDES,p
    CHARACTER (LEN=5) :: NFDEEXTENSION, CONFEXTENSION, CMSHEXTENSION
     
@@ -1779,7 +1777,8 @@ CONTAINS
    NFDEEXTENSION='.nfde'; CONFEXTENSION='.conf'; CMSHEXTENSION='.cmsh'
    statuse=0
    !!!!!!!!!!!!!!!
-   n = commandargumentcount (l%chain2)
+   binaryPath = getBinaryPath()
+   n = commandargumentcount (l%chain2, binaryPath)
    IF (n == 0) THEN
       call print_basic_help(l)  
       call stoponerror(l%layoutnumber,l%size,'Error: NO arguments neither command line nor in launch file. Correct and remove pause...',.true.)
@@ -1791,7 +1790,7 @@ CONTAINS
       num_nfdes=0
       i = 2
       DO while (i <= n)
-         CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse)
+         CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse, binaryPath)
          IF (statuse /= 0) THEN
             CALL stoponerror (l%layoutnumber, l%size, 'Reading input',.true.)
             goto 667
@@ -1800,7 +1799,7 @@ CONTAINS
          SELECT CASE (trim(adjustl(l%chain)))
           CASE ('-mpidir')
             i = i + 1
-            CALL getcommandargument (l%chain2, i, f, l%length,  statuse)
+            CALL getcommandargument (l%chain2, i, f, l%length, statuse, binaryPath)
             select case (trim (adjustl(f)))
              case ('x','X')
                l%mpidir=1  !!!lo cambie por error !161018
@@ -1835,7 +1834,7 @@ CONTAINS
          temp_numnfdes=0
          i = 2 ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
          DO while (i <= n)
-            CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse)
+            CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse, binaryPath)
              IF (statuse /= 0) THEN
                 CALL stoponerror (l%layoutnumber, l%size, 'Reading input',.true.)
                 goto 667
@@ -1845,7 +1844,7 @@ CONTAINS
              CASE ('-i')
                temp_numnfdes=temp_numnfdes + 1
                i = i + 1
-               CALL getcommandargument (l%chain2, i, f, l%length,  statuse)
+               CALL getcommandargument (l%chain2, i, f, l%length, statuse, binaryPath)
                p = LEN_trim (adjustl(f))
                IF ((p-4) >= 1) THEN
                   IF (f((p-4) :(p-4)) == NFDEEXTENSION(1:1)) THEN
@@ -1924,7 +1923,7 @@ CONTAINS
    IF (n > 0) THEN
    i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
       DO while (i <= n)
-         CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse)
+         CALL getcommandargument (l%chain2, i, l%chain, l%length, statuse, binaryPath)
          IF (statuse /= 0) THEN
             CALL stoponerror (l%layoutnumber, l%size, 'Reading input',.true.)
             goto 667
@@ -1937,7 +1936,7 @@ CONTAINS
             i = i + 1
             if (temp_numnfdes == 1) then
                !
-               CALL getcommandargument (l%chain2, i, f, l%length,  statuse)
+               CALL getcommandargument (l%chain2, i, f, l%length, statuse, binaryPath)
                p = LEN_trim (adjustl(f))
                IF ((p-4) >= 1) THEN
                   IF (f((p-4) :(p-4)) == NFDEEXTENSION(1:1)) THEN
@@ -1954,6 +1953,11 @@ CONTAINS
                   statuse=-1
                   goto 667
                END IF
+               block 
+                  CHARACTER(len=255) :: cwd
+                  CALL getcwd(cwd)
+                  WRITE(*,*) TRIM(cwd)                  
+               end block
                INQUIRE (file=trim(adjustl(l%fichin))//NFDEEXTENSION, EXIST=l%existeNFDE)
                IF ( .NOT. l%existeNFDE) THEN
                   buff='The input file was not found '//trim(adjustl(l%fichin))//NFDEEXTENSION
@@ -2012,7 +2016,6 @@ CONTAINS
       l%createh5filefromsinglebin=.false.
       l%permitscaling=.false.
       l%niapapostprocess=.false.
-      l%planewavecorr=.false.
       l%prioritizeCOMPOoverPEC=.false.  !pec has default more priority than compo (para siva hay que cambiarlo)
       l%prioritizeTHINWIRE=.false. !solo para visualizacion y experimentacion 231024
       l%prioritizeISOTROPICBODYoverall=.FALSE. !PARA EL SIVA SE CAMBIA POR LINEA DE COMANDO
@@ -2033,6 +2036,7 @@ CONTAINS
       l%facesNF2FF%ar=.true.
       !defaults
       l%use_mtln_wires = .false.
+      l%read_command_line = .true.
       l%hay_slanted_wires=.false.
       l%forcing = .FALSE.
       l%resume_fromold = .FALSE.
@@ -2104,6 +2108,7 @@ CONTAINS
       l%stableradholland=.false. !solo actua si se invoca con l%wiresflavor holland 
       l%fieldtotl=.false.
       l%experimentalVideal=.false.
+      l%thereare_stoch=.false.
       l%forceresampled=.false.
       l%factorradius=1.0e+30 !para evitar division por cero 120123
       l%factordelta=1.0e+30 !para evitar division por cero 120123

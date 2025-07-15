@@ -19,10 +19,11 @@
     "materials": [
         {
             "id": 1,
-            "type": "wire",
-            "radius": 0.1e-3,
-            "resistancePerMeter": 0.0,
-            "inductancePerMeter": 0.0
+            "type": "unshieldedMultiwire",
+            "inductancePerMeter" :  [[0.0]],
+            "capacitancePerMeter" : [[0.0]],
+            "resistancePerMeter": [0.0],
+            "conductancePerMeter": [0.0]
         },
         {
             "id": 2,
@@ -65,14 +66,14 @@
 
     "materialAssociations": [
         { 
-                        "name": "cable1",
+            "name": "cable1",
             "materialId": 1,
             "initialTerminalId": 3,
             "endTerminalId": 2,
             "elementIds": [2]
         },
         { 
-                        "name": "cable2",
+            "name": "cable2",
             "materialId": 1,
             "initialTerminalId": 3,
             "endTerminalId": 3,

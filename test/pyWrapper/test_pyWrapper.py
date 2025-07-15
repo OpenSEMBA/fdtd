@@ -165,6 +165,7 @@ def test_casemaker_sphere_rcs_case(tmp_path):
     cm = CaseMaker()
 
     cm.setNumberOfTimeSteps(1)
+    cm.setTimeStep(1e-12)
 
     cm.setAllBoundaries("mur")
 
