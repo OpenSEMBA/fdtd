@@ -8,7 +8,6 @@ module network_manager_mod
 
     type network_manager_t
         type(network_t), dimension(:), allocatable :: networks
-        logical :: has_networks = .true.
         type(circuit_t) :: circuit
         real :: time, dt
     contains
@@ -118,7 +117,6 @@ contains
 
     subroutine network_advanceVoltage(this)
         class(network_manager_t) :: this
-
         call this%updateCircuitCurrentsFromNetwork()
         call this%circuit%step()
         this%circuit%time = this%circuit%time + this%circuit%dt
