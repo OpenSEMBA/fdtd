@@ -2582,7 +2582,7 @@ contains
       call MPIinitSubcomm(this%control%layoutnumber,this%control%size,SUBCOMM_MPI_conformal_probes,&
                            MPI_conformal_probes_root,group_conformalprobes_dummy)
       ! print *,'-----creating--->',this%control%layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
-      call MPI_BASRRIER(SUBCOMM_MPI, ierr)
+      call MPI_BARRIER(SUBCOMM_MPI, ierr)
       !!!no lo hago pero al salir deberia luego destruir el grupo call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)                   
    end subroutine initMPIConformalProbes
 #endif
