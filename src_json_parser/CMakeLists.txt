@@ -20,6 +20,7 @@ add_library(smbjson
 	"mesh.F90"
 	"parser_tools.F90"
 	"nfdetypes_extension.F90" 
+	"../src_main_pub/evolution_operator.F90"
 )
 
 target_link_libraries(smbjson PRIVATE jsonfortran semba-types semba-reports fhash)
