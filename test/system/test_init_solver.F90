@@ -19,6 +19,7 @@ integer function test_init_solver() bind (C) result(err)
    if (solver%get_field_value(iHy, 2,2,2) == 0) err = err + 1
    if (solver%get_field_value(iHz, 2,2,2) == 0) err = err + 1
 
+   call solver%destroy_and_deallocate(semba%sgg)
    call chdir("../../")
 end function
 
@@ -42,12 +43,11 @@ integer function test_rank_remapping() bind (C) result(err)
                     semba%sggMtag, semba%SINPML_fullsize, semba%fullsize, semba%tag_numbers)
    call solver%set_field_value(iHy, [2,2], [2,2], [2,2], 1.0)
    call solver%advanceEx(solver%sggMiEx)
-   ! call solver%advanceEx(solver%Ex, solver%Hy, solver%Hz, solver%sggMiEx)
    if (solver%get_field_value(iEx, 2,2,2) /= -33.8822708) err = err + 1
    if (solver%get_field_value(iEx, 2,2,3) /= 33.8822708) err = err + 1
 
+   call solver%destroy_and_deallocate(semba%sgg)
 
-   
    call chdir("../../")
 
 end function
