@@ -125,6 +125,8 @@ module Solver_mod
       procedure :: get_field_value
       procedure :: step
       procedure :: advanceEx 
+
+      procedure :: destroy_and_deallocate
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
 #endif
@@ -514,8 +516,7 @@ module Solver_mod
                close (14)
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming.', dummyMin,dummyMax,this%lastexecutedtimesteP
                call stoponerror (this%control%layoutnumber,this%control%size,BUFF,.true.) !para que retorne
-               call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
-               ! this%Ex et al as arguments?
+               call this%destroy_and_deallocate(sgg)
                ! call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
                return
             else
@@ -531,7 +532,8 @@ module Solver_mod
                if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,this%lastexecutedtimestep
                   call stoponerror (this%control%layoutnumber,this%control%size,DUBUF,.true.) !para que retorne
-                  call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
+                  ! call Destroy_All_exceptSGGMxxDestroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
+                  call this%destroy_and_deallocate(sgg)
                   return
                else
                   write(dubuf,*) 'SUCCESS: Restarting from .fields.old instead. From n=',this%lastexecutedtimestep
@@ -543,7 +545,8 @@ module Solver_mod
 
             write(dubuf,*) 'Incoherence between MPI saved steps for resuming.',dummyMin,dummyMax,this%lastexecutedtimestep
             call stoponerror (this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
-            call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
+            ! call Destroy_All_exceptSGGMxxDestroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
+            call this%destroy_and_deallocate(sgg)
             return
 #endif
          endif
@@ -555,7 +558,8 @@ module Solver_mod
 
       if (this%initialtimestep>this%control%finaltimestep) then
           call stoponerror (this%control%layoutnumber,this%control%size,'Initial time step greater than final one',.true.) !para que retorne
-          call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
+         !  call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
+          call this%destroy_and_deallocate(sgg)
           return
       endif
 !!!incializa el vector de tiempos para permit scaling 191118
@@ -627,7 +631,8 @@ module Solver_mod
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
          call stoponerror(this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
-         call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
+         ! call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
+         call this%destroy_and_deallocate(sgg)
          return
       endif
 #ifdef CompileWithMPI
@@ -2861,6 +2866,46 @@ contains
       return
    end subroutine Destroy_All_exceptSGGMxx
 
+   subroutine destroy_and_deallocate(this,sgg)
+      class(solver_t) :: this
+      type (SGGFDTDINFO), intent(INOUT)     ::  sgg
+
+      call DestroyObservation(sgg)
+      Call DestroyNodal(sgg)
+      call DestroyIlumina(sgg)
+#ifdef CompileWithNIBC
+      call DestroyMultiports(sgg)
+#endif
+
+      call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((this%thereAre%sgbcs).and.(sgbc))
+      call destroyLumped(sgg)
+      call DestroyEDispersives(sgg)
+      call DestroyMDispersives(sgg)
+      if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
+          (trim(adjustl(this%control%wiresflavor))=='transition')) then
+         call DestroyWires(sgg)
+      endif
+#ifdef CompileWithBerengerWires
+      if (trim(adjustl(this%control%wiresflavor))=='berenger') then
+         call DestroyWires_Berenger(sgg)
+      endif
+#endif
+#ifdef CompileWithSlantedWires
+      if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
+         call DestroyWires_Slanted(sgg)
+      endif
+#endif      
+
+      call DestroyCPMLBorders
+      call DestroyPMLbodies(sgg)
+      call DestroyMURBorders
+      !Destroy the remaining
+      deallocate (sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
+      deallocate (this%G1,this%G2,this%GM1,this%GM2)
+      deallocate (this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
+      deallocate (this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)
+      return
+   end subroutine destroy_and_deallocate
 
    
    
