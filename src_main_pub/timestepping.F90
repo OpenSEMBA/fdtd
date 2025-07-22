@@ -124,6 +124,7 @@ module Solver_mod
       procedure :: set_field_value
       procedure :: get_field_value
       procedure :: step
+      procedure :: advanceEx 
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
 #endif
@@ -2076,6 +2077,8 @@ contains
 
    end subroutine solver_run
 
+
+
    subroutine step(this, sgg, eps0, mu0, sinPML_fullsize, tag_numbers)
       class(solver_t) :: this
       type(sggfdtdinfo), intent(in) :: sgg
@@ -2245,7 +2248,8 @@ contains
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle EX")
 #endif
-      call Advance_Ex          (Ex, Hy, Hz, Idyh, Idzh, this%sggMiEx, this%bounds,g1,g2)    
+      call this%AdvanceEx(Ex, Hy, Hz, this%sggMiEx)    
+      ! call Advance_Ex          (Ex, Hy, Hz, Idyh, Idzh, this%sggMiEx, this%bounds,g1,g2)    
 #ifdef CompileWithProfiling
       call nvtxEndRange
 
@@ -2560,7 +2564,7 @@ contains
 !       !SO THAT DISPERSIVE MATERIALS CAN ALSO BE TRUNCATED BY CPML)
    subroutine advancePMLE()
       If (this%thereAre%PMLbodies) then !waveport absorbers
-         call AdvancePMLbodyE
+         call AdvancePMLbodyE()
       endif
       If (this%thereAre%PMLBorders) then
          call AdvanceelectricCPML(sgg%NumMedia, this%bounds,this%sggMiEx,this%sggMiEy,this%sggMiEz,G2,Ex,Ey,Ez,Hx,Hy,Hz)
@@ -2582,12 +2586,52 @@ contains
       call MPIinitSubcomm(this%control%layoutnumber,this%control%size,SUBCOMM_MPI_conformal_probes,&
                            MPI_conformal_probes_root,group_conformalprobes_dummy)
       ! print *,'-----creating--->',this%control%layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
-      call MPI_BASRRIER(SUBCOMM_MPI, ierr)
+      call MPI_BARRIER(SUBCOMM_MPI, ierr)
       !!!no lo hago pero al salir deberia luego destruir el grupo call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)                   
    end subroutine initMPIConformalProbes
 #endif
 
    end subroutine step
+
+   subroutine advanceEx(this, Ex, Hy, Hz, sggMiEx)
+      class(solver_t) :: this
+      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEx%NX-1,0:this%bounds%sggMiEx%NY-1,0:this%bounds%sggMiEx%NZ-1), intent(in) :: sggMiEx
+      real(kind=rkind), dimension(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1), intent(inout) ::  Ex
+      real(kind=rkind), dimension(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1), intent(in) ::  Hy
+      real(kind=rkind), dimension(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1), intent(in) ::  Hz
+      
+      real(kind=rkind), dimension(:), pointer :: Idyh
+      real(kind=rkind), dimension(:), pointer :: Idzh
+
+      real(kind=rkind) :: Idzhk, Idyhj
+      integer(kind=4) :: i, j, k
+      integer(kind=integersizeofmediamatrices) :: medio
+
+      Idyh(0:this%bounds%dyh%NY-1) => this%Idyh
+      Idzh(0:this%bounds%dzh%NZ-1) => this%Idzh
+
+#ifdef CompileWithOpenMP
+!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk,Idyhj) 
+#endif
+#ifdef CompileWithACC   
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex) 
+#endif
+      Do k=1,this%bounds%sweepEx%NZ
+         Do j=1,this%bounds%sweepEx%NY
+            Do i=1,this%bounds%sweepEx%NX
+               Idzhk=Idzh(k)
+               Idyhj=Idyh(j)
+               medio =sggMiEx(i,j,k)
+               Ex(i,j,k)=this%g1(MEDIO)*Ex(i,j,k)+this%g2(MEDIO)* &
+               ((Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk)
+            End do
+         End do
+      End do
+#ifdef CompileWithOpenMP   
+!$OMP  END PARALLEL DO
+#endif
+   end subroutine
+
 
    subroutine solver_end(this, sgg, eps0, mu0, tagtype, finishedwithsuccess)
       class(solver_t) :: this
