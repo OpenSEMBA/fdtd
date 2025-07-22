@@ -9,10 +9,7 @@
   
     "boundary": {
         "all": {
-            "type": "pml",
-            "layers": 6, 
-            "order": 2.0,
-            "reflection": 0.001
+            "type": "pec"
         }
     },
 
@@ -33,19 +30,19 @@
 
     "mesh": {
         "grid": {
-            "numberOfCells": [20, 20, 22],
+            "numberOfCells": [4, 4, 4],
             "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
         },
         "coordinates": [
-            {"id": 1, "relativePosition": [11, 11,  7]},
-            {"id": 2, "relativePosition": [11, 11, 12]},
-            {"id": 3, "relativePosition": [11, 11, 17]},
-            {"id": 4, "relativePosition": [12, 11, 17]}
+            {"id": 1, "relativePosition": [1, 1, 1 ]},
+            {"id": 2, "relativePosition": [1, 2, 2]},
+            {"id": 3, "relativePosition": [1, 3, 2]},
+            {"id": 4, "relativePosition": [1, 3, 3]}
         ],
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [2]},
             {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
-            {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [19, 19, 21]]] },
+            {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [3, 3, 4]]] },
             {"id": 4, "type": "node", "coordinateIds": [4]}
         ]
     }

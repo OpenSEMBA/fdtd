@@ -93,7 +93,7 @@ module Solver_mod
       type(Logic_control) :: thereAre
       type(perform_t) :: perform, d_perform
 
-      real(kind=rkind), pointer, dimension (:,:,:) :: Ex,Ey,Ez,Hx,Hy,Hz
+      real(kind=rkind), pointer, dimension (:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
 
@@ -2248,7 +2248,7 @@ contains
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle EX")
 #endif
-      call this%AdvanceEx()    
+      call this%AdvanceEx(this%sggMiEx)
       ! call Advance_Ex          (Ex, Hy, Hz, Idyh, Idzh, this%sggMiEx, this%bounds,g1,g2)    
 #ifdef CompileWithProfiling
       call nvtxEndRange
@@ -2593,12 +2593,13 @@ contains
 
    end subroutine step
 
-   subroutine advanceEx(this)
+   subroutine advanceEx(this, sggMiEx)
       class(solver_t) :: this
-      integer(kind=integersizeofmediamatrices), dimension(:,:,:), pointer :: sggMiEx
-      real(kind=rkind), dimension(:,:,:), pointer ::  Ex
-      real(kind=rkind), dimension(:,:,:), pointer ::  Hy
-      real(kind=rkind), dimension(:,:,:), pointer ::  Hz
+      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEx%NX-1,0:this%bounds%sggMiEx%NY-1,0:this%bounds%sggMiEx%NZ-1), intent(in) :: sggMiEx
+
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Ex
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hy
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hz
       real(kind=rkind), dimension(:), pointer :: Idyh
       real(kind=rkind), dimension(:), pointer :: Idzh
 
@@ -2606,10 +2607,10 @@ contains
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
-      allocate(Ex(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1), source = this%Ex)
-      allocate(Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1), source = this%Hy)
-      allocate(Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1), source = this%Hz)
-      allocate(sggMiEx(0:this%bounds%sggMiEx%NX-1,0:this%bounds%sggMiEx%NY-1,0:this%bounds%sggMiEx%NZ-1), source = this%sggMiEx)
+      Ex(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1) => this%Ex
+      Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
+      Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
+
       Idyh(0:this%bounds%dyh%NY-1) => this%Idyh
       Idzh(0:this%bounds%dzh%NZ-1) => this%Idzh
 
