@@ -1191,6 +1191,7 @@ contains
    subroutine semba_launch(this)
       class(semba_fdtd_t) :: this
       type(solver_t) :: solver
+      type(media_matrices_t) :: media
       character (LEN=BUFSIZE) :: dubuf
       logical :: dummylog
 
@@ -1207,12 +1208,24 @@ contains
          solver%mtln_parsed =  this%mtln_parsed
 #endif
 
+         media%sggMiNo = this%sggMiNo
+         media%sggMiEx = this%sggMiEx
+         media%sggMiEy = this%sggMiEy
+         media%sggMiEz = this%sggMiEz
+         media%sggMiHx = this%sggMiHx
+         media%sggMiHy = this%sggMiHy
+         media%sggMiHz = this%sggMiHz
+         media%sggMtag = this%sggMtag
+
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
-            CALL solver%launch_simulation (this%sgg,this%sggMtag,this%tag_numbers,this%sggMiNo, this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,&
-                                           this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
+            CALL solver%launch_simulation (this%sgg,media,this%tag_numbers,this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
                                            this%l, this%maxSourceValue, this%time_desdelanzamiento)
+            ! CALL solver%launch_simulation (this%sgg,this%sggMtag,this%tag_numbers,this%sggMiNo, this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,&
+            !                                this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
+            !                                this%l, this%maxSourceValue, this%time_desdelanzamiento)
 
             deallocate (this%sggMiEx, this%sggMiEy, this%sggMiEz,this%sggMiHx, this%sggMiHy, this%sggMiHz,this%sggMiNo,this%sggMtag)
+            deallocate (media%sggMiEx, media%sggMiEy, media%sggMiEz,media%sggMiHx, media%sggMiHy, media%sggMiHz,media%sggMiNo,media%sggMtag)
          else
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)

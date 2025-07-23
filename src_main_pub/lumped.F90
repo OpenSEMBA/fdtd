@@ -31,13 +31,17 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,&
+   subroutine InitLumped(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,&
                          IDxe,IDye,IDze,IDxh,IDyh,IDzh, control, &
                          ThereAreLumped,eps00,mu00)
+   ! subroutine InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,&
+   !                       IDxe,IDye,IDze,IDxh,IDyh,IDzh, control, &
+   !                       ThereAreLumped,eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
+      type(media_matrices_t), intent(in) :: media
 
       type (SGGFDTDINFO), intent(IN)     ::  sgg
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
       sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
       sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE)
@@ -63,6 +67,9 @@ contains
       type (Nodes_t), pointer :: lumped_
       logical :: unstable
 !
+      sggMiEx = media%sggMiEx
+      sggMiEy = media%sggMiEy
+      sggMiEz = media%sggMiEz
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !
 !!!

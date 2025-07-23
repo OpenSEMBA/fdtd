@@ -621,6 +621,11 @@ module  FDETYPES
       type (coorsxyzP)  ::  Punto
    end type
 
+   type media_matrices_t
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
+      integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
+   end type
+
    type nf2ff_t
       logical :: tr,fr,iz,de,ab,ar
    end type

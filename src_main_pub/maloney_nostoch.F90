@@ -93,17 +93,21 @@ contains
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Subroutine to initialize the parameters
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-subroutine InitSGBCs(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
+subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
                      layoutnumber,size,G1,G2,GM1,GM2,ThereAreSGBCs,resume,temp_SGBCcrank,temp_SGBCFreq,temp_SGBCresol,temp_SGBCDepth,temp_SGBCDispersive, &
                      eps00,mu00,simu_devia,stochastic)
+! subroutine InitSGBCs(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
+!                      layoutnumber,size,G1,G2,GM1,GM2,ThereAreSGBCs,resume,temp_SGBCcrank,temp_SGBCFreq,temp_SGBCresol,temp_SGBCDepth,temp_SGBCDispersive, &
+!                      eps00,mu00,simu_devia,stochastic)
 
+   type(media_matrices_t), intent(in) :: media
    logical :: simu_devia,stochastic 
    REAL (KIND=RKIND)           ::  eps00,mu00
    logical :: temp_SGBCcrank,temp_SGBCDispersive
    REAL (KIND=RKIND)     , pointer, dimension ( : ), intent(inout)   ::  gm1,g1
    type (SGGFDTDINFO), intent(INOUT)     ::  sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
    REAL (KIND=RKIND)     , pointer, dimension ( : ), intent(inout)     ::   gm2,g2
-   integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
+   integer (KIND=INTEGERSIZEOFMEDIAMATRICES)  ::  &
    sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
    sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
    sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
@@ -140,6 +144,14 @@ subroutine InitSGBCs(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,E
    COMPLEX (kind=ckind) :: value1, value2
    character (LEN=BUFSIZE)                            ::   ficheropolos
 !
+
+   sggMiEx = media%sggMiEx
+   sggMiEy = media%sggMiEy
+   sggMiEz = media%sggMiEz
+   sggMiHx = media%sggMiHx
+   sggMiHy = media%sggMiHy
+   sggMiHz = media%sggMiHz
+
    eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
    SGBCcrank        = temp_SGBCcrank     
    SGBCDispersive   = temp_SGBCDispersive

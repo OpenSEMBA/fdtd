@@ -111,14 +111,19 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+   subroutine InitObservation(sgg,media,tag_numbers, &
                               ThereAreObservation,ThereAreWires,ThereAreFarFields,resume,initialtimestep, finaltimestep,lastexecutedtime, &
                               nEntradaRoot,layoutnumber,size, saveall, singlefilewrite,wiresflavor, &
                               SINPML_fullsize,facesNF2FF,NF2FFDecim,eps00,mu00,simu_devia,mpidir,niapapostprocess,b)
+   ! subroutine InitObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+   !                            ThereAreObservation,ThereAreWires,ThereAreFarFields,resume,initialtimestep, finaltimestep,lastexecutedtime, &
+   !                            nEntradaRoot,layoutnumber,size, saveall, singlefilewrite,wiresflavor, &
+   !                            SINPML_fullsize,facesNF2FF,NF2FFDecim,eps00,mu00,simu_devia,mpidir,niapapostprocess,b)
       !solo lo precisa de entrada farfield
+      type(media_matrices_t), intent(in) :: media
       type (bounds_t)  ::  b
       type (SGGFDTDINFO), intent(IN)         ::  sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      INTEGER (KIND=IKINDMTAG) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
       logical :: simu_devia,niapapostprocess
       REAL (KIND=RKIND)           ::  eps00,mu00
@@ -126,7 +131,7 @@ contains
       integer (kind=4), intent(in) :: layoutnumber,size,mpidir
       type (nf2ff_t) :: facesNF2FF
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
       sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
       sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
@@ -172,7 +177,14 @@ contains
 !
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !
-!!
+      sggMiEx = media%sggMiEx
+      sggMiEy = media%sggMiEy
+      sggMiEz = media%sggMiEz
+      sggMiHx = media%sggMiHx
+      sggMiHy = media%sggMiHy
+      sggMiHz = media%sggMiHz
+      sggMtag = media%sggMtag
+      !!
       output=> null()
 #ifdef CompileWithMPI
       valores=>null()
@@ -2555,14 +2567,18 @@ contains
    !!! The Wire modules uses its own updating procedure
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, tag_numbers, &
+   subroutine UpdateObservation(sgg,media, tag_numbers, &
       nTime,nInit, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_fullsize,wirecrank, &
       noconformalmapvtk,b)
+   ! subroutine UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, tag_numbers, &
+   !    nTime,nInit, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_fullsize,wirecrank, &
+   !    noconformalmapvtk,b)
       !solo lo precisa de entrada farfield
       type (bounds_t)  ::  b
       logical :: noconformalmapvtk
       type (SGGFDTDINFO), intent(IN)         ::  sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      type(media_matrices_t), intent(in) :: media
+      INTEGER (KIND=IKINDMTAG) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
       !---------------------------> inputs <----------------------------------------------------------
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
@@ -2583,7 +2599,7 @@ contains
                                                             dze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       !!!
       !----->
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES)   ::  &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
       sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
       sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
@@ -2613,6 +2629,15 @@ contains
 #endif
 
       logical ::  INIT,GEOM,ASIGNA,electric,magnetic
+
+      sggMiEx = media%sggMiEx
+      sggMiEy = media%sggMiEy
+      sggMiEz = media%sggMiEz
+      sggMiHx = media%sggMiHx
+      sggMiHy = media%sggMiHy
+      sggMiHz = media%sggMiHz
+      sggMtag = media%sggMtag
+
       !!!
       at=-1; jx=-1; jy=-1;jz=-1;jdir=-1;jdir1=-1;jdir2=-1  !para que gfortran no me diga que no las inicializo
 
