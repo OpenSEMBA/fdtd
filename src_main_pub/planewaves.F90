@@ -51,13 +51,13 @@ contains
    ! subroutine InitPlaneWave(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,SINPML_Fullsize,ThereArePlaneWaveBoxes,resume,eps00,mu00)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       type(media_matrices_t), intent(in) :: media
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES)  ::  &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES)  ::  &
+      ! sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
+      ! sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
+      ! sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
+      ! sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
+      ! sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
+      ! sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       !!!
       integer (kind=4), intent(in) :: layoutnumber,size
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
@@ -71,12 +71,12 @@ contains
       cluz=1.0_RKIND/sqrt(eps0*mu0) !lo necesitara incid
       zvac=sqrt(mu0/eps0) !lo necesitan las variables de mas abajo
 
-      sggMiEx = media%sggMiEx
-      sggMiEy = media%sggMiEy
-      sggMiEz = media%sggMiEz
-      sggMiHx = media%sggMiHx
-      sggMiHy = media%sggMiHy
-      sggMiHz = media%sggMiHz
+      ! sggMiEx = media%sggMiEx
+      ! sggMiEy = media%sggMiEy
+      ! sggMiEz = media%sggMiEz
+      ! sggMiHx = media%sggMiHx
+      ! sggMiHy = media%sggMiHy
+      ! sggMiHz = media%sggMiHz
 
 !!!
       do field=iEx,iHz
@@ -410,9 +410,9 @@ contains
              i = TrFr(jjj)%I%tra%Ez !Back
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
-                   if (sggMiEz( i, j, k) /=1 ) then
+                   if (media%sggMiEz( i, j, k) /=1 ) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Ez ',i,j,k
-                      if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -423,9 +423,9 @@ contains
              i = TrFr(jjj)%I%tra%Ey
              do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
-                   if (sggMiEy(i,j,k) /=1 ) then
+                   if (media%sggMiEy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Ey ',i,j,k
-                      if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -439,9 +439,9 @@ contains
              i = TrFr(jjj)%I%fro%Ez !Front
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 do j = TrFr(jjj)%J%com%Ez, TrFr(jjj)%J%fin%Ez
-                   if (sggMiEz(i,j,k) /=1 ) then
+                   if (media%sggMiEz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Ez ',i,j,k
-                      if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -452,9 +452,9 @@ contains
              i = TrFr(jjj)%I%fro%Ey !Front
              do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
                 do j = TrFr(jjj)%J%com%Ey, TrFr(jjj)%J%fin%Ey
-                   if (sggMiEy(i,j,k) /=1 ) then
+                   if (media%sggMiEy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Ey ',i,j,k
-                      if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -468,9 +468,9 @@ contains
              j = IzDe(jjj)%J%izq%Ex  !Left
              do k = IzDe(jjj)%K%com%Ex, IzDe(jjj)%K%fin%Ex
                 do i = IzDe(jjj)%I%com%Ex, IzDe(jjj)%I%fin%Ex
-                   if (sggMiEx(i,j,k) /=1 ) then
+                   if (media%sggMiEx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Ex ',i,j,k
-                      if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -481,9 +481,9 @@ contains
              j = IzDe(jjj)%J%izq%Ez  !Left
              do k = IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
-                   if (sggMiEz(i,j,k) /=1 ) then
+                   if (media%sggMiEz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Ez ',i,j,k
-                      if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -497,9 +497,9 @@ contains
              j = IzDe(jjj)%J%der%Ez !Right
              do k = IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez
                 do i = IzDe(jjj)%I%com%Ez, IzDe(jjj)%I%fin%Ez
-                   if (sggMiEz(i,j,k) /=1 ) then
+                   if (media%sggMiEz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Ez ',i,j,k
-                      if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -510,9 +510,9 @@ contains
              j = IzDe(jjj)%J%der%Ex !Right
              do k = IzDe(jjj)%K%com%Ex,IzDe(jjj)%K%fin%Ex
                 do i=IzDe(jjj)%I%com%Ex,IzDe(jjj)%I%fin%Ex
-                   if (sggMiEx(i,j,k) /=1 ) then
+                   if (media%sggMiEx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Ex ',i,j,k
-                      if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -526,9 +526,9 @@ contains
              k = AbAr(jjj)%K%aba%Ex  !Down
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
                 Do i=AbAr(jjj)%I%com%Ex,AbAr(jjj)%I%fin%Ex
-                   if (sggMiEx(i,j,k) /=1 ) then
+                   if (media%sggMiEx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Ex ',i,j,k
-                      if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -539,9 +539,9 @@ contains
              k = AbAr(jjj)%K%aba%Ey  !Down
              do j = AbAr(jjj)%J%com%Ey, AbAr(jjj)%J%fin%Ey
                 do i = AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey
-                   if (sggMiEy(i,j,k) /=1 ) then
+                   if (media%sggMiEy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Ey ',i,j,k
-                      if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -555,9 +555,9 @@ contains
              k = AbAr(jjj)%K%arr%Ex  !Up
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
                 do i = AbAr(jjj)%I%com%Ex, AbAr(jjj)%I%fin%Ex
-                   if (sggMiEx(i,j,k) /=1 ) then
+                   if (media%sggMiEx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Ex ',i,j,k
-                      if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -568,9 +568,9 @@ contains
              k = AbAr(jjj)%K%arr%Ey
              do j = AbAr(jjj)%J%com%Ey, AbAr(jjj)%J%fin%Ey
                 do i = AbAr(jjj)%I%com%Ey, AbAr(jjj)%I%fin%Ey
-                   if (sggMiEy(i,j,k) /=1 ) then
+                   if (media%sggMiEy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Ey ',i,j,k
-                      if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -584,9 +584,9 @@ contains
              i = TrFr(jjj)%I%tra%Hz  !Back
              do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                 do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
-                   if (sggMiHz(i,j,k) /=1 ) then
+                   if (media%sggMiHz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Hz ',i,j,k
-                      if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -597,9 +597,9 @@ contains
              i = TrFr(jjj)%I%tra%Hy  !Back
              do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                 do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
-                   if (sggMiHy(i,j,k) /=1 ) then
+                   if (media%sggMiHy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Back TF/SF region intersects a material at Hy ',i,j,k
-                      if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -612,9 +612,9 @@ contains
              i = TrFr(jjj)%I%fro%Hz !Front
              do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                 do j = TrFr(jjj)%J%com%Hz, TrFr(jjj)%J%fin%Hz
-                   if (sggMiHz(i,j,k) /=1 ) then
+                   if (media%sggMiHz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Hz ',i,j,k
-                      if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -625,9 +625,9 @@ contains
              i = TrFr(jjj)%I%fro%Hy !Front
              do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                 do j = TrFr(jjj)%J%com%Hy, TrFr(jjj)%J%fin%Hy
-                   if (sggMiHy( i,j,k) /=1 ) then
+                   if (media%sggMiHy( i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Front TF/SF region intersects a material at Hy ',i,j,k
-                      if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -641,9 +641,9 @@ contains
              j = IzDe(jjj)%J%izq%Hx  !Left
              do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                 do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
-                   if (sggMiHx( i,j,k) /=1 ) then
+                   if (media%sggMiHx( i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Hx ',i,j,k
-                      if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -654,9 +654,9 @@ contains
              j = IzDe(jjj)%J%izq%Hz  !Left
              do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                 do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
-                   if (sggMiHz( i,j,k) /=1 ) then
+                   if (media%sggMiHz( i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Left TF/SF region intersects a material at Hz ',i,j,k
-                      if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -669,9 +669,9 @@ contains
              j = IzDe(jjj)%J%der%Hx !Right
              do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                 do i = IzDe(jjj)%I%com%Hx, IzDe(jjj)%I%fin%Hx
-                   if (sggMiHx(i,j,k) /=1 ) then
+                   if (media%sggMiHx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Hx ',i,j,k
-                      if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -682,9 +682,9 @@ contains
              j = IzDe(jjj)%J%der%Hz !Right
              do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                 do i = IzDe(jjj)%I%com%Hz, IzDe(jjj)%I%fin%Hz
-                   if (sggMiHz(i,j,k) /=1 ) then
+                   if (media%sggMiHz(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Right TF/SF region intersects a material at Hz ',i,j,k
-                      if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHz(i,j,k) ==0).or.(sgg%med(media%sggMiHz(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -697,9 +697,9 @@ contains
              k = AbAr(jjj)%K%aba%Hx  !Down
              do j = AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx
                 do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
-                   if (sggMiHx(i,j,k) /=1 ) then
+                   if (media%sggMiHx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Hx ',i,j,k
-                      if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -710,9 +710,9 @@ contains
              k = AbAr(jjj)%K%aba%Hy  !Down
              do j = AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy
                 do i=AbAr(jjj)%I%com%Hy,AbAr(jjj)%I%fin%Hy
-                   if (sggMiHy(i,j,k) /=1 ) then
+                   if (media%sggMiHy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Down TF/SF region intersects a material at Hy ',i,j,k
-                      if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -726,9 +726,9 @@ contains
              k = AbAr(jjj)%K%arr%Hx  !Up
              do j = AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx
                 do i = AbAr(jjj)%I%com%Hx, AbAr(jjj)%I%fin%Hx
-                   if (sggMiHx(i,j,k) /=1 ) then
+                   if (media%sggMiHx(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Hx ',i,j,k
-                      if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHx(i,j,k) ==0).or.(sgg%med(media%sggMiHx(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)
@@ -739,9 +739,9 @@ contains
              k=AbAr(jjj)%K%arr%Hy  !Up
              do j = AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy
                 do i = AbAr(jjj)%I%com%Hy, AbAr(jjj)%I%fin%Hy
-                   if (sggMiHy(i,j,k) /=1 ) then
+                   if (media%sggMiHy(i,j,k) /=1 ) then
                       write (buff,'(a,3i7)') 'Up TF/SF region intersects a material at Hy ',i,j,k
-                      if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
+                      if (((media%sggMiHy(i,j,k) ==0).or.(sgg%med(media%sggMiHy(i,j,k) )%is%pec)).and. .not. &
                       ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                       (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
                       call stoponerror(layoutnumber,size,buff)

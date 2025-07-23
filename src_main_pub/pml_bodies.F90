@@ -49,18 +49,11 @@ contains
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitPMLbodies(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
-   ! subroutine InitPMLbodies(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
+   ! subroutine InitPMLbodies(sgg,media,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
-      type(media_matrices_t), intent(in) :: media
       type (SGGFDTDINFO), intent(IN)     ::  sgg
+      type(media_matrices_t), intent(in) :: media
       REAL (KIND=RKIND)     , pointer, dimension ( : )   ::   g2,gm2
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       REAL (KIND=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -84,13 +77,6 @@ contains
       character (LEN=BUFSIZE)  ::  whoami
       type (BerPML__t), pointer :: PML_
       logical :: unstable
-
-      sggMiEx = media%sggMiEx
-      sggMiEy = media%sggMiEy
-      sggMiEz = media%sggMiEz
-      sggMiHx = media%sggMiHx
-      sggMiHy = media%sggMiHy
-      sggMiHz = media%sggMiHz
 !
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !         
@@ -108,7 +94,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
          Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
             Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-               jmed=sggMiEx(i1,j1,k1)
+               jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEx) then
@@ -127,7 +113,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
          Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
             Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-               jmed=sggMiEy(i1,j1,k1)
+               jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEy) then
@@ -147,7 +133,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
          Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
             Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-               jmed=sggMiEz(i1,j1,k1)
+               jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEz) then
@@ -177,7 +163,7 @@ contains
       Do k1=sgg%SINPMLSweep(iHx)%ZI,sgg%SINPMLSweep(iHx)%ZE
          Do j1=sgg%SINPMLSweep(iHx)%YI,sgg%SINPMLSweep(iHx)%YE
             Do i1=sgg%SINPMLSweep(iHx)%XI,sgg%SINPMLSweep(iHx)%XE
-               jmed=sggMiHx(i1,j1,k1)
+               jmed=media%sggMiHx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEx) then
@@ -190,7 +176,7 @@ contains
       Do k1=sgg%SINPMLSweep(iHy)%ZI,sgg%SINPMLSweep(iHy)%ZE
          Do j1=sgg%SINPMLSweep(iHy)%YI,sgg%SINPMLSweep(iHy)%YE
             Do i1=sgg%SINPMLSweep(iHy)%XI,sgg%SINPMLSweep(iHy)%XE
-               jmed=sggMiHy(i1,j1,k1)
+               jmed=media%sggMiHy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEy) then
@@ -204,7 +190,7 @@ contains
       Do k1=sgg%SINPMLSweep(iHz)%ZI,sgg%SINPMLSweep(iHz)%ZE
          Do j1=sgg%SINPMLSweep(iHz)%YI,sgg%SINPMLSweep(iHz)%YE
             Do i1=sgg%SINPMLSweep(iHz)%XI,sgg%SINPMLSweep(iHz)%XE
-               jmed=sggMiHz(i1,j1,k1)
+               jmed=media%sggMiHz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEz) then
@@ -228,7 +214,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
          Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
             Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-               jmed=sggMiEx(i1,j1,k1)
+               jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                 if (orient/=iEx) then
@@ -269,7 +255,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
          Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
             Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-               jmed=sggMiEy(i1,j1,k1)
+               jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                 if (orient/=iEy) then
@@ -310,7 +296,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
          Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
             Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-               jmed=sggMiEz(i1,j1,k1)
+               jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                 if (orient/=iEz) then
@@ -356,7 +342,7 @@ contains
       Do k1=sgg%SINPMLSweep(iHx)%ZI,sgg%SINPMLSweep(iHx)%ZE
          Do j1=sgg%SINPMLSweep(iHx)%YI,sgg%SINPMLSweep(iHx)%YE
             Do i1=sgg%SINPMLSweep(iHx)%XI,sgg%SINPMLSweep(iHx)%XE
-               jmed=sggMiHx(i1,j1,k1)
+               jmed=media%sggMiHx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                 if (orient/=iEx) then
@@ -397,7 +383,7 @@ contains
       Do k1=sgg%SINPMLSweep(iHy)%ZI,sgg%SINPMLSweep(iHy)%ZE
          Do j1=sgg%SINPMLSweep(iHy)%YI,sgg%SINPMLSweep(iHy)%YE
             Do i1=sgg%SINPMLSweep(iHy)%XI,sgg%SINPMLSweep(iHy)%XE
-               jmed=sggMiHy(i1,j1,k1)
+               jmed=media%sggMiHy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                 if (orient/=iEy) then
@@ -438,7 +424,7 @@ contains
       Do k1=sgg%SINPMLSweep(iHz)%ZI,sgg%SINPMLSweep(iHz)%ZE
          Do j1=sgg%SINPMLSweep(iHz)%YI,sgg%SINPMLSweep(iHz)%YE
             Do i1=sgg%SINPMLSweep(iHz)%XI,sgg%SINPMLSweep(iHz)%XE
-               jmed=sggMiHz(i1,j1,k1)
+               jmed=media%sggMiHz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%PMLbody) then
                 orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                 if (orient/=iEz) then

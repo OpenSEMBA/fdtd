@@ -123,7 +123,7 @@ contains
       type(media_matrices_t), intent(in) :: media
       type (bounds_t)  ::  b
       type (SGGFDTDINFO), intent(IN)         ::  sgg
-      INTEGER (KIND=IKINDMTAG) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      ! INTEGER (KIND=IKINDMTAG) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
       logical :: simu_devia,niapapostprocess
       REAL (KIND=RKIND)           ::  eps00,mu00
@@ -131,13 +131,13 @@ contains
       integer (kind=4), intent(in) :: layoutnumber,size,mpidir
       type (nf2ff_t) :: facesNF2FF
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
+      ! sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
+      ! sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
+      ! sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
+      ! sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
+      ! sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
+      ! sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       !
       !!!
       character(len=*), INTENT(in) :: wiresflavor
@@ -177,13 +177,13 @@ contains
 !
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !
-      sggMiEx = media%sggMiEx
-      sggMiEy = media%sggMiEy
-      sggMiEz = media%sggMiEz
-      sggMiHx = media%sggMiHx
-      sggMiHy = media%sggMiHy
-      sggMiHz = media%sggMiHz
-      sggMtag = media%sggMtag
+      ! sggMiEx = media%sggMiEx
+      ! sggMiEy = media%sggMiEy
+      ! sggMiEz = media%sggMiEz
+      ! sggMiHx = media%sggMiHx
+      ! sggMiHy = media%sggMiHy
+      ! sggMiHz = media%sggMiHz
+      ! sggMtag = media%sggMtag
       !!
       output=> null()
 #ifdef CompileWithMPI
@@ -1286,10 +1286,10 @@ contains
                      if (field==mapvtk) then
                         INIT=.TRUE.; geom=.false. ; asigna=.false.; magnetic=.false. ; electric=.true.
 
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                        call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                         init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
 
-                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
+                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,media%sggMtag, tag_numbers)
                      endif
                      !!!
                      do kkk=sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1327,7 +1327,7 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.false. ; asigna=.false.; magnetic=.true. ; electric=.false.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                        call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
                           
                      endif
@@ -1490,9 +1490,9 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.false. ; electric=.true.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                        call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
+                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,media%sggMtag, tag_numbers)
                      endif
                      !!!
                      do kkk=sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1540,7 +1540,7 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.true. ; electric=.false.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                        call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
 
                      endif
@@ -1943,7 +1943,7 @@ contains
                   call checkduplicatenames
                   !!!!!!
                   !inicializacion especifica del farfield
-                  call InitFarField(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size, &
+                  call InitFarField(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,layoutnumber,size, &
                   b,resume, &
                   output(ii)%item(i)%unit        ,   &
                   output(ii)%item(i)%path          , &
@@ -2033,17 +2033,17 @@ contains
          integer (kind=4) :: field, i, j, k
          select case(field)
          case(iEx)
-            res = sggMiEx(i, j, k)
+            res = media%sggMiEx(i, j, k)
          case(iEy)
-            res = sggMiEy(i, j, k)
+            res = media%sggMiEy(i, j, k)
          case(iEz)
-            res = sggMiEz(i, j, k)
+            res = media%sggMiEz(i, j, k)
          case(iHx)
-            res = sggMiHx(i, j, k)
+            res = media%sggMiHx(i, j, k)
          case(iHy)
-            res = sggMiHy(i, j, k)
+            res = media%sggMiHy(i, j, k)
          case(iHz)
-            res = sggMiHz(i, j, k)
+            res = media%sggMiHz(i, j, k)
          case default
             call StopOnError(layoutnumber, size, 'Unrecognized field')
          end select
@@ -2578,7 +2578,7 @@ contains
       logical :: noconformalmapvtk
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       type(media_matrices_t), intent(in) :: media
-      INTEGER (KIND=IKINDMTAG) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      ! INTEGER (KIND=IKINDMTAG) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
       !---------------------------> inputs <----------------------------------------------------------
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
@@ -2599,13 +2599,13 @@ contains
                                                             dze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       !!!
       !----->
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES)   ::  &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES)   ::  &
+      ! sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
+      ! sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
+      ! sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
+      ! sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
+      ! sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
+      ! sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
       !---------------------------> variables locales <-----------------------------------------------
       integer( kind = 4)  ::  i, ii, i1, i2, j1, j2, k1, k2, i1_m, i2_m, j1_m, j2_m, k1_m, k2_m, field,jjx,jjy,jjz,if1,i1t,j1t,k1t,iff1
@@ -2630,13 +2630,13 @@ contains
 
       logical ::  INIT,GEOM,ASIGNA,electric,magnetic
 
-      sggMiEx = media%sggMiEx
-      sggMiEy = media%sggMiEy
-      sggMiEz = media%sggMiEz
-      sggMiHx = media%sggMiHx
-      sggMiHy = media%sggMiHy
-      sggMiHz = media%sggMiHz
-      sggMtag = media%sggMtag
+      ! sggMiEx = media%sggMiEx
+      ! sggMiEy = media%sggMiEy
+      ! sggMiEz = media%sggMiEz
+      ! sggMiHx = media%sggMiHx
+      ! sggMiHy = media%sggMiHy
+      ! sggMiHz = media%sggMiHz
+      ! sggMtag = media%sggMtag
 
       !!!
       at=-1; jx=-1; jy=-1;jz=-1;jdir=-1;jdir1=-1;jdir2=-1  !para que gfortran no me diga que no las inicializo
@@ -3230,10 +3230,10 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.false. ; electric=.true.
-                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                              call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
           
-                              call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
+                              call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,media%sggMtag, tag_numbers)
                            endif
                            !!!
                            do KKK = k1, k2
@@ -3286,7 +3286,7 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.true. ; electric=.false.
-                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                              call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
                            endif
                            !!!
@@ -3625,17 +3625,17 @@ contains
          integer (kind=4) :: field, i, j, k
          select case(field)
          case(iEx)
-            res = sggMiEx(i, j, k)
+            res = media%sggMiEx(i, j, k)
          case(iEy)
-            res = sggMiEy(i, j, k)
+            res = media%sggMiEy(i, j, k)
          case(iEz)
-            res = sggMiEz(i, j, k)
+            res = media%sggMiEz(i, j, k)
          case(iHx)
-            res = sggMiHx(i, j, k)
+            res = media%sggMiHx(i, j, k)
          case(iHy)
-            res = sggMiHy(i, j, k)
+            res = media%sggMiHy(i, j, k)
          case(iHz)
-            res = sggMiHz(i, j, k)
+            res = media%sggMiHz(i, j, k)
          end select
       end function
 

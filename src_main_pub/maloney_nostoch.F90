@@ -107,13 +107,13 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    REAL (KIND=RKIND)     , pointer, dimension ( : ), intent(inout)   ::  gm1,g1
    type (SGGFDTDINFO), intent(INOUT)     ::  sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
    REAL (KIND=RKIND)     , pointer, dimension ( : ), intent(inout)     ::   gm2,g2
-   integer (KIND=INTEGERSIZEOFMEDIAMATRICES)  ::  &
-   sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-   sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-   sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-   sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-   sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-   sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+   ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES)  ::  &
+   ! sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
+   ! sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
+   ! sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
+   ! sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
+   ! sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
+   ! sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
    REAL (KIND=RKIND)   , intent(in) , target     :: &
    Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
    Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -145,12 +145,12 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    character (LEN=BUFSIZE)                            ::   ficheropolos
 !
 
-   sggMiEx = media%sggMiEx
-   sggMiEy = media%sggMiEy
-   sggMiEz = media%sggMiEz
-   sggMiHx = media%sggMiHx
-   sggMiHy = media%sggMiHy
-   sggMiHz = media%sggMiHz
+   ! sggMiEx = media%sggMiEx
+   ! sggMiEy = media%sggMiEy
+   ! sggMiEz = media%sggMiEz
+   ! sggMiHx = media%sggMiHx
+   ! sggMiHy = media%sggMiHy
+   ! sggMiHz = media%sggMiHz
 
    eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
    SGBCcrank        = temp_SGBCcrank     
@@ -179,7 +179,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
       Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
          Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-            jmed=sggMiEx(i1,j1,k1)
+            jmed=media%sggMiEx(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC)  conta=conta+1
          end do
       end do
@@ -187,7 +187,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
       Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
          Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-            jmed=sggMiEy(i1,j1,k1)
+            jmed=media%sggMiEy(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC)  conta=conta+1
          end do
       end do
@@ -196,7 +196,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
       Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
          Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-            jmed=sggMiEz(i1,j1,k1)
+            jmed=media%sggMiEz(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC) conta=conta+1
          end do
       end do
@@ -307,15 +307,15 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
 Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
     Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
          Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-            jmed=sggMiEx(i1,j1,k1)
+            jmed=media%sggMiEx(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC)  then
 !!!
                filo_placas=0
                es_unfilo_placa=.false.
-               if (SGG%Med(sggMiEx(i1,j1,k1+1))%Is%SGBC) filo_placas=filo_placas+1
-               if (SGG%Med(sggMiEx(i1,j1,k1-1))%Is%SGBC) filo_placas=filo_placas+1
-               if (SGG%Med(sggMiEx(i1,j1+1,k1))%Is%SGBC) filo_placas=filo_placas+1
-               if (SGG%Med(sggMiEx(i1,j1-1,k1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEx(i1,j1,k1+1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEx(i1,j1,k1-1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEx(i1,j1+1,k1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEx(i1,j1-1,k1))%Is%SGBC) filo_placas=filo_placas+1
                if (filo_placas < 2) then
                      es_unfilo_placa=.true.
                endif
@@ -329,16 +329,16 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                   compo%transversalDeltaE =    1.0_RKIND/IDYe(   j1     )
                   compo%transversalDeltaH =    1.0_RKIND/IDYh(   j1     )
                   compo%alignedlDeltaH     =    1.0_RKIND/Idzh(        k1)
-                  compo%med(1) =                     sggMiHz(i1,j1  ,k1)
-                  compo%med(0) =                     sggMiHz(i1,j1-1,k1)
+                  compo%med(1) =                     media%sggMiHz(i1,j1  ,k1)
+                  compo%med(0) =                     media%sggMiHz(i1,j1-1,k1)
                   compo%Correct_Ha=.true. !son ciclicos a,b -> x,y,z
                   compo%Correct_Hb=.false.
                 case (iEz)
                   compo%transversalDeltaE    = 1.0_RKIND/IDze(      k1  )
                   compo%transversalDeltaH    = 1.0_RKIND/IDzh(      k1  )
                   compo%alignedlDeltaH        = 1.0_RKIND/IDYh(   j1     )
-                  compo%med(1) =                     sggMiHy(i1,j1,k1  )
-                  compo%med(0) =                     sggMiHy(i1,j1,k1-1)
+                  compo%med(1) =                     media%sggMiHy(i1,j1,k1  )
+                  compo%med(0) =                     media%sggMiHy(i1,j1,k1-1)
                   compo%Correct_Hb=.true.
                   compo%Correct_Ha=.false.
                 case DEFAULT
@@ -396,15 +396,15 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
    Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
       Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
          Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-            jmed=sggMiEy(i1,j1,k1)
+            jmed=media%sggMiEy(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC)  then
 !!!
                filo_placas=0
                es_unfilo_placa=.false.
-               if (SGG%Med(sggMiEy(i1+1,j1,k1))%Is%SGBC) filo_placas=filo_placas+1
-               if (SGG%Med(sggMiEy(i1-1,j1,k1))%Is%SGBC) filo_placas=filo_placas+1
-               if (SGG%Med(sggMiEy(i1,j1,k1+1))%Is%SGBC) filo_placas=filo_placas+1
-               if (SGG%Med(sggMiEy(i1,j1,k1-1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEy(i1+1,j1,k1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEy(i1-1,j1,k1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEy(i1,j1,k1+1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEy(i1,j1,k1-1))%Is%SGBC) filo_placas=filo_placas+1
                if (filo_placas < 2) then
                      es_unfilo_placa=.true.
                endif
@@ -418,16 +418,16 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                   compo%transversalDeltaE = 1.0_RKIND/IDze(      k1  )
                   compo%transversalDeltaH = 1.0_RKIND/IDzh(      k1  )
                   compo%alignedlDeltaH     = 1.0_RKIND/Idxh(i1        )
-                  compo%med(1) =                  sggMiHx(i1,j1,k1  )
-                  compo%med(0) =                  sggMiHx(i1,j1,k1-1)
+                  compo%med(1) =                  media%sggMiHx(i1,j1,k1  )
+                  compo%med(0) =                  media%sggMiHx(i1,j1,k1-1)
                   compo%Correct_Ha=.true.
                   compo%Correct_Hb=.false.
                 case (iEx)
                   compo%transversalDeltaE = 1.0_RKIND/IDxe(i1        )
                   compo%transversalDeltaH = 1.0_RKIND/IDxh(i1        )
                   compo%alignedlDeltaH     = 1.0_RKIND/IDzh(        k1)
-                  compo%med(1) =                  sggMiHz(i1  ,j1,k1)
-                  compo%med(0) =                  sggMiHz(i1-1,j1,k1)
+                  compo%med(1) =                  media%sggMiHz(i1  ,j1,k1)
+                  compo%med(0) =                  media%sggMiHz(i1-1,j1,k1)
                   compo%Correct_Ha=.false.
                   compo%Correct_Hb=.true.
                 case DEFAULT
@@ -485,15 +485,15 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
    Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
       Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
          Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-            jmed=sggMiEz(i1,j1,k1)
+            jmed=media%sggMiEz(i1,j1,k1)
             if (SGG%Med(jmed)%Is%SGBC) then
 !!!
                filo_placas=0
                es_unfilo_placa=.false.
-               if (SGG%Med(sggMiEz(i1,j1+1,k1))%Is%SGBC) filo_placas=filo_placas+1
-               if (SGG%Med(sggMiEz(i1,j1-1,k1))%Is%SGBC) filo_placas=filo_placas+1
-               if (SGG%Med(sggMiEz(i1+1,j1,k1))%Is%SGBC) filo_placas=filo_placas+1
-               if (SGG%Med(sggMiEz(i1-1,j1,k1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEz(i1,j1+1,k1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEz(i1,j1-1,k1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEz(i1+1,j1,k1))%Is%SGBC) filo_placas=filo_placas+1
+               if (SGG%Med(media%sggMiEz(i1-1,j1,k1))%Is%SGBC) filo_placas=filo_placas+1
                if (filo_placas < 2) then
                      es_unfilo_placa=.true.
                endif
@@ -507,16 +507,16 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                   compo%transversalDeltaE = 1.0_RKIND/IDxE(i1        )
                   compo%transversalDeltaH = 1.0_RKIND/IDxh(i1        )
                   compo%alignedlDeltaH     = 1.0_RKIND/IDyh(     j1   )
-                  compo%med(1) =                  sggMiHy(i1  ,j1,k1)
-                  compo%med(0) =                  sggMiHy(i1-1,j1,k1)
+                  compo%med(1) =                  media%sggMiHy(i1  ,j1,k1)
+                  compo%med(0) =                  media%sggMiHy(i1-1,j1,k1)
                   compo%Correct_Ha=.true.
                   compo%Correct_Hb=.false.
                 case (iEy)
                   compo%transversalDeltaE = 1.0_RKIND/IDyE(    j1     )
                   compo%transversalDeltaH = 1.0_RKIND/IDyh(    j1     )
                   compo%alignedlDeltaH     = 1.0_RKIND/IDxh(i1        )
-                  compo%med(1) =                    sggMiHx(i1,j1  ,k1)
-                  compo%med(0) =                    sggMiHx(i1,j1-1,k1)
+                  compo%med(1) =                    media%sggMiHx(i1,j1  ,k1)
+                  compo%med(0) =                    media%sggMiHx(i1,j1-1,k1)
                   compo%Correct_Ha=.false.
                   compo%Correct_Hb=.true.
                 case DEFAULT
