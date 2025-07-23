@@ -125,7 +125,7 @@ module Solver_mod
       procedure :: get_field_value
       procedure :: step
       procedure :: advanceE, advanceEx, advanceEy, advanceEz
-
+      procedure :: advanceHx, advanceHy, advanceHz
       procedure :: destroy_and_deallocate
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
@@ -2253,17 +2253,20 @@ contains
 #ifdef CompileWithProfiling    
       call nvtxStartRange("Antes del bucle HX")
 #endif
-      call Advance_Hx           (Hx, Ey, Ez, Idye, Idze, this%sggMiHx, this%bounds,gm1,gm2)        
+      call this%advanceHx(this%sggMiHx)
+      ! call Advance_Hx           (Hx, Ey, Ez, Idye, Idze, this%sggMiHx, this%bounds,gm1,gm2)        
 #ifdef CompileWithProfiling    
       call nvtxEndRange
       call nvtxStartRange("Antes del bucle HY")
 #endif
-      call Advance_Hy           (Hy, Ez, Ex, Idze, Idxe, this%sggMiHy, this%bounds,gm1,gm2)     
+      call this%advanceHy(this%sggMiHy)
+      ! call Advance_Hy           (Hy, Ez, Ex, Idze, Idxe, this%sggMiHy, this%bounds,gm1,gm2)     
 #ifdef CompileWithProfiling    
       call nvtxEndRange
       call nvtxStartRange("Antes del bucle HZ")
 #endif
-      call Advance_Hz           (Hz, Ex, Ey, Idxe, Idye, this%sggMiHz, this%bounds,gm1,gm2)  
+      call this%advanceHz(this%sggMiHz)  
+      ! call Advance_Hz           (Hz, Ex, Ey, Idxe, Idye, this%sggMiHz, this%bounds,gm1,gm2)  
 #ifdef CompileWithProfiling    
       call nvtxEndRange
 #endif
@@ -2463,20 +2466,20 @@ contains
 #ifdef CompileWithProfiling
       call nvtxStartRange("Antes del bucle EX")
 #endif
-      call this%AdvanceEx(this%sggMiEx)
+      call this%advanceEx(this%sggMiEx)
 #ifdef CompileWithProfiling
       call nvtxEndRange
 
       call nvtxStartRange("Antes del bucle EY")
 #endif
-      call this%AdvanceEy(this%sggMiEy)
+      call this%advanceEy(this%sggMiEy)
       
 #ifdef CompileWithProfiling    
       call nvtxEndRange
 
       call nvtxStartRange("Antes del bucle EZ")
 #endif
-      call this%AdvanceEz(this%sggMiEz)
+      call this%advanceEz(this%sggMiEz)
 #ifdef CompileWithProfiling    
       call nvtxEndRange
 #endif
@@ -2523,9 +2526,9 @@ contains
 #ifdef CompileWithOpenMP   
 !$OMP  END PARALLEL DO
 #endif
-   end subroutine
+   end subroutine advanceEx
 
-   subroutine AdvanceEy(this,sggMiEy)
+   subroutine advanceEy(this,sggMiEy)
       class(solver_t) :: this
       integer(kind=integersizeofmediamatrices), dimension (0:this%bounds%sggMiEy%NX-1,0:this%bounds%sggMiEy%NY-1,0:this%bounds%sggMiEy%NZ-1), intent(in) :: sggMiEy
 
@@ -2568,9 +2571,9 @@ contains
 
 
       return
-   end subroutine AdvanceEy
+   end subroutine advanceEy
 
-   subroutine AdvanceEz(this,sggMiEz)
+   subroutine advanceEz(this,sggMiEz)
       class(solver_t) :: this
       integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEz%NX-1,0:this%bounds%sggMiEz%NY-1,0:this%bounds%sggMiEz%NZ-1), intent(in) ::  sggMiEz
 
@@ -2611,7 +2614,132 @@ contains
 !$OMP  END PARALLEL DO
 #endif
       return
-   end subroutine AdvanceEz
+   end subroutine advanceEz
+
+   subroutine advanceHx(this, sggMiHx)
+      class(solver_t) :: this
+      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiHx%NX-1,0:this%bounds%sggMiHx%NY-1,0:this%bounds%sggMiHx%NZ-1), intent(in) :: sggMiHx
+
+      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Hx
+      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ey
+      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ez
+      real (kind=rkind), dimension(:), pointer:: IdyE
+      real (kind=rkind), dimension(:), pointer:: IdzE
+
+      real (kind=rkind) :: Idzek, Idyej
+      integer(kind=4) :: i, j, k
+      integer(kind=integersizeofmediamatrices) :: medio
+
+      Hx(0:this%bounds%Hx%NX-1,0:this%bounds%Hx%NY-1,0:this%bounds%Hx%NZ-1) => this%Hx
+      Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
+      Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
+
+      IdyE(0:this%bounds%dyE%NY-1) => this%IdyE
+      IdzE(0:this%bounds%dzE%NZ-1) => this%IdzE
+
+#ifdef CompileWithOpenMP
+!$OMP  PARALLEL DO  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek,Idyej)     
+#endif
+#ifdef CompileWithACC   
+!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek,Idyej)       copyin(Hx,sggMiHx,Ey,Ez,Idye,Idze,b,GM1,GM2) copyout(Hx) 
+#endif
+      Do k=1,this%bounds%sweepHx%NZ
+         Do j=1,this%bounds%sweepHx%NY
+            Do i=1,this%bounds%sweepHx%NX
+            Idzek=Idze(k)
+            Idyej=Idye(j)
+               medio =sggMiHx(i,j,k)
+               Hx(i,j,k)=this%gm1(medio)*Hx(i,j,k)+this%gm2(medio)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
+            End do
+         End do
+      End do
+#ifdef CompileWithOpenMP
+!$OMP  END PARALLEL DO
+#endif
+      return
+   end subroutine advanceHx
+
+   subroutine advanceHy(this, sggMiHy)
+      class(solver_t) :: this
+      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiHy%NX-1,0:this%bounds%sggMiHy%NY-1,0:this%bounds%sggMiHy%NZ-1), intent(in) :: sggMiHy
+
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ez
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ex
+      real(kind=rkind), dimension(:), pointer :: IdzE
+      real(kind=rkind), dimension(:), pointer :: IdxE
+
+      real (kind=rkind) :: Idzek
+      integer(kind=4) :: i, j, k
+      integer(kind=integersizeofmediamatrices) :: medio
+
+      Hy(0:this%bounds%Hy%NX-1,0:this%bounds%Hy%NY-1,0:this%bounds%Hy%NZ-1) => this%Hy
+      Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
+      Ex(0:this%bounds%Ex%NX-1,0:this%bounds%Ex%NY-1,0:this%bounds%Ex%NZ-1) => this%Ex
+
+      IdzE(0:this%bounds%dzE%NZ-1) => this%IdzE
+      IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
+
+#ifdef CompileWithOpenMP
+!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek)     
+#endif
+#ifdef CompileWithACC   
+!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek)         copyin(Hy,sggMiHy,Ez,Ex,Idze,Idxe,b,GM1,GM2) copyout(Hy) 
+#endif
+      Do k=1,this%bounds%sweepHy%NZ
+         Do j=1,this%bounds%sweepHy%NY
+            Do i=1,this%bounds%sweepHy%NX
+               Idzek=Idze(k)
+               medio =sggMiHy(i,j,k)
+               Hy(i,j,k)=this%gm1(medio)*Hy(i,j,k)+this%gm2(medio)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
+            End do
+         End do
+      End do
+#ifdef CompileWithOpenMP
+!$OMP  END PARALLEL DO
+#endif
+      return
+   end subroutine advanceHy
+
+   subroutine advanceHz(this, sggMiHz)
+      class(solver_t) :: this
+      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiHz%NX-1,0:this%bounds%sggMiHz%NY-1,0:this%bounds%sggMiHz%NZ-1), intent(in) :: sggMiHz
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hz
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ex
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ey
+      real(kind=rkind), dimension(:), pointer :: IdyE
+      real(kind=rkind), dimension(:), pointer :: IdxE
+
+      real (kind = RKIND)  ::  Idyej
+      integer(kind = 4)  ::  i, j, k
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
+      Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
+      Ex(0:this%bounds%EX%NX-1,0:this%bounds%EX%NY-1,0:this%bounds%EX%NZ-1) => this%Ex
+      Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
+      IdyE(0:this%bounds%dyE%NY-1) => this%IdyE
+      IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
+
+#ifdef CompileWithOpenMP
+!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyej)  
+#endif
+#ifdef CompileWithACC   
+!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idyej)       copyin(Hz,sggMiHz,Ex,Ey,Idxe,Idye,b,GM1,GM2) copyout(Hz)
+#endif
+      Do k=1,this%bounds%sweepHz%NZ
+         Do j=1,this%bounds%sweepHz%NY
+            Do i=1,this%bounds%sweepHz%NX
+               Idyej=Idye(j)
+               medio =sggMiHz(i,j,k)
+               Hz(i,j,k)=this%gm1(medio)*Hz(i,j,k)+this%gm2(medio)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
+            End do
+         End do
+      End do
+#ifdef CompileWithOpenMP
+!$OMP  END PARALLEL DO
+#endif
+      return
+   end subroutine advanceHz
+
 
    subroutine solver_end(this, sgg, eps0, mu0, tagtype, finishedwithsuccess)
       class(solver_t) :: this
