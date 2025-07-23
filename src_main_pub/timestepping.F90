@@ -124,7 +124,7 @@ module Solver_mod
       procedure :: set_field_value
       procedure :: get_field_value
       procedure :: step
-      procedure :: advanceEx, advanceEy, advanceEz
+      procedure :: advanceE, advanceEx, advanceEy, advanceEz
 
       procedure :: destroy_and_deallocate
 #ifdef CompileWithMTLN
@@ -2118,7 +2118,7 @@ contains
 
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       IF (this%thereAre%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
-      call advanceE()
+      call this%advanceE()
 #ifdef CompileWithConformal
       if(this%control%input_conformal_flag) call conformal_advance_E()
 #endif
@@ -2248,148 +2248,6 @@ contains
          endif
       endif
    end subroutine 
-
-   subroutine advanceE()
-#ifdef CompileWithProfiling
-      call nvtxStartRange("Antes del bucle EX")
-#endif
-      call this%AdvanceEx(this%sggMiEx)
-      ! call Advance_Ex          (Ex, Hy, Hz, Idyh, Idzh, this%sggMiEx, this%bounds,g1,g2)    
-#ifdef CompileWithProfiling
-      call nvtxEndRange
-
-      call nvtxStartRange("Antes del bucle EY")
-#endif
-      call this%AdvanceEy(this%sggMiEy)
-      ! call Advance_Ey          (Ey, Hz, Hx, Idzh, Idxh, this%sggMiEy, this%bounds,g1,g2)
-      
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-
-      call nvtxStartRange("Antes del bucle EZ")
-#endif
-      call this%AdvanceEz(this%sggMiEz)
-      ! call Advance_Ez          (Ez, Hx, Hy, Idxh, Idyh, this%sggMiEz, this%bounds,g1,g2)
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-#endif
-   end subroutine
-
-   subroutine Advance_Ex(Ex,Hy,Hz,Idyh,Idzh,sggMiEx,b,g1,g2)
-
-      !------------------------>
-      type (bounds_t), intent( IN)  ::  b
-      REAL (KIND=RKIND)     , pointer, dimension ( : )  ::  g1, g2
-      !
-      real (kind = RKIND), dimension    ( 0 :     b%dyh%NY-1     )  , intent( IN)  ::  Idyh
-      real (kind = RKIND), dimension    ( 0 :     b%dzh%NZ-1     )  , intent( IN)  ::  Idzh
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( IN)     ::  sggMiEx
-      real (kind = RKIND), dimension    ( 0 :      b%Ex%NX-1 , 0 :      b%Ex%NY-1 , 0 :      b%Ex%NZ-1 )  , intent( INOUT)  ::  Ex
-      real (kind = RKIND), dimension    ( 0 :      b%Hy%NX-1 , 0 :      b%Hy%NY-1 , 0 :      b%Hy%NZ-1 )  , intent( IN)  ::  HY
-      real (kind = RKIND), dimension    ( 0 :      b%Hz%NX-1 , 0 :      b%Hz%NY-1 , 0 :      b%Hz%NZ-1 )  , intent( IN)  ::  HZ
-      !------------------------> Variables locales
-      real (kind = RKIND)  ::  Idzhk, Idyhj
-      integer(kind = 4)  ::  i, j, k
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
-#ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk,Idyhj) 
-#endif
-#ifdef CompileWithACC   
-!$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex) 
-#endif
-      Do k=1,b%sweepEx%NZ
-         Do j=1,b%sweepEx%NY
-            Do i=1,b%sweepEx%NX
-               Idzhk=Idzh(k)
-               Idyhj=Idyh(j)
-               medio =sggMiEx(i,j,k)
-               Ex(i,j,k)=G1(MEDIO)*Ex(i,j,k)+G2(MEDIO)* &
-               ((Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk)
-            End do
-         End do
-      End do
-#ifdef CompileWithOpenMP   
-!$OMP  END PARALLEL DO
-#endif
-      return
-   end subroutine Advance_Ex
-   
-   subroutine Advance_Ey(Ey,Hz,Hx,Idzh,Idxh,sggMiEy,b,g1,g2)
-
-      !------------------------>
-      type (bounds_t), intent( IN)  ::  b
-      REAL (KIND=RKIND)     , pointer, dimension ( : )   ::  g1, g2
-      !
-      real (kind = RKIND), dimension    ( 0 :     b%dzh%NZ-1     )  , intent( IN)  ::  Idzh
-      real (kind = RKIND), dimension    ( 0 :     b%dxh%NX-1     )  , intent( IN)  ::  Idxh
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1   )  , intent( IN)     ::  sggMiEy
-      real (kind = RKIND), dimension    ( 0 :      b%Ey%NX-1 , 0 :      b%Ey%NY-1 , 0 :      b%Ey%NZ-1 )  , intent( INOUT)  ::  EY
-      real (kind = RKIND), dimension    ( 0 :      b%Hz%NX-1 , 0 :      b%Hz%NY-1 , 0 :      b%Hz%NZ-1 )  , intent( IN)  ::  HZ
-      real (kind = RKIND), dimension    ( 0 :      b%Hx%NX-1 , 0 :      b%Hx%NY-1 , 0 :      b%Hx%NZ-1 )  , intent( IN)  ::  HX
-      !------------------------> Variables locales
-      real (kind = RKIND)  ::  Idzhk
-      integer(kind = 4)  ::  i, j, k
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
-#ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk)  
-#endif
-#ifdef CompileWithACC   
-!$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk)     copyin(Ey,sggMiEy,Hz,Hx,Idzh,Idxh,b,G1,G2) copyout(Ey) 
-#endif
-      Do k=1,b%sweepEy%NZ
-         Do j=1,b%sweepEy%NY
-            Do i=1,b%sweepEy%NX
-               Idzhk=Idzh(k)
-               medio =sggMiEy(i,j,k)
-               Ey(i,j,k)=G1(MEDIO)*Ey(i,j,k)+G2(MEDIO)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
-            End do
-         End do
-      End do
-#ifdef CompileWithOpenMP
-!$OMP  END PARALLEL DO
-#endif
-
-
-
-      return
-   end subroutine Advance_Ey
-
-   subroutine Advance_Ez(Ez,Hx,Hy,Idxh,Idyh,sggMiEz,b,g1,g2)
-
-      !------------------------>
-      type (bounds_t), intent( IN)  ::  b
-      REAL (KIND=RKIND)     , pointer, dimension ( : )   ::  g1, g2
-      !
-      real (kind = RKIND), dimension    ( 0 :     b%dyh%NY-1     )  , intent( IN)  ::  Idyh
-      real (kind = RKIND), dimension    ( 0 :     b%dxh%NX-1     )  , intent( IN)  ::  Idxh
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( IN)     ::  sggMiEz
-      real (kind = RKIND), dimension    ( 0 :      b%Ez%NX-1 , 0 :      b%Ez%NY-1 , 0 :      b%Ez%NZ-1 )  , intent( INOUT)  ::  Ez
-      real (kind = RKIND), dimension    ( 0 :      b%HX%NX-1 , 0 :      b%HX%NY-1 , 0 :      b%HX%NZ-1 )  , intent( IN)  ::  HX
-      real (kind = RKIND), dimension    ( 0 :      b%Hy%NX-1 , 0 :      b%Hy%NY-1 , 0 :      b%Hy%NZ-1 )  , intent( IN)  ::  HY
-      !------------------------> Variables locales
-      real (kind = RKIND)  ::   Idyhj
-      integer(kind = 4)  ::  i, j, k
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
-#ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyhj)    
-#endif
-#ifdef CompileWithACC   
-!$ACC parallel loop   DEFAULT(present) collapse (2) private (i,j,k,medio,Idyhj)        copyin(Ez,sggMiEz,Hx,Hy,Idxh,Idyh,b,G1,G2) copyout(Ez) 
-#endif
-      Do k=1,b%sweepEz%NZ
-         Do j=1,b%sweepEz%NY
-            Do i=1,b%sweepEz%NX
-               Idyhj=Idyh(j)
-               medio =sggMiEz(i,j,k)
-               Ez(i,j,k)=G1(MEDIO)*Ez(i,j,k)+G2(MEDIO)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
-            End do
-         End do
-      End do
-#ifdef CompileWithOpenMP
-!$OMP  END PARALLEL DO
-#endif
-      return
-   end subroutine Advance_Ez
 
    subroutine advanceH()
 #ifdef CompileWithProfiling    
@@ -2599,6 +2457,30 @@ contains
 #endif
 
    end subroutine step
+
+   subroutine advanceE(this)
+      class(solver_t) :: this
+#ifdef CompileWithProfiling
+      call nvtxStartRange("Antes del bucle EX")
+#endif
+      call this%AdvanceEx(this%sggMiEx)
+#ifdef CompileWithProfiling
+      call nvtxEndRange
+
+      call nvtxStartRange("Antes del bucle EY")
+#endif
+      call this%AdvanceEy(this%sggMiEy)
+      
+#ifdef CompileWithProfiling    
+      call nvtxEndRange
+
+      call nvtxStartRange("Antes del bucle EZ")
+#endif
+      call this%AdvanceEz(this%sggMiEz)
+#ifdef CompileWithProfiling    
+      call nvtxEndRange
+#endif
+   end subroutine
 
    subroutine advanceEx(this, sggMiEx)
       class(solver_t) :: this
