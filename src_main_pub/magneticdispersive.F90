@@ -54,14 +54,8 @@ contains
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitMdispersives(sgg,media,ThereAreMdispersives,resume,GM1,GM2,Hx,Hy,Hz)
-   ! subroutine InitMdispersives(sgg,sggmiHx,sggmiHy,sggmiHz,ThereAreMdispersives,resume,GM1,GM2,Hx,Hy,Hz)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       type(media_matrices_t), intent(in) :: media
-      !!!
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
-      ! sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE), &
-      ! sggMiHy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE), &
-      ! sggMiHz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
       REAL (KIND=RKIND)     , intent(inout)      ::  &
       GM1(0 : sgg%NumMedia),GM2(0 : sgg%NumMedia)
       REAL (KIND=RKIND)   , intent(inout), target      :: &
@@ -76,10 +70,6 @@ contains
       REAL (KIND=RKIND)   ::  tempo
       integer (kind=4)  ::  numpolres
       MDutton%Medium => null()
-      !!!
-      ! sggMiHx = media%sggMiHx
-      ! sggMiHy = media%sggMiHy
-      ! sggMiHz = media%sggMiHz
 
       ThereAreMdispersives=.FALSE.
       conta=0

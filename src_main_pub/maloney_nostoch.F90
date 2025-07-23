@@ -96,9 +96,6 @@ contains
 subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
                      layoutnumber,size,G1,G2,GM1,GM2,ThereAreSGBCs,resume,temp_SGBCcrank,temp_SGBCFreq,temp_SGBCresol,temp_SGBCDepth,temp_SGBCDispersive, &
                      eps00,mu00,simu_devia,stochastic)
-! subroutine InitSGBCs(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
-!                      layoutnumber,size,G1,G2,GM1,GM2,ThereAreSGBCs,resume,temp_SGBCcrank,temp_SGBCFreq,temp_SGBCresol,temp_SGBCDepth,temp_SGBCDispersive, &
-!                      eps00,mu00,simu_devia,stochastic)
 
    type(media_matrices_t), intent(in) :: media
    logical :: simu_devia,stochastic 
@@ -107,13 +104,6 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    REAL (KIND=RKIND)     , pointer, dimension ( : ), intent(inout)   ::  gm1,g1
    type (SGGFDTDINFO), intent(INOUT)     ::  sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
    REAL (KIND=RKIND)     , pointer, dimension ( : ), intent(inout)     ::   gm2,g2
-   ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES)  ::  &
-   ! sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-   ! sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-   ! sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-   ! sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-   ! sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-   ! sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
    REAL (KIND=RKIND)   , intent(in) , target     :: &
    Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
    Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -143,14 +133,6 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    logical :: unstable, errnofile,es_unfilo_placa
    COMPLEX (kind=ckind) :: value1, value2
    character (LEN=BUFSIZE)                            ::   ficheropolos
-!
-
-   ! sggMiEx = media%sggMiEx
-   ! sggMiEy = media%sggMiEy
-   ! sggMiEz = media%sggMiEz
-   ! sggMiHx = media%sggMiHx
-   ! sggMiHy = media%sggMiHy
-   ! sggMiHz = media%sggMiHz
 
    eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
    SGBCcrank        = temp_SGBCcrank     

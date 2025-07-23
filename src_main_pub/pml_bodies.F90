@@ -49,7 +49,6 @@ contains
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitPMLbodies(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
-   ! subroutine InitPMLbodies(sgg,media,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
       type (SGGFDTDINFO), intent(IN)     ::  sgg
       type(media_matrices_t), intent(in) :: media

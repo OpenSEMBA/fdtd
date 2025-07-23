@@ -97,8 +97,6 @@ module Solver_mod
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
 
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), allocatable :: sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
-      ! integer (KIND=IKINDMTAG), dimension(:,:,:), allocatable :: sggMtag
       type(media_matrices_t) :: media
       real (kind=RKIND_tiempo) :: lastexecutedtime
       real (kind=RKIND) :: maxSourceValue
@@ -362,29 +360,18 @@ module Solver_mod
                                 input, maxSourceValue, time_desdelanzamiento)
       class(solver_t) :: this
       type (SGGFDTDINFO), intent(INOUT)   ::  sgg
-      ! integer (KIND=IKINDMTAG)   ::  &
-      ! sggMtag(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       type(taglist_t), intent(in) :: tag_numbers
       type(media_matrices_t), intent(inout) :: media
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES)   ::  &
-      ! sggMiNo(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE), &
-      ! sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      ! sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      ! sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      ! sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      ! sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      ! sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
-      logical :: finishedwithsuccess
+      logical, intent(inout) :: finishedwithsuccess
       REAL (KIND=RKIND), intent(inout) :: eps0,mu0
-      type (tagtype_t) :: tagtype
+      type (tagtype_t), intent(in) :: tagtype
       type(entrada_t), intent(in) :: input
       real (kind=RKIND), intent(in) :: maxSourceValue
       REAL (kind=8), intent(in) :: time_desdelanzamiento
 
       call this%init_control(input,maxSourceValue, time_desdelanzamiento)
       call this%init(sgg, eps0, mu0, media, SINPML_fullsize, fullsize, tag_numbers)
-      ! call this%init(sgg, eps0, mu0, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, sggMtag, SINPML_fullsize, fullsize, tag_numbers)
       call this%run(sgg, eps0, mu0, SINPML_fullsize, fullsize, tag_numbers, tagtype)
       call this%end(sgg, eps0, mu0, tagtype, finishedwithsuccess)
 
@@ -429,15 +416,6 @@ module Solver_mod
       real(kind=rkind) :: rdummy
 ! #endif
       this%media = media
-      ! this%sggMiNo = sggMiNo
-      ! this%sggMiEx = sggMiEx
-      ! this%sggMiEy = sggMiEy
-      ! this%sggMiEz = sggMiEz
-      ! this%sggMiHx = sggMiHx
-      ! this%sggMiHy = sggMiHy
-      ! this%sggMiHz = sggMiHz
-      ! this%sggMtag = sggMtag
-
       this%control%fatalerror=.false.
 
       this%parar=.false.
@@ -607,7 +585,6 @@ module Solver_mod
       call initializeNodalSources()
 
       call fillMtag(sgg, this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMtag, this%bounds, tag_numbers)
-      ! call fillMtag(sgg, this%sggMiEx, this%sggMiEy, this%sggMiEz, this%sggMiHx, this%sggMiHy, this%sggMiHz,this%sggMtag, this%bounds, tag_numbers)
       call initializeObservation()
 
       !!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aqui
@@ -1096,7 +1073,6 @@ contains
 #endif
          write(dubuf,*) 'Init PML Bodies...';  call print11(this%control%layoutnumber,dubuf)
          call InitPMLbodies(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
-         ! call InitPMLbodies(sgg,this%media, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
          l_auxinput=this%thereAre%PMLbodies
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1137,7 +1113,6 @@ contains
          !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
          write(dubuf,*) 'Init Lumped Elements...';  call print11(this%control%layoutnumber,dubuf)
          CALL InitLumped(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,eps0,mu0)
-         ! CALL InitLumped(sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,eps0,mu0)
          l_auxinput=this%thereAre%Lumpeds
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1292,7 +1267,6 @@ contains
 #endif
          write(dubuf,*) 'Init Anisotropic...';  call print11(this%control%layoutnumber,dubuf)
          call InitAnisotropic(sgg,this%media,this%thereAre%Anisotropic,this%thereAre%ThinSlot,eps0,mu0)
-         ! call InitAnisotropic(sgg,this%sggMiex,this%sggMiey,this%sggMiez,this%sggMiHx ,this%sggMiHy ,this%sggMiHz,this%thereAre%Anisotropic,this%thereAre%ThinSlot,eps0,mu0)
          l_auxinput=this%thereAre%Anisotropic.or.this%thereAre%ThinSlot
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1321,8 +1295,7 @@ contains
                write(dubuf,*) 'Init Multi sgbc...';  call print11(this%control%layoutnumber,dubuf)
                call Initsgbcs(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size, &
                   G1,G2,GM1,GM2,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
-               ! call Initsgbcs(sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size, &
-               !    G1,G2,GM1,GM2,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
+
          l_auxinput= this%thereAre%sgbcs
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1411,7 +1384,6 @@ contains
 #endif
          write(dubuf,*) 'Init EDispersives...';  call print11(this%control%layoutnumber,dubuf)
          call InitEDispersives(sgg,this%media,this%thereAre%EDispersives,this%control%resume,g1,g2,ex,ey,ez)
-         ! call InitEDispersives(sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%thereAre%EDispersives,this%control%resume,g1,g2,ex,ey,ez)
          l_auxinput=this%thereAre%EDispersives
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1437,7 +1409,6 @@ contains
 #endif
          write(dubuf,*) 'Init MDispersives...';  call print11(this%control%layoutnumber,dubuf)
          call InitMDispersives(sgg,this%media,this%thereAre%MDispersives,this%control%resume,gm1,gm2,hx,hy,hz)
-         ! call InitMDispersives(sgg,this%sggMiHx,this%sggMiHy,this%sggMiHz,this%thereAre%MDispersives,this%control%resume,gm1,gm2,hx,hy,hz)
          l_auxinput=this%thereAre%MDispersives
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1463,8 +1434,6 @@ contains
 #endif
          write(dubuf,*) 'Init Multi Plane-Waves...';  call print11(this%control%layoutnumber,dubuf)
          call InitPlaneWave   (sgg,this%media,this%control%layoutnumber,this%control%size,SINPML_fullsize,this%thereAre%PlaneWaveBoxes,this%control%resume,eps0,mu0)
-         ! call InitPlaneWave   (sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,this%control%layoutnumber,this%control%size,SINPML_fullsize,this%thereAre%PlaneWaveBoxes,this%control%resume,eps0,mu0)
-
          l_auxinput=this%thereAre%PlaneWaveBoxes
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1526,10 +1495,7 @@ contains
                               this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%control%resume,this%initialtimestep,this%control%finaltimestep,this%lastexecutedtime, &
                               this%control%nentradaroot,this%control%layoutnumber,this%control%size,this%control%saveall,this%control%singlefilewrite,this%control%wiresflavor,&
                               SINPML_FULLSIZE,this%control%facesNF2FF,this%control%NF2FFDecim,eps0,mu0,this%control%simu_devia,this%control%mpidir,this%control%niapapostprocess,this%bounds)
-         ! call InitObservation (sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,this%sggMtag,tag_numbers, &
-         !                      this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%control%resume,this%initialtimestep,this%control%finaltimestep,this%lastexecutedtime, &
-         !                      this%control%nentradaroot,this%control%layoutnumber,this%control%size,this%control%saveall,this%control%singlefilewrite,this%control%wiresflavor,&
-         !                      SINPML_FULLSIZE,this%control%facesNF2FF,this%control%NF2FFDecim,eps0,mu0,this%control%simu_devia,this%control%mpidir,this%control%niapapostprocess,this%bounds)
+
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -2059,7 +2025,6 @@ contains
          integer(kind=4) :: mindum
          IF (this%thereAre%Observation) then
             call UpdateObservation(sgg,this%media,tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,SINPML_FULLSIZE,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
-            ! call UpdateObservation(sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,this%sggMtag,tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,SINPML_FULLSIZE,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
                call FlushObservationFiles(sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora

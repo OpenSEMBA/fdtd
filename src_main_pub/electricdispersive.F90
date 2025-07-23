@@ -52,14 +52,8 @@ contains
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitEDispersives(sgg,media,ThereAreEDispersives,resume,g1,g2,ex,ey,ez)
-   ! subroutine InitEDispersives(sgg,sggmiex,sggmiey,sggmiez,ThereAreEDispersives,resume,g1,g2,ex,ey,ez)
       type (SGGFDTDINFO), intent(IN)     ::  sgg
       type(media_matrices_t), intent(in) :: media
-      !!!
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
-      ! sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
-      ! sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
-      ! sggMiEz(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
       REAL (KIND=RKIND)     , intent(inout)      ::  &
       G1(0 : sgg%NumMedia),G2(0 : sgg%NumMedia)
       REAL (KIND=RKIND)   , intent(inout), target      :: &
@@ -73,10 +67,6 @@ contains
       integer (kind=4)  ::  jmed,j1,conta,k1,i1,tempindex
       REAL (KIND=RKIND)   ::  tempo
       integer (kind=4)  ::  numpolres
-
-      ! sggMiEx = media%sggMiEx
-      ! sggMiEy = media%sggMiEy
-      ! sggMiEz = media%sggMiEz
 
       ThereAreEDispersives=.FALSE.
       conta=0

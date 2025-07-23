@@ -63,7 +63,6 @@ contains
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitAnisotropic(sgg,media,ThereAreAnisotropic,ThereAreThinSlot,eps00,mu00)
-   ! subroutine InitAnisotropic(sgg,sggmiex,sggmiey,sggmiez,sggMiHx ,sggMiHy ,sggMiHz,ThereAreAnisotropic,ThereAreThinSlot,eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
       type (SGGFDTDINFO), intent(IN) , target      ::  sgg
       type(media_matrices_t), intent(in) :: media

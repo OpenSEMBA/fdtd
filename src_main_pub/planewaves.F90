@@ -48,17 +48,8 @@ contains
    !!! Initializes Plane Wave data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitPlaneWave(sgg,media,layoutnumber,size,SINPML_Fullsize,ThereArePlaneWaveBoxes,resume,eps00,mu00)
-   ! subroutine InitPlaneWave(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size,SINPML_Fullsize,ThereArePlaneWaveBoxes,resume,eps00,mu00)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       type(media_matrices_t), intent(in) :: media
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES)  ::  &
-      ! sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      ! sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      ! sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      ! sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      ! sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      ! sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      !!!
       integer (kind=4), intent(in) :: layoutnumber,size
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
       integer j,k,field,i,jjj,maxnumus,maxmodes,kkk
@@ -71,14 +62,6 @@ contains
       cluz=1.0_RKIND/sqrt(eps0*mu0) !lo necesitara incid
       zvac=sqrt(mu0/eps0) !lo necesitan las variables de mas abajo
 
-      ! sggMiEx = media%sggMiEx
-      ! sggMiEy = media%sggMiEy
-      ! sggMiEz = media%sggMiEz
-      ! sggMiHx = media%sggMiHx
-      ! sggMiHy = media%sggMiHy
-      ! sggMiHz = media%sggMiHz
-
-!!!
       do field=iEx,iHz
          allocate (Punto%PhysCoor(field)%x(sgg%Sweep(field)%XI-1 : sgg%Sweep(field)%XE+1), &
          Punto%PhysCoor(field)%y(sgg%Sweep(field)%YI-1 : sgg%Sweep(field)%YE+1), &
