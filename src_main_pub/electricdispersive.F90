@@ -56,10 +56,10 @@ contains
       type (SGGFDTDINFO), intent(IN)     ::  sgg
       type(media_matrices_t), intent(in) :: media
       !!!
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
-      sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
-      sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
-      sggMiEz(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
+      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
+      ! sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
+      ! sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
+      ! sggMiEz(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
       REAL (KIND=RKIND)     , intent(inout)      ::  &
       G1(0 : sgg%NumMedia),G2(0 : sgg%NumMedia)
       REAL (KIND=RKIND)   , intent(inout), target      :: &
@@ -74,9 +74,9 @@ contains
       REAL (KIND=RKIND)   ::  tempo
       integer (kind=4)  ::  numpolres
 
-      sggMiEx = media%sggMiEx
-      sggMiEy = media%sggMiEy
-      sggMiEz = media%sggMiEz
+      ! sggMiEx = media%sggMiEx
+      ! sggMiEy = media%sggMiEy
+      ! sggMiEz = media%sggMiEz
 
       ThereAreEDispersives=.FALSE.
       conta=0
@@ -133,7 +133,7 @@ contains
          Do k1=sgg%Sweep(iEx)%ZI,sgg%Sweep(iEx)%ZE
             Do j1=sgg%Sweep(iEx)%YI,sgg%Sweep(iEx)%YE
                Do i1=sgg%Sweep(iEx)%XI,sgg%Sweep(iEx)%XE
-                  if ((sggMiEx(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiEx(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -148,7 +148,7 @@ contains
          Do k1=sgg%Sweep(iEx)%ZI,sgg%Sweep(iEx)%ZE
             Do j1=sgg%Sweep(iEx)%YI,sgg%Sweep(iEx)%YE
                Do i1=sgg%Sweep(iEx)%XI,sgg%Sweep(iEx)%XE
-                  if ((sggMiEx(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiEx(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      Dutton%Medium(jmed)%NodesEx(conta)%i=i1
                      Dutton%Medium(jmed)%NodesEx(conta)%j=j1
@@ -164,7 +164,7 @@ contains
          Do k1=sgg%Sweep(iEy)%ZI,sgg%Sweep(iEy)%ZE
             Do j1=sgg%Sweep(iEy)%YI,sgg%Sweep(iEy)%YE
                Do i1=sgg%Sweep(iEy)%XI,sgg%Sweep(iEy)%XE
-                  if ((sggMiEy(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiEy(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -179,7 +179,7 @@ contains
          Do k1=sgg%Sweep(iEy)%ZI,sgg%Sweep(iEy)%ZE
             Do j1=sgg%Sweep(iEy)%YI,sgg%Sweep(iEy)%YE
                Do i1=sgg%Sweep(iEy)%XI,sgg%Sweep(iEy)%XE
-                  if ((sggMiEy(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiEy(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      Dutton%Medium(jmed)%NodesEy(conta)%i=i1
                      Dutton%Medium(jmed)%NodesEy(conta)%j=j1
@@ -195,7 +195,7 @@ contains
          Do k1=sgg%Sweep(iEz)%ZI,sgg%Sweep(iEz)%ZE
             Do j1=sgg%Sweep(iEz)%YI,sgg%Sweep(iEz)%YE
                Do i1=sgg%Sweep(iEz)%XI,sgg%Sweep(iEz)%XE
-                  if ((sggMiEz(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiEz(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -211,7 +211,7 @@ contains
          Do k1=sgg%Sweep(iEz)%ZI,sgg%Sweep(iEz)%ZE
             Do j1=sgg%Sweep(iEz)%YI,sgg%Sweep(iEz)%YE
                Do i1=sgg%Sweep(iEz)%XI,sgg%Sweep(iEz)%XE
-                  if ((sggMiEz(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiEz(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      Dutton%Medium(jmed)%NodesEz(conta)%i=i1
                      Dutton%Medium(jmed)%NodesEz(conta)%j=j1

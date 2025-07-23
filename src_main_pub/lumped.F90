@@ -41,10 +41,10 @@ contains
       type(media_matrices_t), intent(in) :: media
 
       type (SGGFDTDINFO), intent(IN)     ::  sgg
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE)
+      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES) ::  &
+      ! sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
+      ! sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
+      ! sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE)
       REAL (KIND=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -67,9 +67,9 @@ contains
       type (Nodes_t), pointer :: lumped_
       logical :: unstable
 !
-      sggMiEx = media%sggMiEx
-      sggMiEy = media%sggMiEy
-      sggMiEz = media%sggMiEz
+      ! sggMiEx = media%sggMiEx
+      ! sggMiEy = media%sggMiEy
+      ! sggMiEz = media%sggMiEz
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !
 !!!
@@ -85,7 +85,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
          Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
             Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-               jmed=sggMiEx(i1,j1,k1)
+               jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  conta=conta+1
             end do
          end do
@@ -93,7 +93,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
          Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
             Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-               jmed=sggMiEy(i1,j1,k1)
+               jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  conta=conta+1
             end do
          end do
@@ -102,7 +102,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
          Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
             Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-               jmed=sggMiEz(i1,j1,k1)
+               jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped) conta=conta+1
             end do
          end do
@@ -119,7 +119,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
          Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
             Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-               jmed=sggMiEx(i1,j1,k1)
+               jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  then
                   conta=conta+1
                   lumped_ => LumpElem%Nodes(conta)
@@ -141,7 +141,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
          Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
             Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-               jmed=sggMiEy(i1,j1,k1)
+               jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  then
                   conta=conta+1
                   lumped_ => LumpElem%Nodes(conta)
@@ -163,7 +163,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
          Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
             Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-               jmed=sggMiEz(i1,j1,k1)
+               jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped) then
                   conta=conta+1
                   lumped_ => LumpElem%Nodes(conta)
