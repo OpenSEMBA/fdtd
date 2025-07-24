@@ -96,7 +96,6 @@ module Solver_mod
 
       real(kind=rkind), pointer, dimension (:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
-      ! real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
       type(constants_t) :: g
       type(media_matrices_t) :: media
       real (kind=RKIND_tiempo) :: lastexecutedtime
@@ -129,12 +128,12 @@ module Solver_mod
       procedure :: advancePlaneWaveH => solver_advancePlaneWaveH
       procedure :: advanceWires => solver_advanceWires
       procedure :: advancePMLE => solver_advancePMLE
+      procedure :: advanceAnisotropicE => solver_advanceAnisotropicE
+      procedure :: advanceLumpedE => solver_advanceLumpedE
+      procedure :: advanceNodalE => solver_advanceNodalE
       ! procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
-      ! procedure :: advanceAnisotropicE => solver_advanceAnisotropicE
       ! procedure :: advanceSGBCE => solver_advanceSGBCE
-      ! procedure :: advanceLumpedE => solver_advanceLumpedE
-      ! procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
-      ! procedure :: advanceNodalE => solver_advanceNodalE
+      procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
       procedure :: destroy_and_deallocate
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
@@ -402,7 +401,6 @@ module Solver_mod
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
-      ! real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
 
       real(kind=RKIND_tiempo) :: ultimodt
       
@@ -445,10 +443,6 @@ module Solver_mod
 !!!lo cambio aqui permit scaling a 211118 por problemas con resuming: debe leer el eps0, mu0, antes de hacer numeros
       
       allocate (this%g%g1(0 : sgg%NumMedia),this%g%g2(0 : sgg%NumMedia),this%g%gm1(0 : sgg%NumMedia),this%g%gm2(0 : sgg%NumMedia))
-      ! g1 => this%g1
-      ! g2 => this%g2
-      ! gm1 => this%gm1
-      ! gm2 => this%gm2
      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Field matrices creation (an extra cell is padded at each limit and direction to deal with PMC imaging with no index errors)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1287,7 +1281,9 @@ contains
 #endif
                write(dubuf,*) 'Init Multi sgbc...';  call print11(this%control%layoutnumber,dubuf)
                call Initsgbcs(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size, &
-                  this%g%G1,this%g%G2,this%g%GM1,this%g%GM2,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
+                  this%g,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
+               ! call Initsgbcs(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size, &
+               !    this%g%G1,this%g%G2,this%g%GM1,this%g%GM2,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
 
          l_auxinput= this%thereAre%sgbcs
          l_auxoutput=l_auxinput
@@ -2065,7 +2061,6 @@ contains
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
-      ! real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
 
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -2074,10 +2069,9 @@ contains
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; 
       dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
-      ! g1 => this%g1; g2 => this%g2; gm1 => this%gm1; gm2 => this%gm2
 
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
-      IF (this%thereAre%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
+      call this%AdvanceAnisotropicE(sgg%alloc)
       call this%advanceE()
 #ifdef CompileWithConformal
       if(this%control%input_conformal_flag) call conformal_advance_E()
@@ -2090,12 +2084,10 @@ contains
 #endif
       IF (this%thereAre%sgbcs.and.(this%control%sgbc)) call AdvancesgbcE(real(sgg%dt,RKIND),this%control%sgbcDispersive,this%control%simu_devia,this%control%stochastic)
 
-      if (this%thereAre%Lumpeds) call AdvanceLumpedE(sgg,this%n,this%control%simu_devia,this%control%stochastic)
-      IF (this%thereAre%Edispersives) call AdvanceEDispersiveE(sgg)
-
+      call this%advanceLumpedE(sgg)
+      call this%advanceEDispersiveE(sgg)
       call this%advancePlaneWaveE(sgg)
-
-      If (this%thereAre%NodalE) call AdvanceNodalE(sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,sgg%NumMedia,this%n, this%bounds,this%g%G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%control%simu_devia)
+      call this%advanceNodalE(sgg)
 
 #ifdef CompileWithMPI
       if (this%control%size>1) then
@@ -2537,6 +2529,19 @@ contains
    end subroutine advanceHz
 
 
+   subroutine solver_advanceEDispersiveE(this, sgg)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+      if (this%thereAre%Edispersives) call AdvanceEDispersiveE(sgg)
+   end subroutine
+
+   subroutine solver_advanceLumpedE(this, sgg)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+      if (this%thereAre%Lumpeds) call AdvanceLumpedE(sgg,this%n,this%control%simu_devia,this%control%stochastic)
+   end subroutine
+
+
    subroutine solver_advancePlaneWaveE(this,sgg)
       class(solver_t) :: this
       type(sggfdtdinfo), intent(in) :: sgg
@@ -2557,6 +2562,27 @@ contains
                                                                   this%Hx, this%Hy, this%Hz, & 
                                                                   this%still_planewave_time)
       endif
+   end subroutine
+
+   subroutine solver_advanceNodalE(this, sgg)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+         if (this%thereAre%NodalE) then 
+            call advanceNodalE(sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,& 
+                               sgg%NumMedia,this%n, this%bounds, this%g%G2,& 
+                               this%Idxh,this%Idyh,this%Idzh,&
+                               this%Ex,this%Ey,this%Ez,&
+                               this%control%simu_devia)
+         end if
+   end subroutine
+
+   subroutine solver_advanceAnisotropicE(this, alloc)
+      class(solver_t) :: this
+      type(XYZlimit_t), dimension (1:6), intent(in) :: alloc
+      if (this%thereAre%Anisotropic) call AdvanceAnisotropicE(alloc,this%ex,this%ey,this%ez, & 
+                                                             this%hx, this%hy, this%hz, & 
+                                                             this%Idxe, this%Idye, this%Idze, & 
+                                                             this%Idxh, this%Idyh, this%Idzh)
    end subroutine
 
    subroutine solver_advancePMLE(this, numMedia)
@@ -2872,7 +2898,7 @@ contains
       call DestroyMURBorders
       !Destroy the remaining
       deallocate (sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
-      deallocate (this%g%G1,this%g%G2,this%g%GM1,this%g%GM2)
+      call this%g%destroy()
       deallocate (this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
       deallocate (this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)
       return

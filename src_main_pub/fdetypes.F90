@@ -628,7 +628,10 @@ module  FDETYPES
 
    type :: constants_t
       real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
+   contains
+      procedure :: destroy => constants_destroy 
    end type
+
 
    type nf2ff_t
       logical :: tr,fr,iz,de,ab,ar
@@ -708,6 +711,11 @@ module  FDETYPES
    !**************************************************************************************************
 
 contains
+
+   subroutine constants_destroy(this)
+      class(constants_t) :: this
+      deallocate (this%g1,this%g2,this%gm1,this%gm2)
+   end subroutine
 
    logical function isFlush(this)
       class(perform_t) :: this
