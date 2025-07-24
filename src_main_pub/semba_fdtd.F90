@@ -52,8 +52,6 @@ module SEMBA_FDTD_mod
       type (entrada_t) :: l
       TYPE (tiempo_t) :: time_comienzo
       real (KIND=8) time_desdelanzamiento
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
-      ! integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
       type(media_matrices_t) :: media
       type (SGGFDTDINFO)   :: sgg
       type (limit_t), DIMENSION (1:6) :: fullsize, SINPML_fullsize
@@ -1204,7 +1202,6 @@ contains
    subroutine semba_launch(this)
       class(semba_fdtd_t) :: this
       type(solver_t) :: solver
-      ! type(media_matrices_t) :: media
       character (LEN=BUFSIZE) :: dubuf
       logical :: dummylog
 
@@ -1221,20 +1218,11 @@ contains
          solver%mtln_parsed =  this%mtln_parsed
 #endif
 
-         ! media%sggMiNo = this%sggMiNo
-         ! media%sggMiEx = this%sggMiEx
-         ! media%sggMiEy = this%sggMiEy
-         ! media%sggMiEz = this%sggMiEz
-         ! media%sggMiHx = this%sggMiHx
-         ! media%sggMiHy = this%sggMiHy
-         ! media%sggMiHz = this%sggMiHz
-         ! media%sggMtag = this%sggMtag
 
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
             CALL solver%launch_simulation (this%sgg,this%media,this%tag_numbers,this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
                                            this%l, this%maxSourceValue, this%time_desdelanzamiento)
 
-            ! deallocate (this%sggMiEx, this%sggMiEy, this%sggMiEz,this%sggMiHx, this%sggMiHy, this%sggMiHz,this%sggMiNo,this%sggMtag)
             deallocate (this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
          else
 #ifdef CompileWithMPI

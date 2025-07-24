@@ -38,9 +38,6 @@ CONTAINS
    SUBROUTINE read_geomData (sgg,media,tag_numbers, fichin, layoutnumber, size, SINPML_fullsize, fullsize, this, &
       groundwires,attfactor,mibc,SGBC,SGBCDispersive,MEDIOEXTRA,maxSourceValue,skindepthpre,createmapvtk,input_conformal_flag,CLIPREGION,boundwireradius,maxwireradius,updateshared,run_with_dmma, &
       eps00,mu00,simu_devia,hay_slanted_wires,verbose,ignoresamplingerrors,tagtype,wiresflavor)
-   ! SUBROUTINE read_geomData (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, fichin, layoutnumber, size, SINPML_fullsize, fullsize, this, &
-   !    groundwires,attfactor,mibc,SGBC,SGBCDispersive,MEDIOEXTRA,maxSourceValue,skindepthpre,createmapvtk,input_conformal_flag,CLIPREGION,boundwireradius,maxwireradius,updateshared,run_with_dmma, &
-   !    eps00,mu00,simu_devia,hay_slanted_wires,verbose,ignoresamplingerrors,tagtype,wiresflavor)
       type(media_matrices_t), intent(inout) :: media
       logical :: simu_devia,verbose,hay_slanted_wires
       REAL (KIND=RKIND)           ::  eps00,mu00
@@ -55,8 +52,6 @@ CONTAINS
       type (SGGFDTDINFO), intent(INOUT)    :: sgg
       character(len=BUFSIZE) :: extraswitches
 
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
-      ! integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) ::  sggMtag
       type(taglist_t) :: tag_numbers
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) :: tama, tama2, tama3, tama4, tama5, tama6, i, j, k, tipotemp, tamaSonda,  &
@@ -5872,21 +5867,8 @@ CONTAINS
 #else
    subroutine AssigLossyOrPECtoNodes(sgg,media)
 #endif
-! #ifdef CompileWithConformal
-!    subroutine AssigLossyOrPECtoNodes(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,conf_conflicts,input_conformal_flag)
-! #else
-!    subroutine AssigLossyOrPECtoNodes(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz)
-! #endif
-
       type (SGGFDTDINFO), intent(INOUT) :: sgg
       type (media_matrices_t), intent(inout) :: media
-
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(inout) :: &
-      !    sggMiNo(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(inout)   ::  &
-      !    sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
-      !    sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
-      !    sggMiEz(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
 
       logical :: ispec, isSGBC, IsComposite, islossy, input_conformal_flag,NODALMENTEIGUALES,iguaSGM,iguaSIG,iguaMUR,iguaPEC,iguaLOS,iguaEPR,ISconformal
       REAL (KIND=RKIND)   :: sigt,epst,SIGMA,SIGMAM,EPR,MUR

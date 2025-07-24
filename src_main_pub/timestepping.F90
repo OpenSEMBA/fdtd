@@ -379,23 +379,10 @@ module Solver_mod
    end subroutine launch_simulation
 
    subroutine solver_init(this, sgg, eps0, mu0, media, sinPML_fullsize, fullsize, tag_numbers)
-   ! subroutine solver_init(this, sgg, eps0, mu0, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, sggMtag, sinPML_fullsize, fullsize, tag_numbers)
       class(solver_t) :: this
-      type(media_matrices_t), intent(inout) :: media
       type(sggfdtdinfo), intent(inout) :: sgg
       real(kind=rkind), intent(inout) :: eps0,mu0
-
-      ! integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(inout)   ::  &
-      ! sggMiNo(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE), &
-      ! sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      ! sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      ! sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      ! sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      ! sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      ! sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      ! integer (KIND=IKINDMTAG), intent(inout)   ::  &
-      ! sggMtag(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-
+      type(media_matrices_t), intent(inout) :: media
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize, fullsize
       type(taglist_t) :: tag_numbers
 
@@ -498,7 +485,6 @@ module Solver_mod
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming.', dummyMin,dummyMax,this%lastexecutedtimesteP
                call stoponerror (this%control%layoutnumber,this%control%size,BUFF,.true.) !para que retorne
                call this%destroy_and_deallocate(sgg)
-               ! call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
                return
             else
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming. Retrying with -old....'
@@ -513,7 +499,6 @@ module Solver_mod
                if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,this%lastexecutedtimestep
                   call stoponerror (this%control%layoutnumber,this%control%size,DUBUF,.true.) !para que retorne
-                  ! call Destroy_All_exceptSGGMxxDestroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
                   call this%destroy_and_deallocate(sgg)
                   return
                else
@@ -526,7 +511,6 @@ module Solver_mod
 
             write(dubuf,*) 'Incoherence between MPI saved steps for resuming.',dummyMin,dummyMax,this%lastexecutedtimestep
             call stoponerror (this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
-            ! call Destroy_All_exceptSGGMxxDestroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
             call this%destroy_and_deallocate(sgg)
             return
 #endif
@@ -539,7 +523,6 @@ module Solver_mod
 
       if (this%initialtimestep>this%control%finaltimestep) then
           call stoponerror (this%control%layoutnumber,this%control%size,'Initial time step greater than final one',.true.) !para que retorne
-         !  call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
           call this%destroy_and_deallocate(sgg)
           return
       endif
@@ -612,7 +595,6 @@ module Solver_mod
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
          call stoponerror(this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
-         ! call Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,this%thereare,this%control%wiresflavor )
          call this%destroy_and_deallocate(sgg)
          return
       endif
