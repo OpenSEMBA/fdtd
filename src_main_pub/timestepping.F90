@@ -126,7 +126,8 @@ module Solver_mod
       procedure :: advanceH, advanceHx, advanceHy, advanceHz
       procedure :: advancePlaneWaveE => solver_advancePlaneWaveE
       procedure :: advancePlaneWaveH => solver_advancePlaneWaveH
-      ! procedure :: advanceWires, advancePMLE
+      procedure :: advanceWires => solver_advanceWires
+      ! , advancePMLE
       ! procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
       ! procedure :: advanceAnisotropicE => solver_advanceAnisotropicE
       ! procedure :: advanceSGBCE => solver_advanceSGBCE
@@ -2085,7 +2086,7 @@ contains
 #ifdef CompileWithConformal
       if(this%control%input_conformal_flag) call conformal_advance_E()
 #endif
-      call advanceWires()
+      call this%advanceWires(sgg, eps0, mu0)
       call advancePMLE()
 
 #ifdef CompileWithNIBC
@@ -2212,43 +2213,6 @@ contains
       endif
    end subroutine 
 
-   subroutine advanceWires()
-      character(len=bufsize) :: buff
-      if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-            (trim(adjustl(this%control%wiresflavor))=='transition')) .and. .not. this%control%use_mtln_wires) then
-         IF (this%thereAre%Wires) then
-            if (this%control%wirecrank) then
-               call AdvanceWiresEcrank(sgg, this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
-            else
-#ifdef CompileWithMTLN
-               if (this%mtln_parsed%has_multiwires) then
-                  write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
-                  call WarnErrReport(buff)
-               end if
-#endif
-               call AdvanceWiresE(sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)
-            endif
-         endif
-      endif
-#ifdef CompileWithBerengerWires
-      if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-         IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(sgg,n)
-      endif
-#endif
-#ifdef CompileWithSlantedWires
-      if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
-         call AdvanceWiresE_Slanted(sgg,n) 
-      endif
-#endif
-      if (this%control%use_mtln_wires) then
-#ifdef CompileWithMTLN
-         call AdvanceWiresE_mtln(sgg,Idxh,Idyh,Idzh,eps0,mu0)
-#else
-         write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
-#endif   
-      end if
-
-   end subroutine advanceWires
 
 !       !PML E-field advancing (IT IS IMPORTANT TO FIRST CALL THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
 !       !ROUTINES INJECT THE POLARIZATION CURRENTS EVERYWHERE (PML INCLUDED)
@@ -2594,7 +2558,6 @@ contains
                                                                  this%Ex,this%Ey,this%Ez, & 
                                                                  this%still_planewave_time)
       end if
-
    end subroutine
 
    subroutine solver_advancePlaneWaveH(this,sgg)
@@ -2606,6 +2569,47 @@ contains
                                                                   this%Hx, this%Hy, this%Hz, & 
                                                                   this%still_planewave_time)
       endif
+   end subroutine
+
+   subroutine solver_advanceWires(this, sgg, eps0, mu0)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+      real(kind=rkind), intent(inout) :: eps0,mu0
+      character(len=bufsize) :: buff
+
+      if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &
+            (trim(adjustl(this%control%wiresflavor))=='transition')) .and. .not. this%control%use_mtln_wires) then
+         IF (this%thereAre%Wires) then
+            if (this%control%wirecrank) then
+               call AdvanceWiresEcrank(sgg, this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+            else
+#ifdef CompileWithMTLN
+               if (this%mtln_parsed%has_multiwires) then
+                  write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
+                  call WarnErrReport(buff)
+               end if
+#endif
+               call AdvanceWiresE(sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)
+            endif
+         endif
+      endif
+#ifdef CompileWithBerengerWires
+      if (trim(adjustl(this%control%wiresflavor))=='berenger') then
+         IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(sgg,n)
+      endif
+#endif
+#ifdef CompileWithSlantedWires
+      if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
+         call AdvanceWiresE_Slanted(sgg,n) 
+      endif
+#endif
+      if (this%control%use_mtln_wires) then
+#ifdef CompileWithMTLN
+         call AdvanceWiresE_mtln(sgg,this%Idxh,this%Idyh,this%Idzh,eps0,mu0)
+#else
+         write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
+#endif   
+      end if
 
    end subroutine
 
