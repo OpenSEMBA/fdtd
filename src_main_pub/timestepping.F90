@@ -124,6 +124,14 @@ module Solver_mod
       procedure :: step
       procedure :: advanceE, advanceEx, advanceEy, advanceEz
       procedure :: advanceH, advanceHx, advanceHy, advanceHz
+      procedure :: advancePlaneWaveE => solver_advancePlaneWaveE
+      ! procedure :: advanceWires, advancePMLE
+      ! procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
+      ! procedure :: advanceAnisotropicE => solver_advanceAnisotropicE
+      ! procedure :: advanceSGBCE => solver_advanceSGBCE
+      ! procedure :: advanceLumpedE => solver_advanceLumpedE
+      ! procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
+      ! procedure :: advanceNodalE => solver_advanceNodalE
       procedure :: destroy_and_deallocate
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
@@ -2052,11 +2060,8 @@ contains
       class(solver_t) :: this
       type(sggfdtdinfo), intent(in) :: sgg
       real(kind=rkind), intent(inout) :: eps0,mu0
-
-      
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
       type(taglist_t), intent(in) :: tag_numbers
-
 
       logical :: planewave_switched_off = .false., thereareplanewave
 
@@ -2069,16 +2074,9 @@ contains
 #endif
 
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
-      
-      Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
-
-      g1 => this%g1
-      g2 => this%g2
-      gm1 => this%gm1
-      gm2 => this%gm2
-
-
-
+      Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; 
+      dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
+      g1 => this%g1; g2 => this%g2; gm1 => this%gm1; gm2 => this%gm2
 
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       IF (this%thereAre%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
@@ -2096,9 +2094,12 @@ contains
 
       if (this%thereAre%Lumpeds) call AdvanceLumpedE(sgg,this%n,this%control%simu_devia,this%control%stochastic)
       IF (this%thereAre%Edispersives) call AdvanceEDispersiveE(sgg)
-      If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time) then 
-         if(.not.this%control%simu_devia) call AdvancePlaneWaveE(sgg,this%n, this%bounds,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%still_planewave_time)
-      end if
+
+      call this%advancePlaneWaveE(sgg)
+
+      ! If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time) then 
+      !    if(.not.this%control%simu_devia) call AdvancePlaneWaveE(sgg,this%n, this%bounds,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%still_planewave_time)
+      ! end if
       If (this%thereAre%NodalE) call AdvanceNodalE(sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,sgg%NumMedia,this%n, this%bounds,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%control%simu_devia)
 
 #ifdef CompileWithMPI
@@ -2585,6 +2586,18 @@ contains
       return
    end subroutine advanceHz
 
+
+   subroutine solver_advancePlaneWaveE(this,sgg)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+      If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time) then 
+         if(.not.this%control%simu_devia) call AdvancePlaneWaveE(sgg,this%n, this%bounds,this%G2, &
+                                                                 this%Idxh,this%Idyh,this%Idzh, & 
+                                                                 this%Ex,this%Ey,this%Ez, & 
+                                                                 this%still_planewave_time)
+      end if
+
+   end subroutine
 
    subroutine solver_end(this, sgg, eps0, mu0, tagtype, finishedwithsuccess)
       class(solver_t) :: this
