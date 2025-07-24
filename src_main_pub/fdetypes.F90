@@ -626,6 +626,10 @@ module  FDETYPES
       integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
    end type
 
+   type :: constants_t
+      real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
+   end type
+
    type nf2ff_t
       logical :: tr,fr,iz,de,ab,ar
    end type

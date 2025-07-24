@@ -88,6 +88,7 @@ module Solver_mod
 #endif
    implicit none
 
+
    type, public :: solver_t
       type(sim_control_t) :: control
       type(Logic_control) :: thereAre
@@ -95,8 +96,8 @@ module Solver_mod
 
       real(kind=rkind), pointer, dimension (:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
-      real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
-
+      ! real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
+      type(constants_t) :: g
       type(media_matrices_t) :: media
       real (kind=RKIND_tiempo) :: lastexecutedtime
       real (kind=RKIND) :: maxSourceValue
@@ -127,7 +128,7 @@ module Solver_mod
       procedure :: advancePlaneWaveE => solver_advancePlaneWaveE
       procedure :: advancePlaneWaveH => solver_advancePlaneWaveH
       procedure :: advanceWires => solver_advanceWires
-      ! , advancePMLE
+      procedure :: advancePMLE => solver_advancePMLE
       ! procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
       ! procedure :: advanceAnisotropicE => solver_advanceAnisotropicE
       ! procedure :: advanceSGBCE => solver_advanceSGBCE
@@ -401,7 +402,7 @@ module Solver_mod
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
-      real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
+      ! real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
 
       real(kind=RKIND_tiempo) :: ultimodt
       
@@ -443,11 +444,11 @@ module Solver_mod
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 !!!lo cambio aqui permit scaling a 211118 por problemas con resuming: debe leer el eps0, mu0, antes de hacer numeros
       
-      allocate (this%G1(0 : sgg%NumMedia),this%G2(0 : sgg%NumMedia),this%GM1(0 : sgg%NumMedia),this%GM2(0 : sgg%NumMedia))
-      g1 => this%g1
-      g2 => this%g2
-      gm1 => this%gm1
-      gm2 => this%gm2
+      allocate (this%g%g1(0 : sgg%NumMedia),this%g%g2(0 : sgg%NumMedia),this%g%gm1(0 : sgg%NumMedia),this%g%gm2(0 : sgg%NumMedia))
+      ! g1 => this%g1
+      ! g2 => this%g2
+      ! gm1 => this%gm1
+      ! gm2 => this%gm2
      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Field matrices creation (an extra cell is padded at each limit and direction to deal with PMC imaging with no index errors)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -544,7 +545,7 @@ module Solver_mod
 
       call updateSigmaM(attinformado)
       call updateThinWiresSigma(attinformado)
-      call calc_G1G2Gm1Gm2(sgg,G1,G2,Gm1,Gm2,eps0,mu0)
+      call calc_G1G2Gm1Gm2(sgg,this%g,eps0,mu0)
       call revertThinWiresSigma()
  
       !
@@ -1064,7 +1065,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init PML Bodies...';  call print11(this%control%layoutnumber,dubuf)
-         call InitPMLbodies(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
+         call InitPMLbodies(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%g%g2,this%g%gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
          l_auxinput=this%thereAre%PMLbodies
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1135,7 +1136,7 @@ contains
             write(dubuf,*) 'Init Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
             call InitWires       (sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
                                  this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
-                                 g2,SINPML_fullsize, fullsize,dtcritico,eps0,mu0,this%control)
+                                 this%g%g2,SINPML_fullsize, fullsize,dtcritico,eps0,mu0,this%control)
             l_auxinput=this%thereAre%Wires
             l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1159,7 +1160,7 @@ contains
             call InitWires_Berenger(sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
             this%control%isolategroupgroups,this%control%mtlnberenger,this%control%mindistwires, &
             this%control%groundwires,this%control%taparrabos,Ex,Ey,Ez, &
-            Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,g2,SINPML_fullsize,fullsize,dtcritico,eps0,mu0,this%control%verbose)
+            Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,this%g%g2,SINPML_fullsize,fullsize,dtcritico,eps0,mu0,this%control%verbose)
          l_auxinput= this%thereAre%Wires
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1195,7 +1196,7 @@ contains
                                     this%thereAre%Wires, this%control%resume,               &
                                     this%control%mindistwires, this%control%groundwires,this%control%noSlantedcrecepelo ,     &
                                     this%control%inductance_model, this%control%inductance_order,   &
-                                    g2, SINPML_fullsize, dtcritico,eps0,mu0,this%control%verbose)
+                                    this%g%g2, SINPML_fullsize, dtcritico,eps0,mu0,this%control%verbose)
             l_auxinput=this%thereAre%Wires
             l_auxoutput=l_auxinput
 !check for MUR1 nodes sgg 230124
@@ -1286,7 +1287,7 @@ contains
 #endif
                write(dubuf,*) 'Init Multi sgbc...';  call print11(this%control%layoutnumber,dubuf)
                call Initsgbcs(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size, &
-                  G1,G2,GM1,GM2,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
+                  this%g%G1,this%g%G2,this%g%GM1,this%g%GM2,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
 
          l_auxinput= this%thereAre%sgbcs
          l_auxoutput=l_auxinput
@@ -1375,7 +1376,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init EDispersives...';  call print11(this%control%layoutnumber,dubuf)
-         call InitEDispersives(sgg,this%media,this%thereAre%EDispersives,this%control%resume,g1,g2,ex,ey,ez)
+         call InitEDispersives(sgg,this%media,this%thereAre%EDispersives,this%control%resume,this%g%g1,this%g%g2,ex,ey,ez)
          l_auxinput=this%thereAre%EDispersives
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1400,7 +1401,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init MDispersives...';  call print11(this%control%layoutnumber,dubuf)
-         call InitMDispersives(sgg,this%media,this%thereAre%MDispersives,this%control%resume,gm1,gm2,hx,hy,hz)
+         call InitMDispersives(sgg,this%media,this%thereAre%MDispersives,this%control%resume,this%g%gm1,this%g%gm2,hx,hy,hz)
          l_auxinput=this%thereAre%MDispersives
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1759,7 +1760,6 @@ contains
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
-      real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
 
       logical :: call_timing, l_aux, flushFF, somethingdone, newsomethingdone
       integer :: i
@@ -1786,10 +1786,6 @@ contains
       
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
-      g1 => this%g1
-      g2 => this%g2
-      gm1 => this%gm1
-      gm2 => this%gm2
 
       ciclo_temporal :  DO while (this%n <= this%control%finaltimestep)
       
@@ -1988,7 +1984,7 @@ contains
             if ((sgg%tiempo(this%n)>=EpsMuTimeScale_input_parameters%tini).and.&
                 &(sgg%tiempo(this%n)<=EpsMuTimeScale_input_parameters%tend)) then
 #endif
-             call updateconstants(sgg,this%n,this%thereare,g1,g2,gM1,gM2, & 
+             call updateconstants(sgg,this%n,this%thereare,this%g%g1,this%g%g2,this%g%gM1,this%g%gM2, & 
                                Idxe,Idye,Idze,Idxh,Idyh,Idzh, &  !needed by  CPML to be updated
                                this%control%sgbc,this%control%mibc,input_conformal_flag, &
                                this%control%wiresflavor, this%control%wirecrank, this%control%fieldtotl,&
@@ -2069,7 +2065,7 @@ contains
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
-      real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
+      ! real(kind=rkind), pointer, dimension (:) ::  g1,g2,gM1,gM2
 
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -2078,7 +2074,7 @@ contains
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; 
       dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
-      g1 => this%g1; g2 => this%g2; gm1 => this%gm1; gm2 => this%gm2
+      ! g1 => this%g1; g2 => this%g2; gm1 => this%gm1; gm2 => this%gm2
 
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       IF (this%thereAre%Anisotropic) call AdvanceAnisotropicE(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
@@ -2087,7 +2083,7 @@ contains
       if(this%control%input_conformal_flag) call conformal_advance_E()
 #endif
       call this%advanceWires(sgg, eps0, mu0)
-      call advancePMLE()
+      call this%advancePMLE(sgg%NumMedia)
 
 #ifdef CompileWithNIBC
       IF (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
@@ -2099,7 +2095,7 @@ contains
 
       call this%advancePlaneWaveE(sgg)
 
-      If (this%thereAre%NodalE) call AdvanceNodalE(sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,sgg%NumMedia,this%n, this%bounds,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%control%simu_devia)
+      If (this%thereAre%NodalE) call AdvanceNodalE(sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,sgg%NumMedia,this%n, this%bounds,this%g%G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%control%simu_devia)
 
 #ifdef CompileWithMPI
       if (this%control%size>1) then
@@ -2110,19 +2106,19 @@ contains
       IF (this%thereAre%Anisotropic) call AdvanceAnisotropicH(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
       call this%advanceH()
       If (this%thereAre%PMLbodies) call AdvancePMLbodyH()
-      If (this%thereAre%PMLBorders) call AdvanceMagneticCPML(sgg%NumMedia, this%bounds, this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, gm2, Hx, Hy, Hz, Ex, Ey, Ez)
+      If (this%thereAre%PMLBorders) call AdvanceMagneticCPML(sgg%NumMedia, this%bounds, this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, this%g%gm2, Hx, Hy, Hz, Ex, Ey, Ez)
       If (this%thereAre%PMCBorders) call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
       If (this%thereAre%PeriodicBorders) call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
       IF (this%thereAre%sgbcs.and.(this%control%sgbc)) call AdvancesgbcH()
       IF (this%thereAre%Mdispersives) call AdvanceMDispersiveH(sgg)
 #ifdef CompileWithNIBC
       IF (this%thereAre%Multiports .and.(this%control%mibc))  &
-         call AdvanceMultiportH (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,this%sggMiHx,this%sggMiHy,this%sggMiHz,gm2,sgg%nummedia,this%control%conformalskin)
+         call AdvanceMultiportH (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,this%sggMiHx,this%sggMiHy,this%sggMiHz,this%g%gm2,sgg%nummedia,this%control%conformalskin)
 #endif
 
       call this%advancePlaneWaveH(sgg)
 
-      If (this%thereAre%NodalH) call AdvanceNodalH(sgg,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,sgg%NumMedia,this%n, this%bounds,GM2,Idxe,Idye,Idze,Hx,Hy,Hz,this%control%simu_devia)
+      If (this%thereAre%NodalH) call AdvanceNodalH(sgg,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,sgg%NumMedia,this%n, this%bounds,this%g%GM2,Idxe,Idye,Idze,Hx,Hy,Hz,this%control%simu_devia)
 
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
@@ -2217,14 +2213,6 @@ contains
 !       !PML E-field advancing (IT IS IMPORTANT TO FIRST CALL THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
 !       !ROUTINES INJECT THE POLARIZATION CURRENTS EVERYWHERE (PML INCLUDED)
 !       !SO THAT DISPERSIVE MATERIALS CAN ALSO BE TRUNCATED BY CPML)
-   subroutine advancePMLE()
-      If (this%thereAre%PMLbodies) then !waveport absorbers
-         call AdvancePMLbodyE()
-      endif
-      If (this%thereAre%PMLBorders) then
-         call AdvanceelectricCPML(sgg%NumMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,G2,Ex,Ey,Ez,Hx,Hy,Hz)
-      endif
-   end subroutine
 
 #ifdef CompileWithMPI
    subroutine initMPIConformalProbes()
@@ -2305,7 +2293,7 @@ contains
                Idzhk=Idzh(k)
                Idyhj=Idyh(j)
                medio =sggMiEx(i,j,k)
-               Ex(i,j,k)=this%g1(MEDIO)*Ex(i,j,k)+this%g2(MEDIO)* &
+               Ex(i,j,k)=this%g%g1(MEDIO)*Ex(i,j,k)+this%g%g2(MEDIO)* &
                ((Hz(i,j,k)-Hz(i,j-1,k))*Idyhj-(Hy(i,j,k)-Hy(i,j,k-1))*Idzhk)
             End do
          End do
@@ -2347,7 +2335,7 @@ contains
             Do i=1,this%bounds%sweepEy%NX
                Idzhk=Idzh(k)
                medio =sggMiEy(i,j,k)
-               Ey(i,j,k)=this%g1(MEDIO)*Ey(i,j,k)+this%g2(MEDIO)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
+               Ey(i,j,k)=this%g%g1(MEDIO)*Ey(i,j,k)+this%g%g2(MEDIO)*((Hx(i,j,k)-Hx(i,j,k-1))*Idzhk-(Hz(i,j,k)-Hz(i-1,j,k))*Idxh(i))
             End do
          End do
       End do
@@ -2393,7 +2381,7 @@ contains
             Do i=1,this%bounds%sweepEz%NX
                Idyhj=Idyh(j)
                medio =sggMiEz(i,j,k)
-               Ez(i,j,k)=this%g1(MEDIO)*Ez(i,j,k)+this%g2(MEDIO)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
+               Ez(i,j,k)=this%g%g1(MEDIO)*Ez(i,j,k)+this%g%g2(MEDIO)*((Hy(i,j,k)-Hy(i-1,j,k))*Idxh(i)-(Hx(i,j,k)-Hx(i,j-1,k))*Idyhj)
             End do
          End do
       End do
@@ -2457,7 +2445,7 @@ contains
             Idzek=Idze(k)
             Idyej=Idye(j)
                medio =sggMiHx(i,j,k)
-               Hx(i,j,k)=this%gm1(medio)*Hx(i,j,k)+this%gm2(medio)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
+               Hx(i,j,k)=this%g%gm1(medio)*Hx(i,j,k)+this%g%gm2(medio)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
             End do
          End do
       End do
@@ -2499,7 +2487,7 @@ contains
             Do i=1,this%bounds%sweepHy%NX
                Idzek=Idze(k)
                medio =sggMiHy(i,j,k)
-               Hy(i,j,k)=this%gm1(medio)*Hy(i,j,k)+this%gm2(medio)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
+               Hy(i,j,k)=this%g%gm1(medio)*Hy(i,j,k)+this%g%gm2(medio)*((Ez(i+1,j,k)-Ez(i,j,k))*Idxe(i)-(Ex(i,j,k+1)-Ex(i,j,k))*Idzek)
             End do
          End do
       End do
@@ -2538,7 +2526,7 @@ contains
             Do i=1,this%bounds%sweepHz%NX
                Idyej=Idye(j)
                medio =sggMiHz(i,j,k)
-               Hz(i,j,k)=this%gm1(medio)*Hz(i,j,k)+this%gm2(medio)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
+               Hz(i,j,k)=this%g%gm1(medio)*Hz(i,j,k)+this%g%gm2(medio)*((Ex(i,j+1,k)-Ex(i,j,k))*Idyej-(Ey(i+1,j,k)-Ey(i,j,k))*Idxe(i))
             End do
          End do
       End do
@@ -2553,7 +2541,7 @@ contains
       class(solver_t) :: this
       type(sggfdtdinfo), intent(in) :: sgg
       If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time) then 
-         if(.not.this%control%simu_devia) call AdvancePlaneWaveE(sgg,this%n, this%bounds,this%G2, &
+         if(.not.this%control%simu_devia) call AdvancePlaneWaveE(sgg,this%n, this%bounds,this%g%G2, &
                                                                  this%Idxh,this%Idyh,this%Idzh, & 
                                                                  this%Ex,this%Ey,this%Ez, & 
                                                                  this%still_planewave_time)
@@ -2564,10 +2552,22 @@ contains
       class(solver_t) :: this
       type(sggfdtdinfo), intent(in) :: sgg
       If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time)  then
-         if (.not.this%control%simu_devia) call AdvancePlaneWaveH(sgg,this%n, this%bounds, this%GM2, & 
+         if (.not.this%control%simu_devia) call AdvancePlaneWaveH(sgg,this%n, this%bounds, this%g%GM2, & 
                                                                   this%Idxe, this%Idye, this%Idze, & 
                                                                   this%Hx, this%Hy, this%Hz, & 
                                                                   this%still_planewave_time)
+      endif
+   end subroutine
+
+   subroutine solver_advancePMLE(this, numMedia)
+      class (solver_t) :: this
+      integer (kind=4) :: numMedia
+      If (this%thereAre%PMLbodies) then !waveport absorbers
+         call AdvancePMLbodyE()
+      endif
+      If (this%thereAre%PMLBorders) then
+         call AdvanceelectricCPML(numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
+                                  this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
       endif
    end subroutine
 
@@ -2872,7 +2872,7 @@ contains
       call DestroyMURBorders
       !Destroy the remaining
       deallocate (sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
-      deallocate (this%G1,this%G2,this%GM1,this%GM2)
+      deallocate (this%g%G1,this%g%G2,this%g%GM1,this%g%GM2)
       deallocate (this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
       deallocate (this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)
       return
