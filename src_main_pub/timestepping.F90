@@ -2088,11 +2088,9 @@ contains
 #endif
       call this%advanceWiresE(sgg, eps0, mu0)
       call this%advancePMLE(sgg%NumMedia)
-
 #ifdef CompileWithNIBC
       IF (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
 #endif
-
       call this%AdvancesgbcE(real(sgg%dt,RKIND))
       call this%advanceLumpedE(sgg)
       call this%advanceEDispersiveE(sgg)
@@ -2105,20 +2103,19 @@ contains
          call FlushMPI_E_Cray
       endif
 #endif
-      call this%advanceAnisotropicH(sgg%alloc)
+
+call this%advanceAnisotropicH(sgg%alloc)
       call this%advanceH()
       call this%advancePMLbodyH()
       call this%AdvanceMagneticCPML(sgg%NumMedia)
       call this%MinusCloneMagneticPMC(sgg%alloc, sgg%border, sgg%sweep)
       call this%CloneMagneticPeriodic(sgg%alloc,sgg%Border, sgg%sweep)
-
       call this%AdvancesgbcH()
       call this%AdvanceMDispersiveH(sgg)
 #ifdef CompileWithNIBC
       IF (this%thereAre%Multiports .and.(this%control%mibc))  &
          call AdvanceMultiportH (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,this%sggMiHx,this%sggMiHy,this%sggMiHz,this%g%gm2,sgg%nummedia,this%control%conformalskin)
 #endif
-
       call this%advancePlaneWaveH(sgg)
       call this%advanceNodalH(sgg)
       call this%advanceWiresH(sgg, eps0, mu0)
