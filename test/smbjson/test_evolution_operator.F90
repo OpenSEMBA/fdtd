@@ -1,7 +1,8 @@
 integer function test_evolution_operator_dimension_Field_basis() bind (C, name="test_evolution_operator_dimension_Field_basis") result(err)
     use smbjson
     use smbjson_testingTools
-    use evolution_operator
+    use evolution_operator 
+    use fhash, only: fhash_tbl_t, key => fhash_key
 
     implicit none
 
@@ -116,6 +117,31 @@ integer function test_evolution_operator_position_H_basis() bind(C, name="test_e
 end function test_evolution_operator_position_H_basis
 
 ! One final test related to the basis of the inputs for the construction of the evolution operator could be check if the separation corresponds with the one detected in the map
+
+integer function test_evolution_operator_E_indices_map() bind(C, name="test_evolution_operator_E_indices_map") result(err)
+    use smbjson
+    use smbjson_testingTools
+    use evolution_operator
+
+    implicit none
+
+    integer :: i, j, k
+    type(bounds_t) :: bounds
+    type(fhash_tbl_t) :: RowIndexMap
+
+    bounds%Ex%NX = 2
+    bounds%Ex%NY = 3
+    bounds%Ex%NZ = 3
+
+    err = 0
+
+    call AddElectricFieldIndices(RowIndexMap, bounds%Ex, 0, 0, 0, 'k', 'j')
+
+    if (0 /= 0) then
+        err = err + 1
+    end if
+
+end function test_evolution_operator_E_indices_map
 
 ! integer function test_evolution_operator_oneStep() bind (C) result(err)
 !     use smbjson

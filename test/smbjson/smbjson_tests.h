@@ -32,6 +32,7 @@ extern "C" int test_read_unshielded_multiwires_multipolar_expansion();
 extern "C" int test_evolution_operator_dimension_Field_basis();
 extern "C" int test_evolution_operator_poisition_E_basis();
 extern "C" int test_evolution_operator_position_H_basis();
+extern "C" int test_evolution_operator_E_indices_map();
 
 TEST(smbjson, idchildtable_fhash)     {EXPECT_EQ(0, test_idchildtable_fhash()); }
 TEST(smbjson, idchildtable_add_get)   {EXPECT_EQ(0, test_idchildtable()); }
@@ -56,6 +57,7 @@ TEST(smbjson, read_lumped_fixture)       { EXPECT_EQ(0, test_read_lumped_fixture
 TEST(smbjson, evolutionOperator_BasisDimension)        { EXPECT_EQ(0, test_evolution_operator_dimension_Field_basis()); }
 TEST(smbjson, evolutionOperator_PositionEBasis)        { EXPECT_EQ(0, test_evolution_operator_poisition_E_basis()); }
 TEST(smbjson, evolutionOperator_PositionHBasis)        { EXPECT_EQ(0, test_evolution_operator_position_H_basis()); }
+TEST(smbjson, evolutionOperator_EIndicesMap)           { EXPECT_EQ(0, test_evolution_operator_E_indices_map()); }
 
 #ifdef CompileWithMTLN
 TEST(smbjson, read_towelhanger)             { EXPECT_EQ(0, test_read_towelhanger()); }

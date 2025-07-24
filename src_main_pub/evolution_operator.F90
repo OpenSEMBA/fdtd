@@ -14,9 +14,13 @@ module evolution_operator
         character(len=2) :: field_type  ! 'Ex', 'Ey', 'Ez', 'Hx', etc.
     end type
 
+    type :: int_array
+        integer, allocatable :: data(:)
+    end type
+
     private 
 
-    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis
+    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices
 
 contains
 
@@ -248,57 +252,142 @@ contains
 
     ! end subroutine
 
-    ! subroutine AddElectricFieldIndices(RowIndexMap, field, shiftE, shiftM1, shiftM2, dirM1, dirM2)
-    !     type(fhash_tbl_t), intent(inout) :: RowIndexMap
-    !     type(limit_t), intent(in) :: field
-    !     integer, intent(in) :: shiftE, shiftM1, shiftM2
-    !     character(len=1), intent(in) :: dirM1, dirM2  
+    subroutine AddElectricFieldIndices(RowIndexMap, field, shiftE, shiftM1, shiftM2, dirM1, dirM2)
+        type(fhash_tbl_t), intent(inout) :: RowIndexMap
+        type(limit_t), intent(in) :: field
+        integer, intent(in) :: shiftE, shiftM1, shiftM2
+        character(len=1), intent(in) :: dirM1, dirM2  
 
-    !     integer :: i, j, k, m, m_shift1, m_shift2
-    !     integer, allocatable :: indexList(:)
-    !     integer :: Nx, Ny, Nz
+        integer :: i, j, k, m, m_shift1, m_shift2
+        integer :: Nx, Ny, Nz
 
-    !     Nx = field%Nx + 2
-    !     Ny = field%Ny + 2
-    !     Nz = field%Nz + 2
+        type(int_array) :: wrapper 
+        integer, allocatable :: indexList(:)
+        integer :: countIndex, positionList
 
-    !     do i = 1, Nx - 2
-    !         do j = 1, Ny - 2
-    !             do k = 1, Nz - 2
-    !                 m = (i*Ny + j)*Nz  + k
+        Nx = field%Nx
+        Ny = field%Ny
+        Nz = field%Nz
 
-    !                 select case (dirM1)
-    !                     case ('i')
-    !                         m_shift1 = ((i - 1)*Ny + j)*Nz + k
-    !                     case ('j')
-    !                         m_shift1 = (i*Ny + (j - 1))*Nz + k
-    !                     case ('k')
-    !                         m_shift1 = (i*Ny + j)*Nz + (k - 1)
-    !                 end select
+        do i = 1, Nx
+            do j = 1, Ny
+                do k = 1, Nz
+                    m = ((i - 1)*Ny + (j - 1))*Nz  + k
+                    countIndex = 1
+                    positionList = 1
 
-    !                 select case (dirM2)
-    !                     case ('i')
-    !                         m_shift2 = ((i - 1)*Ny + j)*Nz + k
-    !                     case ('j')
-    !                         m_shift2 = (i*Ny + (j - 1))*Nz + k
-    !                     case ('k')
-    !                         m_shift2 = (i*Ny + j)*Nz + (k - 1)
-    !                 end select
+                    select case (dirM1)
+                        case ('i')
+                            if (i > 1 .and. i < Nx) then
+                                m_shift1 = ((i - 2)*Ny + (j - 1))*Nz  + k
+                                countIndex = countIndex + 2
+                            else if (i == 1) then
+                                m_shift1 = -1
+                                countIndex = countIndex + 1
+                            else
+                                m_shift1 = -2
+                                countIndex = countIndex + 1
+                            end if
+                        case ('j')
+                            if (j > 1 .and. j < Ny) then
+                                m_shift1 = ((i - 1)*Ny + (j - 2))*Nz  + k
+                                countIndex = countIndex + 2
+                            else if (j == 1) then
+                                m_shift1 = -1
+                                countIndex = countIndex + 1
+                            else
+                                m_shift1 = -2
+                                countIndex = countIndex + 1
+                            end if
+                        case ('k')
+                            if (k > 1 .and. k < Nz) then
+                                m_shift1 = ((i - 1)*Ny + (j - 1))*Nz  + (k - 1)
+                                countIndex = countIndex + 2
+                            else if (k == 1) then
+                                m_shift1 = -1
+                                countIndex = countIndex + 1
+                            else
+                                m_shift1 = -2
+                                countIndex = countIndex + 1
+                            end if
+                    end select
 
-    !                 allocate(indexList(5))
-    !                 indexList(1) = shiftE + m
-    !                 indexList(2) = shiftM1 + m
-    !                 indexList(3) = shiftM1 + m_shift2
-    !                 indexList(4) = shiftM2 + m
-    !                 indexList(5) = shiftM2 + m_shift1
+                    select case (dirM2)
+                        case ('i')
+                            if (i > 1 .and. i < Nx) then
+                                m_shift2 = ((i - 2)*Ny + (j - 1))*Nz  + k
+                                countIndex = countIndex + 2
+                            else if (i == 1) then
+                                m_shift2 = -1
+                                countIndex = countIndex + 1
+                            else
+                                m_shift2 = -2
+                                countIndex = countIndex + 1
+                            end if
+                        case ('j')
+                            if (j > 1 .and. j < Ny) then
+                                m_shift2 = ((i - 1)*Ny + (j - 2))*Nz  + k
+                                countIndex = countIndex + 2
+                            else if (j == 1) then
+                                m_shift2 = -1
+                                countIndex = countIndex + 1
+                            else
+                                m_shift2 = -2
+                                countIndex = countIndex + 1
+                            end if
+                        case ('k')
+                            if (k > 1 .and. k < Nz) then
+                                m_shift2 = ((i - 1)*Ny + (j - 1))*Nz  + (k - 1)
+                                countIndex = countIndex + 2
+                            else if (k == 1) then
+                                m_shift2 = -1
+                                countIndex = countIndex + 1
+                            else
+                                m_shift2 = -2
+                                countIndex = countIndex + 1
+                            end if
+                    end select
 
-    !                 call RowIndexMap%set(key(shiftE + m), value=indexList)
+                    ! Allocate the indexList with the size of countIndex
+                    allocate(indexList(countIndex))
 
-    !                 deallocate(indexList)
-    !             end do
-    !         end do
-    !     end do
-    ! end subroutine 
+                    indexList(positionList) = shiftE + m
+                    positionList = positionList + 1
+
+                    if (m_shift2 /= -1 .and. m_shift2 /= -2) then
+                        indexList(positionList) = shiftM1 + m
+                        indexList(positionList + 1) = shiftM1 + m_shift2
+                        positionList = positionList + 2
+                    else if (m_shift2 == -1) then   ! Border at the beginning
+                        indexList(positionList) = shiftM1 + m
+                        positionList = positionList + 1
+                    else                            ! Border at the end
+                        indexList(positionList) = shiftM1 + m_shift2
+                        positionList = positionList + 1
+                    end if
+
+
+                    if (m_shift1 /= -1 .and. m_shift1 /= -2) then
+                        indexList(positionList) = shiftM2 + m
+                        indexList(positionList + 1) = shiftM2 + m_shift1
+                        positionList = positionList + 2
+                    else if (m_shift1 == -1) then   ! Border at the beginning
+                        indexList(positionList) = shiftM2 + m
+                        positionList = positionList + 1
+                    else                            ! Border at the end
+                        indexList(positionList) = shiftM2 + m_shift1
+                        positionList = positionList + 1
+                    end if
+
+                    wrapper%data = indexList
+                    call RowIndexMap%set(key(shiftE + m), wrapper)  
+
+
+                    deallocate(indexList)
+                end do
+            end do
+        end do
+    end subroutine 
 
     ! subroutine AddMagneticFieldIndices(RowIndexMap, field, shiftH, shiftE1, shiftE2, dir1, dir2)
     !     type(fhash_tbl_t), intent(inout) :: RowIndexMap
