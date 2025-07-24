@@ -125,6 +125,7 @@ module Solver_mod
       procedure :: advanceE, advanceEx, advanceEy, advanceEz
       procedure :: advanceH, advanceHx, advanceHy, advanceHz
       procedure :: advancePlaneWaveE => solver_advancePlaneWaveE
+      procedure :: advancePlaneWaveH => solver_advancePlaneWaveH
       ! procedure :: advanceWires, advancePMLE
       ! procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
       ! procedure :: advanceAnisotropicE => solver_advanceAnisotropicE
@@ -2097,9 +2098,6 @@ contains
 
       call this%advancePlaneWaveE(sgg)
 
-      ! If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time) then 
-      !    if(.not.this%control%simu_devia) call AdvancePlaneWaveE(sgg,this%n, this%bounds,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%still_planewave_time)
-      ! end if
       If (this%thereAre%NodalE) call AdvanceNodalE(sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,sgg%NumMedia,this%n, this%bounds,G2,Idxh,Idyh,Idzh,Ex,Ey,Ez,this%control%simu_devia)
 
 #ifdef CompileWithMPI
@@ -2120,9 +2118,9 @@ contains
       IF (this%thereAre%Multiports .and.(this%control%mibc))  &
          call AdvanceMultiportH (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,this%sggMiHx,this%sggMiHy,this%sggMiHz,gm2,sgg%nummedia,this%control%conformalskin)
 #endif
-      If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time)  then
-            if (.not.this%control%simu_devia) call AdvancePlaneWaveH(sgg,this%n, this%bounds, GM2, Idxe,Idye, Idze, Hx, Hy, Hz,this%still_planewave_time)
-      endif
+
+      call this%advancePlaneWaveH(sgg)
+
       If (this%thereAre%NodalH) call AdvanceNodalH(sgg,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,sgg%NumMedia,this%n, this%bounds,GM2,Idxe,Idye,Idze,Hx,Hy,Hz,this%control%simu_devia)
 
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
@@ -2596,6 +2594,18 @@ contains
                                                                  this%Ex,this%Ey,this%Ez, & 
                                                                  this%still_planewave_time)
       end if
+
+   end subroutine
+
+   subroutine solver_advancePlaneWaveH(this,sgg)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+      If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time)  then
+         if (.not.this%control%simu_devia) call AdvancePlaneWaveH(sgg,this%n, this%bounds, this%GM2, & 
+                                                                  this%Idxe, this%Idye, this%Idze, & 
+                                                                  this%Hx, this%Hy, this%Hz, & 
+                                                                  this%still_planewave_time)
+      endif
 
    end subroutine
 
