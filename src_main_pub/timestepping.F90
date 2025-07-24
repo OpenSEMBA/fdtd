@@ -126,14 +126,24 @@ module Solver_mod
       procedure :: advanceH, advanceHx, advanceHy, advanceHz
       procedure :: advancePlaneWaveE => solver_advancePlaneWaveE
       procedure :: advancePlaneWaveH => solver_advancePlaneWaveH
-      procedure :: advanceWires => solver_advanceWires
+      procedure :: advanceWiresE => solver_advanceWiresE
+      procedure :: advanceWiresH => solver_advanceWiresH
       procedure :: advancePMLE => solver_advancePMLE
       procedure :: advanceAnisotropicE => solver_advanceAnisotropicE
+      procedure :: advanceAnisotropicH => solver_advanceAnisotropicH
       procedure :: advanceLumpedE => solver_advanceLumpedE
       procedure :: advanceNodalE => solver_advanceNodalE
+      procedure :: advanceNodalH => solver_advanceNodalH
+      procedure :: advancePMLbodyH => solver_advancePMLbodyH
+      procedure :: advanceMagneticCPML => solver_advanceMagneticCPML
+      procedure :: advanceSGBCE => solver_advanceSGBCE
+      procedure :: advanceSGBCH => solver_advanceSGBCH
+
+      procedure :: MinusCloneMagneticPMC => solver_MinusCloneMagneticPMC
+      procedure :: CloneMagneticPeriodic => solver_CloneMagneticPeriodic
       ! procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
-      ! procedure :: advanceSGBCE => solver_advanceSGBCE
       procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
+      procedure :: advanceMDispersiveH => solver_advanceMDispersiveH
       procedure :: destroy_and_deallocate
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
@@ -2076,14 +2086,14 @@ contains
 #ifdef CompileWithConformal
       if(this%control%input_conformal_flag) call conformal_advance_E()
 #endif
-      call this%advanceWires(sgg, eps0, mu0)
+      call this%advanceWiresE(sgg, eps0, mu0)
       call this%advancePMLE(sgg%NumMedia)
 
 #ifdef CompileWithNIBC
       IF (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
 #endif
-      IF (this%thereAre%sgbcs.and.(this%control%sgbc)) call AdvancesgbcE(real(sgg%dt,RKIND),this%control%sgbcDispersive,this%control%simu_devia,this%control%stochastic)
 
+      call this%AdvancesgbcE(real(sgg%dt,RKIND))
       call this%advanceLumpedE(sgg)
       call this%advanceEDispersiveE(sgg)
       call this%advancePlaneWaveE(sgg)
@@ -2095,35 +2105,25 @@ contains
          call FlushMPI_E_Cray
       endif
 #endif
-      IF (this%thereAre%Anisotropic) call AdvanceAnisotropicH(sgg%alloc,ex,ey,ez,hx,hy,hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh)
+      call this%advanceAnisotropicH(sgg%alloc)
       call this%advanceH()
-      If (this%thereAre%PMLbodies) call AdvancePMLbodyH()
-      If (this%thereAre%PMLBorders) call AdvanceMagneticCPML(sgg%NumMedia, this%bounds, this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, this%g%gm2, Hx, Hy, Hz, Ex, Ey, Ez)
-      If (this%thereAre%PMCBorders) call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
-      If (this%thereAre%PeriodicBorders) call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
-      IF (this%thereAre%sgbcs.and.(this%control%sgbc)) call AdvancesgbcH()
-      IF (this%thereAre%Mdispersives) call AdvanceMDispersiveH(sgg)
+      call this%advancePMLbodyH()
+      call this%AdvanceMagneticCPML(sgg%NumMedia)
+      call this%MinusCloneMagneticPMC(sgg%alloc, sgg%border, sgg%sweep)
+      call this%CloneMagneticPeriodic(sgg%alloc,sgg%Border, sgg%sweep)
+
+      call this%AdvancesgbcH()
+      call this%AdvanceMDispersiveH(sgg)
 #ifdef CompileWithNIBC
       IF (this%thereAre%Multiports .and.(this%control%mibc))  &
          call AdvanceMultiportH (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,this%sggMiHx,this%sggMiHy,this%sggMiHz,this%g%gm2,sgg%nummedia,this%control%conformalskin)
 #endif
 
       call this%advancePlaneWaveH(sgg)
-
-      If (this%thereAre%NodalH) call AdvanceNodalH(sgg,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,sgg%NumMedia,this%n, this%bounds,this%g%GM2,Idxe,Idye,Idze,Hx,Hy,Hz,this%control%simu_devia)
-
-      if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-            (trim(adjustl(this%control%wiresflavor))=='transition')) then
-         IF (this%thereAre%Wires) then
-            if (this%control%wirecrank) then
-               continue
-            else
-               call AdvanceWiresH(sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)
-            endif
-         endif
-      endif
-      If (this%thereAre%PMCBorders) call MinusCloneMagneticPMC(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
-      If (this%thereAre%PeriodicBorders) call CloneMagneticPeriodic(sgg%alloc,sgg%Border,Hx,Hy,Hz,sgg%sweep,this%control%layoutnumber,this%control%size)
+      call this%advanceNodalH(sgg)
+      call this%advanceWiresH(sgg, eps0, mu0)
+      call this%MinusCloneMagneticPMC(sgg%alloc, sgg%border, sgg%sweep)
+      call this%CloneMagneticPeriodic(sgg%alloc, sgg%Border, sgg%sweep)
 
 #ifdef CompileWithConformal                      
       if(this%control%input_conformal_flag) call conformal_advance_H()
@@ -2535,6 +2535,12 @@ contains
       if (this%thereAre%Edispersives) call AdvanceEDispersiveE(sgg)
    end subroutine
 
+   subroutine solver_advanceMDispersiveH(this, sgg)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+      if (this%thereAre%Mdispersives) call AdvanceMDispersiveH(sgg)
+   end subroutine
+
    subroutine solver_advanceLumpedE(this, sgg)
       class(solver_t) :: this
       type(sggfdtdinfo), intent(in) :: sgg
@@ -2576,6 +2582,18 @@ contains
          end if
    end subroutine
 
+   subroutine solver_advanceNodalH(this, sgg)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+      if (this%thereAre%NodalH) then 
+         call AdvanceNodalH(sgg,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
+                            sgg%NumMedia,this%n, this%bounds,this%g%GM2, & 
+                            this%Idxe,this%Idye,this%Idze, & 
+                            this%Hx,this%Hy,this%Hz,&
+                            this%control%simu_devia)
+      end if
+   end subroutine
+
    subroutine solver_advanceAnisotropicE(this, alloc)
       class(solver_t) :: this
       type(XYZlimit_t), dimension (1:6), intent(in) :: alloc
@@ -2584,6 +2602,48 @@ contains
                                                              this%Idxe, this%Idye, this%Idze, & 
                                                              this%Idxh, this%Idyh, this%Idzh)
    end subroutine
+
+   subroutine solver_advanceAnisotropicH(this, alloc)
+      class(solver_t) :: this
+      type(XYZlimit_t), dimension (1:6), intent(in) :: alloc
+      IF (this%thereAre%Anisotropic) call AdvanceAnisotropicH(alloc, this%ex, this%ey, this%ez, & 
+                                                              this%hx, this%hy, this%hz, & 
+                                                              this%Idxe, this%Idye, this%Idze, &
+                                                              this%Idxh, this%Idyh, this%Idzh)
+   end subroutine
+
+   subroutine solver_advancePMLbodyH(this)
+      class(solver_t) :: this
+      if (this%thereAre%PMLbodies) call AdvancePMLbodyH()
+   end subroutine
+
+   subroutine solver_advanceMagneticCPML(this, numMedia)
+      class(solver_t) :: this
+      integer(kind=4), intent(in) :: numMedia
+      If (this%thereAre%PMLBorders) call advanceMagneticCPML(numMedia, this%bounds, & 
+                                                             this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
+                                                             this%g%gm2, this%Hx, this%Hy, this%Hz, & 
+                                                             this%Ex, this%Ey, this%Ez)
+   end subroutine
+
+   subroutine solver_MinusCloneMagneticPMC(this, alloc, border, sweep)
+      class(solver_t) :: this
+      type(XYZlimit_t), dimension (1:6), intent(in) :: alloc
+      type (Border_t), intent(in) :: border
+      type (XYZlimit_t), dimension(1:6) :: sweep
+      If (this%thereAre%PMCBorders) call MinusCloneMagneticPMC(alloc,border,this%Hx,this%Hy,this%Hz,sweep, & 
+                                                               this%control%layoutnumber,this%control%size)
+   end subroutine
+
+   subroutine solver_CloneMagneticPeriodic(this, alloc, border, sweep)
+      class(solver_t) :: this
+      type(XYZlimit_t), dimension (1:6), intent(in) :: alloc
+      type (Border_t), intent(in) :: border
+      type (XYZlimit_t), dimension(1:6) :: sweep
+      If (this%thereAre%PeriodicBorders) call CloneMagneticPeriodic(alloc,border,this%Hx,this%Hy,this%Hz,sweep,& 
+                                                                    this%control%layoutnumber,this%control%size)
+   end subroutine
+
 
    subroutine solver_advancePMLE(this, numMedia)
       class (solver_t) :: this
@@ -2597,7 +2657,22 @@ contains
       endif
    end subroutine
 
-   subroutine solver_advanceWires(this, sgg, eps0, mu0)
+   subroutine solver_advancesgbcE(this, dt)
+      class(solver_t) :: this
+      real(kind=rkind), intent(in) :: dt
+
+      if (this%thereAre%sgbcs.and.(this%control%sgbc)) then 
+         call AdvancesgbcE(dt,this%control%sgbcDispersive, & 
+                                this%control%simu_devia,this%control%stochastic)
+      end if
+   end subroutine
+
+   subroutine solver_advancesgbcH(this)
+      class(solver_t) :: this
+      if (this%thereAre%sgbcs.and.(this%control%sgbc)) call AdvancesgbcH()
+   end subroutine
+
+   subroutine solver_advanceWiresE(this, sgg, eps0, mu0)
       class(solver_t) :: this
       type(sggfdtdinfo), intent(in) :: sgg
       real(kind=rkind), intent(inout) :: eps0,mu0
@@ -2636,6 +2711,23 @@ contains
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif   
       end if
+
+   end subroutine
+
+   subroutine solver_advancewiresH(this, sgg, eps0, mu0)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+      real(kind=rkind), intent(inout) :: eps0,mu0
+      if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
+            (trim(adjustl(this%control%wiresflavor))=='transition')) then
+         IF (this%thereAre%Wires) then
+            if (this%control%wirecrank) then
+               continue
+            else
+               call AdvanceWiresH(sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)
+            endif
+         endif
+      endif
 
    end subroutine
 
