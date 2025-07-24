@@ -94,16 +94,14 @@ contains
 ! Subroutine to initialize the parameters
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
-                     layoutnumber,size,G1,G2,GM1,GM2,ThereAreSGBCs,resume,temp_SGBCcrank,temp_SGBCFreq,temp_SGBCresol,temp_SGBCDepth,temp_SGBCDispersive, &
+                     layoutnumber,size,g,ThereAreSGBCs,resume,temp_SGBCcrank,temp_SGBCFreq,temp_SGBCresol,temp_SGBCDepth,temp_SGBCDispersive, &
                      eps00,mu00,simu_devia,stochastic)
-
    type(media_matrices_t), intent(in) :: media
    logical :: simu_devia,stochastic 
    REAL (KIND=RKIND)           ::  eps00,mu00
    logical :: temp_SGBCcrank,temp_SGBCDispersive
-   REAL (KIND=RKIND)     , pointer, dimension ( : ), intent(inout)   ::  gm1,g1
+   type(constants_t), intent(inout) :: g
    type (SGGFDTDINFO), intent(INOUT)     ::  sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
-   REAL (KIND=RKIND)     , pointer, dimension ( : ), intent(inout)     ::   gm2,g2
    REAL (KIND=RKIND)   , intent(in) , target     :: &
    Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
    Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -553,7 +551,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
       end do
    end do
 
-   call calc_SGBCconstants(sgg,G1,G2,Gm1,Gm2,eps0,mu0,stochastic)
+   call calc_SGBCconstants(sgg,g,eps0,mu0,stochastic)
 
 !!!reporting de depth
     i=-100
@@ -614,16 +612,18 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
 
 end subroutine InitSGBCs
 
-subroutine calc_SGBCconstants(sgg,G1,G2,Gm1,Gm2,eps00,mu00,stochastic)
+subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
    REAL (KIND=RKIND), intent(IN)           ::  eps00,mu00
    type (SGGFDTDINFO), intent(IN)     ::  sgg 
    REAL (KIND=RKIND), pointer, dimension ( : )   ::  gm1,g1,gm2,g2
+   type(constants_t) :: g
  integer :: jmed,conta,i
    REAL (KIND=RKIND) :: sigmam,sigma,mu,epsilon,signo,g1eff_0,g2eff_0,g1eff_1,g2eff_1
    type (SGBCSurface_t), pointer :: compo
    character(len=BUFSIZE) :: buFF
    logical :: stochastic
 !
+   g1 => g%g1; g2 => g%g2; gm1 => g%gm1; gm2 => g%gm2; 
    eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
    zvac=sqrt(mu0/eps0)
    cluz=1.0_RKIND/sqrt(mu0*eps0)
