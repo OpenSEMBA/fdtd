@@ -138,12 +138,11 @@ module Solver_mod
       procedure :: advanceMagneticCPML => solver_advanceMagneticCPML
       procedure :: advanceSGBCE => solver_advanceSGBCE
       procedure :: advanceSGBCH => solver_advanceSGBCH
-
-      procedure :: MinusCloneMagneticPMC => solver_MinusCloneMagneticPMC
-      procedure :: CloneMagneticPeriodic => solver_CloneMagneticPeriodic
-      ! procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
       procedure :: advanceEDispersiveE => solver_advanceEDispersiveE
       procedure :: advanceMDispersiveH => solver_advanceMDispersiveH
+      procedure :: MinusCloneMagneticPMC => solver_MinusCloneMagneticPMC
+      procedure :: CloneMagneticPeriodic => solver_CloneMagneticPeriodic
+      procedure :: advanceMagneticMUR => solver_advanceMagneticMUR
       procedure :: destroy_and_deallocate
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
@@ -2069,16 +2068,9 @@ contains
 
       logical :: planewave_switched_off = .false., thereareplanewave
 
-      real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
-      real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
-
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
-
-      Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
-      Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; 
-      dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE(sgg%alloc)
@@ -2089,7 +2081,7 @@ contains
       call this%advanceWiresE(sgg, eps0, mu0)
       call this%advancePMLE(sgg%NumMedia)
 #ifdef CompileWithNIBC
-      IF (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(sgg%alloc,Ex, Ey, Ez)
+      IF (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(sgg%alloc, this%Ex, this%Ey, this%Ez)
 #endif
       call this%AdvancesgbcE(real(sgg%dt,RKIND))
       call this%advanceLumpedE(sgg)
@@ -2104,7 +2096,7 @@ contains
       endif
 #endif
 
-call this%advanceAnisotropicH(sgg%alloc)
+      call this%advanceAnisotropicH(sgg%alloc)
       call this%advanceH()
       call this%advancePMLbodyH()
       call this%AdvanceMagneticCPML(sgg%NumMedia)
@@ -2114,7 +2106,11 @@ call this%advanceAnisotropicH(sgg%alloc)
       call this%AdvanceMDispersiveH(sgg)
 #ifdef CompileWithNIBC
       IF (this%thereAre%Multiports .and.(this%control%mibc))  &
-         call AdvanceMultiportH (sgg%alloc,Hx,Hy,Hz,Ex,Ey,Ez,Idxe,Idye,Idze,this%sggMiHx,this%sggMiHy,this%sggMiHz,this%g%gm2,sgg%nummedia,this%control%conformalskin)
+         call AdvanceMultiportH (sgg%alloc,this%Hx,this%Hy,this%Hz, & 
+                                 this%Ex,this%Ey,this%Ez,& 
+                                 this%Idxe,this%Idye,this%Idze, & 
+                                 this%sggMiHx,this%sggMiHy,this%sggMiHz, & 
+                                 this%g%gm2,sgg%nummedia,this%control%conformalskin)
 #endif
       call this%advancePlaneWaveH(sgg)
       call this%advanceNodalH(sgg)
@@ -2161,17 +2157,7 @@ call this%advanceAnisotropicH(sgg%alloc)
          if (this%control%stochastic) call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%size)
 #endif    
 #endif 
-      If (this%thereAre%MURBorders) then
-         call AdvanceMagneticMUR(this%bounds, sgg,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, Hx, Hy, Hz,this%control%mur_second)
-#ifdef CompileWithMPI
-         if (this%control%mur_second) then
-            if (this%control%size>1) then
-               call MPI_Barrier(SUBCOMM_MPI,ierr)
-               call FlushMPI_H_Cray
-            endif
-         endif
-#endif
-      endif
+      call this%advanceMagneticMUR(sgg)
 contains
 
    subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
@@ -2727,6 +2713,29 @@ contains
       endif
 
    end subroutine
+
+   subroutine solver_advanceMagneticMUR(this, sgg)
+      class(solver_t) :: this
+      type(sggfdtdinfo), intent(in) :: sgg
+#ifdef CompileWithMPI
+      integer(kind=4) :: ierr
+#endif
+      If (this%thereAre%MURBorders) then
+         call AdvanceMagneticMUR(this%bounds, sgg, & 
+                                 this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
+                                 this%Hx, this%Hy, this%Hz, & 
+                                 this%control%mur_second)
+#ifdef CompileWithMPI
+         if (this%control%mur_second) then
+            if (this%control%size>1) then
+               call MPI_Barrier(SUBCOMM_MPI,ierr)
+               call FlushMPI_H_Cray
+            endif
+         endif
+#endif
+      endif
+   end subroutine
+
 
    subroutine solver_end(this, sgg, eps0, mu0, tagtype, finishedwithsuccess)
       class(solver_t) :: this
