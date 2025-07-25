@@ -122,22 +122,69 @@ integer function test_evolution_operator_E_indices_map() bind(C, name="test_evol
     use smbjson
     use smbjson_testingTools
     use evolution_operator
+    use fhash, key => fhash_key
 
     implicit none
 
     integer :: i, j, k
+    integer :: m
     type(bounds_t) :: bounds
     type(fhash_tbl_t) :: RowIndexMap
+    type(int_array) :: wrapper
+    integer :: ElementsInMap
 
     bounds%Ex%NX = 2
     bounds%Ex%NY = 3
     bounds%Ex%NZ = 3
 
     err = 0
+    ElementsInMap = 0
 
     call AddElectricFieldIndices(RowIndexMap, bounds%Ex, 0, 0, 0, 'k', 'j')
 
-    if (0 /= 0) then
+    do i = 1, bounds%Ex%NX
+        do j = 1, bounds%Ex%NY
+            do k = 1, bounds%Ex%NZ
+                m = ((i - 1)*bounds%Ex%NY + (j - 1))*bounds%Ex%NZ  + k
+
+                call fhash_get_int_array(RowIndexMap, key(m), wrapper)
+
+                ! Check if the map has been created correctly for each i, j, k
+                if (size(wrapper%data) == 0) then
+                    err = err + 1
+                    cycle
+                else 
+                    ElementsInMap = ElementsInMap + 1
+                end if
+
+                ! First we check the number of neighbours in the frontier of the first direction
+                if (j == 1 .or. j == bounds%Ex%Ny) then
+                    if (k == 1 .or. k == bounds%Ex%NZ) then
+                        if (size(wrapper%data) /= 3) then
+                            err = err + 1
+                        end if
+                    else
+                        if (size(wrapper%data) /= 4) then
+                            err = err + 1
+                        end if
+                    end if
+                ! Then we check the number of neighbours in the frontier of the second direction that are not neighbours of the first direction               
+                else if (k == 1 .or. k == bounds%Ex%NZ) then
+                    if (size(wrapper%data) /= 4) then
+                        err = err + 1
+                    end if
+                ! Finally we check the number of neighbours in the interior of the grid
+                else
+                    if (size(wrapper%data) /= 5) then
+                        err = err + 1
+                    end if
+                end if
+
+            end do
+        end do
+    end do
+
+    if (ElementsInMap /= bounds%Ex%NX * bounds%Ex%NY * bounds%Ex%NZ) then
         err = err + 1
     end if
 
