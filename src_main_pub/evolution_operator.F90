@@ -5,7 +5,7 @@ module evolution_operator
     use fdetypes
     use Report
 
-    use fhash, only: fhash_tbl_t, key => fhash_key
+    use fhash,  key => fhash_key
 
     implicit none
 
@@ -20,7 +20,7 @@ module evolution_operator
 
     private 
 
-    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices
+    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, fhash_get_int_array, int_array
 
 contains
 
@@ -380,7 +380,7 @@ contains
                     end if
 
                     wrapper%data = indexList
-                    call RowIndexMap%set(key(shiftE + m), wrapper)  
+                    call RowIndexMap%set(key(shiftE + m), value=wrapper)  
 
 
                     deallocate(indexList)
@@ -567,5 +567,28 @@ contains
 
 
 !     end subroutine
+
+    subroutine fhash_get_int_array(tbl, k, val)
+        type(fhash_tbl_t), intent(in) :: tbl
+        class(fhash_key_t), intent(in) :: k
+        type(int_array), intent(out) :: val
+
+        integer :: stat
+        class(*), allocatable :: raw
+
+        call tbl%get_raw(k, raw, stat)
+
+        if (stat /= 0) then
+            allocate(val%data(0))
+            return
+        end if
+
+        select type(d => raw)
+        type is (int_array)
+            val = d
+        class default
+            allocate(val%data(0))
+        end select
+    end subroutine
 
 end module
