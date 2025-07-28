@@ -52,8 +52,7 @@ module SEMBA_FDTD_mod
       type (entrada_t) :: l
       TYPE (tiempo_t) :: time_comienzo
       real (KIND=8) time_desdelanzamiento
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
-      integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
+      type(media_matrices_t) :: media
       type (SGGFDTDINFO)   :: sgg
       type (limit_t), DIMENSION (1:6) :: fullsize, SINPML_fullsize
       real (KIND=RKIND) ::  eps0,mu0,cluz
@@ -385,7 +384,7 @@ contains
          CALL print11 (this%l%layoutnumber, '[OK] Ended conversion internal ASCII => Binary')
          !release memory created by newPARSER
          if (this%l%fatalerror) then
-            if (allocated(this%sggMiEx)) deallocate (this%sggMiEx, this%sggMiEy, this%sggMiEz,this%sggMiHx, this%sggMiHy, this%sggMiHz,this%sggMiNo,this%sggMtag)
+            if (allocated(this%media%sggMiEx)) deallocate (this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
             CALL stoponerror (this%l%layoutnumber, this%l%size, 'Error in .nfde file syntax. Check all *Warnings* and *tmpWarnings* files, correct and remove pause file if any',.true.); goto 652
          endif
 
@@ -492,14 +491,20 @@ contains
          !*************************************************************************
 #endif
 
-         if (allocated(this%sggMiEx)) then !para el this%l%skindepthpre no se allocatea nada
+         if (allocated(this%media%sggMiEx)) then !para el this%l%skindepthpre no se allocatea nada
 #ifdef CompileWithConformal
-         call AssigLossyOrPECtoNodes(this%sgg,this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,&
-                                       &conf_conflicts,this%l%input_conformal_flag)
+         call AssigLossyOrPECtoNodes(this%sgg,this%media, conf_conflicts,this%l%input_conformal_flag)
 #else
-         call AssigLossyOrPECtoNodes(this%sgg,this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz)
+         call AssigLossyOrPECtoNodes(this%sgg,this%media)
 #endif
-         IF (this%l%createmap) CALL store_geomData (this%sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%geomfile)
+! #ifdef CompileWithConformal
+!          call AssigLossyOrPECtoNodes(this%sgg,this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,&
+!                                        &conf_conflicts,this%l%input_conformal_flag)
+! #else
+!          call AssigLossyOrPECtoNodes(this%sgg,this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz)
+! #endif
+         IF (this%l%createmap) CALL store_geomData (this%sgg,this%media, this%l%geomfile)
+         ! IF (this%l%createmap) CALL store_geomData (this%sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%geomfile)
          endif
          !
 #ifdef CompileWithMPI
@@ -828,9 +833,12 @@ contains
             !!fin 16/07/15
             WRITE (dubuf,*) 'INIT NFDE --------> GEOM'
             CALL print11 (this%l%layoutnumber, dubuf)
-            CALL read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
+            CALL read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
             this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, this%eps0, &
-            this%mu0,.false.,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
+            this%mu0,.false.,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)            
+            ! CALL read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
+            ! this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, this%eps0, &
+            ! this%mu0,.false.,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
 #ifdef CompileWithMTLN
             if (trim(adjustl(this%l%extension))=='.json')  then 
                this%mtln_parsed = parser%mtln
@@ -904,9 +912,12 @@ contains
             WRITE (dubuf,*) 'INIT NFDE --------> GEOM'
             CALL print11 (this%l%layoutnumber, dubuf)           
 
-            CALL read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
+            CALL read_geomData (this%sgg,this%media,this%tag_numbers, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
             this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, &
             this%eps0,this%mu0,this%l%simu_devia,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
+            ! CALL read_geomData (this%sgg,this%sggMtag,this%tag_numbers, this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%fichin, this%l%layoutnumber, this%l%size, this%SINPML_fullsize, this%fullsize, parser, &
+            ! this%l%groundwires,this%l%attfactorc,this%l%mibc,this%l%sgbc,this%l%sgbcDispersive,this%l%MEDIOEXTRA,this%maxSourceValue,this%l%skindepthpre,this%l%createmapvtk,this%l%input_conformal_flag,this%l%CLIPREGION,this%l%boundwireradius,this%l%maxwireradius,this%l%updateshared,this%l%run_with_dmma, &
+            ! this%eps0,this%mu0,this%l%simu_devia,this%l%hay_slanted_wires,this%l%verbose,this%l%ignoresamplingerrors,this%tagtype,this%l%wiresflavor)
 
 
 #ifdef CompileWithMPI
@@ -1207,12 +1218,12 @@ contains
          solver%mtln_parsed =  this%mtln_parsed
 #endif
 
+
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
-            CALL solver%launch_simulation (this%sgg,this%sggMtag,this%tag_numbers,this%sggMiNo, this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,&
-                                           this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
+            CALL solver%launch_simulation (this%sgg,this%media,this%tag_numbers,this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
                                            this%l, this%maxSourceValue, this%time_desdelanzamiento)
 
-            deallocate (this%sggMiEx, this%sggMiEy, this%sggMiEz,this%sggMiHx, this%sggMiHy, this%sggMiHz,this%sggMiNo,this%sggMtag)
+            deallocate (this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
          else
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
