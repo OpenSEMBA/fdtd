@@ -1123,7 +1123,8 @@ contains
       end subroutine initializeLumped
 
       subroutine initializeWires()
-         real (kind=rkind) :: dtcritico, newdtcritico
+         real (kind=rkind_tiempo) :: dtcritico, newdtcritico
+         ! real (kind=rkind) :: dtcritico, newdtcritico
          character(len=BUFSIZE) :: dubuf, buff
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
