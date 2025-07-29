@@ -8,6 +8,7 @@
     #include "smbjson/smbjson_tests.h"
     #include "rotate/rotate_tests.h"
 #endif
+#include "conformal/conformal_tests.h"
 
 int main(int argc, char **argv) {
     ::testing::InitGoogleTest(&argc, argv);
