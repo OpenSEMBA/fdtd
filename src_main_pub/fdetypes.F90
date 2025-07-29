@@ -138,13 +138,17 @@ module  FDETYPES
    integer (kind=4), parameter  ::  REALSIZE=MPI_DOUBLE_PRECISION
    integer (kind=4), parameter  ::  REALSIZE_wires=MPI_DOUBLE_PRECISION
    integer (kind=4), parameter  ::  COMPLEXSIZE=MPI_DOUBLE_COMPLEX
+   integer (kind=4), parameter  ::  REALSIZE_tiempo=MPI_DOUBLE_PRECISION
 #else
 #ifdef CompileWithReal16
    integer (kind=4), parameter  ::  REALSIZE=MPI_REAL16
    integer (kind=4), parameter  ::  COMPLEXSIZE=MPI_COMPLEX32
+   integer (kind=4), parameter  ::  REALSIZE_tiempo=MPI_REAL_16
 #else
    integer (kind=4), parameter  ::  REALSIZE=MPI_REAL
    integer (kind=4), parameter  ::  REALSIZE_wires=MPI_DOUBLE_PRECISION
+   integer (kind=4), parameter  ::  REALSIZE_tiempo=MPI_DOUBLE_PRECISION
+
 !!!   integer (kind=4), parameter  ::  COMPLEXSIZE=MPI_COMPLEX
    integer (kind=4), parameter  ::  COMPLEXSIZE=MPI_DOUBLE_COMPLEX  !LOS COMPLEJOS LOS VOY A MANEJAR SIEMPRE EN DOBLE PRECISION como minimo !esto debe ir ligado a la definicion de ckind
 #endif

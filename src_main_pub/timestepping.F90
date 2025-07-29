@@ -1220,7 +1220,9 @@ contains
 #endif
       !!!sincroniza el dtcritico
 #ifdef CompileWithMPI
-         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
+         newdtcritico = 0.0
+         ! call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_tiempo, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
          if (sgg%dt <= dtcritico) then
