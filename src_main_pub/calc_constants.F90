@@ -33,15 +33,15 @@ module CALC_CONSTANTS
             g%gm2(r)=0.0_RKIND
          else
             if (sgg%Med(R)%Is%ConformalPEC) then
-               G1(r)  = 1 
-               G2(r)  = sgg%dt /Epsilon
-               GM1(r) = 1
-               GM2(r) = sgg%dt/ Mu
+               g%g1(r)  = 1 
+               g%g2(r)  = sgg%dt /Epsilon
+               g%gm1(r) = 1
+               g%gm2(r) = sgg%dt/ Mu
             elseif ((sgg%Med(R)%Is%multiport).or.(sgg%Med(R)%Is%AnisMultiport)) then
-               G1(r)=0.0_RKIND !mull fields on the main procedure (good both for Ian and for me)
-               G2(r)=0.0_RKIND
-               GM1(r)=0.0_RKIND
-               GM2(r)=0.0_RKIND
+               g%g1(r)=0.0_RKIND !mull fields on the main procedure (good both for Ian and for me)
+               g%g2(r)=0.0_RKIND
+               g%gm1(r)=0.0_RKIND
+               g%gm2(r)=0.0_RKIND
             elseif ((sgg%Med(R)%Is%pec).or.(r==0)) then
                !Trivially PEC updating Ca, Cbfficients are set to 0.0_RKIND
                g%g1(r)=0.0_RKIND ;  g%g2(r)=0.0_RKIND;  g%gm1(r)=0.0_RKIND;  g%gm2(r)=0.0_RKIND ;

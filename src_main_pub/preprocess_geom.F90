@@ -2542,7 +2542,7 @@ CONTAINS
       end do
       !END SLANTED WIRES
 
-      call addConformalMedia(sgg, conformal_media, contamedia)
+      call addConformalMedia(sgg, media, conformal_media, contamedia)
 
 
 
@@ -4784,16 +4784,18 @@ CONTAINS
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine addConformalMedia(sgg, conformal_media, contamedia)
-         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+      subroutine addConformalMedia(sgg, media, conformal_media, contamedia)
+         type(sggfdtdinfo), intent(inout)    :: sgg
+         type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer (kind=4), intent(inout) :: contamedia
-         call addConformalEdgeMedia(sgg, conformal_media, contamedia)
-         call addConformalFaceMedia(sgg, conformal_media, contamedia)
+         call addConformalEdgeMedia(sgg, media, conformal_media, contamedia)
+         call addConformalFaceMedia(sgg, media, conformal_media, contamedia)
       end subroutine
 
-      subroutine addConformalFaceMedia(sgg, conformal_media, contamedia)
+      subroutine addConformalFaceMedia(sgg, media, conformal_media, contamedia)
          type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer (kind=4), intent(inout) :: contamedia
          integer (kind=4) :: cell_i, cell_j, cell_k
@@ -4814,19 +4816,20 @@ CONTAINS
                cell_k = conformal_media%face_media(j)%faces(k)%cell(3)
                select case(conformal_media%face_media(j)%faces(k)%direction)
                case(F_X)
-                  sggMiHx(cell_i, cell_j, cell_k) = contamedia
+                  media%sggMiHx(cell_i, cell_j, cell_k) = contamedia
                case(F_Y)
-                  sggMiHy(cell_i, cell_j, cell_k) = contamedia
+                  media%sggMiHy(cell_i, cell_j, cell_k) = contamedia
                case(F_Z)
-                  sggMiHz(cell_i, cell_j, cell_k) = contamedia
+                  media%sggMiHz(cell_i, cell_j, cell_k) = contamedia
                end select
             end do
          end do
    
       end subroutine
 
-      subroutine addConformalEdgeMedia(sgg, conformal_media, contamedia)
+      subroutine addConformalEdgeMedia(sgg, media, conformal_media, contamedia)
          type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer (kind=4), intent(inout) :: contamedia
          integer (kind=4) :: edge_media
@@ -4853,11 +4856,11 @@ CONTAINS
                cell_k = conformal_media%edge_media(j)%edges(k)%cell(3)
                select case(conformal_media%edge_media(j)%edges(k)%direction)
                case(E_X)
-                  sggMiEx(cell_i, cell_j, cell_k) = edge_media
+                  media%sggMiEx(cell_i, cell_j, cell_k) = edge_media
                case(E_Y)
-                  sggMiEy(cell_i, cell_j, cell_k) = edge_media
+                  media%sggMiEy(cell_i, cell_j, cell_k) = edge_media
                case(E_Z)
-                  sggMiEz(cell_i, cell_j, cell_k) = edge_media
+                  media%sggMiEz(cell_i, cell_j, cell_k) = edge_media
                end select
             end do
          end do
