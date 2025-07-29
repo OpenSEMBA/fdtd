@@ -7,7 +7,7 @@ integer function test_mtl_wrong_dt() bind(C) result(error_cnt)
 
     type(mtl_t) :: line
     real :: dt = 1.0 
-    line = buildLineWithNConductors(2,'line0', dt = dt)
+    line = buildLineWithNConductors(2,'line0', dt = dt, type = "shielded")
     error_cnt = 0
     if (line%dt == dt) then 
         error_cnt = error_cnt + 1
@@ -18,7 +18,6 @@ end function
 integer function test_mtl_init_homogeneous() bind(C) result(error_cnt) 
     use mtl_mod
     use mtln_testingTools_mod
-
     implicit none
 
     character(len=*), parameter :: name = 'line0'
@@ -34,71 +33,36 @@ integer function test_mtl_init_homogeneous() bind(C) result(error_cnt)
     real,dimension(2,2) :: gpul = reshape( &
         source = [ 0.0, 0.0, 0.0, 0.0 ], shape = [ 2,2 ] )
     real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
+    type(segment_t), dimension(:), allocatable :: segments
 
     type(mtl_t) :: line 
+    type(transfer_impedance_per_meter_t):: Zt
+    type(multipolar_expansion_t), dimension(:), allocatable:: mE
+
+    Zt%inductive_term = 0.0
+    Zt%resistive_term = 0.0
+    allocate(Zt%poles(0), Zt%residues(0))
+    allocate(mE(0))
+
+    allocate(segments(5))
+    do i = 1, 5
+        segments(i)%x = i
+        segments(i)%y = 1
+        segments(i)%z = 1
+        segments(i)%orientation = DIRECTION_X_POS
+    end do
+
     error_cnt = 0
-    line = mtl_t(lpul, cpul, rpul, gpul, step_size, name)
+    line = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12, parent_name ="p", conductor_in_parent = 1, transfer_impedance = Zt)
     call comparePULMatrices(error_cnt, line%lpul, lpul)
     call comparePULMatrices(error_cnt, line%cpul, cpul)
     call comparePULMatrices(error_cnt, line%rpul, rpul)
     call comparePULMatrices(error_cnt, line%gpul, gpul)
-    
-
-
-end function
-
-integer function test_mtl_init_inhomogeneous() bind(C) result(error_cnt)    
-    use mtl_mod
-    use mtln_testingTools_mod
-
-    implicit none
-
-    character(len=*), parameter :: name = 'line0'
-    integer :: i,j
-
-    
-    real,dimension(2,2) :: lpul1 = reshape( &
-        source = [ 4.4712610E-07, 1.4863653E-07, 1.4863653E-07, 4.4712610E-07 ], shape = [ 2,2 ] )
-    real,dimension(2,2) :: lpul2 = reshape( &
-        source = [ 2.4712610E-07, 0.4863653E-07, 0.4863653E-07, 2.4712610E-07 ], shape = [ 2,2 ] )
-    real,dimension(2,2,2) :: lpul
-    
-    real,dimension(2,2) :: cpul1 = reshape( &
-        source = [ 1.242e-10, -6.453e-11,-6.453e-11, 1.242e-10 ], shape = [ 2,2 ] )
-    real,dimension(2,2) :: cpul2 = reshape( &
-        source = [ 2.242e-10, -7.453e-11,-7.453e-11, 2.242e-10 ], shape = [ 2,2 ] )
-    real,dimension(2,2) :: cpul3 = reshape( &
-        source = [ 3.242e-10, -8.453e-11,-8.453e-11, 3.242e-10 ], shape = [ 2,2 ] )
-    real,dimension(3,2,2) :: cpul
-    
-    real,dimension(2,2) :: rpul0 = reshape( source = [ 0.0, 0.0, 0.0, 0.0 ], shape = [ 2,2 ] )
-    real,dimension(2,2,2) :: rpul
-    
-    real,dimension(2,2) :: gpul0 = reshape( source = [ 0.0, 0.0, 0.0, 0.0 ], shape = [ 2,2 ] )
-    real,dimension(3,2,2) :: gpul
-    
-    real, dimension(2) :: step_size = [50.0, 50.0]
-    type(mtl_t) :: line 
-    
-    lpul(1,:,:) = lpul1
-    lpul(2,:,:) = lpul2
-    cpul(1,:,:) = cpul1
-    cpul(2,:,:) = cpul2
-    cpul(3,:,:) = cpul3
-    rpul(1,:,:) = rpul0
-    rpul(2,:,:) = rpul0
-    gpul(1,:,:) = gpul0
-    gpul(2,:,:) = gpul0
-    gpul(3,:,:) = gpul0
-
-    error_cnt = 0
-    line = mtl_t(lpul, cpul, rpul, gpul, step_size, name)
-    call comparePULMatricesIH(error_cnt, line%lpul, lpul)
-    call comparePULMatricesIH(error_cnt, line%cpul, cpul)
-    call comparePULMatricesIH(error_cnt, line%rpul, rpul)
-    call comparePULMatricesIH(error_cnt, line%gpul, gpul)
-    
-
+    line = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12, multipolar_expansion = mE)
+    call comparePULMatrices(error_cnt, line%lpul, lpul)
+    call comparePULMatrices(error_cnt, line%cpul, cpul)
+    call comparePULMatrices(error_cnt, line%rpul, rpul)
+    call comparePULMatrices(error_cnt, line%gpul, gpul)
 
 end function
 
@@ -114,7 +78,7 @@ integer function test_mtl_time_step() bind(C) result(error_cnt)
 
 
     type(mtl_t) :: line 
-    line = buildLineWithNConductors(2, "line0")
+    line = buildLineWithNConductors(2, "line0", dt = 1e-6, type = "unshielded")
 
     error_cnt = 0
 

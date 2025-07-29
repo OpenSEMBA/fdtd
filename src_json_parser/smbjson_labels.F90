@@ -19,6 +19,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_FIELD_VOLTAGE = "voltage"
    character (len=*), parameter :: J_FIELD_CURRENT = "current"
    character (len=*), parameter :: J_FIELD_CURRENT_DENSITY = "currentDensity"
+   character (len=*), parameter :: J_FIELD_CHARGE = "charge"
 
    ! -- materials
    character (len=*), parameter :: J_MATERIALS = "materials"
@@ -30,10 +31,12 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_TYPE_PEC = "pec"
    character (len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
    character (len=*), parameter :: J_MAT_TYPE_ISOTROPIC = "isotropic"
+   character (len=*), parameter :: J_MAT_TYPE_LUMPED = "lumped"
    character (len=*), parameter :: J_MAT_TYPE_MULTILAYERED_SURFACE = "multilayeredSurface"
    character (len=*), parameter :: J_MAT_TYPE_SLOT = "thinSlot"
    character (len=*), parameter :: J_MAT_TYPE_WIRE = "wire"
-   character (len=*), parameter :: J_MAT_TYPE_MULTIWIRE = "multiwire"
+   character (len=*), parameter :: J_MAT_TYPE_SHIELDED_MULTIWIRE = "shieldedMultiwire"
+   character (len=*), parameter :: J_MAT_TYPE_UNSHIELDED_MULTIWIRE = "unshieldedMultiwire"
    character (len=*), parameter :: J_MAT_TYPE_TERMINAL = "terminal"
    character (len=*), parameter :: J_MAT_TYPE_CONNECTOR = "connector"
    
@@ -45,13 +48,28 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC = "dielectric"
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_RADIUS = "radius"
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_PERMITTIVITY = "relativePermittivity"
-   character (len=*), parameter :: J_MAT_WIRE_PASS = "isPassthrough"
-   
+
+   character (len=*), parameter :: J_MAT_LUMPED_MODEL = "model"
+   character (len=*), parameter :: J_MAT_LUMPED_MODEL_RESISTOR = "resistor"
+   character (len=*), parameter :: J_MAT_LUMPED_MODEL_INDUCTOR = "inductor"
+   character (len=*), parameter :: J_MAT_LUMPED_MODEL_CAPACITOR = "capacitor"
+   character (len=*), parameter :: J_MAT_LUMPED_RESISTANCE = "resistance"
+   character (len=*), parameter :: J_MAT_LUMPED_STARTING_TIME = "startingTime"
+   character (len=*), parameter :: J_MAT_LUMPED_END_TIME = "endTime"
+   character (len=*), parameter :: J_MAT_LUMPED_INDUCTANCE = "inductance"
+   character (len=*), parameter :: J_MAT_LUMPED_CAPACITANCE = "capacitance" 
+      
    character (len=*), parameter :: J_MAT_TERM_TERMINATIONS = "terminations"
    character (len=*), parameter :: J_MAT_TERM_TYPE_OPEN = "open"
    character (len=*), parameter :: J_MAT_TERM_TYPE_SHORT = "short"
    character (len=*), parameter :: J_MAT_TERM_TYPE_SERIES = "series"
-   character (len=*), parameter :: J_MAT_TERM_TYPE_LCpRs = "LCpRs"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_PARALLEL = "parallel"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_LsRCp = "LsRCp"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_CsLRp = "CsLRp"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_RCsLp = "RCsLp"
+   character (len=*), parameter :: J_MAT_TERM_TYPE_LCsRp = "LCsRp"
+
+   character (len=*), parameter :: J_MAT_TERM_TYPE_RsLCp = "RsLCp"
    character (len=*), parameter :: J_MAT_TERM_TYPE_RLsCp = "RLsCp"
    character (len=*), parameter :: J_MAT_TERM_TYPE_CIRCUIT = "circuit"
 
@@ -68,6 +86,20 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_MULTIWIRE_INDUCTANCE = "inductancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_RESISTANCE = "resistancePerMeter"
    character (len=*), parameter :: J_MAT_MULTIWIRE_CONDUCTANCE = "conductancePerMeter"
+   
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION = "multipolarExpansion"
+   ! ME = Multipolar Expansion
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX = "innerRegionBox"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MAX = "max"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_INNER_REGION_BOX_MIN = "min"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_ELECTRIC = "electric"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_ME_MAGNETIC = "magnetic"
+   ! MEFR = Multipolar Expansion Field Reconstruction
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_AB = "ab"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_CONDUCTOR_POTENTIALS = "conductorPotentials"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_EXPANSION_CENTER = "expansionCenter"
+   character (len=*), parameter :: J_MAT_MULTIWIRE_MEFR_INNER_REGION_AVERAGE_POTENTIAL = "innerRegionAveragePotential"
+
 
    character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_LAYERS = "layers"
    character (len=*), parameter :: J_MAT_MULTILAYERED_SURF_THICKNESS = "thickness"
@@ -128,6 +160,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_GEN_TIME_STEP = "timeStep"
    character (len=*), parameter :: J_GEN_NUMBER_OF_STEPS = "numberOfSteps"
    character (len=*), parameter :: J_GEN_MTLN_PROBLEM = "mtlnProblem"
+   character (len=*), parameter :: J_GEN_ADDITIONAL_ARGUMENTS = "additionalArguments"
 
 
    ! type(Frontera)
@@ -165,6 +198,11 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_SRC_PW_THETA = "theta"
    character (len=*), parameter :: J_SRC_PW_PHI = "phi"
 
+   ! type(NodalSource)
+   character (len=*), parameter :: J_SRC_NS_HARDNESS = "hardness"
+   character (len=*), parameter :: J_SRC_NS_HARDNESS_SOFT = "soft"
+   character (len=*), parameter :: J_SRC_NS_HARDNESS_HARD = "hard"
+
    ! --- probe types
    character (len=*), parameter :: J_PROBES = "probes"
    
@@ -173,6 +211,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_PR_TYPE_BULK_CURRENT = "bulkCurrent"
    character (len=*), parameter :: J_PR_TYPE_FARFIELD = "farField"
    character (len=*), parameter :: J_PR_TYPE_MOVIE = "movie"
+   character (len=*), parameter :: J_PR_TYPE_LINE = "line"
    
    character (len=*), parameter :: J_PR_POINT_DIRECTIONS = "directions"
 

@@ -12,7 +12,6 @@ CONTAINS
    SUBROUTINE nfde_rotate (this,mpidir) 
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) ::  mpidir
-      print *,'-----> Warning novel 2024 rotate routine......'
       call  rotate_generateSpaceSteps                (this, mpidir)
       call  rotate_generateCurrent_Field_Sources     (this, mpidir)
       call  rotate_generatePlaneWaves                (this, mpidir)
@@ -40,15 +39,17 @@ CONTAINS
    SUBROUTINE rotate_generateSpaceSteps (this, mpidir)
       TYPE (Parseador), INTENT (INOUT) :: this          
       INTEGER (KIND=4) ::  mpidir
-      TYPE (Desplazamiento), POINTER ::        old_despl => NULL ()      
-      TYPE (MatrizMedios), POINTER ::          old_matriz => NULL ()
+      TYPE (Desplazamiento), POINTER :: old_despl => NULL ()      
+      TYPE (MatrizMedios), POINTER :: old_matriz => NULL ()
       integer (kind=4) :: oxi,oyi,ozi
       REAL (KIND=RK) :: roxi,royi,rozi
+      REAL (KIND=RK), dimension(:),POINTER :: poxi, poyi, pozi
       
       !!! MPI ROTATE           
       allocate(old_despl,source=this%despl)
       allocate(old_matriz,source=this%matriz)
-      
+
+      !X->Y->Z->X
       IF (MPIDIR==2 ) THEN
          OXI=old_matriz%totalX
          OYI=old_matriz%totalY
@@ -90,9 +91,14 @@ CONTAINS
          this%despl%originY=rOXI
          this%despl%originZ=rOYI
          !         
-         this%despl%desX = old_despl%desz
-         this%despl%desY = old_despl%desx
-         this%despl%desZ = old_despl%desy
+         poxi => old_despl%desX 
+         poyi => old_despl%desY 
+         pozi => old_despl%desZ 
+         !                  
+         this%despl%desX => pozi
+         this%despl%desY => poxi
+         this%despl%desZ => poyi
+      !X->Z->Y->X
       ELSEIF (MPIDIR==1 ) THEN
          OXI=old_matriz%totalX
          OYI=old_matriz%totalY
@@ -134,9 +140,14 @@ CONTAINS
          this%despl%originY=rOZI
          this%despl%originZ=rOXI
          !
-         this%despl%desX = old_despl%desY
-         this%despl%desY = old_despl%desZ
-         this%despl%desZ = old_despl%desX
+         poxi => old_despl%desX 
+         poyi => old_despl%desY 
+         pozi => old_despl%desZ 
+         !
+         this%despl%desX => poyi
+         this%despl%desY => pozi
+         this%despl%desZ => poxi
+
       ENDIF
       !!!!!!!!! fin rotacion
       deallocate (old_despl,old_matriz)
@@ -519,22 +530,24 @@ CONTAINS
    
    SUBROUTINE rotate_generateThinWires (this,mpidir)     
       TYPE (Parseador), INTENT (INOUT) :: this
-      INTEGER (KIND=4) ::  mpidir    
-      TYPE (ThinWires), POINTER :: old_tWires    
+      INTEGER (KIND=4) ::  mpidir     
       integer (kind=4) :: tama,tama2,i,ii
+      integer (kind=4) :: oldx, oldy, oldz
       
       tama = this%twires%n_tw
-      allocate(old_twires,source=this%twires)
       do i=1, tama       
          tama2 = this%twires%TW(i)%N_TWC
          DO ii = 1, tama2
       !!!ROTATE THINWIRE
              IF (MPIDIR==2 ) THEN
-                   this%twires%tw(i)%tWc(ii)%i = old_twires%tw(i)%twc(ii)%K
-                   this%twires%tw(i)%tWc(ii)%j = old_twires%tw(i)%twc(ii)%I
-                   this%twires%tw(i)%tWc(ii)%K = old_twires%tw(i)%twc(ii)%J
+                   oldx = this%twires%tw(i)%tWc(ii)%i
+                   oldy = this%twires%tw(i)%tWc(ii)%j
+                   oldz = this%twires%tw(i)%tWc(ii)%K
+                   this%twires%tw(i)%tWc(ii)%i = oldz
+                   this%twires%tw(i)%tWc(ii)%j = oldx
+                   this%twires%tw(i)%tWc(ii)%K = oldy
 
-                   SELECT CASE (old_twires%tw(i)%tWc(ii)%d)
+                   SELECT CASE (this%twires%tw(i)%tWc(ii)%d)
                     CASE (iEx)
                       this%twires%tw(i)%tWc(ii)%d = iEy
                     CASE (iEY)
@@ -543,11 +556,14 @@ CONTAINS
                       this%twires%tw(i)%tWc(ii)%d = iEx
                    END SELECT
             ELSEIF (MPIDIR==1 ) THEN
-                   this%twires%tw(i)%tWc(ii)%i = old_twires%tw(ii)%twc(i)%J
-                   this%twires%tw(i)%tWc(ii)%j = old_twires%tw(ii)%twc(i)%K
-                   this%twires%tw(i)%tWc(ii)%K = old_twires%tw(ii)%twc(i)%I
+                      oldx = this%twires%tw(i)%tWc(ii)%i
+                      oldy = this%twires%tw(i)%tWc(ii)%j
+                      oldz = this%twires%tw(i)%tWc(ii)%K
+                      this%twires%tw(i)%tWc(ii)%i = oldy
+                      this%twires%tw(i)%tWc(ii)%j = oldz
+                      this%twires%tw(i)%tWc(ii)%K = oldx
       
-                   SELECT CASE (old_twires%tw(i)%tWc(ii)%d)
+                   SELECT CASE (this%twires%tw(i)%tWc(ii)%d)
                     CASE (iEx)
                       this%twires%tw(i)%tWc(ii)%d = iEz
                     CASE (iEY)
@@ -559,8 +575,6 @@ CONTAINS
       !!!FIN  
          end do
       end do
-      
-      deallocate(old_twires)
      
       RETURN
    END SUBROUTINE rotate_generateThinWires
@@ -569,6 +583,7 @@ CONTAINS
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) ::  mpidir    
       TYPE (SlantedWires), POINTER :: old_swires    
+      real (kind=8) :: oldx, oldy, oldz
       integer (kind=4) :: tama,tama2,i,ii
       
       tama = this%swires%n_sw
@@ -578,13 +593,21 @@ CONTAINS
          do ii=1,tama2
              !!!ROTATE THINWIRE
              IF (MPIDIR==2 ) THEN
-                      this%swires%sw(i)%swc(ii)%x = old_swires%sw(i)%swc(ii)%z
-                      this%swires%sw(i)%swc(ii)%y = old_swires%sw(i)%swc(ii)%x
-                      this%swires%sw(i)%swc(ii)%z = old_swires%sw(i)%swc(ii)%y
+                      oldx = this%swires%sw(i)%swc(ii)%x
+                      oldy = this%swires%sw(i)%swc(ii)%y
+                      oldz = this%swires%sw(i)%swc(ii)%z
+
+                      this%swires%sw(i)%swc(ii)%x = oldz
+                      this%swires%sw(i)%swc(ii)%y = oldx
+                      this%swires%sw(i)%swc(ii)%z = oldy
              ELSEIF (MPIDIR==1 ) THEN
-                      this%swires%sw(i)%swc(ii)%x = old_swires%sw(i)%swc(ii)%y
-                      this%swires%sw(i)%swc(ii)%y = old_swires%sw(i)%swc(ii)%z
-                      this%swires%sw(i)%swc(ii)%z = old_swires%sw(i)%swc(ii)%x
+                      oldx = this%swires%sw(i)%swc(ii)%x
+                      oldy = this%swires%sw(i)%swc(ii)%y
+                      oldz = this%swires%sw(i)%swc(ii)%z
+
+                      this%swires%sw(i)%swc(ii)%x = oldy
+                      this%swires%sw(i)%swc(ii)%y = oldz
+                      this%swires%sw(i)%swc(ii)%z = oldx
              ENDIF
          end do
          !!!FIN
@@ -599,6 +622,7 @@ CONTAINS
       INTEGER (KIND=4) ::  mpidir    
       TYPE (ThinSlots), POINTER :: old_tSlots    
       integer (kind=4) :: tama,tama2,i,ii
+      integer (kind=4) :: oldx, oldy, oldz
       
       tama = this%tSlots%n_Tg
       allocate(old_tSlots,source=this%tSlots)
@@ -607,9 +631,13 @@ CONTAINS
          DO ii = 1, tama2
               !!!ROTATE THIN SLOT
               IF (MPIDIR==2 ) THEN
-                       this%tSlots%Tg(i)%TgC(ii)%i = old_tsLots%Tg(i)%TgC(ii)%K
-                       this%tSlots%Tg(i)%TgC(ii)%j = old_tsLots%Tg(i)%TgC(ii)%I
-                       this%tSlots%Tg(i)%TgC(ii)%K = old_tsLots%Tg(i)%TgC(ii)%J
+                       oldx = this%tSlots%Tg(i)%TgC(ii)%i
+                       oldy = this%tSlots%Tg(i)%TgC(ii)%j
+                       oldz = this%tSlots%Tg(i)%TgC(ii)%K
+
+                       this%tSlots%Tg(i)%TgC(ii)%i = oldz
+                       this%tSlots%Tg(i)%TgC(ii)%j = oldx
+                       this%tSlots%Tg(i)%TgC(ii)%K = oldy
                        SELECT CASE (old_tsLots%Tg(i)%TgC(ii)%dir)
                         CASE (iEx)
                           this%tSlots%Tg(i)%TgC(ii)%dir = iEy
@@ -619,9 +647,13 @@ CONTAINS
                           this%tSlots%Tg(i)%TgC(ii)%dir = iEx
                        END SELECT
               ELSEIF (MPIDIR==1 ) THEN
-                       this%tSlots%Tg(i)%TgC(ii)%i = old_tsLots%Tg(i)%TgC(ii)%J
-                       this%tSlots%Tg(i)%TgC(ii)%j = old_tsLots%Tg(i)%TgC(ii)%K
-                       this%tSlots%Tg(i)%TgC(ii)%K = old_tsLots%Tg(i)%TgC(ii)%I
+                       oldx = this%tSlots%Tg(i)%TgC(ii)%i
+                       oldy = this%tSlots%Tg(i)%TgC(ii)%j
+                       oldz = this%tSlots%Tg(i)%TgC(ii)%K
+                       
+                       this%tSlots%Tg(i)%TgC(ii)%i = oldy
+                       this%tSlots%Tg(i)%TgC(ii)%j = oldz
+                       this%tSlots%Tg(i)%TgC(ii)%K = oldx
 
                        SELECT CASE (old_tsLots%Tg(i)%TgC(ii)%dir)
                         CASE (iEx)
@@ -666,6 +698,7 @@ CONTAINS
          DO ii = 1, tama2
             CALL ROTATEMPI(mpidir,this%FRQDEPMATS%Vols(i)%c(ii))  
          end do
+         call rotate_freq_depend_material_properties(mpidir,this%FRQDEPMATS%Vols(i))
       end do
       
       tama = (this%FRQDEPMATS%nsurfs)    
@@ -674,6 +707,7 @@ CONTAINS
          DO ii = 1, tama2
             CALL ROTATEMPI(mpidir,this%FRQDEPMATS%Surfs(i)%c(ii))   
          end do
+         call rotate_freq_depend_material_properties(mpidir,this%FRQDEPMATS%Surfs(i))
       end do
       
       tama = (this%FRQDEPMATS%nlins)
@@ -682,6 +716,7 @@ CONTAINS
          DO ii = 1, tama2
             CALL ROTATEMPI(mpidir,this%FRQDEPMATS%Lins(i)%c(ii))   
          end do
+         call rotate_freq_depend_material_properties(mpidir,this%FRQDEPMATS%Lins(i))
       end do
       RETURN
       
@@ -695,6 +730,7 @@ CONTAINS
       TYPE (Electric_Sonda), POINTER :: old_Electric => NULL ()
       TYPE (Magnetic_Sonda), POINTER :: old_Magnetic => NULL ()
       REAL(KIND=RK) :: THETASTART,THETASTOP,PHISTART,PHISTOP
+      integer :: iox, ioy, ioz
       
       tama = this%oldSONDA%n_probes        
       ! tres posibilidades FarField, Electric,Magnetic
@@ -709,12 +745,12 @@ CONTAINS
             !!!mpirotate angulos farfield .... las coordenadas se rotan luego
             IF (MPIDIR==2 ) THEN
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Cos(phistart)**2*Sin(thetastart)**2),Sin(phistart)*Sin(thetastart))
-                   this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart   = atan2(Cos(phistart)*Sin(thetastart),Cos(thetastart))      
+                   this%oldSONDA%probes(i)%FarField(ii)%probe%phistart = atan2(Cos(phistart)*Sin(thetastart),Cos(thetastart))      
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Cos(phistop)**2*Sin(thetastop)**2),Sin(phistop)*Sin(thetastop))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistop   = atan2(Cos(phistop)*Sin(thetastop),Cos(thetastop))
             ELSEIF (MPIDIR==1 ) THEN
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Sin(phistart)**2*Sin(thetastart)**2),Cos(phistart)*Sin(thetastart))
-                   this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart   = atan2(Cos(thetastart),Sin(phistart)*Sin(thetastart))    
+                   this%oldSONDA%probes(i)%FarField(ii)%probe%phistart   = atan2(Cos(thetastart),Sin(phistart)*Sin(thetastart))    
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Sin(phistop)**2*Sin(thetastop)**2),Cos(phistop)*Sin(thetastop))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistop   = atan2(Cos(thetastop),Sin(phistop)*Sin(thetastop))
             ENDIF        
@@ -722,13 +758,21 @@ CONTAINS
             DO iii = 1, tama3
               !!!ROTATE MPI
               IF (MPIDIR==2 ) THEN
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = old_FarField%probe%K(iii)
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = old_FarField%probe%I(iii)
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = old_FarField%probe%J(iii)
+                  iox = this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = ioz
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = iox
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = ioy
               ELSEIF (MPIDIR==1 ) THEN                    
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = old_FarField%probe%J(iii)
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = old_FarField%probe%K(iii)
-                 this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = old_FarField%probe%I(iii)
+                 iox = this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = ioy
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = ioz
+                 this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = iox
               ENDIF
             end do             
             deallocate (old_FarField)
@@ -743,13 +787,21 @@ CONTAINS
             DO iii = 1, tama3
               !!!ROTATE MPI
               IF (MPIDIR==2 ) THEN
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = old_Electric%probe%K(iii)
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = old_Electric%probe%I(iii)
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = old_Electric%probe%J(iii)
+                 iox = this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = ioz
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = iox
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = ioy
               ELSEIF (MPIDIR==1 ) THEN                    
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = old_Electric%probe%J(iii)
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = old_Electric%probe%K(iii)
-                 this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = old_Electric%probe%I(iii)
+                 iox = this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = ioy
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = ioz
+                 this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = iox
               ENDIF
             end do             
             deallocate (old_Electric)
@@ -764,13 +816,21 @@ CONTAINS
             DO iii = 1, tama3
               !!!ROTATE MPI
               IF (MPIDIR==2 ) THEN
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = old_Magnetic%probe%K(iii)
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = old_Magnetic%probe%I(iii)
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = old_Magnetic%probe%J(iii)
+                 iox = this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = ioz
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = iox
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = ioy
               ELSEIF (MPIDIR==1 ) THEN                    
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = old_Magnetic%probe%J(iii)
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = old_Magnetic%probe%K(iii)
-                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = old_Magnetic%probe%I(iii)
+                 iox = this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii)
+                  ioy = this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii)
+                  ioz = this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii)
+                 
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = ioy
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = ioz
+                 this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = iox
               ENDIF
             end do             
             deallocate (old_Magnetic)
@@ -926,10 +986,10 @@ CONTAINS
       integer (kind=4) :: oxi,oyi,ozi,oxe,oye,oze,oor,TXI,TYI,TZI  
       TYPE (Coords), POINTER :: old_Coordinates => NULL ()
       
-      tama = this%Sonda%length       
+      tama = this%VolPrb%length
       ! tres posibilidades FarField, Electric,Magnetic
       DO i = 1, tama      
-         tama2 = (this%Sonda%collection(i)%len_cor)    
+         tama2 = (this%VolPrb%collection(i)%len_cor)    
          DO ii = 1, tama2                                               
               allocate (old_Coordinates,source=this%VolPrb%collection(i)%cordinates(ii))    
               OXI=old_Coordinates%XI
@@ -1123,7 +1183,316 @@ CONTAINS
       RETURN
    END SUBROUTINE ROTATEMPI_SCALED
      
+   subroutine rotate_freq_depend_material_properties(mpidir, freqDepMat)
+      integer (KIND=4), intent(in) ::  mpidir    
+      type (FreqDepenMaterial), intent(inout) :: freqDepMat
+      complex, dimension(:), pointer :: po11, po12, po13, po22, po23, po33
+      real(kind=RK) :: ro11, ro12, ro13, ro22, ro23, ro33
+      integer(kind=4) :: io11, io12, io13, io22, io23, io33
+!!    
+      if (mpidir==2) then
+         !Rotate a matrix
+         po11 => freqDepMat%a11
+         po12 => freqDepMat%a12
+         po13 => freqDepMat%a13
+         po22 => freqDepMat%a22
+         po23 => freqDepMat%a23
+         po33 => freqDepMat%a33
 
-!!   
+         freqDepMat%a11 => po33 
+         freqDepMat%a12 => po23 
+         freqDepMat%a13 => po12 
+         freqDepMat%a22 => po11 
+         freqDepMat%a23 => po13 
+         freqDepMat%a33 => po22
+         
+         !Rotate am matrix
+         po11 => freqDepMat%am11
+         po12 => freqDepMat%am12
+         po13 => freqDepMat%am13
+         po22 => freqDepMat%am22
+         po23 => freqDepMat%am23
+         po33 => freqDepMat%am33
+
+         freqDepMat%am11 => po33 
+         freqDepMat%am12 => po23 
+         freqDepMat%am13 => po12 
+         freqDepMat%am22 => po11 
+         freqDepMat%am23 => po13 
+         freqDepMat%am33 => po22
+
+         !Rotate b matrix
+         po11 => freqDepMat%b11
+         po12 => freqDepMat%b12
+         po13 => freqDepMat%b13
+         po22 => freqDepMat%b22
+         po23 => freqDepMat%b23
+         po33 => freqDepMat%b33
+
+         freqDepMat%b11 => po33 
+         freqDepMat%b12 => po23 
+         freqDepMat%b13 => po12 
+         freqDepMat%b22 => po11 
+         freqDepMat%b23 => po13 
+         freqDepMat%b33 => po22
+         
+         !Rotate bm matrix
+         po11 => freqDepMat%bm11
+         po12 => freqDepMat%bm12
+         po13 => freqDepMat%bm13
+         po22 => freqDepMat%bm22
+         po23 => freqDepMat%bm23
+         po33 => freqDepMat%bm33
+
+         freqDepMat%bm11 => po33 
+         freqDepMat%bm12 => po23 
+         freqDepMat%bm13 => po12 
+         freqDepMat%bm22 => po11 
+         freqDepMat%bm23 => po13 
+         freqDepMat%bm33 => po22
+
+         !Rotate eps matrix
+         ro11 = freqDepMat%eps11
+         ro12 = freqDepMat%eps12
+         ro13 = freqDepMat%eps13
+         ro22 = freqDepMat%eps22
+         ro23 = freqDepMat%eps23
+         ro33 = freqDepMat%eps33
+
+         freqDepMat%eps11 = ro33 
+         freqDepMat%eps12 = ro23 
+         freqDepMat%eps13 = ro12 
+         freqDepMat%eps22 = ro11 
+         freqDepMat%eps23 = ro13 
+         freqDepMat%eps33 = ro22
+
+         !Rotate mu matrix
+         ro11 = freqDepMat%mu11
+         ro12 = freqDepMat%mu12
+         ro13 = freqDepMat%mu13
+         ro22 = freqDepMat%mu22
+         ro23 = freqDepMat%mu23
+         ro33 = freqDepMat%mu33
+
+         freqDepMat%mu11 = ro33 
+         freqDepMat%mu12 = ro23 
+         freqDepMat%mu13 = ro12 
+         freqDepMat%mu22 = ro11 
+         freqDepMat%mu23 = ro13 
+         freqDepMat%mu33 = ro22
+
+         !Rotate sigma matrix
+         ro11 = freqDepMat%sigma11
+         ro12 = freqDepMat%sigma12
+         ro13 = freqDepMat%sigma13
+         ro22 = freqDepMat%sigma22
+         ro23 = freqDepMat%sigma23
+         ro33 = freqDepMat%sigma33
+
+         freqDepMat%sigma11 = ro33 
+         freqDepMat%sigma12 = ro23 
+         freqDepMat%sigma13 = ro12 
+         freqDepMat%sigma22 = ro11 
+         freqDepMat%sigma23 = ro13 
+         freqDepMat%sigma33 = ro22
+
+         !Rotate sigmam matrix
+         ro11 = freqDepMat%sigmam11
+         ro12 = freqDepMat%sigmam12
+         ro13 = freqDepMat%sigmam13
+         ro22 = freqDepMat%sigmam22
+         ro23 = freqDepMat%sigmam23
+         ro33 = freqDepMat%sigmam33
+
+         freqDepMat%sigmam11 = ro33 
+         freqDepMat%sigmam12 = ro23 
+         freqDepMat%sigmam13 = ro12 
+         freqDepMat%sigmam22 = ro11 
+         freqDepMat%sigmam23 = ro13 
+         freqDepMat%sigmam33 = ro22
+
+         !Rotate K matrix
+         io11 = freqDepMat%k11
+         io12 = freqDepMat%k12
+         io13 = freqDepMat%k13
+         io22 = freqDepMat%k22
+         io23 = freqDepMat%k23
+         io33 = freqDepMat%k33
+
+         freqDepMat%k11 = io33 
+         freqDepMat%k12 = io23 
+         freqDepMat%k13 = io12 
+         freqDepMat%k22 = io11 
+         freqDepMat%k23 = io13 
+         freqDepMat%k33 = io22
+         
+         !Rotate Km matrix
+         io11 = freqDepMat%km11
+         io12 = freqDepMat%km12
+         io13 = freqDepMat%km13
+         io22 = freqDepMat%km22
+         io23 = freqDepMat%km23
+         io33 = freqDepMat%km33
+
+         freqDepMat%km11 = io33 
+         freqDepMat%km12 = io23 
+         freqDepMat%km13 = io12 
+         freqDepMat%km22 = io11 
+         freqDepMat%km23 = io13 
+         freqDepMat%km33 = io22
+      endif 
+      if (mpidir==1) then
+         !Rotate a matrix
+         po11 => freqDepMat%a11
+         po12 => freqDepMat%a12
+         po13 => freqDepMat%a13
+         po22 => freqDepMat%a22
+         po23 => freqDepMat%a23
+         po33 => freqDepMat%a33
+
+         freqDepMat%a11 => po22
+         freqDepMat%a12 => po13 
+         freqDepMat%a13 => po23 
+         freqDepMat%a22 => po33 
+         freqDepMat%a23 => po12
+         freqDepMat%a33 => po11
+         
+         !Rotate am matrix
+         po11 => freqDepMat%am11
+         po12 => freqDepMat%am12
+         po13 => freqDepMat%am13
+         po22 => freqDepMat%am22
+         po23 => freqDepMat%am23
+         po33 => freqDepMat%am33
+
+         freqDepMat%am11 => po22 
+         freqDepMat%am12 => po13 
+         freqDepMat%am13 => po23 
+         freqDepMat%am22 => po33 
+         freqDepMat%am23 => po12 
+         freqDepMat%am33 => po11
+
+         !Rotate b matrix
+         po11 => freqDepMat%b11
+         po12 => freqDepMat%b12
+         po13 => freqDepMat%b13
+         po22 => freqDepMat%b22
+         po23 => freqDepMat%b23
+         po33 => freqDepMat%b33
+
+         freqDepMat%b11 => po22 
+         freqDepMat%b12 => po13 
+         freqDepMat%b13 => po23 
+         freqDepMat%b22 => po33 
+         freqDepMat%b23 => po12 
+         freqDepMat%b33 => po11
+         
+         !Rotate bm matrix
+         po11 => freqDepMat%bm11
+         po12 => freqDepMat%bm12
+         po13 => freqDepMat%bm13
+         po22 => freqDepMat%bm22
+         po23 => freqDepMat%bm23
+         po33 => freqDepMat%bm33
+
+         freqDepMat%bm11 => po22 
+         freqDepMat%bm12 => po13 
+         freqDepMat%bm13 => po23 
+         freqDepMat%bm22 => po33 
+         freqDepMat%bm23 => po12 
+         freqDepMat%bm33 => po11
+
+         !Rotate eps matrix
+         ro11 = freqDepMat%eps11
+         ro12 = freqDepMat%eps12
+         ro13 = freqDepMat%eps13
+         ro22 = freqDepMat%eps22
+         ro23 = freqDepMat%eps23
+         ro33 = freqDepMat%eps33
+
+         freqDepMat%eps11 = ro22 
+         freqDepMat%eps12 = ro13 
+         freqDepMat%eps13 = ro23 
+         freqDepMat%eps22 = ro33 
+         freqDepMat%eps23 = ro12 
+         freqDepMat%eps33 = ro11
+
+         !Rotate mu matrix
+         ro11 = freqDepMat%mu11
+         ro12 = freqDepMat%mu12
+         ro13 = freqDepMat%mu13
+         ro22 = freqDepMat%mu22
+         ro23 = freqDepMat%mu23
+         ro33 = freqDepMat%mu33
+
+         freqDepMat%mu11 = ro22 
+         freqDepMat%mu12 = ro13 
+         freqDepMat%mu13 = ro23 
+         freqDepMat%mu22 = ro33 
+         freqDepMat%mu23 = ro12 
+         freqDepMat%mu33 = ro11
+
+         !Rotate sigma matrix
+         ro11 = freqDepMat%sigma11
+         ro12 = freqDepMat%sigma12
+         ro13 = freqDepMat%sigma13
+         ro22 = freqDepMat%sigma22
+         ro23 = freqDepMat%sigma23
+         ro33 = freqDepMat%sigma33
+
+         freqDepMat%sigma11 = ro22 
+         freqDepMat%sigma12 = ro13 
+         freqDepMat%sigma13 = ro23 
+         freqDepMat%sigma22 = ro33 
+         freqDepMat%sigma23 = ro12 
+         freqDepMat%sigma33 = ro11
+
+         !Rotate sigmam matrix
+         ro11 = freqDepMat%sigmam11
+         ro12 = freqDepMat%sigmam12
+         ro13 = freqDepMat%sigmam13
+         ro22 = freqDepMat%sigmam22
+         ro23 = freqDepMat%sigmam23
+         ro33 = freqDepMat%sigmam33
+
+         freqDepMat%sigmam11 = ro22 
+         freqDepMat%sigmam12 = ro13 
+         freqDepMat%sigmam13 = ro23 
+         freqDepMat%sigmam22 = ro33 
+         freqDepMat%sigmam23 = ro12 
+         freqDepMat%sigmam33 = ro11
+
+         !Rotate K matrix
+         io11 = freqDepMat%k11
+         io12 = freqDepMat%k12
+         io13 = freqDepMat%k13
+         io22 = freqDepMat%k22
+         io23 = freqDepMat%k23
+         io33 = freqDepMat%k33
+
+         freqDepMat%k11 = io22 
+         freqDepMat%k12 = io13 
+         freqDepMat%k13 = io23 
+         freqDepMat%k22 = io33 
+         freqDepMat%k23 = io12 
+         freqDepMat%k33 = io11
+         
+         !Rotate Km matrix
+         io11 = freqDepMat%km11
+         io12 = freqDepMat%km12
+         io13 = freqDepMat%km13
+         io22 = freqDepMat%km22
+         io23 = freqDepMat%km23
+         io33 = freqDepMat%km33
+
+         freqDepMat%km11 = io22 
+         freqDepMat%km12 = io13 
+         freqDepMat%km13 = io23 
+         freqDepMat%km22 = io33 
+         freqDepMat%km23 = io12 
+         freqDepMat%km33 = io11
+      endif 
+   end subroutine
+
 
 END MODULE nfde_rotate_m

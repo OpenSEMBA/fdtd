@@ -53,13 +53,9 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitMdispersives(sgg,sggmiHx,sggmiHy,sggmiHz,ThereAreMdispersives,resume,GM1,GM2,Hx,Hy,Hz)
+   subroutine InitMdispersives(sgg,media,ThereAreMdispersives,resume,GM1,GM2,Hx,Hy,Hz)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
-      !!!
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
-      sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE), &
-      sggMiHy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE), &
-      sggMiHz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
+      type(media_matrices_t), intent(in) :: media
       REAL (KIND=RKIND)     , intent(inout)      ::  &
       GM1(0 : sgg%NumMedia),GM2(0 : sgg%NumMedia)
       REAL (KIND=RKIND)   , intent(inout), target      :: &
@@ -74,7 +70,6 @@ contains
       REAL (KIND=RKIND)   ::  tempo
       integer (kind=4)  ::  numpolres
       MDutton%Medium => null()
-      !!!
 
       ThereAreMdispersives=.FALSE.
       conta=0
@@ -131,7 +126,7 @@ contains
          Do k1=sgg%Sweep(iHx)%ZI,sgg%Sweep(iHx)%ZE
             Do j1=sgg%Sweep(iHx)%YI,sgg%Sweep(iHx)%YE
                Do i1=sgg%Sweep(iHx)%XI,sgg%Sweep(iHx)%XE
-                  if ((sggMiHx(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiHx(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -146,7 +141,7 @@ contains
          Do k1=sgg%Sweep(iHx)%ZI,sgg%Sweep(iHx)%ZE
             Do j1=sgg%Sweep(iHx)%YI,sgg%Sweep(iHx)%YE
                Do i1=sgg%Sweep(iHx)%XI,sgg%Sweep(iHx)%XE
-                  if ((sggMiHx(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiHx(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      MDutton%Medium(jmed)%NodesHx(conta)%i=i1
                      MDutton%Medium(jmed)%NodesHx(conta)%j=j1
@@ -162,7 +157,7 @@ contains
          Do k1=sgg%Sweep(iHy)%ZI,sgg%Sweep(iHy)%ZE
             Do j1=sgg%Sweep(iHy)%YI,sgg%Sweep(iHy)%YE
                Do i1=sgg%Sweep(iHy)%XI,sgg%Sweep(iHy)%XE
-                  if ((sggMiHy(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiHy(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -177,7 +172,7 @@ contains
          Do k1=sgg%Sweep(iHy)%ZI,sgg%Sweep(iHy)%ZE
             Do j1=sgg%Sweep(iHy)%YI,sgg%Sweep(iHy)%YE
                Do i1=sgg%Sweep(iHy)%XI,sgg%Sweep(iHy)%XE
-                  if ((sggMiHy(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiHy(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      MDutton%Medium(jmed)%NodesHy(conta)%i=i1
                      MDutton%Medium(jmed)%NodesHy(conta)%j=j1
@@ -193,7 +188,7 @@ contains
          Do k1=sgg%Sweep(iHz)%ZI,sgg%Sweep(iHz)%ZE
             Do j1=sgg%Sweep(iHz)%YI,sgg%Sweep(iHz)%YE
                Do i1=sgg%Sweep(iHz)%XI,sgg%Sweep(iHz)%XE
-                  if ((sggMiHz(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiHz(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -209,7 +204,7 @@ contains
          Do k1=sgg%Sweep(iHz)%ZI,sgg%Sweep(iHz)%ZE
             Do j1=sgg%Sweep(iHz)%YI,sgg%Sweep(iHz)%YE
                Do i1=sgg%Sweep(iHz)%XI,sgg%Sweep(iHz)%XE
-                  if ((sggMiHz(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiHz(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      MDutton%Medium(jmed)%NodesHz(conta)%i=i1
                      MDutton%Medium(jmed)%NodesHz(conta)%j=j1

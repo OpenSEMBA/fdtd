@@ -22,6 +22,7 @@ def test_paul_8_6_square(tmp_path):
                        :, 0:2], rtol=0.01, atol=0.2)
 
 
+
 @no_mtln_skip
 @pytest.mark.mtln
 def test_paul_8_6_triangle(tmp_path):

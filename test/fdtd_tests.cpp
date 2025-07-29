@@ -6,6 +6,7 @@
 #endif
 #ifdef CompileWithSMBJSON
     #include "smbjson/smbjson_tests.h"
+    #include "rotate/rotate_tests.h"
 #endif
 #include "conformal/conformal_tests.h"
 

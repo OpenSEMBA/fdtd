@@ -1,0 +1,716 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 1e-12,
+        "numberOfSteps": 40000
+    },
+    "boundary": {
+        "all": {
+            "type": "mur"
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                63,
+                43,
+                73
+            ],
+            "steps": {
+                "x": [
+                    0.002
+                ],
+                "y": [
+                    0.002
+                ],
+                "z": [
+                    0.002
+                ]
+            }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    20.0,
+                    20.0,
+                    25.0
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    25.0,
+                    20.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 3,
+                "relativePosition": [
+                    25.0,
+                    20.0,
+                    30.0
+                ]
+            },
+            {
+                "id": 4,
+                "relativePosition": [
+                    35.0,
+                    20.0,
+                    30.0
+                ]
+            },
+            {
+                "id": 5,
+                "relativePosition": [
+                    35.0,
+                    20.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 6,
+                "relativePosition": [
+                    25.0,
+                    20.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 7,
+                "relativePosition": [
+                    25.0,
+                    20.0,
+                    50.0
+                ]
+            },
+            {
+                "id": 8,
+                "relativePosition": [
+                    35.0,
+                    20.0,
+                    50.0
+                ]
+            },
+            {
+                "id": 9,
+                "relativePosition": [
+                    35.0,
+                    20.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 10,
+                "relativePosition": [
+                    25.0,
+                    20.0,
+                    30.0
+                ]
+            },
+            {
+                "id": 11,
+                "relativePosition": [
+                    35.0,
+                    20.0,
+                    30.0
+                ]
+            },
+            {
+                "id": 12,
+                "relativePosition": [
+                    35.0,
+                    20.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 13,
+                "relativePosition": [
+                    40.0,
+                    20.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 14,
+                "relativePosition": [
+                    40.0,
+                    20.0,
+                    20.0
+                ]
+            },
+            {
+                "id": 15,
+                "relativePosition": [
+                    20.0,
+                    20.0,
+                    20.0
+                ]
+            },
+            {
+                "id": 16,
+                "relativePosition": [
+                    20.0,
+                    20.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 17,
+                "relativePosition": [
+                    25.0,
+                    20.0,
+                    40.0
+                ]
+            },
+            {
+                "id": 18,
+                "relativePosition": [
+                    25.0,
+                    20.0,
+                    50.0
+                ]
+            },
+            {
+                "id": 19,
+                "relativePosition": [
+                    30.0,
+                    20.0,
+                    50.0
+                ]
+            },
+            {
+                "id": 21,
+                "relativePosition": [
+                    35.0,
+                    20.0,
+                    50.0
+                ]
+            }
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "type": "node",
+                "coordinateIds": [
+                    1
+                ]
+            },
+            {
+                "id": 2,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            30,
+                            18,
+                            28
+                        ],
+                        [
+                            30,
+                            23,
+                            33
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            18,
+                            18,
+                            28
+                        ],
+                        [
+                            23,
+                            23,
+                            28
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 4,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            30,
+                            18,
+                            48
+                        ],
+                        [
+                            30,
+                            23,
+                            53
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 5,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            25.0,
+                            20.0,
+                            40.0
+                        ],
+                        [
+                            25.0,
+                            20.0,
+                            30.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 6,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            35.0,
+                            20.0,
+                            30.0
+                        ],
+                        [
+                            35.0,
+                            20.0,
+                            40.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 7,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            25.0,
+                            20.0,
+                            40.0
+                        ],
+                        [
+                            25.0,
+                            20.0,
+                            50.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 8,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            35.0,
+                            20.0,
+                            50.0
+                        ],
+                        [
+                            35.0,
+                            20.0,
+                            40.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 9,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            25.0,
+                            20.0,
+                            30.0
+                        ],
+                        [
+                            35.0,
+                            20.0,
+                            30.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 10,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            35,
+                            20,
+                            40
+                        ],
+                        [
+                            35,
+                            20,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            25,
+                            20,
+                            40
+                        ],
+                        [
+                            25,
+                            20,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            35,
+                            20,
+                            40
+                        ],
+                        [
+                            35,
+                            20,
+                            40
+                        ]
+                    ],
+                    [
+                        [
+                            25,
+                            20,
+                            40
+                        ],
+                        [
+                            25,
+                            20,
+                            40
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 11,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            25,
+                            20,
+                            50
+                        ],
+                        [
+                            25,
+                            20,
+                            50
+                        ]
+                    ],
+                    [
+                        [
+                            25,
+                            20,
+                            50
+                        ],
+                        [
+                            25,
+                            20,
+                            50
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 12,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            30,
+                            20,
+                            50
+                        ],
+                        [
+                            30,
+                            20,
+                            50
+                        ]
+                    ],
+                    [
+                        [
+                            35,
+                            20,
+                            50
+                        ],
+                        [
+                            35,
+                            20,
+                            50
+                        ]
+                    ],
+                    [
+                        [
+                            30,
+                            20,
+                            50
+                        ],
+                        [
+                            30,
+                            20,
+                            50
+                        ]
+                    ],
+                    [
+                        [
+                            35,
+                            20,
+                            50
+                        ],
+                        [
+                            35,
+                            20,
+                            50
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 13,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            30,
+                            20,
+                            50
+                        ],
+                        [
+                            30,
+                            20,
+                            50
+                        ]
+                    ],
+                    [
+                        [
+                            30,
+                            20,
+                            50
+                        ],
+                        [
+                            30,
+                            20,
+                            50
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 14,
+                "type": "polyline",
+                "coordinateIds": [
+                    12,
+                    13,
+                    14,
+                    15,
+                    1,
+                    16,
+                    17
+                ]
+            },
+            {
+                "id": 15,
+                "type": "polyline",
+                "coordinateIds": [
+                    18,
+                    19
+                ]
+            },
+            {
+                "id": 16,
+                "type": "polyline",
+                "coordinateIds": [
+                    19,
+                    21
+                ]
+            }
+        ]
+    },
+    "materials": [
+        {
+            "id": 1,
+            "type": "pec"
+        },
+        { "id": 2, "name": "lumped_resistor", "type": "lumped", "model": "resistor", "resistance": 10.0 },
+        {
+            "name": "Terminal_R",
+            "id": 3,
+            "type": "terminal",
+            "terminations": [
+                {
+                    "type": "series",
+                    "resistance": 10.0,
+                    "capacitance": 1e+22
+                }
+            ]
+        },
+        {
+            "name": "Wirematerial_E",
+            "id": 4,
+            "type": "wire",
+            "radius": 0.0001,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "name": "Wirematerial_BL",
+            "id": 5,
+            "type": "wire",
+            "radius": 0.0001,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "name": "Wirematerial_BR",
+            "id": 6,
+            "type": "wire",
+            "radius": 0.0001,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "name": "Wirematerial_TL",
+            "id": 7,
+            "type": "wire",
+            "radius": 0.0001,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "name": "Wirematerial_TR",
+            "id": 8,
+            "type": "wire",
+            "radius": 0.0001,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "name": "Wiremateriallumped",
+            "id": 9,
+            "type": "wire",
+            "radius": 0.0001,
+            "resistancePerMeter": 0.0,
+            "inductancePerMeter": 0.0
+        },
+        {
+            "name": "Short",
+            "id": 10,
+            "type": "terminal",
+            "terminations": [
+                {
+                    "type": "short"
+                }
+            ]
+        }
+    ],
+    "materialAssociations": [
+        {
+            "type": "surface",
+            "materialId": 1,
+            "elementIds": [
+                5,
+                6,
+                7,
+                8
+            ]
+        },
+        {
+            "type": "surface",
+            "materialId": 2,
+            "elementIds": [
+                9
+            ]
+        },
+        {
+            "name": "Cable_E",
+            "type": "cable",
+            "elementIds": [
+                14
+            ],
+            "materialId": 4,
+            "initialTerminalId": 10,
+            "endTerminalId": 10
+        },
+        {
+            "name": "Cable_T1",
+            "type": "cable",
+            "elementIds": [
+                15
+            ],
+            "materialId": 7,
+            "initialTerminalId": 10,
+            "endTerminalId": 3
+        },
+        {
+            "name": "Cable_T2",
+            "type": "cable",
+            "elementIds": [
+                16
+            ],
+            "materialId": 8,
+            "initialTerminalId": 10,
+            "endTerminalId": 10
+        }
+    ],
+    "sources": [
+        {
+            "name": "Generator on line",
+            "type": "generator",
+            "magnitudeFile": "predefinedExcitation.1.exc",
+            "elementIds": [
+                1
+            ],
+            "field": "voltage"
+        }
+    ],
+    "probes": [
+        {
+            "name": "Bulk Top probe",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                4
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "Bulk Bottom probe",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                2
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "Bulk Initial probe",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                3
+            ],
+            "domain": {
+                "type": "time"
+            }
+        }
+    ]
+}

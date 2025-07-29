@@ -1,12 +1,8 @@
-
-    
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Module Lumped
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!!!!!17/08/15 update!!!!!!!!!!!
 !!!Elimino el tratamiento de los campos magneticos de Lumped para programar un multiLumped 
 !!!solo teniendo en cuenta los parametros efectivos y sin actualizar los magneticos.
-!!!Mangento en el fichero Lumped_pre170815_noupdateababienH.F90 la version antigua
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module Lumped
@@ -20,17 +16,14 @@ module Lumped
 
    implicit none
    
-   !!!!!valiables locales
    type (LumpedElem_t), save, target   ::  LumpElem
    
-!!!variables globales del modulo
    REAL (KIND=RKIND), save           ::  eps0,mu0,zvac,cluz
    
    private
-
 !!!
 !!!
-   public LumpedElem_t,Nodes_t !el tipo es publico
+   public LumpedElem_t,Nodes_t 
    public AdvanceLumpedE,InitLumped,DestroyLumped,StoreFieldsLumpeds,calc_lumpedconstants,Getlumped
 
 contains
@@ -38,17 +31,13 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitLumped(sgg,sggMiEx,sggMiEy,sggMiEz,Ex,Ey,Ez,Hx,Hy,Hz,&
-                         IDxe,IDye,IDze,IDxh,IDyh,IDzh,layoutnumber,size,&
-                         ThereAreLumped,resume,simu_devia,stochastic,eps00,mu00)
+   subroutine InitLumped(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,&
+                         IDxe,IDye,IDze,IDxh,IDyh,IDzh, control, &
+                         ThereAreLumped,eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
+      type(media_matrices_t), intent(in) :: media
 
       type (SGGFDTDINFO), intent(IN)     ::  sgg
-      logical :: simu_devia,stochastic 
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE)
       REAL (KIND=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -63,9 +52,8 @@ contains
                                                             Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
                                                             Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
-      integer (kind=4), intent(in) :: layoutnumber,size
-      logical, INTENT(IN)  :: resume
       logical, INTENT(OUT)  ::  ThereAreLumped
+      type(sim_control_t), intent(in) :: control
       integer (kind=4)  ::  jmed,j1,conta,k1,i1
       character(len=BUFSIZE) :: buff
       character (LEN=BUFSIZE)  ::  whoami
@@ -75,7 +63,7 @@ contains
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !
 !!!
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
       unstable=.false.
 !
 !
@@ -87,7 +75,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
          Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
             Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-               jmed=sggMiEx(i1,j1,k1)
+               jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  conta=conta+1
             end do
          end do
@@ -95,7 +83,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
          Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
             Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-               jmed=sggMiEy(i1,j1,k1)
+               jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  conta=conta+1
             end do
          end do
@@ -104,7 +92,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
          Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
             Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-               jmed=sggMiEz(i1,j1,k1)
+               jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped) conta=conta+1
             end do
          end do
@@ -121,7 +109,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
          Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
             Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-               jmed=sggMiEx(i1,j1,k1)
+               jmed=media%sggMiEx(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  then
                   conta=conta+1
                   lumped_ => LumpElem%Nodes(conta)
@@ -143,7 +131,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
          Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
             Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-               jmed=sggMiEy(i1,j1,k1)
+               jmed=media%sggMiEy(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped)  then
                   conta=conta+1
                   lumped_ => LumpElem%Nodes(conta)
@@ -165,7 +153,7 @@ contains
       Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
          Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
             Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-               jmed=sggMiEz(i1,j1,k1)
+               jmed=media%sggMiEz(i1,j1,k1)
                if (SGG%Med(jmed)%Is%Lumped) then
                   conta=conta+1
                   lumped_ => LumpElem%Nodes(conta)
@@ -187,15 +175,15 @@ contains
       call calc_lumpedconstants(sgg,eps0,mu0)   
 
       !!!!!!!!!resuming
-      if (.not.resume) then  
+      if (.not.control%resume) then  
          do conta=1,LumpElem%numnodes
             lumped_ => LumpElem%Nodes(conta)
             lumped_%EfieldPrevPrev=0.0_RKIND
             lumped_%EfieldPrev    =0.0_RKIND
-            lumped_%Jcur          =0.0_RKIND !olvide inicializar jcur 071118
+            lumped_%Jcur          =0.0_RKIND
          end do
 #ifdef CompileWithStochastic
-         if (stochastic) then
+         if (control%stochastic) then
              do conta=1,LumpElem%numnodes
                 lumped_ => LumpElem%Nodes(conta)
             lumped_%EfieldPrevPrev_for_devia=0.0_RKIND
@@ -207,13 +195,13 @@ contains
       else  
         do conta=1,LumpElem%numnodes
             lumped_ => LumpElem%Nodes(conta)
-            read(14) lumped_%EfieldPrevPrev,lumped_%EfieldPrev,lumped_%Jcur !olvide almacenar jcur 071118
+            read(14) lumped_%EfieldPrevPrev,lumped_%EfieldPrev,lumped_%Jcur 
         end do  
 #ifdef CompileWithStochastic
-         if (stochastic) then
+         if (control%stochastic) then
              do conta=1,LumpElem%numnodes
                 lumped_ => LumpElem%Nodes(conta)
-                read(14) lumped_%EfieldPrevPrev_for_devia,lumped_%EfieldPrev_for_devia,lumped_%Jcur_for_devia !olvide almacenar jcur 071118
+                read(14) lumped_%EfieldPrevPrev_for_devia,lumped_%EfieldPrev_for_devia,lumped_%Jcur_for_devia
              end do
          endif
 #endif
@@ -238,7 +226,8 @@ contains
          if (sgg%med(lumped_%jmed)%lumped(1)%inductor) then
              lumped_%EfieldPrevPrev = lumped_%EfieldPrev
              lumped_%EfieldPrev     = lumped_%Efield
-             lumped_%Jcur = lumped_%Jcur + lumped_%sigmaEffResistInduct * (lumped_%EfieldPrev + lumped_%EfieldPrevPrev)
+             !!! The evolution of the current must be modified by a coefficient different from that shown in Mittra pag65.
+             lumped_%Jcur = lumped_%currentCoeff * lumped_%Jcur + lumped_%sigmaEffResistInduct * (lumped_%EfieldPrev + lumped_%EfieldPrevPrev)
          else
              lumped_%Jcur=0.0_RKIND
          endif
@@ -250,14 +239,14 @@ contains
          else !debe entrar aqui si es un resistor, inductor o capacitor
             if (sgg%med(lumped_%jmed)%lumped(1)%resistor) then
                 if ((timestep*sgg%dt >= sgg%Med(lumped_%jmed)%Lumped(1)%Rtime_on).and.(timestep*sgg%dt <= sgg%Med(lumped_%jmed)%Lumped(1)%Rtime_off)) then
-                   lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) + &
+                   lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) - &
                                     lumped_%GJ * lumped_%Jcur
                 else
                    lumped_%Efield = lumped_%G1_usual * lumped_%Efield +(lumped_%G2a_usual *(lumped_%Ha_Plus - lumped_%Ha_Minu) - &
                                                                         lumped_%G2b_usual *(lumped_%Hb_Plus - lumped_%Hb_Minu))
                 endif
             else !inductor o capacitor
-                lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) + &
+                lumped_%Efield = lumped_%G1 * lumped_%Efield +  (lumped_%G2a *(lumped_%Ha_Plus   - lumped_%Ha_Minu    ) - lumped_%G2b *(lumped_%Hb_Plus     - lumped_%Hb_Minu  ) ) - &
                                  lumped_%GJ * lumped_%Jcur
             endif
          endif                     
@@ -282,7 +271,7 @@ contains
       real (kind=RKIND) :: epsilon,sigma,g1,g2,Resist,Induct,Capaci,sigmaeff,epsiloneff,DiodB,DiodIsat
       real (kind=RKIND) :: g1_usual,g2_usual
       real (kind=RKIND) :: epsilonEffCapac    ,sigmaEffResistInduct,sigmaEffResist   ,sigmaEffResistCapac ,sigmaEffResistDiode, &
-                           alignedDeltaE,transversalDeltaHa,transversalDeltaHb 
+                           alignedDeltaE,transversalDeltaHa,transversalDeltaHb,  currentCoeff
       
       character(len=BUFSIZE) :: buff
 !
@@ -307,13 +296,13 @@ contains
             alignedDeltaE      =lumped_%alignedDeltaE      
             transversalDeltaHa =lumped_%transversalDeltaHa 
             transversalDeltaHb =lumped_%transversalDeltaHb     
-               
 !
             epsilonEffCapac      = alignedDeltaE * Capaci / (            transversalDeltaHa * transversalDeltaHb)
             sigmaEffResistInduct = alignedDeltaE * sgg%dt / (2.0_RKIND * transversalDeltaHa * transversalDeltaHb * (Induct + Resist * sgg%dt /2.0_RKIND))
             sigmaEffResist       = alignedDeltaE          / (   Resist * transversalDeltaHa * transversalDeltaHb)
             sigmaEffResistCapac  = sigmaEffResist
             sigmaEffResistDiode  = sigmaEffResist
+            currentCoeff         = (Induct - Resist * sgg%dt /2.0_RKIND) / (Induct + Resist * sgg%dt /2.0_RKIND)
 
 !!!! Mittra pag65   Parallel Finite-Difference Time-Domain Method
             if (sgg%med(jmed)%lumped(1)%resistor) then
@@ -348,7 +337,6 @@ contains
                (epsilonEff/sgg%dt   + SigmaEff/2.0_RKIND  ) 
             
             
-    !!!!repensar si es necesario 27/08/15
             !!!lo he comentado a 050122 por consistencia con stochastic
             !!if (g1 < 0.0_RKIND) then !exponential time stepping
             !!    g1=exp(- SigmaEff * sgg%dt / (epsilonEff ))
@@ -357,13 +345,13 @@ contains
             lumped_%g1=g1 
             lumped_%G2a= G2 / transversalDeltaHa 
             lumped_%G2b= G2 / transversalDeltaHb
-            lumped_%GJ = G2 !!!!Mittra pag65
+            !!! The current derivation on page 65 of Mittra is incorrect and leads to saturation. 
+            !!! The correct coefficient is the one shown here.
+            lumped_%GJ = G2 * (1 + currentCoeff) / 2 !!!!Mittra pag65
             lumped_%sigmaEffResistInduct = sigmaEffResistInduct
+            lumped_%currentCoeff = currentCoeff
   
-            
-            
             !!!!usual para resistencia que se encienden/apagan 200319
-
             G1_usual=(1.0_RKIND  - Sigma * sgg%dt / (2.0_RKIND * epsilon) ) / &
                 (1.0_RKIND  + Sigma * sgg%dt / (2.0_RKIND * epsilon) ) 
             G2_usual=  sgg%dt / epsilon                        / &
@@ -377,7 +365,6 @@ contains
             lumped_%G2a_usual= G2_usual / transversalDeltaHa 
             lumped_%G2b_usual= G2_usual / transversalDeltaHb
                   
-                
            !!!only for diodes 
             if (orient>0.0) then
                 lumped_%diodeB    = lumped_%diodeB * alignedDeltaE / 2.0_RKIND

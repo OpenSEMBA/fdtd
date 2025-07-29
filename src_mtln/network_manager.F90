@@ -117,7 +117,6 @@ contains
 
     subroutine network_advanceVoltage(this)
         class(network_manager_t) :: this
-
         call this%updateCircuitCurrentsFromNetwork()
         call this%circuit%step()
         this%circuit%time = this%circuit%time + this%circuit%dt

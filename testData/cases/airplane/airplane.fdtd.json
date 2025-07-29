@@ -7031,8 +7031,7 @@
             "magnitudeFile": "dummy.exc",
             "elementIds": [
                 1
-            ],
-            "field": "electric"
+            ]
         }
     ],
     "probes": [

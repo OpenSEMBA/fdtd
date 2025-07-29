@@ -63,13 +63,15 @@ This object must always be present and contains general information regarding th
 Addtionally, it may contain the following optional entry:
 
 + `<mtlnProblem>` : A bool indicating whether the problem is a pure MTLN problem and will solved using only the MTLN solver. If it is not present, its default value is `false`
++ `<additionalArguments>` : A string with flags. Keep in mind that flags passed by console have higher priority. 
 
 **Example:**
 
 ```json
 "general": {
     "timeStep": 10e-12,
-    "numberOfSteps": 2000
+    "numberOfSteps": 2000,
+    "additionalArguments": "-mapvtk -sgbc"
 }
 ```
 
@@ -272,13 +274,54 @@ A `material` with `type` `isotropic` represents an isotropic material with const
 
 ```json
 {
-    "name": "teflon"
+    "name": "teflon",
     "id": 1, 
     "type": "isotropic",
     "relativePermittivity": 2.5,
     "electricConducitivity": 1e-6
 } 
 ```
+
+### `lumped`
+
+A `material` with `type` `lumped` represents a lumped circuit `model`, e.g a resistor. Lumped materials can only be assigned to `cell` `elements` with `intervals` describing oriented lines. If multiple cells are assigned to a lumped element, only the first one of them will be treated as a lumped by the solver, the other cells will be treated as a PEC material.
+The specific behavior is described using the `<model>` keyword, described below. `resistor`, `inductor` and `capacitor` are based, with some additions, on the following reference
+
+```
+    Liu, Y., Mittra, R., Su, T., Yang, X., & Yu, W. (2006). Parallel finite-difference time-domain method. Artech.
+    Chapter 3, Section 5.
+```
+
+#### `resistor` model
+
+Defined by:
++ `<resistance>` a positive real number.
++ `[startingTime]` and `[endTime]` are the times in which the resistor will be active. Default to $0.0$ and $1.0$ seconds, respectively. When deactivated, the backgroung material properties will be used, i.e. the edge will be equivalent to an open circuit at low frequencies.
+
+**Example:**
+
+```json
+{
+    "name": "100_ohm_resistor",
+    "id": 1, 
+    "type": "lumped",
+    "model": "resistor",
+    "resistance": 100,
+    "startingTime": 0.0,
+    "endTime": 1.0
+} 
+```
+
+#### `inductor` model
+A series $LR$ circuit, $R$ is optional:
++ `<inductance>` a positive real number
++ `[resistance]` a positive or zero real number. Defaults to $0.0$.
+
+#### `capacitor` model
+A parallel $CR$ circuit:
++ `<capacitance>` a positive real number
++ `<resistance>` a positive real number.
+
 
 ### `multilayeredSurface`
 
@@ -357,23 +400,18 @@ A single wire might be surrounded by a dielectric material. In that case, the ra
 ```
 If the `dielectric` field is present but any of `radius` or `relativePermittivity` is absent, the parsing of the dielectric will fail.
 
-### `multiwire`
+### `shieldedMultiwire`
 
-A `multiwire`, models $N+1$ electrical wires inside a bundled. The voltages and currents on these wires are solved by a multiconductor transmission lines (MTLN) solver described in:
+A `shieldedMultiwire`, models $N+1$ electrical wires inside a bundled. The voltages and currents on these wires are solved by a multiconductor transmission lines (MTLN) solver described in:
 
     Paul, C. R. (2007). Analysis of multiconductor transmission lines. John Wiley & Sons.
 
-`multiwire` materials are assumed to be contained within a `wire` or another `multiwire` which is the external domain and is used as voltage reference. 
+`shieldedMultiwire` materials are assumed to be contained within a `wire` or another `shieldedMultiwire` which is the external domain and is used as voltage reference. 
 They must contain the following entries:
 
-+ `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$.
-+ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero.
++ `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]` 
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
 + `[transferImpedancePerMeter]` which represents the coupling with the external domain, described below. If not present, it defaults to zero, i.e. perfect shielding.
-
-If the number of wires of the `multiwire` is equal to 1, none of the properties above are scalars:
-
-+ `<inductancePerMeter>` and `<capacitancePerMeter>` will be a $1 \times 1$ matrix, i.e `[[1e-7]]` 
-+ `[resistancePerMeter]` and `[conductancePerMeter]` will be arrays of size $1$, i.e `[50]`
 
 `transferImpedancePerMeter` can contain:
 
@@ -387,7 +425,7 @@ If the number of wires of the `multiwire` is equal to 1, none of the properties 
 {
     "name": "Bundle_2_level_2",
     "id": 62,
-    "type": "multiwire",
+    "type": "shieldedMultiwire",
     "resistancePerMeter" : [62.0e-3,62.0e-3],
     "inductancePerMeter": [
         [2.4382084E-07, 4.7377505E-08],
@@ -404,18 +442,57 @@ If the number of wires of the `multiwire` is equal to 1, none of the properties 
 }
 ```
 
+### `unshieldedMultiwire`
+
+A `unshieldedMultiwire`, models a bundle of $N$ electrical wires. The charges and currents on these wires are solved using the model described in:
+
+    Berenger, J. P. A Multiwire formalism for the FDTD Method. IEEE Transactions on Electromagnetic Compatability. August, 2000.
+
+They must contain the following entries:
+
++ `<inCellParameters>` which can be defined in two ways:
+    - By fixed values defined in `inductancePerMeter` and `capacitancePerMeter` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]`.
+    - By a `multipolarExpansion` object which allows to calculate the in-cell inductances and capacitances. This object can be obtained using the [_opensemba/pulmtln_ ](https://github.com/OpenSEMBA/pulmtln) tool containing:
+        - An `<innerRegionBox>` object, containing two pairs of real numbers, named `min` and `max` which describe a cross sectional bounding box. This box must contain all the conductors and dielectrics which form the bundle cross section. It also must be smaller or equal than the minimum side of the FDTD dual cells which are crossed by the bundle.
+        - Two arrays, `<electric>` and `<magnetic>` in which each contain a [field reconstruction object](#field-reconstruction) described below. They must contain a $N$ multipolar expansions, one for each conductor. Each entry assumes that the $n$-th conductor has a prescribed potential of $1 \, \text{V}$ and the rest are floating.
++ `[resistancePerMeter]` and `[conductancePerMeter]` which must be arrays of size $N$. Defaults to zero. If the number of wires is equal to $1$, must be an array of size $1$, e.g. `[50]`.
+
+#### Field reconstruction
+
+The field reconstruction objects contains information necessary to calculate the in-cell parameters for an `unshieldedMultiwire` with $N$ conductors. The `electric` and `magnetic`potentials are used to compute the in-cell capacitances and in-cell inductances, respectively. Each contains information to perform a multipolar expansion based on
+
+    Tsogtgerel Gantumur. Multipole Expansions in the plane. 2016, lecture notes. 
+
+and which must contain
+
++ `<conductorPotentials>` is an array of size $N$ indicating the potentials for each conductor. The $n$-th entry of this array should be equal to $1$, for the active conductor, and less than one for the rest (floating conductors).
++ `<ab>` which is an array of $P$ pairs of real numbers $(a_p, b_p)$, which are the pole coefficients of the field expansion when the $n$-th conductor is active. 
++ `<expansionCenter>` is an pair of real numbers indicating the place in which the dipole moment is zero, a concept similar to the _center of charge_. 
++ `<innerRegionAveragePotential>` is the potential averaged within the `innerRegionBox`. The multipolar expansion only valid outside the inner region.
+
+
 ### `terminal`
 
-A `terminal` models a lumped circuit which is assumed to located at one end of a `wire` or `multiwire`. Terminals are assumed to be assigned on points and therefore have zero dimension.
+A `terminal` models a lumped circuit which is assumed to located at one end of a `wire`, `shieldedMultiwire` or `unshieldedMultiwire`. Terminals are assumed to be assigned on points and therefore have zero dimension.
 
-+ If the terminal is associated with a `wire`, the `terminations` array must contain a single `termination`.
-+ In the case it is associated with a $N+1$ conductors `multiwire`, the `terminations` array must contain $N$ entries.
++ If the terminal is associated with a `wire` or `unshieldedMultiwire`, the `terminations` array must contain a  `termination` for each conductor.
++ In the case it is associated with a $N+1$ conductors `shieldedMultiwire`, the `terminations` array must contain $N$ entries.
 
 Each entry in `terminations` is specified by a `type`
 
 + `short` if the wire is short-circuited with another wire or with any surface which might be present.
 + `open` if the wire does not end in an ohmic contact with any other structure.
-+ Different configurations of passive circuit elements R, L, and C can be defined with `series` (for RLC series circuits), `LCpRs` (LC parallel in series with a resistance) and `RLsCp` (for series RL in parallel with C). The are defined as follows:
++ Different configurations of passive circuit elements R, L, and C can be defined:
+  + `series` (for RLC series circuits), 
+  + `parallel` (for RLC parallel circuits), 
+  + `RsLCp` (LC parallel in series with R), 
+  + `RLsCp` (RL series in parallel with C), 
+  + `LsRCp` (RC parallel in series with L), 
+  + `CsLRp` (LR parallel in parallel with C),
+  + `RCsLp` (RC series in parallel with L), and 
+  + `LCsRp` (LC series in parallel with R). 
+
+The values are defined defined as follows:
   + `[resistance]` which defaults to `0.0`,
   + `[inductance]` which defaults to `0.0`,
   + `[capacitance]` which defaults to `1e22`.
@@ -454,11 +531,11 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
 
 ### `connector`
 
-The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire` or a `multiwire`. 
+The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire`, a `shieldedMultiwire` or an `unshieldedMultiwire`. 
 This `wire` can be either a single wire or the outermost conductor of a `cable` bundle. The `conector`  can have the following properties:
 
-+ `[resistances]`, an array of $N$ real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment of the multiwire
-+ `[transferImpedancePerMeter]`, described in the same way as explained in the [multiwire](#multiwire) section. Only valid in a `connector` associated with `multiwire`.
++ `[resistances]`, an array of $N$ real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment.
++ `[transferImpedancePerMeter]`, described in the same way as explained in the [shieldedMultiwire](#shieldedMultiwire) section. Only valid in a `connector` associated with `shieldedMultiwire`.
 
 
 
@@ -499,7 +576,7 @@ Associations with cables can contain the following inputs:
 
 + `<initialTerminalId>` and `<endTerminalId>` which must be present within the `materials` list of type. These entries indicate the lumped circuits connected at the ends of the cable.
 + `[initialConnectorId]` and `[endConnectorId]` entries which must point to materials of type `connector` and are assigned to the last segments of the corresponding ends of the cable.
-+ Its `materialId` must point to a [`wire`](#wire) or a [`multiwire`](#multiwire) material. If it points to a `multiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `multiwire` is embedded.
++ Its `materialId` must point to a [`wire`](#wire), a [`shieldedMultiwire`](#shieldedMultiwire) or an [`unshieldedMultiwire`](#unshieldedMultiwire) material. If it points to a `shieldedMultiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `shieldedMultiwire` is embedded.
 
 **Example:**
 
@@ -559,7 +636,9 @@ Records a vector field a single position referenced by `elementIds` which must c
 
 Records a scalar field at a single position referenced by `elementIds`. `elementIds` must contain a single `id` referencing an element of type `node`. Additionally, this `node` must point to a `coordinateId` belonging to at least one `polyline`. 
 If the node's `coordinateId` is shared by more than one `polyline` a probe will be defined for each one of them
-The `[field]` can be `voltage` or `current`. Defaults to `current`. When `current` is selected, the orientation of the `polyline` on which the probe is located indicates the direction of the current. Voltages are well defined at polyline points. However, currents are defined over segments so:
+The `[field]` can be `voltage`, `current` or `charge`  (defaults to `current`). Voltage probes are properly defined only when used placed on `shieldedMultiwires`. The voltage on a conductor will be referred to the shield surrounding that conductor. In an unshielded wire, there is not a well defined reference, and thus the probe is not reliable. Charge probes are implemented only for wires not treated with the MTL module.
+
+When `current` is selected, the orientation of the `polyline` on which the probe is located indicates the direction of the current. Voltages are well defined at polyline points. However, currents are defined over segments so:
 
 - If the point is in the interior of the wire, the output will be an average on the currents of the segments which are contiguous to it.
 - If the point is at one wire end, the current will be the output of the last segment.
@@ -579,9 +658,9 @@ Performs a loop integral along on the contour of the surface reference in the `e
 
 + If it is a point or a volume, `direction` must be present.
 + For an oriented line, `direction` is optional and the orientation of the line will be used as default.
-+ For an oriented surface, `direction` is also optional, and if not value is given it is assumed to be the normal of the surface.
++ For an oriented surface, `direction` is also optional, and if not value is given it is assumed to be the the positive axis of the surface normal.
 
-Due to Ampere's law, the loop integral of the magnetic field is equal to the total electric current passing through the surfaces. `[field]`, can be `electric` or `magnetic`. Defaults to `electric`, which gives the total current passing through the surface.
+Due to Ampere's law, the loop integral of the magnetic field is equal to the total electric current passing through the surfaces. `[field]`, can be `electric` or `magnetic`. Defaults to `electric`, which returns the total current passing through the surface.
 
 In the following example `elementId` points an element describing a single oriented surface, therefore `direction` does not need to be stated explicitly.
 
@@ -602,6 +681,34 @@ In this example `elementId` points to a volume element, therefore `direction` mu
     "elementIds": [8],
     "direction": "x"
 }
+```
+
+One important aspect to keep in mind when working with `bulkCurrent` with `electric field type` is its natural offset. This arises from the fact that to measure the electric current it is necessary to calculate the closed path integral of the magnetic field, then, the electric current is defined on the **dual mesh** of the inserted grid—i.e., the mesh corresponding to the magnetic field. The **dual mesh** is constructed by placing a point at the center of each cell in the original (primal) mesh and connecting these points.
+
+Because of this, the code internally shifts the `bulkCurrent` you define to align with the dual mesh, causing a **half-cell offset**. In the case of surfaces, the coordinates **perpendicular** to the current flowing through the surface experience a **negative offset**, as shown in the figure below:
+
+
+![Negative offset](fig/grid-negativeOffSet.svg)
+
+If the current is flowing out of the page and the defined `bulkCurrent` corresponds to the blue surface, the algorithm will actually evaluate the current on the green surface. Mathematically, this can be interpreted as follows: if the `bulkCurrent` is defined as a rectangle with bounds `[a, b] × [c, d]`, the measurement is performed on the **half-open domain** `[a, b) × [c, d)`.
+
+On the other hand, the coordinate **parallel** to the current also experiences a **half-cell offset**, but this time in the **positive direction**, as illustrated in the figure below:
+
+![Positive offset](fig/grid-positiveOffSet.svg)
+
+Again, with the current flowing in the direction of the red line, the blue line represents a cross-sectional view of the plane where the `bulkCurrent` is defined, while the green line shows the actual location used for current evaluation by the method.
+
+#### `line`
+
+A `line` probe computes the electric field line integral along a given `polyline`. At low frequencies, this quantity can be equivalent to a DC voltage difference between the extremes of the line. At higher frequencies, "voltage" is no longer a proper name. The integral is performed along a geometric line, hence the `polyline` does not have to be associated with any material. `[field]` defaults to `electric`, the only field supported at this point. The probe is only valid in the time domain.
+
+```json
+    {
+        "name" : "vprobe",
+        "type" : "line",
+        "elementIds" : [4],
+        "field" : "electric"
+    }
 ```
 
 #### `farField`
@@ -707,7 +814,7 @@ An example of a planewave propagating towards $\hat{z}$ and polarized in the $+\
 
 This object represents a time-varying vector field applied along an oriented line with the same orientation of the line. Therefore, the `elementIds` within must contain only elements of type `cell` with `intervals` describing a collection of oriented lines. Additionally, it may contain:
 
-+ `[field]` with a `electric` or `magnetic` label which indicates the vector field which will be applied. If not present, it defaults to `electric`.
++ `[field]` with a `current` label which indicates the vector field which will be applied. If not present, it defaults to `current`.
 + `[hardness]` with `soft` or `hard` label. A `soft` hardness indicated that the magnitude will be **added** to the field this situation is typical for a waveport. `hard` sources mean that the field is **substituted** by the value established by the `magnitudeFile`, which for an electric field `nodalSource` would be equivalent to a `pec` material if the magnitude is zero.
 
 **Example:**
@@ -718,8 +825,7 @@ This object represents a time-varying vector field applied along an oriented lin
     "type": "nodalSource", 
     "magnitudeFile": "gauss.exc", 
     "elementIds": [1],
-    "hardness": "soft",
-    "field": "electric"
+    "hardness": "soft"
 }
 ```
 
@@ -739,7 +845,7 @@ A `generator` source must be located on a single `node` whose `coordinateId` is 
 }
 ```
 
-In case the generator is located at the junction (connection point) of two of more lines, the  `node` shared by the lines will share the same  `coordinateId`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elemId` of the `polyline` the source is connected to. 
+In case the generator is located at the junction (connection point) of two of more lines, the  `node` shared by the lines will share the same  `coordinateId`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the source is connected to. 
 
 **Example:**
 

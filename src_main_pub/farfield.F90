@@ -2555,9 +2555,6 @@ contains
                         Hcampo2Y => FF%HyFr2
                      endif
                      if (GOahead) then
-#ifdef CompileWithOpenMP
-!$OMP                 PARALLEL DO DEFAULT(SHARED) private (co,new_co,Mx,My,Mz,Jx,Jy,Jz,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,j,k,j_m,k_m) REDUCTION(+:L_theta) REDUCTION(+:L_phi) REDUCTION(+:N_theta) REDUCTION(+:N_phi)
-#endif
                         do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ey
                            k_m = k - b%Ez%ZI
                            do j = FF%TrFr%J%com%Ez, FF%TrFr%J%fin%Ez
@@ -2777,10 +2774,6 @@ contains
                               !!! fin simetrias
                            enddo
                         enddo
-#ifdef CompileWithOpenMP
-!$OMP                 END PARALLEL DO
-!$OMP BARRIER
-#endif
                         L_theta_final = L_theta_final + L_theta ; L_phi_final   = L_phi_final   + L_phi
                         N_theta_final = N_theta_final + N_theta ; N_phi_final   = N_phi_final   + N_phi
                         L_theta=0.0_RKIND ; L_phi=0.0_RKIND ; N_theta=0.0_RKIND ; N_phi=0.0_RKIND ;
@@ -2820,9 +2813,6 @@ contains
                         Hcampo2X => FF%HxDe2
                      endif
                      if (GOahead) then
-#ifdef CompileWithOpenMP
-!$OMP                 PARALLEL DO DEFAULT(SHARED) private (co,new_co,Mx,My,Mz,Jx,Jy,Jz,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,k,i,k_m,i_m) REDUCTION(+:L_theta) REDUCTION(+:L_phi) REDUCTION(+:N_theta) REDUCTION(+:N_phi)
-#endif
                         do k = FF%IzDe%K%com%Ex, FF%IzDe%K%fin%Ex
                            k_m = k - b%Ex%ZI
                            do i = FF%IzDe%I%com%Ex, FF%IzDe%I%fin%Ez
@@ -3041,10 +3031,6 @@ contains
                               !!! fin simetrias
                            enddo
                         enddo
-#ifdef CompileWithOpenMP
-!$OMP                 END PARALLEL DO
-!$OMP BARRIER
-#endif
                         L_theta_final = L_theta_final + L_theta ; L_phi_final   = L_phi_final   + L_phi
                         N_theta_final = N_theta_final + N_theta ; N_phi_final   = N_phi_final   + N_phi
                         L_theta=0.0_RKIND ; L_phi=0.0_RKIND ; N_theta=0.0_RKIND ; N_phi=0.0_RKIND ;
@@ -3084,9 +3070,6 @@ contains
                         Hcampo2X => FF%HxAr2
                      endif
                      if (GOahead) then
-#ifdef CompileWithOpenMP
-!$OMP                 PARALLEL DO DEFAULT(SHARED) private (co,new_co,Mx,My,Mz,Jx,Jy,Jz,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,i,j,i_m,j_m) REDUCTION(+:L_theta) REDUCTION(+:L_phi) REDUCTION(+:N_theta) REDUCTION(+:N_phi)
-#endif
                         do j = FF%AbAr%J%com%Ey,FF%AbAr%J%fin%Ex
                            j_m = j - b%Ey%YI
                            do i = FF%AbAr%I%com%Ey, FF%AbAr%I%fin%Ey
@@ -3306,10 +3289,6 @@ contains
                               !!! fin simetrias
                            enddo
                         enddo
-#ifdef CompileWithOpenMP
-!$OMP                 END PARALLEL DO
-!$OMP BARRIER
-#endif
                         L_theta_final = L_theta_final + L_theta ; L_phi_final   = L_phi_final   + L_phi
                         N_theta_final = N_theta_final + N_theta ; N_phi_final   = N_phi_final   + N_phi
                         L_theta=0.0_RKIND ; L_phi=0.0_RKIND ; N_theta=0.0_RKIND ; N_phi=0.0_RKIND ;

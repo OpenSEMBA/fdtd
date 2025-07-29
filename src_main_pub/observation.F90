@@ -111,14 +111,14 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+   subroutine InitObservation(sgg,media,tag_numbers, &
                               ThereAreObservation,ThereAreWires,ThereAreFarFields,resume,initialtimestep, finaltimestep,lastexecutedtime, &
                               nEntradaRoot,layoutnumber,size, saveall, singlefilewrite,wiresflavor, &
                               SINPML_fullsize,facesNF2FF,NF2FFDecim,eps00,mu00,simu_devia,mpidir,niapapostprocess,b)
       !solo lo precisa de entrada farfield
+      type(media_matrices_t), intent(in) :: media
       type (bounds_t)  ::  b
       type (SGGFDTDINFO), intent(IN)         ::  sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
       logical :: simu_devia,niapapostprocess
       REAL (KIND=RKIND)           ::  eps00,mu00
@@ -126,15 +126,6 @@ contains
       integer (kind=4), intent(in) :: layoutnumber,size,mpidir
       type (nf2ff_t) :: facesNF2FF
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      !
-      !!!
       character(len=*), INTENT(in) :: wiresflavor
       logical  ::  saveall,singlefilewrite,NF2FFDecim, INIT,GEOM,ASIGNA,electric,magnetic
       character (LEN=BUFSIZE)  ::  p1,p2
@@ -172,7 +163,7 @@ contains
 !
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !
-!!
+      !!
       output=> null()
 #ifdef CompileWithMPI
       valores=>null()
@@ -330,7 +321,7 @@ contains
 #else
                endif
 #endif
-             case (iEx,iVx,iEy,iVy,iHz,iBloqueMz,iJx,iJy) !in case of MPI the flushing is only cared by one of the sharing layouts
+             case (iEx,iVx,iEy,iVy,iHz,iBloqueMz,iJx,iJy, iQx, iQy) !in case of MPI the flushing is only cared by one of the sharing layouts
                !in case of MPI the flushing is only cared by one of the sharing layouts
                !este es el unico caso en el que un punto es susceptible de ser escrito por dos layouts. Por eso se lo echo
                ! solo a uno de ellos: al de abajo (a menos que que sea el layout de mas arriba, en cuyo caso tiene que tratarlo el) !bug del itc2 con el pathx hasta el borde
@@ -338,7 +329,7 @@ contains
                (sgg%observation(ii)%P(i)%ZI <  sgg%Sweep(fieldo(field,'Z'))%ZI)                             ) then
                   sgg%observation(ii)%P(i)%What=Nothing !do not observe anything
                endif
-             case (iEz,iVz,iJz,iBloqueJz,iHx,iHy)
+             case (iEz,iVz,iJz,iQz,iBloqueJz,iHx,iHy)
                if ((sgg%Observation(ii)%P(i)%ZI > sgg%Sweep(fieldo(field,'Z'))%ZE).or. &
                (sgg%Observation(ii)%P(i)%ZI < sgg%Sweep(fieldo(field,'Z'))%ZI)) then
                   sgg%observation(ii)%P(i)%What=Nothing !do not observe anything
@@ -427,6 +418,20 @@ contains
             if (field/=nothing) ThereAreObservation=.true.
          end do
       end do
+#ifdef CompileWithMTLN
+      block
+         type(mtln_solver_t), pointer :: mtln_solver
+         integer :: i,j
+         mtln_solver => GetSolverPtr()
+         do i = 1, ubound(mtln_solver%bundles, 1)
+            if (ubound(mtln_solver%bundles(i)%probes,1) /= 0) then 
+               do j = 1, ubound(mtln_solver%bundles(i)%probes,1)
+                  if (mtln_solver%bundles(i)%probes(j)%in_layer) ThereAreObservation=.true.
+               end do
+            end if
+         end do
+      end block
+#endif
       !
       memo=0
       !
@@ -580,7 +585,7 @@ contains
                field=sgg%observation(ii)%P(i)%what
                select case(field)
                   !
-               case (iEx,iEy,iEz,iVx,iVy,iVz,iJx,iJy,iJz,iHx,iHy,iHz)
+               case (iEx,iEy,iEz,iVx,iVy,iVz,iJx,iJy,iJz,iQx,iQy,iQz, iHx,iHy,iHz, lineIntegral)
                   !
                   if (((field == iEx).or.(field == iEy).or.(field == iEz).or. &
                   (field == iHx).or.(field == iHy).or.(field == iHz)).and. &
@@ -609,6 +614,12 @@ contains
                         prefix_field=prefix(iJy)
                       case (iJz)
                         prefix_field=prefix(iJz)
+                      case (iQx)
+                        prefix_field=prefix(iQx)
+                      case (iQy)
+                        prefix_field=prefix(iQy)
+                      case (iQz)
+                        prefix_field=prefix(iQz)
                       case (iVx)
                         prefix_field=prefix(iVx)
                       case (iVy)
@@ -639,6 +650,12 @@ contains
                         prefix_field=prefix(iJx)
                       case (iJz)
                         prefix_field=prefix(iJy)
+                      case (iQx)
+                        prefix_field=prefix(iQz)
+                      case (iQy)
+                        prefix_field=prefix(iQx)
+                      case (iQz)
+                        prefix_field=prefix(iQy)
                       case (iVx)
                         prefix_field=prefix(iVz)
                       case (iVy)
@@ -669,6 +686,12 @@ contains
                         prefix_field=prefix(iJz)
                       case (iJz)
                         prefix_field=prefix(iJx)
+                      case (iQx)
+                        prefix_field=prefix(iQy)
+                      case (iQy)
+                        prefix_field=prefix(iQz)
+                      case (iQz)
+                        prefix_field=prefix(iQx)
                       case (iVx)
                         prefix_field=prefix(iVy)
                       case (iVy)
@@ -689,6 +712,11 @@ contains
                   endif
                   !     
                   if ((field == iJx).or.(field == iJy).or.(field == iJz)) then
+                     write(charNO,'(i7)') NO
+                     !append the number of the segment
+                     extpoint=trim(adjustl(extpoint))//'_s'//trim(adjustl(charNO))
+                  endif
+                  if ((field == iQx).or.(field == iQy).or.(field == iQz)) then
                      write(charNO,'(i7)') NO
                      !append the number of the segment
                      extpoint=trim(adjustl(extpoint))//'_s'//trim(adjustl(charNO))
@@ -720,6 +748,27 @@ contains
                   endif
                   allocate (output(ii)%item(i)%valor(0 : BuffObse))
                   output(ii)%item(i)%valor(0 : BuffObse)=0.0_RKIND
+
+                  if (field == iQx .or. field == iQy .or. field == iQz) then 
+                     found = .false.
+                     do n=1,HWireslocal%NumCurrentSegments
+                        if ((HWireslocal%CurrentSegment(n)%origindex==no).and. &
+                        (HWireslocal%CurrentSegment(n)%i==i1).and. &
+                        (HWireslocal%CurrentSegment(n)%j==j1).and. &
+                        (HWireslocal%CurrentSegment(n)%k==k1).and. &
+                        (HWireslocal%CurrentSegment(n)%tipofield*10000==field))  then
+                           output(ii)%item(i)%segmento => HWireslocal%CurrentSegment(n)
+                           if (output(ii)%item(i)%segmento%orientadoalreves) output(ii)%item(i)%valorsigno=-1
+                           found=.true.
+                        endif
+                     end do
+                     if ((.not.found).and. ((field==iQx).or.(field==iQy).or.(field==iQz))) then
+                        sgg%Observation(ii)%P(i)%What=nothing
+                        write(buff,'(a,4i7,a)') 'ERROR: CHARGE probe ',no,i1,j1,k1,' DOES NOT EXIST'
+                        CALL WarnErrReport (buff,.true.)
+                     endif
+
+                  end if
 
                   if ((trim(adjustl(wiresflavor))=='holland') .or. &
                       (trim(adjustl(wiresflavor))=='transition')) then
@@ -1216,10 +1265,10 @@ contains
                      if (field==mapvtk) then
                         INIT=.TRUE.; geom=.false. ; asigna=.false.; magnetic=.false. ; electric=.true.
 
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                        call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                         init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
 
-                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
+                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,media%sggMtag, tag_numbers)
                      endif
                      !!!
                      do kkk=sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1257,7 +1306,7 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.false. ; asigna=.false.; magnetic=.true. ; electric=.false.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                        call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
                           
                      endif
@@ -1420,9 +1469,9 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.false. ; electric=.true.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                        call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
-                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
+                        call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,media%sggMtag, tag_numbers)
                      endif
                      !!!
                      do kkk=sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1470,7 +1519,7 @@ contains
                      !!!
                      if (field==mapvtk) then
                         INIT=.false.; geom=.true. ; asigna=.false.; magnetic=.true. ; electric=.false.
-                        call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                        call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                       init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
 
                      endif
@@ -1873,7 +1922,7 @@ contains
                   call checkduplicatenames
                   !!!!!!
                   !inicializacion especifica del farfield
-                  call InitFarField(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size, &
+                  call InitFarField(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,layoutnumber,size, &
                   b,resume, &
                   output(ii)%item(i)%unit        ,   &
                   output(ii)%item(i)%path          , &
@@ -1963,17 +2012,17 @@ contains
          integer (kind=4) :: field, i, j, k
          select case(field)
          case(iEx)
-            res = sggMiEx(i, j, k)
+            res = media%sggMiEx(i, j, k)
          case(iEy)
-            res = sggMiEy(i, j, k)
+            res = media%sggMiEy(i, j, k)
          case(iEz)
-            res = sggMiEz(i, j, k)
+            res = media%sggMiEz(i, j, k)
          case(iHx)
-            res = sggMiHx(i, j, k)
+            res = media%sggMiHx(i, j, k)
          case(iHy)
-            res = sggMiHy(i, j, k)
+            res = media%sggMiHy(i, j, k)
          case(iHz)
-            res = sggMiHz(i, j, k)
+            res = media%sggMiHz(i, j, k)
          case default
             call StopOnError(layoutnumber, size, 'Unrecognized field')
          end select
@@ -2497,17 +2546,16 @@ contains
    !!! The Wire modules uses its own updating procedure
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine UpdateObservation(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag, tag_numbers, &
+   subroutine UpdateObservation(sgg,media, tag_numbers, &
       nTime,nInit, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,wiresflavor,SINPML_fullsize,wirecrank, &
-       Exvac, Eyvac, Ezvac, Hxvac, Hyvac, Hzvac,Excor, Eycor, Ezcor, Hxcor, Hycor, Hzcor,planewavecorr,noconformalmapvtk,b)
+      noconformalmapvtk,b)
       !solo lo precisa de entrada farfield
       type (bounds_t)  ::  b
       logical :: noconformalmapvtk
       type (SGGFDTDINFO), intent(IN)         ::  sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      type(media_matrices_t), intent(in) :: media
       type(taglist_t) :: tag_numbers
       !---------------------------> inputs <----------------------------------------------------------
-      logical :: planewavecorr
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
       integer, intent( IN)  ::  nTime,nInit
       REAL (KIND=RKIND)   , intent(in) , target     :: &
@@ -2518,37 +2566,12 @@ contains
       Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
       Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       !--->
-      REAL (KIND=RKIND)   , target     :: &
-      Exvac(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
-      Eyvac(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
-      Ezvac(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
-      Hxvac(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
-      Hyvac(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
-      Hzvac(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      !--->
-            REAL (KIND=RKIND)    , target     :: &
-      Excor(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
-      Eycor(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
-      Ezcor(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
-      Hxcor(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
-      Hycor(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
-      Hzcor(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      
       REAL (KIND=RKIND) , dimension (:)   , intent(in)   :: dxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
                                                             dyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
                                                             dzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
                                                             dxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
                                                             dye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
                                                             dze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      !!!
-      !----->
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
       !---------------------------> variables locales <-----------------------------------------------
       integer( kind = 4)  ::  i, ii, i1, i2, j1, j2, k1, k2, i1_m, i2_m, j1_m, j2_m, k1_m, k2_m, field,jjx,jjy,jjz,if1,i1t,j1t,k1t,iff1
@@ -2572,7 +2595,7 @@ contains
 #endif
 
       logical ::  INIT,GEOM,ASIGNA,electric,magnetic
-      !!!
+
       at=-1; jx=-1; jy=-1;jz=-1;jdir=-1;jdir1=-1;jdir2=-1  !para que gfortran no me diga que no las inicializo
 
       !---------------------------> empieza UpdateObservation <---------------------------------------
@@ -2764,6 +2787,38 @@ contains
                         output( ii)%item( i)%valor(nTime-nInit) +   &
                         (Ey( i1_m, JJJ_m, k1_m) - Ey( i2_m+1, JJJ_m, k1_m)) * dye( JJJ_m )
                      enddo
+
+                   case (lineIntegral)
+                     block
+                        integer (kind=4) :: lidx, lx, ly, lz, lor
+                        type(direction_t), dimension(:), allocatable :: line
+                        line = sgg%observation(ii)%P(i)%line
+                        output( ii)%item( i)%valor(nTime-nInit) = 0.0_RKIND !wipe value
+
+                        do lidx = 1, ubound(line,1)-lbound(line,1)+1
+                           lor = line(lidx)%orientation
+                           lx = line(lidx)%x
+                           ly = line(lidx)%y
+                           lz = line(lidx)%z
+                           select case(abs(lor))
+                           case(iEx)
+                              output( ii)%item( i)%valor(nTime-nInit) = output( ii)%item( i)%valor(nTime-nInit) + &
+                                                                       Ex(lx, ly, lz)*sign(1,lor)*dxe(lx)
+                           case(iEy)
+                              output( ii)%item( i)%valor(nTime-nInit) = output( ii)%item( i)%valor(nTime-nInit) + &
+                                                                       Ey(lx, ly, lz)*sign(1,lor)*dye(ly)
+                           case(iEz)
+                              output( ii)%item( i)%valor(nTime-nInit) = output( ii)%item( i)%valor(nTime-nInit) + &
+                                                                       Ez(lx, ly, lz)*sign(1,lor)*dze(lz)
+                           end select
+                        end do
+                     end block
+
+
+                   case( iQx, iQy, iQz)
+                        output( ii)%item( i)%valor(nTime-nInit) = 0.0_RKIND !wipe value
+                        SegmDumm => output( ii)%item( i)%Segmento
+                        output( ii)%item(i)%valor(nTime-nInit)= SegmDumm%ChargeMinus%ChargePresent
 
                    case( iJx, iJy, iJz)
                      if ((trim(adjustl(wiresflavor))=='holland') .or. &
@@ -3083,7 +3138,7 @@ contains
                                        do Efield = iEx, iEz
                                           if (isThinWire(Efield, iii, jjj, kkk) .and. isWithinBounds(Efield, iii, jjj, kkk)) then 
                                              conta = conta + 1
-                                             jdir = computeJ(field, iii, jjj, kkk)
+                                             jdir = computeJ(EField, iii, jjj, kkk)
                                              output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
                                              output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
                                              output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
@@ -3094,13 +3149,12 @@ contains
                                              output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
                                              output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
                                           end if
-                                       end do
-
-                                       if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. &
+                                          
+                                          if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. &
                                            .not. isSplitOrAdvanced(Efield, iii, jjj, kkk) .and. &
                                            isWithinBounds(Efield, iii, jjj, kkk)) then 
                                              conta = conta + 1
-                                             jdir = computeJ(field, iii, jjj, kkk)
+                                             jdir = computeJ(EField, iii, jjj, kkk)
                                              output( ii)%item( i)%Serialized%valor_x(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
                                              output( ii)%item( i)%Serialized%valor_y(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
                                              output( ii)%item( i)%Serialized%valor_z(Ntimeforvolumic,conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
@@ -3110,7 +3164,8 @@ contains
                                              output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,Efield)
                                              output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
                                              output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
-                                       end if  
+                                          end if  
+                                       end do
 
                                     else !si es mapvtk
 
@@ -3132,10 +3187,10 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.false. ; electric=.true.
-                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                              call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
           
-                              call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,sggMtag, tag_numbers)
+                              call wirebundlesvtk(sgg,init,geom,asigna,conta,i,ii,output,Ntimeforvolumic,wiresflavor,media%sggMtag, tag_numbers)
                            endif
                            !!!
                            do KKK = k1, k2
@@ -3188,7 +3243,7 @@ contains
                            !!!
                            if (field==mapvtk) then
                               INIT=.false.; geom=.false. ; asigna=.true.; magnetic=.true. ; electric=.false.
-                              call nodalvtk(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,sggMtag,tag_numbers, &
+                              call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                             init,geom,asigna,electric,magnetic,conta,i,ii,output,Ntimeforvolumic)
                            endif
                            !!!
@@ -3197,13 +3252,7 @@ contains
                      endif
                      !!!!!!!!fin sondas corriente
                    case( FarField)
-                     if (planewavecorr) then
-                         Excor=Ex-Exvac; Eycor=Ey-Eyvac; Ezcor=Ez-Ezvac;
-                         Hxcor=Hx-Hxvac; Hycor=Hy-Hyvac; Hzcor=Hz-Hzvac;
-                         call UpdateFarField(ntime, b, Excor, Eycor, Ezcor,Hxcor,Hycor,Hzcor)
-                     else
-                         call UpdateFarField(ntime, b, Ex, Ey, Ez,Hx,Hy,Hz)
-                     endif
+                     call UpdateFarField(ntime, b, Ex, Ey, Ez,Hx,Hy,Hz)
                   endselect
                   !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!FREQMAIN
                   !!!!!!!!!!!!!!!!!!!!
@@ -3504,8 +3553,8 @@ contains
          i2 = i - merge(1,0,1+mod(field,3) == iEx)
          j2 = j - merge(1,0,1+mod(field,3) == iEy)
          k2 = k - merge(1,0,1+mod(field,3) == iEz)
-         res =  getDelta(1+mod(field,3)  , i, j, k) * (-getField(1+mod(field,3) + 4,  i,j,k) + getField(1+mod(field,3) + 4,  i1,j1,k1))  + &
-                getDelta(1+mod(field+1,3), i, j, k) * ( getField(1+mod(field+1,3) + 4,i,j,k) - getField(1+mod(field+1,3) + 4,i2,j2,k2))  
+         res =  getDelta(1+mod(field,3)  , i, j, k) * (-getField(1+mod(field,3) + 3,  i,j,k) + getField(1+mod(field,3) + 3,  i1,j1,k1))  + &
+                getDelta(1+mod(field+1,3), i, j, k) * ( getField(1+mod(field+1,3) + 3,i,j,k) - getField(1+mod(field+1,3) + 3,i2,j2,k2))  
       end function
 
 
@@ -3533,17 +3582,17 @@ contains
          integer (kind=4) :: field, i, j, k
          select case(field)
          case(iEx)
-            res = sggMiEx(i, j, k)
+            res = media%sggMiEx(i, j, k)
          case(iEy)
-            res = sggMiEy(i, j, k)
+            res = media%sggMiEy(i, j, k)
          case(iEz)
-            res = sggMiEz(i, j, k)
+            res = media%sggMiEz(i, j, k)
          case(iHx)
-            res = sggMiHx(i, j, k)
+            res = media%sggMiHx(i, j, k)
          case(iHy)
-            res = sggMiHy(i, j, k)
+            res = media%sggMiHy(i, j, k)
          case(iHz)
-            res = sggMiHz(i, j, k)
+            res = media%sggMiHz(i, j, k)
          end select
       end function
 
@@ -3780,7 +3829,7 @@ contains
             field=sgg%observation(ii)%P(i)%what
             if (SGG%Observation(ii)%TimeDomain) then
                select case(field)
-                case (iEx,iEy,iEz,iJx,iJy,iJz,iHx,iHy,iHz)
+                case (iEx,iEy,iEz,iJx,iJy,iJz,iQx,iQy,iQz,iHx,iHy,iHz, lineIntegral)
                   I1=sgg%OBSERVATION(ii)%P(i)%XI
                   J1=sgg%OBSERVATION(ii)%P(i)%YI
                   K1=sgg%OBSERVATION(ii)%P(i)%ZI
@@ -3791,7 +3840,7 @@ contains
                         select case(field)
                          case (iHx,iHy,iHz)
                            at=sgg%tiempo(N)+sgg%dt/2.0_RKIND_tiempo
-                         case(iEx,iEy,iEz,iJx,iJy,iJz)
+                         case(iEx,iEy,iEz,iJx,iJy,iJz,iQx,iQy,iQz, lineIntegral)
                            at=sgg%tiempo(N)
                         end select
                         if ( ((at >= sgg%OBSERVATION(ii)%InitialTime).and.(at <= sgg%OBSERVATION(ii)%FinalTime+sgg%dt/2.0_RKIND)).or. &
@@ -3879,6 +3928,25 @@ contains
                                                         output(ii)%item(i)%valor4(n-nInit) , & ! Vminus 
                                                         output(ii)%item(i)%valor5(n-nInit) ! vplus-vminus
                               endif
+                            case(iQx,iQy,iQz)
+                              if (singlefilewrite) then
+                                 unidad=output(ii)%item(i)%unitmaster
+                                 WRITE (unidad) output(ii)%item(i)%unit,at, &
+                                                output(ii)%item(i)%valor(n-nInit) ! node charge
+                              else
+                                 unidad=output(ii)%item(i)%unit
+                                 WRITE (unidad,fmt) at, output(ii)%item(i)%valor(n-nInit) ! node charge
+                              endif
+
+                            case(lineIntegral)
+                              if (singlefilewrite) then
+                                 unidad=output(ii)%item(i)%unitmaster
+                                 WRITE (unidad) output(ii)%item(i)%unit,at, &
+                                                output(ii)%item(i)%valor(n-nInit) ! e*dl sum along line
+                              else
+                                 unidad=output(ii)%item(i)%unit
+                                 WRITE (unidad,fmt) at, output(ii)%item(i)%valor(n-nInit) ! e*dl sum along line
+                              endif
                            end select
                         endif
                      endif
@@ -3886,6 +3954,7 @@ contains
                   if (singlefilewrite.and.((field==iEx).or.(field==iEy).or.(field==iEz).or. &
                   (field==iVx).or.(field==iVy).or.(field==iVz).or. &
                   (field==iJx).or.(field==iJy).or.(field==iJz).or. &
+                  (field==iQx).or.(field==iQy).or.(field==iQz).or. &
                   (field==iHx).or.(field==iHy).or.(field==iHz))) then
                      unidad=output(ii)%item(i)%unitmaster
                   else
@@ -4094,6 +4163,8 @@ contains
                   !    output(ii)%item(i)%Serialized%valor = 0.0_RKIND
                   !case (iMHC,iHxC,iHyC,iHzC,iMEC,iExC,iEyC,iEzC)
                   !    output(ii)%item(i)%valor3D = 0.0_RKIND
+                case (iQx,iQy,iQz)
+                  output(ii)%item(i)%valor(0:BuffObse)=0.0_RKIND
                 case (iJx,iJy,iJz)
                   output(ii)%item(i)%valor(0:BuffObse)=0.0_RKIND
                   output(ii)%item(i)%valor2(0:BuffObse)=0.0_RKIND   
@@ -4112,14 +4183,18 @@ contains
    end subroutine FlushObservationFiles
 
 #ifdef CompileWithMTLN
-   subroutine FlushMTLNObservationFiles(nEntradaRoot)
+   subroutine FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem)
       character (len=*), intent(in)  ::  nEntradaRoot
+      logical, intent(in) :: mtlnProblem
       type(mtln_solver_t), pointer :: mtln_solver
       integer :: i,j,k,n
       integer :: unit 
       character (len=bufsize)  ::  temp
       character (len=bufsize)  ::  path
       character (len=:), allocatable :: buffer
+#ifdef CompileWithMPI
+      integer (kind=4) :: ierr
+#endif
 
       mtln_solver => GetSolverPtr()
       unit = 2000
@@ -4176,10 +4251,14 @@ contains
          DO i=1,sgg%Observation(ii)%nP
             field=sgg%observation(ii)%P(i)%what
             select case(field)
+             case (iQx,iQy,iQz)
+               deallocate (output(ii)%item(i)%valor)
              case (iJx,iJy,iJz)
                deallocate (output(ii)%item(i)%valor)
                deallocate (output(ii)%item(i)%valor2,output(ii)%item(i)%valor3,output(ii)%item(i)%valor4,output(ii)%item(i)%valor5)  !en caso de hilos se necesitan
              case (iBloqueJx,iBloqueJy,iBloqueMx,iBloqueMy)
+               deallocate (output(ii)%item(i)%valor)
+             case (lineIntegral)
                deallocate (output(ii)%item(i)%valor)
 #ifdef CompileWithMPI
                if (output(ii)%item(i)%MPISubComm /= -1) then
@@ -4280,6 +4359,12 @@ contains
          ext='Wy_'
        case (iJz)
          ext='Wz_'
+       case (iQx)
+         ext='Qx_'
+       case (iQy)
+         ext='Qy_'
+       case (iQz)
+         ext='Qz_'
        case (iExC)
          ext='ExC_'
        case (iEyC)
@@ -4308,6 +4393,8 @@ contains
          ext='BCZ_'
        case (farfield)
          ext='FF_'
+       case(lineIntegral)
+         ext='LI_'
       end select
 
       return
@@ -4341,11 +4428,11 @@ contains
       select case(field)
        case(iEx,iEy,iEz,iHx,iHy,iHz)
          fieldo2=field
-       case (iJx,iVx,iBloqueJx,iExC)
+       case (iJx,iVx,iBloqueJx,iExC, iQx)
          fieldo2=iEx
-       case (iJy,iVy,iBloqueJy,iEyC)
+       case (iJy,iVy,iBloqueJy,iEyC, iQy)
          fieldo2=iEy
-       case (iJz,iVz,iBloqueJz,iEzC)
+       case (iJz,iVz,iBloqueJz,iEzC, iQz)
          fieldo2=iEz
        case (iBloqueMx,iHxC)
          fieldo2=iHx

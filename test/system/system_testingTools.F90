@@ -1,10 +1,9 @@
 module system_testingTools_mod
     use iso_c_binding
-    
+    use fdetypes
     implicit none
     
-    character(len=*, kind=c_char), parameter :: PATH_TO_TEST_DATA = c_char_'testData/'
-
+    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'
+    character(len=*), parameter :: INPUT_EXAMPLES='input_examples/'
 
  end module system_testingTools_mod
- 

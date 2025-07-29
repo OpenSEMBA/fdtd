@@ -678,9 +678,7 @@ contains
          (a%n_C2P == b%n_C2P) .and. &
          (a%nombre == b%nombre) .and. &
          (a%isElec .eqv. b%isElec) .and. &
-         (a%isMagnet  .eqv. b%isMagnet) .and. &
-         (a%isCurrent .eqv. b%isCurrent) .and. &
-         (a%isField .eqv. b%isField) .and. &
+         (a%isHard .eqv. b%isHard) .and. &
          (a%isInitialValue .eqv. b%isInitialValue)
    end function curr_field_src_eq
 

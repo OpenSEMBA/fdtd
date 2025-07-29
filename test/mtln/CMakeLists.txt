@@ -1,7 +1,5 @@
 message(STATUS "Creating build system for test/mtln")
 
-set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/mod)
-
 add_library(
     mtln_solver_tests_fortran
     "mtln_testingTools.F90"
@@ -14,7 +12,7 @@ add_library(
     # "test_Paul.F90"
     "test_fhash.F90"
     "test_dispersive.F90"
-    # "test_wire_panel.F90"
+    "test_multipolar_expansion.F90"
 )
 target_link_libraries(mtln_solver_tests_fortran
     mtlnsolver 

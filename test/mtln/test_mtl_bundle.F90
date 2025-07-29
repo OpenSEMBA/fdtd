@@ -5,38 +5,44 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
 
     type(mtl_t) :: mtl_out, mtl_in
     type(mtl_bundle_t) :: bundle
-    type(mtl_array_t), dimension(2) :: levels
+    type(transmission_line_level_t), dimension(2) :: levels
 
     real,dimension(1,1) :: l1 = reshape( source = [ 4.4712610E-07 ], shape = [ 1,1 ] )
     real,dimension(1,1) :: c1 = reshape( source = [ 2.242e-10 ], shape = [ 1,1 ] )
     real,dimension(1,1) :: r1 = reshape( source = [ 0.0 ], shape = [ 1,1 ] )
     real,dimension(1,1) :: g1 = reshape( source = [ 0.0 ], shape = [ 1,1 ] )
 
-
+    integer :: i
     real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
-    type(external_field_segment_t), dimension(5) :: external_field_segments
+    type(segment_t), allocatable, dimension(:) :: segments
+
+    type(transfer_impedance_per_meter_t):: Zt
+    type(multipolar_expansion_t), dimension(:), allocatable:: mE
+    Zt%inductive_term = 0.0
+    Zt%resistive_term = 0.0
+    allocate(Zt%poles(0), Zt%residues(0))
+    allocate(mE(0))
 
     error_cnt = 0
-    block
-        integer :: i
-        do i = 1, 5
-            external_field_segments(i)%position = (/i, 1, 1/)
-            external_field_segments(i)%direction = 1
-            external_field_segments(i)%field => null()
-        end do
-    end block
+    allocate(segments(5))
+    do i = 1, 5
+        segments(i)%x = i
+        segments(i)%y = 1 
+        segments(i)%z = 1
+        segments(i)%orientation = 1
+    end do
 
-    mtl_out   = mtl_t(l1, c1, r1, g1, step_size, "line_out", external_field_segments = external_field_segments)
-    mtl_in   =  mtl_t(l1, c1, r1, g1, step_size, "line_in",  &
-                      parent_name = "line_out", &
-                      conductor_in_parent = 1, &
-                      external_field_segments = external_field_segments)
+    mtl_in   =  mtl_shielded(l1, c1, r1, g1, step_size, name = "line_in", segments = segments, dt = 1e-11, & 
+                            parent_name = "line_out", conductor_in_parent = 1, &
+                            transfer_impedance = Zt)
+    mtl_out   = mtl_unshielded(l1, c1, r1, g1, step_size, name = "line_out", segments = segments, dt = 1e-11, &
+                            multipolar_expansion = mE )
 
     allocate(levels(1)%lines(1))
     allocate(levels(2)%lines(1))
-    levels(1)%lines = [mtl_out]
-    levels(2)%lines = [mtl_in]
-    bundle = mtl_bundle_t(levels, name="bundle")
+    levels(1)%lines = mtl_out
+    levels(2)%lines = mtl_in
+    bundle = mtldCtor(levels, name="bundle")
 
     if ((size(bundle%lpul,1) /= 5) .or. &
         (size(bundle%lpul,2) /= 2) .or. &
@@ -49,8 +55,5 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
         error_cnt = error_cnt + 1
     end if
     !check size of pul matrices and V I vectors
-
-
-    
 
 end function

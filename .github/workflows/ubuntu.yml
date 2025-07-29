@@ -1,6 +1,10 @@
 name: ubuntu
 
 on:
+  push:
+    branches:
+      - main
+
   pull_request:
     branches:
       - main
@@ -17,12 +21,12 @@ jobs:
       matrix: 
         os: [ubuntu-latest]
         compiler: [
-          {name: 'intel', version: '2024.2'},
+          {name: 'intel', version: '2025.1'},
           {name: 'gcc', version: 11}
         ]
-        build-type: ["Debug", "Release"]
+        build-type: ["Release"]
         mpi: ["Yes", "No"]
-        mtln: ["Yes"]
+        mtln: ["Yes", "No"]
         hdf: ["Yes"]
         double-precision: ["No"]
 
@@ -35,6 +39,14 @@ jobs:
             hdf: "Yes"
             double-precision: "No"
 
+          # - os: ubuntu-22.04
+          #   compiler: {name: 'intel-classic', version: '2021.10'}
+          #   build-type: "Release"
+          #   mpi: "No"
+          #   mtln: "Yes"
+          #   hdf: "Yes"
+          #   double-precision: "No"
+
           - os: ubuntu-latest
             compiler: {name: 'nvidia-hpc', version: '24.5'}
             build-type: "Release"
@@ -43,8 +55,8 @@ jobs:
             hdf: "No"
             double-precision: "No"
 
-          - os: ubuntu-latest
-            compiler: {name: 'intel', version: '2024.2'}
+          - os: ubuntu-latest # This is the only test with double precision.
+            compiler: {name: 'intel', version: '2025.1'}
             build-type: "Release"
             mpi: "Yes"
             mtln: "No"
@@ -84,7 +96,7 @@ jobs:
       with:
         compiler: ${{matrix.compiler.name}}
         version: ${{matrix.compiler.version}}
-
+        
     - name: Build application
       run: |       
         cmake -S . -B build \

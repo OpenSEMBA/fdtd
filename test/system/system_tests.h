@@ -1,7 +1,9 @@
 #include <gtest/gtest.h>
 
-extern "C" int test_map_wires_to_bundles();
-extern "C" int test_json_to_solver_input_shielded_pair();
+extern "C" int test_init_solver();
+extern "C" int test_rank_remapping();
 
-// TEST(system, json_to_solver_shielded)     {EXPECT_EQ(0, test_json_to_solver_input_shielded_pair()); }
-
+#ifndef CompileWithMPI
+TEST(system, init_solver)     {EXPECT_EQ(0, test_init_solver()); }
+TEST(system, rank_remapping)     {EXPECT_EQ(0, test_rank_remapping()); }
+#endif

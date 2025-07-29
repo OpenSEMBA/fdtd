@@ -23,4 +23,4 @@ add_library(smbjson
 	"conformal_region.F90"
 )
 
-target_link_libraries(smbjson PRIVATE jsonfortran semba-types fhash conformal)
+target_link_libraries(smbjson PRIVATE jsonfortran semba-types semba-reports fhash conformal)

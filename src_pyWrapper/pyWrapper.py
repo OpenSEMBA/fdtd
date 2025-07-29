@@ -10,6 +10,7 @@ import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 from itertools import product
 import copy
+import matplotlib.pyplot as plt
 
 DEFAULT_SEMBA_FDTD_PATH = '/build/bin/semba-fdtd'
 
@@ -18,6 +19,7 @@ class Probe():
     MTLN_PROBE_TAGS = ['_V_', '_I_']
     CURRENT_PROBE_TAGS = ['_Wx_', '_Wy_', '_Wz_']
     BULK_CURRENT_PROBE_TAGS = ['_Jx_', '_Jy_', '_Jz_']
+    LINE_INTEGRAL_PROBE_TAG = ['_LI_']
     POINT_PROBE_TAGS = ['_Ex_', '_Ey_', '_Ez_', '_Hx_', '_Hy_', '_Hz_']
     FAR_FIELD_TAG = ['_FF_']
     MOVIE_TAGS = ['_ExC_', '_EyC_', '_EzC_',
@@ -26,6 +28,7 @@ class Probe():
     ALL_TAGS = MTLN_PROBE_TAGS \
         + CURRENT_PROBE_TAGS \
         + BULK_CURRENT_PROBE_TAGS \
+        + LINE_INTEGRAL_PROBE_TAG \
         + POINT_PROBE_TAGS \
         + FAR_FIELD_TAG \
         + MOVIE_TAGS
@@ -77,6 +80,15 @@ class Probe():
                     self.data.columns[0]: 'frequency',
                     self.data.columns[1]: 'magnitude',
                     self.data.columns[2]: 'phase'
+                })
+        elif tag in Probe.LINE_INTEGRAL_PROBE_TAG:
+            self.type = 'lineIntegral'
+            self.field, self.direction = Probe._getFieldAndDirection(tag)
+            self.cell = self._positionStrToCell(position_str)
+            if self.domainType == 'time':
+                self.data = self.data.rename(columns={
+                    't': 'time',
+                    self.data.columns[1]: 'lineIntegral'
                 })
         elif tag in Probe.POINT_PROBE_TAGS:
             self.type = 'point'
@@ -194,6 +206,19 @@ class Probe():
     def _getFieldAndDirection(tag: str):
         return tag[1], tag[2]
 
+class ExcitationFile():
+    def __init__(self, excitation_filename):
+        if isinstance(excitation_filename, os.PathLike):
+            self.filename = excitation_filename.as_posix()
+        else:
+            self.filename = excitation_filename
+        assert os.path.isfile(self.filename)
+
+        self.data = pd.read_csv(self.filename, sep='\\s+', names=['time', 'value'])
+
+    def __getitem__(self, key):
+        return self.data[key]
+    
 
 class FDTD():
     def __init__(self, input_filename, path_to_exe=None,
@@ -335,11 +360,24 @@ class FDTD():
 
         return sorted(probeFiles)
 
+    def getExcitationFile(self, excitation_file_name):
+        file_extensions =('*.1.exc',)
+        excitationFile = []
+        for ext in file_extensions:
+            newExcitationFile = [x for x in glob.glob(ext) if re.match(excitation_file_name, x)]
+            excitationFile.extend(newExcitationFile)
+        
+        if ((len(excitationFile)) != 1):
+            raise "Unexpected number of excitation Files found: {}".format(excitationFile)
+
+        return excitationFile
+
+
     def getVTKMap(self):
         current_path = os.getcwd()
         folders = [item for item in os.listdir(
             current_path) if os.path.isdir(os.path.join(current_path, item))]
-        if len(folders) != 1:
+        if len(folders) == 0:
             return None
         for folder in folders:
             mapFile = os.path.join(current_path, folder, folder+"_1.vtk")
@@ -363,7 +401,7 @@ class FDTD():
     def getMaterialProperties(self, materialName):
         if 'materials' in self._input:
             for idx, element in enumerate(self._input['materials']):
-                if element["name"] == materialName:
+                if element.get("name") == materialName:
                     return self._input['materials'][idx]
 
 
@@ -380,6 +418,12 @@ class CaseMaker():
             self.input['general'] = {}
 
         self.input['general']['numberOfSteps'] = steps
+
+    def setTimeStep(self, time):
+        if 'general' not in self.input:
+            self.input['general'] = {}
+
+        self.input['general']['timeStep'] = time
 
     def setGridFromVTK(self, path_to_grid):
         assert os.path.isfile(path_to_grid)
@@ -413,7 +457,9 @@ class CaseMaker():
 
     def setAllBoundaries(self, boundary_type):
         self.input['boundary'] = {
-            "all": boundary_type
+            "all": {
+                "type": boundary_type
+            }
         }
 
     def addCellElementsFromVTK(self, path_to_vtk):

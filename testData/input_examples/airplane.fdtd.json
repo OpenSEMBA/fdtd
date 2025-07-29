@@ -4,6 +4,7 @@
         "timeStep": 1.2971876e-09,
         "numberOfSteps": 23
     },
+
     "boundary": {
         "all": {
             "type": "pml",
@@ -10732,8 +10733,7 @@
             "magnitudeFile": "gauss.exc",
             "elementIds": [
                 1
-            ],
-            "field": "electric"
+            ]
         }
     ],
     "probes": [

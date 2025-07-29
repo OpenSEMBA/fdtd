@@ -41,14 +41,8 @@ module  FDETYPES
 
 
 #ifdef CompileWithMPI
-#ifdef CompileWithIncludeMpifh
-   implicit none
-   include 'mpif.h'
-#else
    use MPI
    implicit none
-#endif
-#else
 #endif
 
    !Every type and parameter is public
@@ -180,8 +174,10 @@ module  FDETYPES
    integer (kind=4),  parameter  :: iHyC=65
    integer (kind=4),  parameter  :: iHzC=66
    integer (kind=4),  parameter  :: farfield=67
+   integer (kind=4),  parameter  :: lineIntegral=68
    ! do not change
    integer (kind=4),  parameter  ::  iJx=10*iEx,iJy=10*iEy,iJz=10*iEz
+   integer (kind=4),  parameter  ::  iQx=10000*iEx,iQy=10000*iEy,iQz=10000*iEz
    integer (kind=4),  parameter  ::  iVx=1000*iEx,iVy=1000*iEy,iVz=1000*iEz
    integer (kind=4),  parameter  ::  iBloqueJx=100*iEx,iBloqueJy=100*iEy,iBloqueJz=100*iEz
    integer (kind=4),  parameter  ::  iBloqueMx=100*iHx,iBloqueMy=100*iHy,iBloqueMz=100*iHz
@@ -257,15 +253,19 @@ module  FDETYPES
       PMLBorders  , &
       MurBorders  , &
       PECBorders  , &
+      PeriodicBorders, &
       Anisotropic  , &
       ThinSlot  , &
       NodalE  , &
       NodalH  , &
-      PeriodicBorders, &
       MagneticMedia, PMLMagneticMedia, &
       MTLNbundles
-
+   contains 
+      procedure :: reset => logic_reset
    end type
+
+
+
    !computational limits
    type Xlimit_t
       integer (kind=4)  :: XI,XE,NX
@@ -490,9 +490,20 @@ module  FDETYPES
       IsDownMUR
    end type
    !
+
+   type, public :: direction_t
+      integer (kind=4) :: x,y,z, orientation
+   contains
+      private
+      procedure :: direction_eq
+      generic, public :: operator(==) => direction_eq
+   end type
+
    type  ::  observable_t
       integer (kind=4)  ::  XI,YI,ZI,XE,YE,ZE,What,Node  !los valores finales XE,YE,ZE solo se precisan para las CurrentProbes
       integer (kind=4)  ::  Xtrancos,Ytrancos,Ztrancos
+      type(direction_t), dimension(:), allocatable :: line
+      
    end type observable_t
    !
    type  ::  Obses_t
@@ -619,9 +630,66 @@ module  FDETYPES
       type (coorsxyzP)  ::  Punto
    end type
 
+   type media_matrices_t
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
+      integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
+   end type
+
+   type :: constants_t
+      real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
+   contains
+      procedure :: destroy => constants_destroy 
+   end type
+
+
    type nf2ff_t
       logical :: tr,fr,iz,de,ab,ar
    end type
+
+   type :: perform_t
+      logical :: flushFields = .false.
+      logical :: flushData = .false.
+      logical :: unpack = .false.
+      logical :: postprocess = .false.
+      logical :: flushXdmf = .false.
+      logical :: flushVTK = .false.
+   contains
+      procedure :: isFlush
+      procedure :: reset => perform_reset
+   end type
+
+   ! variables for timestepping solver control
+   type :: sim_control_t
+      logical :: simu_devia, resume,saveall,makeholes,& 
+                 connectendings,isolategroupgroups,createmap, & 
+                 groundwires,noSlantedcrecepelo, & 
+                 mibc,ADE,conformalskin,sgbc, sgbcDispersive, sgbccrank, & 
+                 NOcompomur,strictOLD,TAPARRABOS, & 
+                 noconformalmapvtk, hopf,experimentalVideal, &
+                 forceresampled, mur_second,MurAfterPML, &
+                 stableradholland,singlefilewrite,NF2FFDecim, &
+                 fieldtotl,finishedwithsuccess, &
+                 permitscaling,mtlnberenger,niapapostprocess, &
+                 stochastic, verbose, dontwritevtk, &
+                 use_mtln_wires, resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
+#ifdef CompileWithConformal
+      logical :: input_conformal_flag
+#endif
+      REAL (kind=8) :: time_desdelanzamiento
+      REAL (kind=RKIND) :: cfl, attfactorc,attfactorw, alphamaxpar, &
+                           alphaOrden, kappamaxpar, mindistwires,sgbcFreq,sgbcresol, maxSourceValue
+      real (kind=rkind_wires) :: factorradius,factordelta
+      
+      character (len=BUFSIZE) :: nEntradaRoot, inductance_model,wiresflavor, nresumeable2
+      CHARACTER (LEN=BUFSIZE) :: opcionestotales, ficherohopf
+      
+      integer (kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
+                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, size
+      
+      TYPE (MedioExtra_t) :: MEDIOEXTRA
+      type (nf2ff_T) :: facesNF2FF
+
+   end type sim_control_t
 
    !!!!!!!!VARIABLES GLOBALES
    integer (kind=4), SAVE, PUBLIC ::  prior_BV     , &
@@ -653,8 +721,52 @@ module  FDETYPES
 
 contains
 
+   subroutine constants_destroy(this)
+      class(constants_t) :: this
+      deallocate (this%g1,this%g2,this%gm1,this%gm2)
+   end subroutine
 
+   logical function isFlush(this)
+      class(perform_t) :: this
+      isFlush = this%flushDATA.or.this%flushFIELDS.or.this%postprocess.or.this%flushXdmf.or.this%flushVTK
+   end function
 
+   subroutine perform_reset(this)
+      class(perform_t) :: this
+      this%flushFields = .false.
+      this%flushData = .false.
+      this%unpack = .false.
+      this%postprocess = .false.
+      this%flushXdmf = .false.
+      this%flushVTK = .false.
+   end subroutine 
+
+   subroutine logic_reset(this)
+      class(logic_control) :: this
+      this%Wires = .false.
+      this%PMLbodies = .false.
+      this%MultiportS = .false.
+      this%AnisMultiportS = .false.
+      this%SGBCs= .false.
+      this%Lumpeds= .false.
+      this%EDispersives = .false.
+      this%MDispersives = .false.
+      this%PlaneWaveBoxes = .false.
+      this%Observation = .false.
+      this%FarFields = .false.
+      this%PMCBorders = .false.
+      this%PMLBorders = .false.
+      this%MurBorders = .false.
+      this%PECBorders = .false.
+      this%Anisotropic = .false.
+      this%ThinSlot = .false.
+      this%NodalE = .false.
+      this%NodalH = .false.
+      this%PeriodicBorders = .false.
+      this%MagneticMedia = .false.
+      this%PMLMagneticMedia= .false.
+      this%MTLNbundles = .false.
+   end subroutine 
 
    subroutine setglobal(iu1,iu2)
        integer (kind=4) :: iu1,iu2
@@ -733,7 +845,15 @@ contains
       end select
    end function
 
+   logical function direction_eq(a,b)
+      class(direction_t), intent(in) :: a,b 
+      direction_eq = .true.
+      direction_eq = direction_eq .and. (a%x == b%x)
+      direction_eq = direction_eq .and. (a%y == b%y)
+      direction_eq = direction_eq .and. (a%z == b%z)
+      direction_eq = direction_eq .and. (a%orientation == b%orientation)
 
+   end function
 end module FDETYPES
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
