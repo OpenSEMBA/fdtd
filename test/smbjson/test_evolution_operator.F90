@@ -190,26 +190,74 @@ integer function test_evolution_operator_E_indices_map() bind(C, name="test_evol
 
 end function test_evolution_operator_E_indices_map
 
-! integer function test_evolution_operator_oneStep() bind (C) result(err)
-!     use smbjson
-!     use smbjson_testingTools
-!     use evolution_operator
+integer function test_evolution_operator_H_indices_map() bind(C, name="test_evolution_operator_H_indices_map") result(err)
+    use smbjson
+    use smbjson_testingTools
+    use evolution_operator
+    use fhash, key => fhash_key
 
-!     implicit none
+    implicit none
 
-!     type(evolution_operator) :: evolOp
+    integer :: i, j, k
+    integer :: m
+    type(bounds_t) :: bounds
+    type(fhash_tbl_t) :: RowIndexMap
+    type(int_array) :: wrapper
+    integer :: ElementsInMap
 
-!     err = 0
+    bounds%Hx%NX = 2
+    bounds%Hx%NY = 3
+    bounds%Hx%NZ = 3
 
-!     call evolOp%GenerateOperator()
+    err = 0
+    ElementsInMap = 0
 
-!     ExternalField_t :: field
+    ! To verify the H indices map, first I need to create the map of all the Electic fields
 
-!     expected_field = smbjson%step(field)
-!     result_field = evolOp%step(field, 1)
+    call AddMagneticFieldIndices(RowIndexMap, bounds%Hx, 0, 0, 0, 'k', 'j')
 
-!     if (any(expected_field%field /= result_field%field)) then
-!         err = err + 1
-!     end if
+    ! do i = 1, bounds%Hx%NX
+    !     do j = 1, bounds%Hx%NY
+    !         do k = 1, bounds%Hx%NZ
+    !             m = ((i - 1)*bounds%Hx%NY + (j - 1))*bounds%Hx%NZ  + k
 
-! end function test_evolution_operator_oneStep
+    !             call fhash_get_int_array(RowIndexMap, key(m), wrapper)
+
+    !             ! Check if the map has been created correctly for each i, j, k
+    !             if (size(wrapper%data) == 0) then
+    !                 err = err + 1
+    !                 cycle
+    !             else 
+    !                 ElementsInMap = ElementsInMap + 1
+    !             end if
+
+    !             ! First we check the number of neighbours in the frontier of the first direction
+    !             if (j == 1 .or. j == bounds%Hx%Ny) then
+    !                 if (k == 1 .or. k == bounds%Hx%NZ) then
+    !                     if (size(wrapper%data) /= 3) then
+    !                         err = err + 1
+    !                     end if
+    !                 else
+    !                     if (size(wrapper%data) /= 4) then
+    !                         err = err + 1
+    !                     end if
+    !                 end if
+    !             ! Then we check the number of neighbours in the frontier of the second direction that are not neighbours of the first direction               
+    !             else if (k == 1 .or. k == bounds%Hx%NZ) then
+    !                 if (size(wrapper%data) /= 4) then
+    !                     err = err + 1
+    !                 end if
+    !             ! Finally we check the number of neighbours in the interior of the grid
+    !             else
+    !                 if (size(wrapper%data) /= 5) then
+    !                     err = err + 1
+    !                 end if
+    !             end if
+    !         end do
+    !     end do
+    ! end do
+
+    ! if (ElementsInMap /= bounds%Hx%NX * bounds%Hx%NY * bounds%Hx%NZ) then
+    !     err = err + 1
+    ! end if
+end function test_evolution_operator_H_indices_map

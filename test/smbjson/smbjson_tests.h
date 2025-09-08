@@ -33,6 +33,7 @@ extern "C" int test_evolution_operator_dimension_Field_basis();
 extern "C" int test_evolution_operator_poisition_E_basis();
 extern "C" int test_evolution_operator_position_H_basis();
 extern "C" int test_evolution_operator_E_indices_map();
+extern "C" int test_evolution_operator_H_indices_map();
 
 TEST(smbjson, idchildtable_fhash)     {EXPECT_EQ(0, test_idchildtable_fhash()); }
 TEST(smbjson, idchildtable_add_get)   {EXPECT_EQ(0, test_idchildtable()); }
@@ -58,6 +59,7 @@ TEST(smbjson, evolutionOperator_BasisDimension)        { EXPECT_EQ(0, test_evolu
 TEST(smbjson, evolutionOperator_PositionEBasis)        { EXPECT_EQ(0, test_evolution_operator_poisition_E_basis()); }
 TEST(smbjson, evolutionOperator_PositionHBasis)        { EXPECT_EQ(0, test_evolution_operator_position_H_basis()); }
 TEST(smbjson, evolutionOperator_EIndicesMap)           { EXPECT_EQ(0, test_evolution_operator_E_indices_map()); }
+TEST(smbjson, evolutionOperator_HIndicesMap)           { EXPECT_EQ(0, test_evolution_operator_H_indices_map()); }
 
 #ifdef CompileWithMTLN
 TEST(smbjson, read_towelhanger)             { EXPECT_EQ(0, test_read_towelhanger()); }

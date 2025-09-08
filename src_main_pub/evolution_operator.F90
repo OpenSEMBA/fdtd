@@ -20,7 +20,7 @@ module evolution_operator
 
     private 
 
-    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, fhash_get_int_array, int_array
+    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array
 
 contains
 
@@ -389,156 +389,97 @@ contains
         end do
     end subroutine 
 
-    ! subroutine AddMagneticFieldIndices(RowIndexMap, field, shiftH, shiftE1, shiftE2, dir1, dir2)
-    !     type(fhash_tbl_t), intent(inout) :: RowIndexMap
-    !     type(limit_t), intent(in) :: field
-    !     integer, intent(in) :: shiftH, shiftE1, shiftE2
-    !     character(len=1), intent(in) :: dir1, dir2
+    subroutine AddMagneticFieldIndices(RowIndexMap, field, shiftH, shiftE1, shiftE2, dir1, dir2)
+        type(fhash_tbl_t), intent(inout) :: RowIndexMap
+        type(limit_t), intent(in) :: field
+        integer, intent(in) :: shiftH, shiftE1, shiftE2
+        character(len=1), intent(in) :: dir1, dir2
 
-    !     integer :: i, j, k, m, m_shift1, m_shift2
-    !     integer :: Nx, Ny, Nz
-    !     integer, allocatable :: temp(:), indexList(:)
-    !     integer, allocatable :: aux1(:), aux2(:), aux3(:), aux4(:)
-    !     integer :: totalSize
+        integer :: i, j, k, m, m_shift1, m_shift2
+        integer :: Nx, Ny, Nz
+        integer, allocatable :: temp(:), indexList(:)
+        type(int_array) :: aux1, aux2, aux3, aux4, wrapper
+        integer :: totalSize
 
-    !     Nx = field%Nx + 2
-    !     Ny = field%Ny + 2
-    !     Nz = field%Nz + 2
+        Nx = field%Nx
+        Ny = field%Ny
+        Nz = field%Nz
 
-    !     do i = 1, Nx - 2
-    !         do j = 1, Ny - 2
-    !             do k = 1, Nz - 2
-    !                 m = (i*Ny + j)*Nz + k
+        do i = 1, Nx
+            do j = 1, Ny
+                do k = 1, Nz
+                    m = ((i - 1)*Ny + (j - 1))*Nz  + k
 
-    !                 select case (dir1)
-    !                     case ('i')
-    !                         m_shift1 = ((i + 1)*Ny + j)*Nz + k
-    !                     case ('j')
-    !                         m_shift1 = (i*Ny + (j + 1))*Nz + k
-    !                     case ('k')
-    !                         m_shift1 = (i*Ny + j)*Nz + (k + 1)
-    !                 end select
+                    select case (dir1)
+                        case ('i')
+                            m_shift1 = (i*Ny + (j - 1))*Nz  + k
+                        case ('j')
+                            m_shift1 = ((i - 1)*Ny + j)*Nz  + k
+                        case ('k')
+                            m_shift1 = ((i - 1)*Ny + (j - 1))*Nz  + (k + 1)
+                    end select
 
-    !                 select case (dir2)
-    !                     case ('i')
-    !                         m_shift2 = ((i + 1)*Ny + j)*Nz + k
-    !                     case ('j')
-    !                         m_shift2 = (i*Ny + (j + 1))*Nz + k
-    !                     case ('k')
-    !                         m_shift2 = (i*Ny + j)*Nz + (k + 1)
-    !                 end select
+                    select case (dir2)
+                        case ('i')
+                            m_shift2 = (i*Ny + (j - 1))*Nz  + k
+                        case ('j')
+                            m_shift2 = ((i - 1)*Ny + j)*Nz  + k
+                        case ('k')
+                            m_shift2 = ((i - 1)*Ny + (j - 1))*Nz  + (k + 1)
+                    end select
 
-    !                 call RowIndexMap%get(key(shiftE1 + m), aux1)
-    !                 call RowIndexMap%get(key(shiftE1 + m_shift1), aux2)
-    !                 call RowIndexMap%get(key(shiftE2 + m), aux3)
-    !                 call RowIndexMap%get(key(shiftE2 + m_shift2), aux4)
+                    call fhash_get_int_array(RowIndexMap, key(shiftE1 + m), aux1)
+                    call fhash_get_int_array(RowIndexMap, key(shiftE1 + m_shift1), aux2)
+                    call fhash_get_int_array(RowIndexMap, key(shiftE2 + m), aux3)
+                    call fhash_get_int_array(RowIndexMap, key(shiftE2 + m_shift2), aux4)
 
-    !                 totalSize = size(aux1) + size(aux2) + size(aux3) + size(aux4)
-    !                 allocate(temp(totalSize))
-    !                 temp(1:size(aux1)) = aux1
-    !                 temp(size(aux1)+1:size(aux1)+size(aux2)) = aux2
-    !                 temp(size(aux1)+size(aux2)+1:size(aux1)+size(aux2)+size(aux3)) = aux3
-    !                 temp(size(aux1)+size(aux2)+size(aux3)+1:) = aux4
+                    totalSize = size(aux1%data) + size(aux2%data) + size(aux3%data) + size(aux4%data)
+                    allocate(temp(totalSize))
+                    temp(1:size(aux1%data)) = aux1%data
+                    temp(size(aux1%data)+1:size(aux1%data)+size(aux2%data)) = aux2%data
+                    temp(size(aux1%data)+size(aux2%data)+1:size(aux1%data)+size(aux2%data)+size(aux3%data)) = aux3%data
+                    temp(size(aux1%data)+size(aux2%data)+size(aux3%data)+1:) = aux4%data
 
-    !                 call RemoveDuplicates(temp, indexList)
+                    call RemoveDuplicates(temp, indexList)
 
+                    wrapper%data = indexList
 
-    !                 call RowIndexMap%set(key(shiftH + m), value=indexList)
+                    call RowIndexMap%set(key(shiftH + m), value=wrapper)
 
-    !                 deallocate(temp, indexList, aux1, aux2, aux3, aux4)
-    !             end do
-    !         end do
-    !     end do
-    ! end subroutine
-
-    ! subroutine AddBoundaryIndices(RowIndexMap, sggBorder, field, shiftField, dir):
-    !     type(fhash_tbl_t), intent(inout) :: RowIndexMap
-    !     type(Border_t), intent(in) :: sggBorder
-    !     type(limit_t), intent(in) :: field
-
-    !     integer, intent(in) :: shiftField
-    !     character(len=1), intent(in) :: dir
-
-    !     !Hx Down
-    !     if (sggBorder%IsDownPMC) then
-    !         if (layoutnumber == 0)      Hx( : , : ,C(iHx)%ZI-1)=-Hx( : , : ,C(iHx)%ZI)
-    !     endif
-    !     !Hx Up
-    !     if (sggBorder%IsUpPMC) then
-    !         if (layoutnumber == size-1) Hx( : , : ,C(iHx)%ZE+1)=-Hx( : , : ,C(iHx)%ZE)
-    !     endif
-    !     !Hx Left
-    !     if (sggBorder%IsLeftPMC) then
-    !         Hx( : ,C(iHx)%YI-1, : )=-Hx( : ,C(iHx)%YI, : )
-    !     endif
-    !     !Hx Right
-    !     if (sggBorder%IsRightPMC) then
-    !         Hx( : ,C(iHx)%YE+1, : )=-Hx( : ,C(iHx)%YE, : )
-    !     endif
-    !     !Hy Back
-    !     if (sggBorder%IsBackPMC) then
-    !         Hy(C(iHy)%XI-1, : , : )=-Hy(C(iHy)%XI, : , : )
-    !     endif
-    !     !Hy Front
-    !     if (sggBorder%IsFrontPMC) then
-    !         Hy(C(iHy)%XE+1, : , : )=-Hy(C(iHy)%XE, : , : )
-    !     endif
-    !     !Hy Down
-    !     if (sggBorder%IsDownPMC) then
-    !         if (layoutnumber == 0)      Hy( : , : ,C(iHy)%ZI-1)=-Hy( : , : ,C(iHy)%ZI)
-    !     endif
-    !     !Hy Up
-    !     if (sggBorder%IsUpPMC) then
-    !         if (layoutnumber == size-1) Hy( : , : ,C(iHy)%ZE+1)=-Hy( : , : ,C(iHy)%ZE)
-    !     endif
-    !     !
-    !     !Hz Back
-    !     if (sggBorder%IsBackPMC) then
-    !         Hz(C(iHz)%XI-1, : , : )=-Hz(C(iHz)%XI, : , : )
-    !     endif
-    !     !Hz Front
-    !     if (sggBorder%IsFrontPMC) then
-    !         Hz(C(iHz)%XE+1, : , : )=-Hz(C(iHz)%XE, : , : )
-    !     endif
-    !     !Hz Left
-    !     if (sggBorder%IsLeftPMC) then
-    !         Hz( : ,C(iHz)%YI-1, : )=-Hz( : ,C(iHz)%YI, : )
-    !     endif
-    !     !Hz Right
-    !     if (sggBorder%IsRightPMC) then
-    !         Hz( : ,C(iHz)%YE+1, : )=-Hz( : ,C(iHz)%YE, : )
-    !     endif
-
-    ! end subroutine
+                    deallocate(temp, indexList)
+                end do
+            end do
+        end do
+    end subroutine
         
-!     subroutine RemoveDuplicates(inputArray, outputArray)
-!         integer, intent(in) :: inputArray(:)
-!         integer, allocatable, intent(out) :: outputArray(:)
-!         integer :: i, j, n
-!         logical :: found
-!         integer, allocatable :: temp(:)
+    subroutine RemoveDuplicates(inputArray, outputArray)
+        integer, intent(in) :: inputArray(:)
+        integer, allocatable, intent(out) :: outputArray(:)
+        integer :: i, j, n
+        logical :: found
+        integer, allocatable :: temp(:)
 
-!         allocate(temp(size(inputArray)))
-!         n = 0
+        allocate(temp(size(inputArray)))
+        n = 0
 
-!         do i = 1, size(inputArray)
-!             found = .false.
-!             do j = 1, n
-!                 if (temp(j) == inputArray(i)) then
-!                     found = .true.
-!                     exit
-!                 end if
-!             end do
-!             if (.not. found) then
-!                 n = n + 1
-!                 temp(n) = inputArray(i)
-!             end if
-!         end do
+        do i = 1, size(inputArray)
+            found = .false.
+            do j = 1, n
+                if (temp(j) == inputArray(i)) then
+                    found = .true.
+                    exit
+                end if
+            end do
+            if (.not. found) then
+                n = n + 1
+                temp(n) = inputArray(i)
+            end if
+        end do
 
-!         allocate(outputArray(n))
-!         outputArray = temp(1:n)
-!         deallocate(temp)
-!     end subroutine 
+        allocate(outputArray(n))
+        outputArray = temp(1:n)
+        deallocate(temp)
+    end subroutine 
 
 !     subroutine GenerateRowIndexMap(b, RowIndexMap)
 
