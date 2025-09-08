@@ -104,6 +104,7 @@ module Solver_mod
       integer (kind=4) :: initialtimestep, lastexecutedtimestep, ini_save, n_info, n
 
       type(bounds_t) :: bounds
+      type (EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
 
       logical :: parar, everflushed = .false., still_planewave_time
 
@@ -232,7 +233,7 @@ module Solver_mod
       this%control%size = input%size
       this%control%MEDIOEXTRA = input%MEDIOEXTRA
       this%control%facesNF2FF = input%facesNF2FF
-      !this%control%EpsMuTimeScale_input_parameters = input%EpsMuTimeScale_input_parameters
+      this%EpsMuTimeScale_input_parameters = input%EpsMuTimeScale_input_parameters
 
 #ifdef CompileWithConformal
       this%control%input_conformal_flag = input%input_conformal_flag
@@ -1986,8 +1987,8 @@ contains
 #ifdef CompileWithPrescale
          if (this%control%permitscaling) then
 #ifndef miguelPscaleStandAlone
-            if ((sgg%tiempo(this%n)>=EpsMuTimeScale_input_parameters%tini).and.&
-                &(sgg%tiempo(this%n)<=EpsMuTimeScale_input_parameters%tend)) then
+            if ((sgg%tiempo(this%n)>=this%EpsMuTimeScale_input_parameters%tini).and.&
+                &(sgg%tiempo(this%n)<=this%EpsMuTimeScale_input_parameters%tend)) then
 #endif
              call updateconstants(sgg,this%n,this%thereare,this%g%g1,this%g%g2,this%g%gM1,this%g%gM2, & 
                                Idxe,Idye,Idze,Idxh,Idyh,Idzh, &  !needed by  CPML to be updated
@@ -1996,7 +1997,7 @@ contains
                                this%control%sgbcDispersive,this%control%finaltimestep, &
                                eps0,mu0, &
                                this%control%simu_devia, &
-                               EpsMuTimeScale_input_parameters,pscale_alpha,this%still_planewave_time &
+                               this%EpsMuTimeScale_input_parameters,pscale_alpha,this%still_planewave_time &
 #ifdef CompileWithMPI
                                ,this%control%layoutnumber,this%control%size &
 #endif
