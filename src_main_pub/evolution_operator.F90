@@ -252,211 +252,210 @@ contains
 
     ! end subroutine
 
-    subroutine AddElectricFieldIndices(RowIndexMap, Efield, H1field, H2field, shiftE, shiftM1, shiftM2, dirM1, dirM2)
+    subroutine AddElectricFieldIndices(RowIndexMap, Efield, H1field, H2field, startingIndex_Efield, startingIndex_H1field, startingIndex_H2field, shiftDirection_H1, shiftDirection_H2)
         type(fhash_tbl_t), intent(inout) :: RowIndexMap
         type(limit_t), intent(in) :: Efield, H1field, H2field
-        integer, intent(in) :: shiftE, shiftM1, shiftM2
-        character(len=1), intent(in) :: dirM1, dirM2  
+        integer, intent(in) :: startingIndex_Efield, startingIndex_H1field, startingIndex_H2field
+        character(len=1), intent(in) :: shiftDirection_H1, shiftDirection_H2  
 
-        integer :: i, j, k, m, m_H1, m_H2, m_shift1, m_shift2, m_aux1, m_aux2
-        integer :: Nx, Ny, Nz
+        integer :: i, j, k
+        integer :: combinedIndex_E, combinedIndex_H1, combinedIndex_H2
+        integer :: indexShift_H1, indexShift_H2, auxiliarIndexShift_H1, auxiliarIndexShift_H2
 
         type(int_array) :: wrapper 
         integer, allocatable :: indexList(:)
         integer :: countIndex, positionList
 
-        Nx = Efield%Nx
-        Ny = Efield%Ny
-        Nz = Efield%Nz
 
-        do i = 1, Nx
-            do j = 1, Ny
-                do k = 1, Nz
-                    m = ((i - 1)*Ny + (j - 1))*Nz  + k
-                    m_H1 = ((i - 1)*H1field%Ny + (j - 1))*H1field%Nz  + k
-                    m_H2 = ((i - 1)*H2field%Ny + (j - 1))*H2field%Nz  + k
+        do i = 1, Efield%Nx
+            do j = 1, Efield%Ny
+                do k = 1, Efield%Nz
+                    combinedIndex_E  = ((i - 1)*Efield%Ny  + (j - 1))*Efield%Nz   + k
+                    combinedIndex_H1 = ((i - 1)*H1field%Ny + (j - 1))*H1field%Nz  + k
+                    combinedIndex_H2 = ((i - 1)*H2field%Ny + (j - 1))*H2field%Nz  + k
+
                     countIndex = 1
                     positionList = 1
 
-                    select case (dirM1)
+
+                    select case (shiftDirection_H1)
                         case ('i')
-                            if (i > 1 .and. i < Nx) then
-                                m_shift1 = ((i - 2)*H1field%Ny + (j - 1))*H1field%Nz  + k
+                            if (i > 1 .and. i < Efield%Nx) then
+                                indexShift_H1 = ((i - 2)*H1field%Ny + (j - 1))*H1field%Nz  + k
                                 countIndex = countIndex + 2
                             else if (i == 1) then
-                                m_shift1 = -1
+                                indexShift_H1 = -1
                                 countIndex = countIndex + 1
                             else
-                                m_shift1 = -2
-                                m_aux1 = ((i - 2)*H1field%Ny + (j - 1))*H1field%Nz  + k
+                                indexShift_H1 = -2
+                                auxiliarIndexShift_H1 = ((i - 2)*H1field%Ny + (j - 1))*H1field%Nz  + k
                                 countIndex = countIndex + 1
                             end if
                         case ('j')
-                            if (j > 1 .and. j < Ny) then
-                                m_shift1 = ((i - 1)*H1field%Ny + (j - 2))*H1field%Nz  + k
+                            if (j > 1 .and. j < Efield%Ny) then
+                                indexShift_H1 = ((i - 1)*H1field%Ny + (j - 2))*H1field%Nz  + k
                                 countIndex = countIndex + 2
                             else if (j == 1) then
-                                m_shift1 = -1
+                                indexShift_H1 = -1
                                 countIndex = countIndex + 1
                             else
-                                m_shift1 = -2
-                                m_aux1 = ((i - 1)*H1field%Ny + (j - 2))*H1field%Nz  + k
+                                indexShift_H1 = -2
+                                auxiliarIndexShift_H1 = ((i - 1)*H1field%Ny + (j - 2))*H1field%Nz  + k
                                 countIndex = countIndex + 1
                             end if
                         case ('k')
-                            if (k > 1 .and. k < Nz) then
-                                m_shift1 = ((i - 1)*H1field%Ny + (j - 1))*H1field%Nz  + (k - 1)
+                            if (k > 1 .and. k < Efield%Nz) then
+                                indexShift_H1 = ((i - 1)*H1field%Ny + (j - 1))*H1field%Nz  + (k - 1)
                                 countIndex = countIndex + 2
                             else if (k == 1) then
-                                m_shift1 = -1
+                                indexShift_H1 = -1
                                 countIndex = countIndex + 1
                             else
-                                m_shift1 = -2
-                                m_aux1 = ((i - 1)*H1field%Ny + (j - 1))*H1field%Nz  + (k - 1)
+                                indexShift_H1 = -2
+                                auxiliarIndexShift_H1 = ((i - 1)*H1field%Ny + (j - 1))*H1field%Nz  + (k - 1)
                                 countIndex = countIndex + 1
                             end if
                     end select
 
-                    select case (dirM2)
+                    select case (shiftDirection_H2)
                         case ('i')
-                            if (i > 1 .and. i < Nx) then
-                                m_shift2 = ((i - 2)*H2field%Ny + (j - 1))*H2field%Nz  + k
+                            if (i > 1 .and. i < Efield%Nx) then
+                                indexShift_H2 = ((i - 2)*H2field%Ny + (j - 1))*H2field%Nz  + k
                                 countIndex = countIndex + 2
                             else if (i == 1) then
-                                m_shift2 = -1
+                                indexShift_H2 = -1
                                 countIndex = countIndex + 1
                             else
-                                m_shift2 = -2
-                                m_aux2 = ((i - 2)*H2field%Ny + (j - 1))*H2field%Nz  + k
+                                indexShift_H2 = -2
+                                auxiliarIndexShift_H2 = ((i - 2)*H2field%Ny + (j - 1))*H2field%Nz  + k
                                 countIndex = countIndex + 1
                             end if
                         case ('j')
-                            if (j > 1 .and. j < Ny) then
-                                m_shift2 = ((i - 1)*H2field%Ny + (j - 2))*H2field%Nz  + k
+                            if (j > 1 .and. j < Efield%Ny) then
+                                indexShift_H2 = ((i - 1)*H2field%Ny + (j - 2))*H2field%Nz  + k
                                 countIndex = countIndex + 2
                             else if (j == 1) then
-                                m_shift2 = -1
+                                indexShift_H2 = -1
                                 countIndex = countIndex + 1
                             else
-                                m_shift2 = -2
-                                m_aux2 = ((i - 1)*H2field%Ny + (j - 2))*H2field%Nz  + k
+                                indexShift_H2 = -2
+                                auxiliarIndexShift_H2 = ((i - 1)*H2field%Ny + (j - 2))*H2field%Nz  + k
                                 countIndex = countIndex + 1
                             end if
                         case ('k')
-                            if (k > 1 .and. k < Nz) then
-                                m_shift2 = ((i - 1)*H2field%Ny + (j - 1))*H2field%Nz  + (k - 1)
+                            if (k > 1 .and. k < Efield%Nz) then
+                                indexShift_H2 = ((i - 1)*H2field%Ny + (j - 1))*H2field%Nz  + (k - 1)
                                 countIndex = countIndex + 2
                             else if (k == 1) then
-                                m_shift2 = -1
+                                indexShift_H2 = -1
                                 countIndex = countIndex + 1
                             else
-                                m_shift2 = -2
-                                m_aux2 = ((i - 1)*H2field%Ny + (j - 1))*H2field%Nz  + (k - 1)
+                                indexShift_H2 = -2
+                                auxiliarIndexShift_H2 = ((i - 1)*H2field%Ny + (j - 1))*H2field%Nz  + (k - 1)
                                 countIndex = countIndex + 1
                             end if
                     end select
 
-                    ! Allocate the indexList with the size of countIndex
+
                     allocate(indexList(countIndex))
-
-                    indexList(positionList) = shiftE + m
+                    indexList(positionList) = startingIndex_Efield + combinedIndex_E
                     positionList = positionList + 1
 
-                    if (m_shift2 /= -1 .and. m_shift2 /= -2) then
-                        indexList(positionList) = shiftM2 + m_H2
-                        indexList(positionList + 1) = shiftM2 + m_shift2
+
+                    if (indexShift_H2 /= -1 .and. indexShift_H2 /= -2) then
+                        indexList(positionList)     = startingIndex_H2field + combinedIndex_H2
+                        indexList(positionList + 1) = startingIndex_H2field + indexShift_H2
                         positionList = positionList + 2
-                    else if (m_shift2 == -1) then   ! Border at the beginning
-                        indexList(positionList) = shiftM2 + m_H2
+                    else if (indexShift_H2 == -1) then   ! Border at the beginning
+                        indexList(positionList) = startingIndex_H2field + combinedIndex_H2
                         positionList = positionList + 1
                     else                            ! Border at the end
-                        indexList(positionList) = shiftM2 + m_aux2
+                        indexList(positionList) = startingIndex_H2field + auxiliarIndexShift_H2
                         positionList = positionList + 1
                     end if
 
-
-                    if (m_shift1 /= -1 .and. m_shift1 /= -2) then
-                        indexList(positionList) = shiftM1 + m_H1
-                        indexList(positionList + 1) = shiftM1 + m_shift1
+                    if (indexShift_H1 /= -1 .and. indexShift_H1 /= -2) then
+                        indexList(positionList)     = startingIndex_H1field + combinedIndex_H1
+                        indexList(positionList + 1) = startingIndex_H1field + indexShift_H1
                         positionList = positionList + 2
-                    else if (m_shift1 == -1) then   ! Border at the beginning
-                        indexList(positionList) = shiftM1 + m_H1
+                    else if (indexShift_H1 == -1) then   ! Border at the beginning
+                        indexList(positionList) = startingIndex_H1field + combinedIndex_H1
                         positionList = positionList + 1
                     else                            ! Border at the end
-                        indexList(positionList) = shiftM1 + m_aux1
+                        indexList(positionList) = startingIndex_H1field + auxiliarIndexShift_H1
                         positionList = positionList + 1
                     end if
+
 
                     wrapper%data = indexList
-                    call RowIndexMap%set(key(shiftE + m), value=wrapper)  
-
-
+                    call RowIndexMap%set(key(startingIndex_Efield + combinedIndex_E), value=wrapper)  
                     deallocate(indexList)
                 end do
             end do
         end do
     end subroutine 
 
-    subroutine AddMagneticFieldIndices(RowIndexMap, Hfield, E1field, E2field, shiftH, shiftE1, shiftE2, dir1, dir2)
+    subroutine AddMagneticFieldIndices(RowIndexMap, Hfield, E1field, E2field, startingIndex_Hfield, startingIndex_E1field, startingIndex_E2field, shiftDirection_E1, shiftDirection_E2)
         type(fhash_tbl_t), intent(inout) :: RowIndexMap
         type(limit_t), intent(in) :: Hfield, E1field, E2field
-        integer, intent(in) :: shiftH, shiftE1, shiftE2
-        character(len=1), intent(in) :: dir1, dir2
+        integer, intent(in) :: startingIndex_Hfield, startingIndex_E1field, startingIndex_E2field
+        character(len=1), intent(in) :: shiftDirection_E1, shiftDirection_E2
 
-        integer :: i, j, k, m, m_E1, m_E2, m_shift1, m_shift2
-        integer :: Nx, Ny, Nz
-        integer, allocatable :: temp(:), indexList(:)
-        type(int_array) :: aux1, aux2, aux3, aux4, wrapper
-        integer :: totalSize
+        integer :: i, j, k
+        integer :: combinedIndex_H, combinedIndex_E1, combinedIndex_E2
+        integer :: indexShift_E1, indexShift_E2
 
-        Nx = Hfield%Nx
-        Ny = Hfield%Ny
-        Nz = Hfield%Nz
+        integer, allocatable :: fullIndexList(:), uniqueIndexList(:)
+        type(int_array) :: relatedIndices_E1, relatedIndices_E1_shift, relatedIndices_E2, relatedIndices_E2_shift, wrapper
+        integer :: relatedIndices_maximumSize
 
-        do i = 1, Nx
-            do j = 1, Ny
-                do k = 1, Nz
-                    m = ((i - 1)*Ny + (j - 1))*Nz  + k
-                    m_E1 = ((i - 1)*E1field%Ny + (j - 1))*E1field%Nz  + k
-                    m_E2 = ((i - 1)*E2field%Ny + (j - 1))*E2field%Nz  + k
 
-                    select case (dir1)
+        do i = 1, Hfield%Nx
+            do j = 1, Hfield%Ny
+                do k = 1, Hfield%Nz
+                    combinedIndex_H  = ((i - 1)*Hfield%Ny  + (j - 1))*Hfield%Nz   + k
+                    combinedIndex_E1 = ((i - 1)*E1field%Ny + (j - 1))*E1field%Nz  + k
+                    combinedIndex_E2 = ((i - 1)*E2field%Ny + (j - 1))*E2field%Nz  + k
+
+                    select case (shiftDirection_E1)
                         case ('i')
-                            m_shift1 = (i*E1field%Ny + (j - 1))*E1field%Nz  + k
+                            indexShift_E1 = ( i     *E1field%Ny + (j - 1))*E1field%Nz  + k
                         case ('j')
-                            m_shift1 = ((i - 1)*E1field%Ny + j)*E1field%Nz  + k
+                            indexShift_E1 = ((i - 1)*E1field%Ny + j      )*E1field%Nz  + k
                         case ('k')
-                            m_shift1 = ((i - 1)*E1field%Ny + (j - 1))*E1field%Nz  + (k + 1)
+                            indexShift_E1 = ((i - 1)*E1field%Ny + (j - 1))*E1field%Nz  + (k + 1)
                     end select
 
-                    select case (dir2)
+                    select case (shiftDirection_E2)
                         case ('i')
-                            m_shift2 = (i*E2field%Ny + (j - 1))*E2field%Nz  + k
+                            indexShift_E2 = ( i     *E2field%Ny + (j - 1))*E2field%Nz  + k
                         case ('j')
-                            m_shift2 = ((i - 1)*E2field%Ny + j)*E2field%Nz  + k
+                            indexShift_E2 = ((i - 1)*E2field%Ny + j      )*E2field%Nz  + k
                         case ('k')
-                            m_shift2 = ((i - 1)*E2field%Ny + (j - 1))*E2field%Nz  + (k + 1)
+                            indexShift_E2 = ((i - 1)*E2field%Ny + (j - 1))*E2field%Nz  + (k + 1)
                     end select
 
-                    call fhash_get_int_array(RowIndexMap, key(shiftE1 + m_E1), aux1)
-                    call fhash_get_int_array(RowIndexMap, key(shiftE1 + m_shift1), aux2)
-                    call fhash_get_int_array(RowIndexMap, key(shiftE2 + m_E2), aux3)
-                    call fhash_get_int_array(RowIndexMap, key(shiftE2 + m_shift2), aux4)
+                    call fhash_get_int_array(RowIndexMap, key(startingIndex_E1field + combinedIndex_E1), relatedIndices_E1)
+                    call fhash_get_int_array(RowIndexMap, key(startingIndex_E1field + indexShift_E1   ), relatedIndices_E1_shift)
+                    call fhash_get_int_array(RowIndexMap, key(startingIndex_E2field + combinedIndex_E2), relatedIndices_E2)
+                    call fhash_get_int_array(RowIndexMap, key(startingIndex_E2field + indexShift_E2   ), relatedIndices_E2_shift)
 
-                    totalSize = size(aux1%data) + size(aux2%data) + size(aux3%data) + size(aux4%data)
-                    allocate(temp(totalSize))
-                    temp(1:size(aux1%data)) = aux1%data
-                    temp(size(aux1%data)+1:size(aux1%data)+size(aux2%data)) = aux2%data
-                    temp(size(aux1%data)+size(aux2%data)+1:size(aux1%data)+size(aux2%data)+size(aux3%data)) = aux3%data
-                    temp(size(aux1%data)+size(aux2%data)+size(aux3%data)+1:) = aux4%data
 
-                    call RemoveDuplicates(temp, indexList)
+                    relatedIndices_maximumSize = size(relatedIndices_E1%data) + size(relatedIndices_E1_shift%data) + size(relatedIndices_E2%data) + size(relatedIndices_E2_shift%data)
+                    allocate(fullIndexList(relatedIndices_maximumSize))
 
-                    wrapper%data = indexList
+                    fullIndexList(1:size(relatedIndices_E1%data)) = relatedIndices_E1%data
+                    fullIndexList(size(relatedIndices_E1%data)+1:size(relatedIndices_E1%data)+size(relatedIndices_E1_shift%data)) = relatedIndices_E1_shift%data
+                    fullIndexList(size(relatedIndices_E1%data)+size(relatedIndices_E1_shift%data)+1:size(relatedIndices_E1%data)+size(relatedIndices_E1_shift%data)+size(relatedIndices_E2%data)) = relatedIndices_E2%data
+                    fullIndexList(size(relatedIndices_E1%data)+size(relatedIndices_E1_shift%data)+size(relatedIndices_E2%data)+1:) = relatedIndices_E2_shift%data
 
-                    call RowIndexMap%set(key(shiftH + m), value=wrapper)
+                    call RemoveDuplicates(fullIndexList, uniqueIndexList)
 
-                    deallocate(temp, indexList)
+                    wrapper%data = uniqueIndexList
+
+                    call RowIndexMap%set(key(startingIndex_Hfield + combinedIndex_H), value=wrapper)
+
+                    deallocate(fullIndexList, uniqueIndexList)
                 end do
             end do
         end do
@@ -467,28 +466,28 @@ contains
         integer, allocatable, intent(out) :: outputArray(:)
         integer :: i, j, n
         logical :: found
-        integer, allocatable :: temp(:)
+        integer, allocatable :: fullIndexList(:)
 
-        allocate(temp(size(inputArray)))
+        allocate(fullIndexList(size(inputArray)))
         n = 0
 
         do i = 1, size(inputArray)
             found = .false.
             do j = 1, n
-                if (temp(j) == inputArray(i)) then
+                if (fullIndexList(j) == inputArray(i)) then
                     found = .true.
                     exit
                 end if
             end do
             if (.not. found) then
                 n = n + 1
-                temp(n) = inputArray(i)
+                fullIndexList(n) = inputArray(i)
             end if
         end do
 
         allocate(outputArray(n))
-        outputArray = temp(1:n)
-        deallocate(temp)
+        outputArray = fullIndexList(1:n)
+        deallocate(fullIndexList)
     end subroutine 
 
 !     subroutine GenerateRowIndexMap(b, RowIndexMap)
