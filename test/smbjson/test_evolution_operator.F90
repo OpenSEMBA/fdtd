@@ -135,12 +135,20 @@ integer function test_evolution_operator_E_indices_map() bind(C, name="test_evol
 
     bounds%Ex%NX = 2
     bounds%Ex%NY = 3
-    bounds%Ex%NZ = 3
+    bounds%Ex%NZ = 4
+
+    bounds%Hy%NX = 1
+    bounds%Hy%NY = 4
+    bounds%Hy%NZ = 3
+
+    bounds%Hz%NX = 1
+    bounds%Hz%NY = 3
+    bounds%Hz%NZ = 4
 
     err = 0
     ElementsInMap = 0
 
-    call AddElectricFieldIndices(RowIndexMap, bounds%Ex, 0, 0, 0, 'k', 'j')
+    call AddElectricFieldIndices(RowIndexMap, bounds%Ex, bounds%Hy, bounds%Hz, 0, 0, 0, 'k', 'j')
 
     do i = 1, bounds%Ex%NX
         do j = 1, bounds%Ex%NY
@@ -204,60 +212,98 @@ integer function test_evolution_operator_H_indices_map() bind(C, name="test_evol
     type(fhash_tbl_t) :: RowIndexMap
     type(int_array) :: wrapper
     integer :: ElementsInMap
+    integer :: shiftEx, shiftEy, shiftEz, shiftHx, shiftHy, shiftHz
+
+    bounds%Ex%NX = 1
+    bounds%Ex%NY = 4
+    bounds%Ex%NZ = 4
+
+    bounds%Ey%NX = 2
+    bounds%Ey%NY = 3
+    bounds%Ey%NZ = 4
+
+    bounds%Ez%NX = 2
+    bounds%Ez%NY = 4
+    bounds%Ez%NZ = 3
 
     bounds%Hx%NX = 2
     bounds%Hx%NY = 3
     bounds%Hx%NZ = 3
+
+    bounds%Hy%NX = 1
+    bounds%Hy%NY = 4
+    bounds%Hy%NZ = 3
+
+    bounds%Hz%NX = 1
+    bounds%Hz%NY = 3
+    bounds%Hz%NZ = 4
+
+    shiftEx = 0
+    shiftEy = 0       + bounds%Ex%Nx * bounds%Ex%Ny * bounds%Ex%Nz
+    shiftEz = shiftEy + bounds%Ey%Nx * bounds%Ey%Ny * bounds%Ey%Nz
+    shiftHx = shiftEz + bounds%Ez%Nx * bounds%Ez%Ny * bounds%Ez%Nz
+    shiftHy = shiftHx + bounds%Hx%Nx * bounds%Hx%Ny * bounds%Hx%Nz
+    shiftHz = shiftHy + bounds%Hy%Nx * bounds%Hy%Ny * bounds%Hy%Nz
 
     err = 0
     ElementsInMap = 0
 
     ! To verify the H indices map, first I need to create the map of all the Electic fields
 
-    call AddMagneticFieldIndices(RowIndexMap, bounds%Hx, 0, 0, 0, 'k', 'j')
+    call AddElectricFieldIndices(RowIndexMap, bounds%Ey, bounds%Hx, bounds%Hz, shiftEy, shiftHx, shiftHz, 'k', 'i')
+    call AddElectricFieldIndices(RowIndexMap, bounds%Ez, bounds%Hx, bounds%Hy, shiftEz, shiftHx, shiftHy, 'j', 'i')
+    call AddMagneticFieldIndices(RowIndexMap, bounds%Hx, bounds%Ez, bounds%Ey, shiftHx, shiftEz, shiftEy, 'j', 'k')
 
-    ! do i = 1, bounds%Hx%NX
-    !     do j = 1, bounds%Hx%NY
-    !         do k = 1, bounds%Hx%NZ
-    !             m = ((i - 1)*bounds%Hx%NY + (j - 1))*bounds%Hx%NZ  + k
+    do i = 1, bounds%Hx%NX
+        do j = 1, bounds%Hx%NY
+            do k = 1, bounds%Hx%NZ
+                m = ((i - 1)*bounds%Hx%NY + (j - 1))*bounds%Hx%NZ  + k
 
-    !             call fhash_get_int_array(RowIndexMap, key(m), wrapper)
+                call fhash_get_int_array(RowIndexMap, key(shiftHx + m), wrapper)
 
-    !             ! Check if the map has been created correctly for each i, j, k
-    !             if (size(wrapper%data) == 0) then
-    !                 err = err + 1
-    !                 cycle
-    !             else 
-    !                 ElementsInMap = ElementsInMap + 1
-    !             end if
+                ! Check if the map has been created correctly for each i, j, k
+                if (size(wrapper%data) == 0) then
+                    err = err + 1
+                    cycle
+                else 
+                    ElementsInMap = ElementsInMap + 1
+                end if
 
-    !             ! First we check the number of neighbours in the frontier of the first direction
-    !             if (j == 1 .or. j == bounds%Hx%Ny) then
-    !                 if (k == 1 .or. k == bounds%Hx%NZ) then
-    !                     if (size(wrapper%data) /= 3) then
-    !                         err = err + 1
-    !                     end if
-    !                 else
-    !                     if (size(wrapper%data) /= 4) then
-    !                         err = err + 1
-    !                     end if
-    !                 end if
-    !             ! Then we check the number of neighbours in the frontier of the second direction that are not neighbours of the first direction               
-    !             else if (k == 1 .or. k == bounds%Hx%NZ) then
-    !                 if (size(wrapper%data) /= 4) then
-    !                     err = err + 1
-    !                 end if
-    !             ! Finally we check the number of neighbours in the interior of the grid
-    !             else
-    !                 if (size(wrapper%data) /= 5) then
-    !                     err = err + 1
-    !                 end if
-    !             end if
-    !         end do
-    !     end do
-    ! end do
+                ! In theory, the indices related to the H field must be maximum 17 and minimum 9, due to the form of the evolution operator, 
+                ! it is difficult to check the exact number of neighbours, but we can check the limits
+                if (size(wrapper%data) < 9 .or. size(wrapper%data) > 17) then
+                    err = err + 1
+                end if
 
-    ! if (ElementsInMap /= bounds%Hx%NX * bounds%Hx%NY * bounds%Hx%NZ) then
-    !     err = err + 1
-    ! end if
+                ! In this particular test, the frontiers must have those specific number of neighbours due to the geometry
+                ! First we check the number of neighbours in the frontier of the first direction
+                if (j == 1 .or. j == bounds%Hx%Ny) then
+                    if (k == 1 .or. k == bounds%Hx%NZ) then
+                        if (size(wrapper%data) /= 11) then
+                            err = err + 1
+                        end if
+                    else
+                        if (size(wrapper%data) /= 12) then
+                            err = err + 1
+                        end if
+                    end if
+                ! Then we check the number of neighbours in the frontier of the second direction that are not neighbours of the first direction               
+                else if (k == 1 .or. k == bounds%Hx%NZ) then
+                    if (size(wrapper%data) /= 12) then
+                        err = err + 1
+                    end if
+                ! Finally we check the number of neighbours in the interior of the grid
+                else
+                    if (size(wrapper%data) /= 13) then
+                        err = err + 1
+                    end if
+                end if
+
+            end do
+        end do
+    end do
+
+    if (ElementsInMap /= bounds%Hx%NX * bounds%Hx%NY * bounds%Hx%NZ) then
+        err = err + 1
+    end if
 end function test_evolution_operator_H_indices_map
