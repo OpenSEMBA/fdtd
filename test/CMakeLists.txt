@@ -17,6 +17,9 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     set(SMBJSON_TESTS_LIBRARY smbjson_tests)
 endif()
 
+add_subdirectory(mor)
+set(MOR_TESTS_LIBRARY mor_tests)
+
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"
 )
@@ -24,6 +27,7 @@ add_executable(fdtd_tests
 target_link_libraries(fdtd_tests
     ${MTLN_TESTS_LIBRARY}
     ${SMBJSON_TESTS_LIBRARY}
+    ${MOR_TESTS_LIBRARY}
     ${SYSTEM_TESTS_LIBRARY}
     ${HDF_TESTS_LIBRARY}
     GTest::gtest_main

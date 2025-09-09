@@ -221,6 +221,7 @@ if(SEMBA_FDTD_COMPONENTS_LIB)
 		"src_main_pub/farfield.F90"
 		"src_wires_pub/wires.F90"
 		"src_wires_pub/wires_mtln.F90"
+		"src_main_pub/evolution_operator.F90"
 	)
 	target_link_libraries(semba-components semba-types semba-reports ${MTLN_LIBRARIES})
 endif()
