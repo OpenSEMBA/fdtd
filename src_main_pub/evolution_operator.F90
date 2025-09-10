@@ -5,7 +5,7 @@ module evolution_operator
     use fdetypes
     use Report
     use SEMBA_FDTD_mod
-    use system_testingTools_mod
+    use smbjson_testingTools
 
     use fhash,  key => fhash_key
 
@@ -214,45 +214,93 @@ contains
 
     end subroutine 
 
-    ! subroutine GenerateOutputFields(b, FieldList)
+    subroutine GenerateOutputFields(input_file_json, fieldListOutput, input_flags_no_json)
         
-    !     type (bounds_t), intent( IN)  ::  b
-    !     type(field_array_t), allocatable, intent(OUT) :: FieldListOutput(:) ! Aquí necesito cambiar el tipo de variable de los outputs para tener en cuenta que con el input i, se generan varios outputs
-    !     allocate(FieldListOutput(66))
+        character (len=*), intent(in) :: input_file_json
+        character (len=*), optional, intent(in) :: input_flags_no_json
+        type(field_array_t), allocatable, intent(OUT) :: fieldListOutput(:) 
+        
+        type(field_array_t), allocatable :: fieldListInput(:)
+        type (bounds_t) ::  bounds
+        type(semba_fdtd_t) :: semba
+        type(solver_t) :: solver
 
-    !     call GenerateInputFieldsBasis(b, FieldListInput)
+        character(len=:), allocatable :: filename
+        integer :: i, j, k, basis_index
+        integer, dimension(3) :: dims
+        
+        filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//input_file_json
 
-    !     integer :: i
+        call semba%init(input_flags_no_json // ' ' // filename)
+        call solver%init_control(semba%l, semba%maxSourceValue, semba%time_desdelanzamiento)
+        call solver%init(semba%sgg,semba%eps0, semba%mu0, semba%sggMiNo,& 
+                            semba%sggMiEx,semba%sggMiEy,semba%sggMiEz,& 
+                            semba%sggMiHx,semba%sggMiHy,semba%sggMiHz, & 
+                            semba%sggMtag, semba%SINPML_fullsize, semba%fullsize, semba%tag_numbers)
 
-    !     do i = 1, size(FieldListInput)
-    !     ! Acá es necesario realizar el paso temporal y extraer los campos usando el timestepping/resuming, en todo caso si la función es general, se llama fuera del case y se almacena dependiendo
-    !     ! del caso.
-    !         select case (trim(FieldListInput(i)%field_type))
-    !             case ("Ex")
-    !                 call Advance_Ex()
-    !                 call Advance_Hy()
-    !                 call Advance_Hz()
-    !             case ("Ey")
-    !                 call Advance_Ey()
-    !                 call Advance_Hx()
-    !                 call Advance_Hz()
-    !             case ("Ez")
-    !                 call Advance_Ez()
-    !                 call Advance_Hx()
-    !                 call Advance_Hy()
-    !             case ("Hx")
-    !                 call Advance_Ex()
-    !                 call Advance_Ey()
-    !                 Call Advance_Ez()
-    !                 call Advance_Hx()
-    !             case ("Hy")
-    !                 call Advance_Hy()
-    !             case ("Hz")
-    !                 call Advance_Hz()
-    !         end select
-    !     end do
 
-    ! end subroutine
+        call get_field_bounds_from_json(bounds, semba%fullsize)
+        call GenerateInputFieldsBasis(bounds, fieldListInput)
+
+        allocate(fieldListOutput(size(fieldListInput)))
+
+        do basis_index = 1, size(fieldListInput)
+            ! Here now i need to acces each element and for each non-zero element, add that element to the set values function from the solver to do one step
+            ! also, i need to identify the type of the field to specify in the step function
+            dims = shape(fieldListInput(i)%data)
+            
+            do i = 1, dims(1)
+                do j = 1, dims(2)
+                    do k = 1, dims(3)
+                        select case (fieldListInput(basis_index)%field_type)
+                        case ('Ex')
+                            call solver%set_field_value(iEx, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
+                        case ('Ey')
+                            call solver%set_field_value(iEy, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
+                        case ('Ez')
+                            call solver%set_field_value(iEz, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
+                        case ('Hx')
+                            call solver%set_field_value(iHx, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
+                        case ('Hy')
+                            call solver%set_field_value(iHy, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
+                        case ('Hz')
+                            call solver%set_field_value(iHz, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
+                        end select
+                    end do
+                end do
+            end do
+
+            call solver%step(semba%sgg, semba%eps0, semba%mu0, semba%SINPML_FULLSIZE, semba%tag_numbers)
+
+            do i = 1, dims(1)
+                do j = 1, dims(2)
+                    do k = 1, dims(3)
+                        select case (fieldListInput(basis_index)%field_type)
+                        case ('Ex')
+                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iEx, i, j, k)
+                        case ('Ey')
+                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iEy, i, j, k)
+                        case ('Ez')
+                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iEz, i, j, k)
+                        case ('Hx')
+                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iHx, i, j, k)
+                        case ('Hy')
+                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iHy, i, j, k)
+                        case ('Hz')
+                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iHz, i, j, k)
+                        end select
+                    end do
+                end do
+            end do
+
+            call solver%set_field_value(iEx, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
+            call solver%set_field_value(iEy, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
+            call solver%set_field_value(iEz, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
+            call solver%set_field_value(iHx, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
+            call solver%set_field_value(iHy, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
+            call solver%set_field_value(iHz, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
+        end do
+    end subroutine
 
     subroutine AddElectricFieldIndices(RowIndexMap, Efield, H1field, H2field, startingIndex_Efield, startingIndex_H1field, startingIndex_H2field, shiftDirection_H1, shiftDirection_H2)
         type(fhash_tbl_t), intent(inout) :: RowIndexMap
