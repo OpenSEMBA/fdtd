@@ -20,7 +20,7 @@ module evolution_operator
 
     private 
 
-    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array
+    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap
 
 contains
 
@@ -490,33 +490,30 @@ contains
         deallocate(fullIndexList)
     end subroutine 
 
-!     subroutine GenerateRowIndexMap(b, RowIndexMap)
+    subroutine GenerateRowIndexMap(bounds, RowIndexMap)
 
-!         type(bounds_t), intent(IN) :: b
-!         type(fhash_tbl_t), intent(OUT) :: RowIndexMap
-!         integer :: shiftEx, shiftEy, shiftEz, shiftHx, shiftHy, shiftHz
+        type(bounds_t), intent(IN) :: bounds
+        type(fhash_tbl_t), intent(OUT) :: RowIndexMap
+        integer :: shiftEx, shiftEy, shiftEz, shiftHx, shiftHy, shiftHz
 
-!         shiftEx = 0
-!         shiftEy = b%Ex%Nx * b%Ex%Ny * b%Ex%Nz
-!         shiftEz = shiftEy + b%Ey%Nx * b%Ey%Ny * b%Ey%Nz
-!         shiftHx = shiftEz + b%Ez%Nx * b%Ez%Ny * b%Ez%Nz
-!         shiftHy = shiftHx + b%Hx%Nx * b%Hx%Ny * b%Hx%Nz
-!         shiftHz = shiftHy + b%Hy%Nx * b%Hy%Ny * b%Hy%Nz
-
-!         call AddElectricFieldIndices(RowIndexMap, b%sweepEx, shiftEx, shiftHy, shiftHz, 'k', 'j')
-!         call AddElectricFieldIndices(RowIndexMap, b%sweepEy, shiftEy, shiftHx, shiftHz, 'k', 'i')
-!         call AddElectricFieldIndices(RowIndexMap, b%sweepEz, shiftEz, shiftHx, shiftHy, 'j', 'i')
-
-!         ! Before the magnetic fields, it is necessary to create the map of indices related to the boundary conditions
-
-!         call AddMagneticFieldIndices(RowIndexMap, b%sweepHx, shiftHx, shiftEy, shiftEz, 'k', 'j')
-!         call AddMagneticFieldIndices(RowIndexMap, b%sweepHy, shiftHy, shiftEx, shiftEz, 'k', 'i')
-!         call AddMagneticFieldIndices(RowIndexMap, b%sweepHz, shiftHz, shiftEx, shiftEy, 'j', 'i')
-
-!         ! And also, it seems to be boundary conditions for the magnetic fields, so we need to add them as well
+        shiftEx = 0
+        shiftEy = shiftEx + bounds%Ex%Nx * bounds%Ex%Ny * bounds%Ex%Nz
+        shiftEz = shiftEy + bounds%Ey%Nx * bounds%Ey%Ny * bounds%Ey%Nz
+        shiftHx = shiftEz + bounds%Ez%Nx * bounds%Ez%Ny * bounds%Ez%Nz
+        shiftHy = shiftHx + bounds%Hx%Nx * bounds%Hx%Ny * bounds%Hx%Nz
+        shiftHz = shiftHy + bounds%Hy%Nx * bounds%Hy%Ny * bounds%Hy%Nz
 
 
-!     end subroutine
+        call AddElectricFieldIndices(RowIndexMap, bounds%Ex, bounds%Hy, bounds%Hz, shiftEx, shiftHy, shiftHz, 'k', 'j')
+        call AddElectricFieldIndices(RowIndexMap, bounds%Ey, bounds%Hx, bounds%Hz, shiftEy, shiftHx, shiftHz, 'k', 'i')
+        call AddElectricFieldIndices(RowIndexMap, bounds%Ez, bounds%Hx, bounds%Hy, shiftEz, shiftHx, shiftHy, 'j', 'i')
+
+        call AddMagneticFieldIndices(RowIndexMap, bounds%Hx, bounds%Ez, bounds%Ey, shiftHx, shiftEz, shiftEy, 'j', 'k')
+        call AddMagneticFieldIndices(RowIndexMap, bounds%Hy, bounds%Ex, bounds%Ez, shiftHy, shiftEx, shiftEz, 'k', 'i')
+        call AddMagneticFieldIndices(RowIndexMap, bounds%Hz, bounds%Ex, bounds%Ey, shiftHz, shiftEx, shiftEy, 'j', 'i')
+
+
+    end subroutine
 
     subroutine fhash_get_int_array(tbl, k, val)
         type(fhash_tbl_t), intent(in) :: tbl

@@ -307,3 +307,109 @@ integer function test_evolution_operator_H_indices_map() bind(C, name="test_evol
         err = err + 1
     end if
 end function test_evolution_operator_H_indices_map
+
+
+integer function test_evolution_operator_indices_map_all_fields() bind(C, name="test_evolution_operator_indices_map_all_fields") result(err)
+    use smbjson
+    use smbjson_testingTools
+    use evolution_operator
+    use fhash, key => fhash_key
+
+    implicit none
+
+    integer :: m
+    type(bounds_t) :: bounds
+    type(fhash_tbl_t) :: RowIndexMap
+    type(int_array) :: wrapper
+    integer :: totalElements
+
+    bounds%Ex%NX = 1
+    bounds%Ex%NY = 4
+    bounds%Ex%NZ = 4
+
+    bounds%Ey%NX = 2
+    bounds%Ey%NY = 3
+    bounds%Ey%NZ = 4
+
+    bounds%Ez%NX = 2
+    bounds%Ez%NY = 4
+    bounds%Ez%NZ = 3
+
+    bounds%Hx%NX = 2
+    bounds%Hx%NY = 3
+    bounds%Hx%NZ = 3
+
+    bounds%Hy%NX = 1
+    bounds%Hy%NY = 4
+    bounds%Hy%NZ = 3
+
+    bounds%Hz%NX = 1
+    bounds%Hz%NY = 3
+    bounds%Hz%NZ = 4
+
+    err = 0
+
+    totalElements = bounds%Ex%NX * bounds%Ex%NY * bounds%Ex%NZ + &
+                    bounds%Ey%NX * bounds%Ey%NY * bounds%Ey%NZ + &
+                    bounds%Ez%NX * bounds%Ez%NY * bounds%Ez%NZ + &
+                    bounds%Hx%NX * bounds%Hx%NY * bounds%Hx%NZ + &
+                    bounds%Hy%NX * bounds%Hy%NY * bounds%Hy%NZ + &
+                    bounds%Hz%NX * bounds%Hz%NY * bounds%Hz%NZ
+
+    call GenerateRowIndexMap(bounds, RowIndexMap)
+
+    do m = 1, totalElements
+        call fhash_get_int_array(RowIndexMap, key(m), wrapper)
+
+        if (size(wrapper%data) == 0) then
+            err = err + 1
+        end if
+    end do
+
+    end function test_evolution_operator_indices_map_all_fields
+
+    integer function test_evolution_operator_comparison_with_solver() bind(C, name="test_evolution_operator_comparison_with_solver") result(err)
+    use smbjson
+    use smbjson_testingTools
+    use evolution_operator
+    use fhash, key => fhash_key
+
+    implicit none
+
+    integer :: m
+    type(bounds_t) :: bounds
+    type(fhash_tbl_t) :: RowIndexMap
+
+    bounds%Ex%NX = 50
+    bounds%Ex%NY = 4
+    bounds%Ex%NZ = 4
+
+    bounds%Ey%NX = 51
+    bounds%Ey%NY = 3
+    bounds%Ey%NZ = 4
+
+    bounds%Ez%NX = 51
+    bounds%Ez%NY = 4
+    bounds%Ez%NZ = 3
+
+    bounds%Hx%NX = bounds%Ex%Nx + 1
+    bounds%Hx%NY = bounds%Ex%Ny - 1
+    bounds%Hx%NZ = bounds%Ex%Nz - 1
+
+    bounds%Hy%NX = bounds%Ey%Nx - 1
+    bounds%Hy%NY = bounds%Ey%Ny + 1
+    bounds%Hy%NZ = bounds%Ey%Nz - 1
+
+    bounds%Hz%NX = bounds%Ez%Nx - 1
+    bounds%Hz%NY = bounds%Ez%Ny - 1
+    bounds%Hz%NZ = bounds%Ez%Nz + 1
+
+    err = 0
+
+    ! Generate the evolution operator with the basis, the map and one step with the solver
+    ! I can make a function with these three steps inside the evolution operator module
+    call GenerateRowIndexMap(bounds, RowIndexMap)
+
+    ! With the evolution operator and the initial excitation, I can generate for example five steps and then compare with the full solver
+
+    end function test_evolution_operator_comparison_with_solver
