@@ -368,6 +368,34 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
 
     end function test_evolution_operator_indices_map_all_fields
 
+    integer function test_evolution_operator_read_bounds_from_json() bind(C, name="test_evolution_operator_read_bounds_from_json") result(err)
+    use smbjson
+    use smbjson_testingTools
+    use evolution_operator
+    use SEMBA_FDTD_mod
+    
+
+    implicit none
+
+    type(bounds_t) :: bounds
+    type(semba_fdtd_t) :: semba
+    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'grid_50x3x3.fdtd.json'
+
+    err = 0
+
+    call semba%init(trim('-i '//filename))
+    call get_field_bounds_from_json(bounds, semba%fullsize)
+
+    if (bounds%Ex%Nx /= 50 .or. bounds%Ex%Ny /= 4 .or. bounds%Ex%Nz /= 4) err = err + 1
+    if (bounds%Ey%Nx /= 51 .or. bounds%Ey%Ny /= 3 .or. bounds%Ey%Nz /= 4) err = err + 1
+    if (bounds%Ez%Nx /= 51 .or. bounds%Ez%Ny /= 4 .or. bounds%Ez%Nz /= 3) err = err + 1
+    if (bounds%Hx%Nx /= 51 .or. bounds%Hx%Ny /= 3 .or. bounds%Hx%Nz /= 3) err = err + 1
+    if (bounds%Hy%Nx /= 50 .or. bounds%Hy%Ny /= 4 .or. bounds%Hy%Nz /= 3) err = err + 1
+    if (bounds%Hz%Nx /= 50 .or. bounds%Hz%Ny /= 3 .or. bounds%Hz%Nz /= 4) err = err + 1
+
+
+    end function test_evolution_operator_read_bounds_from_json
+
     integer function test_evolution_operator_comparison_with_solver() bind(C, name="test_evolution_operator_comparison_with_solver") result(err)
     use smbjson
     use smbjson_testingTools

@@ -4,6 +4,8 @@ module evolution_operator
     use Solver_mod
     use fdetypes
     use Report
+    use SEMBA_FDTD_mod
+    use system_testingTools_mod
 
     use fhash,  key => fhash_key
 
@@ -20,7 +22,7 @@ module evolution_operator
 
     private 
 
-    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap
+    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap, get_field_bounds_from_json
 
 contains
 
@@ -536,6 +538,40 @@ contains
         class default
             allocate(val%data(0))
         end select
+    end subroutine
+
+    subroutine get_field_bounds_from_json(field_bounds, fullsize)
+        type(bounds_t), intent(out) :: field_bounds
+        TYPE (limit_t), DIMENSION (1:6) :: fullsize
+        type(integer) :: Nx, Ny, Nz
+
+        Nx = fullsize(1)%xe - fullsize(1)%xi + 1
+        Ny = fullsize(2)%ye - fullsize(2)%yi + 1
+        Nz = fullsize(3)%ze - fullsize(3)%zi + 1
+
+        field_bounds%Ex%NX = nX
+        field_bounds%Ex%NY = nY + 1
+        field_bounds%Ex%NZ = nZ + 1
+
+        field_bounds%Ey%NX = nX + 1
+        field_bounds%Ey%NY = nY
+        field_bounds%Ey%NZ = nZ + 1
+
+        field_bounds%Ez%NX = nX + 1
+        field_bounds%Ez%NY = nY + 1
+        field_bounds%Ez%NZ = nZ
+
+        field_bounds%Hx%NX = field_bounds%Ex%Nx + 1
+        field_bounds%Hx%NY = field_bounds%Ex%Ny - 1
+        field_bounds%Hx%NZ = field_bounds%Ex%Nz - 1
+
+        field_bounds%Hy%NX = field_bounds%Ey%Nx - 1
+        field_bounds%Hy%NY = field_bounds%Ey%Ny + 1
+        field_bounds%Hy%NZ = field_bounds%Ey%Nz - 1
+
+        field_bounds%Hz%NX = field_bounds%Ez%Nx - 1
+        field_bounds%Hz%NY = field_bounds%Ez%Ny - 1
+        field_bounds%Hz%NZ = field_bounds%Ez%Nz + 1
     end subroutine
 
 end module
