@@ -1689,13 +1689,13 @@ contains
                   j = j + 1
                end do
             case (iEy)
-               do k = 1, (cs(i)%xe - cs(i)%xi + 1)
+               do k = 1, (cs(i)%ye - cs(i)%yi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%j = cs(i)%yi + k - 1
                   j = j + 1
                end do
             case (iEz)
-               do k = 1, (cs(i)%xe - cs(i)%xi + 1)
+               do k = 1, (cs(i)%ze - cs(i)%zi + 1)
                   tc(j) = buildBaseThinSlotComponent(cs(i))
                   tc(j)%k = cs(i)%zi + k - 1
                   j = j + 1
