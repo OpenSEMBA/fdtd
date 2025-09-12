@@ -12,7 +12,7 @@ module evolution_operator
     implicit none
 
     type :: field_array_t
-        real(RKIND), pointer, dimension(:,:,:) :: data
+        real(RKIND), allocatable, dimension(:,:,:) :: data
         character(len=2) :: field_type  ! 'Ex', 'Ey', 'Ez', 'Hx', etc.
     end type
 
@@ -22,7 +22,7 @@ module evolution_operator
 
     private 
 
-    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap, get_field_bounds_from_json
+    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap, get_field_bounds_from_json, GenerateOutputFields, field_array_t
 
 contains
 
@@ -103,28 +103,28 @@ contains
         type(field_array_t), allocatable, intent(OUT) :: FieldList(:)
         
         ! Generating the basis for the electical fields
-        real (kind = RKIND), dimension    ( 0 :      b%Ex%NX-1 , 0 :      b%Ex%NY-1 , 0 :      b%Ex%NZ-1 ) ::  Ex
-        real (kind = RKIND), dimension    ( 0 :      b%Ey%NX-1 , 0 :      b%Ey%NY-1 , 0 :      b%Ey%NZ-1 ) ::  Ey
-        real (kind = RKIND), dimension    ( 0 :      b%Ez%NX-1 , 0 :      b%Ez%NY-1 , 0 :      b%Ez%NZ-1 ) ::  Ez
+        real (kind = RKIND), dimension    ( b%Ex%NX, b%Ex%NY, b%Ex%NZ) ::  Ex
+        real (kind = RKIND), dimension    ( b%Ey%NX, b%Ey%NY, b%Ey%NZ) ::  Ey
+        real (kind = RKIND), dimension    ( b%Ez%NX, b%Ez%NY, b%Ez%NZ) ::  Ez
         
         ! Generating the basis for the magnetical fields
-        real (kind = RKIND), dimension    ( 0 :      b%HX%NX-1 , 0 :      b%HX%NY-1 , 0 :      b%HX%NZ-1 ) ::  Hx
-        real (kind = RKIND), dimension    ( 0 :      b%Hy%NX-1 , 0 :      b%Hy%NY-1 , 0 :      b%Hy%NZ-1 ) ::  Hy
-        real (kind = RKIND), dimension    ( 0 :      b%Hz%NX-1 , 0 :      b%Hz%NY-1 , 0 :      b%Hz%NZ-1 ) ::  Hz
+        real (kind = RKIND), dimension    ( b%HX%NX, b%HX%NY, b%HX%NZ) ::  Hx
+        real (kind = RKIND), dimension    ( b%Hy%NX, b%Hy%NY, b%Hy%NZ) ::  Hy
+        real (kind = RKIND), dimension    ( b%Hz%NX, b%Hz%NY, b%Hz%NZ) ::  Hz
 
         ! Allocating the basis for the electrical fields
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ex_ee
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ex_eo
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ex_oe
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ex_oo
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ey_ee
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ey_eo
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ey_oe
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ey_oo
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ez_ee
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ez_eo
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ez_oe
-        real (kind = RKIND), allocatable, dimension(:,:,:) :: Ez_oo
+        real (kind = RKIND), dimension    (b%Ex%NX,b%Ex%NY, b%Ex%NZ ) :: Ex_ee
+        real (kind = RKIND), dimension    (b%Ex%NX,b%Ex%NY, b%Ex%NZ ) :: Ex_eo
+        real (kind = RKIND), dimension    (b%Ex%NX,b%Ex%NY, b%Ex%NZ ) :: Ex_oe
+        real (kind = RKIND), dimension    (b%Ex%NX,b%Ex%NY, b%Ex%NZ ) :: Ex_oo
+        real (kind = RKIND), dimension    (b%Ey%NX,b%Ey%NY, b%Ey%NZ ) :: Ey_ee
+        real (kind = RKIND), dimension    (b%Ey%NX,b%Ey%NY, b%Ey%NZ ) :: Ey_eo
+        real (kind = RKIND), dimension    (b%Ey%NX,b%Ey%NY, b%Ey%NZ ) :: Ey_oe
+        real (kind = RKIND), dimension    (b%Ey%NX,b%Ey%NY, b%Ey%NZ ) :: Ey_oo
+        real (kind = RKIND), dimension    (b%Ez%NX,b%Ez%NY, b%Ez%NZ ) :: Ez_ee
+        real (kind = RKIND), dimension    (b%Ez%NX,b%Ez%NY, b%Ez%NZ ) :: Ez_eo
+        real (kind = RKIND), dimension    (b%Ez%NX,b%Ez%NY, b%Ez%NZ ) :: Ez_oe
+        real (kind = RKIND), dimension    (b%Ez%NX,b%Ez%NY, b%Ez%NZ ) :: Ez_oo
 
         ! Allocating the basis for the magnetical fields
         real (kind = RKIND), allocatable, dimension(:,:,:,:,:,:) :: Hx_m
@@ -207,31 +207,30 @@ contains
                 do i3 = 1, 2
                     idx = idx + 1
                     FieldList(idx)%data = Hz_m(i1, i2, i3, :, :, :)
-                    
+                    FieldList(idx)%field_type = 'Hz'
                 end do
             end do
         end do
 
     end subroutine 
 
-    subroutine GenerateOutputFields(input_file_json, fieldListOutput, input_flags_no_json)
+    subroutine GenerateOutputFields(input_flags_no_json, input_file_json, fieldInput, fieldOutput)
         
         character (len=*), intent(in) :: input_file_json
         character (len=*), optional, intent(in) :: input_flags_no_json
-        type(field_array_t), allocatable, intent(OUT) :: fieldListOutput(:) 
-        
-        type(field_array_t), allocatable :: fieldListInput(:)
+
+        type(field_array_t), intent(in) :: fieldInput
+        type(field_array_t), intent(out) :: fieldOutput
+
         type (bounds_t) ::  bounds
         type(semba_fdtd_t) :: semba
         type(solver_t) :: solver
 
-        character(len=:), allocatable :: filename
-        integer :: i, j, k, basis_index
+        integer :: i, j, k
         integer, dimension(3) :: dims
         
-        filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//input_file_json
 
-        call semba%init(input_flags_no_json // ' ' // filename)
+        call semba%init(input_flags_no_json // ' ' // input_file_json)
         call solver%init_control(semba%l, semba%maxSourceValue, semba%time_desdelanzamiento)
         call solver%init(semba%sgg,semba%eps0, semba%mu0, semba%sggMiNo,& 
                             semba%sggMiEx,semba%sggMiEy,semba%sggMiEz,& 
@@ -240,66 +239,69 @@ contains
 
 
         call get_field_bounds_from_json(bounds, semba%fullsize)
-        call GenerateInputFieldsBasis(bounds, fieldListInput)
 
-        allocate(fieldListOutput(size(fieldListInput)))
+        
+        dims = shape(fieldInput%data)
+        
+        allocate(fieldOutput%data( &
+            size(fieldInput%data, 1), &
+            size(fieldInput%data, 2), &
+            size(fieldInput%data, 3)))
 
-        do basis_index = 1, size(fieldListInput)
-            ! Here now i need to acces each element and for each non-zero element, add that element to the set values function from the solver to do one step
-            ! also, i need to identify the type of the field to specify in the step function
-            dims = shape(fieldListInput(i)%data)
-            
-            do i = 1, dims(1)
-                do j = 1, dims(2)
-                    do k = 1, dims(3)
-                        select case (fieldListInput(basis_index)%field_type)
-                        case ('Ex')
-                            call solver%set_field_value(iEx, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
-                        case ('Ey')
-                            call solver%set_field_value(iEy, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
-                        case ('Ez')
-                            call solver%set_field_value(iEz, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
-                        case ('Hx')
-                            call solver%set_field_value(iHx, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
-                        case ('Hy')
-                            call solver%set_field_value(iHy, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
-                        case ('Hz')
-                            call solver%set_field_value(iHz, [i,i], [j,j], [k,k], fieldListInput(basis_index)%data(i,j,k))
-                        end select
-                    end do
+        fieldOutput%data = 0.0_RKIND
+        
+        do i = 1, dims(1)
+            do j = 1, dims(2)
+                do k = 1, dims(3)
+                    select case (fieldInput%field_type)
+                    case ('Ex')
+                        call solver%set_field_value(iEx, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
+                    case ('Ey')
+                        call solver%set_field_value(iEy, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
+                    case ('Ez')
+                        call solver%set_field_value(iEz, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
+                    case ('Hx')
+                        call solver%set_field_value(iHx, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
+                    case ('Hy')
+                        call solver%set_field_value(iHy, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
+                    case ('Hz')
+                        call solver%set_field_value(iHz, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
+                    end select
                 end do
             end do
-
-            call solver%step(semba%sgg, semba%eps0, semba%mu0, semba%SINPML_FULLSIZE, semba%tag_numbers)
-
-            do i = 1, dims(1)
-                do j = 1, dims(2)
-                    do k = 1, dims(3)
-                        select case (fieldListInput(basis_index)%field_type)
-                        case ('Ex')
-                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iEx, i, j, k)
-                        case ('Ey')
-                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iEy, i, j, k)
-                        case ('Ez')
-                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iEz, i, j, k)
-                        case ('Hx')
-                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iHx, i, j, k)
-                        case ('Hy')
-                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iHy, i, j, k)
-                        case ('Hz')
-                            fieldListOutput(basis_index)%data(i, j, k) = solver%get_field_value(iHz, i, j, k)
-                        end select
-                    end do
-                end do
-            end do
-
-            call solver%set_field_value(iEx, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
-            call solver%set_field_value(iEy, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
-            call solver%set_field_value(iEz, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
-            call solver%set_field_value(iHx, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
-            call solver%set_field_value(iHy, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
-            call solver%set_field_value(iHz, [1,dims(1)], [1,dims(2)], [1,dims(3)], 0.0)
         end do
+
+        call solver%step(semba%sgg, semba%eps0, semba%mu0, semba%SINPML_FULLSIZE, semba%tag_numbers)
+
+        ! This is wrong, for example with Ex as imput, we should have Ex, Hy and Hz as output
+        do i = 1, dims(1)
+            do j = 1, dims(2)
+                do k = 1, dims(3)
+                    select case (fieldInput%field_type)
+                    case ('Ex')
+                        fieldOutput%data(i, j, k) = solver%get_field_value(iEx, i-1, j-1, k-1)
+                    case ('Ey')
+                        fieldOutput%data(i, j, k) = solver%get_field_value(iEy, i-1, j-1, k-1)
+                    case ('Ez')
+                        fieldOutput%data(i, j, k) = solver%get_field_value(iEz, i-1, j-1, k-1)
+                    case ('Hx')
+                        fieldOutput%data(i, j, k) = solver%get_field_value(iHx, i-1, j-1, k-1)
+                    case ('Hy')
+                        fieldOutput%data(i, j, k) = solver%get_field_value(iHy, i-1, j-1, k-1)
+                    case ('Hz')
+                        fieldOutput%data(i, j, k) = solver%get_field_value(iHz, i-1, j-1, k-1)
+                    end select
+                end do
+            end do
+        end do
+
+        call solver%set_field_value(iEx, [solver%bounds%Ex%xi, solver%bounds%Ex%xe], [solver%bounds%Ex%yi, solver%bounds%Ex%ye], [solver%bounds%Ex%zi, solver%bounds%Ex%ze], 0.0)
+        call solver%set_field_value(iEy, [solver%bounds%Ey%xi, solver%bounds%Ey%xe], [solver%bounds%Ey%yi, solver%bounds%Ey%ye], [solver%bounds%Ey%zi, solver%bounds%Ey%ze], 0.0)
+        call solver%set_field_value(iEz, [solver%bounds%Ez%xi, solver%bounds%Ez%xe], [solver%bounds%Ez%yi, solver%bounds%Ez%ye], [solver%bounds%Ez%zi, solver%bounds%Ez%ze], 0.0)
+        call solver%set_field_value(iHx, [solver%bounds%Hx%xi, solver%bounds%Hx%xe], [solver%bounds%Hx%yi, solver%bounds%Hx%ye], [solver%bounds%Hx%zi, solver%bounds%Hx%ze], 0.0)
+        call solver%set_field_value(iHy, [solver%bounds%Hy%xi, solver%bounds%Hy%xe], [solver%bounds%Hy%yi, solver%bounds%Hy%ye], [solver%bounds%Hy%zi, solver%bounds%Hy%ze], 0.0)
+        call solver%set_field_value(iHz, [solver%bounds%Hz%xi, solver%bounds%Hz%xe], [solver%bounds%Hz%yi, solver%bounds%Hz%ye], [solver%bounds%Hz%zi, solver%bounds%Hz%ze], 0.0)
+
     end subroutine
 
     subroutine AddElectricFieldIndices(RowIndexMap, Efield, H1field, H2field, startingIndex_Efield, startingIndex_H1field, startingIndex_H2field, shiftDirection_H1, shiftDirection_H2)

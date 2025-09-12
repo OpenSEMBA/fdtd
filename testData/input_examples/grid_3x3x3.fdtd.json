@@ -1,0 +1,33 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "JSON input file for a 3x3x3 grid to test the evolution operator generation and comparison with full solver.",
+
+    "general": {
+        "timeStep": 10e-12,
+        "numberOfSteps": 5
+    },
+    
+    "boundary": {
+        "xLower": {"type": "pec"},
+        "xUpper": {"type": "pec"},
+        "yLower": {"type": "pec"},
+        "yUpper": {"type": "pec"},
+        "zLower": {"type": "pec"},
+        "zUpper": {"type": "pec"}
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [3, 3, 3],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [1, 1, 1]},
+            {"id": 2, "relativePosition": [1, 3, 3]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [1]},
+            {"id": 2, "type": "node", "coordinateIds": [2]}
+        ]
+    }    
+}
