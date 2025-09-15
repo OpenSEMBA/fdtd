@@ -23,7 +23,7 @@ module evolution_operator
     private 
 
     public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap, get_field_bounds_from_json, GenerateOutputFields, field_array_t
-    public :: GenerateColumnIndexMap
+    public :: GenerateColumnIndexMap, GenerateEvolutionOperator
 
 contains
 
@@ -186,9 +186,9 @@ contains
         do i1 = 1, 2
             do i2 = 1, 3
                 do i3 = 1, 3
-                    idx = idx + 1
                     FieldList(idx)%data = Hx_m(i1, i2, i3, :, :, :)
                     FieldList(idx)%field_type = 'Hx'
+                    idx = idx + 1 
                 end do
             end do
         end do
@@ -196,9 +196,9 @@ contains
         do i1 = 1, 3
             do i2 = 1, 2
                 do i3 = 1, 3
-                    idx = idx + 1
                     FieldList(idx)%data = Hy_m(i1, i2, i3, :, :, :)
                     FieldList(idx)%field_type = 'Hy'
+                    idx = idx + 1
                 end do
             end do
         end do
@@ -206,9 +206,9 @@ contains
         do i1 = 1, 3
             do i2 = 1, 3
                 do i3 = 1, 2
-                    idx = idx + 1
                     FieldList(idx)%data = Hz_m(i1, i2, i3, :, :, :)
                     FieldList(idx)%field_type = 'Hz'
+                    idx = idx + 1
                 end do
             end do
         end do
@@ -676,6 +676,164 @@ contains
         field_bounds%Hz%NX = field_bounds%Ez%Nx - 1
         field_bounds%Hz%NY = field_bounds%Ez%Ny - 1
         field_bounds%Hz%NZ = field_bounds%Ez%Nz + 1
+    end subroutine
+
+    subroutine GenerateEvolutionOperator(input_flags_no_json, input_file_json, evolutionOperator)
+        
+        character (len=*), intent(in) :: input_file_json
+        character (len=*), optional, intent(in) :: input_flags_no_json
+        real (kind = RKIND), allocatable, dimension(:, :), intent(out) ::  evolutionOperator
+
+        type(field_array_t), allocatable :: fieldInputList(:)
+        type(int_array) :: wrapper
+
+        type (bounds_t) ::  bounds
+        type(fhash_tbl_t) :: ColIndexMap
+        type(semba_fdtd_t) :: semba
+        type(solver_t) :: solver
+
+        integer :: shiftEx, shiftEy, shiftEz, shiftHx, shiftHy, shiftHz
+        integer :: i, j, k, m, totalElements, fieldIdx
+        integer :: i_rel, j_rel, k_rel, m_rel, wrapperIdx
+        real(kind = RKIND) :: fieldValue
+        integer, dimension(3) :: dims
+        
+
+        call semba%init(input_flags_no_json // ' ' // input_file_json)
+        call solver%init_control(semba%l, semba%maxSourceValue, semba%time_desdelanzamiento)
+        call solver%init(semba%sgg,semba%eps0, semba%mu0, semba%sggMiNo,& 
+                            semba%sggMiEx,semba%sggMiEy,semba%sggMiEz,& 
+                            semba%sggMiHx,semba%sggMiHy,semba%sggMiHz, & 
+                            semba%sggMtag, semba%SINPML_fullsize, semba%fullsize, semba%tag_numbers)
+
+
+        call get_field_bounds_from_json(bounds, semba%fullsize)
+
+        shiftEx = 0
+        shiftEy = 0       + bounds%Ex%Nx * bounds%Ex%Ny * bounds%Ex%Nz
+        shiftEz = shiftEy + bounds%Ey%Nx * bounds%Ey%Ny * bounds%Ey%Nz
+        shiftHx = shiftEz + bounds%Ez%Nx * bounds%Ez%Ny * bounds%Ez%Nz
+        shiftHy = shiftHx + bounds%Hx%Nx * bounds%Hx%Ny * bounds%Hx%Nz
+        shiftHz = shiftHy + bounds%Hy%Nx * bounds%Hy%Ny * bounds%Hy%Nz
+
+        totalElements = bounds%Ex%NX * bounds%Ex%NY * bounds%Ex%NZ + &
+                        bounds%Ey%NX * bounds%Ey%NY * bounds%Ey%NZ + &
+                        bounds%Ez%NX * bounds%Ez%NY * bounds%Ez%NZ + &
+                        bounds%Hx%NX * bounds%Hx%NY * bounds%Hx%NZ + &
+                        bounds%Hy%NX * bounds%Hy%NY * bounds%Hy%NZ + &
+                        bounds%Hz%NX * bounds%Hz%NY * bounds%Hz%NZ
+
+        allocate(evolutionOperator(totalElements, totalElements))
+        evolutionOperator = 0.0_RKIND
+
+        call GenerateColumnIndexMap(bounds, ColIndexMap)
+        call GenerateInputFieldsBasis(bounds, fieldInputList)
+
+        do fieldIdx = 1, size(fieldInputList)
+            dims = shape(fieldInputList(fieldIdx)%data)
+            
+            do i = 1, dims(1)
+                do j = 1, dims(2)
+                    do k = 1, dims(3)
+                        select case (fieldInputList(fieldIdx)%field_type)
+                        case ('Ex')
+                            call solver%set_field_value(iEx, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInputList(fieldIdx)%data(i,j,k))
+                        case ('Ey')
+                            call solver%set_field_value(iEy, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInputList(fieldIdx)%data(i,j,k))
+                        case ('Ez')
+                            call solver%set_field_value(iEz, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInputList(fieldIdx)%data(i,j,k))
+                        case ('Hx')
+                            call solver%set_field_value(iHx, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInputList(fieldIdx)%data(i,j,k))
+                        case ('Hy')
+                            call solver%set_field_value(iHy, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInputList(fieldIdx)%data(i,j,k))
+                        case ('Hz')
+                            call solver%set_field_value(iHz, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInputList(fieldIdx)%data(i,j,k))
+                        end select
+                    end do
+                end do
+            end do
+            
+
+            call solver%step(semba%sgg, semba%eps0, semba%mu0, semba%SINPML_FULLSIZE, semba%tag_numbers)
+            
+            
+            do i = 1, dims(1)
+                do j = 1, dims(2)
+                    do k = 1, dims(3)
+                        m = ((i - 1)*dims(2) + (j - 1))*dims(3) + k
+
+                        select case (fieldInputList(fieldIdx)%field_type)
+                        case ('Ex')
+                            call fhash_get_int_array(ColIndexMap, key(shiftEx + m), wrapper)
+                        case ('Ey')
+                            call fhash_get_int_array(ColIndexMap, key(shiftEy + m), wrapper)
+                        case ('Ez')
+                            call fhash_get_int_array(ColIndexMap, key(shiftEz + m), wrapper)
+                        case ('Hx')
+                            call fhash_get_int_array(ColIndexMap, key(shiftHx + m), wrapper)
+                        case ('Hy')
+                            call fhash_get_int_array(ColIndexMap, key(shiftHy + m), wrapper)
+                        case ('Hz')
+                            call fhash_get_int_array(ColIndexMap, key(shiftHz + m), wrapper)
+                        end select
+
+                        do wrapperIdx = 1, size(wrapper%data)
+                            m_rel = wrapper%data(wrapperIdx)
+
+                            select case (fieldInputList(fieldIdx)%field_type)
+                            case ('Ex')
+                                k_rel = mod(m_rel - shiftEx - 1, bounds%Ex%Nz) + 1
+                                j_rel = mod((m_rel - shiftEx - 1) / bounds%Ex%Nz, bounds%Ex%Ny) + 1
+                                i_rel = (m_rel - shiftEx - 1) / (bounds%Ex%Nz * bounds%Ex%Ny) + 1
+
+                                fieldValue = solver%get_field_value(iEx, i_rel - 1, j_rel - 1, k_rel - 1)
+                            case ('Ey')
+                                k_rel = mod(m_rel - shiftEy - 1, bounds%Ey%Nz) + 1
+                                j_rel = mod((m_rel - shiftEy - 1) / bounds%Ey%Nz, bounds%Ey%Ny) + 1
+                                i_rel = (m_rel - shiftEy - 1) / (bounds%Ey%Nz * bounds%Ey%Ny) + 1
+
+                                fieldValue = solver%get_field_value(iEy, i_rel - 1, j_rel - 1, k_rel - 1)
+                            case ('Ez')
+                                k_rel = mod(m_rel - shiftEz - 1, bounds%Ez%Nz) + 1
+                                j_rel = mod((m_rel - shiftEz - 1) / bounds%Ez%Nz, bounds%Ez%Ny) + 1
+                                i_rel = (m_rel - shiftEz - 1) / (bounds%Ez%Nz * bounds%Ez%Ny) + 1
+
+                                fieldValue = solver%get_field_value(iEz, i_rel - 1, j_rel - 1, k_rel - 1)
+                            case ('Hx')
+                                k_rel = mod(m_rel - shiftHx - 1, bounds%Hx%Nz) + 1
+                                j_rel = mod((m_rel - shiftHx - 1) / bounds%Hx%Nz, bounds%Hx%Ny) + 1
+                                i_rel = (m_rel - shiftHx - 1) / (bounds%Hx%Nz * bounds%Hx%Ny) + 1
+
+                                fieldValue = solver%get_field_value(iHx, i_rel - 1, j_rel - 1, k_rel - 1)
+                            case ('Hy')
+                                k_rel = mod(m_rel - shiftHy - 1, bounds%Hy%Nz) + 1
+                                j_rel = mod((m_rel - shiftHy - 1) / bounds%Hy%Nz, bounds%Hy%Ny) + 1
+                                i_rel = (m_rel - shiftHy - 1) / (bounds%Hy%Nz * bounds%Hy%Ny) + 1
+
+                                fieldValue = solver%get_field_value(iHy, i_rel - 1, j_rel - 1, k_rel - 1)
+                            case ('Hz')
+                                k_rel = mod(m_rel - shiftHz - 1, bounds%Hz%Nz) + 1
+                                j_rel = mod((m_rel - shiftHz - 1) / bounds%Hz%Nz, bounds%Hz%Ny) + 1
+                                i_rel = (m_rel - shiftHz - 1) / (bounds%Hz%Nz * bounds%Hz%Ny) + 1
+
+                                fieldValue = solver%get_field_value(iHz, i_rel - 1, j_rel - 1, k_rel - 1)
+                            end select
+
+                            evolutionOperator(m_rel, m) = fieldValue
+                        end do
+                        
+                    end do
+                end do
+            end do
+
+            call solver%set_field_value(iEx, [solver%bounds%Ex%xi, solver%bounds%Ex%xe], [solver%bounds%Ex%yi, solver%bounds%Ex%ye], [solver%bounds%Ex%zi, solver%bounds%Ex%ze], 0.0)
+            call solver%set_field_value(iEy, [solver%bounds%Ey%xi, solver%bounds%Ey%xe], [solver%bounds%Ey%yi, solver%bounds%Ey%ye], [solver%bounds%Ey%zi, solver%bounds%Ey%ze], 0.0)
+            call solver%set_field_value(iEz, [solver%bounds%Ez%xi, solver%bounds%Ez%xe], [solver%bounds%Ez%yi, solver%bounds%Ez%ye], [solver%bounds%Ez%zi, solver%bounds%Ez%ze], 0.0)
+            call solver%set_field_value(iHx, [solver%bounds%Hx%xi, solver%bounds%Hx%xe], [solver%bounds%Hx%yi, solver%bounds%Hx%ye], [solver%bounds%Hx%zi, solver%bounds%Hx%ze], 0.0)
+            call solver%set_field_value(iHy, [solver%bounds%Hy%xi, solver%bounds%Hy%xe], [solver%bounds%Hy%yi, solver%bounds%Hy%ye], [solver%bounds%Hy%zi, solver%bounds%Hy%ze], 0.0)
+            call solver%set_field_value(iHz, [solver%bounds%Hz%xi, solver%bounds%Hz%xe], [solver%bounds%Hz%yi, solver%bounds%Hz%ye], [solver%bounds%Hz%zi, solver%bounds%Hz%ze], 0.0)
+            
+        end do
     end subroutine
 
 end module

@@ -539,16 +539,11 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
 
     implicit none
 
-    type(field_array_t) :: fieldInput, fieldOutput
-    real(RKIND), dimension(3,4,4) :: M_Ex, M_ee, M_eo, M_oe, M_oo
+    real(RKIND), allocatable, dimension(:, :) :: evolOp
 
     character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'grid_3x3x3.fdtd.json'
-
-    call GenerateElectricalInputBasis(M_Ex, 2, 3, M_ee, M_eo, M_oe, M_oo)
-    fieldInput%data = M_ee
-    fieldInput%field_type = 'Ex'
     
-    call GenerateOutputFields('-i', filename, fieldInput, fieldOutput)
+    call GenerateEvolutionOperator('-i', filename, evolOp)
 
     end function test_evolution_operator_get_field_outputs
 
