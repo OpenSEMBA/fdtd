@@ -368,6 +368,141 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
 
     end function test_evolution_operator_indices_map_all_fields
 
+    integer function test_evolution_operator_column_map_creation() bind(C, name="test_evolution_operator_column_map_creation") result(err)
+    use smbjson
+    use smbjson_testingTools
+    use evolution_operator
+    use fhash, key => fhash_key
+
+    implicit none
+
+    integer :: m
+    type(bounds_t) :: bounds
+    type(fhash_tbl_t) :: ColIndexMap
+    type(int_array) :: wrapper
+    integer :: totalElements
+
+    bounds%Ex%NX = 1
+    bounds%Ex%NY = 4
+    bounds%Ex%NZ = 4
+
+    bounds%Ey%NX = 2
+    bounds%Ey%NY = 3
+    bounds%Ey%NZ = 4
+
+    bounds%Ez%NX = 2
+    bounds%Ez%NY = 4
+    bounds%Ez%NZ = 3
+
+    bounds%Hx%NX = 2
+    bounds%Hx%NY = 3
+    bounds%Hx%NZ = 3
+
+    bounds%Hy%NX = 1
+    bounds%Hy%NY = 4
+    bounds%Hy%NZ = 3
+
+    bounds%Hz%NX = 1
+    bounds%Hz%NY = 3
+    bounds%Hz%NZ = 4
+
+    err = 0
+
+    totalElements = bounds%Ex%NX * bounds%Ex%NY * bounds%Ex%NZ + &
+                    bounds%Ey%NX * bounds%Ey%NY * bounds%Ey%NZ + &
+                    bounds%Ez%NX * bounds%Ez%NY * bounds%Ez%NZ + &
+                    bounds%Hx%NX * bounds%Hx%NY * bounds%Hx%NZ + &
+                    bounds%Hy%NX * bounds%Hy%NY * bounds%Hy%NZ + &
+                    bounds%Hz%NX * bounds%Hz%NY * bounds%Hz%NZ
+
+    call GenerateColumnIndexMap(bounds, ColIndexMap)
+
+    do m = 1, totalElements
+        call fhash_get_int_array(ColIndexMap, key(m), wrapper)
+
+        if (size(wrapper%data) == 0) then
+            err = err + 1
+        end if
+    end do
+
+    end function test_evolution_operator_column_map_creation
+
+    integer function test_evolution_operator_chaeck_map_consistency() bind(C, name="test_evolution_operator_chaeck_map_consistency") result(err)
+    use smbjson
+    use smbjson_testingTools
+    use evolution_operator
+    use fhash, key => fhash_key
+
+    implicit none
+
+    integer :: m, i
+    type(bounds_t) :: bounds
+    type(fhash_tbl_t) :: ColIndexMap, RowIndexMap
+    type(int_array) :: wrapperCol, wrapperRow
+    integer :: totalElements
+
+    bounds%Ex%NX = 1
+    bounds%Ex%NY = 4
+    bounds%Ex%NZ = 4
+
+    bounds%Ey%NX = 2
+    bounds%Ey%NY = 3
+    bounds%Ey%NZ = 4
+
+    bounds%Ez%NX = 2
+    bounds%Ez%NY = 4
+    bounds%Ez%NZ = 3
+
+    bounds%Hx%NX = 2
+    bounds%Hx%NY = 3
+    bounds%Hx%NZ = 3
+
+    bounds%Hy%NX = 1
+    bounds%Hy%NY = 4
+    bounds%Hy%NZ = 3
+
+    bounds%Hz%NX = 1
+    bounds%Hz%NY = 3
+    bounds%Hz%NZ = 4
+
+    err = 0
+
+    totalElements = bounds%Ex%NX * bounds%Ex%NY * bounds%Ex%NZ + &
+                    bounds%Ey%NX * bounds%Ey%NY * bounds%Ey%NZ + &
+                    bounds%Ez%NX * bounds%Ez%NY * bounds%Ez%NZ + &
+                    bounds%Hx%NX * bounds%Hx%NY * bounds%Hx%NZ + &
+                    bounds%Hy%NX * bounds%Hy%NY * bounds%Hy%NZ + &
+                    bounds%Hz%NX * bounds%Hz%NY * bounds%Hz%NZ
+
+    call GenerateRowIndexMap(bounds, RowIndexMap)
+    call GenerateColumnIndexMap(bounds, ColIndexMap)
+
+    do m = 1, totalElements
+        call fhash_get_int_array(ColIndexMap, key(m), wrapperCol)
+
+        do i = 1, size(wrapperCol%data)
+            call fhash_get_int_array(RowIndexMap, key(wrapperCol%data(i)), wrapperRow)
+
+            if (all(wrapperRow%data /= m)) then
+                err = err + 1
+            end if
+        end do
+    end do
+
+    do m = 1, totalElements
+        call fhash_get_int_array(RowIndexMap, key(m), wrapperRow)
+
+        do i = 1, size(wrapperRow%data)
+            call fhash_get_int_array(ColIndexMap, key(wrapperRow%data(i)), wrapperCol)
+
+            if (all(wrapperCol%data /= m)) then
+                err = err + 1
+            end if
+        end do
+    end do
+
+    end function test_evolution_operator_chaeck_map_consistency
+
     integer function test_evolution_operator_read_bounds_from_json() bind(C, name="test_evolution_operator_read_bounds_from_json") result(err)
     use smbjson
     use smbjson_testingTools
@@ -395,6 +530,27 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
 
 
     end function test_evolution_operator_read_bounds_from_json
+
+    integer function test_evolution_operator_get_field_outputs() bind(C, name="test_evolution_operator_get_field_outputs") result(err)
+    use smbjson
+    use smbjson_testingTools
+    use evolution_operator
+    use SEMBA_FDTD_mod
+
+    implicit none
+
+    type(field_array_t) :: fieldInput, fieldOutput
+    real(RKIND), dimension(3,4,4) :: M_Ex, M_ee, M_eo, M_oe, M_oo
+
+    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'grid_3x3x3.fdtd.json'
+
+    call GenerateElectricalInputBasis(M_Ex, 2, 3, M_ee, M_eo, M_oe, M_oo)
+    fieldInput%data = M_ee
+    fieldInput%field_type = 'Ex'
+    
+    call GenerateOutputFields('-i', filename, fieldInput, fieldOutput)
+
+    end function test_evolution_operator_get_field_outputs
 
     integer function test_evolution_operator_comparison_with_solver() bind(C, name="test_evolution_operator_comparison_with_solver") result(err)
     use smbjson

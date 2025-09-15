@@ -23,6 +23,7 @@ module evolution_operator
     private 
 
     public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap, get_field_bounds_from_json, GenerateOutputFields, field_array_t
+    public :: GenerateColumnIndexMap
 
 contains
 
@@ -565,7 +566,60 @@ contains
         call AddMagneticFieldIndices(RowIndexMap, bounds%Hz, bounds%Ex, bounds%Ey, shiftHz, shiftEx, shiftEy, 'j', 'i')
 
 
-    end subroutine
+    end subroutine GenerateRowIndexMap
+
+    subroutine GenerateColumnIndexMap(bounds, ColIndexMap)
+
+        type(bounds_t), intent(IN) :: bounds
+        type(fhash_tbl_t), intent(OUT) :: ColIndexMap
+        type(fhash_tbl_t) :: RowIndexMap
+        integer :: m1, m2, dataIdx, listPosition, countSize, totalElements
+        type(int_array) :: wrapper1, wrapper2, wrapperColumn
+        integer, allocatable :: tempData(:)
+
+
+        totalElements = bounds%Ex%NX * bounds%Ex%NY * bounds%Ex%NZ + &
+                        bounds%Ey%NX * bounds%Ey%NY * bounds%Ey%NZ + &
+                        bounds%Ez%NX * bounds%Ez%NY * bounds%Ez%NZ + &
+                        bounds%Hx%NX * bounds%Hx%NY * bounds%Hx%NZ + &
+                        bounds%Hy%NX * bounds%Hy%NY * bounds%Hy%NZ + &
+                        bounds%Hz%NX * bounds%Hz%NY * bounds%Hz%NZ
+
+        call GenerateRowIndexMap(bounds, RowIndexMap)
+
+        do m1 = 1, totalElements
+            call fhash_get_int_array(RowIndexMap, key(m1), wrapper1)
+
+            do dataIdx = 1, size(wrapper1%data)
+                listPosition = 1
+                countSize = 0
+
+                do m2 = 1, totalElements
+                    call fhash_get_int_array(RowIndexMap, key(m2), wrapper2)
+
+                    if (any(wrapper2%data == wrapper1%data(dataIdx))) then
+                        countSize = countSize + 1
+                    end if
+                end do
+
+                allocate(tempData(countSize))
+
+                do m2 = 1, totalElements
+                    call fhash_get_int_array(RowIndexMap, key(m2), wrapper2)
+
+                    if (any(wrapper2%data == wrapper1%data(dataIdx))) then
+                        tempData(listPosition) = m2
+                        listPosition = listPosition + 1
+                    end if
+                end do
+
+                wrapperColumn%data = tempData
+                call ColIndexMap%set(key(wrapper1%data(dataIdx)), value=wrapperColumn)
+                deallocate(tempData)
+            end do
+        end do
+
+    end subroutine GenerateColumnIndexMap
 
     subroutine fhash_get_int_array(tbl, k, val)
         type(fhash_tbl_t), intent(in) :: tbl
