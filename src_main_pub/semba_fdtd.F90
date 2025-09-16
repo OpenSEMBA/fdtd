@@ -408,14 +408,14 @@ contains
 #ifdef CompileWithMPI
             CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
             CALL conformal_ini (TRIM(this%l%conformal_file_input_name),trim(this%l%fileFDE),parser,&
-               &this%sgg, this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,this%l%run_with_abrezanjas,&
+               &this%sgg, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%l%run_with_abrezanjas,&
                &this%fullsize,this%l%layoutnumber,this%l%mpidir, this%l%input_conformal_flag,conf_err,this%l%verbose)
 #endif
             !......................................................................
 #ifndef CompileWithMPI
             !CALL conformal_ini (TRIM(this%l%conformal_file_input_name),trim(this%l%fileFDE),sgg,fullsize,0,conf_err,this%l%verbose)
          CALL conformal_ini (TRIM(this%l%conformal_file_input_name),trim(this%l%fileFDE),parser,&
-               &this%sgg, this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,&
+               &this%sgg, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
                &this%l%run_with_abrezanjas,this%fullsize,0,this%l%mpidir,this%l%input_conformal_flag,conf_err,this%l%verbose)
 #endif
             if(conf_err/=0)then
@@ -472,7 +472,7 @@ contains
                write(dubuf,*) '----> this%l%input_conformal_flag True and init';  call print11(this%l%layoutnumber,dubuf)
             call conf_geometry_mapped_for_UGRDTD (&
             &conf_conflicts, &
-            &this%sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, &
+            &this%sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, &
             &this%fullsize, this%SINPML_fullsize,this%l%layoutnumber,conf_err,this%l%verbose);
             !call conf_geometry_mapped_for_UGRDTD (sgg, fullsize, this%SINPML_fullsize,this%l%layoutnumber,conf_err,this%l%verbose); //refactor JUL15
             if(conf_err==0)then

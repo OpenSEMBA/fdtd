@@ -1290,10 +1290,10 @@ contains
               call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
                write(dubuf,*) 'Init Multi sgbc...';  call print11(this%control%layoutnumber,dubuf)
-               call Initsgbcs(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size, &
-                  this%g,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
-               ! call Initsgbcs(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control%layoutnumber,this%control%size, &
-               !    this%g%G1,this%g%G2,this%g%GM1,this%g%GM2,this%thereAre%sgbcs,this%control%resume,this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive,eps0,mu0,this%control%simu_devia,this%control%stochastic)
+               call Initsgbcs(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
+                              this%control%layoutnumber,this%control%size, this%g, this%thereAre%sgbcs,this%control%resume, &
+                              this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive, &
+                              eps0,mu0,this%control%simu_devia,this%control%stochastic)
 
          l_auxinput= this%thereAre%sgbcs
          l_auxoutput=l_auxinput
@@ -1319,8 +1319,8 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Multiports...';  call print11(this%control%layoutnumber,dubuf)
-            call InitMultiports        (sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx ,this%sggMiHy ,this%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Multiports,this%control%resume, &
-            Idxe,Idye,Idze,this%control%NOcompomur,this%control%AD,%this%control%cfl,eps0,mu0)
+            call InitMultiports        (sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx ,this%media%sggMiHy ,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Multiports,this%control%resume, &
+            Idxe,Idye,Idze,this%control%NOcompomur,this%control%ADE,this%control%cfl,eps0,mu0)
          l_auxinput= this%thereAre%Multiports
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1348,8 +1348,8 @@ contains
             write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
 !WIP
 !DEBUG
-            call initialize_memory_FDTD_conf_fields (sgg,this%sggMiEx, &
-            & this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,&
+            call initialize_memory_FDTD_conf_fields (sgg,this%media%sggMiEx, &
+            & this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,&
             & this%control%layoutnumber,this%control%size, this%control%verbose);
             l_auxinput=input_conformal_flag
             l_auxoutput=l_auxinput
@@ -1756,7 +1756,7 @@ contains
 
    subroutine solver_run(this, sgg, eps0, mu0, sinPML_fullsize, fullsize, tag_numbers, tagtype)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
+      type(sggfdtdinfo), intent(inout) :: sgg
 
       real(kind=rkind), intent(inout) :: eps0,mu0
 
@@ -1990,7 +1990,7 @@ contains
             if ((sgg%tiempo(this%n)>=this%EpsMuTimeScale_input_parameters%tini).and.&
                 &(sgg%tiempo(this%n)<=this%EpsMuTimeScale_input_parameters%tend)) then
 #endif
-             call updateconstants(sgg,this%n,this%thereare,this%g%g1,this%g%g2,this%g%gM1,this%g%gM2, & 
+             call updateconstants(sgg,this%n,this%thereare,this%g, & 
                                Idxe,Idye,Idze,Idxh,Idyh,Idzh, &  !needed by  CPML to be updated
                                this%control%sgbc,this%control%mibc,input_conformal_flag, &
                                this%control%wiresflavor, this%control%wirecrank, this%control%fieldtotl,&
@@ -2110,7 +2110,7 @@ contains
          call AdvanceMultiportH (sgg%alloc,this%Hx,this%Hy,this%Hz, & 
                                  this%Ex,this%Ey,this%Ez,& 
                                  this%Idxe,this%Idye,this%Idze, & 
-                                 this%sggMiHx,this%sggMiHy,this%sggMiHz, & 
+                                 this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
                                  this%g%gm2,sgg%nummedia,this%control%conformalskin)
 #endif
       call this%advancePlaneWaveH(sgg)
@@ -2680,12 +2680,12 @@ contains
       endif
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-         IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(sgg,n)
+         IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(sgg,this%n)
       endif
 #endif
 #ifdef CompileWithSlantedWires
       if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
-         call AdvanceWiresE_Slanted(sgg,n) 
+         call AdvanceWiresE_Slanted(sgg,this%n) 
       endif
 #endif
       if (this%control%use_mtln_wires) then
