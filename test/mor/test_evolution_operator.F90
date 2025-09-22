@@ -539,11 +539,52 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
 
     implicit none
 
-    real(RKIND), allocatable, dimension(:, :) :: evolOp
+    type(bounds_t) :: bounds
+    type(semba_fdtd_t) :: semba
+    type(field_array_t), allocatable :: fieldArrayInput(:), fieldArrayOutput(:)
+    real(RKIND), allocatable :: initialState(:), finalState(:)
 
     character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'grid_3x3x3.fdtd.json'
+
+    err = 0
+
+    call semba%init(trim('-i '//filename))
+    call get_field_bounds_from_json(bounds, semba%fullsize)
+
+    ! Creating an initial field array with all the fields with zeros
+    allocate(fieldArrayInput(6))
+
+    fieldArrayInput(1)%field_type = 'Ex'
+    allocate(fieldArrayInput(1)%data(bounds%Ex%Nx, bounds%Ex%Ny, bounds%Ex%Nz))
+    fieldArrayInput(1)%data = 0.0_RKIND
+
+    fieldArrayInput(2)%field_type = 'Ey'
+    allocate(fieldArrayInput(2)%data(bounds%Ey%Nx, bounds%Ey%Ny, bounds%Ey%Nz))
+    fieldArrayInput(2)%data = 0.0_RKIND
+
+    fieldArrayInput(3)%field_type = 'Ez'
+    allocate(fieldArrayInput(3)%data(bounds%Ez%Nx, bounds%Ez%Ny, bounds%Ez%Nz))
+    fieldArrayInput(3)%data = 0.0_RKIND
+
+    fieldArrayInput(4)%field_type = 'Hx'
+    allocate(fieldArrayInput(4)%data(bounds%Hx%Nx, bounds%Hx%Ny, bounds%Hx%Nz))
+    fieldArrayInput(4)%data = 0.0_RKIND
+
+    fieldArrayInput(5)%field_type = 'Hy'
+    allocate(fieldArrayInput(5)%data(bounds%Hy%Nx, bounds%Hy%Ny, bounds%Hy%Nz))
+    fieldArrayInput(5)%data = 0.0_RKIND
+
+    fieldArrayInput(6)%field_type = 'Hz'
+    allocate(fieldArrayInput(6)%data(bounds%Hz%Nx, bounds%Hz%Ny, bounds%Hz%Nz))
+    fieldArrayInput(6)%data = 0.0_RKIND
+
+    fieldArrayInput(1)%data(2,2,2) = 1.0_RKIND
+
+
+    call GenerateStateFromFields(fieldArrayInput, initialState)
+    call EvolveState('-i', filename, initialState, finalState)
+    call GenerateFieldArrayFromState(finalState, fieldArrayInput, fieldArrayOutput)
     
-    call GenerateEvolutionOperator('-i', filename, evolOp)
 
     end function test_evolution_operator_get_field_outputs
 

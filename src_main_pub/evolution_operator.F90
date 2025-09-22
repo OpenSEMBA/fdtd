@@ -23,7 +23,7 @@ module evolution_operator
     private 
 
     public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap, get_field_bounds_from_json, GenerateOutputFields, field_array_t
-    public :: GenerateColumnIndexMap, GenerateEvolutionOperator
+    public :: GenerateColumnIndexMap, GenerateEvolutionOperator, EvolveState, EvolveStateMultipleSteps, GenerateStateFromFields, GenerateFieldArrayFromState
 
 contains
 
@@ -834,6 +834,121 @@ contains
             call solver%set_field_value(iHz, [solver%bounds%Hz%xi, solver%bounds%Hz%xe], [solver%bounds%Hz%yi, solver%bounds%Hz%ye], [solver%bounds%Hz%zi, solver%bounds%Hz%ze], 0.0)
             
         end do
+    end subroutine
+
+    subroutine GenerateStateFromFields(fieldArray, stateVector)
+        type(field_array_t), intent(in) :: fieldArray(:)
+        real (kind = RKIND), allocatable, dimension(:), intent(out) :: stateVector
+        real (kind = RKIND), allocatable, dimension(:,:,:) :: tempField
+
+        integer :: i, j, k, m, shiftField
+        integer :: nFields, totalElements
+
+        totalElements = 0
+        do nFields = 1, size(fieldArray)
+            tempField = fieldArray(nFields)%data
+
+            do i = 1, size(tempField, 1)
+                do j = 1, size(tempField, 2)
+                    do k = 1, size(tempField, 3)
+                        totalElements = totalElements + 1
+                    end do
+                end do
+            end do
+        end do
+
+        allocate(stateVector(totalElements))
+
+        shiftField = 0
+        do nFields = 1, size(fieldArray)
+            tempField = fieldArray(nFields)%data
+
+            do i = 1, size(tempField, 1)
+                do j = 1, size(tempField, 2)
+                    do k = 1, size(tempField, 3)
+                        m = ((i - 1)*size(tempField, 2) + (j - 1))*size(tempField, 3) + k
+                        stateVector(shiftField + m) = tempField(i, j, k)
+                    end do
+                end do
+            end do
+
+            shiftField = shiftField + size(tempField, 1) * size(tempField, 2) * size(tempField, 3)
+        end do
+        
+
+    end subroutine
+
+    subroutine EvolveState(input_flags_no_json, input_file_json, initialState, finalState)
+        
+        character (len=*), intent(in) :: input_file_json
+        character (len=*), optional, intent(in) :: input_flags_no_json
+        real (kind = RKIND), intent(in), dimension(:) ::  initialState
+        real (kind = RKIND), intent(out), dimension(:), allocatable :: finalState
+
+        type (bounds_t) ::  bounds
+        real (kind = RKIND), allocatable, dimension(:, :) :: evolutionOperator
+
+        call GenerateEvolutionOperator(input_flags_no_json, input_file_json, evolutionOperator)
+        allocate(finalState(size(initialState)))
+
+        finalState = matmul(evolutionOperator, initialState)
+
+    end subroutine
+
+    subroutine EvolveStateMultipleSteps(input_flags_no_json, input_file_json, nSteps, initialState, finalState)
+        
+        character (len=*), intent(in) :: input_file_json
+        character (len=*), optional, intent(in) :: input_flags_no_json
+        integer, intent(in) :: nSteps
+        real (kind = RKIND), intent(in), dimension(:) ::  initialState
+        real (kind = RKIND), intent(out), dimension(:), allocatable :: finalState
+
+        real (kind = RKIND), allocatable, dimension(:, :) :: evolutionOperator
+        real (kind = RKIND), allocatable, dimension(:) :: tempState
+        integer :: step
+
+        call GenerateEvolutionOperator(input_flags_no_json, input_file_json, evolutionOperator)
+
+        tempState = initialState
+        allocate(finalState(size(initialState)))
+
+        do step = 1, nSteps
+            finalState = matmul(evolutionOperator, tempState)
+            tempState = finalState
+        end do
+
+    end subroutine
+
+    subroutine GenerateFieldArrayFromState(stateVector, fieldArrayInput, fieldArrayOutput)
+        real (kind = RKIND), intent(in), dimension(:) :: stateVector
+        type(field_array_t), intent(in) :: fieldArrayInput(:)
+        type(field_array_t), allocatable, intent(out) :: fieldArrayOutput(:)
+
+        integer :: i, j, k, m, shiftField
+        integer :: nFields
+        
+        m = size(stateVector)
+        shiftField = 0
+        allocate(fieldArrayOutput(size(fieldArrayInput)))
+
+        do nFields = 1, size(fieldArrayInput)
+            allocate(fieldArrayOutput(nFields)%data(size(fieldArrayInput(nFields)%data, 1), size(fieldArrayInput(nFields)%data, 2), size(fieldArrayInput(nFields)%data, 3)))
+            fieldArrayOutput(nFields)%field_type = fieldArrayInput(nFields)%field_type
+
+            do i = 1, size(fieldArrayInput(nFields)%data, 1)
+                do j = 1, size(fieldArrayInput(nFields)%data, 2)
+                    do k = 1, size(fieldArrayInput(nFields)%data, 3)
+                        m = ((i - 1)*size(fieldArrayInput(nFields)%data, 2) + (j - 1))*size(fieldArrayInput(nFields)%data, 3) + k
+                        fieldArrayOutput(nFields)%data(i, j, k) = stateVector(shiftField + m)
+                    end do
+                end do
+            end do
+
+            shiftField = shiftField + size(fieldArrayInput(nFields)%data, 1) * size(fieldArrayInput(nFields)%data, 2) * size(fieldArrayInput(nFields)%data, 3)
+        end do
+
+        
+
     end subroutine
 
 end module
