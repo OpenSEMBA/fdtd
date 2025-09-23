@@ -1,26 +1,26 @@
 #include <gtest/gtest.h>
 
 extern "C" int test_evolution_operator_dimension_Field_basis();
-extern "C" int test_evolution_operator_poisition_E_basis();
+extern "C" int test_evolution_operator_position_E_basis();
 extern "C" int test_evolution_operator_position_H_basis();
 extern "C" int test_evolution_operator_E_indices_map();
 extern "C" int test_evolution_operator_H_indices_map();
 extern "C" int test_evolution_operator_indices_map_all_fields();
 extern "C" int test_evolution_operator_column_map_creation();
 extern "C" int test_evolution_operator_comparison_with_solver();
-extern "C" int test_evolution_operator_read_bounds_from_json();
+extern "C" int test_evolution_operator_read_bounds_from_semba();
 extern "C" int test_evolution_operator_get_field_outputs();
-extern "C" int test_evolution_operator_chaeck_map_consistency();
+extern "C" int test_evolution_operator_check_map_consistency();
 
 TEST(mor, evolutionOperator_BasisDimension)        { EXPECT_EQ(0, test_evolution_operator_dimension_Field_basis()); }
-TEST(mor, evolutionOperator_PositionEBasis)        { EXPECT_EQ(0, test_evolution_operator_poisition_E_basis()); }
+TEST(mor, evolutionOperator_PositionEBasis)        { EXPECT_EQ(0, test_evolution_operator_position_E_basis()); }
 TEST(mor, evolutionOperator_PositionHBasis)        { EXPECT_EQ(0, test_evolution_operator_position_H_basis()); }
 TEST(mor, evolutionOperator_EIndicesMap)           { EXPECT_EQ(0, test_evolution_operator_E_indices_map()); }
 TEST(mor, evolutionOperator_HIndicesMap)           { EXPECT_EQ(0, test_evolution_operator_H_indices_map()); }
 TEST(mor, evolutionOperator_IndicesMapAllFields)   { EXPECT_EQ(0, test_evolution_operator_indices_map_all_fields()); }
 TEST(mor, evolutionOperator_ColumnMapCreation)     { EXPECT_EQ(0, test_evolution_operator_column_map_creation()); }
-TEST(mor, evolutionOperator_CheckMapConsistency)   { EXPECT_EQ(0, test_evolution_operator_chaeck_map_consistency()); }
-TEST(mor, evolutionOperator_ReadFieldBoundsFromJson) { EXPECT_EQ(0, test_evolution_operator_read_bounds_from_json()); }
+TEST(mor, evolutionOperator_CheckMapConsistency)   { EXPECT_EQ(0, test_evolution_operator_check_map_consistency()); }
+TEST(mor, evolutionOperator_ReadFieldBoundsFromSemba) { EXPECT_EQ(0, test_evolution_operator_read_bounds_from_semba()); }
 TEST(mor, evolutionOperator_GetFieldOutputs)      { EXPECT_EQ(0, test_evolution_operator_get_field_outputs()); }
 
 TEST(mor, evolutionOperator_ComparisonWithSolver)  { EXPECT_EQ(0, test_evolution_operator_comparison_with_solver()); }

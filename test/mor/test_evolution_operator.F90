@@ -29,7 +29,7 @@ integer function test_evolution_operator_dimension_Field_basis() bind (C, name="
 
 end function test_evolution_operator_dimension_Field_basis
 
-integer function test_evolution_operator_poisition_E_basis() bind(C, name="test_evolution_operator_poisition_E_basis") result(err)
+integer function test_evolution_operator_position_E_basis() bind(C, name="test_evolution_operator_position_E_basis") result(err)
     use smbjson
     use smbjson_testingTools
     use evolution_operator
@@ -65,7 +65,7 @@ integer function test_evolution_operator_poisition_E_basis() bind(C, name="test_
         err = err + 1
     end if
 
-end function test_evolution_operator_poisition_E_basis
+end function test_evolution_operator_position_E_basis
 
 integer function test_evolution_operator_position_H_basis() bind(C, name="test_evolution_operator_position_H_basis") result(err)
     use smbjson
@@ -248,7 +248,7 @@ integer function test_evolution_operator_H_indices_map() bind(C, name="test_evol
     err = 0
     ElementsInMap = 0
 
-    ! To verify the H indices map, first I need to create the map of all the Electic fields
+    ! To verify the H indices map, first I need to create the map of all the Electric fields
 
     call AddElectricFieldIndices(RowIndexMap, bounds%Ey, bounds%Hx, bounds%Hz, shiftEy, shiftHx, shiftHz, 'k', 'i')
     call AddElectricFieldIndices(RowIndexMap, bounds%Ez, bounds%Hx, bounds%Hy, shiftEz, shiftHx, shiftHy, 'j', 'i')
@@ -427,7 +427,7 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
 
     end function test_evolution_operator_column_map_creation
 
-    integer function test_evolution_operator_chaeck_map_consistency() bind(C, name="test_evolution_operator_chaeck_map_consistency") result(err)
+    integer function test_evolution_operator_check_map_consistency() bind(C, name="test_evolution_operator_check_map_consistency") result(err)
     use smbjson
     use smbjson_testingTools
     use evolution_operator
@@ -501,9 +501,9 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
         end do
     end do
 
-    end function test_evolution_operator_chaeck_map_consistency
+    end function test_evolution_operator_check_map_consistency
 
-    integer function test_evolution_operator_read_bounds_from_json() bind(C, name="test_evolution_operator_read_bounds_from_json") result(err)
+    integer function test_evolution_operator_read_bounds_from_semba() bind(C, name="test_evolution_operator_read_bounds_from_semba") result(err)
     use smbjson
     use smbjson_testingTools
     use evolution_operator
@@ -519,7 +519,7 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
     err = 0
 
     call semba%init(trim('-i '//filename))
-    call get_field_bounds_from_json(bounds, semba%fullsize)
+    call get_field_bounds_from_sembaFullsize(bounds, semba%fullsize)
 
     if (bounds%Ex%Nx /= 50 .or. bounds%Ex%Ny /= 4 .or. bounds%Ex%Nz /= 4) err = err + 1
     if (bounds%Ey%Nx /= 51 .or. bounds%Ey%Ny /= 3 .or. bounds%Ey%Nz /= 4) err = err + 1
@@ -529,7 +529,7 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
     if (bounds%Hz%Nx /= 50 .or. bounds%Hz%Ny /= 3 .or. bounds%Hz%Nz /= 4) err = err + 1
 
 
-    end function test_evolution_operator_read_bounds_from_json
+    end function test_evolution_operator_read_bounds_from_semba
 
     integer function test_evolution_operator_get_field_outputs() bind(C, name="test_evolution_operator_get_field_outputs") result(err)
     use smbjson
@@ -541,6 +541,7 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
 
     type(bounds_t) :: bounds
     type(semba_fdtd_t) :: semba
+    type(solver_t) :: solver
     type(field_array_t), allocatable :: fieldArrayInput(:), fieldArrayOutput(:)
     real(RKIND), allocatable :: initialState(:), finalState(:)
     integer :: i, j, k, nFields
@@ -550,7 +551,13 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
     err = 0
 
     call semba%init(trim('-i '//filename))
-    call get_field_bounds_from_json(bounds, semba%fullsize)
+    call solver%init_control(semba%l, semba%maxSourceValue, semba%time_desdelanzamiento)
+    call solver%init(semba%sgg,semba%eps0, semba%mu0, semba%sggMiNo,& 
+                        semba%sggMiEx,semba%sggMiEy,semba%sggMiEz,& 
+                        semba%sggMiHx,semba%sggMiHy,semba%sggMiHz, & 
+                        semba%sggMtag, semba%SINPML_fullsize, semba%fullsize, semba%tag_numbers)
+
+    call get_field_bounds_from_sembaFullsize(bounds, semba%fullsize)
 
     ! Creating an initial field array with all the fields with zeros
     allocate(fieldArrayInput(6))
@@ -584,7 +591,7 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
 
 
     call GenerateStateFromFields(fieldArrayInput, initialState)
-    call EvolveState('-i', filename, initialState, finalState)
+    call EvolveState(semba, solver, initialState, finalState)
     call GenerateFieldArrayFromState(finalState, fieldArrayInput, fieldArrayOutput)
 
     ! We expect to see values different from zero in Ex(2,2,2), Hy(2,2,2), Hy(2,2,1), Hz(2,2,2) and Hz(2,1,2) and zeros in the rest of the components of the fields
@@ -628,44 +635,78 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
     use smbjson
     use smbjson_testingTools
     use evolution_operator
-    use fhash, key => fhash_key
+    use SEMBA_FDTD_mod
 
     implicit none
 
-    integer :: m
     type(bounds_t) :: bounds
-    type(fhash_tbl_t) :: RowIndexMap
+    type(semba_fdtd_t) :: semba
+    type(solver_t) :: solver
+    type(field_array_t), allocatable :: fieldArrayInput(:), fieldArrayOutput(:)
+    real(RKIND), allocatable :: initialState(:), finalState(:)
+    integer :: i, j, k, nFields
 
-    bounds%Ex%NX = 50
-    bounds%Ex%NY = 4
-    bounds%Ex%NZ = 4
-
-    bounds%Ey%NX = 51
-    bounds%Ey%NY = 3
-    bounds%Ey%NZ = 4
-
-    bounds%Ez%NX = 51
-    bounds%Ez%NY = 4
-    bounds%Ez%NZ = 3
-
-    bounds%Hx%NX = bounds%Ex%Nx + 1
-    bounds%Hx%NY = bounds%Ex%Ny - 1
-    bounds%Hx%NZ = bounds%Ex%Nz - 1
-
-    bounds%Hy%NX = bounds%Ey%Nx - 1
-    bounds%Hy%NY = bounds%Ey%Ny + 1
-    bounds%Hy%NZ = bounds%Ey%Nz - 1
-
-    bounds%Hz%NX = bounds%Ez%Nx - 1
-    bounds%Hz%NY = bounds%Ez%Ny - 1
-    bounds%Hz%NZ = bounds%Ez%Nz + 1
+    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'grid_3x3x3.fdtd.json'
 
     err = 0
 
-    ! Generate the evolution operator with the basis, the map and one step with the solver
-    ! I can make a function with these three steps inside the evolution operator module
-    call GenerateRowIndexMap(bounds, RowIndexMap)
+    ! Creating the results from the evolution operator
+    call semba%init(trim('-i '//filename))
+    call solver%init_control(semba%l, semba%maxSourceValue, semba%time_desdelanzamiento)
+    call solver%init(semba%sgg,semba%eps0, semba%mu0, semba%sggMiNo,& 
+                        semba%sggMiEx,semba%sggMiEy,semba%sggMiEz,& 
+                        semba%sggMiHx,semba%sggMiHy,semba%sggMiHz, & 
+                        semba%sggMtag, semba%SINPML_fullsize, semba%fullsize, semba%tag_numbers)
 
-    ! With the evolution operator and the initial excitation, I can generate for example five steps and then compare with the full solver
+    call get_field_bounds_from_sembaFullsize(bounds, semba%fullsize)
+
+    ! Creating an initial field array with all the fields with zeros
+    allocate(fieldArrayInput(6))
+
+    fieldArrayInput(1)%field_type = 'Ex'
+    allocate(fieldArrayInput(1)%data(bounds%Ex%Nx, bounds%Ex%Ny, bounds%Ex%Nz))
+    fieldArrayInput(1)%data = 0.0_RKIND
+
+    fieldArrayInput(2)%field_type = 'Ey'
+    allocate(fieldArrayInput(2)%data(bounds%Ey%Nx, bounds%Ey%Ny, bounds%Ey%Nz))
+    fieldArrayInput(2)%data = 0.0_RKIND
+
+    fieldArrayInput(3)%field_type = 'Ez'
+    allocate(fieldArrayInput(3)%data(bounds%Ez%Nx, bounds%Ez%Ny, bounds%Ez%Nz))
+    fieldArrayInput(3)%data = 0.0_RKIND
+
+    fieldArrayInput(4)%field_type = 'Hx'
+    allocate(fieldArrayInput(4)%data(bounds%Hx%Nx, bounds%Hx%Ny, bounds%Hx%Nz))
+    fieldArrayInput(4)%data = 0.0_RKIND
+
+    fieldArrayInput(5)%field_type = 'Hy'
+    allocate(fieldArrayInput(5)%data(bounds%Hy%Nx, bounds%Hy%Ny, bounds%Hy%Nz))
+    fieldArrayInput(5)%data = 0.0_RKIND
+
+    fieldArrayInput(6)%field_type = 'Hz'
+    allocate(fieldArrayInput(6)%data(bounds%Hz%Nx, bounds%Hz%Ny, bounds%Hz%Nz))
+    fieldArrayInput(6)%data = 0.0_RKIND
+
+    ! Putting a non zero value in Ex(2,2,2)
+    fieldArrayInput(1)%data(2,2,2) = 1.0_RKIND
+
+
+    call GenerateStateFromFields(fieldArrayInput, initialState)
+    call EvolveState(semba, solver, initialState, finalState)
+    call GenerateFieldArrayFromState(finalState, fieldArrayInput, fieldArrayOutput)
+
+    ! Creating the results from the solver
+    call ResetSolverFields(solver)
+
+    ! Putting a non zero value in Ex(2,2,2), remembering that the full solver starts arrays from 0 and not from 1
+    call solver%set_field_value(iEx, [1,1], [1,1], [1,1], 1.0)
+    call solver%step(semba%sgg, semba%eps0, semba%mu0, semba%SINPML_FULLSIZE, semba%tag_numbers)
+
+    ! Comparing the non zero values of both methods
+    if (abs(fieldArrayOutput(1)%data(2,2,2) - solver%get_field_value(iEx, 1,1,1)) > 1.0e-12_RKIND) err = err + 1
+    if (abs(fieldArrayOutput(5)%data(2,2,2) - solver%get_field_value(iHy, 1,1,1)) > 1.0e-12_RKIND) err = err + 1
+    if (abs(fieldArrayOutput(5)%data(2,2,1) - solver%get_field_value(iHy, 1,1,0)) > 1.0e-12_RKIND) err = err + 1
+    if (abs(fieldArrayOutput(6)%data(2,2,2) - solver%get_field_value(iHz, 1,1,1)) > 1.0e-12_RKIND) err = err + 1
+    if (abs(fieldArrayOutput(6)%data(2,1,2) - solver%get_field_value(iHz, 1,0,1)) > 1.0e-12_RKIND) err = err + 1
 
     end function test_evolution_operator_comparison_with_solver

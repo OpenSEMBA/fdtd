@@ -22,8 +22,8 @@ module evolution_operator
 
     private 
 
-    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap, get_field_bounds_from_json, GenerateOutputFields, field_array_t
-    public :: GenerateColumnIndexMap, GenerateEvolutionOperator, EvolveState, EvolveStateMultipleSteps, GenerateStateFromFields, GenerateFieldArrayFromState
+    public :: GenerateElectricalInputBasis,  GenerateMagneticalInputBasis, AddElectricFieldIndices, AddMagneticFieldIndices, fhash_get_int_array, int_array, GenerateRowIndexMap, get_field_bounds_from_sembaFullsize, field_array_t
+    public :: GenerateColumnIndexMap, GenerateEvolutionOperator, EvolveState, EvolveStateMultipleSteps, GenerateStateFromFields, GenerateFieldArrayFromState, ResetSolverFields
 
 contains
 
@@ -214,96 +214,6 @@ contains
         end do
 
     end subroutine 
-
-    subroutine GenerateOutputFields(input_flags_no_json, input_file_json, fieldInput, fieldOutput)
-        
-        character (len=*), intent(in) :: input_file_json
-        character (len=*), optional, intent(in) :: input_flags_no_json
-
-        type(field_array_t), intent(in) :: fieldInput
-        type(field_array_t), intent(out) :: fieldOutput
-
-        type (bounds_t) ::  bounds
-        type(semba_fdtd_t) :: semba
-        type(solver_t) :: solver
-
-        integer :: i, j, k
-        integer, dimension(3) :: dims
-        
-
-        call semba%init(input_flags_no_json // ' ' // input_file_json)
-        call solver%init_control(semba%l, semba%maxSourceValue, semba%time_desdelanzamiento)
-        call solver%init(semba%sgg,semba%eps0, semba%mu0, semba%sggMiNo,& 
-                            semba%sggMiEx,semba%sggMiEy,semba%sggMiEz,& 
-                            semba%sggMiHx,semba%sggMiHy,semba%sggMiHz, & 
-                            semba%sggMtag, semba%SINPML_fullsize, semba%fullsize, semba%tag_numbers)
-
-
-        call get_field_bounds_from_json(bounds, semba%fullsize)
-
-        
-        dims = shape(fieldInput%data)
-        
-        allocate(fieldOutput%data( &
-            size(fieldInput%data, 1), &
-            size(fieldInput%data, 2), &
-            size(fieldInput%data, 3)))
-
-        fieldOutput%data = 0.0_RKIND
-        
-        do i = 1, dims(1)
-            do j = 1, dims(2)
-                do k = 1, dims(3)
-                    select case (fieldInput%field_type)
-                    case ('Ex')
-                        call solver%set_field_value(iEx, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
-                    case ('Ey')
-                        call solver%set_field_value(iEy, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
-                    case ('Ez')
-                        call solver%set_field_value(iEz, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
-                    case ('Hx')
-                        call solver%set_field_value(iHx, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
-                    case ('Hy')
-                        call solver%set_field_value(iHy, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
-                    case ('Hz')
-                        call solver%set_field_value(iHz, [i-1,i-1], [j-1,j-1], [k-1,k-1], fieldInput%data(i,j,k))
-                    end select
-                end do
-            end do
-        end do
-
-        call solver%step(semba%sgg, semba%eps0, semba%mu0, semba%SINPML_FULLSIZE, semba%tag_numbers)
-
-        ! This is wrong, for example with Ex as imput, we should have Ex, Hy and Hz as output
-        do i = 1, dims(1)
-            do j = 1, dims(2)
-                do k = 1, dims(3)
-                    select case (fieldInput%field_type)
-                    case ('Ex')
-                        fieldOutput%data(i, j, k) = solver%get_field_value(iEx, i-1, j-1, k-1)
-                    case ('Ey')
-                        fieldOutput%data(i, j, k) = solver%get_field_value(iEy, i-1, j-1, k-1)
-                    case ('Ez')
-                        fieldOutput%data(i, j, k) = solver%get_field_value(iEz, i-1, j-1, k-1)
-                    case ('Hx')
-                        fieldOutput%data(i, j, k) = solver%get_field_value(iHx, i-1, j-1, k-1)
-                    case ('Hy')
-                        fieldOutput%data(i, j, k) = solver%get_field_value(iHy, i-1, j-1, k-1)
-                    case ('Hz')
-                        fieldOutput%data(i, j, k) = solver%get_field_value(iHz, i-1, j-1, k-1)
-                    end select
-                end do
-            end do
-        end do
-
-        call solver%set_field_value(iEx, [solver%bounds%Ex%xi, solver%bounds%Ex%xe], [solver%bounds%Ex%yi, solver%bounds%Ex%ye], [solver%bounds%Ex%zi, solver%bounds%Ex%ze], 0.0)
-        call solver%set_field_value(iEy, [solver%bounds%Ey%xi, solver%bounds%Ey%xe], [solver%bounds%Ey%yi, solver%bounds%Ey%ye], [solver%bounds%Ey%zi, solver%bounds%Ey%ze], 0.0)
-        call solver%set_field_value(iEz, [solver%bounds%Ez%xi, solver%bounds%Ez%xe], [solver%bounds%Ez%yi, solver%bounds%Ez%ye], [solver%bounds%Ez%zi, solver%bounds%Ez%ze], 0.0)
-        call solver%set_field_value(iHx, [solver%bounds%Hx%xi, solver%bounds%Hx%xe], [solver%bounds%Hx%yi, solver%bounds%Hx%ye], [solver%bounds%Hx%zi, solver%bounds%Hx%ze], 0.0)
-        call solver%set_field_value(iHy, [solver%bounds%Hy%xi, solver%bounds%Hy%xe], [solver%bounds%Hy%yi, solver%bounds%Hy%ye], [solver%bounds%Hy%zi, solver%bounds%Hy%ze], 0.0)
-        call solver%set_field_value(iHz, [solver%bounds%Hz%xi, solver%bounds%Hz%xe], [solver%bounds%Hz%yi, solver%bounds%Hz%ye], [solver%bounds%Hz%zi, solver%bounds%Hz%ze], 0.0)
-
-    end subroutine
 
     subroutine AddElectricFieldIndices(RowIndexMap, Efield, H1field, H2field, startingIndex_Efield, startingIndex_H1field, startingIndex_H2field, shiftDirection_H1, shiftDirection_H2)
         type(fhash_tbl_t), intent(inout) :: RowIndexMap
@@ -644,7 +554,7 @@ contains
         end select
     end subroutine
 
-    subroutine get_field_bounds_from_json(field_bounds, fullsize)
+    subroutine get_field_bounds_from_sembaFullsize(field_bounds, fullsize)
         type(bounds_t), intent(out) :: field_bounds
         TYPE (limit_t), DIMENSION (1:6) :: fullsize
         type(integer) :: Nx, Ny, Nz
@@ -678,10 +588,10 @@ contains
         field_bounds%Hz%NZ = field_bounds%Ez%Nz + 1
     end subroutine
 
-    subroutine GenerateEvolutionOperator(input_flags_no_json, input_file_json, evolutionOperator)
+    subroutine GenerateEvolutionOperator(semba, solver, evolutionOperator)
         
-        character (len=*), intent(in) :: input_file_json
-        character (len=*), optional, intent(in) :: input_flags_no_json
+        type(semba_fdtd_t), intent(inout) :: semba
+        type(solver_t), intent(inout) :: solver
         real (kind = RKIND), allocatable, dimension(:, :), intent(out) ::  evolutionOperator
 
         type(field_array_t), allocatable :: fieldInputList(:)
@@ -689,25 +599,15 @@ contains
 
         type (bounds_t) ::  bounds
         type(fhash_tbl_t) :: ColIndexMap
-        type(semba_fdtd_t) :: semba
-        type(solver_t) :: solver
 
         integer :: shiftEx, shiftEy, shiftEz, shiftHx, shiftHy, shiftHz
         integer :: i, j, k, m, m_shifted, totalElements, fieldIdx
         integer :: i_rel, j_rel, k_rel, m_rel, wrapperIdx
         real(kind = RKIND) :: fieldValue
         integer, dimension(3) :: dims
-        
-
-        call semba%init(input_flags_no_json // ' ' // input_file_json)
-        call solver%init_control(semba%l, semba%maxSourceValue, semba%time_desdelanzamiento)
-        call solver%init(semba%sgg,semba%eps0, semba%mu0, semba%sggMiNo,& 
-                            semba%sggMiEx,semba%sggMiEy,semba%sggMiEz,& 
-                            semba%sggMiHx,semba%sggMiHy,semba%sggMiHz, & 
-                            semba%sggMtag, semba%SINPML_fullsize, semba%fullsize, semba%tag_numbers)
 
 
-        call get_field_bounds_from_json(bounds, semba%fullsize)
+        call get_field_bounds_from_sembaFullsize(bounds, semba%fullsize)
 
         shiftEx = 0
         shiftEy = 0       + bounds%Ex%Nx * bounds%Ex%Ny * bounds%Ex%Nz
@@ -832,12 +732,7 @@ contains
                 end do
             end do
 
-            call solver%set_field_value(iEx, [solver%bounds%Ex%xi, solver%bounds%Ex%xe], [solver%bounds%Ex%yi, solver%bounds%Ex%ye], [solver%bounds%Ex%zi, solver%bounds%Ex%ze], 0.0)
-            call solver%set_field_value(iEy, [solver%bounds%Ey%xi, solver%bounds%Ey%xe], [solver%bounds%Ey%yi, solver%bounds%Ey%ye], [solver%bounds%Ey%zi, solver%bounds%Ey%ze], 0.0)
-            call solver%set_field_value(iEz, [solver%bounds%Ez%xi, solver%bounds%Ez%xe], [solver%bounds%Ez%yi, solver%bounds%Ez%ye], [solver%bounds%Ez%zi, solver%bounds%Ez%ze], 0.0)
-            call solver%set_field_value(iHx, [solver%bounds%Hx%xi, solver%bounds%Hx%xe], [solver%bounds%Hx%yi, solver%bounds%Hx%ye], [solver%bounds%Hx%zi, solver%bounds%Hx%ze], 0.0)
-            call solver%set_field_value(iHy, [solver%bounds%Hy%xi, solver%bounds%Hy%xe], [solver%bounds%Hy%yi, solver%bounds%Hy%ye], [solver%bounds%Hy%zi, solver%bounds%Hy%ze], 0.0)
-            call solver%set_field_value(iHz, [solver%bounds%Hz%xi, solver%bounds%Hz%xe], [solver%bounds%Hz%yi, solver%bounds%Hz%ye], [solver%bounds%Hz%zi, solver%bounds%Hz%ze], 0.0)
+            call ResetSolverFields(solver)
             
         end do
     end subroutine
@@ -884,27 +779,27 @@ contains
 
     end subroutine
 
-    subroutine EvolveState(input_flags_no_json, input_file_json, initialState, finalState)
+    subroutine EvolveState(semba, solver, initialState, finalState)
         
-        character (len=*), intent(in) :: input_file_json
-        character (len=*), optional, intent(in) :: input_flags_no_json
+        type(semba_fdtd_t), intent(inout) :: semba
+        type(solver_t), intent(inout) :: solver
         real (kind = RKIND), intent(in), dimension(:) ::  initialState
         real (kind = RKIND), intent(out), dimension(:), allocatable :: finalState
 
         type (bounds_t) ::  bounds
         real (kind = RKIND), allocatable, dimension(:, :) :: evolutionOperator
 
-        call GenerateEvolutionOperator(input_flags_no_json, input_file_json, evolutionOperator)
+        call GenerateEvolutionOperator(semba, solver, evolutionOperator)
         allocate(finalState(size(initialState)))
 
         finalState = matmul(evolutionOperator, initialState)
 
     end subroutine
 
-    subroutine EvolveStateMultipleSteps(input_flags_no_json, input_file_json, nSteps, initialState, finalState)
+    subroutine EvolveStateMultipleSteps(semba, solver, nSteps, initialState, finalState)
         
-        character (len=*), intent(in) :: input_file_json
-        character (len=*), optional, intent(in) :: input_flags_no_json
+        type(semba_fdtd_t), intent(inout) :: semba
+        type(solver_t), intent(inout) :: solver
         integer, intent(in) :: nSteps
         real (kind = RKIND), intent(in), dimension(:) ::  initialState
         real (kind = RKIND), intent(out), dimension(:), allocatable :: finalState
@@ -913,7 +808,7 @@ contains
         real (kind = RKIND), allocatable, dimension(:) :: tempState
         integer :: step
 
-        call GenerateEvolutionOperator(input_flags_no_json, input_file_json, evolutionOperator)
+        call GenerateEvolutionOperator(semba, solver, evolutionOperator)
 
         tempState = initialState
         allocate(finalState(size(initialState)))
@@ -954,6 +849,18 @@ contains
         end do
 
         
+
+    end subroutine
+
+    subroutine ResetSolverFields(solver)
+        type(solver_t), intent(inout) :: solver
+
+        call solver%set_field_value(iEx, [solver%bounds%Ex%xi, solver%bounds%Ex%xe], [solver%bounds%Ex%yi, solver%bounds%Ex%ye], [solver%bounds%Ex%zi, solver%bounds%Ex%ze], 0.0)
+        call solver%set_field_value(iEy, [solver%bounds%Ey%xi, solver%bounds%Ey%xe], [solver%bounds%Ey%yi, solver%bounds%Ey%ye], [solver%bounds%Ey%zi, solver%bounds%Ey%ze], 0.0)
+        call solver%set_field_value(iEz, [solver%bounds%Ez%xi, solver%bounds%Ez%xe], [solver%bounds%Ez%yi, solver%bounds%Ez%ye], [solver%bounds%Ez%zi, solver%bounds%Ez%ze], 0.0)
+        call solver%set_field_value(iHx, [solver%bounds%Hx%xi, solver%bounds%Hx%xe], [solver%bounds%Hx%yi, solver%bounds%Hx%ye], [solver%bounds%Hx%zi, solver%bounds%Hx%ze], 0.0)
+        call solver%set_field_value(iHy, [solver%bounds%Hy%xi, solver%bounds%Hy%xe], [solver%bounds%Hy%yi, solver%bounds%Hy%ye], [solver%bounds%Hy%zi, solver%bounds%Hy%ze], 0.0)
+        call solver%set_field_value(iHz, [solver%bounds%Hz%xi, solver%bounds%Hz%xe], [solver%bounds%Hz%yi, solver%bounds%Hz%ye], [solver%bounds%Hz%zi, solver%bounds%Hz%ze], 0.0)
 
     end subroutine
 
