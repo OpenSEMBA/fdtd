@@ -543,6 +543,7 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
     type(semba_fdtd_t) :: semba
     type(field_array_t), allocatable :: fieldArrayInput(:), fieldArrayOutput(:)
     real(RKIND), allocatable :: initialState(:), finalState(:)
+    integer :: i, j, k, nFields
 
     character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'grid_3x3x3.fdtd.json'
 
@@ -578,13 +579,48 @@ integer function test_evolution_operator_indices_map_all_fields() bind(C, name="
     allocate(fieldArrayInput(6)%data(bounds%Hz%Nx, bounds%Hz%Ny, bounds%Hz%Nz))
     fieldArrayInput(6)%data = 0.0_RKIND
 
+    ! Putting a non zero value in Ex(2,2,2)
     fieldArrayInput(1)%data(2,2,2) = 1.0_RKIND
 
 
     call GenerateStateFromFields(fieldArrayInput, initialState)
     call EvolveState('-i', filename, initialState, finalState)
     call GenerateFieldArrayFromState(finalState, fieldArrayInput, fieldArrayOutput)
-    
+
+    ! We expect to see values different from zero in Ex(2,2,2), Hy(2,2,2), Hy(2,2,1), Hz(2,2,2) and Hz(2,1,2) and zeros in the rest of the components of the fields
+    if (abs(fieldArrayOutput(1)%data(2,2,2)) < 1.0e-12_RKIND) err = err + 1
+
+    if (abs(fieldArrayOutput(5)%data(2,2,2)) < 1.0e-12_RKIND) err = err + 1
+    if (abs(fieldArrayOutput(5)%data(2,2,1)) < 1.0e-12_RKIND) err = err + 1
+
+    if (abs(fieldArrayOutput(6)%data(2,2,2)) < 1.0e-12_RKIND) err = err + 1
+    if (abs(fieldArrayOutput(6)%data(2,1,2)) < 1.0e-12_RKIND) err = err + 1
+
+    do nFields = 1, size(fieldArrayOutput)
+        do i = 1, size(fieldArrayOutput(nFields)%data, 1)
+            do j = 1, size(fieldArrayOutput(nFields)%data, 2)
+                do k = 1, size(fieldArrayOutput(nFields)%data, 3)
+                    select case (fieldArrayOutput(nFields)%field_type)
+                    case ('Ex')
+                        if (i == 2 .and. j == 2 .and. k == 2) cycle
+                        if (abs(fieldArrayOutput(nFields)%data(i,j,k)) > 1.0e-12_RKIND) err = err + 1
+                    case ('Ey')
+                        if (abs(fieldArrayOutput(nFields)%data(i,j,k)) > 1.0e-12_RKIND) err = err + 1
+                    case ('Ez')
+                        if (abs(fieldArrayOutput(nFields)%data(i,j,k)) > 1.0e-12_RKIND) err = err + 1
+                    case ('Hx')
+                        if (abs(fieldArrayOutput(nFields)%data(i,j,k)) > 1.0e-12_RKIND) err = err + 1
+                    case ('Hy')
+                        if ((i == 2 .and. j == 2 .and. k == 2) .or. (i == 2 .and. j == 2 .and. k == 1)) cycle
+                        if (abs(fieldArrayOutput(nFields)%data(i,j,k)) > 1.0e-12_RKIND) err = err + 1
+                    case ('Hz')
+                        if ((i == 2 .and. j == 2 .and. k == 2) .or. (i == 2 .and. j == 1 .and. k == 2)) cycle
+                        if (abs(fieldArrayOutput(nFields)%data(i,j,k)) > 1.0e-12_RKIND) err = err + 1
+                    end select
+                end do
+            end do
+        end do
+    end do
 
     end function test_evolution_operator_get_field_outputs
 

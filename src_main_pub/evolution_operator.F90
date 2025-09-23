@@ -693,7 +693,7 @@ contains
         type(solver_t) :: solver
 
         integer :: shiftEx, shiftEy, shiftEz, shiftHx, shiftHy, shiftHz
-        integer :: i, j, k, m, totalElements, fieldIdx
+        integer :: i, j, k, m, m_shifted, totalElements, fieldIdx
         integer :: i_rel, j_rel, k_rel, m_rel, wrapperIdx
         real(kind = RKIND) :: fieldValue
         integer, dimension(3) :: dims
@@ -725,6 +725,7 @@ contains
 
         allocate(evolutionOperator(totalElements, totalElements))
         evolutionOperator = 0.0_RKIND
+        fieldValue = 0.0_RKIND
 
         call GenerateColumnIndexMap(bounds, ColIndexMap)
         call GenerateInputFieldsBasis(bounds, fieldInputList)
@@ -765,61 +766,66 @@ contains
                         select case (fieldInputList(fieldIdx)%field_type)
                         case ('Ex')
                             call fhash_get_int_array(ColIndexMap, key(shiftEx + m), wrapper)
+                            m_shifted = shiftEx + m
                         case ('Ey')
                             call fhash_get_int_array(ColIndexMap, key(shiftEy + m), wrapper)
+                            m_shifted = shiftEy + m
                         case ('Ez')
                             call fhash_get_int_array(ColIndexMap, key(shiftEz + m), wrapper)
+                            m_shifted = shiftEz + m
                         case ('Hx')
                             call fhash_get_int_array(ColIndexMap, key(shiftHx + m), wrapper)
+                            m_shifted = shiftHx + m
                         case ('Hy')
                             call fhash_get_int_array(ColIndexMap, key(shiftHy + m), wrapper)
+                            m_shifted = shiftHy + m
                         case ('Hz')
                             call fhash_get_int_array(ColIndexMap, key(shiftHz + m), wrapper)
+                            m_shifted = shiftHz + m
                         end select
 
                         do wrapperIdx = 1, size(wrapper%data)
                             m_rel = wrapper%data(wrapperIdx)
 
-                            select case (fieldInputList(fieldIdx)%field_type)
-                            case ('Ex')
+                            if (m_rel <= shiftEy) then
                                 k_rel = mod(m_rel - shiftEx - 1, bounds%Ex%Nz) + 1
                                 j_rel = mod((m_rel - shiftEx - 1) / bounds%Ex%Nz, bounds%Ex%Ny) + 1
                                 i_rel = (m_rel - shiftEx - 1) / (bounds%Ex%Nz * bounds%Ex%Ny) + 1
 
                                 fieldValue = solver%get_field_value(iEx, i_rel - 1, j_rel - 1, k_rel - 1)
-                            case ('Ey')
+                            else if (m_rel <= shiftEz) then
                                 k_rel = mod(m_rel - shiftEy - 1, bounds%Ey%Nz) + 1
                                 j_rel = mod((m_rel - shiftEy - 1) / bounds%Ey%Nz, bounds%Ey%Ny) + 1
                                 i_rel = (m_rel - shiftEy - 1) / (bounds%Ey%Nz * bounds%Ey%Ny) + 1
 
                                 fieldValue = solver%get_field_value(iEy, i_rel - 1, j_rel - 1, k_rel - 1)
-                            case ('Ez')
+                            else if (m_rel <= shiftHx) then
                                 k_rel = mod(m_rel - shiftEz - 1, bounds%Ez%Nz) + 1
                                 j_rel = mod((m_rel - shiftEz - 1) / bounds%Ez%Nz, bounds%Ez%Ny) + 1
                                 i_rel = (m_rel - shiftEz - 1) / (bounds%Ez%Nz * bounds%Ez%Ny) + 1
 
                                 fieldValue = solver%get_field_value(iEz, i_rel - 1, j_rel - 1, k_rel - 1)
-                            case ('Hx')
+                            else if (m_rel <= shiftHy) then
                                 k_rel = mod(m_rel - shiftHx - 1, bounds%Hx%Nz) + 1
                                 j_rel = mod((m_rel - shiftHx - 1) / bounds%Hx%Nz, bounds%Hx%Ny) + 1
                                 i_rel = (m_rel - shiftHx - 1) / (bounds%Hx%Nz * bounds%Hx%Ny) + 1
 
                                 fieldValue = solver%get_field_value(iHx, i_rel - 1, j_rel - 1, k_rel - 1)
-                            case ('Hy')
+                            else if (m_rel <= shiftHz) then
                                 k_rel = mod(m_rel - shiftHy - 1, bounds%Hy%Nz) + 1
                                 j_rel = mod((m_rel - shiftHy - 1) / bounds%Hy%Nz, bounds%Hy%Ny) + 1
                                 i_rel = (m_rel - shiftHy - 1) / (bounds%Hy%Nz * bounds%Hy%Ny) + 1
 
                                 fieldValue = solver%get_field_value(iHy, i_rel - 1, j_rel - 1, k_rel - 1)
-                            case ('Hz')
+                            else
                                 k_rel = mod(m_rel - shiftHz - 1, bounds%Hz%Nz) + 1
                                 j_rel = mod((m_rel - shiftHz - 1) / bounds%Hz%Nz, bounds%Hz%Ny) + 1
                                 i_rel = (m_rel - shiftHz - 1) / (bounds%Hz%Nz * bounds%Hz%Ny) + 1
 
                                 fieldValue = solver%get_field_value(iHz, i_rel - 1, j_rel - 1, k_rel - 1)
-                            end select
+                            end if
 
-                            evolutionOperator(m_rel, m) = fieldValue
+                            evolutionOperator(m_rel, m_shifted) = fieldValue
                         end do
                         
                     end do
