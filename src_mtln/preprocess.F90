@@ -4,7 +4,7 @@ module preprocess_mod
     use mtln_types_mod, parsed_probe_t => probe_t, parsed_mtln_t => mtln_t
     use mtl_bundle_mod
     use network_manager_mod
-    use mtl_mod!, only: mtl_t, transmission_line_level_t, transmission_line_bundle_t,
+    use mtl_mod
 
     use fhash, only: fhash_tbl_t, key=>fhash_key, fhash_key_t
     implicit none
@@ -147,7 +147,7 @@ contains
     subroutine setBundleTransferImpedance(bundle, line)
         type(mtl_bundle_t), intent(inout) :: bundle
         type(transmission_line_bundle_t), intent(in) :: line
-        integer :: i,j,k
+        integer :: i,j,k, conductor_in_parent
         integer, dimension(:), allocatable :: range_in
         integer :: conductor_out
         type(transfer_impedance_per_meter_t) :: zt
@@ -161,16 +161,23 @@ contains
                 conductor_out = findOuterConductorNumber(line%levels(i)%lines(j), line%levels(i-1), sum(conductors_in_level(1:i-2)))
                 range_in = findInnerConductorRange(line%levels(i)%lines(j), line%levels(i), sum(conductors_in_level(1:i-1)))
                 call bundle%addTransferImpedance(conductor_out, range_in, line%levels(i)%lines(j)%transfer_impedance)
-
-                if (line%levels(i)%lines(j)%initial_connector_transfer_impedance%has_transfer_impedance() .eqv. .true.) then 
-                    call bundle%setConnectorTransferImpedance(1, conductor_out, range_in, line%levels(i)%lines(j)%initial_connector_transfer_impedance)
-                end if
-                if (line%levels(i)%lines(j)%end_connector_transfer_impedance%has_transfer_impedance() .eqv. .true.) then 
-                    call bundle%setConnectorTransferImpedance(size(bundle%du, 1), conductor_out, range_in, line%levels(i)%lines(j)%end_connector_transfer_impedance)
-                end if
-
             end do
         end do  
+
+
+        do j = 1, size(line%levels(2)%lines)
+            conductor_out = findOuterConductorNumber(line%levels(2)%lines(j), line%levels(1), sum(conductors_in_level(1:0)))
+            range_in = findInnerConductorRange(line%levels(2)%lines(j), line%levels(2), sum(conductors_in_level(1:1)))
+            conductor_in_parent = line%levels(2)%lines(j)%conductor_in_parent
+            zt = line%levels(1)%lines(1)%initial_connector_transfer_impedances(conductor_in_parent) 
+            if (zt%has_transfer_impedance() .eqv. .true.) then 
+                call bundle%setConnectorTransferImpedance(1, conductor_out, range_in, zt)
+            end if
+            zt = line%levels(1)%lines(1)%end_connector_transfer_impedances(conductor_in_parent) 
+            if (zt%has_transfer_impedance() .eqv. .true.) then 
+                call bundle%setConnectorTransferImpedance(size(bundle%du, 1), conductor_out, range_in, zt)
+            end if
+        end do
 
 
     end subroutine
@@ -276,7 +283,7 @@ contains
             do i = 1, line%number_of_conductors
                 line%rpul(1, i, i) = connector%resistances(i)/line%du(1, i, i)
             end do
-            line%initial_connector_transfer_impedance = connector%transfer_impedance_per_meter
+            line%initial_connector_transfer_impedances = connector%transfer_impedances_per_meter
 
         end subroutine
 
@@ -287,7 +294,7 @@ contains
             do i = 1, line%number_of_conductors
                 line%rpul(size(line%du,1), i, i) = connector%resistances(i)/line%du(size(line%du,1), i, i)
             end do
-            line%end_connector_transfer_impedance = connector%transfer_impedance_per_meter
+            line%end_connector_transfer_impedances = connector%transfer_impedances_per_meter
 
         end subroutine
 
