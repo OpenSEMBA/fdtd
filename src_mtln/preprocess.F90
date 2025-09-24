@@ -57,7 +57,6 @@ contains
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
 
 #endif
-
         res%final_time = parsed%time_step * parsed%number_of_steps
         res%dt = parsed%time_step
         
@@ -164,24 +163,25 @@ contains
             end do
         end do  
 
-
-        do j = 1, size(line%levels(2)%lines)
-            conductor_out = findOuterConductorNumber(line%levels(2)%lines(j), line%levels(1), sum(conductors_in_level(1:0)))
-            range_in = findInnerConductorRange(line%levels(2)%lines(j), line%levels(2), sum(conductors_in_level(1:1)))
-            conductor_in_parent = line%levels(2)%lines(j)%conductor_in_parent
-            if (size(line%levels(1)%lines(1)%initial_connector_transfer_impedances) /= 0) then 
-                zt = line%levels(1)%lines(1)%initial_connector_transfer_impedances(conductor_in_parent) 
-                if (zt%has_transfer_impedance() .eqv. .true.) then 
-                    call bundle%setConnectorTransferImpedance(1, conductor_out, range_in, zt)
+        if (size(line%levels) > 1) then 
+            do j = 1, size(line%levels(2)%lines)
+                conductor_out = findOuterConductorNumber(line%levels(2)%lines(j), line%levels(1), sum(conductors_in_level(1:0)))
+                range_in = findInnerConductorRange(line%levels(2)%lines(j), line%levels(2), sum(conductors_in_level(1:1)))
+                conductor_in_parent = line%levels(2)%lines(j)%conductor_in_parent
+                if (size(line%levels(1)%lines(1)%initial_connector_transfer_impedances) /= 0) then 
+                    zt = line%levels(1)%lines(1)%initial_connector_transfer_impedances(conductor_in_parent) 
+                    if (zt%has_transfer_impedance() .eqv. .true.) then 
+                        call bundle%setConnectorTransferImpedance(1, conductor_out, range_in, zt)
+                    end if
                 end if
-            end if
-            if (size(line%levels(1)%lines(1)%end_connector_transfer_impedances) /= 0) then 
-                zt = line%levels(1)%lines(1)%end_connector_transfer_impedances(conductor_in_parent) 
-                if (zt%has_transfer_impedance() .eqv. .true.) then 
-                    call bundle%setConnectorTransferImpedance(size(bundle%du, 1), conductor_out, range_in, zt)
+                if (size(line%levels(1)%lines(1)%end_connector_transfer_impedances) /= 0) then 
+                    zt = line%levels(1)%lines(1)%end_connector_transfer_impedances(conductor_in_parent) 
+                    if (zt%has_transfer_impedance() .eqv. .true.) then 
+                        call bundle%setConnectorTransferImpedance(size(bundle%du, 1), conductor_out, range_in, zt)
+                    end if
                 end if
-            end if
-        end do
+            end do
+        end if
 
 
     end subroutine
@@ -220,7 +220,6 @@ contains
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
-
         allocate(res(size(lines)))
         do i = 1, size(lines)
             res(i) = mtldCtor(lines(i)%levels, "bundle_"//lines(i)%levels(1)%lines(1)%name)
