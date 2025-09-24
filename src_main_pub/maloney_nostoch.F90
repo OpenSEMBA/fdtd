@@ -94,7 +94,8 @@ contains
 ! Subroutine to initialize the parameters
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
-                     layoutnumber,size,g,ThereAreSGBCs,resume,temp_SGBCcrank,temp_SGBCFreq,temp_SGBCresol,temp_SGBCDepth,temp_SGBCDispersive, &
+                     layoutnumber,size,g,ThereAreSGBCs,resume, &
+                     temp_SGBCcrank,temp_SGBCFreq,temp_SGBCresol,temp_SGBCDepth,temp_SGBCDispersive, &
                      eps00,mu00,simu_devia,stochastic)
    type(media_matrices_t), intent(in) :: media
    logical :: simu_devia,stochastic 
