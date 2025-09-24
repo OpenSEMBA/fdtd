@@ -169,13 +169,17 @@ contains
             conductor_out = findOuterConductorNumber(line%levels(2)%lines(j), line%levels(1), sum(conductors_in_level(1:0)))
             range_in = findInnerConductorRange(line%levels(2)%lines(j), line%levels(2), sum(conductors_in_level(1:1)))
             conductor_in_parent = line%levels(2)%lines(j)%conductor_in_parent
-            zt = line%levels(1)%lines(1)%initial_connector_transfer_impedances(conductor_in_parent) 
-            if (zt%has_transfer_impedance() .eqv. .true.) then 
-                call bundle%setConnectorTransferImpedance(1, conductor_out, range_in, zt)
+            if (size(line%levels(1)%lines(1)%initial_connector_transfer_impedances) /= 0) then 
+                zt = line%levels(1)%lines(1)%initial_connector_transfer_impedances(conductor_in_parent) 
+                if (zt%has_transfer_impedance() .eqv. .true.) then 
+                    call bundle%setConnectorTransferImpedance(1, conductor_out, range_in, zt)
+                end if
             end if
-            zt = line%levels(1)%lines(1)%end_connector_transfer_impedances(conductor_in_parent) 
-            if (zt%has_transfer_impedance() .eqv. .true.) then 
-                call bundle%setConnectorTransferImpedance(size(bundle%du, 1), conductor_out, range_in, zt)
+            if (size(line%levels(1)%lines(1)%end_connector_transfer_impedances) /= 0) then 
+                zt = line%levels(1)%lines(1)%end_connector_transfer_impedances(conductor_in_parent) 
+                if (zt%has_transfer_impedance() .eqv. .true.) then 
+                    call bundle%setConnectorTransferImpedance(size(bundle%du, 1), conductor_out, range_in, zt)
+                end if
             end if
         end do
 
@@ -271,8 +275,16 @@ contains
 #endif
                                 )
         end select
-        if (associated(cable%initial_connector)) call addInitialConnector(res, cable%initial_connector)
-        if (associated(cable%end_connector))     call addEndConnector(res, cable%end_connector)
+        if (associated(cable%initial_connector)) then 
+            call addInitialConnector(res, cable%initial_connector)
+        else
+            allocate(res%initial_connector_transfer_impedances(0))
+        end if
+        if (associated(cable%end_connector)) then 
+            call addEndConnector(res, cable%end_connector)
+        else
+            allocate(res%end_connector_transfer_impedances(0))
+        end if
 
         
     contains
