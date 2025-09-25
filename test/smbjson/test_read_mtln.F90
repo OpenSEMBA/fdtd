@@ -92,37 +92,35 @@ contains
       allocate(expected%mtln%connectors(1)%resistances(1))
       expected%mtln%connectors(1)%id = 24
       expected%mtln%connectors(1)%resistances = [100.0e-3]
-      expected%mtln%connectors(1)%transfer_impedance_per_meter%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      allocate(expected%mtln%connectors(1)%transfer_impedance_per_meter%poles(0))
-      allocate(expected%mtln%connectors(1)%transfer_impedance_per_meter%residues(0))
+      allocate(expected%mtln%connectors(1)%transfer_impedances_per_meter(0))
 
       ! id = 25
       allocate(expected%mtln%connectors(2)%resistances(1))
       expected%mtln%connectors(2)%id = 25
       expected%mtln%connectors(2)%resistances = [19.0]
-      expected%mtln%connectors(2)%transfer_impedance_per_meter%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      allocate(expected%mtln%connectors(2)%transfer_impedance_per_meter%poles(0))
-      allocate(expected%mtln%connectors(2)%transfer_impedance_per_meter%residues(0))
+      allocate(expected%mtln%connectors(2)%transfer_impedances_per_meter(0))
 
       ! id = 204
       allocate(expected%mtln%connectors(3)%resistances(1))
       expected%mtln%connectors(3)%id = 204
       expected%mtln%connectors(3)%resistances = [100.0e-3]
-      expected%mtln%connectors(3)%transfer_impedance_per_meter%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%connectors(3)%transfer_impedance_per_meter%resistive_term = 3.33
-      expected%mtln%connectors(3)%transfer_impedance_per_meter%inductive_term = 2.6e-9
-      allocate(expected%mtln%connectors(3)%transfer_impedance_per_meter%poles(0))
-      allocate(expected%mtln%connectors(3)%transfer_impedance_per_meter%residues(0))
+      allocate(expected%mtln%connectors(3)%transfer_impedances_per_meter(1))
+      expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
+      expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%resistive_term = 3.33
+      expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%inductive_term = 2.6e-9
+      allocate(expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%poles(0))
+      allocate(expected%mtln%connectors(3)%transfer_impedances_per_meter(1)%residues(0))
 
       ! id = 205
       allocate(expected%mtln%connectors(4)%resistances(1))
       expected%mtln%connectors(4)%id = 205
       expected%mtln%connectors(4)%resistances = [19.0]
-      expected%mtln%connectors(4)%transfer_impedance_per_meter%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
-      expected%mtln%connectors(4)%transfer_impedance_per_meter%resistive_term = 609.3
-      expected%mtln%connectors(4)%transfer_impedance_per_meter%inductive_term = 2.6e-9
-      allocate(expected%mtln%connectors(4)%transfer_impedance_per_meter%poles(0))
-      allocate(expected%mtln%connectors(4)%transfer_impedance_per_meter%residues(0))
+      allocate(expected%mtln%connectors(4)%transfer_impedances_per_meter(1))
+      expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
+      expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%resistive_term = 609.3
+      expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%inductive_term = 2.6e-9
+      allocate(expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%poles(0))
+      allocate(expected%mtln%connectors(4)%transfer_impedances_per_meter(1)%residues(0))
 
       !cables
       deallocate(expected%mtln%cables)

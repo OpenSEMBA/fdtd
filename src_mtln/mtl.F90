@@ -41,7 +41,7 @@ module mtl_mod
         character (len=:), allocatable :: parent_name
         integer :: conductor_in_parent
         type(transfer_impedance_per_meter_t) :: transfer_impedance
-        type(transfer_impedance_per_meter_t) :: initial_connector_transfer_impedance, end_connector_transfer_impedance
+        type(transfer_impedance_per_meter_t), dimension(:), allocatable :: initial_connector_transfer_impedances, end_connector_transfer_impedances
         type(segment_t), dimension(:), allocatable :: segments
 
 #ifdef CompileWithMPI
