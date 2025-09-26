@@ -66,9 +66,11 @@ module SEMBA_FDTD_mod
       logical :: finishedwithsuccess
 
    contains
-      procedure :: init => semba_init   
-      procedure :: launch => semba_launch   
-      procedure :: end => semba_end   
+      procedure :: init => semba_init
+      procedure :: launch => semba_launch
+      procedure :: end => semba_end
+      procedure :: create_solver => semba_create_solver
+      procedure :: update_after_simulation => semba_update_after_simulation
    end type semba_fdtd_t 
 
    
@@ -1199,6 +1201,28 @@ contains
    end subroutine semba_init  
 
 
+   function semba_create_solver(this) result (res)
+      class(semba_fdtd_t) :: this
+      type(solver_t) :: res
+
+      res = solver_ctor(this%sgg,this%media,this%tag_numbers,this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,& 
+                        this%eps0,this%mu0,this%tagtype,this%l, this%maxSourceValue, this%time_desdelanzamiento)
+
+   end function
+
+   subroutine semba_update_after_simulation(this, success, sgg, eps, mu, media)
+      class(semba_fdtd_t) :: this
+      logical :: success
+      type (sggfdtdinfo) :: sgg
+      type(media_matrices_t) :: media
+      real (kind=rkind) :: eps ,mu
+      this%finishedwithsuccess = success
+      this%sgg = sgg
+      this%eps0 = eps
+      this%mu0 = mu
+      this%media = media
+   end subroutine
+   
    subroutine semba_launch(this)
       class(semba_fdtd_t) :: this
       type(solver_t) :: solver
@@ -1212,16 +1236,20 @@ contains
          CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
          this%finishedwithsuccess=.false.
-
+         solver = this%create_solver()
 
 #ifdef CompileWithMTLN
          solver%mtln_parsed =  this%mtln_parsed
 #endif
 
-
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
-            CALL solver%launch_simulation (this%sgg,this%media,this%tag_numbers,this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
-                                           this%l, this%maxSourceValue, this%time_desdelanzamiento)
+
+
+            ! call solver%launch_simulation (this%sgg,this%media,this%tag_numbers,this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
+            !                                this%l, this%maxSourceValue, this%time_desdelanzamiento)
+            call solver%launch_simulation()
+            call this%update_after_simulation(solver%finishedwithsuccess, solver%sgg, solver%eps0,solver%mu0,solver%media)
+           
 
             deallocate (this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
          else
