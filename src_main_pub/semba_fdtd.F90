@@ -1204,10 +1204,11 @@ contains
    function semba_create_solver(this) result (res)
       class(semba_fdtd_t) :: this
       type(solver_t) :: res
-
-      res = solver_ctor(this%sgg,this%media,this%tag_numbers,this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,& 
-                        this%eps0,this%mu0,this%tagtype,this%l, this%maxSourceValue, this%time_desdelanzamiento)
-
+      res = solver_ctor(this%sgg,this%media,this%tag_numbers,& 
+                        this%SINPML_fullsize,this%fullsize, & 
+                        this%finishedwithsuccess, this%eps0,this%mu0, & 
+                        this%tagtype,this%l, this%maxSourceValue, & 
+                        this%time_desdelanzamiento)
    end function
 
    subroutine semba_update_after_simulation(this, success, sgg, eps, mu, media)
@@ -1237,19 +1238,12 @@ contains
 #endif
          this%finishedwithsuccess=.false.
          solver = this%create_solver()
-
 #ifdef CompileWithMTLN
          solver%mtln_parsed =  this%mtln_parsed
 #endif
-
          if ((this%l%finaltimestep >= 0).and.(.not.this%l%skindepthpre)) then
-
-
-            ! call solver%launch_simulation (this%sgg,this%media,this%tag_numbers,this%SINPML_fullsize,this%fullsize,this%finishedwithsuccess,this%eps0,this%mu0,this%tagtype,&
-            !                                this%l, this%maxSourceValue, this%time_desdelanzamiento)
             call solver%launch_simulation()
             call this%update_after_simulation(solver%finishedwithsuccess, solver%sgg, solver%eps0,solver%mu0,solver%media)
-           
 
             deallocate (this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMiNo,this%media%sggMtag)
          else

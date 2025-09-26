@@ -97,7 +97,6 @@ module Solver_mod
       real(kind=rkind), pointer, dimension (:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       type(constants_t) :: g
-      ! type(media_matrices_t) :: media
       real (kind=RKIND_tiempo) :: lastexecutedtime
       real (kind=RKIND) :: maxSourceValue
 
@@ -422,13 +421,7 @@ module Solver_mod
    end subroutine launch_simulation
 
    subroutine solver_init(this)
-   ! subroutine solver_init(this, sgg, eps0, mu0, media, sinPML_fullsize, fullsize, tag_numbers)
       class(solver_t) :: this
-      ! type(sggfdtdinfo), intent(inout) :: sgg
-      ! real(kind=rkind), intent(inout) :: eps0,mu0
-      ! type(media_matrices_t), intent(inout) :: media
-      ! type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize, fullsize
-      ! type(taglist_t) :: tag_numbers
 
       integer(kind=4) :: i, j, k, field
       character (len=bufsize)  ::  whoami, chari, layoutcharID
@@ -445,7 +438,6 @@ module Solver_mod
       integer(kind=4) :: dummyMin,dummyMax, ierr
       real(kind=rkind) :: rdummy
 ! #endif
-      ! this%media = media
       this%control%fatalerror=.false.
 
       this%parar=.false.
@@ -1777,15 +1769,8 @@ contains
 
    end subroutine solver_init
 
-   subroutine solver_run(this)!, sgg, eps0, mu0, sinPML_fullsize, fullsize, tag_numbers, tagtype)
+   subroutine solver_run(this)
       class(solver_t) :: this
-      ! type(sggfdtdinfo), intent(inout) :: sgg
-
-      ! real(kind=rkind), intent(inout) :: eps0,mu0
-
-      ! type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize, fullsize
-      ! type(taglist_t), intent(in) :: tag_numbers
-      ! type (tagtype_t), intent(in) :: tagtype
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
@@ -2083,12 +2068,8 @@ contains
 
 
 
-   subroutine step(this)!, sgg, eps0, mu0, sinPML_fullsize, tag_numbers)
+   subroutine step(this)
       class(solver_t) :: this
-      ! type(sggfdtdinfo), intent(in) :: sgg
-      ! real(kind=rkind), intent(inout) :: eps0,mu0
-      ! type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
-      ! type(taglist_t), intent(in) :: tag_numbers
 
       logical :: planewave_switched_off = .false., thereareplanewave
 
@@ -2737,12 +2718,8 @@ contains
    end subroutine
 
 
-   subroutine solver_end(this)!, sgg, eps0, mu0, tagtype, finishedwithsuccess)
+   subroutine solver_end(this)
       class(solver_t) :: this
-      ! type(sggfdtdinfo), intent(in) :: sgg
-      ! real(kind=rkind), intent(in) :: eps0,mu0
-      ! type (tagtype_t), intent(in) :: tagtype
-      ! logical, intent(inout) :: finishedwithsuccess
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: dxe, dye, dze, dxh, dyh, dzh
