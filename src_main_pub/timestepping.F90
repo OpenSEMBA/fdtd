@@ -97,7 +97,6 @@ module Solver_mod
       real(kind=rkind), pointer, dimension (:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       type(constants_t) :: g
-      type(media_matrices_t) :: media
       real (kind=RKIND_tiempo) :: lastexecutedtime
       real (kind=RKIND) :: maxSourceValue
 
@@ -107,6 +106,15 @@ module Solver_mod
       type (EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
 
       logical :: parar, everflushed = .false., still_planewave_time
+
+      ! semba variables 
+      type (sggfdtdinfo) :: sgg
+      type(media_matrices_t) :: media
+      type(taglist_t) :: tag_numbers
+      type (limit_t), dimension(1:6) :: SINPML_fullsize,fullsize
+      logical :: finishedwithsuccess = .false.
+      real (kind=rkind) :: eps0,mu0
+      type (tagtype_t) :: tagtype
 
 #ifdef CompileWithMTLN
       type (mtln_t) :: mtln_parsed
@@ -150,7 +158,38 @@ module Solver_mod
 #endif
    end type
 
+   interface solver_t
+      module procedure solver_ctor
+   end interface
+
+
    contains
+
+   function solver_ctor(sgg,media,tag_numbers,SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
+                        input, maxSourceValue, time_desdelanzamiento) result(res)
+      type (SGGFDTDINFO), intent(in)   ::  sgg
+      type(taglist_t), intent(in) :: tag_numbers
+      type(media_matrices_t), intent(in) :: media
+      type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
+      logical, intent(in) :: finishedwithsuccess
+      REAL (KIND=RKIND), intent(in) :: eps0,mu0
+      type (tagtype_t), intent(in) :: tagtype
+      type(entrada_t), intent(in) :: input
+      real (kind=RKIND), intent(in) :: maxSourceValue
+      REAL (kind=8), intent(in) :: time_desdelanzamiento
+      type(solver_t) :: res
+
+      call res%init_control(input,maxSourceValue, time_desdelanzamiento)
+      res%sgg = sgg
+      res%media = media
+      res%tag_numbers = tag_numbers 
+      res%sinPML_fullsize = SINPML_fullsize
+      res%fullsize = fullsize
+      res%eps0 = eps0
+      res%mu0 = mu0
+      res%tagtype = tagtype
+
+   end function
 
    subroutine solver_init_control(this, input, maxSourceValue, time_desdelanzamiento)
       class(solver_t) :: this
@@ -257,36 +296,34 @@ module Solver_mod
    end subroutine
 #endif
 
-   subroutine init_fields(this, sgg)
+   subroutine init_fields(this)
       class(solver_t) :: this
-      type (sggfdtdinfo), intent(in) :: sgg
       allocate ( &
-      this%Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
-      this%Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
-      this%Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
-      this%Hx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
-      this%Hy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
-      this%Hz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE))
+      this%Ex(this%sgg%Alloc(iEx)%XI : this%sgg%Alloc(iEx)%XE,this%sgg%Alloc(iEx)%YI : this%sgg%Alloc(iEx)%YE,this%sgg%Alloc(iEx)%ZI : this%sgg%Alloc(iEx)%ZE),&
+      this%Ey(this%sgg%Alloc(iEy)%XI : this%sgg%Alloc(iEy)%XE,this%sgg%Alloc(iEy)%YI : this%sgg%Alloc(iEy)%YE,this%sgg%Alloc(iEy)%ZI : this%sgg%Alloc(iEy)%ZE),&
+      this%Ez(this%sgg%Alloc(iEz)%XI : this%sgg%Alloc(iEz)%XE,this%sgg%Alloc(iEz)%YI : this%sgg%Alloc(iEz)%YE,this%sgg%Alloc(iEz)%ZI : this%sgg%Alloc(iEz)%ZE),&
+      this%Hx(this%sgg%Alloc(iHx)%XI : this%sgg%Alloc(iHx)%XE,this%sgg%Alloc(iHx)%YI : this%sgg%Alloc(iHx)%YE,this%sgg%Alloc(iHx)%ZI : this%sgg%Alloc(iHx)%ZE),&
+      this%Hy(this%sgg%Alloc(iHy)%XI : this%sgg%Alloc(iHy)%XE,this%sgg%Alloc(iHy)%YI : this%sgg%Alloc(iHy)%YE,this%sgg%Alloc(iHy)%ZI : this%sgg%Alloc(iHy)%ZE),&
+      this%Hz(this%sgg%Alloc(iHz)%XI : this%sgg%Alloc(iHz)%XE,this%sgg%Alloc(iHz)%YI : this%sgg%Alloc(iHz)%YE,this%sgg%Alloc(iHz)%ZI : this%sgg%Alloc(iHz)%ZE))
       this%Ex = 0.0_RKIND; this%Ey = 0.0_RKIND; this%Ez = 0.0_RKIND; this%Hx = 0.0_RKIND; this%Hy = 0.0_RKIND; this%Hz = 0.0_RKIND
    end subroutine
 
-   subroutine init_distances(this,sgg)
+   subroutine init_distances(this)
       class(solver_t) :: this
-      type (sggfdtdinfo), intent(in) :: sgg
       integer :: i
       allocate ( & 
-      this%dxe (sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
-      this%dye (sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
-      this%dze (sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
-      this%Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
-      this%Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
-      this%Idze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
-      this%dxh (sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
-      this%dyh (sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
-      this%dzh (sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
-      this%Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
-      this%Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
-      this%Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE))
+      this%dxe (this%sgg%ALLOC(iHx)%XI : this%sgg%ALLOC(iHx)%XE), &
+      this%dye (this%sgg%ALLOC(iHy)%YI : this%sgg%ALLOC(iHy)%YE), &
+      this%dze (this%sgg%ALLOC(iHz)%ZI : this%sgg%ALLOC(iHz)%ZE), &
+      this%Idxe(this%sgg%ALLOC(iHx)%XI : this%sgg%ALLOC(iHx)%XE), &
+      this%Idye(this%sgg%ALLOC(iHy)%YI : this%sgg%ALLOC(iHy)%YE), &
+      this%Idze(this%sgg%ALLOC(iHz)%ZI : this%sgg%ALLOC(iHz)%ZE), &
+      this%dxh (this%sgg%ALLOC(iEx)%XI : this%sgg%ALLOC(iEx)%XE), &
+      this%dyh (this%sgg%ALLOC(iEy)%YI : this%sgg%ALLOC(iEy)%YE), &
+      this%dzh (this%sgg%ALLOC(iEz)%ZI : this%sgg%ALLOC(iEz)%ZE), &
+      this%Idxh(this%sgg%ALLOC(iEx)%XI : this%sgg%ALLOC(iEx)%XE), &
+      this%Idyh(this%sgg%ALLOC(iEy)%YI : this%sgg%ALLOC(iEy)%YE), &
+      this%Idzh(this%sgg%ALLOC(iEz)%ZI : this%sgg%ALLOC(iEz)%ZE))
       this%dxe=-1.0e10_RKIND
       this%dye=-1.0e10_RKIND
       this%dze=-1.0e10_RKIND
@@ -294,23 +331,23 @@ module Solver_mod
       this%dyh=-1.0e10_RKIND
       this%dzh=-1.0e10_RKIND
       
-      do i=sgg%ALLOC(iHx)%XI,sgg%ALLOC(iHx)%XE
-         this%dxe(i)=sgg%DX(i)
+      do i=this%sgg%ALLOC(iHx)%XI,this%sgg%ALLOC(iHx)%XE
+         this%dxe(i)=this%sgg%DX(i)
       end do
-      do i=sgg%ALLOC(iHy)%YI,sgg%ALLOC(iHy)%YE
-         this%dye(i)=sgg%DY(i)
+      do i=this%sgg%ALLOC(iHy)%YI,this%sgg%ALLOC(iHy)%YE
+         this%dye(i)=this%sgg%DY(i)
       end do
-      do i=sgg%ALLOC(iHz)%ZI,sgg%ALLOC(iHz)%ZE
-         this%dze(i)=sgg%DZ(i)
+      do i=this%sgg%ALLOC(iHz)%ZI,this%sgg%ALLOC(iHz)%ZE
+         this%dze(i)=this%sgg%DZ(i)
       end do
-      do i=sgg%ALLOC(iEx)%XI,sgg%ALLOC(iEx)%XE
-         this%dxh(i)=(sgg%DX(i)+sgg%DX(i-1))/2.0_RKIND
+      do i=this%sgg%ALLOC(iEx)%XI,this%sgg%ALLOC(iEx)%XE
+         this%dxh(i)=(this%sgg%DX(i)+this%sgg%DX(i-1))/2.0_RKIND
       end do
-      do i=sgg%ALLOC(iEy)%YI,sgg%ALLOC(iEy)%YE
-         this%dyh(i)=(sgg%DY(i)+sgg%DY(i-1))/2.0_RKIND
+      do i=this%sgg%ALLOC(iEy)%YI,this%sgg%ALLOC(iEy)%YE
+         this%dyh(i)=(this%sgg%DY(i)+this%sgg%DY(i-1))/2.0_RKIND
       end do
-      do i=sgg%ALLOC(iEz)%ZI,sgg%ALLOC(iEz)%ZE
-         this%dzh(i)=(sgg%DZ(i)+sgg%DZ(i-1))/2.0_RKIND
+      do i=this%sgg%ALLOC(iEz)%ZI,this%sgg%ALLOC(iEz)%ZE
+         this%dzh(i)=(this%sgg%DZ(i)+this%sgg%DZ(i-1))/2.0_RKIND
       end do
 
       this%Idxe=1.0_RKIND/this%dxe
@@ -376,35 +413,15 @@ module Solver_mod
       res = field(fi,fj,fk)
    end function
 
-   subroutine launch_simulation(this, sgg,media,tag_numbers,SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
-                                input, maxSourceValue, time_desdelanzamiento)
+   subroutine launch_simulation(this)
       class(solver_t) :: this
-      type (SGGFDTDINFO), intent(INOUT)   ::  sgg
-      type(taglist_t), intent(in) :: tag_numbers
-      type(media_matrices_t), intent(inout) :: media
-      type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
-      logical, intent(inout) :: finishedwithsuccess
-      REAL (KIND=RKIND), intent(inout) :: eps0,mu0
-      type (tagtype_t), intent(in) :: tagtype
-      type(entrada_t), intent(in) :: input
-      real (kind=RKIND), intent(in) :: maxSourceValue
-      REAL (kind=8), intent(in) :: time_desdelanzamiento
-
-      call this%init_control(input,maxSourceValue, time_desdelanzamiento)
-      call this%init(sgg, eps0, mu0, media, SINPML_fullsize, fullsize, tag_numbers)
-      call this%run(sgg, eps0, mu0, SINPML_fullsize, fullsize, tag_numbers, tagtype)
-      call this%end(sgg, eps0, mu0, tagtype, finishedwithsuccess)
-
-      
+      call this%init()
+      call this%run()
+      call this%end()
    end subroutine launch_simulation
 
-   subroutine solver_init(this, sgg, eps0, mu0, media, sinPML_fullsize, fullsize, tag_numbers)
+   subroutine solver_init(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(inout) :: sgg
-      real(kind=rkind), intent(inout) :: eps0,mu0
-      type(media_matrices_t), intent(inout) :: media
-      type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize, fullsize
-      type(taglist_t) :: tag_numbers
 
       integer(kind=4) :: i, j, k, field
       character (len=bufsize)  ::  whoami, chari, layoutcharID
@@ -421,51 +438,50 @@ module Solver_mod
       integer(kind=4) :: dummyMin,dummyMax, ierr
       real(kind=rkind) :: rdummy
 ! #endif
-      this%media = media
       this%control%fatalerror=.false.
 
       this%parar=.false.
       call this%perform%reset()
       call this%d_perform%reset()
       call this%thereAre%reset()
-      this%thereAre%MagneticMedia = sgg%thereareMagneticMedia
-      this%thereAre%PMLMagneticMedia = sgg%therearePMLMagneticMedia
+      this%thereAre%MagneticMedia = this%sgg%thereareMagneticMedia
+      this%thereAre%PMLMagneticMedia = this%sgg%therearePMLMagneticMedia
 
       !prechecking of no offsetting to prevent errors in case of modifications
-      I=sgg%Alloc(iEx)%XI
-      J=sgg%Alloc(iEx)%YI
-      K=sgg%Alloc(iEx)%ZI
+      I=this%sgg%Alloc(iEx)%XI
+      J=this%sgg%Alloc(iEx)%YI
+      K=this%sgg%Alloc(iEx)%ZI
       do field=iEy,6
-         if (sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
       END DO
 
       write(whoami,'(a,i5,a,i5,a)') '(',this%control%layoutnumber+1,'/',this%control%size,') '
       !file names
       write(chari,*) this%control%layoutnumber+1
-      if ((this%control%layoutnumber == 0).and.this%control%verbose) call reportmedia(sgg)
+      if ((this%control%layoutnumber == 0).and.this%control%verbose) call reportmedia(this%sgg)
       layoutcharID = trim(adjustl(this%control%nentradaroot))//'_'//trim(adjustl(chari))
-      call findbounds(sgg,this%bounds)
+      call findbounds(this%bounds)
 
-      call this%init_distances(sgg)
+      call this%init_distances()
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 !!!lo cambio aqui permit scaling a 211118 por problemas con resuming: debe leer el eps0, mu0, antes de hacer numeros
       
-      allocate (this%g%g1(0 : sgg%NumMedia),this%g%g2(0 : sgg%NumMedia),this%g%gm1(0 : sgg%NumMedia),this%g%gm2(0 : sgg%NumMedia))
+      allocate (this%g%g1(0 : this%sgg%NumMedia),this%g%g2(0 : this%sgg%NumMedia),this%g%gm1(0 : this%sgg%NumMedia),this%g%gm2(0 : this%sgg%NumMedia))
      !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Field matrices creation (an extra cell is padded at each limit and direction to deal with PMC imaging with no index errors)
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !ojo las dimesniones deben ser giuales a las utlizadas en reallocate para las matrices sggmiEx, etc
 
-      call this%init_fields(sgg)
+      call this%init_fields()
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz
       
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Init the local variables and observation stuff needed by each module, taking into account resume status
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      dt0=sgg%dt !guardalo aqui para entrada pscale correcta si resume
+      dt0=this%sgg%dt !guardalo aqui para entrada pscale correcta si resume
       if (.not.this%control%resume) then
          Ex=0.0_RKIND; Ey=0.0_RKIND; Ez=0.0_RKIND; Hx=0.0_RKIND; Hy=0.0_RKIND; Hz=0.0_RKIND
          this%initialtimestep=0 
@@ -479,16 +495,16 @@ module Solver_mod
          else
             open (14,file=trim(adjustl(this%control%nresumeable2)),form='unformatted')
          endif
-         call ReadFields(sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,eps0,mu0,Ex,Ey,Ez,Hx,Hy,Hz)
-         sgg%dt=ultimodt !para permit scaling
+         call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
+         this%sgg%dt=ultimodt !para permit scaling
       !!!!!!!!!!!!No es preciso re-sincronizar pero lo hago !!!!!!!!!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithMPI
-         rdummy=sgg%dt
-         call MPIupdateMin(real(sgg%dt,RKIND),rdummy)
-         rdummy=eps0
-         call MPIupdateMin(eps0,rdummy)
-         rdummy=mu0
-         call MPIupdateMin(mu0,rdummy)
+         rdummy=this%sgg%dt
+         call MPIupdateMin(real(this%sgg%dt,RKIND),rdummy)
+         rdummy=this%eps0
+         call MPIupdateMin(this%eps0,rdummy)
+         rdummy=this%mu0
+         call MPIupdateMin(this%mu0,rdummy)
 #endif
 #ifdef CompileWithMPI
          call MPI_AllReduce( this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
@@ -499,7 +515,7 @@ module Solver_mod
                close (14)
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming.', dummyMin,dummyMax,this%lastexecutedtimesteP
                call stoponerror (this%control%layoutnumber,this%control%size,BUFF,.true.) !para que retorne
-               call this%destroy_and_deallocate(sgg)
+               call this%destroy_and_deallocate()
                return
             else
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming. Retrying with -old....'
@@ -507,14 +523,14 @@ module Solver_mod
                this%control%resume_fromold=.true.
                close (14)
                open (14,file=trim(adjustl(this%control%nresumeable2))//'.old',form='unformatted')
-               call ReadFields(sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,eps0,mu0,Ex,Ey,Ez,Hx,Hy,Hz)
-               sgg%dt=ultimodt !para permit scaling
+               call ReadFields(this%sgg%alloc,this%lastexecutedtimestep,this%lastexecutedtime,ultimodt,this%eps0,this%mu0,Ex,Ey,Ez,Hx,Hy,Hz)
+               this%sgg%dt=ultimodt !para permit scaling
                call MPI_AllReduce( this%lastexecutedtimestep, dummyMin, 1_4, MPI_INTEGER, MPI_MIN, SUBCOMM_MPI, ierr)
                call MPI_AllReduce( this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
                if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,this%lastexecutedtimestep
                   call stoponerror (this%control%layoutnumber,this%control%size,DUBUF,.true.) !para que retorne
-                  call this%destroy_and_deallocate(sgg)
+                  call this%destroy_and_deallocate()
                   return
                else
                   write(dubuf,*) 'SUCCESS: Restarting from .fields.old instead. From n=',this%lastexecutedtimestep
@@ -526,7 +542,7 @@ module Solver_mod
 
             write(dubuf,*) 'Incoherence between MPI saved steps for resuming.',dummyMin,dummyMax,this%lastexecutedtimestep
             call stoponerror (this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
-            call this%destroy_and_deallocate(sgg)
+            call this%destroy_and_deallocate()
             return
 #endif
          endif
@@ -538,18 +554,18 @@ module Solver_mod
 
       if (this%initialtimestep>this%control%finaltimestep) then
           call stoponerror (this%control%layoutnumber,this%control%size,'Initial time step greater than final one',.true.) !para que retorne
-          call this%destroy_and_deallocate(sgg)
+          call this%destroy_and_deallocate()
           return
       endif
 !!!incializa el vector de tiempos para permit scaling 191118
-      call crea_timevector(sgg,this%lastexecutedtimestep,this%control%finaltimestep,this%lastexecutedtime)
+      call crea_timevector(this%sgg,this%lastexecutedtimestep,this%control%finaltimestep,this%lastexecutedtime)
 !!!!!!!!!!!!!!!!!!!!!
 
 ! !fin lo cambio aqui
 
       call updateSigmaM(attinformado)
       call updateThinWiresSigma(attinformado)
-      call calc_G1G2Gm1Gm2(sgg,this%g,eps0,mu0)
+      call calc_G1G2Gm1Gm2(this%sgg,this%g,this%eps0,this%mu0)
       call revertThinWiresSigma()
  
       !
@@ -557,7 +573,7 @@ module Solver_mod
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       write(dubuf,*) 'Init Reporting...';  call print11(this%control%layoutnumber,dubuf)
-      call InitReporting(sgg,this%control)
+      call InitReporting(this%sgg,this%control)
       call reportSimulationOptions()
 
 #ifdef CompileWithMPI
@@ -582,7 +598,7 @@ module Solver_mod
       call initializePlanewave()
       call initializeNodalSources()
 
-      call fillMtag(sgg, this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMtag, this%bounds, tag_numbers)
+      call fillMtag(this%sgg, this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz, this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz,this%media%sggMtag, this%bounds, this%tag_numbers)
       call initializeObservation()
 
       !!!!voy a jugar con fuego !!!210815 sincronizo las matrices de medios porque a veces se precisan. Reutilizo rutinas viejas mias NO CRAY. Solo se usan aqui
@@ -602,7 +618,7 @@ module Solver_mod
       this%n_info = 5 + this%initialtimestep
 
       write(dubuf,*) 'Init Timing...';  call print11(this%control%layoutnumber,dubuf)
-      call InitTiming(sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue)
+      call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue)
 
 
       CALL CLOSEWARNINGFILE(this%control%layoutnumber,this%control%size,this%control%fatalerror,.false.,this%control%simu_devia) !aqui ya esta dividido el stochastic y hay dos this%control%layoutnumber=0
@@ -610,7 +626,7 @@ module Solver_mod
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
          call stoponerror(this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
-         call this%destroy_and_deallocate(sgg)
+         call this%destroy_and_deallocate()
          return
       endif
 #ifdef CompileWithMPI
@@ -631,203 +647,202 @@ module Solver_mod
    
 contains
 
-      subroutine findbounds(sgg,b)
+      subroutine findbounds(b)
          !
-         type (SGGFDTDINFO), intent(IN)     ::  sgg
          type (bounds_t), intent(out)  ::  b
          !
 
          !No tocar. Dejar como estan alocateados
-         b%dxe%XI=sgg%alloc(iHx)%XI
-         b%dxe%XE=sgg%alloc(iHx)%XE
-         b%dye%YI=sgg%alloc(iHy)%YI
-         b%dye%YE=sgg%alloc(iHy)%YE
-         b%dze%ZI=sgg%alloc(iHz)%ZI
-         b%dze%ZE=sgg%alloc(iHz)%ZE
+         b%dxe%XI=this%sgg%alloc(iHx)%XI
+         b%dxe%XE=this%sgg%alloc(iHx)%XE
+         b%dye%YI=this%sgg%alloc(iHy)%YI
+         b%dye%YE=this%sgg%alloc(iHy)%YE
+         b%dze%ZI=this%sgg%alloc(iHz)%ZI
+         b%dze%ZE=this%sgg%alloc(iHz)%ZE
          !
-         b%dxh%XI=sgg%alloc(iEx)%XI
-         b%dxh%XE=sgg%alloc(iEx)%XE
-         b%dyh%YI=sgg%alloc(iEy)%YI
-         b%dyh%YE=sgg%alloc(iEy)%YE
-         b%dzh%ZI=sgg%alloc(iEz)%ZI
-         b%dzh%ZE=sgg%alloc(iEz)%ZE
+         b%dxh%XI=this%sgg%alloc(iEx)%XI
+         b%dxh%XE=this%sgg%alloc(iEx)%XE
+         b%dyh%YI=this%sgg%alloc(iEy)%YI
+         b%dyh%YE=this%sgg%alloc(iEy)%YE
+         b%dzh%ZI=this%sgg%alloc(iEz)%ZI
+         b%dzh%ZE=this%sgg%alloc(iEz)%ZE
 
          !
          !No tocar. Dejar como estan alocateados
-         b%Ex%XI=sgg%Alloc(iEx)%XI
-         b%Ex%XE=sgg%Alloc(iEx)%XE
-         b%Ey%XI=sgg%Alloc(iEy)%XI
-         b%Ey%XE=sgg%Alloc(iEy)%XE
-         b%Ez%XI=sgg%Alloc(iEz)%XI
-         b%Ez%XE=sgg%Alloc(iEz)%XE
+         b%Ex%XI=this%sgg%Alloc(iEx)%XI
+         b%Ex%XE=this%sgg%Alloc(iEx)%XE
+         b%Ey%XI=this%sgg%Alloc(iEy)%XI
+         b%Ey%XE=this%sgg%Alloc(iEy)%XE
+         b%Ez%XI=this%sgg%Alloc(iEz)%XI
+         b%Ez%XE=this%sgg%Alloc(iEz)%XE
          !
-         b%Hx%XI=sgg%Alloc(iHx)%XI
-         b%Hx%XE=sgg%Alloc(iHx)%XE
-         b%Hy%XI=sgg%Alloc(iHy)%XI
-         b%Hy%XE=sgg%Alloc(iHy)%XE
-         b%Hz%XI=sgg%Alloc(iHz)%XI
-         b%Hz%XE=sgg%Alloc(iHz)%XE
+         b%Hx%XI=this%sgg%Alloc(iHx)%XI
+         b%Hx%XE=this%sgg%Alloc(iHx)%XE
+         b%Hy%XI=this%sgg%Alloc(iHy)%XI
+         b%Hy%XE=this%sgg%Alloc(iHy)%XE
+         b%Hz%XI=this%sgg%Alloc(iHz)%XI
+         b%Hz%XE=this%sgg%Alloc(iHz)%XE
          !
-         b%Ex%YI=sgg%Alloc(iEx)%YI
-         b%Ex%YE=sgg%Alloc(iEx)%YE
-         b%Ey%YI=sgg%Alloc(iEy)%YI
-         b%Ey%YE=sgg%Alloc(iEy)%YE
-         b%Ez%YI=sgg%Alloc(iEz)%YI
-         b%Ez%YE=sgg%Alloc(iEz)%YE
+         b%Ex%YI=this%sgg%Alloc(iEx)%YI
+         b%Ex%YE=this%sgg%Alloc(iEx)%YE
+         b%Ey%YI=this%sgg%Alloc(iEy)%YI
+         b%Ey%YE=this%sgg%Alloc(iEy)%YE
+         b%Ez%YI=this%sgg%Alloc(iEz)%YI
+         b%Ez%YE=this%sgg%Alloc(iEz)%YE
          !
-         b%Hx%YI=sgg%Alloc(iHx)%YI
-         b%Hx%YE=sgg%Alloc(iHx)%YE
-         b%Hy%YI=sgg%Alloc(iHy)%YI
-         b%Hy%YE=sgg%Alloc(iHy)%YE
-         b%Hz%YI=sgg%Alloc(iHz)%YI
-         b%Hz%YE=sgg%Alloc(iHz)%YE
+         b%Hx%YI=this%sgg%Alloc(iHx)%YI
+         b%Hx%YE=this%sgg%Alloc(iHx)%YE
+         b%Hy%YI=this%sgg%Alloc(iHy)%YI
+         b%Hy%YE=this%sgg%Alloc(iHy)%YE
+         b%Hz%YI=this%sgg%Alloc(iHz)%YI
+         b%Hz%YE=this%sgg%Alloc(iHz)%YE
          !
-         b%Ex%ZI=sgg%Alloc(iEx)%ZI
-         b%Ex%ZE=sgg%Alloc(iEx)%ZE
-         b%Ey%ZI=sgg%Alloc(iEy)%ZI
-         b%Ey%ZE=sgg%Alloc(iEy)%ZE
-         b%Ez%ZI=sgg%Alloc(iEz)%ZI
-         b%Ez%ZE=sgg%Alloc(iEz)%ZE
+         b%Ex%ZI=this%sgg%Alloc(iEx)%ZI
+         b%Ex%ZE=this%sgg%Alloc(iEx)%ZE
+         b%Ey%ZI=this%sgg%Alloc(iEy)%ZI
+         b%Ey%ZE=this%sgg%Alloc(iEy)%ZE
+         b%Ez%ZI=this%sgg%Alloc(iEz)%ZI
+         b%Ez%ZE=this%sgg%Alloc(iEz)%ZE
          !
-         b%Hx%ZI=sgg%Alloc(iHx)%ZI
-         b%Hx%ZE=sgg%Alloc(iHx)%ZE
-         b%Hy%ZI=sgg%Alloc(iHy)%ZI
-         b%Hy%ZE=sgg%Alloc(iHy)%ZE
-         b%Hz%ZI=sgg%Alloc(iHz)%ZI
-         b%Hz%ZE=sgg%Alloc(iHz)%ZE
+         b%Hx%ZI=this%sgg%Alloc(iHx)%ZI
+         b%Hx%ZE=this%sgg%Alloc(iHx)%ZE
+         b%Hy%ZI=this%sgg%Alloc(iHy)%ZI
+         b%Hy%ZE=this%sgg%Alloc(iHy)%ZE
+         b%Hz%ZI=this%sgg%Alloc(iHz)%ZI
+         b%Hz%ZE=this%sgg%Alloc(iHz)%ZE
          !
          !
          !
 
          !matrix indexes. Nothing to change. Asi estan alocateados
-         b%sggMiEx%XI=sgg%Alloc(iEx)%XI
-         b%sggMiEx%XE=sgg%Alloc(iEx)%XE
-         b%sggMiEy%XI=sgg%Alloc(iEy)%XI
-         b%sggMiEy%XE=sgg%Alloc(iEy)%XE
-         b%sggMiEz%XI=sgg%Alloc(iEz)%XI
-         b%sggMiEz%XE=sgg%Alloc(iEz)%XE
+         b%sggMiEx%XI=this%sgg%Alloc(iEx)%XI
+         b%sggMiEx%XE=this%sgg%Alloc(iEx)%XE
+         b%sggMiEy%XI=this%sgg%Alloc(iEy)%XI
+         b%sggMiEy%XE=this%sgg%Alloc(iEy)%XE
+         b%sggMiEz%XI=this%sgg%Alloc(iEz)%XI
+         b%sggMiEz%XE=this%sgg%Alloc(iEz)%XE
          !
-         b%sggMiHx%XI=sgg%Alloc(iHx)%XI
-         b%sggMiHx%XE=sgg%Alloc(iHx)%XE
-         b%sggMiHy%XI=sgg%Alloc(iHy)%XI
-         b%sggMiHy%XE=sgg%Alloc(iHy)%XE
-         b%sggMiHz%XI=sgg%Alloc(iHz)%XI
-         b%sggMiHz%XE=sgg%Alloc(iHz)%XE
+         b%sggMiHx%XI=this%sgg%Alloc(iHx)%XI
+         b%sggMiHx%XE=this%sgg%Alloc(iHx)%XE
+         b%sggMiHy%XI=this%sgg%Alloc(iHy)%XI
+         b%sggMiHy%XE=this%sgg%Alloc(iHy)%XE
+         b%sggMiHz%XI=this%sgg%Alloc(iHz)%XI
+         b%sggMiHz%XE=this%sgg%Alloc(iHz)%XE
          !
-         b%sggMiEx%YI=sgg%Alloc(iEx)%YI
-         b%sggMiEx%YE=sgg%Alloc(iEx)%YE
-         b%sggMiEy%YI=sgg%Alloc(iEy)%YI
-         b%sggMiEy%YE=sgg%Alloc(iEy)%YE
-         b%sggMiEz%YI=sgg%Alloc(iEz)%YI
-         b%sggMiEz%YE=sgg%Alloc(iEz)%YE
+         b%sggMiEx%YI=this%sgg%Alloc(iEx)%YI
+         b%sggMiEx%YE=this%sgg%Alloc(iEx)%YE
+         b%sggMiEy%YI=this%sgg%Alloc(iEy)%YI
+         b%sggMiEy%YE=this%sgg%Alloc(iEy)%YE
+         b%sggMiEz%YI=this%sgg%Alloc(iEz)%YI
+         b%sggMiEz%YE=this%sgg%Alloc(iEz)%YE
          !
-         b%sggMiHx%YI=sgg%Alloc(iHx)%YI
-         b%sggMiHx%YE=sgg%Alloc(iHx)%YE
-         b%sggMiHy%YI=sgg%Alloc(iHy)%YI
-         b%sggMiHy%YE=sgg%Alloc(iHy)%YE
-         b%sggMiHz%YI=sgg%Alloc(iHz)%YI
-         b%sggMiHz%YE=sgg%Alloc(iHz)%YE
+         b%sggMiHx%YI=this%sgg%Alloc(iHx)%YI
+         b%sggMiHx%YE=this%sgg%Alloc(iHx)%YE
+         b%sggMiHy%YI=this%sgg%Alloc(iHy)%YI
+         b%sggMiHy%YE=this%sgg%Alloc(iHy)%YE
+         b%sggMiHz%YI=this%sgg%Alloc(iHz)%YI
+         b%sggMiHz%YE=this%sgg%Alloc(iHz)%YE
          !
-         b%sggMiEx%ZI=sgg%Alloc(iEx)%ZI
-         b%sggMiEx%ZE=sgg%Alloc(iEx)%ZE
-         b%sggMiEy%ZI=sgg%Alloc(iEy)%ZI
-         b%sggMiEy%ZE=sgg%Alloc(iEy)%ZE
-         b%sggMiEz%ZI=sgg%Alloc(iEz)%ZI
-         b%sggMiEz%ZE=sgg%Alloc(iEz)%ZE
+         b%sggMiEx%ZI=this%sgg%Alloc(iEx)%ZI
+         b%sggMiEx%ZE=this%sgg%Alloc(iEx)%ZE
+         b%sggMiEy%ZI=this%sgg%Alloc(iEy)%ZI
+         b%sggMiEy%ZE=this%sgg%Alloc(iEy)%ZE
+         b%sggMiEz%ZI=this%sgg%Alloc(iEz)%ZI
+         b%sggMiEz%ZE=this%sgg%Alloc(iEz)%ZE
          !
-         b%sggMiHx%ZI=sgg%Alloc(iHx)%ZI
-         b%sggMiHx%ZE=sgg%Alloc(iHx)%ZE
-         b%sggMiHy%ZI=sgg%Alloc(iHy)%ZI
-         b%sggMiHy%ZE=sgg%Alloc(iHy)%ZE
-         b%sggMiHz%ZI=sgg%Alloc(iHz)%ZI
-         b%sggMiHz%ZE=sgg%Alloc(iHz)%ZE
-         !
-         !
-         !
-         b%sweepEx%XI=sgg%Sweep(iEx)%XI
-         b%sweepEx%XE=sgg%Sweep(iEx)%XE
-         b%sweepEy%XI=sgg%Sweep(iEy)%XI
-         b%sweepEy%XE=sgg%Sweep(iEy)%XE
-         b%sweepEz%XI=sgg%Sweep(iEz)%XI
-         b%sweepEz%XE=sgg%Sweep(iEz)%XE
-         !
-         b%sweepHx%XI=sgg%Sweep(iHx)%XI
-         b%sweepHx%XE=sgg%Sweep(iHx)%XE
-         b%sweepHy%XI=sgg%Sweep(iHy)%XI
-         b%sweepHy%XE=sgg%Sweep(iHy)%XE
-         b%sweepHz%XI=sgg%Sweep(iHz)%XI
-         b%sweepHz%XE=sgg%Sweep(iHz)%XE
+         b%sggMiHx%ZI=this%sgg%Alloc(iHx)%ZI
+         b%sggMiHx%ZE=this%sgg%Alloc(iHx)%ZE
+         b%sggMiHy%ZI=this%sgg%Alloc(iHy)%ZI
+         b%sggMiHy%ZE=this%sgg%Alloc(iHy)%ZE
+         b%sggMiHz%ZI=this%sgg%Alloc(iHz)%ZI
+         b%sggMiHz%ZE=this%sgg%Alloc(iHz)%ZE
          !
          !
-         b%sweepEx%YI=sgg%Sweep(iEx)%YI
-         b%sweepEx%YE=sgg%Sweep(iEx)%YE
-         b%sweepEy%YI=sgg%Sweep(iEy)%YI
-         b%sweepEy%YE=sgg%Sweep(iEy)%YE
-         b%sweepEz%YI=sgg%Sweep(iEz)%YI
-         b%sweepEz%YE=sgg%Sweep(iEz)%YE
          !
-         b%sweepHx%YI=sgg%Sweep(iHx)%YI
-         b%sweepHx%YE=sgg%Sweep(iHx)%YE
-         b%sweepHy%YI=sgg%Sweep(iHy)%YI
-         b%sweepHy%YE=sgg%Sweep(iHy)%YE
-         b%sweepHz%YI=sgg%Sweep(iHz)%YI
-         b%sweepHz%YE=sgg%Sweep(iHz)%YE
+         b%sweepEx%XI=this%sgg%Sweep(iEx)%XI
+         b%sweepEx%XE=this%sgg%Sweep(iEx)%XE
+         b%sweepEy%XI=this%sgg%Sweep(iEy)%XI
+         b%sweepEy%XE=this%sgg%Sweep(iEy)%XE
+         b%sweepEz%XI=this%sgg%Sweep(iEz)%XI
+         b%sweepEz%XE=this%sgg%Sweep(iEz)%XE
          !
-         b%sweepEx%ZI=sgg%Sweep(iEx)%ZI
-         b%sweepEx%ZE=sgg%Sweep(iEx)%ZE
-         b%sweepEy%ZI=sgg%Sweep(iEy)%ZI
-         b%sweepEy%ZE=sgg%Sweep(iEy)%ZE
-         b%sweepEz%ZI=sgg%Sweep(iEz)%ZI
-         b%sweepEz%ZE=sgg%Sweep(iEz)%ZE
+         b%sweepHx%XI=this%sgg%Sweep(iHx)%XI
+         b%sweepHx%XE=this%sgg%Sweep(iHx)%XE
+         b%sweepHy%XI=this%sgg%Sweep(iHy)%XI
+         b%sweepHy%XE=this%sgg%Sweep(iHy)%XE
+         b%sweepHz%XI=this%sgg%Sweep(iHz)%XI
+         b%sweepHz%XE=this%sgg%Sweep(iHz)%XE
          !
-         b%sweepHx%ZI=sgg%Sweep(iHx)%ZI
-         b%sweepHx%ZE=sgg%Sweep(iHx)%ZE
-         b%sweepHy%ZI=sgg%Sweep(iHy)%ZI
-         b%sweepHy%ZE=sgg%Sweep(iHy)%ZE
-         b%sweepHz%ZI=sgg%Sweep(iHz)%ZI
-         b%sweepHz%ZE=sgg%Sweep(iHz)%ZE
          !
-         b%sweepSINPMLEx%XI=sgg%SINPMLSweep(iEx)%XI
-         b%sweepSINPMLEy%XI=sgg%SINPMLSweep(iEy)%XI
-         b%sweepSINPMLEz%XI=sgg%SINPMLSweep(iEz)%XI
-         b%sweepSINPMLHx%XI=sgg%SINPMLSweep(iHx)%XI
-         b%sweepSINPMLHy%XI=sgg%SINPMLSweep(iHy)%XI
-         b%sweepSINPMLHz%XI=sgg%SINPMLSweep(iHz)%XI
+         b%sweepEx%YI=this%sgg%Sweep(iEx)%YI
+         b%sweepEx%YE=this%sgg%Sweep(iEx)%YE
+         b%sweepEy%YI=this%sgg%Sweep(iEy)%YI
+         b%sweepEy%YE=this%sgg%Sweep(iEy)%YE
+         b%sweepEz%YI=this%sgg%Sweep(iEz)%YI
+         b%sweepEz%YE=this%sgg%Sweep(iEz)%YE
          !
-         b%sweepSINPMLEx%XE=sgg%SINPMLSweep(iEx)%XE
-         b%sweepSINPMLEy%XE=sgg%SINPMLSweep(iEy)%XE
-         b%sweepSINPMLEz%XE=sgg%SINPMLSweep(iEz)%XE
-         b%sweepSINPMLHx%XE=sgg%SINPMLSweep(iHx)%XE
-         b%sweepSINPMLHy%XE=sgg%SINPMLSweep(iHy)%XE
-         b%sweepSINPMLHz%XE=sgg%SINPMLSweep(iHz)%XE
+         b%sweepHx%YI=this%sgg%Sweep(iHx)%YI
+         b%sweepHx%YE=this%sgg%Sweep(iHx)%YE
+         b%sweepHy%YI=this%sgg%Sweep(iHy)%YI
+         b%sweepHy%YE=this%sgg%Sweep(iHy)%YE
+         b%sweepHz%YI=this%sgg%Sweep(iHz)%YI
+         b%sweepHz%YE=this%sgg%Sweep(iHz)%YE
          !
-         b%sweepSINPMLEx%YI=sgg%SINPMLSweep(iEx)%YI
-         b%sweepSINPMLEy%YI=sgg%SINPMLSweep(iEy)%YI
-         b%sweepSINPMLEz%YI=sgg%SINPMLSweep(iEz)%YI
-         b%sweepSINPMLHx%YI=sgg%SINPMLSweep(iHx)%YI
-         b%sweepSINPMLHy%YI=sgg%SINPMLSweep(iHy)%YI
-         b%sweepSINPMLHz%YI=sgg%SINPMLSweep(iHz)%YI
+         b%sweepEx%ZI=this%sgg%Sweep(iEx)%ZI
+         b%sweepEx%ZE=this%sgg%Sweep(iEx)%ZE
+         b%sweepEy%ZI=this%sgg%Sweep(iEy)%ZI
+         b%sweepEy%ZE=this%sgg%Sweep(iEy)%ZE
+         b%sweepEz%ZI=this%sgg%Sweep(iEz)%ZI
+         b%sweepEz%ZE=this%sgg%Sweep(iEz)%ZE
          !
-         b%sweepSINPMLEx%YE=sgg%SINPMLSweep(iEx)%YE
-         b%sweepSINPMLEy%YE=sgg%SINPMLSweep(iEy)%YE
-         b%sweepSINPMLEz%YE=sgg%SINPMLSweep(iEz)%YE
-         b%sweepSINPMLHx%YE=sgg%SINPMLSweep(iHx)%YE
-         b%sweepSINPMLHy%YE=sgg%SINPMLSweep(iHy)%YE
-         b%sweepSINPMLHz%YE=sgg%SINPMLSweep(iHz)%YE
+         b%sweepHx%ZI=this%sgg%Sweep(iHx)%ZI
+         b%sweepHx%ZE=this%sgg%Sweep(iHx)%ZE
+         b%sweepHy%ZI=this%sgg%Sweep(iHy)%ZI
+         b%sweepHy%ZE=this%sgg%Sweep(iHy)%ZE
+         b%sweepHz%ZI=this%sgg%Sweep(iHz)%ZI
+         b%sweepHz%ZE=this%sgg%Sweep(iHz)%ZE
          !
-         b%sweepSINPMLEx%ZI=sgg%SINPMLSweep(iEx)%ZI
-         b%sweepSINPMLEy%ZI=sgg%SINPMLSweep(iEy)%ZI
-         b%sweepSINPMLEz%ZI=sgg%SINPMLSweep(iEz)%ZI
-         b%sweepSINPMLHx%ZI=sgg%SINPMLSweep(iHx)%ZI
-         b%sweepSINPMLHy%ZI=sgg%SINPMLSweep(iHy)%ZI
-         b%sweepSINPMLHz%ZI=sgg%SINPMLSweep(iHz)%ZI
+         b%sweepSINPMLEx%XI=this%sgg%SINPMLSweep(iEx)%XI
+         b%sweepSINPMLEy%XI=this%sgg%SINPMLSweep(iEy)%XI
+         b%sweepSINPMLEz%XI=this%sgg%SINPMLSweep(iEz)%XI
+         b%sweepSINPMLHx%XI=this%sgg%SINPMLSweep(iHx)%XI
+         b%sweepSINPMLHy%XI=this%sgg%SINPMLSweep(iHy)%XI
+         b%sweepSINPMLHz%XI=this%sgg%SINPMLSweep(iHz)%XI
          !
-         b%sweepSINPMLEx%ZE=sgg%SINPMLSweep(iEx)%ZE
-         b%sweepSINPMLEy%ZE=sgg%SINPMLSweep(iEy)%ZE
-         b%sweepSINPMLEz%ZE=sgg%SINPMLSweep(iEz)%ZE
-         b%sweepSINPMLHx%ZE=sgg%SINPMLSweep(iHx)%ZE
-         b%sweepSINPMLHy%ZE=sgg%SINPMLSweep(iHy)%ZE
-         b%sweepSINPMLHz%ZE=sgg%SINPMLSweep(iHz)%ZE
+         b%sweepSINPMLEx%XE=this%sgg%SINPMLSweep(iEx)%XE
+         b%sweepSINPMLEy%XE=this%sgg%SINPMLSweep(iEy)%XE
+         b%sweepSINPMLEz%XE=this%sgg%SINPMLSweep(iEz)%XE
+         b%sweepSINPMLHx%XE=this%sgg%SINPMLSweep(iHx)%XE
+         b%sweepSINPMLHy%XE=this%sgg%SINPMLSweep(iHy)%XE
+         b%sweepSINPMLHz%XE=this%sgg%SINPMLSweep(iHz)%XE
+         !
+         b%sweepSINPMLEx%YI=this%sgg%SINPMLSweep(iEx)%YI
+         b%sweepSINPMLEy%YI=this%sgg%SINPMLSweep(iEy)%YI
+         b%sweepSINPMLEz%YI=this%sgg%SINPMLSweep(iEz)%YI
+         b%sweepSINPMLHx%YI=this%sgg%SINPMLSweep(iHx)%YI
+         b%sweepSINPMLHy%YI=this%sgg%SINPMLSweep(iHy)%YI
+         b%sweepSINPMLHz%YI=this%sgg%SINPMLSweep(iHz)%YI
+         !
+         b%sweepSINPMLEx%YE=this%sgg%SINPMLSweep(iEx)%YE
+         b%sweepSINPMLEy%YE=this%sgg%SINPMLSweep(iEy)%YE
+         b%sweepSINPMLEz%YE=this%sgg%SINPMLSweep(iEz)%YE
+         b%sweepSINPMLHx%YE=this%sgg%SINPMLSweep(iHx)%YE
+         b%sweepSINPMLHy%YE=this%sgg%SINPMLSweep(iHy)%YE
+         b%sweepSINPMLHz%YE=this%sgg%SINPMLSweep(iHz)%YE
+         !
+         b%sweepSINPMLEx%ZI=this%sgg%SINPMLSweep(iEx)%ZI
+         b%sweepSINPMLEy%ZI=this%sgg%SINPMLSweep(iEy)%ZI
+         b%sweepSINPMLEz%ZI=this%sgg%SINPMLSweep(iEz)%ZI
+         b%sweepSINPMLHx%ZI=this%sgg%SINPMLSweep(iHx)%ZI
+         b%sweepSINPMLHy%ZI=this%sgg%SINPMLSweep(iHy)%ZI
+         b%sweepSINPMLHz%ZI=this%sgg%SINPMLSweep(iHz)%ZI
+         !
+         b%sweepSINPMLEx%ZE=this%sgg%SINPMLSweep(iEx)%ZE
+         b%sweepSINPMLEy%ZE=this%sgg%SINPMLSweep(iEy)%ZE
+         b%sweepSINPMLEz%ZE=this%sgg%SINPMLSweep(iEz)%ZE
+         b%sweepSINPMLHx%ZE=this%sgg%SINPMLSweep(iHx)%ZE
+         b%sweepSINPMLHy%ZE=this%sgg%SINPMLSweep(iHy)%ZE
+         b%sweepSINPMLHz%ZE=this%sgg%SINPMLSweep(iHz)%ZE
 
          !
 
@@ -928,24 +943,24 @@ contains
          integer :: i
          if (abs(this%control%attfactorc-1.0_RKIND) > 1.0e-12_RKIND) then
             att=.false.
-            do i=1,sgg%nummedia
-               if (sgg%Med(i)%Is%MultiportPadding) then
-                  sgg%Med(i)%SigmaM =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorc)*mu0)/((1 + this%control%attfactorc)*sgg%dt)
+            do i=1,this%sgg%nummedia
+               if (this%sgg%Med(i)%Is%MultiportPadding) then
+                  this%sgg%Med(i)%SigmaM =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorc)*this%mu0)/((1 + this%control%attfactorc)*this%sgg%dt)
                   hayattmedia=.true.
                endif
-               deltaespmax=max(max(maxval(sgg%dx),maxval(sgg%dy)),maxval(sgg%dz))
+               deltaespmax=max(max(maxval(this%sgg%dx),maxval(this%sgg%dy)),maxval(this%sgg%dz))
                if (hayattmedia.and. .not. att) then
                   !!!!info on stabilization
                   epr   =1.0_RKIND
                   mur   =1.0_RKIND
                   !!
-                  write(buff,'(a,2e10.2e3)') ' Composites stabilization att. factor=',this%control%attfactorc,sgg%Med(i)%SigmaM
+                  write(buff,'(a,2e10.2e3)') ' Composites stabilization att. factor=',this%control%attfactorc,this%sgg%Med(i)%SigmaM
 
                   call WarnErrReport(buff)
                   !!
-                  fmax=1.0_RKIND / (10.0_RKIND * sgg%dt)
-                  skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*fmax*Pi*(epr*Eps0**2*(4*mur*mu0**2.0_RKIND + sgg%Med(i)%Sigmam**2/(fmax**2*Pi**2.0_RKIND )))**0.25_RKIND * &
-                  Sin(atan2(2*Pi*epr*Eps0*mur*mu0, - (epr*eps0*sgg%Med(i)%Sigmam)/fmax)/2.0_RKIND))
+                  fmax=1.0_RKIND / (10.0_RKIND * this%sgg%dt)
+                  skin_depth=1.0_RKIND / (Sqrt(2.0_RKIND)*fmax*Pi*(epr*this%eps0**2*(4*mur*this%mu0**2.0_RKIND + this%sgg%Med(i)%Sigmam**2/(fmax**2*Pi**2.0_RKIND )))**0.25_RKIND * &
+                  Sin(atan2(2*Pi*epr*this%eps0*mur*this%mu0, - (epr*this%eps0*this%sgg%Med(i)%Sigmam)/fmax)/2.0_RKIND))
                   write(buff,'(a,e9.2e2,a,e10.2e3)') ' At 10 samp/per f=',fmax,',Max Att(dB)=', &
                   -(0.0001295712360834271997*AIMAG(fmax*Sqrt((epr*((0,-2.825225e7) + &
                   8.8757061047382236e6*mur + this%control%attfactorc*((0,2.825225e7) + 8.8757061047382236e6*mur)))/ &
@@ -971,11 +986,11 @@ contains
          integer :: i
          if (abs(this%control%attfactorw-1.0_RKIND) > 1.0e-12_RKIND) then
             att=.false.
-            do i=1,sgg%nummedia
-               if (sgg%Med(i)%Is%ThinWire) then
-                  sgg%Med(i)%Sigma =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorw)*eps0)/((1 + this%control%attfactorw)*sgg%dt)
+            do i=1,this%sgg%nummedia
+               if (this%sgg%Med(i)%Is%ThinWire) then
+                  this%sgg%Med(i)%Sigma =(-2.0_RKIND * (-1.0_RKIND + this%control%attfactorw)*this%eps0)/((1 + this%control%attfactorw)*this%sgg%dt)
                   if (.not.att) then
-                     write(buff,'(a,2e10.2e3)') ' WIREs stabilization att. factors=',this%control%attfactorw,sgg%Med(i)%Sigma
+                     write(buff,'(a,2e10.2e3)') ' WIREs stabilization att. factors=',this%control%attfactorw,this%sgg%Med(i)%Sigma
                      if (this%control%layoutnumber == 0) call WarnErrReport(buff)
                      att=.true.
                   endif
@@ -987,9 +1002,9 @@ contains
       subroutine revertThinWiresSigma()
          integer :: i
          if (abs(this%control%attfactorw-1.0_RKIND) > 1.0e-12_RKIND) then
-            do i=1,sgg%nummedia
-               if (sgg%Med(i)%Is%ThinWire) then
-                  sgg%Med(i)%Sigma = 0.0_RKIND !revert!!! !necesario para no lo tome como un lossy luego en wires !solo se toca el g1,g2
+            do i=1,this%sgg%nummedia
+               if (this%sgg%Med(i)%Is%ThinWire) then
+                  this%sgg%Med(i)%Sigma = 0.0_RKIND !revert!!! !necesario para no lo tome como un lossy luego en wires !solo se toca el g1,g2
                endif
             end do
          endif
@@ -1033,7 +1048,7 @@ contains
          integer (kind=4) :: ierr
 #endif
          write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
-         call InitOtherBorders    (sgg,this%thereAre)
+         call InitOtherBorders    (this%sgg,this%thereAre)
          l_auxinput=this%thereAre%PECBorders.or.this%thereAre%PMCBorders.or.this%thereAre%PeriodicBorders
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1050,8 +1065,8 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init CPML Borders...';  call print11(this%control%layoutnumber,dubuf)
-         call InitCPMLBorders     (sgg,SINPML_Fullsize,this%thereAre%PMLBorders,this%control, &
-                                 dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps0,mu0)
+         call InitCPMLBorders     (this%sgg,this%sinPML_fullsize,this%thereAre%PMLBorders,this%control, &
+                                 dxe,dye,dze,dxh,dyh,dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%eps0,this%mu0)
 
          l_auxinput=this%thereAre%PMLBorders
          l_auxoutput=l_auxinput
@@ -1069,7 +1084,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init PML Bodies...';  call print11(this%control%layoutnumber,dubuf)
-         call InitPMLbodies(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%g%g2,this%g%gm2,this%thereAre%PMLbodies,this%control,eps0,mu0)
+         call InitPMLbodies(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%g%g2,this%g%gm2,this%thereAre%PMLbodies,this%control,this%eps0,this%mu0)
          l_auxinput=this%thereAre%PMLbodies
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1085,7 +1100,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Mur Borders...';  call print11(this%control%layoutnumber,dubuf)
-         call InitMURBorders      (sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,eps0,mu0)
+         call InitMURBorders      (this%sgg,this%thereAre%MURBorders,this%control%resume,Idxh,Idyh,Idzh,this%eps0,this%mu0)
          l_auxinput= this%thereAre%MURBorders
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1109,7 +1124,7 @@ contains
 
          !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
          write(dubuf,*) 'Init Lumped Elements...';  call print11(this%control%layoutnumber,dubuf)
-         CALL InitLumped(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,eps0,mu0)
+         CALL InitLumped(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,this%eps0,this%mu0)
          l_auxinput=this%thereAre%Lumpeds
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1131,16 +1146,16 @@ contains
          integer(kind=4) :: ierr
 #endif
 
-         dtcritico=sgg%dt
+         dtcritico=this%sgg%dt
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires       (sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
+            call InitWires       (this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
                                  this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
-                                 this%g%g2,SINPML_fullsize, fullsize,dtcritico,eps0,mu0,this%control)
+                                 this%g%g2,this%sinPML_fullsize, this%fullsize,dtcritico,this%eps0,this%mu0,this%control)
             l_auxinput=this%thereAre%Wires
             l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1161,10 +1176,10 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Multi-Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires_Berenger(sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
+            call InitWires_Berenger(this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
             this%control%isolategroupgroups,this%control%mtlnberenger,this%control%mindistwires, &
             this%control%groundwires,this%control%taparrabos,Ex,Ey,Ez, &
-            Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,this%g%g2,SINPML_fullsize,fullsize,dtcritico,eps0,mu0,this%control%verbose)
+            Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,this%g%g2,this%sinPML_fullsize,fullsize,dtcritico,this%eps0,this%mu0,this%control%verbose)
          l_auxinput= this%thereAre%Wires
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1188,11 +1203,11 @@ contains
             write(dubuf,*) 'Init Slanted Wires...';  call print11(this%control%layoutnumber,dubuf)
             if ((trim(adjustl(this%control%wiresflavor))=='semistructured')) then
                write(dubuf,*) '...',this%control%precision;  call print11(this%control%layoutnumber,dubuf)
-               call estructura_slanted(sgg,this%control%precision)
+               call estructura_slanted(this%sgg,this%control%precision)
             else
                continue
             endif
-            call InitWires_Slanted(sgg, this%control%layoutnumber,this%control%size, Ex, Ey, Ez,   & 
+            call InitWires_Slanted(this%sgg, this%control%layoutnumber,this%control%size, Ex, Ey, Ez,   & 
                                     Idxe, Idye, Idze, Idxh, Idyh, Idzh,   &
                                     this%media%sggMiNo,                              &
                                     this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,            &
@@ -1200,11 +1215,11 @@ contains
                                     this%thereAre%Wires, this%control%resume,               &
                                     this%control%mindistwires, this%control%groundwires,this%control%noSlantedcrecepelo ,     &
                                     this%control%inductance_model, this%control%inductance_order,   &
-                                    this%g%g2, SINPML_fullsize, dtcritico,eps0,mu0,this%control%verbose)
+                                    this%g%g2, this%sinPML_fullsize, dtcritico,this%eps0,this%mu0,this%control%verbose)
             l_auxinput=this%thereAre%Wires
             l_auxoutput=l_auxinput
 !check for MUR1 nodes sgg 230124
-            call init_murABC_slanted(sgg,SINPML_Fullsize,eps0,mu0)
+            call init_murABC_slanted(this%sgg,this%sinPML_fullsize,this%eps0,this%mu0)
 !!!!!!         
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1223,7 +1238,7 @@ contains
          call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
-         if (sgg%dt <= dtcritico) then
+         if (this%sgg%dt <= dtcritico) then
             write(buff,'(a,e10.2e3)')  'WIR_INFO: deltat for stability OK: ',dtcritico
             if ((this%control%layoutnumber==0).and.this%control%verbose) call WarnErrReport(buff)
          else
@@ -1243,7 +1258,7 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires_mtln(sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,eps0, mu0, this%mtln_parsed,this%thereAre%MTLNbundles)
+            call InitWires_mtln(this%sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles)
 #else
             write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif
@@ -1263,7 +1278,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Anisotropic...';  call print11(this%control%layoutnumber,dubuf)
-         call InitAnisotropic(sgg,this%media,this%thereAre%Anisotropic,this%thereAre%ThinSlot,eps0,mu0)
+         call InitAnisotropic(this%sgg,this%media,this%thereAre%Anisotropic,this%thereAre%ThinSlot,this%eps0,this%mu0)
          l_auxinput=this%thereAre%Anisotropic.or.this%thereAre%ThinSlot
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1290,10 +1305,10 @@ contains
               call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
                write(dubuf,*) 'Init Multi sgbc...';  call print11(this%control%layoutnumber,dubuf)
-               call Initsgbcs(sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
+               call Initsgbcs(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
                               this%control%layoutnumber,this%control%size, this%g, this%thereAre%sgbcs,this%control%resume, &
                               this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive, &
-                              eps0,mu0,this%control%simu_devia,this%control%stochastic)
+                              this%eps0,this%mu0,this%control%simu_devia,this%control%stochastic)
 
          l_auxinput= this%thereAre%sgbcs
          l_auxoutput=l_auxinput
@@ -1319,8 +1334,8 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Multiports...';  call print11(this%control%layoutnumber,dubuf)
-            call InitMultiports        (sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx ,this%media%sggMiHy ,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Multiports,this%control%resume, &
-            Idxe,Idye,Idze,this%control%NOcompomur,this%control%ADE,this%control%cfl,eps0,mu0)
+            call InitMultiports        (this%sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx ,this%media%sggMiHy ,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Multiports,this%control%resume, &
+            Idxe,Idye,Idze,this%control%NOcompomur,this%control%ADE,this%control%cfl,this%eps0,this%mu0)
          l_auxinput= this%thereAre%Multiports
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1348,7 +1363,7 @@ contains
             write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
 !WIP
 !DEBUG
-            call initialize_memory_FDTD_conf_fields (sgg,this%media%sggMiEx, &
+            call initialize_memory_FDTD_conf_fields (this%sgg,this%media%sggMiEx, &
             & this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,&
             & this%control%layoutnumber,this%control%size, this%control%verbose);
             l_auxinput=input_conformal_flag
@@ -1382,7 +1397,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init EDispersives...';  call print11(this%control%layoutnumber,dubuf)
-         call InitEDispersives(sgg,this%media,this%thereAre%EDispersives,this%control%resume,this%g%g1,this%g%g2,ex,ey,ez)
+         call InitEDispersives(this%sgg,this%media,this%thereAre%EDispersives,this%control%resume,this%g%g1,this%g%g2,ex,ey,ez)
          l_auxinput=this%thereAre%EDispersives
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1407,7 +1422,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init MDispersives...';  call print11(this%control%layoutnumber,dubuf)
-         call InitMDispersives(sgg,this%media,this%thereAre%MDispersives,this%control%resume,this%g%gm1,this%g%gm2,hx,hy,hz)
+         call InitMDispersives(this%sgg,this%media,this%thereAre%MDispersives,this%control%resume,this%g%gm1,this%g%gm2,hx,hy,hz)
          l_auxinput=this%thereAre%MDispersives
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1432,7 +1447,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Multi Plane-Waves...';  call print11(this%control%layoutnumber,dubuf)
-         call InitPlaneWave   (sgg,this%media,this%control%layoutnumber,this%control%size,SINPML_fullsize,this%thereAre%PlaneWaveBoxes,this%control%resume,eps0,mu0)
+         call InitPlaneWave   (this%sgg,this%media,this%control%layoutnumber,this%control%size,this%sinPML_fullsize,this%thereAre%PlaneWaveBoxes,this%control%resume,this%eps0,this%mu0)
          l_auxinput=this%thereAre%PlaneWaveBoxes
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1458,9 +1473,9 @@ contains
 #endif
          write(dubuf,*) 'Init Nodal Sources...';  call print11(this%control%layoutnumber,dubuf)
          if (.not.this%control%hopf) then
-            call InitNodalSources(sgg,this%control%layoutnumber,sgg%NumNodalSources,sgg%NodalSource,sgg%Sweep,this%thereAre%NodalE,this%thereAre%NodalH)
+            call InitNodalSources(this%sgg,this%control%layoutnumber,this%sgg%NumNodalSources,this%sgg%NodalSource,this%sgg%Sweep,this%thereAre%NodalE,this%thereAre%NodalH)
          else
-            call InitHopf(sgg,sgg%NumNodalSources,sgg%NodalSource,sgg%Sweep,this%control%ficherohopf) !lo manejara antonio con las entradas que precise
+            call InitHopf(this%sgg,this%sgg%NumNodalSources,this%sgg%NodalSource,this%sgg%Sweep,this%control%ficherohopf) !lo manejara antonio con las entradas que precise
             this%thereAre%NodalE=.false. !no habra mas nodales excepto la de Hopf
             this%thereAre%NodalH=.false. 
          endif
@@ -1490,10 +1505,10 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
-         call InitObservation (sgg,this%media,tag_numbers, &
+         call InitObservation (this%sgg,this%media,this%tag_numbers, &
                               this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%control%resume,this%initialtimestep,this%control%finaltimestep,this%lastexecutedtime, &
                               this%control%nentradaroot,this%control%layoutnumber,this%control%size,this%control%saveall,this%control%singlefilewrite,this%control%wiresflavor,&
-                              SINPML_FULLSIZE,this%control%facesNF2FF,this%control%NF2FFDecim,eps0,mu0,this%control%simu_devia,this%control%mpidir,this%control%niapapostprocess,this%bounds)
+                              this%sinPML_fullsize,this%control%facesNF2FF,this%control%NF2FFDecim,this%eps0,this%mu0,this%control%simu_devia,this%control%mpidir,this%control%niapapostprocess,this%bounds)
 
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
@@ -1516,13 +1531,13 @@ contains
          if (this%control%size>1) then
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) 'Init MPI MediaMatrix flush...';  call print11(this%control%layoutnumber,dubuf)
-            call InitMPI(sgg%sweep,sgg%alloc)
+            call InitMPI(this%sgg%sweep,this%sgg%alloc)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call InitExtraFlushMPI(this %control%layoutnumber,sgg%sweep,sgg%alloc,sgg%med,sgg%nummedia,this%media%sggMiEz,this%media%sggMiHz)
+            call InitExtraFlushMPI(this %control%layoutnumber,this%sgg%sweep,this%sgg%alloc,this%sgg%med,this%sgg%nummedia,this%media%sggMiEz,this%media%sggMiHz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call FlushMPI_H(sgg%alloc,this%control%layoutnumber,this%control%size, this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz)
+            call FlushMPI_H(this%sgg%alloc,this%control%layoutnumber,this%control%size, this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call FlushMPI_E(sgg%alloc,this%control%layoutnumber,this%control%size, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz)
+            call FlushMPI_E(this%sgg%alloc,this%control%layoutnumber,this%control%size, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
          endif
@@ -1532,8 +1547,8 @@ contains
       !MPI initialization
          if (this%control%size>1) then
             write(dubuf,*) 'Init MPI Cray...';  call print11(this%control%layoutnumber,dubuf)
-            call InitMPI_Cray(this%control%layoutnumber,this%control%size,sgg%sweep,sgg%alloc, &
-            sgg%Border%IsDownPeriodic,sgg%Border%IsUpPeriodic, &
+            call InitMPI_Cray(this%control%layoutnumber,this%control%size,this%sgg%sweep,this%sgg%alloc, &
+            this%sgg%Border%IsDownPeriodic,this%sgg%Border%IsUpPeriodic, &
             Ex,Ey,Ez,Hx,Hy,Hz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
@@ -1544,7 +1559,7 @@ contains
                (trim(adjustl(this%control%wiresflavor))=='transition') .or. & 
                this%control%use_mtln_wires) then
                write(dubuf,*) 'Init MPI Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
-               call newInitWiresMPI(this%control%layoutnumber,this%thereAre%wires,this%control%size,this%control%resume,sgg%sweep)
+               call newInitWiresMPI(this%control%layoutnumber,this%thereAre%wires,this%control%size,this%control%resume,this%sgg%sweep)
                call MPI_Barrier(SUBCOMM_MPI,ierr)
                write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
             endif
@@ -1552,14 +1567,14 @@ contains
 #ifdef CompileWithBerengerWires
             if (trim(adjustl(this%control%wiresflavor))=='berenger') then
                write(dubuf,*) 'Init MPI Multi-Wires...';  call print11(this%control%layoutnumber,dubuf)
-               call InitWiresMPI_Berenger(this%control%layoutnumber,this%thereAre%wires,this%control%size,this%control%resume,sgg%sweep)
+               call InitWiresMPI_Berenger(this%control%layoutnumber,this%thereAre%wires,this%control%size,this%control%resume,this%sgg%sweep)
                call MPI_Barrier(SUBCOMM_MPI,ierr)
                write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
             endif
 #endif
          !llamalo siempre para forzar los flush extra en caso de materiales anisotropos o multiport
             write(dubuf,*) 'Init Extra Flush MPI...';  call print11(this%control%layoutnumber,dubuf)
-            call InitExtraFlushMPI_Cray(this%control%layoutnumber,sgg%sweep,sgg%alloc,sgg%Med,sgg%NumMedia,this%media%sggMiez,this%media%sggMiHz, &
+            call InitExtraFlushMPI_Cray(this%control%layoutnumber,this%sgg%sweep,this%sgg%alloc,this%sgg%Med,this%sgg%NumMedia,this%media%sggMiez,this%media%sggMiHz, &
             Ex,Ey,Ez,Hx,Hy,Hz,this%thereAre%MURBorders)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
@@ -1569,12 +1584,12 @@ contains
       !must be called now in case the MPI has changed the connectivity info
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-            call ReportWireJunctions(this%control%layoutnumber,this%control%size,this%thereAre%wires,sgg%Sweep(iHz)%ZI, sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
+            call ReportWireJunctions(this%control%layoutnumber,this%control%size,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
          endif
 
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-               call ReportWireJunctionsBerenger(this%control%layoutnumber,this%control%size,this%thereAre%wires,sgg%Sweep(iHz)%ZI, sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
+               call ReportWireJunctionsBerenger(this%control%layoutnumber,this%control%size,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
                   !dama no tenia el equivalente 050416
       endif
 #endif
@@ -1754,15 +1769,8 @@ contains
 
    end subroutine solver_init
 
-   subroutine solver_run(this, sgg, eps0, mu0, sinPML_fullsize, fullsize, tag_numbers, tagtype)
+   subroutine solver_run(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(inout) :: sgg
-
-      real(kind=rkind), intent(inout) :: eps0,mu0
-
-      type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize, fullsize
-      type(taglist_t), intent(in) :: tag_numbers
-      type (tagtype_t), intent(in) :: tagtype
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
@@ -1795,7 +1803,7 @@ contains
 
       ciclo_temporal :  DO while (this%n <= this%control%finaltimestep)
       
-         call this%step(sgg, eps0, mu0, sinPML_fullsize, tag_numbers)
+         call this%step()
          call updateAndFlush()
 
          if(this%n >= this%n_info) then
@@ -1810,14 +1818,14 @@ contains
 #endif
          
          if (call_timing) then
-            call Timing(sgg,this%bounds,this%n,this%n_info,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
+            call Timing(this%sgg,this%bounds,this%n,this%n_info,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
             this%control%finaltimestep,this%perform,this%parar,.FALSE., &
             Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
             if (.not.this%parar) then !!! si es por parada se gestiona al final
 !!!!! si esta hecho lo flushea todo pero poniendo de acuerdo a todos los mpi
-                do i=1,sgg%NumberRequest
-                   if  (sgg%Observation(i)%done.and.(.not.sgg%Observation(i)%flushed)) then
+                do i=1,this%sgg%NumberRequest
+                   if  (this%sgg%Observation(i)%done.and.(.not.this%sgg%Observation(i)%flushed)) then
                       this%perform%flushXdmf=.true.
                       this%perform%flushVTK=.true.
                    endif
@@ -1844,7 +1852,7 @@ contains
                    call print11(this%control%layoutnumber,dubuf)
                    write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
                    call print11(this%control%layoutnumber,dubuf)
-                   call flush_and_save_resume(sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,eps0,mu0, this%everflushed,  &
+                   call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
                    Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
 #ifdef CompileWithMPI
                    call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1868,7 +1876,7 @@ contains
                       call print11(this%control%layoutnumber,dubuf)
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
     !!
-                      if (this%thereAre%Observation) call FlushObservationFiles(sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
+                      if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
                       !!
 #ifdef CompileWithMPI
                       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1888,8 +1896,8 @@ contains
                          write(dubuf,*) SEPARADOR//separador//separador
                          call print11(this%control%layoutnumber,dubuf)
                          somethingdone=.false.
-                         at=this%n*sgg%dt
-                         if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%size,sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
+                         at=this%n*this%sgg%dt
+                         if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%size,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
 #ifdef CompileWithMPI
                          call MPI_Barrier(SUBCOMM_MPI,ierr)
                          call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -1914,7 +1922,7 @@ contains
                          call print11(this%control%layoutnumber,dubuf)
                          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                          somethingdone=.false.
-                         if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%size,sgg,this%control%vtkindex,somethingdone,this%control%mpidir,tagtype,this%media%sggMtag,this%control%dontwritevtk)
+                         if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%tagtype,this%media%sggMtag,this%control%dontwritevtk)
 #ifdef CompileWithMPI
                          call MPI_Barrier(SUBCOMM_MPI,ierr)
                          call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -1939,8 +1947,8 @@ contains
                             call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                             somethingdone=.false.
 
-                            if (this%thereAre%Observation) call createxdmfOnTheFly(sgg,this%control%layoutnumber,this%control%size,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)                          
-                            if (this%control%createh5bin) call createh5bintxt(sgg,this%control%layoutnumber,this%control%size) !lo deben llamar todos haya on on this%thereAre%observation
+                            if (this%thereAre%Observation) call createxdmfOnTheFly(this%sgg,this%control%layoutnumber,this%control%size,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)                          
+                            if (this%control%createh5bin) call createh5bintxt(this%sgg,this%control%layoutnumber,this%control%size) !lo deben llamar todos haya on on this%thereAre%observation
 
 #ifdef CompileWithMPI
                         call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1987,15 +1995,15 @@ contains
 #ifdef CompileWithPrescale
          if (this%control%permitscaling) then
 #ifndef miguelPscaleStandAlone
-            if ((sgg%tiempo(this%n)>=this%EpsMuTimeScale_input_parameters%tini).and.&
-                &(sgg%tiempo(this%n)<=this%EpsMuTimeScale_input_parameters%tend)) then
+            if ((this%sgg%tiempo(this%n)>=this%EpsMuTimeScale_input_parameters%tini).and.&
+                &(this%sgg%tiempo(this%n)<=this%EpsMuTimeScale_input_parameters%tend)) then
 #endif
-             call updateconstants(sgg,this%n,this%thereare,this%g, & 
+             call updateconstants(this%sgg,this%n,this%thereare,this%g, & 
                                Idxe,Idye,Idze,Idxh,Idyh,Idzh, &  !needed by  CPML to be updated
                                this%control%sgbc,this%control%mibc,input_conformal_flag, &
                                this%control%wiresflavor, this%control%wirecrank, this%control%fieldtotl,&
                                this%control%sgbcDispersive,this%control%finaltimestep, &
-                               eps0,mu0, &
+                               this%eps0,this%mu0, &
                                this%control%simu_devia, &
                                this%EpsMuTimeScale_input_parameters,pscale_alpha,this%still_planewave_time &
 #ifdef CompileWithMPI
@@ -2018,10 +2026,10 @@ contains
       subroutine updateAndFlush()
          integer(kind=4) :: mindum
          IF (this%thereAre%Observation) then
-            call UpdateObservation(sgg,this%media,tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,SINPML_FULLSIZE,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
+            call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
-               call FlushObservationFiles(sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
+               call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
             endif
          endif
       end subroutine
@@ -2037,11 +2045,11 @@ contains
          write(dubuf,'(a,i9)')  ' Unpacking .bin files and prostprocessing them at n= ',this%n
          call print11(this%control%layoutnumber,dubuf)
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-         if (this%thereAre%Observation) call unpacksinglefiles(sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%control%resume) !dump the remaining to disk
+         if (this%thereAre%Observation) call unpacksinglefiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%control%resume) !dump the remaining to disk
          somethingdone=.false.
          if (this%control%singlefilewrite.and.this%perform%Unpack) then
-            at=this%n*sgg%dt
-            if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%size,sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
+            at=this%n*this%sgg%dt
+            if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%size,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
          endif
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2060,12 +2068,8 @@ contains
 
 
 
-   subroutine step(this, sgg, eps0, mu0, sinPML_fullsize, tag_numbers)
+   subroutine step(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
-      real(kind=rkind), intent(inout) :: eps0,mu0
-      type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
-      type(taglist_t), intent(in) :: tag_numbers
 
       logical :: planewave_switched_off = .false., thereareplanewave
 
@@ -2074,21 +2078,21 @@ contains
 #endif
 
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
-      call this%AdvanceAnisotropicE(sgg%alloc)
+      call this%AdvanceAnisotropicE()
       call this%advanceE()
 #ifdef CompileWithConformal
       if(this%control%input_conformal_flag) call conformal_advance_E()
 #endif
-      call this%advanceWiresE(sgg, eps0, mu0)
-      call this%advancePMLE(sgg%NumMedia)
+      call this%advanceWiresE()
+      call this%advancePMLE()
 #ifdef CompileWithNIBC
-      IF (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(sgg%alloc, this%Ex, this%Ey, this%Ez)
+      IF (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(this%sgg%alloc, this%Ex, this%Ey, this%Ez)
 #endif
-      call this%AdvancesgbcE(real(sgg%dt,RKIND))
-      call this%advanceLumpedE(sgg)
-      call this%advanceEDispersiveE(sgg)
-      call this%advancePlaneWaveE(sgg)
-      call this%advanceNodalE(sgg)
+      call this%AdvancesgbcE()
+      call this%advanceLumpedE()
+      call this%advanceEDispersiveE()
+      call this%advancePlaneWaveE()
+      call this%advanceNodalE()
 
 #ifdef CompileWithMPI
       if (this%control%size>1) then
@@ -2097,27 +2101,27 @@ contains
       endif
 #endif
 
-      call this%advanceAnisotropicH(sgg%alloc)
+      call this%advanceAnisotropicH()
       call this%advanceH()
       call this%advancePMLbodyH()
-      call this%AdvanceMagneticCPML(sgg%NumMedia)
-      call this%MinusCloneMagneticPMC(sgg%alloc, sgg%border, sgg%sweep)
-      call this%CloneMagneticPeriodic(sgg%alloc,sgg%Border, sgg%sweep)
+      call this%AdvanceMagneticCPML()
+      call this%MinusCloneMagneticPMC()
+      call this%CloneMagneticPeriodic()
       call this%AdvancesgbcH()
-      call this%AdvanceMDispersiveH(sgg)
+      call this%AdvanceMDispersiveH()
 #ifdef CompileWithNIBC
       IF (this%thereAre%Multiports .and.(this%control%mibc))  &
-         call AdvanceMultiportH (sgg%alloc,this%Hx,this%Hy,this%Hz, & 
+         call AdvanceMultiportH (this%sgg%alloc,this%Hx,this%Hy,this%Hz, & 
                                  this%Ex,this%Ey,this%Ez,& 
                                  this%Idxe,this%Idye,this%Idze, & 
                                  this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
-                                 this%g%gm2,sgg%nummedia,this%control%conformalskin)
+                                 this%g%gm2,this%sgg%nummedia,this%control%conformalskin)
 #endif
-      call this%advancePlaneWaveH(sgg)
-      call this%advanceNodalH(sgg)
-      call this%advanceWiresH(sgg, eps0, mu0)
-      call this%MinusCloneMagneticPMC(sgg%alloc, sgg%border, sgg%sweep)
-      call this%CloneMagneticPeriodic(sgg%alloc, sgg%Border, sgg%sweep)
+      call this%advancePlaneWaveH()
+      call this%advanceNodalH()
+      call this%advanceWiresH()
+      call this%MinusCloneMagneticPMC()
+      call this%CloneMagneticPeriodic()
 
 #ifdef CompileWithConformal                      
       if(this%control%input_conformal_flag) call conformal_advance_H()
@@ -2158,7 +2162,7 @@ contains
          if (this%control%stochastic) call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%size)
 #endif    
 #endif 
-      call this%advanceMagneticMUR(sgg)
+      call this%advanceMagneticMUR()
 contains
 
    subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
@@ -2513,84 +2517,75 @@ contains
    end subroutine advanceHz
 
 
-   subroutine solver_advanceEDispersiveE(this, sgg)
+   subroutine solver_advanceEDispersiveE(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
-      if (this%thereAre%Edispersives) call AdvanceEDispersiveE(sgg)
+      if (this%thereAre%Edispersives) call AdvanceEDispersiveE(this%sgg)
    end subroutine
 
-   subroutine solver_advanceMDispersiveH(this, sgg)
+   subroutine solver_advanceMDispersiveH(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
-      if (this%thereAre%Mdispersives) call AdvanceMDispersiveH(sgg)
+      if (this%thereAre%Mdispersives) call AdvanceMDispersiveH(this%sgg)
    end subroutine
 
-   subroutine solver_advanceLumpedE(this, sgg)
+   subroutine solver_advanceLumpedE(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
-      if (this%thereAre%Lumpeds) call AdvanceLumpedE(sgg,this%n,this%control%simu_devia,this%control%stochastic)
+      if (this%thereAre%Lumpeds) call AdvanceLumpedE(this%sgg,this%n,this%control%simu_devia,this%control%stochastic)
    end subroutine
 
 
-   subroutine solver_advancePlaneWaveE(this,sgg)
+   subroutine solver_advancePlaneWaveE(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
       If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time) then 
-         if(.not.this%control%simu_devia) call AdvancePlaneWaveE(sgg,this%n, this%bounds,this%g%G2, &
+         if(.not.this%control%simu_devia) call AdvancePlaneWaveE(this%sgg,this%n, this%bounds,this%g%G2, &
                                                                  this%Idxh,this%Idyh,this%Idzh, & 
                                                                  this%Ex,this%Ey,this%Ez, & 
                                                                  this%still_planewave_time)
       end if
    end subroutine
 
-   subroutine solver_advancePlaneWaveH(this,sgg)
+   subroutine solver_advancePlaneWaveH(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
       If (this%thereAre%PlaneWaveBoxes.and.this%still_planewave_time)  then
-         if (.not.this%control%simu_devia) call AdvancePlaneWaveH(sgg,this%n, this%bounds, this%g%GM2, & 
+         if (.not.this%control%simu_devia) call AdvancePlaneWaveH(this%sgg,this%n, this%bounds, this%g%GM2, & 
                                                                   this%Idxe, this%Idye, this%Idze, & 
                                                                   this%Hx, this%Hy, this%Hz, & 
                                                                   this%still_planewave_time)
       endif
    end subroutine
 
-   subroutine solver_advanceNodalE(this, sgg)
+   subroutine solver_advanceNodalE(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
          if (this%thereAre%NodalE) then 
-            call advanceNodalE(sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,& 
-                               sgg%NumMedia,this%n, this%bounds, this%g%G2,& 
+            call advanceNodalE(this%sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,& 
+                               this%sgg%NumMedia,this%n, this%bounds, this%g%G2,& 
                                this%Idxh,this%Idyh,this%Idzh,&
                                this%Ex,this%Ey,this%Ez,&
                                this%control%simu_devia)
          end if
    end subroutine
 
-   subroutine solver_advanceNodalH(this, sgg)
+   subroutine solver_advanceNodalH(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
       if (this%thereAre%NodalH) then 
-         call AdvanceNodalH(sgg,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
-                            sgg%NumMedia,this%n, this%bounds,this%g%GM2, & 
+         call AdvanceNodalH(this%sgg,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,&
+                            this%sgg%NumMedia,this%n, this%bounds,this%g%GM2, & 
                             this%Idxe,this%Idye,this%Idze, & 
                             this%Hx,this%Hy,this%Hz,&
                             this%control%simu_devia)
       end if
    end subroutine
 
-   subroutine solver_advanceAnisotropicE(this, alloc)
+   subroutine solver_advanceAnisotropicE(this)
       class(solver_t) :: this
-      type(XYZlimit_t), dimension (1:6), intent(in) :: alloc
-      if (this%thereAre%Anisotropic) call AdvanceAnisotropicE(alloc,this%ex,this%ey,this%ez, & 
+      if (this%thereAre%Anisotropic) call AdvanceAnisotropicE(this%sgg%alloc,this%ex,this%ey,this%ez, & 
                                                              this%hx, this%hy, this%hz, & 
                                                              this%Idxe, this%Idye, this%Idze, & 
                                                              this%Idxh, this%Idyh, this%Idzh)
    end subroutine
 
-   subroutine solver_advanceAnisotropicH(this, alloc)
+   subroutine solver_advanceAnisotropicH(this)
       class(solver_t) :: this
-      type(XYZlimit_t), dimension (1:6), intent(in) :: alloc
-      IF (this%thereAre%Anisotropic) call AdvanceAnisotropicH(alloc, this%ex, this%ey, this%ez, & 
+      IF (this%thereAre%Anisotropic) call AdvanceAnisotropicH(this%sgg%alloc, this%ex, this%ey, this%ez, & 
                                                               this%hx, this%hy, this%hz, & 
                                                               this%Idxe, this%Idye, this%Idze, &
                                                               this%Idxh, this%Idyh, this%Idzh)
@@ -2601,52 +2596,42 @@ contains
       if (this%thereAre%PMLbodies) call AdvancePMLbodyH()
    end subroutine
 
-   subroutine solver_advanceMagneticCPML(this, numMedia)
+   subroutine solver_advanceMagneticCPML(this)
       class(solver_t) :: this
-      integer(kind=4), intent(in) :: numMedia
-      If (this%thereAre%PMLBorders) call advanceMagneticCPML(numMedia, this%bounds, & 
+      If (this%thereAre%PMLBorders) call advanceMagneticCPML(this%sgg%numMedia, this%bounds, & 
                                                              this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, & 
                                                              this%g%gm2, this%Hx, this%Hy, this%Hz, & 
                                                              this%Ex, this%Ey, this%Ez)
    end subroutine
 
-   subroutine solver_MinusCloneMagneticPMC(this, alloc, border, sweep)
+   subroutine solver_MinusCloneMagneticPMC(this)
       class(solver_t) :: this
-      type(XYZlimit_t), dimension (1:6), intent(in) :: alloc
-      type (Border_t), intent(in) :: border
-      type (XYZlimit_t), dimension(1:6) :: sweep
-      If (this%thereAre%PMCBorders) call MinusCloneMagneticPMC(alloc,border,this%Hx,this%Hy,this%Hz,sweep, & 
+      If (this%thereAre%PMCBorders) call MinusCloneMagneticPMC(this%sgg%alloc,this%sgg%border,this%Hx,this%Hy,this%Hz,this%sgg%sweep, & 
                                                                this%control%layoutnumber,this%control%size)
    end subroutine
 
-   subroutine solver_CloneMagneticPeriodic(this, alloc, border, sweep)
+   subroutine solver_CloneMagneticPeriodic(this)
       class(solver_t) :: this
-      type(XYZlimit_t), dimension (1:6), intent(in) :: alloc
-      type (Border_t), intent(in) :: border
-      type (XYZlimit_t), dimension(1:6) :: sweep
-      If (this%thereAre%PeriodicBorders) call CloneMagneticPeriodic(alloc,border,this%Hx,this%Hy,this%Hz,sweep,& 
+      If (this%thereAre%PeriodicBorders) call CloneMagneticPeriodic(this%sgg%alloc,this%sgg%border,this%Hx,this%Hy,this%Hz,this%sgg%sweep,& 
                                                                     this%control%layoutnumber,this%control%size)
    end subroutine
 
 
-   subroutine solver_advancePMLE(this, numMedia)
+   subroutine solver_advancePMLE(this)
       class (solver_t) :: this
-      integer (kind=4) :: numMedia
       If (this%thereAre%PMLbodies) then !waveport absorbers
          call AdvancePMLbodyE()
       endif
       If (this%thereAre%PMLBorders) then
-         call AdvanceelectricCPML(numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
+         call AdvanceelectricCPML(this%sgg%numMedia, this%bounds,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz, & 
                                   this%g%G2, this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
       endif
    end subroutine
 
-   subroutine solver_advancesgbcE(this, dt)
+   subroutine solver_advancesgbcE(this)
       class(solver_t) :: this
-      real(kind=rkind), intent(in) :: dt
-
       if (this%thereAre%sgbcs.and.(this%control%sgbc)) then 
-         call AdvancesgbcE(dt,this%control%sgbcDispersive, & 
+         call AdvancesgbcE(real(this%sgg%dt,RKIND),this%control%sgbcDispersive, & 
                                 this%control%simu_devia,this%control%stochastic)
       end if
    end subroutine
@@ -2656,17 +2641,15 @@ contains
       if (this%thereAre%sgbcs.and.(this%control%sgbc)) call AdvancesgbcH()
    end subroutine
 
-   subroutine solver_advanceWiresE(this, sgg, eps0, mu0)
+   subroutine solver_advanceWiresE(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
-      real(kind=rkind), intent(inout) :: eps0,mu0
       character(len=bufsize) :: buff
 
       if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) .and. .not. this%control%use_mtln_wires) then
          IF (this%thereAre%Wires) then
             if (this%control%wirecrank) then
-               call AdvanceWiresEcrank(sgg, this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+               call AdvanceWiresEcrank(this%sgg, this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
             else
 #ifdef CompileWithMTLN
                if (this%mtln_parsed%has_multiwires) then
@@ -2674,23 +2657,23 @@ contains
                   call WarnErrReport(buff)
                end if
 #endif
-               call AdvanceWiresE(sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)
+               call AdvanceWiresE(this%sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,this%eps0,this%mu0)
             endif
          endif
       endif
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-         IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(sgg,this%n)
+         IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(this%sgg,this%n)
       endif
 #endif
 #ifdef CompileWithSlantedWires
       if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
-         call AdvanceWiresE_Slanted(sgg,this%n) 
+         call AdvanceWiresE_Slanted(this%sgg,this%n) 
       endif
 #endif
       if (this%control%use_mtln_wires) then
 #ifdef CompileWithMTLN
-         call AdvanceWiresE_mtln(sgg,this%Idxh,this%Idyh,this%Idzh,eps0,mu0)
+         call AdvanceWiresE_mtln(this%sgg,this%Idxh,this%Idyh,this%Idzh,this%eps0,this%mu0)
 #else
          write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif   
@@ -2698,31 +2681,28 @@ contains
 
    end subroutine
 
-   subroutine solver_advancewiresH(this, sgg, eps0, mu0)
+   subroutine solver_advancewiresH(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
-      real(kind=rkind), intent(inout) :: eps0,mu0
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
          IF (this%thereAre%Wires) then
             if (this%control%wirecrank) then
                continue
             else
-               call AdvanceWiresH(sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,eps0,mu0)
+               call AdvanceWiresH(this%sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,this%eps0,this%mu0)
             endif
          endif
       endif
 
    end subroutine
 
-   subroutine solver_advanceMagneticMUR(this, sgg)
+   subroutine solver_advanceMagneticMUR(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
       If (this%thereAre%MURBorders) then
-         call AdvanceMagneticMUR(this%bounds, sgg, & 
+         call AdvanceMagneticMUR(this%bounds, this%sgg, & 
                                  this%media%sggMiHx, this%media%sggMiHy, this%media%sggMiHz, &
                                  this%Hx, this%Hy, this%Hz, & 
                                  this%control%mur_second)
@@ -2738,12 +2718,8 @@ contains
    end subroutine
 
 
-   subroutine solver_end(this, sgg, eps0, mu0, tagtype, finishedwithsuccess)
+   subroutine solver_end(this)
       class(solver_t) :: this
-      type(sggfdtdinfo), intent(in) :: sgg
-      real(kind=rkind), intent(in) :: eps0,mu0
-      type (tagtype_t), intent(in) :: tagtype
-      logical, intent(inout) :: finishedwithsuccess
 
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: dxe, dye, dze, dxh, dyh, dzh
@@ -2772,9 +2748,9 @@ contains
 
       if (this%n>this%control%finaltimestep) this%n = this%control%finaltimestep !readjust n since after finishing it is increased
       this%control%finaltimestep = this%n
-      this%lastexecutedtime=sgg%tiempo(this%control%finaltimestep)
+      this%lastexecutedtime=this%sgg%tiempo(this%control%finaltimestep)
       !se llama con dummylog para no perder los flags de parada
-      call Timing(sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, this%control%size, & 
+      call Timing(this%sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, this%control%size, & 
                   this%control%maxCPUtime,this%control%flushsecondsFields, this%control%flushsecondsData, &
                   this%initialtimestep, this%control%finaltimestep,this%d_perform,dummylog,.FALSE., &
                   Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue, & 
@@ -2786,7 +2762,7 @@ contains
       if ((this%control%flushsecondsFields/=0).or.this%perform%flushFIELDS) then
          write(dubuf,'(a,i9)')  ' INIT FINAL FLUSHING OF RESTARTING FIELDS n= ',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-         call flush_and_save_resume(sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,eps0,mu0, this%everflushed,  &
+         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
          write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
@@ -2803,8 +2779,8 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       if (this%thereAre%Observation) THEN
-         call FlushObservationFiles(sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
-         call CloseObservationFiles(sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
+         call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
+         call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
 #ifdef CompileWithMTLN      
          if (this%control%use_mtln_wires) then
             call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
@@ -2830,8 +2806,8 @@ contains
       write(dubuf,*) SEPARADOR//separador//separador
       call print11(this%control%layoutnumber,dubuf)
       somethingdone=.false.
-      at=this%n*sgg%dt
-      if (this%thereAre%Observation) call PostProcess(this%control%layoutnumber,this%control%size,sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
+      at=this%n*this%sgg%dt
+      if (this%thereAre%Observation) call PostProcess(this%control%layoutnumber,this%control%size,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce(somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -2856,7 +2832,7 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       somethingdone=.false.
 
-      if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%size,sgg,this%control%vtkindex,somethingdone,this%control%mpidir,tagtype,this%media%sggMtag,this%control%dontwritevtk)
+      if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%tagtype,this%media%sggMtag,this%control%dontwritevtk)
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2880,8 +2856,8 @@ contains
       write(dubuf,*) SEPARADOR//separador//separador
       call print11(this%control%layoutnumber,dubuf)
       somethingdone=.false.
-      if (this%thereAre%Observation) call createxdmf(sgg,this%control%layoutnumber,this%control%size,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)
-      if (this%control%createh5bin) call createh5bintxt(sgg,this%control%layoutnumber,this%control%size) !lo deben llamar todos haya o no this%thereAre%observation
+      if (this%thereAre%Observation) call createxdmf(this%sgg,this%control%layoutnumber,this%control%size,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)
+      if (this%control%createh5bin) call createh5bintxt(this%sgg,this%control%layoutnumber,this%control%size) !lo deben llamar todos haya o no this%thereAre%observation
 !        call create_interpreted_mesh(sgg)
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2903,7 +2879,7 @@ contains
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-      call Timing(sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, &
+      call Timing(this%sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, &
                   this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields, &
                   this%control%flushsecondsData,this%initialtimestep, &
                   this%control%finaltimestep,this%perform,this%parar,.FALSE., &
@@ -2911,7 +2887,7 @@ contains
                   this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
       write(dubuf,*)'END FINAL POSTPROCESSING at n= ',this%n
       call print11(this%control%layoutnumber,dubuf)
-      finishedwithsuccess=.true.
+      this%finishedwithsuccess=.true.
 
       return
 
@@ -2962,41 +2938,40 @@ contains
       return
    end subroutine Destroy_All_exceptSGGMxx
 
-   subroutine destroy_and_deallocate(this,sgg)
+   subroutine destroy_and_deallocate(this)
       class(solver_t) :: this
-      type (SGGFDTDINFO), intent(INOUT)     ::  sgg
 
-      call DestroyObservation(sgg)
-      Call DestroyNodal(sgg)
-      call DestroyIlumina(sgg)
+      call DestroyObservation(this%sgg)
+      Call DestroyNodal(this%sgg)
+      call DestroyIlumina(this%sgg)
 #ifdef CompileWithNIBC
-      call DestroyMultiports(sgg)
+      call DestroyMultiports(this%sgg)
 #endif
 
-      call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((this%thereAre%sgbcs).and.(sgbc))
-      call destroyLumped(sgg)
-      call DestroyEDispersives(sgg)
-      call DestroyMDispersives(sgg)
+      call destroysgbcs(this%sgg) !!todos deben destruir pq alocatean en funcion de this%sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((this%thereAre%sgbcs).and.(sgbc))
+      call destroyLumped(this%sgg)
+      call DestroyEDispersives(this%sgg)
+      call DestroyMDispersives(this%sgg)
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
           (trim(adjustl(this%control%wiresflavor))=='transition')) then
-         call DestroyWires(sgg)
+         call DestroyWires(this%sgg)
       endif
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-         call DestroyWires_Berenger(sgg)
+         call DestroyWires_Berenger(this%sgg)
       endif
 #endif
 #ifdef CompileWithSlantedWires
       if((trim(adjustl(this%control%wiresflavor))=='slanted').or.(trim(adjustl(this%control%wiresflavor))=='semistructured')) then
-         call DestroyWires_Slanted(sgg)
+         call DestroyWires_Slanted(this%sgg)
       endif
 #endif      
 
       call DestroyCPMLBorders
-      call DestroyPMLbodies(sgg)
+      call DestroyPMLbodies(this%sgg)
       call DestroyMURBorders
       !Destroy the remaining
-      deallocate (sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
+      deallocate (this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%tiempo)
       call this%g%destroy()
       deallocate (this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
       deallocate (this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)
