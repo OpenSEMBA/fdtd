@@ -65,18 +65,17 @@ contains
         else  
             pre = preprocess(parsed)
         endif
-
         if (size(pre%bundles) == 0) then
             res%number_of_bundles = 0
             return
         end if
-
+        
         res%has_multiwires = parsed%has_multiwires
-
+        
         res%dt = pre%dt
         res%time  = 0.0
         res%final_time = pre%final_time
-
+        
         res%bundles = pre%bundles
         res%number_of_bundles = size(res%bundles)
         

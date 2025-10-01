@@ -259,22 +259,18 @@
 			"name": "SegmentConnector3",
 			"type": "connector",
 			"resistances": [100.0e-3],
-			"transferImpedancePerMeter" : {
-				"resistiveTerm" : 3.33,
-				"inductiveTerm" : 2.6e-9,
-				"direction" : "inwards"
-			}
+			"transferImpedancesPerMeter" : [
+				{"resistiveTerm" : 3.33, "inductiveTerm" : 2.6e-9, "direction" : "inwards"}
+			]
 		},
 		{
 			"id": 205,
 			"name": "SegmentConnector4",
 			"type": "connector",
 			"resistances": [19.0],
-			"transferImpedancePerMeter" : {
-				"resistiveTerm" : 609.3,
-				"inductiveTerm" : 2.6e-9,
-				"direction" : "inwards"
-			}
+			"transferImpedancesPerMeter" : [
+				{"resistiveTerm" : 609.3, "inductiveTerm" : 2.6e-9, "direction" : "inwards"}
+			]
 		}
 	],
 	"mesh": {

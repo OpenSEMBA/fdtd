@@ -88,8 +88,6 @@ contains
         res%external_field_segments = buildExternalFieldSegments(levels)
         call res%initialAllocation()
 
-        ! call res%getCellPULParameters()
-
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
 

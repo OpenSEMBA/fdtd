@@ -35,9 +35,10 @@ MODULE Preprocess_m
    !
 CONTAINS
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   SUBROUTINE read_geomData (sgg,sggMtag,tag_numbers, sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, fichin, layoutnumber, size, SINPML_fullsize, fullsize, this, &
+   SUBROUTINE read_geomData (sgg,media,tag_numbers, fichin, layoutnumber, size, SINPML_fullsize, fullsize, this, &
       groundwires,attfactor,mibc,SGBC,SGBCDispersive,MEDIOEXTRA,maxSourceValue,skindepthpre,createmapvtk,input_conformal_flag,CLIPREGION,boundwireradius,maxwireradius,updateshared,run_with_dmma, &
       eps00,mu00,simu_devia,hay_slanted_wires,verbose,ignoresamplingerrors,tagtype,wiresflavor)
+      type(media_matrices_t), intent(inout) :: media
       logical :: simu_devia,verbose,hay_slanted_wires
       REAL (KIND=RKIND)           ::  eps00,mu00
 
@@ -51,8 +52,6 @@ CONTAINS
       type (SGGFDTDINFO), intent(INOUT)    :: sgg
       character(len=BUFSIZE) :: extraswitches
 
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
-      integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) ::  sggMtag
       type(taglist_t) :: tag_numbers
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) :: tama, tama2, tama3, tama4, tama5, tama6, i, j, k, tipotemp, tamaSonda,  &
@@ -239,8 +238,8 @@ CONTAINS
       field = 1
       !
       numertag = 0
-      ALLOCATE (sggMtag(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
-      ALLOCATE (sggmiNo(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
+      ALLOCATE (media%sggMtag(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
+      ALLOCATE (media%sggMiNo(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
 
       ALLOCATE (tag_numbers%edge%x(Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE))
       ALLOCATE (tag_numbers%edge%y(Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE))
@@ -250,14 +249,14 @@ CONTAINS
       ALLOCATE (tag_numbers%face%z(Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
 
       !!!nodos materiales: se precisan para el conformal !sgg310715
-      ALLOCATE (sggmiEx(Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE))
-      ALLOCATE (sggmiEy(Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE))
-      ALLOCATE (sggmiEz(Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE))
-      ALLOCATE (sggmiHx(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE))
-      ALLOCATE (sggmiHy(Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE))
-      ALLOCATE (sggmiHz(Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
+      ALLOCATE (media%sggMiEx(Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE))
+      ALLOCATE (media%sggMiEy(Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE))
+      ALLOCATE (media%sggMiEz(Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE))
+      ALLOCATE (media%sggMiHx(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE))
+      ALLOCATE (media%sggMiHy(Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE))
+      ALLOCATE (media%sggMiHz(Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
       !el tag esta voided porque luego el numero va con el del tag
-      sggMtag (:, :, :) = 0 !LO VOIDEO A 0 EN VEZ DE A -1 PORQUE EL TAG 0 NO VA A EXISTIR NUNCA 141020
+      media%sggMtag (:, :, :) = 0 !LO VOIDEO A 0 EN VEZ DE A -1 PORQUE EL TAG 0 NO VA A EXISTIR NUNCA 141020
       tag_numbers%edge%x(:,:,:) = 0
       tag_numbers%edge%y(:,:,:) = 0
       tag_numbers%edge%z(:,:,:) = 0
@@ -265,13 +264,13 @@ CONTAINS
       tag_numbers%face%y(:,:,:) = 0
       tag_numbers%face%z(:,:,:) = 0
       !todo sustrato por defecto
-      sggmiNo (:, :, :) = 1
-      sggmiEx (:, :, :) = 1
-      sggmiEy (:, :, :) = 1
-      sggmiEz (:, :, :) = 1
-      sggmiHx (:, :, :) = 1
-      sggmiHy (:, :, :) = 1
-      sggmiHz (:, :, :) = 1
+      media%sggMiNo (:, :, :) = 1
+      media%sggMiEx (:, :, :) = 1
+      media%sggMiEy (:, :, :) = 1
+      media%sggMiEz (:, :, :) = 1
+      media%sggMiHx (:, :, :) = 1
+      media%sggMiHy (:, :, :) = 1
+      media%sggMiHz (:, :, :) = 1
 
       !planeWaves
       !
@@ -527,8 +526,8 @@ CONTAINS
             punto%ZI = this%pecregs%vols(i)%ZI
             punto%ZE = this%pecregs%vols(i)%ZE
             numertag = searchtag(tagtype,this%pecregs%vols(i)%tag )
-            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz,  Alloc_iEx_XI, &
+            CALL CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -546,8 +545,8 @@ CONTAINS
             punto%ZE = this%pecregs%surfs(i)%ZE
             orientacion = this%pecregs%surfs(i)%or
             numertag = searchtag(tagtype,this%pecregs%surfs(i)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, &
+            CALL CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, &
             & Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, &
             & Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, &
             & Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, &
@@ -568,8 +567,8 @@ CONTAINS
             orientacion = this%pecregs%lins(i)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%pecregs%lins(i)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -615,8 +614,8 @@ CONTAINS
             !
             !
             numertag = searchtag(tagtype,this%pmcregs%vols(i)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -634,8 +633,8 @@ CONTAINS
             punto%ZE = this%pmcregs%surfs(i)%ZE
             orientacion = this%pmcregs%surfs(i)%or
             numertag = searchtag(tagtype,this%pmcregs%surfs(i)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -655,8 +654,8 @@ CONTAINS
             orientacion = this%pmcregs%lins(i)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%pmcregs%lins(i)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -698,8 +697,8 @@ CONTAINS
             punto%ZI = this%DielRegs%vols(i)%c2P(j)%ZI
             punto%ZE = this%DielRegs%vols(i)%c2P(j)%ZE
             numertag = searchtag(tagtype,this%DielRegs%vols(i)%c2P(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -717,8 +716,8 @@ CONTAINS
             punto%ZE = this%DielRegs%vols(i)%c1P(j)%ZI
             !
             numertag = searchtag(tagtype,this%DielRegs%vols(i)%c1P(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -746,8 +745,8 @@ CONTAINS
             punto%ZE = this%DielRegs%surfs(i)%c2P(j)%ZE
             orientacion = this%DielRegs%surfs(i)%c2P(j)%or
             numertag = searchtag(tagtype,this%DielRegs%surfs(i)%c2P(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -766,8 +765,8 @@ CONTAINS
             punto%ZE = this%DielRegs%surfs(i)%c1P(j)%ZI
             orientacion = this%DielRegs%surfs(i)%c1P(j)%or
             numertag = searchtag(tagtype,this%DielRegs%surfs(i)%c1P(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -884,8 +883,8 @@ CONTAINS
             orientacion = this%DielRegs%lins(i)%c2P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%DielRegs%lins(i)%c2P(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -904,8 +903,8 @@ CONTAINS
             orientacion = this%DielRegs%lins(i)%c1P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%DielRegs%lins(i)%c1P(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -938,8 +937,8 @@ CONTAINS
             punto%ZI = this%ANIMATS%vols(i)%c2P(j)%ZI
             punto%ZE = this%ANIMATS%vols(i)%c2P(j)%ZE
             numertag = searchtag(tagtype,this%ANIMATS%vols(i)%c2P(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -956,8 +955,8 @@ CONTAINS
             punto%ZE = this%ANIMATS%vols(i)%c1P(j)%ZI
             !
             numertag = searchtag(tagtype,this%ANIMATS%vols(i)%c1P(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -986,8 +985,8 @@ CONTAINS
             punto%ZE = this%ANIMATS%surfs(i)%c2P(j)%ZE
             orientacion = this%ANIMATS%surfs(i)%c2P(j)%or
             numertag = searchtag(tagtype,this%ANIMATS%surfs(i)%c2P(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -1005,8 +1004,8 @@ CONTAINS
             punto%ZE = this%ANIMATS%surfs(i)%c1P(j)%ZI
             orientacion = this%ANIMATS%surfs(i)%c1P(j)%or
             numertag = searchtag(tagtype,this%ANIMATS%surfs(i)%c1P(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -1037,8 +1036,8 @@ CONTAINS
             orientacion = this%ANIMATS%lins(i)%c2P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%ANIMATS%lins(i)%c2P(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -1057,8 +1056,8 @@ CONTAINS
             orientacion = this%ANIMATS%lins(i)%c1P(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%ANIMATS%lins(i)%c1P(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -1088,8 +1087,8 @@ CONTAINS
             punto%ZI = this%FRQDEPMATS%vols(i)%C(j)%ZI
             punto%ZE = this%FRQDEPMATS%vols(i)%C(j)%ZE
             numertag = searchtag(tagtype,this%FRQDEPMATS%vols(i)%C(j)%tag)
-            CALL CreateVolumeMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateVolumeMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -1117,8 +1116,8 @@ CONTAINS
             punto%ZE = this%FRQDEPMATS%surfs(i)%C(j)%ZE
             orientacion = this%FRQDEPMATS%surfs(i)%C(j)%or
             numertag = searchtag(tagtype,this%FRQDEPMATS%surfs(i)%C(j)%tag)
-            CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -1146,8 +1145,8 @@ CONTAINS
             orientacion = this%FRQDEPMATS%lins(i)%C(j)%or
             isathinwire = .FALSE.
             numertag = searchtag(tagtype,this%FRQDEPMATS%lins(i)%C(j)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -1391,8 +1390,8 @@ CONTAINS
                !
                !
                numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-               CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-               & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+               CALL CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+               & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
                & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
                & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
                & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -1520,8 +1519,8 @@ CONTAINS
                !
                !
                numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-               CALL CreateSurfaceMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-               & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+               CALL CreateSurfaceMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+               & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
                & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
                & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
                & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -1575,9 +1574,9 @@ CONTAINS
                   punto%XI = this%LossyThinSurfs%cs(j)%C(i)%XI
                   punto%XE = this%LossyThinSurfs%cs(j)%C(i)%XI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
-                     sggmiEz, &
-                  & sggmiHx, sggmiHy, sggmiHz,   &
+                  CALL CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
+                     media%sggMiEz, &
+                  & media%sggMiHx, media%sggMiHy, media%sggMiHz,   &
                      Alloc_iEx_XI, &
                   & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE,   &
                      Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
@@ -1593,9 +1592,9 @@ CONTAINS
                   punto%XI = this%LossyThinSurfs%cs(j)%C(i)%XI-1
                   punto%XE = this%LossyThinSurfs%cs(j)%C(i)%XI-1
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,  &
-                     sggmiEz, &
-                  & sggmiHx, sggmiHy, sggmiHz,   &
+                  CALL CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,  &
+                     media%sggMiEz, &
+                  & media%sggMiHx, media%sggMiHy, media%sggMiHz,   &
                      Alloc_iEx_XI, &
                   & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI,   &
                      Alloc_iEy_XE, Alloc_iEy_YI, &
@@ -1612,9 +1611,9 @@ CONTAINS
                   punto%YI = this%LossyThinSurfs%cs(j)%C(i)%YI
                   punto%YE = this%LossyThinSurfs%cs(j)%C(i)%YI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
-                     sggmiEz, &
-                  & sggmiHx, sggmiHy, sggmiHz,   &
+                  CALL CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
+                     media%sggMiEz, &
+                  & media%sggMiHx, media%sggMiHy, media%sggMiHz,   &
                      Alloc_iEx_XI, &
                   & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI,   &
                      Alloc_iEy_XE, Alloc_iEy_YI, &
@@ -1630,9 +1629,9 @@ CONTAINS
                   punto%YI = this%LossyThinSurfs%cs(j)%C(i)%YI-1
                   punto%YE = this%LossyThinSurfs%cs(j)%C(i)%YI-1
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
-                     sggmiEz, &
-                  & sggmiHx, sggmiHy, sggmiHz,   &
+                  CALL CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
+                     media%sggMiEz, &
+                  & media%sggMiHx, media%sggMiHy, media%sggMiHz,   &
                      Alloc_iEx_XI, &
                   & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI,   &
                      Alloc_iEy_XE, Alloc_iEy_YI, &
@@ -1649,9 +1648,9 @@ CONTAINS
                   punto%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI
                   punto%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZI
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
-                     sggmiEz, &
-                  & sggmiHx, sggmiHy, sggmiHz,   &
+                  CALL CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
+                     media%sggMiEz, &
+                  & media%sggMiHx, media%sggMiHy, media%sggMiHz,   &
                      Alloc_iEx_XI, &
                   & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI,   &
                      Alloc_iEy_XE, Alloc_iEy_YI, &
@@ -1667,9 +1666,9 @@ CONTAINS
                   punto%ZI = this%LossyThinSurfs%cs(j)%C(i)%ZI-1
                   punto%ZE = this%LossyThinSurfs%cs(j)%C(i)%ZI-1
                   numertag = searchtag(tagtype,this%LossyThinSurfs%cs(j)%C(i)%tag)
-                  CALL CreateMagneticSurface (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy,   &
-                     sggmiEz, &
-                  & sggmiHx, sggmiHy, sggmiHz,   &
+                  CALL CreateMagneticSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy,   &
+                     media%sggMiEz, &
+                  & media%sggMiHx, media%sggMiHy, media%sggMiHz,   &
                      Alloc_iEx_XI, &
                   & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI,   &
                      Alloc_iEy_XE, Alloc_iEy_YI, &
@@ -1971,28 +1970,28 @@ CONTAINS
                endif
                select case (orientacion)
                 case (iEx)
-                  if ((sggmiEx(i,j,k) ==0).or.(sgg%med(sggmiEx(i,j,k) )%is%pec)) then
+                  if ((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)) then
                      paraerrhilo=.true.
                      WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   x-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (sggmiEx(i,j,k) /= 1) then
-                     islossy = (sgg%Med(sggmiEx(i,j,k))%Sigma /= 0.0_RKIND)
+                  elseif (media%sggMiEx(i,j,k) /= 1) then
+                     islossy = (sgg%Med(media%sggMiEx(i,j,k))%Sigma /= 0.0_RKIND)
                      if (islossy) then
                         paraerrhilo=.true.
                         WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k, &
                            ' embedded within LOSSY medium ', &
-                           sggmiEx(i,j,k)
+                           media%sggMiEx(i,j,k)
                      else
                         WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
-                           sggmiEx(i,j,k)
+                           media%sggMiEx(i,j,k)
                      endif
                      if (verbose) CALL WarnErrReport (buff)
                   endif
-                  if ((((sggmiEy(i  ,j,k) ==0).or.(sgg%med(sggmiEy(i  ,j,k) )%is%pec)).or. &
-                     ((sggmiEz(i  ,j,k) ==0).or.(sgg%med(sggmiEz(i  ,j,k) )%is%pec)).or. &
-                     ((sggmiEy(i  ,jmenos1,k) ==0).or.(sgg%med(sggmiEy(i  ,jmenos1,k) )%is%pec)).or. &
-                     ((sggmiEz(i  ,j,kmenos1) ==0).or.(sgg%med(sggmiEz(i  ,j,kmenos1) )%is%pec))).and. &
-                  &     ((sggmiEx(i  ,j,k) /=0).and.(.not.(sgg%med(sggmiEx(i  ,j,k) )%is%pec)))) then
+                  if ((((media%sggMiEy(i  ,j,k) ==0).or.(sgg%med(media%sggMiEy(i  ,j,k) )%is%pec)).or. &
+                     ((media%sggMiEz(i  ,j,k) ==0).or.(sgg%med(media%sggMiEz(i  ,j,k) )%is%pec)).or. &
+                     ((media%sggMiEy(i  ,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i  ,jmenos1,k) )%is%pec)).or. &
+                     ((media%sggMiEz(i  ,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i  ,j,kmenos1) )%is%pec))).and. &
+                  &     ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i, j, k, &
@@ -2003,11 +2002,11 @@ CONTAINS
                         !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) CALL WarnErrReport (buff)
                      endif
-                  elseif ((((sggmiEy(i+1,j,k) ==0).or.(sgg%med(sggmiEy(i+1,j,k) )%is%pec)).or.&
-                     ((sggmiEz(i+1,j,k) ==0).or.(sgg%med(sggmiEz(i+1,j,k) )%is%pec)).or. &
-                     ((sggmiEy(i+1,jmenos1,k) ==0).or.(sgg%med(sggmiEy(i+1,jmenos1,k) )%is%pec)).or. &
-                     ((sggmiEz(i+1,j,kmenos1) ==0).or.(sgg%med(sggmiEz(i+1,j,kmenos1) )%is%pec))).and. &
-                  &         ((sggmiEx(i  ,j,k) /=0).and.(.not.(sgg%med(sggmiEx(i  ,j,k) )%is%pec)))) then
+                  elseif ((((media%sggMiEy(i+1,j,k) ==0).or.(sgg%med(media%sggMiEy(i+1,j,k) )%is%pec)).or.&
+                     ((media%sggMiEz(i+1,j,k) ==0).or.(sgg%med(media%sggMiEz(i+1,j,k) )%is%pec)).or. &
+                     ((media%sggMiEy(i+1,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i+1,jmenos1,k) )%is%pec)).or. &
+                     ((media%sggMiEz(i+1,j,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i+1,j,kmenos1) )%is%pec))).and. &
+                  &         ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i+1, j, k, &
@@ -2018,49 +2017,49 @@ CONTAINS
                         !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i+1, j, k,' touching PEC'
                         !if (verbose) CALL WarnErrReport (buff)
                      endif
-                  elseif (((sggmiEy(i  ,j,k) /= 1)).and. &
-                     (sggmiEx(i  ,j,k) == 1)) then
+                  elseif (((media%sggMiEy(i  ,j,k) /= 1)).and. &
+                     (media%sggMiEx(i  ,j,k) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
-                     &                                  sggmiEy(i,j,k)
+                     &                                  media%sggMiEy(i,j,k)
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (((sggmiEz(i  ,j,k) /= 1)).and. &
-                     (sggmiEx(i  ,j,k) == 1)) then
+                  elseif (((media%sggMiEz(i  ,j,k) /= 1)).and. &
+                     (media%sggMiEx(i  ,j,k) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
-                     &                                  sggmiEz(i,j,k)
+                     &                                  media%sggMiEz(i,j,k)
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (((sggmiEy(i+1,j,k) /= 1)).and. &
-                     (sggmiEx(i  ,j,k) == 1)) then
+                  elseif (((media%sggMiEy(i+1,j,k) /= 1)).and. &
+                     (media%sggMiEx(i  ,j,k) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
-                     &                                  sggmiEy(i+1,j,k)
+                     &                                  media%sggMiEy(i+1,j,k)
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (((sggmiEz(i+1,j,k) /= 1)).and. &
-                     (sggmiEx(i  ,j,k) == 1)) then
+                  elseif (((media%sggMiEz(i+1,j,k) /= 1)).and. &
+                     (media%sggMiEx(i  ,j,k) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
-                     &                                  sggmiEz(i+1,j,k)
+                     &                                  media%sggMiEz(i+1,j,k)
                      if (verbose) CALL WarnErrReport (buff)
                   endif
                 case (iEy)
-                  if ((sggmiEy(i,j,k) ==0).or.(sgg%med(sggmiEy(i,j,k) )%is%pec)) then
+                  if ((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)) then
                      paraerrhilo=.true.
                      WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   y-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (sggmiEy(i,j,k) /= 1) then
-                     islossy = (sgg%Med(sggmiEy(i,j,k))%Sigma /= 0.0_RKIND)
+                  elseif (media%sggMiEy(i,j,k) /= 1) then
+                     islossy = (sgg%Med(media%sggMiEy(i,j,k))%Sigma /= 0.0_RKIND)
                      if (islossy) then
                         paraerrhilo=.true.
                         WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: Y-WIRE at ',OrigIndex, i, j, k,' embedded within LOSSY medium ', &
-                           sggmiEY(i,j,k)
+                           media%sggMiEY(i,j,k)
                      else
                         WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
-                           sggmiEy(i,j,k)
+                           media%sggMiEy(i,j,k)
                      ENDIF
                      if (verbose) CALL WarnErrReport (buff)
                   endif
-                  if ((((sggmiEx(i,j  ,k) ==0).or.(sgg%med(sggmiEx(i,j  ,k) )%is%pec)).or. &
-                     ((sggmiEz(i,j,k  ) ==0).or.(sgg%med(sggmiEz(i,j,k  ) )%is%pec)).or. &
-                     ((sggmiEx(imenos1,j  ,k) ==0).or.(sgg%med(sggmiEx(imenos1,j  ,k) )%is%pec)).or. &
-                     ((sggmiEz(i,j,kmenos1  ) ==0).or.(sgg%med(sggmiEz(i,j,kmenos1  ) )%is%pec))).and. &
-                  &     ((sggmiEy(i,j  ,k) /=0).and.(.not.(sgg%med(sggmiEy(i,j  ,k) )%is%pec)))) then
+                  if ((((media%sggMiEx(i,j  ,k) ==0).or.(sgg%med(media%sggMiEx(i,j  ,k) )%is%pec)).or. &
+                     ((media%sggMiEz(i,j,k  ) ==0).or.(sgg%med(media%sggMiEz(i,j,k  ) )%is%pec)).or. &
+                     ((media%sggMiEx(imenos1,j  ,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j  ,k) )%is%pec)).or. &
+                     ((media%sggMiEz(i,j,kmenos1  ) ==0).or.(sgg%med(media%sggMiEz(i,j,kmenos1  ) )%is%pec))).and. &
+                  &     ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j, k, &
@@ -2071,11 +2070,11 @@ CONTAINS
                         !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) CALL WarnErrReport (buff)
                      endif
-                  elseif ((((sggmiEx(i,j+1,k) ==0).or.(sgg%med(sggmiEx(i,j+1,k) )%is%pec)).or. &
-                     ((sggmiEz(i,j+1,k) ==0).or.(sgg%med(sggmiEz(i,j+1,k) )%is%pec)).or. &
-                     ((sggmiEx(imenos1,j+1,k) ==0).or.(sgg%med(sggmiEx(imenos1,j+1,k) )%is%pec)).or. &
-                     ((sggmiEz(i,j+1,kmenos1) ==0).or.(sgg%med(sggmiEz(i,j+1,kmenos1) )%is%pec))).and. &
-                  &         ((sggmiEy(i,j  ,k) /=0).and.(.not.(sgg%med(sggmiEy(i,j  ,k) )%is%pec)))) then
+                  elseif ((((media%sggMiEx(i,j+1,k) ==0).or.(sgg%med(media%sggMiEx(i,j+1,k) )%is%pec)).or. &
+                     ((media%sggMiEz(i,j+1,k) ==0).or.(sgg%med(media%sggMiEz(i,j+1,k) )%is%pec)).or. &
+                     ((media%sggMiEx(imenos1,j+1,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j+1,k) )%is%pec)).or. &
+                     ((media%sggMiEz(i,j+1,kmenos1) ==0).or.(sgg%med(media%sggMiEz(i,j+1,kmenos1) )%is%pec))).and. &
+                  &         ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j+1, k, &
@@ -2086,50 +2085,50 @@ CONTAINS
                         !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j+1, k,' touching PEC'
                         !if (verbose) CALL WarnErrReport (buff)
                      endif
-                  elseif (((sggmiEx(i,j  ,k) /= 1)).and. &
-                  &         (sggmiEy(i,j  ,k) == 1)) then
+                  elseif (((media%sggMiEx(i,j  ,k) /= 1)).and. &
+                  &         (media%sggMiEy(i,j  ,k) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
-                     &                                  sggmiEx(i,j,k)
+                     &                                  media%sggMiEx(i,j,k)
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (((sggmiEz(i,j  ,k) /= 1)).and. &
-                  &         (sggmiEy(i,j  ,k) == 1)) then
+                  elseif (((media%sggMiEz(i,j  ,k) /= 1)).and. &
+                  &         (media%sggMiEy(i,j  ,k) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
-                     &                                  sggmiEz(i,j,k)
+                     &                                  media%sggMiEz(i,j,k)
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (((sggmiEx(i,j+1,k) /= 1)).and. &
-                  &         (sggmiEy(i,j  ,k) == 1)) then
+                  elseif (((media%sggMiEx(i,j+1,k) /= 1)).and. &
+                  &         (media%sggMiEy(i,j  ,k) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
-                     &                                  sggmiEx(i,j+1,k)
+                     &                                  media%sggMiEx(i,j+1,k)
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (((sggmiEz(i,j+1,k) /= 1)).and. &
-                  &         (sggmiEy(i,j  ,k) == 1)) then
+                  elseif (((media%sggMiEz(i,j+1,k) /= 1)).and. &
+                  &         (media%sggMiEy(i,j  ,k) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
-                     &                                  sggmiEz(i,j+1,k)
+                     &                                  media%sggMiEz(i,j+1,k)
                      if (verbose) CALL WarnErrReport (buff)
                   endif
                 case (iEz)
-                  if ((sggmiEz(i,j,k) ==0).or.(sgg%med(sggmiEz(i,j,k) )%is%pec)) then
+                  if ((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)) then
                      paraerrhilo=.true.
                      WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   z-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (sggmiEz(i,j,k) /= 1) then
-                     islossy = (sgg%Med(sggmiEz(i,j,k))%Sigma /= 0.0_RKIND)
+                  elseif (media%sggMiEz(i,j,k) /= 1) then
+                     islossy = (sgg%Med(media%sggMiEz(i,j,k))%Sigma /= 0.0_RKIND)
                      if (islossy) then
                         paraerrhilo=.true.
                         WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: Y-WIRE at ',OrigIndex, i, j, k, &
                            ' embedded within LOSSY medium ', &
-                           sggmiEz(i,j,k)
+                           media%sggMiEz(i,j,k)
                      else
                         WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
-                           sggmiEz(i,j,k)
+                           media%sggMiEz(i,j,k)
                      ENDIF
                      if (verbose) CALL WarnErrReport (buff)
                   endif
-                  if ((((sggmiEx(i,j,k  ) ==0).or.(sgg%med(sggmiEx(i,j,k  ) )%is%pec)).or. &
-                     ((sggmiEy(i,j,k  ) ==0).or.(sgg%med(sggmiEy(i,j,k  ) )%is%pec)).or. &
-                     ((sggmiEx(imenos1,j,k  ) ==0).or.(sgg%med(sggmiEx(imenos1,j,k  ) )%is%pec)).or. &
-                     ((sggmiEy(i,jmenos1,k  ) ==0).or.(sgg%med(sggmiEy(i,jmenos1,k  ) )%is%pec))).and. &
-                  &     ((sggmiEz(i,j,k  ) /=0).and.(.not.(sgg%med(sggmiEz(i,j,k  ) )%is%pec)))) then
+                  if ((((media%sggMiEx(i,j,k  ) ==0).or.(sgg%med(media%sggMiEx(i,j,k  ) )%is%pec)).or. &
+                     ((media%sggMiEy(i,j,k  ) ==0).or.(sgg%med(media%sggMiEy(i,j,k  ) )%is%pec)).or. &
+                     ((media%sggMiEx(imenos1,j,k  ) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k  ) )%is%pec)).or. &
+                     ((media%sggMiEy(i,jmenos1,k  ) ==0).or.(sgg%med(media%sggMiEy(i,jmenos1,k  ) )%is%pec))).and. &
+                  &     ((media%sggMiEz(i,j,k  ) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k  ) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k, &
@@ -2140,11 +2139,11 @@ CONTAINS
                         !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) CALL WarnErrReport (buff)
                      endif
-                  elseif ((((sggmiEx(i,j  ,k+1) ==0).or.(sgg%med(sggmiEx(i,j  ,k+1) )%is%pec)).or. &
-                     ((sggmiEy(i,j  ,k+1) ==0).or.(sgg%med(sggmiEy(i,j  ,k+1) )%is%pec)).or.   &
-                  &         ((sggmiEx(imenos1,j,k+1) ==0).or.(sgg%med(sggmiEx(imenos1,j,k+1) )%is%pec)).or. &
-                     ((sggmiEy(i,jmenos1,k+1) ==0).or.(sgg%med(sggmiEy(i,jmenos1,k+1) )%is%pec))).and. &
-                  &         (((sggmiEz(i,j,k  ) /=0).and.(.not.(sgg%med(sggmiEz(i,j,k  ) )%is%pec))).or.(.not.(sgg%med(sggmiEz(i,j,k  ) )%is%pec)))) then
+                  elseif ((((media%sggMiEx(i,j  ,k+1) ==0).or.(sgg%med(media%sggMiEx(i,j  ,k+1) )%is%pec)).or. &
+                     ((media%sggMiEy(i,j  ,k+1) ==0).or.(sgg%med(media%sggMiEy(i,j  ,k+1) )%is%pec)).or.   &
+                  &         ((media%sggMiEx(imenos1,j,k+1) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k+1) )%is%pec)).or. &
+                     ((media%sggMiEy(i,jmenos1,k+1) ==0).or.(sgg%med(media%sggMiEy(i,jmenos1,k+1) )%is%pec))).and. &
+                  &         (((media%sggMiEz(i,j,k  ) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k  ) )%is%pec))).or.(.not.(sgg%med(media%sggMiEz(i,j,k  ) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
                         WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k+1, &
@@ -2155,25 +2154,25 @@ CONTAINS
                         !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k+1,' touching PEC'
                         !if (verbose) CALL WarnErrReport (buff)
                      endif
-                  elseif (((sggmiEx(i,j,k  ) /= 1)).and. &
-                  &         (sggmiEz(i,j,k  ) == 1)) then
+                  elseif (((media%sggMiEx(i,j,k  ) /= 1)).and. &
+                  &         (media%sggMiEz(i,j,k  ) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
-                     &                                  sggmiEx(i,j,k)
+                     &                                  media%sggMiEx(i,j,k)
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (((sggmiEy(i,j,k  ) /= 1)).and. &
-                  &         (sggmiEz(i,j,k  ) == 1)) then
+                  elseif (((media%sggMiEy(i,j,k  ) /= 1)).and. &
+                  &         (media%sggMiEz(i,j,k  ) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
-                     &                                  sggmiEy(i,j,k)
+                     &                                  media%sggMiEy(i,j,k)
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (((sggmiEy(i,j,k+1) /= 1)).and. &
-                  &         (sggmiEz(i,j,k  ) == 1)) then
+                  elseif (((media%sggMiEy(i,j,k+1) /= 1)).and. &
+                  &         (media%sggMiEz(i,j,k  ) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
-                     &                                  sggmiEy(i,j,k+1)
+                     &                                  media%sggMiEy(i,j,k+1)
                      if (verbose) CALL WarnErrReport (buff)
-                  elseif (((sggmiEx(i,j,k+1) /= 1)).and. &
-                  &         (sggmiEz(i,j,k  ) == 1)) then
+                  elseif (((media%sggMiEx(i,j,k+1) /= 1)).and. &
+                  &         (media%sggMiEz(i,j,k  ) == 1)) then
                      WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
-                     &                                  sggmiEx(i,j,k+1)
+                     &                                  media%sggMiEx(i,j,k+1)
                      if (verbose) CALL WarnErrReport (buff)
                   endif
                end select
@@ -2283,8 +2282,8 @@ CONTAINS
             !
             isathinwire = .TRUE.
             numertag = searchtag(tagtype,this%twires%TW(j)%TWC(i)%tag)
-            CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-            & sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+            CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
             & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
             & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
             & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -2580,76 +2579,76 @@ CONTAINS
                &    (k1 >= BoundingBox%ZI) .AND. (k1 < BoundingBox%ZE)) THEN
                   !encuentra la orientacion del plano PEC que contiene al Slot
                   oriX = (direccion == iEy)  .AND.   &
-                  &       (((sggmiHx(i1, j1, k1) ==0).or.(sgg%med(sggmiHx(i1, j1, k1) )%is%pec)) .OR. &
-                  &       (sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))          !&
+                  &       (((media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(media%sggMiHx(i1, j1, k1) )%is%pec)) .OR. &
+                  &       (sgg%Med(media%sggMiHx(i1, j1, k1))%Is%ThinSlot))          !&
                   !& .AND. (((sggmiHz(i1, j1, k1) /=0).and.(.not.(sgg%med(sggmiHz(i1, j1, k1) )%is%pec))) .AND.                   &
                   !&       ( .NOT. sgg%Med(sggmiHz(i1, j1,k1))%Is%ThinSlot))
 
                   oriX4 =(direccion == iEz) .AND.    &
-                  &       (((               sggmiHx(i1, j1, k1) ==0).or.(sgg%med(               sggmiHx(i1, j1, k1) )%is%pec)) .OR.       &
-                  &        (       sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))   !&
+                  &       (((               media%sggMiHx(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHx(i1, j1, k1) )%is%pec)) .OR.       &
+                  &        (       sgg%Med(media%sggMiHx(i1, j1, k1))%Is%ThinSlot))   !&
                   !& .AND. (((               sggmiHy(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1, k1) )%is%pec))) .AND.      &
                   !&       ( .NOT.  sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))
 
                   oriY = (direccion == iEx) .AND.   &
-                  &       (((               sggmiHy(i1, j1, k1) ==0).or.(sgg%med(               sggmiHy(i1, j1, k1) )%is%pec)) .OR.       &
-                  &        (       sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))   !&
+                  &       (((               media%sggMiHy(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHy(i1, j1, k1) )%is%pec)) .OR.       &
+                  &        (       sgg%Med(media%sggMiHy(i1, j1, k1))%Is%ThinSlot))   !&
                   !& .AND. (((               sggmiHz(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHz(i1, j1, k1) )%is%pec))) .AND.      &
                   !&        ( .NOT. sgg%Med(sggmiHz(i1, j1, k1))%Is%ThinSlot))
 
                   oriY4 =(direccion == iEz) .AND.   &
-                  &       (((              sggmiHy(i1, j1, k1) ==0).or.(sgg%med(              sggmiHy(i1, j1, k1) )%is%pec)) .OR.        &
-                  &        (      sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))    !&
+                  &       (((              media%sggMiHy(i1, j1, k1) ==0).or.(sgg%med(              media%sggMiHy(i1, j1, k1) )%is%pec)) .OR.        &
+                  &        (      sgg%Med(media%sggMiHy(i1, j1, k1))%Is%ThinSlot))    !&
                   !&  .AND.(((               sggmiHx(i1, j1, k1) /=0).and.(.not.(sgg%med(              sggmiHx(i1, j1, k1) )%is%pec))) .AND.       &
                   !&       ( .NOT. sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))
 
                   oriZ = (direccion == iEx) .AND.  &
-                  &       (((               sggmiHz(i1, j1, k1) ==0).or.(sgg%med(               sggmiHz(i1, j1, k1) )%is%pec)) .OR.        &
-                  &        (       sgg%Med(sggmiHz(i1, j1, k1))%Is%ThinSlot))    !&
+                  &       (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1, k1) )%is%pec)) .OR.        &
+                  &        (       sgg%Med(media%sggMiHz(i1, j1, k1))%Is%ThinSlot))    !&
                   !&       (((               sggmiHy(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1, k1) )%is%pec))) .AND.       &
                   !&        (.NOT.  sgg%Med(sggmiHy(i1, j1, k1))%Is%ThinSlot))
 
                   oriZ4 = (direccion == iEy) .AND.   &
-                  &        (((               sggmiHz(i1, j1, k1) ==0).or.(sgg%med(               sggmiHz(i1, j1, k1) )%is%pec)) .OR.       &
-                  &         (       sgg%Med(sggmiHz(i1, j1, k1))%Is%ThinSlot))   !&
+                  &        (((               media%sggMiHz(i1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1, k1) )%is%pec)) .OR.       &
+                  &         (       sgg%Med(media%sggMiHz(i1, j1, k1))%Is%ThinSlot))   !&
                   !& .AND.  (((              sggmiHx(i1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHx(i1, j1, k1) )%is%pec))) .AND.      &
                   !&         ( .NOT. sgg%Med(sggmiHx(i1, j1, k1))%Is%ThinSlot))
 
                   !encuentra la orientacion del plano PEC que contiene al Slot (considera los vecinos)
                   oriX2 = (direccion == iEy) .AND.   &
-                  &        (((               sggmiHx(i1, j1, k1-1) ==0).or.(sgg%med(               sggmiHx(i1, j1, k1-1) )%is%pec)) .OR.     &
-                  &         (       sgg%Med(sggmiHx(i1, j1, k1-1))%Is%ThinSlot)) !&
+                  &        (((               media%sggMiHx(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHx(i1, j1, k1-1) )%is%pec)) .OR.     &
+                  &         (       sgg%Med(media%sggMiHx(i1, j1, k1-1))%Is%ThinSlot)) !&
                   !& .AND.  (((              sggmiHz(i1, j1, k1-1) /=0).and.(.not.(sgg%med(               sggmiHz(i1, j1, k1-1) )%is%pec))) .AND.    &
                   !&         ( .NOT. sgg%Med(sggmiHz(i1, j1, k1-1))%Is%ThinSlot))
 
                   oriX3 = (direccion == iEz) .AND.   &
-                  &        (((                sggmiHx(i1, j1-1, k1) ==0).or.(sgg%med(                sggmiHx(i1, j1-1, k1) )%is%pec)) .OR.     &
-                  &         (        sgg%Med(sggmiHx(i1, j1-1, k1))%Is%ThinSlot)) !&
+                  &        (((                media%sggMiHx(i1, j1-1, k1) ==0).or.(sgg%med(                media%sggMiHx(i1, j1-1, k1) )%is%pec)) .OR.     &
+                  &         (        sgg%Med(media%sggMiHx(i1, j1-1, k1))%Is%ThinSlot)) !&
                   !& .AND.  (((              sggmiHy(i1, j1-1, k1) /=0).and.(.not.(sgg%med(                sggmiHy(i1, j1-1, k1) )%is%pec))) .AND.    &
                   !&         ( .NOT.  sgg%Med(sggmiHy(i1, j1-1, k1))%Is%ThinSlot))
 
                   oriY2 = (direccion == iEx) .AND.   &
-                  &        (((               sggmiHy(i1, j1, k1-1) ==0).or.(sgg%med(               sggmiHy(i1, j1, k1-1) )%is%pec)) .OR.      &
-                  &         (sgg%Med(       sggmiHy(i1, j1, k1-1))%Is%ThinSlot))  !&
+                  &        (((               media%sggMiHy(i1, j1, k1-1) ==0).or.(sgg%med(               media%sggMiHy(i1, j1, k1-1) )%is%pec)) .OR.      &
+                  &         (sgg%Med(       media%sggMiHy(i1, j1, k1-1))%Is%ThinSlot))  !&
                   !& .AND.  (((              sggmiHz(i1, j1, k1-1) /=0).and.(.not.(sgg%med(               sggmiHz(i1, j1, k1-1) )%is%pec))) .AND.     &
                   !&         ( .NOT. sgg%Med(sggmiHz(i1, j1, k1-1))%Is%ThinSlot))
 
                   oriY3 = (direccion == iEz) .AND.   &
-                  &        (((               sggmiHy(i1-1, j1, k1) ==0).or.(sgg%med(               sggmiHy(i1-1, j1, k1) )%is%pec)) .OR.      &
-                  &         (       sgg%Med(sggmiHy(i1-1, j1, k1))%Is%ThinSlot))  !&
+                  &        (((               media%sggMiHy(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHy(i1-1, j1, k1) )%is%pec)) .OR.      &
+                  &         (       sgg%Med(media%sggMiHy(i1-1, j1, k1))%Is%ThinSlot))  !&
                   !& .AND.  (((              sggmiHx(i1-1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHx(i1-1, j1, k1) )%is%pec))) .AND.     &
                   !&         ( .NOT. sgg%Med(sggmiHx(i1-1, j1, k1))%Is%ThinSlot))
 
                   oriZ2 = (direccion == iEx)  .AND.   &
-                  &        (((               sggmiHz(i1, j1-1, k1) ==0).or.(sgg%med(               sggmiHz(i1, j1-1, k1) )%is%pec)) .OR.      &
-                  &         (       sgg%Med(sggmiHz(i1, j1-1, k1))%Is%ThinSlot))  !&
+                  &        (((               media%sggMiHz(i1, j1-1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1, j1-1, k1) )%is%pec)) .OR.      &
+                  &         (       sgg%Med(media%sggMiHz(i1, j1-1, k1))%Is%ThinSlot))  !&
                   !& .AND.  (((              sggmiHy(i1, j1-1, k1) /=0).and.(.not.(sgg%med(               sggmiHy(i1, j1-1, k1) )%is%pec))) .AND.     &
                   !&         ( .NOT. sgg%Med(sggmiHy(i1, j1-1, k1))%Is%ThinSlot))
 
 
                   oriZ3 = (direccion == iEy) .AND.   &
-                  &        (((               sggmiHz(i1-1, j1, k1) ==0).or.(sgg%med(               sggmiHz(i1-1, j1, k1) )%is%pec)) .OR.      &
-                  &         (       sgg%Med(sggmiHz(i1-1, j1, k1))%Is%ThinSlot))  !&
+                  &        (((               media%sggMiHz(i1-1, j1, k1) ==0).or.(sgg%med(               media%sggMiHz(i1-1, j1, k1) )%is%pec)) .OR.      &
+                  &         (       sgg%Med(media%sggMiHz(i1-1, j1, k1))%Is%ThinSlot))  !&
                   !& .AND.  (((              sggmiHx(i1-1, j1, k1) /=0).and.(.not.(sgg%med(               sggmiHx(i1-1, j1, k1) )%is%pec))) .AND.     &
                   !&         ( .NOT. sgg%Med(sggmiHx(i1-1, j1, k1))%Is%ThinSlot))
 
@@ -2691,23 +2690,23 @@ CONTAINS
                   medio1=-1
                   SELECT CASE (Abs(orientacion))
                    CASE (iEx)
-                     medio1 = sggmiHx(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix !puede que me haya cargado los thin-slots en materialescon esto 03/07/15
+                     medio1 = media%sggMiHx(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix !puede que me haya cargado los thin-slots en materialescon esto 03/07/15
                      IF (i1 > BoundingBox%XI) then
-                        medio2 = sggmiHx(i1-1,j1,k1)  !!!sggmcen (i1-1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                        medio2 = media%sggMiHx(i1-1,j1,k1)  !!!sggmcen (i1-1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      else
                         medio2=medio1
                      endif
                    CASE (iEy)
-                     medio1 = sggmiHy(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                     medio1 = media%sggMiHy(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      IF (j1 > BoundingBox%YI) then
-                        medio2 = sggmiHy(i1,j1-1,k1) !!!sggmcen (i1, j1-1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                        medio2 = media%sggMiHy(i1,j1-1,k1) !!!sggmcen (i1, j1-1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      else
                         medio2=medio1
                      endif
                    CASE (iEz)
-                     medio1 = sggmiHz(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                     medio1 = media%sggMiHz(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      IF (k1 > BoundingBox%ZI) then
-                        medio2 = sggmiHz(i1,j1,k1-1) !!! sggmcen (i1, j1, k1-1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
+                        medio2 = media%sggMiHz(i1,j1,k1-1) !!! sggmcen (i1, j1, k1-1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      else
                         medio2=medio1
                      endif
@@ -2799,8 +2798,8 @@ CONTAINS
                   punto%ZI = k1
                   punto%ZE = k1
                   numertag = searchtag(tagtype,this%tSlots%Tg(j)%TgC(i)%tag)
-                  CALL CreateSurfaceSlotMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz,&
-                     sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI,&
+                  CALL CreateSurfaceSlotMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz,&
+                     media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI,&
                      Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, &
                      Alloc_iEy_YI,&
                      Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, &
@@ -2927,7 +2926,7 @@ CONTAINS
                   DO i1 = punto_s%XI, punto_s%XE
                      IF (punto_s%xc /= 0) THEN
                         !bug OLD 181214 sl_4_20mm_gli.nfde. Fuente nodal electrica embebida en pec y nodal magnetica en pmc se ignoraran sean hard or soft
-                        MEDIO = sggmiEx (i1, j1, k1)
+                        MEDIO = media%sggMiEx (i1, j1, k1)
                         valido=.true.
                         !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -2959,7 +2958,7 @@ CONTAINS
                      !
                      !
                      IF (punto_s%yc /= 0) THEN
-                        MEDIO = sggmiEy (i1, j1, k1)
+                        MEDIO = media%sggMiEy (i1, j1, k1)
                         valido=.true.
                         !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -2991,7 +2990,7 @@ CONTAINS
                      !
                      !
                      IF (punto_s%zc /= 0) THEN
-                        MEDIO = sggmiEz (i1, j1, k1)
+                        MEDIO = media%sggMiEz (i1, j1, k1)
                         valido=.true.
                         !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -3054,8 +3053,8 @@ CONTAINS
                orientacion = punto_s%or
                isathinwire = .FALSE.
                numertag = 37
-               CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-                  sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+               CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+                  media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
                   Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
                   Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
                   Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -3101,7 +3100,7 @@ CONTAINS
                DO j1 = punto_s%YI, punto_s%YE
                   DO i1 = punto_s%XI, punto_s%XE
                      IF (punto_s%xc /= 0) THEN
-                        MEDIO = sggmiEx (i1, j1, k1)
+                        MEDIO = media%sggMiEx (i1, j1, k1)
                         valido=.true.
                         !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -3134,7 +3133,7 @@ CONTAINS
                      !
                      !
                      IF (punto_s%yc /= 0) THEN
-                        MEDIO = sggmiEy (i1, j1, k1)
+                        MEDIO = media%sggMiEy (i1, j1, k1)
                         valido=.true.
                         !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -3166,7 +3165,7 @@ CONTAINS
                      !
                      !
                      IF (punto_s%zc /= 0) THEN
-                        MEDIO = sggmiEz (i1, j1, k1)
+                        MEDIO = media%sggMiEz (i1, j1, k1)
                         valido=.true.
                         !IF ( .NOT. this%nodsrc%NodalSource(i)%isHard) THEN
                         !  VALIDO = (sgg%Med(MEDIO)%Is%Dielectric) .OR. (sgg%Med(MEDIO)%Is%EDispersive) .OR. &
@@ -3229,8 +3228,8 @@ CONTAINS
                orientacion = punto_s%or
                isathinwire = .FALSE.
                numertag = 37
-               CALL CreateLineMM (layoutnumber, sggMtag, tag_numbers, numertag, sggmiEx, sggmiEy, sggmiEz, &
-                  sggmiHx, sggmiHy, sggmiHz, Alloc_iEx_XI, &
+               CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+                  media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
                   Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
                   Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
                   Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
@@ -4639,17 +4638,17 @@ CONTAINS
                         (K>=sinpml_FULLSIZE(field)%ZE-4).AND.(K<=sinpml_FULLSIZE(field)%ZE  )) THEN
                         select case (field)
                          case (iEx)
-                           SGGMIEX(I,J,K)=1
+                           media%sggMIEX(I,J,K)=1
                          case (iEy)
-                           SGGMIEY(I,J,K)=1
+                           media%sggMIEY(I,J,K)=1
                          case (iEz)
-                           SGGMIEZ(I,J,K)=1
+                           media%sggMIEZ(I,J,K)=1
                          case (iHx)
-                           SGGMiHX(I,J,K)=1
+                           media%sggMiHX(I,J,K)=1
                          case (iHy)
-                           SGGMiHY(I,J,K)=1
+                           media%sggMiHY(I,J,K)=1
                          case (iHz)
-                           SGGMiHZ(I,J,K)=1
+                           media%sggMiHZ(I,J,K)=1
                         end select
                      ENDIF
                   END DO
@@ -4661,7 +4660,7 @@ CONTAINS
       !!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!fin clipeado
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      CALL CreatePMLmatrix (layoutnumber, SIZE,sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, SINPML_fullsize, fullsize, BoundingBox, sgg%Med, sgg%NumMedia, sgg%Border,MEDIOEXTRA)
+      CALL CreatePMLmatrix (layoutnumber, SIZE,sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz, SINPML_fullsize, fullsize, BoundingBox, sgg%Med, sgg%NumMedia, sgg%Border,MEDIOEXTRA)
       sgg%EndPMLMedia = sgg%NumMedia
 
       !
@@ -5864,18 +5863,12 @@ CONTAINS
    !!!!!!!!end 09/07/13
 
 #ifdef CompileWithConformal
-   subroutine AssigLossyOrPECtoNodes(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,conf_conflicts,input_conformal_flag)
+   subroutine AssigLossyOrPECtoNodes(sgg,media,conf_conflicts,input_conformal_flag)
 #else
-   subroutine AssigLossyOrPECtoNodes(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz)
+   subroutine AssigLossyOrPECtoNodes(sgg,media)
 #endif
-
-      type (SGGFDTDINFO), intent(INOUT)     ::  sgg
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(inout) :: &
-         sggMiNo(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(inout)   ::  &
-         sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
-         sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
-         sggMiEz(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
+      type (SGGFDTDINFO), intent(INOUT) :: sgg
+      type (media_matrices_t), intent(inout) :: media
 
       logical :: ispec, isSGBC, IsComposite, islossy, input_conformal_flag,NODALMENTEIGUALES,iguaSGM,iguaSIG,iguaMUR,iguaPEC,iguaLOS,iguaEPR,ISconformal
       REAL (KIND=RKIND)   :: sigt,epst,SIGMA,SIGMAM,EPR,MUR
@@ -5904,12 +5897,12 @@ CONTAINS
                if (j-1 <  sgg%alloc(iEy)%YI) jmenos1=j
                if (k-1 <  sgg%alloc(iEz)%ZI) kmenos1=k
 
-               med(0)  = sggMiEx(i       , j       , k       )
-               med(1)  = sggMiEx(imenos1 , j       , k       )
-               med(2)  = sggMiEy(i       , j       , k       )
-               med(3)  = sggMiEy(i       , jmenos1 , k       )
-               med(4)  = sggMiEz(i       , j       , k       )
-               med(5)  = sggMiEz(i       , j       , kmenos1 )
+               med(0)  = media%sggMiEx(i       , j       , k       )
+               med(1)  = media%sggMiEx(imenos1 , j       , k       )
+               med(2)  = media%sggMiEy(i       , j       , k       )
+               med(3)  = media%sggMiEy(i       , jmenos1 , k       )
+               med(4)  = media%sggMiEz(i       , j       , k       )
+               med(5)  = media%sggMiEz(i       , j       , kmenos1 )
                sigma                       = 0.0_RKIND
                sigmam                      = 0.0_RKIND
                epr                         = 0.0_RKIND
@@ -5950,8 +5943,8 @@ CONTAINS
                            call READJUST(SGG%ALLOCmed,sgg%med,2*SGG%ALLOCmed) !LO HAgo REallocatando al doble. gENERO NUEVO PARAMETRO sgg%ALLOCmed. Pero esto es un guirigay.... 261115
                         endif
                         SGG%NUMMEDIA=SGG%NUMMEDIA+1
-                        sggMiNo(i,j,k)=SGG%NUMMEDIA
-                        r=sggMiNo(i,j,k)
+                        media%sggMiNo(i,j,k)=SGG%NUMMEDIA
+                        r=media%sggMiNo(i,j,k)
                         sgg%med(r)%sigma =sigma
                         sgg%med(r)%sigmam=sigmam
                         sgg%med(r)%epr   =epr
@@ -5961,12 +5954,12 @@ CONTAINS
                         sgg%med(r)%is%needed = .true.  !sgg 220817 por defecto lo he puesto en readjust a false
 !write(113,*) '.NOT.NODALMENTEIGUALES--> ',i,j,k,' - ',med(0),med(1),med(2),med(3),med(4),med(5),' - ',SGG%NUMMEDIA
                      ELSE
-                        sggMiNo(i,j,k)=i1  !PUEDE QUE NO SEAN IGUALES PERO NODALMENTE LO SON (SOLO A EFECTOS DE SIGMA,EPR,SIGMAM,MUR,ISLOSSY,ISPEC
+                        media%sggMiNo(i,j,k)=i1  !PUEDE QUE NO SEAN IGUALES PERO NODALMENTE LO SON (SOLO A EFECTOS DE SIGMA,EPR,SIGMAM,MUR,ISLOSSY,ISPEC
                         !bug 060417 debo ponerlo al medio que ha encontrado igual (i1) y estaba a med(0)!!!!
 !write(114,*) '.YES.NODALMENTEIGUALES--> ',i,j,k,' - ',med(0),med(1),med(2),med(3),med(4),med(5),' - ',SGG%NUMMEDIA
                      ENDIF
                   else
-                     sggMiNo(i,j,k)=MED(0)  !todos iguales
+                     media%sggMiNo(i,j,k)=MED(0)  !todos iguales
                   endif
                endif !del no es pml
                !!!!aqui habra luego que ir creando y almacenando lo nuevos tipos de medio nodales en funcion de los sigt y epst para que wires use directamente esa info
@@ -5984,7 +5977,7 @@ CONTAINS
             j=conf_busy_node(n)%j
             k=conf_busy_node(n)%k
             if (conf_busy_node(n)%ispec) then
-               sggMiNo(i,j,k)=0
+               media%sggMiNo(i,j,k)=0
             endif
          end do
          !!!conf_busy_node(n)%i = 0

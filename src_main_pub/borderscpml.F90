@@ -518,7 +518,7 @@ contains
       do REGION=back,front
          if (associated(regBF(region)%Psi_Ezx)) deallocate (regBF(region)%Psi_Ezx,regBF(region)%Psi_Eyx,regBF(region)%Psi_Hzx,regBF(region)%Psi_Hyx)
       end do
-
+      if (allocated(dxe)) deallocate(dxe, dye,dze,dxh,dyh,dzh)
       return
    end subroutine DestroyCPMLBorders
 

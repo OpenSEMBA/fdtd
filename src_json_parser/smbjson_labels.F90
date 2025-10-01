@@ -119,7 +119,7 @@ module smbjson_labels_mod
    
    ! -- connector
    character (len=*), parameter :: J_MAT_CONN_RESISTANCES = "resistances"
-   character (len=*), parameter :: J_MAT_CONN_TRANSFER_IMPEDANCE = "transferImpedancePerMeter"
+   character (len=*), parameter :: J_MAT_CONN_TRANSFER_IMPEDANCES = "transferImpedancesPerMeter"
 
    ! -- transferImpedancePerMeter
    character (len=*), parameter :: J_MAT_TRANSFER_IMPEDANCE_RESISTANCE = "resistiveTerm"

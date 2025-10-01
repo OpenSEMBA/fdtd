@@ -621,6 +621,18 @@ module  FDETYPES
       type (coorsxyzP)  ::  Punto
    end type
 
+   type media_matrices_t
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
+      integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
+   end type
+
+   type :: constants_t
+      real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
+   contains
+      procedure :: destroy => constants_destroy 
+   end type
+
+
    type nf2ff_t
       logical :: tr,fr,iz,de,ab,ar
    end type
@@ -699,6 +711,11 @@ module  FDETYPES
    !**************************************************************************************************
 
 contains
+
+   subroutine constants_destroy(this)
+      class(constants_t) :: this
+      deallocate (this%g1,this%g2,this%gm1,this%gm2)
+   end subroutine
 
    logical function isFlush(this)
       class(perform_t) :: this

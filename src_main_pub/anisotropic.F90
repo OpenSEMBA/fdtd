@@ -62,18 +62,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitAnisotropic(sgg,sggmiex,sggmiey,sggmiez,sggMiHx ,sggMiHy ,sggMiHz,ThereAreAnisotropic,ThereAreThinSlot,eps00,mu00)
+   subroutine InitAnisotropic(sgg,media,ThereAreAnisotropic,ThereAreThinSlot,eps00,mu00)
       REAL (KIND=RKIND)           ::  eps00,mu00
       type (SGGFDTDINFO), intent(IN) , target      ::  sgg
+      type(media_matrices_t), intent(in) :: media
       !!!
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
-      sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
-      sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
-      sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
-      sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
-      sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
-      sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-
 
       type (Anisotropic_t), pointer :: DummyAnisProp,dummyAnisShared
 
@@ -123,7 +116,7 @@ contains
          Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
             Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
                Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-                  if ((sggMiEx(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiEx(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -140,7 +133,7 @@ contains
          Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
             Do j1=sgg%SINPMLSweep(iEx)%YI,sgg%SINPMLSweep(iEx)%YE
                Do i1=sgg%SINPMLSweep(iEx)%XI,sgg%SINPMLSweep(iEx)%XE
-                  if ((sggMiEx(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiEx(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      AniMed%info(jmed)%Ex_Shared(conta)%times = 1
                      AniMed%info(jmed)%Ex_i(conta)=i1
@@ -155,7 +148,7 @@ contains
          Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
             Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
                Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-                  if ((sggMiEy(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiEy(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -172,7 +165,7 @@ contains
          Do k1=sgg%SINPMLSweep(iEy)%ZI,sgg%SINPMLSweep(iEy)%ZE
             Do j1=sgg%SINPMLSweep(iEy)%YI,sgg%SINPMLSweep(iEy)%YE
                Do i1=sgg%SINPMLSweep(iEy)%XI,sgg%SINPMLSweep(iEy)%XE
-                  if ((sggMiEy(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiEy(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      AniMed%info(jmed)%Ey_Shared(conta)%times = 1
                      AniMed%info(jmed)%Ey_i(conta)=i1
@@ -187,7 +180,7 @@ contains
          Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
             Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
                Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-                  if ((sggMiEz(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiEz(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -204,7 +197,7 @@ contains
          Do k1=sgg%SINPMLSweep(iEz)%ZI,sgg%SINPMLSweep(iEz)%ZE
             Do j1=sgg%SINPMLSweep(iEz)%YI,sgg%SINPMLSweep(iEz)%YE
                Do i1=sgg%SINPMLSweep(iEz)%XI,sgg%SINPMLSweep(iEz)%XE
-                  if ((sggMiEz(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiEz(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      AniMed%info(jmed)%Ez_Shared(conta)%times = 1
                      AniMed%info(jmed)%Ez_i(conta)=i1
@@ -220,7 +213,7 @@ contains
          Do k1=sgg%SINPMLSweep(iHx)%ZI,sgg%SINPMLSweep(iHx)%ZE
             Do j1=sgg%SINPMLSweep(iHx)%YI,sgg%SINPMLSweep(iHx)%YE
                Do i1=sgg%SINPMLSweep(iHx)%XI,sgg%SINPMLSweep(iHx)%XE
-                  if ((sggMiHx(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiHx(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -237,7 +230,7 @@ contains
          Do k1=sgg%SINPMLSweep(iHx)%ZI,sgg%SINPMLSweep(iHx)%ZE
             Do j1=sgg%SINPMLSweep(iHx)%YI,sgg%SINPMLSweep(iHx)%YE
                Do i1=sgg%SINPMLSweep(iHx)%XI,sgg%SINPMLSweep(iHx)%XE
-                  if ((sggMiHx(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiHx(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      AniMed%info(jmed)%Hx_Shared(conta)%times = 1
                      AniMed%info(jmed)%Hx_i(conta)=i1
@@ -252,7 +245,7 @@ contains
          Do k1=sgg%SINPMLSweep(iHy)%ZI,sgg%SINPMLSweep(iHy)%ZE
             Do j1=sgg%SINPMLSweep(iHy)%YI,sgg%SINPMLSweep(iHy)%YE
                Do i1=sgg%SINPMLSweep(iHy)%XI,sgg%SINPMLSweep(iHy)%XE
-                  if ((sggMiHy(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiHy(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -269,7 +262,7 @@ contains
          Do k1=sgg%SINPMLSweep(iHy)%ZI,sgg%SINPMLSweep(iHy)%ZE
             Do j1=sgg%SINPMLSweep(iHy)%YI,sgg%SINPMLSweep(iHy)%YE
                Do i1=sgg%SINPMLSweep(iHy)%XI,sgg%SINPMLSweep(iHy)%XE
-                  if ((sggMiHy(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiHy(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      AniMed%info(jmed)%Hy_Shared(conta)%times = 1
                      AniMed%info(jmed)%Hy_i(conta)=i1
@@ -284,7 +277,7 @@ contains
          Do k1=sgg%SINPMLSweep(iHz)%ZI,sgg%SINPMLSweep(iHz)%ZE
             Do j1=sgg%SINPMLSweep(iHz)%YI,sgg%SINPMLSweep(iHz)%YE
                Do i1=sgg%SINPMLSweep(iHz)%XI,sgg%SINPMLSweep(iHz)%XE
-                  if ((sggMiHz(i1,j1,k1)) == tempindex)  conta=conta+1
+                  if ((media%sggMiHz(i1,j1,k1)) == tempindex)  conta=conta+1
                end do
             end do
          end do
@@ -301,7 +294,7 @@ contains
          Do k1=sgg%SINPMLSweep(iHz)%ZI,sgg%SINPMLSweep(iHz)%ZE
             Do j1=sgg%SINPMLSweep(iHz)%YI,sgg%SINPMLSweep(iHz)%YE
                Do i1=sgg%SINPMLSweep(iHz)%XI,sgg%SINPMLSweep(iHz)%XE
-                  if ((sggMiHz(i1,j1,k1))==tempindex)  then
+                  if ((media%sggMiHz(i1,j1,k1))==tempindex)  then
                      conta=conta+1
                      AniMed%info(jmed)%Hz_Shared(conta)%times = 1
                      AniMed%info(jmed)%Hz_i(conta)=i1
