@@ -4,7 +4,7 @@ integer function test_init_solver() bind (C) result(err)
    implicit none
    type(semba_fdtd_t) :: semba
    type(solver_t) :: solver
-   real(kind=RKIND) :: field_value(1.0)
+   real(kind=RKIND) :: field_value = 1.0
    err = 0
    call chdir("./test/system/")
 
