@@ -156,10 +156,10 @@ module Solver_mod
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
 #endif
-      end type
 #ifdef CompileWithMPI
       procedure, private :: init_MPIConformalProbes
 #endif
+      end type
       
    interface solver_t
       module procedure solver_ctor
