@@ -38,7 +38,7 @@ module nodalsources
    type (nodsou), save, target :: Nodal_Ex,Nodal_Ey,Nodal_Ez
    type (nodsou), save, target :: Nodal_Hx,Nodal_Hy,Nodal_Hz
 
-   public :: InitHopf,initNodalSources,AdvanceNodalE,AdvanceNodalH,DestroyNodal,nodsou,getnodal
+   public :: initNodalSources,AdvanceNodalE,AdvanceNodalH,DestroyNodal,nodsou,getnodal
 
 
 
@@ -737,16 +737,6 @@ contains
 
       return
    end subroutine
-
-   
-   subroutine InitHopf(sgg,NumNodalSources,sggNodalSource,sggSweep,ficherohopf)
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
-      integer, intent (in) :: NumNodalSources
-      type (NodalSource_t), dimension(1:NumNodalSources),intent(in)           ::  sggNodalSource
-      type (XYZlimit_t), dimension (1:6)    ::  sggSweep
-      character (LEN=BUFSIZE) :: ficherohopf
-      return
-   end subroutine InitHopf
 
 END MODULE nodalsources
  
