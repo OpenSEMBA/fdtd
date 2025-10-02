@@ -1987,7 +1987,7 @@ CONTAINS
       l%precision=0 !redondeo del semiestructurado
       l%stochastic=.false.
       l%chosenyesornostochastic=.false. !es un flag informativo que debe inicializarse a .false. a pesar de qu el sentido comun diga lo contrario
-      l%simu_devia=.false. !puto bug semana santa 2019 cazado a 210419
+      l%simu_devia=.false. 
    
 #ifdef CompileWithHDF
       l%createh5bin=.false.
@@ -2022,8 +2022,7 @@ CONTAINS
       l%forcing = .FALSE.
       l%resume_fromold = .FALSE.
       l%singlefilewrite = .FALSE.
-      l%updateshared=.true. !040717 para que no pierda tiempo en el update shared de preprocess se crea flag -noshared que pone esta variable a false. 
-                          !Esa info solo la usan anisotropic y composites. podria hacerse algo mas automatico. de momento manual.
+      l%updateshared=.true.
 
       l%finaltimestep=0
       l%cfltemp=1.0 !dummy
@@ -2067,10 +2066,6 @@ CONTAINS
       !**************************************************************************************************
       !conformal existence flags   ref: ##Confflag##
       l%input_conformal_flag = .false.
-      !**************************************************************************************************
-      !**************************************************************************************************
-      !**************************************************************************************************
-      !added 2701418 para prevenir conflictos de dobles mallas conformal si se usa -l%run_with_abrezanjas
       l%flag_conf_sgg=.false.
       !
 
