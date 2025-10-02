@@ -127,7 +127,6 @@ module Solver_mod
       procedure :: init_control => solver_init_control
       procedure, private :: init_fields
       procedure, private :: init_distances
-      procedure, private :: init_MPIConformalProbes
       procedure :: launch_simulation
       procedure :: set_field_value
       procedure :: get_field_value
@@ -157,8 +156,11 @@ module Solver_mod
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
 #endif
-   end type
-
+      end type
+#ifdef CompileWithMPI
+      procedure, private :: init_MPIConformalProbes
+#endif
+      
    interface solver_t
       module procedure solver_ctor
    end interface
