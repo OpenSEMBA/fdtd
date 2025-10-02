@@ -13,7 +13,7 @@ jobs:
       matrix: 
         build-type: ["Release"]
         mpi: ["No"]
-        mtln: ["No"]
+        mtln: ["Yes"]
         hdf: ["Yes"]
 
     steps:
