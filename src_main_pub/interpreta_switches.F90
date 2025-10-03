@@ -30,7 +30,6 @@ module interpreta_switches_m
             dontwritevtk                    , &
             vtkindex                        , &
             createmapvtk                    , &
-            hopf                            , &
             run_with_dmma                   , &
             run_with_abrezanjas             , &
             input_conformal_flag            , &
@@ -159,7 +158,6 @@ module interpreta_switches_m
                                    wiresflavor     , &
                                    nEntradaRoot    , &
                                    opcionestotales , &
-                                   ficherohopf,      &
                                    conformal_file_input_name  , &
                                    geomfile         
                         
@@ -439,25 +437,10 @@ CONTAINS
             l%vtkindex = .TRUE.  
           CASE ('-mapvtk')
             l%createmapvtk = .TRUE.
-          CASE ('-hopf')
-            l%hopf=.true.
-            i = i + 1;
-            l%ficherohopf = char(0);
-            CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
-            l%ficherohopf = trim(adjustl(f));
-            INQUIRE (file=trim(adjustl(f)), EXIST=l%existeNFDE)
-            IF ( .NOT. l%existeNFDE) THEN
-               l%hopf = .FALSE.;
-               buff = 'The l%hopf input file was not found '//trim(adjustl(l%ficherohopf));
-               call WarnErrReport(Trim(buff),.true.)
-            END IF
-            l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
-!
           CASE ('-dmma')
               l%run_with_dmma = .TRUE.
               l%run_with_abrezanjas = .FALSE.
               l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))
-!!              i = i + 1;
 
 #ifdef CompileWithConformal
           CASE ('-abrezanjas') !Provisional FEB-2018
@@ -2000,13 +1983,11 @@ CONTAINS
       l%sgbcdepth=-1
       l%statuse=0
       l%time_begin=0
-      l%ficherohopf=''
 !
-      l%hopf=.false.
       l%precision=0 !redondeo del semiestructurado
       l%stochastic=.false.
       l%chosenyesornostochastic=.false. !es un flag informativo que debe inicializarse a .false. a pesar de qu el sentido comun diga lo contrario
-      l%simu_devia=.false. !puto bug semana santa 2019 cazado a 210419
+      l%simu_devia=.false. 
    
 #ifdef CompileWithHDF
       l%createh5bin=.false.
@@ -2041,8 +2022,7 @@ CONTAINS
       l%forcing = .FALSE.
       l%resume_fromold = .FALSE.
       l%singlefilewrite = .FALSE.
-      l%updateshared=.true. !040717 para que no pierda tiempo en el update shared de preprocess se crea flag -noshared que pone esta variable a false. 
-                          !Esa info solo la usan anisotropic y composites. podria hacerse algo mas automatico. de momento manual.
+      l%updateshared=.true.
 
       l%finaltimestep=0
       l%cfltemp=1.0 !dummy
@@ -2086,10 +2066,6 @@ CONTAINS
       !**************************************************************************************************
       !conformal existence flags   ref: ##Confflag##
       l%input_conformal_flag = .false.
-      !**************************************************************************************************
-      !**************************************************************************************************
-      !**************************************************************************************************
-      !added 2701418 para prevenir conflictos de dobles mallas conformal si se usa -l%run_with_abrezanjas
       l%flag_conf_sgg=.false.
       !
 

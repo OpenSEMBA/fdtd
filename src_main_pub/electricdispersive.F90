@@ -1,12 +1,12 @@
 
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! Module EDispersives !ojo los polos conjugados DEBEN APARECER explicitamente 20JUNE'12
+! Module EDispersives !ojo los polos conjugados DEBEN APARECER explicitamente
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 ! Beware in Dutton's model BOTH pair OF complex conjugate poles/residues
 ! in input from .nfde MUST APPEAR (this is why the factor /2 in the algorithm part
 ! for instance a 1 real-pole and 2 ccomplex-pole material would require in nfde
-! 5 poles (not 3) !UNTESTED SGG JUN'12
+! 5 poles (not 3) 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 module EDispersives
