@@ -156,8 +156,11 @@ module Solver_mod
 #ifdef CompileWithMTLN
       procedure :: launch_mtln_simulation
 #endif
-   end type
-
+#ifdef CompileWithMPI
+      procedure, private :: init_MPIConformalProbes
+#endif
+      end type
+      
    interface solver_t
       module procedure solver_ctor
    end interface
@@ -1780,7 +1783,7 @@ contains
 !240424 sgg creo el comunicador mpi de las sondas conformal aqui. debe irse con el nuevo conformal
 #ifdef CompileWithConformal                
 #ifdef CompileWithMPI
-      call initMPIConformalProbes()
+      call this%init_MPIConformalProbes()
 #endif  
 #endif
       this%still_planewave_time=.true. !inicializacion de la variable 
@@ -2184,9 +2187,11 @@ contains
 !       !PML E-field advancing (IT IS IMPORTANT TO FIRST CALL THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
 !       !ROUTINES INJECT THE POLARIZATION CURRENTS EVERYWHERE (PML INCLUDED)
 !       !SO THAT DISPERSIVE MATERIALS CAN ALSO BE TRUNCATED BY CPML)
+   end subroutine step
 
 #ifdef CompileWithMPI
-   subroutine initMPIConformalProbes()
+   subroutine init_MPIConformalProbes(this)
+      class(solver_t) :: this
       integer (kind=4) :: group_conformalprobes_dummy, ierr
 !!!!sgg250424 niapa para que funcionen sondas conformal mpi
 !todos deben crear el subcomunicador mpi una sola vez   
@@ -2202,10 +2207,8 @@ contains
       ! print *,'-----creating--->',this%control%layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
       call MPI_BARRIER(SUBCOMM_MPI, ierr)
       !!!no lo hago pero al salir deberia luego destruir el grupo call MPI_Group_free(output(ii)%item(i)%MPIgroupindex,ierr)                   
-   end subroutine initMPIConformalProbes
+   end subroutine init_MPIConformalProbes
 #endif
-
-   end subroutine step
 
    subroutine advanceE(this)
       class(solver_t) :: this
