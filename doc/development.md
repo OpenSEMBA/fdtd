@@ -138,26 +138,23 @@ Once the environment is loaded, follow the steps in the next section.
 
 1. **Install necessary tools**:
    - Install **Intel Base Kit** and **Intel HPC Kit**.
-   - Install Visual Studio 2019. This must be done **after** the intel Intel compilers. Visual Studio 2022 is not supported (as of Oct. 2024).
-   - Ensure **CMake** is installed. It's recommended to use **CMake GUI** to simplify configuration on Windows.
+   - Install Visual Studio 2022. This must be done **after** the intel Intel compilers.
+   - Ensure **CMake** is installed. 
 
-2. **Generate the Project with CMake GUI**:
-   - In **CMake GUI**, select the option to create a project for **Visual Studio 2019** from the CMake files.
-   - Set `-T fortran=ifx` to use intelLLVM compiler.
-   - Specify the output folder where the `.sln` file for the project will be generated.
+3. **Open a terminal with the Intel One API variables loaded**:
+   - Launch Visual Studio 2022 with
+     ```
+     "C:\Program Files\Microsoft Visual Studio\2022\Community\Common7\IDE\devenv.exe"  
+     ```
+   - Open the opensemba/fdtd cloned repo as a folder.
 
-3. **Open the Project in Visual Studio**:
-   - Open the generated `.sln` file in Visual Studio 2019.
-   - You will see multiple projects in the solution, one for each library and executable.
 
-4. **Compilation Configuration**:
-   - You may encounter specific errors in the **fdtd-tests** projects during compilation, particularly related to the `/Mtd` or `/MD` options.
-   - To resolve this issue:
-     - Right-click on the problematic project (`fdtd_tests`) and select **Properties**.
-     - Go to **Code Generation** and change the corresponding option to `/Mtd`.
-
-5. **Set the Main Project**:
-   - Select the `semba-fdtd` project and set it as the main project.
+4. **Ensure cmake has nofpp option**:
+   - The following command 
+     ```
+     add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:/nofpp>)
+     ```
+     must be present in CMakeLists.txt due to an issue https://gitlab.kitware.com/cmake/cmake/-/issues/21816
 
 6. **Debugger Configuration**:
    - In the project properties, go to the **Debugger** section.
@@ -167,8 +164,6 @@ Once the environment is loaded, follow the steps in the next section.
 
 7. **Debug the Project**:
    - Launch the project by pressing **F5** to begin debugging.
-
-Following these steps, the project should be set up and ready to compile and debug in Visual Studio 2019 with Intel tools.
 
 ## WSL2 + Visual Studio Code + GFortran Setup Guide
 
