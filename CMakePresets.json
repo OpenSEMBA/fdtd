@@ -1,0 +1,29 @@
+{
+  "version": 3,
+  "configurePresets": [
+    {
+      "name": "rls",
+      "generator": "Ninja",
+      "binaryDir": "build-rls/",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release"
+      }
+    },
+    {
+      "name": "dbg",
+      "inherits": "rls",
+      "binaryDir": "build-dbg/",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug"
+      }
+    },
+    {
+      "name": "dbg-nomtln",
+      "inherits": "dbg",
+      "binaryDir": "build-dbg-nomtln/",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_MTLN": "No"
+      }
+    }
+  ]
+}

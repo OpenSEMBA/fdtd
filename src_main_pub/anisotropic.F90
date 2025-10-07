@@ -73,7 +73,7 @@ contains
       logical, INTENT(OUT)  ::  ThereAreAnisotropic,ThereAreThinSlot
       integer (kind=4)  ::  jmed,j1,conta,k1,i1,tempindex
 
-      eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
+      eps0=eps00; mu0=mu00;
 
       !!!
 
@@ -318,10 +318,8 @@ contains
                (sgg%Eshared%elem(j1)%Field == iEx)) then
                   AniMed%info(jmed)%Ex_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1 ) then
-                     allocate (AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times)) !OJO, EN EL ORIGINAL LO ALLOCATEABA HASTA -1
-                     !LO CAMBIO EL 26/10 POR ERROR EN LA NACELLE DEL SS5, PERO NO ESTOY SEGURO QUE HAYA UN BUG CON ESTO DE LOS SHARED !!?
+                     allocate (AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))    
                   endif
-                  !PRINT *,'---> eX',sgg%Eshared%elem(j1)%i,sgg%Eshared%elem(j1)%J,sgg%Eshared%elem(j1)%k,sgg%Eshared%elem(j1)%times
                   exit buscaEx
                endif
             end do
@@ -337,7 +335,6 @@ contains
                   if (sgg%Eshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))
                   endif
-                  !PRINT *,'---> ey',sgg%Eshared%elem(j1)%i,sgg%Eshared%elem(j1)%J,sgg%Eshared%elem(j1)%k,sgg%Eshared%elem(j1)%times
                   exit buscaEy
                endif
             end do
@@ -412,9 +409,7 @@ contains
       end do
 
       !STORE THE INDEXES OF THE SHARED MEDIA
-
-
-      do jmed=1,AniMed%NumMed !barrelos ahora todos
+      do jmed=1,AniMed%NumMed 
          do i1=1,AniMed%info(jmed)%NumNodesEx
             conta=0
             do j1=1,sgg%Eshared%conta

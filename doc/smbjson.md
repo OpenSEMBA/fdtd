@@ -532,26 +532,29 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
 ### `connector`
 
 The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire`, a `shieldedMultiwire` or an `unshieldedMultiwire`. 
-This `wire` can be either a single wire or the outermost conductor of a `cable` bundle. The `conector`  can have the following properties:
+This `wire` can be either a single wire or the outermost conductor of a `cable` bundle. The `connector` can have the following properties:
 
-+ `[resistances]`, an array of $N$ real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment.
-+ `[transferImpedancePerMeter]`, described in the same way as explained in the [shieldedMultiwire](#shieldedMultiwire) section. Only valid in a `connector` associated with `shieldedMultiwire`.
++ `[resistances]`, an array of real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment.
++ `[transferImpedancesPerMeter]`, an array of [transferImpedancePerMeter], as described in the [shieldedMultiwire](#shieldedMultiwire) section. 
 
+The most common situation will be having the connector of a shielded bundle. In that case, the arrays have a single component. However, the `connector` can describe the connections of a (unshielded) bundle of $N$ shielded conductors. In that case, the `connector` has to describe the connections, if any, of the $N$ shielded conductors.
 
 
 **Example:**
 
 ```json
 {
-    "name": "SegmentConnector1",
+    "name": "SegmentConnector",
     "id": 204,
     "type": "connector",
-    "resistance": 100e-3,
-    "transferImpedancePerMeter" : {
+    "resistances": [100e-3],
+    "transferImpedancesPerMeter" : [
+        {
         "resistiveTerm" : 3.33,
         "inductiveTerm" : 2.6e-9,
         "direction" : "inwards"
-    }
+        }
+    ]
 }
 ```
 

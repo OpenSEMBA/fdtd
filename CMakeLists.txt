@@ -135,26 +135,14 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 		# This prevents a compilation error happening due to visual studio headers being too strict.
 		# It can possibly can be removed in the future.
 		add_compile_definitions("$<$<COMPILE_LANGUAGE:C,CXX>:-D_ALLOW_COMPILER_AND_STL_VERSION_MISMATCH>")
-
+		add_compile_options($<$<COMPILE_LANGUAGE:Fortran>:/nofpp>)
 		set(CMAKE_CXX_FLAGS "/Qopenmp")
-		set(CMAKE_Fortran_FLAGS "/Qopenmp /fpp")
+		set(CMAKE_Fortran_FLAGS "/Qopenmp")
 
 		# Not tested
-
-		# set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
-		
-		set(CMAKE_CXX_FLAGS_FLAGS_DEBUG "/Qopenmp-simd- /Wno-debug-option-simd")
-		# set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
-
-	elseif((CMAKE_Fortran_COMPILER_ID MATCHES "Intel"))
-		message(STATUS "Using Intel (ifort) flags")
-		set(CMAKE_CXX_FLAGS "/Qopenmp")
-
-		# Not tested
-		# set(CMAKE_Fortran_FLAGS "/fpp /qopenmp") 
-
 		# set(CMAKE_Fortran_FLAGS_RELEASE "/fast")
 
+		#set(CMAKE_CXX_FLAGS_FLAGS_DEBUG "/Qopenmp-simd- /Wno-debug-option-simd")
 		# set(CMAKE_Fortran_FLAGS_DEBUG "/check all,nouninit /debug full -traceback")
 	else()
 		message(FATAL_ERROR "Unrecognized compiler id:" ${CMAKE_Fortran_COMPILER_ID})

@@ -669,7 +669,7 @@ module  FDETYPES
                  groundwires,noSlantedcrecepelo, & 
                  mibc,ADE,conformalskin,sgbc, sgbcDispersive, sgbccrank, & 
                  NOcompomur,strictOLD,TAPARRABOS, & 
-                 noconformalmapvtk, hopf,experimentalVideal, &
+                 noconformalmapvtk, experimentalVideal, &
                  forceresampled, mur_second,MurAfterPML, &
                  stableradholland,singlefilewrite,NF2FFDecim, &
                  fieldtotl,finishedwithsuccess, &
@@ -685,7 +685,7 @@ module  FDETYPES
       real (kind=rkind_wires) :: factorradius,factordelta
       
       character (len=BUFSIZE) :: nEntradaRoot, inductance_model,wiresflavor, nresumeable2
-      CHARACTER (LEN=BUFSIZE) :: opcionestotales, ficherohopf
+      CHARACTER (LEN=BUFSIZE) :: opcionestotales
       
       integer (kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
                           mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, size

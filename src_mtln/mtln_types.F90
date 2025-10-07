@@ -19,9 +19,10 @@ module mtln_types_mod
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
    integer, parameter :: TERMINAL_NODE_SIDE_END       =  2
 
-   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_INWARDS   =  1
-   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_OUTWARDS  =  2
-   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_BOTH      =  3
+   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_UNDEFINED   =  -1
+   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_INWARDS     =   1
+   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_OUTWARDS    =   2
+   integer, parameter :: TRANSFER_IMPEDANCE_DIRECTION_BOTH        =   3
 
    integer, parameter :: PROBE_TYPE_UNDEFINED = -1
    integer, parameter :: PROBE_TYPE_VOLTAGE   =  1
@@ -108,7 +109,7 @@ module mtln_types_mod
       real :: inductive_term = 0.0
       real :: resistive_term = 0.0
       complex, dimension(:), allocatable :: poles, residues ! poles and residues
-      integer :: direction = TRANSFER_IMPEDANCE_DIRECTION_INWARDS
+      integer :: direction = TRANSFER_IMPEDANCE_DIRECTION_UNDEFINED
    contains
       private
       procedure :: transfer_impedance_per_meter_eq
@@ -119,7 +120,7 @@ module mtln_types_mod
    type :: connector_t
       integer :: id
       real, dimension(:), allocatable :: resistances
-      type(transfer_impedance_per_meter_t) :: transfer_impedance_per_meter
+      type(transfer_impedance_per_meter_t), dimension(:), allocatable :: transfer_impedances_per_meter
    contains
       private
       procedure :: connector_eq
@@ -419,7 +420,7 @@ contains
       connector_eq = &
          (a%id == b%id) .and. &
          all((a%resistances == b%resistances)) .and. &
-         (a%transfer_impedance_per_meter == b%transfer_impedance_per_meter)
+         all((a%transfer_impedances_per_meter == b%transfer_impedances_per_meter))
    end function
 
    elemental logical function termination_eq(a, b)
@@ -524,8 +525,8 @@ contains
    function has_transfer_impedance(this) result(res)
       class(transfer_impedance_per_meter_t) :: this
       logical :: res
-      res = (this%resistive_term /= 0) .and. (this%inductive_term /= 0) .and. &
-         (size(this%poles) /= 0) .and. (size(this%residues) /= 0)
+      res = (this%resistive_term /= 0) .or. (this%inductive_term /= 0) .or. &
+         (size(this%poles) /= 0) .or. (size(this%residues) /= 0)
    end function
 
    subroutine terminal_network_add_connection(this, connection)

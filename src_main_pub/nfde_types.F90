@@ -189,12 +189,12 @@ MODULE NFDETypes
       REAL (KIND=RK) :: sigmam = 0.0_RKIND
       INTEGER (KIND=4) :: n_C1P = 0
       INTEGER (KIND=4) :: n_C2P = 0
-!!!reaprovecho para meter aqui los lumped
+      !!! Lumped vars.
       REAL (KIND=RK)   :: Rtime_on = 0.0_RKIND, Rtime_off = 0.0_RKIND
       REAL (KIND=RK) :: R = 0.0_RKIND
       REAL (KIND=RK) :: L = 0.0_RKIND
       REAL (KIND=RK) :: C = 0.0_RKIND
-      !stoch 201022
+      !!! Stoch vars.
       REAL (KIND=RK) :: R_devia = 0.0_RKIND
       REAL (KIND=RK) :: L_devia = 0.0_RKIND
       REAL (KIND=RK) :: C_devia = 0.0_RKIND
@@ -202,11 +202,10 @@ MODULE NFDETypes
       REAL (KIND=RK) :: DiodB = 0.0_RKIND
       REAL (KIND=RK)   :: DiodIsat = 0.0_RKIND
       INTEGER (KIND=4) :: DiodOri = 0
-!!!reaprovecho para meter aqui los waveports de Berenger
+      !!! Berenger's waveports
       INTEGER (KIND=4) :: orient = 0
 !!!!!!!!!
       logical :: resistor=.false. , inductor=.false. , capacitor=.false. , diodo=.false. , plain=.false. , PMLbody=.false.
-!!!!fin 270815
    END TYPE Dielectric_t
    !------------------------------------------------------------------------------
    ! Locates all the different Non Metal Media found
@@ -335,7 +334,6 @@ MODULE NFDETypes
       REAL (KIND=RK), DIMENSION (:), POINTER :: sigmam
       REAL (KIND=RK), DIMENSION (:), POINTER :: thk
       !for_devia
-      
       REAL (KIND=RK), DIMENSION (:), POINTER :: sigma_devia
       REAL (KIND=RK), DIMENSION (:), POINTER :: eps_devia
       REAL (KIND=RK), DIMENSION (:), POINTER :: mu_devia
@@ -343,8 +341,8 @@ MODULE NFDETypes
       REAL (KIND=RK), DIMENSION (:), POINTER :: thk_devia
       !
       INTEGER (KIND=4) :: nc = 0
-      CHARACTER (LEN=BUFSIZE) :: files = ' ' !2011 tag nombre fichero
-      INTEGER (KIND=4)  :: numcapas  !2014 multicapas
+      CHARACTER (LEN=BUFSIZE) :: files = ' ' 
+      INTEGER (KIND=4)  :: numcapas  
    END TYPE LossyThinSurface
    !------------------------------------------------------------------------------
    ! Locates all the different Comp media found
@@ -470,8 +468,7 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: K = 0
       INTEGER (KIND=4) :: node = 0
       INTEGER (KIND=4) :: dir = - 1
-      INTEGER (KIND=4) :: Or = - 1 !added by 2011 and filled in inside PREPROCESS
-      !since the orientation of the plane info is not on .nfde, but foud afterwards
+      INTEGER (KIND=4) :: Or = - 1
       CHARACTER (LEN=BUFSIZE) :: tag
    END TYPE ThinSlotComp
    !--------------------------------------------------------------------------

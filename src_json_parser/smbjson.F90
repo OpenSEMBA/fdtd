@@ -2539,10 +2539,10 @@ contains
 
       function readConnectors() result(res)
          type(connector_t), dimension(:), pointer :: res
-         type(json_value), pointer :: mat, z
+         type(json_value), pointer :: mat, z, zs
          logical :: materialsFound
          type(json_value_ptr), dimension(:), allocatable :: connectors
-         integer :: i, id
+         integer :: i, j, id, n
          
          call this%core%get(this%root, J_MATERIALS, mat, materialsFound)
          if (.not. materialsFound) then
@@ -2561,11 +2561,17 @@ contains
                   allocate(res(i)%resistances(0))
                end if
 
-               if (this%existsAt(connectors(i)%p, J_MAT_CONN_TRANSFER_IMPEDANCE)) then
-                  call this%core%get(connectors(i)%p, J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE,  z)
-                  res(i)%transfer_impedance_per_meter = readTransferImpedance(z)
+               if (this%existsAt(connectors(i)%p, J_MAT_CONN_TRANSFER_IMPEDANCES)) then
+                  call this%core%get(connectors(i)%p, J_MAT_CONN_TRANSFER_IMPEDANCES,  zs)
+                  n = this%core%count(zs)
+                  allocate(res(i)%transfer_impedances_per_meter(n))
+                  do j = 1, n
+                     call this%core%get_child(zs, j, z)
+                     res(i)%transfer_impedances_per_meter(j) = readTransferImpedance(z)
+                  end do
                else
-                  res(i)%transfer_impedance_per_meter = noTransferImpedance()
+                  allocate(res(i)%transfer_impedances_per_meter(0))
+                  ! res(i)%transfer_impedance_per_meter = noTransferImpedance()
                end if
 
             end do
@@ -3398,43 +3404,6 @@ contains
             res = readTransferImpedance(z)
          else
             res = noTransferImpedance()
-         end if
-      end function
-
-      !needs correction
-      function buildConnector(j_cable, side) result(res)
-         type(json_value), pointer :: j_cable
-         character(*), intent(in) :: side
-         type(connector_t), pointer :: res
-         type(connector_t), target :: res_conn
-         type(json_value_ptr) :: conn
-         type(json_value), pointer :: z
-         type(json_value), pointer :: c_ptr
-
-         logical :: found
-         character(:), allocatable :: name, type
-         integer :: id
-         real, dimension(:), allocatable :: rs
-         if (this%existsAt(j_cable, side)) then
-            conn = this%matTable%getId(this%getIntAt(j_cable, side))
-
-            if (this%existsAt(conn%p, J_MAT_CONN_RESISTANCES)) then
-               res_conn%resistances = this%getRealsAt(conn%p, J_MAT_CONN_RESISTANCES)
-            else
-               allocate(res_conn%resistances(0))
-               call WarnErrReport("Error reading connector: no resistances label found")
-            end if
-
-            if (this%existsAt(conn%p, J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE)) then
-               call this%core%get(conn%p, J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE,  z)
-               res_conn%transfer_impedance_per_meter = readTransferImpedance(z)
-            else
-               res_conn%transfer_impedance_per_meter = noTransferImpedance()
-               call WarnErrReport("Error reading connector: no transferImpedancePerMeter label found")
-            end if
-            res => res_conn
-         else
-            res => null()
          end if
       end function
 

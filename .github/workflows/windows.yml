@@ -25,7 +25,7 @@ jobs:
         compiler: [ {name: 'intel', version: '2025.0'} ]
         build-type: ["Release"]
         mpi: ["No"]
-        mtln: ["No"]
+        mtln: ["Yes", "No"]
         hdf: ["Yes"]
         double-precision: ["Yes", "No"]
 
