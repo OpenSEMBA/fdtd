@@ -314,6 +314,8 @@ contains
 #else
 #ifdef CompilePrivateVersion
    NFDE_FILE => cargar_NFDE_FILE (this%l%filefde)
+#else
+   allocate (NFDE_FILE)
 #endif
 #endif
 
