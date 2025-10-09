@@ -1026,3 +1026,76 @@ def test_negative_offset_in_x(tmp_path):
     assert np.corrcoef(probeTotal['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.corrcoef(probeL['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
+    
+def test_conformal_sphere_rcs(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_sphere_rcs.fdtd.json'
+    cm = CaseMaker(fn)
+    
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+
+    # read vtk and extract triangles
+    reader = vtk.vtkUnstructuredGridReader()
+    reader.SetFileName(GEOMETRIES_FOLDER+"sphere.tessellator.conformal.vtk")
+    reader.Update()
+    polyData = reader.GetOutput()
+   
+
+    for i in range(polyData.GetNumberOfCells()):
+        cellType = polyData.GetCellType(i)
+        if cellType == vtk.VTK_QUAD:
+            p1 = polyData.GetCell(i).GetPointId(0)
+            p2 = polyData.GetCell(i).GetPointId(2)
+        elif cellType == vtk.VTK_LINE:
+            p1 = polyData.GetCell(i).GetPointId(0)
+            p2 = polyData.GetCell(i).GetPointId(1)
+        else:
+            continue
+
+    ###
+
+    # add triangles to json
+
+    ###
+
+    solver.cleanUp()
+    solver.run()
+    far  = Probe(solver.getSolvedProbeFilenames("FarField")[0])
+    f = far['freq']
+    # assert()
+    
+
+def test_conformal_delay(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+
+    solver['materialAssociations'][0]['elementIds'] = [4]
+    solver['mesh']['elements'][3]['intervals'] = [[[0,0,4],[2,2,4]]]
+    solver.cleanUp()
+    solver.run()
+    front = Probe(solver.getSolvedProbeFilenames("front")[0])
+    t = front['time']
+    t4 = t[front['field'].argmin()]
+
+    solver['materialAssociations'][0]['elementIds'] = [5]
+    n = 4
+    for i in range(1,n):
+        solver['mesh']['coordinates'][6]["relativePosition"][2]   = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][7]["relativePosition"][2]   = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][8]["relativePosition"][2]   = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][9]["relativePosition"][2]   = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][15]["relativePosition"][2]  = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][16]["relativePosition"][2]  = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][17]["relativePosition"][2]  = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][18]["relativePosition"][2]  = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][19]["relativePosition"][2]  = 4.0 + i*1.0/n
+
+        solver.cleanUp()
+        solver.run()
+        front = Probe(solver.getSolvedProbeFilenames("front")[0])
+        t = front['time']
+        delay = t[front['field'].argmin()]
+        tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
+        assert np.abs(delay - tdelta)/tdelta < 0.01
+        
