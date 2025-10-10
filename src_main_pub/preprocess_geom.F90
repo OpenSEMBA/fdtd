@@ -64,7 +64,7 @@ CONTAINS
 
       CHARACTER (LEN=BUFSIZE) :: tag
 
-      TYPE (XYZlimit_t) :: punto, BoundingBox
+      TYPE (XYZlimit_t) :: punto, BoundingBox, conf_bounding_box
       TYPE (XYZlimit_t_scaled) :: punto_s
       INTEGER (KIND=4) :: orientacion,orientacionL,orientacionR, direccion, contamedia,oldcontamedia, maxcontamedia, mincontamedia, inicontamedia, &
          i1, j1, field, k1, pecmedio, ii, medio1, medio2, sondas,CONTACURR,CONTAVOLT,I_,J_
@@ -2541,9 +2541,23 @@ CONTAINS
          end do
       end do
       !END SLANTED WIRES
+      conf_bounding_box%XI = sgg%Alloc(iHx)%XI
+      conf_bounding_box%XE = sgg%Alloc(iHx)%XE
+      conf_bounding_box%YI = sgg%Alloc(iHy)%YI
+      conf_bounding_box%YE = sgg%Alloc(iHy)%YE
+      conf_bounding_box%ZI = sgg%Alloc(iHz)%ZI
+      conf_bounding_box%ZE = sgg%Alloc(iHz)%ZE
 
-      call addConformalMedia(sgg, media, conformal_media, contamedia)
-
+      if (associated(this%conformalRegs%volumes)) then 
+         call addConformalMedia(sgg, media, conformal_media, contamedia, conf_bounding_box)
+         CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
+            & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
+            & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
+            & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
+            & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, conf_bounding_box)
+      end if
 
 
       !reporta el bounding box
@@ -4784,26 +4798,29 @@ CONTAINS
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine addConformalMedia(sgg, media, conformal_media, contamedia)
+      subroutine addConformalMedia(sgg, media, conformal_media, contamedia, bbox)
          type(sggfdtdinfo), intent(inout)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer (kind=4), intent(inout) :: contamedia
-         call addConformalEdgeMedia(sgg, media, conformal_media, contamedia)
-         call addConformalFaceMedia(sgg, media, conformal_media, contamedia)
+         type(XYZlimit_t), intent(inout) :: bbox
+         call addConformalEdgeMedia(sgg, media, conformal_media, contamedia, bbox)
+         call addConformalFaceMedia(sgg, media, conformal_media, contamedia, bbox)
       end subroutine
 
-      subroutine addConformalFaceMedia(sgg, media, conformal_media, contamedia)
+      subroutine addConformalFaceMedia(sgg, media, conformal_media, contamedia, bbox)
          type (SGGFDTDINFO), intent(INOUT)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer (kind=4), intent(inout) :: contamedia
-         integer (kind=4) :: cell_i, cell_j, cell_k
+         integer (kind=4) :: cell(3)
+         type(XYZlimit_t), intent(inout) :: bbox
          integer :: j, k
          do j = 1, conformal_media%n_faces_media
             contamedia = contamedia + 1
             sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
             sgg%Med(contamedia)%Is%Needed = .TRUE.
+            sgg%Med(contamedia)%Is%Volume = .TRUE.
             sgg%Med(contamedia)%Priority = prior_PEC
             sgg%Med(contamedia)%Epr = this%mats%mats(1)%eps / Eps0
             sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
@@ -4811,35 +4828,42 @@ CONTAINS
             sgg%Med(contamedia)%SigmaM = 0.0_RKIND
             ! funcion al healer para tener en cuenta la prioridad
             do k = 1, conformal_media%face_media(j)%size
-               cell_i = conformal_media%face_media(j)%faces(k)%cell(1)
-               cell_j = conformal_media%face_media(j)%faces(k)%cell(2)
-               cell_k = conformal_media%face_media(j)%faces(k)%cell(3)
+               cell(:) = conformal_media%face_media(j)%faces(k)%cell(:)
+               if (cell(1) < bbox%xi) bbox%xi = cell(1)
+               if (cell(1) > bbox%xe) bbox%xe = cell(1)
+               if (cell(2) < bbox%yi) bbox%yi = cell(2)
+               if (cell(2) > bbox%ye) bbox%ye = cell(2)
+               if (cell(3) < bbox%zi) bbox%zi = cell(3)
+               if (cell(3) > bbox%ze) bbox%ze = cell(3)
+
                select case(conformal_media%face_media(j)%faces(k)%direction)
                case(F_X)
-                  media%sggMiHx(cell_i, cell_j, cell_k) = contamedia
+                  media%sggMiHx(cell(1), cell(2), cell(3)) = contamedia
                case(F_Y)
-                  media%sggMiHy(cell_i, cell_j, cell_k) = contamedia
+                  media%sggMiHy(cell(1), cell(2), cell(3)) = contamedia
                case(F_Z)
-                  media%sggMiHz(cell_i, cell_j, cell_k) = contamedia
+                  media%sggMiHz(cell(1), cell(2), cell(3)) = contamedia
                end select
             end do
          end do
-   
+
       end subroutine
 
-      subroutine addConformalEdgeMedia(sgg, media, conformal_media, contamedia)
+      subroutine addConformalEdgeMedia(sgg, media, conformal_media, contamedia, bbox)
          type (SGGFDTDINFO), intent(INOUT)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer (kind=4), intent(inout) :: contamedia
          integer (kind=4) :: edge_media
-         integer (kind=4) :: cell_i, cell_j, cell_k
+         integer (kind=4) :: cell(3)
+         type(XYZlimit_t), intent(inout) :: bbox
          integer :: j, k
          do j = 1, conformal_media%n_edges_media
             if (conformal_media%edge_media(j)%ratio /= 0) then 
                contamedia = contamedia + 1
                sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
                sgg%Med(contamedia)%Is%Needed = .TRUE.
+               sgg%Med(contamedia)%Is%Volume = .TRUE.
                sgg%Med(contamedia)%Priority = prior_PEC
                sgg%Med(contamedia)%Epr = (this%mats%mats(1)%eps / conformal_media%edge_media(j)%ratio ) / Eps0
                sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
@@ -4851,16 +4875,20 @@ CONTAINS
             end if
             ! funcion al healer para tener en cuenta la prioridad
             do k = 1, conformal_media%edge_media(j)%size
-               cell_i = conformal_media%edge_media(j)%edges(k)%cell(1)
-               cell_j = conformal_media%edge_media(j)%edges(k)%cell(2)
-               cell_k = conformal_media%edge_media(j)%edges(k)%cell(3)
+               cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
+               if (cell(1) < bbox%xi) bbox%xi = cell(1)
+               if (cell(1) > bbox%xe) bbox%xe = cell(1)
+               if (cell(2) < bbox%yi) bbox%yi = cell(2)
+               if (cell(2) > bbox%ye) bbox%ye = cell(2)
+               if (cell(3) < bbox%zi) bbox%zi = cell(3)
+               if (cell(3) > bbox%ze) bbox%ze = cell(3)
                select case(conformal_media%edge_media(j)%edges(k)%direction)
                case(E_X)
-                  media%sggMiEx(cell_i, cell_j, cell_k) = edge_media
+                  media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
                case(E_Y)
-                  media%sggMiEy(cell_i, cell_j, cell_k) = edge_media
+                  media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
                case(E_Z)
-                  media%sggMiEz(cell_i, cell_j, cell_k) = edge_media
+                  media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                end select
             end do
          end do

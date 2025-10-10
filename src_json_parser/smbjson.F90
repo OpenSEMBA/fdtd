@@ -588,12 +588,12 @@ contains
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
 
-      if (size(mAs) == 0) then
-         allocate(aux_tris(0))
-         cR%triangles = aux_tris
-         call appendRegion(res%volumes, cR)
-         call appendRegion(res%surfaces, cR)
-      end if
+      ! if (size(mAs) == 0) then
+      !    allocate(aux_tris(0))
+      !    cR%triangles = aux_tris
+      !    call appendRegion(res%volumes, cR)
+      !    call appendRegion(res%surfaces, cR)
+      ! end if
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
             cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)

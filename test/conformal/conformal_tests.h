@@ -24,6 +24,7 @@ extern "C" int test_fhash_cellmap_set_get();
 extern "C" int test_conformal_filling_open();
 extern "C" int test_conformal_filling_closed();
 extern "C" int test_conformal_edge_next_cell();
+extern "C" int test_conformal_pec_media();
 
 
 TEST(conformal, geometry_coord_position)   { EXPECT_EQ(0, test_geometry_coord_position()); }
@@ -51,3 +52,5 @@ TEST(conformal, fhash_cellmap_set_get)     { EXPECT_EQ(0, test_fhash_cellmap_set
 TEST(conformal, conformal_filling_open)        { EXPECT_EQ(0, test_conformal_filling_open()); }
 TEST(conformal, conformal_filling_closed)        { EXPECT_EQ(0, test_conformal_filling_closed()); }
 TEST(conformal, conformal_edge_next_cell)        { EXPECT_EQ(0, test_conformal_edge_next_cell()); }
+
+TEST(conformal, conformal_pec_media)        { EXPECT_EQ(0, test_conformal_pec_media()); }

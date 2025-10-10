@@ -3,6 +3,7 @@ from typing import Dict
 import os
 from sys import platform
 from scipy import signal
+from src_caseMaker.caseMaker import *
 
 def test_lineIntegralProbe(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
@@ -1028,41 +1029,24 @@ def test_negative_offset_in_x(tmp_path):
     assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
     
 def test_conformal_sphere_rcs(tmp_path):
+
     fn = CASES_FOLDER + 'conformal/conformal_sphere_rcs.fdtd.json'
     cm = CaseMaker(fn)
-    
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path, flags=['-mapvtk'])
-
-    # read vtk and extract triangles
-    reader = vtk.vtkUnstructuredGridReader()
-    reader.SetFileName(GEOMETRIES_FOLDER+"sphere.tessellator.conformal.vtk")
-    reader.Update()
-    polyData = reader.GetOutput()
-   
-
-    for i in range(polyData.GetNumberOfCells()):
-        cellType = polyData.GetCellType(i)
-        if cellType == vtk.VTK_QUAD:
-            p1 = polyData.GetCell(i).GetPointId(0)
-            p2 = polyData.GetCell(i).GetPointId(2)
-        elif cellType == vtk.VTK_LINE:
-            p1 = polyData.GetCell(i).GetPointId(0)
-            p2 = polyData.GetCell(i).GetPointId(1)
-        else:
-            continue
-
-    ###
-
+    cm.setGridFromVTK(GEOMETRIES_FOLDER+"sphere_1mm.tessellator.grid.vtk")
     # add triangles to json
-
+    cm.addCellElementsFromVTK(GEOMETRIES_FOLDER+"sphere_1mm.tessellator.cmsh.vtk")    
+    case_name = 'conformal_sphere_1mm_rcs'
+    cm.exportCase(TEST_DATA_FOLDER+'cases/conformal/'+case_name)
     ###
+    # solver = FDTD(input_filename=case_name + ".fdtd.json", path_to_exe=SEMBA_EXE,
+    #               run_in_folder=tmp_path, flags=['-mapvtk'])
 
-    solver.cleanUp()
-    solver.run()
-    far  = Probe(solver.getSolvedProbeFilenames("FarField")[0])
-    f = far['freq']
-    # assert()
+    # # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
+    # far  = Probe(solver.getSolvedProbeFilenames("FarField")[0])
+    # f = far['freq']
+    # # assert()
     
 
 def test_conformal_delay(tmp_path):

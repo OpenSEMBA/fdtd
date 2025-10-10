@@ -3,6 +3,7 @@ import os
 import vtk
 from vtk.util.numpy_support import vtk_to_numpy
 import numpy as np
+from math import modf
 
 class CaseMaker():
     # A collection of helper functions to create FDTD cases.
@@ -29,7 +30,13 @@ class CaseMaker():
     def setGridFromVTK(self, path_to_grid):
         assert os.path.isfile(path_to_grid)
 
-        reader = vtk.vtkXMLPolyDataReader()
+        with open(path_to_grid, 'r') as f:
+            c = f.read(1)
+            if (c == '<'):
+                reader = vtk.vtkXMLPolyDataReader()
+            else:
+                reader = vtk.vtkUnstructuredGridReader()
+                
         reader.SetFileName(path_to_grid)
         reader.Update()
 
@@ -63,10 +70,18 @@ class CaseMaker():
             }
         }
 
+    # def addConformalElementsFromVTK():
+
     def addCellElementsFromVTK(self, path_to_vtk):
         assert os.path.isfile(path_to_vtk)
 
-        reader = vtk.vtkXMLPolyDataReader()
+        with open(path_to_vtk, 'r') as f:
+            c = f.read(1)
+            if (c == '<'):
+                reader = vtk.vtkXMLPolyDataReader()
+            else:
+                reader = vtk.vtkUnstructuredGridReader()
+
         reader.SetFileName(path_to_vtk)
         reader.Update()
         polyData = reader.GetOutput()
@@ -88,8 +103,42 @@ class CaseMaker():
             "id": id,
             "type": "cell",
             "intervals": self._getCellsIntervals(polyData),
+            "triangles": self._getTriangles(polyData)
         })
+        return id
 
+    def setCellElementsFromVTK(self, path_to_vtk):
+        assert os.path.isfile(path_to_vtk)
+
+        with open(path_to_vtk, 'r') as f:
+            c = f.read(1)
+            if (c == '<'):
+                reader = vtk.vtkXMLPolyDataReader()
+            else:
+                reader = vtk.vtkUnstructuredGridReader()
+
+        reader.SetFileName(path_to_vtk)
+        reader.Update()
+        polyData = reader.GetOutput()
+
+        vtkGroups = vtk_to_numpy(polyData.GetCellData().GetArray('group'))
+        if len(np.unique(vtkGroups)) > 1:
+            raise ValueError("Different groups are not supported.")
+
+        # Stores in case input
+        if 'mesh' not in self.input:
+            self.input['mesh'] = {}
+
+        self.input['mesh']['elements'] = []
+        elements = self.input['mesh']['elements']
+
+        id = len(elements) + 1
+        elements.append({
+            "id": id,
+            "type": "cell",
+            "intervals": self._getCellsIntervals(polyData),
+            "triangles": self._getTriangles(polyData)
+        })
         return id
 
     def addCellElementBox(self, boundingBox):
@@ -234,30 +283,90 @@ class CaseMaker():
         gridLines = self._buildGridLines()
 
         res = np.empty_like(relativeCoordinates, dtype=float)
-        for x in range(3):
-            res[:, x] = gridLines[x][relativeCoordinates[:, x]]
+        for (idx, c) in enumerate(relativeCoordinates):
+            for x in range(3):
+                f, i = modf(c[x])[0], int(modf(c[x])[1])
+                if (i == len(gridLines[x])-1) :
+                    res[idx, x] = gridLines[x][i]
+                else:
+                    res[idx, x] = gridLines[x][i] + f*(gridLines[x][i+1]-gridLines[x][i])
+                # res[:, x] = gridLines[x][relativeCoordinates[:, x]]
 
         return res
 
-    def _absoluteToRelative(self, absoluteCoordinates):
+    def _filterIntegerCoordinates(self, absoluteCoordinates):
+        nInts = 0
+        for c in absoluteCoordinates:
+            if all(v == True for v in [modf(c[x])[0] == 0 for x in range(3)]) == True:
+                nInts = nInts + 1
+        res = np.zeros([nInts,3])
+        nInts = 0
+        for c in absoluteCoordinates:
+            if all(v == True for v in [modf(c[x])[0] == 0 for x in range(3)]) == True:
+                res[nInts] = c
+                nInts = nInts + 1
+        return res
+    
+    def _absoluteToRelative(self, absoluteCoordinates, arg_type = int):
         gridLines = self._buildGridLines()
 
-        res = np.empty_like(absoluteCoordinates, dtype=int)
+        if (arg_type == int):
+            absoluteCoordinates = self._filterIntegerCoordinates(absoluteCoordinates)
+        
+        res = np.empty_like(absoluteCoordinates, dtype=arg_type)
         for x in range(3):
             for i in range(absoluteCoordinates.shape[0]):
                 array = gridLines[x]
                 value = absoluteCoordinates[i, x]
                 idx = np.searchsorted(array, value, side="left")
-                if idx > 0 and (idx == len(array) or np.abs(value - array[idx-1]) < np.abs(value - array[idx])):
-                    res[i, x] = idx-1
+                if (arg_type == int):
+                    if idx > 0 and (idx == len(array) or np.abs(value - array[idx-1]) < np.abs(value - array[idx])):
+                        res[i, x] = idx-1
+                    else:
+                        res[i,x] = idx
                 else:
-                    res[i, x] = idx
+                    res[i, x] = idx-1 + (value-array[idx-1])/(array[idx]-array[idx-1])
 
         if np.any(absoluteCoordinates - self._relativeToAbsolute(res) > 1e-10):
             raise ValueError(
                 "Error in conversion from absolute to relative coordinates.")
 
         return res
+
+    def _getTriangles(self, polyData):
+        relative = self._absoluteToRelative(
+            vtk_to_numpy(polyData.GetPoints().GetData()), arg_type = float)
+
+        numberOfTriangles = 0
+        for i in range(polyData.GetNumberOfCells()):
+            cellType = polyData.GetCellType(i)
+            if cellType == vtk.VTK_TRIANGLE:
+                numberOfTriangles += 1
+        res = [None] * numberOfTriangles
+        
+        c = 0
+        listOfCoords = []
+        if 'coordinates' not in self.input['mesh']:
+            self.input['mesh']['coordinates'] = []
+
+        for i in range(polyData.GetNumberOfCells()):
+            cellType = polyData.GetCellType(i)
+            if cellType == vtk.VTK_TRIANGLE:
+                
+                res[c] = [polyData.GetCell(i).GetPointId(0),polyData.GetCell(i).GetPointId(1),polyData.GetCell(i).GetPointId(2)]
+                for p in res[c]:
+                    if p not in listOfCoords:
+                        listOfCoords.append(p)
+
+                        coordId = len(self.input['mesh']['coordinates']) + 1
+                        self.input['mesh']['coordinates'].append({
+                            "id": coordId,
+                            "relativePosition": relative[p].tolist()
+                        })
+                c = c+1
+
+        return res            
+      
 
     def _getCellsIntervals(self, polyData):
         relative = self._absoluteToRelative(
@@ -267,7 +376,7 @@ class CaseMaker():
         numberOfIntervals = 0
         for i in range(polyData.GetNumberOfCells()):
             cellType = polyData.GetCellType(i)
-            if cellType == vtk.VTK_QUAD or vtk.VTK_LINE:
+            if cellType == (vtk.VTK_QUAD or vtk.VTK_LINE):
                 numberOfIntervals += 1
         res = [None] * numberOfIntervals
 

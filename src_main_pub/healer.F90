@@ -31,6 +31,7 @@ MODULE CreateMatrices
    PUBLIC CreatePMLmatrix, Readjust
    PUBLIC CreateVolumeMM, CreateSurfaceMM, CreateLineMM
    PUBLIC CreateSurfaceSlotMM,CreateMagneticSurface
+   public CreateConformalPECVolume
    !
     CONTAINS
     
@@ -54,6 +55,92 @@ MODULE CreateMatrices
         endif
    END SUBROUTINE
     
+   SUBROUTINE CreateConformalPECVolume (layoutnumber, Mtag, tags, numertag, MMiEx, MMiEy, MMiEz, MMiHx, &
+   & MMiHy, MMiHz, Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, &
+   & Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, &
+   & Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, &
+   & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
+   & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
+   & NumMedia, BoundingBox)
+      character(len=BUFSIZE) :: buff
+      TYPE (Shared_t) :: Eshared
+      !
+      INTEGER (KIND=4) :: NumMedia
+      TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
+      INTEGER (KIND=4) :: medio, m
+      !
+      TYPE (XYZlimit_t), INTENT(IN) ::  BoundingBox
+      !
+      INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
+      & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
+      & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
+      & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
+      !
+      type(taglist_t) :: tags
+      INTEGER (KIND=IKINDMTAG) numertag
+      INTEGER (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      !
+      INTEGER (KIND=4) :: layoutnumber, i, j, k
+
+      logical :: is_inside_volume = .false.
+
+      do k = BoundingBox%zi-1, BoundingBox%ze+1
+         do j = BoundingBox%yi-1, BoundingBox%ye+1
+            is_inside_volume = .false.
+            do i = BoundingBox%xi-1, BoundingBox%xe+1
+               medio = MMiEx (i, j, k)
+               if (med(medio)%Is%ConformalPEC) then 
+                  is_inside_volume = .not. is_inside_volume
+               end if
+               if (is_inside_volume) then 
+                  MMiEx (i, j, k) = 0
+                  Mtag(i,j,k)=64*numertag 
+                  tags%edge%x(i,j,k) = 64*numertag
+               end if
+            end do
+         end do
+      end do
+      do i = BoundingBox%xi-1, BoundingBox%xe+1
+         do k = BoundingBox%zi-1, BoundingBox%ze+1
+            do j = BoundingBox%yi-1, BoundingBox%ye+1
+               is_inside_volume = .false.
+               medio = MMiEy (i, j, k)
+               if (med(medio)%Is%ConformalPEC) then 
+                  is_inside_volume = .not. is_inside_volume
+               end if
+               if (is_inside_volume) then 
+                  MMiEy (i, j, k) = 0
+                  Mtag(i,j,k)=64*numertag 
+                  tags%edge%y(i,j,k) = 64*numertag
+               end if
+            end do
+         end do
+      end do
+      do j = BoundingBox%yi-1, BoundingBox%ye+1
+         do i = BoundingBox%xi-1, BoundingBox%xe+1
+            do k = BoundingBox%zi-1, BoundingBox%ze+1
+               is_inside_volume = .false.
+               medio = MMiEz (i, j, k)
+               if (med(medio)%Is%ConformalPEC) then 
+                  is_inside_volume = .not. is_inside_volume
+               end if
+               if (is_inside_volume) then 
+                  MMiEz (i, j, k) = 0
+                  Mtag(i,j,k)=64*numertag 
+                  tags%edge%z(i,j,k) = 64*numertag
+               end if
+            end do
+         end do
+      end do
+
+   end subroutine
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Routine :  CreateVolumeMM :  Sets every field component of a volume voxel to the index of the medium
    ! Inputs :   M(field)%Mediamatrix(i,j,k)  : type of medium at each i,j,k, for each field
