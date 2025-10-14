@@ -33,6 +33,7 @@ module geometry_mod
         procedure :: getCell => side_getCell
         procedure :: getFace => side_getFace
         procedure :: isOnEdge => side_isOnEdge
+        procedure :: isInCell => side_isInCell
         procedure :: isOnAnyEdge => side_isOnAnyEdge
         procedure :: isOnFace => side_isOnFace
         procedure :: isOnAnyFace => side_isOnAnyFace
@@ -108,6 +109,12 @@ contains
         real, dimension(3) :: delta
         delta = (this%position - floor(this%position))
         coord_isOnVertex = all(delta .eq. [0,0,0])
+    end function
+
+    logical function side_isInCell(this, cell)
+        class(side_t) :: this
+        integer(kind=4), dimension(3) :: cell
+        side_isInCell = all(this%getCell() .eq. cell)
     end function
 
     logical function side_isOnEdge(this, edge)

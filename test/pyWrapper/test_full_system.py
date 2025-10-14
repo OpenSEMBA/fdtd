@@ -1032,10 +1032,10 @@ def test_conformal_sphere_rcs(tmp_path):
 
     fn = CASES_FOLDER + 'conformal/conformal_sphere_rcs.fdtd.json'
     cm = CaseMaker(fn)
-    cm.setGridFromVTK(GEOMETRIES_FOLDER+"sphere_1mm.tessellator.grid.vtk")
+    cm.setGridFromVTK(GEOMETRIES_FOLDER+"sphere_1mm_delta.tessellator.grid.vtk")
     # add triangles to json
-    cm.addCellElementsFromVTK(GEOMETRIES_FOLDER+"sphere_1mm.tessellator.cmsh.vtk")    
-    case_name = 'conformal_sphere_1mm_rcs'
+    cm.addConformalVolumeFromVTK(GEOMETRIES_FOLDER+"sphere_1mm_delta.tessellator.cmsh.vtk")    
+    case_name = 'conformal_sphere_1mm_rcs_delta'
     cm.exportCase(TEST_DATA_FOLDER+'cases/conformal/'+case_name)
     ###
     # solver = FDTD(input_filename=case_name + ".fdtd.json", path_to_exe=SEMBA_EXE,

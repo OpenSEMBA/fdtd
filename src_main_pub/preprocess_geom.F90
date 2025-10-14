@@ -2541,12 +2541,6 @@ CONTAINS
          end do
       end do
       !END SLANTED WIRES
-      conf_bounding_box%XI = sgg%Alloc(iHx)%XI
-      conf_bounding_box%XE = sgg%Alloc(iHx)%XE
-      conf_bounding_box%YI = sgg%Alloc(iHy)%YI
-      conf_bounding_box%YE = sgg%Alloc(iHy)%YE
-      conf_bounding_box%ZI = sgg%Alloc(iHz)%ZI
-      conf_bounding_box%ZE = sgg%Alloc(iHz)%ZE
 
       if (associated(this%conformalRegs%volumes)) then 
          call addConformalMedia(sgg, media, conformal_media, contamedia, conf_bounding_box)
@@ -4798,12 +4792,24 @@ CONTAINS
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
+      subroutine initConformalBoundingBox(sgg, bbox)
+         type(sggfdtdinfo), intent(in)    :: sgg
+         type(XYZlimit_t), intent(inout) :: bbox
+         bbox%XI = -sgg%Alloc(iHx)%XI
+         bbox%XE = -sgg%Alloc(iHx)%XE
+         bbox%YI = -sgg%Alloc(iHy)%YI
+         bbox%YE = -sgg%Alloc(iHy)%YE
+         bbox%ZI = -sgg%Alloc(iHz)%ZI
+         bbox%ZE = -sgg%Alloc(iHz)%ZE
+      end subroutine
+
       subroutine addConformalMedia(sgg, media, conformal_media, contamedia, bbox)
          type(sggfdtdinfo), intent(inout)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer (kind=4), intent(inout) :: contamedia
          type(XYZlimit_t), intent(inout) :: bbox
+         call initConformalBoundingBox(sgg,bbox)
          call addConformalEdgeMedia(sgg, media, conformal_media, contamedia, bbox)
          call addConformalFaceMedia(sgg, media, conformal_media, contamedia, bbox)
       end subroutine

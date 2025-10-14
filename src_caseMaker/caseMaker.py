@@ -70,7 +70,41 @@ class CaseMaker():
             }
         }
 
-    # def addConformalElementsFromVTK():
+    def addConformalVolumeFromVTK(self, path_to_vtk):
+        assert os.path.isfile(path_to_vtk)
+
+        with open(path_to_vtk, 'r') as f:
+            c = f.read(1)
+            if (c == '<'):
+                reader = vtk.vtkXMLPolyDataReader()
+            else:
+                reader = vtk.vtkUnstructuredGridReader()
+
+        reader.SetFileName(path_to_vtk)
+        reader.Update()
+        polyData = reader.GetOutput()
+
+        vtkGroups = vtk_to_numpy(polyData.GetCellData().GetArray('group'))
+        if len(np.unique(vtkGroups)) > 1:
+            raise ValueError("Different groups are not supported.")
+
+        # Stores in case input
+        if 'mesh' not in self.input:
+            self.input['mesh'] = {}
+
+        if 'elements' not in self.input['mesh']:
+            self.input['mesh']['elements'] = []
+        elements = self.input['mesh']['elements']
+
+        id = len(elements) + 1
+        elements.append({
+            "id": id,
+            "type": "conformalVolume",
+            "intervals" : [],
+            "triangles": self._getTriangles(polyData)
+        })
+        return id
+
 
     def addCellElementsFromVTK(self, path_to_vtk):
         assert os.path.isfile(path_to_vtk)
@@ -102,44 +136,10 @@ class CaseMaker():
         elements.append({
             "id": id,
             "type": "cell",
-            "intervals": self._getCellsIntervals(polyData),
-            "triangles": self._getTriangles(polyData)
+            "intervals": self._getCellsIntervals(polyData)
         })
         return id
 
-    def setCellElementsFromVTK(self, path_to_vtk):
-        assert os.path.isfile(path_to_vtk)
-
-        with open(path_to_vtk, 'r') as f:
-            c = f.read(1)
-            if (c == '<'):
-                reader = vtk.vtkXMLPolyDataReader()
-            else:
-                reader = vtk.vtkUnstructuredGridReader()
-
-        reader.SetFileName(path_to_vtk)
-        reader.Update()
-        polyData = reader.GetOutput()
-
-        vtkGroups = vtk_to_numpy(polyData.GetCellData().GetArray('group'))
-        if len(np.unique(vtkGroups)) > 1:
-            raise ValueError("Different groups are not supported.")
-
-        # Stores in case input
-        if 'mesh' not in self.input:
-            self.input['mesh'] = {}
-
-        self.input['mesh']['elements'] = []
-        elements = self.input['mesh']['elements']
-
-        id = len(elements) + 1
-        elements.append({
-            "id": id,
-            "type": "cell",
-            "intervals": self._getCellsIntervals(polyData),
-            "triangles": self._getTriangles(polyData)
-        })
-        return id
 
     def addCellElementBox(self, boundingBox):
         ''' boundingBox is assumed to be in absolute coordinates.'''
@@ -346,15 +346,18 @@ class CaseMaker():
         
         c = 0
         listOfCoords = []
+        vtkToCoordId = {}
         if 'coordinates' not in self.input['mesh']:
             self.input['mesh']['coordinates'] = []
 
         for i in range(polyData.GetNumberOfCells()):
             cellType = polyData.GetCellType(i)
             if cellType == vtk.VTK_TRIANGLE:
-                
-                res[c] = [polyData.GetCell(i).GetPointId(0),polyData.GetCell(i).GetPointId(1),polyData.GetCell(i).GetPointId(2)]
-                for p in res[c]:
+                vtk_ids = [polyData.GetCell(i).GetPointId(0),
+                          polyData.GetCell(i).GetPointId(1),
+                          polyData.GetCell(i).GetPointId(2)]                 
+                vertices = []
+                for (id,p) in enumerate(vtk_ids):
                     if p not in listOfCoords:
                         listOfCoords.append(p)
 
@@ -363,6 +366,11 @@ class CaseMaker():
                             "id": coordId,
                             "relativePosition": relative[p].tolist()
                         })
+                        
+                        vtkToCoordId[p] = coordId
+                    vertices.append(vtkToCoordId[p])
+                res[c] = vertices
+                    
                 c = c+1
 
         return res            
