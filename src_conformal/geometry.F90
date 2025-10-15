@@ -535,10 +535,12 @@ contains
     function contourArea(contour) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: contour
         type(side_t), dimension(:), allocatable :: aux_contour
-        ! type(side_t) :: aux_side
         real :: res
         integer :: face, i, dir1,dir2
-        face = contour(1)%getFace()
+        do i = 1, size(contour)
+            face = contour(i)%getFace()
+            if (face /= NOT_ON_FACE) exit
+        end do
         allocate(aux_contour(size(contour)))
         aux_contour = contour
         if (isClockwise(contour(1), face)) then 
@@ -599,6 +601,26 @@ contains
  
     end function   
  
+    function getTrianglesOnFace(tris, face) result(res)
+        type(triangle_t), dimension(:), allocatable, intent(in) :: tris
+        integer, intent(in) :: face
+        type(triangle_t), dimension(:), allocatable :: res
+        integer :: i, n
+        n = 0
+        do i = 1, size(tris)
+            if (tris(i)%isOnFace(face)) n = n + 1
+        end do
+        allocate(res(n))
+        n = 0
+        do i = 1, size(tris)
+            if (tris(i)%isOnFace(face)) then 
+                n = n + 1
+                res(n) = tris(i)
+            end if
+        end do
+       
+    end function
+
     function getSidesOnFace(sides, face) result (res)
         type(side_t), dimension(:), allocatable, intent(in) :: sides
         integer, intent(in) :: face

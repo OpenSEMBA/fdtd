@@ -21,7 +21,6 @@ contains
       do i = 1, size(regions%volumes)
          call buildCellMap(cell_map, regions%volumes(i)%triangles)
       end do
-      ! call fillConformalElements(cell_map, edges, edge_ratios, faces, face_ratios)
       call fillConformalEdges(cell_map, edges, edge_ratios)
       call fillConformalFaces(cell_map, faces, face_ratios)
 
@@ -119,65 +118,24 @@ contains
       end do
    end function   
 
-
-   subroutine fillEdgesFromSides(cell, sides, edges, edge_ratios)
+   subroutine fillEdgesFromSides(cell, sides, on_sides, edges, edge_ratios)
       integer (kind=4), dimension(3), intent(in) :: cell
-      type(side_t), dimension(:), allocatable, intent(in) :: sides
+      type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios
-      type(side_t), dimension(:), allocatable :: sides_on_face, contour
-      type(side_t) :: side, aux_side
+      type(side_t), dimension(:), allocatable :: sides_in_cell
       real (kind=rkind) :: ratio, delta
-      integer (kind=4) :: face, edge, i
-      logical, dimension(3) :: visited_edge = .false.
-      do face = FACE_X, FACE_Z
-         sides_on_face = getSidesOnFace(sides, face)
-         contour = buildSidesContour(sides_on_face)
-         do i = 1, size(contour)
-            do edge = EDGE_X, EDGE_Z
-               if (contour(i)%isInCell(cell) .and. &
-                   contour(i)%isOnEdge(edge) .and. &
-                   .not. visited_edge(edge)) then
-                  visited_edge(edge) = .true.
-                  ratio = 1.0 - contour(i)%length()
-                  if (ratio /= 0) then ! needed?
-                     call addEdge(edges, cell, edge, ratio)
-                     if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
-                  end if
-               end if
-            end do
-         end do
+      integer (kind=4) :: face, edge
+      sides_in_cell = buildCellSideSet(sides, on_sides)
+      do j = 1, size(sides_in_cell)
+         edge = sides_in_cell(j)%getEdge()
+         if (edge /= NOT_ON_EDGE .and. (all(sides_in_cell(j)%getCell() .eq. cell))) then 
+            ratio = 1.0 - sides_in_cell(j)%length()
+            if (isNewEdge(edges, cell, edge, ratio)) call addEdge(edges, cell, edge, ratio)
+            if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
+         end if
       end do
-
-
-      ! sides_in_cell = buildCellSideSet(sides, on_sides)
-      ! do j = 1, size(sides_in_cell)
-      !    edge = sides_in_cell(j)%getEdge()
-      !    if (edge /= NOT_ON_EDGE .and. (all(sides_in_cell(j)%getCell() .eq. cell))) then 
-      !       ratio = 1.0 - sides_in_cell(j)%length()
-      !       call addEdge(edges, cell, edge, ratio)
-      !       if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
-      !    end if
-      ! end do
    end subroutine
-   ! subroutine fillEdgesFromSides(cell, sides, on_sides, edges, edge_ratios)
-   !    integer (kind=4), dimension(3), intent(in) :: cell
-   !    type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides
-   !    type (edge_t), dimension (:), allocatable, intent(inout) :: edges
-   !    real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios
-   !    type(side_t), dimension(:), allocatable :: sides_in_cell
-   !    real (kind=rkind) :: ratio, delta
-   !    integer (kind=4) :: face, edge
-   !    sides_in_cell = buildCellSideSet(sides, on_sides)
-   !    do j = 1, size(sides_in_cell)
-   !       edge = sides_in_cell(j)%getEdge()
-   !       if (edge /= NOT_ON_EDGE .and. (all(sides_in_cell(j)%getCell() .eq. cell))) then 
-   !          ratio = 1.0 - sides_in_cell(j)%length()
-   !          call addEdge(edges, cell, edge, ratio)
-   !          if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
-   !       end if
-   !    end do
-   ! end subroutine
 
    subroutine fillFacesFromSides(cell, sides, faces, face_ratios)
       integer (kind=4), dimension(3), intent(in) :: cell
@@ -186,7 +144,7 @@ contains
       type (face_t), dimension (:), allocatable, intent(inout) :: faces
       real (kind=rkind), dimension(:), allocatable, intent(inout) :: face_ratios
       type(side_t), dimension(:), allocatable :: contour
-      real (kind=rkind) :: ratio, delta
+      real (kind=rkind) :: ratio
       integer (kind=4) :: face 
       do face = FACE_X, FACE_Z
          sides_on_face = getSidesOnFace(sides, face)
@@ -199,10 +157,36 @@ contains
       end do
    end subroutine
 
+   subroutine fillFacesFromTris(cell, tris, faces, face_ratios)
+      integer (kind=4), dimension(3), intent(in) :: cell
+      type(triangle_t), dimension(:), allocatable, intent(in) :: tris
+      type(triangle_t), dimension(:), allocatable :: tris_on_face
+      type (face_t), dimension (:), allocatable, intent(inout) :: faces
+      real (kind=rkind), dimension(:), allocatable, intent(inout) :: face_ratios
+      type(side_t), dimension(:), allocatable :: contour
+      real (kind=rkind) :: area_on_face
+      integer (kind=4) :: face, i
+      do face = FACE_X, FACE_Z
+         area_on_face = 0
+         tris_on_face = getTrianglesOnFace(tris, face)
+         do i = 1, size(tris_on_face)
+            contour = tris_on_face(i)%getSides()
+            area_on_face = area_on_face + contourArea(contour)
+         end do
+         if (abs(area_on_face - 1.0) <= 1e-5) then 
+            call addFace(faces, cell, face, 0.0)
+            if (isNewRatio(face_ratios, 0.0)) call addRatio(face_ratios, 0.0)
+         end if
+      end do
+
+   end subroutine
+
+
    subroutine fillConformalFaces(cell_map, faces, face_ratios)
       type(cell_map_t), intent(in) :: cell_map
       type (face_t), dimension (:), allocatable :: faces
       type(side_t), dimension(:), allocatable :: sides
+      type(triangle_t), dimension(:), allocatable :: tris
       real (kind=rkind), dimension(:), allocatable :: face_ratios
       integer (kind=4), dimension(3) :: cell
       integer :: i
@@ -211,7 +195,9 @@ contains
       do i = 1, size(cell_map%keys)
          cell = cell_map%keys(i)%cell 
          sides = cell_map%getSidesInCell(cell)
+         tris = cell_map%getTrianglesInCell(cell)
          call fillFacesFromSides(cell, sides , faces, face_ratios)
+         call fillFacesFromTris(cell, tris , faces, face_ratios)
       end do
    end subroutine
 
@@ -228,28 +214,26 @@ contains
          cell = cell_map%keys(i)%cell 
          sides = cell_map%getSidesInCell(cell) 
          on_sides = cell_map%getOnSidesInCell(cell)
-         call fillEdgesFromSides(cell, sides, edges, edge_ratios)
-         ! call fillEdgesFromSides(cell, sides, on_sides, edges, edge_ratios)
+         call fillEdgesFromSides(cell, sides, on_sides, edges, edge_ratios)
       end do
    end subroutine
     
-   ! subroutine fillConformalElements(cell_map, edges, edge_ratios, faces, face_ratios)
-   !    type(cell_map_t), intent(in) :: cell_map
-   !    type (edge_t), dimension (:), allocatable, intent(inout) :: edges
-   !    type (face_t), dimension (:), allocatable, intent(inout) :: faces
-   !    real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios, face_ratios
-   !    type (side_t), dimension (:), allocatable :: sides
-   !    integer (kind=4), dimension(3) :: cell
-   !    integer :: i
-   !    allocate(faces(0))
-   !    allocate(face_ratios(0))
-   !    do i = 1, size(cell_map%keys)
-   !       cell = cell_map%keys(i)%cell 
-   !       sides = cell_map%getSidesInCell(cell)
-   !       call fillFacesFromSides(cell, sides , faces, face_ratios)
-   !    end do
-
-   ! end subroutine
+   logical function isNewEdge(edges, cell, edge, ratio)
+      type(edge_t), dimension(:), allocatable, intent(inout) :: edges
+      integer (kind=4), dimension(3), intent(in) :: cell
+      integer (kind=4) :: edge 
+      real (kind=rkind) :: ratio
+      integer :: i
+      isNewEdge = .true.
+      do i = 1, size(edges)
+         if (all(edges(i)%cell == cell) .and. &
+             edges(i)%ratio == ratio .and. &
+             edges(i)%direction == edge) then 
+               isNewEdge = .false.
+               exit
+         end if
+      end do
+   end function
 
    subroutine addEdge(edges, cell, edge, ratio)
       type(edge_t), dimension(:), allocatable, intent(inout) :: edges
