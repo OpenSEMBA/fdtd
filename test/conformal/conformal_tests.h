@@ -21,6 +21,9 @@ extern "C" int test_fhash_coords();
 extern "C" int test_fhash_array();
 extern "C" int test_fhash_add_triangle();
 extern "C" int test_fhash_cellmap_set_get();
+extern "C" int test_conformal_filling_off_face_triangle_x();
+extern "C" int test_conformal_filling_off_face_triangle_y();
+extern "C" int test_conformal_filling_off_face_triangle_z();
 extern "C" int test_conformal_filling_open();
 extern "C" int test_conformal_filling_closed();
 extern "C" int test_conformal_edge_next_cell();
@@ -50,10 +53,13 @@ TEST(conformal, fhash_array)               { EXPECT_EQ(0, test_fhash_array()); }
 TEST(conformal, fhash_add_triangle)        { EXPECT_EQ(0, test_fhash_add_triangle()); }
 TEST(conformal, fhash_cellmap_set_get)     { EXPECT_EQ(0, test_fhash_cellmap_set_get()); }
 
-TEST(conformal, conformal_filling_open)        { EXPECT_EQ(0, test_conformal_filling_open()); }
-TEST(conformal, conformal_filling_closed)        { EXPECT_EQ(0, test_conformal_filling_closed()); }
-TEST(conformal, conformal_edge_next_cell)        { EXPECT_EQ(0, test_conformal_edge_next_cell()); }
-TEST(conformal, conformal_filling_closed_corner)        { EXPECT_EQ(0, test_conformal_filling_closed_corner()); }
-TEST(conformal, conformal_filling_block_and_corner)        { EXPECT_EQ(0, test_conformal_filling_block_and_corner()); }
+TEST(conformal, conformal_filling_off_face_triangle_x)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_x()); }
+TEST(conformal, conformal_filling_off_face_triangle_y)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_y()); }
+TEST(conformal, conformal_filling_off_face_triangle_z)     { EXPECT_EQ(0, test_conformal_filling_off_face_triangle_z()); }
+TEST(conformal, conformal_filling_open)                        { EXPECT_EQ(0, test_conformal_filling_open()); }
+TEST(conformal, conformal_filling_closed)                      { EXPECT_EQ(0, test_conformal_filling_closed()); }
+TEST(conformal, conformal_edge_next_cell)                      { EXPECT_EQ(0, test_conformal_edge_next_cell()); }
+TEST(conformal, conformal_filling_closed_corner)               { EXPECT_EQ(0, test_conformal_filling_closed_corner()); }
+TEST(conformal, conformal_filling_block_and_corner)            { EXPECT_EQ(0, test_conformal_filling_block_and_corner()); }
 
 TEST(conformal, conformal_pec_media)        { EXPECT_EQ(0, test_conformal_pec_media()); }

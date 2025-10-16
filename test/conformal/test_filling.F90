@@ -1,3 +1,258 @@
+integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err)
+
+!         /|
+!       /  |
+!     /    |
+!   /______|____2__
+!   |      |____||_\\_3____
+!   |     /     ||   //    /
+!   |    /      ||  //   /
+!   |  /        ||//|  /
+!   |/__________1___|/
+
+    use conformal_mod
+    implicit none
+
+    type(triangle_t) :: t
+    type(triangle_t), dimension(:), allocatable :: tris
+
+    type(coord_t) :: c1, c2, c3
+    type(ConformalPECRegions) :: cR
+    type(ConformalMedia_t) :: cM
+
+    err = 0
+    c1 = coord_t(position = [0.75,0.0,0.0],  id = 1)
+    c2 = coord_t(position = [0.75,0.0,1.0],  id=  2)
+    c3 = coord_t(position = [0.75,1.0,0.0],  id=  3)
+
+    ! inside in +x
+    allocate(tris(1))
+    tris(1) = triangle_t(vertices = [c1,c2,c3])
+
+    allocate(cR%volumes(1))
+    allocate(cR%volumes(1)%triangles(1))
+    cR%volumes(1)%triangles(1) = tris(1)
+
+    cM = buildConformalMedia(cR)
+
+    if (size(cM%edge_media) /= 2) err = err + 1
+
+    if (abs(cM%edge_media(1)%ratio - 0.75) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.75) > 0.01) err = err + 1
+    
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+
+    if (size(cM%face_media) /= 1) err = err + 1
+    if (abs(cM%face_media(1)%ratio - 0.75) > 0.01) err = err + 1
+    if (size(cM%face_media(1)%faces) /= 2) err = err + 1
+    if (abs(cM%face_media(1)%faces(1)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%face_media(1)%faces(2)%ratio-0.75) > 0.01) err = err + 1
+
+    ! inside in -x
+    tris(1) = triangle_t(vertices = [c1,c3,c2])
+
+    cR%volumes(1)%triangles(1) = tris(1)
+
+    cM = buildConformalMedia(cR)
+
+    if (size(cM%edge_media) /= 2) err = err + 1
+
+    if (abs(cM%edge_media(1)%ratio - 0.25) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.25) > 0.01) err = err + 1
+    
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+
+    if (size(cM%face_media) /= 1) err = err + 1
+    if (abs(cM%face_media(1)%ratio - 0.25) > 0.01) err = err + 1
+    if (size(cM%face_media(1)%faces) /= 2) err = err + 1
+    if (abs(cM%face_media(1)%faces(1)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%face_media(1)%faces(2)%ratio-0.25) > 0.01) err = err + 1
+
+
+end function
+
+integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err)
+
+!         /|
+!       2  |
+!     / ||\\|
+!   /___||_|_\\____
+!   |   || |____\\_|______
+!   |   ||/        \\  /
+!   |    1=============3
+!   |  /           | /
+!   |/_____________|/
+
+    use conformal_mod
+    implicit none
+
+    type(triangle_t) :: t
+    type(triangle_t), dimension(:), allocatable :: tris
+
+    type(coord_t) :: c1, c2, c3
+    type(ConformalPECRegions) :: cR
+    type(ConformalMedia_t) :: cM
+
+    err = 0
+    c1 = coord_t(position = [0.00,0.75,0.0],  id = 1)
+    c2 = coord_t(position = [0.00,0.75,1.0],  id=  2)
+    c3 = coord_t(position = [1.00,0.75,0.0],  id=  3)
+
+    ! inside in -y
+    allocate(tris(1))
+    tris(1) = triangle_t(vertices = [c1,c2,c3])
+
+    allocate(cR%volumes(1))
+    allocate(cR%volumes(1)%triangles(1))
+    cR%volumes(1)%triangles(1) = tris(1)
+
+    cM = buildConformalMedia(cR)
+
+    if (size(cM%edge_media) /= 2) err = err + 1
+
+    if (abs(cM%edge_media(1)%ratio - 0.25) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.25) > 0.01) err = err + 1
+    
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+
+    if (size(cM%face_media) /= 1) err = err + 1
+    if (abs(cM%face_media(1)%ratio - 0.25) > 0.01) err = err + 1
+    if (size(cM%face_media(1)%faces) /= 2) err = err + 1
+    if (abs(cM%face_media(1)%faces(1)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%face_media(1)%faces(2)%ratio-0.25) > 0.01) err = err + 1
+
+    ! inside in +y
+    tris(1) = triangle_t(vertices = [c1,c3,c2])
+
+    cR%volumes(1)%triangles(1) = tris(1)
+
+    cM = buildConformalMedia(cR)
+
+    if (size(cM%edge_media) /= 2) err = err + 1
+
+    if (abs(cM%edge_media(1)%ratio - 0.75) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.75) > 0.01) err = err + 1
+    
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+
+    if (size(cM%face_media) /= 1) err = err + 1
+    if (abs(cM%face_media(1)%ratio - 0.75) > 0.01) err = err + 1
+    if (size(cM%face_media(1)%faces) /= 2) err = err + 1
+    if (abs(cM%face_media(1)%faces(1)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%face_media(1)%faces(2)%ratio-0.75) > 0.01) err = err + 1
+
+
+end function
+
+integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err)
+
+!         /|
+!       /  2
+!     / // |\\
+!   /_//___|__\\___
+!   |//    |____\\_|______
+!   1==============3      /
+!   |    /         |    /
+!   |  /           |  /
+!   |/_____________|/
+
+    use conformal_mod
+    implicit none
+
+    type(triangle_t) :: t
+    type(triangle_t), dimension(:), allocatable :: tris
+
+    type(coord_t) :: c1, c2, c3
+    type(ConformalPECRegions) :: cR
+    type(ConformalMedia_t) :: cM
+
+    err = 0
+    c1 = coord_t(position = [0.0,0.0,0.75],  id = 1)
+    c2 = coord_t(position = [0.0,1.0,0.75],  id=  2)
+    c3 = coord_t(position = [1.0,0.0,0.75],  id=  3)
+
+    ! inside in +z
+    allocate(tris(1))
+    tris(1) = triangle_t(vertices = [c1,c2,c3])
+
+    allocate(cR%volumes(1))
+    allocate(cR%volumes(1)%triangles(1))
+    cR%volumes(1)%triangles(1) = tris(1)
+
+    cM = buildConformalMedia(cR)
+
+    if (size(cM%edge_media) /= 2) err = err + 1
+
+    if (abs(cM%edge_media(1)%ratio - 0.75) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.75) > 0.01) err = err + 1
+    
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+
+    if (size(cM%face_media) /= 1) err = err + 1
+    if (abs(cM%face_media(1)%ratio - 0.75) > 0.01) err = err + 1
+    if (size(cM%face_media(1)%faces) /= 2) err = err + 1
+    if (abs(cM%face_media(1)%faces(1)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%face_media(1)%faces(2)%ratio-0.75) > 0.01) err = err + 1
+
+    ! inside in -z
+    tris(1) = triangle_t(vertices = [c1,c3,c2])
+
+    cR%volumes(1)%triangles(1) = tris(1)
+
+    cM = buildConformalMedia(cR)
+
+    if (size(cM%edge_media) /= 2) err = err + 1
+
+    if (abs(cM%edge_media(1)%ratio - 0.25) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.25) > 0.01) err = err + 1
+    
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+
+    if (size(cM%face_media) /= 1) err = err + 1
+    if (abs(cM%face_media(1)%ratio - 0.25) > 0.01) err = err + 1
+    if (size(cM%face_media(1)%faces) /= 2) err = err + 1
+    if (abs(cM%face_media(1)%faces(1)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%face_media(1)%faces(2)%ratio-0.25) > 0.01) err = err + 1
+
+
+end function
+
 integer function test_conformal_filling_open() bind(C) result(err)
 !         /|
 !       /  |

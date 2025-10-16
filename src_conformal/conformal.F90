@@ -118,21 +118,24 @@ contains
       end do
    end function   
 
-   subroutine fillEdgesFromSides(cell, sides, on_sides, edges, edge_ratios)
-      integer (kind=4), dimension(3), intent(in) :: cell
+   subroutine fillEdgesFromSides(sides, on_sides, edges, edge_ratios)
       type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios
       type(side_t), dimension(:), allocatable :: sides_in_cell
-      real (kind=rkind) :: ratio, delta
-      integer (kind=4) :: face, edge
+      real (kind=rkind) :: ratio
+      integer (kind=4) :: edge
       sides_in_cell = buildCellSideSet(sides, on_sides)
       do j = 1, size(sides_in_cell)
          edge = sides_in_cell(j)%getEdge()
-         if (edge /= NOT_ON_EDGE .and. (all(sides_in_cell(j)%getCell() .eq. cell))) then 
+         if (edge /= NOT_ON_EDGE) then 
             ratio = 1.0 - sides_in_cell(j)%length()
-            if (isNewEdge(edges, cell, edge, ratio)) call addEdge(edges, cell, edge, ratio)
-            if (isNewRatio(edge_ratios, ratio)) call addRatio(edge_ratios, ratio)
+            if (isNewEdge(edges, sides_in_cell(j)%getCell(), edge, ratio)) hen 
+               call addEdge(edges, sides_in_cell(j)%getCell(), edge, ratio)
+            end if
+            if (isNewRatio(edge_ratios, ratio)) then 
+               call addRatio(edge_ratios, ratio)
+            end if
          end if
       end do
    end subroutine
@@ -214,7 +217,7 @@ contains
          cell = cell_map%keys(i)%cell 
          sides = cell_map%getSidesInCell(cell) 
          on_sides = cell_map%getOnSidesInCell(cell)
-         call fillEdgesFromSides(cell, sides, on_sides, edges, edge_ratios)
+         call fillEdgesFromSides(sides, on_sides, edges, edge_ratios)
       end do
    end subroutine
     
