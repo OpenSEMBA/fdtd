@@ -583,48 +583,53 @@ contains
       type(materialAssociation_t), dimension(:), allocatable :: mAs
       type(conformal_region_t) :: cR
       type(triangle_t), dimension(:), allocatable :: aux_tris
+      character (len=:), allocatable :: tagName
       integer :: i, j
       logical :: found
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
 
-      ! if (size(mAs) == 0) then
-      !    allocate(aux_tris(0))
-      !    cR%triangles = aux_tris
-      !    call appendRegion(res%volumes, cR)
-      !    call appendRegion(res%surfaces, cR)
-      ! end if
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
             cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
             if (found) then 
-               if (cR%type == REGION_TYPE_VOLUME) call appendRegion(res%volumes, cR)
-               if (cR%type == REGION_TYPE_SURFACE) call appendRegion(res%surfaces, cR)
+               tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
+               if (cR%type == REGION_TYPE_VOLUME) then 
+                  call appendRegion(res%volumes, cR, tagName)
+               end if
+               if (cR%type == REGION_TYPE_SURFACE) then 
+                  call appendRegion(res%surfaces, cR, tagName)
+               end if
             end if
          end do
       end do
 
    contains 
-      subroutine appendRegion(regions, region)
+      subroutine appendRegion(regions, region, tagName)
          type(ConformalPECElements), dimension(:), pointer :: regions
          type(conformal_region_t), intent(in) :: region
+         character (len=:), allocatable, intent(in) :: tagName
+
          type(ConformalPECElements), dimension(:), allocatable :: aux
          integer :: i
          if (.not. associated(regions)) then 
             allocate(regions(1))
             regions(1)%triangles = region%triangles
+            regions(1)%tag = tagName
          else 
             allocate(aux(size(regions) + 1))
             do i = 1, size(regions)
                aux(i) = regions(i)
             end do
             aux(size(regions) + 1)%triangles = region%triangles
+            aux(size(regions) + 1)%tag  = tagName
             deallocate(regions)
             
             allocate(regions(size(aux)))
             do i = 1, size(aux)
                regions(i) = aux(i)
             end do
+
          end if
       end subroutine
 

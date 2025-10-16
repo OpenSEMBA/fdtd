@@ -61,15 +61,16 @@ MODULE CreateMatrices
    & Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, &
    & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
-   & NumMedia, BoundingBox)
+   & NumMedia, BoundingBox,indicemedio)
       character(len=BUFSIZE) :: buff
       TYPE (Shared_t) :: Eshared
       !
       INTEGER (KIND=4) :: NumMedia
       TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
-      INTEGER (KIND=4) :: medio, m
+      INTEGER (KIND=4) :: medio, m, medio_x, medio_x_plus, medio_y, medio_y_plus, medio_z, medio_z_plus
       !
       TYPE (XYZlimit_t), INTENT(IN) ::  BoundingBox
+      integer(kind=4), intent(in) :: indicemedio
       !
       INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
@@ -90,51 +91,134 @@ MODULE CreateMatrices
       INTEGER (KIND=4) :: layoutnumber, i, j, k
 
       logical :: is_inside_volume = .false.
-
-      do k = BoundingBox%zi-1, BoundingBox%ze+1
-         do j = BoundingBox%yi-1, BoundingBox%ye+1
+      logical :: is_pec
+      do k = BoundingBox%zi, BoundingBox%ze+1
+         do j = BoundingBox%yi, BoundingBox%ye+1
             is_inside_volume = .false.
-            do i = BoundingBox%xi-1, BoundingBox%xe+1
+            do i = BoundingBox%xi, BoundingBox%xe+1
                medio = MMiEx (i, j, k)
-               if (med(medio)%Is%ConformalPEC) then 
-                  is_inside_volume = .not. is_inside_volume
-               end if
-               if (is_inside_volume) then 
-                  MMiEx (i, j, k) = 0
+               is_pec = med(medio)%Is%ConformalPEC .or. med(medio)%Is%PEC
+               if (is_inside_volume .and. .not. is_pec) then 
+                  MMiEx (i, j, k) = indicemedio
                   Mtag(i,j,k)=64*numertag 
                   tags%edge%x(i,j,k) = 64*numertag
-               end if
+               else if (is_pec) then 
+                  Mtag(i,j,k)=64*numertag 
+                  tags%edge%x(i,j,k) = 64*numertag
+                  is_inside_volume = .not. is_inside_volume
+               endif
             end do
          end do
       end do
-      do i = BoundingBox%xi-1, BoundingBox%xe+1
-         do k = BoundingBox%zi-1, BoundingBox%ze+1
-            do j = BoundingBox%yi-1, BoundingBox%ye+1
-               is_inside_volume = .false.
+      do i = BoundingBox%xi, BoundingBox%xe+1
+         do k = BoundingBox%zi, BoundingBox%ze+1
+            is_inside_volume = .false.
+            do j = BoundingBox%yi, BoundingBox%ye+1
                medio = MMiEy (i, j, k)
-               if (med(medio)%Is%ConformalPEC) then 
-                  is_inside_volume = .not. is_inside_volume
-               end if
-               if (is_inside_volume) then 
-                  MMiEy (i, j, k) = 0
+               is_pec = med(medio)%Is%ConformalPEC .or. med(medio)%Is%PEC
+               if (is_inside_volume .and. .not. is_pec) then 
+                  MMiEy (i, j, k) = indicemedio
                   Mtag(i,j,k)=64*numertag 
                   tags%edge%y(i,j,k) = 64*numertag
+               else if (is_pec) then 
+                  Mtag(i,j,k)=64*numertag 
+                  tags%edge%y(i,j,k) = 64*numertag
+                  is_inside_volume = .not. is_inside_volume
+               endif
+               ! if (med(medio)%Is%ConformalPEC .or. med(medio)%Is%PEC) then 
+               !    Mtag(i,j,k)=64*numertag 
+               !    tags%edge%y(i,j,k) = 64*numertag
+               !    is_inside_volume = .not. is_inside_volume
+               ! endif
+               ! if (is_inside_volume) then 
+               !    MMiEy (i, j, k) = indicemedio
+               !    Mtag(i,j,k)=64*numertag 
+               !    tags%edge%y(i,j,k) = 64*numertag
+               ! end if
+            end do
+         end do
+      end do
+      do j = BoundingBox%yi, BoundingBox%ye+1
+         do i = BoundingBox%xi, BoundingBox%xe+1
+            is_inside_volume = .false.
+            do k = BoundingBox%zi, BoundingBox%ze+1
+               medio = MMiEz (i, j, k)
+               is_pec = med(medio)%Is%ConformalPEC .or. med(medio)%Is%PEC
+               if (is_inside_volume .and. .not. is_pec) then 
+                  MMiEz (i, j, k) = indicemedio
+                  Mtag(i,j,k)=64*numertag 
+                  tags%edge%z(i,j,k) = 64*numertag
+               else if (is_pec) then 
+                  Mtag(i,j,k)=64*numertag 
+                  tags%edge%z(i,j,k) = 64*numertag
+                  is_inside_volume = .not. is_inside_volume
+               endif
+            end do
+         end do
+      end do
+
+      do k = BoundingBox%zi, BoundingBox%ze+1
+         do j = BoundingBox%yi, BoundingBox%ye+1
+            is_inside_volume = .false.
+            do i = BoundingBox%xi-1, BoundingBox%xe+1
+               medio_y = MMiEy (i, j, k)
+               medio_z = MMiEz (i, j, k)
+               medio_y_plus = MMiEy (i, j, k+1)
+               medio_z_plus = MMiEz (i, j+1, k)
+               if (med(medio_y)%Is%PEC .and. med(medio_z)%Is%PEC .and. &
+                   med(medio_y_plus)%Is%PEC .and. med(medio_z_plus)%Is%PEC ) then 
+                  Mtag(i,j,k)=64*numertag 
+                  tags%face%x(i,j,k) = 64*numertag
+                  is_inside_volume = .not. is_inside_volume
+               end if
+               if (is_inside_volume) then 
+                  MMiHx (i, j, k) = indicemedio
+                  Mtag(i,j,k)=64*numertag 
+                  tags%face%x(i,j,k) = 64*numertag
                end if
             end do
          end do
       end do
-      do j = BoundingBox%yi-1, BoundingBox%ye+1
-         do i = BoundingBox%xi-1, BoundingBox%xe+1
-            do k = BoundingBox%zi-1, BoundingBox%ze+1
-               is_inside_volume = .false.
-               medio = MMiEz (i, j, k)
-               if (med(medio)%Is%ConformalPEC) then 
+      do i = BoundingBox%xi, BoundingBox%xe+1
+         do k = BoundingBox%zi, BoundingBox%ze+1
+            is_inside_volume = .false.
+            do j = BoundingBox%yi-1, BoundingBox%ye+1
+               medio_x = MMiEx (i, j, k)
+               medio_z = MMiEz (i, j, k)
+               medio_x_plus = MMiEx (i, j, k+1)
+               medio_z_plus = MMiEz (i+1, j, k)
+               if (med(medio_x)%Is%PEC .and. med(medio_z)%Is%PEC .and. &
+                   med(medio_x_plus)%Is%PEC .and. med(medio_z_plus)%Is%PEC ) then 
+                  Mtag(i,j,k)=64*numertag 
+                  tags%face%y(i,j,k) = 64*numertag
                   is_inside_volume = .not. is_inside_volume
                end if
                if (is_inside_volume) then 
-                  MMiEz (i, j, k) = 0
+                  MMiHy (i, j, k) = indicemedio
                   Mtag(i,j,k)=64*numertag 
-                  tags%edge%z(i,j,k) = 64*numertag
+                  tags%face%y(i,j,k) = 64*numertag
+               end if
+            end do
+         end do
+      end do
+      do j = BoundingBox%yi, BoundingBox%ye+1
+         do i = BoundingBox%xi, BoundingBox%xe+1
+            is_inside_volume = .false.
+            do k = BoundingBox%zi, BoundingBox%ze+1
+               medio_x = MMiEx (i, j, k)
+               medio_y = MMiEy (i, j, k)
+               medio_x_plus = MMiEx (i, j+1, k)
+               medio_y_plus = MMiEy (i+1, j, k)
+               if (med(medio_x)%Is%PEC .and. med(medio_y)%Is%PEC .and. &
+                   med(medio_x_plus)%Is%PEC .and. med(medio_y_plus)%Is%PEC ) then 
+                  Mtag(i,j,k)=64*numertag 
+                  tags%face%z(i,j,k) = 64*numertag
+                  is_inside_volume = .not. is_inside_volume
+               end if
+               if (is_inside_volume) then 
+                  MMiHz (i, j, k) = indicemedio
+                  Mtag(i,j,k)=64*numertag 
+                  tags%face%z(i,j,k) = 64*numertag
                end if
             end do
          end do

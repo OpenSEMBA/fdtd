@@ -95,7 +95,7 @@ MODULE NFDETypes
       REAL (KIND=RK) :: xc = 0.0_RKIND
       REAL (KIND=RK) :: yc = 0.0_RKIND
       REAL (KIND=RK) :: zc = 0.0_RKIND
-          INTEGER (KIND=4) :: Or = 0 !field orientation nuevo 2015
+      INTEGER (KIND=4) :: Or = 0 !field orientation nuevo 2015
       CHARACTER (LEN=BUFSIZE) :: tag
    END TYPE coords_scaled
    !-----------------> Material Types
@@ -124,6 +124,7 @@ MODULE NFDETypes
 
    type, public :: ConformalPECElements
       type(triangle_t), dimension(:), allocatable :: triangles
+      character(len=bufsize) :: tag
    end type 
 
    type, public :: ConformalPECRegions
@@ -160,6 +161,7 @@ MODULE NFDETypes
       TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: face_media => NULL ()
       TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
       real (kind=rkind) :: cfl = 1.0
+      character(len=bufsize) :: tag
    END TYPE ConformalMedia_t
 
    !------------------------------------------------------------------------------

@@ -31,7 +31,7 @@ contains
       res%n_faces_media = size(res%face_media)
 
       res%cfl = computeCFL(res%edge_media, res%face_media)
-
+      res%tag = regions%volumes(1)%tag
    end function
 
    function addEdgeMedia(edges, edge_ratios) result(res)
@@ -130,7 +130,7 @@ contains
          edge = sides_in_cell(j)%getEdge()
          if (edge /= NOT_ON_EDGE) then 
             ratio = 1.0 - sides_in_cell(j)%length()
-            if (isNewEdge(edges, sides_in_cell(j)%getCell(), edge, ratio)) hen 
+            if (isNewEdge(edges, sides_in_cell(j)%getCell(), edge, ratio)) then 
                call addEdge(edges, sides_in_cell(j)%getCell(), edge, ratio)
             end if
             if (isNewRatio(edge_ratios, ratio)) then 
