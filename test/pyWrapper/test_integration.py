@@ -72,6 +72,62 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert np.all(p.cell_init == np.array([2, 2, 2]))
 
 
+def test_fill_conformal_vtk_sphere(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_sphere_1mm_rcs_delta.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert face_media_dict[0] == 6  # PEC surface
+    assert face_media_dict[12] == 48  # Conformal PEC surface
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 12  # PEC line
+    assert line_media_dict[12.5] == 24  # Conformal line
+    
+def test_fill_conformal_vtk_corner(tmp_path):
+#          /|
+#        5  |
+#      / |\ |
+#    3___|_4|_______
+#    |   | ||_______|______
+#    |   | |        |      /
+#    |    6|        |    /
+#    |  / \|        |  /
+#    1/____2________|/
+    
+    
+    
+    fn = CASES_FOLDER + 'conformal/conformal_corner.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    
+    assert(0 not in face_media_dict.keys())
+    assert face_media_dict[12] == 4  # Conformal PEC surface
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 1  # PEC line
+    assert line_media_dict[12.5] == 4  # Conformal line
+    
+
 def test_three_surfaces(tmp_path):
     fn = CASES_FOLDER + 'observation/three_surfaces.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,

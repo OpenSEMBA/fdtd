@@ -1448,8 +1448,6 @@ contains
 #ifdef CompileWithMPI
       CALL MPI_FINALIZE (this%l%ierr)
 #endif
-   STOP
-   !
    end subroutine semba_end
 
    subroutine initEntrada(input)

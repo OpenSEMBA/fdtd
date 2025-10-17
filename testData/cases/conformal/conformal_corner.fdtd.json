@@ -1,0 +1,86 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 3.85167e-11,
+        "numberOfSteps": 1000
+    },
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 10,
+            "order": 2,
+            "reflection": 0.001
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                5,
+                5,
+                5
+            ],
+            "steps": {
+                "x": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "y": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ],
+                "z": [
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0,
+                    1.0
+                ]
+            }
+        },
+        "elements": [
+            {
+                "id": 1,
+                "type": "conformalVolume",
+                "intervals" : [],
+                "triangles": [
+                    [1,2,3],
+                    [2,4,3],
+                    [1,3,5],
+                    [1,5,6],
+                    [3,4,5],
+                    [1,6,2],
+                    [2,6,5],
+                    [2,5,4]
+                ]
+            }
+        ],
+        "coordinates": [
+            {"id": 1,"relativePosition": [2.0,2.0,2.0]},
+            {"id": 2,"relativePosition": [2.25,2.0,2.0]},
+            {"id": 3,"relativePosition": [2.0,2.0,3.0]},
+            {"id": 4,"relativePosition": [2.25,2.0,3.0]},
+            {"id": 5,"relativePosition": [2.0,2.25,3.0]},
+            {"id": 6,"relativePosition": [2.0,2.25,2.0]}
+        ]
+    },
+    "materials": [
+        {
+            "id": 1,
+            "type": "pec"
+        }
+    ],
+    "materialAssociations": [
+        {
+            "materialId": 1,
+            "elementIds": [
+                1
+            ]
+        }
+    ]
+}

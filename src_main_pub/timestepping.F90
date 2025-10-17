@@ -2885,7 +2885,6 @@ contains
       write(dubuf,*)'END FINAL POSTPROCESSING at n= ',this%n
       call print11(this%control%layoutnumber,dubuf)
       this%finishedwithsuccess=.true.
-
       return
 
    end subroutine
