@@ -2,7 +2,7 @@
     "_format": "FDTD Input file",
     "general": {
         "timeStep": 3.85167e-11,
-        "numberOfSteps": 1000
+        "numberOfSteps": 2500
     },
     "boundary": {
         "all": {
@@ -14,39 +14,8 @@
     },
     "mesh": {
         "grid": {
-            "numberOfCells": [
-                5,
-                5,
-                5
-            ],
-            "steps": {
-                "x": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "y": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ],
-                "z": [
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0,
-                    1.0
-                ]
-            },
-            "origin": [
-                -2.0,
-                -2.0,
-                -2.0
-            ]
+            "numberOfCells": [30, 30, 30],
+            "steps": { "x": [0.001], "y": [0.001], "z": [0.001] }
         },
         "elements": [
             {
@@ -55,14 +24,14 @@
                 "intervals": [
                     [
                         [
-                            0,
-                            0,
-                            0
+                            10,
+                            10,
+                            10
                         ],
                         [
-                            5,
-                            5,
-                            5
+                            20,
+                            20,
+                            20
                         ]
                     ]
                 ]
@@ -73,14 +42,14 @@
                 "intervals": [
                     [
                         [
-                            1,
-                            1,
-                            1
+                            8,
+                            8,
+                            8
                         ],
                         [
-                            6,
-                            6,
-                            6
+                            22,
+                            22,
+                            22
                         ]
                     ]
                 ]
@@ -140,203 +109,38 @@
                     [26,22,21]
 
                 ]
-            }
+            },
+            {"id": 4, "type": "node", "coordinateIds": [27]}
         ],
         "coordinates": [
-            {
-                "id": 1,
-                "relativePosition": [
-                    2.0,
-                    2.0,
-                    1.666700005531311
-                ]
-            },
-            {
-                "id": 2,
-                "relativePosition": [
-                    2.0,
-                    3.0,
-                    1.666700005531311
-                ]
-            },
-            {
-                "id": 3,
-                "relativePosition": [
-                    3.0,
-                    3.0,
-                    1.666700005531311
-                ]
-            },
-            {
-                "id": 4,
-                "relativePosition": [
-                    2.0,
-                    3.333299994468689,
-                    2.0
-                ]
-            },
-            {
-                "id": 5,
-                "relativePosition": [
-                    3.333299994468689,
-                    3.0,
-                    2.0
-                ]
-            },
-            {
-                "id": 6,
-                "relativePosition": [
-                    3.333299994468689,
-                    2.0,
-                    2.0
-                ]
-            },
-            {
-                "id": 7,
-                "relativePosition": [
-                    3.0,
-                    3.333299994468689,
-                    2.0
-                ]
-            },
-            {
-                "id": 8,
-                "relativePosition": [
-                    3.0,
-                    2.0,
-                    1.666700005531311
-                ]
-            },
-            {
-                "id": 11,
-                "relativePosition": [
-                    1.666700005531311,
-                    2.0,
-                    2.0
-                ]
-            },
-            {
-                "id": 12,
-                "relativePosition": [
-                    1.666700005531311,
-                    3.0,
-                    2.0
-                ]
-            },
-            {
-                "id": 13,
-                "relativePosition": [
-                    3.333299994468689,
-                    3.0,
-                    3.0
-                ]
-            },
-            {
-                "id": 14,
-                "relativePosition": [
-                    3.0,
-                    3.333299994468689,
-                    3.0
-                ]
-            },
-            {
-                "id": 15,
-                "relativePosition": [
-                    2.0,
-                    3.333299994468689,
-                    3.0
-                ]
-            },
-            {
-                "id": 16,
-                "relativePosition": [
-                    1.666700005531311,
-                    3.0,
-                    3.0
-                ]
-            },
-            {
-                "id": 17,
-                "relativePosition": [
-                    3.333299994468689,
-                    2.0,
-                    3.0
-                ]
-            },
-            {
-                "id": 18,
-                "relativePosition": [
-                    2.0,
-                    1.666700005531311,
-                    2.0
-                ]
-            },
-            {
-                "id": 19,
-                "relativePosition": [
-                    3.0,
-                    1.666700005531311,
-                    2.0
-                ]
-            },
-            {
-                "id": 20,
-                "relativePosition": [
-                    1.666700005531311,
-                    2.0,
-                    3.0
-                ]
-            },
-            {
-                "id": 21,
-                "relativePosition": [
-                    3.0,
-                    3.0,
-                    3.333299994468689
-                ]
-            },
-            {
-                "id": 22,
-                "relativePosition": [
-                    3.0,
-                    2.0,
-                    3.333299994468689
-                ]
-            },
-            {
-                "id": 23,
-                "relativePosition": [
-                    2.0,
-                    3.0,
-                    3.333299994468689
-                ]
-            },
-            {
-                "id": 24,
-                "relativePosition": [
-                    2.0,
-                    1.666700005531311,
-                    3.0
-                ]
-            },
-            {
-                "id": 25,
-                "relativePosition": [
-                    3.0,
-                    1.666700005531311,
-                    3.0
-                ]
-            },
-            {
-                "id": 26,
-                "relativePosition": [
-                    2.0,
-                    2.0,
-                    3.333299994468689
-                ]
-            }
-        ]
-    },
+            {"id": 1,"relativePosition":  [15.0,               15.0,               14.666700005531311]},
+            {"id": 2,"relativePosition":  [15.0,               16.0,               14.666700005531311]},
+            {"id": 3,"relativePosition":  [16.0,               16.0,               14.666700005531311]},
+            {"id": 4,"relativePosition":  [15.0,               16.333299994468689, 15.0]},
+            {"id": 5,"relativePosition":  [16.333299994468689, 16.0,               15.0]},
+            {"id": 6,"relativePosition":  [16.333299994468689, 15.0,               15.0]},
+            {"id": 7,"relativePosition":  [16.0,               16.333299994468689, 15.0 ]},
+            {"id": 8, "relativePosition": [16.0,               15.0,               14.666700005531311]},
+            {"id": 11,"relativePosition": [14.666700005531311, 15.0,               15.0]},
+            {"id": 12,"relativePosition": [14.666700005531311, 16.0,               15.0]},
+            {"id": 13,"relativePosition": [16.333299994468689, 16.0,               16.0]},
+            {"id": 14,"relativePosition": [16.0,               16.333299994468689, 16.0]},
+            {"id": 15,"relativePosition": [15.0,               16.333299994468689, 16.0]},
+            {"id": 16,"relativePosition": [14.666700005531311, 16.0,               16.0]},            
+            {"id": 17,"relativePosition": [16.333299994468689, 15.0,               16.0]},            
+            {"id": 18,"relativePosition": [15.0,               14.666700005531311, 15.0]},
+            {"id": 19,"relativePosition": [16.0,               14.666700005531311, 15.0]},
+            {"id": 20,"relativePosition": [14.666700005531311, 15.0,               16.0]},            
+            {"id": 21,"relativePosition": [16.0,               16.0,               16.333299994468689]},
+            {"id": 22,"relativePosition": [16.0,               15.0,               16.333299994468689]},            
+            {"id": 23,"relativePosition": [15.0,               16.0,               16.333299994468689]},            
+            {"id": 24,"relativePosition": [15.0,               14.666700005531311, 16.0]},            
+            {"id": 25,"relativePosition": [16.0,               14.666700005531311, 16.0]},            
+            {"id": 26,"relativePosition": [15.0,               15.0,               16.333299994468689]},
+            {"id": 27,"relativePosition": [15.0,               15.0,               15.0]}
+
+            ]    
+        },
     "materials": [
         {
             "id": 1,
@@ -369,6 +173,38 @@
         }
     ],
     "probes": [
- 
+        {
+            "name": "FarField",
+            "type": "farField",
+            "elementIds": [
+                2
+            ],
+            "theta": {
+                "initial": 0.0,
+                "final": 90.0,
+                "step": 90.0
+            },
+            "phi": {
+                "initial": 0.0,
+                "final": 180.0,
+                "step": 90.0
+            },
+            "domain": {
+                "type": "frequency",
+                "initialFrequency": 3e8,
+                "finalFrequency": 2.4e11,
+                "numberOfFrequencies": 1,
+                "frequencySpacing": "logarithmic"
+            }
+        },
+        {
+            "name": "electric_field_point_probe",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [4],
+            "directions": ["x", "y", "z"],
+            "domain": { "type": "time" }
+        }
+
     ]
 }
