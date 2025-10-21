@@ -312,7 +312,11 @@ contains
 #ifdef CompileWithMPI
    call initialize_MPI_process(this%l%filefde,this%l%extension)
 #else
+#ifdef CompilePrivateVersion
+   NFDE_FILE => cargar_NFDE_FILE (this%l%filefde)
+#else
    allocate (NFDE_FILE)
+#endif
 #endif
 
    call data_loader(this%l%filefde, parser)
