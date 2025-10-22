@@ -495,15 +495,7 @@ CONTAINS
                                        READ (output(ii)%item(1)%UNIT) &
                                           Serialized%valorComplex_x(1,posicionMPI+conta), &
                                           Serialized%valorComplex_y(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_z(1,posicionMPI+conta) !lo meto en el unico step
-                                       READ (output(ii)%item(1)%UNIT) &
-                                          Serialized%valorComplex_Ex(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_Ey(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_Ez(1,posicionMPI+conta) !lo meto en el unico step
-                                       READ (output(ii)%item(1)%UNIT) &
-                                          Serialized%valorComplex_Hx(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_Hy(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_Hz(1,posicionMPI+conta) !lo meto en el unico step
+                                          Serialized%valorComplex_z(1,posicionMPI+conta)
                                     end do
                            endif
 
