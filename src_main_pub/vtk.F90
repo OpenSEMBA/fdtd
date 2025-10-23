@@ -25,7 +25,9 @@ CONTAINS
       !------------------------>
       CHARACTER (LEN=BUFSIZE) :: filename ! File name
       CHARACTER (LEN=BUFSIZE) :: fichero,fichero_input,char_i_sub_time ! File name
-      !
+      integer (kind=4) :: k
+      character (len=32), dimension(3) :: suffFile = (/'_current.vtk', '_efield.vtk ', '_hfield.vtk '/)
+      character (len=3), dimension (3) :: suffTag  = (/'cu', 'ef', 'hf'/)
       !
       !
 
@@ -66,6 +68,7 @@ CONTAINS
       real (kind= RKIND), allocatable, dimension(:,:) :: Nodes
       integer (kind=4), allocatable, dimension(:,:) :: Elems
       integer (kind=4) :: coldummy
+      integer (kind=4), dimension(5) :: volumicCurrentFlags = [iCur, iCurX, iCurY, iCurZ, mapvtk]
 !      print *,'RKIND,CKIND,REALSIZE,COMPLEXSIZE,MPI_DOUBLE_PRECISION, MPI_DOUBLE_COMPLEX',RKIND,CKIND,REALSIZE,COMPLEXSIZE,MPI_DOUBLE_PRECISION, MPI_DOUBLE_COMPLEX
       yacreado=.false.
       numNodes=0; numEdges=0;numQuads=0;
@@ -77,35 +80,30 @@ CONTAINS
       !
       somethingdone=.false.
       barridoprobes: DO ii = 1, sgg%NumberRequest
-
-         IF (sgg%observation(ii)%Volumic) then
-         if (sgg%observation(ii)%nP == 1) then
-         if ((sgg%observation(ii)%P(1)%What == iCur).or.(sgg%observation(ii)%P(1)%What == iCurX).or. &
-               (sgg%observation(ii)%P(1)%What == iCurY).or.(sgg%observation(ii)%P(1)%What == iCurZ).or. &
-               (sgg%observation(ii)%P(1)%What == mapvtk)) THEN !solo corrientes volumicas
-               if (sgg%Observation(ii)%done.and.(sgg%Observation(ii)%flushed)) then
+         IF ((sgg%observation(ii)%Volumic) .and. (sgg%observation(ii)%nP == 1)) then
+         if (any(sgg%observation(ii)%P(1)%What == volumicCurrentFlags)) then
+            if (sgg%Observation(ii)%done) then 
+               if (sgg%Observation(ii)%flushed) then 
                   cycle barridoprobes
-               elseif (sgg%Observation(ii)%done) then
-                  sgg%Observation(ii)%flushed=.true. !ultima que se flushea
-                  continue
-               elseif ((.not.(sgg%Observation(ii)%done)).and.(sgg%Observation(ii)%Begun)) then
-                  continue
-               elseif (.not.(sgg%Observation(ii)%begun))  then
-                  cycle barridoprobes
-               else !creo que tengo toda la casuistica, por si se me escapa algo continuo, y ya debajo se manejara
+               else
+                  sgg%Observation(ii)%flushed=.true.
                   continue
                endif
+            else
+               if (sgg%Observation(ii)%Begun) then 
+                  continue
+               else
+                  cycle barridoprobes
+               endif
+            endif
          else 
                cycle barridoprobes
          endif
-         endif 
          endif
          !sondas Volumic traducelas a VTK
          IF (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
-               if ((sgg%observation(ii)%P(1)%What == iCur).or.(sgg%observation(ii)%P(1)%What == iCurX).or. &
-               (sgg%observation(ii)%P(1)%What == iCurY).or.(sgg%observation(ii)%P(1)%What == iCurZ).or. &
-               (sgg%observation(ii)%P(1)%What == mapvtk)) THEN !solo corrientes volumicas
+               if (any(sgg%observation(ii)%P(1)%What == volumicCurrentFlags)) then
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if ((lexis).and.(output(ii)%TimesWritten/=0)) then
                      !
@@ -163,15 +161,6 @@ CONTAINS
                         endif
                      endif
 #endif
-
-
-                     !!!                    OPEN (output(ii)%item(1)%UNIT, FILE=trim(adjustl(output(ii)%item(1)%path)), &
-                     !!!                            FORM='unformatted')
-                     !!!                        DO
-                     !!!                            READ (output(ii)%item(1)%UNIT, end=762) finalstep
-                     !!!                        END DO
-                     !!!762                     CONTINUE
-                     !!!                    CLOSE (output(ii)%item(1)%UNIT)
                      finalstep=output(ii)%TimesWritten
                      allocate (att(1:finalstep))
                      !!!!!!!!!!!!!
@@ -840,30 +829,23 @@ CONTAINS
                                  else
                                     if (freqDomain) then
                                        total_sub_times=time_phases_param
-                                       do i_sub_time=0,total_sub_times
-                                             write (char_i_sub_time,'(i3)') i_sub_time
-                                             fichero_input=fichero(1:iroot1-1)//'_n_'//trim(adjustl(char_i_sub_time))//'_current.vtk' 
-                                             CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
-                                                               i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'cu')
-                                             write(dubuf,'(a,i9,a,i9)')  trim(adjustl(whoamishort))//' -------> Dumped frequency phase file '//trim(adjustl(fichero_input))//', ',i_sub_time,'/',total_sub_times
-                                             call print11(layoutnumber,dubuf,.true.)        
-                                             !electric
+                                       do i_sub_time = 0, total_sub_times
+                                          write(char_i_sub_time,'(i3)') i_sub_time
+                                          do k = 1, 3
+                                             fichero_input = fichero(1:iroot1-1)//'_n_'//trim(adjustl(char_i_sub_time))//suffFile(k)
+                                          
+                                             CALL write_VTKfile( sgg, fichero_input, iroot2, Serialized, numberOfSerialized, &
+                                                                 Nodes, Numnodes, Elems, NumEdges, NumQuads, time, &
+                                                                 i_sub_time, total_sub_times, freqDomain, sgg%observation(ii)%P(1)%What, sggMtag, &
+                                                                 suffTag(k) )
+                                          
+                                             write(dubuf,'(a,i9,a,i9)') trim(adjustl(whoamishort))//' -------> Dumped frequency phase file '// &
+                                                                          trim(adjustl(fichero_input))//', ', i_sub_time, '/', total_sub_times
+                                             call print11(layoutnumber, dubuf, .true.)
+                                          end do
                                        
-                                             fichero_input=fichero(1:iroot1-1)//'_n_'//trim(adjustl(char_i_sub_time))//'_efield.vtk' 
-                                             CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
-                                                               i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'ef')
-                                             write(dubuf,'(a,i9,a,i9)')  trim(adjustl(whoamishort))//' -------> Dumped frequency phase file '//trim(adjustl(fichero_input))//', ',i_sub_time,'/',total_sub_times
-                                             call print11(layoutnumber,dubuf,.true.) 
-                                             !      
-                                             !      magnetic
-                                       
-                                             fichero_input=fichero(1:iroot1-1)//'_n_'//trim(adjustl(char_i_sub_time))//'_hfield.vtk' 
-                                             CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
-                                                               i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'hf')
-                                             write(dubuf,'(a,i9,a,i9)')  trim(adjustl(whoamishort))//' -------> Dumped frequency phase file '//trim(adjustl(fichero_input))//', ',i_sub_time,'/',total_sub_times
-                                             call print11(layoutnumber,dubuf,.true.) 
-                                             !      
                                        end do
+
                                     else
                                        fichero_input=fichero(1:iroot1-1)//'_current.vtk'  
                                        i_sub_time=-30 !cualquier cosa
