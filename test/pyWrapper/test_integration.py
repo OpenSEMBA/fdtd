@@ -61,7 +61,7 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
 
     solver.run()
 
-    p = Probe(solver.getSolvedProbeFilenames("Far")[0])
+    p = Probe(solver.getSolvedProbeFilenames("far")[0])
     assert p.case_name == 'sphere'
     assert p.type == 'farField'
     assert np.all(p.cell_init == np.array([2, 2, 2]))
@@ -70,6 +70,35 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert p.case_name == 'sphere'
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([2, 2, 2]))
+
+def test_movie_with_frequency_domain(tmp_path):
+    fn = CASES_FOLDER + 'observation/movieFrequency.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['general']['numberOfSteps'] = 100
+    solver['general']['timeStep'] = 2.0e-9
+    solver['probes'][0]['domain']['numberOfFrequencies'] = 100
+
+    solver.run()
+
+    p = Probe(solver.getSolvedProbeFilenames("movie_electric")[0])
+    assert p.case_name == 'movieFrequency'
+    assert p.type == 'movie'
+    assert np.all(p.cell_init == np.array([1, 1, 1]))
+
+def test_movie_with_time_domain(tmp_path):
+    fn = CASES_FOLDER + 'observation/movieTime.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['general']['numberOfSteps'] = 1
+    solver['probes'][0]['domain']['samplingPeriod'] = 1e-9
+
+    solver.run()
+
+    p = Probe(solver.getSolvedProbeFilenames("movie_electric")[0])
+    assert p.case_name == 'movieTime'
+    assert p.type == 'movie'
+    assert np.all(p.cell_init == np.array([1, 1, 1]))
+
+
 
 
 def test_three_surfaces(tmp_path):
