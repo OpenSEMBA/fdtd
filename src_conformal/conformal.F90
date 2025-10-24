@@ -23,7 +23,7 @@ contains
       end do
       call fillConformalEdges(cell_map, edges, edge_ratios)
       call fillConformalFaces(cell_map, faces, face_ratios)
-
+      ! call fillConformalElements(cell_map, faces, face_ratios, edges, edge_ratios)
       res%edge_media => addEdgeMedia(edges, edge_ratios)
       res%face_media => addFaceMedia(faces, face_ratios)
 
@@ -33,6 +33,8 @@ contains
       res%cfl = computeCFL(res%edge_media, res%face_media)
       res%tag = regions%volumes(1)%tag
    end function
+
+
 
    function addEdgeMedia(edges, edge_ratios) result(res)
       real (kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
@@ -184,6 +186,108 @@ contains
 
    end subroutine
 
+   subroutine resetSidesOnEdges(sides_on_edges)
+      type(side_list_t), dimension(4,3), intent(inout) :: sides_on_edges
+      integer i, j
+      do i = 1, 3
+         do j = 1, 4
+            if (allocated(sides_on_edges(j,i)%sides)) deallocate(sides_on_edges(j,i)%sides)
+            allocate(sides_on_edges(j,i)%sides(0))
+         end do
+      end do
+   end subroutine
+
+   subroutine fillConformalElements(cell_map, faces, face_ratios, edges, edge_ratios)
+      type(cell_map_t), intent(in) :: cell_map
+      type (face_t), dimension (:), allocatable :: faces
+      real (kind=rkind), dimension(:), allocatable :: face_ratios
+      type (edge_t), dimension (:), allocatable, intent(inout) :: edges
+      real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios
+      type(side_t), dimension(:), allocatable :: sides_set_on_faces, sides_on_face, contour, tri_sides
+      type(side_list_t), dimension(4,3) :: sides_on_edges
+      type(side_t) :: side_on_edge
+      ! type(triangle_t), dimension(:), allocatable :: tris
+      ! type (side_t), dimension (:), allocatable :: sides, on_sides
+      integer (kind=4), dimension(3) :: cell
+      integer :: i, j, k, d, s
+      integer (kind=4) :: face,edge
+      real (kind=rkind) :: ratio, area
+      type(triangle_t), dimension(:), allocatable :: tris, tris_on_face
+
+      allocate(faces(0))
+      allocate(face_ratios(0))
+      allocate(edges(0))
+      allocate(edge_ratios(0))
+
+      do i = 1, size(cell_map%keys)
+         call resetSidesOnEdges(sides_on_edges)
+         cell = cell_map%keys(i)%cell 
+         if (cell(1) == 18 .and. cell(2) == 22 .and. cell(3) == 21) then 
+            call sleep(1)
+         end if
+         sides_set_on_faces = cell_map%getSideSetOnFaceInCell(cell)
+         do face = FACE_X, FACE_Z
+            sides_on_face = getSidesOnFace(sides_set_on_faces, face)
+            contour = buildSidesContour(sides_on_face)
+            if (size(contour) /= 0) then 
+               ratio = 1.0 - contourArea(contour)
+               call addFace(faces, cell, face, ratio)
+               if (isNewRatio(face_ratios, ratio)) call addRatio(face_ratios, ratio)
+            end if
+            do j = 1, size(contour)
+               do edge = EDGE_X, EDGE_Z
+                  if (contour(j)%isOnEdge(edge)) then 
+                     d = getCellDistance(cell, contour(j)%getCell(), edge)
+                     call addNewSide(sides_on_edges(d,edge)%sides, contour(j))
+                  end if
+               end do
+            end do
+            tris = cell_map%getTrianglesInCell(cell)
+            tris_on_face = getTrianglesOnFace(tris, face)
+            area = 0.0
+            do j = 1, size(tris_on_face)
+               area = area + tris_on_face(i)%getArea()
+            end do
+            if (abs(area-1.0) < 1e-5) then 
+               call addFace(faces, cell, face, 0.0)
+               if (isNewRatio(face_ratios, 0.0)) call addRatio(face_ratios, 0.0)
+               do k = 1, size(tris_on_face)
+                  tri_sides = tris_on_face(k)%getSides()
+                  do s = 1, 3
+                     if (tri_sides(s)%isOnAnyEdge()) then 
+                        if (isNewEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), 0.0)) then 
+                           call addEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), 0.0)
+                        end if
+                        if (isNewRatio(edge_ratios, 0.0)) then 
+                           call addRatio(edge_ratios, 0.0)
+                        end if
+                     end if
+                     
+                  end do
+                  !recorre la cara y los edges son 0
+               end do
+            end if
+         end do
+
+
+         do edge = EDGE_X, EDGE_Z
+            do d = 1, 4
+               if (size(sides_on_edges(d, edge)%sides) /= 0) then 
+                  side_on_edge = mergeSides(sides_on_edges(d, edge)%sides, edge)
+                  ratio = 1.0 - side_on_edge%length()
+                  if (isNewEdge(edges, side_on_edge%getCell(), edge, ratio)) then 
+                     call addEdge(edges, side_on_edge%getCell(), edge, ratio)
+                  end if
+                  if (isNewRatio(edge_ratios, ratio)) then 
+                     call addRatio(edge_ratios, ratio)
+                  end if
+               end if
+            end do
+         end do
+      end do
+
+
+   end subroutine
 
    subroutine fillConformalFaces(cell_map, faces, face_ratios)
       type(cell_map_t), intent(in) :: cell_map

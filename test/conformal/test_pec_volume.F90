@@ -13,99 +13,99 @@ integer function  test_conformal_pec_media() bind(C) result(err)
     ! check inside/outside and media
     
     !conformal edges
-    if (semba%media%sggmiEx(1,2,2) /= 4) err = err + 1
-    if (semba%media%sggmiEx(3,2,2) /= 4) err = err + 1
-    if (semba%media%sggmiEx(1,2,3) /= 4) err = err + 1
-    if (semba%media%sggmiEx(3,2,3) /= 4) err = err + 1
-    if (semba%media%sggmiEx(1,3,2) /= 4) err = err + 1
-    if (semba%media%sggmiEx(3,3,2) /= 4) err = err + 1
-    if (semba%media%sggmiEx(1,3,3) /= 4) err = err + 1
-    if (semba%media%sggmiEx(3,3,3) /= 4) err = err + 1
+    if (semba%media%sggmiEx(14,15,15) /= 4) err = err + 1
+    if (semba%media%sggmiEx(16,15,15) /= 4) err = err + 1
+    if (semba%media%sggmiEx(14,15,16) /= 4) err = err + 1
+    if (semba%media%sggmiEx(16,15,16) /= 4) err = err + 1
+    if (semba%media%sggmiEx(14,16,15) /= 4) err = err + 1
+    if (semba%media%sggmiEx(16,16,15) /= 4) err = err + 1
+    if (semba%media%sggmiEx(14,16,16) /= 4) err = err + 1
+    if (semba%media%sggmiEx(16,16,16) /= 4) err = err + 1
 
-    if (semba%media%sggmiEy(2,1,2) /= 4) err = err + 1
-    if (semba%media%sggmiEy(2,3,2) /= 4) err = err + 1
-    if (semba%media%sggmiEy(2,1,3) /= 4) err = err + 1
-    if (semba%media%sggmiEy(2,3,3) /= 4) err = err + 1
-    if (semba%media%sggmiEy(3,1,2) /= 4) err = err + 1
-    if (semba%media%sggmiEy(3,3,2) /= 4) err = err + 1
-    if (semba%media%sggmiEy(3,1,3) /= 4) err = err + 1
-    if (semba%media%sggmiEy(3,3,3) /= 4) err = err + 1
+    if (semba%media%sggmiEy(15,14,15) /= 4) err = err + 1
+    if (semba%media%sggmiEy(15,16,15) /= 4) err = err + 1
+    if (semba%media%sggmiEy(15,14,16) /= 4) err = err + 1
+    if (semba%media%sggmiEy(15,16,16) /= 4) err = err + 1
+    if (semba%media%sggmiEy(16,14,15) /= 4) err = err + 1
+    if (semba%media%sggmiEy(16,16,15) /= 4) err = err + 1
+    if (semba%media%sggmiEy(16,14,16) /= 4) err = err + 1
+    if (semba%media%sggmiEy(16,16,16) /= 4) err = err + 1
 
-    if (semba%media%sggmiEz(2,2,1) /= 4) err = err + 1
-    if (semba%media%sggmiEz(2,2,3) /= 4) err = err + 1
-    if (semba%media%sggmiEz(3,2,1) /= 4) err = err + 1
-    if (semba%media%sggmiEz(3,2,3) /= 4) err = err + 1
-    if (semba%media%sggmiEz(2,3,1) /= 4) err = err + 1
-    if (semba%media%sggmiEz(2,3,3) /= 4) err = err + 1
-    if (semba%media%sggmiEz(3,3,1) /= 4) err = err + 1
-    if (semba%media%sggmiEz(3,3,3) /= 4) err = err + 1
+    if (semba%media%sggmiEz(15,15,14) /= 4) err = err + 1
+    if (semba%media%sggmiEz(15,15,16) /= 4) err = err + 1
+    if (semba%media%sggmiEz(16,15,14) /= 4) err = err + 1
+    if (semba%media%sggmiEz(16,15,16) /= 4) err = err + 1
+    if (semba%media%sggmiEz(15,16,14) /= 4) err = err + 1
+    if (semba%media%sggmiEz(15,16,16) /= 4) err = err + 1
+    if (semba%media%sggmiEz(16,16,14) /= 4) err = err + 1
+    if (semba%media%sggmiEz(16,16,16) /= 4) err = err + 1
 
     !pec edges
-    if (semba%media%sggmiEx(2,2,2) /= 0) err = err + 1
-    if (semba%media%sggmiEy(2,2,2) /= 0) err = err + 1
-    if (semba%media%sggmiEz(2,2,2) /= 0) err = err + 1
-    if (semba%media%sggmiEx(2,3,2) /= 0) err = err + 1
-    if (semba%media%sggmiEy(3,2,2) /= 0) err = err + 1
-    if (semba%media%sggmiEz(3,3,2) /= 0) err = err + 1
+    if (semba%media%sggmiEx(15,15,15) /= 0) err = err + 1
+    if (semba%media%sggmiEy(15,15,15) /= 0) err = err + 1
+    if (semba%media%sggmiEz(15,15,15) /= 0) err = err + 1
+    if (semba%media%sggmiEx(15,16,15) /= 0) err = err + 1
+    if (semba%media%sggmiEy(16,15,15) /= 0) err = err + 1
+    if (semba%media%sggmiEz(16,16,15) /= 0) err = err + 1
 
     ! pec faces
-    if (semba%media%sggmiHx(2,2,2) /= 0) err = err + 1
-    if (semba%media%sggmiHy(2,2,2) /= 0) err = err + 1
-    if (semba%media%sggmiHz(2,2,2) /= 0) err = err + 1
-    if (semba%media%sggmiHx(3,2,2) /= 0) err = err + 1
-    if (semba%media%sggmiHy(2,3,2) /= 0) err = err + 1
-    if (semba%media%sggmiHz(2,2,3) /= 0) err = err + 1
+    if (semba%media%sggmiHx(15,15,15) /= 0) err = err + 1
+    if (semba%media%sggmiHy(15,15,15) /= 0) err = err + 1
+    if (semba%media%sggmiHz(15,15,15) /= 0) err = err + 1
+    if (semba%media%sggmiHx(16,15,15) /= 0) err = err + 1
+    if (semba%media%sggmiHy(15,16,15) /= 0) err = err + 1
+    if (semba%media%sggmiHz(15,15,16) /= 0) err = err + 1
     ! conformal faces
-    if (semba%media%sggmiHx(2,1,1) /= 6) err = err + 1
-    if (semba%media%sggmiHx(2,2,1) /= 5) err = err + 1
-    if (semba%media%sggmiHx(2,3,1) /= 6) err = err + 1
-    if (semba%media%sggmiHx(2,1,2) /= 5) err = err + 1
-    if (semba%media%sggmiHx(2,3,2) /= 5) err = err + 1
-    if (semba%media%sggmiHx(2,1,3) /= 6) err = err + 1
-    if (semba%media%sggmiHx(2,2,3) /= 5) err = err + 1
-    if (semba%media%sggmiHx(2,3,3) /= 6) err = err + 1
+    if (semba%media%sggmiHx(15,14,14) /= 6) err = err + 1
+    if (semba%media%sggmiHx(15,15,14) /= 5) err = err + 1
+    if (semba%media%sggmiHx(15,16,14) /= 6) err = err + 1
+    if (semba%media%sggmiHx(15,14,15) /= 5) err = err + 1
+    if (semba%media%sggmiHx(15,16,15) /= 5) err = err + 1
+    if (semba%media%sggmiHx(15,14,16) /= 6) err = err + 1
+    if (semba%media%sggmiHx(15,15,16) /= 5) err = err + 1
+    if (semba%media%sggmiHx(15,16,16) /= 6) err = err + 1
 
-    if (semba%media%sggmiHx(3,1,1) /= 6) err = err + 1
-    if (semba%media%sggmiHx(3,2,1) /= 5) err = err + 1
-    if (semba%media%sggmiHx(3,3,1) /= 6) err = err + 1
-    if (semba%media%sggmiHx(3,1,2) /= 5) err = err + 1
-    if (semba%media%sggmiHx(3,3,2) /= 5) err = err + 1
-    if (semba%media%sggmiHx(3,1,3) /= 6) err = err + 1
-    if (semba%media%sggmiHx(3,2,3) /= 5) err = err + 1
-    if (semba%media%sggmiHx(3,3,3) /= 6) err = err + 1
+    if (semba%media%sggmiHx(16,14,14) /= 6) err = err + 1
+    if (semba%media%sggmiHx(16,15,14) /= 5) err = err + 1
+    if (semba%media%sggmiHx(16,16,14) /= 6) err = err + 1
+    if (semba%media%sggmiHx(16,14,15) /= 5) err = err + 1
+    if (semba%media%sggmiHx(16,16,15) /= 5) err = err + 1
+    if (semba%media%sggmiHx(16,14,16) /= 6) err = err + 1
+    if (semba%media%sggmiHx(16,15,16) /= 5) err = err + 1
+    if (semba%media%sggmiHx(16,16,16) /= 6) err = err + 1
 
-    if (semba%media%sggmiHy(1,2,1) /= 6) err = err + 1
-    if (semba%media%sggmiHy(2,2,1) /= 5) err = err + 1
-    if (semba%media%sggmiHy(3,2,1) /= 6) err = err + 1
-    if (semba%media%sggmiHy(1,2,2) /= 5) err = err + 1
-    if (semba%media%sggmiHy(3,2,2) /= 5) err = err + 1
-    if (semba%media%sggmiHy(1,2,3) /= 6) err = err + 1
-    if (semba%media%sggmiHy(2,2,3) /= 5) err = err + 1
-    if (semba%media%sggmiHy(3,2,3) /= 6) err = err + 1
+    if (semba%media%sggmiHy(14,15,14) /= 6) err = err + 1
+    if (semba%media%sggmiHy(15,15,14) /= 5) err = err + 1
+    if (semba%media%sggmiHy(16,15,14) /= 6) err = err + 1
+    if (semba%media%sggmiHy(14,15,15) /= 5) err = err + 1
+    if (semba%media%sggmiHy(16,15,15) /= 5) err = err + 1
+    if (semba%media%sggmiHy(14,15,16) /= 6) err = err + 1
+    if (semba%media%sggmiHy(15,15,16) /= 5) err = err + 1
+    if (semba%media%sggmiHy(16,15,16) /= 6) err = err + 1
 
-    if (semba%media%sggmiHz(1,1,2) /= 6) err = err + 1
-    if (semba%media%sggmiHz(2,1,2) /= 5) err = err + 1
-    if (semba%media%sggmiHz(3,1,2) /= 6) err = err + 1
-    if (semba%media%sggmiHz(1,2,2) /= 5) err = err + 1
-    if (semba%media%sggmiHz(3,2,2) /= 5) err = err + 1
-    if (semba%media%sggmiHz(1,3,2) /= 6) err = err + 1
-    if (semba%media%sggmiHz(2,3,2) /= 5) err = err + 1
-    if (semba%media%sggmiHz(3,3,2) /= 6) err = err + 1
+    if (semba%media%sggmiHz(14,14,15) /= 6) err = err + 1
+    if (semba%media%sggmiHz(15,14,15) /= 5) err = err + 1
+    if (semba%media%sggmiHz(16,14,15) /= 6) err = err + 1
+    if (semba%media%sggmiHz(14,15,15) /= 5) err = err + 1
+    if (semba%media%sggmiHz(16,15,15) /= 5) err = err + 1
+    if (semba%media%sggmiHz(14,16,15) /= 6) err = err + 1
+    if (semba%media%sggmiHz(15,16,15) /= 5) err = err + 1
+    if (semba%media%sggmiHz(16,16,15) /= 6) err = err + 1
 
-    if (semba%media%sggmiHz(1,1,3) /= 6) err = err + 1
-    if (semba%media%sggmiHz(2,1,3) /= 5) err = err + 1
-    if (semba%media%sggmiHz(3,1,3) /= 6) err = err + 1
-    if (semba%media%sggmiHz(1,2,3) /= 5) err = err + 1
-    if (semba%media%sggmiHz(3,2,3) /= 5) err = err + 1
-    if (semba%media%sggmiHz(1,3,3) /= 6) err = err + 1
-    if (semba%media%sggmiHz(2,3,3) /= 5) err = err + 1
-    if (semba%media%sggmiHz(3,3,3) /= 6) err = err + 1
+    if (semba%media%sggmiHz(14,14,16) /= 6) err = err + 1
+    if (semba%media%sggmiHz(15,14,16) /= 5) err = err + 1
+    if (semba%media%sggmiHz(16,14,16) /= 6) err = err + 1
+    if (semba%media%sggmiHz(14,15,16) /= 5) err = err + 1
+    if (semba%media%sggmiHz(16,15,16) /= 5) err = err + 1
+    if (semba%media%sggmiHz(14,16,16) /= 6) err = err + 1
+    if (semba%media%sggmiHz(15,16,16) /= 5) err = err + 1
+    if (semba%media%sggmiHz(16,16,16) /= 6) err = err + 1
 
     call semba%launch()
     call semba%end()
 
     ! check inside/outside
-    ! if (semba%media%sggmiEx(1,1,1) /= 0) err = err + 1
+    ! if (semba%media%sggmiEx(14,14,14) /= 0) err = err + 1
 
 end function
 

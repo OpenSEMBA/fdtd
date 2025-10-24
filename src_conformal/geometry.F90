@@ -41,6 +41,10 @@ module geometry_mod
         procedure :: isEquiv
     end type
 
+    type, public :: side_list_t
+        type(side_t), dimension(:), allocatable :: sides
+    end type
+
     type, public :: triangle_t
         type(coord_t), dimension(3) :: vertices
     contains
@@ -50,11 +54,19 @@ module geometry_mod
         procedure :: getCell => triangle_getCell
         procedure :: isOnFace => triangle_isOnFace
         procedure :: isOnAnyFace => triangle_isOnAnyFace
+        procedure :: getArea => triangle_getArea
         procedure, private :: centroid
     end type
     
 contains
 
+    function triangle_getArea(this) result(res)
+        class(triangle_t) :: this
+        real :: res
+        type(side_t), dimension(:), allocatable :: sides
+        sides = this%getSides()
+        res = contourArea(sides)
+    end function
 
     function triangle_getCell(this) result(res)
         class(triangle_t) :: this
@@ -258,6 +270,32 @@ contains
     logical function side_isOnAnyEdge(this)
         class(side_t) :: this
         side_isOnAnyEdge = (this%isOnEdge(EDGE_X) .or. this%isOnEdge(EDGE_Y) .or. this%isOnEdge(EDGE_Z))
+    end function
+
+    function mergeSides(sides, edge) result(res)
+        type(side_t), dimension(:), allocatable, intent(in) :: sides
+        type(side_t), dimension(:), allocatable :: sides_copy
+        integer(kind=4), intent(in) :: edge
+        real :: c
+        type(side_t) :: res
+        integer :: i
+        sides_copy = sides
+        do i = 1, size(sides_copy)
+            if (sides_copy(i)%init%position(edge) > sides_copy(i)%end%position(edge)) then 
+                c = sides_copy(i)%init%position(edge)
+                sides_copy(i)%init%position(edge) = sides_copy(i)%end%position(edge)
+                sides_copy(i)%end%position(edge) = c
+            end if
+        end do
+        res = sides_copy(1)
+        do i = 2, size(sides_copy)
+            if (sides_copy(i)%init%position(edge) < res%init%position(edge)) then 
+                res%init%position(edge) = sides_copy(i)%init%position(edge)
+            end if
+            if (sides_copy(i)%end%position(edge) > res%end%position(edge)) then 
+                res%end%position(edge) = sides_copy(i)%end%position(edge)
+            end if
+        end do
     end function
 
 
@@ -582,7 +620,27 @@ contains
         end do
     end function
 
-    function getTrianglesOffFaces(triangles) result (res)
+    function getCellDistance(ref_cell, cell,edge) result(res)
+        integer(kind=4), dimension(3), intent(in) :: ref_cell, cell
+        integer, intent(in) :: edge
+        integer :: res
+        integer :: i 
+        res = 0
+        do i = 1, 3
+            res = res + i*abs(ref_cell(i)-cell(i))
+        end do
+        if (edge == EDGE_X) then 
+            if (res == 2) res = 1
+            if (res == 3) res = 2
+            if (res == 5) res = 3
+        else if (edge == EDGE_Y) then 
+            if (res == 3) res = 2
+            if (res == 4) res = 3
+        end if
+        res = res + 1
+    end function
+
+    function getTrianglesOffFaces(triangles) result (res) !delete
         type(triangle_t), dimension(:), allocatable, intent(in) :: triangles
         type(triangle_t), dimension(:), allocatable :: res
         integer :: i, j, n
