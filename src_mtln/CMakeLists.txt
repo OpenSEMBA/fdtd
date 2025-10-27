@@ -29,5 +29,6 @@ target_link_libraries(mtlnsolver PRIVATE
 	fhash
 	ngspice_interface
 	semba-types
+	semba-reports
 	${MPI_Fortran_LIBRARIES}
 )

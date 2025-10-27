@@ -1,0 +1,60 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Dummy case for movies with frequency domain",
+    
+    "general": {
+        "timeStep": 2.0e-9,
+        "numberOfSteps": 100
+    },
+      
+    "boundary": {
+        "all": {
+            "type": "mur"
+        }
+    },
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [10, 20, 10],
+            "steps": {"x": [0.1], "y": [0.1], "z": [0.1]}
+        },
+
+        "coordinates": [
+        ],
+        
+        "elements": [
+            {"id": 1, "type": "cell", "name": "cube", "intervals": [ [ [2,4,2], [8, 10, 8] ] ]},
+            {"id": 2, "type": "cell", "name": "movie-domain", "intervals": [ [[1, 1, 1], [9, 19, 9] ]]}
+        ]
+    },
+
+    "materials": [
+        {
+            "id": 1,
+            "name": "cube_material",
+            "type": "pec"
+        }
+    ],
+
+    "materialAssociations": [
+        {
+            "name": "cube_association",
+            "elementIds": [1],
+            "materialId": 1
+        }
+    ],
+
+    "probes": [
+        {
+            "name": "movie_electric",
+            "type": "movie",
+            "field": "electric",
+            "component": "magnitude",
+            "elementIds": [2],
+            "domain": {
+                "type": "time",
+                "samplingPeriod": 1e-9
+            }
+        }
+    ]
+}

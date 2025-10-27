@@ -222,7 +222,6 @@ module Solver_mod
       this%control%strictOLD = input%strictOLD
       this%control%TAPARRABOS  = input%TAPARRABOS
       this%control%noconformalmapvtk = input%noconformalmapvtk
-      this%control%hopf = input%hopf
       this%control%experimentalVideal = input%experimentalVideal
       this%control%forceresampled = input%forceresampled
       this%control%mur_second = input%mur_second
@@ -261,7 +260,6 @@ module Solver_mod
       this%control%wiresflavor = trim(adjustl(input%wiresflavor))
       this%control%nresumeable2 = trim(adjustl(input%nresumeable2))
       this%control%opcionestotales = input%opcionestotales
-      this%control%ficherohopf = input%ficherohopf
       this%control%finaltimestep = input%finaltimestep
       this%control%flushsecondsFields = input%flushsecondsFields
       this%control%flushsecondsData = input%flushsecondsData
@@ -1475,14 +1473,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Nodal Sources...';  call print11(this%control%layoutnumber,dubuf)
-         if (.not.this%control%hopf) then
-            call InitNodalSources(this%sgg,this%control%layoutnumber,this%sgg%NumNodalSources,this%sgg%NodalSource,this%sgg%Sweep,this%thereAre%NodalE,this%thereAre%NodalH)
-         else
-            call InitHopf(this%sgg,this%sgg%NumNodalSources,this%sgg%NodalSource,this%sgg%Sweep,this%control%ficherohopf) !lo manejara antonio con las entradas que precise
-            this%thereAre%NodalE=.false. !no habra mas nodales excepto la de Hopf
-            this%thereAre%NodalH=.false. 
-         endif
-         
+         call InitNodalSources(this%sgg,this%control%layoutnumber,this%sgg%NumNodalSources,this%sgg%NodalSource,this%sgg%Sweep,this%thereAre%NodalE,this%thereAre%NodalH)
          l_auxinput=this%thereAre%NodalH.or.this%thereAre%NodalE
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI

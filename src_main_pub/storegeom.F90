@@ -1,5 +1,3 @@
-
-    
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Module to handle the storing of the geometry in ascii files
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

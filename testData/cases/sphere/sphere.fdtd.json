@@ -40928,7 +40928,7 @@
     ],
     "probes": [
         {
-            "name": "FarField",
+            "name": "farfield",
             "type": "farField",
             "elementIds": [
                 2

@@ -1,5 +1,5 @@
 module parser_tools_mod
-    
+
 #ifdef CompileWithSMBJSON
    use mesh_mod
    use cells_mod
@@ -23,10 +23,6 @@ module parser_tools_mod
       integer :: cId
       type(coordinate_t) :: relPos
    end type
-
-   ! type :: cable_ptr_t
-   !    type(cable_t), pointer :: p
-   ! end type
 #endif
 
 contains
@@ -42,11 +38,11 @@ contains
       do i = 1, size(cellRegions)
          if (present(cellType)) then
             numberOfIntervals = numberOfIntervals + count(cellRegions(i)%intervals%getType() == cellType)
-         else 
+         else
             numberOfIntervals = numberOfIntervals + size(cellRegions(i)%intervals)
          end if
       end do
-      
+
       allocate(intervals(numberOfIntervals))
       copiedIntervals = 0
       do i = 1, size(cellRegions)
@@ -57,12 +53,12 @@ contains
          end if
          do j = 1, size(intervalsInRegion)
             copiedIntervals = copiedIntervals + 1
-            intervals(copiedIntervals) = intervalsInRegion(j) 
+            intervals(copiedIntervals) = intervalsInRegion(j)
          end do
       end do
 
    end function
-   
+
    function cellRegionToCoords(cellRegion, cellType, tag) result(res)
       type(cell_region_t), intent(in) :: cellRegion
       integer, intent(in), optional :: cellType
@@ -75,7 +71,7 @@ contains
       intervals = getIntervalsInCellRegions([cellRegion], cellType)
       if (present(tag)) then
          cs = cellIntervalsToCoords(intervals, tag)
-      else 
+      else
          cs = cellIntervalsToCoords(intervals)
       endif
       res = cs
@@ -115,7 +111,7 @@ contains
             res(i)%zc = -1.0
          end select
       end do
-   end 
+   end
 
    subroutine cellRegionsToScaledCoords(res, cellRegions, tag)
       type(coords_scaled), dimension(:), pointer :: res
@@ -124,7 +120,7 @@ contains
       type(coords), dimension(:), allocatable :: cs
       type(coords_scaled), dimension(:), allocatable :: scaledCoords
       character (LEN=BUFSIZE), optional, intent(in) :: tag
-      
+
       intervals = getIntervalsInCellRegions(cellRegions, CELL_TYPE_LINEL)
       if (present(tag)) then
          cs = cellIntervalsToCoords(intervals, tag)
@@ -160,7 +156,7 @@ contains
          type(cell_interval_t), intent(in) :: interval
          integer, intent(in) :: dir
          integer :: a, b
-         a = interval%ini%cell(dir) 
+         a = interval%ini%cell(dir)
          b = interval%end%cell(dir)
          if (a < b) then
             xi = a
