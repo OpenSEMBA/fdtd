@@ -1177,10 +1177,11 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Multi-Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires_Berenger(this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
-            this%control%isolategroupgroups,this%control%mtlnberenger,this%control%mindistwires, &
-            this%control%groundwires,this%control%taparrabos,Ex,Ey,Ez, &
-            Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,this%g%g2,this%sinPML_fullsize,fullsize,dtcritico,this%eps0,this%mu0,this%control%verbose)
+            call InitWires_Berenger(&
+               this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
+               this%control%isolategroupgroups,this%control%mtlnberenger,this%control%mindistwires, &
+               this%control%groundwires,this%control%taparrabos,Ex,Ey,Ez, &
+               Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,this%g%g2,this%sinPML_fullsize,this%fullsize,dtcritico,this%eps0,this%mu0,this%control%verbose)
          l_auxinput= this%thereAre%Wires
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
