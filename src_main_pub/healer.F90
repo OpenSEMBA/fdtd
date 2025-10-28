@@ -54,7 +54,7 @@ MODULE CreateMatrices
             p%ZE = aux
         endif
    END SUBROUTINE
-    
+   
    SUBROUTINE CreateConformalPECVolume (layoutnumber, Mtag, tags, numertag, MMiEx, MMiEy, MMiEz, MMiHx, &
    & MMiHy, MMiHz, Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, &
    & Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, &
@@ -91,154 +91,350 @@ MODULE CreateMatrices
       !
       INTEGER (KIND=4) :: layoutnumber, i, j, k
 
-      logical :: is_inside_volume = .false.,has_crossed = .false., is_on_boundary = .false.
+      logical :: is_inside_volume = .false.
+      logical :: has_crossed_1 = .false.,has_crossed_2 = .false., is_on_boundary = .false.
 
+      logical :: has_crossed
+      integer(kind=4) :: mE, mEPrev, mH1, mH2, mH3, mH4
+      integer :: idx_in, idx_out
+
+      !!! faces that should be PEC, bc edges are all PEC
       do k = BoundingBox%zi, BoundingBox%ze+1
          do j = BoundingBox%yi, BoundingBox%ye+1
-            is_inside_volume = .false.
-            has_crossed = .false.
             do i = BoundingBox%xi, BoundingBox%xe+1
-               medio1 = MMiHx(i,j,k); medio2 = MMiHx(i,j-1,k)
-               medio3 = MMiHx(i,j-1,k-1); medio4 = MMiHx(i,j,k-1)
-               has_crossed = (med(medio1)%Is%ConformalPEC .or. med(medio1)%Is%PEC) .and. & 
-                             (med(medio2)%Is%ConformalPEC .or. med(medio2)%Is%PEC) .and. & 
-                             (med(medio3)%Is%ConformalPEC .or. med(medio3)%Is%PEC) .and. & 
-                             (med(medio4)%Is%ConformalPEC .or. med(medio4)%Is%PEC)
-               if (has_crossed) is_inside_volume = .not. is_inside_volume
-               if (is_inside_volume) then 
-                  MMiEx (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%edge%x(i,j,k) = 64*numertag
-               end if
-            end do
-         end do
-      end do
-      do i = BoundingBox%xi, BoundingBox%xe+1
-         do k = BoundingBox%zi, BoundingBox%ze+1
-            is_inside_volume = .false.
-            has_crossed = .false.
-            do j = BoundingBox%yi, BoundingBox%ye+1
-               medio1 = MMiHy(i,j,k); medio2 = MMiHy(i-1,j,k)
-               medio3 = MMiHy(i-1,j,k-1); medio4 = MMiHy(i,j,k-1)
-               has_crossed = (med(medio1)%Is%ConformalPEC .or. med(medio1)%Is%PEC) .and. &
-                             (med(medio2)%Is%ConformalPEC .or. med(medio2)%Is%PEC) .and. &
-                             (med(medio3)%Is%ConformalPEC .or. med(medio3)%Is%PEC) .and. &
-                             (med(medio4)%Is%ConformalPEC .or. med(medio4)%Is%PEC)
-               if (has_crossed) is_inside_volume = .not. is_inside_volume
-               if (is_inside_volume) then 
-                  MMiEy (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%edge%y(i,j,k) = 64*numertag
-               end if
-            end do
-         end do
-      end do
-      do j = BoundingBox%yi, BoundingBox%ye+1
-         do i = BoundingBox%xi, BoundingBox%xe+1
-            is_inside_volume = .false.
-            has_crossed = .false.
-            do k = BoundingBox%zi, BoundingBox%ze+1
-               medio1 = MMiHz(i,j,k); medio2 = MMiHz(i,j-1,k)
-               medio3 = MMiHz(i-1,j-1,k); medio4 = MMiHz(i-1,j,k)
-               has_crossed = (med(medio1)%Is%ConformalPEC .or. med(medio1)%Is%PEC) .and. &
-                             (med(medio2)%Is%ConformalPEC .or. med(medio2)%Is%PEC) .and. &
-                             (med(medio3)%Is%ConformalPEC .or. med(medio3)%Is%PEC) .and. &
-                             (med(medio4)%Is%ConformalPEC .or. med(medio4)%Is%PEC)
-               if (has_crossed) is_inside_volume = .not. is_inside_volume
-               if (is_inside_volume) then 
-                  MMiEz (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%edge%z(i,j,k) = 64*numertag
-               end if
-            end do
-         end do
-      end do
-
-      do k = BoundingBox%zi, BoundingBox%ze+1
-         do j = BoundingBox%yi, BoundingBox%ye+1
-            is_inside_volume = .false.
-            is_on_boundary = .false.
-            do i = BoundingBox%xi, BoundingBox%xe+1
+               !!!x
                medio_y = MMiEy (i, j, k)
                medio_z = MMiEz (i, j, k)
                medio_y_plus = MMiEy (i, j, k+1)
                medio_z_plus = MMiEz (i, j+1, k)
 
-               is_on_boundary = (med(medio_y)%Is%PEC .or. med(medio_y)%Is%ConformalPEC) .and. &
-                                (med(medio_z)%Is%PEC .or. med(medio_z)%Is%ConformalPEC) .and. &
-                                (med(medio_y_plus)%Is%PEC .or. med(medio_y_plus)%Is%ConformalPEC) .and. &
-                                (med(medio_z_plus)%Is%PEC .or. med(medio_z_plus)%Is%ConformalPEC)
+               is_on_boundary = (med(medio_y)%Is%PEC) .and. &
+                                (med(medio_z)%Is%PEC) .and. &
+                                (med(medio_y_plus)%Is%PEC) .and. &
+                                (med(medio_z_plus)%Is%PEC)
 
-               if (.not. is_on_boundary .and. is_inside_volume) then 
+               if (is_on_boundary) then 
                   MMiHx (i, j, k) = indicemedio
                   Mtag(i,j,k)=64*numertag 
                   tags%face%x(i,j,k) = 64*numertag
-               else if (is_on_boundary) then 
-                  MMiHx (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%face%x(i,j,k) = 64*numertag
-                  is_inside_volume = .not. is_inside_volume
                end if
-
-            end do
-         end do
-      end do
-      do i = BoundingBox%xi, BoundingBox%xe+1
-         do k = BoundingBox%zi, BoundingBox%ze+1
-            is_inside_volume = .false.
-            is_on_boundary = .false.
-            do j = BoundingBox%yi, BoundingBox%ye+1
+               !!!y
                medio_x = MMiEx (i, j, k)
                medio_z = MMiEz (i, j, k)
                medio_x_plus = MMiEx (i, j, k+1)
                medio_z_plus = MMiEz (i+1, j, k)
 
-               is_on_boundary = (med(medio_x)%Is%PEC .or. med(medio_x)%Is%ConformalPEC) .and. &
-                                (med(medio_z)%Is%PEC .or. med(medio_z)%Is%ConformalPEC) .and. &
-                                (med(medio_x_plus)%Is%PEC .or. med(medio_x_plus)%Is%ConformalPEC) .and. &
-                                (med(medio_z_plus)%Is%PEC .or. med(medio_z_plus)%Is%ConformalPEC)
+               is_on_boundary = (med(medio_x)%Is%PEC) .and. &
+                                (med(medio_z)%Is%PEC) .and. &
+                                (med(medio_x_plus)%Is%PEC) .and. &
+                                (med(medio_z_plus)%Is%PEC)
 
-               if (.not. is_on_boundary .and. is_inside_volume) then 
+               if (is_on_boundary) then 
                   MMiHy (i, j, k) = indicemedio
                   Mtag(i,j,k)=64*numertag 
                   tags%face%y(i,j,k) = 64*numertag
-               else if (is_on_boundary) then 
-                  MMiHy (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%face%y(i,j,k) = 64*numertag
-                  is_inside_volume = .not. is_inside_volume
                end if
-            end do
-         end do
-      end do
-      do j = BoundingBox%yi, BoundingBox%ye+1
-         do i = BoundingBox%xi, BoundingBox%xe+1
-            is_inside_volume = .false.
-            is_on_boundary = .false.
-            do k = BoundingBox%zi, BoundingBox%ze+1
+               !!!z
                medio_y = MMiEy (i, j, k)
                medio_x = MMiEx (i, j, k)
                medio_y_plus = MMiEy (i+1, j, k)
                medio_x_plus = MMiEx (i, j+1, k)
 
-               is_on_boundary = (med(medio_y)%Is%PEC .or. med(medio_y)%Is%ConformalPEC) .and. &
-                                (med(medio_x)%Is%PEC .or. med(medio_x)%Is%ConformalPEC) .and. &
-                                (med(medio_y_plus)%Is%PEC .or. med(medio_y_plus)%Is%ConformalPEC) .and. &
-                                (med(medio_x_plus)%Is%PEC .or. med(medio_x_plus)%Is%ConformalPEC)
+               is_on_boundary = (med(medio_y)%Is%PEC) .and. &
+                                (med(medio_x)%Is%PEC) .and. &
+                                (med(medio_y_plus)%Is%PEC) .and. &
+                                (med(medio_x_plus)%Is%PEC)
 
-               if (.not. is_on_boundary .and. is_inside_volume) then 
+               if (is_on_boundary) then 
                   MMiHz (i, j, k) = indicemedio
                   Mtag(i,j,k)=64*numertag 
                   tags%face%z(i,j,k) = 64*numertag
-               else if (is_on_boundary) then 
-                  MMiHz (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%face%z(i,j,k) = 64*numertag
-                  is_inside_volume = .not. is_inside_volume
                end if
+
+
             end do
          end do
       end do
+      ! do i = BoundingBox%xi, BoundingBox%xe+1
+      !    do k = BoundingBox%zi, BoundingBox%ze+1
+      !       do j = BoundingBox%yi, BoundingBox%ye+1
+
+      !          medio_x = MMiEx (i, j, k)
+      !          medio_z = MMiEz (i, j, k)
+      !          medio_x_plus = MMiEx (i, j, k+1)
+      !          medio_z_plus = MMiEz (i+1, j, k)
+
+      !          is_on_boundary = (med(medio_x)%Is%PEC) .and. &
+      !                           (med(medio_z)%Is%PEC) .and. &
+      !                           (med(medio_x_plus)%Is%PEC) .and. &
+      !                           (med(medio_z_plus)%Is%PEC)
+
+      !          if (is_on_boundary) then 
+      !             MMiHy (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%y(i,j,k) = 64*numertag
+      !          end if
+
+      !       end do
+      !    end do
+      ! end do
+      ! do j = BoundingBox%yi, BoundingBox%ye+1
+      !    do i = BoundingBox%xi, BoundingBox%xe+1
+      !       do k = BoundingBox%zi, BoundingBox%ze+1
+
+      !          medio_y = MMiEy (i, j, k)
+      !          medio_x = MMiEx (i, j, k)
+      !          medio_y_plus = MMiEy (i+1, j, k)
+      !          medio_x_plus = MMiEx (i, j+1, k)
+
+      !          is_on_boundary = (med(medio_y)%Is%PEC) .and. &
+      !                           (med(medio_x)%Is%PEC) .and. &
+      !                           (med(medio_y_plus)%Is%PEC) .and. &
+      !                           (med(medio_x_plus)%Is%PEC)
+
+      !          if (is_on_boundary) then 
+      !             MMiHz (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%z(i,j,k) = 64*numertag
+      !          end if
+
+      !       end do
+      !    end do
+      ! end do
+      !!!
+      !!! raytracing x
+      do k = BoundingBox%zi, BoundingBox%ze+1
+         do j = BoundingBox%yi, BoundingBox%ye+1
+            is_inside_volume = .false.
+            has_crossed = .false.
+            idx_in = 0
+            idx_out = 0
+            if (j==15 .and. k == 15) then 
+               call sleep(1)
+            end if
+            do i = BoundingBox%xi, BoundingBox%xe+1
+               ! crossing PEC boundary
+               mE = MMiEx(i,j,k)
+               mEPrev = MMiEx(i-1,j,k)
+               if (.not. (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC)) then 
+                  if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                     mH1 = MMiHx(i,j,k); mH2 = MMiHx(i,j-1,k)
+                     mH3 = MMiHx(i,j,k-1); mH4 = MMiHx(i,j-1,k-1)
+                     has_crossed = (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .and. &
+                                   (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .and. &
+                                   (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .and. &
+                                   (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
+                  else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
+                     mH1 = MMiHx(i,j,k) ; mH2 = MMiHx(i,j-1,k)
+                     mH3 = MMiHx(i-1,j,k) ; mH4 = MMiHx(i-1,j-1,k)
+                     has_crossed   = (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .or. &
+                                     (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .or. & 
+                                     (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .or. &
+                                     (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
+
+                     ! mH1 = MMiHx(i,j,k-1) ; mH2 = MMiHx(i,j-1,k-1)
+                     ! has_crossed   = has_crossed .or. (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .and. &
+                     !                 (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC)
+
+                     ! mH1 = MMiHx(i-1,j,k-1) ; mH2 = MMiHx(i-1,j-1,k-1)
+                     ! has_crossed   = has_crossed .or. (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .and. &
+                     !                 (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC)
+
+                     ! mH1 = MMiHy(i-1,j,k); mH2 = MMiHz(i-1,j,k)
+                     ! mH3 = MMiHy(i-1,j,k-1); mH4 = MMiHz(i-1,j-1,k)
+                     ! has_crossed = has_crossed .or. (((med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .and. &
+                     !             (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC)) .or. &
+                     !             ((med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .and. &
+                     !             (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)))
+
+                     ! mH1 = MMiHx(i-1,j,k); mH2 = MMiHx(i-1,j-1,k)
+                     ! mH3 = MMiHx(i-1,j,k-1); mH4 = MMiHx(i-1,j-1,k-1)
+                     ! has_crossed = has_crossed .or. ((med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .and. &
+                     !               (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .and. &
+                     !               (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .and. &
+                     !               (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC))
+
+                     ! mH1 = MMiHx(i,j,k); mH2 = MMiHx(i,j-1,k)
+                     ! mH3 = MMiHx(i,j,k-1); mH4 = MMiHx(i,j-1,k-1)
+                     ! has_crossed = has_crossed .or. (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .and. &
+                     !               (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .and. &
+                     !               (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .and. &
+                     !               (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
+
+
+                  end if
+               end if
+
+               if (has_crossed) is_inside_volume = .not. is_inside_volume
+               if (has_crossed .and. is_inside_volume) then 
+                  idx_in = i
+                  ! MMiEx (i, j, k) = indicemedio
+                  ! Mtag(i,j,k)=64*numertag 
+                  ! tags%edge%x(i,j,k) = 64*numertag
+               end if
+               if (has_crossed .and. .not. is_inside_volume) then 
+                  idx_out = i-1
+               end if
+               
+               ! medio1 = MMiHy(i,j,k); medio2 = MMiHz(i,j,k)
+               ! medio3 = MMiHy(i,j,k-1); medio4 = MMiHz(i,j-1,k)
+               ! has_crossed_1 = (med(medio1)%Is%ConformalPEC .or. med(medio1)%Is%PEC) .and. &
+               !               (med(medio2)%Is%ConformalPEC .or. med(medio2)%Is%PEC) .and. &
+               !               (med(medio3)%Is%ConformalPEC .or. med(medio3)%Is%PEC) .and. &
+               !               (med(medio4)%Is%ConformalPEC .or. med(medio4)%Is%PEC)
+               ! has_crossed_2 = (.not. med(MMiEx (i, j, k))%Is%ConformalPEC .and. .not. med(MMiEx (i, j, k))%Is%PEC) .and. &
+               !               (med(MMiEx (i-1, j, k))%Is%ConformalPEC .or. med(MMiEx (i-1, j, k))%Is%PEC)
+               ! if (has_crossed_1 .or. has_crossed_2) is_inside_volume = .not. is_inside_volume
+               ! if (is_inside_volume) then 
+               !    MMiEx (i, j, k) = indicemedio
+               !    Mtag(i,j,k)=64*numertag 
+               !    tags%edge%x(i,j,k) = 64*numertag
+               ! end if
+            end do
+            if (idx_in /= 0 .and. idx_out /=0) then 
+               do i = idx_in, idx_out-1
+                     MMiEx (i, j, k) = indicemedio
+                     Mtag(i,j,k)=64*numertag 
+                     tags%edge%x(i,j,k) = 64*numertag
+               end do
+            end if
+         end do
+      end do
+
+      ! do i = BoundingBox%xi, BoundingBox%xe+1
+      !    do k = BoundingBox%zi, BoundingBox%ze+1
+      !       is_inside_volume = .false.
+      !       has_crossed = .false.
+      !       do j = BoundingBox%yi, BoundingBox%ye+1
+      !          medio1 = MMiHx(i,j,k); medio2 = MMiHz(i,j,k)
+      !          medio3 = MMiHx(i,j,k-1); medio4 = MMiHz(i-1,j,k)
+      !          ! medio1 = MMiHy(i,j,k); medio2 = MMiHy(i-1,j,k)
+      !          ! medio3 = MMiHy(i-1,j,k-1); medio4 = MMiHy(i,j,k-1)
+      !          has_crossed = (med(medio1)%Is%ConformalPEC .or. med(medio1)%Is%PEC) .and. &
+      !                        (med(medio2)%Is%ConformalPEC .or. med(medio2)%Is%PEC) .and. &
+      !                        (med(medio3)%Is%ConformalPEC .or. med(medio3)%Is%PEC) .and. &
+      !                        (med(medio4)%Is%ConformalPEC .or. med(medio4)%Is%PEC) .and. &
+      !                        (med(MMiEy (i, j, k))%Is%ConformalPEC .or. med(MMiEy (i, j, k))%Is%PEC)
+      !          if (has_crossed) is_inside_volume = .not. is_inside_volume
+      !          if (is_inside_volume) then 
+      !             MMiEy (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%edge%y(i,j,k) = 64*numertag
+      !          end if
+      !       end do
+      !    end do
+      ! end do
+      ! do j = BoundingBox%yi, BoundingBox%ye+1
+      !    do i = BoundingBox%xi, BoundingBox%xe+1
+      !       is_inside_volume = .false.
+      !       has_crossed = .false.
+      !       do k = BoundingBox%zi, BoundingBox%ze+1
+      !          medio1 = MMiHx(i,j,k); medio2 = MMiHy(i,j,k)
+      !          medio3 = MMiHx(i,j-1,k); medio4 = MMiHy(i-1,j,k)
+      !          ! medio1 = MMiHz(i,j,k); medio2 = MMiHz(i,j-1,k)
+      !          ! medio3 = MMiHz(i-1,j-1,k); medio4 = MMiHz(i-1,j,k)
+      !          has_crossed = (med(medio1)%Is%ConformalPEC .or. med(medio1)%Is%PEC) .and. &
+      !                        (med(medio2)%Is%ConformalPEC .or. med(medio2)%Is%PEC) .and. &
+      !                        (med(medio3)%Is%ConformalPEC .or. med(medio3)%Is%PEC) .and. &
+      !                        (med(medio4)%Is%ConformalPEC .or. med(medio4)%Is%PEC) .and. &
+      !                        (med(MMiEz (i, j, k))%Is%ConformalPEC .or. med(MMiEz (i, j, k))%Is%PEC)
+      !          if (has_crossed) is_inside_volume = .not. is_inside_volume
+      !          if (is_inside_volume) then 
+      !             MMiEz (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%edge%z(i,j,k) = 64*numertag
+      !          end if
+      !       end do
+      !    end do
+      ! end do
+
+      !!!!
+      !!!!!
+      ! do k = BoundingBox%zi, BoundingBox%ze+1
+      !    do j = BoundingBox%yi, BoundingBox%ye+1
+      !       is_inside_volume = .false.
+      !       is_on_boundary = .false.
+      !       do i = BoundingBox%xi, BoundingBox%xe+1
+      !          medio_y = MMiEy (i, j, k)
+      !          medio_z = MMiEz (i, j, k)
+      !          medio_y_plus = MMiEy (i, j, k+1)
+      !          medio_z_plus = MMiEz (i, j+1, k)
+
+      !          is_on_boundary = (med(medio_y)%Is%PEC .or. med(medio_y)%Is%ConformalPEC) .and. &
+      !                           (med(medio_z)%Is%PEC .or. med(medio_z)%Is%ConformalPEC) .and. &
+      !                           (med(medio_y_plus)%Is%PEC .or. med(medio_y_plus)%Is%ConformalPEC) .and. &
+      !                           (med(medio_z_plus)%Is%PEC .or. med(medio_z_plus)%Is%ConformalPEC)
+
+      !          if (.not. is_on_boundary .and. is_inside_volume) then 
+      !             MMiHx (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%x(i,j,k) = 64*numertag
+      !          else if (is_on_boundary) then 
+      !             MMiHx (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%x(i,j,k) = 64*numertag
+      !             is_inside_volume = .not. is_inside_volume
+      !          end if
+
+      !       end do
+      !    end do
+      ! end do
+      ! do i = BoundingBox%xi, BoundingBox%xe+1
+      !    do k = BoundingBox%zi, BoundingBox%ze+1
+      !       is_inside_volume = .false.
+      !       is_on_boundary = .false.
+      !       do j = BoundingBox%yi, BoundingBox%ye+1
+      !          medio_x = MMiEx (i, j, k)
+      !          medio_z = MMiEz (i, j, k)
+      !          medio_x_plus = MMiEx (i, j, k+1)
+      !          medio_z_plus = MMiEz (i+1, j, k)
+
+      !          is_on_boundary = (med(medio_x)%Is%PEC .or. med(medio_x)%Is%ConformalPEC) .and. &
+      !                           (med(medio_z)%Is%PEC .or. med(medio_z)%Is%ConformalPEC) .and. &
+      !                           (med(medio_x_plus)%Is%PEC .or. med(medio_x_plus)%Is%ConformalPEC) .and. &
+      !                           (med(medio_z_plus)%Is%PEC .or. med(medio_z_plus)%Is%ConformalPEC)
+
+      !          if (.not. is_on_boundary .and. is_inside_volume) then 
+      !             MMiHy (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%y(i,j,k) = 64*numertag
+      !          else if (is_on_boundary) then 
+      !             MMiHy (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%y(i,j,k) = 64*numertag
+      !             is_inside_volume = .not. is_inside_volume
+      !          end if
+      !       end do
+      !    end do
+      ! end do
+      ! do j = BoundingBox%yi, BoundingBox%ye+1
+      !    do i = BoundingBox%xi, BoundingBox%xe+1
+      !       is_inside_volume = .false.
+      !       is_on_boundary = .false.
+      !       do k = BoundingBox%zi, BoundingBox%ze+1
+      !          medio_y = MMiEy (i, j, k)
+      !          medio_x = MMiEx (i, j, k)
+      !          medio_y_plus = MMiEy (i+1, j, k)
+      !          medio_x_plus = MMiEx (i, j+1, k)
+
+      !          is_on_boundary = (med(medio_y)%Is%PEC .or. med(medio_y)%Is%ConformalPEC) .and. &
+      !                           (med(medio_x)%Is%PEC .or. med(medio_x)%Is%ConformalPEC) .and. &
+      !                           (med(medio_y_plus)%Is%PEC .or. med(medio_y_plus)%Is%ConformalPEC) .and. &
+      !                           (med(medio_x_plus)%Is%PEC .or. med(medio_x_plus)%Is%ConformalPEC)
+
+      !          if (.not. is_on_boundary .and. is_inside_volume) then 
+      !             MMiHz (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%z(i,j,k) = 64*numertag
+      !          else if (is_on_boundary) then 
+      !             MMiHz (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%z(i,j,k) = 64*numertag
+      !             is_inside_volume = .not. is_inside_volume
+      !          end if
+      !       end do
+      !    end do
+      ! end do
 
    end subroutine
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
