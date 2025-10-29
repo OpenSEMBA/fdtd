@@ -4820,20 +4820,25 @@ CONTAINS
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer (kind=4), intent(inout) :: contamedia
+         integer (kind=4) :: face_media
          integer (kind=4) :: cell(3)
          type(XYZlimit_t), intent(inout) :: bbox
          integer :: j, k
          do j = 1, conformal_media%n_faces_media
-            contamedia = contamedia + 1
-            sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
-            sgg%Med(contamedia)%Is%Needed = .TRUE.
-            sgg%Med(contamedia)%Is%Volume = .TRUE.
-            sgg%Med(contamedia)%Priority = prior_PEC
-            sgg%Med(contamedia)%Epr = this%mats%mats(1)%eps / Eps0
-            sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
-            sgg%Med(contamedia)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
-            sgg%Med(contamedia)%SigmaM = 0.0_RKIND
-            ! funcion al healer para tener en cuenta la prioridad
+            if (conformal_media%face_media(j)%ratio /= 0) then 
+               contamedia = contamedia + 1
+               sgg%Med(contamedia)%Is%ConformalPEC = .TRUE.
+               sgg%Med(contamedia)%Is%Needed = .TRUE.
+               sgg%Med(contamedia)%Is%Volume = .TRUE.
+               sgg%Med(contamedia)%Priority = prior_PEC
+               sgg%Med(contamedia)%Epr = this%mats%mats(1)%eps / Eps0
+               sgg%Med(contamedia)%Sigma = 1.0e29_RKIND
+               sgg%Med(contamedia)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
+               sgg%Med(contamedia)%SigmaM = 0.0_RKIND
+               face_media = contamedia
+            else
+               face_media = 0
+            end if
             do k = 1, conformal_media%face_media(j)%size
                cell(:) = conformal_media%face_media(j)%faces(k)%cell(:)
                if (cell(1) < bbox%xi) bbox%xi = cell(1)
@@ -4845,11 +4850,11 @@ CONTAINS
 
                select case(conformal_media%face_media(j)%faces(k)%direction)
                case(F_X)
-                  media%sggMiHx(cell(1), cell(2), cell(3)) = contamedia
+                  media%sggMiHx(cell(1), cell(2), cell(3)) = face_media
                case(F_Y)
-                  media%sggMiHy(cell(1), cell(2), cell(3)) = contamedia
+                  media%sggMiHy(cell(1), cell(2), cell(3)) = face_media
                case(F_Z)
-                  media%sggMiHz(cell(1), cell(2), cell(3)) = contamedia
+                  media%sggMiHz(cell(1), cell(2), cell(3)) = face_media
                end select
             end do
          end do
@@ -4880,9 +4885,9 @@ CONTAINS
             else
                edge_media = 0
             end if
-            ! funcion al healer para tener en cuenta la prioridad
             do k = 1, conformal_media%edge_media(j)%size
                cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
+
                if (cell(1) < bbox%xi) bbox%xi = cell(1)
                if (cell(1) > bbox%xe) bbox%xe = cell(1)
                if (cell(2) < bbox%yi) bbox%yi = cell(2)
