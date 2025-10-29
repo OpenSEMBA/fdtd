@@ -122,16 +122,16 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
 
     if (size(cM%edge_media) /= 2) err = err + 1
 
-    if (abs(cM%edge_media(2)%ratio - 0.25) > 0.01) err = err + 1
-    if (size(cM%edge_media(2)%edges) /= 3) err = err + 1
-    if (abs(cM%edge_media(2)%edges(1)%ratio-0.25) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(2)%ratio-0.25) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(3)%ratio-0.25) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%ratio - 0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.25) > 0.01) err = err + 1
     
-    if (abs(cM%edge_media(1)%ratio - 0.0) > 0.01) err = err + 1
-    if (size(cM%edge_media(1)%edges) /= 2) err = err + 1
-    if (abs(cM%edge_media(1)%edges(1)%ratio-0.0) > 0.01) err = err + 1
-    if (abs(cM%edge_media(1)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
 
     if (size(cM%face_media) /= 1) err = err + 1
     if (abs(cM%face_media(1)%ratio - 0.25) > 0.01) err = err + 1
@@ -148,16 +148,16 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
 
     if (size(cM%edge_media) /= 2) err = err + 1
 
-    if (abs(cM%edge_media(2)%ratio - 0.75) > 0.01) err = err + 1
-    if (size(cM%edge_media(2)%edges) /= 3) err = err + 1
-    if (abs(cM%edge_media(2)%edges(1)%ratio-0.75) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(2)%ratio-0.75) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(3)%ratio-0.75) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%ratio - 0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.75) > 0.01) err = err + 1
     
-    if (abs(cM%edge_media(1)%ratio - 0.0) > 0.01) err = err + 1
-    if (size(cM%edge_media(1)%edges) /= 2) err = err + 1
-    if (abs(cM%edge_media(1)%edges(1)%ratio-0.0) > 0.01) err = err + 1
-    if (abs(cM%edge_media(1)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
 
     if (size(cM%face_media) /= 1) err = err + 1
     if (abs(cM%face_media(1)%ratio - 0.75) > 0.01) err = err + 1
@@ -207,16 +207,16 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
 
     if (size(cM%edge_media) /= 2) err = err + 1
 
-    if (size(cM%edge_media(2)%edges) /= 3) err = err + 1
-    if (abs(cM%edge_media(2)%ratio - 0.75) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(1)%ratio-0.75) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(2)%ratio-0.75) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(3)%ratio-0.75) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%ratio - 0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.75) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.75) > 0.01) err = err + 1
     
-    if (size(cM%edge_media(1)%edges) /= 2) err = err + 1
-    if (abs(cM%edge_media(1)%ratio - 0.0) > 0.01) err = err + 1
-    if (abs(cM%edge_media(1)%edges(1)%ratio-0.0) > 0.01) err = err + 1
-    if (abs(cM%edge_media(1)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
 
     if (size(cM%face_media) /= 1) err = err + 1
     if (abs(cM%face_media(1)%ratio - 0.75) > 0.01) err = err + 1
@@ -233,16 +233,16 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
 
     if (size(cM%edge_media) /= 2) err = err + 1
 
-    if (size(cM%edge_media(2)%edges) /= 3) err = err + 1
-    if (abs(cM%edge_media(2)%ratio - 0.25) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(1)%ratio-0.25) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(2)%ratio-0.25) > 0.01) err = err + 1
-    if (abs(cM%edge_media(2)%edges(3)%ratio-0.25) > 0.01) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 3) err = err + 1
+    if (abs(cM%edge_media(1)%ratio - 0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(1)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(2)%ratio-0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%edges(3)%ratio-0.25) > 0.01) err = err + 1
     
-    if (size(cM%edge_media(1)%edges) /= 2) err = err + 1
-    if (abs(cM%edge_media(1)%ratio - 0.0) > 0.01) err = err + 1
-    if (abs(cM%edge_media(1)%edges(1)%ratio-0.0) > 0.01) err = err + 1
-    if (abs(cM%edge_media(1)%edges(2)%ratio-0.0) > 0.01) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(1)%ratio-0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%edges(2)%ratio-0.0) > 0.01) err = err + 1
 
     if (size(cM%face_media) /= 1) err = err + 1
     if (abs(cM%face_media(1)%ratio - 0.25) > 0.01) err = err + 1
@@ -411,13 +411,13 @@ integer function  test_conformal_edge_next_cell() bind(C) result(err)
     cM = buildConformalMedia(cR)
 
     if (size(cM%edge_media) /= 4) err = err + 1
-    if (abs(cM%edge_media(2)%ratio - 0.25) > 0.01) err = err + 1
-    if (abs(cM%edge_media(1)%ratio - 0.0) > 0.01) err = err + 1
+    if (abs(cM%edge_media(1)%ratio - 0.25) > 0.01) err = err + 1
+    if (abs(cM%edge_media(2)%ratio - 0.0) > 0.01) err = err + 1
     if (abs(cM%edge_media(3)%ratio - 0.75) > 0.01) err = err + 1
     if (abs(cM%edge_media(4)%ratio - 0.5) > 0.01) err = err + 1
 
-    if (size(cM%edge_media(2)%edges) /= 1) err = err + 1
-    if (size(cM%edge_media(1)%edges) /= 2) err = err + 1
+    if (size(cM%edge_media(1)%edges) /= 1) err = err + 1
+    if (size(cM%edge_media(2)%edges) /= 2) err = err + 1
     if (size(cM%edge_media(3)%edges) /= 1) err = err + 1
     if (size(cM%edge_media(4)%edges) /= 1) err = err + 1
 

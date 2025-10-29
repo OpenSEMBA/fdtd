@@ -181,7 +181,7 @@ contains
         do k = 1, size(tri_cell_map%keys)
             cell = tri_cell_map%keys(k)%cell
             if ((cell(1) == 18) .and. cell(2) == 22 .and. cell(3) == 21) then 
-                call sleep(1)
+                ! call sleep(1)
             end if
 
             triangles = tri_cell_map%getTrianglesInCell(tri_cell_map%keys(k)%cell)

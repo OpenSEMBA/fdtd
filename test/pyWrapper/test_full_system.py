@@ -1030,12 +1030,12 @@ def test_negative_offset_in_x(tmp_path):
     
 def test_conformal_sphere_rcs(tmp_path):
 
-    fn = CASES_FOLDER + 'conformal/conformal_sphere_rcs.fdtd.json'
+    fn = CASES_FOLDER + 'conformal/conformal_sphere_base.fdtd.json'
     cm = CaseMaker(fn)
-    cm.setGridFromVTK(GEOMETRIES_FOLDER+"sphere.tessellator.selective.grid.vtk")
+    cm.setGridFromVTK(GEOMETRIES_FOLDER+"sphere30.conformal.tessellator.grid.vtk")
     # add triangles to json
-    cm.addConformalVolumeFromVTK(GEOMETRIES_FOLDER+"sphere.tessellator.selective.cmsh.vtk")    
-    case_name = 'conformal_sphere_selective'
+    cm.addConformalVolumeFromVTK(GEOMETRIES_FOLDER+"sphere30.conformal.tessellator.cmsh.vtk")    
+    case_name = 'conformal_sphere_30'
     cm.exportCase(TEST_DATA_FOLDER+'cases/conformal/'+case_name)
     ###
     # solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,

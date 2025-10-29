@@ -298,6 +298,29 @@ contains
         end do
     end function
 
+    function findContourCell(contour) result(res)
+        type(side_t), dimension(:), allocatable, intent(in) :: contour
+        integer, dimension(3) :: res
+        integer :: i 
+        do i = 1, size(contour)
+            if (contour(i)%isOnAnyFace()) then 
+                res = contour(i)%getCell()
+            end if
+        end do
+    end function
+
+    function findContourFace(contour) result(res)
+        type(side_t), dimension(:), allocatable, intent(in) :: contour
+        integer :: res
+        integer :: i 
+        do i = 1, size(contour)
+            if (contour(i)%isOnAnyFace()) then 
+                res = contour(i)%getFace()
+            end if
+        end do
+        if (res == NOT_ON_FACE) error stop 'Contour face could not be identified'
+    
+    end function
 
     function buildCellSideSet(sides, on_sides) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: sides, on_sides

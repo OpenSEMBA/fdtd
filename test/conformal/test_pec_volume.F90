@@ -1,6 +1,5 @@
 integer function  test_conformal_pec_media() bind(C) result(err)
     use SEMBA_FDTD_mod
-    ! use conformal_mod
     implicit none
 
     type(semba_fdtd_t) :: semba
@@ -111,7 +110,6 @@ end function
 
 integer function  test_conformal_pec_corner() bind(C) result(err)
     use SEMBA_FDTD_mod
-    use conformal_mod
     implicit none
 
     type(semba_fdtd_t) :: semba
@@ -136,3 +134,20 @@ integer function  test_conformal_pec_corner() bind(C) result(err)
     call semba%end()
 
 end function
+
+integer function test_conformal_pec_media_raytracing() bind(C) result(err)
+    use SEMBA_FDTD_mod
+    implicit none
+
+    type(semba_fdtd_t) :: semba
+    type(solver_t) :: solver
+
+    err = 0
+    call chdir("./testData/cases/conformal/")
+    call semba%init("-i conformal_sphere_30.fdtd.json -mapvtk -n 1")
+    call semba%launch()
+    call semba%end()
+
+
+end function
+
