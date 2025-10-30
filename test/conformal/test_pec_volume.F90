@@ -133,6 +133,8 @@ integer function  test_conformal_pec_corner() bind(C) result(err)
     call semba%launch()
     call semba%end()
 
+    if (semba%l%fatalerror .eqv. .true.) err = err + 1
+
 end function
 
 integer function test_conformal_pec_media_raytracing() bind(C) result(err)
@@ -147,6 +149,8 @@ integer function test_conformal_pec_media_raytracing() bind(C) result(err)
     call semba%init("-i conformal_sphere_30.fdtd.json -mapvtk -n 1")
     call semba%launch()
     call semba%end()
+
+    if (semba%l%fatalerror .eqv. .true.) err = err + 1
 
 
 end function

@@ -71,6 +71,13 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([2, 2, 2]))
 
+def test_casemaker_sphere_rcs_case(tmp_path):
+    case_name = "sphere_rcs"
+    solver = FDTD(
+        CASES_FOLDER+"/sphere/" + case_name + ".fdtd.json",
+        path_to_exe=SEMBA_EXE)
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
 
 def test_fill_conformal_vtk_sphere(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal_sphere_1mm_rcs_delta.fdtd.json'
