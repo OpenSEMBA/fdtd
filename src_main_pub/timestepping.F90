@@ -1140,7 +1140,8 @@ contains
       end subroutine initializeLumped
 
       subroutine initializeWires()
-         real (kind=rkind) :: dtcritico, newdtcritico
+         real (kind=rkind_tiempo) :: dtcritico, newdtcritico
+         ! real (kind=rkind) :: dtcritico, newdtcritico
          character(len=BUFSIZE) :: dubuf, buff
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
@@ -1237,7 +1238,9 @@ contains
 #endif
       !!!sincroniza el dtcritico
 #ifdef CompileWithMPI
-         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
+         newdtcritico = 0.0
+         ! call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_tiempo, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
          if (this%sgg%dt <= dtcritico) then
@@ -2883,7 +2886,6 @@ contains
       write(dubuf,*)'END FINAL POSTPROCESSING at n= ',this%n
       call print11(this%control%layoutnumber,dubuf)
       this%finishedwithsuccess=.true.
-
       return
 
    end subroutine

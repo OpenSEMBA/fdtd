@@ -1,4 +1,5 @@
 from utils import *
+from src_caseMaker.caseMaker import *
 
 
 def test_read_wire_probe():

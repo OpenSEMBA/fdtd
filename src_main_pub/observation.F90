@@ -3655,6 +3655,8 @@ contains
          media = getMedia(field, i, j, k)
          if ((media==0).or.(sgg%Med(media)%is%Pec)) then
             res=0
+         else if (sgg%Med(media)%is%ConformalPec) then 
+            res = 12
          elseif (sgg%Med(media)%is%thinwire) then
             CALL StopOnError (0,1,'ERROR: A magnetic field cannot be a thin-wire')
          elseif (isSGBCorMultiport(media)) then
@@ -3692,6 +3694,8 @@ contains
             endif
          elseif ((media==0).or.(sgg%Med(media)%is%Pec)) then
             res=0.5_RKIND
+         else if (sgg%Med(media)%is%ConformalPec) then 
+            res=12.5
          elseif (isSGBCorMultiport(media)) then
             res=3.5
          elseif (isDispersive(media)) then

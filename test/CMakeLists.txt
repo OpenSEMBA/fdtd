@@ -21,6 +21,9 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     set(ROTATE_TESTS_LIBRARY rotate_tests)
 endif()
 
+add_subdirectory(conformal)
+set(CONFORMAL_TESTS_LIBRARY conformal_tests)
+
 add_executable(fdtd_tests 
     "fdtd_tests.cpp"
 )
@@ -28,6 +31,7 @@ add_executable(fdtd_tests
 target_link_libraries(fdtd_tests
     ${MTLN_TESTS_LIBRARY}
     ${SMBJSON_TESTS_LIBRARY}
+    ${CONFORMAL_TESTS_LIBRARY}
     ${ROTATE_TESTS_LIBRARY}
     ${SYSTEM_TESTS_LIBRARY}
     ${HDF_TESTS_LIBRARY}

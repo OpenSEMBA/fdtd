@@ -3,8 +3,6 @@ module smbjson
 #ifdef CompileWithSMBJSON
    use NFDETypes
 
-   use Report
-
    use NFDETypes_extension
    use smbjson_labels_mod
    use mesh_mod
@@ -15,6 +13,10 @@ module smbjson
 
    use json_module
    use json_kinds
+
+   use conformal_types_mod
+
+   use, intrinsic :: iso_fortran_env , only: error_unit
 
    implicit none
 
@@ -58,6 +60,7 @@ module smbjson
       procedure, private :: readVolumicProbes
       procedure, private :: readThinWires
       procedure, private :: readThinSlots
+      procedure, private :: readConformalRegions
       !
       !
       procedure, private :: getLogicalAt
@@ -109,7 +112,8 @@ module smbjson
    type, private :: domain_t
       real :: tstart = 0.0, tstop = 0.0, tstep = 0.0
       real :: fstart = 0.0, fstop = 0.0
-      integer :: fstep = 0
+      real :: fstep = 0.0
+      ! integer :: fstep = 0
       character(len=:), allocatable :: filename
       integer :: type1 = NP_T1_PLAIN, type2 = NP_T2_TIME
       logical :: isLogarithmicFrequencySpacing = .false.
@@ -174,6 +178,9 @@ contains
       res%BloquePrb = this%readBlockProbes()
       res%VolPrb = this%readVolumicProbes()
       
+      ! Conformal elements
+      res%conformalRegs = this%readConformalRegions()
+
       ! Thin elements
       res%tWires = this%readThinWires()
       res%tSlots = this%readThinSlots()
@@ -181,6 +188,7 @@ contains
 #ifdef CompileWithMTLN
       res%mtln = this%readMTLN()
 #endif
+
 
    end function
 
@@ -249,6 +257,23 @@ contains
                      type(cell_interval_t), dimension(:), allocatable :: intervals
                      cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
                      call mesh%addCellRegion(id, cR)
+                     
+                  end block
+                case (J_ELEM_TYPE_CONF_VOLUME) 
+                  block 
+                     type(conformal_region_t) :: cV
+                     type(coordinate_t) :: c
+                     integer :: j, k
+                     cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+                     do k = 1, size(cV%triangles)
+                        do j = 1, 3
+                           c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
+                           cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+                        end do
+                     end do
+                     cV%type = REGION_TYPE_VOLUME
+                     cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                     call mesh%addConformalRegion(id, cV)
                   end block
                 case default
                   call WarnErrReport('Invalid element type', .true.)
@@ -282,6 +307,36 @@ contains
             res(i)%end%cell = cellEnd(1:3)
          end do
       end function
+
+      function readTriangles(place, path) result(res)
+         type(json_value), pointer, intent(in) :: place
+         character (len=*), intent(in) :: path
+         type(triangle_t), dimension(:), allocatable :: res
+
+         type(json_value), pointer :: triangles, triangle_ptr
+         real, dimension(:), allocatable :: triangle
+         integer :: i, j, nTriangles
+         real, dimension(:), allocatable :: cellIni, cellEnd
+
+         logical :: containsTriangles
+         call this%core%get(place, path, triangles, found=containsTriangles)
+         if (.not. containsTriangles) then
+            allocate(res(0))
+            return
+         end if
+         nTriangles = this%core%count(triangles)
+         allocate(res(nTriangles))
+         do i = 1, nTriangles
+            call this%core%get_child(triangles, i, triangle_ptr)
+            call this%core%get(triangle_ptr, triangle)
+            do j = 1, 3
+               res(i)%vertices(j)%id = triangle(j)
+            end do
+         end do
+         
+
+      end function
+
    end function
 
    function readAdditionalArguments(this) result (res)
@@ -519,6 +574,65 @@ contains
          end if
       end subroutine         
    end function
+
+   function readConformalRegions(this) result(res)
+      class(parser_t) :: this
+      type(ConformalPECRegions) :: res
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
+      type(conformal_region_t) :: cR
+      type(triangle_t), dimension(:), allocatable :: aux_tris
+      character (len=:), allocatable :: tagName
+      integer :: i, j
+      logical :: found
+
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
+
+      do i = 1, size(mAs)
+         do j = 1, size(mAs(i)%elementIds)
+            cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
+            if (found) then 
+               tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
+               if (cR%type == REGION_TYPE_VOLUME) then 
+                  call appendRegion(res%volumes, cR, tagName)
+               end if
+               if (cR%type == REGION_TYPE_SURFACE) then 
+                  call appendRegion(res%surfaces, cR, tagName)
+               end if
+            end if
+         end do
+      end do
+
+   contains 
+      subroutine appendRegion(regions, region, tagName)
+         type(ConformalPECElements), dimension(:), pointer :: regions
+         type(conformal_region_t), intent(in) :: region
+         character (len=:), allocatable, intent(in) :: tagName
+
+         type(ConformalPECElements), dimension(:), allocatable :: aux
+         integer :: i
+         if (.not. associated(regions)) then 
+            allocate(regions(1))
+            regions(1)%triangles = region%triangles
+            regions(1)%tag = tagName
+         else 
+            allocate(aux(size(regions) + 1))
+            do i = 1, size(regions)
+               aux(i) = regions(i)
+            end do
+            aux(size(regions) + 1)%triangles = region%triangles
+            aux(size(regions) + 1)%tag  = tagName
+            deallocate(regions)
+            
+            allocate(regions(size(aux)))
+            do i = 1, size(aux)
+               regions(i) = aux(i)
+            end do
+
+         end if
+      end subroutine
+
+   end function
+
 
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
@@ -2016,7 +2130,8 @@ contains
       if (numberOfFrequencies == 0) then
          res%fstep = 0.0
       else
-         res%fstep = res%fstart * numberOfFrequencies
+         res%fstep = (res%fstop - res%fstart) / numberOfFrequencies
+         ! res%fstep = res%fstart * numberOfFrequencies
       endif
 
       freqSpacing = &
@@ -2305,6 +2420,7 @@ contains
          end do
       end function
    end function
+
 
 #ifdef CompileWithMTLN
    function readMTLN(this) result (mtln_res)
