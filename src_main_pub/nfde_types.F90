@@ -4,7 +4,7 @@ MODULE NFDETypes
 #ifdef CompileWithMTLN   
    USE mtln_types_mod
 #endif
-   USE geometry_mod, only: triangle_t
+   USE conformal_types_mod
    !
    IMPLICIT NONE
    INTEGER (KIND=4), PARAMETER :: RK = RKIND
@@ -161,7 +161,7 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: n_faces_media = 0
       TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: face_media => NULL ()
       TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
-      real (kind=rkind) :: cfl = 1.0
+      real (kind=rkind) :: time_step_scale_factor = 1.0
       character(len=bufsize) :: tag
    END TYPE ConformalMedia_t
 

@@ -5,9 +5,11 @@ module mesh_mod
    
    use fhash, only: fhash_tbl_t, key=>fhash_key
    use cells_mod
-   use conformal_region_mod
+   use geometry_mod, only: triangle_t
    integer, private, parameter  ::  MAX_LINE = 256
-   
+   integer, parameter :: REGION_TYPE_VOLUME = 3
+   integer, parameter :: REGION_TYPE_SURFACE = 2
+
    type :: element_t
       integer, dimension(:), allocatable :: coordIds
    end type
@@ -60,6 +62,12 @@ module mesh_mod
       procedure :: allocateCoordinates => mesh_allocateCoordinates
       procedure :: allocateElements => mesh_allocateElements
    end type
+
+   type, public :: conformal_region_t
+      type(triangle_t), dimension(:), allocatable :: triangles
+      type(cell_interval_t), dimension(:), allocatable :: intervals
+      integer :: type
+    end type
 
 
 contains

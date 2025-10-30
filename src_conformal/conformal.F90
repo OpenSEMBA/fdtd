@@ -2,7 +2,7 @@ module conformal_mod
 
     use geometry_mod
     use cell_map_mod
-    use NFDETypes, only: ConformalPECRegions, ConformalMedia_t, edge_t, face_t, conformal_face_media_t, conformal_edge_media_t, rkind
+    use NFDETypes, only: ConformalPECRegions, ConformalPECElements, ConformalMedia_t, edge_t, face_t, conformal_face_media_t, conformal_edge_media_t, rkind
 
     real (kind=rkind), PARAMETER :: RATIO_EQ_TOLERANCE = 0.05
 
@@ -10,6 +10,16 @@ contains
 
    function buildConformalMedia(regions) result(res)
       type(ConformalPECRegions), intent(in) :: regions
+      type(ConformalMedia_t), dimension(:), allocatable :: res
+      integer :: i
+      allocate(res(size(regions%volumes)))
+      do i = 1, size(regions%volumes)
+         res(i) = buildConformalVolume(regions%volumes(i))
+      end do
+   end function   
+
+   function buildConformalVolume(volume) result(res)
+      type(ConformalPECElements), intent(in) :: volume
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map
@@ -18,27 +28,38 @@ contains
       type(face_t), dimension(:), allocatable :: faces, filtered_faces
       integer :: i
       
-      do i = 1, size(regions%volumes)
-         call buildCellMap(cell_map, regions%volumes(i)%triangles)
-      end do
-      call fillElements(cell_map, faces, face_ratios, edges)
-
-      allocate(edge_ratios(0))
-      do i = 1, size(edges)
-         if (isNewRatio(edge_ratios, edges(i)%ratio)) then 
-            call addRatio(edge_ratios, edges(i)%ratio)
-         end if
-      end do
+      call buildCellMap(cell_map, volume%triangles)
+      call fillElements(cell_map, faces, edges)
+      call addNewRatios(edges, faces, edge_ratios, face_ratios)
       res%edge_media => addEdgeMedia(edges, edge_ratios)
       res%face_media => addFaceMedia(faces, face_ratios)
 
       res%n_edges_media = size(res%edge_media)
       res%n_faces_media = size(res%face_media)
 
-      res%cfl = computeCFL(res%edge_media, res%face_media)
-      res%tag = regions%volumes(1)%tag
+      res%time_step_scale_factor = computeTimeStepScalingFactor(res%edge_media, res%face_media)
+      res%tag = volume%tag
    end function
 
+   subroutine addNewRatios(edges, faces, edge_ratios, face_ratios)
+      type(edge_t), dimension(:), allocatable, intent(in) :: edges
+      type(face_t), dimension(:), allocatable, intent(in) :: faces
+      real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios, face_ratios
+      integer :: i
+      allocate(edge_ratios(0))
+      allocate(face_ratios(0))
+      do i = 1, size(edges)
+         if (isNewRatio(edge_ratios, edges(i)%ratio)) then 
+            call addRatio(edge_ratios, edges(i)%ratio)
+         end if
+      end do
+      do i = 1, size(faces)
+         if (isNewRatio(face_ratios, faces(i)%ratio)) then 
+            call addRatio(face_ratios, faces(i)%ratio)
+         end if
+      end do
+
+   end subroutine
 
 
    function addEdgeMedia(edges, edge_ratios) result(res)
@@ -72,49 +93,49 @@ contains
 
    end function
 
-   function computeCFL(edges_media, faces_media) result(res)
+   function computeTimeStepScalingFactor(edges_media, faces_media) result(res)
       TYPE (conformal_face_media_t), dimension(:), intent(in), pointer :: faces_media
       TYPE (conformal_edge_media_t), dimension(:), intent(in), pointer :: edges_media
       real (kind=rkind) :: res, l_ratio 
-      type(cfl_map_t) :: cfl_map
-      type(cfl_info_t) :: cfl_info
+      type(cell_ratios_map_t) :: cell_ratio_map
+      type(cell_ratios_t) :: cell_ratio_info
       integer (kind=4), dimension(3) :: cell, aux_cell
       integer :: idx1, idx2
       integer :: i,j
       res = 1.0
-      if (.not. allocated(cfl_map%keys)) allocate(cfl_map%keys(0))
+      if (.not. allocated(cell_ratio_map%keys)) allocate(cell_ratio_map%keys(0))
       do i = 1, size(faces_media)
          do j = 1, size(faces_media(i)%faces)
-            call cfl_map%addFaceRatio(faces_media(i)%faces(j)%cell, faces_media(i)%faces(j)%direction, faces_media(i)%faces(j)%ratio)
+            call cell_ratio_map%addFaceRatio(faces_media(i)%faces(j)%cell, faces_media(i)%faces(j)%direction, faces_media(i)%faces(j)%ratio)
          end do
       end do
       do i = 1, size(edges_media)
          do j = 1, size(edges_media(i)%edges)
-            call cfl_map%addEdgeRatio(edges_media(i)%edges(j)%cell, edges_media(i)%edges(j)%direction, edges_media(i)%edges(j)%ratio)
+            call cell_ratio_map%addEdgeRatio(edges_media(i)%edges(j)%cell, edges_media(i)%edges(j)%direction, edges_media(i)%edges(j)%ratio)
          end do
       end do
       l_ratio = 0.0
-      do i = 1, size(cfl_map%keys)
-         cell = cfl_map%keys(i)%cell
+      do i = 1, size(cell_ratio_map%keys)
+         cell = cell_ratio_map%keys(i)%cell
          aux_cell = cell
-         cfl_info = cfl_map%getCFLInCell(cell)
+         cell_ratio_info = cell_ratio_map%getCellRatiosInCell(cell)
          do j = FACE_X, FACE_Z
-            area = cfl_info%area(j)
+            area = cell_ratio_info%area(j)
             idx1 = mod(j,3) + 1
             idx2 = mod(j + 1,3) + 1
-            l_ratio = max(cfl_info%length(idx1),cfl_info%length(idx2))
+            l_ratio = max(cell_ratio_info%length(idx1),cell_ratio_info%length(idx2))
             aux_cell(idx1) = aux_cell(idx1) + 1
-            if (cfl_map%hasKey(aux_cell)) then 
-               cfl_info = cfl_map%getCFLInCell(aux_cell)
-               l_ratio = max(l_ratio, cfl_info%length(idx2))
+            if (cell_ratio_map%hasKey(aux_cell)) then 
+               cell_ratio_info = cell_ratio_map%getCellRatiosInCell(aux_cell)
+               l_ratio = max(l_ratio, cell_ratio_info%length(idx2))
             else 
                l_ratio = 1.0
             end if
             aux_cell = cell
             aux_cell(idx2) = aux_cell(idx2) + 1
-            if (cfl_map%hasKey(aux_cell)) then 
-               cfl_info = cfl_map%getCFLInCell(aux_cell)
-               l_ratio = max(l_ratio, cfl_info%length(idx1))
+            if (cell_ratio_map%hasKey(aux_cell)) then 
+               cell_ratio_info = cell_ratio_map%getCellRatiosInCell(aux_cell)
+               l_ratio = max(l_ratio, cell_ratio_info%length(idx1))
             else
                l_ratio = 1.0
             end if
@@ -126,15 +147,13 @@ contains
    end function   
 
 
-   subroutine fillElements(cell_map, faces, face_ratios, edges)
+   subroutine fillElements(cell_map, faces, edges)
       type(cell_map_t), intent(in) :: cell_map
       type (face_t), dimension (:), allocatable, intent(inout) :: faces
-      real (kind=rkind), dimension(:), allocatable, intent(inout) :: face_ratios
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       integer (kind=4), dimension(3) :: cell
       integer :: i, edge, face
       allocate(faces(0))
-      allocate(face_ratios(0))
       allocate(edges(0))
       block
          type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour, sides_on_edge
@@ -146,9 +165,9 @@ contains
             do face = FACE_X, FACE_Z
                sides_on_face = getSidesOnFace(sides, face)
                contour = findLargestContour(sides_on_face)
-               call fillFaceFromContour(contour, faces, face_ratios)
+               call fillFaceFromContour(contour, faces)
                call fillEdgesFromContour(contour, edges)
-               call fillFullFaces(getTrianglesOnFace(tris, face), faces, face_ratios, edges)
+               call fillFullFaces(getTrianglesOnFace(tris, face), faces, edges)
             end do
          end do
       end block
@@ -173,22 +192,20 @@ contains
       end block
    end subroutine
 
-   subroutine fillFullFaces(tris_on_face, faces, face_ratios, edges)
+   subroutine fillFullFaces(tris_on_face, faces, edges)
       type(triangle_t), dimension(:), allocatable, intent(in) :: tris_on_face
       type (face_t), dimension (:), allocatable, intent(inout) :: faces
-      real (kind=rkind), dimension(:), allocatable, intent(inout) :: face_ratios
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       type(side_t), dimension(:), allocatable :: tri_sides
       integer :: j, k, s
       real :: area
       area = 0.0
       do j = 1, size(tris_on_face)
-         area = area + tris_on_face(j)%getArea()
+         area = area + getArea(tris_on_face(j))
       end do
       if (abs(area-1.0) < 1e-4) then 
 
          call addFace(faces, tris_on_face(1)%getCell(), tris_on_face(1)%getFace(), 0.0)
-         if (isNewRatio(face_ratios, 0.0)) call addRatio(face_ratios, 0.0)
          do k = 1, size(tris_on_face)
             tri_sides = tris_on_face(k)%getSides()
             do s = 1, 3
@@ -237,10 +254,9 @@ contains
       end do
    end subroutine
 
-   subroutine fillFaceFromContour(contour, faces, face_ratios)
+   subroutine fillFaceFromContour(contour, faces)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type (face_t), dimension (:), allocatable :: faces
-      real (kind=rkind), dimension(:), allocatable :: face_ratios
       integer :: face
       integer (kind=4), dimension(3) :: cell
       real :: face_ratio
@@ -249,9 +265,7 @@ contains
          cell = findContourCell(contour)
          face_ratio = 1.0 - contourArea(contour)
          call addFace(faces, cell, face, face_ratio)
-         if (isNewRatio(face_ratios, face_ratio)) call addRatio(face_ratios,face_ratio)
       end if
-
    end subroutine
 
    function findLargestContour(sides) result(res)

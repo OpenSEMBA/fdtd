@@ -50,7 +50,6 @@ contains
       type (SGGFDTDINFO), intent(INOUT) , target    ::  sgg
       REAL (KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
       REAL (KIND=RKIND_tiempo), intent(out) :: dtcritico
-      ! REAL (KIND=RKIND), intent(out) :: dtcritico
       REAL (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
            Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
            Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &

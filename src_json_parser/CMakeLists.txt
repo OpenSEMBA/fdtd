@@ -20,7 +20,6 @@ add_library(smbjson
 	"mesh.F90"
 	"parser_tools.F90"
 	"nfdetypes_extension.F90" 
-	"conformal_region.F90"
 )
 
 target_link_libraries(smbjson PRIVATE jsonfortran semba-types semba-reports fhash conformal)

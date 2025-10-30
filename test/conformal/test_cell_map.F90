@@ -1,4 +1,4 @@
-integer function test_fhash_coords() bind(C) result(err)
+integer function test_cell_map_coords() bind(C) result(err)
     use cell_map_mod
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use iso_fortran_env, only: int32, int64
@@ -28,7 +28,7 @@ integer function test_fhash_coords() bind(C) result(err)
 
 end function
 
-integer function test_fhash_array() bind(C) result(err)
+integer function test_cell_map_array() bind(C) result(err)
     use cell_map_mod
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use iso_fortran_env, only: int32, int64
@@ -101,7 +101,7 @@ integer function test_fhash_array() bind(C) result(err)
 
 end function
 
-integer function test_fhash_add_triangle() bind(C) result(err)
+integer function test_cell_map_add_triangle() bind(C) result(err)
     use cell_map_mod
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use iso_fortran_env, only: int32, int64
@@ -161,7 +161,7 @@ integer function test_fhash_add_triangle() bind(C) result(err)
     if (.not. all(tbl%keys(1)%cell == [0,0,0])) err = err + 1
 end function
 
-integer function test_fhash_cellmap_set_get() bind(C) result(err)
+integer function test_cell_map_cellmap_set_get() bind(C) result(err)
     use cell_map_mod
     use geometry_mod
     implicit none 

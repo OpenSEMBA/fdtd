@@ -3,8 +3,6 @@ module smbjson
 #ifdef CompileWithSMBJSON
    use NFDETypes
 
-   use Report
-
    use NFDETypes_extension
    use smbjson_labels_mod
    use mesh_mod
@@ -16,8 +14,7 @@ module smbjson
    use json_module
    use json_kinds
 
-   use geometry_mod
-   ! use cell_map_mod
+   use conformal_types_mod
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -115,7 +112,8 @@ module smbjson
    type, private :: domain_t
       real :: tstart = 0.0, tstop = 0.0, tstep = 0.0
       real :: fstart = 0.0, fstop = 0.0
-      integer :: fstep = 0
+      real :: fstep = 0.0
+      ! integer :: fstep = 0
       character(len=:), allocatable :: filename
       integer :: type1 = NP_T1_PLAIN, type2 = NP_T2_TIME
       logical :: isLogarithmicFrequencySpacing = .false.
@@ -2132,7 +2130,8 @@ contains
       if (numberOfFrequencies == 0) then
          res%fstep = 0.0
       else
-         res%fstep = res%fstart * numberOfFrequencies
+         res%fstep = (res%fstop - res%fstart) / numberOfFrequencies
+         ! res%fstep = res%fstart * numberOfFrequencies
       endif
 
       freqSpacing = &

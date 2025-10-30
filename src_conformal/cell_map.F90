@@ -7,7 +7,6 @@ module cell_map_mod
 
 
     type :: element_set_t
-!        type(side_t), dimension(:), allocatable :: sides_on_face_set ! not repeated sides on faces 
         type(triangle_t), dimension(:), allocatable :: triangles ! triangles on faces
         type(side_t), dimension(:), allocatable :: sides ! sides from triangles off faces
         type(side_t), dimension(:), allocatable :: sides_on  ! sides from triangles on faces
@@ -17,17 +16,17 @@ module cell_map_mod
         integer, dimension(3) :: cell
     end type
 
-    type, public :: cfl_info_t
+    type, public :: cell_ratios_t
         real (kind=rkind), dimension(3) :: area = [1,1,1], length = [1,1,1]
     end type
 
-    type, extends(fhash_tbl_t) :: cfl_map_t
+    type, extends(fhash_tbl_t) :: cell_ratios_map_t
         type(cell_t), dimension(:), allocatable :: keys
     contains
-        procedure :: hasKey => cfl_hasKey
+        procedure :: hasKey => cell_ratio_hasKey
         procedure :: addFaceRatio
         procedure :: addEdgeRatio
-        procedure :: getCFLInCell
+        procedure :: getCellRatiosInCell
     end type
 
     type, extends(fhash_tbl_t) :: cell_map_t
@@ -37,7 +36,6 @@ module cell_map_mod
         procedure :: getTrianglesInCell
         procedure :: getSidesInCell
         procedure :: getOnSidesInCell
-        ! procedure :: getSideSetOnFaceInCell
     end type
 
     type, extends(cell_map_t) :: triangle_map_t
@@ -49,7 +47,6 @@ module cell_map_mod
     contains
         procedure :: addSide
         procedure :: addSideOn
-        ! procedure :: addSideToSet
     end type
 
 contains
@@ -57,21 +54,17 @@ contains
     subroutine buildCellMap(res, triangles)
         type(cell_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
-        type(triangle_map_t) :: tri_map, tri_in_cell_map
-        type(side_map_t) :: side_map, side_map_on, side_set_map
+        type(triangle_map_t) :: tri_map
+        type(side_map_t) :: side_map, side_map_on
         type(cell_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
         integer (kind=4) :: i
-!        call buildMapOfTrisInCells(tri_in_cell_map, triangles)
-!        call buildMapOfSidesSetOnFaces(side_set_map, tri_in_cell_map)
-
         call buildMapOfTrisOnFaces(tri_map, triangles)
         call buildMapOfSidesOnFaceOrEdgeFromTrisNotOnFaces(side_map, triangles)
         call buildMapOfSidesOnEdgeFromTrisOnFaces(side_map_on, triangles)
         keys = mergeKeys(tri_map%keys, side_map%keys)
         keys = mergeKeys(keys, side_map_on%keys)
         do i = 1, size(keys)
-!            elems%sides_on_face_set = side_set_map%getSideSetOnFaceInCell(keys(i)%cell)
             elems%triangles = tri_map%getTrianglesInCell(keys(i)%cell)
             elems%sides = side_map%getSidesInCell(keys(i)%cell)
             elems%sides_on = side_map_on%getOnSidesInCell(keys(i)%cell)
@@ -156,59 +149,6 @@ contains
         end do
     end subroutine
 
-    ! subroutine buildMapOfTrisInCells(res, triangles)
-    !     type(triangle_map_t), intent(inout) :: res
-    !     type(triangle_t), dimension(:), allocatable :: triangles
-    !     type(side_t), dimension(3) :: sides
-    !     integer (kind=4) :: i
-    !     if (.not. allocated(res%keys)) allocate(res%keys(0))
-    !     do i = 1, size(triangles)
-    !         call res%addTriangle(triangles(i))
-    !     end do
-    ! end subroutine
-
-    ! subroutine buildMapOfSidesSetOnFaces(res, tri_cell_map)
-    !     type(side_map_t), intent(inout) :: res
-    !     type(triangle_map_t), intent(in) :: tri_cell_map
-    !     type(triangle_t), dimension(:), allocatable :: triangles
-    !     type(side_t), dimension(3) :: sides
-    !     integer (kind=4) :: i, j, k
-    !     integer (kind=4), dimension(3) :: cell
-    !     if (.not. allocated(res%keys)) allocate(res%keys(0))
-
-    !     do k = 1, size(tri_cell_map%keys)
-    !         cell = tri_cell_map%keys(k)%cell
-    !         triangles = tri_cell_map%getTrianglesInCell(tri_cell_map%keys(k)%cell)
-    !         do i = 1, size(triangles)
-    !             sides = triangles(i)%getSides()
-    !             do j = 1, 3
-    !                 if (sides(j)%isOnAnyFace() .and. sides(j)%isInCell(cell)) then 
-    !                     call res%addSideToSet(sides(j))
-    !                 end if
-    !             end do
-    !         end do
-    !     end do
-
-
-    ! end subroutine
-
-    ! subroutine buildMapOfSidesSetOnFaces(res, triangles)
-    !     type(side_map_t), intent(inout) :: res
-    !     type(triangle_t), dimension(:), allocatable :: triangles
-    !     type(side_t), dimension(3) :: sides
-    !     integer (kind=4) :: i, j
-    !     integer (kind=4), dimension(3) :: cell
-    !     if (.not. allocated(res%keys)) allocate(res%keys(0))
-    !     do i = 1, size(triangles)
-    !         sides = triangles(i)%getSides()
-    !         do j = 1, 3
-    !             if (sides(j)%isOnAnyFace()) then 
-    !                 call res%addSideToSet(sides(j))
-    !             end if
-    !         end do
-    !     end do
-    ! end subroutine
-
     subroutine buildMapOfSidesOnEdgeFromTrisOnFaces(res, triangles)
         type(side_map_t), intent(inout) :: res
         type(triangle_t), dimension(:), allocatable :: triangles
@@ -237,13 +177,13 @@ contains
         if (stat == 0) cell_hasKey = .true.
     end function
 
-    logical function cfl_hasKey(this, k)
-        class(cfl_map_t) :: this
+    logical function cell_ratio_hasKey(this, k)
+        class(cell_ratios_map_t) :: this
         integer(kind=4), dimension(3), intent(in) :: k
         integer :: stat
-        cfl_hasKey = .false.
+        cell_ratio_hasKey = .false.
         call this%check_key(key(k), stat)
-        if (stat == 0) cfl_hasKey = .true.
+        if (stat == 0) cell_ratio_hasKey = .true.
     end function
 
     subroutine addTriangle(this, triangle)
@@ -323,62 +263,6 @@ contains
 
     end subroutine
 
-    ! subroutine addSideToSet(this, side)
-    !     class(side_map_t) :: this
-    !     type(side_t) :: side
-    !     class(*), allocatable :: alloc_list
-    !     type(element_set_t) :: aux_list
-    !     integer (kind=4), dimension(3) :: cell
-    !     type(cell_t), dimension(:), allocatable :: aux_keys
-    !     integer :: i, n
-    !     cell = side%getCell()
-
-    !     if (this%hasKey(cell)) then 
-
-    !         call this%get_raw(key(cell), alloc_list)
-    !         select type(alloc_list)
-    !         type is(element_set_t)
-            
-    !             if (isNewSide(alloc_list%sides_on_face_set, side)) then 
-    !                 allocate(aux_list%sides_on_face_set(size(alloc_list%sides_on_face_set) + 1))
-    !                 aux_list%sides_on_face_set(1:size(alloc_list%sides_on_face_set)) = alloc_list%sides_on_face_set
-    !                 aux_list%sides_on_face_set(size(alloc_list%sides_on_face_set) + 1) = side
-    !                 deallocate(alloc_list%sides_on_face_set)
-    !                 allocate(alloc_list%sides_on_face_set(size(aux_list%sides_on_face_set)))
-    !                 alloc_list%sides_on_face_set = aux_list%sides_on_face_set
-    !                 call this%set(key(cell), value = alloc_list)
-    !             else
-    !                 allocate(aux_list%sides_on_face_set(size(alloc_list%sides_on_face_set) - 1))
-    !                 n = 0
-    !                 do i = 1, size(alloc_list%sides_on_face_set)
-    !                     if (.not. alloc_list%sides_on_face_set(i)%isEquiv(side)) then 
-    !                         n = n + 1
-    !                         aux_list%sides_on_face_set(n) = alloc_list%sides_on_face_set(i)
-    !                     end if
-    !                 end do
-    !                 deallocate(alloc_list%sides_on_face_set)
-    !                 allocate(alloc_list%sides_on_face_set(size(aux_list%sides_on_face_set)))
-    !                 alloc_list%sides_on_face_set = aux_list%sides_on_face_set
-    !                 call this%set(key(cell), value = alloc_list)
-
-    !             end if
-    !         end select
-
-    !     else 
-    !         allocate(aux_list%sides_on_face_set(1))
-    !         aux_list%sides_on_face_set(1) = side
-    !         call this%set(key(cell), value = aux_list)
-
-    !         allocate(aux_keys(size(this%keys) + 1))
-    !         aux_keys(1:size(this%keys)) = this%keys
-    !         aux_keys(size(this%keys) + 1)%cell = side%getCell()
-    !         deallocate(this%keys)
-    !         allocate(this%keys(size(aux_keys)))
-    !         this%keys = aux_keys
-    !     end if
-
-    ! end subroutine
-
     subroutine addSideOn(this, side)
         class(side_map_t) :: this
         type(side_t) :: side
@@ -416,23 +300,6 @@ contains
         end if
 
     end subroutine
-
-    ! function getSideSetOnFaceInCell(this, k) result(res)
-    !     class(cell_map_t) :: this
-    !     integer(kind=4), dimension(3) :: k
-    !     class(*), allocatable :: alloc_list
-    !     type(side_t), dimension(:), allocatable :: res
-
-    !     if (this%hasKey(k)) then 
-    !         call this%get_raw(key(k), alloc_list)
-    !         select type(alloc_list)
-    !         type is(element_set_t)
-    !             res = alloc_list%sides_on_face_set
-    !         end select
-    !     else
-    !         allocate(res(0))
-    !     end if
-    ! end function
 
     function getTrianglesInCell(this, k) result(res)
         class(cell_map_t) :: this
@@ -489,9 +356,9 @@ contains
 
 
     subroutine addFaceRatio(this, cell, direction, ratio)
-        class(cfl_map_t) :: this
+        class(cell_ratios_map_t) :: this
         class(*), allocatable :: alloc_list
-        type(cfl_info_t) :: aux_cfl
+        type(cell_ratios_t) :: aux_cell_ratio
         integer (kind=4), dimension(3), intent(in) :: cell
         integer (kind=4), intent(in) :: direction
         real (kind=rkind), intent(in) :: ratio
@@ -501,14 +368,14 @@ contains
 
             call this%get_raw(key(cell), alloc_list)
             select type(alloc_list)
-            type is(cfl_info_t)
+            type is(cell_ratios_t)
                 alloc_list%area(direction) = ratio
                 call this%set(key(cell), value = alloc_list)
             end select
 
         else 
-            aux_cfl%area(direction) = ratio
-            call this%set(key(cell), value = aux_cfl)
+            aux_cell_ratio%area(direction) = ratio
+            call this%set(key(cell), value = aux_cell_ratio)
 
             allocate(aux_keys(size(this%keys) + 1))
             aux_keys(1:size(this%keys)) = this%keys
@@ -520,10 +387,10 @@ contains
 
     end subroutine
     subroutine addEdgeRatio(this, cell, direction, ratio)
-        class(cfl_map_t) :: this
+        class(cell_ratios_map_t) :: this
         
         class(*), allocatable :: alloc_list
-        type(cfl_info_t) :: aux_cfl
+        type(cell_ratios_t) :: aux_cell_ratio
         integer (kind=4), dimension(3), intent(in) :: cell
         integer (kind=4), intent(in) :: direction
         real (kind=rkind), intent(in) :: ratio
@@ -533,14 +400,14 @@ contains
 
             call this%get_raw(key(cell), alloc_list)
             select type(alloc_list)
-            type is(cfl_info_t)
+            type is(cell_ratios_t)
                 alloc_list%length(direction) = ratio
                 call this%set(key(cell), value = alloc_list)
             end select
 
         else 
-            aux_cfl%length(direction) = ratio
-            call this%set(key(cell), value = aux_cfl)
+            aux_cell_ratio%length(direction) = ratio
+            call this%set(key(cell), value = aux_cell_ratio)
 
             allocate(aux_keys(size(this%keys) + 1))
             aux_keys(1:size(this%keys)) = this%keys
@@ -552,16 +419,16 @@ contains
 
     end subroutine
 
-    function getCFLInCell(this, k) result(res)
-        class(cfl_map_t) :: this
+    function getCellRatiosInCell(this, k) result(res)
+        class(cell_ratios_map_t) :: this
         integer(kind=4), dimension(3) :: k
         class(*), allocatable :: alloc_list
-        type(cfl_info_t) :: res
+        type(cell_ratios_t) :: res
 
         if (this%hasKey(k)) then 
             call this%get_raw(key(k), alloc_list)
             select type(alloc_list)
-            type is(cfl_info_t)
+            type is(cell_ratios_t)
                 res = alloc_list
             end select
         end if
