@@ -1,4 +1,4 @@
-message(STATUS "Creating build system for test/vtk")
+message(STATUS "Creating build system for test/observation")
 
 add_library(
     observation_test_fortran
