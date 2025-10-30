@@ -7,7 +7,7 @@ module cell_map_mod
 
 
     type :: element_set_t
-        type(side_t), dimension(:), allocatable :: sides_on_face_set ! not repeated sides on faces 
+!        type(side_t), dimension(:), allocatable :: sides_on_face_set ! not repeated sides on faces 
         type(triangle_t), dimension(:), allocatable :: triangles ! triangles on faces
         type(side_t), dimension(:), allocatable :: sides ! sides from triangles off faces
         type(side_t), dimension(:), allocatable :: sides_on  ! sides from triangles on faces
@@ -37,7 +37,7 @@ module cell_map_mod
         procedure :: getTrianglesInCell
         procedure :: getSidesInCell
         procedure :: getOnSidesInCell
-        procedure :: getSideSetOnFaceInCell
+        ! procedure :: getSideSetOnFaceInCell
     end type
 
     type, extends(cell_map_t) :: triangle_map_t
@@ -49,7 +49,7 @@ module cell_map_mod
     contains
         procedure :: addSide
         procedure :: addSideOn
-        procedure :: addSideToSet
+        ! procedure :: addSideToSet
     end type
 
 contains
@@ -62,10 +62,8 @@ contains
         type(cell_t), dimension(:), allocatable :: keys
         type(element_set_t) :: elems
         integer (kind=4) :: i
-        call buildMapOfTrisInCells(tri_in_cell_map, triangles)
-
-        call buildMapOfSidesSetOnFaces(side_set_map, tri_in_cell_map)
-        ! call buildMapOfSidesSetOnFaces(side_set_map, triangles)
+!        call buildMapOfTrisInCells(tri_in_cell_map, triangles)
+!        call buildMapOfSidesSetOnFaces(side_set_map, tri_in_cell_map)
 
         call buildMapOfTrisOnFaces(tri_map, triangles)
         call buildMapOfSidesOnFaceOrEdgeFromTrisNotOnFaces(side_map, triangles)
@@ -73,7 +71,7 @@ contains
         keys = mergeKeys(tri_map%keys, side_map%keys)
         keys = mergeKeys(keys, side_map_on%keys)
         do i = 1, size(keys)
-            elems%sides_on_face_set = side_set_map%getSideSetOnFaceInCell(keys(i)%cell)
+!            elems%sides_on_face_set = side_set_map%getSideSetOnFaceInCell(keys(i)%cell)
             elems%triangles = tri_map%getTrianglesInCell(keys(i)%cell)
             elems%sides = side_map%getSidesInCell(keys(i)%cell)
             elems%sides_on = side_map_on%getOnSidesInCell(keys(i)%cell)
@@ -158,45 +156,41 @@ contains
         end do
     end subroutine
 
-    subroutine buildMapOfTrisInCells(res, triangles)
-        type(triangle_map_t), intent(inout) :: res
-        type(triangle_t), dimension(:), allocatable :: triangles
-        type(side_t), dimension(3) :: sides
-        integer (kind=4) :: i
-        if (.not. allocated(res%keys)) allocate(res%keys(0))
-        do i = 1, size(triangles)
-            call res%addTriangle(triangles(i))
-        end do
-    end subroutine
+    ! subroutine buildMapOfTrisInCells(res, triangles)
+    !     type(triangle_map_t), intent(inout) :: res
+    !     type(triangle_t), dimension(:), allocatable :: triangles
+    !     type(side_t), dimension(3) :: sides
+    !     integer (kind=4) :: i
+    !     if (.not. allocated(res%keys)) allocate(res%keys(0))
+    !     do i = 1, size(triangles)
+    !         call res%addTriangle(triangles(i))
+    !     end do
+    ! end subroutine
 
-    subroutine buildMapOfSidesSetOnFaces(res, tri_cell_map)
-        type(side_map_t), intent(inout) :: res
-        type(triangle_map_t), intent(in) :: tri_cell_map
-        type(triangle_t), dimension(:), allocatable :: triangles
-        type(side_t), dimension(3) :: sides
-        integer (kind=4) :: i, j, k
-        integer (kind=4), dimension(3) :: cell
-        if (.not. allocated(res%keys)) allocate(res%keys(0))
+    ! subroutine buildMapOfSidesSetOnFaces(res, tri_cell_map)
+    !     type(side_map_t), intent(inout) :: res
+    !     type(triangle_map_t), intent(in) :: tri_cell_map
+    !     type(triangle_t), dimension(:), allocatable :: triangles
+    !     type(side_t), dimension(3) :: sides
+    !     integer (kind=4) :: i, j, k
+    !     integer (kind=4), dimension(3) :: cell
+    !     if (.not. allocated(res%keys)) allocate(res%keys(0))
 
-        do k = 1, size(tri_cell_map%keys)
-            cell = tri_cell_map%keys(k)%cell
-            if ((cell(1) == 18) .and. cell(2) == 22 .and. cell(3) == 21) then 
-                ! call sleep(1)
-            end if
-
-            triangles = tri_cell_map%getTrianglesInCell(tri_cell_map%keys(k)%cell)
-            do i = 1, size(triangles)
-                sides = triangles(i)%getSides()
-                do j = 1, 3
-                    if (sides(j)%isOnAnyFace() .and. sides(j)%isInCell(cell)) then 
-                        call res%addSideToSet(sides(j))
-                    end if
-                end do
-            end do
-        end do
+    !     do k = 1, size(tri_cell_map%keys)
+    !         cell = tri_cell_map%keys(k)%cell
+    !         triangles = tri_cell_map%getTrianglesInCell(tri_cell_map%keys(k)%cell)
+    !         do i = 1, size(triangles)
+    !             sides = triangles(i)%getSides()
+    !             do j = 1, 3
+    !                 if (sides(j)%isOnAnyFace() .and. sides(j)%isInCell(cell)) then 
+    !                     call res%addSideToSet(sides(j))
+    !                 end if
+    !             end do
+    !         end do
+    !     end do
 
 
-    end subroutine
+    ! end subroutine
 
     ! subroutine buildMapOfSidesSetOnFaces(res, triangles)
     !     type(side_map_t), intent(inout) :: res
@@ -329,61 +323,61 @@ contains
 
     end subroutine
 
-    subroutine addSideToSet(this, side)
-        class(side_map_t) :: this
-        type(side_t) :: side
-        class(*), allocatable :: alloc_list
-        type(element_set_t) :: aux_list
-        integer (kind=4), dimension(3) :: cell
-        type(cell_t), dimension(:), allocatable :: aux_keys
-        integer :: i, n
-        cell = side%getCell()
+    ! subroutine addSideToSet(this, side)
+    !     class(side_map_t) :: this
+    !     type(side_t) :: side
+    !     class(*), allocatable :: alloc_list
+    !     type(element_set_t) :: aux_list
+    !     integer (kind=4), dimension(3) :: cell
+    !     type(cell_t), dimension(:), allocatable :: aux_keys
+    !     integer :: i, n
+    !     cell = side%getCell()
 
-        if (this%hasKey(cell)) then 
+    !     if (this%hasKey(cell)) then 
 
-            call this%get_raw(key(cell), alloc_list)
-            select type(alloc_list)
-            type is(element_set_t)
+    !         call this%get_raw(key(cell), alloc_list)
+    !         select type(alloc_list)
+    !         type is(element_set_t)
             
-                if (isNewSide(alloc_list%sides_on_face_set, side)) then 
-                    allocate(aux_list%sides_on_face_set(size(alloc_list%sides_on_face_set) + 1))
-                    aux_list%sides_on_face_set(1:size(alloc_list%sides_on_face_set)) = alloc_list%sides_on_face_set
-                    aux_list%sides_on_face_set(size(alloc_list%sides_on_face_set) + 1) = side
-                    deallocate(alloc_list%sides_on_face_set)
-                    allocate(alloc_list%sides_on_face_set(size(aux_list%sides_on_face_set)))
-                    alloc_list%sides_on_face_set = aux_list%sides_on_face_set
-                    call this%set(key(cell), value = alloc_list)
-                else
-                    allocate(aux_list%sides_on_face_set(size(alloc_list%sides_on_face_set) - 1))
-                    n = 0
-                    do i = 1, size(alloc_list%sides_on_face_set)
-                        if (.not. alloc_list%sides_on_face_set(i)%isEquiv(side)) then 
-                            n = n + 1
-                            aux_list%sides_on_face_set(n) = alloc_list%sides_on_face_set(i)
-                        end if
-                    end do
-                    deallocate(alloc_list%sides_on_face_set)
-                    allocate(alloc_list%sides_on_face_set(size(aux_list%sides_on_face_set)))
-                    alloc_list%sides_on_face_set = aux_list%sides_on_face_set
-                    call this%set(key(cell), value = alloc_list)
+    !             if (isNewSide(alloc_list%sides_on_face_set, side)) then 
+    !                 allocate(aux_list%sides_on_face_set(size(alloc_list%sides_on_face_set) + 1))
+    !                 aux_list%sides_on_face_set(1:size(alloc_list%sides_on_face_set)) = alloc_list%sides_on_face_set
+    !                 aux_list%sides_on_face_set(size(alloc_list%sides_on_face_set) + 1) = side
+    !                 deallocate(alloc_list%sides_on_face_set)
+    !                 allocate(alloc_list%sides_on_face_set(size(aux_list%sides_on_face_set)))
+    !                 alloc_list%sides_on_face_set = aux_list%sides_on_face_set
+    !                 call this%set(key(cell), value = alloc_list)
+    !             else
+    !                 allocate(aux_list%sides_on_face_set(size(alloc_list%sides_on_face_set) - 1))
+    !                 n = 0
+    !                 do i = 1, size(alloc_list%sides_on_face_set)
+    !                     if (.not. alloc_list%sides_on_face_set(i)%isEquiv(side)) then 
+    !                         n = n + 1
+    !                         aux_list%sides_on_face_set(n) = alloc_list%sides_on_face_set(i)
+    !                     end if
+    !                 end do
+    !                 deallocate(alloc_list%sides_on_face_set)
+    !                 allocate(alloc_list%sides_on_face_set(size(aux_list%sides_on_face_set)))
+    !                 alloc_list%sides_on_face_set = aux_list%sides_on_face_set
+    !                 call this%set(key(cell), value = alloc_list)
 
-                end if
-            end select
+    !             end if
+    !         end select
 
-        else 
-            allocate(aux_list%sides_on_face_set(1))
-            aux_list%sides_on_face_set(1) = side
-            call this%set(key(cell), value = aux_list)
+    !     else 
+    !         allocate(aux_list%sides_on_face_set(1))
+    !         aux_list%sides_on_face_set(1) = side
+    !         call this%set(key(cell), value = aux_list)
 
-            allocate(aux_keys(size(this%keys) + 1))
-            aux_keys(1:size(this%keys)) = this%keys
-            aux_keys(size(this%keys) + 1)%cell = side%getCell()
-            deallocate(this%keys)
-            allocate(this%keys(size(aux_keys)))
-            this%keys = aux_keys
-        end if
+    !         allocate(aux_keys(size(this%keys) + 1))
+    !         aux_keys(1:size(this%keys)) = this%keys
+    !         aux_keys(size(this%keys) + 1)%cell = side%getCell()
+    !         deallocate(this%keys)
+    !         allocate(this%keys(size(aux_keys)))
+    !         this%keys = aux_keys
+    !     end if
 
-    end subroutine
+    ! end subroutine
 
     subroutine addSideOn(this, side)
         class(side_map_t) :: this
@@ -423,22 +417,22 @@ contains
 
     end subroutine
 
-    function getSideSetOnFaceInCell(this, k) result(res)
-        class(cell_map_t) :: this
-        integer(kind=4), dimension(3) :: k
-        class(*), allocatable :: alloc_list
-        type(side_t), dimension(:), allocatable :: res
+    ! function getSideSetOnFaceInCell(this, k) result(res)
+    !     class(cell_map_t) :: this
+    !     integer(kind=4), dimension(3) :: k
+    !     class(*), allocatable :: alloc_list
+    !     type(side_t), dimension(:), allocatable :: res
 
-        if (this%hasKey(k)) then 
-            call this%get_raw(key(k), alloc_list)
-            select type(alloc_list)
-            type is(element_set_t)
-                res = alloc_list%sides_on_face_set
-            end select
-        else
-            allocate(res(0))
-        end if
-    end function
+    !     if (this%hasKey(k)) then 
+    !         call this%get_raw(key(k), alloc_list)
+    !         select type(alloc_list)
+    !         type is(element_set_t)
+    !             res = alloc_list%sides_on_face_set
+    !         end select
+    !     else
+    !         allocate(res(0))
+    !     end if
+    ! end function
 
     function getTrianglesInCell(this, k) result(res)
         class(cell_map_t) :: this
