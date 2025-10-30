@@ -90,15 +90,17 @@ def test_fill_conformal_vtk_sphere(tmp_path):
     vtkmapfile = solver.getVTKMap()
     assert os.path.isfile(vtkmapfile)
 
-    face_media_dict = createPropertyDictionary(
-        vtkmapfile, celltype=9, property='mediatype')
-    assert face_media_dict[0] == 6  # PEC surface
-    assert face_media_dict[12] == 48  # Conformal PEC surface
-
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
     assert line_media_dict[0.5] == 12  # PEC line
-    assert line_media_dict[12.5] == 24  # Conformal line
+    assert line_media_dict[604] == 24  # Conformal line
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert face_media_dict[0] == 6  # PEC surface
+    assert face_media_dict[505] == 24  # Conformal PEC surface
+    assert face_media_dict[506] == 24  # Conformal PEC surface
+
     
 def test_fill_conformal_vtk_corner(tmp_path):
 #          /|
@@ -127,12 +129,13 @@ def test_fill_conformal_vtk_corner(tmp_path):
         vtkmapfile, celltype=9, property='mediatype')
     
     assert(0 not in face_media_dict.keys())
-    assert face_media_dict[12] == 4  # Conformal PEC surface
+    assert face_media_dict[505] == 2  # Conformal PEC surface #1
+    assert face_media_dict[506] == 2  # Conformal PEC surface #2
 
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
     assert line_media_dict[0.5] == 1  # PEC line
-    assert line_media_dict[12.5] == 4  # Conformal line
+    assert line_media_dict[604] == 4  # Conformal line #1
     
 
 def test_three_surfaces(tmp_path):
