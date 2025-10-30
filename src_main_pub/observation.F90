@@ -40,6 +40,14 @@ module Observa
       complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_x,valorComplex_y,valorComplex_z        
       complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_Ex,valorComplex_Ey,valorComplex_Ez
       complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_Hx,valorComplex_Hy,valorComplex_Hz
+
+      contains
+         procedure :: allocate_for_time_domain
+         procedure :: allocate_for_frequency_domain
+         procedure :: allocate_current_value
+         procedure :: deallocate_for_time_domain
+         procedure :: deallocate_for_frequency_domain
+         procedure :: deallocate_current_value
    end type Serialized_t
    type item_t
 
@@ -108,6 +116,140 @@ module Observa
 #endif 
 contains
 
+   SUBROUTINE allocate_for_time_domain(this, numberOfSerialized)
+      class(Serialized_t), intent(inout) :: this
+      integer(kind=4) :: numberOfSerialized
+
+      ALLOCATE (this%Valor(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_x(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_y(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_z(1,1:numberOfSerialized))
+
+      ALLOCATE (this%ValorE(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Ex(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Ey(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Ez(1,1:numberOfSerialized))
+
+      ALLOCATE (this%ValorH(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Hx(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Hy(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Hz(1,1:numberOfSerialized))
+
+      this%Valor = 0.   
+      this%Valor_x= 0.
+      this%Valor_y= 0.
+      this%Valor_z= 0. 
+      
+      this%ValorE = 0.   
+      this%Valor_Ex= 0.
+      this%Valor_Ey= 0.
+      this%Valor_Ez= 0. 
+      
+      this%ValorH = 0.   
+      this%Valor_Hx= 0.
+      this%Valor_Hy= 0.
+      this%Valor_Hz= 0.
+   
+   END SUBROUTINE
+
+   SUBROUTINE deallocate_for_time_domain(this)
+      class(Serialized_t), intent(inout) :: this
+
+      DEALLOCATE (this%Valor)
+      DEALLOCATE (this%Valor_x)
+      DEALLOCATE (this%Valor_y)
+      DEALLOCATE (this%Valor_z)
+
+      DEALLOCATE (this%ValorE)
+      DEALLOCATE (this%Valor_Ex)
+      DEALLOCATE (this%Valor_Ey)
+      DEALLOCATE (this%Valor_Ez)
+
+      DEALLOCATE (this%ValorH)
+      DEALLOCATE (this%Valor_Hx)
+      DEALLOCATE (this%Valor_Hy)
+      DEALLOCATE (this%Valor_Hz)
+
+   END SUBROUTINE
+
+   SUBROUTINE allocate_for_frequency_domain(this, numberOfSerialized)
+      class(Serialized_t), intent(inout) :: this
+      integer(kind=4) :: numberOfSerialized
+
+      this%allocate_for_time_domain(numberOfSerialized)
+
+      ALLOCATE (this%ValorComplex_x(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_y(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_z(1,1:numberOfSerialized))
+
+      ALLOCATE (this%ValorComplex_Ex(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_Ey(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_Ez(1,1:numberOfSerialized))
+
+      ALLOCATE (this%ValorComplex_Hx(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_Hy(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_Hz(1,1:numberOfSerialized)) 
+
+      this%ValorComplex_x = 0.
+      this%ValorComplex_y = 0.
+      this%ValorComplex_z = 0.
+
+      this%ValorComplex_Ex = 0.
+      this%ValorComplex_Ey = 0.
+      this%ValorComplex_Ez = 0.
+
+      this%ValorComplex_Hx = 0.
+      this%ValorComplex_Hy = 0.
+      this%ValorComplex_Hz = 0.
+
+   END SUBROUTINE
+
+   SUBROUTINE deallocate_for_frequency_domain(this)
+      class(Serialized_t), intent(inout) :: this
+      this%deallocate_for_time_domain(numberOfSerialized)
+
+      DEALLOCATE (this%ValorComplex_x(1,1:numberOfSerialized))
+      DEALLOCATE (this%ValorComplex_y(1,1:numberOfSerialized))
+      DEALLOCATE (this%ValorComplex_z(1,1:numberOfSerialized))
+
+      DEALLOCATE (this%ValorComplex_Ex(1,1:numberOfSerialized))
+      DEALLOCATE (this%ValorComplex_Ey(1,1:numberOfSerialized))
+      DEALLOCATE (this%ValorComplex_Ez(1,1:numberOfSerialized))
+
+      DEALLOCATE (this%ValorComplex_Hx(1,1:numberOfSerialized))
+      DEALLOCATE (this%ValorComplex_Hy(1,1:numberOfSerialized))
+      DEALLOCATE (this%ValorComplex_Hz(1,1:numberOfSerialized)) 
+
+   END SUBROUTINE
+
+   SUBROUTINE allocate_current_value(this, numberOfSerialized)
+      class(Serialized_t), intent(inout) :: this
+      integer(kind=4) :: numberOfSerialized
+
+      ALLOCATE (Serialized%eI(1:numberOfSerialized))
+      ALLOCATE (Serialized%eJ(1:numberOfSerialized))
+      ALLOCATE (Serialized%eK(1:numberOfSerialized))
+
+      ALLOCATE (Serialized%currentType(1:numberOfSerialized))
+      ALLOCATE (Serialized%sggMtag(1:numberOfSerialized))
+      
+      Serialized%eI = 0
+      Serialized%eJ = 0
+      Serialized%eK = 0
+
+      Serialized%currentType = 0
+      Serialized%sggMtag = 0
+   END SUBROUTINE 
+
+   SUBROUTINE deallocate_current_value(this)
+      class(Serialized_t), intent(inout) :: this
+      DEALLOCATE (Serialized%eI(1:numberOfSerialized))
+      DEALLOCATE (Serialized%eJ(1:numberOfSerialized))
+      DEALLOCATE (Serialized%eK(1:numberOfSerialized))
+
+      DEALLOCATE (Serialized%currentType(1:numberOfSerialized))
+      DEALLOCATE (Serialized%sggMtag(1:numberOfSerialized))
+   END SUBROUTINE 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
