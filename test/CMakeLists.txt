@@ -19,6 +19,8 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     set(SMBJSON_TESTS_LIBRARY smbjson_tests)
     add_subdirectory(rotate)
     set(ROTATE_TESTS_LIBRARY rotate_tests)
+    add_subdirectory(observation)
+    set(OBSERVATION_TESTS_LIBRARY observation_tests)
 endif()
 
 add_executable(fdtd_tests 

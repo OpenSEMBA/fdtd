@@ -176,7 +176,7 @@ contains
       class(Serialized_t), intent(inout) :: this
       integer(kind=4) :: numberOfSerialized
 
-      this%allocate_for_time_domain(numberOfSerialized)
+      call this%allocate_for_time_domain(numberOfSerialized)
 
       ALLOCATE (this%ValorComplex_x(1,1:numberOfSerialized))
       ALLOCATE (this%ValorComplex_y(1,1:numberOfSerialized))
@@ -206,19 +206,19 @@ contains
 
    SUBROUTINE deallocate_for_frequency_domain(this)
       class(Serialized_t), intent(inout) :: this
-      this%deallocate_for_time_domain(numberOfSerialized)
+      call this%deallocate_for_time_domain()
 
-      DEALLOCATE (this%ValorComplex_x(1,1:numberOfSerialized))
-      DEALLOCATE (this%ValorComplex_y(1,1:numberOfSerialized))
-      DEALLOCATE (this%ValorComplex_z(1,1:numberOfSerialized))
+      DEALLOCATE (this%ValorComplex_x)
+      DEALLOCATE (this%ValorComplex_y)
+      DEALLOCATE (this%ValorComplex_z)
 
-      DEALLOCATE (this%ValorComplex_Ex(1,1:numberOfSerialized))
-      DEALLOCATE (this%ValorComplex_Ey(1,1:numberOfSerialized))
-      DEALLOCATE (this%ValorComplex_Ez(1,1:numberOfSerialized))
+      DEALLOCATE (this%ValorComplex_Ex)
+      DEALLOCATE (this%ValorComplex_Ey)
+      DEALLOCATE (this%ValorComplex_Ez)
 
-      DEALLOCATE (this%ValorComplex_Hx(1,1:numberOfSerialized))
-      DEALLOCATE (this%ValorComplex_Hy(1,1:numberOfSerialized))
-      DEALLOCATE (this%ValorComplex_Hz(1,1:numberOfSerialized)) 
+      DEALLOCATE (this%ValorComplex_Hx)
+      DEALLOCATE (this%ValorComplex_Hy)
+      DEALLOCATE (this%ValorComplex_Hz) 
 
    END SUBROUTINE
 
@@ -226,29 +226,29 @@ contains
       class(Serialized_t), intent(inout) :: this
       integer(kind=4) :: numberOfSerialized
 
-      ALLOCATE (Serialized%eI(1:numberOfSerialized))
-      ALLOCATE (Serialized%eJ(1:numberOfSerialized))
-      ALLOCATE (Serialized%eK(1:numberOfSerialized))
+      ALLOCATE (this%eI(1:numberOfSerialized))
+      ALLOCATE (this%eJ(1:numberOfSerialized))
+      ALLOCATE (this%eK(1:numberOfSerialized))
 
-      ALLOCATE (Serialized%currentType(1:numberOfSerialized))
-      ALLOCATE (Serialized%sggMtag(1:numberOfSerialized))
+      ALLOCATE (this%currentType(1:numberOfSerialized))
+      ALLOCATE (this%sggMtag(1:numberOfSerialized))
       
-      Serialized%eI = 0
-      Serialized%eJ = 0
-      Serialized%eK = 0
+      this%eI = 0
+      this%eJ = 0
+      this%eK = 0
 
-      Serialized%currentType = 0
-      Serialized%sggMtag = 0
+      this%currentType = 0
+      this%sggMtag = 0
    END SUBROUTINE 
 
    SUBROUTINE deallocate_current_value(this)
       class(Serialized_t), intent(inout) :: this
-      DEALLOCATE (Serialized%eI(1:numberOfSerialized))
-      DEALLOCATE (Serialized%eJ(1:numberOfSerialized))
-      DEALLOCATE (Serialized%eK(1:numberOfSerialized))
+      DEALLOCATE (this%eI)
+      DEALLOCATE (this%eJ)
+      DEALLOCATE (this%eK)
 
-      DEALLOCATE (Serialized%currentType(1:numberOfSerialized))
-      DEALLOCATE (Serialized%sggMtag(1:numberOfSerialized))
+      DEALLOCATE (this%currentType)
+      DEALLOCATE (this%sggMtag)
    END SUBROUTINE 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff

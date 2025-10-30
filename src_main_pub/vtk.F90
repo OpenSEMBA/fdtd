@@ -188,13 +188,13 @@ CONTAINS
                      ALLOCATE (PosiMPI(1:numberOfSerialized))
 
                      if (SGG%Observation(ii)%TimeDomain) then
-                        Serialized%allocate_for_time_domain(numberOfSerialized)      
+                        call Serialized%allocate_for_time_domain(numberOfSerialized)      
                         freqdomain=.false.
                      elseif (SGG%Observation(ii)%FreqDomain) then
-                        Serialized%allocate_for_frequency_domain(numberOfSerialized)
+                        call Serialized%allocate_for_frequency_domain(numberOfSerialized)
                         freqdomain=.true.
                      endif
-                     Serialized%allocate_current_value(numberOfSerialized)
+                     call Serialized%allocate_current_value(numberOfSerialized)
                      PosiMPI=0
 
                      !!!BUSCA LA POSICION mpi E INICIALIZA LOS NUEVOS

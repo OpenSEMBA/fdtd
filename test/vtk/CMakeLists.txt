@@ -2,7 +2,7 @@ message(STATUS "Creating build system for test/vtk")
 
 add_library(
     vtk_test_fortran
-    "rotate_testingTools.F90"
+    "test_init_vtk.F90"
 
 )
 
