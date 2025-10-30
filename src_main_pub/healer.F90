@@ -177,9 +177,19 @@ MODULE CreateMatrices
                                    (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .and. &
                                    (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
                   else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
-                     mH1 = MMiHx(i,j,k) ; mH2 = MMiHx(i,j-1,k)
-                     mH3 = MMiHx(i-1,j,k) ; mH4 = MMiHx(i-1,j-1,k)
+                     mH1 = MMiHx(i,j,k) 
+                     mH2 = MMiHx(i,j-1,k)
+                     mH3 = MMiHx(i-1,j,k)
+                     mH4 = MMiHx(i-1,j-1,k)
                      has_crossed   = (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .or. &
+                                     (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .or. & 
+                                     (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .or. &
+                                     (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
+                     mH1 = MMiHx(i,j,k-1) 
+                     mH2 = MMiHx(i,j-1,k-1)
+                     mH3 = MMiHx(i-1,j,k-1)
+                     mH4 = MMiHx(i-1,j-1,k-1)
+                     has_crossed   = has_crossed .and. (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .or. &
                                      (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .or. & 
                                      (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .or. &
                                      (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
@@ -226,9 +236,19 @@ MODULE CreateMatrices
                                    (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .and. &
                                    (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
                   else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
-                     mH1 = MMiHy(i,j,k) ; mH2 = MMiHy(i,j,k-1)
-                     mH3 = MMiHy(i,j-1,k) ; mH4 = MMiHy(i,j-1,k-1)
+                     mH1 = MMiHy(i,j,k)
+                     mH2 = MMiHy(i,j,k-1)
+                     mH3 = MMiHy(i,j-1,k)
+                     mH4 = MMiHy(i,j-1,k-1)
                      has_crossed   = (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .or. &
+                                     (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .or. & 
+                                     (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .or. &
+                                     (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
+                     mH1 = MMiHy(i-1,j,k)
+                     mH2 = MMiHy(i-1,j,k-1)
+                     mH3 = MMiHy(i-1,j-1,k)
+                     mH4 = MMiHy(i-1,j-1,k-1)
+                     has_crossed   = has_crossed .and. (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .or. &
                                      (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .or. & 
                                      (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .or. &
                                      (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
@@ -274,9 +294,11 @@ MODULE CreateMatrices
                                    (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .and. &
                                    (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
                   else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
-                     mH1 = MMiHz(i,j,k) ; mH2 = MMiHz(i-1,j,k)
-                     mH3 = MMiHz(i,j,k-1) ; mH4 = MMiHz(i-1,j,k-1)
-                     has_crossed   = (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .or. &
+                     mH1 = MMiHz(i,j-1,k)
+                     mH2 = MMiHz(i-1,j-1,k)
+                     mH3 = MMiHz(i,j-1,k-1)
+                     mH4 = MMiHz(i-1,j-1,k-1)
+                     has_crossed   = has_crossed .and. (med(mH1)%Is%ConformalPEC .or. med(mH1)%Is%PEC) .or. &
                                      (med(mH2)%Is%ConformalPEC .or. med(mH2)%Is%PEC) .or. & 
                                      (med(mH3)%Is%ConformalPEC .or. med(mH3)%Is%PEC) .or. &
                                      (med(mH4)%Is%ConformalPEC .or. med(mH4)%Is%PEC)
@@ -303,71 +325,71 @@ MODULE CreateMatrices
          end do
       end do
 
-      do k = BoundingBox%zi-1, BoundingBox%ze+1
-         do j = BoundingBox%yi-1, BoundingBox%ye+1
-            do i = BoundingBox%xi-1, BoundingBox%xe+1
-               !!!x
-               medio_y = MMiEy (i, j, k)
-               medio_z = MMiEz (i, j, k)
-               medio_y_plus = MMiEy (i, j, k+1)
-               medio_z_plus = MMiEz (i, j+1, k)
-               medio = MMiHx(i,j,k)
-               is_on_boundary = (med(medio_y)%Is%PEC .or. med(medio_y)%Is%ConformalPEC     ) .and. &
-                                (med(medio_z)%Is%PEC .or. med(medio_z)%Is%ConformalPEC     ) .and. &
-                                (med(medio_y_plus)%Is%PEC .or. med(medio_y_plus)%Is%ConformalPEC) .and. &
-                                (med(medio_z_plus)%Is%PEC .or. med(medio_z_plus)%Is%ConformalPEC)
+      ! do k = BoundingBox%zi-1, BoundingBox%ze+1
+      !    do j = BoundingBox%yi-1, BoundingBox%ye+1
+      !       do i = BoundingBox%xi-1, BoundingBox%xe+1
+      !          !!!x
+      !          medio_y = MMiEy (i, j, k)
+      !          medio_z = MMiEz (i, j, k)
+      !          medio_y_plus = MMiEy (i, j, k+1)
+      !          medio_z_plus = MMiEz (i, j+1, k)
+      !          medio = MMiHx(i,j,k)
+      !          is_on_boundary = (med(medio_y)%Is%PEC) .and. &
+      !                           (med(medio_z)%Is%PEC) .and. &
+      !                           (med(medio_y_plus)%Is%PEC) .and. &
+      !                           (med(medio_z_plus)%Is%PEC)
 
-               if (is_on_boundary .and. .not. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
-                  MMiHx (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%face%x(i,j,k) = 64*numertag
-               else if (is_on_boundary .and. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
-                  Mtag(i,j,k)=64*numertag
-                  tags%face%x(i,j,k) = 64*numertag
-               end if
-               !!!y
-               medio_x = MMiEx (i, j, k)
-               medio_z = MMiEz (i, j, k)
-               medio_x_plus = MMiEx (i, j, k+1)
-               medio_z_plus = MMiEz (i+1, j, k)
-               medio = MMiHy(i,j,k)
+      !          if (is_on_boundary .and. .not. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
+      !             MMiHx (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%x(i,j,k) = 64*numertag
+      !          else if (is_on_boundary .and. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
+      !             Mtag(i,j,k)=64*numertag
+      !             tags%face%x(i,j,k) = 64*numertag
+      !          end if
+      !          !!!y
+      !          medio_x = MMiEx (i, j, k)
+      !          medio_z = MMiEz (i, j, k)
+      !          medio_x_plus = MMiEx (i, j, k+1)
+      !          medio_z_plus = MMiEz (i+1, j, k)
+      !          medio = MMiHy(i,j,k)
 
-               is_on_boundary = (med(medio_x)%Is%PEC .or. med(medio_x)%Is%ConformalPEC) .and. &
-                                (med(medio_z)%Is%PEC .or. med(medio_z)%Is%ConformalPEC) .and. &
-                                (med(medio_x_plus)%Is%PEC .or. med(medio_x_plus)%Is%ConformalPEC) .and. &
-                                (med(medio_z_plus)%Is%PEC .or. med(medio_z_plus)%Is%ConformalPEC)
+      !          is_on_boundary = (med(medio_x)%Is%PEC) .and. &
+      !                           (med(medio_z)%Is%PEC) .and. &
+      !                           (med(medio_x_plus)%Is%PEC) .and. &
+      !                           (med(medio_z_plus)%Is%PEC)
 
-               if (is_on_boundary .and. .not. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
-                  MMiHy (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%face%y(i,j,k) = 64*numertag
-               else if (is_on_boundary .and. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
-                  Mtag(i,j,k)=64*numertag
-                  tags%face%y(i,j,k) = 64*numertag
-               end if
-               !!!z
-               medio_y = MMiEy (i, j, k)
-               medio_x = MMiEx (i, j, k)
-               medio_y_plus = MMiEy (i+1, j, k)
-               medio_x_plus = MMiEx (i, j+1, k)
-               medio = MMiHz(i,j,k)
+      !          if (is_on_boundary .and. .not. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
+      !             MMiHy (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag 
+      !             tags%face%y(i,j,k) = 64*numertag
+      !          else if (is_on_boundary .and. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
+      !             Mtag(i,j,k)=64*numertag
+      !             tags%face%y(i,j,k) = 64*numertag
+      !          end if
+      !          !!!z
+      !          medio_y = MMiEy (i, j, k)
+      !          medio_x = MMiEx (i, j, k)
+      !          medio_y_plus = MMiEy (i+1, j, k)
+      !          medio_x_plus = MMiEx (i, j+1, k)
+      !          medio = MMiHz(i,j,k)
 
-               is_on_boundary = (med(medio_y)%Is%PEC .or. med(medio_y)%Is%ConformalPEC) .and. &
-                                (med(medio_x)%Is%PEC .or. med(medio_x)%Is%ConformalPEC) .and. &
-                                (med(medio_y_plus)%Is%PEC .or. med(medio_y_plus)%Is%ConformalPEC) .and. &
-                                (med(medio_x_plus)%Is%PEC .or. med(medio_x_plus)%Is%ConformalPEC)
+      !          is_on_boundary = (med(medio_y)%Is%PEC .or. med(medio_y)%Is%ConformalPEC) .and. &
+      !                           (med(medio_x)%Is%PEC .or. med(medio_x)%Is%ConformalPEC) .and. &
+      !                           (med(medio_y_plus)%Is%PEC .or. med(medio_y_plus)%Is%ConformalPEC) .and. &
+      !                           (med(medio_x_plus)%Is%PEC .or. med(medio_x_plus)%Is%ConformalPEC)
 
-               if (is_on_boundary .and. .not. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
-                  MMiHz (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag
-                  tags%face%z(i,j,k) = 64*numertag
-               else if (is_on_boundary .and. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
-                  Mtag(i,j,k)=64*numertag
-                  tags%face%z(i,j,k) = 64*numertag
-               end if
-            end do
-         end do
-      end do
+      !          if (is_on_boundary .and. .not. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
+      !             MMiHz (i, j, k) = indicemedio
+      !             Mtag(i,j,k)=64*numertag
+      !             tags%face%z(i,j,k) = 64*numertag
+      !          else if (is_on_boundary .and. (med(medio)%Is%PEC .or. med(medio)%Is%ConformalPEC)) then 
+      !             Mtag(i,j,k)=64*numertag
+      !             tags%face%z(i,j,k) = 64*numertag
+      !          end if
+      !       end do
+      !    end do
+      ! end do
 
 
    end subroutine

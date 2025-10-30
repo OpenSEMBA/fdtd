@@ -129,7 +129,6 @@ integer function  test_conformal_pec_corner() bind(C) result(err)
     if (semba%media%sggmiHy(2,2,2) /= 5) err = err + 1
     if (semba%media%sggmiHz(2,2,2) /= 6) err = err + 1
     if (semba%media%sggmiHz(2,2,3) /= 6) err = err + 1
-    
     call semba%launch()
     call semba%end()
 
