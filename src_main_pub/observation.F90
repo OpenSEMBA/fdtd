@@ -40,6 +40,14 @@ module Observa
       complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_x,valorComplex_y,valorComplex_z        
       complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_Ex,valorComplex_Ey,valorComplex_Ez
       complex( kind = CKIND), dimension( :,:), allocatable  :: valorComplex_Hx,valorComplex_Hy,valorComplex_Hz
+
+      contains
+         procedure :: allocate_for_time_domain
+         procedure :: allocate_for_frequency_domain
+         procedure :: allocate_current_value
+         procedure :: deallocate_for_time_domain
+         procedure :: deallocate_for_frequency_domain
+         procedure :: deallocate_current_value
    end type Serialized_t
    type item_t
 
@@ -108,9 +116,219 @@ module Observa
 #endif 
 contains
 
+   SUBROUTINE allocate_for_time_domain(this, numberOfSerialized)
+      class(Serialized_t), intent(inout) :: this
+      integer(kind=4) :: numberOfSerialized
+
+      ALLOCATE (this%Valor(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_x(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_y(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_z(1,1:numberOfSerialized))
+
+      ALLOCATE (this%ValorE(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Ex(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Ey(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Ez(1,1:numberOfSerialized))
+
+      ALLOCATE (this%ValorH(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Hx(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Hy(1,1:numberOfSerialized))
+      ALLOCATE (this%Valor_Hz(1,1:numberOfSerialized))
+
+      this%Valor = 0.   
+      this%Valor_x= 0.
+      this%Valor_y= 0.
+      this%Valor_z= 0. 
+      
+      this%ValorE = 0.   
+      this%Valor_Ex= 0.
+      this%Valor_Ey= 0.
+      this%Valor_Ez= 0. 
+      
+      this%ValorH = 0.   
+      this%Valor_Hx= 0.
+      this%Valor_Hy= 0.
+      this%Valor_Hz= 0.
+   
+   END SUBROUTINE
+
+   SUBROUTINE deallocate_for_time_domain(this)
+      class(Serialized_t), intent(inout) :: this
+
+      DEALLOCATE (this%Valor)
+      DEALLOCATE (this%Valor_x)
+      DEALLOCATE (this%Valor_y)
+      DEALLOCATE (this%Valor_z)
+
+      DEALLOCATE (this%ValorE)
+      DEALLOCATE (this%Valor_Ex)
+      DEALLOCATE (this%Valor_Ey)
+      DEALLOCATE (this%Valor_Ez)
+
+      DEALLOCATE (this%ValorH)
+      DEALLOCATE (this%Valor_Hx)
+      DEALLOCATE (this%Valor_Hy)
+      DEALLOCATE (this%Valor_Hz)
+
+   END SUBROUTINE
+
+   SUBROUTINE allocate_for_frequency_domain(this, numberOfSerialized)
+      class(Serialized_t), intent(inout) :: this
+      integer(kind=4) :: numberOfSerialized
+
+      call this%allocate_for_time_domain(numberOfSerialized)
+
+      ALLOCATE (this%ValorComplex_x(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_y(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_z(1,1:numberOfSerialized))
+
+      ALLOCATE (this%ValorComplex_Ex(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_Ey(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_Ez(1,1:numberOfSerialized))
+
+      ALLOCATE (this%ValorComplex_Hx(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_Hy(1,1:numberOfSerialized))
+      ALLOCATE (this%ValorComplex_Hz(1,1:numberOfSerialized)) 
+
+      this%ValorComplex_x = 0.
+      this%ValorComplex_y = 0.
+      this%ValorComplex_z = 0.
+
+      this%ValorComplex_Ex = 0.
+      this%ValorComplex_Ey = 0.
+      this%ValorComplex_Ez = 0.
+
+      this%ValorComplex_Hx = 0.
+      this%ValorComplex_Hy = 0.
+      this%ValorComplex_Hz = 0.
+
+   END SUBROUTINE
+
+   SUBROUTINE deallocate_for_frequency_domain(this)
+      class(Serialized_t), intent(inout) :: this
+      call this%deallocate_for_time_domain()
+
+      DEALLOCATE (this%ValorComplex_x)
+      DEALLOCATE (this%ValorComplex_y)
+      DEALLOCATE (this%ValorComplex_z)
+
+      DEALLOCATE (this%ValorComplex_Ex)
+      DEALLOCATE (this%ValorComplex_Ey)
+      DEALLOCATE (this%ValorComplex_Ez)
+
+      DEALLOCATE (this%ValorComplex_Hx)
+      DEALLOCATE (this%ValorComplex_Hy)
+      DEALLOCATE (this%ValorComplex_Hz) 
+
+   END SUBROUTINE
+
+   SUBROUTINE allocate_current_value(this, numberOfSerialized)
+      class(Serialized_t), intent(inout) :: this
+      integer(kind=4) :: numberOfSerialized
+
+      ALLOCATE (this%eI(1:numberOfSerialized))
+      ALLOCATE (this%eJ(1:numberOfSerialized))
+      ALLOCATE (this%eK(1:numberOfSerialized))
+
+      ALLOCATE (this%currentType(1:numberOfSerialized))
+      ALLOCATE (this%sggMtag(1:numberOfSerialized))
+      
+      this%eI = 0
+      this%eJ = 0
+      this%eK = 0
+
+      this%currentType = 0
+      this%sggMtag = 0
+   END SUBROUTINE 
+
+   SUBROUTINE deallocate_current_value(this)
+      class(Serialized_t), intent(inout) :: this
+      DEALLOCATE (this%eI)
+      DEALLOCATE (this%eJ)
+      DEALLOCATE (this%eK)
+
+      DEALLOCATE (this%currentType)
+      DEALLOCATE (this%sggMtag)
+   END SUBROUTINE 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   subroutine InitObservations(sgg)
+      type (SGGFDTDINFO), intent(IN)         ::  sgg
+
+      do ii=1,sgg%NumberRequest
+         call preprocess_observation(sgg%Observation(ii), output(ii), sgg%dt)
+      END DO
+
+   end subroutine InitObservations
+
+   subroutine preprocess_observation(observation, privateOutput, dt)
+      type(Obses_t), intent(inout) :: observation
+      type(output_t), intent(inout) :: privateOutput
+      real(kind=RKIND_tiempo), intent(in) :: dt
+
+      observation%done = .false.
+      observation%begun = .false.
+      observation%flushed = .false.
+
+      observation%TimeStep = max(observation%TimeStep,dt)
+
+      if (10.0_RKIND*(observation%FinalTime-observation%InitialTime)/min(dt,observation%TimeStep ) >= huge (1_4)) then
+         observation%FinalTime = observation%InitialTime+min(dt,observation%TimeStep )*huge(1_4)/10.0_RKIND
+      endif
+
+      if (observation%InitialTime < observation%TimeStep ) then
+         observation%InitialTime = 0.0_RKIND !para que saque tambien el instante inicial
+      endif
+
+      if ( observation%TimeStep > (observation%FinalTime - observation%InitialTime)) then
+         
+         if (observation%P(1)%what == mapvtk) then
+             observation%FinalTime= 0.0_RKIND
+             observation%InitialTime= 0.0_RKIND
+         else                
+            observation%FinalTime = observation%InitialTime + observation%TimeStep
+         endif
+      endif
+
+      observation%InitialTime = int(observation%InitialTime/dt) * dt
+      observation%FinalTime =   int(observation%FinalTime  /dt) * dt
+      observation%FreqStep = min(observation%FreqStep,2.0_RKIND / dt)
+      if ((observation%FreqStep > observation%FinalFreq   - observation%InitialFreq).or.(observation%FreqStep ==0)) then
+         observation%FreqStep = observation%FinalFreq   - observation%InitialFreq
+         observation%FinalFreq= observation%InitialFreq + observation%FreqStep
+      endif
+      if (.not.observation%Volumic) then 
+         observation%Saveall=observation%Saveall.or.saveall 
+         privateOutput%SaveAll=observation%Saveall     
+      else              
+         privateOutput%SaveAll=.false.
+         observation%Saveall=.false.
+      endif
+#ifdef miguelConformalStandAlone
+      privateOutput%SaveAll=.false.
+#endif
+      if (observation%Saveall)  then
+         privateOutput%Trancos = 1
+         observation%InitialTime=0.0_RKIND
+         observation%FinalTime=sgg%tiempo(FINALTIMESTEP+2)
+      else
+         privateOutput%Trancos       = max(1,int(observation%TimeStep/dt))
+         observation%InitialTime=max(0.0_RKIND,observation%InitialTime)
+         observation%FinalTime=min(sgg%tiempo(FINALTIMESTEP+2),observation%FinalTime) !CLIPEA
+         if (observation%FinalTime < observation%InitialTime) then
+            observation%FinalTime = observation%InitialTime
+         endif
+      endif
+      if (observation%nP/=0) then
+         if (observation%P(1)%what == mapvtk) then    
+            privateOutput%SaveAll=.false.
+            observation%Saveall=.false.
+         endif              
+      endif
+!!!!
+   end subroutine preprocess_observation
+
    subroutine InitObservation(sgg,media,tag_numbers, &
                               ThereAreObservation,ThereAreWires,ThereAreFarFields,resume,initialtimestep, finaltimestep,lastexecutedtime, &
                               nEntradaRoot,layoutnumber,size, saveall, singlefilewrite,wiresflavor, &
