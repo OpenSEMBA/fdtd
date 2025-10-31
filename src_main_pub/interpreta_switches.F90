@@ -1392,7 +1392,7 @@ CONTAINS
       if (l%creditosyaprinteados) return
       l%creditosyaprinteados=.true.
       CALL print11 (l%layoutnumber, '=========================')
-      CALL print11 (l%layoutnumber, 'SEMBA-FDTD SOLVER')
+      CALL print11 (l%layoutnumber, program_name)
       CALL print11 (l%layoutnumber, '=========================')
       
       WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
