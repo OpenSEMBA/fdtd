@@ -148,15 +148,6 @@ else()
 	message(FATAL_ERROR "Unrecognized system name")
 endif()
 
-# Prepares variables containing information on commit-hash and build flags.
-# This information is only available at the configuration stage.
-include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
-configure_file(
-  ${CMAKE_SOURCE_DIR}/src_main_pub/version.F90.in
-  ${CMAKE_SOURCE_DIR}/src_main_pub/version.F90
-  @ONLY
-)
-
 # =========================================
 
 add_subdirectory(external)
@@ -236,6 +227,15 @@ if(SEMBA_FDTD_OUTPUTS_LIB)
 endif()
 
 if(SEMBA_FDTD_MAIN_LIB)
+	# Prepares variables containing information on commit-hash and build flags.
+	# This information is only available at the configuration stage.
+	include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
+	configure_file(
+	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90.in
+	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90
+	@ONLY
+	)
+
 	add_library(semba-main
 		"src_main_pub/semba_fdtd.F90"
 		"src_main_pub/calc_constants.F90"
