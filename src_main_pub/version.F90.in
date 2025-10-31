@@ -1,0 +1,9 @@
+module version 
+    character(*), parameter :: compilation_date= __DATE__ // " " // __TIME__  
+    character(*), parameter :: git_commit="@GIT_COMMIT@"
+    character(*), parameter :: compiler_id="@CMAKE_Fortran_COMPILER_ID@"
+    character(*), parameter :: cmake_build_type="@CMAKE_BUILD_TYPE@"
+    character(*), parameter :: compilation_flags="@CMAKE_Fortran_FLAGS@"
+    character(*), parameter :: compilation_flags_debug="@CMAKE_Fortran_FLAGS@ @CMAKE_Fortran_FLAGS_DEBUG@"
+    character(*), parameter :: compilation_flags_release="@CMAKE_Fortran_FLAGS@ @CMAKE_Fortran_FLAGS_RELEASE@"
+end module version

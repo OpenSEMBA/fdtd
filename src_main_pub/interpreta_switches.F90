@@ -1397,7 +1397,17 @@ CONTAINS
       
       WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
       CALL print11 (l%layoutnumber, dubuf)
-      WRITE (dubuf,*) trim (adjustl(dataversion))
+      CALL print11 (l%layoutnumber, 'Compilation date: ' // compilation_date)
+      CALL print11 (l%layoutnumber, 'Compiler Id: ' // compiler_id)
+      CALL print11 (l%layoutnumber, 'git commit: ' // git_commit)
+      CALL print11 (l%layoutnumber, 'cmake build type: ' // cmake_build_type)
+      if (cmake_build_type == "Debug") then
+         CALL print11 (l%layoutnumber, 'cmake compilation flags: ' // compilation_flags_debug)
+      elseif(cmake_build_type == "Release") then
+         CALL print11 (l%layoutnumber, 'cmake compilation flags: ' // compilation_flags_release)
+      else
+         CALL print11 (l%layoutnumber, 'cmake compilation flags: ' // compilation_flags)
+      endif
       CALL print11 (l%layoutnumber, dubuf)
       WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
       CALL print11 (l%layoutnumber, dubuf)
