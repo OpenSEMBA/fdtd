@@ -4,7 +4,7 @@ module version
     character(*), parameter :: program_name="@PROGRAM_NAME@"
     character(*), parameter :: compilation_date= __DATE__ // " " // __TIME__  
     character(*), parameter :: git_commit="@GIT_COMMIT@"
-    character(*), parameter :: compiler_id="@CMAKE_Fortran_COMPILER_ID@"
+    character(*), parameter :: compiler_id="@CMAKE_Fortran_COMPILER_ID@ @CMAKE_Fortran_COMPILER_VERSION@"
     character(*), parameter :: cmake_build_type="@CMAKE_BUILD_TYPE@"
     character(*), parameter :: compilation_flags="@CMAKE_Fortran_FLAGS@"
     character(*), parameter :: compilation_flags_debug="@CMAKE_Fortran_FLAGS@ @CMAKE_Fortran_FLAGS_DEBUG@"
