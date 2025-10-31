@@ -148,7 +148,8 @@ else()
 	message(FATAL_ERROR "Unrecognized system name")
 endif()
 
-# Commit and build info.
+# Prepares variables containing information on commit-hash and build flags.
+# This information is only available at the configuration stage.
 include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
 configure_file(
   ${CMAKE_SOURCE_DIR}/src_main_pub/version.F90.in
