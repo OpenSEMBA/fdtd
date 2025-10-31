@@ -253,6 +253,82 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   subroutine InitObservations(sgg)
+      type (SGGFDTDINFO), intent(IN)         ::  sgg
+
+      do ii=1,sgg%NumberRequest
+         call preprocess_observation(sgg%Observation(ii), output(ii), sgg%dt)
+      END DO
+
+   end subroutine InitObservations
+
+   subroutine preprocess_observation(observation, privateOutput, dt)
+      type(Obses_t), intent(inout) :: observation
+      type(output_t), intent(inout) :: privateOutput
+      real(kind=RKIND_tiempo), intent(in) :: dt
+
+      observation%done = .false.
+      observation%begun = .false.
+      observation%flushed = .false.
+
+      observation%TimeStep = max(observation%TimeStep,dt)
+
+      if (10.0_RKIND*(observation%FinalTime-observation%InitialTime)/min(dt,observation%TimeStep ) >= huge (1_4)) then
+         observation%FinalTime = observation%InitialTime+min(dt,observation%TimeStep )*huge(1_4)/10.0_RKIND
+      endif
+
+      if (observation%InitialTime < observation%TimeStep ) then
+         observation%InitialTime = 0.0_RKIND !para que saque tambien el instante inicial
+      endif
+
+      if ( observation%TimeStep > (observation%FinalTime - observation%InitialTime)) then
+         
+         if (observation%P(1)%what == mapvtk) then
+             observation%FinalTime= 0.0_RKIND
+             observation%InitialTime= 0.0_RKIND
+         else                
+            observation%FinalTime = observation%InitialTime + observation%TimeStep
+         endif
+      endif
+
+      observation%InitialTime = int(observation%InitialTime/dt) * dt
+      observation%FinalTime =   int(observation%FinalTime  /dt) * dt
+      observation%FreqStep = min(observation%FreqStep,2.0_RKIND / dt)
+      if ((observation%FreqStep > observation%FinalFreq   - observation%InitialFreq).or.(observation%FreqStep ==0)) then
+         observation%FreqStep = observation%FinalFreq   - observation%InitialFreq
+         observation%FinalFreq= observation%InitialFreq + observation%FreqStep
+      endif
+      if (.not.observation%Volumic) then 
+         observation%Saveall=observation%Saveall.or.saveall 
+         privateOutput%SaveAll=observation%Saveall     
+      else              
+         privateOutput%SaveAll=.false.
+         observation%Saveall=.false.
+      endif
+#ifdef miguelConformalStandAlone
+      privateOutput%SaveAll=.false.
+#endif
+      if (observation%Saveall)  then
+         privateOutput%Trancos = 1
+         observation%InitialTime=0.0_RKIND
+         observation%FinalTime=sgg%tiempo(FINALTIMESTEP+2)
+      else
+         privateOutput%Trancos       = max(1,int(observation%TimeStep/dt))
+         observation%InitialTime=max(0.0_RKIND,observation%InitialTime)
+         observation%FinalTime=min(sgg%tiempo(FINALTIMESTEP+2),observation%FinalTime) !CLIPEA
+         if (observation%FinalTime < observation%InitialTime) then
+            observation%FinalTime = observation%InitialTime
+         endif
+      endif
+      if (observation%nP/=0) then
+         if (observation%P(1)%what == mapvtk) then    
+            privateOutput%SaveAll=.false.
+            observation%Saveall=.false.
+         endif              
+      endif
+!!!!
+   end subroutine preprocess_observation
+
    subroutine InitObservation(sgg,media,tag_numbers, &
                               ThereAreObservation,ThereAreWires,ThereAreFarFields,resume,initialtimestep, finaltimestep,lastexecutedtime, &
                               nEntradaRoot,layoutnumber,size, saveall, singlefilewrite,wiresflavor, &
