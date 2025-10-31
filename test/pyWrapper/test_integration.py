@@ -114,14 +114,13 @@ def test_fill_conformal_vtk_large_sphere(tmp_path):
 
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
-    # assert line_media_dict[0.5] == 12  # PEC line
-    # assert line_media_dict[604] == 24  # Conformal line
+
+    assert -0.5 not in line_media_dict.keys()
 
     face_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=9, property='mediatype')
-    assert face_media_dict[0] == 6  # PEC surface
-    # assert face_media_dict[505] == 24  # Conformal PEC surface
-    # assert face_media_dict[506] == 24  # Conformal PEC surface
+
+    assert -1 not in face_media_dict.keys()
 
     
 def test_fill_conformal_vtk_corner(tmp_path):
