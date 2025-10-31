@@ -148,30 +148,8 @@ else()
 	message(FATAL_ERROR "Unrecognized system name")
 endif()
 
-if(EXISTS "${CMAKE_SOURCE_DIR}/git_info.txt")
-	file(READ "${CMAKE_SOURCE_DIR}/git_info.txt" GIT_INFO_CONTENT)
-	string(REGEX MATCH "GIT_COMMIT=\"([^\"]+)\"" _ "${GIT_INFO_CONTENT}")
-	set(GIT_COMMIT "${CMAKE_MATCH_1}")
-
-	message(STATUS "Git commit info found in git_info.txt: ${GIT_COMMIT}")
-elseif(EXISTS "${CMAKE_SOURCE_DIR}/.git")
-    find_program(GIT_EXECUTABLE git)
-    if(GIT_EXECUTABLE)
-        execute_process(
-            COMMAND ${GIT_EXECUTABLE} rev-parse --short HEAD
-            WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-            OUTPUT_VARIABLE GIT_COMMIT
-            OUTPUT_STRIP_TRAILING_WHITESPACE
-        )
-    endif()
-
-	message(STATUS "Git commit info found using git command: ${GIT_COMMIT}")
-else()
-    set(GIT_COMMIT "UNKNOWN")
-
-	message(STATUS "Git commit info not found, setting as ${GIT_COMMIT}")
-endif()
-
+# Commit and build info.
+include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
 configure_file(
   ${CMAKE_SOURCE_DIR}/src_main_pub/version.F90.in
   ${CMAKE_SOURCE_DIR}/src_main_pub/version.F90
