@@ -4,7 +4,7 @@
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module Observa
-   use fdetypes
+   use FDETYPES
 
 #ifdef CompileWithMPI
    use MPIcomm
@@ -253,19 +253,32 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitObservations(sgg)
+   subroutine InitObservations(sgg, finaltimestep, saveall)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
+      real(kind=RKIND_tiempo), intent(in) :: finaltimestep
+      integer(kind=4) :: i
+      logical  ::  saveall
 
-      do ii=1,sgg%NumberRequest
-         call preprocess_observation(sgg%Observation(ii), output(ii), sgg%dt)
+      output => null()
+      allocate (output(1 : sgg%NumberRequest))
+      output(1 : sgg%NumberRequest)%Trancos = -1
+      output(1 : sgg%NumberRequest)%SaveAll = .false.
+      output(1 : sgg%NumberRequest)%TimesWritten = -1
+
+      do i=1,sgg%NumberRequest
+         call preprocess_observation(sgg%Observation(i), output(i), sgg%tiempo, finaltimestep, sgg%dt, saveall)
       END DO
+
+      
 
    end subroutine InitObservations
 
-   subroutine preprocess_observation(observation, privateOutput, dt)
+   subroutine preprocess_observation(observation, privateOutput, time, finaltimestep, dt, saveall)
       type(Obses_t), intent(inout) :: observation
       type(output_t), intent(inout) :: privateOutput
-      real(kind=RKIND_tiempo), intent(in) :: dt
+      real(kind=RKIND_tiempo), pointer, dimension(:), intent(in) :: time
+      real(kind=RKIND_tiempo), intent(in) :: dt, finaltimestep
+      logical :: saveall
 
       observation%done = .false.
       observation%begun = .false.
@@ -294,7 +307,7 @@ contains
       observation%InitialTime = int(observation%InitialTime/dt) * dt
       observation%FinalTime =   int(observation%FinalTime  /dt) * dt
       observation%FreqStep = min(observation%FreqStep,2.0_RKIND / dt)
-      if ((observation%FreqStep > observation%FinalFreq   - observation%InitialFreq).or.(observation%FreqStep ==0)) then
+      if ((observation%FreqStep > observation%FinalFreq   - observation%InitialFreq).or.(observation%FreqStep == 0)) then
          observation%FreqStep = observation%FinalFreq   - observation%InitialFreq
          observation%FinalFreq= observation%InitialFreq + observation%FreqStep
       endif
@@ -311,11 +324,11 @@ contains
       if (observation%Saveall)  then
          privateOutput%Trancos = 1
          observation%InitialTime=0.0_RKIND
-         observation%FinalTime=sgg%tiempo(FINALTIMESTEP+2)
+         observation%FinalTime=time(finaltimestep+2)
       else
          privateOutput%Trancos       = max(1,int(observation%TimeStep/dt))
          observation%InitialTime=max(0.0_RKIND,observation%InitialTime)
-         observation%FinalTime=min(sgg%tiempo(FINALTIMESTEP+2),observation%FinalTime) !CLIPEA
+         observation%FinalTime=min(time(finaltimestep+2),observation%FinalTime) !CLIPEA
          if (observation%FinalTime < observation%InitialTime) then
             observation%FinalTime = observation%InitialTime
          endif
