@@ -255,8 +255,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitObservations(sgg, finaltimestep, saveall)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
-      real(kind=RKIND_tiempo), intent(in) :: finaltimestep
-      integer(kind=4) :: i
+      integer(kind=4) :: i, finaltimestep
       logical  ::  saveall
 
       output => null()
@@ -277,7 +276,8 @@ contains
       type(Obses_t), intent(inout) :: observation
       type(output_t), intent(inout) :: privateOutput
       real(kind=RKIND_tiempo), pointer, dimension(:), intent(in) :: time
-      real(kind=RKIND_tiempo), intent(in) :: dt, finaltimestep
+      real(kind=RKIND_tiempo), intent(in) :: dt
+      integer(kind=4) :: finaltimestep
       logical :: saveall
 
       observation%done = .false.
