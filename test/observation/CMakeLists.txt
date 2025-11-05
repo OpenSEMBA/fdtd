@@ -2,6 +2,7 @@ message(STATUS "Creating build system for test/observation")
 
 add_library(
     observation_test_fortran
+    "observation_testingTools.F90"
     "test_observation.F90"
     "test_preprocess.F90"
 )
