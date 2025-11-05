@@ -1342,7 +1342,7 @@ subroutine NFDE2sgg
             sgg%SINPMLSweep(field)%ZE = Min (SINPML_fullsize(field)%ZE, sgg%Sweep(field)%ZE)
          END DO
          !!fin 16/07/15
-         WRITE (dubuf,*) 'INIT NFDE --------> GEOM'
+         WRITE (dubuf,*) 'INIT NFDE/JSON --------> GEOM'
          CALL print11 (l%layoutnumber, dubuf)
          CALL read_geomData (sgg,sggMtag,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, l%fichin, l%layoutnumber, l%size, SINPML_fullsize, fullsize, parser, &
          l%groundwires,l%attfactorc,l%mibc,l%sgbc,l%sgbcDispersive,l%MEDIOEXTRA,maxSourceValue,l%skindepthpre,l%createmapvtk,l%input_conformal_flag,l%CLIPREGION,l%boundwireradius,l%maxwireradius,l%updateshared,l%run_with_dmma, &
@@ -1351,7 +1351,7 @@ subroutine NFDE2sgg
          if (trim(adjustl(l%extension))=='.json')  mtln_parsed = parser%mtln
          ! if (trim(adjustl(l%extension))=='.json')  mtln_solver = mtlnCtor(parser%mtln)   
 #endif
-         WRITE (dubuf,*) '[OK] ENDED NFDE --------> GEOM'
+         WRITE (dubuf,*) '[OK] ENDED NFDE/JSON --------> GEOM'
          CALL print11 (l%layoutnumber, dubuf)
          !writing
          slices = '!SLICES'

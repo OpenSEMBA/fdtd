@@ -3820,13 +3820,13 @@ contains
                                     output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = 0.0 
                                     output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) +  output( ii)%auxExp_H(if1) * Jz             
                                     !ELECTRIC                                           
-                                    output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEz) 
-                                    output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEz)
-                                    output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEz) 
+                                    output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEz)
                                     !MAGNETIC                                                                                                                                                                                                                                          
-                                    output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEz)
-                                    output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
-                                    output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
                                  end do
                               endif          
                                medium=sggMiEx(III , JJJ , KKK )
@@ -3845,13 +3845,13 @@ contains
                                        output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = 0. 
                                        output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) = 0.     
                                        !ELECTRIC                                           
-                                       output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEx) 
-                                       output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEx)
-                                       output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEx)
+                                       output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEx) 
+                                       output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEx)
+                                       output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEx)
                                        !MAGNETIC                                            
-                                       output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEx)
-                                       output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEx)
-                                       output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEx)
+                                       output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEx)
+                                       output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEx)
+                                       output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEx)
                                     end do
                                 !!! endif
                               endif         
@@ -3871,13 +3871,13 @@ contains
                                        output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) + output( ii)%auxExp_H(if1) * Jy    
                                        output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) = 0.0        
                                       !ELECTRIC                                           
-                                      output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEy) 
-                                      output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEy)
-                                      output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEy)
+                                      output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEy) 
+                                      output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEy)
+                                      output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEy)
                                       !MAGNETIC                                                                                                                                                                                                                                          
-                                      output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEy)
-                                      output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEy)
-                                      output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEy)  
+                                      output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEy)
+                                      output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEy)
+                                      output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEy)  
                                     end do
                                 !!! endif
                               endif
@@ -3897,13 +3897,13 @@ contains
                                        output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = 0.0   
                                        output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) +  output( ii)%auxExp_H(if1) * Jz               
                                        !ELECTRIC                                           
-                                       output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEz) 
-                                       output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEz)
-                                       output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEz)
+                                       output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iEz) 
+                                       output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iEz)
+                                       output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iEz)
                                        !MAGNETIC                                                                                                                                                                                                                                          
-                                       output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEz)
-                                       output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
-                                       output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
+                                       output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iEz)
+                                       output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iEz)
+                                       output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iEz)
 
                                     end do
                                !!!  endif
@@ -3932,13 +3932,13 @@ contains
                                     output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) +   output( ii)%auxExp_H(if1) * Jy
                                     output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) +   output( ii)%auxExp_H(if1) * Jz                 
                                     !ELECTRIC                                           
-                                    output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iHx) 
-                                    output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iHx)
-                                    output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iHx)
+                                    output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iHx) 
+                                    output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iHx)
+                                    output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iHx)
                                     !MAGNETIC                                                                                                                                                                                                                                          
-                                    output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iHx)
-                                    output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iHx)
-                                    output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHx)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iHx)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iHx)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHx)
                                  end do
                               endif
                               if (((sgg%med(sggMiHy(III, JJJ, KKK))%Is%PEC).or. &
@@ -3958,13 +3958,13 @@ contains
                                     output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = 0.0_RKIND
                                     output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_z(if1,conta) + output( ii)%auxExp_H(if1) * Jz       
                                     !ELECTRIC                                           
-                                    output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iHy) 
-                                    output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iHy)
-                                    output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iHy)
+                                    output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iHy) 
+                                    output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iHy)
+                                    output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iHy)
                                     !MAGNETIC                                                                                                                                                                                                                                         
-                                    output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iHy)
-                                    output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iHy)
-                                    output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHy)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iHy)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iHy)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHy)
                                  end do
 
                               endif
@@ -3984,13 +3984,13 @@ contains
                                     output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) +  output(ii)%auxExp_H(if1) * Jy
                                     output( ii)%item( i)%Serialized%valorComplex_y(if1,conta) = 0.0            
                                     !ELECTRIC                                           
-                                    output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iHz) 
-                                    output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iHz)
-                                    output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(Ntimeforvolumic,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iHz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ex(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,iHz) 
+                                    output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ey(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,iHz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Ez(if1,conta) + output( ii)%auxExp_E(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,iHz)
                                     !MAGNETIC                                                                                                                                                                                                                                          
-                                    output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iHz)
-                                    output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iHz)
-                                    output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(Ntimeforvolumic,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hx(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,iHz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hy(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,iHz)
+                                    output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) = output( ii)%item( i)%Serialized%valorComplex_Hz(if1,conta) + output( ii)%auxExp_H(if1) * interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,iHz)
                                  end do
                               endif
                               !nunca va a haver mapvtk en frequencia!!!
@@ -5437,6 +5437,7 @@ contains
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
+
 
 
       fqVal=fqVal*2.0_RKIND !BUG HIRAI ENERGIA DOBLE PARSEVAL  mail 24/07/19
