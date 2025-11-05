@@ -70,16 +70,17 @@ contains
     end if
   end subroutine check_size
 
-  logical function approx_equal(a, b, tol)
+  logical function approx_equal(a, b, tol) result(equal)
     real(kind=RKIND), intent(in) :: a, b, tol
-    approx_equal = abs(a - b) <= tol
+    equal = abs(a - b) <= tol
   end function approx_equal
 
   function create_time_array(array_size, interval) result(arr)
     integer, intent(in) :: array_size
+    integer(kind=4) :: i
     real(kind=RKIND_tiempo) :: interval
 
-    real(kind=RKIND_tiempo), dimension(:), allocatable :: arr
+    real(kind=RKIND_tiempo), pointer ,dimension(:) :: arr
     allocate (arr(array_size))
 
     DO i = 1, array_size

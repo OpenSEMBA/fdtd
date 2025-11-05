@@ -302,8 +302,8 @@ contains
       end if
     end if
 
-    observation%InitialTime = int(observation%InitialTime/dt)*dt
-    observation%FinalTime = int(observation%FinalTime/dt)*dt
+    observation%InitialTime = int(observation%InitialTime)
+    observation%FinalTime = int(observation%FinalTime)
     observation%FreqStep = min(observation%FreqStep, 2.0_RKIND/dt)
     if ((observation%FreqStep > observation%FinalFreq - observation%InitialFreq) .or. (observation%FreqStep == 0)) then
       observation%FreqStep = observation%FinalFreq - observation%InitialFreq
@@ -319,6 +319,13 @@ contains
 #ifdef miguelConformalStandAlone
     privateOutput%SaveAll = .false.
 #endif
+   if (observation%nP /= 0) then
+      if (observation%P(1)%what == mapvtk) then
+        privateOutput%SaveAll = .false.
+        observation%Saveall = .false.
+      end if
+    end if
+    
     if (observation%Saveall) then
       privateOutput%Trancos = 1
       observation%InitialTime = 0.0_RKIND
@@ -331,12 +338,7 @@ contains
         observation%FinalTime = observation%InitialTime
       end if
     end if
-    if (observation%nP /= 0) then
-      if (observation%P(1)%what == mapvtk) then
-        privateOutput%SaveAll = .false.
-        observation%Saveall = .false.
-      end if
-    end if
+    
 !!!!
   end subroutine preprocess_observation
 
