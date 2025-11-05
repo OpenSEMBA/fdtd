@@ -325,7 +325,7 @@ contains
         observation%Saveall = .false.
       end if
     end if
-    
+
     if (observation%Saveall) then
       privateOutput%Trancos = 1
       observation%InitialTime = 0.0_RKIND
@@ -341,6 +341,174 @@ contains
     
 !!!!
   end subroutine preprocess_observation
+
+  subroutine eliminate_unnecesary_observation_points(output_item, observation_probe, sweep, SINPMLSweep, ZI, ZE)
+   type(item_t), pointer, dimension(:), intent(inout) :: output_item
+   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+   type(XYZlimit_t), dimension(1:6), intent(in) :: sweep, SINPMLSweep
+   integer(kind=4), intent(in) :: ZI, ZE
+   
+   output_item%Xtrancos = observation_probe%Xtrancos
+   output_item%Ytrancos = observation_probe%Ytrancos
+   output_item%Ztrancos = observation_probe%Ztrancos
+
+   output_item%XItrancos = int(observation_probe%XI/output_item%Xtrancos)
+   output_item%YItrancos = int(observation_probe%YI/output_item%Ytrancos)
+   output_item%ZItrancos = int(observation_probe%ZI/output_item%Ztrancos)
+
+   output_item%XEtrancos = int(observation_probe%XE/output_item%Xtrancos)
+   output_item%YEtrancos = int(observation_probe%YE/output_item%Ytrancos)
+   output_item%ZEtrancos = int(observation_probe%ZE/output_item%Ztrancos)
+
+   if (mod(observation_probe%XI,output_item%Xtrancos) /= 0) output_item%XItrancos=output_item%XItrancos+1
+   if (mod(observation_probe%YI,output_item%Ytrancos) /= 0) output_item%YItrancos=output_item%YItrancos+1
+   if (mod(observation_probe%ZI,output_item%Ztrancos) /= 0) output_item%ZItrancos=output_item%ZItrancos+1
+
+#ifdef CompileWithMPI
+   output_item%MPISubComm = -1 !just to void it
+#endif
+
+   field = observation_probe%What
+   select case (field)
+      case (iBloqueJx, iBloqueJy, iBloqueMx, iBloqueMy)
+         call eliminate_observation_from_block(observation_probe, output_item, sweep, field)
+      case (iEx, iVx, iEy, iVy, iHz, iBloqueMz, iJx, iJy, iQx, iQy)
+         !in case of MPI the flushing is only cared by one of the sharing layouts
+         !este es el unico caso en el que un punto es susceptible de ser escrito por dos layouts. Por eso se lo echo
+         ! solo a uno de ellos: al de abajo (a menos que que sea el layout de mas arriba, en cuyo caso tiene que tratarlo el) !bug del itc2 con el pathx hasta el borde
+         if (((observation_probe%ZI >= sweep(fieldo(field, 'Z'))%ZE) .and. (layoutnumber /= size - 1)) .or. &
+            (observation_probe%ZI < sweep(fieldo(field, 'Z'))%ZI)) then
+            sgg%observation(ii)%P(i)%What = Nothing !do not observe anything
+         end if
+      case (iEz, iVz, iJz, iQz, iBloqueJz, iHx, iHy)
+         if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
+              (observation_probe%ZI < sweep(fieldo(field, 'Z'))%ZI)) then
+            observation_probe%What = nothing !do not observe anything
+         end if
+      case (iExC, iEyC, iHzC, iMhC, iEzC, iHxC, iHyC, iMeC)
+         call eliminate_observation_from_block(observation_probe, output_item, sweep, field)
+      case (iCur, iCurX, iCurY, iCurZ, mapvtk)
+         call eliminate_observation_from_current(observation_probe, output_item, sweep, field)
+      case (FarField)
+         call eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE)
+   end select
+  end subroutine eliminate_unnecesary_observation_points
+
+  subroutine eliminate_observation_from_block(observation_probe, output_item, sweep, field)
+   type(item_t), pointer, dimension(:), intent(inout) :: output_item
+   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+   type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
+   integer, intent(in) :: field
+
+   if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
+   (observation_probe%ZE < sweep(fieldo(field, 'Z'))%ZI)) then
+         observation_probe%What = nothing
+
+#ifdef CompileWithMPI
+      output_item%MPISubComm = -1 !just to void it
+   else
+      output_item%MPISubComm = 1
+   end if
+      output_item%MPIRoot = 0
+      If ((observation_probe%ZI >= sweep(fieldo(field, 'Z'))%ZI) .and. &
+         (observation_probe%ZI <= sweep(fieldo(field, 'Z'))%ZE)) then
+         output_item%MPIRoot = layoutnumber
+      end if
+   !all of them must call the init routine even if they do not sync
+   call MPIinitSubcomm(layoutnumber, size, &
+         output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
+#else
+   end if
+#endif
+
+  end subroutine eliminate_observation_from_block
+
+  subroutine eliminate_observation_from_electric_current(observation_probe, output_item, sweep, field)
+   type(item_t), pointer, dimension(:), intent(inout) :: output_item
+   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+   type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
+   integer, intent(in) :: field
+
+   if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
+         (observation_probe%ZE < sweep(fieldo(field, 'Z'))%ZI)) then
+      observation_probe%What = nothing
+#ifdef CompileWithMPI
+      output_item%MPISubComm = -1
+   else
+      output_item%MPISubComm = 1
+   end if
+   output_item%MPIRoot = 0
+   If ((observation_probe%ZI >= sweep(fieldo(field, 'Z'))%ZI) .and. &
+         (observation_probe%ZI <= sweep(fieldo(field, 'Z'))%ZE)) then
+      output_item%MPIRoot = layoutnumber
+   end if
+   call MPIinitSubcomm(layoutnumber, size, &
+      output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
+#else
+   end if
+#endif
+
+   end subroutine eliminate_observation_from_electric_current
+
+   subroutine eliminate_observation_from_current(observation_probe, output_item, sweep, field)
+   type(item_t), pointer, dimension(:), intent(inout) :: output_item
+   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+   type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
+   integer, intent(in) :: field
+
+   if ((observation_probe%ZI >= sweep(iHz)%ZE) .or. &
+         (observation_probe%ZE < sweep(iHZ)%ZI)) then
+      observation_probe%What = nothing
+#ifdef CompileWithMPI
+      output_item%MPISubComm = -1
+   else
+      output_item%MPISubComm = 1
+   end if
+      !clipeo los finales porque luego tengo que interpolar y el MPI me puede molestar 06/07/15
+   if ((field == icur) .or. (field == icurX) .or. (field == icurY) .or. (field == mapvtk)) then
+      observation_probe%ZE = Min(observation_probe%ZE, sweep(iHx)%ZE)
+   end if
+   
+   output_item%MPIRoot = 0
+   If ((observation_probe%ZI >= sweep(fieldo(field, 'Z'))%ZI) .and. &
+         (observation_probe%ZI <= sweep(fieldo(field, 'Z'))%ZE)) then
+      output_item%MPIRoot = layoutnumber
+   end if
+   call MPIinitSubcomm(layoutnumber, size, &
+      output(ii)%item(i)%MPISubComm, output(ii)%item(i)%MPIRoot, output(ii)%item(i)%MPIGroupIndex)
+#else
+   end if
+#endif
+
+   end subroutine eliminate_observation_from_current
+
+   subroutine eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE)
+   type(item_t), pointer, dimension(:), intent(inout) :: output_item
+   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+   type(XYZlimit_t), dimension(1:6), intent(in) :: SINPMLSweep
+   integer, intent(in) :: field
+   INTEGER(kind=4), intent(in) :: ZI, ZE
+
+   if ((ZI > SINPMLSweep(IHz)%ZE) .or. (ZE < SINPMLSweep(iHz)%ZI)) then   !MPI NO DUPLICAR CALCULOS
+      observation_probe%What = nothing
+#ifdef CompileWithMPI
+      output_item%MPISubComm = -1 !just to void it
+   else
+      output_item%MPISubComm = 1
+   end if
+      output_item%MPIRoot = 0
+   If ((observation_probe%ZI >= SINPMLSweep(iHz)%ZI) .and. &
+         (observation_probe%ZI < SINPMLSweep(iHz)%ZE)) then
+      output_item%MPIRoot = layoutnumber
+   end if
+
+   call MPIinitSubcomm(layoutnumber, size, &
+         output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
+#else
+   end if
+#endif
+      
+   end subroutine eliminate_observation_from_farfield
 
   subroutine InitObservation(sgg, media, tag_numbers, &
                   ThereAreObservation, ThereAreWires, ThereAreFarFields, resume, initialtimestep, finaltimestep, lastexecutedtime, &
@@ -364,7 +532,7 @@ contains
 
     character(len=*), intent(in)  ::  nEntradaRoot
 
-      integer (kind=4)  ::  i,field,ii,i1,j1,k1,n,i2,j2,k2,initialtimestep, finaltimestep,NO,NO2,iwi,iwj,compo,ntime,ntimeforvolumic,iff1,i0t
+    integer (kind=4)  ::  i,field,ii,i1,j1,k1,n,i2,j2,k2,initialtimestep, finaltimestep,NO,NO2,iwi,iwj,compo,ntime,ntimeforvolumic,iff1,i0t
     integer(kind=4) :: Efield, HField
     logical, intent(inout)   ::  ThereAreObservation, ThereAreFarFields
     logical, intent(in)      ::  ThereAreWires, resume
@@ -423,10 +591,6 @@ contains
     output(1:sgg%NumberRequest)%SaveAll = .false.
     output(1:sgg%NumberRequest)%TimesWritten = -1
 
-    !preprocesa par evitar overflows en integers
-      !!!!!
-    !corrige los time step en funcion del final (bug OLD 1 solo time step pero con trancos mayor que 0) !31/03/2014
-
     do ii = 1, sgg%NumberRequest
       call preprocess_observation(sgg%Observation(ii), output(ii), sgg%tiempo, finaltimestep, sgg%dt, saveall)
     end do
@@ -442,138 +606,12 @@ contains
       output(ii)%TimesWritten = 0 !for volumic probes
     end do
 
-    !eliminate unnecesary observation points
-    do ii = 1, sgg%NumberRequest
+   do ii = 1, sgg%NumberRequest
       do i = 1, sgg%Observation(ii)%nP
-        !trancos
-        output(ii)%item(i)%Xtrancos = sgg%Observation(ii)%P(i)%Xtrancos
-        output(ii)%item(i)%Ytrancos = sgg%Observation(ii)%P(i)%Ytrancos
-        output(ii)%item(i)%Ztrancos = sgg%Observation(ii)%P(i)%Ztrancos
-        output(ii)%item(i)%XItrancos = int(sgg%Observation(ii)%P(i)%XI/output(ii)%item(i)%Xtrancos)
-        output(ii)%item(i)%XEtrancos = int(sgg%Observation(ii)%P(i)%XE/output(ii)%item(i)%Xtrancos)
-        output(ii)%item(i)%YItrancos = int(sgg%observation(ii)%P(i)%YI/output(ii)%item(i)%Ytrancos)
-        output(ii)%item(i)%YEtrancos = int(sgg%observation(ii)%P(i)%YE/output(ii)%item(i)%Ytrancos)
-        output(ii)%item(i)%ZItrancos = int(sgg%observation(ii)%P(i)%ZI/output(ii)%item(i)%Ztrancos)
-        output(ii)%item(i)%ZEtrancos = int(sgg%observation(ii)%P(i)%ZE/output(ii)%item(i)%Ztrancos)
-        !
-  if (mod(sgg%Observation(ii)%P(i)%XI,output(ii)%item(i)%Xtrancos) /= 0) output(ii)%item(i)%XItrancos=output(ii)%item(i)%XItrancos+1
-  if (mod(sgg%Observation(ii)%P(i)%YI,output(ii)%item(i)%Ytrancos) /= 0) output(ii)%item(i)%YItrancos=output(ii)%item(i)%YItrancos+1
-  if (mod(sgg%Observation(ii)%P(i)%ZI,output(ii)%item(i)%Ztrancos) /= 0) output(ii)%item(i)%ZItrancos=output(ii)%item(i)%ZItrancos+1
-
-        !fin trancos
-#ifdef CompileWithMPI
-        output(ii)%item(i)%MPISubComm = -1 !just to void it
-#endif
-        field = sgg%observation(ii)%P(i)%What
-        select case (field)
-        case (iBloqueJx, iBloqueJy, iBloqueMx, iBloqueMy)     !the end point info is only relevant for Bloque
-          if ((sgg%Observation(ii)%P(i)%ZI > sgg%Sweep(fieldo(field, 'Z'))%ZE) .or. &
-              (sgg%Observation(ii)%P(i)%ZE < sgg%Sweep(fieldo(field, 'Z'))%ZI)) then
-            sgg%observation(ii)%P(i)%What = nothing
-#ifdef CompileWithMPI
-            output(ii)%item(i)%MPISubComm = -1 !just to void it
-          else
-            output(ii)%item(i)%MPISubComm = 1
-          end if
-          output(ii)%item(i)%MPIRoot = 0
-          If ((sgg%observation(ii)%P(i)%ZI >= sgg%Sweep(fieldo(field, 'Z'))%ZI) .and. &
-              (sgg%observation(ii)%P(i)%ZI <= sgg%Sweep(fieldo(field, 'Z'))%ZE)) then
-            output(ii)%item(i)%MPIRoot = layoutnumber
-          end if
-          !all of them must call the init routine even if they do not sync
-          call MPIinitSubcomm(layoutnumber, size, &
-                              output(ii)%item(i)%MPISubComm, output(ii)%item(i)%MPIRoot, output(ii)%item(i)%MPIGroupIndex)
-
-#else
-          end if
-#endif
-          case (iEx, iVx, iEy, iVy, iHz, iBloqueMz, iJx, iJy, iQx, iQy) !in case of MPI the flushing is only cared by one of the sharing layouts
-          !in case of MPI the flushing is only cared by one of the sharing layouts
-          !este es el unico caso en el que un punto es susceptible de ser escrito por dos layouts. Por eso se lo echo
-          ! solo a uno de ellos: al de abajo (a menos que que sea el layout de mas arriba, en cuyo caso tiene que tratarlo el) !bug del itc2 con el pathx hasta el borde
-          if (((sgg%Observation(ii)%P(i)%ZI >= sgg%Sweep(fieldo(field, 'Z'))%ZE) .and. (layoutnumber /= size - 1)) .or. &
-              (sgg%observation(ii)%P(i)%ZI < sgg%Sweep(fieldo(field, 'Z'))%ZI)) then
-            sgg%observation(ii)%P(i)%What = Nothing !do not observe anything
-          end if
-          case (iEz, iVz, iJz, iQz, iBloqueJz, iHx, iHy)
-          if ((sgg%Observation(ii)%P(i)%ZI > sgg%Sweep(fieldo(field, 'Z'))%ZE) .or. &
-              (sgg%Observation(ii)%P(i)%ZI < sgg%Sweep(fieldo(field, 'Z'))%ZI)) then
-            sgg%observation(ii)%P(i)%What = Nothing !do not observe anything
-          end if
-          !the end point info is only relevant for Volumic and Bloque
-          case (iExC, iEyC, iHzC, iMhC, iEzC, iHxC, iHyC, iMeC)
-          if ((sgg%Observation(ii)%P(i)%ZI > sgg%Sweep(fieldo(field, 'Z'))%ZE) .or. &
-              (sgg%Observation(ii)%P(i)%ZE < sgg%Sweep(fieldo(field, 'Z'))%ZI)) then
-            sgg%Observation(ii)%P(i)%What = nothing
-#ifdef CompileWithMPI
-            output(ii)%item(i)%MPISubComm = -1 !just to void it
-          else
-            output(ii)%item(i)%MPISubComm = 1
-          end if
-          output(ii)%item(i)%MPIRoot = 0
-          If ((sgg%observation(ii)%P(i)%ZI >= sgg%Sweep(fieldo(field, 'Z'))%ZI) .and. &
-              (sgg%observation(ii)%P(i)%ZI <= sgg%Sweep(fieldo(field, 'Z'))%ZE)) then
-            output(ii)%item(i)%MPIRoot = layoutnumber
-          end if
-          !all of them must call the init routine even if they do not sync
-          call MPIinitSubcomm(layoutnumber, size, &
-                              output(ii)%item(i)%MPISubComm, output(ii)%item(i)%MPIRoot, output(ii)%item(i)%MPIGroupIndex)
-
-#else
-          end if
-#endif
-          !the end point info is only relevant for Volumic and Bloque
-          case (iCur, iCurX, iCurY, iCurZ, mapvtk)
-          if ((sgg%Observation(ii)%P(i)%ZI >= sgg%Sweep(iHz)%ZE) .or. &
-              (sgg%Observation(ii)%P(i)%ZE < sgg%Sweep(iHZ)%ZI)) then
-            sgg%Observation(ii)%P(i)%What = nothing
-#ifdef CompileWithMPI
-            output(ii)%item(i)%MPISubComm = -1 !just to void it
-          else
-            output(ii)%item(i)%MPISubComm = 1
-          end if
-          !clipeo los finales porque luego tengo que interpolar y el MPI me puede molestar 06/07/15
-          if ((field == icur) .or. (field == icurX) .or. (field == icurY) .or. (field == mapvtk)) then
-            sgg%Observation(ii)%P(i)%ZE = Min(sgg%Observation(ii)%P(i)%ZE, sgg%Sweep(iHx)%ZE)
-          end if
-               !!!!!!!!!!!!
-          output(ii)%item(i)%MPIRoot = 0
-          If ((sgg%observation(ii)%P(i)%ZI >= sgg%Sweep(fieldo(field, 'Z'))%ZI) .and. &
-              (sgg%observation(ii)%P(i)%ZI <= sgg%Sweep(fieldo(field, 'Z'))%ZE)) then
-            output(ii)%item(i)%MPIRoot = layoutnumber
-          end if
-          !all of them must call the init routine even if they do not sync
-          call MPIinitSubcomm(layoutnumber, size, &
-                              output(ii)%item(i)%MPISubComm, output(ii)%item(i)%MPIRoot, output(ii)%item(i)%MPIGroupIndex)
-
-#else
-          end if
-#endif
-          case (FarField)
-          if ((sgg%observation(ii)%P(1)%ZI > sgg%SINPMLSweep(IHz)%ZE) .or. &  !MPI NO DUPLICAR CALCULOS
-              (sgg%observation(ii)%P(1)%ZE < sgg%SINPMLSweep(iHz)%ZI)) then
-
-            sgg%Observation(ii)%P(i)%What = nothing
-#ifdef CompileWithMPI
-            output(ii)%item(i)%MPISubComm = -1 !just to void it
-          else
-            output(ii)%item(i)%MPISubComm = 1
-          end if
-          output(ii)%item(i)%MPIRoot = 0
-          If ((sgg%observation(ii)%P(i)%ZI >= sgg%SINPMLSweep(iHz)%ZI) .and. &
-              (sgg%observation(ii)%P(i)%ZI < sgg%SINPMLSweep(iHz)%ZE)) then
-            output(ii)%item(i)%MPIRoot = layoutnumber
-          end if
-          !all of them must call the init routine even if they do not sync
-          call MPIinitSubcomm(layoutnumber, size, &
-                              output(ii)%item(i)%MPISubComm, output(ii)%item(i)%MPIRoot, output(ii)%item(i)%MPIGroupIndex)
-#else
-          end if
-#endif
-          !
-          end select
-        end do
+         call eliminate_unnecesary_observation_points(sgg%Observation(ii)%P(i), output(ii)%item(i), &
+            sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE)
       end do
+   end do
 
       !
       ThereAreObservation = .false.
@@ -1687,7 +1725,7 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                 end if
                      !!!
                 my_iostat = 0
-9137            if (my_iostat /= 0) write (*, fmt='(a)', advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9137,layoutnumber,trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt'
+            if (my_iostat /= 0) write (*, fmt='(a)', advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9137,layoutnumber,trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt'
                 write (19, '(a)', err=9137, iostat=my_iostat) trim(adjustl(output(ii)%item(i)%path))
 
                 !erase pre-existing data unless this is a resuming simulation
