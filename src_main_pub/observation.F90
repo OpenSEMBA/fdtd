@@ -342,11 +342,12 @@ contains
 !!!!
   end subroutine preprocess_observation
 
-  subroutine eliminate_unnecesary_observation_points(output_item, observation_probe, sweep, SINPMLSweep, ZI, ZE)
-   type(item_t), pointer, dimension(:), intent(inout) :: output_item
-   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+  subroutine eliminate_unnecesary_observation_points(observation_probe, output_item, sweep, SINPMLSweep, ZI, ZE, layoutnumber, size)
+   type(item_t),  intent(inout) :: output_item
+   type(observable_t),  intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep, SINPMLSweep
-   integer(kind=4), intent(in) :: ZI, ZE
+   integer(kind=4), intent(in) :: ZI, ZE, layoutnumber, size
+   integer(kind=4) :: field
    
    output_item%Xtrancos = observation_probe%Xtrancos
    output_item%Ytrancos = observation_probe%Ytrancos
@@ -378,7 +379,7 @@ contains
          ! solo a uno de ellos: al de abajo (a menos que que sea el layout de mas arriba, en cuyo caso tiene que tratarlo el) !bug del itc2 con el pathx hasta el borde
          if (((observation_probe%ZI >= sweep(fieldo(field, 'Z'))%ZE) .and. (layoutnumber /= size - 1)) .or. &
             (observation_probe%ZI < sweep(fieldo(field, 'Z'))%ZI)) then
-            sgg%observation(ii)%P(i)%What = Nothing !do not observe anything
+            observation_probe%What = Nothing !do not observe anything
          end if
       case (iEz, iVz, iJz, iQz, iBloqueJz, iHx, iHy)
          if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
@@ -395,8 +396,8 @@ contains
   end subroutine eliminate_unnecesary_observation_points
 
   subroutine eliminate_observation_from_block(observation_probe, output_item, sweep, field)
-   type(item_t), pointer, dimension(:), intent(inout) :: output_item
-   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+   type(item_t), intent(inout) :: output_item
+   type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
 
@@ -424,8 +425,8 @@ contains
   end subroutine eliminate_observation_from_block
 
   subroutine eliminate_observation_from_electric_current(observation_probe, output_item, sweep, field)
-   type(item_t), pointer, dimension(:), intent(inout) :: output_item
-   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+   type(item_t), intent(inout) :: output_item
+   type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
 
@@ -451,8 +452,8 @@ contains
    end subroutine eliminate_observation_from_electric_current
 
    subroutine eliminate_observation_from_current(observation_probe, output_item, sweep, field)
-   type(item_t), pointer, dimension(:), intent(inout) :: output_item
-   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+   type(item_t), intent(inout) :: output_item
+   type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
 
@@ -483,8 +484,8 @@ contains
    end subroutine eliminate_observation_from_current
 
    subroutine eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE)
-   type(item_t), pointer, dimension(:), intent(inout) :: output_item
-   type(observable_t), pointer, dimension( : ), intent(inout) :: observation_probe
+   type(item_t), intent(inout) :: output_item
+   type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: SINPMLSweep
    integer, intent(in) :: field
    INTEGER(kind=4), intent(in) :: ZI, ZE
@@ -609,7 +610,7 @@ contains
    do ii = 1, sgg%NumberRequest
       do i = 1, sgg%Observation(ii)%nP
          call eliminate_unnecesary_observation_points(sgg%Observation(ii)%P(i), output(ii)%item(i), &
-            sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE)
+            sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, layoutnumber, size)
       end do
    end do
 
@@ -1725,7 +1726,7 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                 end if
                      !!!
                 my_iostat = 0
-            if (my_iostat /= 0) write (*, fmt='(a)', advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9137,layoutnumber,trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt'
+9137            if (my_iostat /= 0) write (*, fmt='(a)', advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9137,layoutnumber,trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt'
                 write (19, '(a)', err=9137, iostat=my_iostat) trim(adjustl(output(ii)%item(i)%path))
 
                 !erase pre-existing data unless this is a resuming simulation
@@ -3451,10 +3452,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
               do iff1 = 1, output(ii)%NumFreqs
                 output(ii)%auxExp_E(iff1) = sgg%dt*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*output(ii)%Freq(iff1)*at)   !el dt deberia ser algun tipo de promedio pero no me complico permit scaling 211118
                 output(ii)%auxExp_H(iff1) = output(ii)%auxExp_E(iff1)*Exp(mcpi2*output(ii)%Freq(iff1)*sgg%dt*0.5_RKIND)
-
               end do
 !!!
-              SElect case (field)
+              select case (field)
 !!!las freqdomain NUNCA ESTAN DONE
               case (iMEC, iExC, iEyC, iEzC) !como los tengo que guardar todas las componentes cartesianas solo variara el output final en el .xdmf
                 !                    if (at > sgg%OBSERVATION(ii)%FinalTime+sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done=.true.
@@ -3473,11 +3473,11 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                       III_m = III
                       do if1 = 1, output(ii)%NumFreqs
                                  !!!
-             output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t) + &
+                        output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t) + &
                                                                                    output(ii)%auxExp_E(if1)*Ex(III_m, JJJ_m, KKK_m)
-             output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t) + &
+                        output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t) + &
                                                                                    output(ii)%auxExp_E(if1)*Ey(III_m, JJJ_m, KKK_m)
-             output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t) + &
+                        output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t) + &
                                                                                    output(ii)%auxExp_E(if1)*Ez(III_m, JJJ_m, KKK_m)
                       end do
                     end if
