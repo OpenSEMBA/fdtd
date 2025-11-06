@@ -253,22 +253,6 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-  subroutine InitObservations(sgg, finaltimestep, saveall)
-    type(SGGFDTDINFO), intent(IN)         ::  sgg
-    integer(kind=4) :: i, finaltimestep
-    logical  ::  saveall
-
-    output => null()
-    allocate (output(1:sgg%NumberRequest))
-    output(1:sgg%NumberRequest)%Trancos = -1
-    output(1:sgg%NumberRequest)%SaveAll = .false.
-    output(1:sgg%NumberRequest)%TimesWritten = -1
-
-    do i = 1, sgg%NumberRequest
-      call preprocess_observation(sgg%Observation(i), output(i), sgg%tiempo, finaltimestep, sgg%dt, saveall)
-    END DO
-
-  end subroutine InitObservations
 
   subroutine preprocess_observation(observation, privateOutput, time, finaltimestep, dt, saveall)
     type(Obses_t), intent(inout) :: observation
@@ -648,6 +632,7 @@ contains
 #endif
         if (sgg%NumPlaneWaves >= 1) incident = .true. !150419 creo que no se ha dado nunca >1 porque los RC tocan el numero de modos pero solo hay una planewave
         !Write also the incident fields in case there are plane waves (useful in SE calculations)
+
         open (119, file=trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt')
         write (119, '(a)') '!END'
         close (119, status='delete')
@@ -674,14 +659,14 @@ contains
         do ii = 1, sgg%NumberRequest
           if (SGG%Observation(ii)%FreqDomain) then
             !
-            !Read the time evolution file common to all iten i
+            !Count the frequencies that are going to be registered
             !
             output(ii)%InitialFreq = sgg%observation(ii)%InitialFreq
             output(ii)%FinalFreq = sgg%observation(ii)%FinalFreq
             output(ii)%FreqStep = sgg%observation(ii)%FreqStep
             !
             if (SGG%Observation(ii)%FreqStep /= 0) then
-    output(ii)%NumFreqs = int(abs(SGG%Observation(ii)%InitialFreq - SGG%Observation(ii)%FinalFreq)/SGG%Observation(ii)%FreqStep) + 1
+              output(ii)%NumFreqs = int(abs(SGG%Observation(ii)%FinalFreq - SGG%Observation(ii)%InitialFreq)/SGG%Observation(ii)%FreqStep) + 1
             else
               output(ii)%NumFreqs = 1 !default
             end if
@@ -693,7 +678,7 @@ contains
               Buff = 'Too many Freqs requested (>100000)'
               call stoponerror(layoutnumber, size, Buff)
             end if
-
+            
             ALLOCATE (output(ii)%Freq(1:output(ii)%NumFreqs), &
                       output(ii)%auxExp_E(1:output(ii)%NumFreqs), &
                       output(ii)%auxExp_H(1:output(ii)%NumFreqs))
@@ -715,9 +700,9 @@ contains
 
               END DO
             end if
-            !
+            !!!!!!!!!!!!!!!!
             errnofile = .FALSE.
-
+            !!! Revisa si existe transfer fucntion y almacena la info en dos arrays
             IF (SGG%Observation(ii)%Transfer) then
               ALLOCATE (output(ii)%dftEntrada(1:output(ii)%NumFreqs))
               output(ii)%dftEntrada = 0.0_RKIND
