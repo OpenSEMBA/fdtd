@@ -101,8 +101,29 @@ def test_fill_conformal_vtk_sphere(tmp_path):
     assert face_media_dict[1005] == 24  # Conformal PEC surface
     assert face_media_dict[1006] == 24  # Conformal PEC surface
 
-def test_fill_conformal_vtk_large_sphere(tmp_path):
+def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
     fn = CASES_FOLDER + 'conformal/conformal_fL_sphere_rcs.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    assert -0.5 not in line_media_dict.keys()
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+
+    assert -1 not in face_media_dict.keys()
+
+def test_fill_conformal_fL_0_15_vtk_large_sphere(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_fL_0.15_sphere_rcs.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1

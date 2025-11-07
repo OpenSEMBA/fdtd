@@ -65,6 +65,9 @@ MODULE CreateMatrices
       character(len=BUFSIZE) :: buff
       TYPE (Shared_t) :: Eshared
       !
+      ! type(ConformalMedia_t), intent(in) :: conformal_media
+      ! type(side_tris_map_t), intent(in) :: side_map
+      !
       INTEGER (KIND=4) :: NumMedia
       TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
@@ -99,21 +102,6 @@ MODULE CreateMatrices
             end do
          end do
       end do
-      ! do k = BoundingBox%zi, BoundingBox%ze+1
-      !    do j = BoundingBox%yi, BoundingBox%ye+1
-      !       call fillBoundaryFaceIfAllFacesCPECX(j,k)
-      !    end do
-      ! end do
-      ! do i = BoundingBox%xi, BoundingBox%xe+1
-      !    do k = BoundingBox%zi, BoundingBox%ze+1
-      !       call fillBoundaryFaceIfAllFacesCPECY(i,k)
-      !    end do
-      ! end do
-      ! do j = BoundingBox%yi, BoundingBox%ye+1
-      !    do i = BoundingBox%xi, BoundingBox%xe+1
-      !       call fillBoundaryFaceIfAllFacesCPECZ(i,j)
-      !    end do
-      ! end do
 
       ! raytracing x
       do k = BoundingBox%zi, BoundingBox%ze+1
@@ -133,16 +121,6 @@ MODULE CreateMatrices
             call fillEdgesInsideVolumeZ(i,j)
          end do
       end do
-
-      ! do k = BoundingBox%zi, BoundingBox%ze+1
-      !    do j = BoundingBox%yi, BoundingBox%ye+1
-      !       do i = BoundingBox%xi, BoundingBox%xe+1
-      !          call fillBoundaryFaceIfAllEdgesPEC(i,j,k, FACE_X)
-      !          call fillBoundaryFaceIfAllEdgesPEC(i,j,k, FACE_Y)
-      !          call fillBoundaryFaceIfAllEdgesPEC(i,j,k, FACE_Z)
-      !       end do
-      !    end do
-      ! end do
 
       ! faces inside volume, should be PEC
       do k = BoundingBox%zi, BoundingBox%ze+1
@@ -193,114 +171,6 @@ MODULE CreateMatrices
                tags%face%z(i,j,k) = 64*numertag
             end select
          end if
-      end subroutine
-
-      subroutine fillBoundaryFaceIfAllFacesCPECX(j,k)
-         integer(kind=4), intent(in) :: j, k
-         integer(kind=4) :: i
-         integer(kind=4) :: m1, m2, m3, m4, m
-         logical :: on_boundary
-         logical :: crossed
-         on_boundary = .false.
-         crossed = .false.
-         do i = BoundingBox%xi, BoundingBox%xe+1
-            if (.not. crossed) then 
-               m1 = MMiHy(i-1,j,k)
-               m2 = MMiHz(i-1,j,k)
-               m3 = MMiHy(i-1,j+1,k)
-               m4 = MMiHz(i-1,j,k+1)
-            else
-               m1 = MMiHy(i,j,k)
-               m2 = MMiHz(i,j,k)
-               m3 = MMiHy(i,j+1,k)
-               m4 = MMiHz(i,j,k+1)
-            end if
-            m = MMiHx(i,j,k)
-            on_boundary = (med(m1)%Is%ConformalPEC) .and. & 
-                          (med(m2)%Is%ConformalPEC) .and. & 
-                          (med(m3)%Is%ConformalPEC) .and. & 
-                          (med(m4)%Is%ConformalPEC)
-            if (on_boundary) then 
-               crossed = .true.
-               if (.not. med(m)%Is%ConformalPEC) then 
-                  Mtag(i,j,k) = 64*numertag 
-                  MMiHx (i, j, k) = indicemedio
-                  tags%face%x(i,j,k) = 64*numertag
-               end if
-            end if
-         end do
-      end subroutine
-
-      subroutine fillBoundaryFaceIfAllFacesCPECY(i,k)
-         integer(kind=4), intent(in) :: i, k
-         integer(kind=4) :: j
-         integer(kind=4) :: m1, m2, m3, m4, m
-         logical :: on_boundary
-         logical :: crossed
-         on_boundary = .false.
-         crossed = .false.
-         do j = BoundingBox%yi, BoundingBox%ye+1
-            if (.not. crossed) then 
-               m1 = MMiHx(i,j-1,k)
-               m2 = MMiHz(i,j-1,k)
-               m3 = MMiHx(i+1,j-1,k)
-               m4 = MMiHz(i,j-1,k+1)
-            else
-               m1 = MMiHx(i,j,k)
-               m2 = MMiHz(i,j,k)
-               m3 = MMiHx(i+1,j,k)
-               m4 = MMiHz(i,j,k+1)
-            end if
-            m = MMiHy(i,j,k)
-            on_boundary = (med(m1)%Is%ConformalPEC) .and. & 
-                          (med(m2)%Is%ConformalPEC) .and. & 
-                          (med(m3)%Is%ConformalPEC) .and. & 
-                          (med(m4)%Is%ConformalPEC)
-            if (on_boundary) then 
-               crossed = .true.
-               if (.not. med(m)%is%ConformalPEC) then 
-                  Mtag(i,j,k) = 64*numertag 
-                  MMiHy (i, j, k) = indicemedio
-                  tags%face%y(i,j,k) = 64*numertag
-               end if
-            end if
-         end do
-      end subroutine
-
-      subroutine fillBoundaryFaceIfAllFacesCPECZ(i,j)
-         integer(kind=4), intent(in) :: i, j
-         integer(kind=4) :: k
-         integer(kind=4) :: m1, m2, m3, m4, m
-         logical :: on_boundary
-         logical :: crossed
-         on_boundary = .false.
-         crossed = .false.
-         do k = BoundingBox%zi, BoundingBox%ze+1
-            if (.not. crossed) then 
-               m1 = MMiHx(i,j,k-1)
-               m2 = MMiHy(i,j,k-1)
-               m3 = MMiHx(i+1,j,k-1)
-               m4 = MMiHy(i,j+1,k-1)
-            else
-               m1 = MMiHx(i,j,k)
-               m2 = MMiHy(i,j,k)
-               m3 = MMiHx(i+1,j,k)
-               m4 = MMiHy(i,j+1,k)
-            end if
-            m = MMiHz(i,j,k)
-            on_boundary = (med(m1)%Is%ConformalPEC) .and. & 
-                          (med(m2)%Is%ConformalPEC) .and. & 
-                          (med(m3)%Is%ConformalPEC) .and. & 
-                          (med(m4)%Is%ConformalPEC)
-            if (on_boundary) then 
-               crossed = .true.
-               if (.not. med(m)%is%ConformalPEC) then 
-                  Mtag(i,j,k) = 64*numertag 
-                  MMiHz (i, j, k) = indicemedio
-                  tags%face%z(i,j,k) = 64*numertag
-               end if
-            end if
-         end do
       end subroutine
 
       logical function hasCrossedPEC(m1,m2,m3,m4)

@@ -223,7 +223,7 @@ contains
             do s = 1, 3
                if (tri_sides(s)%isOnAnyEdge()) then 
                   if (isNewEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), 0.0)) then 
-                     call addEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), tri_sides(s), tris_on_face(k)%getNormal())
+                     call addEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), tri_sides(s))
                   end if
                end if
             end do
@@ -237,16 +237,14 @@ contains
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       real :: edge_ratio
       integer :: i, edge
-      real, dimension(3) :: normal
-      normal = getNormal(contour)
       do i = 1, size(contour)
          edge = contour(i)%getEdge()
          if (edge /= NOT_ON_EDGE) then 
             edge_ratio = 1.0 - contour(i)%length()
             if (isEdgeFilled(edges, contour(i)%getCell(), edge)) then 
-               call fillSmallerRatio(edges, contour(i)%getCell(), edge, contour(i), normal)
+               call fillSmallerRatio(edges, contour(i)%getCell(), edge, contour(i))
             else 
-               call addEdge(edges, contour(i)%getCell(), edge, contour(i), normal)
+               call addEdge(edges, contour(i)%getCell(), edge, contour(i))
             end if
          end if
       end do
@@ -256,16 +254,13 @@ contains
       type(side_t), dimension(:), allocatable, intent(in) :: sides
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       integer :: i, edge
-      real, dimension(3) :: normal
-      normal(:) = 0.0
-      ! normal = getNormal(sides)
       do i = 1, size(sides)
          edge = sides(i)%getEdge()
          if (edge /= NOT_ON_EDGE) then 
             if (isEdgeFilled(edges, sides(i)%getCell(), edge)) then 
                call reduceEdgeRatio(edges, sides(i)%getCell(), edge, sides(i))
             else 
-               call addEdge(edges, sides(i)%getCell(), edge, sides(i), normal)
+               call addEdge(edges, sides(i)%getCell(), edge, sides(i))
             end if
          end if
       end do
@@ -357,18 +352,16 @@ contains
       end do
    end subroutine
 
-   subroutine fillSmallerRatio (edges, cell, edge, side, normal)
+   subroutine fillSmallerRatio (edges, cell, edge, side)
       type(edge_t), dimension(:), allocatable, intent(inout) :: edges
       integer (kind=4), dimension(3), intent(in) :: cell
       integer (kind=4) :: edge 
       type(side_t), intent(in) :: side
-      real, dimension(3), intent(in) :: normal
       integer :: i
       real(kind=rkind) :: new_ratio
       do i = 1, size(edges)
          if (all(edges(i)%cell == cell) .and. &
              edges(i)%direction == edge) then 
-               edges(i)%normal = 0.5*(edges(i)%normal + normal)
                new_ratio = 1.0 - side%length()
                if (new_ratio < edges(i)%ratio) then 
                    edges(i)%ratio = new_ratio
@@ -378,13 +371,12 @@ contains
       end do
    end subroutine
 
-   subroutine addEdge(edges, cell, edge, side, normal)
+   subroutine addEdge(edges, cell, edge, side)
       type(edge_t), dimension(:), allocatable, intent(inout) :: edges
       type(edge_t), dimension(:), allocatable :: aux
       integer (kind=4), dimension(3), intent(in) :: cell
       integer (kind=4) :: edge 
       type(side_t), intent(in) :: side
-      real, dimension(3), intent(in) :: normal
       type(edge_t) :: new_edge
       real (kind=rkind) :: ratio
       real (kind = rkind), dimension(2) :: coords
@@ -394,7 +386,7 @@ contains
       aux(1:size(edges)) = edges
       coords(1) = min(side%init%position(edge), side%end%position(edge))
       coords(2) = max(side%init%position(edge), side%end%position(edge))
-      new_edge = edge_t(cell=cell, ratio=ratio, direction=edge, material_coords = coords, normal = normal)
+      new_edge = edge_t(cell=cell, ratio=ratio, direction=edge, material_coords = coords)
       aux(size(edges) + 1) = new_edge
 
       deallocate(edges)
