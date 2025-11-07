@@ -138,6 +138,7 @@ MODULE NFDETypes
       integer(kind=4) :: direction = -1
       real (kind=rkind) :: ratio = -1
       real (kind=rkind), dimension(2) :: material_coords
+      real, dimension(3) :: normal
    end type 
    type, public :: face_t 
       integer (kind=4), dimension(3) :: cell

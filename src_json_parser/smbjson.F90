@@ -154,8 +154,9 @@ contains
       this%elementTable = IdChildTable_t(this%core, this%root, J_MESH//'.'//J_ELEMENTS)
       
       call initializeProblemDescription(res)
+      
       res%switches = this%readAdditionalArguments()
-
+      
       ! Basics
       res%general = this%readGeneral()
       res%matriz = this%readMediaMatrix()
@@ -518,7 +519,6 @@ contains
       integer :: i
       
       mAs = this%getMaterialAssociations([matType])
-      
       block
          type(coords), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then 
@@ -529,7 +529,7 @@ contains
             return
          end if
       end block
-
+      
       do i = 1, size(mAs)
          call this%matAssToCoords(cs, mAs(i), CELL_TYPE_LINEL)
          call appendRegion(res%lins,  res%nLins,  res%nLins_max, cs)
@@ -585,7 +585,7 @@ contains
       integer :: i, j
       logical :: found
 
-      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC])
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_CPEC])
 
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
@@ -2316,7 +2316,6 @@ contains
       integer :: i, j, k
       integer :: nMaterials
       logical :: found
-
       call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, allMatAss, found)
       if (.not. found) then
          allocate(res(0))

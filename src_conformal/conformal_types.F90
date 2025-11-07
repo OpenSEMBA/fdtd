@@ -48,7 +48,7 @@ module conformal_types_mod
     type, public :: triangle_t
         type(coord_t), dimension(3) :: vertices
     contains
-        procedure :: getNormal
+        procedure :: getNormal => triangle_getNormal
         procedure :: getFace => triangle_getFace
         procedure :: getSides
         procedure :: getCell => triangle_getCell
@@ -240,7 +240,19 @@ contains
         res = res/3.0
     end function
     
-    function getNormal(this) result(res)
+    function getNormal(contour) result(res)
+        type(side_t), dimension(:), allocatable :: contour
+        real, dimension(3) :: v1, v2, res
+        v1 = contour(1)%end%position - contour(1)%init%position
+        v2 = contour(2)%end%position - contour(2)%init%position
+        res = [ v1(2)*v2(3)-v1(3)*v2(2), &
+                -(v1(1)*v2(3)-v1(3)*v2(1)), &
+                v1(1)*v2(2)-v1(2)*v2(1)]
+        res = res/norm2(res)
+        
+    end function
+
+    function triangle_getNormal(this) result(res)
         class(triangle_t) :: this
         real, dimension(3) :: v1,v2, res
         v1 = this%vertices(2)%position - this%vertices(1)%position

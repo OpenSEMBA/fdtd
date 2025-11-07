@@ -49,7 +49,99 @@ module cell_map_mod
         procedure :: addSideOn
     end type
 
+    !!!!
+    type :: side_dir_t
+        integer, dimension(4) :: side_dir
+    end type
+
+    type, extends(fhash_tbl_t) :: side_tris_map_t
+        type(side_dir_t), dimension(:), allocatable :: keys
+    contains
+        procedure :: hasKey => side_hasKey
+        procedure :: getTrianglesFromSide
+    end type
+
+    type, extends(side_tris_map_t) :: side_triangle_map_t
+    contains
+        procedure :: addTriangleToSide
+    end type
+
+
 contains
+
+    subroutine buildSideToTrisMap(res, triangles)
+        type(side_triangle_map_t), intent(inout) :: res
+        type(triangle_t), dimension(:), allocatable :: triangles
+        type(side_t), dimension(:), allocatable :: sides
+        type(side_t) :: aux_side
+
+        integer :: i, j
+        if (.not. allocated(res%keys)) allocate(res%keys(0))
+        do i = 1, size(triangles)
+            sides = triangles(i)%getSides()
+            do j = 1, 3
+                if (sides(j)%isOnAnyEdge()) then 
+                    call res%addTriangleToSide(sides(j), triangles(i))
+                end if
+            end do
+        end do
+    end subroutine
+
+    subroutine addTriangleToSide(this, side, triangle)
+        class(side_triangle_map_t) :: this
+        type(side_t), intent(in) :: side
+        type(triangle_t), intent(in) :: triangle
+        class(*), allocatable :: alloc_list
+        type(element_set_t) :: aux_list
+        integer (kind=4), dimension(4) :: side_dir
+        type(side_dir_t), dimension(:), allocatable :: aux_keys
+        side_dir(1:3) = side%getCell()
+        side_dir(4) = side%getEdge()
+        if (this%hasKey(side_dir)) then 
+
+            call this%get_raw(key(side_dir), alloc_list)
+            select type(alloc_list)
+            type is(element_set_t)
+                allocate(aux_list%triangles(size(alloc_list%triangles) + 1))
+                aux_list%triangles(1:size(alloc_list%triangles)) = alloc_list%triangles
+                aux_list%triangles(size(alloc_list%triangles) + 1) = triangle
+                deallocate(alloc_list%triangles)
+                allocate(alloc_list%triangles(size(aux_list%triangles)))
+                alloc_list%triangles = aux_list%triangles
+                call this%set(key(side_dir), value = alloc_list)
+            end select
+
+        else 
+            allocate(aux_list%triangles(1))
+            aux_list%triangles(1) = triangle
+            call this%set(key(side_dir), value = aux_list)
+
+            allocate(aux_keys(size(this%keys) + 1))
+            aux_keys(1:size(this%keys)) = this%keys
+            aux_keys(size(this%keys) + 1)%side_dir = side_dir
+            deallocate(this%keys)
+            allocate(this%keys(size(aux_keys)))
+            this%keys = aux_keys
+        end if
+
+
+    end subroutine
+
+    subroutine buildSideMap(res, triangles)
+        type(side_tris_map_t), intent(inout) :: res
+        type(triangle_t), dimension(:), allocatable :: triangles
+        type(side_triangle_map_t) :: tri_map
+        type(side_dir_t), dimension(:), allocatable :: keys
+        type(element_set_t) :: elems
+        integer (kind=4) :: i
+        call buildSideToTrisMap(tri_map, triangles)
+        keys = tri_map%keys
+        do i = 1, size(keys)
+            elems%triangles = tri_map%getTrianglesFromSide(keys(i)%side_dir)
+            call res%set(key(keys(i)%side_dir), value=elems)
+        end do
+        res%keys = keys
+    end subroutine
 
     subroutine buildCellMap(res, triangles)
         type(cell_map_t), intent(inout) :: res
@@ -175,6 +267,15 @@ contains
         cell_hasKey = .false.
         call this%check_key(key(k), stat)
         if (stat == 0) cell_hasKey = .true.
+    end function
+
+    logical function side_hasKey(this, k)
+        class(side_tris_map_t) :: this
+        integer(kind=4), dimension(4), intent(in) :: k
+        integer :: stat
+        side_hasKey = .false.
+        call this%check_key(key(k), stat)
+        if (stat == 0) side_hasKey = .true.
     end function
 
     logical function cell_ratio_hasKey(this, k)
@@ -304,6 +405,24 @@ contains
     function getTrianglesInCell(this, k) result(res)
         class(cell_map_t) :: this
         integer(kind=4), dimension(3) :: k
+        class(*), allocatable :: alloc_list
+        type(triangle_t), dimension(:), allocatable :: res
+
+        if (this%hasKey(k)) then 
+            call this%get_raw(key(k), alloc_list)
+            select type(alloc_list)
+            type is(element_set_t)
+                allocate(res(size(alloc_list%triangles)))
+                res = alloc_list%triangles
+            end select
+        else
+            allocate(res(0))
+        end if
+    end function
+
+    function getTrianglesFromSide(this, k) result(res)
+        class(side_tris_map_t) :: this
+        integer(kind=4), dimension(4) :: k
         class(*), allocatable :: alloc_list
         type(triangle_t), dimension(:), allocatable :: res
 
