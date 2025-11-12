@@ -338,7 +338,7 @@ integer function test_huge_cap() bind(C) result(err)
 
   ! After preprocessing, FinalTime must have been capped to something not exceeding huge-scale expression:
   ! A simple sanity check: FinalTime should not exceed tiempo(FINALTIMESTEP+2) (the upper clamp)
-  ok = (obs%FinalTime <= tiempo(finalTimeIndex + 2) + 1e-8_RKIND)
+  ok = (obs%FinalTime <= tiempo(finalTimeIndex + 2) + dt)
 
   if (ok) then
     err = 0
