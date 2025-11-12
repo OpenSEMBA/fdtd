@@ -7,7 +7,7 @@ module observation_testingTools
 contains
   subroutine check_shape_real(arr, n_expected, test_err, name)
     use Observa
-    real(kind=8), intent(in), dimension(:, :) :: arr
+    real(kind=RKIND), intent(in), dimension(:, :) :: arr
     integer, intent(in) :: n_expected
     integer, intent(inout) :: test_err
     character(len=*), intent(in), optional :: name
@@ -29,7 +29,7 @@ contains
 
   subroutine check_shape_complex(arr, n_expected, test_err, name)
     use Observa
-    complex(kind=8), intent(in), dimension(:, :) :: arr
+    complex(kind=RKIND), intent(in), dimension(:, :) :: arr
     integer, intent(in) :: n_expected
     integer, intent(inout) :: test_err
     character(len=*), intent(in), optional :: name

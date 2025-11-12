@@ -495,6 +495,113 @@ contains
       
    end subroutine eliminate_observation_from_farfield
 
+    subroutine init_frequency_output(observation, privateOutput, dt, layoutnumber, size, niapapostprocess)
+      type(Obses_t), intent(inout) :: observation
+      type(output_t), intent(inout) :: privateOutput
+      integer(kind=4), intent(in) :: layoutnumber, size
+      real(KIND=RKIND_tiempo), intent(in) :: dt
+      logical, intent(inout) :: niapapostprocess
+
+      integer :: i, frequency_index, klk, timesteps, fqlength, pozi
+      REAL(KIND=RKIND) :: field1
+      real(KIND=RKIND_tiempo) :: tiempo1
+      real(KIND=RKIND), allocatable, dimension(:) :: signal, fqPos
+      real(KIND=RKIND_tiempo), allocatable, dimension(:) :: samplingtime
+      complex(kind=CKIND), allocatable, dimension(:) :: fqValues
+      character(LEN=BUFSIZE) :: buff
+      logical :: errnofile
+
+
+      privateOutput%InitialFreq = observation%InitialFreq
+      privateOutput%FinalFreq = observation%FinalFreq
+      privateOutput%FreqStep = observation%FreqStep
+      !
+      if (observation%FreqStep /= 0) then
+        privateOutput%NumFreqs = int(abs(observation%FinalFreq - observation%InitialFreq)/observation%FreqStep) + 1
+      else
+        privateOutput%NumFreqs = 1 !default
+      end if
+
+      if ((privateOutput%NumFreqs < 0)) then
+        Buff = 'Freq. range for Freq. probes invalid'
+        call stoponerror(layoutnumber, size, Buff)
+      end if
+      if ((privateOutput%NumFreqs > 100000)) then
+        Buff = 'Too many Freqs requested (>100000)'
+        call stoponerror(layoutnumber, size, Buff)
+      end if
+            
+      allocate (privateOutput%Freq(1:privateOutput%NumFreqs), &
+                privateOutput%auxExp_E(1:privateOutput%NumFreqs), &
+                privateOutput%auxExp_H(1:privateOutput%NumFreqs))
+!
+      pozi = index(observation%outputrequest, '_log_')
+      if (pozi == 0) then
+        do frequency_index = 1, privateOutput%NumFreqs
+          privateOutput%Freq(frequency_index) = privateOutput%InitialFreq + (frequency_index - 1)*privateOutput%FreqStep
+        end do
+      else !logaritmico
+        privateOutput%InitialFreq = log10(privateOutput%InitialFreq)
+        privateOutput%FinalFreq = log10(privateOutput%FinalFreq)
+        privateOutput%FreqStep = abs((privateOutput%InitialFreq - privateOutput%FinalFreq)/(privateOutput%NumFreqs))
+
+        do frequency_index = 1, privateOutput%NumFreqs
+          privateOutput%Freq(frequency_index) = 10.0_RKIND**(privateOutput%InitialFreq + (frequency_index - 1)*privateOutput%FreqStep)
+        end do
+      end if
+
+
+      errnofile = .FALSE.
+            
+      if (observation%Transfer) then
+        allocate (privateOutput%dftEntrada(1:privateOutput%NumFreqs))
+        privateOutput%dftEntrada = 0.0_RKIND
+!
+        inquire (file=trim(adjustl(observation%FileNormalize)), EXIST=errnofile)
+        if (.NOT. errnofile) then
+          buff = trim(adjustl(observation%FileNormalize))//' NORMALIZATION FILE DOES NOT EXIST'
+          call STOPONERROR(layoutnumber, size, buff)
+        end if
+
+        timesteps = 0
+        open (15, file=trim(adjustl(observation%FileNormalize)))
+        do
+          READ (15, *, end=998) tiempo1, field1
+          timesteps = timesteps + 1
+          continue
+        end do
+998     close (15)
+        allocate (samplingTime(1:timesteps))
+        allocate (signal(1:timesteps))
+        signal = 0.0_RKIND
+        samplingTime = 0.0_RKIND_tiempo
+!
+        !read the normalization file and find its DFT
+        open (15, file=trim(adjustl(observation%FileNormalize)))
+        DO klk = 1, timesteps
+          READ (15, *) samplingTime(klk), signal(klk)
+        END DO
+        CLOSE (15)
+!
+        !niapa quitar 200120 ojooo
+        if (niapapostprocess) then
+          print *, 'Correcting in observation ', timesteps, trim(adjustl(observation%FileNormalize))
+          DO klk = 1, timesteps
+            samplingTime(klk) = real(klk*dt, RKIND_tiempo)
+          end do
+        end if
+        !fin niapa
+
+        fqLength = privateOutput%NumFreqs
+        allocate (fqValues(1:fqLength), fqPos(1:fqLength))
+        fqValues(1:fqLength) = 0.0_RKIND
+        fqPos(1:fqLength) = privateOutput%Freq(1:fqLength)
+        call dtft(fqValues, fqPos, fqLength, samplingTime, signal, timesteps)
+        privateOutput%dftEntrada = fqValues
+        deallocate (samplingTime, signal, fqValues, fqPos)
+      end if
+    end subroutine init_frequency_output
+
   subroutine InitObservation(sgg, media, tag_numbers, &
                   ThereAreObservation, ThereAreWires, ThereAreFarFields, resume, initialtimestep, finaltimestep, lastexecutedtime, &
                              nEntradaRoot, layoutnumber, size, saveall, singlefilewrite, wiresflavor, &
@@ -638,10 +745,9 @@ contains
         close (119, status='delete')
         my_iostat = 0
 9138    if (my_iostat /= 0) write (*, fmt='(a)', advance='no') '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9138,'.',layoutnumber,trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt'
-         open (19,file=trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt',err=9138,iostat=my_iostat,status='new',action='write')
+        open (19,file=trim(adjustl(nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt',err=9138,iostat=my_iostat,status='new',action='write')
 
-        if ((trim(adjustl(wiresflavor)) == 'holland') .or. &
-            (trim(adjustl(wiresflavor)) == 'transition')) then
+        if ((trim(adjustl(wiresflavor)) == 'holland') .or. (trim(adjustl(wiresflavor)) == 'transition')) then
           if (Therearewires) Hwireslocal => GetHwires()
         end if
 #ifdef CompileWithBerengerWires
@@ -658,98 +764,7 @@ contains
          !!!!!!!!!Comun a todas las sondas freqdomain
         do ii = 1, sgg%NumberRequest
           if (SGG%Observation(ii)%FreqDomain) then
-            !
-            !Count the frequencies that are going to be registered
-            !
-            output(ii)%InitialFreq = sgg%observation(ii)%InitialFreq
-            output(ii)%FinalFreq = sgg%observation(ii)%FinalFreq
-            output(ii)%FreqStep = sgg%observation(ii)%FreqStep
-            !
-            if (SGG%Observation(ii)%FreqStep /= 0) then
-              output(ii)%NumFreqs = int(abs(SGG%Observation(ii)%FinalFreq - SGG%Observation(ii)%InitialFreq)/SGG%Observation(ii)%FreqStep) + 1
-            else
-              output(ii)%NumFreqs = 1 !default
-            end if
-            if ((output(ii)%NumFreqs < 0)) then
-              Buff = 'Freq. range for Freq. probes invalid'
-              call stoponerror(layoutnumber, size, Buff)
-            end if
-            if ((output(ii)%NumFreqs > 100000)) then
-              Buff = 'Too many Freqs requested (>100000)'
-              call stoponerror(layoutnumber, size, Buff)
-            end if
-            
-            ALLOCATE (output(ii)%Freq(1:output(ii)%NumFreqs), &
-                      output(ii)%auxExp_E(1:output(ii)%NumFreqs), &
-                      output(ii)%auxExp_H(1:output(ii)%NumFreqs))
-!
-            pozi = index(sgg%observation(ii)%outputrequest, '_log_')
-            if (pozi == 0) then
-
-              do iff1 = 1, output(ii)%NumFreqs
-                output(ii)%Freq(iff1) = output(ii)%InitialFreq + (iff1 - 1)*output(ii)%FreqStep
-
-              END DO
-            else !logaritmico
-              output(ii)%InitialFreq = log10(output(ii)%InitialFreq)
-              output(ii)%FinalFreq = log10(output(ii)%FinalFreq)
-              output(ii)%FreqStep = abs((output(ii)%InitialFreq - output(ii)%FinalFreq)/(output(ii)%NumFreqs))
-
-              do iff1 = 1, output(ii)%NumFreqs
-                output(ii)%Freq(iff1) = 10.0_RKIND**(output(ii)%InitialFreq + (iff1 - 1)*output(ii)%FreqStep)
-
-              END DO
-            end if
-            !!!!!!!!!!!!!!!!
-            errnofile = .FALSE.
-            !!! Revisa si existe transfer fucntion y almacena la info en dos arrays
-            IF (SGG%Observation(ii)%Transfer) then
-              ALLOCATE (output(ii)%dftEntrada(1:output(ii)%NumFreqs))
-              output(ii)%dftEntrada = 0.0_RKIND
-!
-              INQUIRE (file=trim(adjustl(sgg%observation(ii)%FileNormalize)), EXIST=errnofile)
-              IF (.NOT. errnofile) THEN
-                Buff = trim(adjustl(sgg%observation(ii)%FileNormalize))//' NORMALIZATION FILE DOES NOT EXIST'
-                CALL STOPONERROR(layoutnumber, size, Buff)
-              END IF
-!precuenta
-              timesteps = 0
-              OPEN (15, file=trim(adjustl(sgg%observation(ii)%FileNormalize)))
-              do
-                READ (15, *, end=998) tiempo1, field1
-                timesteps = timesteps + 1
-                continue
-              end do
-998           CLOSE (15)
-              allocate (samplingTime(1:timesteps))
-              allocate (signal(1:timesteps))
-              signal = 0.0_RKIND
-              samplingTime = 0.0_RKIND_tiempo
-!
-              !read the normalization file and find its DFT
-              OPEN (15, file=trim(adjustl(sgg%observation(ii)%FileNormalize)))
-              DO klk = 1, timesteps
-                READ (15, *) samplingTime(klk), signal(klk)
-              END DO
-              CLOSE (15)
-!
-              !niapa quitar 200120 ojooo
-              if (niapapostprocess) then
-                print *, 'Correcting in observation ', timesteps, trim(adjustl(sgg%observation(ii)%FileNormalize))
-                DO klk = 1, timesteps
-                  samplingTime(klk) = real(klk*sgg%dt, RKIND_tiempo)
-                end do
-              end if
-              !fin niapa
-
-              fqLength = output(ii)%NumFreqs
-              allocate (fqValues(1:fqLength), fqPos(1:fqLength))
-              fqValues(1:fqLength) = 0.0_RKIND
-              fqPos(1:fqLength) = output(ii)%Freq(1:fqLength)
-              call dtft(fqValues, fqPos, fqLength, samplingTime, signal, timesteps)
-              output(ii)%dftEntrada = fqValues
-              deallocate (samplingTime, signal, fqValues, fqPos)
-            END IF !DEL TRANSFER
+            call init_frequency_output(sgg%observation(ii), output(ii), sgg%dt, layoutnumber, size, niapapostprocess)
           end if !del freqdomain
         end do
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!
