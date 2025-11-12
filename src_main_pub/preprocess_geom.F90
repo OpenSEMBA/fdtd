@@ -4939,9 +4939,10 @@ CONTAINS
             face_ratios_no_zero = face_ratios
          end if
          num_media = contamedia
-         call addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, side_map)
+         call addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox)
          num_media = contamedia + ubound(edge_ratios_no_zero,1)
          call addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios_no_zero, bbox)
+         call addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, side_map)
       end subroutine
 
       subroutine addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios, bbox)
@@ -5002,7 +5003,7 @@ CONTAINS
          res = res/ubound(triangles,1)
       end function
 
-      subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, bbox, side_map)
+      subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, bbox)
          type (SGGFDTDINFO), intent(INOUT)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
@@ -5012,7 +5013,6 @@ CONTAINS
          integer (kind=4) :: edge_media
          integer (kind=4) :: cell(3)
          type(XYZlimit_t), intent(inout) :: bbox
-         type(side_tris_map_t), intent(in) :: side_map
          integer(kind=4), dimension(4) :: key
          integer :: j, k
          real, dimension(3) :: normal
@@ -5046,107 +5046,138 @@ CONTAINS
                select case(conformal_media%edge_media(j)%edges(k)%direction)
                case(E_X)
                   media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
-                  key(4) = E_X
-                  if (edge_media == 0 .and. side_map%hasKey(key)) then
-                     normal = getEdgeNormalFromTriangles(side_map%getTrianglesFromSide(key))
-                     if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
-                        media%sggMiHz(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2)+1, cell(3)) = edge_media
-                        media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEy(cell(1)+1, cell(2), cell(3)) = edge_media
-                     else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then 
-                        media%sggMiHz(cell(1), cell(2)-1, cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2)-1, cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEy(cell(1), cell(2)-1, cell(3)) = edge_media
-                        media%sggMiEy(cell(1)+1, cell(2)-1, cell(3)) = edge_media
-                     end if
-                     
-                     if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
-                        media%sggMiHy(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2), cell(3)+1) = edge_media
-                        media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEz(cell(1)+1, cell(2), cell(3)) = edge_media
-
-                     else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then 
-                        media%sggMiHy(cell(1), cell(2), cell(3)-1) = edge_media
-                        media%sggMiEx(cell(1), cell(2), cell(3)-1) = edge_media
-                        media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEz(cell(1), cell(2), cell(3)-1) = edge_media
-                        media%sggMiEz(cell(1)+1, cell(2), cell(3)-1) = edge_media
-
-                     end if
-                  end if
                case(E_Y)
                   media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
-                  key(4) = E_Y
-                  if (edge_media == 0 .and. side_map%hasKey(key)) then
-                     normal = getEdgeNormalFromTriangles(side_map%getTrianglesFromSide(key))
-                     if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
-                        media%sggMiHx(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEy(cell(1), cell(2), cell(3)+1) = edge_media
-                        media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEz(cell(1), cell(2)+1, cell(3)) = edge_media
-                     else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then 
-                        media%sggMiHx(cell(1), cell(2), cell(3)-1) = edge_media
-                        media%sggMiEy(cell(1), cell(2), cell(3)-1) = edge_media
-                        media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEz(cell(1), cell(2), cell(3)-1) = edge_media
-                        media%sggMiEz(cell(1), cell(2)+1, cell(3)-1) = edge_media
-                     end if
-
-                     if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
-                        media%sggMiHz(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2)+1, cell(3)) = edge_media
-                        media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEy(cell(1)+1, cell(2), cell(3)) = edge_media
-                     else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then 
-                        media%sggMiHz(cell(1)-1, cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1)-1, cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1)-1, cell(2)+1, cell(3)) = edge_media
-                        media%sggMiEy(cell(1)-1, cell(2), cell(3)) = edge_media
-                        media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
-                     end if
-                  end if
                case(E_Z)
                   media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
-                  key(4) = E_Z
-                  if (edge_media == 0 .and. side_map%hasKey(key)) then
-                     normal = getEdgeNormalFromTriangles(side_map%getTrianglesFromSide(key))
-                     if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then
-                         media%sggMiHx(cell(1), cell(2), cell(3)) = edge_media
-                         media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
-                         media%sggMiEy(cell(1), cell(2), cell(3)+1) = edge_media
-                         media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
-                         media%sggMiEz(cell(1), cell(2)+1, cell(3)) = edge_media
-                     else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then 
-                        media%sggMiHx(cell(1), cell(2)-1, cell(3)) = edge_media
-                         media%sggMiEy(cell(1), cell(2)-1, cell(3)) = edge_media
-                         media%sggMiEy(cell(1), cell(2)-1, cell(3)+1) = edge_media
-                         media%sggMiEz(cell(1), cell(2)-1, cell(3)) = edge_media
-                         media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
-                     end if
-                     if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
-                        media%sggMiHy(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1), cell(2), cell(3)+1) = edge_media
-                        media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
-                        media%sggMiEz(cell(1)+1, cell(2), cell(3)) = edge_media
-                     else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then 
-                        media%sggMiHy(cell(1)-1, cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1)-1, cell(2), cell(3)) = edge_media
-                        media%sggMiEx(cell(1)-1, cell(2), cell(3)+1) = edge_media
-                        media%sggMiEz(cell(1)-1, cell(2), cell(3)) = edge_media
-                        media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
-                     end if
-                  end if
                end select
-
             end do
+         end do
+      end subroutine
+
+      subroutine addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios, bbox, side_map)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(media_matrices_t), intent(inout) :: media
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(in) :: num_media
+
+         real (kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
+         integer (kind=4) :: edge_media
+         integer (kind=4) :: cell(3)
+         type(XYZlimit_t), intent(inout) :: bbox
+         type(side_tris_map_t), intent(in) :: side_map
+         integer(kind=4), dimension(4) :: key
+         integer :: j, k
+         real, dimension(3) :: normal
+
+         do j = 1, conformal_media%n_edges_media
+            if (conformal_media%edge_media(j)%ratio == 0) then 
+               edge_media = 0
+               do k = 1, conformal_media%edge_media(j)%size
+                  cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
+                  key(1:3) = cell
+
+                  select case(conformal_media%edge_media(j)%edges(k)%direction)
+                  case(E_X)
+                     key(4) = E_X
+                     if (side_map%hasKey(key)) then
+                        normal = getEdgeNormalFromTriangles(side_map%getTrianglesFromSide(key))
+                        if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2)+1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1)+1, cell(2), cell(3)) = edge_media
+                        else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then 
+                           media%sggMiHz(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1)+1, cell(2)-1, cell(3)) = edge_media
+                        end if
+                        
+                        if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1)+1, cell(2), cell(3)) = edge_media
+
+                        else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then 
+                           media%sggMiHy(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEz(cell(1)+1, cell(2), cell(3)-1) = edge_media
+
+                        end if
+                     end if
+                  case(E_Y)
+                     key(4) = E_Y
+                     if (edge_media == 0 .and. side_map%hasKey(key)) then
+                        normal = getEdgeNormalFromTriangles(side_map%getTrianglesFromSide(key))
+                        if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2)+1, cell(3)) = edge_media
+                        else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then 
+                           media%sggMiHx(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEz(cell(1), cell(2)+1, cell(3)-1) = edge_media
+                        end if
+
+                        if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2)+1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1)+1, cell(2), cell(3)) = edge_media
+                        else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHz(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1)-1, cell(2)+1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                        end if
+                     end if
+                  case(E_Z)
+                     key(4) = E_Z
+                     if (edge_media == 0 .and. side_map%hasKey(key)) then
+                        normal = getEdgeNormalFromTriangles(side_map%getTrianglesFromSide(key))
+                        if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then
+                           media%sggMiHx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3))   = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3))   = edge_media
+                           media%sggMiEz(cell(1), cell(2)+1, cell(3)) = edge_media
+                        else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then 
+                           media%sggMiHx(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2)-1, cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                        end if
+                        if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1)+1, cell(2), cell(3)) = edge_media
+                        else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHy(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1)-1, cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                        end if
+                     end if
+                  end select
+               end do
+            end if
          end do
       end subroutine
 
