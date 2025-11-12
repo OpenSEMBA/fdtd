@@ -1,6 +1,7 @@
 integer function test_allocate_serialize_for_time_domain() bind(C) result(err)
   use observation_testingTools
   use OBSERVA
+  use FDETYPES
   type(Serialized_t) :: serialize
   integer(kind=4) :: numberOfSerialized = 4
   integer :: test_err = 0
@@ -28,6 +29,7 @@ end function test_allocate_serialize_for_time_domain
 integer function test_allocate_serialize_for_frequency_domain() bind(C) result(err)
   use observation_testingTools
   use OBSERVA
+  use FDETYPES
   type(Serialized_t) :: serialize
   integer(kind=4) :: numberOfSerialized = 4
   integer :: test_err = 0
@@ -66,6 +68,7 @@ end function test_allocate_serialize_for_frequency_domain
 integer function test_allocate_current() bind(C) result(err)
   use observation_testingTools
   use OBSERVA
+  use FDETYPES
   type(Serialized_t) :: serialize
   integer(kind=4) :: numberOfSerialized = 4
   integer :: test_err = 0

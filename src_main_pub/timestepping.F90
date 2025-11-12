@@ -1154,9 +1154,9 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires       (this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
-                                 this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
-                                 this%g%g2,this%sinPML_fullsize, this%fullsize,dtcritico,this%eps0,this%mu0,this%control)
+            call InitWires(this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
+                           this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
+                           this%g%g2,this%sinPML_fullsize, this%fullsize,dtcritico,this%eps0,this%mu0,this%control)
             l_auxinput=this%thereAre%Wires
             l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -2684,7 +2684,9 @@ contains
             if (this%control%wirecrank) then
                continue
             else
-               call AdvanceWiresH(this%sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,this%eps0,this%mu0)
+               call AdvanceWiresH(this%sgg, this%n, this%control%layoutnumber, &
+               this%control%wiresflavor, this%control%simu_devia, this%control%stochastic, &
+               this%control%experimentalVideal, this%control%wirethickness, this%eps0, this%mu0)
             endif
          endif
       endif

@@ -7,7 +7,7 @@ integer function test_initial_time_less_than_timestep() bind(C) result(err)
   type(output_t) :: out
   
   integer(kind=4) :: finalTimeIndex
-  real(kind=RKIND) :: dt
+  real(kind=RKIND_tiempo) :: dt
   real(KIND=RKIND_tiempo), pointer , dimension(:) :: tiempo
   
   logical :: saveall
@@ -91,7 +91,7 @@ integer function test_timestep_greater_not_mapvtk() bind(C) result(err)
   type(output_t) :: out
 
   integer :: finalTimeIndex
-  real(kind=RKIND) :: dt
+  real(kind=RKIND_tiempo) :: dt
   real(KIND=RKIND_tiempo), pointer, dimension(:) :: tiempo
 
   logical :: saveall
@@ -132,7 +132,7 @@ integer function test_freqstep_zero_or_large() bind(C) result(err)
   type(output_t) :: out
 
   integer :: finalTimeIndex
-  real(kind=RKIND) :: dt
+  real(kind=RKIND_tiempo) :: dt
   real(KIND=RKIND_tiempo), pointer, dimension(:) :: tiempo
   logical :: saveall
 
@@ -184,7 +184,7 @@ integer function test_volumic_false_true_and_saveall() bind(C) result(err)
   type(output_t) :: out
 
   integer :: finalTimeIndex
-  real(kind=RKIND) :: dt
+  real(kind=RKIND_tiempo) :: dt
   real(KIND=RKIND_tiempo), pointer, dimension(:) :: tiempo
   logical :: ok1, ok2, saveall
 
@@ -234,7 +234,7 @@ integer function test_saveall_branch() bind(C) result(err)
   type(output_t) :: out
 
   integer :: finalTimeIndex
-  real(kind=RKIND) :: dt
+  real(kind=RKIND_tiempo) :: dt
   real(KIND=RKIND_tiempo), pointer, dimension(:) :: tiempo
   logical :: saveall
 
@@ -255,7 +255,7 @@ integer function test_saveall_branch() bind(C) result(err)
   call preprocess_observation(obs, out, tiempo, finalTimeIndex, dt, saveall)
 
   if (out%Trancos == 1 .and. approx_equal(obs%InitialTime, 0.0_RKIND, 1e-12_RKIND) .and. &
-    approx_equal(obs%FinalTime, tiempo(finalTimeIndex + 2), 1e-12_RKIND)) then
+    approx_equal(obs%FinalTime, real(tiempo(finalTimeIndex + 2), RKIND), 1e-12_RKIND)) then
     err = 0
   else
     print *, "test_saveall_branch: Trancos=", out%Trancos, " InitialTime=", obs%InitialTime, " FinalTime=", obs%FinalTime
@@ -272,7 +272,7 @@ integer function test_final_less_than_initial() bind(C) result(err)
   type(output_t) :: out
 
   integer :: finalTimeIndex
-  real(kind=RKIND) :: dt
+  real(kind=RKIND_tiempo) :: dt
   real(KIND=RKIND_tiempo), pointer, dimension(:) :: tiempo
   logical :: saveall
   
@@ -308,7 +308,7 @@ integer function test_huge_cap() bind(C) result(err)
   type(output_t) :: out
 
   integer :: finalTimeIndex
-  real(kind=RKIND) :: dt
+  real(kind=RKIND_tiempo) :: dt
   real(KIND=RKIND_tiempo), pointer, dimension(:) :: tiempo
   real(kind=4) :: huge4
   logical :: ok, saveall
