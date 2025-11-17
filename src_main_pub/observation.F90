@@ -1616,7 +1616,7 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                   output(ii)%item(i)%Serialized%ValorComplex_Hz = (0.0_RKIND, 0.0_RKIND)
                 end if
 
-                allocate (output(ii)%item(i)%Serialized%eI(1:output(ii)%item(i)%columnas)) !he aprovechado la variable columnas!!jeje...comentario hecho el 120120 por bug vtk OLD
+                allocate (output(ii)%item(i)%Serialized%eI(1:output(ii)%item(i)%columnas))
                 allocate (output(ii)%item(i)%Serialized%eJ(1:output(ii)%item(i)%columnas))
                 allocate (output(ii)%item(i)%Serialized%eK(1:output(ii)%item(i)%columnas))
                 allocate (output(ii)%item(i)%Serialized%currentType(1:output(ii)%item(i)%columnas))
@@ -1794,7 +1794,7 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                     end do
                     read (output(ii)%item(i)%unit) at
                     if (int(at/sgg%dt) /= (initialtimestep - 1)) then
- write (buff,*) nint(at/sgg%dt), initialtimestep-1,' Data files for resuming 3D freq domain probes might be corrupt. Continuing....'
+                     write (buff,*) nint(at/sgg%dt), initialtimestep-1,' Data files for resuming 3D freq domain probes might be corrupt. Continuing....'
                       call print11(layoutnumber, buff)
                     end if
                     do N = 1, output(ii)%NumFreqs
@@ -1816,17 +1816,17 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                         end do
                       end if
                       if (SGG%Observation(ii)%transfer) then
-  output(ii)%item(i)%Serialized%ValorComplex_x = output(ii)%item(i)%Serialized%ValorComplex_x*output(ii)%dftEntrada(N) !desnormaliza
-  output(ii)%item(i)%Serialized%ValorComplex_y = output(ii)%item(i)%Serialized%ValorComplex_y*output(ii)%dftEntrada(N) !desnormaliza
-  output(ii)%item(i)%Serialized%ValorComplex_z = output(ii)%item(i)%Serialized%ValorComplex_z*output(ii)%dftEntrada(N) !desnormaliza
+                        output(ii)%item(i)%Serialized%ValorComplex_x = output(ii)%item(i)%Serialized%ValorComplex_x*output(ii)%dftEntrada(N) !desnormaliza
+                        output(ii)%item(i)%Serialized%ValorComplex_y = output(ii)%item(i)%Serialized%ValorComplex_y*output(ii)%dftEntrada(N) !desnormaliza
+                        output(ii)%item(i)%Serialized%ValorComplex_z = output(ii)%item(i)%Serialized%ValorComplex_z*output(ii)%dftEntrada(N) !desnormaliza
 
-output(ii)%item(i)%Serialized%ValorComplex_Ex = output(ii)%item(i)%Serialized%ValorComplex_Ex*output(ii)%dftEntrada(N) !desnormaliza
-output(ii)%item(i)%Serialized%ValorComplex_Ey = output(ii)%item(i)%Serialized%ValorComplex_Ey*output(ii)%dftEntrada(N) !desnormaliza
-output(ii)%item(i)%Serialized%ValorComplex_Ez = output(ii)%item(i)%Serialized%ValorComplex_Ez*output(ii)%dftEntrada(N) !desnormaliza
+                        output(ii)%item(i)%Serialized%ValorComplex_Ex = output(ii)%item(i)%Serialized%ValorComplex_Ex*output(ii)%dftEntrada(N) !desnormaliza
+                        output(ii)%item(i)%Serialized%ValorComplex_Ey = output(ii)%item(i)%Serialized%ValorComplex_Ey*output(ii)%dftEntrada(N) !desnormaliza
+                        output(ii)%item(i)%Serialized%ValorComplex_Ez = output(ii)%item(i)%Serialized%ValorComplex_Ez*output(ii)%dftEntrada(N) !desnormaliza
 
-output(ii)%item(i)%Serialized%ValorComplex_Hx = output(ii)%item(i)%Serialized%ValorComplex_Hx*output(ii)%dftEntrada(N) !desnormaliza
-output(ii)%item(i)%Serialized%ValorComplex_Hy = output(ii)%item(i)%Serialized%ValorComplex_Hy*output(ii)%dftEntrada(N) !desnormaliza
-output(ii)%item(i)%Serialized%ValorComplex_Hz = output(ii)%item(i)%Serialized%ValorComplex_Hz*output(ii)%dftEntrada(N) !desnormaliza
+                        output(ii)%item(i)%Serialized%ValorComplex_Hx = output(ii)%item(i)%Serialized%ValorComplex_Hx*output(ii)%dftEntrada(N) !desnormaliza
+                        output(ii)%item(i)%Serialized%ValorComplex_Hy = output(ii)%item(i)%Serialized%ValorComplex_Hy*output(ii)%dftEntrada(N) !desnormaliza
+                        output(ii)%item(i)%Serialized%ValorComplex_Hz = output(ii)%item(i)%Serialized%ValorComplex_Hz*output(ii)%dftEntrada(N) !desnormaliza
                       end if
                     end do
 6919                continue

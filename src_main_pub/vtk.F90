@@ -1032,26 +1032,11 @@ CONTAINS
       else                   
          select case(que_saco)           
          case('cu')
-         if (.not.Freqdomain) then
-!probando2023 vectores        write (buff,'(a)') 'SCALARS current_t float 1'
-               write (buff,'(a)') 'SCALARS current_t float 3'
-         else
             write (buff,'(a)') 'SCALARS current_f float 3'
-         endif     
          case('ef')    
-         if (.not.Freqdomain) then
-!probando2023 vectores        write (buff,'(a)') 'SCALARS current_t float 1'
-               write (buff,'(a)') 'SCALARS efield_t float 3'
-         else
             write (buff,'(a)') 'SCALARS efield_f float 3'
-         endif
          case('hf')    
-         if (.not.Freqdomain) then
-!probando2023 vectores        write (buff,'(a)') 'SCALARS current_t float 1'
-               write (buff,'(a)') 'SCALARS hfield_t float 3'
-         else
             write (buff,'(a)') 'SCALARS hfield_f float 3'
-         endif
          end select
       endif
       write(myunit,'(a)') trim(adjustl(buff))
