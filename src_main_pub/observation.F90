@@ -603,31 +603,28 @@ contains
     end subroutine init_frequency_output
 
   subroutine InitObservation(sgg, media, tag_numbers, &
-                  ThereAreObservation, ThereAreWires, ThereAreFarFields, resume, initialtimestep, finaltimestep, lastexecutedtime, &
-                             nEntradaRoot, layoutnumber, size, saveall, singlefilewrite, wiresflavor, &
-                             SINPML_fullsize, facesNF2FF, NF2FFDecim, eps00, mu00, simu_devia, mpidir, niapapostprocess, b)
+                              ThereAreObservation, ThereAreWires, ThereAreFarFields, initialtimestep, lastexecutedtime, &
+                             SINPML_fullsize, eps00, mu00, b, control)
     !solo lo precisa de entrada farfield
     type(media_matrices_t), intent(in) :: media
     type(bounds_t)  ::  b
-    type(SGGFDTDINFO), intent(IN)         ::  sgg
+    type(SGGFDTDINFO), intent(IN) ::  sgg
     type(taglist_t) :: tag_numbers
-    logical :: simu_devia, niapapostprocess
+    logical ::  niapapostprocess
     REAL(KIND=RKIND)           ::  eps00, mu00
     !---------------------------> inputs <----------------------------------------------------------
-    integer(kind=4), intent(in) :: layoutnumber, size, mpidir
-    type(nf2ff_t) :: facesNF2FF
+    
+    
     type(limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
-    character(len=*), INTENT(in) :: wiresflavor
-    logical  ::  saveall, singlefilewrite, NF2FFDecim, INIT, GEOM, ASIGNA, electric, magnetic
+    
+    logical  :: INIT, GEOM, ASIGNA, electric, magnetic
     character(LEN=BUFSIZE)  ::  p1, p2
     real(kind=RKIND_tiempo) :: lastexecutedtime
 
-    character(len=*), intent(in)  ::  nEntradaRoot
-
-    integer (kind=4)  ::  i,field,ii,i1,j1,k1,n,i2,j2,k2,initialtimestep, finaltimestep,NO,NO2,iwi,iwj,compo,ntime,ntimeforvolumic,iff1,i0t
+    integer (kind=4)  ::  i,field,ii,i1,j1,k1,n,i2,j2,k2,initialtimestep,NO,NO2,iwi,iwj,compo,ntime,ntimeforvolumic,iff1,i0t
     integer(kind=4) :: Efield, HField
     logical, intent(inout)   ::  ThereAreObservation, ThereAreFarFields
-    logical, intent(in)      ::  ThereAreWires, resume
+    logical, intent(in)      ::  ThereAreWires 
     character(LEN=BUFSIZE)  ::  chari, charj, chark, chari2, charj2, chark2, charNO
     character(LEN=BUFSIZE)  ::  ext, extpoint, adum, prefix_field
     logical  ::  incident, errnofile, first
@@ -651,6 +648,29 @@ contains
     complex(kind=CKIND), allocatable, dimension(:) :: fqValues
     integer(kind=4) :: timesteps, klk, fqlength
     integer :: my_iostat
+
+    !!!Control Inputs
+    type(sim_control_t), intent(inout) :: control
+    integer(kind=4) :: layoutnumber, size, mpidir, finaltimestep
+    character(len=bufsize) :: nEntradaRoot, wiresflavor
+    logical :: resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
+    type(nf2ff_t) :: facesNF2FF
+    !!!End Control Inputs!!!!!!!!!!!!!!
+
+    !!!!!!!!Load control values to refactor initObservation call. This will allow easuier testing
+      resume = control%resume
+      finalTimeStep = control%finalTimeStep
+      nEntradaRoot = control%nEntradaRoot
+      layoutnumber = control%layoutnumber
+      size = control%size
+      saveall = control%saveall
+      singleFileWrite = control%singleFileWrite
+      wiresflavor = control%wiresflavor
+      facesNF2FF = control%facesNF2FF
+      NF2FFDecim = control%NF2FFDecim
+      simu_devia = control%simu_devia
+      mpidir = control%mpidir
+      niapapostprocess = control%niapapostprocess
 !
     eps0 = eps00; mu0 = mu00; !chapuz para convertir la variables de paso en globales
 !

@@ -1501,9 +1501,8 @@ contains
 #endif
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
          call InitObservation (this%sgg,this%media,this%tag_numbers, &
-                              this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%control%resume,this%initialtimestep,this%control%finaltimestep,this%lastexecutedtime, &
-                              this%control%nentradaroot,this%control%layoutnumber,this%control%size,this%control%saveall,this%control%singlefilewrite,this%control%wiresflavor,&
-                              this%sinPML_fullsize,this%control%facesNF2FF,this%control%NF2FFDecim,this%eps0,this%mu0,this%control%simu_devia,this%control%mpidir,this%control%niapapostprocess,this%bounds)
+                                 this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%initialtimestep,this%lastexecutedtime, &
+                                 this%sinPML_fullsize,this%eps0,this%mu0,this%bounds, this%control)
 
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
