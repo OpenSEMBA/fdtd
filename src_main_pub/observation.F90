@@ -286,8 +286,6 @@ contains
       end if
     end if
 
-    observation%InitialTime = int(observation%InitialTime)
-    observation%FinalTime = int(observation%FinalTime)
     observation%FreqStep = min(observation%FreqStep, 2.0_RKIND/dt)
     if ((observation%FreqStep > observation%FinalFreq - observation%InitialFreq) .or. (observation%FreqStep == 0)) then
       observation%FreqStep = observation%FinalFreq - observation%InitialFreq
@@ -1442,7 +1440,7 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                   call stoponerror(layoutnumber, size, 'Excesive number of probes')
                 end if
                 output(ii)%item(i)%unit = unit
-                output(ii)%item(i)%columnas = 0 !numero de items a escribir
+                output(ii)%item(i)%columnas = 0 !Esto proboca que no se genere información dentro del binario
 
                      !!!busca nombres de ficheros por duplicado y resuelve la duplicidad
                 call checkduplicatenames
@@ -3538,93 +3536,53 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 end do
                 !sondas corriente 20/2/14
               case (iCur, iCurX, iCurY, iCurZ)
-!                     if (at > sgg%OBSERVATION(ii)%FinalTime+sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done=.true.
                 if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
                 conta = 0 !en el mismo orden que se allocatearon
                 do KKK = k1, k2
                   do JJJ = j1, j2
                     do III = i1, i2
-                      !saca bul current a lo largo del edgje con las sondas icur
+                      !saca bul current a lo largo del edge con las sondas icur
                       do Hfield = iHx, iHz
-                        if (isThinWire(Hfield, iii, jjj, kkk) .and. isWithinBounds(Hfield, iii, jjj, kkk)) then
+                      if (isWithinBounds(Hfield, iii, jjj, kkk)) then
+                        if (isThinWire(Hfield, iii, jjj, kkk)) then
                           conta = conta + 1
                           jdir = computeJ(Hfield, iii, jjj, kkk)
+
                           do if1 = 1, output(ii)%NumFreqs
-                            output(ii)%item(i)%Serialized%valorComplex_x(conta, if1) = &
-              merge(output(ii)%item(i)%Serialized%valorComplex_x(conta, if1) + output(ii)%auxExp_H(if1)*jdir, z_cplx, Hfield == iHx)
-                            output(ii)%item(i)%Serialized%valorComplex_y(conta, if1) = &
-              merge(output(ii)%item(i)%Serialized%valorComplex_y(conta, if1) + output(ii)%auxExp_H(if1)*jdir, z_cplx, Hfield == iHy)
-                            output(ii)%item(i)%Serialized%valorComplex_z(conta, if1) = &
-              merge(output(ii)%item(i)%Serialized%valorComplex_z(conta, if1) + output(ii)%auxExp_H(if1)*jdir, z_cplx, Hfield == iHz)
+                            call updateValorComplex(iHx, output(ii)%item(i)%Serialized%valorComplex_x(conta, if1), output(ii)%auxExp_H(if1))
+                            call updateValorComplex(iHy, output(ii)%item(i)%Serialized%valorComplex_y(conta, if1), output(ii)%auxExp_H(if1))
+                            call updateValorComplex(iHz, output(ii)%item(i)%Serialized%valorComplex_z(conta, if1), output(ii)%auxExp_H(if1))
 
-                            output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1) + &
-                         output(ii)%auxExp_E(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1) + &
-                         output(ii)%auxExp_E(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1) + &
-                         output(ii)%auxExp_E(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Hfield)
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Hfield))
+                            
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Hfield))
 
-                            output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1) + &
-                         output(ii)%auxExp_H(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1) + &
-                         output(ii)%auxExp_H(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1) + &
-                         output(ii)%auxExp_H(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Hfield)
                           end do
                         end if
 
-                        if (.not. isMediaVacuum(Hfield, iii, jjj, kkk) .and. &
-                            .not. isSplitOrAdvanced(Hfield, iii, jjj, kkk) .and. &
-                            isWithinBounds(Hfield, iii, jjj, kkk)) then
+                        if ((.not. isMediaVacuum(Hfield, iii, jjj, kkk)) .and. (.not. isSplitOrAdvanced(Hfield, iii, jjj, kkk))) then
+                            
                           conta = conta + 1
                           jdir = computeJ(Hfield, iii, jjj, kkk)
                           do if1 = 1, output(ii)%NumFreqs
-                            output(ii)%item(i)%Serialized%valorComplex_x(conta, if1) = &
-              merge(output(ii)%item(i)%Serialized%valorComplex_x(conta, if1) + output(ii)%auxExp_H(if1)*jdir, z_cplx, Hfield == iHx)
-                            output(ii)%item(i)%Serialized%valorComplex_y(conta, if1) = &
-              merge(output(ii)%item(i)%Serialized%valorComplex_y(conta, if1) + output(ii)%auxExp_H(if1)*jdir, z_cplx, Hfield == iHy)
-                            output(ii)%item(i)%Serialized%valorComplex_z(conta, if1) = &
-              merge(output(ii)%item(i)%Serialized%valorComplex_z(conta, if1) + output(ii)%auxExp_H(if1)*jdir, z_cplx, Hfield == iHz)
+                            call updateValorComplex(iHx, output(ii)%item(i)%Serialized%valorComplex_x(conta, if1), output(ii)%auxExp_H(if1))
+                            call updateValorComplex(iHy, output(ii)%item(i)%Serialized%valorComplex_y(conta, if1), output(ii)%auxExp_H(if1))
+                            call updateValorComplex(iHz, output(ii)%item(i)%Serialized%valorComplex_z(conta, if1), output(ii)%auxExp_H(if1))
 
-                            output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1) + &
-                         output(ii)%auxExp_E(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1) + &
-                         output(ii)%auxExp_E(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1) + &
-                         output(ii)%auxExp_E(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Hfield)
-
-                            output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1) + &
-                         output(ii)%auxExp_H(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1) + &
-                         output(ii)%auxExp_H(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1) + &
-                         output(ii)%auxExp_H(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Hfield)
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Hfield))
+                            
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Hfield))
                           end do
                         end if
-                      end do
-                    end do
-                  end do
-                end do
-                do KKK = k1, k2
-                  do JJJ = j1, j2
-                    do III = i1, i2
-                      !saca current en surfaces 0124
-                      do HField = iHx, iHz
-                        if ((isPECorSurface(Hfield, iii, jjj, kkk) .or. &
-                             field == blockCurrent(Hfield)) .and. &
-                            isWithinBounds(Hfield, iii, jjj, kkk)) then
+                        if (isPECorSurface(Hfield, iii, jjj, kkk) .or. (field == blockCurrent(Hfield))) then
 
                           conta = conta + 1
                           jdir1 = computeJ1(HField, iii, jjj, kkk)
@@ -3638,32 +3596,22 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                             output(ii)%item(i)%Serialized%valorComplex_z(conta, if1) = &
                                              merge(z_cplx, output( ii)%item( i)%Serialized%valorComplex_z(conta, if1)+output( ii)%auxExp_H(if1)*merge(jdir1, jdir2, HField == iHy), Hfield == iHz)
 
-                            output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1) + &
-                         output(ii)%auxExp_E(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1) + &
-                         output(ii)%auxExp_E(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1) + &
-                         output(ii)%auxExp_E(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Hfield)
-
-                            output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1) + &
-                         output(ii)%auxExp_H(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1) + &
-                         output(ii)%auxExp_H(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Hfield)
-                            output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1) = &
-                              output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1) + &
-                         output(ii)%auxExp_H(if1)*interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Hfield)
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Hfield))
+                            
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Hfield))
+                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Hfield))
+                             !!!!!!!!!!!!esto dara problemas en los angulos y aristas donde porque ahi sacara la Bloque current en Hx!!!! 19/2/14
                           end do
                         end if
+                      end if
                       end do
                     end do
                   end do
                 end do
-                     !!!!!!!!!!!!esto dara problemas en los angulos y aristas donde porque ahi sacara la Bloque current en Hx!!!! 19/2/14
+                    
 
                      !!!!!!!!fin sondas corriente
               end select
@@ -3676,6 +3624,22 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       return
 
     contains
+
+      subroutine updateValorComplex(hDir, valorComplex, auxExp)
+        integer, intent(in) :: hDir
+        complex(kind=CKIND), intent(inout) :: valorComplex
+        complex(kind=CKIND), intent(in) :: auxExp
+
+        valorComplex = merge(valorComplex + auxExp*jdir, z_cplx, Hfield == hDir)
+      end subroutine updateValorComplex
+
+      subroutine updateValorComplexWithInterpolation(valorComplex, auxExp, interpolatedValue)
+        complex(kind=CKIND), intent(inout) :: valorComplex
+        complex(kind=CKIND), intent(in) :: auxExp
+        real(kind=RKIND), intent(in) :: interpolatedValue
+
+        valorComplex = valorComplex + auxExp*interpolatedValue
+      end subroutine updateValorComplexWithInterpolation
 
       logical function isPECorSurface(field, i, j, k)
         integer(kind=4) :: field, i, j, k
