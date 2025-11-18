@@ -3087,7 +3087,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 end if
 #endif
                 !Volumic probes
-              case (iExC)
+              case (iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
                 at = sgg%tiempo(ntime)
                 if (at > sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done = .true.
                 if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
@@ -3107,7 +3107,20 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                         if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
                           i1t = int(iii/output(ii)%item(i)%Xtrancos)
                           III_m = III
-                          output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Ex(III_m, JJJ_m, KKK_m)
+                          selectcase(field)
+                          case(iExC)
+                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Ex(III_m, JJJ_m, KKK_m)
+                          case(iEyC)
+                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Ey(III_m, JJJ_m, KKK_m)
+                          case(iEzC)
+                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Ez(III_m, JJJ_m, KKK_m)
+                          case(iHxC)
+                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Hx(III_m, JJJ_m, KKK_m)
+                          case(iHyC)
+                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Hy(III_m, JJJ_m, KKK_m)
+                          case(iHzC)
+                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Hz(III_m, JJJ_m, KKK_m)
+                          end select
                         end if
                         end do
                       end if
@@ -3116,7 +3129,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                     end do
                   end if
                 end if
-              case (iEyC)
+              
+              case (iMEC, iMHC)
                 at = sgg%tiempo(ntime)
                 if (at > sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done = .true.
                 if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
@@ -3136,187 +3150,16 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                         if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
                           i1t = int(iii/output(ii)%item(i)%Xtrancos)
                           III_m = III
-                          output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Ey(III_m, JJJ_m, KKK_m)
-                        end if
-                        end do
-                      end if
-                      end do
-                    end if
-                    end do
-                  end if
-                end if
-              case (iEzC)
-                at = sgg%tiempo(ntime)
-                if (at > sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done = .true.
-                if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
-                Ntimeforvolumic = Ntime !!!-nint(0.4999999+sgg%OBSERVATION(ii)%InitialTime/sgg%dt)
-                if (mod(Ntimeforvolumic, output(ii)%Trancos) == 0) then
-                  Ntimeforvolumic = Ntimeforvolumic/output(ii)%Trancos
-                  if (((at >= sgg%OBSERVATION(ii)%InitialTime) .and. (at <= sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND))) then
-                    do KKK = k1, k2
-                    if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
-                      k1t = int(kkk/output(ii)%item(i)%Ztrancos)
-                      KKK_m = KKK
-                      do JJJ = j1, j2
-                      if (mod(jjj, output(ii)%item(i)%Ytrancos) == 0) then
-                        j1t = int(jjj/output(ii)%item(i)%Ytrancos)
-                        JJJ_m = JJJ
-                        do III = i1, i2
-                        if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
-                          i1t = int(iii/output(ii)%item(i)%Xtrancos)
-                          III_m = III
-                          output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Ez(III_m, JJJ_m, KKK_m)
-                        end if
-                        end do
-                      end if
-                      end do
-                    end if
-                    end do
-                  end if
-                end if
-!por aqui voy con los i1t, j1t, k1t
-              case (iHxC)
-                at = sgg%tiempo(ntime)
-                if (at > sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done = .true.
-                if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
-                Ntimeforvolumic = Ntime !!!-nint(0.4999999+sgg%OBSERVATION(ii)%InitialTime/sgg%dt)
-                if (mod(Ntimeforvolumic, output(ii)%Trancos) == 0) then
-                  Ntimeforvolumic = Ntimeforvolumic/output(ii)%Trancos
-                  if (((at >= sgg%OBSERVATION(ii)%InitialTime) .and. (at <= sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND))) then
-                    do KKK = k1, k2
-                    if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
-                      k1t = int(kkk/output(ii)%item(i)%Ztrancos)
-                      KKK_m = KKK
-                      do JJJ = j1, j2
-                      if (mod(jjj, output(ii)%item(i)%Ytrancos) == 0) then
-                        j1t = int(jjj/output(ii)%item(i)%Ytrancos)
-                        JJJ_m = JJJ
-                        do III = i1, i2
-                        if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
-                          i1t = int(iii/output(ii)%item(i)%Xtrancos)
-                          III_m = III
-                          output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Hx(III_m, JJJ_m, KKK_m)
-                        end if
-                        end do
-                      end if
-                      end do
-                    end if
-                    end do
-                  end if
-                end if
-              case (iHyC)
-                AT = sgg%tiempo(ntime)
-                if (at > sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done = .true.
-                if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
-                Ntimeforvolumic = Ntime !!!-nint(0.4999999+sgg%OBSERVATION(ii)%InitialTime/sgg%dt)
-                if (mod(Ntimeforvolumic, output(ii)%Trancos) == 0) then
-                  Ntimeforvolumic = Ntimeforvolumic/output(ii)%Trancos
-                  if (((at >= sgg%OBSERVATION(ii)%InitialTime) .and. (at <= sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND))) then
-                    do KKK = k1, k2
-                    if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
-                      k1t = int(kkk/output(ii)%item(i)%Ztrancos)
-                      KKK_m = KKK
-                      do JJJ = j1, j2
-                      if (mod(jjj, output(ii)%item(i)%Ytrancos) == 0) then
-                        j1t = int(jjj/output(ii)%item(i)%Ytrancos)
-                        JJJ_m = JJJ
-                        do III = i1, i2
-                        if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
-                          i1t = int(iii/output(ii)%item(i)%Xtrancos)
-                          III_m = III
-                          output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Hy(III_m, JJJ_m, KKK_m)
-                        end if
-                        end do
-                      end if
-                      end do
-                    end if
-                    end do
-                  end if
-                end if
-              case (iHzC)
-                at = sgg%tiempo(ntime)
-                if (at > sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done = .true.
-                if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
-                Ntimeforvolumic = Ntime !!!-nint(0.4999999+sgg%OBSERVATION(ii)%InitialTime/sgg%dt)
-                if (mod(Ntimeforvolumic, output(ii)%Trancos) == 0) then
-                  Ntimeforvolumic = Ntimeforvolumic/output(ii)%Trancos
-                  if (((at >= sgg%OBSERVATION(ii)%InitialTime) .and. (at <= sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND))) then
-                    do KKK = k1, k2
-                    if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
-                      k1t = int(kkk/output(ii)%item(i)%Ztrancos)
-                      KKK_m = KKK
-                      do JJJ = j1, j2
-                      if (mod(jjj, output(ii)%item(i)%Ytrancos) == 0) then
-                        j1t = int(jjj/output(ii)%item(i)%Ytrancos)
-                        JJJ_m = JJJ
-                        do III = i1, i2
-                        if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
-                          i1t = int(iii/output(ii)%item(i)%Xtrancos)
-                          III_m = III
-                          output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Hz(III_m, JJJ_m, KKK_m)
-                        end if
-                        end do
-                      end if
-                      end do
-                    end if
-                    end do
-                  end if
-                end if
-                !
-              case (iMEC)
-                at = sgg%tiempo(ntime)
-                if (at > sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done = .true.
-                if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
-                Ntimeforvolumic = Ntime !!!-nint(0.4999999+sgg%OBSERVATION(ii)%InitialTime/sgg%dt)
-                if (mod(Ntimeforvolumic, output(ii)%Trancos) == 0) then
-                  Ntimeforvolumic = Ntimeforvolumic/output(ii)%Trancos
-                  if (((at >= sgg%OBSERVATION(ii)%InitialTime) .and. (at <= sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND))) then
-                    do KKK = k1, k2
-                    if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
-                      k1t = int(kkk/output(ii)%item(i)%Ztrancos)
-                      KKK_m = KKK
-                      do JJJ = j1, j2
-                      if (mod(jjj, output(ii)%item(i)%Ytrancos) == 0) then
-                        j1t = int(jjj/output(ii)%item(i)%Ytrancos)
-                        JJJ_m = JJJ
-                        do III = i1, i2
-                        if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
-                          i1t = int(iii/output(ii)%item(i)%Xtrancos)
-                          III_m = III
+                          selectcase(field)
+                          case(iMEC)
                           output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) =  &
                           &    sqrt(Ex(III_m, JJJ_m, KKK_m)**2.0_RKIND + Ey(III_m, JJJ_m, KKK_m)**2.0_RKIND + &
                           Ez(III_m, JJJ_m, KKK_m)**2.0_RKIND)
-                        end if
-                        end do
-                      end if
-                      end do
-                    end if
-                    end do
-                  end if
-                end if
-              case (iMHC)
-                at = sgg%tiempo(ntime)
-                if (at > sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done = .true.
-                if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
-                Ntimeforvolumic = Ntime !!!-nint(0.4999999+sgg%OBSERVATION(ii)%InitialTime/sgg%dt)
-                if (mod(Ntimeforvolumic, output(ii)%Trancos) == 0) then
-                  Ntimeforvolumic = Ntimeforvolumic/output(ii)%Trancos
-                  if (((at >= sgg%OBSERVATION(ii)%InitialTime) .and. (at <= sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND))) then
-                    do KKK = k1, k2
-                    if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
-                      k1t = int(kkk/output(ii)%item(i)%Ztrancos)
-                      KKK_m = KKK
-                      do JJJ = j1, j2
-                      if (mod(jjj, output(ii)%item(i)%Ytrancos) == 0) then
-                        j1t = int(jjj/output(ii)%item(i)%Ytrancos)
-                        JJJ_m = JJJ
-                        do III = i1, i2
-                        if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
-                          i1t = int(iii/output(ii)%item(i)%Xtrancos)
-                          III_m = III
-                          output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) =  &
+                          case(iMHC)
+                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) =  &
                           &    sqrt(Hx(III_m, JJJ_m, KKK_m)**2.0_RKIND + Hy(III_m, JJJ_m, KKK_m)**2.0_RKIND + &
                           Hz(III_m, JJJ_m, KKK_m)**2.0_RKIND)
+                          end select
                         end if
                         end do
                       end if
@@ -3342,49 +3185,49 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                           if (field /= mapvtk) then
                             ! refactoring done. Needs tests
                             do Efield = iEx, iEz
-                              if (isThinWire(Efield, iii, jjj, kkk) .and. isWithinBounds(Efield, iii, jjj, kkk)) then
+                            if (isWithinBounds(Efield, iii, jjj, kkk)) then
+                              if (isThinWire(Efield, iii, jjj, kkk)) then
                                 conta = conta + 1
                                 jdir = computeJ(EField, iii, jjj, kkk)
-                               output(ii)%item(i)%Serialized%valor_x(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
-                               output(ii)%item(i)%Serialized%valor_y(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
-                               output(ii)%item(i)%Serialized%valor_z(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
-                                             output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,Efield) 
-                                             output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,Efield)
-                                             output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,Efield)
-                                             output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,Efield)
-                                             output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
-                                             output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
+                                output(ii)%item(i)%Serialized%valor_x(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
+                                output(ii)%item(i)%Serialized%valor_y(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
+                                output(ii)%item(i)%Serialized%valor_z(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
+
+                                output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,Efield) 
+                                output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,Efield)
+                                output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,Efield)
+
+                                output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,Efield)
+                                output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
+                                output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
                               end if
 
-                              if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. &
-                                  .not. isSplitOrAdvanced(Efield, iii, jjj, kkk) .and. &
-                                  isWithinBounds(Efield, iii, jjj, kkk)) then
+                              if (.not. isMediaVacuum(Efield, iii, jjj, kkk) .and. .not. isSplitOrAdvanced(Efield, iii, jjj, kkk)) then
                                 conta = conta + 1
                                 jdir = computeJ(EField, iii, jjj, kkk)
-                               output(ii)%item(i)%Serialized%valor_x(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
-                               output(ii)%item(i)%Serialized%valor_y(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
-                               output(ii)%item(i)%Serialized%valor_z(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
-                                             output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,Efield) 
-                                             output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,Efield)
-                                             output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,Efield)
-                                             output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,Efield)
-                                             output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
-                                             output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
+                                output(ii)%item(i)%Serialized%valor_x(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
+                                output(ii)%item(i)%Serialized%valor_y(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
+                                output(ii)%item(i)%Serialized%valor_z(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
+                                
+                                output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,Efield) 
+                                output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,Efield)
+                                output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,Efield)
+
+                                output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,Efield)
+                                output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,Efield)
+                                output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,Efield)
                               end if
+                            end if
                             end do
-
-                          else !si es mapvtk
-
+                          else
                             do Efield = iEx, iEz
                               call assignMedia(imed, imed1, imed2, imed3, imed4, Efield, iii, jjj, kkk)
-                            call contabordes(sgg, imed, imed1, imed2, imed3, imed4, EsBorde, SINPML_fullsize, Efield, iii, jjj, kkk)
+                              call contabordes(sgg, imed, imed1, imed2, imed3, imed4, EsBorde, SINPML_fullsize, Efield, iii, jjj, kkk)
                               if (esBorde) then
                                 conta = conta + 1
-                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic, conta) = &
-                                  assignEdgeMediaType(Efield, iii, jjj, kkk)
+                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic, conta) = assignEdgeMediaType(Efield, iii, jjj, kkk)
                               end if
                             end do
-
                           end if
                         end do
                       end do
@@ -3393,10 +3236,10 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                            !!!
                     if (field == mapvtk) then
                       INIT = .false.; geom = .false.; asigna = .true.; magnetic = .false.; electric = .true.
-  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
+                      call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                     init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
 
-        call wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, media%sggMtag, tag_numbers)
+                      call wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, media%sggMtag, tag_numbers)
                     end if
                            !!!
                     do KKK = k1, k2
@@ -3411,24 +3254,23 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                                 jdir1 = computeJ1(HField, iii, jjj, kkk)
                                 jdir2 = computeJ2(HField, iii, jjj, kkk)
 
- output(ii)%item(i)%Serialized%valor_x(Ntimeforvolumic, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHz), Hfield == iHx)
- output(ii)%item(i)%Serialized%valor_y(Ntimeforvolumic, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHx), Hfield == iHy)
- output(ii)%item(i)%Serialized%valor_z(Ntimeforvolumic, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHy), Hfield == iHz)
+                                output(ii)%item(i)%Serialized%valor_x(Ntimeforvolumic, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHz), Hfield == iHx)
+                                output(ii)%item(i)%Serialized%valor_y(Ntimeforvolumic, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHx), Hfield == iHy)
+                                output(ii)%item(i)%Serialized%valor_z(Ntimeforvolumic, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHy), Hfield == iHz)
 
-                                                   output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,HField)
-                                                   output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,HField)
-                                                   output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,HField)
-                                                   output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,HField)
-                                                   output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,HField)
-                                                   output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,HField)
+                                output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,HField)
+                                output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,HField)
+                                output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,HField)
+                                output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,HField)
+                                output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,HField)
+                                output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,HField)
                               end if
                             end do
                           else
                             do Hfield = iHx, iHz
                               if (surfaceIsMedia(Hfield, iii, jjj, kkk)) then
                                 conta = conta + 1
-                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic, conta) = &
-                                  assignSurfaceMediaType(Hfield, iii, jjj, kkk)
+                                output(ii)%item(i)%Serialized%valor(Ntimeforvolumic, conta) = assignSurfaceMediaType(Hfield, iii, jjj, kkk)
                               end if
                               ! faces or edges?
                               if (tag_numbers%getFaceTag(Hfield, iii, jjj, kkk) < 0 .and. &
@@ -3438,9 +3280,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                                 call updateJ(Hfield, jdir)
                                 output(ii)%item(i)%Serialized%valor(Ntimeforvolumic, conta) = jdir
                               end if
-
                             end do
-                          end if !del if mapvtk
+                          end if
                           !
                         end do
                       end do
