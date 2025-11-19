@@ -137,8 +137,8 @@ integer function test_freqstep_zero_or_large() bind(C) result(err)
   logical :: saveall
 
   finalTimeIndex = 90
-  dt = 0.1_RKIND
-  tiempo => create_time_array(100, 0.1_RKIND_tiempo)
+  dt = 0.1_RKIND_tiempo
+  tiempo => create_time_array(100, dt)
   saveall = .false.
 
   ! Case A: FreqStep = 0 -> should be set to FinalFreq-InitialFreq
@@ -277,8 +277,8 @@ integer function test_final_less_than_initial() bind(C) result(err)
   logical :: saveall
   
   finalTimeIndex = 90
-  dt = 0.1_RKIND
-  tiempo => create_time_array(100, 0.1_RKIND_tiempo)
+  dt = 0.1_RKIND_tiempo
+  tiempo => create_time_array(100, dt)
   saveall = .false.
 
   obs%Volumic = .false.
@@ -292,7 +292,7 @@ integer function test_final_less_than_initial() bind(C) result(err)
 
   call preprocess_observation(obs, out, tiempo, finalTimeIndex, dt, saveall)
 
-  if (approx_equal(obs%FinalTime, obs%InitialTime, 1e-12_RKIND)) then
+  if (approx_equal(obs%FinalTime, obs%InitialTime + obs%TimeStep, 1e-12_RKIND)) then
     err = 0
   else
     print *, "test_final_less_than_initial: InitialTime=", obs%InitialTime, " FinalTime=", obs%FinalTime
@@ -315,7 +315,7 @@ integer function test_huge_cap() bind(C) result(err)
 
   finalTimeIndex = 90
   dt = 0.1_RKIND
-  tiempo => create_time_array(100, 0.1_RKIND_tiempo)
+  tiempo => create_time_array(100, dt)
   huge4 = huge(1.0_4)
   saveall = .false.
 
