@@ -23,6 +23,8 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
     set(VTK_TESTS_LIBRARY vtk_tests)
     add_subdirectory(observation)
     set(OBSERVATION_TESTS_LIBRARY observation_tests)
+    add_subdirectory(utils)
+    set(UTILS_TEST, test_utils_fortran)
 endif()
 
 add_executable(fdtd_tests 
