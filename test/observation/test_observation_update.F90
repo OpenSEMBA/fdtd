@@ -1,49 +1,50 @@
-integer function test_update_observation() bind(C) result(err)
-    use observation_testingTools
-    use OBSERVA
+integer function test_update_time_movie_observation() bind(C) result(err)
     use FDETYPES
+    use FDETYPES_TOOLS
+    use Observa
+    use observation_testingTools
 
-    type(nf2ff_t) :: facesNF2FF
-    type(sim_control_t) :: control
-
-    type(taglist_t) :: tagNumbers
+    type(SGGFDTDINFO) ::  sgg
     type(media_matrices_t) :: media
-
-    type(bounds_t)  ::  bounds
-    type(limit_t), dimension(1:6) :: SINPML_fullsize
-    
+    type(taglist_t) :: tag_numbers
     logical :: ThereAreObservation, ThereAreWires, ThereAreFarFields
-    integer :: initialtimestep, lastexecutedtime
-    REAL(KIND=RKIND) :: eps00, mu00
+    integer :: initialtimestep
+    real(kind=RKIND_tiempo) :: lastexecutedtime
+    type(limit_t), dimension(1:6) :: SINPML_fullsize
+    type(bounds_t)  ::  bounds
+    type(sim_control_t) :: control
+    type(nf2ff_t) :: facesNF2FF
+    real(kind=RKIND) :: eps = EPSILON_VACUUM, mu = MU_VACUUM
+    character(LEN=BUFSIZE)  ::  chari, charj, chark, chari2, charj2, chark2, expectedOutputPath
 
-    call initialize_nf2ff(facesNF2FF, &
-        .FALSE., .FALSE., .TRUE., .TRUE., .TRUE., .TRUE.)
+    type(output_t), pointer, dimension(:) :: output
 
-    call initialize_control_flags(control,
-        0, size, 3, 1077, &
-        'frequencySlices', 'holland', &
-        .FALSE., .FALSE., .FALSE., .FALSE., .FALSE., &
-        facesNF2FF)
+    sgg = create_base_sgg()
+    call set_sgg_data(sgg)
 
-    call initialize_tag_numbers(tagNumbers)
+    media = create_media(sgg%Alloc)
+    tag_numbers = create_tag_list(sgg%Alloc)
 
-    call initialize_media(media)
+    ThereAreObservation = .false.
+    ThereAreWires = .false.
+    ThereAreFarFields = .false.
 
-    call initialize_bounds(bounds)
+    initialtimestep = 0
+    lastexecutedtime = 0.0_RKIND_tiempo
 
-    call initialize_sinpml_fullsize(SINPML_fullsize)
+    SINPML_fullsize = create_limit_t(0,4,0,4,0,4,3,3,3)
 
-    ThereAreObservation = .FALSE.
-    ThereAreWires = .FALSE.
-    ThereAreFarFields = .FALSE.
+    facesNF2FF = create_facesNF2FF(.false., .false., .false., .false., .false., .false.)
+    control = create_control_flags(0, 0, 3, 10, "entryRoot", "wireflavour",&
+                                    .false., .false., .false., .false., .false.,&
+                                    facesNF2FF)
 
-    eps00
-    mu00
-
-    call InitObservation(this%sgg,media,tagNumbers, &
-                                ThereAreObservation, ThereAreWires, ThereAreFarFields, initialtimestep, lastexecutedtime, &
-                                this%sinPML_fullsize,this%eps0, this%mu0, bounds, control)
+    call InitObservation(sgg, media, tag_numbers, &
+                            ThereAreObservation, ThereAreWires, ThereAreFarFields,&
+                            initialtimestep, lastexecutedtime, &
+                            SINPML_fullsize, eps, mu, bounds, control)
     
-    call UpdateObservation()
+    !I have to invastegate how to create dummy data to test update
+    !call UpdateObservation()
 
-end function test_update_observation
+end function test_update_time_movie_observation

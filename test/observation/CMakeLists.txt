@@ -6,6 +6,7 @@ add_library(
     "test_observation.F90"
     "test_preprocess.F90"
     "test_observation_init.F90"
+    "test_observation_update.F90"
 )
 
 target_link_libraries(observation_test_fortran
