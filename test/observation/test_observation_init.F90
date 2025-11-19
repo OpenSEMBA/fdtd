@@ -17,6 +17,13 @@ integer function test_init_time_movie_observation() bind(C) result(err)
 
     type(output_t), pointer, dimension(:) :: output
 
+    ThereAreObservation = .false.
+    ThereAreWires = .false.
+    ThereAreFarFields = .false.
+
+    initialtimestep = 0
+    lastexecutedtime = 0.0_RKIND_tiempo
+
     sgg = create_base_sgg()
     SINPML_fullsize = create_limit_t(0,4,0,4,0,4,3,3,3)
 
