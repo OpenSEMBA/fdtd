@@ -111,6 +111,8 @@ module Observa
   public InitObservation, FlushObservationFiles, UpdateObservation, DestroyObservation, CloseObservationFiles, unpacksinglefiles, &
     GetOutput, preprocess_observation
   public output_t, item_t, Serialized_t, dtft
+  !Required at least in tests
+  public fieldo
 #ifdef CompileWithMTLN
   public FlushMTLNObservationFiles
 #endif
@@ -263,8 +265,8 @@ contains
     logical :: saveall
 
     observation%done = .false.
-    observation%begun = .false.
     observation%flushed = .false.
+    observation%begun = .false.
 
     observation%TimeStep = max(observation%TimeStep, dt)
 
@@ -658,12 +660,12 @@ contains
     !!!!!!!!Load control values to refactor initObservation call. This will allow easuier testing
       resume = control%resume
       finalTimeStep = control%finalTimeStep
-      nEntradaRoot = control%nEntradaRoot
+      nEntradaRoot = trim(adjustl(control%nEntradaRoot))
       layoutnumber = control%layoutnumber
       size = control%size
       saveall = control%saveall
       singleFileWrite = control%singleFileWrite
-      wiresflavor = control%wiresflavor
+      wiresflavor = trim(adjustl(control%wiresflavor))
       facesNF2FF = control%facesNF2FF
       NF2FFDecim = control%NF2FFDecim
       simu_devia = control%simu_devia
@@ -1192,7 +1194,7 @@ contains
                     wrotemaster = .true.
                     unitmaster = output(ii)%item(i)%unit
                     output(ii)%item(i)%unitmaster = unitmaster
-open (unitmaster, recl=1000, file=trim(adjustl(output(ii)%item(i)%path))//'_master'//'_'//trim(adjustl(whoamishort))//'_master.bin')
+                    open (unitmaster, recl=1000, file=trim(adjustl(output(ii)%item(i)%path))//'_master'//'_'//trim(adjustl(whoamishort))//'_master.bin')
                     write (unitmaster, *) '!END'
                     close (unitmaster, status='delete')
                     my_iostat = 0
@@ -1204,7 +1206,7 @@ open (unitmaster, recl=1000, file=trim(adjustl(output(ii)%item(i)%path))//'_mast
                 else
                   inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                   if (.not. existe) then
-    call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Ex, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
+                    call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Ex, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
                   end if
                   !
                   open (output(ii)%item(i)%unit, recl=1000, access='sequential', file=trim(adjustl(output(ii)%item(i)%path)))
@@ -1347,7 +1349,7 @@ open (unitmaster, recl=1000, file=trim(adjustl(output(ii)%item(i)%path))//'_mast
                 else
                   inquire (file=trim(adjustl(output(ii)%item(i)%path)), exist=existe)
                   if (.not. existe) then
-call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloque, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
+                    call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloque, etc.) '//trim(adjustl(output(ii)%item(i)%path)))
                   end if
                   open (output(ii)%item(i)%unit, recl=1000, access='sequential', &
                         file=trim(adjustl(output(ii)%item(i)%path)))
@@ -1485,10 +1487,10 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                 if (field == mapvtk) then
                   INIT = .TRUE.; geom = .false.; asigna = .false.; magnetic = .false.; electric = .true.
 
-  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
+                  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                 init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
 
-        call wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, media%sggMtag, tag_numbers)
+                  call wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, media%sggMtag, tag_numbers)
                 end if
                      !!!
                 do kkk = sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1526,9 +1528,8 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                      !!!
                 if (field == mapvtk) then
                   INIT = .false.; geom = .false.; asigna = .false.; magnetic = .true.; electric = .false.
-  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
+                  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                 init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
-
                 end if
                      !!!
                 output(ii)%item(i)%columnas = conta
@@ -1688,9 +1689,9 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                      !!!
                 if (field == mapvtk) then
                   INIT = .false.; geom = .true.; asigna = .false.; magnetic = .false.; electric = .true.
-  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
+                  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                 init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
-        call wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, media%sggMtag, tag_numbers)
+                  call wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, media%sggMtag, tag_numbers)
                 end if
                      !!!
                 do kkk = sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1738,7 +1739,7 @@ call stoponerror(layoutnumber, size, 'Data files for resuming non existent (Bloq
                      !!!
                 if (field == mapvtk) then
                   INIT = .false.; geom = .true.; asigna = .false.; magnetic = .true.; electric = .false.
-  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
+                  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                 init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
 
                 end if

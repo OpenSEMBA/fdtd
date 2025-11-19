@@ -96,70 +96,43 @@ contains
       type(limit_t) :: r
    end function
 
-   function create_sgg_sweep() result(arr)
+   function create_xyz_limit_array(XI,YI,ZI,XE,YE,ZE) result(arr)
       use FDETYPES
       type(XYZlimit_t), dimension(1:6) :: arr
+      integer (kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
       integer :: i
       do i = 1, 6
-         arr(i)%XI = 0
-         arr(i)%XE = 0
-         arr(i)%YI = 0
-         arr(i)%YE = 0
-         arr(i)%ZI = 0
-         arr(i)%ZE = 0
+         arr(i)%XI = XI
+         arr(i)%XE = XE
+         arr(i)%YI = YI
+         arr(i)%YE = YE
+         arr(i)%ZI = ZI
+         arr(i)%ZE = ZE
       end do
-   end function create_sgg_sweep
+   end function create_xyz_limit_array
 
-   function create_sgg_alloc() result(arr)
-      use FDETYPES
-      type(XYZlimit_t), dimension(1:6) :: arr
-      integer :: i
-      do i = 1, 6
-         arr(i)%XI = 0
-         arr(i)%XE = 0
-         arr(i)%YI = 0
-         arr(i)%YE = 5
-         arr(i)%ZI = 5
-         arr(i)%ZE = 5
-      end do
-   end function create_sgg_alloc
    
-   function create_sgg_SINPMLSweep() result(arr)
-      use FDETYPES
-      type(XYZlimit_t), dimension(1:6) :: arr
-      integer :: i
-      do i = 1, 6
-         arr(i)%XI = 0
-         arr(i)%XE = 0
-         arr(i)%YI = 0
-         arr(i)%YE = 5
-         arr(i)%ZI = 5
-         arr(i)%ZE = 5
-      end do
-   end function create_sgg_SINPMLSweep
-
    function create_facesNF2FF(tr, fr, iz, de, ab, ar) result(faces)
       use FDETYPES
       type(nf2ff_t) :: faces
       logical :: tr, fr, iz, de, ab, ar
 
-      faces%tr = .false.
-      faces%fr = .false.
-      faces%iz = .false.
-      faces%de = .false.
-      faces%ab = .false.
-      faces%ar = .false.
+      faces%tr = tr
+      faces%fr = fr
+      faces%iz = iz
+      faces%de = de
+      faces%ab = ab
+      faces%ar = ar
    end function create_facesNF2FF
 
-   subroutine initialize_control_flags(control, &
-                                       layoutnumber, size, mpidir, finaltimestep, &
+   function create_control_flags(layoutnumber, size, mpidir, finaltimestep, &
                                        nEntradaRoot, wiresflavor, &
                                        resume, saveall, NF2FFDecim, simu_devia, singlefilewrite, &
-                                       facesNF2FF)
+                                       facesNF2FF) result(control)
       use FDETYPES
-      type(sim_control_t), intent(out) :: control
+      type(sim_control_t) :: control
       integer(kind=4), intent(in) :: layoutnumber, size, mpidir, finaltimestep
-      character(len=bufsize), intent(in) :: nEntradaRoot, wiresflavor
+      character(len=*), intent(in) :: nEntradaRoot, wiresflavor
       logical, intent(in) :: resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
       type(nf2ff_t), intent(in) :: facesNF2FF
 
@@ -176,7 +149,7 @@ contains
       control%singlefilewrite  = singlefilewrite
       control%facesNF2FF = facesNF2FF
 
-   end subroutine initialize_control_flags
+   end function create_control_flags
 
    function create_base_sgg() result(sgg)
       use FDETYPES
@@ -188,10 +161,10 @@ contains
       sgg%NumberRequest = 1
       sgg%dt = 0.1_RKIND_tiempo
       sgg%tiempo => create_time_array(100, sgg%dt)
-      sgg%Sweep = create_sgg_sweep()
-      sgg%SINPMLSweep = create_sgg_SINPMLSweep()
+      sgg%Sweep = create_xyz_limit_array(0,0,0,6,6,6)
+      sgg%SINPMLSweep = create_xyz_limit_array(1,1,1,5,5,5)
       sgg%NumPlaneWaves = 1
-      sgg%alloc = create_sgg_alloc()
+      sgg%alloc = create_xyz_limit_array(0,0,0,6,6,6)
  
    end function create_base_sgg
 
