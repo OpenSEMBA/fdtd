@@ -3428,6 +3428,10 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                             call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Efield))
                           end do
                         end if
+                      end if
+                      end do 
+                      do Hfield = iHx, iHz
+                      if (isWithinBounds(Hfield, iii, jjj, kkk)) then
                         if (isPECorSurface(Hfield, iii, jjj, kkk) .or. (field == blockCurrent(Hfield))) then
 
                           conta = conta + 1
