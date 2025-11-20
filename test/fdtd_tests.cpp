@@ -8,6 +8,8 @@
     #include "smbjson/smbjson_tests.h"
     #include "rotate/rotate_tests.h"
     #include "vtk/vtk_tests.h"
+#endif
+#ifndef CompileWithMPI
     #include "observation/observation_tests.h"
 #endif
 
