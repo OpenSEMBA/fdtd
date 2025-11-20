@@ -208,11 +208,11 @@ CONTAINS
                         endif
                         ALLOCATE (newPosiMPI(1:numberOfSerialized))
                         if (SGG%Observation(ii)%TimeDomain) then
-                           NewSerialized%allocate_for_time_domain(numberOfSerialized)
+                           call NewSerialized%allocate_for_time_domain(numberOfSerialized)
                         elseif (SGG%Observation(ii)%FreqDomain) then
-                           NewSerialized%allocate_for_frequency_domain(numberOfSerialized)
+                           call NewSerialized%allocate_for_frequency_domain(numberOfSerialized)
                         endif
-                        NewSerialized%allocate_current_value(numberOfSerialized)
+                        call NewSerialized%allocate_current_value(numberOfSerialized)
                         NewPosiMPI=0
                      endif
 #endif

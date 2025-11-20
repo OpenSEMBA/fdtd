@@ -356,7 +356,7 @@ contains
    field = observation_probe%What
    select case (field)
       case (iBloqueJx, iBloqueJy, iBloqueMx, iBloqueMy)
-         call eliminate_observation_from_block(observation_probe, output_item, sweep, field)
+         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, size)
       case (iEx, iVx, iEy, iVy, iHz, iBloqueMz, iJx, iJy, iQx, iQy)
          !in case of MPI the flushing is only cared by one of the sharing layouts
          !este es el unico caso en el que un punto es susceptible de ser escrito por dos layouts. Por eso se lo echo
@@ -371,19 +371,20 @@ contains
             observation_probe%What = nothing !do not observe anything
          end if
       case (iExC, iEyC, iHzC, iMhC, iEzC, iHxC, iHyC, iMeC)
-         call eliminate_observation_from_block(observation_probe, output_item, sweep, field)
+         call eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, size)
       case (iCur, iCurX, iCurY, iCurZ, mapvtk)
-         call eliminate_observation_from_current(observation_probe, output_item, sweep, field)
+         call eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, size)
       case (FarField)
-         call eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE)
+         call eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, size)
    end select
   end subroutine eliminate_unnecesary_observation_points
 
-  subroutine eliminate_observation_from_block(observation_probe, output_item, sweep, field)
+  subroutine eliminate_observation_from_block(observation_probe, output_item, sweep, field, layoutnumber, size)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
+   integer(kind=4), intent(in) :: layoutnumber, size
 
    if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
    (observation_probe%ZE < sweep(fieldo(field, 'Z'))%ZI)) then
@@ -408,11 +409,12 @@ contains
 
   end subroutine eliminate_observation_from_block
 
-  subroutine eliminate_observation_from_electric_current(observation_probe, output_item, sweep, field)
+  subroutine eliminate_observation_from_electric_current(observation_probe, output_item, sweep, field, layoutnumber, size)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
+   integer(kind=4), intent(in) :: layoutnumber, size
 
    if ((observation_probe%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. &
          (observation_probe%ZE < sweep(fieldo(field, 'Z'))%ZI)) then
@@ -435,11 +437,12 @@ contains
 
    end subroutine eliminate_observation_from_electric_current
 
-   subroutine eliminate_observation_from_current(observation_probe, output_item, sweep, field)
+   subroutine eliminate_observation_from_current(observation_probe, output_item, sweep, field, layoutnumber, size)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
    integer, intent(in) :: field
+   integer(kind=4), intent(in) :: layoutnumber, size
 
    if ((observation_probe%ZI >= sweep(iHz)%ZE) .or. &
          (observation_probe%ZE < sweep(iHZ)%ZI)) then
@@ -460,19 +463,20 @@ contains
       output_item%MPIRoot = layoutnumber
    end if
    call MPIinitSubcomm(layoutnumber, size, &
-      output(ii)%item(i)%MPISubComm, output(ii)%item(i)%MPIRoot, output(ii)%item(i)%MPIGroupIndex)
+      output_item%MPISubComm, output_item%MPIRoot, output_item%MPIGroupIndex)
 #else
    end if
 #endif
 
    end subroutine eliminate_observation_from_current
 
-   subroutine eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE)
+   subroutine eliminate_observation_from_farfield(observation_probe, output_item, SINPMLSweep, field, ZI, ZE, layoutnumber, size)
    type(item_t), intent(inout) :: output_item
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: SINPMLSweep
    integer, intent(in) :: field
    INTEGER(kind=4), intent(in) :: ZI, ZE
+   integer(kind=4), intent(in) :: layoutnumber, size
 
    if ((ZI > SINPMLSweep(IHz)%ZE) .or. (ZE < SINPMLSweep(iHz)%ZI)) then   !MPI NO DUPLICAR CALCULOS
       observation_probe%What = nothing
