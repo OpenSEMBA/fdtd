@@ -1,8 +1,52 @@
 module observation_testingTools
-   implicit none
+   use FDETYPES
+   type :: dummyFields_t
+      real(kind=RKIND),allocatable, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+      real(kind=RKIND),allocatable, dimension(:) :: dxe, dye, dze, dxh, dyh, dzh
+      contains
+      procedure, public :: createDummyFields => create_dummy_fields
+   end type dummyFields_t
+
+   public dummyFields
    public check_shape_real, check_shape_complex, check_size
    public approx_equal
 contains
+   subroutine create_dummy_fields(this, lower, upper, delta)
+      class(dummyFields_t), intent(inout) :: this
+      integer, intent(in) :: lower, upper
+      real(kind=rkind), intent(in) :: delta
+      allocate(&
+         this%Ex(lower:upper, lower:upper, lower:upper),&
+         this%Ey(lower:upper, lower:upper, lower:upper),&
+         this%Ez(lower:upper, lower:upper, lower:upper),&
+         this%Hx(lower:upper, lower:upper, lower:upper),&
+         this%Hy(lower:upper, lower:upper, lower:upper),&
+         this%Hz(lower:upper, lower:upper, lower:upper)&
+      )
+
+      this%Ex = 0.0_RKIND
+      this%Ey = 0.0_RKIND
+      this%Ez = 0.0_RKIND
+      this%Hx = 0.0_RKIND
+      this%Hy = 0.0_RKIND
+      this%Hz = 0.0_RKIND
+
+      allocate(&
+         this%dxh(lower:upper), &
+         this%dyh(lower:upper), &
+         this%dzh(lower:upper), &
+         this%dxe(lower:upper), &
+         this%dye(lower:upper), &
+         this%dze(lower:upper)&
+      )
+      this%dxh = delta
+      this%dyh = delta
+      this%dzh = delta
+      this%dxe = delta
+      this%dye = delta
+      this%dze = delta
+   end subroutine create_dummy_fields
+
    subroutine check_shape_real(arr, n_expected, test_err, name)
       use Observa
       use FDETYPES
