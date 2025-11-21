@@ -14,12 +14,11 @@ MODULE VTK
 CONTAINS
    !Subrutine to parse the volumic probes to create VTK files on PEC and on wires
    !
-   SUBROUTINE createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,tagtype,sggMtag,dontwritevtk)
+   SUBROUTINE createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
    
       type (SGGFDTDINFO), intent(IN)   :: sgg
       INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
-      type (tagtype_t) :: tagtype
       integer (KIND=4) :: mpidir
       logical :: vtkindex,yacreado,dontwritevtk
       !------------------------>
@@ -188,89 +187,15 @@ CONTAINS
                      !asumo solamente un time step por lectura
                      ALLOCATE (PosiMPI(1:numberOfSerialized))
 
-                     if (SGG%Observation(ii)%TimeDomain) then            
-                        ALLOCATE (Serialized%Valor(1,1:numberOfSerialized), &
-                                    Serialized%Valor_x(1,1:numberOfSerialized), &
-                                    Serialized%Valor_y(1,1:numberOfSerialized), &
-                                    Serialized%Valor_z(1,1:numberOfSerialized) )
-                        ALLOCATE (Serialized%ValorE(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ex(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ey(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ez(1,1:numberOfSerialized) )
-                        ALLOCATE (Serialized%ValorH(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hx(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hy(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hz(1,1:numberOfSerialized) )  
-                        Serialized%Valor = 0.   
-                        Serialized%Valor_x= 0.
-                        Serialized%Valor_y= 0.
-                        Serialized%Valor_z= 0. 
-                        Serialized%ValorE = 0.   
-                        Serialized%Valor_Ex= 0.
-                        Serialized%Valor_Ey= 0.
-                        Serialized%Valor_Ez= 0. 
-                        Serialized%ValorH = 0.   
-                        Serialized%Valor_Hx= 0.
-                        Serialized%Valor_Hy= 0.
-                        Serialized%Valor_Hz= 0.
+                     if (SGG%Observation(ii)%TimeDomain) then
+                        call Serialized%allocate_for_time_domain(numberOfSerialized)      
                         freqdomain=.false.
-                     elseif (SGG%Observation(ii)%FreqDomain) then        
-                        ALLOCATE (Serialized%Valor(1,1:numberOfSerialized), &
-                                    Serialized%Valor_x(1,1:numberOfSerialized), &
-                                    Serialized%Valor_y(1,1:numberOfSerialized), &
-                                    Serialized%Valor_z(1,1:numberOfSerialized) ) !auxiliar para sincronizar MPI
-                        ALLOCATE (Serialized%ValorE(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ex(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ey(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ez(1,1:numberOfSerialized) ) !auxiliar para sincronizar MPI
-                        ALLOCATE (Serialized%ValorH(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hx(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hy(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hz(1,1:numberOfSerialized) ) !auxiliar para sincronizar MPI     
-                        Serialized%Valor = 0.
-                        Serialized%Valor_x = 0.
-                        Serialized%Valor_y = 0.
-                        Serialized%Valor_z = 0.   
-                        Serialized%ValorE = 0.
-                        Serialized%Valor_Ex = 0.
-                        Serialized%Valor_Ey = 0.
-                        Serialized%Valor_Ez = 0.   
-                        Serialized%ValorH = 0.
-                        Serialized%Valor_Hx = 0.
-                        Serialized%Valor_Hy = 0.
-                        Serialized%Valor_Hz = 0.      
-                        ALLOCATE (Serialized%ValorComplex_x(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_y(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_z(1,1:numberOfSerialized) )
-                        ALLOCATE (Serialized%ValorComplex_Ex(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_Ey(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_Ez(1,1:numberOfSerialized) )
-                        ALLOCATE (Serialized%ValorComplex_Hx(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_Hy(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_Hz(1,1:numberOfSerialized) )  
-                        Serialized%ValorComplex_x = 0.
-                        Serialized%ValorComplex_y = 0.
-                        Serialized%ValorComplex_z = 0.
-                        Serialized%ValorComplex_Ex = 0.
-                        Serialized%ValorComplex_Ey = 0.
-                        Serialized%ValorComplex_Ez = 0.
-                        Serialized%ValorComplex_Hx = 0.
-                        Serialized%ValorComplex_Hy = 0.
-                        Serialized%ValorComplex_Hz = 0.
+                     elseif (SGG%Observation(ii)%FreqDomain) then
+                        call Serialized%allocate_for_frequency_domain(numberOfSerialized)
                         freqdomain=.true.
                      endif
-                     allocate (Serialized%eI(1:numberOfSerialized))
-                     allocate (Serialized%eJ(1:numberOfSerialized))
-                     allocate (Serialized%eK(1:numberOfSerialized))
-                     allocate (Serialized%currentType(1:numberOfSerialized))
-                     allocate (Serialized%sggMtag(1:numberOfSerialized))
+                     call Serialized%allocate_current_value(numberOfSerialized)
                      PosiMPI=0
-                     Serialized%eI = 0
-                     Serialized%eJ = 0
-                     Serialized%eK = 0
-                     Serialized%currentType = 0
-                     Serialized%sggMtag = 0
-
 
                      !!!BUSCA LA POSICION mpi E INICIALIZA LOS NUEVOS
                      posicionMPI=0
@@ -283,76 +208,12 @@ CONTAINS
                         endif
                         ALLOCATE (newPosiMPI(1:numberOfSerialized))
                         if (SGG%Observation(ii)%TimeDomain) then
-                           ALLOCATE (NewSerialized%Valor(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_x(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_y(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_z(1,1:numberOfSerialized))   
-                           
-                           ALLOCATE (NewSerialized%ValorE(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ex(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ey(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ez(1,1:numberOfSerialized))   
-                           ALLOCATE (NewSerialized%ValorH(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hx(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hy(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hz(1,1:numberOfSerialized))   
-                           
-                           NewSerialized%Valor = 0.
-                           NewSerialized%Valor_x = 0.
-                           NewSerialized%Valor_y = 0.
-                           NewSerialized%Valor_z = 0.
-                           
-                           
-                           NewSerialized%ValorE = 0.
-                           NewSerialized%Valor_Ex = 0.
-                           NewSerialized%Valor_Ey = 0.
-                           NewSerialized%Valor_Ez = 0.
-                           
-                           NewSerialized%ValorH = 0.
-                           NewSerialized%Valor_Hx = 0.
-                           NewSerialized%Valor_Hy = 0.
-                           NewSerialized%Valor_Hz = 0.
+                           call NewSerialized%allocate_for_time_domain(numberOfSerialized)
                         elseif (SGG%Observation(ii)%FreqDomain) then
-!!!lo hago con parte real e imaginaria
-                           ALLOCATE (NewSerialized%Valor  (1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_x(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_y(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_z(1,1:numberOfSerialized))     
-                           
-                           ALLOCATE (NewSerialized%ValorE  (1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ex(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ey(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ez(1,1:numberOfSerialized))     
-                           ALLOCATE (NewSerialized%ValorH  (1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hx(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hy(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hz(1,1:numberOfSerialized))     
-                           NewSerialized%Valor = 0.
-                           NewSerialized%Valor_x = 0.
-                           NewSerialized%Valor_y = 0.
-                           NewSerialized%Valor_z = 0.  
-                              
-                           NewSerialized%ValorE = 0.
-                           NewSerialized%Valor_Ex = 0.
-                           NewSerialized%Valor_Ey = 0.
-                           NewSerialized%Valor_Ez = 0.    
-                           NewSerialized%ValorH = 0.
-                           NewSerialized%Valor_Hx = 0.
-                           NewSerialized%Valor_Hy = 0.
-                           NewSerialized%Valor_Hz = 0.  
+                           call NewSerialized%allocate_for_frequency_domain(numberOfSerialized)
                         endif
-                        allocate (newSerialized%eI(1:numberOfSerialized))
-                        allocate (newSerialized%eJ(1:numberOfSerialized))
-                        allocate (newSerialized%eK(1:numberOfSerialized))
-                        allocate (newSerialized%currentType(1:numberOfSerialized))
-                        allocate (newSerialized%sggMtag(1:numberOfSerialized))
+                        call NewSerialized%allocate_current_value(numberOfSerialized)
                         NewPosiMPI=0
-                        newSerialized%eI = 0
-                        newSerialized%eJ = 0
-                        newSerialized%eK = 0
-                        newSerialized%currentType = 0
-                        newSerialized%sggMtag = 0
-                        !
                      endif
 #endif
                      !LEE INFO GEOMETRICA TENIENDO EN CUENTA POSICION MPI
@@ -1016,12 +877,10 @@ CONTAINS
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-   SUBROUTINE createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,tagtype,sggMtag,dontwritevtk)
+   SUBROUTINE createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
       type (SGGFDTDINFO), intent(IN)    :: sgg
       INTEGER (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
-   
-      type (tagtype_t) :: tagtype
    
       integer (KIND=4) :: mpidir
       logical :: vtkindex,somethingdone
@@ -1060,7 +919,7 @@ CONTAINS
          ENDIF
 
       END DO  !barrido puntos de observacion
-      call createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,tagtype,sggMtag,dontwritevtk)
+      call createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
       DO ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
          IF (sgg%observation(ii)%Volumic) then
@@ -1173,26 +1032,11 @@ CONTAINS
       else                   
          select case(que_saco)           
          case('cu')
-         if (.not.Freqdomain) then
-!probando2023 vectores        write (buff,'(a)') 'SCALARS current_t float 1'
-               write (buff,'(a)') 'SCALARS current_t float 3'
-         else
             write (buff,'(a)') 'SCALARS current_f float 3'
-         endif     
          case('ef')    
-         if (.not.Freqdomain) then
-!probando2023 vectores        write (buff,'(a)') 'SCALARS current_t float 1'
-               write (buff,'(a)') 'SCALARS efield_t float 3'
-         else
             write (buff,'(a)') 'SCALARS efield_f float 3'
-         endif
          case('hf')    
-         if (.not.Freqdomain) then
-!probando2023 vectores        write (buff,'(a)') 'SCALARS current_t float 1'
-               write (buff,'(a)') 'SCALARS hfield_t float 3'
-         else
             write (buff,'(a)') 'SCALARS hfield_f float 3'
-         endif
          end select
       endif
       write(myunit,'(a)') trim(adjustl(buff))
@@ -1338,11 +1182,6 @@ CONTAINS
          return
       endif
       !
-
-
-
-
-
       do conta=1,numberOfSerialized
          select case (Serialized%currentType(conta))
             case (iJx)

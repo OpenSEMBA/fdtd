@@ -114,6 +114,7 @@
             "component": "magnitude",
             "elementIds": [7],
             "domain": {
+                "type": "time",
                 "initialTime": 0.0, 
                 "finalTime": 2e-7, 
                 "samplingPeriod": 1.5e-10

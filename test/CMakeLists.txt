@@ -15,10 +15,18 @@ if (SEMBA_FDTD_ENABLE_MTLN)
     endif()
 endif()
 if (SEMBA_FDTD_ENABLE_SMBJSON)
+    add_subdirectory(utils)
+    set(UTILS_TEST, test_utils_fortran)
     add_subdirectory(smbjson)
     set(SMBJSON_TESTS_LIBRARY smbjson_tests)
     add_subdirectory(rotate)
     set(ROTATE_TESTS_LIBRARY rotate_tests)
+    add_subdirectory(vtk)
+    set(VTK_TESTS_LIBRARY vtk_tests)
+    if (NOT SEMBA_FDTD_ENABLE_MPI)
+        add_subdirectory(observation)
+        set(OBSERVATION_TESTS_LIBRARY observation_tests)
+    endif()
 endif()
 
 add_executable(fdtd_tests 
@@ -29,7 +37,9 @@ target_link_libraries(fdtd_tests
     ${MTLN_TESTS_LIBRARY}
     ${SMBJSON_TESTS_LIBRARY}
     ${ROTATE_TESTS_LIBRARY}
-    ${SYSTEM_TESTS_LIBRARY}
     ${HDF_TESTS_LIBRARY}
+    ${VTK_TESTS_LIBRARY}
+    ${SYSTEM_TESTS_LIBRARY}
+    ${OBSERVATION_TESTS_LIBRARY}
     GTest::gtest_main
 )
