@@ -2795,6 +2795,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       complex(kind=ckind) :: z_cplx
       integer(kind=4) :: conta !para realmente dar tangenciales de campos en los medios superficiales
       character(len=*), INTENT(in) :: wiresflavor
+      integer, dimension(:) :: pointObservationCases(6)
+      real(RKIND), pointer :: fld(:,:,:)
 
       type(CurrentSegments), pointer  ::  segmDumm !segmento de hilo que se observa si lo hubiere
       !
@@ -2809,7 +2811,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       logical ::  INIT, GEOM, ASIGNA, electric, magnetic
 
       at = -1; jx = -1; jy = -1; jz = -1; jdir = -1; jdir1 = -1; jdir2 = -1  !para que gfortran no me diga que no las inicializo
-
+      pointObservationCases = [iEx, iEy, iEz, iHx, iHy, iHz]
       !---------------------------> empieza UpdateObservation <---------------------------------------
       do ii = 1, sgg%NumberRequest
         loop_obser: do i = 1, sgg%Observation(ii)%nP
@@ -2823,6 +2825,18 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
             K2 = SGG%Observation(ii)%P(i)%ZE
             !--->
             if (SGG%Observation(ii)%TimeDomain) then
+              if (any(field == pointObservationCases)) then 
+                selectcase (field)
+                case (iEx); fld => Ex
+                case (iEy); fld => Ey
+                case (iEz); fld => Ez
+                case (iHx); fld => Hx
+                case (iHy); fld => Hy
+                case (iHz); fld => Hz
+                end select
+                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND
+                output(ii)%item(i)%valor(nTime - nInit) = fld(I1, J1, K1)
+              end if 
               selectcase (field)
               case (iEx)
                 output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
