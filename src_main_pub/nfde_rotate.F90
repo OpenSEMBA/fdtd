@@ -474,14 +474,17 @@ CONTAINS
          tama2 = (this%DielRegs%vols(i)%n_c1P)
          DO ii = 1, tama2
             CALL ROTATEMPI(mpidir,this%DielRegs%vols(i)%C1P(ii)) 
-         end do      
-         this%DielRegs%vols(i)%DiodOrI = this%DielRegs%vols(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
-         
+         end do
+         if (tama2 > 0) then
+            this%DielRegs%vols(i)%DiodOrI = this%DielRegs%vols(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
+         end if
          tama3 = (this%DielRegs%vols(i)%n_c2P)  
          DO ii = 1, tama3
             CALL ROTATEMPI(mpidir,this%DielRegs%vols(i)%C2P(ii)) 
-         end do        
-         this%DielRegs%vols(i)%DiodOrI = this%DielRegs%vols(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+         end do
+         if (tama3 > 0) then 
+            this%DielRegs%vols(i)%DiodOrI = this%DielRegs%vols(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+         end if
       end do
       !surfaces
       tama = (this%DielRegs%nsurfs)
@@ -489,14 +492,17 @@ CONTAINS
          tama2 = (this%DielRegs%surfs(i)%n_c1P)
          DO ii = 1, tama2
             CALL ROTATEMPI(mpidir,this%DielRegs%surfs(i)%C1P(ii)) 
-         end do      
-         this%DielRegs%surfs(i)%DiodOrI = this%DielRegs%surfs(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
-         
+         end do
+         if (tama2 > 0) then      
+            this%DielRegs%surfs(i)%DiodOrI = this%DielRegs%surfs(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
+         end if
          tama3 = (this%DielRegs%surfs(i)%n_c2P)  
          DO ii = 1, tama3
             CALL ROTATEMPI(mpidir,this%DielRegs%surfs(i)%C2P(ii)) 
-         end do        
-         this%DielRegs%surfs(i)%DiodOrI = this%DielRegs%surfs(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+         end do
+         if (tama3 > 0) then    
+            this%DielRegs%surfs(i)%DiodOrI = this%DielRegs%surfs(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+         end if
       end do
       !lines
       tama = (this%DielRegs%nlins)
@@ -504,14 +510,18 @@ CONTAINS
          tama2 = (this%DielRegs%lins(i)%n_c1P)
          DO ii = 1, tama2
             CALL ROTATEMPI(mpidir,this%DielRegs%lins(i)%C1P(ii)) 
-         end do      
-         this%DielRegs%lins(i)%DiodOrI = this%DielRegs%lins(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
-         
+         end do
+         if (tama2 > 0) then       
+            this%DielRegs%lins(i)%DiodOrI = this%DielRegs%lins(i)%c1P(tama2)%Or    !UPDATE diodos POR SI HAY ROTACION ojo es un chapuz solo valido para diodos de 1p o 2p
+         end if
+
          tama3 = (this%DielRegs%lins(i)%n_c2P)  
          DO ii = 1, tama3
             CALL ROTATEMPI(mpidir,this%DielRegs%lins(i)%C2P(ii)) 
-         end do        
-         this%DielRegs%lins(i)%DiodOrI = this%DielRegs%lins(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+         end do
+         if (tama3 > 0) then        
+            this%DielRegs%lins(i)%DiodOrI = this%DielRegs%lins(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
+         end if
       end do
       RETURN
    END SUBROUTINE rotate_generateNONMetals

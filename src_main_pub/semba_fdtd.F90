@@ -312,7 +312,15 @@ contains
 #ifdef CompileWithMPI
    call initialize_MPI_process(this%l%filefde,this%l%extension)
 #else
+#ifdef CompilePrivateVersion
+   if (trim(adjustl(this%l%extension))=='.nfde') then 
+      NFDE_FILE => cargar_NFDE_FILE (this%l%filefde)
+   else
+      allocate (NFDE_FILE)
+   endif
+#else
    allocate (NFDE_FILE)
+#endif
 #endif
 
    call data_loader(this%l%filefde, parser)
@@ -327,8 +335,6 @@ contains
       this%l%chain2=trim(adjustl(chaindummy))//' '//trim(adjustl(this%sgg%extraswitches))//' '//trim(adjustl(this%l%chain2(this%l%length+1:)))               
       this%l%chaininput=trim(adjustl(this%l%chain2))
    !!!!
-      
-
       call interpreta(this%l,status )      
       this%sgg%nEntradaRoot=trim (adjustl(this%l%nEntradaRoot))
 

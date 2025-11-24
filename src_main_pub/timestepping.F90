@@ -1155,9 +1155,9 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires       (this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
-                                 this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
-                                 this%g%g2,this%sinPML_fullsize, this%fullsize,dtcritico,this%eps0,this%mu0,this%control)
+            call InitWires(this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
+                           this%thereAre%Wires, Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, &
+                           this%g%g2,this%sinPML_fullsize, this%fullsize,dtcritico,this%eps0,this%mu0,this%control)
             l_auxinput=this%thereAre%Wires
             l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1178,10 +1178,11 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Multi-Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires_Berenger(this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
-            this%control%isolategroupgroups,this%control%mtlnberenger,this%control%mindistwires, &
-            this%control%groundwires,this%control%taparrabos,Ex,Ey,Ez, &
-            Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,this%g%g2,this%sinPML_fullsize,fullsize,dtcritico,this%eps0,this%mu0,this%control%verbose)
+            call InitWires_Berenger(&
+               this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
+               this%control%isolategroupgroups,this%control%mtlnberenger,this%control%mindistwires, &
+               this%control%groundwires,this%control%taparrabos,Ex,Ey,Ez, &
+               Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,this%g%g2,this%sinPML_fullsize,this%fullsize,dtcritico,this%eps0,this%mu0,this%control%verbose)
          l_auxinput= this%thereAre%Wires
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1503,9 +1504,8 @@ contains
 #endif
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
          call InitObservation (this%sgg,this%media,this%tag_numbers, &
-                              this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%control%resume,this%initialtimestep,this%control%finaltimestep,this%lastexecutedtime, &
-                              this%control%nentradaroot,this%control%layoutnumber,this%control%size,this%control%saveall,this%control%singlefilewrite,this%control%wiresflavor,&
-                              this%sinPML_fullsize,this%control%facesNF2FF,this%control%NF2FFDecim,this%eps0,this%mu0,this%control%simu_devia,this%control%mpidir,this%control%niapapostprocess,this%bounds)
+                                 this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%initialtimestep,this%lastexecutedtime, &
+                                 this%sinPML_fullsize,this%eps0,this%mu0,this%bounds, this%control)
 
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
@@ -1919,7 +1919,7 @@ contains
                          call print11(this%control%layoutnumber,dubuf)
                          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                          somethingdone=.false.
-                         if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%tagtype,this%media%sggMtag,this%control%dontwritevtk)
+                         if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
 #ifdef CompileWithMPI
                          call MPI_Barrier(SUBCOMM_MPI,ierr)
                          call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -2685,7 +2685,9 @@ contains
             if (this%control%wirecrank) then
                continue
             else
-               call AdvanceWiresH(this%sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,this%eps0,this%mu0)
+               call AdvanceWiresH(this%sgg, this%n, this%control%layoutnumber, &
+               this%control%wiresflavor, this%control%simu_devia, this%control%stochastic, &
+               this%control%experimentalVideal, this%control%wirethickness, this%eps0, this%mu0)
             endif
          endif
       endif
@@ -2828,7 +2830,7 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       somethingdone=.false.
 
-      if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%tagtype,this%media%sggMtag,this%control%dontwritevtk)
+      if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)

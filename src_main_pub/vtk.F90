@@ -14,18 +14,19 @@ MODULE VTK
 CONTAINS
    !Subrutine to parse the volumic probes to create VTK files on PEC and on wires
    !
-   SUBROUTINE createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,tagtype,sggMtag,dontwritevtk)
+   SUBROUTINE createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
    
       type (SGGFDTDINFO), intent(IN)   :: sgg
       INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
-      type (tagtype_t) :: tagtype
       integer (KIND=4) :: mpidir
       logical :: vtkindex,yacreado,dontwritevtk
       !------------------------>
       CHARACTER (LEN=BUFSIZE) :: filename ! File name
       CHARACTER (LEN=BUFSIZE) :: fichero,fichero_input,char_i_sub_time ! File name
-      !
+      integer (kind=4) :: k
+      character (len=32), dimension(3) :: suffFile = (/'_current.vtk', '_efield.vtk ', '_hfield.vtk '/)
+      character (len=3), dimension (3) :: suffTag  = (/'cu', 'ef', 'hf'/)
       !
       !
 
@@ -66,6 +67,7 @@ CONTAINS
       real (kind= RKIND), allocatable, dimension(:,:) :: Nodes
       integer (kind=4), allocatable, dimension(:,:) :: Elems
       integer (kind=4) :: coldummy
+      integer (kind=4), dimension(5) :: volumicCurrentFlags = [iCur, iCurX, iCurY, iCurZ, mapvtk]
 !      print *,'RKIND,CKIND,REALSIZE,COMPLEXSIZE,MPI_DOUBLE_PRECISION, MPI_DOUBLE_COMPLEX',RKIND,CKIND,REALSIZE,COMPLEXSIZE,MPI_DOUBLE_PRECISION, MPI_DOUBLE_COMPLEX
       yacreado=.false.
       numNodes=0; numEdges=0;numQuads=0;
@@ -77,35 +79,30 @@ CONTAINS
       !
       somethingdone=.false.
       barridoprobes: DO ii = 1, sgg%NumberRequest
-
-         IF (sgg%observation(ii)%Volumic) then
-         if (sgg%observation(ii)%nP == 1) then
-         if ((sgg%observation(ii)%P(1)%What == iCur).or.(sgg%observation(ii)%P(1)%What == iCurX).or. &
-               (sgg%observation(ii)%P(1)%What == iCurY).or.(sgg%observation(ii)%P(1)%What == iCurZ).or. &
-               (sgg%observation(ii)%P(1)%What == mapvtk)) THEN !solo corrientes volumicas
-               if (sgg%Observation(ii)%done.and.(sgg%Observation(ii)%flushed)) then
+         IF ((sgg%observation(ii)%Volumic) .and. (sgg%observation(ii)%nP == 1)) then
+         if (any(sgg%observation(ii)%P(1)%What == volumicCurrentFlags)) then
+            if (sgg%Observation(ii)%done) then 
+               if (sgg%Observation(ii)%flushed) then 
                   cycle barridoprobes
-               elseif (sgg%Observation(ii)%done) then
-                  sgg%Observation(ii)%flushed=.true. !ultima que se flushea
-                  continue
-               elseif ((.not.(sgg%Observation(ii)%done)).and.(sgg%Observation(ii)%Begun)) then
-                  continue
-               elseif (.not.(sgg%Observation(ii)%begun))  then
-                  cycle barridoprobes
-               else !creo que tengo toda la casuistica, por si se me escapa algo continuo, y ya debajo se manejara
+               else
+                  sgg%Observation(ii)%flushed=.true.
                   continue
                endif
+            else
+               if (sgg%Observation(ii)%Begun) then 
+                  continue
+               else
+                  cycle barridoprobes
+               endif
+            endif
          else 
                cycle barridoprobes
          endif
-         endif 
          endif
          !sondas Volumic traducelas a VTK
          IF (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
-               if ((sgg%observation(ii)%P(1)%What == iCur).or.(sgg%observation(ii)%P(1)%What == iCurX).or. &
-               (sgg%observation(ii)%P(1)%What == iCurY).or.(sgg%observation(ii)%P(1)%What == iCurZ).or. &
-               (sgg%observation(ii)%P(1)%What == mapvtk)) THEN !solo corrientes volumicas
+               if (any(sgg%observation(ii)%P(1)%What == volumicCurrentFlags)) then
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if ((lexis).and.(output(ii)%TimesWritten/=0)) then
                      !
@@ -163,15 +160,6 @@ CONTAINS
                         endif
                      endif
 #endif
-
-
-                     !!!                    OPEN (output(ii)%item(1)%UNIT, FILE=trim(adjustl(output(ii)%item(1)%path)), &
-                     !!!                            FORM='unformatted')
-                     !!!                        DO
-                     !!!                            READ (output(ii)%item(1)%UNIT, end=762) finalstep
-                     !!!                        END DO
-                     !!!762                     CONTINUE
-                     !!!                    CLOSE (output(ii)%item(1)%UNIT)
                      finalstep=output(ii)%TimesWritten
                      allocate (att(1:finalstep))
                      !!!!!!!!!!!!!
@@ -199,89 +187,15 @@ CONTAINS
                      !asumo solamente un time step por lectura
                      ALLOCATE (PosiMPI(1:numberOfSerialized))
 
-                     if (SGG%Observation(ii)%TimeDomain) then            
-                        ALLOCATE (Serialized%Valor(1,1:numberOfSerialized), &
-                                    Serialized%Valor_x(1,1:numberOfSerialized), &
-                                    Serialized%Valor_y(1,1:numberOfSerialized), &
-                                    Serialized%Valor_z(1,1:numberOfSerialized) )
-                        ALLOCATE (Serialized%ValorE(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ex(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ey(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ez(1,1:numberOfSerialized) )
-                        ALLOCATE (Serialized%ValorH(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hx(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hy(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hz(1,1:numberOfSerialized) )  
-                        Serialized%Valor = 0.   
-                        Serialized%Valor_x= 0.
-                        Serialized%Valor_y= 0.
-                        Serialized%Valor_z= 0. 
-                        Serialized%ValorE = 0.   
-                        Serialized%Valor_Ex= 0.
-                        Serialized%Valor_Ey= 0.
-                        Serialized%Valor_Ez= 0. 
-                        Serialized%ValorH = 0.   
-                        Serialized%Valor_Hx= 0.
-                        Serialized%Valor_Hy= 0.
-                        Serialized%Valor_Hz= 0.
+                     if (SGG%Observation(ii)%TimeDomain) then
+                        call Serialized%allocate_for_time_domain(numberOfSerialized)      
                         freqdomain=.false.
-                     elseif (SGG%Observation(ii)%FreqDomain) then        
-                        ALLOCATE (Serialized%Valor(1,1:numberOfSerialized), &
-                                    Serialized%Valor_x(1,1:numberOfSerialized), &
-                                    Serialized%Valor_y(1,1:numberOfSerialized), &
-                                    Serialized%Valor_z(1,1:numberOfSerialized) ) !auxiliar para sincronizar MPI
-                        ALLOCATE (Serialized%ValorE(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ex(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ey(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Ez(1,1:numberOfSerialized) ) !auxiliar para sincronizar MPI
-                        ALLOCATE (Serialized%ValorH(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hx(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hy(1,1:numberOfSerialized), &
-                                    Serialized%Valor_Hz(1,1:numberOfSerialized) ) !auxiliar para sincronizar MPI     
-                        Serialized%Valor = 0.
-                        Serialized%Valor_x = 0.
-                        Serialized%Valor_y = 0.
-                        Serialized%Valor_z = 0.   
-                        Serialized%ValorE = 0.
-                        Serialized%Valor_Ex = 0.
-                        Serialized%Valor_Ey = 0.
-                        Serialized%Valor_Ez = 0.   
-                        Serialized%ValorH = 0.
-                        Serialized%Valor_Hx = 0.
-                        Serialized%Valor_Hy = 0.
-                        Serialized%Valor_Hz = 0.      
-                        ALLOCATE (Serialized%ValorComplex_x(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_y(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_z(1,1:numberOfSerialized) )
-                        ALLOCATE (Serialized%ValorComplex_Ex(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_Ey(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_Ez(1,1:numberOfSerialized) )
-                        ALLOCATE (Serialized%ValorComplex_Hx(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_Hy(1,1:numberOfSerialized), &
-                                    Serialized%ValorComplex_Hz(1,1:numberOfSerialized) )  
-                        Serialized%ValorComplex_x = 0.
-                        Serialized%ValorComplex_y = 0.
-                        Serialized%ValorComplex_z = 0.
-                        Serialized%ValorComplex_Ex = 0.
-                        Serialized%ValorComplex_Ey = 0.
-                        Serialized%ValorComplex_Ez = 0.
-                        Serialized%ValorComplex_Hx = 0.
-                        Serialized%ValorComplex_Hy = 0.
-                        Serialized%ValorComplex_Hz = 0.
+                     elseif (SGG%Observation(ii)%FreqDomain) then
+                        call Serialized%allocate_for_frequency_domain(numberOfSerialized)
                         freqdomain=.true.
                      endif
-                     allocate (Serialized%eI(1:numberOfSerialized))
-                     allocate (Serialized%eJ(1:numberOfSerialized))
-                     allocate (Serialized%eK(1:numberOfSerialized))
-                     allocate (Serialized%currentType(1:numberOfSerialized))
-                     allocate (Serialized%sggMtag(1:numberOfSerialized))
+                     call Serialized%allocate_current_value(numberOfSerialized)
                      PosiMPI=0
-                     Serialized%eI = 0
-                     Serialized%eJ = 0
-                     Serialized%eK = 0
-                     Serialized%currentType = 0
-                     Serialized%sggMtag = 0
-
 
                      !!!BUSCA LA POSICION mpi E INICIALIZA LOS NUEVOS
                      posicionMPI=0
@@ -294,76 +208,12 @@ CONTAINS
                         endif
                         ALLOCATE (newPosiMPI(1:numberOfSerialized))
                         if (SGG%Observation(ii)%TimeDomain) then
-                           ALLOCATE (NewSerialized%Valor(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_x(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_y(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_z(1,1:numberOfSerialized))   
-                           
-                           ALLOCATE (NewSerialized%ValorE(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ex(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ey(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ez(1,1:numberOfSerialized))   
-                           ALLOCATE (NewSerialized%ValorH(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hx(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hy(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hz(1,1:numberOfSerialized))   
-                           
-                           NewSerialized%Valor = 0.
-                           NewSerialized%Valor_x = 0.
-                           NewSerialized%Valor_y = 0.
-                           NewSerialized%Valor_z = 0.
-                           
-                           
-                           NewSerialized%ValorE = 0.
-                           NewSerialized%Valor_Ex = 0.
-                           NewSerialized%Valor_Ey = 0.
-                           NewSerialized%Valor_Ez = 0.
-                           
-                           NewSerialized%ValorH = 0.
-                           NewSerialized%Valor_Hx = 0.
-                           NewSerialized%Valor_Hy = 0.
-                           NewSerialized%Valor_Hz = 0.
+                           call NewSerialized%allocate_for_time_domain(numberOfSerialized)
                         elseif (SGG%Observation(ii)%FreqDomain) then
-!!!lo hago con parte real e imaginaria
-                           ALLOCATE (NewSerialized%Valor  (1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_x(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_y(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_z(1,1:numberOfSerialized))     
-                           
-                           ALLOCATE (NewSerialized%ValorE  (1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ex(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ey(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Ez(1,1:numberOfSerialized))     
-                           ALLOCATE (NewSerialized%ValorH  (1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hx(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hy(1,1:numberOfSerialized))
-                           ALLOCATE (NewSerialized%Valor_Hz(1,1:numberOfSerialized))     
-                           NewSerialized%Valor = 0.
-                           NewSerialized%Valor_x = 0.
-                           NewSerialized%Valor_y = 0.
-                           NewSerialized%Valor_z = 0.  
-                              
-                           NewSerialized%ValorE = 0.
-                           NewSerialized%Valor_Ex = 0.
-                           NewSerialized%Valor_Ey = 0.
-                           NewSerialized%Valor_Ez = 0.    
-                           NewSerialized%ValorH = 0.
-                           NewSerialized%Valor_Hx = 0.
-                           NewSerialized%Valor_Hy = 0.
-                           NewSerialized%Valor_Hz = 0.  
+                           call NewSerialized%allocate_for_frequency_domain(numberOfSerialized)
                         endif
-                        allocate (newSerialized%eI(1:numberOfSerialized))
-                        allocate (newSerialized%eJ(1:numberOfSerialized))
-                        allocate (newSerialized%eK(1:numberOfSerialized))
-                        allocate (newSerialized%currentType(1:numberOfSerialized))
-                        allocate (newSerialized%sggMtag(1:numberOfSerialized))
+                        call NewSerialized%allocate_current_value(numberOfSerialized)
                         NewPosiMPI=0
-                        newSerialized%eI = 0
-                        newSerialized%eJ = 0
-                        newSerialized%eK = 0
-                        newSerialized%currentType = 0
-                        newSerialized%sggMtag = 0
-                        !
                      endif
 #endif
                      !LEE INFO GEOMETRICA TENIENDO EN CUENTA POSICION MPI
@@ -495,15 +345,7 @@ CONTAINS
                                        READ (output(ii)%item(1)%UNIT) &
                                           Serialized%valorComplex_x(1,posicionMPI+conta), &
                                           Serialized%valorComplex_y(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_z(1,posicionMPI+conta) !lo meto en el unico step
-                                       READ (output(ii)%item(1)%UNIT) &
-                                          Serialized%valorComplex_Ex(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_Ey(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_Ez(1,posicionMPI+conta) !lo meto en el unico step
-                                       READ (output(ii)%item(1)%UNIT) &
-                                          Serialized%valorComplex_Hx(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_Hy(1,posicionMPI+conta), &
-                                          Serialized%valorComplex_Hz(1,posicionMPI+conta) !lo meto en el unico step
+                                          Serialized%valorComplex_z(1,posicionMPI+conta)
                                     end do
                            endif
 
@@ -848,30 +690,23 @@ CONTAINS
                                  else
                                     if (freqDomain) then
                                        total_sub_times=time_phases_param
-                                       do i_sub_time=0,total_sub_times
-                                             write (char_i_sub_time,'(i3)') i_sub_time
-                                             fichero_input=fichero(1:iroot1-1)//'_n_'//trim(adjustl(char_i_sub_time))//'_current.vtk' 
-                                             CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
-                                                               i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'cu')
-                                             write(dubuf,'(a,i9,a,i9)')  trim(adjustl(whoamishort))//' -------> Dumped frequency phase file '//trim(adjustl(fichero_input))//', ',i_sub_time,'/',total_sub_times
-                                             call print11(layoutnumber,dubuf,.true.)        
-                                             !electric
+                                       do i_sub_time = 0, total_sub_times
+                                          write(char_i_sub_time,'(i3)') i_sub_time
+                                          do k = 1, 3
+                                             fichero_input = fichero(1:iroot1-1)//'_n_'//trim(adjustl(char_i_sub_time))//suffFile(k)
+                                          
+                                             CALL write_VTKfile( sgg, fichero_input, iroot2, Serialized, numberOfSerialized, &
+                                                                 Nodes, Numnodes, Elems, NumEdges, NumQuads, time, &
+                                                                 i_sub_time, total_sub_times, freqDomain, sgg%observation(ii)%P(1)%What, sggMtag, &
+                                                                 suffTag(k) )
+                                          
+                                             write(dubuf,'(a,i9,a,i9)') trim(adjustl(whoamishort))//' -------> Dumped frequency phase file '// &
+                                                                          trim(adjustl(fichero_input))//', ', i_sub_time, '/', total_sub_times
+                                             call print11(layoutnumber, dubuf, .true.)
+                                          end do
                                        
-                                             fichero_input=fichero(1:iroot1-1)//'_n_'//trim(adjustl(char_i_sub_time))//'_efield.vtk' 
-                                             CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
-                                                               i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'ef')
-                                             write(dubuf,'(a,i9,a,i9)')  trim(adjustl(whoamishort))//' -------> Dumped frequency phase file '//trim(adjustl(fichero_input))//', ',i_sub_time,'/',total_sub_times
-                                             call print11(layoutnumber,dubuf,.true.) 
-                                             !      
-                                             !      magnetic
-                                       
-                                             fichero_input=fichero(1:iroot1-1)//'_n_'//trim(adjustl(char_i_sub_time))//'_hfield.vtk' 
-                                             CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
-                                                               i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'hf')
-                                             write(dubuf,'(a,i9,a,i9)')  trim(adjustl(whoamishort))//' -------> Dumped frequency phase file '//trim(adjustl(fichero_input))//', ',i_sub_time,'/',total_sub_times
-                                             call print11(layoutnumber,dubuf,.true.) 
-                                             !      
                                        end do
+
                                     else
                                        fichero_input=fichero(1:iroot1-1)//'_current.vtk'  
                                        i_sub_time=-30 !cualquier cosa
@@ -1042,12 +877,10 @@ CONTAINS
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-   SUBROUTINE createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,tagtype,sggMtag,dontwritevtk)
+   SUBROUTINE createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
       type (SGGFDTDINFO), intent(IN)    :: sgg
       INTEGER (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
-   
-      type (tagtype_t) :: tagtype
    
       integer (KIND=4) :: mpidir
       logical :: vtkindex,somethingdone
@@ -1086,7 +919,7 @@ CONTAINS
          ENDIF
 
       END DO  !barrido puntos de observacion
-      call createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,tagtype,sggMtag,dontwritevtk)
+      call createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
       DO ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
          IF (sgg%observation(ii)%Volumic) then
@@ -1199,26 +1032,11 @@ CONTAINS
       else                   
          select case(que_saco)           
          case('cu')
-         if (.not.Freqdomain) then
-!probando2023 vectores        write (buff,'(a)') 'SCALARS current_t float 1'
-               write (buff,'(a)') 'SCALARS current_t float 3'
-         else
             write (buff,'(a)') 'SCALARS current_f float 3'
-         endif     
          case('ef')    
-         if (.not.Freqdomain) then
-!probando2023 vectores        write (buff,'(a)') 'SCALARS current_t float 1'
-               write (buff,'(a)') 'SCALARS efield_t float 3'
-         else
             write (buff,'(a)') 'SCALARS efield_f float 3'
-         endif
          case('hf')    
-         if (.not.Freqdomain) then
-!probando2023 vectores        write (buff,'(a)') 'SCALARS current_t float 1'
-               write (buff,'(a)') 'SCALARS hfield_t float 3'
-         else
             write (buff,'(a)') 'SCALARS hfield_f float 3'
-         endif
          end select
       endif
       write(myunit,'(a)') trim(adjustl(buff))
@@ -1364,11 +1182,6 @@ CONTAINS
          return
       endif
       !
-
-
-
-
-
       do conta=1,numberOfSerialized
          select case (Serialized%currentType(conta))
             case (iJx)

@@ -2126,7 +2126,7 @@ contains
 !      IF (layoutnumber == 0) THEN
 669      open (newunit=thefile8,file=trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp',err=667 )
          goto 668
-667      print *,' '//trim(adjustl(whoamishort))//' ','--> no hay cojones con open para borrar unidad ',thefile8
+667      print *,' '//trim(adjustl(whoamishort))//' ','--> no se pudo borrar la unidad usando open',thefile8
          call sleep(2)
          goto 669
 668     continue        

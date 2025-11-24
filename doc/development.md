@@ -157,10 +157,32 @@ Once the environment is loaded, follow the steps in the next section.
      must be present in CMakeLists.txt due to an issue https://gitlab.kitware.com/cmake/cmake/-/issues/21816
 
 6. **Debugger Configuration**:
-   - In the project properties, go to the **Debugger** section.
+   - Select your current build as start up item
+   - In Debug options, open `Debug and launch settings` for your start up item
    - Configure the following parameters:
      - **Working Directory**: Set the working directory based on the case you want to debug.
      - **Command Arguments**: Enter `-i filename` (where `filename` is the required input file).
+     You should end up with something like this.
+     ```
+      {
+        "configurations": [
+                {
+                    "type": "default",
+                    "project": "CMakeLists.txt",
+                    "projectTarget": "semba-fdtd.exe (bin\\semba-fdtd.exe)",
+                    "name": "semba-fdtd.exe (bin\\semba-fdtd.exe)",
+                    "currentDir": "<root-folder>\\tmp_cases\\coated_antenna",
+                    "args": [
+                        "-i",
+                        "coated_antenna.fdtd.json",
+                        "-mtlnwires"
+                        ]
+                }
+        ],
+        "defaults": {},
+        "version": "0.2.1"
+      }
+     ```
 
 7. **Debug the Project**:
    - Launch the project by pressing **F5** to begin debugging.

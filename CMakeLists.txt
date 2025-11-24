@@ -43,9 +43,6 @@ add_definitions(
 	-DCompileWithInt2 
 	-DCompileWithOpenMP
 )
-if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-	add_definitions(-DCompileWithDebug)
-endif()
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
@@ -150,6 +147,8 @@ else()
 	message(FATAL_ERROR "Unrecognized system name")
 endif()
 
+# =========================================
+
 add_subdirectory(external)
 
 add_library(semba-types 
@@ -231,6 +230,16 @@ if(SEMBA_FDTD_OUTPUTS_LIB)
 endif()
 
 if(SEMBA_FDTD_MAIN_LIB)
+	# Prepares variables containing information on commit-hash and build flags.
+	# This information is only available at the configuration stage.
+	set(PROGRAM_NAME "semba-fdtd")
+	include("${CMAKE_CURRENT_SOURCE_DIR}/get_commit_info.cmake")
+	configure_file(
+	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90.in
+	${CMAKE_SOURCE_DIR}/src_main_pub/version.F90
+	@ONLY
+	)
+
 	add_library(semba-main
 		"src_main_pub/semba_fdtd.F90"
 		"src_main_pub/calc_constants.F90"

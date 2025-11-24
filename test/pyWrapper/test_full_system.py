@@ -278,8 +278,7 @@ def test_sphere(tmp_path):
 
     solver.run()
 
-    # semba-fdtd seems to always use the name Far for "far field" probes.
-    far_field_probe_files = solver.getSolvedProbeFilenames("FF")
+    far_field_probe_files = solver.getSolvedProbeFilenames("far")
     assert len(far_field_probe_files) == 1
     p = Probe(far_field_probe_files[0])
     assert p.type == 'farField'
