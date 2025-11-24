@@ -2796,7 +2796,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       integer(kind=4) :: conta !para realmente dar tangenciales de campos en los medios superficiales
       character(len=*), INTENT(in) :: wiresflavor
       integer, dimension(:) :: pointObservationCases(6), blockCurrentObservationCases(6), FrequencyPointObservables(8), FrequencyCurrentObservables(4)
-      real(RKIND), pointer :: fld(:,:,:), fieldReference(:,:,:), xField(:,:,:), yField(:,:,:), zField(:,:,:)
+      real(RKIND), pointer :: fieldReference(:,:,:), xField(:,:,:), yField(:,:,:), zField(:,:,:)
       complex(kind=CKIND), pointer, dimension(:) :: auxExp
 
       type(CurrentSegments), pointer  ::  segmDumm !segmento de hilo que se observa si lo hubiere
@@ -2831,15 +2831,15 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
             if (SGG%Observation(ii)%TimeDomain) then
               if (any(field == pointObservationCases)) then 
                 selectcase (field)
-                case (iEx); fld => Ex
-                case (iEy); fld => Ey
-                case (iEz); fld => Ez
-                case (iHx); fld => Hx
-                case (iHy); fld => Hy
-                case (iHz); fld => Hz
+                case (iEx); fieldReference => Ex
+                case (iEy); fieldReference => Ey
+                case (iEz); fieldReference => Ez
+                case (iHx); fieldReference => Hx
+                case (iHy); fieldReference => Hy
+                case (iHz); fieldReference => Hz
                 end select
                 output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND
-                output(ii)%item(i)%valor(nTime - nInit) = fld(I1, J1, K1)
+                output(ii)%item(i)%valor(nTime - nInit) = fieldReference(I1, J1, K1)
               else if (any(field == blockCurrentObservationCases)) then 
                 i1_m = I1
                 i2_m = I2
@@ -2959,7 +2959,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                     output(ii)%item(i)%valor5(nTime - nInit) = output(ii)%item(i)%valor3(nTime - nInit) - output(ii)%item(i)%valor4(nTime - nInit)
 
                   else
-!!saco el potencial calculado con E*delta !051115 !!y aniado el vdrop antinugo porque la Z se hacien bien con este 030719
+                    !!saco el potencial calculado con E*delta !051115 !!y aniado el vdrop antinugo porque la Z se hacien bien con este 030719
                     output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valorsigno* &
                                                               SegmDumm%currentpast
                     output(ii)%item(i)%valor2(nTime - nInit) = -SegmDumm%Efield_wire2main*SegmDumm%delta
@@ -3050,28 +3050,27 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 if (mod(Ntimeforvolumic, output(ii)%Trancos) == 0) then
                   Ntimeforvolumic = Ntimeforvolumic/output(ii)%Trancos
                   if (((at >= sgg%OBSERVATION(ii)%InitialTime) .and. (at <= sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND))) then
+                    select case(field)
+                    case (iMEC)
+                      xField => Ex
+                      yField => Ey
+                      zField => Ez
+                    case (iMHC)
+                      xField => Hx
+                      yField => Hy
+                      zField => Hz
+                    end select
                     do KKK = k1, k2
                     if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
                       k1t = int(kkk/output(ii)%item(i)%Ztrancos)
-                      KKK_m = KKK
                       do JJJ = j1, j2
                       if (mod(jjj, output(ii)%item(i)%Ytrancos) == 0) then
                         j1t = int(jjj/output(ii)%item(i)%Ytrancos)
-                        JJJ_m = JJJ
                         do III = i1, i2
                         if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
                           i1t = int(iii/output(ii)%item(i)%Xtrancos)
-                          III_m = III
-                          selectcase(field)
-                          case(iMEC)
                           output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) =  &
-                          &    sqrt(Ex(III_m, JJJ_m, KKK_m)**2.0_RKIND + Ey(III_m, JJJ_m, KKK_m)**2.0_RKIND + &
-                          Ez(III_m, JJJ_m, KKK_m)**2.0_RKIND)
-                          case(iMHC)
-                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) =  &
-                          &    sqrt(Hx(III_m, JJJ_m, KKK_m)**2.0_RKIND + Hy(III_m, JJJ_m, KKK_m)**2.0_RKIND + &
-                          Hz(III_m, JJJ_m, KKK_m)**2.0_RKIND)
-                          end select
+                              sqrt(xField(III, JJJ, KKK)**2.0_RKIND + yField(III, JJJ, KKK)**2.0_RKIND + zField(III, JJJ, KKK)**2.0_RKIND)
                         end if
                         end do
                       end if
@@ -3173,6 +3172,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                                 output( ii)%item( i)%Serialized%valor_Ex(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEx,HField)
                                 output( ii)%item( i)%Serialized%valor_Ey(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEy,HField)
                                 output( ii)%item( i)%Serialized%valor_Ez(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iEz,HField)
+
                                 output( ii)%item( i)%Serialized%valor_Hx(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHx,HField)
                                 output( ii)%item( i)%Serialized%valor_Hy(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHy,HField)
                                 output( ii)%item( i)%Serialized%valor_Hz(Ntimeforvolumic,conta) = interpolate_field_atwhere(sgg,Ex,Ey,Ez,Hx,Hy,Hz,iii, jjj, kkk, iHz,HField)
@@ -3202,7 +3202,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                            !!!
                     if (field == mapvtk) then
                       INIT = .false.; geom = .false.; asigna = .true.; magnetic = .true.; electric = .false.
-  call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
+                      call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                     init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
                     end if
                            !!!
