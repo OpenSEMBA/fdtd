@@ -2,7 +2,7 @@
     "_format": "FDTD Input file",
     "general": {
         "timeStep": 3.85167e-11,
-        "numberOfSteps": 2500
+        "numberOfSteps": 1
     },
     "boundary": {
         "all": {
@@ -144,7 +144,7 @@
     "materials": [
         {
             "id": 1,
-            "type": "pec"
+            "type": "conformalPec"
         }
     ],
     "materialAssociations": [
@@ -191,9 +191,9 @@
             },
             "domain": {
                 "type": "frequency",
-                "initialFrequency": 3e8,
-                "finalFrequency": 2.4e11,
-                "numberOfFrequencies": 1,
+                "initialFrequency": 3e9,
+                "finalFrequency": 2.5e11,
+                "numberOfFrequencies": 100,
                 "frequencySpacing": "logarithmic"
             }
         },

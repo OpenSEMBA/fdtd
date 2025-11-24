@@ -171,7 +171,7 @@ contains
       allocate(edges(0))
       block
          type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour, sides_on_edge
-         type(triangle_t), dimension(:), allocatable :: tris
+         type(triangle_t), dimension(:), allocatable :: tris, tris_on_face
          type(interval_t), dimension(:), allocatable :: intervals
          do i = 1, size(cell_map%keys)
             cell = cell_map%keys(i)%cell 
@@ -183,7 +183,8 @@ contains
                contour = findLargestContour(sides_on_face)
                call fillFaceFromContour(contour, faces)
                call fillEdgesFromContour(contour, edges)
-               call fillFullFaces(getTrianglesOnFace(tris, face), faces, edges)
+               tris_on_face = getTrianglesOnFace(tris, face)
+               call fillFullFaces(tris_on_face, faces, edges)
             end do
             call fillIntervals(intervals,edges, faces)
          end do
