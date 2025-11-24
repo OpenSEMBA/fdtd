@@ -12,7 +12,8 @@ add_library (conformal_test_fortran
 
 target_link_libraries(conformal_test_fortran
     conformal 
-    fhash 
+    fhash
+    semba-main
 )
 
 add_library(conformal_tests "conformal_tests.cpp")
