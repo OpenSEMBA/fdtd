@@ -1,7 +1,7 @@
 module geometry_mod
 
     use conformal_types_mod
-    
+
 contains
 
     function getArea(triangle) result(res)
@@ -60,6 +60,7 @@ contains
         type(side_t), dimension(:), allocatable, intent(in) :: contour
         integer :: res
         integer :: i 
+        res = NOT_ON_FACE
         do i = 1, size(contour)
             if (contour(i)%isOnAnyFace()) then 
                 res = contour(i)%getFace()
@@ -340,15 +341,20 @@ contains
         if (x_prod(face) < 0) isClockwise = .false.
     end function
 
-    function contourArea(contour) result(res)
+    function contourArea(contour, orientation) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: contour
         type(side_t), dimension(:), allocatable :: aux_contour
+        integer, optional :: orientation
         real :: res
         integer :: face, i, dir1,dir2
-        do i = 1, size(contour)
-            face = contour(i)%getFace()
-            if (face /= NOT_ON_FACE) exit
-        end do
+        if (present(orientation)) then 
+            face = orientation
+        else
+            do i = 1, size(contour)
+                face = contour(i)%getFace()
+                if (face /= NOT_ON_FACE) exit
+            end do
+        end if
         allocate(aux_contour(size(contour)))
         aux_contour = contour
         if (isClockwise(contour(1), face)) then 

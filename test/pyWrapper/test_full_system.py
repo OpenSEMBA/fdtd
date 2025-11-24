@@ -279,7 +279,7 @@ def test_sphere(tmp_path):
     solver.run()
 
     # semba-fdtd seems to always use the name Far for "far field" probes.
-    far_field_probe_files = solver.getSolvedProbeFilenames("Far")
+    far_field_probe_files = solver.getSolvedProbeFilenames("FF")
     assert len(far_field_probe_files) == 1
     p = Probe(far_field_probe_files[0])
     assert p.type == 'farField'
@@ -1027,17 +1027,70 @@ def test_negative_offset_in_x(tmp_path):
     assert np.corrcoef(probeL['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
     
-@pytest.mark.skip(reason="work in progress")
+def test_conformal_impedance_cylinder(tmp_path):
+    case_name = 'conformal_impedance_cylinder_conformal'
+    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.cleanUp()
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
+
+    case_name = 'conformal_impedance_cylinder_staircase'
+    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.cleanUp()
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
+    
+    #discrete fourier transforms
+    exc_file = "predefinedExcitation.1.exc"
+    exc = pd.read_csv(exc_file, sep='\\s+')
+    exc = exc.rename(columns={
+        exc.columns[0]: 'time',
+        exc.columns[1]: 'V'
+    })
+    new_freqs = np.geomspace(1e3, 1e7, num=100)
+    Vexc = exc["V"].to_numpy()
+    texc = exc["time"].to_numpy()
+    dt_exc = texc[1]-texc[0]
+    Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
+
+    Ibulk = bulk["current"].to_numpy()
+    tbulk = bulk["time"].to_numpy()
+    dt_bulk = tbulk[1]-tbulk[0]
+    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
+
+    Ibulk_conf = bulk_conf["current"].to_numpy()
+    tbulk_conf = bulk_conf["time"].to_numpy()
+    dt_bulk_conf = tbulk_conf[1]-tbulk_conf[0]
+    Ifbulk_conf = dt_bulk_conf*np.array([np.sum(Ibulk_conf * np.exp(-1j * 2 * np.pi * f * tbulk_conf)) for f in new_freqs])
+
+    #impedance comparison
+    assert np.allclose(np.abs(Vfexc/Ifbulk), np.abs(Vfexc/Ifbulk_conf), rtol=0.01, atol=0.001)
+
+    
 def test_conformal_sphere_rcs(tmp_path):
-    case_name = 'conformal_sphere_30'
+    case_name = 'conformal_sphere_rcs'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path, flags=['-mapvtk','-n 1'])
+                  run_in_folder=tmp_path)
     solver.run()
     assert solver.hasFinishedSuccessfully()
 
-    far  = Probe(solver.getSolvedProbeFilenames("FarField")[0])
-    f = far['freq']
-    # assert()
+    far  = Probe(solver.getSolvedProbeFilenames("n2f")[0])
+    ra = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'rcs_arit']
+    rg = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'rcs_geom']
+    ffar  = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'freq']
+    
+    # analytical RCS
+    f = np.linspace(1e7,7e8,200)
+    r = 0.5 # in meters
+    rcs = RCS(fspace=f, radius=r)
+    # simulated, interpolated to analytical frequencies
+    rcs_interp = np.interp(f,ffar,rg)
+
+    assert np.allclose(rcs[5:150], rcs_interp[5:150], rtol=0.25, atol=0.15)
     
 
 def test_conformal_delay(tmp_path):

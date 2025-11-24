@@ -613,6 +613,7 @@ contains
          if (.not. associated(regions)) then 
             allocate(regions(1))
             regions(1)%triangles = region%triangles
+            regions(1)%intervals = region%intervals
             regions(1)%tag = tagName
          else 
             allocate(aux(size(regions) + 1))
@@ -620,6 +621,7 @@ contains
                aux(i) = regions(i)
             end do
             aux(size(regions) + 1)%triangles = region%triangles
+            aux(size(regions) + 1)%intervals = region%intervals
             aux(size(regions) + 1)%tag  = tagName
             deallocate(regions)
             

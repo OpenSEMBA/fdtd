@@ -638,6 +638,7 @@ module  FDETYPES
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
       integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
    end type
+      
 
    type :: constants_t
       real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2

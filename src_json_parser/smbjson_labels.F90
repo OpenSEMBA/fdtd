@@ -155,6 +155,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_CELL_INTERVALS = "intervals"
    character (len=*), parameter :: J_ELEM_TYPE_CONF_VOLUME = "conformalVolume"
    character (len=*), parameter :: J_CONF_VOLUME_TRIANGLES = "triangles"
+   character (len=*), parameter :: J_CONF_VOLUME_INTERVALS = "intervals"
 
    ! type(NFDEGeneral)
    character (len=*), parameter :: J_GENERAL = "general"

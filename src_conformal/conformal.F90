@@ -1,11 +1,13 @@
 module conformal_mod
 
-    use geometry_mod
-    use cell_map_mod
-    use NFDETypes, only: ConformalPECRegions, ConformalPECElements, ConformalMedia_t, edge_t, face_t, conformal_face_media_t, conformal_edge_media_t, rkind
-
-    real (kind=rkind), PARAMETER :: EDGE_RATIO_EQ_TOLERANCE = 1e-5
-    real (kind=rkind), PARAMETER :: FACE_RATIO_EQ_TOLERANCE = 1e-3
+   use geometry_mod
+   use cell_map_mod
+   use NFDETypes, only: ConformalPECRegions, ConformalPECElements, ConformalMedia_t, & 
+                        edge_t, face_t, & 
+                        conformal_face_media_t, conformal_edge_media_t, rkind
+   
+   real (kind=rkind), PARAMETER :: EDGE_RATIO_EQ_TOLERANCE = 1e-5
+   real (kind=rkind), PARAMETER :: FACE_RATIO_EQ_TOLERANCE = 1e-3
 
 contains
 
@@ -40,7 +42,7 @@ contains
       type(face_t), dimension(:), allocatable :: faces, filtered_faces
       integer :: i
       
-      call buildCellMap(cell_map, volume%triangles)
+      call buildCellMap(cell_map, volume)
       call fillElements(cell_map, faces, edges)
       call addNewRatios(edges, faces, edge_ratios, face_ratios)
       res%edge_media => addEdgeMedia(edges, edge_ratios)
@@ -108,9 +110,9 @@ contains
    function computeTimeStepScalingFactor(edges_media, faces_media) result(res)
       TYPE (conformal_face_media_t), dimension(:), intent(in), pointer :: faces_media
       TYPE (conformal_edge_media_t), dimension(:), intent(in), pointer :: edges_media
-      real (kind=rkind) :: res, l_ratio 
-      type(cell_ratios_map_t) :: cell_ratio_map
-      type(cell_ratios_t) :: cell_ratio_info
+      real (kind=rkind) :: res, l_ratio, area
+      type (cell_ratios_map_t) :: cell_ratio_map
+      type (cell_ratios_t) :: cell_ratio_info
       integer (kind=4), dimension(3) :: cell, aux_cell
       integer :: idx1, idx2
       integer :: i,j
@@ -170,10 +172,12 @@ contains
       block
          type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour, sides_on_edge
          type(triangle_t), dimension(:), allocatable :: tris
+         type(cell_interval_t), dimension(:), allocatable :: intervals
          do i = 1, size(cell_map%keys)
             cell = cell_map%keys(i)%cell 
             sides = cell_map%getSidesInCell(cell)
             tris =  cell_map%getTrianglesInCell(cell)
+            intervals = cell_map%getIntervalsInCell(cell)
             do face = FACE_X, FACE_Z
                sides_on_face = getSidesOnFace(sides, face)
                contour = findLargestContour(sides_on_face)
@@ -181,6 +185,7 @@ contains
                call fillEdgesFromContour(contour, edges)
                call fillFullFaces(getTrianglesOnFace(tris, face), faces, edges)
             end do
+            call fillIntervals(intervals,edges, faces)
          end do
       end block
 
@@ -202,6 +207,52 @@ contains
             end do
          end do
       end block
+   end subroutine
+
+   function buildSidesFromCellInterval(interval) result(res)
+      type(cell_interval_t) :: interval
+      integer :: face
+      type(side_t), dimension(4) :: res
+      type(side_t) :: aux
+      type(coord_t), dimension(4) :: cs
+      aux%init%position = interval%ini%cell
+      aux%end%position = interval%end%cell
+      face = aux%getFace()
+      cs(1)%position = aux%getCell()
+      select case(face)
+      case(FACE_X)
+         cs(2)%position = cs(1)%position + [0,1,0]
+         cs(3)%position = cs(1)%position + [0,1,1]
+         cs(4)%position = cs(1)%position + [0,0,1]
+      case(FACE_Y)
+         cs(2)%position = cs(1)%position + [0,0,1]
+         cs(3)%position = cs(1)%position + [1,0,1]
+         cs(4)%position = cs(1)%position + [1,0,0]
+      case(FACE_Z)
+         cs(2)%position = cs(1)%position + [1,0,0]
+         cs(3)%position = cs(1)%position + [1,1,0]
+         cs(4)%position = cs(1)%position + [0,1,0]
+      end select
+      res(1)%init = cs(1)
+      res(1)%end  = cs(2)
+      res(2)%init = cs(2)
+      res(2)%end =  cs(3)
+      res(3)%init = cs(3)
+      res(3)%end  = cs(4)
+      res(4)%init = cs(4)
+      res(4)%end  = cs(1)
+   end function
+
+   subroutine fillIntervals(intervals, edges, faces)
+      type(cell_interval_t), dimension(:), allocatable :: intervals
+      type (edge_t), dimension (:), allocatable, intent(inout) :: edges
+      type (face_t), dimension (:), allocatable, intent(inout) :: faces
+      integer :: i
+      type(side_t), dimension(:), allocatable :: contour
+      do i = 1, size(intervals) 
+         call fillEdgesFromInterval(edges, intervals(i))
+         call fillFaceFromInterval(faces, intervals(i))
+      end do
    end subroutine
 
    subroutine fillFullFaces(tris_on_face, faces, edges)
@@ -235,12 +286,10 @@ contains
    subroutine fillEdgesFromContour(contour, edges)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
-      real :: edge_ratio
       integer :: i, edge
       do i = 1, size(contour)
          edge = contour(i)%getEdge()
          if (edge /= NOT_ON_EDGE) then 
-            edge_ratio = 1.0 - contour(i)%length()
             if (isEdgeFilled(edges, contour(i)%getCell(), edge)) then 
                call fillSmallerRatio(edges, contour(i)%getCell(), edge, contour(i))
             else 
@@ -266,17 +315,38 @@ contains
       end do
    end subroutine
 
+   subroutine fillEdgesFromInterval(edges, interval)
+      type (edge_t), dimension (:), allocatable :: edges
+      type(cell_interval_t), intent(in) :: interval
+      integer :: i, edge
+      type(side_t), dimension(4) :: sides
+      sides = buildSidesFromCellInterval(interval)
+      do i = 1, size(sides)
+         edge = sides(i)%getEdge()
+         if (edge /= NOT_ON_EDGE) then 
+            if (isEdgeFilled(edges, sides(i)%getCell(), edge)) then 
+               call fillSmallerRatio(edges, sides(i)%getCell(), edge, sides(i))
+            else 
+               call addEdge(edges, sides(i)%getCell(), edge, sides(i))
+            end if
+         end if
+      end do
+   end subroutine
+
+   subroutine fillFaceFromInterval(faces, interval)
+      type (face_t), dimension (:), allocatable :: faces
+      type(cell_interval_t), intent(in) :: interval
+      type(side_t) :: aux
+      aux%init%position = interval%ini%cell
+      aux%end%position = interval%end%cell
+      call addFace(faces, aux%getCell(), aux%getFace(), 0.0)
+   end subroutine
+
    subroutine fillFaceFromContour(contour, faces)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type (face_t), dimension (:), allocatable :: faces
-      integer :: face
-      integer (kind=4), dimension(3) :: cell
-      real :: face_ratio
       if (size(contour) /= 0) then 
-         face = findContourFace(contour)
-         cell = findContourCell(contour)
-         face_ratio = 1.0 - contourArea(contour)
-         call addFace(faces, cell, face, face_ratio)
+         call addFace(faces, findContourCell(contour), findContourFace(contour), 1.0 - contourArea(contour))
       end if
    end subroutine
 

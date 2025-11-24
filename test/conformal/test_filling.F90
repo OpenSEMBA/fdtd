@@ -20,7 +20,6 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     type(ConformalPECRegions) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
-
     err = 0
     c1 = coord_t(position = [0.75,0.0,0.0],  id = 1)
     c2 = coord_t(position = [0.75,0.0,1.0],  id=  2)
@@ -32,6 +31,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(1))
+    allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(1) = tris(1)
 
     cMs = buildConformalMedia(cR)
@@ -120,6 +120,8 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(1))
+    allocate(cR%volumes(1)%intervals(0))
+
     cR%volumes(1)%triangles(1) = tris(1)
 
     cMs = buildConformalMedia(cR)
@@ -196,6 +198,7 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
     type(ConformalPECRegions) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
+    
 
     err = 0
     c1 = coord_t(position = [0.0,0.0,0.75],  id = 1)
@@ -208,6 +211,8 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(1))
+    allocate(cR%volumes(1)%intervals(0))
+
     cR%volumes(1)%triangles(1) = tris(1)
 
     cMs = buildConformalMedia(cR)
@@ -286,6 +291,7 @@ integer function test_conformal_filling_open() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
+    
 
     err = 0
     c1 = coord_t(position = [0.6,0.0,0.0],   id = 1)
@@ -297,6 +303,7 @@ integer function test_conformal_filling_open() bind(C) result(err)
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(1))
+    allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(1) = tris(1)
 
     cMs = buildConformalMedia(cR)
@@ -345,6 +352,7 @@ integer function test_conformal_filling_closed() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
+    
 
     err = 0
     c1 = coord_t(position = [0.6,0.0,0.0],   id = 1)
@@ -360,6 +368,7 @@ integer function test_conformal_filling_closed() bind(C) result(err)
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(4))
+    allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
     cMs = buildConformalMedia(cR)
@@ -399,6 +408,7 @@ integer function  test_conformal_edge_next_cell() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
+    
 
     err = 0
     c1 = coord_t(position = [0.0,0.25,0.0], id = 1)
@@ -420,6 +430,7 @@ integer function  test_conformal_edge_next_cell() bind(C) result(err)
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(8))
+    allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
     cMs = buildConformalMedia(cR)
@@ -470,6 +481,7 @@ integer function test_conformal_filling_closed_corner() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
+    
 
     err = 0
     c1 = coord_t(position = [0.0,0.0,0.0], id = 1)
@@ -491,6 +503,7 @@ integer function test_conformal_filling_closed_corner() bind(C) result(err)
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(8))
+    allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
     cMs = buildConformalMedia(cR)
@@ -551,6 +564,7 @@ integer function test_conformal_filling_block_and_corner() bind(C) result(err)
     type(cell_map_t) :: cell_map
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
+    
 
     err = 0
     c1 = coord_t(position = [0.0,0.0,0.0], id = 1)
@@ -584,6 +598,7 @@ integer function test_conformal_filling_block_and_corner() bind(C) result(err)
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(16))
+    allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
     cMs = buildConformalMedia(cR)
@@ -655,6 +670,7 @@ integer function test_conformal_filling_cylinder_base_on_grid_plane() bind(C) re
 
     type(side_map_t) :: side_map
     type(side_t), dimension(:), allocatable :: sides
+    
 
     err = 0
     c(1) = coord_t(position  = [1.0,0.25,0.0], id = 1)
@@ -686,6 +702,7 @@ integer function test_conformal_filling_cylinder_base_on_grid_plane() bind(C) re
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(44))
+    allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
     cMs = buildConformalMedia(cR)

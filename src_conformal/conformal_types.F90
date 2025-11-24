@@ -1,5 +1,7 @@
 module conformal_types_mod
 
+    use cells_mod, only: cell_interval_t
+
     implicit none
     
     integer, parameter :: FACE_X = 1
@@ -110,7 +112,7 @@ contains
         coord_isOnAnyEdge = (this%isOnEdge(EDGE_X) .or. this%isOnEdge(EDGE_Y) .or. this%isOnEdge(EDGE_Z))
     end function
 
-        function side_getCell(this) result(res)
+    function side_getCell(this) result(res)
         class(side_t) :: this
         real, dimension(3) :: c
         integer(kind=4), dimension(3) :: res

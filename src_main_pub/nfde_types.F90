@@ -124,6 +124,7 @@ MODULE NFDETypes
 
    type, public :: ConformalPECElements
       type(triangle_t), dimension(:), allocatable :: triangles
+      type(cell_interval_t), dimension(:), allocatable :: intervals
       character(len=bufsize) :: tag
    end type 
 
@@ -164,6 +165,7 @@ MODULE NFDETypes
       real (kind=rkind) :: time_step_scale_factor = 1.0
       character(len=bufsize) :: tag
    END TYPE ConformalMedia_t
+
 
    !------------------------------------------------------------------------------
    ! Locates all the different PEC media found

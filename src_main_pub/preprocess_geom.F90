@@ -143,9 +143,10 @@ CONTAINS
       sgg%EShared%MaxConta = 10
       ALLOCATE (sgg%EShared%elem(1:sgg%EShared%MaxConta))
 
+
       block 
          integer :: m
-         real :: min_scale_factor = 1.0
+         real :: min_scale_factor = 1.0, dt
          if (associated(this%conformalRegs%volumes)) then 
             conformal_media = buildConformalMedia(this%conformalRegs)
             side_to_triangles_maps = buildSideMaps(this%conformalRegs)
@@ -154,10 +155,15 @@ CONTAINS
                   min_scale_factor = conformal_media(m)%time_step_scale_factor
                end if
             end do
-            write(*,*) 'Conformal lenghts require a time step change'
-            write(*,*) 'Previous time step: ', sgg%dt
-            sgg%dt = sgg%dt*min_scale_factor
-            write(*,*) 'New time step: ', sgg%dt
+            dt = (1.0_RKIND/(cluz*sqrt(((1.0_RKIND / minval(sgg%DX))**2.0_RKIND) + & 
+                                       ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + & 
+                                       ((1.0_RKIND / minval(sgg%DZ))**2.0_RKIND ))))
+            if (sgg%dt > dt*min_scale_factor) then 
+               write(*,*) '-- Conformal geometry requires a time step change'
+               write(*,*) 'Previous time step: ', sgg%dt
+               sgg%dt = dt*min_scale_factor
+               write(*,*) 'New time step: ', sgg%dt
+            end if
          else
             allocate(conformal_media(0))
          end if
@@ -288,6 +294,8 @@ CONTAINS
       ALLOCATE (media%sggMiHx(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE))
       ALLOCATE (media%sggMiHy(Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE))
       ALLOCATE (media%sggMiHz(Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
+
+
       !el tag esta voided porque luego el numero va con el del tag
       media%sggMtag (:, :, :) = 0 !LO VOIDEO A 0 EN VEZ DE A -1 PORQUE EL TAG 0 NO VA A EXISTIR NUNCA 141020
       tag_numbers%edge%x(:,:,:) = 0
@@ -304,6 +312,7 @@ CONTAINS
       media%sggMiHx (:, :, :) = 1
       media%sggMiHy (:, :, :) = 1
       media%sggMiHz (:, :, :) = 1
+      
 
       !planeWaves
       !
@@ -3958,7 +3967,7 @@ CONTAINS
                sgg%observation(ii)%phiStep    =this%oldSONDA%probes(i)%FarField(j)%probe%phiStep
                sgg%observation(ii)%FileNormalize    =this%oldSONDA%probes(i)%FarField(j)%probe%FileNormalize
 
-               sgg%observation(ii)%outputrequest=trim(adjustl(this%oldSONDA%probes(i)%FarField(j)%probe%outputrequest(1:3)))
+               sgg%observation(ii)%outputrequest=trim(adjustl(this%oldSONDA%probes(i)%FarField(j)%probe%outputrequest))
 
                IF ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
@@ -4989,8 +4998,9 @@ CONTAINS
                end select
             end do
          end do
-
       end subroutine
+
+
 
       function getEdgeNormalFromTriangles(triangles) result(res)
          type(triangle_t), dimension(:), allocatable :: triangles
@@ -5040,8 +5050,6 @@ CONTAINS
                if (cell(2) > bbox%ye) bbox%ye = cell(2)
                if (cell(3) < bbox%zi) bbox%zi = cell(3)
                if (cell(3) > bbox%ze) bbox%ze = cell(3)
-
-               key(1:3) = cell
 
                select case(conformal_media%edge_media(j)%edges(k)%direction)
                case(E_X)

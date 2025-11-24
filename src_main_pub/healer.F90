@@ -226,11 +226,11 @@ MODULE CreateMatrices
          integer(kind=4), dimension(:), allocatable :: idx_in, idx_out
          inside_volume = .false.
          crossed = .false.
+         n_crosses = countCrossesX(j,k)
          allocate(idx_in(n_crosses/2))
          allocate(idx_out(n_crosses/2))
          idx_in(:) = 0
          idx_out(:) = 0
-         n_crosses = countCrossesX(j,k)
          do i = BoundingBox%xi, BoundingBox%xe+1
             mE = MMiEx(i,j,k)
             mEPrev = MMiEx(i-1,j,k)
@@ -254,9 +254,11 @@ MODULE CreateMatrices
          do ii = 1, size(idx_in)
             if (idx_in(ii) /= 0 .and. idx_out(ii) /=0) then 
                do i = idx_in(ii), idx_out(ii)-1
-                     MMiEx (i, j, k) = indicemedio
-                     Mtag(i,j,k)=64*numertag 
-                     tags%edge%x(i,j,k) = 64*numertag
+                     if (MMiEx (i, j, k) == 1) then 
+                        MMiEx (i, j, k) = indicemedio
+                        Mtag(i,j,k)=64*numertag 
+                        tags%edge%x(i,j,k) = 64*numertag
+                     end if
                end do
             end if
          end do
@@ -301,11 +303,11 @@ MODULE CreateMatrices
          integer(kind=4), dimension(:), allocatable :: idx_in, idx_out
          inside_volume = .false.
          crossed = .false.
+         n_crosses = countCrossesY(i,k)
          allocate(idx_in(n_crosses/2))
          allocate(idx_out(n_crosses/2))
          idx_in(:) = 0
          idx_out(:) = 0
-         n_crosses = countCrossesY(i,k)
          do j = BoundingBox%yi, BoundingBox%ye+1
             ! crossing PEC boundary
             mE = MMiEy(i,j,k)
@@ -334,9 +336,11 @@ MODULE CreateMatrices
          do jj = 1, size(idx_in)
             if (idx_in(jj) /= 0 .and. idx_out(jj) /=0) then 
                do j = idx_in(jj), idx_out(jj)-1
-                  MMiEy (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%edge%y(i,j,k) = 64*numertag
+                  if (MMiEy (i, j, k) == 1) then 
+                     MMiEy (i, j, k) = indicemedio
+                     Mtag(i,j,k)=64*numertag 
+                     tags%edge%y(i,j,k) = 64*numertag
+                  end if
                end do
             end if
          end do
@@ -370,7 +374,9 @@ MODULE CreateMatrices
             if (crossed) res = res + 1
          end do
          if (res /= 0) then 
-            if (modulo(res,2) /= 0) error stop 'uneven number of crosses'
+            if (modulo(res,2) /= 0) then 
+               error stop 'uneven number of crosses'
+            end if
          end if
       end function
 
@@ -383,11 +389,11 @@ MODULE CreateMatrices
          integer(kind=4), dimension(:), allocatable :: idx_in, idx_out
          inside_volume = .false.
          crossed = .false.
+         n_crosses = countCrossesZ(i,j)
          allocate(idx_in(n_crosses/2))
          allocate(idx_out(n_crosses/2))
          idx_in(:) = 0
          idx_out(:) = 0
-         n_crosses = countCrossesZ(i,j)
          do k = BoundingBox%zi, BoundingBox%ze+1
             ! crossing PEC boundary
             mE = MMiEz(i,j,k)
@@ -414,9 +420,11 @@ MODULE CreateMatrices
          do kk = 1, size(idx_in)
             if (idx_in(kk) /= 0 .and. idx_out(kk) /=0) then 
                do k = idx_in(kk), idx_out(kk)-1
-                  MMiEz (i, j, k) = indicemedio
-                  Mtag(i,j,k)=64*numertag 
-                  tags%edge%z(i,j,k) = 64*numertag
+                  if (MMiEz (i, j, k) == 1) then 
+                     MMiEz (i, j, k) = indicemedio
+                     Mtag(i,j,k)=64*numertag 
+                     tags%edge%z(i,j,k) = 64*numertag
+                  end if
                end do
             end if
          end do
