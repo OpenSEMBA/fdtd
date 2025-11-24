@@ -2795,8 +2795,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       complex(kind=ckind) :: z_cplx
       integer(kind=4) :: conta !para realmente dar tangenciales de campos en los medios superficiales
       character(len=*), INTENT(in) :: wiresflavor
-      integer, dimension(:) :: pointObservationCases(6), blockCurrentObservationCases(6)
-      real(RKIND), pointer :: fld(:,:,:)
+      integer, dimension(:) :: pointObservationCases(6), blockCurrentObservationCases(6), FrequencyPointObservables(8), FrequencyCurrentObservables(4)
+      real(RKIND), pointer :: fld(:,:,:), fieldReference(:,:,:), xField(:,:,:), yField(:,:,:), zField(:,:,:)
+      complex(kind=CKIND), pointer, dimension(:) :: auxExp
 
       type(CurrentSegments), pointer  ::  segmDumm !segmento de hilo que se observa si lo hubiere
       !
@@ -2813,6 +2814,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       at = -1; jx = -1; jy = -1; jz = -1; jdir = -1; jdir1 = -1; jdir2 = -1  !para que gfortran no me diga que no las inicializo
       pointObservationCases = [iEx, iEy, iEz, iHx, iHy, iHz]
       blockCurrentObservationCases = [iBloqueJx, iBloqueJy ,iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz]
+      FrequencyPointObservables = [iMEC, iExC, iEyC, iEzC, iMHC, iHxC, iHyC, iHzC]
+      FrequencyCurrentObservables = [iCur, iCurX, iCurY, iCurZ]
       !---------------------------> empieza UpdateObservation <---------------------------------------
       do ii = 1, sgg%NumberRequest
         loop_obser: do i = 1, sgg%Observation(ii)%nP
@@ -2837,8 +2840,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 end select
                 output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND
                 output(ii)%item(i)%valor(nTime - nInit) = fld(I1, J1, K1)
-              end if
-              if (any(field = blockCurrentObservationCases)) then 
+              else if (any(field == blockCurrentObservationCases)) then 
                 i1_m = I1
                 i2_m = I2
                 j1_m = J1
@@ -2953,8 +2955,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                     output(ii)%item(i)%valor3(nTime - nInit) = output(ii)%item(i)%valorsigno* &
                           (((SegmDumm%ChargePlus%ChargePresent)))*SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
                     output(ii)%item(i)%valor4(nTime - nInit) = output(ii)%item(i)%valorsigno* &
-                         (((SegmDumm%ChargeMinus%ChargePresent)))*SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
-      output(ii)%item(i)%valor5(nTime - nInit) = output(ii)%item(i)%valor3(nTime - nInit) - output(ii)%item(i)%valor4(nTime - nInit)
+                          (((SegmDumm%ChargeMinus%ChargePresent)))*SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
+                    output(ii)%item(i)%valor5(nTime - nInit) = output(ii)%item(i)%valor3(nTime - nInit) - output(ii)%item(i)%valor4(nTime - nInit)
 
                   else
 !!saco el potencial calculado con E*delta !051115 !!y aniado el vdrop antinugo porque la Z se hacien bien con este 030719
@@ -2967,7 +2969,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                     output(ii)%item(i)%valor4(nTime - nInit) = output(ii)%item(i)%valorsigno* &
                                              (((SegmDumm%ChargeMinus%ChargePresent + SegmDumm%ChargeMinus%ChargePast))/2.0_RKIND)* &
                                                                SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
-      output(ii)%item(i)%valor5(nTime - nInit) = output(ii)%item(i)%valor3(nTime - nInit) - output(ii)%item(i)%valor4(nTime - nInit)
+                    output(ii)%item(i)%valor5(nTime - nInit) = output(ii)%item(i)%valor3(nTime - nInit) - output(ii)%item(i)%valor4(nTime - nInit)
 
                   end if
                         !!!!!!!!!!!!!!!!!!
@@ -2985,7 +2987,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                   output(ii)%item(i)%valor4(nTime - nInit) = output(ii)%item(i)%valorsigno* &
                                                 (((SegmDumm_Berenger%ChargeMinus + SegmDumm_Berenger%ChargeMinusPast))/2.0_RKIND)* &
                                                   SegmDumm_Berenger%L*(InvMu(SegmDumm_Berenger%imed)*InvEps(SegmDumm_Berenger%imed))
-      output(ii)%item(i)%valor5(nTime - nInit) = output(ii)%item(i)%valor3(nTime - nInit) - output(ii)%item(i)%valor4(nTime - nInit)
+                  output(ii)%item(i)%valor5(nTime - nInit) = output(ii)%item(i)%valor3(nTime - nInit) - output(ii)%item(i)%valor4(nTime - nInit)
                 end if
 #endif
 #ifdef CompileWithSlantedWires
@@ -2998,7 +3000,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                     (((SegmDumm_Slanted%Voltage(iPlus)%ptr%Voltage + SegmDumm_Slanted%Voltage(iPlus)%ptr%VoltagePast))/2.0_RKIND)
                   output(ii)%item(i)%valor4(nTime - nInit) = &
                     (((SegmDumm_Slanted%Voltage(iMinus)%ptr%Voltage + SegmDumm_Slanted%Voltage(iMinus)%ptr%VoltagePast))/2.0_RKIND)
-      output(ii)%item(i)%valor5(nTime - nInit) = output(ii)%item(i)%valor3(nTime - nInit) - output(ii)%item(i)%valor4(nTime - nInit)
+                  output(ii)%item(i)%valor5(nTime - nInit) = output(ii)%item(i)%valor3(nTime - nInit) - output(ii)%item(i)%valor4(nTime - nInit)
                 end if
 #endif
                 !Volumic probes
@@ -3010,6 +3012,14 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 if (mod(Ntimeforvolumic, output(ii)%Trancos) == 0) then
                   Ntimeforvolumic = Ntimeforvolumic/output(ii)%Trancos
                   if (((at >= sgg%OBSERVATION(ii)%InitialTime) .and. (at <= sgg%OBSERVATION(ii)%FinalTime + sgg%dt/2.0_RKIND))) then
+                    selectcase(field)
+                    case(iExC); fieldReference => Ex
+                    case(iEyC); fieldReference => Ey
+                    case(iEzC); fieldReference => Ez
+                    case(iHxC); fieldReference => Hx
+                    case(iHyC); fieldReference => Hy
+                    case(iHzC); fieldReference => Hz
+                    end select
                     do KKK = k1, k2
                     if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
                       k1t = int(kkk/output(ii)%item(i)%Ztrancos)
@@ -3022,20 +3032,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                         if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
                           i1t = int(iii/output(ii)%item(i)%Xtrancos)
                           III_m = III
-                          selectcase(field)
-                          case(iExC)
-                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Ex(III_m, JJJ_m, KKK_m)
-                          case(iEyC)
-                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Ey(III_m, JJJ_m, KKK_m)
-                          case(iEzC)
-                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Ez(III_m, JJJ_m, KKK_m)
-                          case(iHxC)
-                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Hx(III_m, JJJ_m, KKK_m)
-                          case(iHyC)
-                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Hy(III_m, JJJ_m, KKK_m)
-                          case(iHzC)
-                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = Hz(III_m, JJJ_m, KKK_m)
-                          end select
+                            output(ii)%item(i)%valor3D(Ntimeforvolumic, i1t, j1t, k1t) = fieldReference(III_m, JJJ_m, KKK_m)
                         end if
                         end do
                       end if
@@ -3225,9 +3222,20 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 output(ii)%auxExp_E(iff1) = sgg%dt*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*output(ii)%Freq(iff1)*at)   !el dt deberia ser algun tipo de promedio pero no me complico permit scaling 211118
                 output(ii)%auxExp_H(iff1) = output(ii)%auxExp_E(iff1)*Exp(mcpi2*output(ii)%Freq(iff1)*sgg%dt*0.5_RKIND)
               end do
-              select case (field)
-              case (iMEC, iExC, iEyC, iEzC) !como los tengo que guardar todas las componentes cartesianas solo variara el output final en el .xdmf
-                !                    if (at > sgg%OBSERVATION(ii)%FinalTime+sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done=.true.
+              if (any(field == FrequencyPointObservables)) then
+                select case (field)
+                case (iMEC, iExC, iEyC, iEzC)
+                  auxExp => output(ii)%auxExp_E
+                  xField => Ex
+                  yField => Ey
+                  zField => Ez
+                case (iMHC, iHxC, iHyC, iHzC)
+                  auxExp => output(ii)%auxExp_H
+                  xField => Hx
+                  yField => Hy
+                  zField => Hz
+                end select
+
                 if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
                 do KKK = k1, k2
                 if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
@@ -3242,9 +3250,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                       i1t = int(iii/output(ii)%item(i)%Xtrancos)
                       III_m = III
                       do if1 = 1, output(ii)%NumFreqs
-                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t), output(ii)%auxExp_E(if1), Ex(III_m, JJJ_m, KKK_m))
-                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t), output(ii)%auxExp_E(if1), Ey(III_m, JJJ_m, KKK_m))
-                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t), output(ii)%auxExp_E(if1), Ez(III_m, JJJ_m, KKK_m))
+                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t), auxExp(if1), xField(III_m, JJJ_m, KKK_m))
+                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t), auxExp(if1), yField(III_m, JJJ_m, KKK_m))
+                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t), auxExp(if1), zField(III_m, JJJ_m, KKK_m))
                       end do
                     end if
                     end do
@@ -3252,33 +3260,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                   end do
                 end if
                 end do
-              case (iMHC, iHxC, iHyC, iHzC)
-                if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
-                do KKK = k1, k2
-                if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
-                  k1t = int(kkk/output(ii)%item(i)%Ztrancos)
-                  KKK_m = KKK
-                  do JJJ = j1, j2
-                  if (mod(jjj, output(ii)%item(i)%Ytrancos) == 0) then
-                    j1t = int(jjj/output(ii)%item(i)%Ytrancos)
-                    JJJ_m = JJJ
-                    do III = i1, i2
-                    if (mod(iii, output(ii)%item(i)%Xtrancos) == 0) then
-                      i1t = int(iii/output(ii)%item(i)%Xtrancos)
-                      III_m = III
-                      do if1 = 1, output(ii)%NumFreqs
-                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t), output(ii)%auxExp_H(if1), Hx(III_m, JJJ_m, KKK_m))
-                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t), output(ii)%auxExp_H(if1), Hy(III_m, JJJ_m, KKK_m))
-                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t), output(ii)%auxExp_H(if1), Hz(III_m, JJJ_m, KKK_m))
-                      end do
-                    end if
-                    end do
-                  end if
-                  end do
-                end if
-                end do
-                !sondas corriente 20/2/14
-              case (iCur, iCurX, iCurY, iCurZ)
+              else if (any(field == FrequencyCurrentObservables)) then 
                 if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
                 conta = 0 !en el mismo orden que se allocatearon
                 do KKK = k1, k2
@@ -3343,13 +3325,13 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                             output(ii)%item(i)%Serialized%valorComplex_z(conta, if1) = &
                                              merge(z_cplx, output( ii)%item( i)%Serialized%valorComplex_z(conta, if1)+output( ii)%auxExp_H(if1)*merge(jdir1, jdir2, HField == iHy), Hfield == iHz)
 
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Hfield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Hfield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Hfield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Hfield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Hfield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Hfield))
                             
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Hfield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Hfield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Hfield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Hfield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Hfield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Hfield))
                              !!!!!!!!!!!!esto dara problemas en los angulos y aristas donde porque ahi sacara la Bloque current en Hx!!!! 19/2/14
                           end do
                         end if
@@ -3358,10 +3340,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                     end do
                   end do
                 end do
-                    
-
-                     !!!!!!!!fin sondas corriente
-              end select
+              end if
 
             end if !time domain
           end if !del nothing
