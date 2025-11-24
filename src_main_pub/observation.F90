@@ -2795,7 +2795,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       complex(kind=ckind) :: z_cplx
       integer(kind=4) :: conta !para realmente dar tangenciales de campos en los medios superficiales
       character(len=*), INTENT(in) :: wiresflavor
-      integer, dimension(:) :: pointObservationCases(6)
+      integer, dimension(:) :: pointObservationCases(6), blockCurrentObservationCases(6)
       real(RKIND), pointer :: fld(:,:,:)
 
       type(CurrentSegments), pointer  ::  segmDumm !segmento de hilo que se observa si lo hubiere
@@ -2812,6 +2812,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
 
       at = -1; jx = -1; jy = -1; jz = -1; jdir = -1; jdir1 = -1; jdir2 = -1  !para que gfortran no me diga que no las inicializo
       pointObservationCases = [iEx, iEy, iEz, iHx, iHy, iHz]
+      blockCurrentObservationCases = [iBloqueJx, iBloqueJy ,iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz]
       !---------------------------> empieza UpdateObservation <---------------------------------------
       do ii = 1, sgg%NumberRequest
         loop_obser: do i = 1, sgg%Observation(ii)%nP
@@ -2836,184 +2837,79 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 end select
                 output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND
                 output(ii)%item(i)%valor(nTime - nInit) = fld(I1, J1, K1)
-              end if 
-              selectcase (field)
-              case (iEx)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
+              end if
+              if (any(field = blockCurrentObservationCases)) then 
                 i1_m = I1
-                j1_m = J1
-                k1_m = K1
-                output(ii)%item(i)%valor(nTime - nInit) = Ex(i1_m, j1_m, k1_m)
-              case (iEy)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                i1_m = I1
-                j1_m = J1
-                k1_m = K1
-                output(ii)%item(i)%valor(nTime - nInit) = Ey(i1_m, j1_m, k1_m)
-              case (iEz)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                i1_m = I1
-                j1_m = J1
-                k1_m = K1
-                output(ii)%item(i)%valor(nTime - nInit) = Ez(i1_m, j1_m, k1_m)
-              case (iHx)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                i1_m = I1
-                j1_m = J1
-                k1_m = K1
-                output(ii)%item(i)%valor(nTime - nInit) = Hx(i1_m, j1_m, k1_m)
-              case (iHy)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                i1_m = I1
-                j1_m = J1
-                k1_m = K1
-                output(ii)%item(i)%valor(nTime - nInit) = Hy(i1_m, j1_m, k1_m)
-              case (iHz)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                i1_m = I1
-                j1_m = J1
-                k1_m = K1
-                output(ii)%item(i)%valor(nTime - nInit) = Hz(i1_m, j1_m, k1_m)
-              case (iBloqueJx)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                i1_m = I1
-                j1_m = J1
-                k1_m = K1
-                k2_m = K2
-                do JJJ = j1, j2
-                  JJJ_m = JJJ
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (Hy(i1_m, JJJ_m, k1_m - 1) - Hy(i1_m, JJJ_m, k2_m))*dyh(JJJ_m)
-                end do
-                !--->
-                i1_m = I1
+                i2_m = I2
                 j1_m = J1
                 j2_m = J2
-                do KKK = k1, k2
-                  KKK_m = KKK
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (-Hz(i1_m, j1_m - 1, KKK_m) + Hz(i1_m, j2_m, KKK_m))*dzh(KKK_m)
-                end do
-              case (iBloqueJy)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                i1_m = I1
-                j1_m = J1
-                i2_m = I2
-                do KKK = k1, k2
-                  KKK_m = KKK
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (-Hz(i2_m, j1_m, KKK_m) + Hz(i1_m - 1, j1_m, KKK_m))*dzh(KKK_m)
-                end do
-                !--->
-                j1_m = J1
                 k1_m = K1
                 k2_m = K2
-                do III = i1, i2
-                  III_m = III
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (Hx(III_m, j1_m, k2_m) - Hx(III_m, j1_m, k1_m - 1))*dxh(III_m)
-                end do
-              case (iBloqueJz)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                j1_m = J1
-                k1_m = K1
-                j2_m = J2
-                do III = i1, i2
-                  III_m = III
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (Hx(III_m, j1_m - 1, k1_m) - Hx(III_m, j2_m, k1_m))*dxh(III_m)
-                end do
-                !--->
-                i1_m = I1
-                k1_m = K1
-                i2_m = I2
-                do JJJ = j1, j2
-                  JJJ_m = JJJ
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (-Hy(i1_m - 1, JJJ_m, k1_m) + Hy(i2_m, JJJ_m, k1_m))*dyh(JJJ_m)
-                end do
-              case (iBloqueMx)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                i1_m = I1
-                k1_m = K1
-                k2_m = K2
-                do JJJ = j1, j2
-                  JJJ_m = JJJ
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (-Ey(i1_m, JJJ_m, k1_m) + Ey(i1_m, JJJ_m, k2_m + 1))*dye(JJJ_m)
-                end do
-                !--->
-                i1_m = I1
-                j1_m = J1
-                j2_m = J2
-                do KKK = k1, k2
-                  KKK_m = KKK
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (Ez(i1_m, j1_m, KKK_m) - Ez(i1_m, j2_m + 1, KKK_m))*dze(KKK_m)
-                end do
-              case (iBloqueMy)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                i1_m = I1
-                j1_m = J1
-                i2_m = I2
-                do KKK = k1, k2
-                  KKK_m = KKK
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (Ez(i2_m + 1, j1_m, KKK_m) - Ez(i1_m, j1_m, KKK_m))*dze(KKK_m)
-                end do
-                !--->
-                j1_m = J1
-                k1_m = K1
-                k2_m = K2
-                do III = i1, i2
-                  III_m = III
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (-Ex(III_m, j1_m, k2_m + 1) + Ex(III_m, j1_m, k1_m))*dxe(III_m)
-                end do
-              case (iBloqueMz)
-                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND !wipe value
-                j1_m = J1
-                k1_m = K1
-                j2_m = J2
-                do III = i1, i2
-                  III_m = III
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (-Ex(III_m, j1_m, k1_m) + Ex(III_m, j2_m + 1, k1_m))*dxe(III_m)
-                end do
-                !--->
-                i1_m = I1
-                k1_m = K1
-                i2_m = I2
-                do JJJ = j1, j2
-                  JJJ_m = JJJ
-                  !--->
-                  output(ii)%item(i)%valor(nTime - nInit) = &
-                    output(ii)%item(i)%valor(nTime - nInit) + &
-                    (Ey(i1_m, JJJ_m, k1_m) - Ey(i2_m + 1, JJJ_m, k1_m))*dye(JJJ_m)
-                end do
+                output(ii)%item(i)%valor(nTime - nInit) = 0.0_RKIND
+                selectcase (field)
+                case (iBloqueJx)
+                  do JJJ = j1, j2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (Hy(i1_m, JJJ, k1_m - 1) - Hy(i1_m, JJJ, k2_m)) * dyh(JJJ)
+                  end do
+                  do KKK = k1, k2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (-Hz(i1_m, j1_m - 1, KKK) + Hz(i1_m, j2_m, KKK)) * dzh(KKK)
+                  end do
 
+                case (iBloqueJy)
+                  do KKK = k1, k2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (-Hz(i2_m, j1_m, KKK) + Hz(i1_m - 1, j1_m, KKK)) * dzh(KKK)
+                  end do
+                  do III = i1, i2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (Hx(III, j1_m, k2_m) - Hx(III, j1_m, k1_m - 1)) * dxh(III)
+                  end do
+
+                case (iBloqueJz)
+                  do III = i1, i2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (Hx(III, j1_m - 1, k1_m) - Hx(III, j2_m, k1_m)) * dxh(III)
+                  end do
+                  do JJJ = j1, j2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (-Hy(i1_m - 1, JJJ, k1_m) + Hy(i2_m, JJJ, k1_m)) * dyh(JJJ)
+                  end do
+
+                case (iBloqueMx)
+                  do JJJ = j1, j2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (-Ey(i1_m, JJJ, k1_m) + Ey(i1_m, JJJ, k2_m + 1)) * dye(JJJ)
+                  end do
+                  do KKK = k1, k2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (Ez(i1_m, j1_m, KKK_m) - Ez(i1_m, j2_m + 1, KKK_m)) * dze(KKK_m)
+                  end do
+
+                case (iBloqueMy)
+                  do KKK = k1, k2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (Ez(i2_m + 1, j1_m, KKK) - Ez(i1_m, j1_m, KKK)) * dze(KKK)
+                  end do
+                  do III = i1, i2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (-Ex(III, j1_m, k2_m + 1) + Ex(III, j1_m, k1_m)) * dxe(III)
+                  end do
+
+                case (iBloqueMz)
+                  do III = i1, i2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (-Ex(III, j1_m, k1_m) + Ex(III, j2_m + 1, k1_m)) * dxe(III)
+                  end do
+                  do JJJ = j1, j2
+                    output(ii)%item(i)%valor(nTime - nInit) = output(ii)%item(i)%valor(nTime - nInit) + &
+                      (Ey(i1_m, JJJ, k1_m) - Ey(i2_m + 1, JJJ, k1_m)) * dye(JJJ)
+                  end do
+
+                end select
+              end if
+              selectcase (field)
               case (lineIntegral)
                 block
                   integer(kind=4) :: lidx, lx, ly, lz, lor
@@ -3325,15 +3221,11 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                   !!!!!!!!!!!!!!!!!!!!
             elseif (SGG%Observation(ii)%FreqDomain) then
               at = sgg%tiempo(ntime)
-!!!!! permit scaling
-
               do iff1 = 1, output(ii)%NumFreqs
                 output(ii)%auxExp_E(iff1) = sgg%dt*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*output(ii)%Freq(iff1)*at)   !el dt deberia ser algun tipo de promedio pero no me complico permit scaling 211118
                 output(ii)%auxExp_H(iff1) = output(ii)%auxExp_E(iff1)*Exp(mcpi2*output(ii)%Freq(iff1)*sgg%dt*0.5_RKIND)
               end do
-!!!
               select case (field)
-!!!las freqdomain NUNCA ESTAN DONE
               case (iMEC, iExC, iEyC, iEzC) !como los tengo que guardar todas las componentes cartesianas solo variara el output final en el .xdmf
                 !                    if (at > sgg%OBSERVATION(ii)%FinalTime+sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done=.true.
                 if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
@@ -3350,13 +3242,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                       i1t = int(iii/output(ii)%item(i)%Xtrancos)
                       III_m = III
                       do if1 = 1, output(ii)%NumFreqs
-                                 !!!
-                        output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t) + &
-                                                                                   output(ii)%auxExp_E(if1)*Ex(III_m, JJJ_m, KKK_m)
-                        output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t) + &
-                                                                                   output(ii)%auxExp_E(if1)*Ey(III_m, JJJ_m, KKK_m)
-                        output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t) + &
-                                                                                   output(ii)%auxExp_E(if1)*Ez(III_m, JJJ_m, KKK_m)
+                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t), output(ii)%auxExp_E(if1), Ex(III_m, JJJ_m, KKK_m))
+                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t), output(ii)%auxExp_E(if1), Ey(III_m, JJJ_m, KKK_m))
+                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t), output(ii)%auxExp_E(if1), Ez(III_m, JJJ_m, KKK_m))
                       end do
                     end if
                     end do
@@ -3365,7 +3253,6 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                 end if
                 end do
               case (iMHC, iHxC, iHyC, iHzC)
-!                     if (at > sgg%OBSERVATION(ii)%FinalTime+sgg%dt/2.0_RKIND) sgg%OBSERVATION(ii)%Done=.true.
                 if (at >= sgg%OBSERVATION(ii)%InitialTime) sgg%OBSERVATION(ii)%Begun = .true.
                 do KKK = k1, k2
                 if (mod(KKK, output(ii)%item(i)%Ztrancos) == 0) then
@@ -3380,13 +3267,9 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                       i1t = int(iii/output(ii)%item(i)%Xtrancos)
                       III_m = III
                       do if1 = 1, output(ii)%NumFreqs
-                                 !!!
-             output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t) + &
-                                                                                   output(ii)%auxExp_H(if1)*Hx(III_m, JJJ_m, KKK_m)
-             output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t) + &
-                                                                                   output(ii)%auxExp_H(if1)*Hy(III_m, JJJ_m, KKK_m)
-             output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t) = output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t) + &
-                                                                                   output(ii)%auxExp_H(if1)*Hz(III_m, JJJ_m, KKK_m)
+                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 1, i1t, j1t, k1t), output(ii)%auxExp_H(if1), Hx(III_m, JJJ_m, KKK_m))
+                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 2, i1t, j1t, k1t), output(ii)%auxExp_H(if1), Hy(III_m, JJJ_m, KKK_m))
+                        call updateValueComplex(output(ii)%item(i)%valor3DComplex(if1, 3, i1t, j1t, k1t), output(ii)%auxExp_H(if1), Hz(III_m, JJJ_m, KKK_m))
                       end do
                     end if
                     end do
@@ -3409,17 +3292,17 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                           jdir = computeJ(EField, iii, jjj, kkk)
 
                           do if1 = 1, output(ii)%NumFreqs
-                            call updateValorComplex(iEx, EField, output(ii)%item(i)%Serialized%valorComplex_x(conta, if1), output(ii)%auxExp_E(if1))
-                            call updateValorComplex(iEy, EField, output(ii)%item(i)%Serialized%valorComplex_y(conta, if1), output(ii)%auxExp_E(if1))
-                            call updateValorComplex(iEz, EField, output(ii)%item(i)%Serialized%valorComplex_z(conta, if1), output(ii)%auxExp_E(if1))
+                            call updateComplexComponent(iEx, EField, output(ii)%item(i)%Serialized%valorComplex_x(conta, if1), output(ii)%auxExp_E(if1))
+                            call updateComplexComponent(iEy, EField, output(ii)%item(i)%Serialized%valorComplex_y(conta, if1), output(ii)%auxExp_E(if1))
+                            call updateComplexComponent(iEz, EField, output(ii)%item(i)%Serialized%valorComplex_z(conta, if1), output(ii)%auxExp_E(if1))
 
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Efield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Efield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Efield))
                             
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Efield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Efield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Efield))
 
                           end do
                         end if
@@ -3429,17 +3312,17 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                           conta = conta + 1
                           jdir = computeJ(Efield, iii, jjj, kkk)
                           do if1 = 1, output(ii)%NumFreqs
-                            call updateValorComplex(iEx, EField, output(ii)%item(i)%Serialized%valorComplex_x(conta, if1), output(ii)%auxExp_E(if1))
-                            call updateValorComplex(iEy, EField, output(ii)%item(i)%Serialized%valorComplex_y(conta, if1), output(ii)%auxExp_E(if1))
-                            call updateValorComplex(iEz, EField, output(ii)%item(i)%Serialized%valorComplex_z(conta, if1), output(ii)%auxExp_E(if1))
+                            call updateComplexComponent(iEx, EField, output(ii)%item(i)%Serialized%valorComplex_x(conta, if1), output(ii)%auxExp_E(if1))
+                            call updateComplexComponent(iEy, EField, output(ii)%item(i)%Serialized%valorComplex_y(conta, if1), output(ii)%auxExp_E(if1))
+                            call updateComplexComponent(iEz, EField, output(ii)%item(i)%Serialized%valorComplex_z(conta, if1), output(ii)%auxExp_E(if1))
 
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Efield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Efield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Ex(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEx, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Ey(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEy, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Ez(conta, if1),  output(ii)%auxExp_E(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iEz, Efield))
                             
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Efield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Efield))
-                            call updateValorComplexWithInterpolation(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Hx(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHx, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Hy(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHy, Efield))
+                            call updateValueComplex(output(ii)%item(i)%Serialized%valorComplex_Hz(conta, if1),  output(ii)%auxExp_H(if1), interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, iii, jjj, kkk, iHz, Efield))
                           end do
                         end if
                       end if
@@ -3488,22 +3371,23 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       return
 
     contains
+      subroutine updateValueComplex(valorComplex, auxExp, fieldValue)
+        complex(kind=CKIND), intent(inout) :: valorComplex
+        complex(kind=CKIND), intent(in) :: auxExp
+        real(KIND=RKIND), intent(in) :: fieldValue
 
-      subroutine updateValorComplex(hDir, fieldIndex, valorComplex, auxExp)
+        valorComplex = valorComplex + auxExp * fieldValue
+
+      end subroutine updateValueComplex
+
+      subroutine updateComplexComponent(hDir, fieldIndex, valorComplex, auxExp)
         integer, intent(in) :: hDir, fieldIndex
         complex(kind=CKIND), intent(inout) :: valorComplex
         complex(kind=CKIND), intent(in) :: auxExp
 
         valorComplex = merge(valorComplex + auxExp*jdir, z_cplx, fieldIndex == hDir)
-      end subroutine updateValorComplex
+      end subroutine updateComplexComponent
 
-      subroutine updateValorComplexWithInterpolation(valorComplex, auxExp, interpolatedValue)
-        complex(kind=CKIND), intent(inout) :: valorComplex
-        complex(kind=CKIND), intent(in) :: auxExp
-        real(kind=RKIND), intent(in) :: interpolatedValue
-
-        valorComplex = valorComplex + auxExp*interpolatedValue
-      end subroutine updateValorComplexWithInterpolation
 
       logical function isPECorSurface(field, i, j, k)
         integer(kind=4) :: field, i, j, k
