@@ -613,7 +613,7 @@ contains
          if (.not. associated(regions)) then 
             allocate(regions(1))
             regions(1)%triangles = region%triangles
-            regions(1)%intervals = region%intervals
+            regions(1)%intervals = copyIntervals(region%intervals)
             regions(1)%tag = tagName
          else 
             allocate(aux(size(regions) + 1))
@@ -621,7 +621,7 @@ contains
                aux(i) = regions(i)
             end do
             aux(size(regions) + 1)%triangles = region%triangles
-            aux(size(regions) + 1)%intervals = region%intervals
+            aux(size(regions) + 1)%intervals = copyIntervals(region%intervals)
             aux(size(regions) + 1)%tag  = tagName
             deallocate(regions)
             
@@ -632,6 +632,17 @@ contains
 
          end if
       end subroutine
+
+      function copyIntervals(intervals) result(res)
+         type(cell_interval_t), dimension(:), allocatable, intent(in) :: intervals
+         type(interval_t), dimension(:), allocatable :: res
+         integer :: i
+         allocate(res(size(intervals)))
+         do i = 1, size(res)
+            res(i)%ini%cell(:) = intervals(i)%ini%cell(:)
+            res(i)%end%cell(:) = intervals(i)%end%cell(:)
+         end do
+      end function
 
    end function
 

@@ -124,7 +124,7 @@ MODULE NFDETypes
 
    type, public :: ConformalPECElements
       type(triangle_t), dimension(:), allocatable :: triangles
-      type(cell_interval_t), dimension(:), allocatable :: intervals
+      type(interval_t), dimension(:), allocatable :: intervals
       character(len=bufsize) :: tag
    end type 
 

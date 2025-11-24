@@ -8,4 +8,4 @@ add_library(conformal
     "geometry.F90"
 )
 
-target_link_libraries(conformal PRIVATE semba-types fhash smbjson)
+target_link_libraries(conformal PRIVATE semba-types fhash)

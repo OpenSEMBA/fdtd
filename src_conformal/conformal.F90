@@ -172,7 +172,7 @@ contains
       block
          type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour, sides_on_edge
          type(triangle_t), dimension(:), allocatable :: tris
-         type(cell_interval_t), dimension(:), allocatable :: intervals
+         type(interval_t), dimension(:), allocatable :: intervals
          do i = 1, size(cell_map%keys)
             cell = cell_map%keys(i)%cell 
             sides = cell_map%getSidesInCell(cell)
@@ -210,7 +210,7 @@ contains
    end subroutine
 
    function buildSidesFromCellInterval(interval) result(res)
-      type(cell_interval_t) :: interval
+      type(interval_t) :: interval
       integer :: face
       type(side_t), dimension(4) :: res
       type(side_t) :: aux
@@ -244,7 +244,7 @@ contains
    end function
 
    subroutine fillIntervals(intervals, edges, faces)
-      type(cell_interval_t), dimension(:), allocatable :: intervals
+      type(interval_t), dimension(:), allocatable :: intervals
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       type (face_t), dimension (:), allocatable, intent(inout) :: faces
       integer :: i
@@ -317,7 +317,7 @@ contains
 
    subroutine fillEdgesFromInterval(edges, interval)
       type (edge_t), dimension (:), allocatable :: edges
-      type(cell_interval_t), intent(in) :: interval
+      type(interval_t), intent(in) :: interval
       integer :: i, edge
       type(side_t), dimension(4) :: sides
       sides = buildSidesFromCellInterval(interval)
@@ -335,7 +335,7 @@ contains
 
    subroutine fillFaceFromInterval(faces, interval)
       type (face_t), dimension (:), allocatable :: faces
-      type(cell_interval_t), intent(in) :: interval
+      type(interval_t), intent(in) :: interval
       type(side_t) :: aux
       aux%init%position = interval%ini%cell
       aux%end%position = interval%end%cell

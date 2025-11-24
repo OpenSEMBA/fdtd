@@ -1,7 +1,5 @@
 module conformal_types_mod
 
-    use cells_mod, only: cell_interval_t
-
     implicit none
     
     integer, parameter :: FACE_X = 1
@@ -58,6 +56,15 @@ module conformal_types_mod
         procedure :: isOnAnyFace => triangle_isOnAnyFace
         procedure, private :: centroid
     end type
+
+    type :: cell_t
+        integer, dimension(3) :: cell
+    end type
+
+    type :: interval_t
+        type(cell_t) :: ini, end
+    end type
+
 
 contains
 

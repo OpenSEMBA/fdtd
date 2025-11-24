@@ -1,6 +1,6 @@
 module cell_map_mod
 
-    use geometry_mod, only: triangle_t, side_t, cell_interval_t, FACE_X, FACE_Y, FACE_Z, isNewSide
+    use geometry_mod, only: triangle_t, side_t, interval_t, FACE_X, FACE_Y, FACE_Z, isNewSide
     use fhash, only: fhash_tbl_t, key=>fhash_key
     use NFDETypes, only: rkind, ConformalPECElements
     implicit none
@@ -10,7 +10,7 @@ module cell_map_mod
         type(triangle_t), dimension(:), allocatable :: triangles ! triangles on faces
         type(side_t), dimension(:), allocatable :: sides ! sides from triangles off faces
         type(side_t), dimension(:), allocatable :: sides_on  ! sides from triangles on faces
-        type(cell_interval_t), dimension(:), allocatable :: intervals
+        type(interval_t), dimension(:), allocatable :: intervals
     end type
 
     type :: cell_t
@@ -232,7 +232,7 @@ contains
 
     subroutine buildMapOfIntervals(res, intervals)
         type(interval_map_t), intent(inout) :: res
-        type(cell_interval_t), dimension(:), allocatable :: intervals
+        type(interval_t), dimension(:), allocatable :: intervals
         integer (kind=4) :: i
         if (.not. allocated(res%keys)) allocate(res%keys(0))
         do i = 1, size(intervals)
@@ -346,12 +346,15 @@ contains
 
     subroutine addInterval(this, interval)
         class(interval_map_t) :: this
-        type(cell_interval_t) :: interval
+        type(interval_t) :: interval
         class(*), allocatable :: alloc_list
         type(element_set_t) :: aux_list
         integer (kind=4), dimension(3) :: cell
         type(cell_t), dimension(:), allocatable :: aux_keys
-        cell = merge(interval%ini%cell, interval%end%cell, interval%getOrientation() > 0)
+        type(side_t) :: aux
+        aux%init%position = interval%ini%cell
+        aux%end%position = interval%end%cell
+        cell = aux%getCell()
         if (this%hasKey(cell)) then 
 
             call this%get_raw(key(cell), alloc_list)
@@ -373,7 +376,7 @@ contains
 
             allocate(aux_keys(size(this%keys) + 1))
             aux_keys(1:size(this%keys)) = this%keys
-            aux_keys(size(this%keys) + 1)%cell = merge(interval%ini%cell, interval%end%cell, interval%getOrientation() > 0)
+            aux_keys(size(this%keys) + 1)%cell = aux%getCell()
             deallocate(this%keys)
             allocate(this%keys(size(aux_keys)))
             this%keys = aux_keys
@@ -481,7 +484,7 @@ contains
         class(cell_map_t) :: this
         integer(kind=4), dimension(3) :: k
         class(*), allocatable :: alloc_list
-        type(cell_interval_t), dimension(:), allocatable :: res
+        type(interval_t), dimension(:), allocatable :: res
 
         if (this%hasKey(k)) then 
             call this%get_raw(key(k), alloc_list)
