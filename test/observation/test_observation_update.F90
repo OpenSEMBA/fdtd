@@ -47,14 +47,15 @@ integer function test_update_time_movie_observation() bind(C) result(err)
                             SINPML_fullsize, eps, mu, bounds, control)
     
     call fields%createDummyFields(0_4, 10_4, 0.1_RKIND)
-    !I have to invastegate how to create dummy data to test update
-    !call UpdateObservation(sgg, media, tag_numbers, 5, 0, &
-    !    fields%Ex, fields%Ey, fields%Ez,&
-    !    fields%Hx, fields%Hy, fields%Hz,&
-    !    fields%dxe, fields%dye, fields%dze,&
-    !    fields%dxh, fields%dyh, fields%dzh,&
-    !    control%wiresflavor, SINPML_fullsize, .false., .false., bounds &
-    !)
+
+    call UpdateObservation(sgg, media, tag_numbers, 5, 0, &
+        fields%Ex, fields%Ey, fields%Ez,&
+        fields%Hx, fields%Hy, fields%Hz,&
+        fields%dxe, fields%dye, fields%dze,&
+        fields%dxh, fields%dyh, fields%dzh,&
+        control%wiresflavor, SINPML_fullsize, .false., .false., bounds &
+    )
+    output => GetOutput()
 
     err = 0
 
