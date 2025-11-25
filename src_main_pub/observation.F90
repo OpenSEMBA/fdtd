@@ -694,7 +694,7 @@ contains
     write (whoamishort, '(i5)') layoutnumber + 1
     write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
 
-    call crea_gnuplot
+    !call crea_gnuplot
 
     allocate (InvEps(0:sgg%NumMedia), InvMu(0:sgg%NumMedia))
 
