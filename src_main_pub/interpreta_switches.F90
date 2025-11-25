@@ -179,6 +179,7 @@ CONTAINS
       logical :: existiarunningigual, mpidirset, resume3
       integer(kind=4) :: i, j, donde, n, newmpidir
       real(KIND=RKIND) :: pausetime
+      integer(kind=4) :: iostatus = 0
 
 !!!
       l%input_conformal_flag = input_conformal_flag !ojooo 051223 es un flag global
@@ -208,36 +209,35 @@ CONTAINS
       IF (n > 0) THEN
          i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
          DO while (i <= n)
-            CALL getcommandargument(l%chaininput, i, l%chain, l%length, statuse, binaryPath)
+            call getcommandargument(l%chaininput, i, l%chain, l%length, statuse, binaryPath)
             IF (statuse /= 0) THEN
-               CALL stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
+               call stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
                statuse = -1
             END IF
-            SELECT CASE (trim(adjustl(l%chain)))
-            CASE ('-i')
+            select case (trim(adjustl(l%chain)))
+            case ('-i')
                i = i + 1
-               CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
+               call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                continue !ya interpretado
             case ('-a')
                i = i + 1
-               CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
+               call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                continue !ya interpretado
-            CASE ('-mpidir')
+            case ('-mpidir')
                i = i + 1
-               CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
+               call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                select case (trim(adjustl(f)))
                case ('x', 'X')
-                  l%mpidir = 1  !!!lo cambie por error !161018
+                  l%mpidir = 1  
                case ('y', 'Y')
-                  l%mpidir = 2   !!!lo cambie por error !161018
+                  l%mpidir = 2   
                case ('z', 'Z')
                   l%mpidir = 3
-               CASE DEFAULT
-                  CALL stoponerror(l%layoutnumber, l%size, 'Invalid or duplicate incoherent -l%mpidir option', .true.)
+               case default
+                  call stoponerror(l%layoutnumber, l%size, 'Invalid or duplicate incoherent -l%mpidir option', .true.)
                   statuse = -1
-                  goto 668
-               END SELECT
-
+                  continue
+               end select
                if (.not. mpidirset) then
                   l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
                   mpidirset = .true.
@@ -245,16 +245,13 @@ CONTAINS
 
             case ('-pause')
                i = i + 1
-               CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               ! Converts the characters to integer
-               READ (f, *, ERR=7312) pausetime
-               GO TO 8312
-7312           CALL stoponerror(l%layoutnumber, l%size, 'Invalid pause time', .true.)
-               statuse = -1
-8312           IF (pausetime <= 0) THEN
-                  CALL stoponerror(l%layoutnumber, l%size, 'Invalid pause time', .true.)
+               call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
+               read (f, *, iostat=iostatus) pausetime
+               if (iostatus /= 0) call stoponerror(l%layoutnumber, l%size, 'Invalid pause time', .true.)
+               if (pausetime <= 0) THEN
+                  call stoponerror(l%layoutnumber, l%size, 'Invalid pause time: zero or negative value', .true.)
                   statuse = -1
-               END IF
+               end if
                !
                l%pausar = .true.
 #ifdef CompileWithMPI
@@ -279,20 +276,10 @@ CONTAINS
                l%l_aux = l%pausar
                CALL MPI_AllReduce(l%l_aux, l%pausar, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, l%ierr)
 #endif
-
-            !!!        CASE ('-maxmessages')
-            !!!            i = i + 1
-            !!!          CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
-            !!!          READ (f,*, ERR=1012) maxmessages
-            !!!          GO TO 2012
-            !!!1012      CALL stoponerror (l%layoutnumber, l%size, 'Invalid Number of maxmessages',.true.)
-          !!!statuse=-1
-            !!!2012      CONTINUE
-            !!!          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
-            CASE ('-NF2FFDecim')
+            case ('-NF2FFDecim')
                l%NF2FFDecim = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-            CASE ('-noNF2FF')
+            case ('-noNF2FF')
                i = i + 1
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                select case (trim(adjustl(f)))
@@ -308,13 +295,11 @@ CONTAINS
                   l%facesNF2FF%AB = .FALSE.
                case ('up', 'UP')
                   l%facesNF2FF%AR = .FALSE.
-               CASE DEFAULT
-                  GOTO 1712
-               END SELECT
-               GO TO 2712
-1712           CALL stoponerror(l%layoutnumber, l%size, 'Invalid -noNF2FF option', .true.)
-               statuse = -1
-2712           CONTINUE
+               case default
+                  CALL stoponerror(l%layoutnumber, l%size, 'Invalid -noNF2FF option', .true.)
+                  statuse = -1
+               end select
+               continue
                !COMO LA RCS SE CALCULA SOLO AL FINAL NO OBLIGO A RESUMEAR CON IGUAL -NONFF2FF PARA PODER CALCULAR CON Y SIN ESTA OPCION resumeando
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
             CASE ('-force')
@@ -369,12 +354,9 @@ CONTAINS
             CASE ('-cpumax')
                i = i + 1
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               ! Converts the characters to integer
-               READ (f, *, ERR=712) l%maxCPUtime
-               GO TO 812
-712            CALL stoponerror(l%layoutnumber, l%size, 'Invalid CPU maximum time', .true.)
-               statuse = -1
-812            IF (l%maxCPUtime <= 0) THEN
+               READ (f, *, iostat=iostatus) l%maxCPUtime
+               if (iostatus /= 0) call stoponerror(l%layoutnumber, l%size, 'Invalid CPU maximum time', .true.)
+               if (l%maxCPUtime <= 0) THEN
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid CPU maximum time', .true.)
                   statuse = -1
                END IF
@@ -384,23 +366,17 @@ CONTAINS
             CASE ('-flush')
                i = i + 1
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               ! Converts the characters to integer
-               READ (f, *, ERR=300) l%flushminutesFields
-               GO TO 400
-300            CALL stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
-               statuse = -1
-400            IF (l%flushminutesFields <= 0) THEN
+               READ (f, *, iostat=iostatus) l%flushminutesFields
+               if (iostatus /= 0) call stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
+               IF (l%flushminutesFields <= 0) THEN
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
                   statuse = -1
                END IF
             CASE ('-flushdata')
                i = i + 1
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
-               ! Converts the characters to integer
-               READ (f, *, ERR=301) l%flushminutesData
-               GO TO 401
-301            CALL stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
-               statuse = -1
+               READ (f, *, iostat=iostatus) l%flushminutesData
+               if (iostatus /= 0) call stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
 401            IF (l%flushminutesData <= 0) THEN
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
                   statuse = -1
@@ -408,7 +384,6 @@ CONTAINS
             CASE ('-run')
                l%run = .TRUE.
             CASE ('-map')
-               !dump the map files
                l%createmap = .TRUE.
             CASE ('-dontwritevtk')
                l%dontwritevtk = .true.
@@ -436,7 +411,6 @@ CONTAINS
                end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
 
-!!            i = i + 1;
             CASE ('-activateconf') !Provisional FEB-2018
                if (.NOT. l%input_conformal_flag) then
                   l%conformal_file_input_name = char(0)
@@ -1316,11 +1290,6 @@ CONTAINS
 #ifdef CompileWithMPI
       CALL MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
-      !
-#ifdef CompileWithMPI
-      CALL MPI_Barrier(SUBCOMM_MPI, l%ierr)
-#endif
-      !
       if (existiarunningigual) then !lo pongo aqui pq si no no se escribe en el report
          CALL stoponerror(l%layoutnumber, l%size, 'Running flag file with same options than requested exist. ', .true.); statuse = -1; 
       end if
@@ -1766,9 +1735,9 @@ CONTAINS
                CALL getcommandargument(l%chain2, i, f, l%length, statuse, binaryPath)
                select case (trim(adjustl(f)))
                case ('x', 'X')
-                  l%mpidir = 1  !!!lo cambie por error !161018
+                  l%mpidir = 1  
                case ('y', 'Y')
-                  l%mpidir = 2   !!!lo cambie por error !161018
+                  l%mpidir = 2   
                case ('z', 'Z')
                   l%mpidir = 3
                CASE DEFAULT
