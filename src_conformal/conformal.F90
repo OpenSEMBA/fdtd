@@ -262,14 +262,15 @@ contains
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       type(side_t), dimension(:), allocatable :: tri_sides
       integer :: j, k, s
-      real :: area
+      real (kind=rkind) :: area, ratio
       area = 0.0
+      ratio = 0.0
       do j = 1, size(tris_on_face)
          area = area + getArea(tris_on_face(j))
       end do
       if (abs(area-1.0) < 1e-4) then 
 
-         call addFace(faces, tris_on_face(1)%getCell(), tris_on_face(1)%getFace(), 0.0)
+         call addFace(faces, tris_on_face(1)%getCell(), tris_on_face(1)%getFace(), ratio)
          do k = 1, size(tris_on_face)
             tri_sides = tris_on_face(k)%getSides()
             do s = 1, 3
@@ -338,16 +339,20 @@ contains
       type (face_t), dimension (:), allocatable :: faces
       type(interval_t), intent(in) :: interval
       type(side_t) :: aux
+      real (kind=rkind) :: ratio
+      ratio = 0.0
       aux%init%position = interval%ini%cell
       aux%end%position = interval%end%cell
-      call addFace(faces, aux%getCell(), aux%getFace(), 0.0)
+      call addFace(faces, aux%getCell(), aux%getFace(), ratio)
    end subroutine
 
    subroutine fillFaceFromContour(contour, faces)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type (face_t), dimension (:), allocatable :: faces
+      real (kind=rkind) :: area
       if (size(contour) /= 0) then 
-         call addFace(faces, findContourCell(contour), findContourFace(contour), 1.0 - contourArea(contour))
+         area = 1.0 - contourArea(contour)
+         call addFace(faces, findContourCell(contour), findContourFace(contour), area)
       end if
    end subroutine
 
