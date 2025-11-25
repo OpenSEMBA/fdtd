@@ -12,6 +12,7 @@ add_library(
 target_link_libraries(observation_test_fortran
     semba-outputs
     test_utils_fortran
+    VTKFortran::VTKFortran
 )
 
 add_library(observation_tests "observation_tests.cpp")

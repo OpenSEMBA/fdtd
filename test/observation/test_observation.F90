@@ -85,3 +85,35 @@ integer function test_allocate_current() bind(C) result(err)
 
   err = test_err
 end function test_allocate_current
+
+   function test_create_vtk_file() bind(C) result(error)
+      use vtk_fortran
+      use FDETYPES
+      
+      type(vtk_file)     :: a_vtk_file                             ! A VTK file.
+      integer, parameter :: nx1=0_4                              ! X lower bound extent.
+      integer, parameter :: nx2=3_4                              ! X upper bound extent.
+      integer, parameter :: ny1=0_4                              ! Y lower bound extent.
+      integer, parameter :: ny2=2_4                              ! Y upper bound extent.
+      integer, parameter :: nz1=0_4                              ! Z lower bound extent.
+      integer, parameter :: nz2=1_4                              ! Z upper bound extent.
+      integer, parameter :: nn=(nx2-nx1+1)*(ny2-ny1+1)*(nz2-nz1+1) ! Number of elements.
+      real               :: x(nx1:nx2,ny1:ny2,nz1:nz2) = 0.1_RKIND             ! X coordinates.
+      real               :: y(nx1:nx2,ny1:ny2,nz1:nz2) = 0.2_RKIND             ! Y coordinates.
+      real               :: z(nx1:nx2,ny1:ny2,nz1:nz2) = 0.3_RKIND             ! Z coordinates.
+      real               :: v(nx1:nx2,ny1:ny2,nz1:nz2) = 0.4_RKIND             ! Variable at coordinates.
+      integer            :: error                                  ! Error status.
+
+      ! initialize the data...
+
+      error = a_vtk_file%initialize(format='ASCII', filename='XML_STRG-binary.vts', &
+                                    mesh_topology='StructuredGrid',                  &
+                                    nx1=nx1, nx2=nx2, ny1=ny1, ny2=ny2, nz1=nz1, nz2=nz2)
+      error = a_vtk_file%xml_writer%write_piece(nx1=nx1, nx2=nx2, ny1=ny1, ny2=ny2, nz1=nz1, nz2=nz2)
+      error = a_vtk_file%xml_writer%write_geo(n=nn, x=x, y=y, z=z)
+      error = a_vtk_file%xml_writer%write_dataarray(location='node', action='open')
+      error = a_vtk_file%xml_writer%write_dataarray(data_name='float64_scalar', x=v, one_component=.true.)
+      error = a_vtk_file%xml_writer%write_dataarray(location='node', action='close')
+      error = a_vtk_file%xml_writer%write_piece()
+      error = a_vtk_file%finalize()
+   end function test_create_vtk_file

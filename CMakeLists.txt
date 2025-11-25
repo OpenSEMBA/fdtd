@@ -186,6 +186,8 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 endif()
 
+add_subdirectory(external/VTKFortran)
+
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
 	add_subdirectory(test)
@@ -265,8 +267,6 @@ if (SEMBA_FDTD_EXECUTABLE)
 	target_link_libraries(semba-fdtd semba-main semba-reports)
 	target_link_libraries(semba-fdtd ${MPI_Fortran_LIBRARIES})
 endif()
-
-
 
 include_directories(${CMAKE_BINARY_DIR}/mod)
 include_directories(${HDF5_INCLUDE_DIRS})

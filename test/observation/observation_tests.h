@@ -17,6 +17,8 @@ extern "C" int test_init_time_movie_observation();
 
 extern "C" int test_update_time_movie_observation();
 
+extern "C" int test_create_vtk_file();
+
 TEST(observation, test_allocate_time             )    {EXPECT_EQ(0, test_allocate_serialize_for_time_domain()); }
 TEST(observation, test_allocate_frequency        )    {EXPECT_EQ(0, test_allocate_serialize_for_frequency_domain()); }
 TEST(observation, test_allocate_serialize_current)    {EXPECT_EQ(0, test_allocate_current()); }
@@ -33,4 +35,7 @@ TEST(observation, test_preproces_huge_cap                       )    {EXPECT_EQ(
 TEST(observation, test_init_movie_observation                   )    {EXPECT_EQ(0, test_init_time_movie_observation()); }
 
 TEST(observation, test_update_movie_observation                   )    {EXPECT_EQ(0, test_update_time_movie_observation()); }
+
+TEST(observation, test_vtk                   )    {EXPECT_EQ(0, test_create_vtk_file()); }
+
 
