@@ -293,6 +293,7 @@ def test_sphere(tmp_path):
 @no_hdf_skip
 @pytest.mark.hdf
 def test_movie_in_planewave_in_box(tmp_path):
+    import h5py
     fn = CASES_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()

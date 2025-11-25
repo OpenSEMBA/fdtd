@@ -1,6 +1,6 @@
 {
     "general": {
-        "numberOfSteps": 1,
+        "numberOfSteps": 5000,
         "timeStep": 7e-11
     },
     "boundary": {
@@ -18583,7 +18583,7 @@
             ]
         },
         {
-            "name": "aaaa",
+            "name": "n2f",
             "type": "farField",
             "elementIds": [
                 4

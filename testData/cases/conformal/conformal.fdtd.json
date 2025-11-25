@@ -415,9 +415,9 @@
             ]
         },
         {
-            "name": "pec",
+            "name": "conformalPec",
             "id": 2,
-            "type": "pec"
+            "type": "conformalPec"
         }
     ],
     "materialAssociations": [

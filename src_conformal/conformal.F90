@@ -275,7 +275,7 @@ contains
             tri_sides = tris_on_face(k)%getSides()
             do s = 1, 3
                if (tri_sides(s)%isOnAnyEdge()) then 
-                  if (isNewEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), 0.0)) then 
+                  if (isNewEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), ratio)) then 
                      call addEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), tri_sides(s))
                   end if
                end if

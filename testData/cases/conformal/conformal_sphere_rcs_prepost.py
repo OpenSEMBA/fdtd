@@ -71,7 +71,7 @@ def had(n,z):
     return (1j)**n*np.exp(-1j*z)
 
 a = 0.5 #radius
-f = np.linspace(1e7,1e9,201)
+f = np.linspace(1e7,6e8,201)
 l = 3.0e8/f
 beta = 2*np.pi*f/3.0e8
 
