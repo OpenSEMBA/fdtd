@@ -173,11 +173,12 @@ CONTAINS
    
 !!!!!!!!!!!!!           
    type (entrada_t), intent(INOUT) :: l
+   integer (kind=4), intent(out) :: statuse
 !!!!!!!!!      
    
    CHARACTER (LEN=BUFSIZE) :: chari,f,dubuf,buff, binaryPath
    logical :: existiarunningigual,mpidirset,resume3
-   integer (kind=4) :: i,j,donde,n, newmpidir,statuse
+   integer (kind=4) :: i,j,donde,n, newmpidir
    real (KIND=RKIND) :: pausetime
 
   
@@ -194,7 +195,6 @@ CONTAINS
       call print_basic_help(l) 
       call stoponerror(l%layoutnumber,l%size,'Error: NO arguments neither command line nor in launch file. Correct and remove pause...',.true.)
       statuse=-1
-      !goto 668
    END IF
    l%opcionestotales=''
    do i=1,n
@@ -202,7 +202,6 @@ CONTAINS
       IF (statuse /= 0) THEN
          CALL stoponerror (l%layoutnumber, l%size, 'Reading input',.true.)
           statuse=-1
-          !goto 668
       END IF
       l%opcionestotales=trim(adjustl(l%opcionestotales))//' '//trim(adjustl(l%chain))
    end do
@@ -216,7 +215,6 @@ CONTAINS
          IF (statuse /= 0) THEN
             CALL stoponerror (l%layoutnumber, l%size, 'Reading input',.true.)
           statuse=-1
-          !goto 668
          END IF
          SELECT CASE (trim(adjustl(l%chain)))   
           CASE ('-i')
@@ -232,26 +230,21 @@ CONTAINS
             CALL getcommandargument (l%chaininput, i, f, l%length, statuse, binaryPath)
             select case (trim (adjustl(f)))
              case ('x','X')
-               newmpidir=1  !!!lo cambie por error !161018
+               l%mpidir=1  !!!lo cambie por error !161018
              case ('y','Y')
-               newmpidir=2   !!!lo cambie por error !161018
+               l%mpidir=2   !!!lo cambie por error !161018
              case ('z','Z')
-               newmpidir=3
+               l%mpidir=3
              CASE DEFAULT
-               GOTO 1762
+               CALL stoponerror (l%layoutnumber, l%size, 'Invalid or duplicate incoherent -l%mpidir option',.true.)
+               statuse=-1
+               goto 668
             END SELECT 
-            if (newmpidir.ne.l%mpidir) then
-               GOTO 1762
+
+            if (.not.mpidirset) then
+              l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
+              mpidirset=.true.
             endif
-            GO TO 2762
-1762        CALL stoponerror (l%layoutnumber, l%size, 'Invalid or duplicate incoherent -l%mpidir option',.true.)
-          statuse=-1
-          goto 668
-2762      CONTINUE
-          if (.not.mpidirset) then
-            l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
-            mpidirset=.true.
-          endif
               
           case ('-pause')
             i = i + 1
@@ -261,11 +254,9 @@ CONTAINS
             GO TO 8312
 7312        CALL stoponerror (l%layoutnumber, l%size, 'Invalid pause time',.true.)
           statuse=-1
-          !goto 668
 8312        IF (pausetime <= 0) THEN
                CALL stoponerror (l%layoutnumber, l%size, 'Invalid pause time',.true.)
           statuse=-1
-          !goto 668
             END IF
             !
             l%pausar=.true.
@@ -299,7 +290,6 @@ CONTAINS
             !!!          GO TO 2012
             !!!1012      CALL stoponerror (l%layoutnumber, l%size, 'Invalid Number of maxmessages',.true.)
           !!!statuse=-1
-          !!!!goto 668
             !!!2012      CONTINUE
             !!!          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
           CASE ('-NF2FFDecim')
@@ -327,7 +317,6 @@ CONTAINS
             GO TO 2712
 1712        CALL stoponerror (l%layoutnumber, l%size, 'Invalid -noNF2FF option',.true.)
           statuse=-1
-          !goto 668
 2712      CONTINUE
             !COMO LA RCS SE CALCULA SOLO AL FINAL NO OBLIGO A RESUMEAR CON IGUAL -NONFF2FF PARA PODER CALCULAR CON Y SIN ESTA OPCION resumeando
             !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))      
@@ -339,7 +328,6 @@ CONTAINS
             GO TO 312
 412         CALL stoponerror (l%layoutnumber, l%size, 'Invalid cut',.true.)
           statuse=-1
-          !goto 668
 312         CONTINUE
             l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
           CASE ('-singlefile')
@@ -389,11 +377,9 @@ CONTAINS
             GO TO 812
 712         CALL stoponerror (l%layoutnumber, l%size, 'Invalid CPU maximum time',.true.)
           statuse=-1
-          !goto 668
 812         IF (l%maxCPUtime <= 0) THEN
                CALL stoponerror (l%layoutnumber, l%size, 'Invalid CPU maximum time',.true.)
           statuse=-1
-          !goto 668
             END IF   
 
           CASE ('-s')
@@ -406,11 +392,9 @@ CONTAINS
             GO TO 400
 300         CALL stoponerror (l%layoutnumber, l%size, 'Invalid flushing interval',.true.)
           statuse=-1
-          !goto 668
 400         IF (l%flushminutesFields <= 0) THEN
                CALL stoponerror (l%layoutnumber, l%size, 'Invalid flushing interval',.true.)
           statuse=-1
-          !goto 668
             END IF
           CASE ('-flushdata')
             i = i + 1
@@ -420,11 +404,9 @@ CONTAINS
             GO TO 401
 301         CALL stoponerror (l%layoutnumber, l%size, 'Invalid flushing interval',.true.)
           statuse=-1
-          !goto 668
 401         IF (l%flushminutesData <= 0) THEN
                CALL stoponerror (l%layoutnumber, l%size, 'Invalid flushing interval',.true.)
           statuse=-1
-          !goto 668
             END IF   
           CASE ('-run')
             l%run = .TRUE.                
