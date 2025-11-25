@@ -5074,6 +5074,7 @@ CONTAINS
          integer (kind=4) :: cell(3)
          type(XYZlimit_t), intent(inout) :: bbox
          type(side_tris_map_t), intent(in) :: side_map
+         type(triangle_t), dimension(:), allocatable :: tris
          integer(kind=4), dimension(4) :: key
          integer :: j, k
          real, dimension(3) :: normal
@@ -5089,7 +5090,8 @@ CONTAINS
                   case(E_X)
                      key(4) = E_X
                      if (side_map%hasKey(key)) then
-                        normal = getEdgeNormalFromTriangles(side_map%getTrianglesFromSide(key))
+                        tris = side_map%getTrianglesFromSide(key)
+                        normal = getEdgeNormalFromTriangles(tris)
                         if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
                            media%sggMiHz(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
@@ -5123,7 +5125,8 @@ CONTAINS
                   case(E_Y)
                      key(4) = E_Y
                      if (edge_media == 0 .and. side_map%hasKey(key)) then
-                        normal = getEdgeNormalFromTriangles(side_map%getTrianglesFromSide(key))
+                        tris = side_map%getTrianglesFromSide(key)
+                        normal = getEdgeNormalFromTriangles(tris)
                         if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
                            media%sggMiHx(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
@@ -5155,7 +5158,8 @@ CONTAINS
                   case(E_Z)
                      key(4) = E_Z
                      if (edge_media == 0 .and. side_map%hasKey(key)) then
-                        normal = getEdgeNormalFromTriangles(side_map%getTrianglesFromSide(key))
+                        tris = side_map%getTrianglesFromSide(key)
+                        normal = getEdgeNormalFromTriangles(tris)
                         if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then
                            media%sggMiHx(cell(1), cell(2), cell(3)) = edge_media
                            media%sggMiEy(cell(1), cell(2), cell(3))   = edge_media

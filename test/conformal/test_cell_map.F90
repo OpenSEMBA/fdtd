@@ -86,7 +86,6 @@ integer function test_cell_map_array() bind(C) result(err)
         select type(t_alloc)
         type is (element_set_t)
             if (size(t_alloc%triangles) /= 2) err = err + 1
-            write(*,*) t_alloc%triangles(1)%vertices
             if (.not. all(t_alloc%triangles(1)%vertices(1)%position .eq. [0,0,0])) err = err + 1
             if (.not. all(t_alloc%triangles(1)%vertices(2)%position .eq. [0,1,0])) err = err + 1
             if (.not. all(t_alloc%triangles(1)%vertices(3)%position .eq. [1,0,1])) err = err + 1
@@ -131,7 +130,6 @@ integer function test_cell_map_add_triangle() bind(C) result(err)
     select type(t_alloc)
     type is (element_set_t)
         if (size(t_alloc%triangles) /= 1) err = err + 1
-        write(*,*) t_alloc%triangles(1)%vertices
         if (.not. all(t_alloc%triangles(1)%vertices(1)%position .eq. [0,0,0])) err = err + 1
         if (.not. all(t_alloc%triangles(1)%vertices(2)%position .eq. [0,1,0])) err = err + 1
         if (.not. all(t_alloc%triangles(1)%vertices(3)%position .eq. [1,0,1])) err = err + 1
@@ -147,7 +145,6 @@ integer function test_cell_map_add_triangle() bind(C) result(err)
     select type(t_alloc)
     type is (element_set_t)
         if (size(t_alloc%triangles) /= 2) err = err + 1
-        write(*,*) t_alloc%triangles(1)%vertices
         if (.not. all(t_alloc%triangles(1)%vertices(1)%position .eq. [0,0,0])) err = err + 1
         if (.not. all(t_alloc%triangles(1)%vertices(2)%position .eq. [0,1,0])) err = err + 1
         if (.not. all(t_alloc%triangles(1)%vertices(3)%position .eq. [1,0,1])) err = err + 1
