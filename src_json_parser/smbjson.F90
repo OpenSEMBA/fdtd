@@ -2144,7 +2144,6 @@ contains
          res%fstep = 0.0
       else
          res%fstep = (res%fstop - res%fstart) / numberOfFrequencies
-         ! res%fstep = res%fstart * numberOfFrequencies
       endif
 
       freqSpacing = &

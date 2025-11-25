@@ -57,12 +57,12 @@ module conformal_types_mod
         procedure, private :: centroid
     end type
 
-    type :: cell_t
+    type :: point_t
         integer, dimension(3) :: cell
     end type
 
     type :: interval_t
-        type(cell_t) :: ini, end
+        type(point_t) :: ini, end
     end type
 
 
