@@ -1140,7 +1140,8 @@ contains
       end subroutine initializeLumped
 
       subroutine initializeWires()
-         real (kind=rkind) :: dtcritico, newdtcritico
+         real (kind=rkind_tiempo) :: dtcritico, newdtcritico
+         ! real (kind=rkind) :: dtcritico, newdtcritico
          character(len=BUFSIZE) :: dubuf, buff
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
@@ -1237,7 +1238,9 @@ contains
 #endif
       !!!sincroniza el dtcritico
 #ifdef CompileWithMPI
-         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
+         newdtcritico = 0.0
+         ! call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_tiempo, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
          if (this%sgg%dt <= dtcritico) then
@@ -2395,7 +2398,6 @@ contains
       real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ez
       real (kind=rkind), dimension(:), pointer:: IdyE
       real (kind=rkind), dimension(:), pointer:: IdzE
-
       real (kind=rkind) :: Idzek, Idyej
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
@@ -2406,6 +2408,7 @@ contains
 
       IdyE(0:this%bounds%dyE%NY-1) => this%IdyE
       IdzE(0:this%bounds%dzE%NZ-1) => this%IdzE
+
 
 #ifdef CompileWithOpenMP
 !$OMP  PARALLEL DO  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek,Idyej)     
@@ -2438,7 +2441,6 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ex
       real(kind=rkind), dimension(:), pointer :: IdzE
       real(kind=rkind), dimension(:), pointer :: IdxE
-
       real (kind=rkind) :: Idzek
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
@@ -2884,7 +2886,6 @@ contains
       write(dubuf,*)'END FINAL POSTPROCESSING at n= ',this%n
       call print11(this%control%layoutnumber,dubuf)
       this%finishedwithsuccess=.true.
-
       return
 
    end subroutine

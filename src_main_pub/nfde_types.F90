@@ -4,6 +4,7 @@ MODULE NFDETypes
 #ifdef CompileWithMTLN   
    USE mtln_types_mod
 #endif
+   USE conformal_types_mod
    !
    IMPLICIT NONE
    INTEGER (KIND=4), PARAMETER :: RK = RKIND
@@ -94,7 +95,7 @@ MODULE NFDETypes
       REAL (KIND=RK) :: xc = 0.0_RKIND
       REAL (KIND=RK) :: yc = 0.0_RKIND
       REAL (KIND=RK) :: zc = 0.0_RKIND
-          INTEGER (KIND=4) :: Or = 0 !field orientation nuevo 2015
+      INTEGER (KIND=4) :: Or = 0 !field orientation nuevo 2015
       CHARACTER (LEN=BUFSIZE) :: tag
    END TYPE coords_scaled
    !-----------------> Material Types
@@ -116,9 +117,60 @@ MODULE NFDETypes
       INTEGER (KIND=4) :: n_Mats_max = 0
       TYPE (Material), DIMENSION (:), POINTER :: Mats => NULL ()
    END TYPE Materials
+
+   !------------------------------------------------------------------------------
+   ! Identifies conformal PEC "media"
+   !------------------------------------------------------------------------------
+
+   type, public :: ConformalPECElements
+      type(triangle_t), dimension(:), allocatable :: triangles
+      type(interval_t), dimension(:), allocatable :: intervals
+      character(len=bufsize) :: tag
+   end type 
+
+   type, public :: ConformalPECRegions
+      type(ConformalPECElements), dimension(:), pointer :: volumes => null()
+      type(ConformalPECElements), dimension(:), pointer :: surfaces => null()
+   end type
+
+
+   type, public :: edge_t 
+      integer (kind=4), dimension(3) :: cell
+      integer(kind=4) :: direction = -1
+      real (kind=rkind) :: ratio = -1
+      real (kind=rkind), dimension(2) :: material_coords
+   end type 
+   type, public :: face_t 
+      integer (kind=4), dimension(3) :: cell
+      integer(kind=4) :: direction = -1
+      real (kind=rkind) :: ratio = -1
+   end type 
+
+   type, public :: conformal_edge_media_t
+      type(edge_t), dimension(:), allocatable :: edges
+      real(kind=rkind) :: ratio
+      integer (kind=4) :: size
+   end type
+   type, public :: conformal_face_media_t
+      type(face_t), dimension(:), allocatable :: faces
+      real(kind=rkind) :: ratio
+      integer (kind=4) :: size
+   end type
+
+   TYPE, PUBLIC :: ConformalMedia_t
+      INTEGER (KIND=4) :: n_edges_media = 0
+      INTEGER (KIND=4) :: n_faces_media = 0
+      TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: face_media => NULL ()
+      TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
+      real (kind=rkind) :: time_step_scale_factor = 1.0
+      character(len=bufsize) :: tag
+   END TYPE ConformalMedia_t
+
+
    !------------------------------------------------------------------------------
    ! Locates all the different PEC media found
    !------------------------------------------------------------------------------
+
    TYPE, PUBLIC :: PECRegions
       INTEGER (KIND=4) :: nVols = 0
       INTEGER (KIND=4) :: nSurfs = 0
@@ -756,7 +808,9 @@ MODULE NFDETypes
       ! Thin Elements                         
       TYPE (ThinWires), POINTER ::             tWires => NULL ()
       TYPE (SlantedWires), POINTER ::          sWires => NULL ()
-      TYPE (ThinSlots), POINTER ::             tSlots => NULL ()    
+      TYPE (ThinSlots), POINTER ::             tSlots => NULL ()
+      ! Conformal
+      TYPE(ConformalPECRegions), pointer ::    conformalRegs => NULL()
 #ifdef CompileWithMTLN
       TYPE (mtln_t), POINTER ::                mtln => NULL () 
 #endif
@@ -777,6 +831,9 @@ MODULE NFDETypes
       logical :: thereare_stoch
    END TYPE t_NFDE_FILE
 !--->
+
+contains
+
 
 END MODULE NFDETypes
 

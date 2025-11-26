@@ -21,13 +21,12 @@ option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
 option(SEMBA_FDTD_ENABLE_INTEL_XHOST_OPTIMIZATION "When compiling in Release, enables the -xHost optimization flag (not supported in github actions)" OFF) 
-option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" ON)
+option(SEMBA_FDTD_ENABLE_INTEL_IPO "When compiling in Release, enables the interprocedural optimization" OFF)
 
 option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
-
 # Compilation defines.
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_definitions(-DCompileWithSMBJSON)
@@ -156,6 +155,7 @@ add_library(semba-types
 	"src_main_pub/nfde_types.F90"
 	"src_main_pub/fdetypes.F90"
 	"src_mtln/mtln_types.F90"
+	"src_conformal/conformal_types.F90"
 	"src_wires_pub/wires_types.F90"
 	"src_main_pub/lumped_types.F90"
 )
@@ -185,6 +185,9 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 		set(MTLN_LIBRARIES mtlnsolver ngspice_interface PARENT_SCOPE)
 	endif()
 endif()
+
+add_subdirectory(src_conformal)
+set(CONFORMAL_LIBRARIES conformal)
 
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)

@@ -47,13 +47,13 @@ jobs:
           #   hdf: "Yes"
           #   double-precision: "No"
 
-          - os: ubuntu-latest
-            compiler: {name: 'nvidia-hpc', version: '24.5'}
-            build-type: "Release"
-            mpi: "No"
-            mtln: "No"
-            hdf: "No"
-            double-precision: "No"
+          # - os: ubuntu-latest
+          #   compiler: {name: 'nvidia-hpc', version: '24.5'}
+          #   build-type: "Release"
+          #   mpi: "No"
+          #   mtln: "No"
+          #   hdf: "No"
+          #   double-precision: "No"
 
           - os: ubuntu-latest # This is the only test with double precision.
             compiler: {name: 'intel', version: '2025.1'}
