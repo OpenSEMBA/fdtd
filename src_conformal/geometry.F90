@@ -14,9 +14,9 @@ contains
 
     function cross(v1,v2) result(res)
         real, dimension(3) :: v1,v2, res
-        res = [ v1(2)*v2(3)-v1(3)*v2(2), &
-                -(v1(1)*v2(3)-v1(3)*v2(1)), &
-                v1(1)*v2(2)-v1(2)*v2(1)]
+        res(1) = v1(2)*v2(3)-v1(3)*v2(2)
+        res(2) = -(v1(1)*v2(3)-v1(3)*v2(1))
+        res(3) = v1(1)*v2(2)-v1(2)*v2(1)
     end function
 
     function mergeSides(sides, edge) result(res)
@@ -47,7 +47,7 @@ contains
 
     function findContourCell(contour) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: contour
-        integer, dimension(3) :: res
+        integer (kind=4), dimension(3) :: res
         integer :: i 
         do i = 1, size(contour)
             if (contour(i)%isOnAnyFace()) then 
@@ -335,9 +335,10 @@ contains
     logical function isClockwise(side, face)
         type(side_t), intent(in) :: side
         integer, intent(in) :: face
-        real, dimension(3) :: x_prod
+        real, dimension(3) :: x_prod, diff
         isClockwise = .true.
-        x_prod = cross(side%end%position - side%init%position, side%normal)
+        diff = side%end%position - side%init%position
+        x_prod = cross(diff, side%normal)
         if (x_prod(face) < 0) isClockwise = .false.
     end function
 

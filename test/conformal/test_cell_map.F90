@@ -168,6 +168,7 @@ integer function test_cell_map_cellmap_set_get() bind(C) result(err)
     type(triangle_t), dimension(:), allocatable :: tri_set, tri_get
     type(triangle_t) :: t1, t2, t3
     type(coord_t) :: c1, c2, c3, c4, c5
+    integer, dimension(3) :: cell
     err = 0
 
     c1 = coord_t(position = [0,0,0], id = 1)
@@ -183,7 +184,8 @@ integer function test_cell_map_cellmap_set_get() bind(C) result(err)
     tri_set(1) = t1
     
     call buildMapOfTrisOnFaces(tri_map,tri_set)
-    tri_get = tri_map%getTrianglesInCell(floor(c1%position))
+    cell = floor(c1%position)
+    tri_get = tri_map%getTrianglesInCell(cell)
     if (size(tri_get) /= 1) err = err + 1
     if (tri_get(1)%vertices(1)%id /= tri_set(1)%vertices(1)%id) err = err + 1
     if (tri_get(1)%vertices(2)%id /= tri_set(1)%vertices(2)%id) err = err + 1
@@ -196,7 +198,8 @@ integer function test_cell_map_cellmap_set_get() bind(C) result(err)
 
     call tri_map%unset(key(t1%getCell()))
     call buildMapOfTrisOnFaces(tri_map, tri_set)
-    tri_get = tri_map%getTrianglesInCell(floor(c1%position))
+    cell = floor(c1%position)
+    tri_get = tri_map%getTrianglesInCell(cell)
     if (size(tri_get) /= 2) err = err + 1
     if (tri_get(1)%vertices(1)%id /= tri_set(1)%vertices(1)%id) err = err + 1
     if (tri_get(1)%vertices(2)%id /= tri_set(1)%vertices(2)%id) err = err + 1

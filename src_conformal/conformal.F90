@@ -167,47 +167,44 @@ contains
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       integer (kind=4), dimension(3) :: cell
       integer :: i, edge, face
+      type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour, sides_on_edge
+      type(triangle_t), dimension(:), allocatable :: tris, tris_on_face
+      type(interval_t), dimension(:), allocatable :: intervals
       allocate(faces(0))
       allocate(edges(0))
-      block
-         type(side_t), dimension(:), allocatable :: sides, sides_on_face, contour, sides_on_edge
-         type(triangle_t), dimension(:), allocatable :: tris, tris_on_face
-         type(interval_t), dimension(:), allocatable :: intervals
-         do i = 1, size(cell_map%keys)
-            cell = cell_map%keys(i)%cell 
-            sides = cell_map%getSidesInCell(cell)
-            tris =  cell_map%getTrianglesInCell(cell)
-            intervals = cell_map%getIntervalsInCell(cell)
-            do face = FACE_X, FACE_Z
-               sides_on_face = getSidesOnFace(sides, face)
+      do i = 1, size(cell_map%keys)
+         cell = cell_map%keys(i)%cell 
+         sides = cell_map%getSidesInCell(cell)
+         tris =  cell_map%getTrianglesInCell(cell)
+         intervals = cell_map%getIntervalsInCell(cell)
+         do face = FACE_X, FACE_Z
+            sides_on_face = getSidesOnFace(sides, face)
+            if (size(sides_on_face) /= 0) then 
                contour = findLargestContour(sides_on_face)
                call fillFaceFromContour(contour, faces)
                call fillEdgesFromContour(contour, edges)
-               tris_on_face = getTrianglesOnFace(tris, face)
-               call fillFullFaces(tris_on_face, faces, edges)
-            end do
-            call fillIntervals(intervals,edges, faces)
+            end if
+            tris_on_face = getTrianglesOnFace(tris, face)
+            if (size(tris_on_face) /= 0) call fillFullFaces(tris_on_face, faces, edges)
          end do
-      end block
+         call fillIntervals(intervals,edges, faces)
+      end do
 
-      block
-         type(side_t), dimension(:), allocatable :: sides, sides_on_edge
-         do i = 1, size(cell_map%keys)
-            cell = cell_map%keys(i)%cell 
-            sides = cell_map%getSidesInCell(cell)
-            
-            do edge = EDGE_X, EDGE_Z
-               sides_on_edge = getSidesOnEdge(sides, edge)
-               call fillEdges(sides_on_edge, edges)
-            end do
-
-            sides = cell_map%getOnSidesInCell(cell)
-            do edge = EDGE_X, EDGE_Z
-               sides_on_edge = getSidesOnEdge(sides, edge)
-               call fillEdges(sides_on_edge, edges)
-            end do
+      do i = 1, size(cell_map%keys)
+         cell = cell_map%keys(i)%cell 
+         sides = cell_map%getSidesInCell(cell)
+         
+         do edge = EDGE_X, EDGE_Z
+            sides_on_edge = getSidesOnEdge(sides, edge)
+            call fillEdges(sides_on_edge, edges)
          end do
-      end block
+
+         sides = cell_map%getOnSidesInCell(cell)
+         do edge = EDGE_X, EDGE_Z
+            sides_on_edge = getSidesOnEdge(sides, edge)
+            call fillEdges(sides_on_edge, edges)
+         end do
+      end do
    end subroutine
 
    function buildSidesFromCellInterval(interval) result(res)
@@ -263,20 +260,25 @@ contains
       type(side_t), dimension(:), allocatable :: tri_sides
       integer :: j, k, s
       real (kind=rkind) :: area, ratio
+      integer :: edge, face
+      integer, dimension(3) :: cell
       area = 0.0
       ratio = 0.0
       do j = 1, size(tris_on_face)
          area = area + getArea(tris_on_face(j))
       end do
       if (abs(area-1.0) < 1e-4) then 
-
-         call addFace(faces, tris_on_face(1)%getCell(), tris_on_face(1)%getFace(), ratio)
+         cell = tris_on_face(1)%getCell()
+         face = tris_on_face(1)%getFace()
+         call addFace(faces, cell, face, ratio)
          do k = 1, size(tris_on_face)
             tri_sides = tris_on_face(k)%getSides()
             do s = 1, 3
                if (tri_sides(s)%isOnAnyEdge()) then 
-                  if (isNewEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), ratio)) then 
-                     call addEdge(edges, tri_sides(s)%getCell(), tri_sides(s)%getEdge(), tri_sides(s))
+                  cell = tri_sides(s)%getCell()
+                  edge = tri_sides(s)%getEdge()
+                  if (isNewEdge(edges, cell, edge, ratio)) then 
+                     call addEdge(edges, cell, edge, tri_sides(s))
                   end if
                end if
             end do
@@ -289,13 +291,15 @@ contains
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       integer :: i, edge
+      integer, dimension(3) :: cell
       do i = 1, size(contour)
          edge = contour(i)%getEdge()
+         cell = contour(i)%getCell()
          if (edge /= NOT_ON_EDGE) then 
-            if (isEdgeFilled(edges, contour(i)%getCell(), edge)) then 
-               call fillSmallerRatio(edges, contour(i)%getCell(), edge, contour(i))
+            if (isEdgeFilled(edges, cell, edge)) then 
+               call fillSmallerRatio(edges, cell, edge, contour(i))
             else 
-               call addEdge(edges, contour(i)%getCell(), edge, contour(i))
+               call addEdge(edges, cell, edge, contour(i))
             end if
          end if
       end do
@@ -305,13 +309,15 @@ contains
       type(side_t), dimension(:), allocatable, intent(in) :: sides
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       integer :: i, edge
+      integer, dimension(3) :: cell
       do i = 1, size(sides)
          edge = sides(i)%getEdge()
+         cell = sides(i)%getCell()
          if (edge /= NOT_ON_EDGE) then 
-            if (isEdgeFilled(edges, sides(i)%getCell(), edge)) then 
-               call reduceEdgeRatio(edges, sides(i)%getCell(), edge, sides(i))
+            if (isEdgeFilled(edges, cell, edge)) then 
+               call reduceEdgeRatio(edges, cell, edge, sides(i))
             else 
-               call addEdge(edges, sides(i)%getCell(), edge, sides(i))
+               call addEdge(edges, cell, edge, sides(i))
             end if
          end if
       end do
@@ -350,9 +356,13 @@ contains
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type (face_t), dimension (:), allocatable :: faces
       real (kind=rkind) :: area
+      integer :: face
+      integer, dimension(3) :: cell
+      cell = findContourCell(contour)
+      face = findContourFace(contour)
       if (size(contour) /= 0) then 
          area = 1.0 - contourArea(contour)
-         call addFace(faces, findContourCell(contour), findContourFace(contour), area)
+         call addFace(faces, cell, face , area)
       end if
    end subroutine
 

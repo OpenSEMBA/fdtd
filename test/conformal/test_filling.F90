@@ -20,6 +20,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     type(ConformalPECRegions) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
+    type(coord_t), dimension(3) :: vertices
     err = 0
     c1 = coord_t(position = [0.75,0.0,0.0],  id = 1)
     c2 = coord_t(position = [0.75,0.0,1.0],  id=  2)
@@ -27,8 +28,9 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
 
     ! inside in +x
     allocate(tris(1))
-    tris(1) = triangle_t(vertices = [c1,c2,c3])
-
+    vertices = [c1,c2,c3]
+    tris(1) = triangle_t(vertices)
+    
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(1))
     allocate(cR%volumes(1)%intervals(0))
@@ -57,7 +59,8 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     if (abs(cM%face_media(1)%faces(2)%ratio-0.75) > 0.01) err = err + 1
 
     ! inside in -x
-    tris(1) = triangle_t(vertices = [c1,c3,c2])
+    vertices = [c1,c3,c2]
+    tris(1) = triangle_t(vertices)
 
     cR%volumes(1)%triangles(1) = tris(1)
 
@@ -108,6 +111,7 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
     type(ConformalPECRegions) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
+    type(coord_t), dimension(3) :: vertices
 
     err = 0
     c1 = coord_t(position = [0.00,0.75,0.0],  id = 1)
@@ -115,8 +119,12 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
     c3 = coord_t(position = [1.00,0.75,0.0],  id=  3)
 
     ! inside in -y
+    vertices(1) = c1
+    vertices(2) = c2
+    vertices(3) = c3
     allocate(tris(1))
-    tris(1) = triangle_t(vertices = [c1,c2,c3])
+    tris(1) = triangle_t(vertices)
+
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(1))
@@ -147,7 +155,10 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
     if (abs(cM%face_media(1)%faces(2)%ratio-0.25) > 0.01) err = err + 1
 
     ! inside in +y
-    tris(1) = triangle_t(vertices = [c1,c3,c2])
+    vertices(1) = c1
+    vertices(2) = c3
+    vertices(3) = c2
+    tris(1) = triangle_t(vertices)
 
     cR%volumes(1)%triangles(1) = tris(1)
 
@@ -198,7 +209,8 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
     type(ConformalPECRegions) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
-    
+    type(coord_t), dimension(3) :: vertices
+
 
     err = 0
     c1 = coord_t(position = [0.0,0.0,0.75],  id = 1)
@@ -207,7 +219,8 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
 
     ! inside in +z
     allocate(tris(1))
-    tris(1) = triangle_t(vertices = [c1,c2,c3])
+    vertices = [c1,c2,c3]
+    tris(1) = triangle_t(vertices)
 
     allocate(cR%volumes(1))
     allocate(cR%volumes(1)%triangles(1))
@@ -238,7 +251,8 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
     if (abs(cM%face_media(1)%faces(2)%ratio-0.75) > 0.01) err = err + 1
 
     ! inside in -z
-    tris(1) = triangle_t(vertices = [c1,c3,c2])
+    vertices = [c1,c3,c2]
+    tris(1) = triangle_t(vertices)
 
     cR%volumes(1)%triangles(1) = tris(1)
 

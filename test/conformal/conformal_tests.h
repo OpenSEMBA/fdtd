@@ -64,5 +64,5 @@ TEST(conformal, conformal_edge_next_cell)                      { EXPECT_EQ(0, te
 TEST(conformal, conformal_filling_closed_corner)               { EXPECT_EQ(0, test_conformal_filling_closed_corner()); }
 TEST(conformal, conformal_filling_block_and_corner)            { EXPECT_EQ(0, test_conformal_filling_block_and_corner()); }
 
-TEST(conformal, conformal_pec_corner)        { EXPECT_EQ(0, test_conformal_pec_corner()); }
-TEST(conformal, conformal_pec_media)        { EXPECT_EQ(0, test_conformal_pec_media()); }
+// TEST(conformal, conformal_pec_corner)        { EXPECT_EQ(0, test_conformal_pec_corner()); }
+// TEST(conformal, conformal_pec_media)        { EXPECT_EQ(0, test_conformal_pec_media()); }

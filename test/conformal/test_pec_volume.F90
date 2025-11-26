@@ -7,7 +7,7 @@ integer function  test_conformal_pec_corner() bind(C) result(err)
     err = 0
 #ifndef CompileWithMPI
     call chdir("./testData/cases/conformal/")
-    call semba%init("-i conformal_corner.fdtd.json -mapvtk -n 1")
+    call semba%init("-i conformal_corner.fdtd.json")
     
     ! check inside/outside and media
     if (semba%media%sggmiEx(2,2,2) /= 4) err = err + 1
@@ -36,7 +36,7 @@ integer function  test_conformal_pec_media() bind(C) result(err)
     err = 0
 #ifndef CompileWithMPI
     call chdir("./testData/cases/conformal/")
-    call semba%init("-i conformal_sphere_1mm_rcs_delta.fdtd.json -mapvtk -n 1")
+    call semba%init("-i conformal_sphere_1mm_rcs_delta.fdtd.json")
     ! check inside/outside and media
     
     !conformal edges
