@@ -2359,7 +2359,7 @@ contains
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(k)))) then
                if (present(elementTypes)) then 
                   do e = 1, size(elementTypes)
-                     if (isAssociatedWithElement(mAPtr, trim(elementTypes(j)))) then 
+                     if (isAssociatedWithElement(mAPtr, trim(elementTypes(k)))) then 
                         res(j) = this%parseMaterialAssociation(mAPtr)
                         j = j+1
                      end if
