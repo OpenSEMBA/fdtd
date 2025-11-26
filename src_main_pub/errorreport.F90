@@ -2109,70 +2109,39 @@ contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   function openfile_mpi(layoutnumber,nombrefich) result (thefile8)
-
-    logical :: borratedeunaputavez1,borratedeunaputavez2
-    
-      integer (kind=4)  ::   thefile8 !for mpi file management
+function openfile_mpi(layoutnumber, nombrefich) result(thefile8)
+    integer(4), intent(in) :: layoutnumber
+    character(len=BUFSIZE), intent(in) :: nombrefich
+    integer(4) :: thefile8, iter, ios
+    character(len=BUFSIZE) :: whoamishort
+    logical :: file_exists
 #ifdef CompileWithMPI
-      integer(kind=MPI_OFFSET_KIND) disp
-      integer (kind=4)  ::  ierr !for mpi file management
-#endif
-      integer (kind=4), intent(in) :: layoutnumber
-      character (LEN=BUFSIZE), intent(in) :: nombrefich
-      character (LEN=BUFSIZE) whoamishort
-      write(whoamishort,'(i5)') layoutnumber+1
-
-!      IF (layoutnumber == 0) THEN
-669      open (newunit=thefile8,file=trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp',err=667 )
-         goto 668
-667      print *,' '//trim(adjustl(whoamishort))//' ','--> no se pudo borrar la unidad usando open',thefile8
-         call sleep(2)
-         goto 669
-668     continue        
-        call sleep(2) 
-         write (thefile8,'(a)') '!END'
-        call sleep(2)
-         close (thefile8,status='delete')
-!      endif
-#ifdef CompileWithMPI
-      call MPI_Barrier(SUBCOMM_MPI,ierr)
+    integer(kind=MPI_OFFSET_KIND) :: disp
+    integer(4) :: ierr
 #endif
 
-      !!!#ifdef CompileWithMPI
-      !!!call MPI_FILE_open (SUBCOMM_MPI, trim(adjustl(nombrefich))//'_tmp', &
-      !!!                       MPI_MODE_WRONLY + MPI_MODE_CREATE, &
-      !!!                       MPI_INFO_NULL, thefile8, ierr)
-      !!!disp = (layoutnumber+1) * 1024 * 20000 !no creo que se den mas de 20000 escrituras por layout
-      !!!
-      !!!call MPI_FILE_SET_VIEW(thefile8, disp, MPI_CHARACTER, &
-      !!!                           MPI_CHARACTER, 'native', &
-      !!!                           MPI_INFO_NULL, ierr)
-      !!!#else
-!pgi    666     inquire (unit=thefile8,exist=borratedeunaputavez1)
-        inquire (file=trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp' ,exist=borratedeunaputavez2)
-!pgi    if (borratedeunaputavez1) then
-!pgi         print *,' '//trim(adjustl(whoamishort))//' ','--> no hay cojones con inquire unidad ',thefile8
-!pgi         call sleep(2)
-!pgi         goto 666
-!pgi    endif
-        if (borratedeunaputavez2) then
-        print *,' '//trim(adjustl(whoamishort))//' ','--> no hay cojones con inquire file fichero ',& 
-                      trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp'
+    write(whoamishort, '(i5)') layoutnumber + 1
+    do iter = 1, 10
+        ios = 0
+        open(newunit=thefile8, file=trim(adjustl(nombrefich)) // trim(adjustl(whoamishort)) // '_tmp', iostat=ios)
+        if (ios /= 0) print *, 'Error opening temporary file: ', trim(adjustl(nombrefich)) // trim(adjustl(whoamishort)) // '_tmp'
+        if ((layoutnumber == 0) .and. (ios == 0)) then
+            call sleep(2)
+            write(thefile8, '(a)') '!END'
+            call sleep(2)
+            ios = 0
+            close(thefile8, status='delete',iostat=ios)
+            if (ios /= 0) print *, 'Error deleting temporary file: ', trim(adjustl(nombrefich)) // trim(adjustl(whoamishort)) // '_tmp'
+        end if
         call sleep(2)
-        goto 669
-      endif
-      open (newunit=thefile8,file=trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp',err=767 )
-      goto 768
-767   print *,' '//trim(adjustl(whoamishort))//' ','--> no hay cojones con open definitivo unidad ',thefile8
-      call sleep(2)
-      goto 669
-768   continue         
-      !!!#endif
-      return
-   end function openfile_mpi
+        if (ios == 0) exit
+    end do
 
+#ifdef CompileWithMPI
+    call MPI_Barrier(SUBCOMM_MPI, ierr)
+#endif
 
+end function openfile_mpi
 
    subroutine writefile_mpi(layoutnumber, thefile8,buff2)
 
@@ -2192,10 +2161,7 @@ contains
 
    end subroutine writefile_mpi
 
-
-
    subroutine closefile_mpi(layoutnumber,size,nombrefich,thefile8)
-
 
       integer (kind=4)  ::  thefile8,thefile19
 #ifdef CompileWithMPI
