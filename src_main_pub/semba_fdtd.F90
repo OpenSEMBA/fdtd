@@ -325,6 +325,8 @@ contains
 
    call data_loader(this%l%filefde, parser)
 
+
+
       this%sgg%extraswitches=parser%switches
    !!!da preferencia a los switches por linea de comando
       CALL getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse, getBinaryPath())
@@ -337,6 +339,18 @@ contains
    !!!!
       call interpreta(this%l,status )      
       this%sgg%nEntradaRoot=trim (adjustl(this%l%nEntradaRoot))
+
+#ifdef CompileWithMPI            
+      CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#endif
+
+      if(newrotate) then      
+         call nfde_rotate (parser,NFDE_FILE%mpidir)
+      endif 
+
+#ifdef CompileWithMPI            
+         CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+#endif
 
 #ifdef CompileWithMTLN   
       if (parser%general%mtlnProblem) then 
@@ -1028,17 +1042,13 @@ contains
       type(Parseador), pointer :: parsedProblem
       type(fdtdjson_parser_t) :: parsed_t
 
-      NFDE_FILE%mpidir=this%l%mpidir
       write (dubuf,*) 'INIT interpreting geometrical data from ', trim (adjustl(filename))
       call print11 (this%l%layoutnumber, dubuf)
 
-      if(newrotate) then
-         verdadero_mpidir=NFDE_FILE%mpidir
-         NFDE_FILE%mpidir=3 !mpdir value is temporaly set to 3.This disables old rotation worflow inside newparser's call
-      endif
    
       if (trim(adjustl(this%l%extension))=='.nfde') then 
 #ifdef CompilePrivateVersion   
+            if(newrotate) NFDE_FILE%mpidir=3 !Legacy hardset to avoid newParser rotation
             parsedProblem => newparser (NFDE_FILE)
             this%l%thereare_stoch=NFDE_FILE%thereare_stoch
 #else
@@ -1057,22 +1067,6 @@ contains
          print *, 'Neither .nfde nor .json files used as input after -i'
          stop
       endif
-
-#ifdef CompileWithMPI            
-      CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-
-      if(newrotate) then      
-         NFDE_FILE%mpidir=verdadero_mpidir   
-         call nfde_rotate (parsedProblem,NFDE_FILE%mpidir)
-      endif 
-
-#ifdef CompileWithMPI            
-         CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-#endif
-
-      
-      this%l%mpidir=NFDE_FILE%mpidir
 
       write(dubuf,*) '[OK] '//trim(adjustl(this%whoami))//' Parser still working ';  call print11(this%l%layoutnumber,dubuf)       
 #ifdef CompileWithMPI            
