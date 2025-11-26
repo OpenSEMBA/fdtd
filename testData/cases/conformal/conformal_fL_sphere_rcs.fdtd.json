@@ -32586,7 +32586,7 @@
     "materials": [
         {
             "id": 1,
-            "type": "conformalPec"
+            "type": "pec"
         }
     ],
     "materialAssociations": [

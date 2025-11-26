@@ -10694,7 +10694,7 @@
         {
             "name": "PEC",
             "id": 1,
-            "type": "conformalPec"
+            "type": "pec"
         },
         {
             "name": "Isotropic_Material",

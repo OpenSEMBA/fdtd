@@ -29,7 +29,6 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_MAGNETIC_CONDUCTIVITY = "magneticConductivity"
    
    character (len=*), parameter :: J_MAT_TYPE_PEC = "pec"
-   character (len=*), parameter :: J_MAT_TYPE_CPEC = "conformalPec"
    character (len=*), parameter :: J_MAT_TYPE_PMC = "pmc"
    character (len=*), parameter :: J_MAT_TYPE_ISOTROPIC = "isotropic"
    character (len=*), parameter :: J_MAT_TYPE_LUMPED = "lumped"

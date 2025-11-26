@@ -518,7 +518,7 @@ contains
       type(coords), dimension(:), pointer :: cs
       integer :: i
       
-      mAs = this%getMaterialAssociations([matType])
+      mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
       block
          type(coords), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then 
@@ -585,7 +585,7 @@ contains
       integer :: i, j
       logical :: found
 
-      mAs = this%getMaterialAssociations([J_MAT_TYPE_CPEC])
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC],[J_ELEM_TYPE_CONF_VOLUME])
 
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
@@ -2318,14 +2318,15 @@ contains
       end subroutine
    end function
 
-   function getMaterialAssociations(this, materialTypes) result(res)
+   function getMaterialAssociations(this, materialTypes, elementTypes) result(res)
       class(parser_t) :: this
       character(len=*), intent(in) :: materialTypes(:)
       type(materialAssociation_t), dimension(:), allocatable :: res
       type(json_value), pointer :: allMatAss
+      character(len=*), intent(in), optional :: elementTypes(:)
       
       type(json_value), pointer :: mAPtr
-      integer :: i, j, k
+      integer :: i, j, k, e
       integer :: nMaterials
       logical :: found
       call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, allMatAss, found)
@@ -2339,7 +2340,13 @@ contains
          call this%core%get_child(allMatAss, i, mAPtr)
          do j = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(j)))) then
-               nMaterials = nMaterials + 1
+               if (present(elementTypes)) then 
+                  do e = 1, size(elementTypes)
+                     if (isAssociatedWithElement(mAPtr, trim(elementTypes(j)))) nMaterials = nMaterials + 1
+                  end do
+               else
+                  nMaterials = nMaterials + 1
+               end if
             end if
          end do
       end do
@@ -2350,8 +2357,17 @@ contains
          call this%core%get_child(allMatAss, i, mAPtr)
          do k = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(k)))) then
-               res(j) = this%parseMaterialAssociation(mAPtr)
-               j = j+1
+               if (present(elementTypes)) then 
+                  do e = 1, size(elementTypes)
+                     if (isAssociatedWithElement(mAPtr, trim(elementTypes(j)))) then 
+                        res(j) = this%parseMaterialAssociation(mAPtr)
+                        j = j+1
+                     end if
+                  end do
+               else
+                  res(j) = this%parseMaterialAssociation(mAPtr)
+                  j = j+1
+               end if
             end if
          end do
       end do
@@ -2367,6 +2383,23 @@ contains
          matAss = this%parseMaterialAssociation(mAPtr)
          mat = this%matTable%getId(matAss%materialId)
          isAssociatedWithMaterial = this%getStrAt(mat%p, J_TYPE) == materialType
+      end function
+
+      logical function isAssociatedWithElement(mAPtr, elementType)
+         type(json_value), pointer, intent(in) :: mAPtr
+         character (len=*), intent(in) :: elementType
+         
+         type(materialAssociation_t) :: matAss
+         type(json_value_ptr) :: elm
+         integer, dimension(:), allocatable :: elementIds
+         integer :: i
+         matAss = this%parseMaterialAssociation(mAPtr)
+         elementIds = matAss%elementIds
+         isAssociatedWithElement = .false.
+         do i = 1, size(elementIds)
+            elm = this%elementTable%getId(elementIds(i))
+            isAssociatedWithElement = isAssociatedWithElement .or. this%getStrAt(elm%p, J_TYPE) == elementType
+         end do
       end function
    end function
 
