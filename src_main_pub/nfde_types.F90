@@ -164,6 +164,8 @@ MODULE NFDETypes
       TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
       real (kind=rkind) :: time_step_scale_factor = 1.0
       character(len=bufsize) :: tag
+      !! something to deal with region II edges and faces
+      ! type(new_conf_t) :: thin_panels
    END TYPE ConformalMedia_t
 
 
