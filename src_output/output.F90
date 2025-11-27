@@ -6,7 +6,10 @@ module output
    character(len=4) :: datFileExtension = '.dat', timeExtension = 'tm', frequencyExtension = 'fq'
    integer(kind=SINGLE), parameter :: MAX_SERIALIZED_COUNT = 500, FILE_UNIT = 400
 
+   integer(kind=SINGLE), parameter :: POINT_PROBE_ID = 0
+
    type solver_output_t
+      integer(kind=SINGLE) :: outputID
       type(point_probe_output_t), allocatable :: pointProbe
       !type(wire_probe_output_t), allocatable :: wireProbe
       !type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
@@ -31,43 +34,124 @@ module output
    interface init_solver_output
       module procedure &
          init_point_probe_output
-         !init_wire_probe_output, &
-         !init_bulk_current_probe_output, &
-         !init_far_field, &
-         !initime_movie_output, &
-         !init_frequency_slice_output
+      !init_wire_probe_output, &
+      !init_bulk_current_probe_output, &
+      !init_far_field, &
+      !initime_movie_output, &
+      !init_frequency_slice_output
    end interface
 
    interface update_solver_output
       module procedure &
          update_point_probe_output
-         !update_wire_probe_output, &
-         !update_bulk_current_probe_output, &
-         !update_far_field, &
-         !updateime_movie_output, &
-         !update_frequency_slice_output
+      !update_wire_probe_output, &
+      !update_bulk_current_probe_output, &
+      !update_far_field, &
+      !updateime_movie_output, &
+      !update_frequency_slice_output
    end interface
 
    interface flush_solver_output
       module procedure &
          flush_point_probe_output
-         !flush_wire_probe_output, &
-         !flush_bulk_current_probe_output, &
-         !flush_far_field, &
-         !flushime_movie_output, &
-         !flush_frequency_slice_output
+      !flush_wire_probe_output, &
+      !flush_bulk_current_probe_output, &
+      !flush_far_field, &
+      !flushime_movie_output, &
+      !flush_frequency_slice_output
    end interface
 
    interface delete_solver_output
       module procedure &
          delete_point_probe_output
-         !delete_wire_probe_output, &
-         !delete_bulk_current_probe_output, &
-         !delete_far_field, &
-         !deleteime_movie_output, &
-         !delete_frequency_slice_output
+      !delete_wire_probe_output, &
+      !delete_bulk_current_probe_output, &
+      !delete_far_field, &
+      !deleteime_movie_output, &
+      !delete_frequency_slice_output
    end interface
 contains
+
+   subroutine init_outputs(sgg, control, outputs)
+      type(SGGFDTDINFO), intent(in) ::  sgg
+      type(sim_control_t), intent(inout) :: control
+      type(solver_output_t), dimension(:), intent(out) :: outputs
+
+      integer(kind=SINGLE) :: outputCount = 0
+      allocate (outputs(sgg%NumberRequest))
+
+      do ii = 1, sgg%NumberRequest
+         do i = 1, sgg%Observation(ii)%nP
+            I1 = sgg%observation(ii)%P(i)%XI
+            J1 = sgg%observation(ii)%P(i)%YI
+            K1 = sgg%observation(ii)%P(i)%ZI
+
+            field = sgg%observation(ii)%P(i)%what
+            select case (field)
+            case (iEx, iEy, iEz, iVx, iVy, iVz, iJx, iJy, iJz, iQx, iQy, iQz, iHx, iHy, iHz, lineIntegral)
+               outputCount = outputCount + 1
+
+               outputs(outputCount)%outputID = POINT_PROBE_ID
+
+               domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, finaltimestep)
+
+               outputTypeExtension = trim(adjustl(nEntradaRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
+
+               allocate (outputs(outputCount)%pointProbe)
+               init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, field, domain, outputTypeExtension, mpidir)
+            case default
+               call stoponerror('Field type not implemented yet on new observations')
+            end select
+         end do
+      end do
+      return
+   contains
+      function preprocess_domain(observation, timeArray, timeStep, finalStepIndex) result(newDomain)
+         type(Obses_t), intent(in) :: observation
+         real(kind=RKIND_tiempo), pointer, dimension(:), intent(in) :: timeArray
+         real(kind=RKIND_tiempo), intent(in) :: timeStep
+         integer(kind=4), intent(in) :: finalStepIndex
+         type(domain_t) :: newDomain
+
+         integer(kind=SINGLE) :: nFreq
+
+         if (observation%TimeDomain) then
+            newdomain = domain_t(observation%InitialTime, observation%FinalTime, observation%TimeStep)
+
+            newdomain%tstep = max(newdomain%tstep, timeStep)
+
+            if (10.0_RKIND*(newdomain%tstop - newdomain%tstart)/min(timeStep, newdomain%tstep) >= huge(1_4)) then
+               newdomain%tstop = newdomain%tstart + min(timeStep, newdomain%tstep)*huge(1_4)/10.0_RKIND
+            end if
+
+            if (newDomain%tstart < newDomain%tstep) then
+               newDomain%tstart = 0.0_RKIND_tiempo
+            end if
+
+            if (newDomain%tstep > (newdomain%tstop - newdomain%tstart)) then
+               newDomain%tstop = newDomain%tstart + newDomain%tstep
+            end if
+
+         elseif (observation%FreqDomain) then
+            !Just linear progression for now. Need to bring logartihmic info to here
+            nFreq = int((observation%FinalFreq - observation%InitialFreq) / observation%FreqStep, kind=SINGLE)
+            newdomain = domain_t(observation%InitialFreq, observation%FinalFreq, nFreq, logarithmicspacing=.false.)
+
+            newDomain%fstep = min(newDomain%fstep, 2.0_RKIND/dt)
+            if ((newDomain%fstep > newDomain%fstop - newDomain%fstart) .or. (newDomain%fstep == 0)) then
+               newDomain%fstep = newDomain%fstop - newDomain%fstart
+               newDomain%fstop = newDomain%fstart + observation%fstep
+            end if
+
+            newDomain%fnum =  int((newDomain%fstop - newDomain%fstart) / newDomain%fstep, kind=SINGLE)
+
+         else
+            call stoponerror('No domain present')
+         end if
+         return
+      end function preprocess_domain
+
+   end subroutine init_observations
 
    subroutine init_point_probe_output(this, iCoord, jCoord, kCoord, field, domain, outputTypeExtension, mpidir)
       type(point_probe_output_t), intent(out) :: this
@@ -86,14 +170,14 @@ contains
       this%domain = domain
       this%path = get_output_path()
 
-      if (any(this%domain%domainType==(/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
+      if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          this%nFreq = this%domain%fnum
          allocate (this%frequencySlice(this%domain%fnum))
          allocate (this%valueForFreq(this%domain%fnum))
          do i = 1, this%nFreq
-          call init_frequency_slice(this%frequencySlice, this%domain)
+            call init_frequency_slice(this%frequencySlice, this%domain)
          end do
-         this%valueForFreq = (0.0_RKIND, 0.0_RKIND) 
+         this%valueForFreq = (0.0_RKIND, 0.0_RKIND)
       end if
 
    contains
@@ -149,7 +233,7 @@ contains
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          do iter = 1, this%nFreq
             this%valueForFreq(iter) = &
-               this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
+   this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
          end do
       end if
    end subroutine update_point_probe_output
