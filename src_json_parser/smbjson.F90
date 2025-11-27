@@ -260,7 +260,7 @@ contains
                      call mesh%addCellRegion(id, cR)
                      
                   end block
-                case (J_ELEM_TYPE_CONF_VOLUME) 
+                case (J_ELEM_TYPE_CONF_VOLUME, J_ELEM_TYPE_CONF_VOLUME) 
                   block 
                      type(conformal_region_t) :: cV
                      type(coordinate_t) :: c
@@ -272,8 +272,11 @@ contains
                            cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
                         end do
                      end do
-                     cV%type = REGION_TYPE_VOLUME
                      cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+
+                     if (elementType == J_ELEM_TYPE_CONF_VOLUME)  cV%type = REGION_TYPE_VOLUME
+                     if (elementType == J_ELEM_TYPE_CONF_SURFACE) cV%type = REGION_TYPE_SURFACE
+
                      call mesh%addConformalRegion(id, cV)
                   end block
                 case default
@@ -585,7 +588,7 @@ contains
       integer :: i, j
       logical :: found
 
-      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC],[J_ELEM_TYPE_CONF_VOLUME])
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC],[J_ELEM_TYPE_CONF_VOLUME, J_ELEM_TYPE_CONF_SURFACE])
 
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
