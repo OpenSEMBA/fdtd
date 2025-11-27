@@ -1127,3 +1127,30 @@ def test_conformal_delay(tmp_path):
         tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
         assert np.abs(delay - tdelta)/tdelta < 0.01
         
+def test_conformal_thin_strip_resistance(tmp_path):
+    fn = CASES_FOLDER + 'conformal_thin_strip/conformal_thin_strip.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    
+    exc = pd.read_csv("predefinedExcitation.1.exc", sep='\\s+')
+    exc = exc.rename(columns={
+        exc.columns[0]: 'time',
+        exc.columns[1]: 'V'
+    })
+    new_freqs = np.geomspace(1e3, 1e7, num=100)
+    Vexc = exc["V"].to_numpy()
+    texc = exc["time"].to_numpy()
+    dt_exc = texc[1]-texc[0]
+    Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
+
+    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
+    Ibulk = bulk["current"].to_numpy()
+    tbulk = bulk["time"].to_numpy()
+    dt_bulk = tbulk[1]-tbulk[0]
+    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
+    # compute 
+    Rdc_th = 0 
+    #impedance comparison 
+    assert (np.abs(Vfexc/Ifbulk)[0] == Rdc_th)
