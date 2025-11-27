@@ -94,7 +94,7 @@ contains
       ex%oldSonda%probes(1)%FarField(1)%probe%tstep = 0.0
       ex%oldSonda%probes(1)%FarField(1)%probe%fstart = 1e6
       ex%oldSonda%probes(1)%FarField(1)%probe%fstop = 1e9
-      ex%oldSonda%probes(1)%FarField(1)%probe%fstep = 1e6*5
+      ex%oldSonda%probes(1)%FarField(1)%probe%fstep = (1e9-1e6)/5
       ex%oldSONDA%probes(1)%FarField(1)%probe%FileNormalize = "gauss.exc"
       allocate(ex%oldSonda%probes(1)%FarField(1)%probe%i(2))
       allocate(ex%oldSonda%probes(1)%FarField(1)%probe%j(2))

@@ -49,7 +49,6 @@ contains
 
    subroutine check_shape_real(arr, n_expected, test_err, name)
       use Observa
-      use FDETYPES
       real(kind=RKIND), intent(in), dimension(:, :) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -72,7 +71,6 @@ contains
 
    subroutine check_shape_complex(arr, n_expected, test_err, name)
       use Observa
-      use FDETYPES
       complex(kind=CKIND), intent(in), dimension(:, :) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -95,7 +93,6 @@ contains
 
    subroutine check_size(arr, n_expected, test_err, name)
       use Observa
-      use FDETYPES
       integer, intent(in), dimension(:) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -116,13 +113,11 @@ contains
    end subroutine check_size
 
    logical function approx_equal(a, b, tol) result(equal)
-      use FDETYPES
       real(kind=RKIND), intent(in) :: a, b, tol
       equal = abs(a - b) <= tol
    end function approx_equal
 
    function create_time_array(array_size, interval) result(arr)
-      use FDETYPES
       integer, intent(in) :: array_size
       integer(kind=4) :: i
       real(kind=RKIND_tiempo) :: interval
@@ -136,12 +131,10 @@ contains
    end function create_time_array
 
    function create_limit_type() result(r)
-      use FDETYPES
       type(limit_t) :: r
    end function
 
    function create_xyz_limit_array(XI,YI,ZI,XE,YE,ZE) result(arr)
-      use FDETYPES
       type(XYZlimit_t), dimension(1:6) :: arr
       integer (kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
       integer :: i
@@ -157,7 +150,6 @@ contains
 
    
    function create_facesNF2FF(tr, fr, iz, de, ab, ar) result(faces)
-      use FDETYPES
       type(nf2ff_t) :: faces
       logical :: tr, fr, iz, de, ab, ar
 
@@ -173,7 +165,6 @@ contains
                                        nEntradaRoot, wiresflavor, &
                                        resume, saveall, NF2FFDecim, simu_devia, singlefilewrite, &
                                        facesNF2FF) result(control)
-      use FDETYPES
       type(sim_control_t) :: control
       integer(kind=4), intent(in) :: layoutnumber, size, mpidir, finaltimestep
       character(len=*), intent(in) :: nEntradaRoot, wiresflavor
@@ -196,7 +187,6 @@ contains
    end function create_control_flags
 
    function create_base_sgg() result(sgg)
-      use FDETYPES
       type(SGGFDTDINFO) :: sgg
       
       sgg%NumMedia = 3
@@ -213,7 +203,6 @@ contains
    end function create_base_sgg
 
    function create_basic_media () result(media)
-      use FDETYPES
       type(MediaData_t) :: media
    end function create_basic_media
 end module
