@@ -193,10 +193,13 @@ CONTAINS
       !!!!!!!!!!!!!
       contamedia = contamedia +1 !para acomodar los nodal sources como caso especial de linea vacia
 
-      ! contamedia = contamedia + this%conformalRegs%nEdges + this%conformalRegs%nFaces
-      
-      edge_ratios = getDifferentEdgeRatios(conformal_volumes)
-      face_ratios = getDifferentFaceRatios(conformal_volumes)
+     
+      call getDifferentEdgeRatios(edge_ratios, conformal_volumes)
+      call getDifferentEdgeRatios(edge_ratios, conformal_surfaces)
+      call getDifferentFaceRatios(face_ratios, conformal_volumes)
+      call getDifferentFaceRatios(face_ratios, conformal_surfaces)
+      ! edge_ratios = getDifferentEdgeRatios(conformal_volumes)
+      ! face_ratios = getDifferentFaceRatios(conformal_volumes)
       contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
       if (findloc(edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
       if (findloc(face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
@@ -4868,74 +4871,73 @@ CONTAINS
          bbox%ZE = -sgg%Alloc(iHz)%ZE
       end subroutine
 
-      function getDifferentEdgeRatios(conformal_volumes) result(res)
-         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_volumes
+      subroutine getDifferentEdgeRatios(ratios, conf_media)
+         real (kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
+         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conf_media
          integer :: i, j, k
          real (kind=rkind), dimension(:), allocatable :: aux
-         real (kind=rkind), dimension(:), allocatable :: res
          logical :: isNew
-         allocate(res(0))
-         do i = 1, ubound(conformal_volumes,1)
-            do j = 1, ubound(conformal_volumes(i)%edge_media,1)
-
+         if (.not. allocated(ratios)) allocate(ratios(0))
+         do i = 1, ubound(conf_media,1)
+            do j = 1, ubound(conf_media(i)%edge_media,1)
                isNew = .true.
-               do k = 1, ubound(res,1)
-                  if (eq_ratio(res(k), conformal_volumes(i)%edge_media(j)%ratio, EDGE_RATIO_EQ_TOLERANCE)) isNew = .false.
+               do k = 1, ubound(ratios,1)
+                  if (eq_ratio(ratios(k), conf_media(i)%edge_media(j)%ratio, EDGE_RATIO_EQ_TOLERANCE)) isNew = .false.
                end do
                if (isNew) then 
                   block 
-                     if (ubound(res,1) == 0) then 
-                        deallocate(res)
-                        allocate(res(1))
-                        res(1) = conformal_volumes(i)%edge_media(j)%ratio
+                     if (ubound(ratios,1) == 0) then 
+                        deallocate(ratios)
+                        allocate(ratios(1))
+                        ratios(1) = conf_media(i)%edge_media(j)%ratio
                      else
                         if (allocated(aux)) deallocate(aux)
-                        allocate(aux(ubound(res,1) + 1))
-                        aux(1:ubound(res,1)) = res
-                        aux(ubound(res,1) + 1) = conformal_volumes(i)%edge_media(j)%ratio
-                        deallocate(res)
-                        allocate(res(ubound(aux,1)))
-                        res = aux
+                        allocate(aux(ubound(ratios,1) + 1))
+                        aux(1:ubound(ratios,1)) = ratios
+                        aux(ubound(ratios,1) + 1) = conf_media(i)%edge_media(j)%ratio
+                        deallocate(ratios)
+                        allocate(ratios(ubound(aux,1)))
+                        ratios = aux
                      end if
                   end block
                end if
             end do
          end do
-      end function
-      function getDifferentFaceRatios(conformal_volumes) result(res)
-         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_volumes
+      end subroutine
+      subroutine getDifferentFaceRatios(ratios, conf_media)
+         real (kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
+         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conf_media
          integer :: i, j, k
-         real (kind=rkind), dimension(:), allocatable :: res
          real (kind=rkind), dimension(:), allocatable :: aux
          logical :: isNew
-         allocate(res(0))
-         do i = 1, ubound(conformal_volumes,1)
-            do j = 1, ubound(conformal_volumes(i)%face_media,1)
+         if (.not. allocated(ratios)) allocate(ratios(0))
+         do i = 1, ubound(conf_media,1)
+            do j = 1, ubound(conf_media(i)%face_media,1)
 
                isNew = .true.
-               do k = 1, ubound(res,1)
-                  if (eq_ratio(res(k), conformal_volumes(i)%face_media(j)%ratio, FACE_RATIO_EQ_TOLERANCE)) isNew = .false.
+               do k = 1, ubound(ratios,1)
+                  if (eq_ratio(ratios(k), conf_media(i)%face_media(j)%ratio, FACE_RATIO_EQ_TOLERANCE)) isNew = .false.
                end do
                if (isNew) then 
                   block 
-                     if (ubound(res,1) == 0) then 
-                        deallocate(res)
-                        allocate(res(1))
-                        res(1) = conformal_volumes(i)%face_media(j)%ratio
+                     if (ubound(ratios,1) == 0) then 
+                        deallocate(ratios)
+                        allocate(ratios(1))
+                        ratios(1) = conf_media(i)%face_media(j)%ratio
                      else
                         if (allocated(aux)) deallocate(aux)
-                        allocate(aux(ubound(res,1) + 1))
-                        aux(1:ubound(res,1)) = res
-                        aux(ubound(res,1) + 1) = conformal_volumes(i)%face_media(j)%ratio
-                        deallocate(res)
-                        allocate(res(ubound(aux,1)))
-                        res = aux
+                        allocate(aux(ubound(ratios,1) + 1))
+                        aux(1:ubound(ratios,1)) = ratios
+                        aux(ubound(ratios,1) + 1) = conf_media(i)%face_media(j)%ratio
+                        deallocate(ratios)
+                        allocate(ratios(ubound(aux,1)))
+                        ratios = aux
                      end if
                   end block
                end if
             end do
          end do
-      end function
+      end subroutine
 
       subroutine addConformalMedia(sgg, media, conformal_volumes, edge_ratios, face_ratios, contamedia, bbox, side_map)
          type(sggfdtdinfo), intent(inout)    :: sgg
