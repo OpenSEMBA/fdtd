@@ -31,6 +31,20 @@ contains
       end do
    end function   
 
+   function buildConformalSurfaces(regions) result(res)
+      type(ConformalPECRegions), intent(in) :: regions
+      type(ConformalMedia_t), dimension(:), allocatable :: res
+      integer :: i
+      allocate(res(size(regions%surfaces)))
+      do i = 1, size(regions%surfaces)
+         res(i) = buildConformalSurface(regions%surfaces(i))
+      end do
+   end function   
+
+   function buildConformalSurface(surface) result(res)
+      type(ConformalPECElements), intent(in) :: surface
+      type(ConformalMedia_t) :: res
+   end function
 
    function buildConformalVolume(volume) result(res)
       type(ConformalPECElements), intent(in) :: volume

@@ -107,7 +107,7 @@ CONTAINS
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       !
-      type(ConformalMedia_t), dimension(:), allocatable :: conformal_volumes
+      type(ConformalMedia_t), dimension(:), allocatable :: conformal_volumes, conformal_surfaces
       real(kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
       type(side_tris_map_t), dimension(:), allocatable :: side_to_triangles_maps
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
@@ -143,32 +143,9 @@ CONTAINS
       sgg%EShared%MaxConta = 10
       ALLOCATE (sgg%EShared%elem(1:sgg%EShared%MaxConta))
 
-
-      block 
-         integer :: m
-         real :: min_scale_factor = 1.0, dt
-         if (associated(this%conformalRegs%volumes)) then 
-            conformal_volumes = buildConformalVolumes(this%conformalRegs)
-            side_to_triangles_maps = buildSideMaps(this%conformalRegs)
-            do m = 1, ubound(conformal_volumes,1)
-               if (conformal_volumes(m)%time_step_scale_factor < min_scale_factor) then 
-                  min_scale_factor = conformal_volumes(m)%time_step_scale_factor
-               end if
-            end do
-            dt = (1.0_RKIND/(cluz*sqrt(((1.0_RKIND / minval(sgg%DX))**2.0_RKIND) + & 
-                                       ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + & 
-                                       ((1.0_RKIND / minval(sgg%DZ))**2.0_RKIND ))))
-            if (sgg%dt > dt*min_scale_factor) then 
-               write(*,*) '-- Conformal geometry requires a time step change'
-               write(*,*) 'Previous time step: ', sgg%dt
-               sgg%dt = dt*min_scale_factor
-               write(*,*) 'New time step: ', sgg%dt
-            end if
-         else
-            allocate(conformal_volumes(0))
-         end if
-      end block
-
+      call buildConformalMedia(this%conformalRegs, conformal_volumes, conformal_surfaces)
+      sgg%dt = changeTimeStepIfConformalNeeded(sgg%dt)
+      if (associated(this%conformalRegs%volumes)) side_to_triangles_maps = buildSideMaps(this%conformalRegs)
 
       ! Cuenta los medios
       !!!!!calcula tamanios
@@ -4828,6 +4805,57 @@ CONTAINS
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      subroutine buildConformalMedia(conformalRegs, volumes, surfaces) 
+         type(ConformalPECRegions), pointer, intent(in) :: conformalRegs
+         type(ConformalMedia_t), allocatable, dimension(:), intent(inout) :: volumes, surfaces
+         if (associated(conformalRegs%volumes)) then 
+            volumes = buildConformalVolumes(conformalRegs)
+         else
+            allocate(volumes(0))
+         end if
+         if (associated(conformalRegs%surfaces)) then 
+            surfaces = buildConformalSurfaces(conformalRegs)
+         else
+            allocate(surfaces(0))
+         end if
+      end subroutine
+
+      function computeConformalTimeFactor(volumes, surfaces) result(res)
+         type(ConformalMedia_t), allocatable, dimension(:), intent(in) :: volumes, surfaces
+         real(kind=rkind) :: res
+         integer :: i
+         res = 1.0
+         do i = 1, ubound(volumes,1)
+            if (volumes(i)%time_step_scale_factor < res) then 
+               res = volumes(i)%time_step_scale_factor
+            end if
+         end do
+         do i = 1, ubound(surfaces,1)
+            if (surfaces(i)%time_step_scale_factor < res) then 
+               res = surfaces(i)%time_step_scale_factor
+            end if
+         end do
+      end function
+
+      function changeTimeStepIfConformalNeeded(sgg_dt) result(res)
+         real(kind=rkind), intent(in) :: sgg_dt
+         real(kind=rkind) :: yee_dt, time_scale_factor
+         real(kind=rkind) :: res
+         time_scale_factor = computeConformalTimeFactor(conformal_volumes, conformal_surfaces)
+         yee_dt = (1.0_RKIND/(cluz*sqrt(((1.0_RKIND / minval(sgg%DX))**2.0_RKIND) + & 
+                  ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + & 
+                  ((1.0_RKIND / minval(sgg%DZ))**2.0_RKIND ))))
+         if (sgg_dt > yee_dt*time_scale_factor) then 
+            write(*,*) '-- Conformal geometry requires a time step change'
+            write(*,*) 'Previous time step: ', sgg_dt
+            res = yee_dt*time_scale_factor
+            write(*,*) 'New time step: ', res
+         else
+            res = sgg_dt
+         end if
+
+      end function
 
       subroutine initConformalBoundingBox(sgg, bbox)
          type(sggfdtdinfo), intent(in)    :: sgg
