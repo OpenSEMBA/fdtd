@@ -191,6 +191,8 @@ if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(test)
 endif()
 
+add_subdirectory(src_output)
+
 if(SEMBA_FDTD_COMPONENTS_LIB)
 	add_library(semba-components
 		"src_main_pub/anisotropic.F90"

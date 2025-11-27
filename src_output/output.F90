@@ -4,15 +4,15 @@ module output
    use mod_outputUtils
    implicit none
    character(len=4) :: datFileExtension = '.dat', timeExtension = 'tm', frequencyExtension = 'fq'
-   integer(kind=SINGLE) :: MAX_SERIALIZED_COUNT = 500, FILE_UNIT = 400
+   integer(kind=SINGLE), parameter :: MAX_SERIALIZED_COUNT = 500, FILE_UNIT = 400
 
    type solver_output_t
       type(point_probe_output_t), allocatable :: pointProbe
-      type(wire_probe_output_t), allocatable :: wireProbe
-      type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
-      type(far_field_t), allocatable :: farField
-      type(time_movie_output_t), allocatable :: timeMovie
-      type(frequency_slice_output_t), allocatable :: frequencySlice
+      !type(wire_probe_output_t), allocatable :: wireProbe
+      !type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
+      !type(far_field_t), allocatable :: farField
+      !type(time_movie_output_t), allocatable :: timeMovie
+      !type(frequency_slice_output_t), allocatable :: frequencySlice
    end type solver_output_t
 
    type point_probe_output_t
@@ -22,50 +22,50 @@ module output
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: fieldComponent
       integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE, nFreq = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(MAX_SERIALIZED_COUNT), allocatable :: timeStep
-      real(kind=RKIND), dimension(MAX_SERIALIZED_COUNT), allocatable :: valueForTime
+      real(kind=RKIND_tiempo), dimension(MAX_SERIALIZED_COUNT) :: timeStep
+      real(kind=RKIND), dimension(MAX_SERIALIZED_COUNT) :: valueForTime
       real(kind=RKIND), dimension(:), allocatable :: frequencySlice
       real(kind=CKIND), dimension(:), allocatable :: valueForFreq
    end type point_probe_output_t
 
    interface init_solver_output
       module procedure &
-         init_point_probe_output, &
-         init_wire_probe_output, &
-         init_bulk_current_probe_output, &
-         init_far_field, &
-         initime_movie_output, &
-         init_frequency_slice_output
+         init_point_probe_output
+         !init_wire_probe_output, &
+         !init_bulk_current_probe_output, &
+         !init_far_field, &
+         !initime_movie_output, &
+         !init_frequency_slice_output
    end interface
 
    interface update_solver_output
       module procedure &
-         update_point_probe_output, &
-         update_wire_probe_output, &
-         update_bulk_current_probe_output, &
-         update_far_field, &
-         updateime_movie_output, &
-         update_frequency_slice_output
+         update_point_probe_output
+         !update_wire_probe_output, &
+         !update_bulk_current_probe_output, &
+         !update_far_field, &
+         !updateime_movie_output, &
+         !update_frequency_slice_output
    end interface
 
    interface flush_solver_output
       module procedure &
-         flush_point_probe_output, &
-         flush_wire_probe_output, &
-         flush_bulk_current_probe_output, &
-         flush_far_field, &
-         flushime_movie_output, &
-         flush_frequency_slice_output
+         flush_point_probe_output
+         !flush_wire_probe_output, &
+         !flush_bulk_current_probe_output, &
+         !flush_far_field, &
+         !flushime_movie_output, &
+         !flush_frequency_slice_output
    end interface
 
    interface delete_solver_output
       module procedure &
-         delete_point_probe_output, &
-         delete_wire_probe_output, &
-         delete_bulk_current_probe_output, &
-         delete_far_field, &
-         deleteime_movie_output, &
-         delete_frequency_slice_output
+         delete_point_probe_output
+         !delete_wire_probe_output, &
+         !delete_bulk_current_probe_output, &
+         !delete_far_field, &
+         !deleteime_movie_output, &
+         !delete_frequency_slice_output
    end interface
 contains
 
@@ -77,18 +77,23 @@ contains
       type(domain_t), intent(in) :: domain
 
       character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
+      integer(kind=SINGLE) :: i
 
       this%xCoord = iCoord
       this%yCoord = jCoord
       this%zCoord = kCoord
 
       this%domain = domain
-      this%path = get_output_path(outputTypeExtension, iCoord, jCoord, kCoord, field, mpidir)
+      this%path = get_output_path()
 
-      if (any(this%domain%domainType=(/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
+      if (any(this%domain%domainType==(/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          this%nFreq = this%domain%fnum
          allocate (this%frequencySlice(this%domain%fnum))
          allocate (this%valueForFreq(this%domain%fnum))
+         do i = 1, this%nFreq
+          call init_frequency_slice(this%frequencySlice, this%domain)
+         end do
+         this%valueForFreq = (0.0_RKIND, 0.0_RKIND) 
       end if
 
    contains
@@ -117,7 +122,7 @@ contains
          elseif (mpidir == 1) then
             ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
          else
-            call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+            call stoponerror('Buggy error in mpidir. ')
          end if
 #else
          ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
@@ -131,19 +136,20 @@ contains
       type(point_probe_output_t), intent(inout) :: this
       real(kind=RKIND), pointer, dimension(:, :, :) :: field
       real(kind=RKIND_tiempo) :: step
+      integer(kind=SINGLE) :: iter
 
       field => get_field_component(this%fieldComponent)
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          this%serializedTimeSize = this%serializedTimeSize + 1
          this%timeStep(this%serializedTimeSize) = step
-         this%valueForTime(this%serializedTimeSize) = field(i, j, k)
+         this%valueForTime(this%serializedTimeSize) = field(this%xCoord, this%yCoord, this%zCoord)
       end if
 
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          do iter = 1, this%nFreq
             this%valueForFreq(iter) = &
-               this%valueForFreq(iter) + field(i, j, k)*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
+               this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
          end do
       end if
    end subroutine update_point_probe_output
@@ -153,13 +159,14 @@ contains
 
       integer(kind=SINGLE) :: timeUnitFile, frequencyUnitFile, status
       character(len=BUFSIZE) :: timeFileName, frequencyFileName
+      integer(kind=SINGLE) :: i
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          timeFileName = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
          timeUnitFile = FILE_UNIT + 1
 
          status = open_file(timeUnitFile, timeFileName)
-         if (status /= 0) call stoponerror()
+         if (status /= 0) call stoponerror('Failed to open timeDomainFile. ')
 
          do i = 1, this%serializedTimeSize
             write (timeUnitFile, '(F12.4, 2X, F12.4)') this%timeStep(i), this%valueForTime(i)
@@ -173,7 +180,7 @@ contains
          frequencyUnitFile = FILE_UNIT + 2
 
          OPEN (UNIT=frequencyUnitFile, FILE=frequencyFileName, STATUS='REPLACE', ACTION='WRITE', iostat=status)
-         if (status /= 0) call stoponerror()
+         if (status /= 0) call stoponerror('Failed to open frequencyDomainFile. ')
 
          do i = 1, this%nFreq
             write (frequencyUnitFile, '(F12.4, 2X, F12.4)') this%frequencySlice(i), this%valueForFreq(i)
@@ -182,5 +189,9 @@ contains
          status = close_file(frequencyUnitFile)
       end if
    end subroutine flush_point_probe_output
+
+   subroutine delete_point_probe_output()
+
+   end subroutine delete_point_probe_output
 
 end module output

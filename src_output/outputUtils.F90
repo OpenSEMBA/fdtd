@@ -1,5 +1,6 @@
 module mod_outputUtils
    use FDETYPES
+   use mod_domain
    implicit none
 
 contains
@@ -76,7 +77,7 @@ contains
          case default; prefixExtension = prefix(field)
          end select
       else
-         call stoponerror(layoutnumber, size, 'Buggy error in mpidir. ')
+         call stoponerror('Buggy error in mpidir. ')
       end if
       return
    end function get_rotated_prefix
@@ -131,9 +132,9 @@ contains
       integer(kind=SINGLE), intent(in) :: fileUnit
       integer(kind=SINGLE) :: iostat
 
-      open (unit=fileUnit, file=fileName status='OLD', action='WRITE', possition='APPEND', iostat=iostat)
+      open (unit=fileUnit, file=fileName, status='OLD', action='WRITE', position='APPEND', iostat=iostat)
       if (iostat /= 0) then
-         open (unit=fileUnit, file=fileName status='NEW', action='WRITE', iostat=iostat)
+         open (unit=fileUnit, file=fileName, status='NEW', action='WRITE', iostat=iostat)
       end if
       return
    end function open_file
@@ -144,4 +145,21 @@ contains
 
       close (fileUnit, iostat=iostat)
    end function close_file
+
+   subroutine init_frequency_slice(frequencySlice, domain)
+    real(kind=RKIND), dimension(:), intent(out) :: frequencySlice
+    type(domain_t), intent(in) :: domain
+
+    integer(kind=SINGLE) :: i
+
+    if (domain%logarithmicSpacing) then
+      do i = 1, domain%fnum
+        frequencySlice(i) = 10.0_RKIND ** (domain%fstart + (i - 1) * domain%fstep)
+      end do
+    else
+      do i=1, domain%fnum
+        frequencySlice(i) = domain%fstart + (i-1) * domain%fstep
+      end do
+    end if
+   end subroutine init_frequency_slice
 end module mod_outputUtils

@@ -7,16 +7,15 @@ module mod_domain
    integer, parameter :: FREQUENCY_DOMAIN = 1
    integer, parameter :: BOTH_DOMAIN = 2
 
-   ! Definición del tipo derivado
+   interface domain_t
+     module procedure new_domain_time, new_domain_freq, new_domain_both
+   end interface domain_t
    type :: domain_t
       real(kind=RKIND_tiempo) :: tstart = 0.0_RKIND_tiempo, tstop = 0.0_RKIND_tiempo, tstep = 0.0_RKIND_tiempo
-      real(kind=RKIND)        :: fstart = 0.0_RKIND, fstop = 0.0_RKIND
+      real(kind=RKIND)        :: fstart = 0.0_RKIND, fstop = 0.0_RKIND, fstep
       integer(kind=SINGLE)    :: fnum = 0
       integer(kind=SINGLE)    :: domainType = UNDEFINED_DOMAIN
       logical                 :: logarithmicSpacing = .false.
-
-   contains
-      generic :: domain_t => new_domain_time, new_domain_freq, new_domain_both
    end type domain_t
 
 contains
@@ -39,6 +38,8 @@ contains
       new_domain%fstart = fstart
       new_domain%fstop = fstop
       new_domain%fnum = fnum
+      new_domain%fstep = (fstop - fstart) / fnum
+      
       new_domain%domainType = FREQUENCY_DOMAIN
 
       if (present(logarithmicSpacing)) then
@@ -60,6 +61,8 @@ contains
       new_domain%fstart = fstart
       new_domain%fstop = fstop
       new_domain%fnum = fnum
+      new_domain%fstep = (fstop - fstart) / fnum
+
       new_domain%domainType = BOTH_DOMAIN
 
       if (present(logarithmicSpacing)) then
