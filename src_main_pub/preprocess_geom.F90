@@ -4824,16 +4824,16 @@ CONTAINS
       function computeConformalTimeFactor(volumes, surfaces) result(res)
          type(ConformalMedia_t), allocatable, dimension(:), intent(in) :: volumes, surfaces
          real(kind=rkind) :: res
-         integer :: i
+         integer :: t
          res = 1.0
-         do i = 1, ubound(volumes,1)
-            if (volumes(i)%time_step_scale_factor < res) then 
-               res = volumes(i)%time_step_scale_factor
+         do t = 1, ubound(volumes,1)
+            if (volumes(t)%time_step_scale_factor < res) then 
+               res = volumes(t)%time_step_scale_factor
             end if
          end do
-         do i = 1, ubound(surfaces,1)
-            if (surfaces(i)%time_step_scale_factor < res) then 
-               res = surfaces(i)%time_step_scale_factor
+         do t = 1, ubound(surfaces,1)
+            if (surfaces(t)%time_step_scale_factor < res) then 
+               res = surfaces(t)%time_step_scale_factor
             end if
          end do
       end function
