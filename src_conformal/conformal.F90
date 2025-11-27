@@ -21,7 +21,7 @@ contains
       end do
    end function
 
-   function buildConformalMedia(regions) result(res)
+   function buildConformalVolumes(regions) result(res)
       type(ConformalPECRegions), intent(in) :: regions
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i

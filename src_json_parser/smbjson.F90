@@ -260,7 +260,7 @@ contains
                      call mesh%addCellRegion(id, cR)
                      
                   end block
-                case (J_ELEM_TYPE_CONF_VOLUME, J_ELEM_TYPE_CONF_VOLUME) 
+                case (J_ELEM_TYPE_CONF_VOLUME, J_ELEM_TYPE_CONF_SURFACE) 
                   block 
                      type(conformal_region_t) :: cV
                      type(coordinate_t) :: c

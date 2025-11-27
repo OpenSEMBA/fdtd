@@ -64,10 +64,7 @@ MODULE CreateMatrices
    & NumMedia, BoundingBox,indicemedio)
       character(len=BUFSIZE) :: buff
       TYPE (Shared_t) :: Eshared
-      !
-      ! type(ConformalMedia_t), intent(in) :: conformal_media
-      ! type(side_tris_map_t), intent(in) :: side_map
-      !
+
       INTEGER (KIND=4) :: NumMedia
       TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
