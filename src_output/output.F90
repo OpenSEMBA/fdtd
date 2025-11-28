@@ -153,6 +153,54 @@ contains
 
    end subroutine init_observations
 
+   subroutine update_outputs(outputs, step, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh)
+      type(solver_output_t), dimension(:), intent(inout) :: outputs
+      real(kind=RKIND_tiempo) :: step
+      integer(kind=SINGLE) :: i, id
+
+
+      REAL(KIND=RKIND), intent(in), target     :: &
+        Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
+        Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
+        Ez(sgg%alloc(iEz)%XI:sgg%alloc(iEz)%XE, sgg%alloc(iEz)%YI:sgg%alloc(iEz)%YE, sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE), &
+        Hx(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE, sgg%alloc(iHx)%YI:sgg%alloc(iHx)%YE, sgg%alloc(iHx)%ZI:sgg%alloc(iHx)%ZE), &
+        Hy(sgg%alloc(iHy)%XI:sgg%alloc(iHy)%XE, sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE, sgg%alloc(iHy)%ZI:sgg%alloc(iHy)%ZE), &
+        Hz(sgg%alloc(iHz)%XI:sgg%alloc(iHz)%XE, sgg%alloc(iHz)%YI:sgg%alloc(iHz)%YE, sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
+      !--->
+      REAL(KIND=RKIND), dimension(:), intent(in)   :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
+                                                      dyh(sgg%ALLOC(iEy)%YI:sgg%ALLOC(iEy)%YE), &
+                                                      dzh(sgg%ALLOC(iEz)%ZI:sgg%ALLOC(iEz)%ZE), &
+                                                      dxe(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE), &
+                                                      dye(sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE), &
+                                                      dze(sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
+
+
+      do i = 1, size(outputs)
+         id = outputs(i)%outputID
+         select case(id)
+         case(POINT_PROBE_ID)
+            field => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
+            update_solver_output(outputs(i)%pointProbe, step, field)
+         case default
+            call stoponerror('Output update not implemented')
+         end select
+      end do
+
+      contains
+      function get_field_component(fieldId) result(field)
+      integer(kind=SINGLE), intent(in) :: fieldId
+      select case(fieldId)
+      case(iEx); field => Ex 
+      case(iEy); field => Ey 
+      case(iEz); field => Ez 
+      case(iHx); field => Hx 
+      case(iHy); field => Hy 
+      case(iHz); field => Hz 
+      end select
+      end function get_field_component
+
+   end subroutine update_outputs
+
    subroutine init_point_probe_output(this, iCoord, jCoord, kCoord, field, domain, outputTypeExtension, mpidir)
       type(point_probe_output_t), intent(out) :: this
       integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord
@@ -198,7 +246,7 @@ contains
          write (charj, '(i7)') jCoord
          write (chark, '(i7)') kCoord
 
-#if CompileWithMPI
+      #if CompileWithMPI
          if (mpidir == 3) then
             ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
          elseif (mpidir == 2) then
@@ -208,21 +256,22 @@ contains
          else
             call stoponerror('Buggy error in mpidir. ')
          end if
-#else
+      #else
          ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
-#endif
+      #endif
 
          return
       end function get_probe_bounds_extension
    end subroutine init_point_probe_output
 
-   subroutine update_point_probe_output(this, step)
+   subroutine
+      
+
+   subroutine update_point_probe_output(this, step, field)
       type(point_probe_output_t), intent(inout) :: this
       real(kind=RKIND), pointer, dimension(:, :, :) :: field
       real(kind=RKIND_tiempo) :: step
       integer(kind=SINGLE) :: iter
-
-      field => get_field_component(this%fieldComponent)
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          this%serializedTimeSize = this%serializedTimeSize + 1
@@ -233,7 +282,7 @@ contains
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          do iter = 1, this%nFreq
             this%valueForFreq(iter) = &
-   this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
+      this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
          end do
       end if
    end subroutine update_point_probe_output
@@ -275,7 +324,7 @@ contains
    end subroutine flush_point_probe_output
 
    subroutine delete_point_probe_output()
-
+      !TODO
    end subroutine delete_point_probe_output
 
 end module output
