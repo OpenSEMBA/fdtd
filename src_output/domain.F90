@@ -32,26 +32,25 @@ contains
    function new_domain_freq(fstart, fstop, fnum, logarithmicSpacing) result(new_domain)
       real(kind=RKIND), intent(in)     :: fstart, fstop
       integer(kind=SINGLE), intent(in) :: fnum
-      logical, intent(in), optional    :: logarithmicSpacing
+      logical, intent(in)    :: logarithmicSpacing
       type(domain_t) :: new_domain
 
       new_domain%fstart = fstart
       new_domain%fstop = fstop
       new_domain%fnum = fnum
       new_domain%fstep = (fstop - fstart) / fnum
+      new_domain%logarithmicSpacing = logarithmicSpacing
       
       new_domain%domainType = FREQUENCY_DOMAIN
 
-      if (present(logarithmicSpacing)) then
-         new_domain%logarithmicSpacing = logarithmicSpacing
-      end if
+      
    end function new_domain_freq
 
    function new_domain_both(tstart, tstop, tstep, fstart, fstop, fnum, logarithmicSpacing) result(new_domain)
       real(kind=RKIND_tiempo), intent(in) :: tstart, tstop, tstep
       real(kind=RKIND), intent(in)     :: fstart, fstop
       integer(kind=SINGLE), intent(in) :: fnum
-      logical, intent(in), optional    :: logarithmicSpacing
+      logical, intent(in)   :: logarithmicSpacing
       type(domain_t) :: new_domain
 
       new_domain%tstart = tstart
@@ -62,12 +61,12 @@ contains
       new_domain%fstop = fstop
       new_domain%fnum = fnum
       new_domain%fstep = (fstop - fstart) / fnum
+      new_domain%logarithmicSpacing = logarithmicSpacing
 
       new_domain%domainType = BOTH_DOMAIN
 
-      if (present(logarithmicSpacing)) then
-         new_domain%logarithmicSpacing = logarithmicSpacing
-      end if
+      
+      
    end function new_domain_both
 
 end module mod_domain

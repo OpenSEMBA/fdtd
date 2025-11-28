@@ -26,7 +26,6 @@ contains
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
       type(domain_t), intent(in) :: domain
 
-      character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
       integer(kind=SINGLE) :: i
 
       this%xCoord = iCoord
@@ -50,6 +49,7 @@ contains
 
    contains
       function get_output_path() result(outputPath)
+         character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
          probeBoundsExtension = get_probe_bounds_extension()
          prefixFieldExtension = get_prefix_extension(field, mpidir)

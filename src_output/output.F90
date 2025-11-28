@@ -85,9 +85,14 @@ contains
    subroutine init_outputs(sgg, control, outputs, ThereAreWires)
       type(SGGFDTDINFO), intent(in) ::  sgg
       type(sim_control_t), intent(inout) :: control
-      type(solver_output_t), dimension(:), intent(out) :: outputs
+      type(solver_output_t), dimension(:), allocatable, intent(out) :: outputs
+      logical :: ThereAreWires
 
+      type(domain_t) :: domain
+      integer(kind=SINGLE) :: i, ii, outputRequestType
+      integer(kind=SINGLE) :: I1, J1, K1, NODE
       integer(kind=SINGLE) :: outputCount = 0
+      character(len=BUFSIZE) :: outputTypeExtension
       allocate (outputs(sgg%NumberRequest))
 
       call retrive_wires_data()
@@ -97,19 +102,19 @@ contains
             I1 = sgg%observation(ii)%P(i)%XI
             J1 = sgg%observation(ii)%P(i)%YI
             K1 = sgg%observation(ii)%P(i)%ZI
-            NO = sgg%observation(ii)%P(i)%NODE
+            NODE = sgg%observation(ii)%P(i)%NODE
 
-            domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, finaltimestep)
-            outputTypeExtension = trim(adjustl(nEntradaRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
+            domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, control%finaltimestep)
+            outputTypeExtension = trim(adjustl(control%nEntradaRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
 
-            field = sgg%observation(ii)%P(i)%what
-            select case (field)
+            outputRequestType = sgg%observation(ii)%P(i)%what
+            select case (outputRequestType)
             case (iEx, iEy, iEz, iHx, iHy, iHz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-            call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, field, domain, outputTypeExtension, control%mpidir)
+            call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir)
 
             case (iJx, iJy, iJz)
                if (ThereAreWires) then
@@ -117,31 +122,33 @@ contains
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
-               call init_solver_output(outputs(outputCount)%wireCurrentProbe, I1, J1, K1, NO, field, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
+               call init_solver_output(outputs(outputCount)%wireCurrentProbe, I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
                end if
             case default
-               call stoponerror('Field type not implemented yet on new observations')
+               call stoponerror('OutputRequestType type not implemented yet on new observations')
             end select
          end do
       end do
       return
    contains
-      function preprocess_domain(observation, timeArray, timeStep, finalStepIndex) result(newDomain)
+      function preprocess_domain(observation, timeArray, simulationTimeStep, finalStepIndex) result(newDomain)
          type(Obses_t), intent(in) :: observation
          real(kind=RKIND_tiempo), pointer, dimension(:), intent(in) :: timeArray
-         real(kind=RKIND_tiempo), intent(in) :: timeStep
+         real(kind=RKIND_tiempo), intent(in) :: simulationTimeStep
          integer(kind=4), intent(in) :: finalStepIndex
          type(domain_t) :: newDomain
 
          integer(kind=SINGLE) :: nFreq
 
          if (observation%TimeDomain) then
-            newdomain = domain_t(observation%InitialTime, observation%FinalTime, observation%TimeStep)
+            newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
+                                 real(observation%FinalTime, kind=RKIND_tiempo), &
+                                 real(observation%TimeStep, kind=RKIND_tiempo))
 
-            newdomain%tstep = max(newdomain%tstep, timeStep)
+            newdomain%tstep = max(newdomain%tstep, simulationTimeStep)
 
-            if (10.0_RKIND*(newdomain%tstop - newdomain%tstart)/min(timeStep, newdomain%tstep) >= huge(1_4)) then
-               newdomain%tstop = newdomain%tstart + min(timeStep, newdomain%tstep)*huge(1_4)/10.0_RKIND
+            if (10.0_RKIND*(newdomain%tstop - newdomain%tstart)/min(simulationTimeStep, newdomain%tstep) >= huge(1_4)) then
+               newdomain%tstop = newdomain%tstart + min(simulationTimeStep, newdomain%tstep)*huge(1_4)/10.0_RKIND
             end if
 
             if (newDomain%tstart < newDomain%tstep) then
@@ -157,7 +164,7 @@ contains
             nFreq = int((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep, kind=SINGLE)
             newdomain = domain_t(observation%InitialFreq, observation%FinalFreq, nFreq, logarithmicspacing=.false.)
 
-            newDomain%fstep = min(newDomain%fstep, 2.0_RKIND/dt)
+            newDomain%fstep = min(newDomain%fstep, 2.0_RKIND/simulationTimeStep)
             if ((newDomain%fstep > newDomain%fstop - newDomain%fstart) .or. (newDomain%fstep == 0)) then
                newDomain%fstep = newDomain%fstop - newDomain%fstart
                newDomain%fstop = newDomain%fstart + newDomain%fstep
@@ -200,7 +207,7 @@ contains
          select case (id)
          case (POINT_PROBE_ID)
             fieldPointer => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
-            call update_solver_output(outputs(i)%pointProbe, step, field)
+            call update_solver_output(outputs(i)%pointProbe, step, fieldPointer)
          case default
             call stoponerror('Output update not implemented')
          end select
@@ -233,6 +240,8 @@ contains
       type(domain_t), intent(in) :: domain
       type(MediaData_t), pointer, dimension(:), intent(in) :: media
 
+      
+
       type(Thinwires_t), pointer  ::  Hwireslocal
 #ifdef CompileWithBerengerWires
       type(TWires), pointer  ::  Hwireslocal_Berenger
@@ -264,16 +273,17 @@ contains
 
    contains
       subroutine find_segment()
-         integer(kind=SINGLE) :: n
+         integer(kind=SINGLE) :: n, iwi, iwj, node2
          type(CurrentSegments), pointer :: currentSegment
          logical :: found = .false.
+         character(len=BUFSIZE) :: buff
 
          select case (trim(adjustl(wiresflavor)))
          case ('holland', 'transition')
             this%segment => HWireslocal%NullSegment
             do n = 1, HWireslocal%NumCurrentSegments
                currentSegment => HWireslocal%CurrentSegment(n)
-               if ((currentSegment%origindex == no) .and. &
+               if ((currentSegment%origindex == node) .and. &
                    (currentSegment%i == iCoord) .and. (currentSegment%j == jCoord) .and. (currentSegment%k == kCoord) .and. &
                    (currentSegment%tipofield*10 == field)) then
                   found = .true.
@@ -285,7 +295,7 @@ contains
          case ('berenger')
             do n = 1, Hwireslocal_Berenger%NumSegments
                currentSegment => Hwireslocal_Berenger%Segments(n)
-               if (currentSegment%IndexSegment == no) then
+               if (currentSegment%IndexSegment == node) then
                   found = .true.
                   this%segmentBerenger => currentSegment
                   if (currentSegment%orientadoalreves) this%sign = -1
@@ -296,7 +306,7 @@ contains
          case ('slanted', 'semistructured')
             do n = 1, Hwireslocal_Slanted%NumSegments
                currentSegment => Hwireslocal_Slanted%Segments(n)
-               if (currentSegment%ptr%Index == no) then
+               if (currentSegment%ptr%Index == node) then
                   found = .true.
                   this%segmentSlanted => currentSegment%ptr
                end if
@@ -309,12 +319,12 @@ contains
             case ('holland', 'transition')
                buscarabono: do iwi = 1, Hwireslocal%NumDifferentWires
                   do iwj = 1, media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%numsegmentos
-                     if ((no == media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex) .and. &
+                     if ((node == media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex) .and. &
                          media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo) then
-                        no2 = media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multiraboDE
+                        node2 = media(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multiraboDE
                         do n = 1, HWireslocal%NumCurrentSegments
                            currentSegment => HWireslocal%CurrentSegment(n)
-                           if (currentSegment%origindex == no2) then
+                           if (currentSegment%origindex == node2) then
                               found = .true.
                               this%segment => currentSegment
                               if (currentSegment%orientadoalreves) this%sign = -1
@@ -328,7 +338,7 @@ contains
             case ('slanted', 'semistructured')
                do n = 1, Hwireslocal_Slanted%NumSegments
                   currentSegment => Hwireslocal_Slanted%Segments(n)
-                  if (currentSegment%ptr%elotroindice == no) then
+                  if (currentSegment%ptr%elotroindice == node) then
                      found = .true.
                      this%segmentSlanted => currentSegment%ptr
                   end if
@@ -338,7 +348,7 @@ contains
          end if
 
          if (.not. found) then
-            write (buff, '(a,4i7,a)') 'ERROR: WIRE probe ', no, iCoord, jCoord, kCoord, ' DOES NOT EXIST'
+            write (buff, '(a,4i7,a)') 'ERROR: WIRE probe ', node, iCoord, jCoord, kCoord, ' DOES NOT EXIST'
             CALL WarnErrReport(buff, .true.)
          end if
       end subroutine find_segment
@@ -346,8 +356,9 @@ contains
       function get_output_path() result(outputPath)
          character(len=BUFSIZE) :: outputPath
          character(len=BUFSIZE)  ::  charNO
+         character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension, prefixNodeExtension
 
-         write (charNO, '(i7)') NO
+         write (charNO, '(i7)') node
          prefixNodeExtension = 's'//trim(adjustl(charNO))
          probeBoundsExtension = get_probe_bounds_extension()
          prefixFieldExtension = get_prefix_extension(field, mpidir)
