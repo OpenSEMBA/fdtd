@@ -44,6 +44,22 @@ contains
    function buildConformalSurface(surface) result(res)
       type(ConformalPECElements), intent(in) :: surface
       type(ConformalMedia_t) :: res
+      real (kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
+      type(edge_t), dimension(:), allocatable :: edges
+      type(face_t), dimension(:), allocatable :: faces
+
+      ! call buildCellMap(cell_map, volume)
+      ! call fillElements(cell_map, faces, edges)
+
+      call addNewRatios(edges, faces, edge_ratios, face_ratios)
+      res%edge_media => addEdgeMedia(edges, edge_ratios)
+      res%face_media => addFaceMedia(faces, face_ratios)
+
+      res%n_edges_media = size(res%edge_media)
+      res%n_faces_media = size(res%face_media)
+
+      res%time_step_scale_factor = computeTimeStepScalingFactor(res%edge_media, res%face_media)
+      res%tag = surface%tag
    end function
 
    function buildConformalVolume(volume) result(res)
@@ -52,9 +68,8 @@ contains
 
       type(cell_map_t) :: cell_map
       real (kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
-      type(edge_t), dimension(:), allocatable :: edges, filtered_edges
-      type(face_t), dimension(:), allocatable :: faces, filtered_faces
-      integer :: i
+      type(edge_t), dimension(:), allocatable :: edges
+      type(face_t), dimension(:), allocatable :: faces
       
       call buildCellMap(cell_map, volume)
       call fillElements(cell_map, faces, edges)

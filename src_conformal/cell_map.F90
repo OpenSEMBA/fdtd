@@ -130,8 +130,6 @@ contains
             allocate(this%keys(size(aux_keys)))
             this%keys = aux_keys
         end if
-
-
     end subroutine
 
     subroutine buildSideMap(res, triangles)

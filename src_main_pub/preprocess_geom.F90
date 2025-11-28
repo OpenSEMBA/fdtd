@@ -2566,6 +2566,20 @@ CONTAINS
 
       end do
 
+      do j = 1, ubound(conformal_surfaces,1)
+
+         ! call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j))
+         ! numertag = searchtag(tagtype,conformal_surfaces(j)%tag)
+         ! CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+         !    & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
+         !    & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
+         !    & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
+         !    & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
+         !    & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
+         !    & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, conf_bounding_box, 0)
+
+      end do
+
       contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
       if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
       if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
