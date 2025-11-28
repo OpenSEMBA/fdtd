@@ -2,7 +2,8 @@ module mod_outputUtils
    use FDETYPES
    use mod_domain
    implicit none
-
+   character(len=4), parameter :: datFileExtension = '.dat', timeExtension = 'tm', frequencyExtension = 'fq'
+   integer(kind=SINGLE), parameter :: FILE_UNIT = 400
 contains
 
    function get_prefix_extension(field, mpidir) result(prefixExtension)
