@@ -36,7 +36,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(1) = tris(1)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 2) err = err + 1
@@ -64,7 +64,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
 
     cR%volumes(1)%triangles(1) = tris(1)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 2) err = err + 1
@@ -132,7 +132,7 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
 
     cR%volumes(1)%triangles(1) = tris(1)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 2) err = err + 1
@@ -162,7 +162,7 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
 
     cR%volumes(1)%triangles(1) = tris(1)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 2) err = err + 1
@@ -228,7 +228,7 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
 
     cR%volumes(1)%triangles(1) = tris(1)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 2) err = err + 1
@@ -256,7 +256,7 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
 
     cR%volumes(1)%triangles(1) = tris(1)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 2) err = err + 1
@@ -320,7 +320,7 @@ integer function test_conformal_filling_open() bind(C) result(err)
     allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(1) = tris(1)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 1) err = err + 1
@@ -385,7 +385,7 @@ integer function test_conformal_filling_closed() bind(C) result(err)
     allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 1) err = err + 1
@@ -447,7 +447,7 @@ integer function  test_conformal_edge_next_cell() bind(C) result(err)
     allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 4) err = err + 1
@@ -520,7 +520,7 @@ integer function test_conformal_filling_closed_corner() bind(C) result(err)
     allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 1) err = err + 1
@@ -615,7 +615,7 @@ integer function test_conformal_filling_block_and_corner() bind(C) result(err)
     allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     if (size(cM%edge_media) /= 2) err = err + 1
@@ -719,7 +719,7 @@ integer function test_conformal_filling_cylinder_base_on_grid_plane() bind(C) re
     allocate(cR%volumes(1)%intervals(0))
     cR%volumes(1)%triangles(:) = tris(:)
 
-    cMs = buildConformalVolumes(cR)
+    cMs = buildMedia(cR%volumes)
     cM = cMs(1)
 
     ! if (size(cM%edge_media) /= 1) err = err + 1

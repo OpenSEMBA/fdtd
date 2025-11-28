@@ -2,7 +2,7 @@ module conformal_mod
 
    use geometry_mod
    use cell_map_mod
-   use NFDETypes, only: ConformalPECRegions, ConformalPECElements, ConformalMedia_t, & 
+   use NFDETypes, only: ConformalPECRegions, ConformalPECElement, ConformalMedia_t, & 
                         edge_t, face_t, & 
                         conformal_face_media_t, conformal_edge_media_t, rkind
    
@@ -21,49 +21,33 @@ contains
       end do
    end function
 
-   function buildConformalVolumes(regions) result(res)
-      type(ConformalPECRegions), intent(in) :: regions
+   subroutine buildConformalMedia(conformalRegs, volumes, surfaces) 
+      type(ConformalPECRegions), pointer, intent(in) :: conformalRegs
+      type(ConformalMedia_t), allocatable, dimension(:), intent(inout) :: volumes, surfaces
+      if (associated(conformalRegs%volumes)) then 
+         volumes = buildMedia(conformalRegs%volumes)
+      else
+         allocate(volumes(0))
+      end if
+      if (associated(conformalRegs%surfaces)) then 
+         surfaces = buildMedia(conformalRegs%surfaces)
+      else
+         allocate(surfaces(0))
+      end if
+   end subroutine
+
+   function buildMedia(elements) result(res)
+      type(ConformalPECElement), dimension(:), pointer :: elements
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
-      allocate(res(size(regions%volumes)))
-      do i = 1, size(regions%volumes)
-         res(i) = buildConformalVolume(regions%volumes(i))
+      allocate(res(size(elements)))
+      do i = 1, size(elements)
+         res(i) = buildMediaFromElement(elements(i))
       end do
    end function   
 
-   function buildConformalSurfaces(regions) result(res)
-      type(ConformalPECRegions), intent(in) :: regions
-      type(ConformalMedia_t), dimension(:), allocatable :: res
-      integer :: i
-      allocate(res(size(regions%surfaces)))
-      do i = 1, size(regions%surfaces)
-         res(i) = buildConformalSurface(regions%surfaces(i))
-      end do
-   end function   
-
-   function buildConformalSurface(surface) result(res)
-      type(ConformalPECElements), intent(in) :: surface
-      type(ConformalMedia_t) :: res
-      real (kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
-      type(edge_t), dimension(:), allocatable :: edges
-      type(face_t), dimension(:), allocatable :: faces
-
-      ! call buildCellMap(cell_map, volume)
-      ! call fillElements(cell_map, faces, edges)
-
-      call addNewRatios(edges, faces, edge_ratios, face_ratios)
-      res%edge_media => addEdgeMedia(edges, edge_ratios)
-      res%face_media => addFaceMedia(faces, face_ratios)
-
-      res%n_edges_media = size(res%edge_media)
-      res%n_faces_media = size(res%face_media)
-
-      res%time_step_scale_factor = computeTimeStepScalingFactor(res%edge_media, res%face_media)
-      res%tag = surface%tag
-   end function
-
-   function buildConformalVolume(volume) result(res)
-      type(ConformalPECElements), intent(in) :: volume
+   function buildMediaFromElement(element) result(res)
+      type(ConformalPECElement), intent(in) :: element
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map
@@ -71,7 +55,7 @@ contains
       type(edge_t), dimension(:), allocatable :: edges
       type(face_t), dimension(:), allocatable :: faces
       
-      call buildCellMap(cell_map, volume)
+      call buildCellMap(cell_map, element)
       call fillElements(cell_map, faces, edges)
       call addNewRatios(edges, faces, edge_ratios, face_ratios)
       res%edge_media => addEdgeMedia(edges, edge_ratios)
@@ -81,7 +65,7 @@ contains
       res%n_faces_media = size(res%face_media)
 
       res%time_step_scale_factor = computeTimeStepScalingFactor(res%edge_media, res%face_media)
-      res%tag = volume%tag
+      res%tag = element%tag
    end function
 
    subroutine addNewRatios(edges, faces, edge_ratios, face_ratios)

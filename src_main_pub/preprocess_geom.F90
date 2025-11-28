@@ -4823,20 +4823,6 @@ CONTAINS
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      subroutine buildConformalMedia(conformalRegs, volumes, surfaces) 
-         type(ConformalPECRegions), pointer, intent(in) :: conformalRegs
-         type(ConformalMedia_t), allocatable, dimension(:), intent(inout) :: volumes, surfaces
-         if (associated(conformalRegs%volumes)) then 
-            volumes = buildConformalVolumes(conformalRegs)
-         else
-            allocate(volumes(0))
-         end if
-         if (associated(conformalRegs%surfaces)) then 
-            surfaces = buildConformalSurfaces(conformalRegs)
-         else
-            allocate(surfaces(0))
-         end if
-      end subroutine
 
       function computeConformalTimeFactor(volumes, surfaces) result(res)
          type(ConformalMedia_t), allocatable, dimension(:), intent(in) :: volumes, surfaces

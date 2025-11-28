@@ -607,11 +607,11 @@ contains
 
    contains 
       subroutine appendRegion(regions, region, tagName)
-         type(ConformalPECElements), dimension(:), pointer :: regions
+         type(ConformalPECElement), dimension(:), pointer :: regions
          type(conformal_region_t), intent(in) :: region
          character (len=:), allocatable, intent(in) :: tagName
 
-         type(ConformalPECElements), dimension(:), allocatable :: aux
+         type(ConformalPECElement), dimension(:), allocatable :: aux
          integer :: i
          if (.not. associated(regions)) then 
             allocate(regions(1))

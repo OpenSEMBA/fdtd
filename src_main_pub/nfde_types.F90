@@ -122,15 +122,15 @@ MODULE NFDETypes
    ! Identifies conformal PEC "media"
    !------------------------------------------------------------------------------
 
-   type, public :: ConformalPECElements
+   type, public :: ConformalPECElement
       type(triangle_t), dimension(:), allocatable :: triangles
       type(interval_t), dimension(:), allocatable :: intervals
       character(len=bufsize) :: tag
    end type 
 
    type, public :: ConformalPECRegions
-      type(ConformalPECElements), dimension(:), pointer :: volumes => null()
-      type(ConformalPECElements), dimension(:), pointer :: surfaces => null()
+      type(ConformalPECElement), dimension(:), pointer :: volumes => null()
+      type(ConformalPECElement), dimension(:), pointer :: surfaces => null()
    end type
 
 
