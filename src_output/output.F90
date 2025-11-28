@@ -2,16 +2,19 @@ module output
    use FDETYPES
    use mod_domain
    use mod_outputUtils
+
+   use wiresHolland_constants
+   use HollandWires
    implicit none
    character(len=4) :: datFileExtension = '.dat', timeExtension = 'tm', frequencyExtension = 'fq'
-   integer(kind=SINGLE), parameter :: MAX_SERIALIZED_COUNT = 500, FILE_UNIT = 400
+   integer(kind=SINGLE), parameter :: FILE_UNIT = 400
 
    integer(kind=SINGLE), parameter :: POINT_PROBE_ID = 0
 
    type solver_output_t
       integer(kind=SINGLE) :: outputID
       type(point_probe_output_t), allocatable :: pointProbe
-      !type(wire_probe_output_t), allocatable :: wireProbe
+      type(wire_current_probe_output_t), allocatable :: wireProbe
       !type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
       !type(far_field_t), allocatable :: farField
       !type(time_movie_output_t), allocatable :: timeMovie
@@ -19,17 +22,37 @@ module output
    end type solver_output_t
 
    type point_probe_output_t
-      integer(kind=SINGLE) :: columnas = 2_SINGLE
+      integer(kind=SINGLE) :: columnas = 2_SINGLE !reference and field
       type(domain_t) :: domain
       integer(kind=SINGLE) :: xCoord, yCoord, zCoord
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: fieldComponent
       integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE, nFreq = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(MAX_SERIALIZED_COUNT) :: timeStep
-      real(kind=RKIND), dimension(MAX_SERIALIZED_COUNT) :: valueForTime
+      real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
+      real(kind=RKIND), dimension(BuffObse) :: valueForTime = 0.0_RKIND
+
       real(kind=RKIND), dimension(:), allocatable :: frequencySlice
       real(kind=CKIND), dimension(:), allocatable :: valueForFreq
    end type point_probe_output_t
+
+   type wire_current_probe_output_t
+      integer(kind=SINGLE) :: columnas = 6_SINGLE !reference, corriente, -e*dl, vplus, vminus, vplus-vminus
+      type(domain_t) :: domain
+      integer(kind=SINGLE) :: xCoord, yCoord, zCoord
+      character(len=BUFSIZE) :: path
+      integer(kind=SINGLE) :: currentComponent
+      integer(kind=SINGLE) :: sign = +1
+      type(CurrentSegments), pointer :: segment
+
+      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
+      real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
+      type(current_values_t), dimension(BuffObse) :: currentValues
+   end type wire_current_probe_output_t
+
+   type current_values_t
+      real(kind=RKIND) :: current = 0.0_RKIND, deltaVoltage = 0.0_RKIND
+      real(kind=RKIND) :: plusVoltage = 0.0_RKIND, minusVoltage = 0.0_RKIND, voltageDiference = 0.0_RKIND
+   end type
 
    interface init_solver_output
       module procedure &
@@ -134,7 +157,7 @@ contains
 
          elseif (observation%FreqDomain) then
             !Just linear progression for now. Need to bring logartihmic info to here
-            nFreq = int((observation%FinalFreq - observation%InitialFreq) / observation%FreqStep, kind=SINGLE)
+            nFreq = int((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep, kind=SINGLE)
             newdomain = domain_t(observation%InitialFreq, observation%FinalFreq, nFreq, logarithmicspacing=.false.)
 
             newDomain%fstep = min(newDomain%fstep, 2.0_RKIND/dt)
@@ -143,7 +166,7 @@ contains
                newDomain%fstop = newDomain%fstart + observation%fstep
             end if
 
-            newDomain%fnum =  int((newDomain%fstop - newDomain%fstart) / newDomain%fstep, kind=SINGLE)
+            newDomain%fnum = int((newDomain%fstop - newDomain%fstart)/newDomain%fstep, kind=SINGLE)
 
          else
             call stoponerror('No domain present')
@@ -158,14 +181,13 @@ contains
       real(kind=RKIND_tiempo) :: step
       integer(kind=SINGLE) :: i, id
 
-
       REAL(KIND=RKIND), intent(in), target     :: &
-        Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
-        Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
-        Ez(sgg%alloc(iEz)%XI:sgg%alloc(iEz)%XE, sgg%alloc(iEz)%YI:sgg%alloc(iEz)%YE, sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE), &
-        Hx(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE, sgg%alloc(iHx)%YI:sgg%alloc(iHx)%YE, sgg%alloc(iHx)%ZI:sgg%alloc(iHx)%ZE), &
-        Hy(sgg%alloc(iHy)%XI:sgg%alloc(iHy)%XE, sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE, sgg%alloc(iHy)%ZI:sgg%alloc(iHy)%ZE), &
-        Hz(sgg%alloc(iHz)%XI:sgg%alloc(iHz)%XE, sgg%alloc(iHz)%YI:sgg%alloc(iHz)%YE, sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
+         Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
+         Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
+         Ez(sgg%alloc(iEz)%XI:sgg%alloc(iEz)%XE, sgg%alloc(iEz)%YI:sgg%alloc(iEz)%YE, sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE), &
+         Hx(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE, sgg%alloc(iHx)%YI:sgg%alloc(iHx)%YE, sgg%alloc(iHx)%ZI:sgg%alloc(iHx)%ZE), &
+         Hy(sgg%alloc(iHy)%XI:sgg%alloc(iHy)%XE, sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE, sgg%alloc(iHy)%ZI:sgg%alloc(iHy)%ZE), &
+         Hz(sgg%alloc(iHz)%XI:sgg%alloc(iHz)%XE, sgg%alloc(iHz)%YI:sgg%alloc(iHz)%YE, sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
       !--->
       REAL(KIND=RKIND), dimension(:), intent(in)   :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
                                                       dyh(sgg%ALLOC(iEy)%YI:sgg%ALLOC(iEy)%YE), &
@@ -174,11 +196,10 @@ contains
                                                       dye(sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE), &
                                                       dze(sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
 
-
       do i = 1, size(outputs)
          id = outputs(i)%outputID
-         select case(id)
-         case(POINT_PROBE_ID)
+         select case (id)
+         case (POINT_PROBE_ID)
             field => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
             update_solver_output(outputs(i)%pointProbe, step, field)
          case default
@@ -186,17 +207,17 @@ contains
          end select
       end do
 
-      contains
+   contains
       function get_field_component(fieldId) result(field)
-      integer(kind=SINGLE), intent(in) :: fieldId
-      select case(fieldId)
-      case(iEx); field => Ex 
-      case(iEy); field => Ey 
-      case(iEz); field => Ez 
-      case(iHx); field => Hx 
-      case(iHy); field => Hy 
-      case(iHz); field => Hz 
-      end select
+         integer(kind=SINGLE), intent(in) :: fieldId
+         select case (fieldId)
+         case (iEx); field => Ex
+         case (iEy); field => Ey
+         case (iEz); field => Ez
+         case (iHx); field => Hx
+         case (iHy); field => Hy
+         case (iHz); field => Hz
+         end select
       end function get_field_component
 
    end subroutine update_outputs
@@ -214,6 +235,8 @@ contains
       this%xCoord = iCoord
       this%yCoord = jCoord
       this%zCoord = kCoord
+
+      this%fieldComponent = field
 
       this%domain = domain
       this%path = get_output_path()
@@ -246,7 +269,7 @@ contains
          write (charj, '(i7)') jCoord
          write (chark, '(i7)') kCoord
 
-      #if CompileWithMPI
+#if CompileWithMPI
          if (mpidir == 3) then
             ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
          elseif (mpidir == 2) then
@@ -256,16 +279,157 @@ contains
          else
             call stoponerror('Buggy error in mpidir. ')
          end if
-      #else
+#else
          ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
-      #endif
+#endif
 
          return
       end function get_probe_bounds_extension
    end subroutine init_point_probe_output
 
-   subroutine
-      
+   subroutine init_wire_current_probe_output(this, iCoord, jCoord, kCoord, node, field, domain, outputTypeExtension, wiresFlavor)
+      type(wire_current_probe_output_t), intent(out) :: this
+      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord, node
+      integer(kind=SINGLE), intent(in) :: field
+      character(len=BUFSIZE), intent(in) :: outputTypeExtension
+      character(len=*), intent(in) :: wiresFlavor
+      type(domain_t), intent(in) :: domain
+
+      this%xCoord = iCoord
+      this%yCoord = jCoord
+      this%zCoord = kCoord
+
+      this%currentComponent = field
+
+      this%domain = domain
+      this%path = get_output_path()
+
+      call find_segment()
+
+   contains
+      subroutine find_segment()
+         integer(kind=SINGLE) :: n
+         type(CurrentSegments), pointer :: currentSegment
+         logical :: found = .false.
+
+         if (ThereAreWires) then
+            select case (trim(adjustl(wiresFlavor)))
+            case ('holland', 'transition')
+               this%segment => HWireslocal%NullSegment
+               do n = 1, HWireslocal%NumCurrentSegments
+                  currentSegment => HWireslocal%CurrentSegment(n)
+                  if ((currentSegment%origindex == no) .and. &
+                      (currentSegment%i == iCoord) .and. (currentSegment%j == jCoord) .and. (currentSegment%k == kCoord) .and. &
+                      (currentSegment%tipofield*10 == field)) then
+                     found = .true.
+                     this%segment => currentSegment
+                     if (currentSegment%orientadoalreves) this%sign = -1
+                  end if
+               end do
+#ifdef CompileWithBerengerWires
+            case ('berenger')
+               do n = 1, Hwireslocal_Berenger%NumSegments
+                  currentSegment => Hwireslocal_Berenger%Segments(n)
+                  if (currentSegment%IndexSegment == no) then
+                     found = .true.
+                     this%segmentBerenger => currentSegment
+                     if (currentSegment%orientadoalreves) this%sign = -1
+                  end if
+               end do
+#endif
+#ifdef CompileWithSlantedWires
+            case ('slanted', 'semistructured')
+               do n = 1, Hwireslocal_Slanted%NumSegments
+                  currentSegment => Hwireslocal_Slanted%Segments(n)
+                  if (currentSegment%ptr%Index == no) then
+                     found = .true.
+                     this%segmentSlanted => currentSegment%ptr
+                  end if
+               end do
+#endif
+            end select
+
+            if (.not. found) then
+               select case (trim(adjustl(wiresFlavor)))
+               case ('holland', 'transition')
+                  buscarabono: do iwi = 1, Hwireslocal%NumDifferentWires
+                     do iwj = 1, sgg%Med(Hwireslocal%WireTipoMedio(iwi))%wire(1)%numsegmentos
+                        if ((no == sgg%Med(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%origindex) .and. &
+                            sgg%Med(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multirabo) then
+                           no2 = sgg%Med(Hwireslocal%WireTipoMedio(iwi))%wire(1)%segm(iwj)%multiraboDE
+                           do n = 1, HWireslocal%NumCurrentSegments
+                              currentSegment => HWireslocal%CurrentSegment(n)
+                              if (currentSegment%origindex == no2) then
+                                 found = .true.
+                                 this%segment => currentSegment
+                                 if (currentSegment%orientadoalreves) this%sign = -1
+                              end if
+                           end do
+                           exit buscarabono
+                        end if
+                     end do
+                  end do buscarabono
+#ifdef CompileWithSlantedWires
+               case ('slanted', 'semistructured')
+                  do n = 1, Hwireslocal_Slanted%NumSegments
+                     currentSegment => Hwireslocal_Slanted%Segments(n)
+                     if (currentSegment%ptr%elotroindice == no) then
+                        found = .true.
+                        this%segmentSlanted => currentSegment%ptr
+                     end if
+                  end do
+#endif
+               end select
+            end if
+         end if
+
+         if (.not. found) then
+            write (buff, '(a,4i7,a)') 'ERROR: WIRE probe ', no, iCoord, jCoord, kCoord, ' DOES NOT EXIST'
+            CALL WarnErrReport(buff, .true.)
+         end if
+      end subroutine find_segment
+
+      function get_output_path() result(outputPath)
+         character(len=BUFSIZE) :: outputPath
+         character(len=BUFSIZE)  ::  charNO
+
+         write (charNO, '(i7)') NO
+         prefixNodeExtension = 's'//trim(adjustl(charNO))
+         probeBoundsExtension = get_probe_bounds_extension()
+         prefixFieldExtension = get_prefix_extension(field, mpidir)
+         
+         outputPath = &
+            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_' &
+            //trim(adjustl(probeBoundsExtension))//'_'//trim(adjustl(prefixNodeExtension))
+         return
+      end function get_output_path
+
+      function get_probe_bounds_extension() result(ext)
+         character(len=BUFSIZE) :: ext
+         character(len=BUFSIZE)  ::  chari, charj, chark
+
+         write (chari, '(i7)') iCoord
+         write (charj, '(i7)') jCoord
+         write (chark, '(i7)') kCoord
+
+#if CompileWithMPI
+         if (mpidir == 3) then
+            ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
+         elseif (mpidir == 2) then
+            ext = trim(adjustl(charj))//'_'//trim(adjustl(chark))//'_'//trim(adjustl(chari))
+         elseif (mpidir == 1) then
+            ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
+         else
+            call stoponerror('Buggy error in mpidir. ')
+         end if
+#else
+         ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
+#endif
+
+         return
+      end function get_probe_bounds_extension
+
+   end subroutine init_wire_current_probe_output
 
    subroutine update_point_probe_output(this, step, field)
       type(point_probe_output_t), intent(inout) :: this
@@ -282,7 +446,7 @@ contains
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          do iter = 1, this%nFreq
             this%valueForFreq(iter) = &
-      this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
+   this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
          end do
       end if
    end subroutine update_point_probe_output
