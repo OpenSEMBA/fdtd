@@ -88,7 +88,7 @@ contains
    subroutine update_point_probe_output(this, step, field)
       type(point_probe_output_t), intent(inout) :: this
       real(kind=RKIND), pointer, dimension(:, :, :) :: field
-      real(kind=RKIND_tiempo) :: step
+      real(kind=RKIND_tiempo), intent(in) :: step
       integer(kind=SINGLE) :: iter
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then

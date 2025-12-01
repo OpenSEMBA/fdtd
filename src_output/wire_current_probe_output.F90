@@ -4,6 +4,15 @@ module mod_wireCurrentProbeOutput
    use mod_outputUtils
    use wiresHolland_constants
    use HollandWires
+
+#ifdef CompileWithBerengerWires
+  use WiresBerenger
+#endif
+#ifdef CompileWithSlantedWires
+  use WiresSlanted
+  use WiresSlanted_Types
+  use WiresSlanted_Constants
+#endif
    implicit none
 
    type current_values_t
@@ -196,8 +205,9 @@ contains
 
    end subroutine init_wire_current_probe_output
 
-   subroutine update_wire_current_probe_output(this, wiresflavor, wirecrank)
+   subroutine update_wire_current_probe_output(this, step, wiresflavor, wirecrank)
       type(wire_current_probe_output_t), intent(inout) :: this
+      real(kind=RKIND_tiempo), intent(in) :: step
       character(len=*), intent(in) :: wiresflavor
       logical :: wirecrank
 
@@ -235,7 +245,7 @@ contains
          this%currentValues(this%serializedTimeSize)%voltageDiference = &
             this%currentValues(this%serializedTimeSize)%plusVoltage - this%currentValues(this%serializedTimeSize)%minusVoltage
 
-#if CompileWithBerengerWires
+#ifdef CompileWithBerengerWires
       case ('berenger')
          this%serializedTimeSize = this%serializedTimeSize + 1
          this%timeStep(this%serializedTimeSize) = step
@@ -254,6 +264,7 @@ contains
             this%currentValues(this%serializedTimeSize)%plusVoltage - this%currentValues(this%serializedTimeSize)%minusVoltage
 
 #endif
+#ifdef CompileWithSlantedWires
       case ('slanted', 'semistructured')
          this%serializedTimeSize = this%serializedTimeSize + 1
          this%timeStep(this%serializedTimeSize) = step
@@ -267,7 +278,7 @@ contains
             (((SegmDumm_Slanted%Voltage(iMinus)%ptr%Voltage + SegmDumm_Slanted%Voltage(iMinus)%ptr%VoltagePast))/2.0_RKIND)
          this%currentValues(this%serializedTimeSize)%voltageDiference = &
             this%currentValues(this%serializedTimeSize)%plusVoltage - this%currentValues(this%serializedTimeSize)%minusVoltage
-
+#endif
       end select
 
    end subroutine

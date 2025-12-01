@@ -4,18 +4,21 @@ module output
    use mod_outputUtils
    use mod_pointProbeOutput
    use mod_wireCurrentProbeOutput
+   use mod_wireChargeProbeOutput
 
    implicit none
    
    
 
    integer(kind=SINGLE), parameter :: POINT_PROBE_ID = 0, &
-                                      WIRE_CURRENT_PROBE_ID = 0
+                                      WIRE_CURRENT_PROBE_ID = 1, &
+                                      WIRE_CHARGE_PROBE_ID = 2
 
    type solver_output_t
       integer(kind=SINGLE) :: outputID
       type(point_probe_output_t), allocatable :: pointProbe
       type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
+      type(wire_charge_probe_output_t), allocatable :: wireChargeProbe
       !type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
       !type(far_field_t), allocatable :: farField
       !type(time_movie_output_t), allocatable :: timeMovie
@@ -26,7 +29,8 @@ module output
    interface init_solver_output
       module procedure &
          init_point_probe_output, &
-         init_wire_current_probe_output
+         init_wire_current_probe_output, &
+         init_wire_charge_probe_output
       !init_bulk_current_probe_output, &
       !init_far_field, &
       !initime_movie_output, &
@@ -36,7 +40,8 @@ module output
    interface update_solver_output
       module procedure &
          update_point_probe_output, &
-         update_wire_current_probe_output
+         update_wire_current_probe_output, &
+         update_wire_charge_probe_output
       !update_bulk_current_probe_output, &
       !update_far_field, &
       !updateime_movie_output, &
@@ -104,9 +109,17 @@ contains
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
-               call init_solver_output(outputs(outputCount)%wireCurrentProbe, I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
+                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
                end if
-            case default
+            
+            case (iQx, iQy, iQz)
+               if(ThereAreWires) then 
+                  outputCount = outputCount + 1
+                  outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
+                  allocate (outputs(outputCount)%wireChargeProbe)
+                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
+               end if 
+               case default
                call stoponerror('OutputRequestType type not implemented yet on new observations')
             end select
          end do
@@ -191,7 +204,9 @@ contains
             fieldPointer => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
             call update_solver_output(outputs(i)%pointProbe, step, fieldPointer)
          case (WIRE_CURRENT_PROBE_ID)
-            call update_solver_output(outputs(i)%wireCurrentProbe, control%wiresflavor, control%wirecrank)
+            call update_solver_output(outputs(i)%wireCurrentProbe, step, control%wiresflavor, control%wirecrank)
+         case (WIRE_CHARGE_PROBE_ID)
+            call update_solver_output(outputs(i)%wireChargeProbe, step)
          case default
             call stoponerror('Output update not implemented')
          end select
