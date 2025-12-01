@@ -2,6 +2,7 @@ module mod_pointProbeOutput
    use FDETYPES
    use mod_domain
    use mod_outputUtils
+   
    implicit none
 
    type point_probe_output_t
