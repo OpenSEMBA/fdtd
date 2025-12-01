@@ -1,0 +1,32 @@
+integer function test_initialize() bind(C) result(err)
+  use FDETYPES
+  use FDETYPES_TOOLS
+  use output
+
+  type(SGGFDTDINFO) :: dummysgg
+  type(sim_control_t) :: dummyControl
+  type(solver_output_t), dimension(:) :: outputs
+  logical :: TehereAreWires = .true.
+
+  integer(kind=SINGLE) :: test_err = 0
+
+
+  !Set requested observables
+  dummysgg = create_base_sgg(nummedia=5, dt=0.1_RKIND_tiempo, time_steps=100)
+  allocate(dummysgg%Observation(3))
+  dummysgg%Observation(1) = define_point_observation()
+  dummysgg%Observation(2) = define_wire_current_observation()
+  dummysgg%Observation(3) = define_wire_charge_observation()
+
+  !Set control flags
+  dummyControl = create_control_flags(mpidir=3, nEntradaRoot='entradaRoot', wiresflavor='holland')
+
+  call init_outputs(dummysgg, dummyControl, outputs, ThereAreWires)
+
+
+
+
+  deallocate(dummysgg)
+   err = test_err
+end function test_initialize()
+
