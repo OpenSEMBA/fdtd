@@ -10,6 +10,7 @@ module mod_wireCurrentProbeOutput
       real(kind=RKIND) :: current = 0.0_RKIND, deltaVoltage = 0.0_RKIND
       real(kind=RKIND) :: plusVoltage = 0.0_RKIND, minusVoltage = 0.0_RKIND, voltageDiference = 0.0_RKIND
    end type
+
    type wire_current_probe_output_t
       integer(kind=SINGLE) :: columnas = 6_SINGLE !reference, corriente, -e*dl, vplus, vminus, vplus-vminus
       type(domain_t) :: domain
@@ -17,7 +18,14 @@ module mod_wireCurrentProbeOutput
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: currentComponent
       integer(kind=SINGLE) :: sign = +1
+
       type(CurrentSegments), pointer :: segment
+#ifdef CompileWithBerengerWires
+      type(TSegment), pointer  :: segmentBerenger
+#endif
+#ifdef CompileWithSlantedWires
+      class(Segment), pointer  :: segmentSlanted
+#endif
 
       integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
       real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
@@ -188,5 +196,80 @@ contains
 
    end subroutine init_wire_current_probe_output
 
+   subroutine update_wire_current_probe_output(this, wiresflavor, wirecrank)
+      type(wire_current_probe_output_t), intent(inout) :: this
+      character(len=*), intent(in) :: wiresflavor
+      logical :: wirecrank
+
+      type(CurrentSegments), pointer  ::  segmDumm
+#ifdef CompileWithBerengerWires
+      type(TSegment), pointer  ::  segmDumm_Berenger
+#endif
+#ifdef CompileWithSlantedWires
+      class(Segment), pointer  ::  segmDumm_Slanted
+#endif
+
+      select case (trim(adjustl(wiresflavor)))
+      case ('holland', 'transition')
+         this%serializedTimeSize = this%serializedTimeSize + 1
+         this%timeStep(this%serializedTimeSize) = step
+         SegmDumm => this%segment
+
+         this%currentValues(this%serializedTimeSize)%current = this%sign*SegmDumm%currentpast
+         this%currentValues(this%serializedTimeSize)%deltaVoltage = -SegmDumm%Efield_wire2main*SegmDumm%delta
+
+         if (wirecrank) then
+            this%currentValues(this%serializedTimeSize)%plusVoltage = this%sign* &
+                          (((SegmDumm%ChargePlus%ChargePresent)))*SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
+            this%currentValues(this%serializedTimeSize)%minusVoltage = this%sign* &
+                         (((SegmDumm%ChargeMinus%ChargePresent)))*SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
+         else
+            this%currentValues(this%serializedTimeSize)%plusVoltage = this%sign* &
+                                               (((SegmDumm%ChargePlus%ChargePresent + SegmDumm%ChargePlus%ChargePast))/2.0_RKIND)* &
+                                                                  SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
+            this%currentValues(this%serializedTimeSize)%minusVoltage = this%sign* &
+                                             (((SegmDumm%ChargeMinus%ChargePresent + SegmDumm%ChargeMinus%ChargePast))/2.0_RKIND)* &
+                                                                  SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
+         end if
+
+         this%currentValues(this%serializedTimeSize)%voltageDiference = &
+            this%currentValues(this%serializedTimeSize)%plusVoltage - this%currentValues(this%serializedTimeSize)%minusVoltage
+
+#if CompileWithBerengerWires
+      case ('berenger')
+         this%serializedTimeSize = this%serializedTimeSize + 1
+         this%timeStep(this%serializedTimeSize) = step
+         SegmDumm_Berenger => this%segmentBerenger
+
+         this%currentValues(this%serializedTimeSize)%current = this%sign*SegmDumm_Berenger%currentpast
+         this%currentValues(this%serializedTimeSize)%deltaVoltage = -SegmDumm_Berenger%field*SegmDumm_Berenger%dl
+
+         this%currentValues(this%serializedTimeSize)%plusVoltage = this%sign* &
+                                                  (((SegmDumm_Berenger%ChargePlus + SegmDumm_Berenger%ChargePlusPast))/2.0_RKIND)* &
+                                                  SegmDumm_Berenger%L*(InvMu(SegmDumm_Berenger%imed)*InvEps(SegmDumm_Berenger%imed))
+         this%currentValues(this%serializedTimeSize)%minusVoltage = this%sign* &
+                                                (((SegmDumm_Berenger%ChargeMinus + SegmDumm_Berenger%ChargeMinusPast))/2.0_RKIND)* &
+                                                  SegmDumm_Berenger%L*(InvMu(SegmDumm_Berenger%imed)*InvEps(SegmDumm_Berenger%imed))
+         this%currentValues(this%serializedTimeSize)%voltageDiference = &
+            this%currentValues(this%serializedTimeSize)%plusVoltage - this%currentValues(this%serializedTimeSize)%minusVoltage
+
+#endif
+      case ('slanted', 'semistructured')
+         this%serializedTimeSize = this%serializedTimeSize + 1
+         this%timeStep(this%serializedTimeSize) = step
+         SegmDumm_Slanted => this%segmentSlanted
+
+         this%currentValues(this%serializedTimeSize)%current = SegmDumm_Slanted%Currentpast !ojo: slanted ya los orienta bien y no hay que multiplicar por valorsigno
+         this%currentValues(this%serializedTimeSize)%deltaVoltage = -SegmDumm_Slanted%field*SegmDumm_Slanted%dl
+         this%currentValues(this%serializedTimeSize)%plusVoltage = &
+            (((SegmDumm_Slanted%Voltage(iPlus)%ptr%Voltage + SegmDumm_Slanted%Voltage(iPlus)%ptr%VoltagePast))/2.0_RKIND)
+         this%currentValues(this%serializedTimeSize)%minusVoltage = &
+            (((SegmDumm_Slanted%Voltage(iMinus)%ptr%Voltage + SegmDumm_Slanted%Voltage(iMinus)%ptr%VoltagePast))/2.0_RKIND)
+         this%currentValues(this%serializedTimeSize)%voltageDiference = &
+            this%currentValues(this%serializedTimeSize)%plusVoltage - this%currentValues(this%serializedTimeSize)%minusVoltage
+
+      end select
+
+   end subroutine
 
 end module mod_wireCurrentProbeOutput

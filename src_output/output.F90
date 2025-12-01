@@ -35,7 +35,8 @@ module output
 
    interface update_solver_output
       module procedure &
-         update_point_probe_output
+         update_point_probe_output, &
+         update_wire_current_probe_output
       !update_bulk_current_probe_output, &
       !update_far_field, &
       !updateime_movie_output, &
@@ -161,11 +162,12 @@ contains
 
    end subroutine init_outputs
 
-   subroutine update_outputs(outputs, step, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh, alloc)
+   subroutine update_outputs(outputs, control, step, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh, alloc)
       type(solver_output_t), dimension(:), intent(inout) :: outputs
       real(kind=RKIND_tiempo) :: step
       integer(kind=SINGLE) :: i, id
       type(XYZlimit_t), dimension(1:6), intent(in) :: alloc
+      type(sim_control_t), intent(in) :: control
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldPointer
 
       real(KIND=RKIND), intent(in), target     :: &
@@ -184,11 +186,12 @@ contains
                                                       dze(alloc(iHz)%ZI:alloc(iHz)%ZE)
 
       do i = 1, size(outputs)
-         id = outputs(i)%outputID
-         select case (id)
+         select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
             fieldPointer => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
             call update_solver_output(outputs(i)%pointProbe, step, fieldPointer)
+         case (WIRE_CURRENT_PROBE_ID)
+            call update_solver_output(outputs(i)%wireCurrentProbe, control%wiresflavor, control%wirecrank)
          case default
             call stoponerror('Output update not implemented')
          end select
