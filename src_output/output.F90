@@ -7,12 +7,13 @@ module output
    use mod_wireChargeProbeOutput
 
    implicit none
-   
-   
 
    integer(kind=SINGLE), parameter :: POINT_PROBE_ID = 0, &
                                       WIRE_CURRENT_PROBE_ID = 1, &
                                       WIRE_CHARGE_PROBE_ID = 2
+
+   REAL(KIND=RKIND), save           ::  eps0, mu0
+   REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
 
    type solver_output_t
       integer(kind=SINGLE) :: outputID
@@ -24,7 +25,6 @@ module output
       !type(time_movie_output_t), allocatable :: timeMovie
       !type(frequency_slice_output_t), allocatable :: frequencySlice
    end type solver_output_t
-
 
    interface init_solver_output
       module procedure &
@@ -82,7 +82,11 @@ contains
       character(len=BUFSIZE) :: outputTypeExtension
       allocate (outputs(sgg%NumberRequest))
 
-      call retrive_wires_data()
+      allocate (InvEps(0:sgg%NumMedia), InvMu(0:sgg%NumMedia))
+
+      InvEps(0:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia)%Epr)
+      InvMu(0:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia)%Mur)
+
 
       do ii = 1, sgg%NumberRequest
          do i = 1, sgg%Observation(ii)%nP
@@ -101,7 +105,7 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-            call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir)
+call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir)
 
             case (iJx, iJy, iJz)
                if (ThereAreWires) then
@@ -111,16 +115,16 @@ contains
                   allocate (outputs(outputCount)%wireCurrentProbe)
                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
                end if
-            
+
             case (iQx, iQy, iQz)
-               if(ThereAreWires) then 
+               if (ThereAreWires) then
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
                   allocate (outputs(outputCount)%wireChargeProbe)
                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
-               end if 
-               case default
-               call stoponerror('OutputRequestType type not implemented yet on new observations')
+               end if
+            case default
+               call stoponerror(0,0,'OutputRequestType type not implemented yet on new observations')
             end select
          end do
       end do
@@ -168,7 +172,7 @@ contains
             newDomain%fnum = int((newDomain%fstop - newDomain%fstart)/newDomain%fstep, kind=SINGLE)
 
          else
-            call stoponerror('No domain present')
+            call stoponerror(0,0,'No domain present')
          end if
          return
       end function preprocess_domain
@@ -204,11 +208,11 @@ contains
             fieldPointer => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
             call update_solver_output(outputs(i)%pointProbe, step, fieldPointer)
          case (WIRE_CURRENT_PROBE_ID)
-            call update_solver_output(outputs(i)%wireCurrentProbe, step, control%wiresflavor, control%wirecrank)
+            call update_solver_output(outputs(i)%wireCurrentProbe, step, control%wiresflavor, control%wirecrank, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
             call update_solver_output(outputs(i)%wireChargeProbe, step)
          case default
-            call stoponerror('Output update not implemented')
+            call stoponerror(0,0,'Output update not implemented')
          end select
       end do
 
@@ -227,6 +231,5 @@ contains
       end function get_field_component
 
    end subroutine update_outputs
-
 
 end module output

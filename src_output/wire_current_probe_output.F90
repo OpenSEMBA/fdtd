@@ -205,11 +205,12 @@ contains
 
    end subroutine init_wire_current_probe_output
 
-   subroutine update_wire_current_probe_output(this, step, wiresflavor, wirecrank)
+   subroutine update_wire_current_probe_output(this, step, wiresflavor, wirecrank, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
       character(len=*), intent(in) :: wiresflavor
-      logical :: wirecrank
+      logical, intent(in) :: wirecrank
+      real(KIND=RKIND), pointer, dimension(:), intent(in) :: InvEps, InvMu
 
       type(CurrentSegments), pointer  ::  segmDumm
 #ifdef CompileWithBerengerWires

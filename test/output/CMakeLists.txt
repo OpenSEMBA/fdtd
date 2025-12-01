@@ -7,6 +7,7 @@ add_library(
 
 target_link_libraries(output_test_fortran
     semba-outputs
+    fdtd-output
     test_utils_fortran
 )
 

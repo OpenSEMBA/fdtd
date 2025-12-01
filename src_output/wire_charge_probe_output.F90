@@ -1,6 +1,7 @@
 module mod_wireChargeProbeOutput
   use FDETYPES
   use mod_domain
+  use mod_outputUtils
   use wiresHolland_constants
   use HollandWires
   implicit none
@@ -17,18 +18,21 @@ module mod_wireChargeProbeOutput
 
       integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
       real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
-      type(rkind), dimension(BuffObse) :: chargeValue
-   end type wire_current_probe_output_t
+      real(kind=RKIND), dimension(BuffObse) :: chargeValue
+   end type wire_charge_probe_output_t
 contains
 
-  subroutine init_wire_charge_probe_output(this, iCoord, jCoord, kCoord, node, field, domain, media, outputTypeExtension, mpidir,)
+  subroutine init_wire_charge_probe_output(this, iCoord, jCoord, kCoord, node, field, domain, outputTypeExtension, mpidir, wiresflavor)
     type(wire_charge_probe_output_t), intent(out) :: this 
     integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord, node
     integer(kind=SINGLE), intent(in) :: field, mpidir
-    character(len=BUFSIZE), intent(in) :: outputTypeExtension
+    character(len=*), intent(in) :: outputTypeExtension, wiresflavor
     type(domain_t), intent(in) :: domain
 
     type(Thinwires_t), pointer  ::  Hwireslocal
+    type(CurrentSegments), pointer :: currentSegment
+    character(len=BUFSIZE) :: buff
+    integer(kind=SINGLE) :: n
     if (trim(adjustl(wiresflavor))=='holland' .or. trim(adjustl(wiresflavor))=='transition') Hwireslocal => GetHwires()
 
     call find_segment()
@@ -60,10 +64,51 @@ contains
             CALL WarnErrReport(buff, .true.)
          end if
       end subroutine find_segment
+
+    function get_output_path() result(outputPath)
+         character(len=BUFSIZE) :: outputPath
+         character(len=BUFSIZE)  ::  charNO
+         character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension, prefixNodeExtension
+
+         write (charNO, '(i7)') node
+         prefixNodeExtension = 's'//trim(adjustl(charNO))
+         probeBoundsExtension = get_probe_bounds_extension()
+         prefixFieldExtension = get_prefix_extension(field, mpidir)
+
+         outputPath = &
+            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_' &
+            //trim(adjustl(probeBoundsExtension))//'_'//trim(adjustl(prefixNodeExtension))
+         return
+      end function get_output_path
+
+      function get_probe_bounds_extension() result(ext)
+         character(len=BUFSIZE) :: ext
+         character(len=BUFSIZE)  ::  chari, charj, chark
+
+         write (chari, '(i7)') iCoord
+         write (charj, '(i7)') jCoord
+         write (chark, '(i7)') kCoord
+
+#if CompileWithMPI
+         if (mpidir == 3) then
+            ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
+         elseif (mpidir == 2) then
+            ext = trim(adjustl(charj))//'_'//trim(adjustl(chark))//'_'//trim(adjustl(chari))
+         elseif (mpidir == 1) then
+            ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
+         else
+            call stoponerror('Buggy error in mpidir. ')
+         end if
+#else
+         ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
+#endif
+
+         return
+      end function get_probe_bounds_extension
   end subroutine init_wire_charge_probe_output
 
   subroutine update_wire_charge_probe_output(this, step)
-    type(wire_charge_probe_output_t), intent(inout) :: this 
+    type(wire_charge_probe_output_t), intent(inout) :: this
     real(kind=RKIND_tiempo), intent(in) :: step
     type(CurrentSegments), pointer  ::  segmDumm
 
@@ -73,4 +118,4 @@ contains
     this%chargeValue(this%serializedTimeSize) = SegmDumm%ChargeMinus%ChargePresent
   end subroutine update_wire_charge_probe_output
   
-end module wire_charge_probe_output_t
+end module mod_wireChargeProbeOutput

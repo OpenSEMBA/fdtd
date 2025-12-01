@@ -1,6 +1,7 @@
 module mod_outputUtils
    use FDETYPES
    use mod_domain
+   use report
    implicit none
    character(len=4), parameter :: datFileExtension = '.dat', timeExtension = 'tm', frequencyExtension = 'fq'
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
@@ -78,7 +79,7 @@ contains
          case default; prefixExtension = prefix(field)
          end select
       else
-         call stoponerror('Buggy error in mpidir. ')
+         call stoponerror(0,0,"Buggy error in mpidir.")
       end if
       return
    end function get_rotated_prefix

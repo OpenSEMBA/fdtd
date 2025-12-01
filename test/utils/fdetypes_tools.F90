@@ -73,7 +73,7 @@ contains
       ! 1. Set explicit defaults for all components
       control%layoutnumber = 0
       control%size = 0
-      control%mpidir = 0
+      control%mpidir = 3
       control%finaltimestep = 0
       control%nEntradaRoot = ""
       control%wiresflavor = ""
@@ -130,7 +130,7 @@ contains
       integer(kind=4) :: i
       integer :: size_val
       real(kind=RKIND_tiempo) :: interval_val
-      real(kind=RKIND_tiempo), allocatable, dimension(:) :: arr
+      real(kind=RKIND_tiempo), pointer, dimension(:) :: arr
 
       size_val = merge(array_size, 100, present(array_size))
       interval_val = merge(interval, 1.0_RKIND_tiempo, present(interval))

@@ -117,7 +117,7 @@ contains
          timeUnitFile = FILE_UNIT + 1
 
          status = open_file(timeUnitFile, timeFileName)
-         if (status /= 0) call stoponerror('Failed to open timeDomainFile. ')
+         if (status /= 0) call stoponerror(0,0,'Failed to open timeDomainFile. ')
 
          do i = 1, this%serializedTimeSize
             write (timeUnitFile, '(F12.4, 2X, F12.4)') this%timeStep(i), this%valueForTime(i)
@@ -131,7 +131,7 @@ contains
          frequencyUnitFile = FILE_UNIT + 2
 
          OPEN (UNIT=frequencyUnitFile, FILE=frequencyFileName, STATUS='REPLACE', ACTION='WRITE', iostat=status)
-         if (status /= 0) call stoponerror('Failed to open frequencyDomainFile. ')
+         if (status /= 0) call stoponerror(0,0, 'Failed to open frequencyDomainFile. ')
 
          do i = 1, this%nFreq
             write (frequencyUnitFile, '(F12.4, 2X, F12.4)') this%frequencySlice(i), this%valueForFreq(i)
