@@ -92,7 +92,7 @@ contains
       if (present(finaltimestep)) control%finaltimestep = finaltimestep
       if (present(nEntradaRoot)) control%nEntradaRoot = nEntradaRoot
       if (present(wiresflavor)) control%wiresflavor = wiresflavor
-      if (present(wiresflavor)) control%wirecrank = wirecrank
+      if (present(wirecrank)) control%wirecrank = wirecrank
       if (present(resume)) control%resume = resume
       if (present(saveall)) control%saveall = saveall
       if (present(NF2FFDecim)) control%NF2FFDecim = NF2FFDecim
@@ -113,8 +113,9 @@ contains
       sgg%NumberRequest = 1
       sgg%dt = merge(dt, 0.1_RKIND_tiempo, present(dt))
 
-      ! Use the new optional-aware create_time_array
-      sgg%tiempo = create_time_array(merge(time_steps, 100, present(time_steps)), sgg%dt)
+      nTimes = merge(time_steps, 100, present(time_steps))
+      allocate(sgg%tiempo(nTimes))
+      sgg%tiempo = create_time_array(nTimes, sgg%dt)
 
       ! Hardcoded array limits now call the optional-aware function
       sgg%Sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)

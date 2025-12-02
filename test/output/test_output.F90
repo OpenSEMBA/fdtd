@@ -12,6 +12,7 @@ function test_initialize() bind(C) result(err)
 
    !Set requested observables
    dummysgg = create_base_sgg(nummedia=5, dt=0.1_RKIND_tiempo, time_steps=100)
+   dummysgg%NumberRequest = 3
    allocate (dummysgg%Observation(3))
    dummysgg%Observation(1) = define_point_observation()
    dummysgg%Observation(2) = define_wire_current_observation()

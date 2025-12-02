@@ -5,6 +5,13 @@ module mod_outputUtils
    implicit none
    character(len=4), parameter :: datFileExtension = '.dat', timeExtension = 'tm', frequencyExtension = 'fq'
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
+
+
+   type field_data_t
+      real(kind=RKIND), pointer, dimension(:, :, :) :: x, y, z
+      real(kind=RKIND), pointer, dimension(:) :: deltaX, deltaY, deltaZ
+   end type field_data_t
+
 contains
 
    function get_prefix_extension(field, mpidir) result(prefixExtension)
@@ -38,6 +45,12 @@ contains
          case (iHx); prefixExtension = prefix(iHx)
          case (iHy); prefixExtension = prefix(iHy)
          case (iHz); prefixExtension = prefix(iHz)
+         case (iBloqueJx); prefix_field = prefix(iBloqueJx)
+         case (iBloqueJy); prefix_field = prefix(iBloqueJy)
+         case (iBloqueJz); prefix_field = prefix(iBloqueJz)
+         case (iBloqueMx); prefix_field = prefix(iBloqueMx)
+         case (iBloqueMy); prefix_field = prefix(iBloqueMy)
+         case (iBloqueMz); prefix_field = prefix(iBloqueMz)
          case default; prefixExtension = prefix(field)
          end select
       elseif (mpidir == 2) then
@@ -57,6 +70,12 @@ contains
          case (iHx); prefixExtension = prefix(iHz)
          case (iHy); prefixExtension = prefix(iHx)
          case (iHz); prefixExtension = prefix(iHy)
+         case (iBloqueJx); prefix_field = prefix(iBloqueJz)
+         case (iBloqueJy); prefix_field = prefix(iBloqueJx)
+         case (iBloqueJz); prefix_field = prefix(iBloqueJy)
+         case (iBloqueMx); prefix_field = prefix(iBloqueMz)
+         case (iBloqueMy); prefix_field = prefix(iBloqueMx)
+         case (iBloqueMz); prefix_field = prefix(iBloqueMy)
          case default; prefixExtension = prefix(field)
          end select
       elseif (mpidir == 1) then
@@ -76,10 +95,16 @@ contains
          case (iHx); prefixExtension = prefix(iHy)
          case (iHy); prefixExtension = prefix(iHz)
          case (iHz); prefixExtension = prefix(iHx)
+         case (iBloqueJx); prefix_field = prefix(iBloqueJy)
+         case (iBloqueJy); prefix_field = prefix(iBloqueJz)
+         case (iBloqueJz); prefix_field = prefix(iBloqueJx)
+         case (iBloqueMx); prefix_field = prefix(iBloqueMy)
+         case (iBloqueMy); prefix_field = prefix(iBloqueMz)
+         case (iBloqueMz); prefix_field = prefix(iBloqueMx)
          case default; prefixExtension = prefix(field)
          end select
       else
-         call stoponerror(0,0,"Buggy error in mpidir.")
+         call stoponerror(0, 0, "Buggy error in mpidir.")
       end if
       return
    end function get_rotated_prefix
@@ -149,19 +174,19 @@ contains
    end function close_file
 
    subroutine init_frequency_slice(frequencySlice, domain)
-    real(kind=RKIND), dimension(:), intent(out) :: frequencySlice
-    type(domain_t), intent(in) :: domain
+      real(kind=RKIND), dimension(:), intent(out) :: frequencySlice
+      type(domain_t), intent(in) :: domain
 
-    integer(kind=SINGLE) :: i
+      integer(kind=SINGLE) :: i
 
-    if (domain%logarithmicSpacing) then
-      do i = 1, domain%fnum
-        frequencySlice(i) = 10.0_RKIND ** (domain%fstart + (i - 1) * domain%fstep)
-      end do
-    else
-      do i=1, domain%fnum
-        frequencySlice(i) = domain%fstart + (i-1) * domain%fstep
-      end do
-    end if
+      if (domain%logarithmicSpacing) then
+         do i = 1, domain%fnum
+            frequencySlice(i) = 10.0_RKIND**(domain%fstart + (i - 1)*domain%fstep)
+         end do
+      else
+         do i = 1, domain%fnum
+            frequencySlice(i) = domain%fstart + (i - 1)*domain%fstep
+         end do
+      end if
    end subroutine init_frequency_slice
 end module mod_outputUtils

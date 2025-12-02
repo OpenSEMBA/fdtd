@@ -5,12 +5,14 @@ module output
    use mod_pointProbeOutput
    use mod_wireCurrentProbeOutput
    use mod_wireChargeProbeOutput
+   use mod_bulkProbe
 
    implicit none
 
    integer(kind=SINGLE), parameter :: POINT_PROBE_ID = 0, &
                                       WIRE_CURRENT_PROBE_ID = 1, &
-                                      WIRE_CHARGE_PROBE_ID = 2
+                                      WIRE_CHARGE_PROBE_ID = 2, &
+                                      BULK_PROBE_ID = 3
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
@@ -20,6 +22,7 @@ module output
       type(point_probe_output_t), allocatable :: pointProbe
       type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
       type(wire_charge_probe_output_t), allocatable :: wireChargeProbe
+      type(bulk_probe_output_t), allocatable :: blukProbe
       !type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
       !type(far_field_t), allocatable :: farField
       !type(time_movie_output_t), allocatable :: timeMovie
@@ -30,7 +33,8 @@ module output
       module procedure &
          init_point_probe_output, &
          init_wire_current_probe_output, &
-         init_wire_charge_probe_output
+         init_wire_charge_probe_output, &
+         init_bulk_probe_output
       !init_bulk_current_probe_output, &
       !init_far_field, &
       !initime_movie_output, &
@@ -77,7 +81,7 @@ contains
 
       type(domain_t) :: domain
       integer(kind=SINGLE) :: i, ii, outputRequestType
-      integer(kind=SINGLE) :: I1, J1, K1, NODE
+      integer(kind=SINGLE) :: I1, J1, K1, I2, J2, K2, NODE
       integer(kind=SINGLE) :: outputCount = 0
       character(len=BUFSIZE) :: outputTypeExtension
       allocate (outputs(sgg%NumberRequest))
@@ -87,12 +91,14 @@ contains
       InvEps(0:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia)%Epr)
       InvMu(0:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia)%Mur)
 
-
       do ii = 1, sgg%NumberRequest
          do i = 1, sgg%Observation(ii)%nP
             I1 = sgg%observation(ii)%P(i)%XI
             J1 = sgg%observation(ii)%P(i)%YI
             K1 = sgg%observation(ii)%P(i)%ZI
+            I2 = sgg%observation(ii)%P(i)%XE
+            J2 = sgg%observation(ii)%P(i)%YE
+            K2 = sgg%observation(ii)%P(i)%ZE
             NODE = sgg%observation(ii)%P(i)%NODE
 
             domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, control%finaltimestep)
@@ -105,7 +111,7 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir)
+               call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir)
 
             case (iJx, iJy, iJz)
                if (ThereAreWires) then
@@ -117,14 +123,21 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
                end if
 
             case (iQx, iQy, iQz)
-               if (ThereAreWires) then
-                  outputCount = outputCount + 1
-                  outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
-                  allocate (outputs(outputCount)%wireChargeProbe)
-                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
-               end if
+               outputCount = outputCount + 1
+               outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
+               
+               allocate (outputs(outputCount)%wireChargeProbe)
+               call init_solver_output(outputs(outputCount)%wireChargeProbe, , I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
+            case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
+               outputCount = outputCount + 1
+               outputs(outputCount)%outputID = BULK_PROBE_ID
+               
+               allocate (outputs(outputCount)%bulkProbe)
+               call init_solver_output(outputs(outputCount)%bulkProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, outputTypeExtension, control%mpidir)
+               !! call adjust_computation_range --- Required due to issues in mpi region edges
+
             case default
-               call stoponerror(0,0,'OutputRequestType type not implemented yet on new observations')
+               call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
          end do
       end do
@@ -172,7 +185,7 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
             newDomain%fnum = int((newDomain%fstop - newDomain%fstart)/newDomain%fstep, kind=SINGLE)
 
          else
-            call stoponerror(0,0,'No domain present')
+            call stoponerror(0, 0, 'No domain present')
          end if
          return
       end function preprocess_domain
@@ -185,7 +198,8 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
       integer(kind=SINGLE) :: i, id
       type(XYZlimit_t), dimension(1:6), intent(in) :: alloc
       type(sim_control_t), intent(in) :: control
-      real(kind=RKIND), pointer, dimension(:, :, :) :: fieldPointer
+      real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
+      type(field_data_t), :: fieldReference 
 
       real(KIND=RKIND), intent(in), target     :: &
          Ex(alloc(iEx)%XI:alloc(iEx)%XE, alloc(iEx)%YI:alloc(iEx)%YE, alloc(iEx)%ZI:alloc(iEx)%ZE), &
@@ -205,14 +219,17 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
-            fieldPointer => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
-            call update_solver_output(outputs(i)%pointProbe, step, fieldPointer)
+            fieldComponent => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
+            call update_solver_output(outputs(i)%pointProbe, step, fieldComponent)
          case (WIRE_CURRENT_PROBE_ID)
             call update_solver_output(outputs(i)%wireCurrentProbe, step, control%wiresflavor, control%wirecrank, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
             call update_solver_output(outputs(i)%wireChargeProbe, step)
+         case (BULK_PROBE_ID)
+            fieldReference => get_field_reference(outputs(i)%blukProbe%fieldComponent)
+            call update_solver_output(outputs(i)%bulkProbe, step, fieldReference)
          case default
-            call stoponerror(0,0,'Output update not implemented')
+            call stoponerror(0, 0, 'Output update not implemented')
          end select
       end do
 
@@ -229,6 +246,30 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
          case (iHz); field => Hz
          end select
       end function get_field_component
+
+      function get_field_reference(fieldId) result(field)
+         integer(kind=SINGLE), intent(in) :: fieldId
+         type(field_data_t) :: field
+         select case
+         case (iBloqueJx, iBloqueJy, iBloqueJz)
+            field%x => Ex
+            field%y => Ey
+            field%z => Ez
+
+            field%deltaX => dxe
+            field%deltaY => dye
+            field%deltaZ => dze
+         case (iBloqueMx, iBloqueMy, iBloqueMz)
+            field%x => Hx
+            field%y => Hy
+            field%z => Hz
+
+            field%deltaX => dxh
+            field%deltaY => dyh
+            field%deltaZ => dzh 
+         end select
+      end function get_field_reference
+          
 
    end subroutine update_outputs
 
