@@ -6,6 +6,7 @@ module output
    use mod_wireCurrentProbeOutput
    use mod_wireChargeProbeOutput
    use mod_bulkProbe
+   use mod_volumicProbe
 
    implicit none
 
@@ -23,6 +24,8 @@ module output
       type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
       type(wire_charge_probe_output_t), allocatable :: wireChargeProbe
       type(bulk_probe_output_t), allocatable :: blukProbe
+      type(volumic_current_probe_t), allocatable :: volumicCurrentProbe
+      type(volumic_field_probe_t), allocatable :: volumicFieldProbe
       !type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
       !type(far_field_t), allocatable :: farField
       !type(time_movie_output_t), allocatable :: timeMovie
@@ -34,8 +37,8 @@ module output
          init_point_probe_output, &
          init_wire_current_probe_output, &
          init_wire_charge_probe_output, &
-         init_bulk_probe_output
-      !init_bulk_current_probe_output, &
+         init_bulk_probe_output, &
+         init_volumic_current_probe_output
       !init_far_field, &
       !initime_movie_output, &
       !init_frequency_slice_output
@@ -45,7 +48,8 @@ module output
       module procedure &
          update_point_probe_output, &
          update_wire_current_probe_output, &
-         update_wire_charge_probe_output
+         update_wire_charge_probe_output, &
+         update_bulk_probe_output
       !update_bulk_current_probe_output, &
       !update_far_field, &
       !updateime_movie_output, &
@@ -73,8 +77,10 @@ module output
    end interface
 contains
 
-   subroutine init_outputs(sgg, control, outputs, ThereAreWires)
+   subroutine init_outputs(sgg, media, sinpml_fullsize, control, outputs, ThereAreWires)
       type(SGGFDTDINFO), intent(in) ::  sgg
+      type(media_matrices_t), intent(in) :: media
+      type(limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
       type(sim_control_t), intent(inout) :: control
       type(solver_output_t), dimension(:), allocatable, intent(out) :: outputs
       logical :: ThereAreWires
@@ -135,6 +141,13 @@ contains
                allocate (outputs(outputCount)%bulkProbe)
                call init_solver_output(outputs(outputCount)%bulkProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, outputTypeExtension, control%mpidir)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
+
+            case (iCur, iCurX, iCurY, iCurZ)
+               outputCount = outputCount + 1
+               outputs(outputCount)%outputID = VOLUMIC_CURRENT_PROBE_ID
+               
+               allocate (outputs(outputCount)%volumicCurrentProbe)
+               call init_solver_output(outputs(outputCount)%volumicCurrentProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir)
 
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
