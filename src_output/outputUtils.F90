@@ -6,13 +6,72 @@ module mod_outputUtils
    character(len=4), parameter :: datFileExtension = '.dat', timeExtension = 'tm', frequencyExtension = 'fq'
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
 
-
    type field_data_t
       real(kind=RKIND), pointer, dimension(:, :, :) :: x, y, z
       real(kind=RKIND), pointer, dimension(:) :: deltaX, deltaY, deltaZ
    end type field_data_t
 
 contains
+
+   function get_probe_coords_extension(iCoord, jCoord, kCoord, mpidir) result(ext)
+      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord, mpidir
+      character(len=BUFSIZE) :: ext
+      character(len=BUFSIZE)  ::  chari, charj, chark
+
+      write (chari, '(i7)') iCoord
+      write (charj, '(i7)') jCoord
+      write (chark, '(i7)') kCoord
+
+#if CompileWithMPI
+      if (mpidir == 3) then
+         ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
+      elseif (mpidir == 2) then
+         ext = trim(adjustl(charj))//'_'//trim(adjustl(chark))//'_'//trim(adjustl(chari))
+      elseif (mpidir == 1) then
+         ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
+      else
+         call stoponerror('Buggy error in mpidir. ')
+      end if
+#else
+      ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
+#endif
+
+      return
+   end function get_probe_coords_extension
+
+   function get_probe_bounds_coords_extension(iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, mpidir) result(ext)
+      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, mpidir
+      character(len=BUFSIZE) :: ext
+      character(len=BUFSIZE)  ::  chari, charj, chark, chari2, charj2, chark2
+
+      write (chari, '(i7)') iCoord
+      write (charj, '(i7)') jCoord
+      write (chark, '(i7)') kCoord
+
+      write (chari2, '(i7)') i2Coord
+      write (charj2, '(i7)') j2Coord
+      write (chark2, '(i7)') k2Coord
+
+#if CompileWithMPI
+      if (mpidir == 3) then
+         ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))//'__'// &
+               trim(adjustl(chari2))//'_'//trim(adjustl(charj2))//'_'//trim(adjustl(chark2))
+      elseif (mpidir == 2) then
+         ext = trim(adjustl(charj))//'_'//trim(adjustl(chark))//'_'//trim(adjustl(chari))//'__'// &
+               trim(adjustl(charj2))//'_'//trim(adjustl(chark2))//'_'//trim(adjustl(chari2))
+      elseif (mpidir == 1) then
+         ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))//'__'// &
+               trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
+      else
+         call stoponerror('Buggy error in mpidir. ')
+      end if
+#else
+      ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))//'__'// &
+            trim(adjustl(chari2))//'_'//trim(adjustl(charj2))//'_'//trim(adjustl(chark2))
+#endif
+
+      return
+   end function get_probe_bounds_coords_extension
 
    function get_prefix_extension(field, mpidir) result(prefixExtension)
       integer(kind=SINGLE), intent(in)  ::  field, mpidir
@@ -189,4 +248,65 @@ contains
          end do
       end if
    end subroutine init_frequency_slice
+
+   integer function blockCurrent(field)
+      integer(kind=4) :: field
+      select case (field)
+      case (iHx); blockCurrent = iCurX
+      case (iHy); blockCurrent = iCurY
+      case (iHz); blockCurrent = iCurZ
+      case default; call StopOnError(layoutnumber, size, 'field is not H field')
+      end select
+   end function
+
+   logical function isPECorSurface(field, i, j, k, media, simulationMedia)
+      type(MediaData_t), pointer, dimension(:), intent(in) :: simulationMedia
+      type(media_matrices_t), intent(in) :: media
+      integer(kind=4), intent(in) :: field, i, j, k
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
+      mediaIndex = getMedia(field, i, j, k, media)
+      isPECorSurface = simulationMedia(mediaIndex)%is%PEC .or. simulationMedia(mediaIndex)%is%Surface
+   end function
+
+   function getMedia(field, i, j, k, media) result(res)
+      TYPE(media_matrices_t), INTENT(IN) :: media
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
+      integer(kind=4) :: field, i, j, k
+      select case (field)
+      case (iEx); res = media%sggMiEx(i, j, k)
+      case (iEy); res = media%sggMiEy(i, j, k)
+      case (iEz); res = media%sggMiEz(i, j, k)
+      case (iHx); res = media%sggMiHx(i, j, k)
+      case (iHy); res = media%sggMiHy(i, j, k)
+      case (iHz); res = media%sggMiHz(i, j, k)
+      case default; call StopOnError(layoutnumber, size, 'Unrecognized field')
+      end select
+   end function
+
+   logical function isWithinBounds(field, i, j, k, SINPML_fullsize)
+      TYPE(limit_t), DIMENSION(:), INTENT(IN) :: SINPML_fullsize
+      integer(kind=4) :: field, i, j, k
+      isWithinBounds = (i <= SINPML_fullsize(field)%XE) .and. &
+                       (j <= SINPML_fullsize(field)%YE) .and. &
+                       (k <= SINPML_fullsize(field)%ZE)
+   end function
+
+   logical function isMediaVacuum(field, i, j, k, media)
+      TYPE(media_matrices_t), INTENT(IN) :: media
+      integer(kind=4) :: field, i, j, k
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex, vacuum = 1
+      mediaIndex = getMedia(field, i, j, k, media)
+      isMediaVacuum = (mediaIndex == vacuum)
+   end function
+
+   logical function isSplitOrAdvanced(field, i, j, k, media, simulationMedia)
+      type(MediaData_t), pointer, dimension(:), intent(in) :: simulationMedia
+      type(media_matrices_t), intent(in) :: media
+      integer(kind=4) :: field, i, j, k
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
+      mediaIndex = getMedia(field, i, j, k, media)
+      isSplitOrAdvanced = sgg%med(mediaIndex)%is%split_and_useless .or. &
+                          sgg%med(mediaIndex)%is%already_YEEadvanced_byconformal
+
+   end function
 end module mod_outputUtils
