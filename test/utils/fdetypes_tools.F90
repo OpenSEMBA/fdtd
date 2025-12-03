@@ -1,5 +1,6 @@
 module FDETYPES_TOOLS
    use FDETYPES
+   use NFDETypes
 contains
    function create_limit_t(XI, XE, YI, YE, ZI, ZE, NX, NY, NZ) result(r)
       type(limit_t) :: r
@@ -114,7 +115,7 @@ contains
       sgg%dt = merge(dt, 0.1_RKIND_tiempo, present(dt))
 
       nTimes = merge(time_steps, 100, present(time_steps))
-      allocate(sgg%tiempo(nTimes))
+      allocate (sgg%tiempo(nTimes))
       sgg%tiempo = create_time_array(nTimes, sgg%dt)
 
       ! Hardcoded array limits now call the optional-aware function
@@ -135,8 +136,6 @@ contains
 
       size_val = merge(array_size, 100, present(array_size))
       interval_val = merge(interval, 1.0_RKIND_tiempo, present(interval))
-
-      
 
       allocate (arr(size_val))
 
@@ -192,10 +191,6 @@ contains
       if (present(ar)) faces%ar = ar
    end function create_facesNF2FF
 
-   function create_basic_media() result(media)
-      type(MediaData_t) :: media
-   end function create_basic_media
-
    function define_point_observation() result(obs)
       type(Obses_t) :: obs
 
@@ -225,7 +220,7 @@ contains
    end function define_point_observation
 
    function define_wire_current_observation() result(obs)
-          type(Obses_t) :: obs
+      type(Obses_t) :: obs
 
       obs%nP = 1
       allocate (obs%P(obs%nP))
@@ -251,9 +246,8 @@ contains
       obs%Flushed = .false.
    end function define_wire_current_observation
 
-   
    function define_wire_charge_observation() result(obs)
-          type(Obses_t) :: obs
+      type(Obses_t) :: obs
 
       obs%nP = 1
       allocate (obs%P(obs%nP))
@@ -279,23 +273,200 @@ contains
       obs%Flushed = .false.
    end function define_wire_charge_observation
 
-   function create_observable(XI,YI,ZI,XE,YE,ZE, what) result(observable)
-                type(observable_t) :: observable
-            integer (kind=4)  ::  XI,YI,ZI,XE,YE,ZE, what
+   function create_observable(XI, YI, ZI, XE, YE, ZE, what) result(observable)
+      type(observable_t) :: observable
+      integer(kind=4)  ::  XI, YI, ZI, XE, YE, ZE, what
 
-            observable%XI = XI
-            observable%YI = YI
-            observable%ZI = ZI
+      observable%XI = XI
+      observable%YI = YI
+      observable%ZI = ZI
 
-            observable%XE = XE
-            observable%YE = YE
-            observable%ZE = ZE
+      observable%XE = XE
+      observable%YE = YE
+      observable%ZE = ZE
 
-            observable%Xtrancos = 1
-            observable%Ytrancos = 1
-            observable%Ztrancos = 1
+      observable%Xtrancos = 1
+      observable%Ytrancos = 1
+      observable%Ztrancos = 1
 
-            observable%What = what
-    end function create_observable
+      observable%What = what
+   end function create_observable
+
+   subroutine add_media_data_to_sgg(sgg, mediaData)
+      implicit none
+
+      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(MediaData_t), intent(in)    :: mediaData
+
+      type(MediaData_t), dimension(:), allocatable :: temp_Med
+      integer :: new_size, istat
+
+      new_size = sgg%NumMedia + 1
+
+      allocate (temp_Med(new_size), stat=istat)
+      if (istat /= 0) then
+         stop "Allocation failed for temporary media array."
+      end if
+
+      if (sgg%NumMedia > 0) then
+         temp_Med(1:sgg%NumMedia) = sgg%Med
+
+         deallocate (sgg%Med)
+      end if
+
+      temp_Med(new_size) = mediaData
+
+      sgg%Med => temp_Med
+
+      sgg%NumMedia = new_size
+
+   end subroutine add_media_data_to_sgg
+
+   function get_default_mediadata() result(res)
+      implicit none
+
+      type(MediaData_t) :: res
+
+      ! Reals
+      res%Priority = prior_BV
+      res%Epr = 1.0_RKIND
+      res%Sigma = 0.0_RKIND
+      res%Mur = 1.0_RKIND
+      res%SigmaM = 0.0_RKIND
+
+      ! Logical
+      res%sigmareasignado = .false.
+
+      ! exists_t logicals
+      res%Is%PML = .false.
+      res%Is%PEC = .false.
+      res%Is%PMC = .false.
+      res%Is%ThinWire = .false.
+      res%Is%SlantedWire = .false.
+      res%Is%EDispersive = .false.
+      res%Is%MDispersive = .false.
+      res%Is%EDispersiveAnis = .false.
+      res%Is%MDispersiveAnis = .false.
+      res%Is%ThinSlot = .false.
+      res%Is%PMLbody = .false.
+      res%Is%SGBC = .false.
+      res%Is%SGBCDispersive = .false.
+      res%Is%Lumped = .false.
+      res%Is%Lossy = .false.
+      res%Is%AnisMultiport = .false.
+      res%Is%Multiport = .false.
+      res%Is%MultiportPadding = .false.
+      res%Is%Dielectric = .false.
+      res%Is%Anisotropic = .false.
+      res%Is%Volume = .false.
+      res%Is%Line = .false.
+      res%Is%Surface = .false.
+      res%Is%Needed = .true.
+      res%Is%Interfase = .false.
+      res%Is%already_YEEadvanced_byconformal = .false.
+      res%Is%split_and_useless = .false.
+
+      ! Pointers: They are automatically unassociated (nullified)
+      ! when a function returns a type with pointer components,
+      ! unless explicitly associated before return.
+      ! For safety, we can explicitly nullify them, although Fortran often handles this.
+      nullify (res%Wire)
+      nullify (res%SlantedWire)
+      nullify (res%PMLbody)
+      nullify (res%Multiport)
+      nullify (res%AnisMultiport)
+      nullify (res%EDispersive)
+      nullify (res%MDispersive)
+      nullify (res%Anisotropic)
+      nullify (res%Lumped)
+
+   end function get_default_mediadata
+
+   function create_pec_media() result(res)
+      implicit none
+
+      type(MediaData_t) :: res
+
+      res = get_default_mediadata()
+
+      res%Is%PEC = .TRUE.
+
+      res%Priority = prior_PEC
+      res%Epr = this%mats%mats(1)%eps/Eps0
+      res%Sigma = 1.0e29_RKIND
+      res%Mur = this%mats%mats(1)%mu/Mu0
+      res%SigmaM = 0.0_RKIND
+
+   end function create_pec_media
+
+   function create_empty_material() result(mat)
+      implicit none
+      type(Material) :: mat
+   end function create_empty_material
+
+   function create_material(eps_in, mu_in, sigma_in, sigmam_in, id_in) result(mat)
+      implicit none
+      real(kind=RK), intent(in) :: eps_in, mu_in, sigma_in, sigmam_in
+      integer(kind=4), intent(in) :: id_in
+      type(Material) :: mat
+
+      ! Error if restricted IDs
+      if ((id_in == 0) .or. (id_in == 1) .or. (id_in == 2)) then
+         stop 'ERROR in create_material: Material ID cannot be 0, 1, or 2, as they are reserved to vacuum, pec and pmc.'
+      end if
+
+      mat%eps = eps_in
+      mat%mu = mu_in
+      mat%sigma = sigma_in
+      mat%sigmam = sigmam_in
+      mat%id = id_in
+   end function create_material
+
+   function create_vacuum_material() result(mat)
+      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, 0.0, 1)
+   end function create_vacuum_material
+
+   function create_pec_material() result(mat)
+      type(Material) :: mat
+      mat = create_material(EPSILON_VACUUM, MU_VACUUM, SIGMA_PEC, 0.0, 2)
+   end function create_pec_material
+
+   function create_pmc_material() result(mat)
+      type(Material) :: mat
+      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, SIGMA_PMC, 3)
+   end function create_pec_material
+
+   function create_empty_materials() result(mats)
+      implicit none
+      type(Materials) :: mats
+   end function create_empty_materials
+
+   subroutine add_material_to_materials(mats_collection, new_mat)
+      implicit none
+      type(Materials), intent(inout) :: mats_collection
+      type(Material), intent(in) :: new_mat
+
+      type(Material), dimension(:), allocatable :: temp_Mats
+      integer :: old_size, new_size
+
+      old_size = mats_collection%n_Mats
+      new_size = old_size + 1
+
+      allocate (temp_Mats(new_size))
+
+      if (old_size > 0) then
+         temp_Mats(1:old_size) = mats_collection%Mats
+
+         deallocate (mats_collection%Mats)
+      end if
+
+      temp_Mats(new_size) = new_mat
+
+      mats_collection%Mats => temp_Mats
+
+      mats_collection%n_Mats = new_size
+      mats_collection%n_Mats_max = new_size
+
+   end subroutine add_material_to_materials
 
 end module FDETYPES_TOOLS
