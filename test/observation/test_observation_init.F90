@@ -19,7 +19,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
 
     type(output_t), pointer, dimension(:) :: output
 
-    sgg = create_base_sgg()
+    sgg = create_base_sgg(dt=0.1_RKIND_tiempo, time_steps=100)
     call set_sgg_data(sgg)
 
     media = create_media(sgg%Alloc)

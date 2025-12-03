@@ -3,8 +3,32 @@ module FDETYPES_TOOLS
    use NFDETypes
 
    implicit none
-   real(kind=rkind) :: EPS0 = 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
- real(kind=rkind) :: MU0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
+   real(kind=rkind) :: UTILEPS0 = 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
+ real(kind=rkind) :: UTILMU0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
+   type :: observation_domain_t
+      real(kind=RKIND) :: InitialTime = 0.0_RKIND
+      real(kind=RKIND) :: FinalTime = 0.0_RKIND
+      real(kind=RKIND) :: TimeStep = 0.0_RKIND
+
+      real(kind=RKIND) :: InitialFreq = 0.0_RKIND
+      real(kind=RKIND) :: FinalFreq = 0.0_RKIND
+      real(kind=RKIND) :: FreqStep = 0.0_RKIND
+
+      real(kind=RKIND) :: thetaStart = 0.0_RKIND
+      real(kind=RKIND) :: thetaStop = 0.0_RKIND
+      real(kind=RKIND) :: thetaStep = 0.0_RKIND
+
+      real(kind=RKIND) :: phiStart = 0.0_RKIND
+      real(kind=RKIND) :: phiStop = 0.0_RKIND
+      real(kind=RKIND) :: phiStep = 0.0_RKIND
+
+      logical :: FreqDomain = .FALSE.
+      logical :: TimeDomain = .TRUE.
+      logical :: Saveall = .FALSE.
+      logical :: TransFer = .FALSE.
+      logical :: Volumic = .FALSE.
+   end type observation_domain_t
+
 contains
    function create_limit_t(XI, XE, YI, YE, ZI, ZE, NX, NY, NZ) result(r)
       type(limit_t) :: r
@@ -120,8 +144,6 @@ contains
       sgg%NumMedia = 3
       sgg%med => media
 
-      allocate (sgg%Med(1:sgg%NumMedia))
-      sgg%NumberRequest = 1
       sgg%dt = merge(dt, 0.1_RKIND_tiempo, present(dt))
 
       nTimes = merge(time_steps, 100, present(time_steps))
@@ -143,7 +165,6 @@ contains
       media(1) = get_default_mediadata()
       media(2) = create_pec_media()
       media(3) = create_pmc_media()
-
 
    end function create_base_media
 
@@ -294,9 +315,12 @@ contains
       obs%Flushed = .false.
    end function define_wire_charge_observation
 
-   function create_observable(XI, YI, ZI, XE, YE, ZE, what) result(observable)
+   function create_observable(XI, YI, ZI, XE, YE, ZE, what, line_in) result(observable)
       type(observable_t) :: observable
-      integer(kind=4)  ::  XI, YI, ZI, XE, YE, ZE, what
+      integer(kind=4), intent(in)  ::  XI, YI, ZI, XE, YE, ZE, what
+      type(direction_t), dimension(:), optional, intent(in) :: line_in
+
+      integer(kind=SINGLE) :: line_size
 
       observable%XI = XI
       observable%YI = YI
@@ -311,6 +335,18 @@ contains
       observable%Ztrancos = 1
 
       observable%What = what
+
+      if (present(line_in)) then
+         line_size = size(line_in)
+
+         if (line_size > 0) then
+            allocate (observable%line(1:line_size))
+
+            observable%line = line_in
+         else
+
+         end if
+      end if
    end function create_observable
 
    subroutine add_media_data_to_sgg(sgg, mediaData)
@@ -414,10 +450,10 @@ contains
 
       res%Is%PEC = .TRUE.
 
-      res%Priority = 150 
-      res%Epr = mat%eps/EPS0
+      res%Priority = 150
+      res%Epr = mat%eps/UTILEPS0
       res%Sigma = mat%sigma
-      res%Mur = mat%mu/MU0
+      res%Mur = mat%mu/UTILMU0
       res%SigmaM = mat%sigmam
 
    end function create_pec_media
@@ -434,13 +470,36 @@ contains
       res%Is%PMC = .TRUE.
 
       res%Priority = 160
-      res%Epr = mat%eps/EPS0
+      res%Epr = mat%eps/UTILEPS0
       res%Sigma = mat%sigma
-      res%Mur = mat%mu/MU0
+      res%Mur = mat%mu/UTILMU0
       res%SigmaM = mat%sigmam
 
    end function create_pmc_media
 
+!function create_thinwire_media() result(res)
+!   implicit none
+!
+!   type(MediaData_t) :: res
+!   type(Material) :: mat
+!
+!   type(Wires_t), target :: wire
+!
+!   mat = create_thinwire_material()
+!   res = get_default_mediadata()
+!
+!   res%Is%ThinWire = .TRUE.
+!
+!   allocate (res%Wire(1))
+!   wire = create_wire()
+!   res%Wire(1) => wire
+!
+!   res%Priority = 15
+!   res%Epr = mat%eps/UTILEPS0
+!   res%Sigma = mat%sigma
+!   res%Mur = mat%mu/UTILMU0
+!   res%SigmaM = mat%sigmam
+!end function create_thinwire_media
 
    function create_empty_material() result(mat)
       implicit none
@@ -507,5 +566,205 @@ contains
       mats_collection%n_Mats_max = new_size
 
    end subroutine add_material_to_materials
+
+   function get_default_wire() result(wire)
+      implicit none
+      type(Wires_t) :: wire
+
+      wire%Radius = 0.0_RKIND_wires
+      wire%R = 0.0_RKIND_wires
+      wire%L = 0.0_RKIND_wires
+      wire%C = 0.0_RKIND_wires
+      wire%P_R = 0.0_RKIND_wires
+      wire%P_L = 0.0_RKIND_wires
+      wire%P_C = 0.0_RKIND_wires
+      wire%Radius_devia = 0.0_RKIND_wires
+      wire%R_devia = 0.0_RKIND_wires
+      wire%L_devia = 0.0_RKIND_wires
+      wire%C_devia = 0.0_RKIND_wires
+
+      wire%numsegmentos = 0
+      wire%NUMVOLTAGESOURCES = 0
+      wire%NUMCURRENTSOURCES = 0
+
+      nullify (wire%segm)
+      nullify (wire%Vsource)
+      nullify (wire%Isource)
+
+      wire%VsourceExists = .false.
+      wire%IsourceExists = .false.
+      wire%HasParallel_LeftEnd = .false.
+      wire%HasParallel_RightEnd = .false.
+      wire%HasSeries_LeftEnd = .false.
+      wire%HasSeries_RightEnd = .false.
+      wire%HasAbsorbing_LeftEnd = .false.
+      wire%HasAbsorbing_RightEnd = .false.
+
+      wire%Parallel_R_RightEnd = 0.0_RKIND_wires
+      wire%Parallel_R_LeftEnd = 0.0_RKIND_wires
+      wire%Series_R_RightEnd = 0.0_RKIND_wires
+      wire%Series_R_LeftEnd = 0.0_RKIND_wires
+      wire%Parallel_L_RightEnd = 0.0_RKIND_wires
+      wire%Parallel_L_LeftEnd = 0.0_RKIND_wires
+      wire%Series_L_RightEnd = 0.0_RKIND_wires
+      wire%Series_L_LeftEnd = 0.0_RKIND_wires
+      wire%Parallel_C_RightEnd = 0.0_RKIND_wires
+      wire%Parallel_C_LeftEnd = 0.0_RKIND_wires
+      wire%Series_C_RightEnd = 2.0e7_RKIND ! Valor por defecto de corto
+      wire%Series_C_LeftEnd = 2.0e7_RKIND ! Valor por defecto de corto
+
+      wire%Parallel_R_RightEnd_devia = 0.0_RKIND_wires
+      wire%Parallel_R_LeftEnd_devia = 0.0_RKIND_wires
+      wire%Series_R_RightEnd_devia = 0.0_RKIND_wires
+      wire%Series_R_LeftEnd_devia = 0.0_RKIND_wires
+      wire%Parallel_L_RightEnd_devia = 0.0_RKIND_wires
+      wire%Parallel_L_LeftEnd_devia = 0.0_RKIND_wires
+      wire%Series_L_RightEnd_devia = 0.0_RKIND_wires
+      wire%Series_L_LeftEnd_devia = 0.0_RKIND_wires
+      wire%Parallel_C_RightEnd_devia = 0.0_RKIND_wires
+      wire%Parallel_C_LeftEnd_devia = 0.0_RKIND_wires
+      wire%Series_C_RightEnd_devia = 0.0_RKIND_wires
+      wire%Series_C_LeftEnd_devia = 0.0_RKIND_wires
+
+      wire%LeftEnd = 0
+      wire%RightEnd = 0
+   end function get_default_wire
+
+   subroutine add_observation_to_sgg(sgg, new_observation)
+      implicit none
+
+      type(SGGFDTDINFO), intent(inout) :: sgg
+      type(Obses_t), intent(in), target :: new_observation
+
+      type(Obses_t), dimension(:), pointer :: temp_obs
+      integer :: old_size, new_size
+
+      old_size = sgg%NumberRequest
+      new_size = old_size + 1
+
+      allocate (temp_obs(1:new_size))
+
+      if (old_size > 0) then
+         temp_obs(1:old_size) = sgg%Observation(1:old_size)
+         deallocate (sgg%Observation)
+      end if
+
+      temp_obs(new_size) = new_observation
+
+      sgg%Observation => temp_obs
+
+      sgg%NumberRequest = new_size
+
+   end subroutine add_observation_to_sgg
+
+   subroutine set_observable(obs, P_in, outputrequest_in, domain_params, FileNormalize_in)
+      implicit none
+
+      type(observable_t), dimension(:), intent(in) :: P_in
+      character(LEN=*), intent(in) :: outputrequest_in, FileNormalize_in
+      type(observation_domain_t), intent(in) :: domain_params
+
+      type(Obses_t), intent(out) :: obs
+      integer(kind=4) :: n_count
+
+      n_count = size(P_in)
+      obs%nP = n_count
+
+      allocate (obs%P(1:n_count))
+
+      obs%P(1:n_count) = P_in(1:n_count)
+
+      obs%outputrequest = outputrequest_in
+      obs%FileNormalize = FileNormalize_in
+
+      obs%InitialTime = domain_params%InitialTime
+      obs%FinalTime = domain_params%FinalTime
+      obs%TimeStep = domain_params%TimeStep
+
+      obs%InitialFreq = domain_params%InitialFreq
+      obs%FinalFreq = domain_params%FinalFreq
+      obs%FreqStep = domain_params%FreqStep
+
+      obs%thetaStart = domain_params%thetaStart
+      obs%thetaStop = domain_params%thetaStop
+      obs%thetaStep = domain_params%thetaStep
+
+      obs%phiStart = domain_params%phiStart
+      obs%phiStop = domain_params%phiStop
+      obs%phiStep = domain_params%phiStep
+
+      obs%FreqDomain = domain_params%FreqDomain
+      obs%TimeDomain = domain_params%TimeDomain
+      obs%Saveall = domain_params%Saveall
+      obs%TransFer = domain_params%TransFer
+      obs%Volumic = domain_params%Volumic
+
+   end subroutine set_observable
+
+   subroutine initialize_time_domain(domain, InitialTime, FinalTime, TimeStep)
+      implicit none
+
+      type(observation_domain_t), intent(inout) :: domain
+      real(kind=RKIND), intent(in) :: InitialTime, FinalTime, TimeStep
+
+
+      domain%InitialTime = InitialTime
+      domain%FinalTime = FinalTime
+      domain%TimeStep = TimeStep
+
+      domain%TimeDomain = .true.
+
+   end subroutine initialize_time_domain
+
+   subroutine initialize_frequency_domain(domain, InitialFreq, FinalFreq, FreqStep)
+      implicit none
+
+      type(observation_domain_t), intent(inout) :: domain
+      real(kind=RKIND), intent(in) :: InitialFreq, FinalFreq, FreqStep
+
+
+      domain%InitialFreq = InitialFreq
+      domain%FinalFreq = FinalFreq
+      domain%FreqStep = FreqStep
+
+      domain%FreqDomain = .true.
+
+   end subroutine initialize_frequency_domain
+
+   subroutine initialize_theta_domain(domain, thetaStart, thetaStop, thetaStep)
+      implicit none
+
+      type(observation_domain_t), intent(inout) :: domain
+      real(kind=RKIND), intent(in) :: thetaStart, thetaStop, thetaStep
+
+      domain%thetaStart = thetaStart
+      domain%thetaStop = thetaStop
+      domain%thetaStep = thetaStep
+
+   end subroutine initialize_theta_domain
+
+   subroutine initialize_phi_domain(domain, phiStart, phiStop, phiStep)
+      implicit none
+
+      type(observation_domain_t), intent(inout) :: domain
+      real(kind=RKIND), intent(in) :: phiStart, phiStop, phiStep
+
+      domain%phiStart = phiStart
+      domain%phiStop = phiStop
+      domain%phiStep = phiStep
+
+   end subroutine initialize_phi_domain
+
+   subroutine initialize_domain_logical_flags(domain, Saveall_flag, TransFer_flag, Volumic_flag)
+    implicit none
+    
+    type(observation_domain_t), intent(inout) :: domain
+    logical, intent(in) :: Saveall_flag, TransFer_flag, Volumic_flag
+
+    domain%Saveall = Saveall_flag
+    domain%TransFer = TransFer_flag
+    domain%Volumic = Volumic_flag
+    
+end subroutine initialize_domain_logical_flags
 
 end module FDETYPES_TOOLS

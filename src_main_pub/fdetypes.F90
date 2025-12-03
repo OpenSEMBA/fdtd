@@ -594,15 +594,15 @@ module  FDETYPES
       REAL (KIND=RKIND_tiempo)  ::  dt
       character (len=BUFSIZE) :: extraswitches
       !!
-      integer (kind=4)   ::  NumMedia,AllocMed
-      integer (kind=4)   ::  IniPMLMedia,EndPMLMedia
-      integer (kind=4)   ::  NumPlaneWaves,TimeSteps,InitialTimeStep
-      integer (kind=4)   ::  NumNodalSources
-      integer (kind=4)   ::  NumberRequest
+      integer (kind=SINGLE)   ::  NumMedia,AllocMed
+      integer (kind=SINGLE)   ::  IniPMLMedia,EndPMLMedia
+      integer (kind=SINGLE)   ::  NumPlaneWaves,TimeSteps,InitialTimeStep
+      integer (kind=SINGLE)   ::  NumNodalSources
+      integer (kind=SINGLE)   ::  NumberRequest = 0_SINGLE
       !!!
       REAL (KIND=RKIND)     , pointer, dimension ( : )        ::  LineX,LineY,LineZ
       REAL (KIND=RKIND)     , pointer, dimension ( : )        ::  DX,DY,DZ
-      integer (kind=4)                                        ::  AllocDxI,AllocDyI,AllocDzI,AllocDxE,AllocDyE,AllocDzE
+      integer (kind=SINGLE)                                        ::  AllocDxI,AllocDyI,AllocDzI,AllocDxE,AllocDyE,AllocDzE
       type (planeonde_t), pointer, dimension ( : )            ::  PlaneWave
       type (Border_t)                                         ::  Border
       type (PML_t)                                            ::  PML
