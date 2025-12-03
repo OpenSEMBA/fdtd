@@ -5,6 +5,8 @@ function test_initialize() bind(C) result(err)
 
    type(SGGFDTDINFO) :: dummysgg
    type(sim_control_t) :: dummyControl
+   type(media_matrices_t), pointer:: dummymedia
+   type(limit_t), pointer, dimension(:) :: dummysinpml_fullsize
    type(solver_output_t), dimension(:), allocatable :: outputs
    logical :: ThereAreWires = .true.
 
@@ -21,7 +23,7 @@ function test_initialize() bind(C) result(err)
    !Set control flags
    dummyControl = create_control_flags(mpidir=3, nEntradaRoot='entradaRoot', wiresflavor='holland')
 
-   call init_outputs(dummysgg, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, dummymedia, dummysinpml_fullsize, dummyControl, outputs, ThereAreWires)
 
    deallocate (dummysgg%Observation)
    deallocate (outputs)

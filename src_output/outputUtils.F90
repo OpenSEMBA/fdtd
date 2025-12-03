@@ -11,6 +11,10 @@ module mod_outputUtils
       real(kind=RKIND), pointer, dimension(:) :: deltaX, deltaY, deltaZ
    end type field_data_t
 
+   type fields_reference_t
+      type(field_data_t), pointer :: E, H
+   end type fields_reference_t
+
 contains
 
    function get_probe_coords_extension(iCoord, jCoord, kCoord, mpidir) result(ext)
@@ -104,12 +108,12 @@ contains
          case (iHx); prefixExtension = prefix(iHx)
          case (iHy); prefixExtension = prefix(iHy)
          case (iHz); prefixExtension = prefix(iHz)
-         case (iBloqueJx); prefix_field = prefix(iBloqueJx)
-         case (iBloqueJy); prefix_field = prefix(iBloqueJy)
-         case (iBloqueJz); prefix_field = prefix(iBloqueJz)
-         case (iBloqueMx); prefix_field = prefix(iBloqueMx)
-         case (iBloqueMy); prefix_field = prefix(iBloqueMy)
-         case (iBloqueMz); prefix_field = prefix(iBloqueMz)
+         case (iBloqueJx); prefixExtension = prefix(iBloqueJx)
+         case (iBloqueJy); prefixExtension = prefix(iBloqueJy)
+         case (iBloqueJz); prefixExtension = prefix(iBloqueJz)
+         case (iBloqueMx); prefixExtension = prefix(iBloqueMx)
+         case (iBloqueMy); prefixExtension = prefix(iBloqueMy)
+         case (iBloqueMz); prefixExtension = prefix(iBloqueMz)
          case default; prefixExtension = prefix(field)
          end select
       elseif (mpidir == 2) then
@@ -129,12 +133,12 @@ contains
          case (iHx); prefixExtension = prefix(iHz)
          case (iHy); prefixExtension = prefix(iHx)
          case (iHz); prefixExtension = prefix(iHy)
-         case (iBloqueJx); prefix_field = prefix(iBloqueJz)
-         case (iBloqueJy); prefix_field = prefix(iBloqueJx)
-         case (iBloqueJz); prefix_field = prefix(iBloqueJy)
-         case (iBloqueMx); prefix_field = prefix(iBloqueMz)
-         case (iBloqueMy); prefix_field = prefix(iBloqueMx)
-         case (iBloqueMz); prefix_field = prefix(iBloqueMy)
+         case (iBloqueJx); prefixExtension = prefix(iBloqueJz)
+         case (iBloqueJy); prefixExtension = prefix(iBloqueJx)
+         case (iBloqueJz); prefixExtension = prefix(iBloqueJy)
+         case (iBloqueMx); prefixExtension = prefix(iBloqueMz)
+         case (iBloqueMy); prefixExtension = prefix(iBloqueMx)
+         case (iBloqueMz); prefixExtension = prefix(iBloqueMy)
          case default; prefixExtension = prefix(field)
          end select
       elseif (mpidir == 1) then
@@ -154,12 +158,12 @@ contains
          case (iHx); prefixExtension = prefix(iHy)
          case (iHy); prefixExtension = prefix(iHz)
          case (iHz); prefixExtension = prefix(iHx)
-         case (iBloqueJx); prefix_field = prefix(iBloqueJy)
-         case (iBloqueJy); prefix_field = prefix(iBloqueJz)
-         case (iBloqueJz); prefix_field = prefix(iBloqueJx)
-         case (iBloqueMx); prefix_field = prefix(iBloqueMy)
-         case (iBloqueMy); prefix_field = prefix(iBloqueMz)
-         case (iBloqueMz); prefix_field = prefix(iBloqueMx)
+         case (iBloqueJx); prefixExtension = prefix(iBloqueJy)
+         case (iBloqueJy); prefixExtension = prefix(iBloqueJz)
+         case (iBloqueJz); prefixExtension = prefix(iBloqueJx)
+         case (iBloqueMx); prefixExtension = prefix(iBloqueMy)
+         case (iBloqueMy); prefixExtension = prefix(iBloqueMz)
+         case (iBloqueMz); prefixExtension = prefix(iBloqueMx)
          case default; prefixExtension = prefix(field)
          end select
       else
@@ -255,13 +259,22 @@ contains
       case (iHx); blockCurrent = iCurX
       case (iHy); blockCurrent = iCurY
       case (iHz); blockCurrent = iCurZ
-      case default; call StopOnError(layoutnumber, size, 'field is not H field')
+      case default; call StopOnError(0, 0, 'field is not H field')
       end select
+   end function
+
+   logical function isThinWire(field, i, j, k, simulationMedia, media)
+      integer(kind=4), intent(in) :: field, i, j, k
+      type(MediaData_t), pointer, dimension(:), intent(in) :: simulationMedia
+      type(media_matrices_t),pointer, intent(in) :: media
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
+      mediaIndex = getMedia(field, i, j, k, media)
+      isThinWire = simulationMedia(mediaIndex)%is%ThinWire
    end function
 
    logical function isPECorSurface(field, i, j, k, media, simulationMedia)
       type(MediaData_t), pointer, dimension(:), intent(in) :: simulationMedia
-      type(media_matrices_t), intent(in) :: media
+      type(media_matrices_t), pointer, intent(in) :: media
       integer(kind=4), intent(in) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
       mediaIndex = getMedia(field, i, j, k, media)
@@ -269,9 +282,9 @@ contains
    end function
 
    function getMedia(field, i, j, k, media) result(res)
-      TYPE(media_matrices_t), INTENT(IN) :: media
+      type(media_matrices_t), pointer, intent(in) :: media
+      integer(kind=4), intent(in) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
-      integer(kind=4) :: field, i, j, k
       select case (field)
       case (iEx); res = media%sggMiEx(i, j, k)
       case (iEy); res = media%sggMiEy(i, j, k)
@@ -279,20 +292,22 @@ contains
       case (iHx); res = media%sggMiHx(i, j, k)
       case (iHy); res = media%sggMiHy(i, j, k)
       case (iHz); res = media%sggMiHz(i, j, k)
-      case default; call StopOnError(layoutnumber, size, 'Unrecognized field')
+      case default; call StopOnError(0, 0, 'Unrecognized field')
       end select
    end function
 
    logical function isWithinBounds(field, i, j, k, SINPML_fullsize)
-      TYPE(limit_t), DIMENSION(:), INTENT(IN) :: SINPML_fullsize
-      integer(kind=4) :: field, i, j, k
+      implicit none
+      TYPE(limit_t),pointer, DIMENSION(:), INTENT(IN) :: SINPML_fullsize
+      integer(kind=4), intent(in) :: field, i, j, k
       isWithinBounds = (i <= SINPML_fullsize(field)%XE) .and. &
                        (j <= SINPML_fullsize(field)%YE) .and. &
                        (k <= SINPML_fullsize(field)%ZE)
    end function
 
    logical function isMediaVacuum(field, i, j, k, media)
-      TYPE(media_matrices_t), INTENT(IN) :: media
+      implicit none
+      TYPE(media_matrices_t), pointer ,INTENT(IN) :: media
       integer(kind=4) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex, vacuum = 1
       mediaIndex = getMedia(field, i, j, k, media)
@@ -300,13 +315,179 @@ contains
    end function
 
    logical function isSplitOrAdvanced(field, i, j, k, media, simulationMedia)
+      implicit none
       type(MediaData_t), pointer, dimension(:), intent(in) :: simulationMedia
-      type(media_matrices_t), intent(in) :: media
+      type(media_matrices_t), pointer, intent(in) :: media
       integer(kind=4) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
       mediaIndex = getMedia(field, i, j, k, media)
-      isSplitOrAdvanced = sgg%med(mediaIndex)%is%split_and_useless .or. &
-                          sgg%med(mediaIndex)%is%already_YEEadvanced_byconformal
+      isSplitOrAdvanced = simulationMedia(mediaIndex)%is%split_and_useless .or. &
+                          simulationMedia(mediaIndex)%is%already_YEEadvanced_byconformal
 
    end function
+
+   function computej(field, i, j, k, fields_reference) result(res)
+      implicit none
+
+      ! Input Arguments
+      integer(kind=single), intent(in) :: field, i, j, k
+      type(fields_reference_t), pointer, intent(in) :: fields_reference
+
+      ! Local Variables
+      integer(kind=single) :: i_shift_a, j_shift_a, k_shift_a  ! Shift for Term A (Offset for H/M field)
+      integer(kind=single) :: i_shift_b, j_shift_b, k_shift_b  ! Shift for Term B (Offset for H/M field)
+
+      integer(kind=single) :: curl_component_a                 ! H/M field component for Term A
+      integer(kind=single) :: curl_component_b                 ! H/M field component for Term B
+
+      real(kind=rkind) :: res
+
+      ! -----------------------------------------------------------
+      ! 1. Determine Curl Components
+      !    The MOD 3 operation cyclically maps the E-field to the two required H-field components.
+      ! -----------------------------------------------------------
+
+      ! Component A (The 'next' component in the sequence)
+      curl_component_a = 1 + mod(field + 1, 3)
+
+      ! Component B (The 'current' component in the sequence)
+      curl_component_b = 1 + mod(field, 3)
+
+      ! -----------------------------------------------------------
+      ! 2. Calculate Spatial Shifts (Yee Cell Staggering)
+      !    We use MERGE to apply the (i-1) shift only in the relevant direction.
+      ! -----------------------------------------------------------
+
+      ! Shift for Term A
+      i_shift_a = i - merge(1, 0, curl_component_a == iex)
+      j_shift_a = j - merge(1, 0, curl_component_a == iey)
+      k_shift_a = k - merge(1, 0, curl_component_a == iez)
+
+      ! Shift for Term B
+      i_shift_b = i - merge(1, 0, curl_component_b == iex)
+      j_shift_b = j - merge(1, 0, curl_component_b == iey)
+      k_shift_b = k - merge(1, 0, curl_component_b == iez)
+
+      ! -----------------------------------------------------------
+      ! 3. Calculate J (Curl Difference)
+      !    The H/M fields are accessed using an offset (+3) from the E-field index.
+      ! -----------------------------------------------------------
+
+      res = &
+         ! TERM B: (Positive term in the difference)
+         (get_delta(curl_component_b, i, j, k, fields_reference)* &
+      ( get_field(curl_component_b + 3, i, j, k, fields_reference) - get_field(curl_component_b + 3, i_shift_b, j_shift_b, k_shift_b, fields_reference) ) &
+          ) - &
+         ! TERM A: (Negative term in the difference)
+         (get_delta(curl_component_a, i, j, k, fields_reference)* &
+      ( get_field(curl_component_a + 3, i, j, k, fields_reference) - get_field(curl_component_a + 3, i_shift_a, j_shift_a, k_shift_a, fields_reference) ) &
+          )
+
+   end function computej
+
+   function computeJ1(f, i, j, k, fields_reference) result(res)
+      implicit none
+      integer(kind=4), intent(in) :: f, i, j, k
+      type(fields_reference_t), pointer, intent(in) :: fields_reference
+      integer(kind=4) :: c       ! Complementary H-field index (Hy/Hz)
+      real(kind=rkind) :: res
+      real(kind=rkind) :: curl_h_term_a, curl_h_term_b, field_diff_term
+
+      ! Calculate complementary H-field index (e.g., if f=1 (Ex), c=5 (Hy) and c+1=6 (Hz) or vice versa depending on definitions)
+      ! For f=1 (Ex), c = mod(1-2, 3)+4 = mod(-1, 3)+4 = 2+4 = 6 (Hz).
+
+      c = mod(f - 2, 3) + 4 ! This typically corresponds to H_z for J_x, or H_x for J_y, etc.
+
+      ! First set of H-field terms 
+      curl_h_term_a = get_delta(c, i, j, k, fields_reference)*get_field(c, i, j, k, fields_reference) + &
+                    get_delta(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx), fields_reference) * get_field(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx), fields_reference)
+
+      ! Second set of H-field terms 
+    curl_h_term_b = get_delta(c, i, j, k, fields_reference) * get_field(c, i-u(f,iHx), j-u(f,iHy), k-u(f,iHz), fields_reference) + &
+                    get_delta(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx), fields_reference) * get_field(c, i-u(f,iHx)+u(f,iHy), j-u(f,iHy)+u(f,iHz), k-u(f,iHz)+u(f,iHx), fields_reference)
+
+      ! E-field term (approximates the change in E-field at the J-node)
+      field_diff_term = get_delta(f, i, j, k, fields_reference)*( &
+                        get_field(f, i - u(f, iHy), j - u(f, iHz), k - u(f, iHx), fields_reference) - &
+                        get_field(f, i + u(f, iHy), j + u(f, iHz), k + u(f, iHx), fields_reference))
+
+      ! Final computation: J1 = - ((Curl_H_A) - (Curl_H_B) + (E_diff))
+      res = -((curl_h_term_a - curl_h_term_b) + field_diff_term)
+
+   end function computeJ1
+
+   function computeJ2(f, i, j, k, fields_reference) result(res)
+      implicit none
+      integer(kind=4), intent(in) :: f, i, j, k
+      type(fields_reference_t), pointer, intent(in) :: fields_reference
+      integer(kind=4) :: c       ! Complementary H-field index (Hx/Hy/Hz)
+      real(kind=rkind) :: res
+      real(kind=rkind) :: curl_h_term_a, curl_h_term_b, field_diff_term
+
+      ! Calculate complementary H-field index (e.g., if f=1 (Ex), c=4 (Hx) or c=5 (Hy))
+      ! For f=1 (Ex), c = mod(1-3, 3)+4 = mod(-2, 3)+4 = 1+4 = 5 (Hy). This is the second H-field curl component.
+      c = mod(f - 3, 3) + 4
+
+      ! First set of H-field terms 
+      curl_h_term_a = get_delta(c, i, j, k, fields_reference)*get_field(c, i, j, k, fields_reference) + &
+                    get_delta(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy), fields_reference) * get_field(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy), fields_reference)
+
+      ! Second set of H-field terms 
+    curl_h_term_b = get_delta(c, i, j, k, fields_reference) * get_field(c, i-u(f,iHx), j-u(f,iHy), k-u(f,iHz), fields_reference) + &
+                    get_delta(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy), fields_reference) * get_field(c, i-u(f,iHx)+u(f,iHz), j-u(f,iHy)+u(f,iHx), k-u(f,iHz)+u(f,iHy), fields_reference)
+
+      ! E-field term (approximates the change in E-field at the J-node)
+      field_diff_term = get_delta(f, i, j, k, fields_reference)*( &
+                        get_field(f, i - u(f, iHz), j - u(f, iHx), k - u(f, iHy), fields_reference) - &
+                        get_field(f, i + u(f, iHz), j + u(f, iHx), k + u(f, iHy), fields_reference))
+
+      ! Final computation: J2 = (Curl_H_A) - (Curl_H_B) + (E_diff)
+      res = (curl_h_term_a - curl_h_term_b) + field_diff_term
+
+   end function computeJ2
+
+   integer function u(field1, field2)
+      integer(kind=4) :: field1, field2
+      if (field1 == field2) then
+         u = 1
+      else
+         u = 0
+      end if
+   end function
+
+   function get_field(field, i, j, k, fields_reference) result(res)
+      implicit none
+      real(kind=rkind) :: res
+      integer(kind=4), intent(in) :: field, i, j, k
+      type(fields_reference_t), pointer, intent(in) :: fields_reference
+
+      ! Retrieves the field value based on the field index (1-3 for E, 4-6 for H)
+      select case (field)
+      case (iex); res = fields_reference%e%x(i, j, k)
+      case (iey); res = fields_reference%e%y(i, j, k)
+      case (iez); res = fields_reference%e%z(i, j, k)
+      case (ihx); res = fields_reference%h%x(i, j, k)
+      case (ihy); res = fields_reference%h%y(i, j, k)
+      case (ihz); res = fields_reference%h%z(i, j, k)
+      end select
+   end function get_field
+
+   function get_delta(field, i, j, k, fields_reference) result(res)
+      implicit none
+      real(kind=rkind) :: res
+      integer(kind=4), intent(in) :: field, i, j, k
+      type(fields_reference_t), pointer, intent(in) :: fields_reference
+
+      ! Retrieves the spatial step size (delta) corresponding to the field direction
+      ! Note: i, j, k are used to select the correct array index if the grid is non-uniform.
+      select case (field)
+      case (iex); res = fields_reference%e%deltax(i)
+      case (iey); res = fields_reference%e%deltay(j)
+      case (iez); res = fields_reference%e%deltaz(k)
+      case (ihx); res = fields_reference%h%deltax(i)
+      case (ihy); res = fields_reference%h%deltay(j)
+      case (ihz); res = fields_reference%h%deltaz(k)
+      end select
+   end function get_delta
+
 end module mod_outputUtils

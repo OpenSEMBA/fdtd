@@ -5,5 +5,7 @@ add_library(fdtd-output
   "point_probe_output.F90"
   "wire_current_probe_output.F90"
   "wire_charge_probe_output.F90"
+  "bulk_probe_output.F90"
+  "volumic_probe_output.F90"
 )
 target_link_libraries(fdtd-output semba-types )

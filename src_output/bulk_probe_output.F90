@@ -97,6 +97,7 @@ contains
 
       integer(kind=SINGLE) :: i1_m, i2_m, j1_m, j2_m, k1_m, k2_m
       integer(kind=SINGLE) :: i1, i2, j1, j2, k1, k2
+      integer(kind=SINGLE) :: iii, jjj, kkk
 
       real(kind=RKIND), pointer, dimension(:,:,:) :: xF, yF, zF
       real(kind=RKIND), pointer, dimension(:) :: dx, dy, dz
@@ -126,7 +127,7 @@ contains
       this%serializedTimeSize = this%serializedTimeSize + 1
       this%timeStep(this%serializedTimeSize) = step
       this%valueForTime(this%serializedTimeSize) = 0.0_RKIND !Clear uninitialized value
-      selectcase (field)
+      selectcase (this%fieldComponent)
       case (iBloqueJx)
          do JJJ = j1, j2
             this%valueForTime(this%serializedTimeSize) = &
@@ -172,7 +173,7 @@ contains
          do KKK = k1, k2
             this%valueForTime(this%serializedTimeSize) = &
                this%valueForTime(this%serializedTimeSize) + &
-               (zF(i1_m, j1_m, KKK_m) - zF(i1_m, j2_m + 1, KKK_m))*dz(KKK_m)
+               (zF(i1_m, j1_m, KKK) - zF(i1_m, j2_m + 1, KKK))*dz(KKK)
          end do
 
       case (iBloqueMy)

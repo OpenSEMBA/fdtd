@@ -13,7 +13,8 @@ module output
    integer(kind=SINGLE), parameter :: POINT_PROBE_ID = 0, &
                                       WIRE_CURRENT_PROBE_ID = 1, &
                                       WIRE_CHARGE_PROBE_ID = 2, &
-                                      BULK_PROBE_ID = 3
+                                      BULK_PROBE_ID = 3, &
+                                      VOLUMIC_CURRENT_PROBE_ID = 4
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
@@ -23,9 +24,9 @@ module output
       type(point_probe_output_t), allocatable :: pointProbe
       type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
       type(wire_charge_probe_output_t), allocatable :: wireChargeProbe
-      type(bulk_probe_output_t), allocatable :: blukProbe
+      type(bulk_probe_output_t), allocatable :: bulkProbe
       type(volumic_current_probe_t), allocatable :: volumicCurrentProbe
-      type(volumic_field_probe_t), allocatable :: volumicFieldProbe
+      !type(volumic_field_probe_t), allocatable :: volumicFieldProbe
       !type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
       !type(far_field_t), allocatable :: farField
       !type(time_movie_output_t), allocatable :: timeMovie
@@ -38,7 +39,7 @@ module output
          init_wire_current_probe_output, &
          init_wire_charge_probe_output, &
          init_bulk_probe_output, &
-         init_volumic_current_probe_output
+         init_volumic_probe_output
       !init_far_field, &
       !initime_movie_output, &
       !init_frequency_slice_output
@@ -79,8 +80,8 @@ contains
 
    subroutine init_outputs(sgg, media, sinpml_fullsize, control, outputs, ThereAreWires)
       type(SGGFDTDINFO), intent(in) ::  sgg
-      type(media_matrices_t), intent(in) :: media
-      type(limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
+      type(media_matrices_t), pointer, intent(in) :: media
+      type(limit_t), pointer, dimension(:), intent(in)  ::  SINPML_fullsize
       type(sim_control_t), intent(inout) :: control
       type(solver_output_t), dimension(:), allocatable, intent(out) :: outputs
       logical :: ThereAreWires
@@ -133,7 +134,7 @@ contains
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
                
                allocate (outputs(outputCount)%wireChargeProbe)
-               call init_solver_output(outputs(outputCount)%wireChargeProbe, , I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
+               call init_solver_output(outputs(outputCount)%wireChargeProbe, I1, J1, K1, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
@@ -212,7 +213,8 @@ contains
       type(XYZlimit_t), dimension(1:6), intent(in) :: alloc
       type(sim_control_t), intent(in) :: control
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
-      type(field_data_t), :: fieldReference 
+      type(field_data_t), pointer :: fieldReference 
+      type(fields_reference_t), pointer :: fields
 
       real(KIND=RKIND), intent(in), target     :: &
          Ex(alloc(iEx)%XI:alloc(iEx)%XE, alloc(iEx)%YI:alloc(iEx)%YE, alloc(iEx)%ZI:alloc(iEx)%ZE), &
@@ -222,12 +224,28 @@ contains
          Hy(alloc(iHy)%XI:alloc(iHy)%XE, alloc(iHy)%YI:alloc(iHy)%YE, alloc(iHy)%ZI:alloc(iHy)%ZE), &
          Hz(alloc(iHz)%XI:alloc(iHz)%XE, alloc(iHz)%YI:alloc(iHz)%YE, alloc(iHz)%ZI:alloc(iHz)%ZE)
       !--->
-      real(KIND=RKIND), dimension(:), intent(in)   :: dxh(alloc(iEx)%XI:alloc(iEx)%XE), &
+      real(KIND=RKIND), dimension(:), intent(in), target   :: dxh(alloc(iEx)%XI:alloc(iEx)%XE), &
                                                       dyh(alloc(iEy)%YI:alloc(iEy)%YE), &
                                                       dzh(alloc(iEz)%ZI:alloc(iEz)%ZE), &
                                                       dxe(alloc(iHx)%XI:alloc(iHx)%XE), &
                                                       dye(alloc(iHy)%YI:alloc(iHy)%YE), &
                                                       dze(alloc(iHz)%ZI:alloc(iHz)%ZE)
+
+      fields%E%x => Ex
+      fields%E%y => Ey
+      fields%E%z => Ez
+
+      fields%H%x => Hx
+      fields%H%y => Hy
+      fields%H%z => Hz
+
+      fields%E%deltax => dxe
+      fields%E%deltay => dye
+      fields%E%deltaz => dze
+
+      fields%H%deltax => dxh
+      fields%H%deltay => dyh
+      fields%H%deltaz => dzh
 
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
@@ -239,7 +257,7 @@ contains
          case (WIRE_CHARGE_PROBE_ID)
             call update_solver_output(outputs(i)%wireChargeProbe, step)
          case (BULK_PROBE_ID)
-            fieldReference => get_field_reference(outputs(i)%blukProbe%fieldComponent)
+            fieldReference => get_field_reference(outputs(i)%bulkProbe%fieldComponent)
             call update_solver_output(outputs(i)%bulkProbe, step, fieldReference)
          case default
             call stoponerror(0, 0, 'Output update not implemented')
@@ -262,8 +280,8 @@ contains
 
       function get_field_reference(fieldId) result(field)
          integer(kind=SINGLE), intent(in) :: fieldId
-         type(field_data_t) :: field
-         select case
+         type(field_data_t), pointer :: field
+         select case (fieldId)
          case (iBloqueJx, iBloqueJy, iBloqueJz)
             field%x => Ex
             field%y => Ey
