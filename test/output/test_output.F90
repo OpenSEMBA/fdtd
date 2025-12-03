@@ -8,12 +8,13 @@ function test_initialize() bind(C) result(err)
    type(media_matrices_t), pointer:: dummymedia
    type(limit_t), pointer, dimension(:) :: dummysinpml_fullsize
    type(solver_output_t), dimension(:), allocatable :: outputs
+   type(MediaData_t) :: defaultMaterial, pecMaterial
    logical :: ThereAreWires = .true.
 
    integer(kind=SINGLE) :: test_err = 0
 
    !Set requested observables
-   dummysgg = create_base_sgg(nummedia=5, dt=0.1_RKIND_tiempo, time_steps=100)
+   dummysgg = create_base_sgg(dt=0.1_RKIND_tiempo, time_steps=100)
    dummysgg%NumberRequest = 3
    allocate (dummysgg%Observation(3))
    dummysgg%Observation(1) = define_point_observation()

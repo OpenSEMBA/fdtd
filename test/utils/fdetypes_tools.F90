@@ -1,6 +1,10 @@
 module FDETYPES_TOOLS
    use FDETYPES
    use NFDETypes
+
+   implicit none
+   real(kind=rkind) :: EPS0 = 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
+ real(kind=rkind) :: MU0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
 contains
    function create_limit_t(XI, XE, YI, YE, ZI, ZE, NX, NY, NZ) result(r)
       type(limit_t) :: r
@@ -103,14 +107,20 @@ contains
 
    end function create_control_flags
 
-   function create_base_sgg(NumMedia, dt, time_steps) result(sgg)
+   function create_base_sgg(dt, time_steps) result(sgg)
+      implicit none
       type(SGGFDTDINFO) :: sgg
-      integer, optional, intent(in) :: NumMedia, time_steps
+      type(MediaData_t), dimension(:), allocatable, target :: media
+      integer, optional, intent(in) :: time_steps
       real(kind=RKIND_tiempo), optional, intent(in) :: dt
 
-      sgg%NumMedia = merge(NumMedia, 3, present(NumMedia))
+      integer(kind=SINGLE) :: nTimes
+
+      media = create_base_media()
+      sgg%NumMedia = 3
+      sgg%med => media
+
       allocate (sgg%Med(1:sgg%NumMedia))
-      sgg%Med = create_basic_media()
       sgg%NumberRequest = 1
       sgg%dt = merge(dt, 0.1_RKIND_tiempo, present(dt))
 
@@ -118,13 +128,24 @@ contains
       allocate (sgg%tiempo(nTimes))
       sgg%tiempo = create_time_array(nTimes, sgg%dt)
 
-      ! Hardcoded array limits now call the optional-aware function
       sgg%Sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
       sgg%SINPMLSweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
       sgg%NumPlaneWaves = 1
       sgg%alloc = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
 
    end function create_base_sgg
+
+   function create_base_media() result(media)
+      implicit none
+
+      type(MediaData_t), dimension(3) :: media
+
+      media(1) = get_default_mediadata()
+      media(2) = create_pec_media()
+      media(3) = create_pmc_media()
+
+
+   end function create_base_media
 
    function create_time_array(array_size, interval) result(arr)
       integer, intent(in), optional :: array_size
@@ -298,7 +319,7 @@ contains
       type(SGGFDTDINFO), intent(inout) :: sgg
       type(MediaData_t), intent(in)    :: mediaData
 
-      type(MediaData_t), dimension(:), allocatable :: temp_Med
+      type(MediaData_t), dimension(:), target, allocatable :: temp_Med
       integer :: new_size, istat
 
       new_size = sgg%NumMedia + 1
@@ -328,7 +349,7 @@ contains
       type(MediaData_t) :: res
 
       ! Reals
-      res%Priority = prior_BV
+      res%Priority = 10
       res%Epr = 1.0_RKIND
       res%Sigma = 0.0_RKIND
       res%Mur = 1.0_RKIND
@@ -386,18 +407,40 @@ contains
       implicit none
 
       type(MediaData_t) :: res
+      type(Material) :: mat
 
+      mat = create_pec_material()
       res = get_default_mediadata()
 
       res%Is%PEC = .TRUE.
 
-      res%Priority = prior_PEC
-      res%Epr = this%mats%mats(1)%eps/Eps0
-      res%Sigma = 1.0e29_RKIND
-      res%Mur = this%mats%mats(1)%mu/Mu0
-      res%SigmaM = 0.0_RKIND
+      res%Priority = 150 
+      res%Epr = mat%eps/EPS0
+      res%Sigma = mat%sigma
+      res%Mur = mat%mu/MU0
+      res%SigmaM = mat%sigmam
 
    end function create_pec_media
+
+   function create_pmc_media() result(res)
+      implicit none
+
+      type(MediaData_t) :: res
+      type(Material) :: mat
+
+      mat = create_pmc_material()
+      res = get_default_mediadata()
+
+      res%Is%PMC = .TRUE.
+
+      res%Priority = 160
+      res%Epr = mat%eps/EPS0
+      res%Sigma = mat%sigma
+      res%Mur = mat%mu/MU0
+      res%SigmaM = mat%sigmam
+
+   end function create_pmc_media
+
 
    function create_empty_material() result(mat)
       implicit none
@@ -410,11 +453,6 @@ contains
       integer(kind=4), intent(in) :: id_in
       type(Material) :: mat
 
-      ! Error if restricted IDs
-      if ((id_in == 0) .or. (id_in == 1) .or. (id_in == 2)) then
-         stop 'ERROR in create_material: Material ID cannot be 0, 1, or 2, as they are reserved to vacuum, pec and pmc.'
-      end if
-
       mat%eps = eps_in
       mat%mu = mu_in
       mat%sigma = sigma_in
@@ -423,6 +461,7 @@ contains
    end function create_material
 
    function create_vacuum_material() result(mat)
+      type(Material) :: mat
       mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, 0.0, 1)
    end function create_vacuum_material
 
@@ -434,7 +473,7 @@ contains
    function create_pmc_material() result(mat)
       type(Material) :: mat
       mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, SIGMA_PMC, 3)
-   end function create_pec_material
+   end function create_pmc_material
 
    function create_empty_materials() result(mats)
       implicit none
@@ -446,7 +485,7 @@ contains
       type(Materials), intent(inout) :: mats_collection
       type(Material), intent(in) :: new_mat
 
-      type(Material), dimension(:), allocatable :: temp_Mats
+      type(Material), dimension(:), target, allocatable :: temp_Mats
       integer :: old_size, new_size
 
       old_size = mats_collection%n_Mats
