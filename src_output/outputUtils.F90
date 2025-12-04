@@ -266,7 +266,7 @@ contains
    logical function isThinWire(field, i, j, k, simulationMedia, media)
       integer(kind=4), intent(in) :: field, i, j, k
       type(MediaData_t), pointer, dimension(:), intent(in) :: simulationMedia
-      type(media_matrices_t),pointer, intent(in) :: media
+      type(media_matrices_t), pointer, intent(in) :: media
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
       mediaIndex = getMedia(field, i, j, k, media)
       isThinWire = simulationMedia(mediaIndex)%is%ThinWire
@@ -298,7 +298,7 @@ contains
 
    logical function isWithinBounds(field, i, j, k, SINPML_fullsize)
       implicit none
-      TYPE(limit_t),pointer, DIMENSION(:), INTENT(IN) :: SINPML_fullsize
+      TYPE(limit_t), pointer, DIMENSION(:), INTENT(IN) :: SINPML_fullsize
       integer(kind=4), intent(in) :: field, i, j, k
       isWithinBounds = (i <= SINPML_fullsize(field)%XE) .and. &
                        (j <= SINPML_fullsize(field)%YE) .and. &
@@ -307,7 +307,7 @@ contains
 
    logical function isMediaVacuum(field, i, j, k, media)
       implicit none
-      TYPE(media_matrices_t), pointer ,INTENT(IN) :: media
+      TYPE(media_matrices_t), pointer, INTENT(IN) :: media
       integer(kind=4) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex, vacuum = 1
       mediaIndex = getMedia(field, i, j, k, media)
@@ -398,11 +398,11 @@ contains
 
       c = mod(f - 2, 3) + 4 ! This typically corresponds to H_z for J_x, or H_x for J_y, etc.
 
-      ! First set of H-field terms 
+      ! First set of H-field terms
       curl_h_term_a = get_delta(c, i, j, k, fields_reference)*get_field(c, i, j, k, fields_reference) + &
                     get_delta(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx), fields_reference) * get_field(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx), fields_reference)
 
-      ! Second set of H-field terms 
+      ! Second set of H-field terms
     curl_h_term_b = get_delta(c, i, j, k, fields_reference) * get_field(c, i-u(f,iHx), j-u(f,iHy), k-u(f,iHz), fields_reference) + &
                     get_delta(c, i+u(f,iHy), j+u(f,iHz), k+u(f,iHx), fields_reference) * get_field(c, i-u(f,iHx)+u(f,iHy), j-u(f,iHy)+u(f,iHz), k-u(f,iHz)+u(f,iHx), fields_reference)
 
@@ -428,11 +428,11 @@ contains
       ! For f=1 (Ex), c = mod(1-3, 3)+4 = mod(-2, 3)+4 = 1+4 = 5 (Hy). This is the second H-field curl component.
       c = mod(f - 3, 3) + 4
 
-      ! First set of H-field terms 
+      ! First set of H-field terms
       curl_h_term_a = get_delta(c, i, j, k, fields_reference)*get_field(c, i, j, k, fields_reference) + &
                     get_delta(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy), fields_reference) * get_field(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy), fields_reference)
 
-      ! Second set of H-field terms 
+      ! Second set of H-field terms
     curl_h_term_b = get_delta(c, i, j, k, fields_reference) * get_field(c, i-u(f,iHx), j-u(f,iHy), k-u(f,iHz), fields_reference) + &
                     get_delta(c, i+u(f,iHz), j+u(f,iHx), k+u(f,iHy), fields_reference) * get_field(c, i-u(f,iHx)+u(f,iHz), j-u(f,iHy)+u(f,iHx), k-u(f,iHz)+u(f,iHy), fields_reference)
 
@@ -489,5 +489,54 @@ contains
       case (ihz); res = fields_reference%h%deltaz(k)
       end select
    end function get_delta
+
+   function assert_integer_equal(val, expected, errorMessage) result(err)
+
+      integer, intent(in) :: val
+      integer, intent(in) :: expected
+      character(*), intent(in) :: errorMessage
+      integer :: err
+
+      if (val == expected) then
+         err = 0
+      else
+         err = 1
+         print *, 'ASSERTION FAILED: ', trim(errorMessage)
+         print *, "  Value: ", val, ". Expected: ", expected
+      end if
+   end function assert_integer_equal
+
+   function assert_real_equal(val, expected, tolerance, errorMessage) result(err)
+
+      real, intent(in) :: val
+      real, intent(in) :: expected
+      real, intent(in) :: tolerance
+      character(*), intent(in) :: errorMessage
+      integer :: err
+
+      if (abs(val - expected) <= tolerance) then
+         err = 0
+      else
+         err = 1
+         print *, 'ASSERTION FAILED: ', trim(errorMessage)
+         print *, "  Value: ", val, ". Expected: ", expected, ". Tolerance: ", tolerance
+      end if
+   end function assert_real_equal
+
+   function assert_string_equal(val, expected, errorMessage) result(err)
+
+      character(*), intent(in) :: val
+      character(*), intent(in) :: expected
+      character(*), intent(in) :: errorMessage
+      integer :: err
+
+      if (trim(val) == trim(expected)) then
+         err = 0
+      else
+         err = 1
+         print *, 'ASSERTION FAILED: ', trim(errorMessage)
+         print *, '  Value: "', trim(val), '". Expected: "', trim(expected), '"'
+      end if
+   end function assert_string_equal
 
 end module mod_outputUtils

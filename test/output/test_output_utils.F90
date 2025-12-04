@@ -16,4 +16,5 @@ contains
       call set_observable(obs, P, 'poinProbe', domain, 'DummyFileNormalize')
 
    end function
+
 end module mod_testOutputUtils

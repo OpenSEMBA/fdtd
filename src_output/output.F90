@@ -91,6 +91,7 @@ contains
       integer(kind=SINGLE) :: I1, J1, K1, I2, J2, K2, NODE
       integer(kind=SINGLE) :: outputCount = 0
       character(len=BUFSIZE) :: outputTypeExtension
+
       allocate (outputs(sgg%NumberRequest))
 
       allocate (InvEps(0:sgg%NumMedia), InvMu(0:sgg%NumMedia))
@@ -132,13 +133,13 @@ contains
             case (iQx, iQy, iQz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
-               
+
                allocate (outputs(outputCount)%wireChargeProbe)
                call init_solver_output(outputs(outputCount)%wireChargeProbe, I1, J1, K1, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
-               
+
                allocate (outputs(outputCount)%bulkProbe)
                call init_solver_output(outputs(outputCount)%bulkProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, outputTypeExtension, control%mpidir)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
@@ -146,7 +147,7 @@ contains
             case (iCur, iCurX, iCurY, iCurZ)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = VOLUMIC_CURRENT_PROBE_ID
-               
+
                allocate (outputs(outputCount)%volumicCurrentProbe)
                call init_solver_output(outputs(outputCount)%volumicCurrentProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir)
 
@@ -213,7 +214,7 @@ contains
       type(XYZlimit_t), dimension(1:6), intent(in) :: alloc
       type(sim_control_t), intent(in) :: control
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
-      type(field_data_t), pointer :: fieldReference 
+      type(field_data_t), pointer :: fieldReference
       type(fields_reference_t), pointer :: fields
 
       real(KIND=RKIND), intent(in), target     :: &
@@ -225,11 +226,11 @@ contains
          Hz(alloc(iHz)%XI:alloc(iHz)%XE, alloc(iHz)%YI:alloc(iHz)%YE, alloc(iHz)%ZI:alloc(iHz)%ZE)
       !--->
       real(KIND=RKIND), dimension(:), intent(in), target   :: dxh(alloc(iEx)%XI:alloc(iEx)%XE), &
-                                                      dyh(alloc(iEy)%YI:alloc(iEy)%YE), &
-                                                      dzh(alloc(iEz)%ZI:alloc(iEz)%ZE), &
-                                                      dxe(alloc(iHx)%XI:alloc(iHx)%XE), &
-                                                      dye(alloc(iHy)%YI:alloc(iHy)%YE), &
-                                                      dze(alloc(iHz)%ZI:alloc(iHz)%ZE)
+                                                              dyh(alloc(iEy)%YI:alloc(iEy)%YE), &
+                                                              dzh(alloc(iEz)%ZI:alloc(iEz)%ZE), &
+                                                              dxe(alloc(iHx)%XI:alloc(iHx)%XE), &
+                                                              dye(alloc(iHy)%YI:alloc(iHy)%YE), &
+                                                              dze(alloc(iHz)%ZI:alloc(iHz)%ZE)
 
       fields%E%x => Ex
       fields%E%y => Ey
@@ -297,11 +298,47 @@ contains
 
             field%deltaX => dxh
             field%deltaY => dyh
-            field%deltaZ => dzh 
+            field%deltaZ => dzh
          end select
       end function get_field_reference
-          
 
    end subroutine update_outputs
+
+   subroutine clean_solver_output_array(output_array)
+
+      type(solver_output_t), dimension(:), allocatable, intent(inout) :: output_array
+      integer :: i
+
+      if (.not. allocated(output_array)) then
+         return
+      end if
+
+      do i = 1, size(output_array)
+
+         if (allocated(output_array(i)%pointProbe)) then
+            deallocate (output_array(i)%pointProbe)
+         end if
+
+         if (allocated(output_array(i)%wireCurrentProbe)) then
+            deallocate (output_array(i)%wireCurrentProbe)
+         end if
+
+         if (allocated(output_array(i)%wireChargeProbe)) then
+            deallocate (output_array(i)%wireChargeProbe)
+         end if
+
+         if (allocated(output_array(i)%bulkProbe)) then
+            deallocate (output_array(i)%bulkProbe)
+         end if
+
+         if (allocated(output_array(i)%volumicCurrentProbe)) then
+            deallocate (output_array(i)%volumicCurrentProbe)
+         end if
+
+      end do
+
+      deallocate (output_array)
+
+   end subroutine clean_solver_output_array
 
 end module output
