@@ -7,12 +7,17 @@ module mod_outputUtils
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
 
    type field_data_t
-      real(kind=RKIND), pointer, dimension(:, :, :) :: x, y, z
-      real(kind=RKIND), pointer, dimension(:) :: deltaX, deltaY, deltaZ
+      real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: x => NULL()
+      real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: y => NULL()
+      real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: z => NULL()
+      real(kind=RKIND), pointer, dimension(:), contiguous :: deltaX => NULL()
+      real(kind=RKIND), pointer, dimension(:), contiguous :: deltaY => NULL()
+      real(kind=RKIND), pointer, dimension(:), contiguous :: deltaZ => NULL()
    end type field_data_t
 
    type fields_reference_t
-      type(field_data_t), pointer :: E, H
+      type(field_data_t) :: E
+      type(field_data_t) :: H
    end type fields_reference_t
 
 contains
@@ -508,9 +513,9 @@ contains
 
    function assert_real_equal(val, expected, tolerance, errorMessage) result(err)
 
-      real, intent(in) :: val
-      real, intent(in) :: expected
-      real, intent(in) :: tolerance
+      real(kind=rkind), intent(in) :: val
+      real(kind=rkind), intent(in) :: expected
+      real(kind=rkind), intent(in) :: tolerance
       character(*), intent(in) :: errorMessage
       integer :: err
 
@@ -522,6 +527,23 @@ contains
          print *, "  Value: ", val, ". Expected: ", expected, ". Tolerance: ", tolerance
       end if
    end function assert_real_equal
+
+   function assert_real_time_equal(val, expected, tolerance, errorMessage) result(err)
+
+      real(kind=RKIND_tiempo), intent(in) :: val
+      real(kind=RKIND_tiempo), intent(in) :: expected
+      real(kind=RKIND_tiempo), intent(in) :: tolerance
+      character(*), intent(in) :: errorMessage
+      integer :: err
+
+      if (abs(val - expected) <= tolerance) then
+         err = 0
+      else
+         err = 1
+         print *, 'ASSERTION FAILED: ', trim(errorMessage)
+         print *, "  Value: ", val, ". Expected: ", expected, ". Tolerance: ", tolerance
+      end if
+   end function assert_real_time_equal
 
    function assert_string_equal(val, expected, errorMessage) result(err)
 

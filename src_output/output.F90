@@ -89,12 +89,13 @@ contains
       type(domain_t) :: domain
       integer(kind=SINGLE) :: i, ii, outputRequestType
       integer(kind=SINGLE) :: I1, J1, K1, I2, J2, K2, NODE
-      integer(kind=SINGLE) :: outputCount = 0
+      integer(kind=SINGLE) :: outputCount
       character(len=BUFSIZE) :: outputTypeExtension
 
       allocate (outputs(sgg%NumberRequest))
 
       allocate (InvEps(0:sgg%NumMedia), InvMu(0:sgg%NumMedia))
+      outputCount = 0
 
       InvEps(0:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia)%Epr)
       InvMu(0:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia)%Mur)
@@ -207,58 +208,26 @@ contains
 
    end subroutine init_outputs
 
-   subroutine update_outputs(outputs, control, step, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh, alloc)
+   subroutine update_outputs(outputs, control, step, fields)
       type(solver_output_t), dimension(:), intent(inout) :: outputs
       real(kind=RKIND_tiempo) :: step
       integer(kind=SINGLE) :: i, id
-      type(XYZlimit_t), dimension(1:6), intent(in) :: alloc
       type(sim_control_t), intent(in) :: control
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
       type(field_data_t), pointer :: fieldReference
-      type(fields_reference_t), pointer :: fields
-
-      real(KIND=RKIND), intent(in), target     :: &
-         Ex(alloc(iEx)%XI:alloc(iEx)%XE, alloc(iEx)%YI:alloc(iEx)%YE, alloc(iEx)%ZI:alloc(iEx)%ZE), &
-         Ey(alloc(iEy)%XI:alloc(iEy)%XE, alloc(iEy)%YI:alloc(iEy)%YE, alloc(iEy)%ZI:alloc(iEy)%ZE), &
-         Ez(alloc(iEz)%XI:alloc(iEz)%XE, alloc(iEz)%YI:alloc(iEz)%YE, alloc(iEz)%ZI:alloc(iEz)%ZE), &
-         Hx(alloc(iHx)%XI:alloc(iHx)%XE, alloc(iHx)%YI:alloc(iHx)%YE, alloc(iHx)%ZI:alloc(iHx)%ZE), &
-         Hy(alloc(iHy)%XI:alloc(iHy)%XE, alloc(iHy)%YI:alloc(iHy)%YE, alloc(iHy)%ZI:alloc(iHy)%ZE), &
-         Hz(alloc(iHz)%XI:alloc(iHz)%XE, alloc(iHz)%YI:alloc(iHz)%YE, alloc(iHz)%ZI:alloc(iHz)%ZE)
-      !--->
-      real(KIND=RKIND), dimension(:), intent(in), target   :: dxh(alloc(iEx)%XI:alloc(iEx)%XE), &
-                                                              dyh(alloc(iEy)%YI:alloc(iEy)%YE), &
-                                                              dzh(alloc(iEz)%ZI:alloc(iEz)%ZE), &
-                                                              dxe(alloc(iHx)%XI:alloc(iHx)%XE), &
-                                                              dye(alloc(iHy)%YI:alloc(iHy)%YE), &
-                                                              dze(alloc(iHz)%ZI:alloc(iHz)%ZE)
-
-      fields%E%x => Ex
-      fields%E%y => Ey
-      fields%E%z => Ez
-
-      fields%H%x => Hx
-      fields%H%y => Hy
-      fields%H%z => Hz
-
-      fields%E%deltax => dxe
-      fields%E%deltay => dye
-      fields%E%deltaz => dze
-
-      fields%H%deltax => dxh
-      fields%H%deltay => dyh
-      fields%H%deltaz => dzh
+      type(fields_reference_t) :: fields
 
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
-            fieldComponent => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
+            fieldComponent => get_field_component(outputs(i)%pointProbe%fieldComponent, fields) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
             call update_solver_output(outputs(i)%pointProbe, step, fieldComponent)
          case (WIRE_CURRENT_PROBE_ID)
             call update_solver_output(outputs(i)%wireCurrentProbe, step, control%wiresflavor, control%wirecrank, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
             call update_solver_output(outputs(i)%wireChargeProbe, step)
          case (BULK_PROBE_ID)
-            fieldReference => get_field_reference(outputs(i)%bulkProbe%fieldComponent)
+            fieldReference => get_field_reference(outputs(i)%bulkProbe%fieldComponent, fields)
             call update_solver_output(outputs(i)%bulkProbe, step, fieldReference)
          case default
             call stoponerror(0, 0, 'Output update not implemented')
@@ -266,79 +235,44 @@ contains
       end do
 
    contains
-      function get_field_component(fieldId) result(field)
+      function get_field_component(fieldId, fieldsReference) result(field)
          integer(kind=SINGLE), intent(in) :: fieldId
+         type(fields_reference_t), intent(in) :: fieldsReference
          real(kind=RKIND), pointer, dimension(:, :, :) :: field
          select case (fieldId)
-         case (iEx); field => Ex
-         case (iEy); field => Ey
-         case (iEz); field => Ez
-         case (iHx); field => Hx
-         case (iHy); field => Hy
-         case (iHz); field => Hz
+         case (iEx); field => fieldsReference%E%x
+         case (iEy); field => fieldsReference%E%y
+         case (iEz); field => fieldsReference%E%z
+         case (iHx); field => fieldsReference%H%x
+         case (iHy); field => fieldsReference%H%y
+         case (iHz); field => fieldsReference%H%z
          end select
       end function get_field_component
 
-      function get_field_reference(fieldId) result(field)
+      function get_field_reference(fieldId, fieldsReference) result(field)
          integer(kind=SINGLE), intent(in) :: fieldId
+         type(fields_reference_t), intent(in) :: fieldsReference
          type(field_data_t), pointer :: field
          select case (fieldId)
          case (iBloqueJx, iBloqueJy, iBloqueJz)
-            field%x => Ex
-            field%y => Ey
-            field%z => Ez
+            field%x => fieldsReference%E%x
+            field%y => fieldsReference%E%y
+            field%z => fieldsReference%E%z
 
-            field%deltaX => dxe
-            field%deltaY => dye
-            field%deltaZ => dze
+            field%deltaX => fieldsReference%E%deltax
+            field%deltaY => fieldsReference%E%deltay
+            field%deltaZ => fieldsReference%E%deltaz
          case (iBloqueMx, iBloqueMy, iBloqueMz)
-            field%x => Hx
-            field%y => Hy
-            field%z => Hz
+            field%x => fieldsReference%H%x
+            field%y => fieldsReference%H%y
+            field%z => fieldsReference%H%z
 
-            field%deltaX => dxh
-            field%deltaY => dyh
-            field%deltaZ => dzh
+            field%deltaX => fieldsReference%H%deltax
+            field%deltaY => fieldsReference%H%deltay
+            field%deltaZ => fieldsReference%H%deltaz
          end select
       end function get_field_reference
 
    end subroutine update_outputs
-
-   subroutine clean_solver_output_array(output_array)
-
-      type(solver_output_t), dimension(:), allocatable, intent(inout) :: output_array
-      integer :: i
-
-      if (.not. allocated(output_array)) then
-         return
-      end if
-
-      do i = 1, size(output_array)
-
-         if (allocated(output_array(i)%pointProbe)) then
-            deallocate (output_array(i)%pointProbe)
-         end if
-
-         if (allocated(output_array(i)%wireCurrentProbe)) then
-            deallocate (output_array(i)%wireCurrentProbe)
-         end if
-
-         if (allocated(output_array(i)%wireChargeProbe)) then
-            deallocate (output_array(i)%wireChargeProbe)
-         end if
-
-         if (allocated(output_array(i)%bulkProbe)) then
-            deallocate (output_array(i)%bulkProbe)
-         end if
-
-         if (allocated(output_array(i)%volumicCurrentProbe)) then
-            deallocate (output_array(i)%volumicCurrentProbe)
-         end if
-
-      end do
-
-      deallocate (output_array)
-
-   end subroutine clean_solver_output_array
 
 end module output

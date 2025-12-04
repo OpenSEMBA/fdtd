@@ -55,7 +55,7 @@ contains
          probeBoundsExtension = get_probe_bounds_extension()
          prefixFieldExtension = get_prefix_extension(field, mpidir)
          outputPath = &
-            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//trim(adjustl(probeBoundsExtension))
+            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
          return
       end function get_output_path
 
