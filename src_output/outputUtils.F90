@@ -495,70 +495,48 @@ contains
       end select
    end function get_delta
 
-   function assert_integer_equal(val, expected, errorMessage) result(err)
+   subroutine create_or_clear_file(path, unit_out, err)
+      implicit none
+      character(len=*), intent(in)  :: path
+      integer, intent(out) :: unit_out
+      integer, intent(out) :: err
+      integer :: unit, ios
+      logical :: opened
+      character(len=BUFSIZE) :: fname
+      integer, parameter :: unit_min = 10, unit_max = 99
 
-      integer, intent(in) :: val
-      integer, intent(in) :: expected
-      character(*), intent(in) :: errorMessage
-      integer :: err
+      err = 0
+      unit_out = -1
 
-      if (val == expected) then
-         err = 0
-      else
+      ! --- Find a free unit ---
+      do unit = unit_min, unit_max
+         inquire (unit=unit, opened=opened, name=fname)
+         if (.not. opened) exit       ! Found free unit
+         if (trim(fname) == trim(path)) then
+            ! Unit is already associated with the same file -> safe to clear
+            close (unit)
+            exit
+         end if
+      end do
+
+      ! Check if no free unit was found
+      inquire (unit=unit, opened=opened)
+      if (opened) then
          err = 1
-         print *, 'ASSERTION FAILED: ', trim(errorMessage)
-         print *, "  Value: ", val, ". Expected: ", expected
+         return
       end if
-   end function assert_integer_equal
 
-   function assert_real_equal(val, expected, tolerance, errorMessage) result(err)
-
-      real(kind=rkind), intent(in) :: val
-      real(kind=rkind), intent(in) :: expected
-      real(kind=rkind), intent(in) :: tolerance
-      character(*), intent(in) :: errorMessage
-      integer :: err
-
-      if (abs(val - expected) <= tolerance) then
-         err = 0
-      else
-         err = 1
-         print *, 'ASSERTION FAILED: ', trim(errorMessage)
-         print *, "  Value: ", val, ". Expected: ", expected, ". Tolerance: ", tolerance
+      ! --- Open the file, replacing it if it exists ---
+      open (unit=unit, file=path, status="replace", action="write", iostat=ios)
+      if (ios /= 0) then
+         err = 2
+         return
       end if
-   end function assert_real_equal
 
-   function assert_real_time_equal(val, expected, tolerance, errorMessage) result(err)
+      close(unit)
 
-      real(kind=RKIND_tiempo), intent(in) :: val
-      real(kind=RKIND_tiempo), intent(in) :: expected
-      real(kind=RKIND_tiempo), intent(in) :: tolerance
-      character(*), intent(in) :: errorMessage
-      integer :: err
-
-      if (abs(val - expected) <= tolerance) then
-         err = 0
-      else
-         err = 1
-         print *, 'ASSERTION FAILED: ', trim(errorMessage)
-         print *, "  Value: ", val, ". Expected: ", expected, ". Tolerance: ", tolerance
-      end if
-   end function assert_real_time_equal
-
-   function assert_string_equal(val, expected, errorMessage) result(err)
-
-      character(*), intent(in) :: val
-      character(*), intent(in) :: expected
-      character(*), intent(in) :: errorMessage
-      integer :: err
-
-      if (trim(val) == trim(expected)) then
-         err = 0
-      else
-         err = 1
-         print *, 'ASSERTION FAILED: ', trim(errorMessage)
-         print *, '  Value: "', trim(val), '". Expected: "', trim(expected), '"'
-      end if
-   end function assert_string_equal
+      ! --- Success ---
+      unit_out = unit
+   end subroutine create_or_clear_file
 
 end module mod_outputUtils

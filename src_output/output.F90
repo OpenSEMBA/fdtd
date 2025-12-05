@@ -45,6 +45,11 @@ module output
       !init_frequency_slice_output
    end interface
 
+   interface create_empty_files
+      module procedure &
+         create_point_probe_output_files
+   end interface
+
    interface update_solver_output
       module procedure &
          update_point_probe_output, &
@@ -67,15 +72,15 @@ module output
       !flush_frequency_slice_output
    end interface
 
-   interface delete_solver_output
-      module procedure &
-         delete_point_probe_output
-      !delete_wire_probe_output, &
-      !delete_bulk_current_probe_output, &
-      !delete_far_field, &
-      !deleteime_movie_output, &
-      !delete_frequency_slice_output
-   end interface
+   !interface delete_solver_output
+   !   module procedure &
+   !      delete_point_probe_output
+   !   !delete_wire_probe_output, &
+   !   !delete_bulk_current_probe_output, &
+   !   !delete_far_field, &
+   !   !deleteime_movie_output, &
+   !   !delete_frequency_slice_output
+   !end interface
 contains
 
    subroutine init_outputs(sgg, media, sinpml_fullsize, control, outputs, ThereAreWires)
@@ -120,7 +125,7 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-               call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir)
+call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir)
 
             case (iJx, iJy, iJz)
                if (ThereAreWires) then
@@ -169,9 +174,9 @@ contains
          integer(kind=SINGLE) :: nFreq
 
          if (observation%TimeDomain) then
-            newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
-                                 real(observation%FinalTime, kind=RKIND_tiempo), &
-                                 real(observation%TimeStep, kind=RKIND_tiempo))
+            newdomain = create_domain(real(observation%InitialTime, kind=RKIND_tiempo), &
+                                      real(observation%FinalTime, kind=RKIND_tiempo), &
+                                      real(observation%TimeStep, kind=RKIND_tiempo))
 
             newdomain%tstep = max(newdomain%tstep, simulationTimeStep)
 
@@ -190,7 +195,7 @@ contains
          elseif (observation%FreqDomain) then
             !Just linear progression for now. Need to bring logartihmic info to here
             nFreq = int((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep, kind=SINGLE)
-            newdomain = domain_t(observation%InitialFreq, observation%FinalFreq, nFreq, logarithmicspacing=.false.)
+            newdomain = create_domain(observation%InitialFreq, observation%FinalFreq, nFreq, logarithmicspacing=.false.)
 
             newDomain%fstep = min(newDomain%fstep, 2.0_RKIND/simulationTimeStep)
             if ((newDomain%fstep > newDomain%fstop - newDomain%fstart) .or. (newDomain%fstep == 0)) then
@@ -207,6 +212,16 @@ contains
       end function preprocess_domain
 
    end subroutine init_outputs
+
+   subroutine create_output_files(outputs)
+      type(solver_output_t), dimension(:), intent(inout) :: outputs
+      integer(kind=SINGLE) :: i
+      do i = 1, size(outputs)
+         select case (outputs(i)%outputID)
+         case (POINT_PROBE_ID); call create_empty_files(outputs(i)%pointProbe)
+         end select
+      end do
+   end subroutine create_output_files
 
    subroutine update_outputs(outputs, control, step, fields)
       type(solver_output_t), dimension(:), intent(inout) :: outputs

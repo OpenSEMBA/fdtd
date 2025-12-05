@@ -2,13 +2,14 @@ module mod_pointProbeOutput
    use FDETYPES
    use mod_domain
    use mod_outputUtils
-   
+
    implicit none
 
    type point_probe_output_t
       integer(kind=SINGLE) :: columnas = 2_SINGLE !reference and field
       type(domain_t) :: domain
       integer(kind=SINGLE) :: xCoord, yCoord, zCoord
+      integer(kind=SINGLE) :: fileUnitTime, fileUnitFreq
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: fieldComponent
       integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE, nFreq = 0_SINGLE
@@ -24,7 +25,7 @@ contains
       type(point_probe_output_t), intent(out) :: this
       integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord
       integer(kind=SINGLE), intent(in) :: mpidir, field
-      character(len=BUFSIZE), intent(in) :: outputTypeExtension
+      character(len=*), intent(in) :: outputTypeExtension
       type(domain_t), intent(in) :: domain
 
       integer(kind=SINGLE) :: i
@@ -85,6 +86,26 @@ contains
       end function get_probe_bounds_extension
    end subroutine init_point_probe_output
 
+   subroutine create_point_probe_output_files(this)
+    implicit none
+    type(point_probe_output_t), intent(inout) :: this
+    character(len=BUFSIZE) :: file_time, file_freq
+    integer(kind=SINGLE) :: err
+    err = 0
+
+    file_time = trim(adjustl(this%path))//'_'// &
+                trim(adjustl(timeExtension))//'_'// &
+                trim(adjustl(datFileExtension))
+
+    file_freq = trim(adjustl(this%path))//'_'// &
+                trim(adjustl(timeExtension))//'_'// &
+                trim(adjustl(datFileExtension))
+
+    call create_or_clear_file(file_time, this%fileUnitTime, err)
+    call create_or_clear_file(file_freq, this%fileUnitFreq, err)
+
+end subroutine create_point_probe_output_files
+
    subroutine update_point_probe_output(this, step, field)
       type(point_probe_output_t), intent(inout) :: this
       real(kind=RKIND), pointer, dimension(:, :, :) :: field
@@ -100,48 +121,74 @@ contains
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          do iter = 1, this%nFreq
             this%valueForFreq(iter) = &
-   this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord) !*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
+               this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord) !*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
          end do
       end if
    end subroutine update_point_probe_output
 
    subroutine flush_point_probe_output(this)
       type(point_probe_output_t), intent(inout) :: this
-
-      integer(kind=SINGLE) :: timeUnitFile, frequencyUnitFile, status
-      character(len=BUFSIZE) :: timeFileName, frequencyFileName
-      integer(kind=SINGLE) :: i
-
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
-         timeFileName = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
-         timeUnitFile = FILE_UNIT + 1
+         call flush_time_domain(this)
+         call clear_time_data(this)
+      end if
+      if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
+         call flush_frequency_domain(this)
+      end if
+   contains
 
-         status = open_file(timeUnitFile, timeFileName)
-         if (status /= 0) call stoponerror(0,0,'Failed to open timeDomainFile. ')
+      subroutine flush_time_domain(this)
+         type(point_probe_output_t), intent(in) :: this
+         integer :: i
+         character(len=BUFSIZE) :: filename
+
+         if (this%serializedTimeSize <= 0) then
+            print *, "No data to write."
+            return
+         end if
+
+         filename = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
+         open (unit=this%fileUnitTime, file=filename, status="old", action="write", position="append")
 
          do i = 1, this%serializedTimeSize
-            write (timeUnitFile, '(F12.4, 2X, F12.4)') this%timeStep(i), this%valueForTime(i)
+            write (this%fileUnitTime, '(F12.6,1X,F12.6)') this%timeStep(i), this%valueForTime(i)
          end do
 
-         status = close_file(timeUnitFile)
-      end if
+         close (this%fileUnitTime)
+      end subroutine flush_time_domain
 
-      if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
-         frequencyFileName = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
-         frequencyUnitFile = FILE_UNIT + 2
+      subroutine flush_frequency_domain(this)
+         type(point_probe_output_t), intent(in) :: this
+         integer ::i
+         character(len=BUFSIZE) :: filename
 
-         OPEN (UNIT=frequencyUnitFile, FILE=frequencyFileName, STATUS='REPLACE', ACTION='WRITE', iostat=status)
-         if (status /= 0) call stoponerror(0,0, 'Failed to open frequencyDomainFile. ')
+         if (.not. allocated(this%frequencySlice) .or. .not. allocated(this%valueForFreq)) then
+            print *, "Error: arrays not allocated."
+            return
+         end if
+
+         if (this%nFreq <= 0) then
+            print *, "No data to write."
+            return
+         end if
+         filename = trim(adjustl(this%path))//'_'//trim(adjustl(frequencyExtension))//'_'//trim(adjustl(datFileExtension))
+         open (unit=this%fileUnitFreq, file=filename, status="replace", action="write")
 
          do i = 1, this%nFreq
-            write (frequencyUnitFile, '(F12.4, 2X, F12.4)') this%frequencySlice(i), this%valueForFreq(i)
+            write (this%fileUnitFreq, '(F12.6,1X,F12.6)') this%frequencySlice(i), this%valueForFreq(i)
          end do
 
-         status = close_file(frequencyUnitFile)
-      end if
-   end subroutine flush_point_probe_output
+         close (this%fileUnitFreq)
+      end subroutine flush_frequency_domain
 
-   subroutine delete_point_probe_output()
-      !TODO
-   end subroutine delete_point_probe_output
+      subroutine clear_time_data(this)
+         type(point_probe_output_t), intent(inout) :: this
+         !Only required for time domain, frequency overwrites itself on every update
+         this%timeStep = 0.0_RKIND_tiempo
+         this%valueForTime = 0.0_RKIND
+
+         this%serializedTimeSize = 0
+      end subroutine clear_time_data
+
+   end subroutine flush_point_probe_output
 end module
