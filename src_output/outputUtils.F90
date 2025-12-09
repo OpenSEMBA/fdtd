@@ -258,12 +258,12 @@ contains
       end if
    end subroutine init_frequency_slice
 
-   integer function blockCurrent(field)
+   integer function getBlockCurrentDirection(field)
       integer(kind=4) :: field
       select case (field)
-      case (iHx); blockCurrent = iCurX
-      case (iHy); blockCurrent = iCurY
-      case (iHz); blockCurrent = iCurZ
+      case (iHx); getBlockCurrentDirection = iCurX
+      case (iHy); getBlockCurrentDirection = iCurY
+      case (iHz); getBlockCurrentDirection = iCurZ
       case default; call StopOnError(0, 0, 'field is not H field')
       end select
    end function

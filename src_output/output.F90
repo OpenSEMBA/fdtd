@@ -174,7 +174,7 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
          integer(kind=SINGLE) :: nFreq
 
          if (observation%TimeDomain) then
-            newdomain = create_domain(real(observation%InitialTime, kind=RKIND_tiempo), &
+            newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
                                       real(observation%FinalTime, kind=RKIND_tiempo), &
                                       real(observation%TimeStep, kind=RKIND_tiempo))
 
@@ -195,7 +195,7 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
          elseif (observation%FreqDomain) then
             !Just linear progression for now. Need to bring logartihmic info to here
             nFreq = int((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep, kind=SINGLE)
-            newdomain = create_domain(observation%InitialFreq, observation%FinalFreq, nFreq, logarithmicspacing=.false.)
+            newdomain = domain_t(observation%InitialFreq, observation%FinalFreq, nFreq, logarithmicspacing=.false.)
 
             newDomain%fstep = min(newDomain%fstep, 2.0_RKIND/simulationTimeStep)
             if ((newDomain%fstep > newDomain%fstop - newDomain%fstart) .or. (newDomain%fstep == 0)) then

@@ -117,7 +117,7 @@ contains
                if (.not. isMediaVacuum(field, iii, jjj, kkk, media) .and. .not. isSplitOrAdvanced(field, iii, jjj, kkk, media, simulationMedia)) then
                   n = n + 1
                end if
-               if (isPECorSurface(field, iii, jjj, kkk, media, simulationMedia) .or. field == blockCurrent(field)) then
+               if (isPECorSurface(field, iii, jjj, kkk, media, simulationMedia) .or. field == getBlockCurrentDirection(field)) then
                   n = n + 1
                end if
             end if
@@ -183,7 +183,7 @@ contains
          integer(kind=SINGLE), intent(in) :: Hfield, I, J, K, outputType
 
          if (isWithinBounds(Hfield, I, J, K, sinpml_fullsize)) then
-       isRelevantSurfaceCell = isPECorSurface(Hfield, iii, jjj, kkk, media, simulationMedia) .or. outputType == blockCurrent(Hfield)
+       isRelevantSurfaceCell = isPECorSurface(Hfield, iii, jjj, kkk, media, simulationMedia) .or. outputType == getBlockCurrentDirection(Hfield)
          else
             isRelevantSurfaceCell = .false.
          end if

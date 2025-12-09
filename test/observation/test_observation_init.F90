@@ -72,7 +72,6 @@ integer function test_init_time_movie_observation() bind(C) result(err)
         err = err + 1
     end if
 
-    !Extra func
     contains
         subroutine set_sgg_data(baseSGG)
             type(SGGFDTDINFO), intent(inout) :: baseSGG

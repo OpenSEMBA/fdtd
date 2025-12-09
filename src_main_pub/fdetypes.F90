@@ -572,6 +572,7 @@ module  FDETYPES
 
 
    type  ::  MediaData_t
+      integer(kind=SINGLE) :: Id
       REAL (KIND=RKIND)          ::  Priority,Epr,Sigma,Mur,SigmaM
       logical :: sigmareasignado !solo afecta a un chequeo de errores en lumped 120123
       type (exists_t)            ::  Is

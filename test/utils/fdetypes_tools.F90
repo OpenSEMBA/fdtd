@@ -43,6 +43,7 @@ contains
       r%NY = NY
       r%NZ = NZ
    end function create_limit_t
+
    function create_tag_list(sggAlloc) result(r)
       type(XYZlimit_t), dimension(6), intent(in) :: sggAlloc
       type(taglist_t) :: r
@@ -140,7 +141,7 @@ contains
 
       integer(kind=SINGLE) :: nTimes
 
-      media = create_base_media()
+      media = create_base_simulation_material_list()
       sgg%NumMedia = 3
       sgg%med => media
 
@@ -157,16 +158,16 @@ contains
 
    end function create_base_sgg
 
-   function create_base_media() result(media)
+   function create_base_simulation_material_list() result(simulationMaterials)
       implicit none
 
-      type(MediaData_t), dimension(3) :: media
+      type(MediaData_t), dimension(3) :: simulationMaterials
 
-      media(1) = get_default_mediadata()
-      media(2) = create_pec_media()
-      media(3) = create_pmc_media()
+      simulationMaterials(1) = get_default_mediadata()
+      simulationMaterials(2) = create_pec_simulation_material()
+      simulationMaterials(3) = create_pmc_simulation_material()
 
-   end function create_base_media
+   end function create_base_simulation_material_list
 
    function create_time_array(array_size, interval) result(arr)
       integer, intent(in), optional :: array_size
@@ -349,6 +350,28 @@ contains
       end if
    end function create_observable
 
+   subroutine add_simulation_material(simulationMaterials, newSimulationMaterial)
+      type(MediaData_t), dimension(:), intent(inout), allocatable :: simulationMaterials
+      type(MediaData_t),  intent(in) :: newSimulationMaterial
+
+      type(MediaData_t), dimension(:), target, allocatable :: tempSimulationMaterials
+      integer(kind=SINGLE) :: oldSize, newSize, istat
+      oldSize = size(simulationMaterials)
+      newSize = oldSize + 1
+      allocate (tempSimulationMaterials(newSize), stat=istat)
+      if (istat /= 0) then
+         stop "Allocation failed for temporary media array."
+      end if
+      
+      if (oldSize > 0) then
+         tempSimulationMaterials(1:oldSize) = simulationMaterials
+         deallocate (simulationMaterials)
+      end if
+      tempSimulationMaterials(newSize) = newSimulationMaterial
+
+      simulationMaterials = tempSimulationMaterials
+   end subroutine add_simulation_material
+
    subroutine add_media_data_to_sgg(sgg, mediaData)
       implicit none
 
@@ -379,10 +402,52 @@ contains
 
    end subroutine add_media_data_to_sgg
 
+   subroutine init_default_media_matrix(res, xi, yi, zi, xe, ye, ze)
+      integer(kind=SINGLE) :: xi, yi, zi, xe, ye, ze
+      type(media_matrices_t), intent(inout) :: res
+
+      allocate(res%sggMtag(xi:xe, yi:ye, zi:ze))
+
+      allocate(res%sggMiNo(xi:xe, yi:ye, zi:ze))
+      allocate(res%sggMiEx(xi:xe, yi:ye, zi:ze))
+      allocate(res%sggMiEy(xi:xe, yi:ye, zi:ze))
+      allocate(res%sggMiEz(xi:xe, yi:ye, zi:ze))
+      allocate(res%sggMiHx(xi:xe, yi:ye, zi:ze))
+      allocate(res%sggMiHy(xi:xe, yi:ye, zi:ze))
+      allocate(res%sggMiHz(xi:xe, yi:ye, zi:ze))
+
+
+      res%sggMtag = 0_SINGLE
+
+      res%sggMiNo = 0.0_RKIND
+      res%sggMiEx = 0.0_RKIND
+      res%sggMiEy = 0.0_RKIND
+      res%sggMiEz = 0.0_RKIND
+      res%sggMiHx = 0.0_RKIND
+      res%sggMiHy = 0.0_RKIND
+      res%sggMiHz = 0.0_RKIND
+   end subroutine init_default_media_matrix
+
+   subroutine assing_material_id_to_media_matrix_coordinate(media, fieldComponent, i, j, k, materialId)
+      type(media_matrices_t), intent(out) :: media
+      integer(kind=SINGLE), intent(in) :: fieldComponent, i, j, k, materialId
+      selectcase(fieldComponent)
+      case(iEx); media%sggMiEx(i,j,k) = materialId
+      case(iEy); media%sggMiEy(i,j,k) = materialId
+      case(iEz); media%sggMiEz(i,j,k) = materialId
+      case(iHx); media%sggMiHx(i,j,k) = materialId
+      case(iHy); media%sggMiHy(i,j,k) = materialId
+      case(iHz); media%sggMiHz(i,j,k) = materialId
+      end select
+
+   end subroutine assing_material_id_to_media_matrix_coordinate
+
    function get_default_mediadata() result(res)
       implicit none
 
       type(MediaData_t) :: res
+      !Vacuum id
+      res%Id = 0
 
       ! Reals
       res%Priority = 10
@@ -439,7 +504,7 @@ contains
 
    end function get_default_mediadata
 
-   function create_pec_media() result(res)
+   function create_pec_simulation_material() result(res)
       implicit none
 
       type(MediaData_t) :: res
@@ -447,7 +512,7 @@ contains
 
       mat = create_pec_material()
       res = get_default_mediadata()
-
+      res%Id = mat%id
       res%Is%PEC = .TRUE.
 
       res%Priority = 150
@@ -456,9 +521,9 @@ contains
       res%Mur = mat%mu/UTILMU0
       res%SigmaM = mat%sigmam
 
-   end function create_pec_media
+   end function create_pec_simulation_material
 
-   function create_pmc_media() result(res)
+   function create_pmc_simulation_material() result(res)
       implicit none
 
       type(MediaData_t) :: res
@@ -467,6 +532,7 @@ contains
       mat = create_pmc_material()
       res = get_default_mediadata()
 
+      res%Id = mat%id
       res%Is%PMC = .TRUE.
 
       res%Priority = 160
@@ -475,31 +541,28 @@ contains
       res%Mur = mat%mu/UTILMU0
       res%SigmaM = mat%sigmam
 
-   end function create_pmc_media
+   end function create_pmc_simulation_material
 
-!function create_thinwire_media() result(res)
-!   implicit none
-!
-!   type(MediaData_t) :: res
-!   type(Material) :: mat
-!
-!   type(Wires_t), target :: wire
-!
-!   mat = create_thinwire_material()
-!   res = get_default_mediadata()
-!
-!   res%Is%ThinWire = .TRUE.
-!
-!   allocate (res%Wire(1))
-!   wire = create_wire()
-!   res%Wire(1) => wire
-!
-!   res%Priority = 15
-!   res%Epr = mat%eps/UTILEPS0
-!   res%Sigma = mat%sigma
-!   res%Mur = mat%mu/UTILMU0
-!   res%SigmaM = mat%sigmam
-!end function create_thinwire_media
+   function create_thinWire_simulation_material(materialId) result(res)
+      implicit none
+      integer(kind=SINGLE) :: materialId
+
+      type(MediaData_t) :: res
+      type(Material) :: mat
+
+      type(Wires_t), target, dimension(1) :: wire
+
+      res = get_default_mediadata()
+      res%Id = materialId
+      res%Is%ThinWire = .TRUE.
+
+      allocate (res%Wire(1))
+      wire(1) = get_default_wire()
+      res%wire => wire
+
+      res%Priority = 15
+
+   end function create_thinWire_simulation_material
 
    function create_empty_material() result(mat)
       implicit none
@@ -707,7 +770,6 @@ contains
       type(observation_domain_t), intent(inout) :: domain
       real(kind=RKIND), intent(in) :: InitialTime, FinalTime, TimeStep
 
-
       domain%InitialTime = InitialTime
       domain%FinalTime = FinalTime
       domain%TimeStep = TimeStep
@@ -721,7 +783,6 @@ contains
 
       type(observation_domain_t), intent(inout) :: domain
       real(kind=RKIND), intent(in) :: InitialFreq, FinalFreq, FreqStep
-
 
       domain%InitialFreq = InitialFreq
       domain%FinalFreq = FinalFreq
@@ -756,15 +817,15 @@ contains
    end subroutine initialize_phi_domain
 
    subroutine initialize_domain_logical_flags(domain, Saveall_flag, TransFer_flag, Volumic_flag)
-    implicit none
-    
-    type(observation_domain_t), intent(inout) :: domain
-    logical, intent(in) :: Saveall_flag, TransFer_flag, Volumic_flag
+      implicit none
 
-    domain%Saveall = Saveall_flag
-    domain%TransFer = TransFer_flag
-    domain%Volumic = Volumic_flag
-    
-end subroutine initialize_domain_logical_flags
+      type(observation_domain_t), intent(inout) :: domain
+      logical, intent(in) :: Saveall_flag, TransFer_flag, Volumic_flag
+
+      domain%Saveall = Saveall_flag
+      domain%TransFer = TransFer_flag
+      domain%Volumic = Volumic_flag
+
+   end subroutine initialize_domain_logical_flags
 
 end module FDETYPES_TOOLS
