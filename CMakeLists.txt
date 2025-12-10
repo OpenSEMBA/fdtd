@@ -60,7 +60,7 @@ if (CMAKE_SYSTEM_NAME MATCHES "Linux")
 		set(CMAKE_CXX_FLAGS_RELEASE "-Ofast")
 		set(CMAKE_Fortran_FLAGS_RELEASE "-Ofast")
 		
-		set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0")
+		set(CMAKE_Fortran_FLAGS_DEBUG "-g -O0 -fno-inline -fcheck=all -fbacktrace")
 
 	elseif(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
 		message(STATUS "Using IntelLLVM (ifx) flags")

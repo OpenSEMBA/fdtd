@@ -402,7 +402,7 @@ contains
 
    end subroutine add_media_data_to_sgg
 
-   subroutine init_default_media_matrix(res, xi, yi, zi, xe, ye, ze)
+   subroutine init_default_media_matrix(res, xi, xe, yi, ye, zi, ze)
       integer(kind=SINGLE) :: xi, yi, zi, xe, ye, ze
       type(media_matrices_t), intent(inout) :: res
 
@@ -429,7 +429,7 @@ contains
    end subroutine init_default_media_matrix
 
    subroutine assing_material_id_to_media_matrix_coordinate(media, fieldComponent, i, j, k, materialId)
-      type(media_matrices_t), intent(out) :: media
+      type(media_matrices_t), intent(inout) :: media
       integer(kind=SINGLE), intent(in) :: fieldComponent, i, j, k, materialId
       selectcase(fieldComponent)
       case(iEx); media%sggMiEx(i,j,k) = materialId

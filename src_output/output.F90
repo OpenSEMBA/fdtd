@@ -55,7 +55,8 @@ module output
          update_point_probe_output, &
          update_wire_current_probe_output, &
          update_wire_charge_probe_output, &
-         update_bulk_probe_output
+         update_bulk_probe_output, &
+         update_volumic_probe_output
       !update_bulk_current_probe_output, &
       !update_far_field, &
       !updateime_movie_output, &
@@ -99,11 +100,11 @@ contains
 
       allocate (outputs(sgg%NumberRequest))
 
-      allocate (InvEps(0:sgg%NumMedia), InvMu(0:sgg%NumMedia))
+      allocate (InvEps(1:sgg%NumMedia), InvMu(1:sgg%NumMedia))
       outputCount = 0
 
-      InvEps(0:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia)%Epr)
-      InvMu(0:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia)%Mur)
+      InvEps(1:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(1:sgg%NumMedia)%Epr)
+      InvMu(1:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(1:sgg%NumMedia)%Mur)
 
       do ii = 1, sgg%NumberRequest
          do i = 1, sgg%Observation(ii)%nP

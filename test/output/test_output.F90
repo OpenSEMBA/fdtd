@@ -235,44 +235,56 @@ end function test_multiple_flush_point_probe
 
 integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err)
    use output
+   use mod_testOutputUtils
    use FDETYPES_TOOLS
 
-   type(volumic_current_probe_t) :: volumicProbe
-   integer(kind=RKIND) :: i, j, k, i2, j2, k2
-   integer(kind=RKIND) :: field
-   type(domain_t) :: domain
+   integer(kind=RKIND) :: iter
    type(media_matrices_t), target :: media
    type(media_matrices_t), pointer :: mediaPtr
    type(MediaData_t), dimension(:), allocatable, target :: simulationMaterials
-   type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
    type(limit_t), dimension(1:6), target :: sinpml_fullsize
    type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
+   type(Obses_t) :: volumicProbeObservable
+   type(SGGFDTDINFO) :: dummysgg
+   type(sim_control_t) :: dummyControl
+   type(solver_output_t), dimension(:), allocatable :: outputs
 
    type(MediaData_t) :: thinWireSimulationMaterial
-   character(len=27) :: test_extension = 'tmp_cases/flush_point_probe'
+   character(len=BUFSIZE) :: test_extension = trim(adjustl('tmp_cases/flush_point_probe'))
    integer(kind=SINGLE) :: mpidir = 3
-   integer(kind=SINGLE) :: pecId = 1
-   integer(kind=SINGLE) :: pmcId = 2
+   logical :: ThereAreWires = .false.
+   err = 1 !If test_err is not updated at the end it will be shown
+   test_err = 0
 
-   domain = domain_t(tstart=0.0_RKIND_tiempo, tstop=0.0_RKIND_tiempo, tstep=0.0_RKIND_tiempo, fstart=0.0_RKIND, fstop=1000.0_RKIND, fnum=10_SINGLE, logarithmicspacing=.false.)
-   
-   do i=1,6
-      sinpml_fullsize(i) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
+   do iter = 1, 6
+      sinpml_fullsize(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
    end do
+   sinpml_fullsizePtr => sinpml_fullsize
 
    simulationMaterials = create_base_simulation_material_list()
    thinWireSimulationMaterial = create_thinWire_simulation_material(size(simulationMaterials) + 1)
    call add_simulation_material(simulationMaterials, thinWireSimulationMaterial)
 
-   call init_default_media_matrix(media, 0,8,0,8,0,8)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 1,1,1, pecId)
-   call assing_material_id_to_media_matrix_coordinate(media, iHz, 1,1,1, pmcId)
-   call assing_material_id_to_media_matrix_coordinate(media, iEx, 2,2,2, thinWireSimulationMaterial%Id)
-
+   call init_default_media_matrix(media, 0, 8, 0, 8, 0, 8)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 1, 1, 1, simulationMaterials(2)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iHz, 1, 1, 1, simulationMaterials(3)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEx, 2, 2, 2, thinWireSimulationMaterial%Id)
    mediaPtr => media
-   simulationMaterialsPtr => simulationMaterials
-   sinpml_fullsizePtr => sinpml_fullsize
 
-call init_volumic_probe_output(volumicProbe, i, j, k, i2, j2, k2, field, domain, mediaPtr, simulationMaterialsPtr, sinpml_fullsizePtr, test_extension, mpidir)
+   dummysgg = create_base_sgg(dt=0.1_RKIND_tiempo, time_steps=100)
+   dummysgg%NumMedia = size(simulationMaterials)
+   dummysgg%med => simulationMaterials
+
+   volumicProbeObservable = create_volumic_probe_observable()
+   call add_observation_to_sgg(dummysgg, volumicProbeObservable)
+
+   dummyControl = create_control_flags(mpidir=mpidir, nEntradaRoot='entradaRoot', wiresflavor='holland')
+
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+
+   test_err = test_err + assert_integer_equal(outputs(1)%outputID, VOLUMIC_CURRENT_PROBE_ID, 'Unexpected probe id')
+   test_err = test_err + assert_integer_equal(outputs(1)%volumicCurrentProbe%columnas, 4, 'Unexpected number of columns')
+   test_err = test_err + assert_string_equal(outputs(1)%volumicCurrentProbe%path, 'entradaRoot_volumicProbe_BCX_4_4_4__6_6_6', 'Unexpected path')
+
    err = test_err
 end function

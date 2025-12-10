@@ -4,6 +4,8 @@ module mod_volumicProbe
    use mod_outputUtils
 
    implicit none
+   private :: isRelevantCell, isRelevantSurfaceCell
+
    type volumic_current_probe_t
       integer(kind=SINGLE) :: columnas = 4_SINGLE !reference and current components
       type(domain_t) :: domain
@@ -37,15 +39,15 @@ module mod_volumicProbe
 
 contains
 
-  subroutine init_volumic_probe_output(this, iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, field, domain, media, simulationMedia, sinpml_fullsize, outputTypeExtension, mpidir)
-      type(volumic_current_probe_t), intent(out) :: this
+  subroutine init_volumic_probe_output(this, iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, field, domain, geometryMedia, registeredMedia, sinpml_fullsize, outputTypeExtension, mpidir)
+      type(volumic_current_probe_t), intent(inout) :: this
       integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord
       integer(kind=SINGLE), intent(in) :: i2Coord, j2Coord, k2Coord
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
 
-      type(MediaData_t), pointer, dimension(:) :: simulationMedia
-      type(media_matrices_t), pointer, intent(in) :: media
+      type(MediaData_t), pointer, dimension(:) :: registeredMedia
+      type(media_matrices_t), pointer, intent(in) :: geometryMedia
       type(limit_t), pointer, dimension(:), intent(in)  :: sinpml_fullsize
 
       type(domain_t), intent(in) :: domain
@@ -65,7 +67,7 @@ contains
       this%domain = domain
       this%path = get_output_path()
 
-      totalPecSurfaces = count_pec_surfaces()
+      totalPecSurfaces = count_pec_surfaces(this, geometryMedia, registeredMedia, sinpml_fullsize)
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          allocate (this%timeStep(BuffObse))
@@ -98,66 +100,67 @@ contains
          probeBoundsExtension = get_probe_bounds_coords_extension(iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, mpidir)
          prefixFieldExtension = get_prefix_extension(field, mpidir)
          outputPath = &
-            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//trim(adjustl(probeBoundsExtension))
+            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
          return
       end function get_output_path
 
-      function count_pec_surfaces() result(n)
-         integer(kind=SINGLE) :: i, j, k, field
-         integer(kind=SINGLE) :: n, iii, jjj, kkk
-         n = 0_SINGLE
-         do i = icoord,i2coord
-         do j = jcoord,j2coord
-         do k = kcoord,k2coord
-         do field = iEx,iEz
-            if (isWithinBounds(field, iii, jjj, kkk, sinpml_fullsize)) then
-               if (isThinWire(field, iii, jjj, kkk, simulationMedia, media)) then
-                  n = n + 1
-               end if
-               if (.not. isMediaVacuum(field, iii, jjj, kkk, media) .and. .not. isSplitOrAdvanced(field, iii, jjj, kkk, media, simulationMedia)) then
-                  n = n + 1
-               end if
-               if (isPECorSurface(field, iii, jjj, kkk, media, simulationMedia) .or. field == getBlockCurrentDirection(field)) then
-                  n = n + 1
-               end if
-            end if
-         end do
-         end do
-         end do
-         end do
-
-      end function count_pec_surfaces
    end subroutine init_volumic_probe_output
 
-   subroutine update_volumic_probe_output(this, step, media, simulationMedia, sinpml_fullsize, fieldsReference)
+   function count_pec_surfaces(this, geometryMedia, registeredMedia, sinpml_fullsize) result(n)
+      type(volumic_current_probe_t), intent(in) :: this
+      type(media_matrices_t), pointer, intent(in) :: geometryMedia
+      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
+      type(limit_t), pointer, dimension(:), intent(in) :: sinpml_fullsize
+      integer(kind=SINGLE) :: i, j, k, field
+      integer(kind=SINGLE) :: n
+      n = 0_SINGLE
+      do i = this%xCoord, this%x2Coord
+      do j = this%yCoord, this%y2Coord
+      do k = this%zCoord, this%z2Coord
+         do field = iEx, iEz
+            if (isRelevantCell(field, i, j, k, geometryMedia, registeredMedia, sinpml_fullsize)) then
+               n = n + 1
+            end if
+         end do
+         do field = iHx, iHz
+            if (isRelevantSurfaceCell(field, i, j, k, this%fieldComponent, geometryMedia, registeredMedia, sinpml_fullsize)) then
+               n = n + 1
+            end if
+         end do
+      end do
+      end do
+      end do
+   end function count_pec_surfaces
+
+   subroutine update_volumic_probe_output(this, step, geometryMedia, registeredMedia, sinpml_fullsize, fieldsReference)
       type(volumic_current_probe_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
 
-      type(media_matrices_t), pointer, intent(in) :: media
-      type(MediaData_t), pointer, dimension(:) :: simulationMedia
+      type(media_matrices_t), pointer, intent(in) :: geometryMedia
+      type(MediaData_t), pointer, dimension(:) :: registeredMedia
       type(limit_t), pointer, dimension(:), intent(in)  :: sinpml_fullsize
       type(fields_reference_t), pointer, intent(in) :: fieldsReference
 
-      integer(kind=SINGLE) :: Efield, Hfield, iii, jjj, kkk
-      integer(kind=SINGLE) :: i1, i2, j1, j2, k1, k2, conta
+      integer(kind=SINGLE) :: Efield, Hfield, i, j, k, conta
+      integer(kind=SINGLE) :: i1, i2, j1, j2, k1, k2
+
+      conta = 0
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          this%serializedTimeSize = this%serializedTimeSize + 1
-         conta = 0
-         do KKK = k1, k2
-         do JJJ = j1, j2
-         do III = i1, i2
+         do k = k1, k2
+         do j = j1, j2
+         do i = i1, i2
          do Efield = iEx, iEz
-            if (isRelevantCell(Efield, iii, jjj, kkk)) then
+            if (isRelevantCell(Efield, i, j, k, geometryMedia, registeredMedia, sinpml_fullsize)) then
                conta = conta + 1
-               call save_current(this, Efield, iii, jjj, kkk, conta, fieldsReference)
-
+               call save_current(this, Efield, i, j, k, conta, fieldsReference)
             end if
          end do
          do Hfield = iHx, iHz
-            if (isRelevantSurfaceCell(Hfield, iii, jjj, kkk, this%fieldComponent)) then
+            if (isRelevantSurfaceCell(Hfield, i, j, k, this%fieldComponent, geometryMedia, registeredMedia, sinpml_fullsize)) then
                conta = conta + 1
-               call save_current_surfaces(this, Hfield, iii, jjj, kkk, conta, fieldsReference)
+               call save_current_surfaces(this, Hfield, i, j, k, conta, fieldsReference)
             end if
          end do
          end do
@@ -167,55 +170,66 @@ contains
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
       end if
    contains
-      logical function isRelevantCell(Efield, I, J, K)
-         integer(kind=SINGLE), intent(in) :: Efield, I, J, K
-
-         if (isWithinBounds(Efield, I, J, K, sinpml_fullsize)) then
-            isRelevantCell = isThinWire(Efield, I, J, K, simulationMedia, media) .OR. &
-                (.NOT. isMediaVacuum(Efield, I, J, K, media) .AND. .NOT. isSplitOrAdvanced(Efield, I, J, K, media, simulationMedia))
-         else
-            isRelevantCell = .false.
-         end if
-
-      END FUNCTION isRelevantCell
-
-      logical function isRelevantSurfaceCell(Hfield, I, J, K, outputType)
-         integer(kind=SINGLE), intent(in) :: Hfield, I, J, K, outputType
-
-         if (isWithinBounds(Hfield, I, J, K, sinpml_fullsize)) then
-       isRelevantSurfaceCell = isPECorSurface(Hfield, iii, jjj, kkk, media, simulationMedia) .or. outputType == getBlockCurrentDirection(Hfield)
-         else
-            isRelevantSurfaceCell = .false.
-         end if
-      end function
-
-      subroutine save_current(this, Efield, iii, jjj, kkk, conta, field_reference)
+      subroutine save_current(this, Efield, i, j, k, conta, field_reference)
          type(fields_reference_t), pointer, intent(in) :: field_reference
          type(volumic_current_probe_t), intent(inout) :: this
-         integer(kind=SINGLE), intent(in) :: Efield, iii, jjj, kkk, conta
+         integer(kind=SINGLE), intent(in) :: Efield, i, j, k, conta
 
          real(kind=RKIND) :: jdir
 
-         jdir = computeJ(EField, iii, jjj, kkk, field_reference)
+         jdir = computeJ(EField, i, j, k, field_reference)
          this%xValueForTime(this%serializedTimeSize, conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
          this%yValueForTime(this%serializedTimeSize, conta) = merge(jdir, 0.0_RKIND, Efield == iEy)
          this%zValueForTime(this%serializedTimeSize, conta) = merge(jdir, 0.0_RKIND, Efield == iEz)
       end subroutine save_current
 
-      subroutine save_current_surfaces(this, Hfield, iii, jjj, kkk, conta, field_reference)
+      subroutine save_current_surfaces(this, Hfield, i, j, k, conta, field_reference)
          implicit none
          type(fields_reference_t), pointer, intent(in) :: field_reference
          type(volumic_current_probe_t), intent(inout) :: this
-         integer(kind=SINGLE), intent(in) :: Hfield, iii, jjj, kkk, conta
+         integer(kind=SINGLE), intent(in) :: Hfield, i, j, k, conta
 
          real(kind=RKIND) :: jdir1, jdir2
-         jdir1 = computeJ1(HField, iii, jjj, kkk, field_reference)
-         jdir2 = computeJ2(HField, iii, jjj, kkk, field_reference)
+         jdir1 = computeJ1(HField, i, j, k, field_reference)
+         jdir2 = computeJ2(HField, i, j, k, field_reference)
 
          this%xValueForTime(this%serializedTimeSize, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHz), Hfield == iHx)
          this%yValueForTime(this%serializedTimeSize, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHx), Hfield == iHy)
          this%zValueForTime(this%serializedTimeSize, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHy), Hfield == iHz)
       end subroutine save_current_surfaces
    end subroutine update_volumic_probe_output
+
+   logical function isRelevantCell(Efield, I, J, K, geometryMedia, registeredMedia, sinpml_fullsize)
+      type(media_matrices_t), pointer, intent(in) :: geometryMedia
+      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
+      type(limit_t), pointer, dimension(:), intent(in) :: sinpml_fullsize
+      integer(kind=SINGLE), intent(in) :: Efield, I, J, K
+      isRelevantCell = .false.
+
+      if (isWithinBounds(Efield, I, J, K, sinpml_fullsize)) then
+         if (isThinWire(Efield, I, J, K, geometryMedia, registeredMedia)) then
+            isRelevantCell = .true.
+         end if
+         if (.NOT. isMediaVacuum(Efield, I, J, K, geometryMedia)) then
+            if (.NOT. isSplitOrAdvanced(Efield, I, J, K, geometryMedia, registeredMedia)) then
+               isRelevantCell = .true.
+            end if
+         end if
+      end if
+
+   end function
+
+   logical function isRelevantSurfaceCell(field, i, j, k, outputType, geometryMedia, registeredMedia, sinpml_fullsize)
+      type(media_matrices_t), pointer, intent(in) :: geometryMedia
+      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
+      type(limit_t), pointer, dimension(:), intent(in) :: sinpml_fullsize
+      integer(kind=SINGLE), intent(in) :: field, i, j, k, outputType
+
+      isRelevantSurfaceCell = .false.
+      if (isWithinBounds(field, i, j, k, sinpml_fullsize)) then
+         isRelevantSurfaceCell = isPEC(field, i, j, k, geometryMedia, registeredMedia)
+      end if
+
+   end function
 
 end module mod_volumicProbe

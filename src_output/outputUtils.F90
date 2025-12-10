@@ -268,25 +268,41 @@ contains
       end select
    end function
 
-   logical function isThinWire(field, i, j, k, simulationMedia, media)
+   logical function isThinWire(field, i, j, k, geometryMedia, registeredMedia)
       integer(kind=4), intent(in) :: field, i, j, k
-      type(MediaData_t), pointer, dimension(:), intent(in) :: simulationMedia
-      type(media_matrices_t), pointer, intent(in) :: media
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
-      mediaIndex = getMedia(field, i, j, k, media)
-      isThinWire = simulationMedia(mediaIndex)%is%ThinWire
+      type(media_matrices_t), pointer, intent(in) :: geometryMedia
+      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
+
+      integer(kind=SINGLE) :: mediaIndex
+
+      mediaIndex = getMediaIndex(field, i, j, k, geometryMedia)
+      isThinWire = registeredMedia(mediaIndex)%is%ThinWire
    end function
 
-   logical function isPECorSurface(field, i, j, k, media, simulationMedia)
-      type(MediaData_t), pointer, dimension(:), intent(in) :: simulationMedia
-      type(media_matrices_t), pointer, intent(in) :: media
+
+   logical function isPEC(field, i, j, k, geometryMedia, registeredMedia)
       integer(kind=4), intent(in) :: field, i, j, k
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
-      mediaIndex = getMedia(field, i, j, k, media)
-      isPECorSurface = simulationMedia(mediaIndex)%is%PEC .or. simulationMedia(mediaIndex)%is%Surface
+      type(media_matrices_t), pointer, intent(in) :: geometryMedia
+      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
+
+      integer(kind=SINGLE) :: mediaIndex
+
+      mediaIndex = getMediaIndex(field, i, j, k, geometryMedia)
+      isPEC = registeredMedia(mediaIndex)%is%PEC
    end function
 
-   function getMedia(field, i, j, k, media) result(res)
+   logical function isSurface(field, i, j, k, geometryMedia, registeredMedia)
+      integer(kind=4), intent(in) :: field, i, j, k
+      type(media_matrices_t), pointer, intent(in) :: geometryMedia
+      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
+
+      integer(kind=SINGLE) :: mediaIndex
+
+      mediaIndex = getMediaIndex(field, i, j, k, geometryMedia)
+      isSurface = registeredMedia(mediaIndex)%is%Surface
+   end function
+
+   function getMediaIndex(field, i, j, k, media) result(res)
       type(media_matrices_t), pointer, intent(in) :: media
       integer(kind=4), intent(in) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
@@ -315,7 +331,7 @@ contains
       TYPE(media_matrices_t), pointer, INTENT(IN) :: media
       integer(kind=4) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex, vacuum = 1
-      mediaIndex = getMedia(field, i, j, k, media)
+      mediaIndex = getMediaIndex(field, i, j, k, media)
       isMediaVacuum = (mediaIndex == vacuum)
    end function
 
@@ -325,7 +341,7 @@ contains
       type(media_matrices_t), pointer, intent(in) :: media
       integer(kind=4) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
-      mediaIndex = getMedia(field, i, j, k, media)
+      mediaIndex = getMediaIndex(field, i, j, k, media)
       isSplitOrAdvanced = simulationMedia(mediaIndex)%is%split_and_useless .or. &
                           simulationMedia(mediaIndex)%is%already_YEEadvanced_byconformal
 
@@ -533,7 +549,7 @@ contains
          return
       end if
 
-      close(unit)
+      close (unit)
 
       ! --- Success ---
       unit_out = unit

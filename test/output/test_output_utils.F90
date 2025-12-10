@@ -22,6 +22,19 @@ contains
       call set_observable(obs, P, 'poinProbe', domain, 'DummyFileNormalize')
 
    end function
+   
+   function create_volumic_probe_observable() result(obs)
+      type(Obses_t) :: obs
+
+      type(observable_t), dimension(:), allocatable :: P
+      type(observation_domain_t) :: domain
+
+      call initialize_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
+      call initialize_frequency_domain(domain, 0.0_RKIND, 1000.0_RKIND, 50.0_RKIND)
+      allocate (P(1))
+      P(1) = create_observable(4, 4, 4, 6, 6, 6, iCurX)
+      call set_observable(obs, P, 'volumicProbe', domain, 'DummyFileNormalize')
+   end function create_volumic_probe_observable
 
    subroutine create_dummy_fields(this, lower, upper, delta)
       class(dummyFields_t), intent(inout) :: this
