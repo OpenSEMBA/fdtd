@@ -1,32 +1,20 @@
 module mod_pointProbeOutput
    use FDETYPES
+   use outputTypes
    use mod_domain
    use mod_outputUtils
 
    implicit none
 
-   type point_probe_output_t
-      integer(kind=SINGLE) :: columnas = 2_SINGLE !reference and field
-      type(domain_t) :: domain
-      integer(kind=SINGLE) :: xCoord, yCoord, zCoord
-      integer(kind=SINGLE) :: fileUnitTime, fileUnitFreq
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: fieldComponent
-      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE, nFreq = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
-      real(kind=RKIND), dimension(BuffObse) :: valueForTime = 0.0_RKIND
-
-      real(kind=RKIND), dimension(:), allocatable :: frequencySlice
-      real(kind=CKIND), dimension(:), allocatable :: valueForFreq
-   end type point_probe_output_t
-
 contains
-   subroutine init_point_probe_output(this, iCoord, jCoord, kCoord, field, domain, outputTypeExtension, mpidir)
+   subroutine init_point_probe_output(this, iCoord, jCoord, kCoord, field, domain, outputTypeExtension, mpidir, timeInterval)
       type(point_probe_output_t), intent(out) :: this
       integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=*), intent(in) :: outputTypeExtension
       type(domain_t), intent(in) :: domain
+
+      real(kind=RKIND_tiempo), intent(in) :: timeInterval
 
       integer(kind=SINGLE) :: i
 
@@ -47,6 +35,13 @@ contains
             call init_frequency_slice(this%frequencySlice, this%domain)
          end do
          this%valueForFreq = (0.0_RKIND, 0.0_RKIND)
+
+         allocate (this%auxExp_E(this%nFreq))
+         allocate (this%auxExp_H(this%nFreq))
+         do i = 1, this%nFreq
+            this%auxExp_E(i) = timeInterval*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*this%frequencySlice(i))   !el dt deberia ser algun tipo de promedio
+            this%auxExp_H(i) = this%auxExp_E(i)*Exp(mcpi2*this%frequencySlice(i)*timeInterval*0.5_RKIND)
+         end do
       end if
 
    contains
@@ -87,29 +82,30 @@ contains
    end subroutine init_point_probe_output
 
    subroutine create_point_probe_output_files(this)
-    implicit none
-    type(point_probe_output_t), intent(inout) :: this
-    character(len=BUFSIZE) :: file_time, file_freq
-    integer(kind=SINGLE) :: err
-    err = 0
+      implicit none
+      type(point_probe_output_t), intent(inout) :: this
+      character(len=BUFSIZE) :: file_time, file_freq
+      integer(kind=SINGLE) :: err
+      err = 0
 
-    file_time = trim(adjustl(this%path))//'_'// &
-                trim(adjustl(timeExtension))//'_'// &
-                trim(adjustl(datFileExtension))
+      file_time = trim(adjustl(this%path))//'_'// &
+                  trim(adjustl(timeExtension))//'_'// &
+                  trim(adjustl(datFileExtension))
 
-    file_freq = trim(adjustl(this%path))//'_'// &
-                trim(adjustl(timeExtension))//'_'// &
-                trim(adjustl(datFileExtension))
+      file_freq = trim(adjustl(this%path))//'_'// &
+                  trim(adjustl(timeExtension))//'_'// &
+                  trim(adjustl(datFileExtension))
 
-    call create_or_clear_file(file_time, this%fileUnitTime, err)
-    call create_or_clear_file(file_freq, this%fileUnitFreq, err)
+      call create_or_clear_file(file_time, this%fileUnitTime, err)
+      call create_or_clear_file(file_freq, this%fileUnitFreq, err)
 
-end subroutine create_point_probe_output_files
+   end subroutine create_point_probe_output_files
 
    subroutine update_point_probe_output(this, step, field)
       type(point_probe_output_t), intent(inout) :: this
-      real(kind=RKIND), pointer, dimension(:, :, :) :: field
+      real(kind=RKIND), pointer, dimension(:, :, :), intent(in) :: field
       real(kind=RKIND_tiempo), intent(in) :: step
+
       integer(kind=SINGLE) :: iter
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
@@ -119,10 +115,19 @@ end subroutine create_point_probe_output_files
       end if
 
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
-         do iter = 1, this%nFreq
-            this%valueForFreq(iter) = &
-               this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord) !*get_auxExp(this%frequencySlice(iter), this%fieldComponent)
-         end do
+         select case (this%fieldComponent)
+         case (iEx, iEy, iEz)
+            do iter = 1, this%nFreq
+               this%valueForFreq(iter) = &
+                  this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*(this%auxExp_E(iter)**step)
+            end do
+         case (iHx, iHy, iHz)
+            do iter = 1, this%nFreq
+               this%valueForFreq(iter) = &
+                  this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*(this%auxExp_H(iter)**step)
+            end do
+         end select
+
       end if
    end subroutine update_point_probe_output
 

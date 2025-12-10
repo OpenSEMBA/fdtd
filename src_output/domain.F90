@@ -1,22 +1,13 @@
 module mod_domain
    use FDETYPES
+   use outputTypes
    implicit none
 
-   integer, parameter :: UNDEFINED_DOMAIN = -1
-   integer, parameter :: TIME_DOMAIN = 0
-   integer, parameter :: FREQUENCY_DOMAIN = 1
-   integer, parameter :: BOTH_DOMAIN = 2
+
 
    interface domain_t
      module procedure new_domain_time, new_domain_freq, new_domain_both
    end interface domain_t
-   type :: domain_t
-      real(kind=RKIND_tiempo) :: tstart = 0.0_RKIND_tiempo, tstop = 0.0_RKIND_tiempo, tstep = 0.0_RKIND_tiempo
-      real(kind=RKIND)        :: fstart = 0.0_RKIND, fstop = 0.0_RKIND, fstep
-      integer(kind=SINGLE)    :: fnum = 0
-      integer(kind=SINGLE)    :: domainType = UNDEFINED_DOMAIN
-      logical                 :: logarithmicSpacing = .false.
-   end type domain_t
 
 contains
    function new_domain_time(tstart, tstop, tstep) result(new_domain)

@@ -1,27 +1,14 @@
-module mod_bulkProbe
+module mod_bulkProbeOutput
    use FDETYPES
+   use outputTypes
    use FDETYPES_TOOLS
-   use mod_domain
    use mod_outputUtils
    implicit none
-
-   type bulk_probe_output_t
-      integer(kind=SINGLE) :: columnas = 2_SINGLE !reference and field
-      type(domain_t) :: domain
-      integer(kind=SINGLE) :: xCoord, yCoord, zCoord
-      integer(kind=SINGLE) :: x2Coord, y2Coord, z2Coord
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: fieldComponent
-      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
-      real(kind=RKIND), dimension(BuffObse) :: valueForTime = 0.0_RKIND
-
-   end type bulk_probe_output_t
 
 contains
 
    subroutine init_bulk_probe_output(this, iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, field, domain, outputTypeExtension, mpidir)
-      type(bulk_probe_output_t), intent(out) :: this
+      type(bulk_current_probe_output_t), intent(out) :: this
       integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord
       integer(kind=SINGLE), intent(in) :: i2Coord, j2Coord, k2Coord
       integer(kind=SINGLE), intent(in) :: mpidir, field
@@ -91,7 +78,7 @@ contains
    end subroutine init_bulk_probe_output
 
    subroutine update_bulk_probe_output(this, step, field)
-      type(bulk_probe_output_t), intent(out) :: this
+      type(bulk_current_probe_output_t), intent(out) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
       type(field_data_t), intent(in) :: field
 
@@ -99,7 +86,7 @@ contains
       integer(kind=SINGLE) :: i1, i2, j1, j2, k1, k2
       integer(kind=SINGLE) :: iii, jjj, kkk
 
-      real(kind=RKIND), pointer, dimension(:,:,:) :: xF, yF, zF
+      real(kind=RKIND), pointer, dimension(:, :, :) :: xF, yF, zF
       real(kind=RKIND), pointer, dimension(:) :: dx, dy, dz
 
       i1_m = this%xCoord
@@ -109,12 +96,12 @@ contains
       k1_m = this%zCoord
       k2_m = this%z2Coord
 
-      i1 = i1_m 
-      j1 = i2_m 
-      k1 = j1_m 
-      i2 = j2_m 
-      j2 = k1_m 
-      k2 = k2_m 
+      i1 = i1_m
+      j1 = i2_m
+      k1 = j1_m
+      i2 = j2_m
+      j2 = k1_m
+      k2 = k2_m
 
       xF => field%x
       yF => field%y
@@ -122,7 +109,6 @@ contains
       dx => field%deltaX
       dy => field%deltaY
       dz => field%deltaZ
-
 
       this%serializedTimeSize = this%serializedTimeSize + 1
       this%timeStep(this%serializedTimeSize) = step
@@ -204,4 +190,4 @@ contains
 
    end subroutine update_bulk_probe_output
 
-end module mod_bulkProbe
+end module mod_bulkProbeOutput

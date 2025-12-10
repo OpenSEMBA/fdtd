@@ -111,7 +111,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    test_err = 0
    test_extension = 'tmp_cases/flush_point_probe'
    domain = domain_t(0.0_RKIND_tiempo, 10.0_RKIND_tiempo, 0.1_RKIND_tiempo, 10.0_RKIND, 100.0_RKIND, 10, .false.)
-   call init_point_probe_output(probe, 2, 2, 2, iEx, domain, test_extension, 3)
+   call init_point_probe_output(probe, 2, 2, 2, iEx, domain, test_extension, 3, 0.1_RKIND_tiempo)
    call create_point_probe_output_files(probe)
 
    n = 10
@@ -170,7 +170,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    test_extension = 'tmp_cases/multiple_flush_point_probe'
 
    domain = domain_t(0.0_RKIND_tiempo, 10.0_RKIND_tiempo, 0.1_RKIND_tiempo, 10.0_RKIND, 100.0_RKIND, 10, .false.)
-   call init_point_probe_output(probe, 2, 2, 2, iEx, domain, test_extension, 3)
+   call init_point_probe_output(probe, 2, 2, 2, iEx, domain, test_extension, 3, 0.1_RKIND_tiempo)
    call create_point_probe_output_files(probe)
 
    file_time = trim(adjustl(probe%path))//'_'// &

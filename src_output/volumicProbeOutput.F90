@@ -1,4 +1,4 @@
-module mod_volumicProbe
+module mod_volumicProbeOutput
    use FDETYPES
    use mod_domain
    use mod_outputUtils
@@ -6,40 +6,9 @@ module mod_volumicProbe
    implicit none
    private :: isRelevantCell, isRelevantSurfaceCell
 
-   type volumic_current_probe_t
-      integer(kind=SINGLE) :: columnas = 4_SINGLE !reference and current components
-      type(domain_t) :: domain
-      integer(kind=SINGLE) :: xCoord, yCoord, zCoord
-      integer(kind=SINGLE) :: x2Coord, y2Coord, z2Coord
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: fieldComponent
-
-      !Intent storage order:
-      !(:) == (timeinstance) => timeValue
-      !(:,:) == (timeInstance, componentId) => escalar
-
-      !Time Domain (requires first allocation)
-      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(:), allocatable :: timeStep
-      real(kind=RKIND), dimension(:, :), allocatable :: xValueForTime
-      real(kind=RKIND), dimension(:, :), allocatable :: yValueForTime
-      real(kind=RKIND), dimension(:, :), allocatable :: zValueForTime
-
-      !Intent storage order:
-      !(:) == (frquencyinstance) => timeValue
-      !(:,:) == (frquencyinstance, componentId) => escalar
-
-      !Frequency Domain (requires first allocation)
-      integer(kind=SINGLE) :: nFreq = 0_SINGLE
-      real(kind=RKIND), dimension(:), allocatable :: frequencySlice
-      real(kind=CKIND), dimension(:, :), allocatable :: xValueForFreq
-      real(kind=CKIND), dimension(:, :), allocatable :: yValueForFreq
-      real(kind=CKIND), dimension(:, :), allocatable :: zValueForFreq
-   end type volumic_current_probe_t
-
 contains
 
-  subroutine init_volumic_probe_output(this, iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, field, domain, geometryMedia, registeredMedia, sinpml_fullsize, outputTypeExtension, mpidir)
+  subroutine init_volumic_probe_output(this, iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, field, domain, geometryMedia, registeredMedia, sinpml_fullsize, outputTypeExtension, mpidir, timeInterval)
       type(volumic_current_probe_t), intent(inout) :: this
       integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord
       integer(kind=SINGLE), intent(in) :: i2Coord, j2Coord, k2Coord
@@ -50,9 +19,11 @@ contains
       type(media_matrices_t), pointer, intent(in) :: geometryMedia
       type(limit_t), pointer, dimension(:), intent(in)  :: sinpml_fullsize
 
+      real(kind=RKIND_tiempo), intent(in) :: timeInterval
+
       type(domain_t), intent(in) :: domain
 
-      integer(kind=SINGLE) :: i, totalPecSurfaces
+      integer(kind=SINGLE) :: i, relevantGeometriesCount
 
       this%xCoord = iCoord
       this%yCoord = jCoord
@@ -67,30 +38,37 @@ contains
       this%domain = domain
       this%path = get_output_path()
 
-      totalPecSurfaces = count_pec_surfaces(this, geometryMedia, registeredMedia, sinpml_fullsize)
+      relevantGeometriesCount = count_relevant_geometries(this, geometryMedia, registeredMedia, sinpml_fullsize)
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          allocate (this%timeStep(BuffObse))
-         allocate (this%xValueForTime(BuffObse, totalPecSurfaces))
-         allocate (this%yValueForTime(BuffObse, totalPecSurfaces))
-         allocate (this%zValueForTime(BuffObse, totalPecSurfaces))
+         allocate (this%xValueForTime(BuffObse, relevantGeometriesCount))
+         allocate (this%yValueForTime(BuffObse, relevantGeometriesCount))
+         allocate (this%zValueForTime(BuffObse, relevantGeometriesCount))
          this%xValueForTime = 0.0_RKIND
          this%yValueForTime = 0.0_RKIND
          this%zValueForTime = 0.0_RKIND
       end if
 
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
-         this%nFreq = this%domain%fnum
-         allocate (this%frequencySlice(this%domain%fnum))
-         allocate (this%xValueForFreq(this%domain%fnum, totalPecSurfaces))
-         allocate (this%yValueForFreq(this%domain%fnum, totalPecSurfaces))
-         allocate (this%zValueForFreq(this%domain%fnum, totalPecSurfaces))
+         this%nFreq = this%nFreq
+         allocate (this%frequencySlice(this%nFreq))
+         allocate (this%xValueForFreq(this%nFreq, relevantGeometriesCount))
+         allocate (this%yValueForFreq(this%nFreq, relevantGeometriesCount))
+         allocate (this%zValueForFreq(this%nFreq, relevantGeometriesCount))
          do i = 1, this%nFreq
             call init_frequency_slice(this%frequencySlice, this%domain)
          end do
          this%xValueForFreq = (0.0_RKIND, 0.0_RKIND)
          this%yValueForFreq = (0.0_RKIND, 0.0_RKIND)
          this%zValueForFreq = (0.0_RKIND, 0.0_RKIND)
+
+         allocate (this%auxExp_E(this%nFreq))
+         allocate (this%auxExp_H(this%nFreq))
+         do i = 1, this%nFreq
+            this%auxExp_E(i) = timeInterval*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*this%frequencySlice(i))   !el dt deberia ser algun tipo de promedio
+            this%auxExp_H(i) = this%auxExp_E(i)*Exp(mcpi2*this%frequencySlice(i)*timeInterval*0.5_RKIND)
+         end do
       end if
 
    contains
@@ -106,13 +84,14 @@ contains
 
    end subroutine init_volumic_probe_output
 
-   function count_pec_surfaces(this, geometryMedia, registeredMedia, sinpml_fullsize) result(n)
+   function count_relevant_geometries(this, geometryMedia, registeredMedia, sinpml_fullsize) result(n)
       type(volumic_current_probe_t), intent(in) :: this
       type(media_matrices_t), pointer, intent(in) :: geometryMedia
       type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
       type(limit_t), pointer, dimension(:), intent(in) :: sinpml_fullsize
       integer(kind=SINGLE) :: i, j, k, field
       integer(kind=SINGLE) :: n
+
       n = 0_SINGLE
       do i = this%xCoord, this%x2Coord
       do j = this%yCoord, this%y2Coord
@@ -130,7 +109,7 @@ contains
       end do
       end do
       end do
-   end function count_pec_surfaces
+   end function
 
    subroutine update_volumic_probe_output(this, step, geometryMedia, registeredMedia, sinpml_fullsize, fieldsReference)
       type(volumic_current_probe_t), intent(inout) :: this
@@ -144,13 +123,12 @@ contains
       integer(kind=SINGLE) :: Efield, Hfield, i, j, k, conta
       integer(kind=SINGLE) :: i1, i2, j1, j2, k1, k2
 
-      conta = 0
-
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
+         conta = 0
          this%serializedTimeSize = this%serializedTimeSize + 1
-         do k = k1, k2
-         do j = j1, j2
          do i = i1, i2
+         do j = j1, j2
+         do k = k1, k2
          do Efield = iEx, iEz
             if (isRelevantCell(Efield, i, j, k, geometryMedia, registeredMedia, sinpml_fullsize)) then
                conta = conta + 1
@@ -167,7 +145,27 @@ contains
          end do
          end do
       end if
+
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
+         conta = 0
+         do i = i1, i2
+         do j = j1, j2
+         do k = k1, k2
+         do Efield = iEx, iEz
+            if (isRelevantCell(Efield, i, j, k, geometryMedia, registeredMedia, sinpml_fullsize)) then
+               conta = conta + 1
+               call update_current(this, Efield, i, j, k, conta, fieldsReference, step)
+            end if
+         end do
+         do Hfield = iHx, iHz
+            if (isRelevantSurfaceCell(Hfield, i, j, k, this%fieldComponent, geometryMedia, registeredMedia, sinpml_fullsize)) then
+               conta = conta + 1
+               call update_current_surfaces(this, Hfield, i, j, k, conta, fieldsReference, step)
+            end if
+         end do
+         end do
+         end do
+         end do
       end if
    contains
       subroutine save_current(this, Efield, i, j, k, conta, field_reference)
@@ -197,6 +195,47 @@ contains
          this%yValueForTime(this%serializedTimeSize, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHx), Hfield == iHy)
          this%zValueForTime(this%serializedTimeSize, conta) = merge(0.0_RKIND, merge(jdir1, jdir2, HField == iHy), Hfield == iHz)
       end subroutine save_current_surfaces
+
+      subroutine update_current(this, Efield, i, j, k, conta, field_reference, step)
+         integer(kind=SINGLE), intent(in) :: Efield, i, j, k, conta
+         type(volumic_current_probe_t), intent(inout) :: this
+         type(fields_reference_t), pointer, intent(in) :: field_reference
+         real(kind=RKIND_tiempo), intent(in) :: step
+
+         integer(kind=SINGLE) :: freqIdx
+         real(kind=RKIND) :: jdir
+
+         jdir = computeJ(Efield, i, j, k, field_reference)
+         do freqIdx = 1, this%nFreq
+            call updateComplexComponent(iEx, EField, this%xValueForFreq(freqIdx, conta), jdir, this%auxExp_E(freqIdx)**step)
+            call updateComplexComponent(iEy, EField, this%yValueForFreq(freqIdx, conta), jdir, this%auxExp_E(freqIdx)**step)
+            call updateComplexComponent(iEz, EField, this%zValueForFreq(freqIdx, conta), jdir, this%auxExp_E(freqIdx)**step)
+         end do
+      end subroutine update_current
+
+      subroutine update_current_surfaces(this, Hfield, i, j, k, conta, field_reference, step)
+         integer(kind=SINGLE), intent(in) :: Hfield, i, j, k, conta
+         type(volumic_current_probe_t), intent(inout) :: this
+         type(fields_reference_t), pointer, intent(in) :: field_reference
+         real(kind=RKIND_tiempo), intent(in) :: step
+
+         integer(kind=SINGLE) :: freqIdx
+         real(kind=RKIND) :: jdir, jdir1, jdir2
+
+         jdir1 = computeJ1(HField, i, j, k, field_reference)
+         jdir2 = computeJ2(HField, i, j, k, field_reference)
+         do freqIdx = 1, this%nFreq
+            jdir = merge(jdir1, jdir2, HField == iHz)
+            call updateComplexComponent(iHx, Hfield, this%xValueForFreq(freqIdx, conta), jdir, this%auxExp_H(freqIdx)**step)
+
+            jdir = merge(jdir1, jdir2, HField == iHx)
+            call updateComplexComponent(iHy, Hfield, this%yValueForFreq(freqIdx, conta), jdir, this%auxExp_H(freqIdx)**step)
+
+            jdir = merge(jdir1, jdir2, HField == iHy)
+            call updateComplexComponent(iHz, Hfield, this%zValueForFreq(freqIdx, conta), jdir, this%auxExp_H(freqIdx)**step)
+         end do
+      end subroutine update_current_surfaces
+
    end subroutine update_volumic_probe_output
 
    logical function isRelevantCell(Efield, I, J, K, geometryMedia, registeredMedia, sinpml_fullsize)
@@ -232,4 +271,15 @@ contains
 
    end function
 
-end module mod_volumicProbe
+   subroutine updateComplexComponent(direction, fieldIndex, valorComplex, jdir, auxExp)
+      integer, intent(in) :: direction, fieldIndex
+      complex(kind=CKIND), intent(inout) :: valorComplex
+      complex(kind=CKIND), intent(in) :: auxExp
+      real(kind=RKIND), intent(in) :: jdir
+
+      complex(kind=CKIND) :: z_cplx = (0.0_RKIND, 0.0_RKIND)
+
+      valorComplex = merge(valorComplex + auxExp*jdir, z_cplx, fieldIndex == direction)
+   end subroutine updateComplexComponent
+
+end module mod_volumicProbeOutput

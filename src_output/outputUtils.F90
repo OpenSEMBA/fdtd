@@ -1,24 +1,11 @@
 module mod_outputUtils
    use FDETYPES
+   use outputTypes
    use mod_domain
    use report
    implicit none
    character(len=4), parameter :: datFileExtension = '.dat', timeExtension = 'tm', frequencyExtension = 'fq'
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
-
-   type field_data_t
-      real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: x => NULL()
-      real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: y => NULL()
-      real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: z => NULL()
-      real(kind=RKIND), pointer, dimension(:), contiguous :: deltaX => NULL()
-      real(kind=RKIND), pointer, dimension(:), contiguous :: deltaY => NULL()
-      real(kind=RKIND), pointer, dimension(:), contiguous :: deltaZ => NULL()
-   end type field_data_t
-
-   type fields_reference_t
-      type(field_data_t) :: E
-      type(field_data_t) :: H
-   end type fields_reference_t
 
 contains
 

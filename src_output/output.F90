@@ -3,10 +3,9 @@ module output
    use mod_domain
    use mod_outputUtils
    use mod_pointProbeOutput
-   use mod_wireCurrentProbeOutput
-   use mod_wireChargeProbeOutput
-   use mod_bulkProbe
-   use mod_volumicProbe
+   use mod_wireProbeOutput
+   use mod_bulkProbeOutput
+   use mod_volumicProbeOutput
 
    implicit none
 
@@ -21,11 +20,16 @@ module output
 
    type solver_output_t
       integer(kind=SINGLE) :: outputID
-      type(point_probe_output_t), allocatable :: pointProbe
-      type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
-      type(wire_charge_probe_output_t), allocatable :: wireChargeProbe
-      type(bulk_probe_output_t), allocatable :: bulkProbe
-      type(volumic_current_probe_t), allocatable :: volumicCurrentProbe
+      type(point_probe_output_t), allocatable :: pointProbe !iEx, iEy, iEz, iHx, iHy, iHz
+      type(wire_current_probe_output_t), allocatable :: wireCurrentProbe !Jx, Jy, Jz
+      type(wire_charge_probe_output_t), allocatable :: wireChargeProbe !Qx, Qy, Qz
+      type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe !BloqueXJ, BloqueYJ, BloqueZJ, BloqueXM, BloqueYM, BloqueZM
+      type(volumic_current_probe_t), allocatable :: volumicCurrentProbe !icurX, icurY, icurZ
+      type(volumic_field_probe_output_t), allocatable :: volumicFieldProbe
+      type(line_integral_probe_output_t), allocatable :: lineIntegralProbe
+      type(far_field_probe_output_t), allocatable :: farFieldProbe
+      type(movie_probe_output_t), allocatable :: movieProbe
+      type(frequency_slice_probe_output_t), allocatable :: frequencySliceProbe
       !type(volumic_field_probe_t), allocatable :: volumicFieldProbe
       !type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
       !type(far_field_t), allocatable :: farField
@@ -126,7 +130,7 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir)
+call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt)
 
             case (iJx, iJy, iJz)
                if (ThereAreWires) then
@@ -147,8 +151,8 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
-               allocate (outputs(outputCount)%bulkProbe)
-               call init_solver_output(outputs(outputCount)%bulkProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, outputTypeExtension, control%mpidir)
+               allocate (outputs(outputCount)%bulkCurrentProbe)
+               call init_solver_output(outputs(outputCount)%bulkCurrentProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, outputTypeExtension, control%mpidir)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (iCur, iCurX, iCurY, iCurZ)
@@ -156,7 +160,7 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
                outputs(outputCount)%outputID = VOLUMIC_CURRENT_PROBE_ID
 
                allocate (outputs(outputCount)%volumicCurrentProbe)
-               call init_solver_output(outputs(outputCount)%volumicCurrentProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir)
+               call init_solver_output(outputs(outputCount)%volumicCurrentProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir, sgg%dt)
 
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
@@ -243,8 +247,8 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
          case (WIRE_CHARGE_PROBE_ID)
             call update_solver_output(outputs(i)%wireChargeProbe, step)
          case (BULK_PROBE_ID)
-            fieldReference => get_field_reference(outputs(i)%bulkProbe%fieldComponent, fields)
-            call update_solver_output(outputs(i)%bulkProbe, step, fieldReference)
+            fieldReference => get_field_reference(outputs(i)%bulkCurrentProbe%fieldComponent, fields)
+            call update_solver_output(outputs(i)%bulkCurrentProbe, step, fieldReference)
          case default
             call stoponerror(0, 0, 'Output update not implemented')
          end select
