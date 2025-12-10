@@ -1,5 +1,6 @@
 module mod_wireProbeOutput
    use FDETYPES
+   use Report
    use outputTypes
    use mod_outputUtils
    use wiresHolland_constants
@@ -7,15 +8,28 @@ module mod_wireProbeOutput
 
    implicit none
 
+   private
+
+   !===========================
+   !  Public interface summary
+   !===========================
+   public :: init_wire_current_probe_output
+   public :: init_wire_charge_probe_output
+   public :: update_wire_current_probe_output
+   public :: update_wire_charge_probe_output
+   !===========================
+
 contains
-   subroutine init_wire_current_probe_output(this, iCoord, jCoord, kCoord, node, field, domain, media, outputTypeExtension, mpidir, wiresflavor)
+   subroutine init_wire_current_probe_output(this, coordinates, node, field, domain, media, outputTypeExtension, mpidir, wiresflavor)
       type(wire_current_probe_output_t), intent(out) :: this
-      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord, node
+      integer(kind=SINGLE), intent(in) :: node
       integer(kind=SINGLE), intent(in) :: field, mpidir
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
       character(len=*), intent(in) :: wiresflavor
       type(domain_t), intent(in) :: domain
       type(MediaData_t), pointer, dimension(:), intent(in) :: media
+
+      type(cell_coordinate_t) :: coordinates
 
       type(Thinwires_t), pointer  ::  Hwireslocal
 #ifdef CompileWithBerengerWires
@@ -37,9 +51,7 @@ contains
 
       call find_segment()
 
-      this%xCoord = iCoord
-      this%yCoord = jCoord
-      this%zCoord = kCoord
+      this%coordinates = coordinates
 
       this%currentComponent = field
 
@@ -171,24 +183,23 @@ contains
 
    end subroutine init_wire_current_probe_output
 
-     subroutine init_wire_charge_probe_output(this, iCoord, jCoord, kCoord, node, field, domain, outputTypeExtension, mpidir, wiresflavor)
+     subroutine init_wire_charge_probe_output(this, coordinates, node, field, domain, outputTypeExtension, mpidir, wiresflavor)
       type(wire_charge_probe_output_t), intent(out) :: this
-      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord, node
+      integer(kind=SINGLE), intent(in) ::  node
       integer(kind=SINGLE), intent(in) :: field, mpidir
       character(len=*), intent(in) :: outputTypeExtension, wiresflavor
       type(domain_t), intent(in) :: domain
 
       type(Thinwires_t), pointer  ::  Hwireslocal
       type(CurrentSegments), pointer :: currentSegment
+      type(cell_coordinate_t) :: coordinates
       character(len=BUFSIZE) :: buff
       integer(kind=SINGLE) :: n
       if (trim(adjustl(wiresflavor)) == 'holland' .or. trim(adjustl(wiresflavor)) == 'transition') Hwireslocal => GetHwires()
 
       call find_segment()
 
-      this%xCoord = iCoord
-      this%yCoord = jCoord
-      this%zCoord = kCoord
+      this%coordinates = coordinates
 
       this%chargeComponent = field
 

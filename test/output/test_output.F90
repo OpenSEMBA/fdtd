@@ -104,6 +104,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    use mod_testOutputUtils
    type(point_probe_output_t) :: probe
    type(domain_t):: domain
+   type(cell_coordinate_t) :: coordinates
    character(len=BUFSIZE) :: file_time, file_freq
    character(len=27) :: test_extension
    integer :: n, i
@@ -111,7 +112,11 @@ integer function test_flush_point_probe() bind(c) result(err)
    test_err = 0
    test_extension = 'tmp_cases/flush_point_probe'
    domain = domain_t(0.0_RKIND_tiempo, 10.0_RKIND_tiempo, 0.1_RKIND_tiempo, 10.0_RKIND, 100.0_RKIND, 10, .false.)
-   call init_point_probe_output(probe, 2, 2, 2, iEx, domain, test_extension, 3, 0.1_RKIND_tiempo)
+   
+   coordinates%x = 2
+   coordinates%y = 2
+   coordinates%z = 2
+   call init_point_probe_output(probe, coordinates, iEx, domain, test_extension, 3, 0.1_RKIND_tiempo)
    call create_point_probe_output_files(probe)
 
    n = 10
@@ -161,6 +166,7 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    use mod_testOutputUtils
    type(point_probe_output_t) :: probe
    type(domain_t):: domain
+   type(cell_coordinate_t) :: coordinates
    character(len=BUFSIZE) :: file_time, file_freq
    real(kind=RKIND), allocatable :: expectedTime(:, :), expectedFreq(:, :)
    character(len=36) :: test_extension
@@ -170,7 +176,10 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    test_extension = 'tmp_cases/multiple_flush_point_probe'
 
    domain = domain_t(0.0_RKIND_tiempo, 10.0_RKIND_tiempo, 0.1_RKIND_tiempo, 10.0_RKIND, 100.0_RKIND, 10, .false.)
-   call init_point_probe_output(probe, 2, 2, 2, iEx, domain, test_extension, 3, 0.1_RKIND_tiempo)
+   coordinates%x = 2
+   coordinates%y = 2
+   coordinates%z = 2
+   call init_point_probe_output(probe, coordinates, iEx, domain, test_extension, 3, 0.1_RKIND_tiempo)
    call create_point_probe_output_files(probe)
 
    file_time = trim(adjustl(probe%path))//'_'// &

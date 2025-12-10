@@ -4,19 +4,57 @@ module mod_outputUtils
    use mod_domain
    use report
    implicit none
-   character(len=4), parameter :: datFileExtension = '.dat', timeExtension = 'tm', frequencyExtension = 'fq'
    integer(kind=SINGLE), parameter :: FILE_UNIT = 400
+
+   private
+
+   !===========================
+   !  Public interface summary
+   !===========================
+   public :: get_coordinates_extension
+   public :: get_prefix_extension
+   public :: open_file
+   public :: close_file
+   public :: create_or_clear_file
+   public :: init_frequency_slice
+   public :: getBlockCurrentDirection
+   public :: isPEC
+   public :: isSplitOrAdvanced
+   public :: isThinWire
+   public :: isMediaVacuum
+   public :: isWithinBounds
+   public :: isSurface
+   public :: isFlush
+   public :: computej
+   public :: computeJ1
+   public :: computeJ2
+   !===========================
+
+   !===========================
+   !  Private interface summary
+   !===========================
+   private :: get_rotated_prefix
+   private :: prefix
+   private :: get_probe_coords_extension
+   private :: get_probe_bounds_coords_extension
+   private :: get_delta
+   !===========================
+
+   interface get_coordinates_extension
+     module procedure get_probe_coords_extension, get_probe_bounds_coords_extension
+   end interface get_coordinates_extension
 
 contains
 
-   function get_probe_coords_extension(iCoord, jCoord, kCoord, mpidir) result(ext)
-      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord, mpidir
+   function get_probe_coords_extension(coordinates, mpidir) result(ext)
+      type(cell_coordinate_t) :: coordinates
+      integer(kind=SINGLE), intent(in) ::  mpidir
       character(len=BUFSIZE) :: ext
       character(len=BUFSIZE)  ::  chari, charj, chark
 
-      write (chari, '(i7)') iCoord
-      write (charj, '(i7)') jCoord
-      write (chark, '(i7)') kCoord
+      write (chari, '(i7)') coordinates%x
+      write (charj, '(i7)') coordinates%y
+      write (chark, '(i7)') coordinates%z
 
 #if CompileWithMPI
       if (mpidir == 3) then
@@ -35,18 +73,19 @@ contains
       return
    end function get_probe_coords_extension
 
-   function get_probe_bounds_coords_extension(iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, mpidir) result(ext)
-      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, mpidir
+   function get_probe_bounds_coords_extension(lowerCoordinates, upperCoordinates, mpidir) result(ext)
+      type(cell_coordinate_t) :: lowerCoordinates, upperCoordinates
+      integer(kind=SINGLE), intent(in) :: mpidir
       character(len=BUFSIZE) :: ext
       character(len=BUFSIZE)  ::  chari, charj, chark, chari2, charj2, chark2
 
-      write (chari, '(i7)') iCoord
-      write (charj, '(i7)') jCoord
-      write (chark, '(i7)') kCoord
+      write (chari, '(i7)') lowerCoordinates%x
+      write (charj, '(i7)') lowerCoordinates%y
+      write (chark, '(i7)') lowerCoordinates%z
 
-      write (chari2, '(i7)') i2Coord
-      write (charj2, '(i7)') j2Coord
-      write (chark2, '(i7)') k2Coord
+      write (chari2, '(i7)') upperCoordinates%x
+      write (charj2, '(i7)') upperCoordinates%y
+      write (chark2, '(i7)') upperCoordinates%z
 
 #if CompileWithMPI
       if (mpidir == 3) then

@@ -17,6 +17,10 @@ module outputTypes
    integer, parameter :: FREQUENCY_DOMAIN = 1
    integer, parameter :: BOTH_DOMAIN = 2
 
+   character(len=4), parameter :: datFileExtension = '.dat'
+   character(len=4), parameter :: timeExtension = 'tm'
+   character(len=4), parameter :: frequencyExtension = 'fq'
+
    type :: domain_t
       real(kind=RKIND_tiempo) :: tstart = 0.0_RKIND_tiempo, tstop = 0.0_RKIND_tiempo, tstep = 0.0_RKIND_tiempo
       real(kind=RKIND)        :: fstart = 0.0_RKIND, fstop = 0.0_RKIND, fstep
@@ -24,6 +28,10 @@ module outputTypes
       integer(kind=SINGLE)    :: domainType = UNDEFINED_DOMAIN
       logical                 :: logarithmicSpacing = .false.
    end type domain_t
+
+   type cell_coordinate_t
+      integer(kind=SINGLE) :: x,y,z
+   end type cell_coordinate_t
 
    type field_data_t
       real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: x => NULL()
@@ -42,7 +50,7 @@ module outputTypes
    type point_probe_output_t
       integer(kind=SINGLE) :: columnas = 2_SINGLE !reference and field
       type(domain_t) :: domain
-      integer(kind=SINGLE) :: xCoord, yCoord, zCoord
+      type(cell_coordinate_t) :: coordinates
       integer(kind=SINGLE) :: fileUnitTime, fileUnitFreq
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: fieldComponent
@@ -59,7 +67,7 @@ module outputTypes
    type wire_charge_probe_output_t
       integer(kind=SINGLE) :: columnas = 6_SINGLE !reference, corriente, -e*dl, vplus, vminus, vplus-vminus
       type(domain_t) :: domain
-      integer(kind=SINGLE) :: xCoord, yCoord, zCoord
+      type(cell_coordinate_t) :: coordinates
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: chargeComponent
       integer(kind=SINGLE) :: sign = +1
@@ -79,7 +87,7 @@ module outputTypes
    type wire_current_probe_output_t
       integer(kind=SINGLE) :: columnas = 6_SINGLE !reference, corriente, -e*dl, vplus, vminus, vplus-vminus
       type(domain_t) :: domain
-      integer(kind=SINGLE) :: xCoord, yCoord, zCoord
+      type(cell_coordinate_t) :: coordinates
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: currentComponent
       integer(kind=SINGLE) :: sign = +1
@@ -100,8 +108,8 @@ module outputTypes
    type bulk_current_probe_output_t
       integer(kind=SINGLE) :: columnas = 2_SINGLE !reference and field
       type(domain_t) :: domain
-      integer(kind=SINGLE) :: xCoord, yCoord, zCoord
-      integer(kind=SINGLE) :: x2Coord, y2Coord, z2Coord
+      type(cell_coordinate_t) :: lowerBound
+      type(cell_coordinate_t) :: upperBound
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: fieldComponent
       integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
@@ -113,8 +121,8 @@ module outputTypes
    type volumic_current_probe_t
       integer(kind=SINGLE) :: columnas = 4_SINGLE !reference and current components
       type(domain_t) :: domain
-      integer(kind=SINGLE) :: xCoord, yCoord, zCoord
-      integer(kind=SINGLE) :: x2Coord, y2Coord, z2Coord
+      type(cell_coordinate_t) :: lowerBound
+      type(cell_coordinate_t) :: upperBound
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: fieldComponent
 
@@ -154,7 +162,23 @@ module outputTypes
     !!!!!Pending
    end type far_field_probe_output_t
    type movie_probe_output_t
-    !!!!!Pending
+      integer(kind=SINGLE) :: columnas = 4_SINGLE !reference and current components
+      type(domain_t) :: domain
+      type(cell_coordinate_t) :: lowerBound
+      type(cell_coordinate_t) :: upperBound
+      character(len=BUFSIZE) :: path
+      integer(kind=SINGLE) :: fieldComponent
+
+      !Intent storage order:
+      !(:) == (timeinstance) => timeValue
+      !(:,:) == (timeInstance, componentId) => escalar
+
+      !Time Domain (requires first allocation)
+      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
+      real(kind=RKIND_tiempo), dimension(:), allocatable :: timeStep
+      real(kind=RKIND), dimension(:, :), allocatable :: xValueForTime
+      real(kind=RKIND), dimension(:, :), allocatable :: yValueForTime
+      real(kind=RKIND), dimension(:, :), allocatable :: zValueForTime
    end type movie_probe_output_t
    type frequency_slice_probe_output_t
     !!!!!Pending

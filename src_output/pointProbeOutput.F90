@@ -7,9 +7,9 @@ module mod_pointProbeOutput
    implicit none
 
 contains
-   subroutine init_point_probe_output(this, iCoord, jCoord, kCoord, field, domain, outputTypeExtension, mpidir, timeInterval)
+   subroutine init_point_probe_output(this, coordinates, field, domain, outputTypeExtension, mpidir, timeInterval)
       type(point_probe_output_t), intent(out) :: this
-      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord
+      type(cell_coordinate_t) :: coordinates
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=*), intent(in) :: outputTypeExtension
       type(domain_t), intent(in) :: domain
@@ -18,9 +18,7 @@ contains
 
       integer(kind=SINGLE) :: i
 
-      this%xCoord = iCoord
-      this%yCoord = jCoord
-      this%zCoord = kCoord
+      this%coordinates = coordinates
 
       this%fieldComponent = field
 
@@ -48,37 +46,13 @@ contains
       function get_output_path() result(outputPath)
          character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_probe_bounds_extension()
+         probeBoundsExtension = get_coordinates_extension(this%coordinates, mpidir)
          prefixFieldExtension = get_prefix_extension(field, mpidir)
          outputPath = &
             trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
          return
       end function get_output_path
 
-      function get_probe_bounds_extension() result(ext)
-         character(len=BUFSIZE) :: ext
-         character(len=BUFSIZE)  ::  chari, charj, chark
-
-         write (chari, '(i7)') iCoord
-         write (charj, '(i7)') jCoord
-         write (chark, '(i7)') kCoord
-
-#if CompileWithMPI
-         if (mpidir == 3) then
-            ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
-         elseif (mpidir == 2) then
-            ext = trim(adjustl(charj))//'_'//trim(adjustl(chark))//'_'//trim(adjustl(chari))
-         elseif (mpidir == 1) then
-            ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
-         else
-            call stoponerror('Buggy error in mpidir. ')
-         end if
-#else
-         ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
-#endif
-
-         return
-      end function get_probe_bounds_extension
    end subroutine init_point_probe_output
 
    subroutine create_point_probe_output_files(this)
@@ -111,7 +85,7 @@ contains
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          this%serializedTimeSize = this%serializedTimeSize + 1
          this%timeStep(this%serializedTimeSize) = step
-         this%valueForTime(this%serializedTimeSize) = field(this%xCoord, this%yCoord, this%zCoord)
+         this%valueForTime(this%serializedTimeSize) = field(this%coordinates%x, this%coordinates%y, this%coordinates%z)
       end if
 
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
@@ -119,12 +93,12 @@ contains
          case (iEx, iEy, iEz)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
-                  this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*(this%auxExp_E(iter)**step)
+                  this%valueForFreq(iter) + field(this%coordinates%x, this%coordinates%y, this%coordinates%z)*(this%auxExp_E(iter)**step)
             end do
          case (iHx, iHy, iHz)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
-                  this%valueForFreq(iter) + field(this%xCoord, this%yCoord, this%zCoord)*(this%auxExp_H(iter)**step)
+                  this%valueForFreq(iter) + field(this%coordinates%x, this%coordinates%y, this%coordinates%z)*(this%auxExp_H(iter)**step)
             end do
          end select
 

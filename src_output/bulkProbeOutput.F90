@@ -7,24 +7,17 @@ module mod_bulkProbeOutput
 
 contains
 
-   subroutine init_bulk_probe_output(this, iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, field, domain, outputTypeExtension, mpidir)
+   subroutine init_bulk_probe_output(this, lowerBound, upperBound, field, domain, outputTypeExtension, mpidir)
       type(bulk_current_probe_output_t), intent(out) :: this
-      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord
-      integer(kind=SINGLE), intent(in) :: i2Coord, j2Coord, k2Coord
+      type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
       type(domain_t), intent(in) :: domain
 
       integer(kind=SINGLE) :: i
 
-      this%xCoord = iCoord
-      this%yCoord = jCoord
-      this%zCoord = kCoord
-
-      this%x2Coord = i2Coord
-      this%y2Coord = j2Coord
-      this%z2Coord = k2Coord
-
+      this%lowerBound = lowerBound
+      this%upperBound = upperBound
       this%fieldComponent = field
 
       this%domain = domain
@@ -35,45 +28,12 @@ contains
       function get_output_path() result(outputPath)
          character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_probe_bounds_extension()
+         probeBoundsExtension = get_coordinates_extension(this%lowerBound, this%upperBound, mpidir)
          prefixFieldExtension = get_prefix_extension(field, mpidir)
          outputPath = &
-            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//trim(adjustl(probeBoundsExtension))
+            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
          return
       end function get_output_path
-
-      function get_probe_bounds_extension() result(ext)
-         character(len=BUFSIZE) :: ext
-         character(len=BUFSIZE)  ::  chari, charj, chark, chari2, charj2, chark2
-
-         write (chari, '(i7)') iCoord
-         write (charj, '(i7)') jCoord
-         write (chark, '(i7)') kCoord
-
-         write (chari2, '(i7)') i2Coord
-         write (charj2, '(i7)') j2Coord
-         write (chark2, '(i7)') k2Coord
-
-#if CompileWithMPI
-         if (mpidir == 3) then
-            ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))//'__'// &
-                  trim(adjustl(chari2))//'_'//trim(adjustl(charj2))//'_'//trim(adjustl(chark2))
-         elseif (mpidir == 2) then
-            ext = trim(adjustl(charj))//'_'//trim(adjustl(chark))//'_'//trim(adjustl(chari))//'__'// &
-                  trim(adjustl(charj2))//'_'//trim(adjustl(chark2))//'_'//trim(adjustl(chari2))
-         elseif (mpidir == 1) then
-            ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))//'__'// &
-                  trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
-         else
-            call stoponerror('Buggy error in mpidir. ')
-         end if
-#else
-         ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))//'__'// &
-               trim(adjustl(chari2))//'_'//trim(adjustl(charj2))//'_'//trim(adjustl(chark2))
-#endif
-
-         return
-      end function get_probe_bounds_extension
 
    end subroutine init_bulk_probe_output
 
@@ -89,12 +49,12 @@ contains
       real(kind=RKIND), pointer, dimension(:, :, :) :: xF, yF, zF
       real(kind=RKIND), pointer, dimension(:) :: dx, dy, dz
 
-      i1_m = this%xCoord
-      i2_m = this%x2Coord
-      j1_m = this%yCoord
-      j2_m = this%y2Coord
-      k1_m = this%zCoord
-      k2_m = this%z2Coord
+      i1_m = this%lowerBound%x
+      j1_m = this%lowerBound%y
+      k1_m = this%lowerBound%z
+      i2_m = this%upperBound%x
+      j2_m = this%upperBound%y
+      k2_m = this%upperBound%z
 
       i1 = i1_m
       j1 = i2_m

@@ -2,16 +2,31 @@ module mod_volumicProbeOutput
    use FDETYPES
    use mod_domain
    use mod_outputUtils
-
    implicit none
-   private :: isRelevantCell, isRelevantSurfaceCell
+   private
+
+   !===========================
+   !  Public interface summary
+   !===========================
+   public :: init_volumic_probe_output
+   public :: update_volumic_probe_output
+   public :: flush_volumic_probe_output
+   !===========================
+
+   !===========================
+   !  Private interface summary
+   !===========================
+   private :: isRelevantCell
+   private :: isRelevantSurfaceCell
+   private :: updateComplexComponent
+   private :: count_relevant_geometries
+   !===========================
 
 contains
 
-  subroutine init_volumic_probe_output(this, iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, field, domain, geometryMedia, registeredMedia, sinpml_fullsize, outputTypeExtension, mpidir, timeInterval)
+  subroutine init_volumic_probe_output(this, lowerBound, upperBound, field, domain, geometryMedia, registeredMedia, sinpml_fullsize, outputTypeExtension, mpidir, timeInterval)
       type(volumic_current_probe_t), intent(inout) :: this
-      integer(kind=SINGLE), intent(in) :: iCoord, jCoord, kCoord
-      integer(kind=SINGLE), intent(in) :: i2Coord, j2Coord, k2Coord
+      type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
 
@@ -25,16 +40,9 @@ contains
 
       integer(kind=SINGLE) :: i, relevantGeometriesCount
 
-      this%xCoord = iCoord
-      this%yCoord = jCoord
-      this%zCoord = kCoord
-
-      this%x2Coord = i2Coord
-      this%y2Coord = j2Coord
-      this%z2Coord = k2Coord
-
+      this%lowerBound = lowerBound
+      this%upperBound = upperBound
       this%fieldComponent = field
-
       this%domain = domain
       this%path = get_output_path()
 
@@ -75,7 +83,7 @@ contains
       function get_output_path() result(outputPath)
          character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_probe_bounds_coords_extension(iCoord, jCoord, kCoord, i2Coord, j2Coord, k2Coord, mpidir)
+         probeBoundsExtension = get_coordinates_extension(this%lowerBound, this%upperBound, mpidir)
          prefixFieldExtension = get_prefix_extension(field, mpidir)
          outputPath = &
             trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
@@ -93,9 +101,9 @@ contains
       integer(kind=SINGLE) :: n
 
       n = 0_SINGLE
-      do i = this%xCoord, this%x2Coord
-      do j = this%yCoord, this%y2Coord
-      do k = this%zCoord, this%z2Coord
+      do i = this%lowerBound%x, this%upperBound%x
+      do j = this%lowerBound%y, this%upperBound%y
+      do k = this%lowerBound%z, this%upperBound%z
          do field = iEx, iEz
             if (isRelevantCell(field, i, j, k, geometryMedia, registeredMedia, sinpml_fullsize)) then
                n = n + 1
@@ -122,6 +130,14 @@ contains
 
       integer(kind=SINGLE) :: Efield, Hfield, i, j, k, conta
       integer(kind=SINGLE) :: i1, i2, j1, j2, k1, k2
+
+      i1 = this%lowerBound%x
+      j1 = this%lowerBound%y
+      k1 = this%lowerBound%z
+
+      i2 = this%upperBound%x
+      j2 = this%upperBound%y
+      k2 = this%upperBound%z
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          conta = 0
@@ -237,6 +253,10 @@ contains
       end subroutine update_current_surfaces
 
    end subroutine update_volumic_probe_output
+
+   subroutine flush_volumic_probe_output
+      !!TODO
+   end subroutine flush_volumic_probe_output
 
    logical function isRelevantCell(Efield, I, J, K, geometryMedia, registeredMedia, sinpml_fullsize)
       type(media_matrices_t), pointer, intent(in) :: geometryMedia

@@ -1,5 +1,6 @@
 module output
    use FDETYPES
+   use Report
    use mod_domain
    use mod_outputUtils
    use mod_pointProbeOutput
@@ -97,8 +98,9 @@ contains
       logical :: ThereAreWires
 
       type(domain_t) :: domain
+      type(cell_coordinate_t) :: lowerBound, upperBound
       integer(kind=SINGLE) :: i, ii, outputRequestType
-      integer(kind=SINGLE) :: I1, J1, K1, I2, J2, K2, NODE
+      integer(kind=SINGLE) :: NODE
       integer(kind=SINGLE) :: outputCount
       character(len=BUFSIZE) :: outputTypeExtension
 
@@ -112,12 +114,13 @@ contains
 
       do ii = 1, sgg%NumberRequest
          do i = 1, sgg%Observation(ii)%nP
-            I1 = sgg%observation(ii)%P(i)%XI
-            J1 = sgg%observation(ii)%P(i)%YI
-            K1 = sgg%observation(ii)%P(i)%ZI
-            I2 = sgg%observation(ii)%P(i)%XE
-            J2 = sgg%observation(ii)%P(i)%YE
-            K2 = sgg%observation(ii)%P(i)%ZE
+            lowerBound%x = sgg%observation(ii)%P(i)%XI
+            lowerBound%y = sgg%observation(ii)%P(i)%YI
+            lowerBound%z = sgg%observation(ii)%P(i)%ZI
+
+            upperBound%x = sgg%observation(ii)%P(i)%XE
+            upperBound%y = sgg%observation(ii)%P(i)%YE
+            upperBound%z = sgg%observation(ii)%P(i)%ZE
             NODE = sgg%observation(ii)%P(i)%NODE
 
             domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, control%finaltimestep)
@@ -130,7 +133,7 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt)
+               call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt)
 
             case (iJx, iJy, iJz)
                if (ThereAreWires) then
@@ -138,7 +141,7 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
-                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, I1, J1, K1, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
+                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
                end if
 
             case (iQx, iQy, iQz)
@@ -146,13 +149,13 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
 
                allocate (outputs(outputCount)%wireChargeProbe)
-               call init_solver_output(outputs(outputCount)%wireChargeProbe, I1, J1, K1, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
+               call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
                allocate (outputs(outputCount)%bulkCurrentProbe)
-               call init_solver_output(outputs(outputCount)%bulkCurrentProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, outputTypeExtension, control%mpidir)
+               call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (iCur, iCurX, iCurY, iCurZ)
@@ -160,7 +163,7 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
                outputs(outputCount)%outputID = VOLUMIC_CURRENT_PROBE_ID
 
                allocate (outputs(outputCount)%volumicCurrentProbe)
-               call init_solver_output(outputs(outputCount)%volumicCurrentProbe, I1, J1, K1, I2, J2, K2, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir, sgg%dt)
+               call init_solver_output(outputs(outputCount)%volumicCurrentProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir, sgg%dt)
 
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
@@ -180,8 +183,8 @@ call init_solver_output(outputs(outputCount)%pointProbe, I1, J1, K1, outputReque
 
          if (observation%TimeDomain) then
             newdomain = domain_t(real(observation%InitialTime, kind=RKIND_tiempo), &
-                                      real(observation%FinalTime, kind=RKIND_tiempo), &
-                                      real(observation%TimeStep, kind=RKIND_tiempo))
+                                 real(observation%FinalTime, kind=RKIND_tiempo), &
+                                 real(observation%TimeStep, kind=RKIND_tiempo))
 
             newdomain%tstep = max(newdomain%tstep, simulationTimeStep)
 
