@@ -2722,6 +2722,7 @@ contains
          type(polyline_t) :: polyline
          type(aux_node_t) :: res
          integer :: cable_index
+         integer :: stat
          call this%core%get_child(termination_list, index, termination)
          
          res%node%termination%termination_type = readTerminationType(termination)
@@ -2735,17 +2736,18 @@ contains
          res%node%side = label
          res%node%conductor_in_cable = index
 
-         call elemIdToCable%get(key(id), value=cable_index)
+         call elemIdToCable%get(key(id), value=cable_index, stat=stat)
+         if (stat == 0) then
          res%node%belongs_to_cable => mtln_res%cables(cable_index)%ptr
 
          polyline = this%mesh%getPolyline(id)
-
-         if (label == TERMINAL_NODE_SIDE_INI) then
-            res%cId = polyline%coordIds(1)
-            res%relPos = this%mesh%getCoordinate(polyline%coordIds(1))
-         else if (label == TERMINAL_NODE_SIDE_END) then
-            res%cId = polyline%coordIds(ubound(polyline%coordIds,1))
-            res%relPos = this%mesh%getCoordinate(polyline%coordIds(ubound(polyline%coordIds,1)))
+            if (label == TERMINAL_NODE_SIDE_INI) then
+               res%cId = polyline%coordIds(1)
+               res%relPos = this%mesh%getCoordinate(polyline%coordIds(1))
+            else if (label == TERMINAL_NODE_SIDE_END) then
+               res%cId = polyline%coordIds(ubound(polyline%coordIds,1))
+               res%relPos = this%mesh%getCoordinate(polyline%coordIds(ubound(polyline%coordIds,1)))
+            end if
          end if
       end function
 
@@ -3176,9 +3178,10 @@ contains
          call elemIdToCable%check_key(key(id), mStat)
          if (mStat /= 0) then
             res => null()
+         else
+            call elemIdToCable%get(key(id), value=index)
+            res => cables(index)%ptr
          end if
-         call elemIdToCable%get(key(id), value=index)
-         res => cables(index)%ptr
       end function
 
       function findConnectorWithId(conn_Id) result(res)
