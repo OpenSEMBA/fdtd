@@ -59,7 +59,11 @@ contains
       integer, allocatable :: shp(:)
       character(len=:), allocatable :: nm
 
-      nm = merge(name, "array", present(name))
+      if (present(name)) then
+          nm = trim(adjustl(name))
+      else
+          nm = "array"
+      end if
 
       rank_arr = rank(arr)
       shp = shape(arr)
@@ -82,7 +86,11 @@ contains
       integer, allocatable :: shp(:)
       character(len=:), allocatable :: nm
 
-      nm = merge(name, "array", present(name))
+      if (present(name)) then
+          nm = trim(adjustl(name))
+      else
+          nm = "array"
+      end if
 
       rank_arr = rank(arr)
       shp = shape(arr)
@@ -105,7 +113,11 @@ contains
       integer :: siz
       character(len=:), allocatable :: nm
 
-      nm = merge(name, "array", present(name))
+      if (present(name)) then
+          nm = trim(adjustl(name))
+      else
+          nm = "array"
+      end if
 
       rank_arr = rank(arr)
       siz = size(arr)
@@ -200,7 +212,7 @@ contains
       type(SGGFDTDINFO) :: sgg
       
       sgg%NumMedia = 3
-      allocate(sgg%Med(1:sgg%NumMedia))
+      allocate(sgg%Med(0:sgg%NumMedia))
       sgg%Med = create_basic_media()
       sgg%NumberRequest = 1
       sgg%dt = 0.1_RKIND_tiempo
