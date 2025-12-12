@@ -699,8 +699,8 @@ contains
     allocate (InvEps(0:sgg%NumMedia), InvMu(0:sgg%NumMedia))
 
     incident = .false.
-    InvEps(0:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia)%Epr)
-    InvMu(0:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia)%Mur)
+    InvEps(1:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(1:sgg%NumMedia)%Epr)
+    InvMu(1:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(1:sgg%NumMedia)%Mur)
 
     allocate (output(1:sgg%NumberRequest))
     output(1:sgg%NumberRequest)%Trancos = -1

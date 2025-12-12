@@ -59,7 +59,11 @@ contains
       integer, allocatable :: shp(:)
       character(len=:), allocatable :: nm
 
-      nm = merge(name, "array", present(name))
+      if (present(name)) then
+          nm = trim(adjustl(name))
+      else
+          nm = "array"
+      end if
 
       rank_arr = rank(arr)
       shp = shape(arr)
@@ -82,7 +86,11 @@ contains
       integer, allocatable :: shp(:)
       character(len=:), allocatable :: nm
 
-      nm = merge(name, "array", present(name))
+      if (present(name)) then
+          nm = trim(adjustl(name))
+      else
+          nm = "array"
+      end if
 
       rank_arr = rank(arr)
       shp = shape(arr)
@@ -105,7 +113,11 @@ contains
       integer :: siz
       character(len=:), allocatable :: nm
 
-      nm = merge(name, "array", present(name))
+      if (present(name)) then
+          nm = trim(adjustl(name))
+      else
+          nm = "array"
+      end if
 
       rank_arr = rank(arr)
       siz = size(arr)

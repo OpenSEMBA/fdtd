@@ -3483,29 +3483,54 @@ contains
          end do
       end function
 
+      pure integer function clip(i, lo, hi)
+         integer, intent(in) :: i, lo, hi
+         clip = max(lo, min(i, hi))
+      end function clip
+
       function getdualBoxYZ(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         res%min = [-0.5*despl%desY(segment%y-1),-0.5*despl%desZ(segment%z-1)]
-         res%max = [ 0.5*despl%desY(segment%y),   0.5*despl%desZ(segment%z)]
+         integer :: y0, y1, z0, z1
+
+         y0 = clip(segment%y-1, 0, size(despl%desY)-1)
+         y1 = clip(segment%y,   0, size(despl%desY)-1)
+         z0 = clip(segment%z-1, 0, size(despl%desZ)-1)
+         z1 = clip(segment%z,   0, size(despl%desZ)-1)
+
+         res%min = [-0.5 * despl%desY(y0), -0.5 * despl%desZ(z0)]
+         res%max = [ 0.5 * despl%desY(y1),  0.5 * despl%desZ(z1)]
       end function
 
       function getdualBoxXY(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         res%min = [-0.5*despl%desX(segment%x-1),-0.5*despl%desY(segment%y-1)]
-         res%max = [ 0.5*despl%desX(segment%x),   0.5*despl%desY(segment%y)]
+         integer :: x0, x1, y0, y1
+
+         x0 = clip(segment%x-1, 0, size(despl%desX)-1)
+         x1 = clip(segment%x,   0, size(despl%desX)-1)
+         y0 = clip(segment%y-1, 0, size(despl%desY)-1)
+         y1 = clip(segment%y,   0, size(despl%desY)-1)
+
+         res%min = [-0.5 * despl%desX(x0), -0.5 * despl%desY(y0)]
+         res%max = [ 0.5 * despl%desX(x1),  0.5 * despl%desY(y1)]
       end function
 
       function getdualBoxZX(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         res%min = [-0.5*despl%desZ(segment%z-1),-0.5*despl%desX(segment%x-1)]
-         res%max = [ 0.5*despl%desZ(segment%z),   0.5*despl%desX(segment%x)]
+         integer :: z0, z1, x0, x1
 
+         z0 = clip(segment%z-1, 0, size(despl%desZ)-1)
+         z1 = clip(segment%z,   0, size(despl%desZ)-1)
+         x0 = clip(segment%x-1, 0, size(despl%desX)-1)
+         x1 = clip(segment%x,   0, size(despl%desX)-1)
+
+         res%min = [-0.5 * despl%desZ(z0), -0.5 * despl%desX(x0)]
+         res%max = [ 0.5 * despl%desZ(z1),  0.5 * despl%desX(x1)]
       end function
 
       function buildStepSize(segments, despl) result(res)
