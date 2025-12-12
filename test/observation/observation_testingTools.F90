@@ -212,7 +212,7 @@ contains
       type(SGGFDTDINFO) :: sgg
       
       sgg%NumMedia = 3
-      allocate(sgg%Med(1:sgg%NumMedia))
+      allocate(sgg%Med(0:sgg%NumMedia))
       sgg%Med = create_basic_media()
       sgg%NumberRequest = 1
       sgg%dt = 0.1_RKIND_tiempo
