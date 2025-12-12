@@ -162,6 +162,7 @@ module outputTypes
     !!!!!Pending
    end type far_field_probe_output_t
    type movie_probe_output_t
+      integer(kind=SINGLE) :: PDVUnit
       integer(kind=SINGLE) :: columnas = 4_SINGLE !reference and current components
       type(domain_t) :: domain
       type(cell_coordinate_t) :: lowerBound
@@ -169,11 +170,14 @@ module outputTypes
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: fieldComponent
 
+      integer(kind=SINGLE), dimension(:,:), allocatable :: coords
+
       !Intent storage order:
       !(:) == (timeinstance) => timeValue
       !(:,:) == (timeInstance, componentId) => escalar
 
       !Time Domain (requires first allocation)
+      integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
       integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
       real(kind=RKIND_tiempo), dimension(:), allocatable :: timeStep
       real(kind=RKIND), dimension(:, :), allocatable :: xValueForTime

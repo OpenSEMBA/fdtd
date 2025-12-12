@@ -7,6 +7,7 @@ module output
    use mod_wireProbeOutput
    use mod_bulkProbeOutput
    use mod_volumicProbeOutput
+   use mod_movieProbeOutput
 
    implicit none
 

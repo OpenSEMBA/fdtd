@@ -7,5 +7,9 @@ add_library(fdtd-output
   "wireProbeOutput.F90"
   "bulkProbeOutput.F90"
   "volumicProbeOutput.F90"
+  "movieProbeOutput.F90"
 )
-target_link_libraries(fdtd-output semba-types )
+target_link_libraries(fdtd-output
+ semba-types
+ VTKFortran::VTKFortran 
+)

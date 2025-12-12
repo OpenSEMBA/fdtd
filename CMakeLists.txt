@@ -186,6 +186,8 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 endif()
 
+add_subdirectory(external/VTKFortran)
+
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
 	add_subdirectory(test)
