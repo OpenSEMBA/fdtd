@@ -6,7 +6,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module  FDETYPES
 
-
 #ifdef CompileWithOpenMP
    use omp_lib
 #endif
@@ -620,6 +619,7 @@ module  FDETYPES
       logical  :: thereArePMLMagneticMedia
       CHARACTER (LEN=BUFSIZE) :: nEntradaRoot
       type (coorsxyzP)  ::  Punto
+
    end type
 
    type media_matrices_t
@@ -846,6 +846,8 @@ contains
       direction_eq = direction_eq .and. (a%orientation == b%orientation)
 
    end function
+
+   
 end module FDETYPES
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

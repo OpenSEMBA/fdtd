@@ -1,8 +1,42 @@
 module FDETYPES_TOOLS
    use FDETYPES
    use NFDETypes
-
    implicit none
+   private
+
+   !===========================
+   !  Public interface summary
+   !===========================
+   public :: observation_domain_t
+   public :: initialize_observation_domain_logical_flags
+   public :: initialize_observation_time_domain
+   public :: initialize_observation_frequency_domain
+   public :: initialize_observation_phi_domain
+   public :: initialize_observation_theta_domain
+   public :: create_observable
+   public :: set_observation
+   public :: init_time_array
+   public :: create_limit_t
+   public :: create_xyzlimit_t
+   public :: create_xyz_limit_array
+   public :: create_tag_list
+   public :: create_geometry_media
+   public :: create_geometry_media_from_sggAlloc
+   public :: create_thinWire_simulation_material
+   public :: init_simulation_material_list
+   public :: create_facesNF2FF
+   public :: create_control_flags
+   public :: add_simulation_material
+   public :: assing_material_id_to_media_matrix_coordinate
+   !===========================
+
+   !===========================
+   !  Private interface summary
+   !===========================
+
+   !===========================
+
+   
    real(kind=rkind) :: UTILEPS0 = 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
    real(kind=rkind) :: UTILMU0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
    type :: observation_domain_t
@@ -30,6 +64,18 @@ module FDETYPES_TOOLS
    end type observation_domain_t
 
 contains
+
+   function create_xyzlimit_t(XI, XE, YI, YE, ZI, ZE) result(r)
+      type(limit_t) :: r
+      integer(kind=4), intent(in) :: XI, XE, YI, YE, ZI, ZE
+      r%XI = XI
+      r%XE = XE
+      r%YI = YI
+      r%YE = YE
+      r%ZI = ZI
+      r%ZE = ZE
+   end function create_xyzlimit_t
+
    function create_limit_t(XI, XE, YI, YE, ZI, ZE, NX, NY, NZ) result(r)
       type(limit_t) :: r
       integer(kind=4), intent(in) :: XI, XE, YI, YE, ZI, ZE, NX, NY, NZ
@@ -63,7 +109,31 @@ contains
       r%face%z(:, :, :) = 0
    end function create_tag_list
 
-   function create_media(sggAlloc) result(r)
+   subroutine create_geometry_media(res, xi, xe, yi, ye, zi, ze)
+      integer(kind=SINGLE) :: xi, yi, zi, xe, ye, ze
+      type(media_matrices_t), intent(inout) :: res
+
+      allocate (res%sggMtag(xi:xe, yi:ye, zi:ze))
+
+      allocate (res%sggMiNo(xi:xe, yi:ye, zi:ze))
+      allocate (res%sggMiEx(xi:xe, yi:ye, zi:ze))
+      allocate (res%sggMiEy(xi:xe, yi:ye, zi:ze))
+      allocate (res%sggMiEz(xi:xe, yi:ye, zi:ze))
+      allocate (res%sggMiHx(xi:xe, yi:ye, zi:ze))
+      allocate (res%sggMiHy(xi:xe, yi:ye, zi:ze))
+      allocate (res%sggMiHz(xi:xe, yi:ye, zi:ze))
+
+      res%sggMtag = 1_SINGLE
+      res%sggMiNo = 1_SINGLE
+      res%sggMiEx = 1_SINGLE
+      res%sggMiEy = 1_SINGLE
+      res%sggMiEz = 1_SINGLE
+      res%sggMiHx = 1_SINGLE
+      res%sggMiHy = 1_SINGLE
+      res%sggMiHz = 1_SINGLE
+   end subroutine create_geometry_media
+
+   function create_geometry_media_from_sggAlloc(sggAlloc) result(r)
       type(XYZlimit_t), dimension(6), intent(in) :: sggAlloc
       type(media_matrices_t) :: r
 
@@ -78,7 +148,7 @@ contains
       allocate (r%sggMiHy(sggAlloc(iHy)%XI:sggAlloc(iHy)%XE, sggAlloc(iHy)%YI:sggAlloc(iHy)%YE, sggAlloc(iHy)%ZI:sggAlloc(iHy)%ZE))
       allocate (r%sggMiHz(sggAlloc(iHz)%XI:sggAlloc(iHz)%XE, sggAlloc(iHz)%YI:sggAlloc(iHz)%YE, sggAlloc(iHz)%ZI:sggAlloc(iHz)%ZE))
 
-      r%sggMtag(:, :, :) = 0
+      r%sggMtag(:, :, :) = 1
       r%sggMiNo(:, :, :) = 1
       r%sggMiEx(:, :, :) = 1
       r%sggMiEy(:, :, :) = 1
@@ -86,7 +156,7 @@ contains
       r%sggMiHx(:, :, :) = 1
       r%sggMiHy(:, :, :) = 1
       r%sggMiHz(:, :, :) = 1
-   end function create_media
+   end function create_geometry_media_from_sggAlloc
 
    function create_control_flags(layoutnumber, size, mpidir, finaltimestep, &
                                  nEntradaRoot, wiresflavor, wirecrank, &
@@ -132,50 +202,24 @@ contains
 
    end function create_control_flags
 
-   function create_base_sgg(dt, time_steps) result(sgg)
+   subroutine init_simulation_material_list(simulationMaterials)
       implicit none
-      type(SGGFDTDINFO) :: sgg
-      type(MediaData_t), dimension(:), allocatable, target :: media
-      integer, optional, intent(in) :: time_steps
-      real(kind=RKIND_tiempo), optional, intent(in) :: dt
-
-      integer(kind=SINGLE) :: nTimes
-
-      media = create_base_simulation_material_list()
-      sgg%NumMedia = 3
-      sgg%med => media
-
-      sgg%dt = merge(dt, 0.1_RKIND_tiempo, present(dt))
-
-      nTimes = merge(time_steps, 100, present(time_steps))
-      allocate (sgg%tiempo(nTimes))
-      sgg%tiempo = create_time_array(nTimes, sgg%dt)
-
-      sgg%Sweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
-      sgg%SINPMLSweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
-      sgg%NumPlaneWaves = 1
-      sgg%alloc = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
-
-   end function create_base_sgg
-
-   function  create_base_simulation_material_list() result(simulationMaterials)
-      implicit none
-      type(MediaData_t), dimension(:), allocatable :: simulationMaterials
-      if (allocated(simulationMaterials)) deallocate(simulationMaterials)
-      allocate(simulationMaterials(0:2))
+      type(MediaData_t), dimension(:), allocatable, intent(out) :: simulationMaterials
+      if (allocated(simulationMaterials)) deallocate (simulationMaterials)
+      allocate (simulationMaterials(0:2))
       simulationMaterials(0) = create_pec_simulation_material()
       simulationMaterials(1) = get_default_mediadata()
       simulationMaterials(2) = create_pmc_simulation_material()
 
-   end function create_base_simulation_material_list
+   end subroutine init_simulation_material_list
 
-   function create_time_array(array_size, interval) result(arr)
+   subroutine init_time_array(arr, array_size, interval)
       integer, intent(in), optional :: array_size
       real(kind=RKIND_tiempo), intent(in), optional :: interval
       integer(kind=4) :: i
       integer :: size_val
       real(kind=RKIND_tiempo) :: interval_val
-      real(kind=RKIND_tiempo), pointer, dimension(:) :: arr
+      real(kind=RKIND_tiempo), pointer, dimension(:), intent(out) :: arr
 
       size_val = merge(array_size, 100, present(array_size))
       interval_val = merge(interval, 1.0_RKIND_tiempo, present(interval))
@@ -185,11 +229,7 @@ contains
       DO i = 1, size_val
          arr(i) = (i - 1)*interval_val
       END DO
-   end function create_time_array
-
-   function create_limit_type() result(r)
-      type(limit_t) :: r
-   end function create_limit_type
+   end subroutine init_time_array
 
    function create_xyz_limit_array(XI, YI, ZI, XE, YE, ZE) result(arr)
       type(XYZlimit_t), dimension(1:6) :: arr
@@ -352,22 +392,21 @@ contains
 
    subroutine add_simulation_material(simulationMaterials, newSimulationMaterial)
       type(MediaData_t), dimension(:), intent(inout), allocatable :: simulationMaterials
-      type(MediaData_t),  intent(in) :: newSimulationMaterial
+      type(MediaData_t), intent(in) :: newSimulationMaterial
 
       type(MediaData_t), dimension(:), target, allocatable :: tempSimulationMaterials
-      integer(kind=SINGLE) :: oldSize, newSize, istat
+      integer(kind=SINGLE) :: oldSize, istat
       oldSize = size(simulationMaterials)
-      newSize = oldSize + 1
-      allocate (tempSimulationMaterials(0:newSize), stat=istat)
+      allocate (tempSimulationMaterials(0:oldSize), stat=istat)
       if (istat /= 0) then
          stop "Allocation failed for temporary media array."
       end if
-      
+
       if (oldSize > 0) then
-         tempSimulationMaterials(1:oldSize) = simulationMaterials
+         tempSimulationMaterials(0:oldSize - 1) = simulationMaterials
          deallocate (simulationMaterials)
       end if
-      tempSimulationMaterials(newSize) = newSimulationMaterial
+      tempSimulationMaterials(oldSize) = newSimulationMaterial
 
       simulationMaterials = tempSimulationMaterials
    end subroutine add_simulation_material
@@ -402,42 +441,16 @@ contains
 
    end subroutine add_media_data_to_sgg
 
-   subroutine init_default_media_matrix(res, xi, xe, yi, ye, zi, ze)
-      integer(kind=SINGLE) :: xi, yi, zi, xe, ye, ze
-      type(media_matrices_t), intent(inout) :: res
-
-      allocate(res%sggMtag(xi:xe, yi:ye, zi:ze))
-
-      allocate(res%sggMiNo(xi:xe, yi:ye, zi:ze))
-      allocate(res%sggMiEx(xi:xe, yi:ye, zi:ze))
-      allocate(res%sggMiEy(xi:xe, yi:ye, zi:ze))
-      allocate(res%sggMiEz(xi:xe, yi:ye, zi:ze))
-      allocate(res%sggMiHx(xi:xe, yi:ye, zi:ze))
-      allocate(res%sggMiHy(xi:xe, yi:ye, zi:ze))
-      allocate(res%sggMiHz(xi:xe, yi:ye, zi:ze))
-
-
-      res%sggMtag = 0_SINGLE
-
-      res%sggMiNo = 0.0_RKIND
-      res%sggMiEx = 0.0_RKIND
-      res%sggMiEy = 0.0_RKIND
-      res%sggMiEz = 0.0_RKIND
-      res%sggMiHx = 0.0_RKIND
-      res%sggMiHy = 0.0_RKIND
-      res%sggMiHz = 0.0_RKIND
-   end subroutine init_default_media_matrix
-
    subroutine assing_material_id_to_media_matrix_coordinate(media, fieldComponent, i, j, k, materialId)
       type(media_matrices_t), intent(inout) :: media
       integer(kind=SINGLE), intent(in) :: fieldComponent, i, j, k, materialId
-      selectcase(fieldComponent)
-      case(iEx); media%sggMiEx(i,j,k) = materialId
-      case(iEy); media%sggMiEy(i,j,k) = materialId
-      case(iEz); media%sggMiEz(i,j,k) = materialId
-      case(iHx); media%sggMiHx(i,j,k) = materialId
-      case(iHy); media%sggMiHy(i,j,k) = materialId
-      case(iHz); media%sggMiHz(i,j,k) = materialId
+      selectcase (fieldComponent)
+      case (iEx); media%sggMiEx(i, j, k) = materialId
+      case (iEy); media%sggMiEy(i, j, k) = materialId
+      case (iEz); media%sggMiEz(i, j, k) = materialId
+      case (iHx); media%sggMiHx(i, j, k) = materialId
+      case (iHy); media%sggMiHy(i, j, k) = materialId
+      case (iHz); media%sggMiHz(i, j, k) = materialId
       end select
 
    end subroutine assing_material_id_to_media_matrix_coordinate
@@ -589,12 +602,12 @@ contains
 
    function create_pec_material() result(mat)
       type(Material) :: mat
-      mat = create_material(EPSILON_VACUUM, MU_VACUUM, SIGMA_PEC, 0.0, 2)
+      mat = create_material(EPSILON_VACUUM, MU_VACUUM, SIGMA_PEC, 0.0, 0)
    end function create_pec_material
 
    function create_pmc_material() result(mat)
       type(Material) :: mat
-      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, SIGMA_PMC, 0)
+      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, SIGMA_PMC, 2)
    end function create_pmc_material
 
    function create_empty_materials() result(mats)
@@ -693,34 +706,7 @@ contains
       wire%RightEnd = 0
    end function get_default_wire
 
-   subroutine add_observation_to_sgg(sgg, new_observation)
-      implicit none
-
-      type(SGGFDTDINFO), intent(inout) :: sgg
-      type(Obses_t), intent(in), target :: new_observation
-
-      type(Obses_t), dimension(:), pointer :: temp_obs
-      integer :: old_size, new_size
-
-      old_size = sgg%NumberRequest
-      new_size = old_size + 1
-
-      allocate (temp_obs(1:new_size))
-
-      if (old_size > 0) then
-         temp_obs(1:old_size) = sgg%Observation(1:old_size)
-         deallocate (sgg%Observation)
-      end if
-
-      temp_obs(new_size) = new_observation
-
-      sgg%Observation => temp_obs
-
-      sgg%NumberRequest = new_size
-
-   end subroutine add_observation_to_sgg
-
-   subroutine set_observable(obs, P_in, outputrequest_in, domain_params, FileNormalize_in)
+   subroutine set_observation(obs, P_in, outputrequest_in, domain_params, FileNormalize_in)
       implicit none
 
       type(observable_t), dimension(:), intent(in) :: P_in
@@ -762,9 +748,9 @@ contains
       obs%TransFer = domain_params%TransFer
       obs%Volumic = domain_params%Volumic
 
-   end subroutine set_observable
+   end subroutine set_observation
 
-   subroutine initialize_time_domain(domain, InitialTime, FinalTime, TimeStep)
+   subroutine initialize_observation_time_domain(domain, InitialTime, FinalTime, TimeStep)
       implicit none
 
       type(observation_domain_t), intent(inout) :: domain
@@ -776,9 +762,9 @@ contains
 
       domain%TimeDomain = .true.
 
-   end subroutine initialize_time_domain
+   end subroutine initialize_observation_time_domain
 
-   subroutine initialize_frequency_domain(domain, InitialFreq, FinalFreq, FreqStep)
+   subroutine initialize_observation_frequency_domain(domain, InitialFreq, FinalFreq, FreqStep)
       implicit none
 
       type(observation_domain_t), intent(inout) :: domain
@@ -790,9 +776,9 @@ contains
 
       domain%FreqDomain = .true.
 
-   end subroutine initialize_frequency_domain
+   end subroutine initialize_observation_frequency_domain
 
-   subroutine initialize_theta_domain(domain, thetaStart, thetaStop, thetaStep)
+   subroutine initialize_observation_theta_domain(domain, thetaStart, thetaStop, thetaStep)
       implicit none
 
       type(observation_domain_t), intent(inout) :: domain
@@ -802,9 +788,9 @@ contains
       domain%thetaStop = thetaStop
       domain%thetaStep = thetaStep
 
-   end subroutine initialize_theta_domain
+   end subroutine initialize_observation_theta_domain
 
-   subroutine initialize_phi_domain(domain, phiStart, phiStop, phiStep)
+   subroutine initialize_observation_phi_domain(domain, phiStart, phiStop, phiStep)
       implicit none
 
       type(observation_domain_t), intent(inout) :: domain
@@ -814,9 +800,9 @@ contains
       domain%phiStop = phiStop
       domain%phiStep = phiStep
 
-   end subroutine initialize_phi_domain
+   end subroutine initialize_observation_phi_domain
 
-   subroutine initialize_domain_logical_flags(domain, Saveall_flag, TransFer_flag, Volumic_flag)
+   subroutine initialize_observation_domain_logical_flags(domain, Saveall_flag, TransFer_flag, Volumic_flag)
       implicit none
 
       type(observation_domain_t), intent(inout) :: domain
@@ -826,6 +812,6 @@ contains
       domain%TransFer = TransFer_flag
       domain%Volumic = Volumic_flag
 
-   end subroutine initialize_domain_logical_flags
+   end subroutine initialize_observation_domain_logical_flags
 
 end module FDETYPES_TOOLS

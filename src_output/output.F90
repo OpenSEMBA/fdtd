@@ -15,7 +15,8 @@ module output
                                       WIRE_CURRENT_PROBE_ID = 1, &
                                       WIRE_CHARGE_PROBE_ID = 2, &
                                       BULK_PROBE_ID = 3, &
-                                      VOLUMIC_CURRENT_PROBE_ID = 4
+                                      VOLUMIC_CURRENT_PROBE_ID = 4, &
+                                      MOVIE_PROBE_ID = 5
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
@@ -45,7 +46,8 @@ module output
          init_wire_current_probe_output, &
          init_wire_charge_probe_output, &
          init_bulk_probe_output, &
-         init_volumic_probe_output
+         init_volumic_probe_output, &
+         init_movie_probe_output
       !init_far_field, &
       !initime_movie_output, &
       !init_frequency_slice_output
@@ -107,11 +109,11 @@ contains
 
       allocate (outputs(sgg%NumberRequest))
 
-      allocate (InvEps(0:sgg%NumMedia), InvMu(0:sgg%NumMedia))
+      allocate (InvEps(0:sgg%NumMedia - 1), InvMu(0:sgg%NumMedia - 1))
       outputCount = 0
 
-      InvEps(0:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia)%Epr)
-      InvMu(0:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia)%Mur)
+      InvEps(0:sgg%NumMedia - 1) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia - 1)%Epr)
+      InvMu(0:sgg%NumMedia - 1) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia - 1)%Mur)
 
       do ii = 1, sgg%NumberRequest
          do i = 1, sgg%Observation(ii)%nP
@@ -159,13 +161,19 @@ contains
                call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
-            case (iCur, iCurX, iCurY, iCurZ)
+            case (iCurX, iCurY, iCurZ)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = VOLUMIC_CURRENT_PROBE_ID
 
                allocate (outputs(outputCount)%volumicCurrentProbe)
                call init_solver_output(outputs(outputCount)%volumicCurrentProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir, sgg%dt)
 
+            case (iCur)
+               outputCount = outputCount + 1
+               outputs(outputCount)%outputID = MOVIE_PROBE_ID
+
+               allocate (outputs(outputCount)%movieProbe)
+               call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, SINPML_fullsize, outputTypeExtension, control%mpidir)
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select

@@ -11,5 +11,6 @@ add_library(fdtd-output
 )
 target_link_libraries(fdtd-output
  semba-types
+ semba-components
  VTKFortran::VTKFortran 
 )

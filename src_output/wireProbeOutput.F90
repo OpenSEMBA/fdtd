@@ -20,7 +20,7 @@ module mod_wireProbeOutput
    !===========================
 
 contains
-   subroutine init_wire_current_probe_output(this, coordinates, node, field, domain, media, outputTypeExtension, mpidir, wiresflavor)
+  subroutine init_wire_current_probe_output(this, coordinates, node, field, domain, media, outputTypeExtension, mpidir, wiresflavor)
       type(wire_current_probe_output_t), intent(out) :: this
       integer(kind=SINGLE), intent(in) :: node
       integer(kind=SINGLE), intent(in) :: field, mpidir
@@ -183,7 +183,7 @@ contains
 
    end subroutine init_wire_current_probe_output
 
-     subroutine init_wire_charge_probe_output(this, coordinates, node, field, domain, outputTypeExtension, mpidir, wiresflavor)
+   subroutine init_wire_charge_probe_output(this, coordinates, node, field, domain, outputTypeExtension, mpidir, wiresflavor)
       type(wire_charge_probe_output_t), intent(out) :: this
       integer(kind=SINGLE), intent(in) ::  node
       integer(kind=SINGLE), intent(in) :: field, mpidir

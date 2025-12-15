@@ -133,11 +133,6 @@ contains
       equal = abs(a - b) <= tol
    end function approx_equal
 
-   function create_limit_type() result(r)
-      use FDETYPES
-      type(limit_t) :: r
-   end function
-
    function create_xyz_limit_array(XI,YI,ZI,XE,YE,ZE) result(arr)
       use FDETYPES
       type(XYZlimit_t), dimension(1:6) :: arr

@@ -1,5 +1,6 @@
 module mod_movieProbeOutput
    use FDETYPES
+   use Report
    use outputTypes
    use mod_outputUtils
    implicit none

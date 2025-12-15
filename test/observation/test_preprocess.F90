@@ -25,7 +25,7 @@ integer function test_initial_time_less_than_timestep() bind(C) result(err)
 
   finalTimeIndex = 20
   dt = 0.1
-  tiempo => create_time_array(100, dt)
+  call init_time_array(tiempo, 100, dt)
   
   saveall = .true.
 
@@ -69,7 +69,7 @@ integer function test_timestep_greater_and_mapvtk() bind(C) result(err)
 
   finalTimeIndex = 90
   dt = 0.1
-  tiempo => create_time_array(100, dt)
+call init_time_array(tiempo, 100, dt)
 
   saveall = .false.
 
@@ -142,7 +142,7 @@ integer function test_freqstep_zero_or_large() bind(C) result(err)
 
   finalTimeIndex = 90
   dt = 0.1_RKIND_tiempo
-  tiempo => create_time_array(100, dt)
+  call init_time_array(tiempo, 100, dt)
   saveall = .false.
 
   ! Case A: FreqStep = 0 -> should be set to FinalFreq-InitialFreq
@@ -195,7 +195,7 @@ integer function test_volumic_false_true_and_saveall() bind(C) result(err)
 
   finalTimeIndex = 90
   dt = 0.1_RKIND
-  tiempo => create_time_array(100, dt)
+  call init_time_array(tiempo, 100, dt)
   saveall = .false.
 
   ! Case Volumic = .false. and global saveall = .false.
@@ -246,7 +246,7 @@ integer function test_saveall_branch() bind(C) result(err)
 
   finalTimeIndex = 90
   dt = 0.1_RKIND
-  tiempo => create_time_array(100, dt)
+  call init_time_array(tiempo, 100, dt)
   saveall = .false.
 
   obs%Volumic = .false.
@@ -285,7 +285,7 @@ integer function test_final_less_than_initial() bind(C) result(err)
   
   finalTimeIndex = 90
   dt = 0.1_RKIND_tiempo
-  tiempo => create_time_array(100, dt)
+  call init_time_array(tiempo, 100, dt)
   saveall = .false.
 
   obs%Volumic = .false.
@@ -323,7 +323,7 @@ integer function test_huge_cap() bind(C) result(err)
 
   finalTimeIndex = 90
   dt = 0.1_RKIND
-  tiempo => create_time_array(100, dt)
+  call init_time_array(tiempo, 100, dt)
   huge4 = huge(1.0_4)
   saveall = .false.
 
