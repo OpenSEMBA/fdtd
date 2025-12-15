@@ -2882,6 +2882,7 @@ contains
          type(polyline_t) :: polyline
          type(aux_node_t) :: res
          integer :: cable_index
+         integer :: stat
          call this%core%get_child(termination_list, index, termination)
          
          res%node%termination%termination_type = readTerminationType(termination)
@@ -2895,17 +2896,18 @@ contains
          res%node%side = label
          res%node%conductor_in_cable = index
 
-         call elemIdToCable%get(key(id), value=cable_index)
+         call elemIdToCable%get(key(id), value=cable_index, stat=stat)
+         if (stat == 0) then
          res%node%belongs_to_cable => mtln_res%cables(cable_index)%ptr
 
          polyline = this%mesh%getPolyline(id)
-
-         if (label == TERMINAL_NODE_SIDE_INI) then
-            res%cId = polyline%coordIds(1)
-            res%relPos = this%mesh%getCoordinate(polyline%coordIds(1))
-         else if (label == TERMINAL_NODE_SIDE_END) then
-            res%cId = polyline%coordIds(ubound(polyline%coordIds,1))
-            res%relPos = this%mesh%getCoordinate(polyline%coordIds(ubound(polyline%coordIds,1)))
+            if (label == TERMINAL_NODE_SIDE_INI) then
+               res%cId = polyline%coordIds(1)
+               res%relPos = this%mesh%getCoordinate(polyline%coordIds(1))
+            else if (label == TERMINAL_NODE_SIDE_END) then
+               res%cId = polyline%coordIds(ubound(polyline%coordIds,1))
+               res%relPos = this%mesh%getCoordinate(polyline%coordIds(ubound(polyline%coordIds,1)))
+            end if
          end if
       end function
 
@@ -3336,9 +3338,10 @@ contains
          call elemIdToCable%check_key(key(id), mStat)
          if (mStat /= 0) then
             res => null()
+         else
+            call elemIdToCable%get(key(id), value=index)
+            res => cables(index)%ptr
          end if
-         call elemIdToCable%get(key(id), value=index)
-         res => cables(index)%ptr
       end function
 
       function findConnectorWithId(conn_Id) result(res)
@@ -3640,29 +3643,54 @@ contains
          end do
       end function
 
+      pure integer function clip(i, lo, hi)
+         integer, intent(in) :: i, lo, hi
+         clip = max(lo, min(i, hi))
+      end function clip
+
       function getdualBoxYZ(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         res%min = [-0.5*despl%desY(segment%y-1),-0.5*despl%desZ(segment%z-1)]
-         res%max = [ 0.5*despl%desY(segment%y),   0.5*despl%desZ(segment%z)]
+         integer :: y0, y1, z0, z1
+
+         y0 = clip(segment%y-1, 0, size(despl%desY)-1)
+         y1 = clip(segment%y,   0, size(despl%desY)-1)
+         z0 = clip(segment%z-1, 0, size(despl%desZ)-1)
+         z1 = clip(segment%z,   0, size(despl%desZ)-1)
+
+         res%min = [-0.5 * despl%desY(y0), -0.5 * despl%desZ(z0)]
+         res%max = [ 0.5 * despl%desY(y1),  0.5 * despl%desZ(z1)]
       end function
 
       function getdualBoxXY(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         res%min = [-0.5*despl%desX(segment%x-1),-0.5*despl%desY(segment%y-1)]
-         res%max = [ 0.5*despl%desX(segment%x),   0.5*despl%desY(segment%y)]
+         integer :: x0, x1, y0, y1
+
+         x0 = clip(segment%x-1, 0, size(despl%desX)-1)
+         x1 = clip(segment%x,   0, size(despl%desX)-1)
+         y0 = clip(segment%y-1, 0, size(despl%desY)-1)
+         y1 = clip(segment%y,   0, size(despl%desY)-1)
+
+         res%min = [-0.5 * despl%desX(x0), -0.5 * despl%desY(y0)]
+         res%max = [ 0.5 * despl%desX(x1),  0.5 * despl%desY(y1)]
       end function
 
       function getdualBoxZX(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         res%min = [-0.5*despl%desZ(segment%z-1),-0.5*despl%desX(segment%x-1)]
-         res%max = [ 0.5*despl%desZ(segment%z),   0.5*despl%desX(segment%x)]
+         integer :: z0, z1, x0, x1
 
+         z0 = clip(segment%z-1, 0, size(despl%desZ)-1)
+         z1 = clip(segment%z,   0, size(despl%desZ)-1)
+         x0 = clip(segment%x-1, 0, size(despl%desX)-1)
+         x1 = clip(segment%x,   0, size(despl%desX)-1)
+
+         res%min = [-0.5 * despl%desZ(z0), -0.5 * despl%desX(x0)]
+         res%max = [ 0.5 * despl%desZ(z1),  0.5 * despl%desX(x1)]
       end function
 
       function buildStepSize(segments, despl) result(res)
