@@ -133,20 +133,6 @@ contains
       equal = abs(a - b) <= tol
    end function approx_equal
 
-   function create_time_array(array_size, interval) result(arr)
-      use FDETYPES
-      integer, intent(in) :: array_size
-      integer(kind=4) :: i
-      real(kind=RKIND_tiempo) :: interval
-
-      real(kind=RKIND_tiempo), pointer, dimension(:) :: arr
-      allocate (arr(array_size))
-
-      DO i = 1, array_size
-         arr(i) = (i - 1)*interval
-      END DO
-   end function create_time_array
-
    function create_limit_type() result(r)
       use FDETYPES
       type(limit_t) :: r
@@ -166,63 +152,6 @@ contains
          arr(i)%ZE = ZE
       end do
    end function create_xyz_limit_array
-
-   
-   function create_facesNF2FF(tr, fr, iz, de, ab, ar) result(faces)
-      use FDETYPES
-      type(nf2ff_t) :: faces
-      logical :: tr, fr, iz, de, ab, ar
-
-      faces%tr = tr
-      faces%fr = fr
-      faces%iz = iz
-      faces%de = de
-      faces%ab = ab
-      faces%ar = ar
-   end function create_facesNF2FF
-
-   function create_control_flags(layoutnumber, size, mpidir, finaltimestep, &
-                                       nEntradaRoot, wiresflavor, &
-                                       resume, saveall, NF2FFDecim, simu_devia, singlefilewrite, &
-                                       facesNF2FF) result(control)
-      use FDETYPES
-      type(sim_control_t) :: control
-      integer(kind=4), intent(in) :: layoutnumber, size, mpidir, finaltimestep
-      character(len=*), intent(in) :: nEntradaRoot, wiresflavor
-      logical, intent(in) :: resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
-      type(nf2ff_t), intent(in) :: facesNF2FF
-
-      control%layoutnumber  = layoutnumber
-      control%size = size
-      control%mpidir  = mpidir
-      control%finaltimestep = finaltimestep
-      control%nEntradaRoot  = nEntradaRoot
-      control%wiresflavor = wiresflavor
-      control%resume  = resume
-      control%saveall = saveall
-      control%NF2FFDecim = NF2FFDecim
-      control%simu_devia = simu_devia
-      control%singlefilewrite  = singlefilewrite
-      control%facesNF2FF = facesNF2FF
-
-   end function create_control_flags
-
-   function create_base_sgg() result(sgg)
-      use FDETYPES
-      type(SGGFDTDINFO) :: sgg
-      
-      sgg%NumMedia = 3
-      allocate(sgg%Med(0:sgg%NumMedia))
-      sgg%Med = create_basic_media()
-      sgg%NumberRequest = 1
-      sgg%dt = 0.1_RKIND_tiempo
-      sgg%tiempo => create_time_array(100, sgg%dt)
-      sgg%Sweep = create_xyz_limit_array(0,0,0,6,6,6)
-      sgg%SINPMLSweep = create_xyz_limit_array(1,1,1,5,5,5)
-      sgg%NumPlaneWaves = 1
-      sgg%alloc = create_xyz_limit_array(0,0,0,6,6,6)
- 
-   end function create_base_sgg
 
    function create_basic_media () result(media)
       use FDETYPES

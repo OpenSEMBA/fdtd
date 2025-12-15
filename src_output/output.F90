@@ -107,11 +107,11 @@ contains
 
       allocate (outputs(sgg%NumberRequest))
 
-      allocate (InvEps(1:sgg%NumMedia), InvMu(1:sgg%NumMedia))
+      allocate (InvEps(0:sgg%NumMedia), InvMu(0:sgg%NumMedia))
       outputCount = 0
 
-      InvEps(1:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(1:sgg%NumMedia)%Epr)
-      InvMu(1:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(1:sgg%NumMedia)%Mur)
+      InvEps(0:sgg%NumMedia) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia)%Epr)
+      InvMu(0:sgg%NumMedia) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia)%Mur)
 
       do ii = 1, sgg%NumberRequest
          do i = 1, sgg%Observation(ii)%nP

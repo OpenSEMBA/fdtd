@@ -4,7 +4,7 @@ module FDETYPES_TOOLS
 
    implicit none
    real(kind=rkind) :: UTILEPS0 = 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
- real(kind=rkind) :: UTILMU0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
+   real(kind=rkind) :: UTILMU0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
    type :: observation_domain_t
       real(kind=RKIND) :: InitialTime = 0.0_RKIND
       real(kind=RKIND) :: FinalTime = 0.0_RKIND
@@ -158,14 +158,14 @@ contains
 
    end function create_base_sgg
 
-   function create_base_simulation_material_list() result(simulationMaterials)
+   function  create_base_simulation_material_list() result(simulationMaterials)
       implicit none
-
-      type(MediaData_t), dimension(3) :: simulationMaterials
-
+      type(MediaData_t), dimension(:), allocatable :: simulationMaterials
+      if (allocated(simulationMaterials)) deallocate(simulationMaterials)
+      allocate(simulationMaterials(0:2))
+      simulationMaterials(0) = create_pec_simulation_material()
       simulationMaterials(1) = get_default_mediadata()
-      simulationMaterials(2) = create_pec_simulation_material()
-      simulationMaterials(3) = create_pmc_simulation_material()
+      simulationMaterials(2) = create_pmc_simulation_material()
 
    end function create_base_simulation_material_list
 
@@ -358,7 +358,7 @@ contains
       integer(kind=SINGLE) :: oldSize, newSize, istat
       oldSize = size(simulationMaterials)
       newSize = oldSize + 1
-      allocate (tempSimulationMaterials(newSize), stat=istat)
+      allocate (tempSimulationMaterials(0:newSize), stat=istat)
       if (istat /= 0) then
          stop "Allocation failed for temporary media array."
       end if
@@ -594,7 +594,7 @@ contains
 
    function create_pmc_material() result(mat)
       type(Material) :: mat
-      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, SIGMA_PMC, 3)
+      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, SIGMA_PMC, 0)
    end function create_pmc_material
 
    function create_empty_materials() result(mats)

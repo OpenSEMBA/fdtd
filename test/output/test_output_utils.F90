@@ -1,6 +1,7 @@
 module mod_testOutputUtils
    use FDETYPES
    use FDETYPES_TOOLS
+   use outputTypes
 
    implicit none
    type :: dummyFields_t
@@ -35,6 +36,19 @@ contains
       P(1) = create_observable(4, 4, 4, 6, 6, 6, iCurX)
       call set_observable(obs, P, 'volumicProbe', domain, 'DummyFileNormalize')
    end function create_volumic_probe_observable
+
+   function create_movie_observable(lower, upper) result(obs)
+      type(cell_coordinate_t), intent(in) :: lower, upper
+      type(Obses_t) :: obs
+
+      type(observable_t), dimension(:), allocatable :: P
+      type(observation_domain_t) :: domain
+
+      call initialize_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
+      allocate (P(1))
+      P(1) = create_observable(lower%x, lower%y, lower%z, upper%x, upper%y, upper%z, iCur)
+      call set_observable(obs, P, 'movieProbe', domain, 'DummyFileNormalize')
+   end function create_movie_observable
 
    subroutine create_dummy_fields(this, lower, upper, delta)
       class(dummyFields_t), intent(inout) :: this

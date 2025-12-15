@@ -112,7 +112,7 @@ integer function test_flush_point_probe() bind(c) result(err)
    test_err = 0
    test_extension = 'tmp_cases/flush_point_probe'
    domain = domain_t(0.0_RKIND_tiempo, 10.0_RKIND_tiempo, 0.1_RKIND_tiempo, 10.0_RKIND, 100.0_RKIND, 10, .false.)
-   
+
    coordinates%x = 2
    coordinates%y = 2
    coordinates%z = 2
@@ -271,12 +271,12 @@ integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err
    sinpml_fullsizePtr => sinpml_fullsize
 
    simulationMaterials = create_base_simulation_material_list()
-   thinWireSimulationMaterial = create_thinWire_simulation_material(size(simulationMaterials) + 1)
+   thinWireSimulationMaterial = create_thinWire_simulation_material(size(simulationMaterials))
    call add_simulation_material(simulationMaterials, thinWireSimulationMaterial)
 
    call init_default_media_matrix(media, 0, 8, 0, 8, 0, 8)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 1, 1, 1, simulationMaterials(2)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iHz, 1, 1, 1, simulationMaterials(3)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 1, 1, 1, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iHz, 1, 1, 1, simulationMaterials(2)%Id)
    call assing_material_id_to_media_matrix_coordinate(media, iEx, 2, 2, 2, thinWireSimulationMaterial%Id)
    mediaPtr => media
 
@@ -295,5 +295,71 @@ integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err
    test_err = test_err + assert_integer_equal(outputs(1)%volumicCurrentProbe%columnas, 4, 'Unexpected number of columns')
    test_err = test_err + assert_string_equal(outputs(1)%volumicCurrentProbe%path, 'entradaRoot_volumicProbe_BCX_4_4_4__6_6_6', 'Unexpected path')
 
+   err = test_err
+end function
+
+integer function test_init_movie_probe() bind(c) result(err)
+   use output
+   use mod_testOutputUtils
+   use FDETYPES_TOOLS
+
+   type(SGGFDTDINFO) :: dummysgg
+   type(media_matrices_t), target :: media
+   type(limit_t), dimension(1:6), target :: sinpml_fullsize
+   type(sim_control_t) :: dummyControl
+   type(solver_output_t), dimension(:), allocatable :: outputs
+   logical :: ThereAreWires = .false.
+
+   type(MediaData_t), dimension(:), allocatable, target :: simulationMaterials
+   type(Obses_t) :: movieObservable
+   type(cell_coordinate_t) :: lowerBoundMovieProbe, upperBoundMovieProbe
+
+   type(media_matrices_t), pointer :: mediaPtr
+   type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
+
+   integer(kind=SINGLE) :: mpidir = 3
+
+   err = 1 !If test_err is not updated at the end it will be shown
+   test_err = 0
+
+   lowerBoundMovieProbe%x = 2
+   lowerBoundMovieProbe%y = 2
+   lowerBoundMovieProbe%z = 2
+
+   upperBoundMovieProbe%x = 5
+   upperBoundMovieProbe%y = 5
+   upperBoundMovieProbe%z = 5
+
+   simulationMaterials = create_base_simulation_material_list()
+
+   dummysgg = create_base_sgg(dt=0.1_RKIND_tiempo, time_steps=100)
+   dummysgg%NumMedia = size(simulationMaterials)
+   dummysgg%med => simulationMaterials
+
+   movieObservable = create_movie_observable(lowerBoundMovieProbe, upperBoundMovieProbe)
+   call add_observation_to_sgg(dummysgg, movieObservable)
+
+   call init_default_media_matrix(media, 0, 8, 0, 8, 0, 8)
+   !----- Defining PEC surface -----!
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3,3,3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4,3,3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4,4,3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3,4,3, simulationMaterials(0)%Id)
+   !----- -------------------- -----!
+   mediaPtr => media
+
+   do iter = 1, 6
+      sinpml_fullsize(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
+   end do
+   sinpml_fullsizePtr => sinpml_fullsize
+
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+   test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
+   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%columnas, 4, 'Unexpected number of columns')
+   
+   if (size(outputs(1)%movieProbe%timeStep) /= BuffObse) then 
+      test_err = 1
+   end if
+   
    err = test_err
 end function
