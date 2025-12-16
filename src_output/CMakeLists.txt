@@ -8,6 +8,7 @@ add_library(fdtd-output
   "bulkProbeOutput.F90"
   "volumicProbeOutput.F90"
   "movieProbeOutput.F90"
+  "frequencySliceProbeOutput.F90"
 )
 target_link_libraries(fdtd-output
  semba-types

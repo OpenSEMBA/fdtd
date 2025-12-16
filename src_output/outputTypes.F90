@@ -170,6 +170,7 @@ module outputTypes
       character(len=BUFSIZE) :: path
       integer(kind=SINGLE) :: fieldComponent
 
+      integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
       integer(kind=SINGLE), dimension(:,:), allocatable :: coords
 
       !Intent storage order:
@@ -177,7 +178,6 @@ module outputTypes
       !(:,:) == (timeInstance, componentId) => escalar
 
       !Time Domain (requires first allocation)
-      integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
       integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
       real(kind=RKIND_tiempo), dimension(:), allocatable :: timeStep
       real(kind=RKIND), dimension(:, :), allocatable :: xValueForTime
@@ -185,7 +185,29 @@ module outputTypes
       real(kind=RKIND), dimension(:, :), allocatable :: zValueForTime
    end type movie_probe_output_t
    type frequency_slice_probe_output_t
-    !!!!!Pending
+      integer(kind=SINGLE) :: PDVUnit
+      integer(kind=SINGLE) :: columnas = 4_SINGLE !reference and current components
+      type(domain_t) :: domain
+      type(cell_coordinate_t) :: lowerBound
+      type(cell_coordinate_t) :: upperBound
+      character(len=BUFSIZE) :: path
+      integer(kind=SINGLE) :: fieldComponent
+
+      integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
+      integer(kind=SINGLE), dimension(:,:), allocatable :: coords
+
+      !Intent storage order:
+      !(:) == (frquencyinstance) => timeValue
+      !(:,:) == (frquencyinstance, componentId) => escalar
+
+      !Frequency Domain (requires first allocation)
+      integer(kind=SINGLE) :: nFreq = 0_SINGLE
+      real(kind=RKIND), dimension(:), allocatable :: frequencySlice
+      complex(kind=CKIND), dimension(:, :), allocatable :: xValueForFreq
+      complex(kind=CKIND), dimension(:, :), allocatable :: yValueForFreq
+      complex(kind=CKIND), dimension(:, :), allocatable :: zValueForFreq
+      complex(kind=CKIND), dimension(:), allocatable :: auxExp_E
+      complex(kind=CKIND), dimension(:), allocatable :: auxExp_H
    end type frequency_slice_probe_output_t
 
 contains

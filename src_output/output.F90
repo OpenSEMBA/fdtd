@@ -8,6 +8,7 @@ module output
    use mod_bulkProbeOutput
    use mod_volumicProbeOutput
    use mod_movieProbeOutput
+   use mod_frequencySliceProbeOutput
 
    implicit none
 
@@ -49,7 +50,7 @@ module output
          init_bulk_probe_output, &
          init_volumic_probe_output, &
          init_movie_probe_output, &
-         init_frequency_slice_output
+         init_frequency_slice_probe_output
                !init_far_field, &
       !initime_movie_output, &
       !init_frequency_slice_output
@@ -68,7 +69,7 @@ module output
          update_bulk_probe_output, &
          update_volumic_probe_output, &
          update_movie_probe_output, &
-         update_frequency_slice_output
+         update_frequency_slice_probe_output
       !update_bulk_current_probe_output, &
       !update_far_field, &
       !updateime_movie_output, &
@@ -79,7 +80,7 @@ module output
       module procedure &
          flush_point_probe_output, &
          flush_movie_probe_output, &
-         flush_frequency_slice_output
+         flush_frequency_slice_probe_output
          
       !flush_wire_probe_output, &
       !flush_bulk_current_probe_output, &
