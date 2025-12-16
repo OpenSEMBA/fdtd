@@ -117,4 +117,13 @@ contains
          end do
       end do
    end function assert_file_content
+
+   integer function assert_file_exists(fileName) result(err)
+      character(len=*), intent(in) :: filename
+      integer :: unit, ios
+      err = 0
+      open(newunit=unit, file=filename, status='old', iostat=ios)
+      close(unit)
+      if (ios/=0) err = 1
+   end function
 end module mod_assertionTools

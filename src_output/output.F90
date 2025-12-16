@@ -16,7 +16,8 @@ module output
                                       WIRE_CHARGE_PROBE_ID = 2, &
                                       BULK_PROBE_ID = 3, &
                                       VOLUMIC_CURRENT_PROBE_ID = 4, &
-                                      MOVIE_PROBE_ID = 5
+                                      MOVIE_PROBE_ID = 5, &
+                                      FREQUENCY_SLICE_PROBE_ID = 6
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
@@ -47,8 +48,9 @@ module output
          init_wire_charge_probe_output, &
          init_bulk_probe_output, &
          init_volumic_probe_output, &
-         init_movie_probe_output
-      !init_far_field, &
+         init_movie_probe_output, &
+         init_frequency_slice_output
+               !init_far_field, &
       !initime_movie_output, &
       !init_frequency_slice_output
    end interface
@@ -64,7 +66,9 @@ module output
          update_wire_current_probe_output, &
          update_wire_charge_probe_output, &
          update_bulk_probe_output, &
-         update_volumic_probe_output
+         update_volumic_probe_output, &
+         update_movie_probe_output, &
+         update_frequency_slice_output
       !update_bulk_current_probe_output, &
       !update_far_field, &
       !updateime_movie_output, &
@@ -73,7 +77,10 @@ module output
 
    interface flush_solver_output
       module procedure &
-         flush_point_probe_output
+         flush_point_probe_output, &
+         flush_movie_probe_output, &
+         flush_frequency_slice_output
+         
       !flush_wire_probe_output, &
       !flush_bulk_current_probe_output, &
       !flush_far_field, &
@@ -174,6 +181,7 @@ contains
 
                allocate (outputs(outputCount)%movieProbe)
                call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, SINPML_fullsize, outputTypeExtension, control%mpidir)
+               call create_pvd(outputs(outputCount)%movieProbe%path, outputs(outputCount)%movieProbe%PDVUnit)
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
@@ -240,14 +248,20 @@ contains
       end do
    end subroutine create_output_files
 
-   subroutine update_outputs(outputs, control, step, fields)
+   subroutine update_outputs(outputs, geometryMedia, materialList, SINPML_fullsize , control, step, fields)
       type(solver_output_t), dimension(:), intent(inout) :: outputs
       real(kind=RKIND_tiempo) :: step
       integer(kind=SINGLE) :: i, id
+      type(media_matrices_t), pointer, intent(in) :: geometryMedia
+      type(MediaData_t),dimension(:), pointer :: materialList
+      type(limit_t), pointer, dimension(:), intent(in)  ::  SINPML_fullsize
       type(sim_control_t), intent(in) :: control
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
       type(field_data_t), pointer :: fieldReference
-      type(fields_reference_t) :: fields
+      type(fields_reference_t), target :: fields
+      type(fields_reference_t), pointer :: fieldsPtr
+
+      fieldsPtr => fields
 
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
@@ -261,6 +275,9 @@ contains
          case (BULK_PROBE_ID)
             fieldReference => get_field_reference(outputs(i)%bulkCurrentProbe%fieldComponent, fields)
             call update_solver_output(outputs(i)%bulkCurrentProbe, step, fieldReference)
+         case (MOVIE_PROBE_ID)
+            call update_solver_output(outputs(i)%movieProbe, step, geometryMedia, materialList, SINPML_fullsize, fieldsPtr)
+         case(FREQUENCY_SLICE_PROBE_ID)
          case default
             call stoponerror(0, 0, 'Output update not implemented')
          end select
@@ -306,5 +323,67 @@ contains
       end function get_field_reference
 
    end subroutine update_outputs
+
+   subroutine flush_outputs(outputs)
+      type(solver_output_t), dimension(:), intent(inout) :: outputs
+      integer :: i
+      do i = 1, size(outputs)
+         select case(outputs(i)%outputID)
+         case(POINT_PROBE_ID)
+            call flush_point_probe_output(outputs(i)%pointProbe)
+         case(WIRE_CURRENT_PROBE_ID)
+         case(WIRE_CHARGE_PROBE_ID)
+         case(BULK_PROBE_ID)
+         case(VOLUMIC_CURRENT_PROBE_ID)
+         case(MOVIE_PROBE_ID)
+            call flush_solver_output(outputs(i)%movieProbe)
+         case(FREQUENCY_SLICE_PROBE_ID)
+         end select
+      end do
+   end subroutine flush_outputs
+
+   subroutine close_outputs(outputs)
+      type(solver_output_t), dimension(:), intent(inout) :: outputs
+      integer :: i
+      do i = 1, size(outputs)
+         select case(outputs(i)%outputID)
+         case(POINT_PROBE_ID)
+         case(WIRE_CURRENT_PROBE_ID)
+         case(WIRE_CHARGE_PROBE_ID)
+         case(BULK_PROBE_ID)
+         case(VOLUMIC_CURRENT_PROBE_ID)
+         case(MOVIE_PROBE_ID)
+            call close_pvd(outputs(i)%movieProbe%PDVUnit)
+         case(FREQUENCY_SLICE_PROBE_ID)
+         end select
+      end do
+   end subroutine
+
+
+   subroutine create_pvd(pdvPath, unitPVD)
+      implicit none
+      character(len=*), intent(in) :: pdvPath
+      integer, intent(out) :: unitPVD
+      integer :: ios
+
+      ! Abrimos el archivo PVD
+      open(newunit=unitPVD, file=trim(pdvPath)//".pvd", status="replace", action="write", iostat=ios)
+      if (ios /= 0) stop "Error al crear archivo PVD"
+
+      ! Escribimos encabezados XML
+      write (unitPVD, *) '<?xml version="1.0"?>'
+      write (unitPVD, *) '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">'
+      write (unitPVD, *) '  <Collection>'
+   end subroutine create_pvd
+
+   subroutine close_pvd(unitPVD)
+      implicit none
+      integer, intent(in) :: unitPVD
+
+      ! Cerramos colección y archivo XML
+      write (unitPVD, *) '  </Collection>'
+      write (unitPVD, *) '</VTKFile>'
+      close (unitPVD)
+   end subroutine close_pvd
 
 end module output

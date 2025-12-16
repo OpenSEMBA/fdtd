@@ -49,6 +49,8 @@ integer function test_init_point_probe() bind(c) result(err)
    test_err = test_err + assert_integer_equal(outputs(1)%pointProbe%columnas, 2, 'Unexpected number of columns')
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, 'entradaRoot_poinProbe_Ex_4_4_4', 'Unexpected path')
 
+   call close_outputs(outputs)
+
    deallocate (dummysgg%Observation)
    deallocate (outputs)
    err = test_err
@@ -111,16 +113,18 @@ integer function test_update_point_probe() bind(c) result(err)
    fields%H%deltaZ => dummyfields%dzh
 
    dummyfields%Ex(4, 4, 4) = 5.0_RKIND
-   call update_outputs(outputs, dummyControl, 0.5_RKIND_tiempo, fields)
+   call update_outputs(outputs, dummyMedia, simulationMediaPtr, dummysinpml_fullsize, dummyControl, 0.5_RKIND_tiempo, fields)
 
    test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(1), 0.5_RKIND_tiempo, 0.00001_RKIND_tiempo, 'Unexpected timestep 1')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(1), 5.0_RKIND, 0.00001_RKIND, 'Unexpected field 1')
 
    dummyfields%Ex(4, 4, 4) = -4.0_RKIND
-   call update_outputs(outputs, dummyControl, 0.8_RKIND_tiempo, fields)
+   call update_outputs(outputs, dummyMedia, simulationMediaPtr, dummysinpml_fullsize, dummyControl, 0.8_RKIND_tiempo, fields)
 
    test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(2), 0.8_RKIND_tiempo, 0.00001_RKIND_tiempo, 'Unexpected timestep 2')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(2), -4.0_RKIND, 0.00001_RKIND, 'Unexpected field 2')
+
+   call close_outputs(outputs)
 
    if (associated(dummymedia)) deallocate (dummymedia)
    if (associated(dummysinpml_fullsize)) deallocate (dummysinpml_fullsize)
@@ -310,8 +314,6 @@ integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err
    call sgg_set_tiempo(dummysgg, timeArray)
    call sgg_set_dt(dummysgg, dt)
 
-
-
    err = 1 !If test_err is not updated at the end it will be shown
    test_err = 0
 
@@ -330,11 +332,11 @@ integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err
    call assing_material_id_to_media_matrix_coordinate(media, iEx, 2, 2, 2, thinWireSimulationMaterial%Id)
    mediaPtr => media
 
-   call sgg_set_NumMedia(dummysgg, size(simulationMaterials)) 
+   call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
    simulationMaterialsPtr => simulationMaterials
    call sgg_set_Med(dummysgg, simulationMaterialsPtr)
 
-   volumicProbeObservable = create_volumic_probe_observation(4,4,4,6,6,6)
+   volumicProbeObservable = create_volumic_probe_observation(4, 4, 4, 6, 6, 6)
    call sgg_add_observation(dummysgg, volumicProbeObservable)
 
    dummyControl = create_control_flags(mpidir=mpidir, nEntradaRoot='entradaRoot', wiresflavor='holland')
@@ -344,6 +346,8 @@ integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, VOLUMIC_CURRENT_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%volumicCurrentProbe%columnas, 4, 'Unexpected number of columns')
    test_err = test_err + assert_string_equal(outputs(1)%volumicCurrentProbe%path, 'entradaRoot_volumicProbe_BCX_4_4_4__6_6_6', 'Unexpected path')
+
+   call close_outputs(outputs)
 
    err = test_err
 end function
@@ -355,26 +359,29 @@ integer function test_init_movie_probe() bind(c) result(err)
    use mod_sggMethods
    use mod_assertionTools
 
+   ! Init inputs
    type(SGGFDTDINFO) :: dummysgg
-   type(media_matrices_t), target :: media
-   type(limit_t), dimension(1:6), target :: sinpml_fullsize
+   type(media_matrices_t), pointer :: mediaPtr
+   type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
+   type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
    type(sim_control_t) :: dummyControl
    type(solver_output_t), dimension(:), allocatable :: outputs
    logical :: ThereAreWires = .false.
 
+   !Auxiliar variables
+   type(media_matrices_t), target :: media
    type(MediaData_t), dimension(:), allocatable, target :: simulationMaterials
-   type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
+   type(limit_t), dimension(1:6), target :: sinpml_fullsize
    type(Obses_t) :: movieObservable
    type(cell_coordinate_t) :: lowerBoundMovieProbe, upperBoundMovieProbe
 
+   real(kind=RKIND_tiempo), pointer, dimension(:) :: timeArray
    real(kind=RKIND_tiempo) :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE) :: nTimeSteps = 100_SINGLE
-   real(kind=RKIND_tiempo), pointer, dimension(:) :: timeArray
-   type(media_matrices_t), pointer :: mediaPtr
-   type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
 
    integer(kind=SINGLE) :: expectedNumMeasurments
    integer(kind=SINGLE) :: mpidir = 3
+   character(len=BUFSIZE) :: test_folder_path = trim(adjustl('tmp_cases/'))
 
    err = 1 !If test_err is not updated at the end it will be shown
    test_err = 0
@@ -387,6 +394,7 @@ integer function test_init_movie_probe() bind(c) result(err)
    upperBoundMovieProbe%y = 5
    upperBoundMovieProbe%z = 5
 
+   ! Setup sgg
    call sgg_init(dummysgg)
 
    call init_time_array(timeArray, nTimeSteps, dt)
@@ -398,15 +406,15 @@ integer function test_init_movie_probe() bind(c) result(err)
    simulationMaterialsPtr => simulationMaterials
    call sgg_set_Med(dummysgg, simulationMaterialsPtr)
 
-   movieObservable = create_movie_observation(2,2,2,5,5,5)
-   call sgg_add_observation(dummysgg, movieObservable)
-
    call sgg_set_Sweep(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
    call sgg_set_SINPMLSweep(dummysgg, create_xyz_limit_array(1, 1, 1, 5, 5, 5))
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
 
-   
+   ! Define movie observation on sgg
+   movieObservable = create_movie_observation(2, 2, 2, 5, 5, 5)
+   call sgg_add_observation(dummysgg, movieObservable)
+
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
    !----- Defining PEC surface -----!
    call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
@@ -422,7 +430,10 @@ integer function test_init_movie_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
+   dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
+
    call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%columnas, 4, 'Unexpected number of columns')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nMeasuredElements, expectedNumMeasurments, 'Unexpected number of measurments')
@@ -430,6 +441,260 @@ integer function test_init_movie_probe() bind(c) result(err)
    if (size(outputs(1)%movieProbe%timeStep) /= BuffObse) then
       test_err = 1
    end if
+
+   call close_outputs(outputs)
+
+   err = test_err
+end function
+
+integer function test_update_movie_probe() bind(c) result(err)
+   use output
+   use mod_testOutputUtils
+   use FDETYPES_TOOLS
+   use mod_sggMethods
+   use mod_assertionTools
+
+   ! Init inputs
+   type(SGGFDTDINFO) :: dummysgg
+   type(media_matrices_t), pointer :: mediaPtr
+   type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
+   type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
+   type(sim_control_t) :: dummyControl
+   type(solver_output_t), dimension(:), allocatable :: outputs
+   logical :: ThereAreWires = .false.
+
+   !Auxiliar variables
+   type(media_matrices_t), target :: media
+   type(MediaData_t), dimension(:), allocatable, target :: simulationMaterials
+   type(limit_t), dimension(1:6), target :: sinpml_fullsize
+   type(Obses_t) :: movieObservable
+   type(cell_coordinate_t) :: lowerBoundMovieProbe, upperBoundMovieProbe
+
+   real(kind=RKIND_tiempo), pointer, dimension(:) :: timeArray
+   real(kind=RKIND_tiempo) :: dt = 0.1_RKIND_tiempo
+   integer(kind=SINGLE) :: nTimeSteps = 100_SINGLE
+
+   integer(kind=SINGLE) :: expectedNumMeasurments
+   integer(kind=SINGLE) :: mpidir = 3
+   character(len=BUFSIZE) :: test_folder_path = trim(adjustl('tmp_cases/'))
+
+   !DummyField required variables
+   type(dummyFields_t), target :: dummyfields
+   type(fields_reference_t) :: fields
+
+   err = 1 !If test_err is not updated at the end it will be shown
+   test_err = 0
+
+   lowerBoundMovieProbe%x = 2
+   lowerBoundMovieProbe%y = 2
+   lowerBoundMovieProbe%z = 2
+
+   upperBoundMovieProbe%x = 5
+   upperBoundMovieProbe%y = 5
+   upperBoundMovieProbe%z = 5
+
+   ! Setup sgg
+   call sgg_init(dummysgg)
+   call init_time_array(timeArray, nTimeSteps, dt)
+   call sgg_set_tiempo(dummysgg, timeArray)
+   call sgg_set_dt(dummysgg, dt)
+   call init_simulation_material_list(simulationMaterials)
+   call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
+   simulationMaterialsPtr => simulationMaterials
+   call sgg_set_Med(dummysgg, simulationMaterialsPtr)
+   call sgg_set_Sweep(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   call sgg_set_SINPMLSweep(dummysgg, create_xyz_limit_array(1, 1, 1, 5, 5, 5))
+   call sgg_set_NumPlaneWaves(dummysgg, 1)
+   call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   ! Define movie observation on sgg
+   movieObservable = create_movie_observation(2, 2, 2, 5, 5, 5)
+   call sgg_add_observation(dummysgg, movieObservable)
+   call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
+   !----- Defining PEC surface -----!
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   expectedNumMeasurments = 4_SINGLE
+   !----- -------------------- -----!
+   mediaPtr => media
+   do iter = 1, 6
+      sinpml_fullsize(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
+   end do
+   sinpml_fullsizePtr => sinpml_fullsize
+
+   dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
+
+
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+
+   ! Set dummy field status
+
+   call create_dummy_fields(dummyfields, 1, 5, 0.1_RKIND)
+   fields%E%x => dummyfields%Ex
+   fields%E%y => dummyfields%Ey
+   fields%E%z => dummyfields%Ez
+   fields%E%deltax => dummyfields%dxe
+   fields%E%deltaY => dummyfields%dye
+   fields%E%deltaZ => dummyfields%dze
+   fields%H%x => dummyfields%Hx
+   fields%H%y => dummyfields%Hy
+   fields%H%z => dummyfields%Hz
+   fields%H%deltax => dummyfields%dxh
+   fields%H%deltaY => dummyfields%dyh
+   fields%H%deltaZ => dummyfields%dzh
+
+   dummyfields%Hx(3, 3, 3) = 2.0_RKIND
+   dummyfields%Hy(3, 3, 3) = 5.0_RKIND
+   dummyfields%Hz(3, 3, 3) = 4.0_RKIND
+
+   call update_outputs(outputs, mediaPtr, simulationMaterialsPtr, sinpml_fullsizePtr, dummyControl, 0.5_RKIND_tiempo, fields)
+
+   test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
+   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%columnas, 4, 'Unexpected number of columns')
+   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nMeasuredElements, expectedNumMeasurments, 'Unexpected number of measurments')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%xValueForTime), expectedNumMeasurments * BuffObse, 'Unexpected allocation size')
+   test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 1), 0.2_RKIND, 0.00001_RKIND, 'Value error')
+   test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 2), 0.0_RKIND, 0.00001_RKIND, 'Value error')
+   test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 3), 0.2_RKIND, 0.00001_RKIND, 'Value error')
+   test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 4), 0.0_RKIND, 0.00001_RKIND, 'Value error')
+   if (size(outputs(1)%movieProbe%timeStep) /= BuffObse) then
+      test_err = 1
+   end if
+
+   call close_outputs(outputs)
+
+   err = test_err
+end function
+
+integer function test_flush_movie_probe() bind(c) result(err)
+   use output
+   use mod_testOutputUtils
+   use FDETYPES_TOOLS
+   use mod_sggMethods
+   use mod_assertionTools
+
+   ! Init inputs
+   type(SGGFDTDINFO) :: dummysgg
+   type(media_matrices_t), pointer :: mediaPtr
+   type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
+   type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
+   type(sim_control_t) :: dummyControl
+   type(solver_output_t), dimension(:), allocatable :: outputs
+   logical :: ThereAreWires = .false.
+
+   !Auxiliar variables
+   type(media_matrices_t), target :: media
+   type(MediaData_t), dimension(:), allocatable, target :: simulationMaterials
+   type(limit_t), dimension(1:6), target :: sinpml_fullsize
+   type(Obses_t) :: movieObservable
+   type(cell_coordinate_t) :: lowerBoundMovieProbe, upperBoundMovieProbe
+
+   real(kind=RKIND_tiempo), pointer, dimension(:) :: timeArray
+   real(kind=RKIND_tiempo) :: dt = 0.1_RKIND_tiempo
+   integer(kind=SINGLE) :: nTimeSteps = 100_SINGLE
+
+   integer(kind=SINGLE) :: expectedNumMeasurments
+   integer(kind=SINGLE) :: mpidir = 3
+   character(len=BUFSIZE) :: test_folder_path = trim(adjustl('tmp_cases/'))
+   character(len=BUFSIZE) :: expectedPath
+
+   err = 1 !If test_err is not updated at the end it will be shown
+   test_err = 0
+
+   lowerBoundMovieProbe%x = 2
+   lowerBoundMovieProbe%y = 2
+   lowerBoundMovieProbe%z = 2
+
+   upperBoundMovieProbe%x = 5
+   upperBoundMovieProbe%y = 5
+   upperBoundMovieProbe%z = 5
+
+   ! Setup sgg
+   call sgg_init(dummysgg)
+   call init_time_array(timeArray, nTimeSteps, dt)
+   call sgg_set_tiempo(dummysgg, timeArray)
+   call sgg_set_dt(dummysgg, dt)
+   call init_simulation_material_list(simulationMaterials)
+   call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
+   simulationMaterialsPtr => simulationMaterials
+   call sgg_set_Med(dummysgg, simulationMaterialsPtr)
+   call sgg_set_Sweep(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   call sgg_set_SINPMLSweep(dummysgg, create_xyz_limit_array(1, 1, 1, 5, 5, 5))
+   call sgg_set_NumPlaneWaves(dummysgg, 1)
+   call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   ! Define movie observation on sgg
+   movieObservable = create_movie_observation(2, 2, 2, 5, 5, 5)
+   call sgg_add_observation(dummysgg, movieObservable)
+   call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
+   !----- Defining PEC surface -----!
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   expectedNumMeasurments = 4_SINGLE
+   !----- -------------------- -----!
+   mediaPtr => media
+   do iter = 1, 6
+      sinpml_fullsize(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
+   end do
+   sinpml_fullsizePtr => sinpml_fullsize
+
+   dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
+
+
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+
+   !Dummy first update
+   outputs(1)%movieProbe%serializedTimeSize = 1
+   outputs(1)%movieProbe%timeStep(1) = 0.5_RKIND_tiempo
+   
+   outputs(1)%movieProbe%xValueForTime(1,1) = 0.0_RKIND
+   outputs(1)%movieProbe%xValueForTime(1,2) = 0.0_RKIND
+   outputs(1)%movieProbe%xValueForTime(1,3) = 0.0_RKIND
+   outputs(1)%movieProbe%xValueForTime(1,4) = 0.0_RKIND
+   
+   outputs(1)%movieProbe%yValueForTime(1,1) = 0.1_RKIND
+   outputs(1)%movieProbe%yValueForTime(1,2) = 0.2_RKIND
+   outputs(1)%movieProbe%yValueForTime(1,3) = 0.3_RKIND
+   outputs(1)%movieProbe%yValueForTime(1,4) = 0.4_RKIND
+
+   outputs(1)%movieProbe%zValueForTime(1,1) = 0.0_RKIND
+   outputs(1)%movieProbe%zValueForTime(1,2) = 0.0_RKIND
+   outputs(1)%movieProbe%zValueForTime(1,3) = 0.0_RKIND
+   outputs(1)%movieProbe%zValueForTime(1,4) = 0.0_RKIND
+
+   !Dummy second update
+   outputs(1)%movieProbe%serializedTimeSize = 2
+   outputs(1)%movieProbe%timeStep(2) = 1.0_RKIND_tiempo
+   
+   outputs(1)%movieProbe%xValueForTime(2,1) = 0.0_RKIND
+   outputs(1)%movieProbe%xValueForTime(2,2) = 0.0_RKIND
+   outputs(1)%movieProbe%xValueForTime(2,3) = 0.0_RKIND
+   outputs(1)%movieProbe%xValueForTime(2,4) = 0.0_RKIND
+   
+   outputs(1)%movieProbe%yValueForTime(2,1) = 0.11_RKIND
+   outputs(1)%movieProbe%yValueForTime(2,2) = 0.22_RKIND
+   outputs(1)%movieProbe%yValueForTime(2,3) = 0.33_RKIND
+   outputs(1)%movieProbe%yValueForTime(2,4) = 0.44_RKIND
+
+   outputs(1)%movieProbe%zValueForTime(2,1) = 0.0_RKIND
+   outputs(1)%movieProbe%zValueForTime(2,2) = 0.0_RKIND
+   outputs(1)%movieProbe%zValueForTime(2,3) = 0.0_RKIND
+   outputs(1)%movieProbe%zValueForTime(2,4) = 0.0_RKIND
+
+   call flush_outputs(outputs)
+
+   expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'_ts'//'0001'//'.vtu'
+   test_err = test_err + assert_file_exists(expectedPath)
+
+   expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'_ts'//'0002'//'.vtu'
+   test_err = test_err + assert_file_exists(expectedPath)
+
+   call close_outputs(outputs)
+
+   expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'.pvd'
+   test_err = test_err + assert_file_exists(expectedPath)
 
    err = test_err
 end function

@@ -20,9 +20,7 @@ module mod_movieProbeOutput
    private :: get_measurements_coords
    private :: save_current_data
    private :: write_vtu_timestep
-   private :: create_pvd
    private :: update_pvd
-   private :: close_pvd
    !===========================
 
 contains
@@ -74,7 +72,7 @@ contains
       real(kind=RKIND_tiempo), intent(in) :: step
 
       type(media_matrices_t), pointer, intent(in) :: geometryMedia
-      type(MediaData_t), pointer, dimension(:) :: registeredMedia
+      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
       type(limit_t), pointer, dimension(:), intent(in)  :: sinpml_fullsize
       type(fields_reference_t), pointer, intent(in) :: fieldsReference
 
@@ -250,33 +248,17 @@ contains
       ierr = vtkOutput%initialize(format='ASCII', filename=trim(filename), mesh_topology='UnstructuredGrid')
       ierr = vtkOutput%xml_writer%write_geo(n=npts, x=x, y=y, z=z)
       ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      ierr = vtkOutput%xml_writer%write_dataarray(data_name='float64_scalar', x=Jx)
+      ierr = vtkOutput%xml_writer%write_dataarray(data_name='CurrentX', x=Jx)
       ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
       ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      ierr = vtkOutput%xml_writer%write_dataarray(data_name='float64_scalar', x=Jy)
+      ierr = vtkOutput%xml_writer%write_dataarray(data_name='CurrentY', x=Jy)
       ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
       ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      ierr = vtkOutput%xml_writer%write_dataarray(data_name='float64_scalar', x=Jz)
+      ierr = vtkOutput%xml_writer%write_dataarray(data_name='CurrentZ', x=Jz)
       ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
       ierr = vtkOutput%xml_writer%finalize()
 
    end subroutine write_vtu_timestep
-
-   subroutine create_pvd(this, unitPVD)
-      implicit none
-      type(movie_probe_output_t), intent(in) :: this
-      integer, intent(out) :: unitPVD
-      integer :: ios
-
-      ! Abrimos el archivo PVD
-      open (newunit=unitPVD, file=trim(this%path)//".pvd", status='replace', action='write', iostat=ios)
-      if (ios /= 0) stop "Error al crear archivo PVD"
-
-      ! Escribimos encabezados XML
-      write (unitPVD, *) '<?xml version="1.0"?>'
-      write (unitPVD, *) '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">'
-      write (unitPVD, *) '  <Collection>'
-   end subroutine create_pvd
 
    subroutine update_pvd(this, stepIndex, unitPVD)
       implicit none
@@ -287,7 +269,7 @@ contains
       character(len=256) :: filename
 
       ! Generamos nombre del archivo VTU para este timestep
-      write (filename, '(A,I4.4,A)') trim(this%path), stepIndex, '.vtu'
+      write (filename, '(A,A,I4.4,A)') trim(this%path), '_ts', stepIndex, '.vtu'
 
       ! Escribimos el VTU correspondiente
       call write_vtu_timestep(this, stepIndex, filename)
@@ -297,15 +279,5 @@ contains
       write (unitPVD, '(A)') '    <DataSet timestep="'//trim(ts)// &
          '" group="" part="0" file="'//trim(filename)//'"/>'
    end subroutine update_pvd
-
-   subroutine close_pvd(unitPVD)
-      implicit none
-      integer, intent(in) :: unitPVD
-
-      ! Cerramos colección y archivo XML
-      write (unitPVD, *) '  </Collection>'
-      write (unitPVD, *) '</VTKFile>'
-      close (unitPVD)
-   end subroutine close_pvd
 
 end module mod_movieProbeOutput
