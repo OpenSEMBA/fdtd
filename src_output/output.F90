@@ -177,12 +177,23 @@ contains
                call init_solver_output(outputs(outputCount)%volumicCurrentProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir, sgg%dt)
 
             case (iCur)
-               outputCount = outputCount + 1
-               outputs(outputCount)%outputID = MOVIE_PROBE_ID
+               if (domain%domainType == TIME_DOMAIN) then
 
-               allocate (outputs(outputCount)%movieProbe)
-               call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, SINPML_fullsize, outputTypeExtension, control%mpidir)
-               call create_pvd(outputs(outputCount)%movieProbe%path, outputs(outputCount)%movieProbe%PDVUnit)
+                  outputCount = outputCount + 1
+                  outputs(outputCount)%outputID = MOVIE_PROBE_ID
+                  allocate (outputs(outputCount)%movieProbe)
+                  call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, SINPML_fullsize, outputTypeExtension, control%mpidir)
+                  call create_pvd(outputs(outputCount)%movieProbe%path, outputs(outputCount)%movieProbe%PDVUnit)
+
+               else if ( domain%domainType == FREQUENCY_DOMAIN ) then
+
+                  outputCount = outputCount + 1
+                  outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
+                  allocate (outputs(outputCount)%frequencySliceProbe)
+                  call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, SINPML_fullsize, outputTypeExtension, control%mpidir, sgg%dt)
+                  call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%PDVUnit)
+
+               end if
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
@@ -279,6 +290,7 @@ contains
          case (MOVIE_PROBE_ID)
             call update_solver_output(outputs(i)%movieProbe, step, geometryMedia, materialList, SINPML_fullsize, fieldsPtr)
          case(FREQUENCY_SLICE_PROBE_ID)
+            call update_solver_output(outputs(i)%frequencySliceProbe, step, geometryMedia, materialList, SINPML_fullsize, fieldsPtr)
          case default
             call stoponerror(0, 0, 'Output update not implemented')
          end select
@@ -339,6 +351,7 @@ contains
          case(MOVIE_PROBE_ID)
             call flush_solver_output(outputs(i)%movieProbe)
          case(FREQUENCY_SLICE_PROBE_ID)
+            call flush_solver_output(outputs(i)%frequencySliceProbe)
          end select
       end do
    end subroutine flush_outputs
