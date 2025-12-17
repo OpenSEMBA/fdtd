@@ -29,7 +29,7 @@ no_mpi_skip = pytest.mark.skipif(
 
 # Use of absolute path to avoid conflicts when changing directory.
 if platform == "linux":
-    SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd')
+    SEMBA_EXE = os.path.join(os.getcwd(), 'build-dbg', 'bin', 'semba-fdtd')
 elif platform == "win32":
     SEMBA_EXE = os.path.join(os.getcwd(), 'build', 'bin', 'semba-fdtd.exe')
 
@@ -41,6 +41,7 @@ EXCITATIONS_FOLDER = os.path.join(TEST_DATA_FOLDER, 'excitations/')
 OUTPUTS_FOLDER = os.path.join(TEST_DATA_FOLDER, 'outputs/')
 SPINIT_FOLDER = os.path.join(TEST_DATA_FOLDER, 'spinit/')
 GEOMETRIES_FOLDER = os.path.join(TEST_DATA_FOLDER, 'geometries/')
+PROBES_INPUT_EXAMPLE = os.path.join(TEST_DATA_FOLDER, 'input_examples/probes/')
 
 def getCase(case):
     return json.load(open(CASES_FOLDER + case + '.fdtd.json'))
