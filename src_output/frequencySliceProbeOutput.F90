@@ -48,6 +48,7 @@ contains
       this%path = get_output_path()
       call get_measurements_coords(this, geometryMedia, registeredMedia, sinpml_fullsize)
 
+      this%nFreq = domain%fnum
       allocate (this%frequencySlice(this%nFreq))
       allocate (this%xValueForFreq(this%nFreq, this%nMeasuredElements))
       allocate (this%yValueForFreq(this%nFreq, this%nMeasuredElements))

@@ -57,7 +57,7 @@ module FDETYPES_TOOLS
       real(kind=RKIND) :: phiStep = 0.0_RKIND
 
       logical :: FreqDomain = .FALSE.
-      logical :: TimeDomain = .TRUE.
+      logical :: TimeDomain = .FALSE.
       logical :: Saveall = .FALSE.
       logical :: TransFer = .FALSE.
       logical :: Volumic = .FALSE.

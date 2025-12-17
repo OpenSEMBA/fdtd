@@ -12,6 +12,7 @@ module mod_testOutputUtils
    public :: create_point_probe_observation
    public :: create_volumic_probe_observation
    public :: create_movie_observation
+   public :: create_frequency_slice_observation
    public :: create_dummy_fields
    !===========================
 
@@ -21,7 +22,6 @@ module mod_testOutputUtils
 
    !===========================
 
-   
    type :: dummyFields_t
       real(kind=RKIND), allocatable, dimension(:, :, :) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=RKIND), allocatable, dimension(:) :: dxe, dye, dze, dxh, dyh, dzh
@@ -39,7 +39,7 @@ contains
       allocate (P(1))
       P(1) = create_observable(x, y, z, x, y, z, iEx)
       call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
-      
+
       call set_observation(obs, P, 'poinProbe', domain, 'DummyFileNormalize')
    end function
 
@@ -72,6 +72,20 @@ contains
 
       call set_observation(observation, P, 'movieProbe', domain, 'DummyFileNormalize')
    end function create_movie_observation
+
+   function create_frequency_slice_observation(xi, yi, zi, xe, ye, ze) result(observation)
+      integer, intent(in) :: xi, yi, zi, xe, ye, ze
+      type(Obses_t) :: observation
+
+      type(observable_t), dimension(:), allocatable :: P
+      type(observation_domain_t) :: domain
+
+      allocate (P(1))
+      P(1) = create_observable(xi, yi, zi, xe, ye, ze, iCur)
+      call initialize_observation_frequency_domain(domain, 0.0_RKIND, 100.0_RKIND, 20.0_RKIND)
+
+      call set_observation(observation, P, 'frequency_sliceProbe', domain, 'DummyFileNormalize')
+   end function create_frequency_slice_observation
 
    subroutine create_dummy_fields(this, lower, upper, delta)
       class(dummyFields_t), intent(inout) :: this

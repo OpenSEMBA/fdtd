@@ -53,6 +53,24 @@ contains
       end if
    end function assert_real_time_equal
 
+function assert_complex_equal(val, expected, tolerance, errorMessage) result(err)
+    complex(kind=CKIND), intent(in) :: val, expected
+    real   (kind=RKIND), intent(in) :: tolerance
+    character(len=*), intent(in)    :: errorMessage
+    integer :: err
+
+    if (abs(val - expected) <= tolerance) then
+        err = 0
+    else
+        err = 1
+        print *, 'ASSERTION FAILED: ', trim(errorMessage)
+        print *, '  Value:    ', val
+        print *, '  Expected: ', expected
+        print *, '  Delta:    ', abs(val - expected)
+        print *, '  Tolerance:', tolerance
+    end if
+end function assert_complex_equal
+
    function assert_string_equal(val, expected, errorMessage) result(err)
 
       character(*), intent(in) :: val
