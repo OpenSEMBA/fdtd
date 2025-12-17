@@ -65,7 +65,8 @@ module outputTypes
    end type point_probe_output_t
 
    type wire_charge_probe_output_t
-      integer(kind=SINGLE) :: columnas = 6_SINGLE !reference, corriente, -e*dl, vplus, vminus, vplus-vminus
+      integer(kind=SINGLE) :: columnas = 2_SINGLE
+      integer(kind=SINGLE) :: fileUnitTime
       type(domain_t) :: domain
       type(cell_coordinate_t) :: coordinates
       character(len=BUFSIZE) :: path
@@ -86,6 +87,7 @@ module outputTypes
 
    type wire_current_probe_output_t
       integer(kind=SINGLE) :: columnas = 6_SINGLE !reference, corriente, -e*dl, vplus, vminus, vplus-vminus
+      integer(kind=SINGLE) :: fileUnitTime
       type(domain_t) :: domain
       type(cell_coordinate_t) :: coordinates
       character(len=BUFSIZE) :: path
@@ -107,6 +109,7 @@ module outputTypes
 
    type bulk_current_probe_output_t
       integer(kind=SINGLE) :: columnas = 2_SINGLE !reference and field
+      integer(kind=SINGLE) :: fileUnitTime
       type(domain_t) :: domain
       type(cell_coordinate_t) :: lowerBound
       type(cell_coordinate_t) :: upperBound

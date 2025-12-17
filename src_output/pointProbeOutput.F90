@@ -109,7 +109,7 @@ contains
       type(point_probe_output_t), intent(inout) :: this
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          call flush_time_domain(this)
-         call clear_time_data(this)
+         call clear_time_data()
       end if
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          call flush_frequency_domain(this)
@@ -160,9 +160,7 @@ contains
          close (this%fileUnitFreq)
       end subroutine flush_frequency_domain
 
-      subroutine clear_time_data(this)
-         type(point_probe_output_t), intent(inout) :: this
-         !Only required for time domain, frequency overwrites itself on every update
+      subroutine clear_time_data()
          this%timeStep = 0.0_RKIND_tiempo
          this%valueForTime = 0.0_RKIND
 

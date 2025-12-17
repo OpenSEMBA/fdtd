@@ -58,7 +58,10 @@ module output
 
    interface create_empty_files
       module procedure &
-         create_point_probe_output_files
+         create_point_probe_output_files, &
+         create_wire_current_probe_output, &
+         create_wire_charge_probe_output, &
+         create_bulk_probe_output
    end interface
 
    interface update_solver_output
@@ -79,6 +82,9 @@ module output
    interface flush_solver_output
       module procedure &
          flush_point_probe_output, &
+         flush_wire_current_probe_output, &
+         flush_wire_charge_probe_output, &
+         flush_bulk_probe_output, &
          flush_movie_probe_output, &
          flush_frequency_slice_probe_output
          
@@ -145,7 +151,7 @@ contains
 
                allocate (outputs(outputCount)%pointProbe)
                call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt)
-
+               call create_empty_files(outputs(outputCount)%pointProbe)
             case (iJx, iJy, iJz)
                if (ThereAreWires) then
                   outputCount = outputCount + 1
@@ -153,6 +159,7 @@ contains
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
+                  call create_empty_files(outputs(outputCount)%wireCurrentProbe)
                end if
 
             case (iQx, iQy, iQz)
@@ -161,12 +168,15 @@ contains
 
                allocate (outputs(outputCount)%wireChargeProbe)
                call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
+               call create_empty_files(outputs(outputCount)%wireChargeProbe)
+
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
                allocate (outputs(outputCount)%bulkCurrentProbe)
                call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
+               call create_empty_files(outputs(outputCount)%bulkCurrentProbe)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (iCurX, iCurY, iCurZ)
@@ -175,7 +185,7 @@ contains
 
                allocate (outputs(outputCount)%volumicCurrentProbe)
                call init_solver_output(outputs(outputCount)%volumicCurrentProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir, sgg%dt)
-
+               
             case (iCur)
                if (domain%domainType == TIME_DOMAIN) then
 
@@ -231,7 +241,7 @@ contains
 
          elseif (observation%FreqDomain) then
             !Just linear progression for now. Need to bring logartihmic info to here
-            nFreq = int((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep, kind=SINGLE)
+            nFreq = int((observation%FinalFreq - observation%InitialFreq)/observation%FreqStep, kind=SINGLE) + 1_SINGLE
             newdomain = domain_t(observation%InitialFreq, observation%FinalFreq, nFreq, logarithmicspacing=.false.)
 
             newDomain%fstep = min(newDomain%fstep, 2.0_RKIND/simulationTimeStep)
@@ -380,7 +390,6 @@ contains
       integer, intent(out) :: unitPVD
       integer :: ios
 
-      ! Abrimos el archivo PVD
       open(newunit=unitPVD, file=trim(pdvPath)//".pvd", status="replace", action="write", iostat=ios)
       if (ios /= 0) stop "Error al crear archivo PVD"
 
@@ -394,7 +403,6 @@ contains
       implicit none
       integer, intent(in) :: unitPVD
 
-      ! Cerramos colección y archivo XML
       write (unitPVD, *) '  </Collection>'
       write (unitPVD, *) '</VTKFile>'
       close (unitPVD)

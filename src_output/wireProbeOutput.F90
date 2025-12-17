@@ -15,8 +15,12 @@ module mod_wireProbeOutput
    !===========================
    public :: init_wire_current_probe_output
    public :: init_wire_charge_probe_output
+   public :: create_wire_current_probe_output
+   public :: create_wire_charge_probe_output
    public :: update_wire_current_probe_output
    public :: update_wire_charge_probe_output
+   public :: flush_wire_current_probe_output
+   public :: flush_wire_charge_probe_output
    !===========================
 
 contains
@@ -265,7 +269,32 @@ contains
 
          return
       end function get_probe_bounds_extension
+
    end subroutine init_wire_charge_probe_output
+
+   subroutine create_wire_current_probe_output(this)
+      type(wire_current_probe_output_t), intent(inout) :: this
+      character(len=BUFSIZE) :: file_time
+      integer(kind=SINGLE) :: err
+      err = 0
+
+      file_time = trim(adjustl(this%path))//'_'// &
+                  trim(adjustl(timeExtension))//'_'// &
+                  trim(adjustl(datFileExtension))
+      call create_or_clear_file(file_time, this%fileUnitTime, err)
+   end subroutine create_wire_current_probe_output
+
+   subroutine create_wire_charge_probe_output(this)
+      character(len=BUFSIZE) :: file_time
+      type(wire_charge_probe_output_t), intent(inout) :: this
+      integer(kind=SINGLE) :: err
+      err = 0
+
+      file_time = trim(adjustl(this%path))//'_'// &
+                  trim(adjustl(timeExtension))//'_'// &
+                  trim(adjustl(datFileExtension))
+      call create_or_clear_file(file_time, this%fileUnitTime, err)
+   end subroutine create_wire_charge_probe_output
 
    subroutine update_wire_current_probe_output(this, step, wiresflavor, wirecrank, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
@@ -356,4 +385,61 @@ contains
       SegmDumm => this%segment
       this%chargeValue(this%serializedTimeSize) = SegmDumm%ChargeMinus%ChargePresent
    end subroutine update_wire_charge_probe_output
+
+   subroutine flush_wire_current_probe_output(this)
+      type(wire_current_probe_output_t), intent(inout) :: this
+      character(len=BUFSIZE) :: filename
+      integer :: i
+
+      filename = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
+      open (unit=this%fileUnitTime, file=filename, status="old", action="write", position="append")
+
+      do i = 1, this%serializedTimeSize
+            write (this%fileUnitTime, fmt) this%timeStep(i), &
+            this%currentValues%current, &
+            this%currentValues%deltaVoltage, &
+            this%currentValues%plusVoltage, &
+            this%currentValues%minusVoltage, &
+            this%currentValues%voltageDiference
+      end do
+      close (this%fileUnitTime)
+
+      call clear_time_data()
+      contains 
+      subroutine clear_time_data()
+         this%timeStep = 0.0_RKIND_tiempo
+
+         this%currentValues%current = 0.0_RKIND
+         this%currentValues%deltaVoltage = 0.0_RKIND
+         this%currentValues%plusVoltage = 0.0_RKIND
+         this%currentValues%minusVoltage = 0.0_RKIND
+         this%currentValues%voltageDiference = 0.0_RKIND
+
+         this%serializedTimeSize = 0
+      end subroutine clear_time_data
+   end subroutine flush_wire_current_probe_output
+
+   subroutine flush_wire_charge_probe_output(this)
+      type(wire_charge_probe_output_t), intent(inout) :: this
+      character(len=BUFSIZE) :: filename
+      integer :: i
+
+      filename = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
+      open (unit=this%fileUnitTime, file=filename, status="old", action="write", position="append")
+
+      do i = 1, this%serializedTimeSize
+            write (this%fileUnitTime, fmt) this%timeStep(i), &
+            this%chargeValue
+      end do
+      close (this%fileUnitTime)
+            call clear_time_data()
+      contains 
+      subroutine clear_time_data()
+         this%timeStep = 0.0_RKIND_tiempo
+
+         this%chargeValue = 0.0_RKIND
+
+         this%serializedTimeSize = 0
+      end subroutine clear_time_data
+   end subroutine flush_wire_charge_probe_output
 end module mod_wireProbeOutput

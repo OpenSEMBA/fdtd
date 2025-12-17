@@ -37,6 +37,18 @@ contains
 
    end subroutine init_bulk_probe_output
 
+   subroutine create_bulk_probe_output(this)
+      type(bulk_current_probe_output_t), intent(inout) :: this
+      character(len=BUFSIZE) :: file_time
+      integer(kind=SINGLE) :: err
+      err = 0
+
+      file_time = trim(adjustl(this%path))//'_'// &
+                  trim(adjustl(timeExtension))//'_'// &
+                  trim(adjustl(datFileExtension))
+      call create_or_clear_file(file_time, this%fileUnitTime, err)
+   end subroutine create_bulk_probe_output
+
    subroutine update_bulk_probe_output(this, step, field)
       type(bulk_current_probe_output_t), intent(out) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
@@ -149,5 +161,32 @@ contains
       end select
 
    end subroutine update_bulk_probe_output
+
+   subroutine flush_bulk_probe_output(this)
+      type(bulk_current_probe_output_t), intent(inout) :: this
+      character(len=BUFSIZE) :: filename
+      integer :: i
+      if (this%serializedTimeSize <= 0) then
+         print *, "No data to write."
+         return
+      end if
+
+      filename = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
+      open (unit=this%fileUnitTime, file=filename, status="old", action="write", position="append")
+
+      do i = 1, this%serializedTimeSize
+         write (this%fileUnitTime, fmt) this%timeStep(i), this%valueForTime(i)
+      end do
+
+      close (this%fileUnitTime)
+      call clear_time_data()
+   contains
+      subroutine clear_time_data()
+         this%timeStep = 0.0_RKIND_tiempo
+         this%valueForTime = 0.0_RKIND
+
+         this%serializedTimeSize = 0
+      end subroutine clear_time_data
+   end subroutine flush_bulk_probe_output
 
 end module mod_bulkProbeOutput
