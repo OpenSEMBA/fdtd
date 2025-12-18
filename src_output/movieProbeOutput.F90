@@ -26,14 +26,14 @@ module mod_movieProbeOutput
 contains
 
    subroutine init_movie_probe_output(this, lowerBound, upperBound, field, domain, geometryMedia, registeredMedia, sinpml_fullsize, outputTypeExtension, mpidir)
-      type(movie_probe_output_t), intent(inout) :: this
+      type(movie_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
 
-      type(MediaData_t), pointer, dimension(:) :: registeredMedia
-      type(media_matrices_t), pointer, intent(in) :: geometryMedia
-      type(limit_t), pointer, dimension(:), intent(in)  :: sinpml_fullsize
+      type(MediaData_t), dimension(:) :: registeredMedia
+      type(media_matrices_t), intent(in) :: geometryMedia
+      type(limit_t), dimension(:), intent(in)  :: sinpml_fullsize
 
       type(domain_t), intent(in) :: domain
 
@@ -71,10 +71,10 @@ contains
       type(movie_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
 
-      type(media_matrices_t), pointer, intent(in) :: geometryMedia
-      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
-      type(limit_t), pointer, dimension(:), intent(in)  :: sinpml_fullsize
-      type(fields_reference_t), pointer, intent(in) :: fieldsReference
+      type(media_matrices_t), intent(in) :: geometryMedia
+      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
+      type(limit_t), dimension(:), intent(in)  :: sinpml_fullsize
+      type(fields_reference_t), intent(in) :: fieldsReference
 
       this%serializedTimeSize = this%serializedTimeSize + 1
 
@@ -106,9 +106,9 @@ contains
 
    subroutine get_measurements_coords(this, geometryMedia, registeredMedia, sinpml_fullsize)
       type(movie_probe_output_t), intent(inout) :: this
-      type(media_matrices_t), pointer, intent(in) :: geometryMedia
-      type(MediaData_t), pointer, dimension(:) :: registeredMedia
-      type(limit_t), pointer, dimension(:), intent(in) :: sinpml_fullsize
+      type(media_matrices_t), intent(in) :: geometryMedia
+      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
+      type(limit_t), dimension(:), intent(in) :: sinpml_fullsize
 
       integer(kind=SINGLE) :: i, j, k, field
       integer(kind=SINGLE) :: istart, jstart, kstart, iend, jend, kend
@@ -169,11 +169,11 @@ contains
    subroutine save_current_data(this, step, fieldsReference, geometryMedia, registeredMedia, sinpml_fullsize)
       type(movie_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
-      type(fields_reference_t), pointer, intent(in) :: fieldsReference
+      type(fields_reference_t), intent(in) :: fieldsReference
 
-      type(media_matrices_t), pointer, intent(in) :: geometryMedia
-      type(MediaData_t), pointer, dimension(:) :: registeredMedia
-      type(limit_t), pointer, dimension(:), intent(in)  :: sinpml_fullsize
+      type(media_matrices_t), intent(in) :: geometryMedia
+      type(MediaData_t), dimension(:) :: registeredMedia
+      type(limit_t), dimension(:), intent(in)  :: sinpml_fullsize
 
       integer(kind=SINGLE) :: i, j, k, field
       integer(kind=SINGLE) :: istart, jstart, kstart, iend, jend, kend

@@ -10,7 +10,7 @@ module output
    use mod_movieProbeOutput
    use mod_frequencySliceProbeOutput
    use mod_farFieldOutput
-
+   
    implicit none
    private
 
@@ -59,6 +59,10 @@ module output
       type(far_field_probe_output_t), allocatable :: farFieldOutput !farfield
    end type solver_output_t
 
+   REAL(KIND=RKIND), save           ::  eps0, mu0
+   REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
+   type(solver_output_t), pointer, dimension(:), save  ::  outputs
+
    interface init_solver_output
       module procedure &
          init_point_probe_output, &
@@ -100,17 +104,24 @@ module output
          flush_movie_probe_output, &
          flush_frequency_slice_probe_output, &
          flush_farField_probe_output
-         
+
    end interface
 contains
 
-   subroutine init_outputs(sgg, media, sinpml_fullsize, control, outputs, ThereAreWires)
+   function GetOutputs() result(r)
+     type(solver_output_t), pointer, dimension(:)  ::  r
+     r => outputs
+     return
+   end function
+
+   subroutine init_outputs(sgg, media, sinpml_fullsize, control, ThereAreWires, bounds, OutputRequested)
       type(SGGFDTDINFO), intent(in) ::  sgg
-      type(media_matrices_t), pointer, intent(in) :: media
-      type(limit_t), pointer, dimension(:), intent(in)  ::  SINPML_fullsize
+      type(media_matrices_t), intent(in) :: media
+      type(limit_t), dimension(:), intent(in)  ::  SINPML_fullsize
+      type(bounds_t) :: bounds
       type(sim_control_t), intent(inout) :: control
-      type(solver_output_t), dimension(:), allocatable, intent(out) :: outputs
-      logical :: ThereAreWires
+      logical, intent(inout) :: ThereAreWires
+      logical, intent(out) :: OutputRequested
 
       type(domain_t) :: domain
       type(spheric_domain_t) :: sphericRange
@@ -183,13 +194,6 @@ contains
                call create_empty_files(outputs(outputCount)%bulkCurrentProbe)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
-            case (iCurX, iCurY, iCurZ)
-               outputCount = outputCount + 1
-               outputs(outputCount)%outputID = VOLUMIC_CURRENT_PROBE_ID
-
-               allocate (outputs(outputCount)%volumicCurrentProbe)
-               call init_solver_output(outputs(outputCount)%volumicCurrentProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, sinpml_fullsize, outputTypeExtension, control%mpidir, sgg%dt)
-               
             case (iCur)
                if (domain%domainType == TIME_DOMAIN) then
 
@@ -285,8 +289,7 @@ contains
 
    end subroutine init_outputs
 
-   subroutine create_output_files(outputs)
-      type(solver_output_t), dimension(:), intent(inout) :: outputs
+   subroutine create_output_files()
       integer(kind=SINGLE) :: i
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
@@ -295,46 +298,48 @@ contains
       end do
    end subroutine create_output_files
 
-   subroutine update_outputs(outputs, geometryMedia, materialList, SINPML_fullsize , control, step, fields)
-      type(solver_output_t), dimension(:), intent(inout) :: outputs
-      real(kind=RKIND_tiempo) :: step
+   subroutine update_outputs(geometryMedia, materialList, SINPML_fullsize, control, discreteTimeArray, timeIndx, fieldsReference, bounds)
+      integer(kind=SINGLE), intent(in) :: timeIndx
+      real(kind=RKIND_tiempo), dimension(:), intent(in) :: discreteTimeArray
       integer(kind=SINGLE) :: i, id
-      type(media_matrices_t), pointer, intent(in) :: geometryMedia
-      type(MediaData_t),dimension(:), pointer :: materialList
-      type(limit_t), pointer, dimension(:), intent(in)  ::  SINPML_fullsize
+      type(media_matrices_t), intent(in) :: geometryMedia
+      type(MediaData_t), dimension(:) :: materialList
+      type(limit_t), dimension(:), intent(in)  ::  SINPML_fullsize
       type(sim_control_t), intent(in) :: control
+      type(bounds_t), intent(in) :: bounds
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
-      type(field_data_t), pointer :: fieldReference
-      type(fields_reference_t), target :: fields
-      type(fields_reference_t), pointer :: fieldsPtr
+      type(field_data_t) :: fieldReference
+      type(fields_reference_t), intent(in) :: fieldsReference
+      real(kind=RKIND_tiempo) :: discreteTime
 
-      fieldsPtr => fields
+      discreteTime = discreteTimeArray(timeIndx)
 
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
-            fieldComponent => get_field_component(outputs(i)%pointProbe%fieldComponent, fields) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
-            call update_solver_output(outputs(i)%pointProbe, step, fieldComponent)
+            fieldComponent => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
+            call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent)
          case (WIRE_CURRENT_PROBE_ID)
-            call update_solver_output(outputs(i)%wireCurrentProbe, step, control%wiresflavor, control%wirecrank, InvEps, InvMu)
+            call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, control%wiresflavor, control%wirecrank, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
-            call update_solver_output(outputs(i)%wireChargeProbe, step)
+            call update_solver_output(outputs(i)%wireChargeProbe, discreteTime)
          case (BULK_PROBE_ID)
-            fieldReference => get_field_reference(outputs(i)%bulkCurrentProbe%fieldComponent, fields)
-            call update_solver_output(outputs(i)%bulkCurrentProbe, step, fieldReference)
+            fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%fieldComponent)
+            call update_solver_output(outputs(i)%bulkCurrentProbe, discreteTime, fieldReference)
          case (MOVIE_PROBE_ID)
-            call update_solver_output(outputs(i)%movieProbe, step, geometryMedia, materialList, SINPML_fullsize, fieldsPtr)
-         case(FREQUENCY_SLICE_PROBE_ID)
-            call update_solver_output(outputs(i)%frequencySliceProbe, step, geometryMedia, materialList, SINPML_fullsize, fieldsPtr)
+            call update_solver_output(outputs(i)%movieProbe, discreteTime, geometryMedia, materialList, SINPML_fullsize, fieldsReference)
+         case (FREQUENCY_SLICE_PROBE_ID)
+            call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, geometryMedia, materialList, SINPML_fullsize, fieldsReference)
+         case (FAR_FIELD_PROBE_ID)
+            call update_solver_output(outputs(i)%farFieldOutput, timeIndx, bounds, fieldsReference)
          case default
             call stoponerror(0, 0, 'Output update not implemented')
          end select
       end do
 
    contains
-      function get_field_component(fieldId, fieldsReference) result(field)
+      function get_field_component(fieldId) result(field)
          integer(kind=SINGLE), intent(in) :: fieldId
-         type(fields_reference_t), intent(in) :: fieldsReference
          real(kind=RKIND), pointer, dimension(:, :, :) :: field
          select case (fieldId)
          case (iEx); field => fieldsReference%E%x
@@ -346,10 +351,9 @@ contains
          end select
       end function get_field_component
 
-      function get_field_reference(fieldId, fieldsReference) result(field)
+      function get_field_reference(fieldId) result(field)
          integer(kind=SINGLE), intent(in) :: fieldId
-         type(fields_reference_t), intent(in) :: fieldsReference
-         type(field_data_t), pointer :: field
+         type(field_data_t) :: field
          select case (fieldId)
          case (iBloqueJx, iBloqueJy, iBloqueJz)
             field%x => fieldsReference%E%x
@@ -372,42 +376,54 @@ contains
 
    end subroutine update_outputs
 
-   subroutine flush_outputs(outputs)
-      type(solver_output_t), dimension(:), intent(inout) :: outputs
+   subroutine flush_outputs(simulationTimeArray, simulationTimeIndex, control, fields, bounds, farFieldFlushRequested)
+      type(fields_reference_t), target :: fields
+      type(fields_reference_t), pointer :: fieldsPtr
+      type(sim_control_t), intent(in) :: control
+      type(bounds_t), intent(in) :: bounds
+      logical, intent(in) :: farFieldFlushRequested
+      real(KIND=RKIND_tiempo), pointer, dimension(:), intent(in) :: simulationTimeArray
+      integer, intent(in) :: simulationTimeIndex
       integer :: i
+
+      fieldsPtr => fields
+
       do i = 1, size(outputs)
-         select case(outputs(i)%outputID)
-         case(POINT_PROBE_ID)
-            call flush_point_probe_output(outputs(i)%pointProbe)
-         case(WIRE_CURRENT_PROBE_ID)
-         case(WIRE_CHARGE_PROBE_ID)
-         case(BULK_PROBE_ID)
-         case(VOLUMIC_CURRENT_PROBE_ID)
-         case(MOVIE_PROBE_ID)
+         select case (outputs(i)%outputID)
+         case (POINT_PROBE_ID)
+            call flush_solver_output(outputs(i)%pointProbe)
+         case (WIRE_CURRENT_PROBE_ID)
+            call flush_solver_output(outputs(i)%wireCurrentProbe)
+         case (WIRE_CHARGE_PROBE_ID)
+            call flush_solver_output(outputs(i)%wireChargeProbe)
+         case (BULK_PROBE_ID)
+            call flush_solver_output(outputs(i)%bulkCurrentProbe)
+         case (MOVIE_PROBE_ID)
             call flush_solver_output(outputs(i)%movieProbe)
-         case(FREQUENCY_SLICE_PROBE_ID)
+         case (FREQUENCY_SLICE_PROBE_ID)
             call flush_solver_output(outputs(i)%frequencySliceProbe)
+         case (FAR_FIELD_PROBE_ID)
+            if (farFieldFlushRequested) call flush_solver_output(outputs(i)%farFieldOutput, simulationTimeArray, simulationTimeIndex, control, fieldsPtr, bounds)
+         case default
          end select
       end do
    end subroutine flush_outputs
 
-   subroutine close_outputs(outputs)
-      type(solver_output_t), dimension(:), intent(inout) :: outputs
+   subroutine close_outputs()
       integer :: i
       do i = 1, size(outputs)
-         select case(outputs(i)%outputID)
-         case(POINT_PROBE_ID)
-         case(WIRE_CURRENT_PROBE_ID)
-         case(WIRE_CHARGE_PROBE_ID)
-         case(BULK_PROBE_ID)
-         case(VOLUMIC_CURRENT_PROBE_ID)
-         case(MOVIE_PROBE_ID)
+         select case (outputs(i)%outputID)
+         case (POINT_PROBE_ID)
+         case (WIRE_CURRENT_PROBE_ID)
+         case (WIRE_CHARGE_PROBE_ID)
+         case (BULK_PROBE_ID)
+         case (VOLUMIC_CURRENT_PROBE_ID)
+         case (MOVIE_PROBE_ID)
             call close_pvd(outputs(i)%movieProbe%PDVUnit)
-         case(FREQUENCY_SLICE_PROBE_ID)
+         case (FREQUENCY_SLICE_PROBE_ID)
          end select
       end do
    end subroutine
-
 
    subroutine create_pvd(pdvPath, unitPVD)
       implicit none
@@ -415,7 +431,7 @@ contains
       integer, intent(out) :: unitPVD
       integer :: ios
 
-      open(newunit=unitPVD, file=trim(pdvPath)//".pvd", status="replace", action="write", iostat=ios)
+      open (newunit=unitPVD, file=trim(pdvPath)//".pvd", status="replace", action="write", iostat=ios)
       if (ios /= 0) stop "Error al crear archivo PVD"
 
       ! Escribimos encabezados XML
@@ -433,4 +449,13 @@ contains
       close (unitPVD)
    end subroutine close_pvd
 
+   function get_required_output_count(sgg) result(count)
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=SINGLE) ::i, count
+      count = 0
+      do i = 1, sgg%NumberRequest
+         count = count + sgg%Observation(i)%nP
+      end do
+      return
+   end function
 end module output

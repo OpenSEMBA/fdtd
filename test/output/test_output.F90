@@ -6,15 +6,18 @@ integer function test_init_point_probe() bind(c) result(err)
    use mod_sggMethods
    use mod_assertionTools
 
+   type(solver_output_t), pointer, dimension(:)  ::  outputs
+
    type(SGGFDTDINFO) :: dummysgg
    type(sim_control_t) :: dummyControl
    type(media_matrices_t), pointer:: dummymedia => NULL()
    type(MediaData_t), dimension(:), allocatable, target :: simulationMedia
    type(MediaData_t), dimension(:), pointer :: simulationMediaPtr
    type(limit_t), pointer, dimension(:) :: dummysinpml_fullsize => NULL()
-   type(solver_output_t), dimension(:), allocatable :: outputs
+   type(bounds_t) :: dummyBound
    type(MediaData_t) :: defaultMaterial, pecMaterial
    logical :: ThereAreWires = .false.
+   logical :: outputRequested
 
    type(Obses_t) :: pointProbeObservable
 
@@ -23,9 +26,6 @@ integer function test_init_point_probe() bind(c) result(err)
    real(kind=RKIND_tiempo), pointer, dimension(:) :: timeArray
 
    integer(kind=SINGLE) :: test_err = 0
-
-   !Cleanup
-   if (allocated(outputs)) deallocate (outputs)
 
    !Set requested observables
    call sgg_init(dummysgg)
@@ -43,13 +43,15 @@ integer function test_init_point_probe() bind(c) result(err)
    !Set control flags
    dummyControl = create_control_flags(mpidir=3, nEntradaRoot='entradaRoot', wiresflavor='holland')
 
-   call init_outputs(dummysgg, dummymedia, dummysinpml_fullsize, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, dummymedia, dummysinpml_fullsize, dummyControl, ThereAreWires, dummyBound, outputRequested)
+
+   outputs => GetOutputs()
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, POINT_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%pointProbe%columnas, 2, 'Unexpected number of columns')
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, 'entradaRoot_poinProbe_Ex_4_4_4', 'Unexpected path')
 
-   call close_outputs(outputs)
+   call close_outputs()
 
    deallocate (dummysgg%Observation)
    deallocate (outputs)
@@ -60,9 +62,12 @@ integer function test_update_point_probe() bind(c) result(err)
    use FDETYPES
    use FDETYPES_TOOLS
    use output
+   use outputTypes
    use mod_testOutputUtils
    use mod_sggMethods
    use mod_assertionTools
+
+   type(solver_output_t), pointer, dimension(:)  ::  outputs
 
    type(SGGFDTDINFO) :: dummysgg
    type(sim_control_t) :: dummyControl
@@ -70,12 +75,13 @@ integer function test_update_point_probe() bind(c) result(err)
    type(MediaData_t), dimension(:), allocatable, target :: simulationMedia
    type(MediaData_t), dimension(:), pointer :: simulationMediaPtr
    type(limit_t), pointer, dimension(:) :: dummysinpml_fullsize => NULL()
-   type(solver_output_t), dimension(:), allocatable :: outputs
    logical :: ThereAreWires = .false.
+   logical :: outputRequested
+   type(bounds_t) :: dummyBound
 
    type(Obses_t) :: pointProbeObservable
    type(dummyFields_t), target :: dummyfields
-   type(fields_reference_t) :: fields
+   type(fields_reference_t) :: fields 
 
    real(kind=RKIND_tiempo) :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE) :: nTimeSteps = 100_SINGLE
@@ -95,7 +101,7 @@ integer function test_update_point_probe() bind(c) result(err)
    simulationMediaPtr => simulationMedia
    call sgg_set_Med(dummysgg, simulationMediaPtr)
 
-   call init_outputs(dummysgg, dummymedia, dummysinpml_fullsize, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, dummymedia, dummysinpml_fullsize, dummyControl, ThereAreWires, dummyBound, outputRequested)
 
    call create_dummy_fields(dummyfields, 1, 10, 0.01)
 
@@ -113,18 +119,20 @@ integer function test_update_point_probe() bind(c) result(err)
    fields%H%deltaZ => dummyfields%dzh
 
    dummyfields%Ex(4, 4, 4) = 5.0_RKIND
-   call update_outputs(outputs, dummyMedia, simulationMediaPtr, dummysinpml_fullsize, dummyControl, 0.5_RKIND_tiempo, fields)
+   call update_outputs(dummyMedia, simulationMediaPtr, dummysinpml_fullsize, dummyControl, dummysgg%tiempo, 1_SINGLE, fields, dummyBound)
 
-   test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(1), 0.5_RKIND_tiempo, 0.00001_RKIND_tiempo, 'Unexpected timestep 1')
+   outputs => GetOutputs()
+
+   test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(1), 0.0_RKIND_tiempo, 0.00001_RKIND_tiempo, 'Unexpected timestep 1')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(1), 5.0_RKIND, 0.00001_RKIND, 'Unexpected field 1')
 
    dummyfields%Ex(4, 4, 4) = -4.0_RKIND
-   call update_outputs(outputs, dummyMedia, simulationMediaPtr, dummysinpml_fullsize, dummyControl, 0.8_RKIND_tiempo, fields)
+   call update_outputs(dummyMedia, simulationMediaPtr, dummysinpml_fullsize, dummyControl, dummysgg%tiempo, 2_SINGLE, fields, dummyBound)
 
-   test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(2), 0.8_RKIND_tiempo, 0.00001_RKIND_tiempo, 'Unexpected timestep 2')
+   test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(2), 0.1_RKIND_tiempo, 0.00001_RKIND_tiempo, 'Unexpected timestep 2')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(2), -4.0_RKIND, 0.00001_RKIND, 'Unexpected field 2')
 
-   call close_outputs(outputs)
+   call close_outputs()
 
    if (associated(dummymedia)) deallocate (dummymedia)
    if (associated(dummysinpml_fullsize)) deallocate (dummysinpml_fullsize)
@@ -134,6 +142,7 @@ end function test_update_point_probe
 
 integer function test_flush_point_probe() bind(c) result(err)
    use output
+   use mod_pointProbeOutput
    use mod_domain
    use mod_testOutputUtils
    use mod_assertionTools
@@ -197,6 +206,7 @@ end function test_flush_point_probe
 
 integer function test_multiple_flush_point_probe() bind(c) result(err)
    use output
+   use mod_pointProbeOutput
    use mod_domain
    use mod_testOutputUtils
    use mod_assertionTools
@@ -285,6 +295,8 @@ integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err
    use mod_sggMethods
    use mod_assertionTools
 
+   type(solver_output_t), pointer, dimension(:)  ::  outputs
+
    integer(kind=RKIND) :: iter
    type(media_matrices_t), target :: media
    type(media_matrices_t), pointer :: mediaPtr
@@ -295,12 +307,13 @@ integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err
    type(Obses_t) :: volumicProbeObservable
    type(SGGFDTDINFO) :: dummysgg
    type(sim_control_t) :: dummyControl
-   type(solver_output_t), dimension(:), allocatable :: outputs
+   type(bounds_t) :: dummyBound
 
    type(MediaData_t) :: thinWireSimulationMaterial
    character(len=BUFSIZE) :: test_extension = trim(adjustl('tmp_cases/flush_point_probe'))
    integer(kind=SINGLE) :: mpidir = 3
    logical :: ThereAreWires = .false.
+   logical :: outputRequested
 
    real(kind=RKIND_tiempo) :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE) :: nTimeSteps = 100_SINGLE
@@ -341,23 +354,28 @@ integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err
 
    dummyControl = create_control_flags(mpidir=mpidir, nEntradaRoot='entradaRoot', wiresflavor='holland')
 
-   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, ThereAreWires, dummyBound, outputRequested)
+
+   outputs => GetOutputs()
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, VOLUMIC_CURRENT_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%volumicCurrentProbe%columnas, 4, 'Unexpected number of columns')
    test_err = test_err + assert_string_equal(outputs(1)%volumicCurrentProbe%path, 'entradaRoot_volumicProbe_BCX_4_4_4__6_6_6', 'Unexpected path')
 
-   call close_outputs(outputs)
+   call close_outputs()
 
    err = test_err
 end function
 
 integer function test_init_movie_probe() bind(c) result(err)
    use output
+   use outputTypes
    use mod_testOutputUtils
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+
+   type(solver_output_t), pointer, dimension(:)  ::  outputs
 
    ! Init inputs
    type(SGGFDTDINFO) :: dummysgg
@@ -365,8 +383,9 @@ integer function test_init_movie_probe() bind(c) result(err)
    type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
    type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
    type(sim_control_t) :: dummyControl
-   type(solver_output_t), dimension(:), allocatable :: outputs
    logical :: ThereAreWires = .false.
+   logical :: outputRequested
+   type(bounds_t) :: dummyBound
 
    !Auxiliar variables
    type(media_matrices_t), target :: media
@@ -432,7 +451,9 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
 
-   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, ThereAreWires, dummyBound, outputRequested)
+
+   outputs => GetOutputs()
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%columnas, 4, 'Unexpected number of columns')
@@ -442,17 +463,21 @@ integer function test_init_movie_probe() bind(c) result(err)
       test_err = 1
    end if
 
-   call close_outputs(outputs)
+   call close_outputs()
 
    err = test_err
 end function
 
 integer function test_update_movie_probe() bind(c) result(err)
    use output
+   use outputTypes
    use mod_testOutputUtils
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+
+   type(solver_output_t), pointer, dimension(:)  ::  outputs
+
 
    ! Init inputs
    type(SGGFDTDINFO) :: dummysgg
@@ -460,8 +485,9 @@ integer function test_update_movie_probe() bind(c) result(err)
    type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
    type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
    type(sim_control_t) :: dummyControl
-   type(solver_output_t), dimension(:), allocatable :: outputs
    logical :: ThereAreWires = .false.
+   logical :: outputRequested
+   type(bounds_t) :: dummyBound
 
    !Auxiliar variables
    type(media_matrices_t), target :: media
@@ -481,6 +507,7 @@ integer function test_update_movie_probe() bind(c) result(err)
    !DummyField required variables
    type(dummyFields_t), target :: dummyfields
    type(fields_reference_t) :: fields
+   
 
    err = 1 !If test_err is not updated at the end it will be shown
    test_err = 0
@@ -525,8 +552,9 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
 
-   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, ThereAreWires, dummyBound, outputRequested)
 
+   outputs => GetOutputs()
    ! Set dummy field status
 
    call create_dummy_fields(dummyfields, 1, 5, 0.1_RKIND)
@@ -547,7 +575,7 @@ integer function test_update_movie_probe() bind(c) result(err)
    dummyfields%Hy(3, 3, 3) = 5.0_RKIND
    dummyfields%Hz(3, 3, 3) = 4.0_RKIND
 
-   call update_outputs(outputs, mediaPtr, simulationMaterialsPtr, sinpml_fullsizePtr, dummyControl, 0.5_RKIND_tiempo, fields)
+   call update_outputs(mediaPtr, simulationMaterialsPtr, sinpml_fullsizePtr, dummyControl, dummysgg%tiempo, 1_SINGLE, fields, dummyBound)
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%columnas, 4, 'Unexpected number of columns')
@@ -561,17 +589,20 @@ integer function test_update_movie_probe() bind(c) result(err)
       test_err = 1
    end if
 
-   call close_outputs(outputs)
+   call close_outputs()
 
    err = test_err
 end function
 
 integer function test_flush_movie_probe() bind(c) result(err)
    use output
+   use outputTypes
    use mod_testOutputUtils
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+
+   type(solver_output_t), pointer, dimension(:)  ::  outputs
 
    ! Init inputs
    type(SGGFDTDINFO) :: dummysgg
@@ -579,8 +610,9 @@ integer function test_flush_movie_probe() bind(c) result(err)
    type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
    type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
    type(sim_control_t) :: dummyControl
-   type(solver_output_t), dimension(:), allocatable :: outputs
    logical :: ThereAreWires = .false.
+   logical :: outputRequested
+   type(bounds_t) :: dummyBound
 
    !Auxiliar variables
    type(media_matrices_t), target :: media
@@ -588,6 +620,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    type(limit_t), dimension(1:6), target :: sinpml_fullsize
    type(Obses_t) :: movieObservable
    type(cell_coordinate_t) :: lowerBoundMovieProbe, upperBoundMovieProbe
+   type(fields_reference_t) :: fields
 
    real(kind=RKIND_tiempo), pointer, dimension(:) :: timeArray
    real(kind=RKIND_tiempo) :: dt = 0.1_RKIND_tiempo
@@ -641,7 +674,9 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
 
-   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl,  ThereAreWires, dummyBound, outputRequested)
+
+   outputs => GetOutputs()
 
    !Dummy first update
    outputs(1)%movieProbe%serializedTimeSize = 1
@@ -681,7 +716,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    outputs(1)%movieProbe%zValueForTime(2, 3) = 0.0_RKIND
    outputs(1)%movieProbe%zValueForTime(2, 4) = 0.0_RKIND
 
-   call flush_outputs(outputs)
+   call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
    expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'_ts'//'0001'//'.vtu'
    test_err = test_err + assert_file_exists(expectedPath)
@@ -689,7 +724,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'_ts'//'0002'//'.vtu'
    test_err = test_err + assert_file_exists(expectedPath)
 
-   call close_outputs(outputs)
+   call close_outputs()
 
    expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'.pvd'
    test_err = test_err + assert_file_exists(expectedPath)
@@ -699,10 +734,13 @@ end function
 
 integer function test_init_frequency_slice_probe() bind(c) result(err)
    use output
+   use outputTypes
    use mod_testOutputUtils
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+
+   type(solver_output_t), pointer, dimension(:)  ::  outputs
 
    ! Init inputs
    type(SGGFDTDINFO) :: dummysgg
@@ -710,8 +748,9 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
    type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
    type(sim_control_t) :: dummyControl
-   type(solver_output_t), dimension(:), allocatable :: outputs
    logical :: ThereAreWires = .false.
+   logical :: outputRequested
+   type(bounds_t) :: dummyBound
 
    !Auxiliar variables
    type(media_matrices_t), target :: media
@@ -770,7 +809,9 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
 
-   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl,  ThereAreWires, dummyBound, outputRequested)
+
+   outputs => GetOutputs()
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, FREQUENCY_SLICE_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%frequencySliceProbe%columnas, 4, 'Unexpected number of columns')
@@ -780,17 +821,20 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
       test_err = 1
    end if
 
-   call close_outputs(outputs)
+   call close_outputs()
 
    err = test_err
 end function
 
 integer function test_update_frequency_slice_probe() bind(c) result(err)
    use output
+   use outputTypes
    use mod_testOutputUtils
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+
+   type(solver_output_t), pointer, dimension(:)  ::  outputs
 
    ! Init inputs
    type(SGGFDTDINFO) :: dummysgg
@@ -798,8 +842,9 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
    type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
    type(sim_control_t) :: dummyControl
-   type(solver_output_t), dimension(:), allocatable :: outputs
    logical :: ThereAreWires = .false.
+   logical :: outputRequested
+   type(bounds_t) :: dummyBound
 
    !Auxiliar variables
    type(media_matrices_t), target :: media
@@ -854,7 +899,9 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
 
-   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl,  ThereAreWires, dummyBound, outputRequested)
+
+   outputs => GetOutputs()
 
    ! Set dummy field status
 
@@ -876,7 +923,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    dummyfields%Hy(3, 3, 3) = 5.0_RKIND
    dummyfields%Hz(3, 3, 3) = 4.0_RKIND
 
-   call update_outputs(outputs, mediaPtr, simulationMaterialsPtr, sinpml_fullsizePtr, dummyControl, 0.5_RKIND_tiempo, fields)
+   call update_outputs(mediaPtr, simulationMaterialsPtr, sinpml_fullsizePtr, dummyControl, dummysgg%tiempo, 1_SINGLE, fields, dummyBound)
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
    test_err = test_err + assert_integer_equal(outputs(1)%frequencySliceProbe%columnas, 4, 'Unexpected number of columns')
@@ -888,17 +935,20 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    test_err = test_err + assert_complex_equal(outputs(1)%frequencySliceProbe%yValueForFreq(3, 4), (0.2_CKIND ,0.2_CKIND), 0.00001_RKIND, 'Value error')
    test_err = test_err + assert_complex_equal(outputs(1)%frequencySliceProbe%yValueForFreq(3, 5), (0.2_CKIND ,0.2_CKIND), 0.00001_RKIND, 'Value error')
 
-   call close_outputs(outputs)
+   call close_outputs()
 
    err = test_err
 end function
 
 integer function test_flush_frequency_slice_probe() bind(c) result(err)
    use output
+   use outputTypes
    use mod_testOutputUtils
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+
+   type(solver_output_t), pointer, dimension(:)  ::  outputs
 
    ! Init inputs
    type(SGGFDTDINFO) :: dummysgg
@@ -906,8 +956,9 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    type(MediaData_t), dimension(:), pointer :: simulationMaterialsPtr
    type(limit_t), dimension(:), pointer :: sinpml_fullsizePtr
    type(sim_control_t) :: dummyControl
-   type(solver_output_t), dimension(:), allocatable :: outputs
    logical :: ThereAreWires = .false.
+   logical :: outputRequested
+   type(bounds_t) :: dummyBound
 
    !Auxiliar variables
    type(media_matrices_t), target :: media
@@ -915,6 +966,7 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    type(limit_t), dimension(1:6), target :: sinpml_fullsize
    type(Obses_t) :: movieObservable
    type(cell_coordinate_t) :: lowerBoundMovieProbe, upperBoundMovieProbe
+   type(fields_reference_t) :: fields
 
    real(kind=RKIND_tiempo), pointer, dimension(:) :: timeArray
    real(kind=RKIND_tiempo) :: dt = 0.1_RKIND_tiempo
@@ -968,7 +1020,9 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
 
-   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, outputs, ThereAreWires)
+   call init_outputs(dummysgg, mediaPtr, sinpml_fullsizePtr, dummyControl, ThereAreWires, dummyBound, outputRequested)
+
+   outputs => GetOutputs()
 
    !Dummy first update
    outputs(1)%movieProbe%serializedTimeSize = 1
@@ -1008,7 +1062,7 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    outputs(1)%movieProbe%zValueForTime(2, 3) = 0.0_RKIND
    outputs(1)%movieProbe%zValueForTime(2, 4) = 0.0_RKIND
 
-   call flush_outputs(outputs)
+   call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
    expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'_ts'//'0001'//'.vtu'
    test_err = test_err + assert_file_exists(expectedPath)
@@ -1016,7 +1070,7 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'_ts'//'0002'//'.vtu'
    test_err = test_err + assert_file_exists(expectedPath)
 
-   call close_outputs(outputs)
+   call close_outputs()
 
    expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'.pvd'
    test_err = test_err + assert_file_exists(expectedPath)

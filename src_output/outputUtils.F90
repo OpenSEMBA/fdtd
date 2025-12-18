@@ -296,8 +296,8 @@ contains
 
    logical function isThinWire(field, i, j, k, geometryMedia, registeredMedia)
       integer(kind=4), intent(in) :: field, i, j, k
-      type(media_matrices_t), pointer, intent(in) :: geometryMedia
-      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
+      type(media_matrices_t), intent(in) :: geometryMedia
+      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
 
       integer(kind=SINGLE) :: mediaIndex
 
@@ -308,8 +308,8 @@ contains
 
    logical function isPEC(field, i, j, k, geometryMedia, registeredMedia)
       integer(kind=4), intent(in) :: field, i, j, k
-      type(media_matrices_t), pointer, intent(in) :: geometryMedia
-      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
+      type(media_matrices_t), intent(in) :: geometryMedia
+      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
 
       integer(kind=SINGLE) :: mediaIndex
 
@@ -319,8 +319,8 @@ contains
 
    logical function isSurface(field, i, j, k, geometryMedia, registeredMedia)
       integer(kind=4), intent(in) :: field, i, j, k
-      type(media_matrices_t), pointer, intent(in) :: geometryMedia
-      type(MediaData_t), pointer, dimension(:), intent(in) :: registeredMedia
+      type(media_matrices_t), intent(in) :: geometryMedia
+      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
 
       integer(kind=SINGLE) :: mediaIndex
 
@@ -329,7 +329,7 @@ contains
    end function
 
    function getMediaIndex(field, i, j, k, media) result(res)
-      type(media_matrices_t), pointer, intent(in) :: media
+      type(media_matrices_t), intent(in) :: media
       integer(kind=4), intent(in) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
       select case (field)
@@ -345,7 +345,7 @@ contains
 
    logical function isWithinBounds(field, i, j, k, SINPML_fullsize)
       implicit none
-      TYPE(limit_t), pointer, DIMENSION(:), INTENT(IN) :: SINPML_fullsize
+      TYPE(limit_t), DIMENSION(:), INTENT(IN) :: SINPML_fullsize
       integer(kind=4), intent(in) :: field, i, j, k
       isWithinBounds = (i <= SINPML_fullsize(field)%XE) .and. &
                        (j <= SINPML_fullsize(field)%YE) .and. &
@@ -354,7 +354,7 @@ contains
 
    logical function isMediaVacuum(field, i, j, k, media)
       implicit none
-      TYPE(media_matrices_t), pointer, INTENT(IN) :: media
+      TYPE(media_matrices_t), INTENT(IN) :: media
       integer(kind=4) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex, vacuum = 1
       mediaIndex = getMediaIndex(field, i, j, k, media)
@@ -363,8 +363,8 @@ contains
 
    logical function isSplitOrAdvanced(field, i, j, k, media, simulationMedia)
       implicit none
-      type(MediaData_t), pointer, dimension(:), intent(in) :: simulationMedia
-      type(media_matrices_t), pointer, intent(in) :: media
+      type(MediaData_t), dimension(:), intent(in) :: simulationMedia
+      type(media_matrices_t), intent(in) :: media
       integer(kind=4) :: field, i, j, k
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
       mediaIndex = getMediaIndex(field, i, j, k, media)
@@ -378,7 +378,7 @@ contains
 
       ! Input Arguments
       integer(kind=single), intent(in) :: field, i, j, k
-      type(fields_reference_t), pointer, intent(in) :: fields_reference
+      type(fields_reference_t), intent(in) :: fields_reference
 
       ! Local Variables
       integer(kind=single) :: i_shift_a, j_shift_a, k_shift_a  ! Shift for Term A (Offset for H/M field)
@@ -435,7 +435,7 @@ contains
    function computeJ1(f, i, j, k, fields_reference) result(res)
       implicit none
       integer(kind=4), intent(in) :: f, i, j, k
-      type(fields_reference_t), pointer, intent(in) :: fields_reference
+      type(fields_reference_t), intent(in) :: fields_reference
       integer(kind=4) :: c       ! Complementary H-field index (Hy/Hz)
       real(kind=rkind) :: res
       real(kind=rkind) :: curl_h_term_a, curl_h_term_b, field_diff_term
@@ -466,7 +466,7 @@ contains
    function computeJ2(f, i, j, k, fields_reference) result(res)
       implicit none
       integer(kind=4), intent(in) :: f, i, j, k
-      type(fields_reference_t), pointer, intent(in) :: fields_reference
+      type(fields_reference_t), intent(in) :: fields_reference
       integer(kind=4) :: c       ! Complementary H-field index (Hx/Hy/Hz)
       real(kind=rkind) :: res
       real(kind=rkind) :: curl_h_term_a, curl_h_term_b, field_diff_term
@@ -506,7 +506,7 @@ contains
       implicit none
       real(kind=rkind) :: res
       integer(kind=4), intent(in) :: field, i, j, k
-      type(fields_reference_t), pointer, intent(in) :: fields_reference
+      type(fields_reference_t), intent(in) :: fields_reference
 
       ! Retrieves the field value based on the field index (1-3 for E, 4-6 for H)
       select case (field)
@@ -523,7 +523,7 @@ contains
       implicit none
       real(kind=rkind) :: res
       integer(kind=4), intent(in) :: field, i, j, k
-      type(fields_reference_t), pointer, intent(in) :: fields_reference
+      type(fields_reference_t), intent(in) :: fields_reference
 
       ! Retrieves the spatial step size (delta) corresponding to the field direction
       ! Note: i, j, k are used to select the correct array index if the grid is non-uniform.

@@ -31,7 +31,7 @@ contains
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
       character(len=*), intent(in) :: wiresflavor
       type(domain_t), intent(in) :: domain
-      type(MediaData_t), pointer, dimension(:), intent(in) :: media
+      type(MediaData_t), dimension(:), intent(in) :: media
 
       type(cell_coordinate_t) :: coordinates
 

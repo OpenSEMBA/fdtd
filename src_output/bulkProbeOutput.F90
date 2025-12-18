@@ -50,7 +50,7 @@ contains
    end subroutine create_bulk_probe_output
 
    subroutine update_bulk_probe_output(this, step, field)
-      type(bulk_current_probe_output_t), intent(out) :: this
+      type(bulk_current_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
       type(field_data_t), intent(in) :: field
 

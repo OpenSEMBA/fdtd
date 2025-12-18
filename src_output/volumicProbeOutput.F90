@@ -126,7 +126,7 @@ contains
       type(media_matrices_t), pointer, intent(in) :: geometryMedia
       type(MediaData_t), pointer, dimension(:) :: registeredMedia
       type(limit_t), pointer, dimension(:), intent(in)  :: sinpml_fullsize
-      type(fields_reference_t), pointer, intent(in) :: fieldsReference
+      type(fields_reference_t), intent(in) :: fieldsReference
 
       integer(kind=SINGLE) :: Efield, Hfield, i, j, k, conta
       integer(kind=SINGLE) :: i1, i2, j1, j2, k1, k2
@@ -185,7 +185,7 @@ contains
       end if
    contains
       subroutine save_current(this, Efield, i, j, k, conta, field_reference)
-         type(fields_reference_t), pointer, intent(in) :: field_reference
+         type(fields_reference_t), intent(in) :: field_reference
          type(volumic_current_probe_t), intent(inout) :: this
          integer(kind=SINGLE), intent(in) :: Efield, i, j, k, conta
 
@@ -199,7 +199,7 @@ contains
 
       subroutine save_current_surfaces(this, Hfield, i, j, k, conta, field_reference)
          implicit none
-         type(fields_reference_t), pointer, intent(in) :: field_reference
+         type(fields_reference_t), intent(in) :: field_reference
          type(volumic_current_probe_t), intent(inout) :: this
          integer(kind=SINGLE), intent(in) :: Hfield, i, j, k, conta
 
@@ -215,7 +215,7 @@ contains
       subroutine update_current(this, Efield, i, j, k, conta, field_reference, step)
          integer(kind=SINGLE), intent(in) :: Efield, i, j, k, conta
          type(volumic_current_probe_t), intent(inout) :: this
-         type(fields_reference_t), pointer, intent(in) :: field_reference
+         type(fields_reference_t), intent(in) :: field_reference
          real(kind=RKIND_tiempo), intent(in) :: step
 
          integer(kind=SINGLE) :: freqIdx
@@ -232,7 +232,7 @@ contains
       subroutine update_current_surfaces(this, Hfield, i, j, k, conta, field_reference, step)
          integer(kind=SINGLE), intent(in) :: Hfield, i, j, k, conta
          type(volumic_current_probe_t), intent(inout) :: this
-         type(fields_reference_t), pointer, intent(in) :: field_reference
+         type(fields_reference_t), intent(in) :: field_reference
          real(kind=RKIND_tiempo), intent(in) :: step
 
          integer(kind=SINGLE) :: freqIdx

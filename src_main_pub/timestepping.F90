@@ -20,6 +20,10 @@ module Solver_mod
    use report
    use PostProcessing
    use Ilumina
+#ifdef CompileWithNewOutputModule
+   use output
+   use outputTypes
+#endif
    use Observa
    use BORDERS_other
    use Borders_CPML
@@ -1500,10 +1504,13 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
+#ifdef CompileWithNewOutputModule
+         call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%control, this%thereAre%wires, this%bounds, this%thereAre%Observation)
+#else
          call InitObservation (this%sgg,this%media,this%tag_numbers, &
                                  this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%initialtimestep,this%lastexecutedtime, &
                                  this%sinPML_fullsize,this%eps0,this%mu0,this%bounds, this%control)
-
+#endif
          l_auxinput=this%thereAre%Observation.or.this%thereAre%FarFields
          l_auxoutput=l_auxinput
 
@@ -1769,6 +1776,10 @@ contains
       real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
 
+#ifdef CompileWithNewOutputModule
+      type(fields_reference_t) :: fieldReference
+#endif
+
       logical :: call_timing, l_aux, flushFF, somethingdone, newsomethingdone
       integer :: i
       real (kind=rkind) :: pscale_alpha
@@ -1794,6 +1805,23 @@ contains
       
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
+#ifdef CompileWithNewOutputModule
+      fieldReference%E%x => this%Ex
+      fieldReference%E%y => this%Ey
+      fieldReference%E%z => this%Ez
+
+      fieldReference%E%deltax => this%dxe
+      fieldReference%E%deltay => this%dye
+      fieldReference%E%deltaz => this%dze
+
+      fieldReference%H%x => this%Hx
+      fieldReference%H%y => this%Hy
+      fieldReference%H%z => this%Hz
+
+      fieldReference%H%deltax => this%dxh
+      fieldReference%H%deltay => this%dyh
+      fieldReference%H%deltaz => this%dzh
+#endif
 
       ciclo_temporal :  DO while (this%n <= this%control%finaltimestep)
       
@@ -1869,9 +1897,11 @@ contains
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                       call print11(this%control%layoutnumber,dubuf)
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-    !!
+#ifdef CompileWithNewOutputModule
+                      if (this%thereAre%Observation) call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, flushFF)
+#else
                       if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
-                      !!
+#endif
 #ifdef CompileWithMPI
                       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -2020,11 +2050,19 @@ contains
       subroutine updateAndFlush()
          integer(kind=4) :: mindum
          IF (this%thereAre%Observation) then
+#ifdef CompileWithNewOutputModule
+            call update_outputs(this%media, this%sgg%Med, this%sinPML_fullsize,this%control, this%sgg%tiempo, this%n + 1, fieldReference, this%bounds)
+            if (this%n>=this%ini_save+BuffObse)  then
+               mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
+               call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
+            endif
+#else
             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
                call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
             endif
+#endif
          endif
       end subroutine
 
