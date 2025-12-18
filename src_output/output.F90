@@ -9,8 +9,32 @@ module output
    use mod_volumicProbeOutput
    use mod_movieProbeOutput
    use mod_frequencySliceProbeOutput
+   use mod_farFieldOutput
 
    implicit none
+   private
+
+   !===========================
+   !  Public interface summary
+   !===========================
+   public :: solver_output_t
+   public :: GetOutputs
+   public :: init_outputs
+   public :: update_outputs
+   public :: flush_outputs
+   public :: close_outputs
+
+   public :: POINT_PROBE_ID, WIRE_CURRENT_PROBE_ID, WIRE_CHARGE_PROBE_ID, BULK_PROBE_ID, VOLUMIC_CURRENT_PROBE_ID, &
+             MOVIE_PROBE_ID, FREQUENCY_SLICE_PROBE_ID, FAR_FIELD_PROBE_ID
+   !===========================
+
+   !===========================
+   !  Private interface summary
+   !===========================
+   private :: get_required_output_count
+   !===========================
+
+
 
    integer(kind=SINGLE), parameter :: POINT_PROBE_ID = 0, &
                                       WIRE_CURRENT_PROBE_ID = 1, &
@@ -18,10 +42,8 @@ module output
                                       BULK_PROBE_ID = 3, &
                                       VOLUMIC_CURRENT_PROBE_ID = 4, &
                                       MOVIE_PROBE_ID = 5, &
-                                      FREQUENCY_SLICE_PROBE_ID = 6
-
-   REAL(KIND=RKIND), save           ::  eps0, mu0
-   REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
+                                      FREQUENCY_SLICE_PROBE_ID = 6, &
+                                      FAR_FIELD_PROBE_ID = 7
 
    type solver_output_t
       integer(kind=SINGLE) :: outputID
@@ -32,14 +54,9 @@ module output
       type(volumic_current_probe_t), allocatable :: volumicCurrentProbe !icurX, icurY, icurZ
       type(volumic_field_probe_output_t), allocatable :: volumicFieldProbe
       type(line_integral_probe_output_t), allocatable :: lineIntegralProbe
-      type(far_field_probe_output_t), allocatable :: farFieldProbe
-      type(movie_probe_output_t), allocatable :: movieProbe
-      type(frequency_slice_probe_output_t), allocatable :: frequencySliceProbe
-      !type(volumic_field_probe_t), allocatable :: volumicFieldProbe
-      !type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
-      !type(far_field_t), allocatable :: farField
-      !type(time_movie_output_t), allocatable :: timeMovie
-      !type(frequency_slice_output_t), allocatable :: frequencySlice
+      type(movie_probe_output_t), allocatable :: movieProbe !iCur if timeDomain
+      type(frequency_slice_probe_output_t), allocatable :: frequencySliceProbe !iCur if freqDomain
+      type(far_field_probe_output_t), allocatable :: farFieldOutput !farfield
    end type solver_output_t
 
    interface init_solver_output
@@ -50,10 +67,8 @@ module output
          init_bulk_probe_output, &
          init_volumic_probe_output, &
          init_movie_probe_output, &
-         init_frequency_slice_probe_output
-               !init_far_field, &
-      !initime_movie_output, &
-      !init_frequency_slice_output
+         init_frequency_slice_probe_output, &
+         init_farField_probe_output
    end interface
 
    interface create_empty_files
@@ -72,11 +87,8 @@ module output
          update_bulk_probe_output, &
          update_volumic_probe_output, &
          update_movie_probe_output, &
-         update_frequency_slice_probe_output
-      !update_bulk_current_probe_output, &
-      !update_far_field, &
-      !updateime_movie_output, &
-      !update_frequency_slice_output
+         update_frequency_slice_probe_output, &
+         update_farField_probe_output
    end interface
 
    interface flush_solver_output
@@ -86,24 +98,10 @@ module output
          flush_wire_charge_probe_output, &
          flush_bulk_probe_output, &
          flush_movie_probe_output, &
-         flush_frequency_slice_probe_output
+         flush_frequency_slice_probe_output, &
+         flush_farField_probe_output
          
-      !flush_wire_probe_output, &
-      !flush_bulk_current_probe_output, &
-      !flush_far_field, &
-      !flushime_movie_output, &
-      !flush_frequency_slice_output
    end interface
-
-   !interface delete_solver_output
-   !   module procedure &
-   !      delete_point_probe_output
-   !   !delete_wire_probe_output, &
-   !   !delete_bulk_current_probe_output, &
-   !   !delete_far_field, &
-   !   !deleteime_movie_output, &
-   !   !delete_frequency_slice_output
-   !end interface
 contains
 
    subroutine init_outputs(sgg, media, sinpml_fullsize, control, outputs, ThereAreWires)
@@ -115,13 +113,19 @@ contains
       logical :: ThereAreWires
 
       type(domain_t) :: domain
+      type(spheric_domain_t) :: sphericRange
       type(cell_coordinate_t) :: lowerBound, upperBound
       integer(kind=SINGLE) :: i, ii, outputRequestType
       integer(kind=SINGLE) :: NODE
       integer(kind=SINGLE) :: outputCount
+      integer(kind=SINGLE) :: requestedOutputs
       character(len=BUFSIZE) :: outputTypeExtension
 
-      allocate (outputs(sgg%NumberRequest))
+      OutputRequested = .false.
+      requestedOutputs = get_required_output_count(sgg)
+
+      outputs => NULL()
+      allocate (outputs(requestedOutputs))
 
       allocate (InvEps(0:sgg%NumMedia - 1), InvMu(0:sgg%NumMedia - 1))
       outputCount = 0
@@ -204,11 +208,20 @@ contains
                   call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%PDVUnit)
 
                end if
+            case (farfield)
+               sphericRange = preprocess_polar_range(sgg%Observation(ii))
+
+               outputCount = outputCount + 1
+               outputs(outputCount)%outputID = FAR_FIELD_PROBE_ID
+               allocate (outputs(outputCount)%farFieldOutput)
+               call init_solver_output(outputs(outputCount)%farFieldOutput, sgg, lowerBound, upperBound,outputRequestType, domain, sphericRange, control, outputTypeExtension, sgg%Observation(ii)%FileNormalize, eps0, mu0, media, SINPML_fullsize, bounds)
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
          end do
       end do
+
+      if (outputCount /= 0) OutputRequested = .true.
       return
    contains
       function preprocess_domain(observation, timeArray, simulationTimeStep, finalStepIndex) result(newDomain)
@@ -257,6 +270,18 @@ contains
          end if
          return
       end function preprocess_domain
+
+      function preprocess_polar_range(observation) result(sphericDomain)
+         type(spheric_domain_t) :: sphericDomain
+         type(Obses_t), intent(in) :: observation
+
+         sphericDomain%phiStart = observation%phiStart
+         sphericDomain%phiStop = observation%phiStop
+         sphericDomain%phiStep = observation%phiStep
+         sphericDomain%thetaStart = observation%thetaStart
+         sphericDomain%thetaStop = observation%thetaStop
+         sphericDomain%thetaStep = observation%thetaStep
+      end function preprocess_polar_range
 
    end subroutine init_outputs
 

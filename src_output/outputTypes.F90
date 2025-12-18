@@ -29,6 +29,11 @@ module outputTypes
       logical                 :: logarithmicSpacing = .false.
    end type domain_t
 
+   type spheric_domain_t
+      real(kind=RKIND) :: phiStart = 0.0_RKIND, phiStop = 0.0_RKIND, phiStep = 0.0_RKIND
+      real(kind=RKIND) :: thetaStart = 0.0_RKIND, thetaStop = 0.0_RKIND, thetastep = 0.0_RKIND
+   end type
+
    type cell_coordinate_t
       integer(kind=SINGLE) :: x,y,z
    end type cell_coordinate_t
@@ -162,7 +167,20 @@ module outputTypes
     !!!!!Pending
    end type line_integral_probe_output_t
    type far_field_probe_output_t
-    !!!!!Pending
+      integer(kind=SINGLE) :: fileUnitFreq
+      integer(kind=SINGLE) :: fieldComponent
+      integer(kind=SINGLE) :: columnas = 6_SINGLE !reference and current components
+      type(domain_t) :: domain
+      type(spheric_domain_t) :: sphericRange
+      type(cell_coordinate_t) :: lowerBound
+      type(cell_coordinate_t) :: upperBound
+      character(len=BUFSIZE) :: path
+
+      integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
+      integer(kind=SINGLE), dimension(:,:), allocatable :: coords
+      integer(kind=SINGLE) :: nFreq = 0_SINGLE
+      real(kind=RKIND), dimension(:), allocatable :: frequencySlice
+      complex(kind=CKIND), dimension(:, :), allocatable :: valueForFreq
    end type far_field_probe_output_t
    type movie_probe_output_t
       integer(kind=SINGLE) :: PDVUnit
