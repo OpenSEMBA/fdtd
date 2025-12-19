@@ -47,7 +47,7 @@
             {
                 "id": 1,
                 "type": "cell",
-                "subtuype" : "volume",
+                "subtype" : "volume",
                 "intervals" : [],
                 "triangles": [
                     [1,2,3],

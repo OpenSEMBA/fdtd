@@ -261,7 +261,8 @@
             },
             {
                 "id": 5,
-                "type": "conformalVolume",
+                "type": "cell",
+                "subtype": "volume",
                 "name": "conformal-box",
                 "intervals": [
                     [

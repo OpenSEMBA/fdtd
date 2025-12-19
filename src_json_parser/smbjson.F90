@@ -269,6 +269,7 @@ contains
                            type(conformal_region_t) :: cV
                            type(coordinate_t) :: c
                            integer :: j, k
+                           character (len=:), allocatable :: subtype
                            cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
                            do k = 1, size(cV%triangles)
                               do j = 1, 3
@@ -276,36 +277,16 @@ contains
                                  cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
                               end do
                            end do
-                           cV%type = REGION_TYPE_VOLUME
                            cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                           subtype = this%getStrAt(je, J_SUBTYPE)
+
+                           if (subtype == J_CONF_SUBTYPE_VOLUME) cV%type = REGION_TYPE_VOLUME
+                           if (subtype == J_CONF_SUBTYPE_SURFACE) cV%type = REGION_TYPE_SURFACE
+
                            call mesh%addConformalRegion(id, cV)
                         end block
                      end if
                   end block
-               ! CASE (J_ELEM_TYPE_CELL)
-               !    block
-               !       type(cell_region_t) :: cR
-               !       type(cell_interval_t), dimension(:), allocatable :: intervals
-               !       cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-               !       call mesh%addCellRegion(id, cR)
-                     
-               !    end block
-               ! case (J_ELEM_TYPE_CONF_VOLUME) 
-               !    block 
-               !       type(conformal_region_t) :: cV
-               !       type(coordinate_t) :: c
-               !       integer :: j, k
-               !       cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
-               !       do k = 1, size(cV%triangles)
-               !          do j = 1, 3
-               !             c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
-               !             cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
-               !          end do
-               !       end do
-               !       cV%type = REGION_TYPE_VOLUME
-               !       cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-               !       call mesh%addConformalRegion(id, cV)
-               !    end block
                case default
                   call WarnErrReport('Invalid element type', .true.)
                end select
@@ -548,7 +529,8 @@ contains
       type(coords), dimension(:), pointer :: cs
       integer :: i
       
-      mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
+      ! mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
+      mAs = this%getMaterialAssociations([matType],['-'//J_CONF_SUBTYPE_SURFACE, J_ELEM_TYPE_CELL//'    ', '-'//J_CONF_SUBTYPE_VOLUME//' '])
       block
          type(coords), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then 
@@ -615,7 +597,7 @@ contains
       integer :: i, j
       logical :: found
 
-      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC],[J_ELEM_TYPE_CONF_VOLUME])
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_CONF_SUBTYPE_VOLUME, J_CONF_SUBTYPE_SURFACE])
 
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
@@ -2359,12 +2341,12 @@ contains
       end subroutine
    end function
 
-   function getMaterialAssociations(this, materialTypes, elementTypes) result(res)
+   function getMaterialAssociations(this, materialTypes, elementLabels) result(res)
       class(parser_t) :: this
       character(len=*), intent(in) :: materialTypes(:)
       type(materialAssociation_t), dimension(:), allocatable :: res
       type(json_value), pointer :: allMatAss
-      character(len=*), intent(in), optional :: elementTypes(:)
+      character(len=*), intent(in), optional :: elementLabels(:)
       
       type(json_value), pointer :: mAPtr
       integer :: i, j, k, e
@@ -2377,14 +2359,13 @@ contains
       end if
 
       nMaterials = 0
+      found = .false.
       do i = 1, this%core%count(allMatAss)
          call this%core%get_child(allMatAss, i, mAPtr)
          do j = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(j)))) then
-               if (present(elementTypes)) then 
-                  do e = 1, size(elementTypes)
-                     if (isAssociatedWithElement(mAPtr, trim(elementTypes(j)))) nMaterials = nMaterials + 1
-                  end do
+               if (present(elementLabels)) then 
+                  if (isAssociatedWithElementLabel(mAPtr, elementLabels)) nMaterials = nMaterials + 1
                else
                   nMaterials = nMaterials + 1
                end if
@@ -2398,13 +2379,11 @@ contains
          call this%core%get_child(allMatAss, i, mAPtr)
          do k = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(k)))) then
-               if (present(elementTypes)) then 
-                  do e = 1, size(elementTypes)
-                     if (isAssociatedWithElement(mAPtr, trim(elementTypes(k)))) then 
-                        res(j) = this%parseMaterialAssociation(mAPtr)
-                        j = j+1
-                     end if
-                  end do
+               if (present(elementLabels)) then 
+                  if (isAssociatedWithElementLabel(mAPtr, elementLabels)) then 
+                     res(j) = this%parseMaterialAssociation(mAPtr)
+                     j = j+1
+                  end if
                else
                   res(j) = this%parseMaterialAssociation(mAPtr)
                   j = j+1
@@ -2426,20 +2405,40 @@ contains
          isAssociatedWithMaterial = this%getStrAt(mat%p, J_TYPE) == materialType
       end function
 
-      logical function isAssociatedWithElement(mAPtr, elementType)
+      logical function isAssociatedWithElementLabel(mAPtr, elementLabels)
          type(json_value), pointer, intent(in) :: mAPtr
-         character (len=*), intent(in) :: elementType
-         
+         character (len=*), intent(in) :: elementLabels(:)
+         character (len=:), allocatable :: trimmedLabel
+         character(len=20) :: elementLabel
          type(materialAssociation_t) :: matAss
          type(json_value_ptr) :: elm
          integer, dimension(:), allocatable :: elementIds
-         integer :: i
+         integer :: i, j
+
+         logical :: negative
          matAss = this%parseMaterialAssociation(mAPtr)
          elementIds = matAss%elementIds
-         isAssociatedWithElement = .false.
+         isAssociatedWithElementLabel = .false.
+
          do i = 1, size(elementIds)
             elm = this%elementTable%getId(elementIds(i))
-            isAssociatedWithElement = isAssociatedWithElement .or. this%getStrAt(elm%p, J_TYPE) == elementType
+            do j = 1, size(elementLabels)
+               if (elementLabels(j)(1:1) == "-") then 
+                  elementLabel = elementLabels(j)(2:)
+                  negative = .true.
+               else
+                  elementLabel = elementLabels(j)(:)
+                  negative = .false.
+               end if
+               trimmedLabel = trim(elementLabel)
+               if (negative) then 
+                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .and. (.not.(this%getStrAt(elm%p, J_TYPE) == trimmedLabel) .and. &
+                                                                              .not.(this%getStrAt(elm%p, J_SUBTYPE) == trimmedLabel))
+               else 
+                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .or. (this%getStrAt(elm%p, J_TYPE) == trimmedLabel .or. & 
+                                                                                    this%getStrAt(elm%p, J_SUBTYPE) == trimmedLabel )
+               end if
+            end do
          end do
       end function
    end function

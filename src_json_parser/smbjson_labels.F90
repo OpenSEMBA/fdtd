@@ -6,6 +6,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_NAME = "name"
    character (len=*), parameter :: J_ID = "id"
    character (len=*), parameter :: J_TYPE = "type"
+   character (len=*), parameter :: J_SUBTYPE = "subtype"
    character (len=*), parameter :: J_ELEMENTIDS = "elementIds"
 
    character (len=*), parameter :: J_DIR = "direction"
@@ -153,11 +154,10 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_ELEM_TYPE_POLYLINE = "polyline"
    character (len=*), parameter :: J_ELEM_TYPE_CELL = "cell"
    character (len=*), parameter :: J_CELL_INTERVALS = "intervals"
-   character (len=*), parameter :: J_ELEM_TYPE_CONF_VOLUME = "conformalVolume"
    character (len=*), parameter :: J_CONF_VOLUME_TRIANGLES = "triangles"
    character (len=*), parameter :: J_CONF_VOLUME_INTERVALS = "intervals"
    
-   character (len=*), parameter :: J_CONF_SUBTYPE_VOLUME = "volume"
+   character (len=*), parameter :: J_CONF_SUBTYPE_VOLUME  = "volume"
    character (len=*), parameter :: J_CONF_SUBTYPE_SURFACE = "surface"
 
    ! type(NFDEGeneral)
