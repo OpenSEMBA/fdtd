@@ -64,10 +64,7 @@ MODULE CreateMatrices
    & NumMedia, BoundingBox,indicemedio)
       character(len=BUFSIZE) :: buff
       TYPE (Shared_t) :: Eshared
-      !
-      ! type(ConformalMedia_t), intent(in) :: conformal_media
-      ! type(side_tris_map_t), intent(in) :: side_map
-      !
+
       INTEGER (KIND=4) :: NumMedia
       TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
@@ -126,9 +123,9 @@ MODULE CreateMatrices
       do k = BoundingBox%zi, BoundingBox%ze+1
          do j = BoundingBox%yi, BoundingBox%ye+1
             do i = BoundingBox%xi, BoundingBox%xe+1
-               call fillPECFaceInsideVolume(i,j,k,FACE_X, MMiHx, MMiEy, MMiEz, tags%face%x)
-               call fillPECFaceInsideVolume(i,j,k,FACE_Y, MMiHy, MMiEx, MMiEz, tags%face%y)
-               call fillPECFaceInsideVolume(i,j,k,FACE_Z, MMiHz, MMiEy, MMiEx, tags%face%z)
+               call fillPECFaceInsideVolume(i,j,k,FACE_X)
+               call fillPECFaceInsideVolume(i,j,k,FACE_Y)
+               call fillPECFaceInsideVolume(i,j,k,FACE_Z)
             end do
          end do
       end do
@@ -188,31 +185,59 @@ MODULE CreateMatrices
                                        (med(m4)%Is%ConformalPEC .or. med(m4)%Is%PEC)
       end function 
 
-      subroutine fillPECFaceInsideVolume(i, j, k, face, MH, ME1, ME2, tags)
+      subroutine fillPECFaceInsideVolume(i, j, k, face)
          integer (kind=4), intent(in) :: i, j, k, face
-         integer (kind=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), intent(inout) :: MH
-         integer (kind=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), intent(inout) :: ME1
-         integer (kind=INTEGERSIZEOFMEDIAMATRICES), dimension(:,:,:), intent(inout) :: ME2
-         integer (KIND=IKINDMTAG) , dimension(:,:,:), intent(inout) :: tags
          integer (kind=4) :: m1,m2,m3,m4, m
          logical :: on_boundary
-         m1 = ME1 (i, j, k)
-         m2 = ME2 (i, j, k)
-         m3 = ME1 (i + merge(1,0, face==FACE_Z), j, k + merge(1,0, face /= FACE_Z))
-         m4 = ME2 (i + merge(1,0, face==FACE_Y), j + merge(1,0, face /= FACE_Y), k)
-         m = MH(i,j,k)
+         select case (face)
+         case(FACE_X)
+            m1 = MMiEy (i, j, k)
+            m2 = MMiEz (i, j, k)
+            m3 = MMiEy (i, j, k + 1)
+            m4 = MMiEz (i, j + 1, k)
+            m = MMiHx(i,j,k)
+         case (FACE_Y)
+            m1 = MMiEx (i, j, k)
+            m2 = MMiEz (i, j, k)
+            m3 = MMiEx (i, j, k + 1)
+            m4 = MMiEz (i + 1, j, k)
+            m =  MMiHy(i,j,k)
+         case (FACE_Z)
+            m1 = MMiEy (i, j, k)
+            m2 = MMiEx (i, j, k)
+            m3 = MMiEy (i + 1, j, k)
+            m4 = MMiEx (i, j + 1, k)
+            m =  MMiHz(i,j,k)
+         end select
+
          on_boundary = (med(m1)%Is%PEC .or. med(m1)%is%conformalPEC) .and. &
                        (med(m2)%Is%PEC .or. med(m2)%is%conformalPEC) .and. &
                        (med(m3)%Is%PEC .or. med(m3)%is%conformalPEC) .and. &
                        (med(m4)%Is%PEC .or. med(m4)%is%conformalPEC)
 
          if (on_boundary .and. .not. (med(m)%Is%PEC .or. med(m)%Is%ConformalPEC)) then 
-            MH (i, j, k) = indicemedio
             Mtag(i,j,k)=64*numertag 
-            tags(i,j,k) = 64*numertag
+            select case (face)
+            case(FACE_X)
+               MMiHx (i, j, k) = indicemedio
+               tags%face%x(i,j,k) = 64*numertag
+            case(FACE_Y)
+               MMiHy (i, j, k) = indicemedio
+               tags%face%y(i,j,k) = 64*numertag
+            case(FACE_z)
+               MMiHz (i, j, k) = indicemedio
+               tags%face%z(i,j,k) = 64*numertag
+            end select
          else if (on_boundary .and. (med(m)%Is%PEC .or. med(m)%Is%ConformalPEC)) then 
             Mtag(i,j,k)=64*numertag
-            tags(i,j,k) = 64*numertag
+            select case (face)
+            case(FACE_X)
+               tags%face%x(i,j,k) = 64*numertag
+            case(FACE_Y)
+               tags%face%y(i,j,k) = 64*numertag
+            case(FACE_z)
+               tags%face%z(i,j,k) = 64*numertag
+            end select
          end if
 
       end subroutine

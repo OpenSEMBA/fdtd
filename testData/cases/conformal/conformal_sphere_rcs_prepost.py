@@ -12,7 +12,6 @@ SEMBA_EXE = '../../../build/bin/semba-fdtd'
 
 from pyWrapper import *
 
-
 # %% Structured
 solver = FDTD(input_filename = 'conformal_str_sphere_rcs.fdtd.json', path_to_exe=SEMBA_EXE)
 solver.cleanUp()

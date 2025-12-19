@@ -36,7 +36,7 @@
             {
                 "id": 1,
                 "type": "cell",
-                "subtype": "subtype",
+                "subtype": "volume",
                 "intervals": [],
                 "triangles": [
                     [

@@ -31,19 +31,22 @@ np.savetxt('gauss.exc', data)
 # %% Prepare solver
 solver = FDTD(input_filename = 'conformal.fdtd.json', path_to_exe=SEMBA_EXE)
 
-dx = solver['mesh']['grid']['steps']['x']
+dx = solver['mesh']['grid']['steps']['x'][0]
 
 solver['materialAssociations'][0]['elementIds'] = [4]
 solver['mesh']['elements'][3]['intervals'] = [[[0,0,4],[2,2,4]]]
 solver.cleanUp()
+
 solver.run()
 front = Probe(solver.getSolvedProbeFilenames("front")[0])
 t = front['time']
 t4 = t[front['field'].argmin()]
 
+
 solver['materialAssociations'][0]['elementIds'] = [4]
 solver['mesh']['elements'][3]['intervals'] = [[[0,0,5],[2,2,5]]]
 solver.cleanUp()
+
 solver.run()
 front = Probe(solver.getSolvedProbeFilenames("front")[0])
 t = front['time']
@@ -66,6 +69,7 @@ for i in range(11):
 
     solver.cleanUp()
     solver.run()
+    assert solver.hasFinishedSuccessfully()
     front = Probe(solver.getSolvedProbeFilenames("front")[0])
     t = front['time']
     inc = front['incident']
@@ -96,3 +100,4 @@ plt.legend()
 # %%
 for i in range(10):
     print(td[i], ' ', t4 + 2*(i*1.0/10)*dx/3e8)
+# %%
