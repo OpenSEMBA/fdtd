@@ -2359,7 +2359,6 @@ contains
       end if
 
       nMaterials = 0
-      found = .false.
       do i = 1, this%core%count(allMatAss)
          call this%core%get_child(allMatAss, i, mAPtr)
          do j = 1, size(materialTypes)
@@ -2432,11 +2431,11 @@ contains
                end if
                trimmedLabel = trim(elementLabel)
                if (negative) then 
-                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .and. (.not.(this%getStrAt(elm%p, J_TYPE) == trimmedLabel) .and. &
-                                                                              .not.(this%getStrAt(elm%p, J_SUBTYPE) == trimmedLabel))
+                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .and. (.not.(this%getStrAt(elm%p, J_TYPE, default="") == trimmedLabel) .and. &
+                                                                              .not.(this%getStrAt(elm%p, J_SUBTYPE, default="") == trimmedLabel))
                else 
-                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .or. (this%getStrAt(elm%p, J_TYPE) == trimmedLabel .or. & 
-                                                                                    this%getStrAt(elm%p, J_SUBTYPE) == trimmedLabel )
+                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .or. (this%getStrAt(elm%p, J_TYPE, default="") == trimmedLabel .or. & 
+                                                                                    this%getStrAt(elm%p, J_SUBTYPE, default="") == trimmedLabel )
                end if
             end do
          end do
