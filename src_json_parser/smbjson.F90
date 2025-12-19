@@ -244,39 +244,69 @@ contains
                id = this%getIntAt(je, J_ID)
                elementType = this%getStrAt(je, J_TYPE)
                select case (elementType)
-                case (J_ELEM_TYPE_NODE)
+               case (J_ELEM_TYPE_NODE)
                   coordIds = this%getIntsAt(je, J_COORDINATE_IDS)
                   node%coordIds = coordIds
                   call mesh%addElement(id, node)
-                case (J_ELEM_TYPE_POLYLINE)
+               case (J_ELEM_TYPE_POLYLINE)
                   coordIds = this%getIntsAt(je, J_COORDINATE_IDS)
                   polyline%coordIds = coordIds
                   call mesh%addElement(id, polyline)
-                CASE (J_ELEM_TYPE_CELL)
+               CASE (J_ELEM_TYPE_CELL)
                   block
-                     type(cell_region_t) :: cR
-                     type(cell_interval_t), dimension(:), allocatable :: intervals
-                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-                     call mesh%addCellRegion(id, cR)
+                     logical :: isConformal
+                     type(json_value), pointer :: triangles
+                     call this%core%get(je, J_CONF_VOLUME_TRIANGLES, triangles, found=isConformal)
+                     if (.not. isConformal) then 
+                        block
+                           type(cell_region_t) :: cR
+                           type(cell_interval_t), dimension(:), allocatable :: intervals
+                           cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                           call mesh%addCellRegion(id, cR)
+                        end block
+                     else 
+                        block 
+                           type(conformal_region_t) :: cV
+                           type(coordinate_t) :: c
+                           integer :: j, k
+                           cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+                           do k = 1, size(cV%triangles)
+                              do j = 1, 3
+                                 c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
+                                 cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+                              end do
+                           end do
+                           cV%type = REGION_TYPE_VOLUME
+                           cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                           call mesh%addConformalRegion(id, cV)
+                        end block
+                     end if
+                  end block
+               ! CASE (J_ELEM_TYPE_CELL)
+               !    block
+               !       type(cell_region_t) :: cR
+               !       type(cell_interval_t), dimension(:), allocatable :: intervals
+               !       cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+               !       call mesh%addCellRegion(id, cR)
                      
-                  end block
-                case (J_ELEM_TYPE_CONF_VOLUME) 
-                  block 
-                     type(conformal_region_t) :: cV
-                     type(coordinate_t) :: c
-                     integer :: j, k
-                     cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
-                     do k = 1, size(cV%triangles)
-                        do j = 1, 3
-                           c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
-                           cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
-                        end do
-                     end do
-                     cV%type = REGION_TYPE_VOLUME
-                     cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-                     call mesh%addConformalRegion(id, cV)
-                  end block
-                case default
+               !    end block
+               ! case (J_ELEM_TYPE_CONF_VOLUME) 
+               !    block 
+               !       type(conformal_region_t) :: cV
+               !       type(coordinate_t) :: c
+               !       integer :: j, k
+               !       cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+               !       do k = 1, size(cV%triangles)
+               !          do j = 1, 3
+               !             c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
+               !             cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+               !          end do
+               !       end do
+               !       cV%type = REGION_TYPE_VOLUME
+               !       cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+               !       call mesh%addConformalRegion(id, cV)
+               !    end block
+               case default
                   call WarnErrReport('Invalid element type', .true.)
                end select
             end do
