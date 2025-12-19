@@ -8,6 +8,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_TYPE = "type"
    character (len=*), parameter :: J_ELEMENTIDS = "elementIds"
 
+   character (len=*), parameter :: J_DIR = "direction"
    character (len=*), parameter :: J_DIR_X = "x"
    character (len=*), parameter :: J_DIR_Y = "y"
    character (len=*), parameter :: J_DIR_Z = "z"

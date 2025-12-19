@@ -1127,3 +1127,35 @@ def test_conformal_delay(tmp_path):
         tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
         assert np.abs(delay - tdelta)/tdelta < 0.01
         
+
+
+def test_bulk_current_outputs(tmp_path):
+    # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.
+    # Verifies all kind of bulk probes are recognised and setted properly by checking outputFile format.
+    fn = PROBES_INPUT_EXAMPLE + 'bulk_probe_cases_over_nodal_source.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver.run()
+
+    bulkXPlaneFiles = solver.getSolvedProbeFilenames("BulkXPlane") 
+    bulkYPlaneFiles = solver.getSolvedProbeFilenames("BulkYPlane") 
+    bulkZPlaneFiles = solver.getSolvedProbeFilenames("BulkZPlane") 
+    bulkYPointFiles = solver.getSolvedProbeFilenames("BulkYPoint") 
+    bulkZVolumeFiles = solver.getSolvedProbeFilenames("BulkZVolume") 
+
+    assert len(bulkXPlaneFiles) == 1
+    assert len(bulkYPlaneFiles) == 1
+    assert len(bulkZPlaneFiles) == 1
+    assert len(bulkYPointFiles) == 1
+    assert len(bulkZVolumeFiles) == 10
+
+    probeBulkXPlane = Probe(bulkXPlaneFiles[0])
+    probeBulkYPlane = Probe(bulkYPlaneFiles[0])
+    probeBulkZPlane = Probe(bulkZPlaneFiles[0])
+    probeBulkYPoint = Probe(bulkYPointFiles[0])
+    probeBulkZVolume = Probe(bulkZVolumeFiles[0])
+
+    assert probeBulkXPlane.direction == 'x'
+    assert probeBulkYPlane.direction == 'y'
+    assert probeBulkZPlane.direction == 'z'
+    assert probeBulkYPoint.direction == 'y'
+    assert probeBulkZVolume.direction == 'z'

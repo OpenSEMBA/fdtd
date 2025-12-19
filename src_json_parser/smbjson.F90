@@ -1557,6 +1557,8 @@ contains
          type(coords), dimension(:), allocatable :: cs
          type(cell_region_t), dimension(:), allocatable :: cRs
 
+         character(len=1) :: direction
+
          cRs = this%mesh%getCellRegions(this%getIntsAt(bp, J_ELEMENTIDS))
          if (size(cRs) /= 1) then
             call WarnErrReport("Bulk current probe must be defined by a single cell region.", .true.)
@@ -1574,6 +1576,15 @@ contains
          res%k1  = cs(1)%zi
          res%k2  = cs(1)%ze
          res%nml = abs(cs(1)%Or)
+         if (res%nml == 0) then !DIR_NULL 
+            direction = this%getStrAt(bp, J_DIR)
+            select case(trim(adjustl(direction)))
+            case(J_DIR_X); res%nml = 1 !DIR_X
+            case(J_DIR_Y); res%nml = 2 !DIR_Y
+            case(J_DIR_Z); res%nml = 3 !DIR_Z
+            case default; call WarnErrReport('Null direction detected for bulk probe. Check definition')
+            end select
+         end if
 
          res%outputrequest = trim(adjustl(this%getStrAt(bp, J_NAME)))
          call setDomain(res, this%getDomain(bp, J_PR_DOMAIN))

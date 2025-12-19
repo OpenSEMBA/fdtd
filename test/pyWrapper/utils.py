@@ -41,6 +41,7 @@ EXCITATIONS_FOLDER = os.path.join(TEST_DATA_FOLDER, 'excitations/')
 OUTPUTS_FOLDER = os.path.join(TEST_DATA_FOLDER, 'outputs/')
 SPINIT_FOLDER = os.path.join(TEST_DATA_FOLDER, 'spinit/')
 GEOMETRIES_FOLDER = os.path.join(TEST_DATA_FOLDER, 'geometries/')
+PROBES_INPUT_EXAMPLE = os.path.join(TEST_DATA_FOLDER, 'input_examples/probes/')
 
 def getCase(case):
     return json.load(open(CASES_FOLDER + case + '.fdtd.json'))
