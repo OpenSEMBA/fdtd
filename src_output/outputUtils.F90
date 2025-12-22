@@ -351,6 +351,53 @@ contains
       return
    end function prefix
 
+   function fieldo(field, dir) result(fieldo2)
+      integer  ::  fieldo2, field
+      character(len=1) :: dir
+      fieldo2 = -1
+      select case (field)
+      case (iEx, iEy, iEz, iHx, iHy, iHz); fieldo2 = field
+      case (iJx, iVx, iBloqueJx, iExC, iQx); fieldo2 = iEx
+      case (iJy, iVy, iBloqueJy, iEyC, iQy); fieldo2 = iEy
+      case (iJz, iVz, iBloqueJz, iEzC, iQz); fieldo2 = iEz
+      case (iBloqueMx, iHxC); fieldo2 = iHx
+      case (iBloqueMy, iHyC); fieldo2 = iHy
+      case (iBloqueMz, iHzC); fieldo2 = iHz
+      case (iMEC)
+         select case (dir)
+         CASE ('X', 'x'); fieldo2 = iEx
+         CASE ('Y', 'y'); fieldo2 = iEY
+         CASE ('Z', 'z'); fieldo2 = iEz
+         END SELECT
+      case (iMHC)
+         select case (dir)
+         CASE ('X', 'x'); fieldo2 = ihx
+         CASE ('Y', 'y'); fieldo2 = iHY
+         CASE ('Z', 'z'); fieldo2 = iHz
+         END SELECT
+      case (iCur, iCurX, icurY, icurZ, mapvtk)  !los pongo en efield para evitar problemas con el MPI
+         select case (dir)
+         CASE ('X', 'x'); fieldo2 = iEx
+         CASE ('Y', 'y'); fieldo2 = iEY
+         CASE ('Z', 'z'); fieldo2 = iEz
+         END SELECT
+      end select
+   end function
+
+   function get_field_component(fieldId, fieldReference) result(component)
+      type(fields_reference_t), intent(in) :: fieldReference
+      integer(kind=SINGLE), intent(in) :: fieldId
+      real(kind=RKIND), pointer, dimension(:, :, :) :: component
+      select case (fieldId)
+      case (iEx); component => fieldsReference%E%x
+      case (iEy); component => fieldsReference%E%y
+      case (iEz); component => fieldsReference%E%z
+      case (iHx); component => fieldsReference%H%x
+      case (iHy); component => fieldsReference%H%y
+      case (iHz); component => fieldsReference%H%z
+      end select
+   end function
+
    function open_file(fileUnit, fileName) result(iostat)
       character(len=*), intent(in) :: fileName
       integer(kind=SINGLE), intent(in) :: fileUnit

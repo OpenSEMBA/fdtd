@@ -1505,7 +1505,7 @@ contains
 #endif
          write(dubuf,*) 'Init Observation...';  call print11(this%control%layoutnumber,dubuf)
 #ifdef CompileWithNewOutputModule
-         call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%control, this%thereAre%wires, this%bounds, this%thereAre%Observation)
+         call init_outputs(this%sgg, this%media, this%sinPML_fullsize, this%bounds, this%control, this%thereAre%Observation, this%thereAre%wires)
 #else
          call InitObservation (this%sgg,this%media,this%tag_numbers, &
                                  this%thereAre%Observation,this%thereAre%wires,this%thereAre%FarFields,this%initialtimestep,this%lastexecutedtime, &

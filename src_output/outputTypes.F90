@@ -21,6 +21,25 @@ module outputTypes
    character(len=4), parameter :: timeExtension = 'tm'
    character(len=4), parameter :: frequencyExtension = 'fq'
 
+   type solver_output_t
+      integer(kind=SINGLE) :: outputID
+      type(point_probe_output_t), allocatable :: pointProbe !iEx, iEy, iEz, iHx, iHy, iHz
+      type(wire_current_probe_output_t), allocatable :: wireCurrentProbe !Jx, Jy, Jz
+      type(wire_charge_probe_output_t), allocatable :: wireChargeProbe !Qx, Qy, Qz
+      type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe !BloqueXJ, BloqueYJ, BloqueZJ, BloqueXM, BloqueYM, BloqueZM
+      type(volumic_current_probe_t), allocatable :: volumicCurrentProbe !icurX, icurY, icurZ
+      type(volumic_field_probe_output_t), allocatable :: volumicFieldProbe
+      type(line_integral_probe_output_t), allocatable :: lineIntegralProbe
+      type(movie_probe_output_t), allocatable :: movieProbe !iCur if timeDomain
+      type(frequency_slice_probe_output_t), allocatable :: frequencySliceProbe !iCur if freqDomain
+      type(far_field_probe_output_t), allocatable :: farFieldOutput !farfield
+
+#ifdef CompileWithMPI
+      integer(kind=4)      :: MPISubcomm, MPIRoot, MPIGroupIndex
+      integer(kind=4)      :: ZIorig, ZEorig
+#endif
+   end type solver_output_t
+
    type :: domain_t
       real(kind=RKIND_tiempo) :: tstart = 0.0_RKIND_tiempo, tstop = 0.0_RKIND_tiempo, tstep = 0.0_RKIND_tiempo
       real(kind=RKIND)        :: fstart = 0.0_RKIND, fstop = 0.0_RKIND, fstep
@@ -35,7 +54,7 @@ module outputTypes
    end type
 
    type cell_coordinate_t
-      integer(kind=SINGLE) :: x,y,z
+      integer(kind=SINGLE) :: x, y, z
    end type cell_coordinate_t
 
    type field_data_t
@@ -177,7 +196,7 @@ module outputTypes
       character(len=BUFSIZE) :: path
 
       integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
-      integer(kind=SINGLE), dimension(:,:), allocatable :: coords
+      integer(kind=SINGLE), dimension(:, :), allocatable :: coords
       integer(kind=SINGLE) :: nFreq = 0_SINGLE
       real(kind=RKIND), dimension(:), allocatable :: frequencySlice
       complex(kind=CKIND), dimension(:, :), allocatable :: valueForFreq
@@ -192,7 +211,7 @@ module outputTypes
       integer(kind=SINGLE) :: fieldComponent
 
       integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
-      integer(kind=SINGLE), dimension(:,:), allocatable :: coords
+      integer(kind=SINGLE), dimension(:, :), allocatable :: coords
 
       !Intent storage order:
       !(:) == (timeinstance) => timeValue
@@ -215,7 +234,7 @@ module outputTypes
       integer(kind=SINGLE) :: fieldComponent
 
       integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
-      integer(kind=SINGLE), dimension(:,:), allocatable :: coords
+      integer(kind=SINGLE), dimension(:, :), allocatable :: coords
 
       !Intent storage order:
       !(:) == (frquencyinstance) => timeValue
