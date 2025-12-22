@@ -181,6 +181,11 @@ module  FDETYPES
    integer (kind=4),  parameter  ::  iBloqueJx=100*iEx,iBloqueJy=100*iEy,iBloqueJz=100*iEz
    integer (kind=4),  parameter  ::  iBloqueMx=100*iHx,iBloqueMy=100*iHy,iBloqueMz=100*iHz
    !
+   integer (kind=4),  parameter :: VOLUMIC_M_MEASURE(3) = [iCur, iMEC, iMHC] !Module
+   integer (kind=4),  parameter :: VOLUMIC_X_MEASURE(3) = [iCurx, iExC, iHxC]
+   integer (kind=4),  parameter :: VOLUMIC_Y_MEASURE(3) = [iCury, iEyC, iHyC]
+   integer (kind=4),  parameter :: VOLUMIC_Z_MEASURE(3) = [iCurz, iEzC, iHzC]
+   !
    CHARACTER (LEN=*), PARAMETER  ::  SEPARADOR='______________'
    integer (kind=4), PARAMETER  ::  comi=1,fine=2, icoord=1,jcoord=2,kcoord=3
 

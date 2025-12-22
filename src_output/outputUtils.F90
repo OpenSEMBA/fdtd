@@ -28,6 +28,7 @@ module mod_outputUtils
    public :: computej
    public :: computeJ1
    public :: computeJ2
+   public :: alloc_and_init
    !===========================
 
    !===========================
@@ -41,10 +42,112 @@ module mod_outputUtils
    !===========================
 
    interface get_coordinates_extension
-     module procedure get_probe_coords_extension, get_probe_bounds_coords_extension
+      module procedure get_probe_coords_extension, get_probe_bounds_coords_extension
    end interface get_coordinates_extension
 
+   interface alloc_and_init
+      procedure alloc_and_init_time_1D
+      procedure alloc_and_init_int_1D
+      procedure alloc_and_init_int_2D
+      procedure alloc_and_init_int_3D
+      procedure alloc_and_init_real_1D
+      procedure alloc_and_init_real_2D
+      procedure alloc_and_init_real_3D
+      procedure alloc_and_init_complex_1D
+      procedure alloc_and_init_complex_2D
+      procedure alloc_and_init_complex_3D
+   end interface
+
 contains
+   subroutine alloc_and_init_time_1D(array, n1, initVal)
+      integer(RKIND_tiempo), allocatable, intent(inout) :: array(:)
+      integer, intent(IN) :: n1
+      integer(RKIND_tiempo), intent(IN) :: initVal
+
+      allocate (array(n1))
+      array = initVal
+   END subroutine alloc_and_init_int_1D
+
+   subroutine alloc_and_init_int_1D(array, n1, initVal)
+      integer(SINGLE), allocatable, intent(inout) :: array(:)
+      integer, intent(IN) :: n1
+      integer(SINGLE), intent(IN) :: initVal
+
+      allocate (array(n1))
+      array = initVal
+   END subroutine alloc_and_init_int_1D
+
+   subroutine alloc_and_init_int_2D(array, n1, n2, initVal)
+      integer(SINGLE), allocatable, intent(inout) :: array(:, :)
+      integer, intent(IN) :: n1, n2
+      integer(SINGLE), intent(IN) :: initVal
+
+      allocate (array(n1, n2))
+      array = initVal
+   END subroutine alloc_and_init_int_2D
+
+   subroutine alloc_and_init_int_3D(array, n1, n2, n3, initVal)
+      integer(SINGLE), allocatable, intent(inout) :: array(:, :, :)
+      integer, intent(IN) :: n1, n2, n3
+      integer(SINGLE), intent(IN) :: initVal
+
+      allocate (array(n1, n2, n3))
+      array = initVal
+   END subroutine alloc_and_init_int_3D
+
+   subroutine alloc_and_init_real_1D(array, n1, initVal)
+      REAL(RKIND), allocatable, intent(inout) :: array(:)
+      integer, intent(IN) :: n1
+      REAL(RKIND), intent(IN) :: initVal
+
+      allocate (array(n1))
+      array = initVal
+   END subroutine alloc_and_init_real_1D
+
+   subroutine alloc_and_init_real_2D(array, n1, n2, initVal)
+      REAL(RKIND), allocatable, intent(inout) :: array(:, :)
+      integer, intent(IN) :: n1, n2
+      REAL(RKIND), intent(IN) :: initVal
+
+      allocate (array(n1, n2))
+      array = initVal
+   END subroutine alloc_and_init_real_2D
+
+   subroutine alloc_and_init_real_3D(array, n1, n2, n3, initVal)
+      REAL(RKIND), allocatable, intent(inout) :: array(:, :, :)
+      integer, intent(IN) :: n1, n2, n3
+      REAL(RKIND), intent(IN) :: initVal
+
+      allocate (array(n1, n2, n3))
+      array = initVal
+   END subroutine alloc_and_init_real_3D
+
+   subroutine alloc_and_init_complex_1D(array, n1, initVal)
+      COMPLEX(CKIND), allocatable, intent(inout) :: array(:)
+      integer, intent(IN) :: n1
+      COMPLEX(CKIND), intent(IN) :: initVal
+
+      allocate (array(n1))
+      array = initVal
+   END subroutine alloc_and_init_complex_1D
+
+   subroutine alloc_and_init_complex_2D(array, n1, n2, initVal)
+      COMPLEX(CKIND), allocatable, intent(inout) :: array(:, :)
+      integer, intent(IN) :: n1, n2
+      COMPLEX(CKIND), intent(IN) :: initVal
+
+      allocate (array(n1, n2))
+      array = initVal
+   END subroutine alloc_and_init_complex_2D
+
+   subroutine alloc_and_init_complex_3D(array, n1, n2, n3, initVal)
+      COMPLEX(CKIND), allocatable, intent(inout) :: array(:, :, :)
+      integer, intent(IN) :: n1, n2, n3
+      COMPLEX(CKIND), intent(IN) :: initVal
+
+      allocate (array(n1, n2, n3))
+      array = initVal
+   END subroutine alloc_and_init_complex_3D
 
    function get_probe_coords_extension(coordinates, mpidir) result(ext)
       type(cell_coordinate_t) :: coordinates
@@ -304,7 +407,6 @@ contains
       mediaIndex = getMediaIndex(field, i, j, k, geometryMedia)
       isThinWire = registeredMedia(mediaIndex)%is%ThinWire
    end function
-
 
    logical function isPEC(field, i, j, k, geometryMedia, registeredMedia)
       integer(kind=4), intent(in) :: field, i, j, k
