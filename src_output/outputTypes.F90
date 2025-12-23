@@ -12,52 +12,50 @@ module outputTypes
 #endif
    implicit none
 
-   integer, parameter :: UNDEFINED_DOMAIN = -1
-   integer, parameter :: TIME_DOMAIN = 0
-   integer, parameter :: FREQUENCY_DOMAIN = 1
-   integer, parameter :: BOTH_DOMAIN = 2
+!=====================================================
+! Parameters & constants
+!=====================================================
+   integer, parameter :: UNDEFINED_DOMAIN  = -1
+   integer, parameter :: TIME_DOMAIN       =  0
+   integer, parameter :: FREQUENCY_DOMAIN  =  1
+   integer, parameter :: BOTH_DOMAIN       =  2
 
    character(len=4), parameter :: datFileExtension = '.dat'
-   character(len=4), parameter :: timeExtension = 'tm'
+   character(len=4), parameter :: timeExtension    = 'tm'
    character(len=4), parameter :: frequencyExtension = 'fq'
 
-   type solver_output_t
-      integer(kind=SINGLE) :: outputID
-      type(point_probe_output_t), allocatable :: pointProbe !iEx, iEy, iEz, iHx, iHy, iHz
-      type(wire_current_probe_output_t), allocatable :: wireCurrentProbe !Jx, Jy, Jz
-      type(wire_charge_probe_output_t), allocatable :: wireChargeProbe !Qx, Qy, Qz
-      type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe !BloqueXJ, BloqueYJ, BloqueZJ, BloqueXM, BloqueYM, BloqueZM
-      type(volumic_current_probe_t), allocatable :: volumicCurrentProbe !icurX, icurY, icurZ
-      type(volumic_field_probe_output_t), allocatable :: volumicFieldProbe
-      type(line_integral_probe_output_t), allocatable :: lineIntegralProbe
-      type(movie_probe_output_t), allocatable :: movieProbe !iCur if timeDomain
-      type(frequency_slice_probe_output_t), allocatable :: frequencySliceProbe !iCur if freqDomain
-      type(far_field_probe_output_t), allocatable :: farFieldOutput !farfield
-
-#ifdef CompileWithMPI
-      integer(kind=4)      :: MPISubcomm, MPIRoot, MPIGroupIndex
-      integer(kind=4)      :: ZIorig, ZEorig
-#endif
-   end type solver_output_t
+!=====================================================
+! Basic helper / geometry types
+!=====================================================
+   type :: cell_coordinate_t
+      integer(kind=SINGLE) :: x, y, z
+   end type cell_coordinate_t
 
    type :: domain_t
-      real(kind=RKIND_tiempo) :: tstart = 0.0_RKIND_tiempo, tstop = 0.0_RKIND_tiempo, tstep = 0.0_RKIND_tiempo
-      real(kind=RKIND)        :: fstart = 0.0_RKIND, fstop = 0.0_RKIND, fstep
+      real(kind=RKIND_tiempo) :: tstart = 0.0_RKIND_tiempo
+      real(kind=RKIND_tiempo) :: tstop  = 0.0_RKIND_tiempo
+      real(kind=RKIND_tiempo) :: tstep  = 0.0_RKIND_tiempo
+      real(kind=RKIND)        :: fstart = 0.0_RKIND
+      real(kind=RKIND)        :: fstop  = 0.0_RKIND
+      real(kind=RKIND)        :: fstep
       integer(kind=SINGLE)    :: fnum = 0
       integer(kind=SINGLE)    :: domainType = UNDEFINED_DOMAIN
       logical                 :: logarithmicSpacing = .false.
    end type domain_t
 
-   type spheric_domain_t
-      real(kind=RKIND) :: phiStart = 0.0_RKIND, phiStop = 0.0_RKIND, phiStep = 0.0_RKIND
-      real(kind=RKIND) :: thetaStart = 0.0_RKIND, thetaStop = 0.0_RKIND, thetastep = 0.0_RKIND
-   end type
+   type :: spheric_domain_t
+      real(kind=RKIND) :: phiStart   = 0.0_RKIND
+      real(kind=RKIND) :: phiStop    = 0.0_RKIND
+      real(kind=RKIND) :: phiStep    = 0.0_RKIND
+      real(kind=RKIND) :: thetaStart = 0.0_RKIND
+      real(kind=RKIND) :: thetaStop  = 0.0_RKIND
+      real(kind=RKIND) :: thetastep  = 0.0_RKIND
+   end type spheric_domain_t
 
-   type cell_coordinate_t
-      integer(kind=SINGLE) :: x, y, z
-   end type cell_coordinate_t
-
-   type field_data_t
+!=====================================================
+! Field & current data containers
+!=====================================================
+   type :: field_data_t
       real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: x => NULL()
       real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: y => NULL()
       real(kind=RKIND), pointer, dimension(:, :, :), contiguous :: z => NULL()
@@ -66,189 +64,132 @@ module outputTypes
       real(kind=RKIND), pointer, dimension(:), contiguous :: deltaZ => NULL()
    end type field_data_t
 
-   type fields_reference_t
+   type :: fields_reference_t
       type(field_data_t) :: E
       type(field_data_t) :: H
    end type fields_reference_t
 
-   type point_probe_output_t
-      integer(kind=SINGLE) :: columnas = 2_SINGLE !reference and field
-      type(domain_t) :: domain
-      type(cell_coordinate_t) :: coordinates
-      integer(kind=SINGLE) :: fileUnitTime, fileUnitFreq
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: fieldComponent
-      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE, nFreq = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
-      real(kind=RKIND), dimension(BuffObse) :: valueForTime = 0.0_RKIND
+   type :: current_values_t
+      real(kind=RKIND) :: current = 0.0_RKIND
+      real(kind=RKIND) :: deltaVoltage = 0.0_RKIND
+      real(kind=RKIND) :: plusVoltage  = 0.0_RKIND
+      real(kind=RKIND) :: minusVoltage = 0.0_RKIND
+      real(kind=RKIND) :: voltageDiference = 0.0_RKIND
+   end type current_values_t
 
-      real(kind=RKIND), dimension(:), allocatable :: frequencySlice
-      complex(kind=CKIND), dimension(:), allocatable :: valueForFreq
-      complex(kind=CKIND), dimension(:), allocatable :: auxExp_E
-      complex(kind=CKIND), dimension(:), allocatable :: auxExp_H
+!=====================================================
+! Abstract probe hierarchy
+!=====================================================
+   type :: abstract_probe_t
+      integer(kind=SINGLE)      :: columnas
+      type(domain_t)            :: domain
+      type(cell_coordinate_t)   :: mainCoords
+      integer(kind=SINGLE)      :: component
+      character(len=BUFSIZE)    :: path
+   end type abstract_probe_t
+
+   type, extends(abstract_probe_t) :: abstract_time_probe_t
+      integer(kind=SINGLE) :: fileUnitTime
+      integer(kind=SINGLE) :: nTime
+      real(kind=RKIND_tiempo), allocatable :: timeStep(:)
+   end type abstract_time_probe_t
+
+   type, extends(abstract_probe_t) :: abstract_frequency_probe_t
+      integer(kind=SINGLE) :: fileUnitFreq
+      integer(kind=SINGLE) :: nFreq
+      real(kind=RKIND), allocatable    :: frequencySlice(:)
+      complex(kind=CKIND), allocatable :: auxExp_E(:), auxExp_H(:)
+   end type abstract_frequency_probe_t
+
+   type, extends(abstract_probe_t) :: abstract_time_frequency_probe_t
+      integer(kind=SINGLE) :: fileUnitTime, fileUnitFreq
+      integer(kind=SINGLE) :: nTime, nFreq
+      real(kind=RKIND_tiempo), allocatable :: timeStep(:)
+      real(kind=RKIND), allocatable        :: frequencySlice(:)
+      complex(kind=CKIND), allocatable     :: auxExp_E(:), auxExp_H(:)
+   end type abstract_time_frequency_probe_t
+
+!=====================================================
+! Concrete probe types
+!=====================================================
+   type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
+      real(kind=RKIND)    :: valueForTime(:)
+      complex(kind=CKIND), allocatable :: valueForFreq(:)
    end type point_probe_output_t
 
-   type wire_charge_probe_output_t
-      integer(kind=SINGLE) :: columnas = 2_SINGLE
-      integer(kind=SINGLE) :: fileUnitTime
-      type(domain_t) :: domain
-      type(cell_coordinate_t) :: coordinates
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: chargeComponent
+   type, extends(abstract_time_probe_t) :: wire_charge_probe_output_t
       integer(kind=SINGLE) :: sign = +1
-
+      real(kind=RKIND)     :: chargeValue(:)
       type(CurrentSegments), pointer :: segment
-
-      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
-      real(kind=RKIND), dimension(BuffObse) :: chargeValue
    end type wire_charge_probe_output_t
 
-   type current_values_t
-      real(kind=RKIND) :: current = 0.0_RKIND, deltaVoltage = 0.0_RKIND
-      real(kind=RKIND) :: plusVoltage = 0.0_RKIND, minusVoltage = 0.0_RKIND, voltageDiference = 0.0_RKIND
-   end type
-
-   type wire_current_probe_output_t
-      integer(kind=SINGLE) :: columnas = 6_SINGLE !reference, corriente, -e*dl, vplus, vminus, vplus-vminus
-      integer(kind=SINGLE) :: fileUnitTime
-      type(domain_t) :: domain
-      type(cell_coordinate_t) :: coordinates
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: currentComponent
+   type :: wire_current_probe_output_t
       integer(kind=SINGLE) :: sign = +1
-
+      type(current_values_t) :: currentValues(BuffObse)
       type(CurrentSegments), pointer :: segment
 #ifdef CompileWithBerengerWires
-      type(TSegment), pointer  :: segmentBerenger
+      type(TSegment), pointer :: segmentBerenger
 #endif
 #ifdef CompileWithSlantedWires
-      class(Segment), pointer  :: segmentSlanted
+      class(Segment), pointer :: segmentSlanted
 #endif
-
-      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
-      type(current_values_t), dimension(BuffObse) :: currentValues
    end type wire_current_probe_output_t
 
-   type bulk_current_probe_output_t
-      integer(kind=SINGLE) :: columnas = 2_SINGLE !reference and field
-      integer(kind=SINGLE) :: fileUnitTime
-      type(domain_t) :: domain
-      type(cell_coordinate_t) :: lowerBound
-      type(cell_coordinate_t) :: upperBound
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: fieldComponent
-      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(BuffObse) :: timeStep = 0.0_RKIND
-      real(kind=RKIND), dimension(BuffObse) :: valueForTime = 0.0_RKIND
-
+   type, extends(abstract_time_probe_t) :: bulk_current_probe_output_t
+      type(cell_coordinate_t) :: auxCoords
+      real(kind=RKIND) :: valueForTime(:)
    end type bulk_current_probe_output_t
 
-   type volumic_current_probe_t
-      integer(kind=SINGLE) :: columnas = 4_SINGLE !reference and current components
-      type(domain_t) :: domain
-      type(cell_coordinate_t) :: lowerBound
-      type(cell_coordinate_t) :: upperBound
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: fieldComponent
-
-      !Intent storage order:
-      !(:) == (timeinstance) => timeValue
-      !(:,:) == (timeInstance, componentId) => escalar
-
-      !Time Domain (requires first allocation)
-      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(:), allocatable :: timeStep
-      real(kind=RKIND), dimension(:, :), allocatable :: xValueForTime
-      real(kind=RKIND), dimension(:, :), allocatable :: yValueForTime
-      real(kind=RKIND), dimension(:, :), allocatable :: zValueForTime
-
-      !Intent storage order:
-      !(:) == (frquencyinstance) => timeValue
-      !(:,:) == (frquencyinstance, componentId) => escalar
-
-      !Frequency Domain (requires first allocation)
-      integer(kind=SINGLE) :: nFreq = 0_SINGLE
-      real(kind=RKIND), dimension(:), allocatable :: frequencySlice
-      complex(kind=CKIND), dimension(:, :), allocatable :: xValueForFreq
-      complex(kind=CKIND), dimension(:, :), allocatable :: yValueForFreq
-      complex(kind=CKIND), dimension(:, :), allocatable :: zValueForFreq
-      complex(kind=CKIND), dimension(:), allocatable :: auxExp_E
-      complex(kind=CKIND), dimension(:), allocatable :: auxExp_H
-
-   end type volumic_current_probe_t
-
-   type volumic_field_probe_output_t
-   !!!!!Pending
-   end type volumic_field_probe_output_t
-   type line_integral_probe_output_t
-    !!!!!Pending
-   end type line_integral_probe_output_t
-   type far_field_probe_output_t
-      integer(kind=SINGLE) :: fileUnitFreq
-      integer(kind=SINGLE) :: fieldComponent
-      integer(kind=SINGLE) :: columnas = 6_SINGLE !reference and current components
-      type(domain_t) :: domain
-      type(spheric_domain_t) :: sphericRange
-      type(cell_coordinate_t) :: lowerBound
-      type(cell_coordinate_t) :: upperBound
-      character(len=BUFSIZE) :: path
-
-      integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
-      integer(kind=SINGLE), dimension(:, :), allocatable :: coords
-      integer(kind=SINGLE) :: nFreq = 0_SINGLE
-      real(kind=RKIND), dimension(:), allocatable :: frequencySlice
-      complex(kind=CKIND), dimension(:, :), allocatable :: valueForFreq
+   type, extends(abstract_frequency_probe_t) :: far_field_probe_output_t
+      type(spheric_domain_t)  :: sphericRange
+      type(cell_coordinate_t) :: auxCoords
+      integer(kind=SINGLE)    :: nPoints
+      integer(kind=SINGLE), allocatable :: coords(:, :)
+      complex(kind=CKIND), allocatable :: valueForFreq(:, :)
    end type far_field_probe_output_t
-   type movie_probe_output_t
-      integer(kind=SINGLE) :: PDVUnit
-      integer(kind=SINGLE) :: columnas = 4_SINGLE !reference and current components
-      type(domain_t) :: domain
-      type(cell_coordinate_t) :: lowerBound
-      type(cell_coordinate_t) :: upperBound
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: fieldComponent
 
-      integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
-      integer(kind=SINGLE), dimension(:, :), allocatable :: coords
-
-      !Intent storage order:
-      !(:) == (timeinstance) => timeValue
-      !(:,:) == (timeInstance, componentId) => escalar
-
-      !Time Domain (requires first allocation)
-      integer(kind=SINGLE) :: serializedTimeSize = 0_SINGLE
-      real(kind=RKIND_tiempo), dimension(:), allocatable :: timeStep
-      real(kind=RKIND), dimension(:, :), allocatable :: xValueForTime
-      real(kind=RKIND), dimension(:, :), allocatable :: yValueForTime
-      real(kind=RKIND), dimension(:, :), allocatable :: zValueForTime
+   type, extends(abstract_time_probe_t) :: movie_probe_output_t
+      type(cell_coordinate_t) :: auxCoords
+      integer(kind=SINGLE)    :: nPoints
+      integer(kind=SINGLE), allocatable :: coords(:, :)
+      real(kind=RKIND), allocatable :: xValueForTime(:, :)
+      real(kind=RKIND), allocatable :: yValueForTime(:, :)
+      real(kind=RKIND), allocatable :: zValueForTime(:, :)
    end type movie_probe_output_t
-   type frequency_slice_probe_output_t
-      integer(kind=SINGLE) :: PDVUnit
-      integer(kind=SINGLE) :: columnas = 4_SINGLE !reference and current components
-      type(domain_t) :: domain
-      type(cell_coordinate_t) :: lowerBound
-      type(cell_coordinate_t) :: upperBound
-      character(len=BUFSIZE) :: path
-      integer(kind=SINGLE) :: fieldComponent
 
-      integer(kind=SINGLE) :: nMeasuredElements = 0_SINGLE
-      integer(kind=SINGLE), dimension(:, :), allocatable :: coords
-
-      !Intent storage order:
-      !(:) == (frquencyinstance) => timeValue
-      !(:,:) == (frquencyinstance, componentId) => escalar
-
-      !Frequency Domain (requires first allocation)
-      integer(kind=SINGLE) :: nFreq = 0_SINGLE
-      real(kind=RKIND), dimension(:), allocatable :: frequencySlice
-      complex(kind=CKIND), dimension(:, :), allocatable :: xValueForFreq
-      complex(kind=CKIND), dimension(:, :), allocatable :: yValueForFreq
-      complex(kind=CKIND), dimension(:, :), allocatable :: zValueForFreq
-      complex(kind=CKIND), dimension(:), allocatable :: auxExp_E
-      complex(kind=CKIND), dimension(:), allocatable :: auxExp_H
+   type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
+      type(cell_coordinate_t) :: auxCoords
+      integer(kind=SINGLE)    :: nPoints
+      integer(kind=SINGLE), allocatable :: coords(:, :)
+      complex(kind=CKIND), allocatable :: xValueForFreq(:, :)
+      complex(kind=CKIND), allocatable :: yValueForFreq(:, :)
+      complex(kind=CKIND), allocatable :: zValueForFreq(:, :)
    end type frequency_slice_probe_output_t
+
+!=====================================================
+! High-level aggregation types
+!=====================================================
+   type :: solver_output_t
+      integer(kind=SINGLE) :: outputID
+      type(point_probe_output_t), allocatable :: pointProbe
+      type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
+      type(wire_charge_probe_output_t), allocatable  :: wireChargeProbe
+      type(bulk_current_probe_output_t), allocatable :: bulkCurrentProbe
+      type(movie_probe_output_t), allocatable         :: movieProbe
+      type(frequency_slice_probe_output_t), allocatable :: frequencySliceProbe
+      type(far_field_probe_output_t), allocatable     :: farFieldOutput
+#ifdef CompileWithMPI
+      integer(kind=4) :: MPISubcomm, MPIRoot, MPIGroupIndex
+      integer(kind=4) :: ZIorig, ZEorig
+#endif
+   end type solver_output_t
+
+   type :: problem_info_t
+      type(media_matrices_t), pointer :: geometryToMaterialData
+      type(limit_t), pointer :: problemDimension(:)
+      type(bounds_t), pointer :: simulationBounds
+      type(MediaData_t), pointer :: materialList(:)
+   end type problem_info_t
 
 contains
 

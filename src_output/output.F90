@@ -46,6 +46,7 @@ module output
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
    type(solver_output_t), pointer, dimension(:), save  ::  outputs
+   type(problem_info_t), save :: problemInfo
 
    interface init_solver_output
       module procedure &
@@ -98,12 +99,18 @@ contains
       return
    end function
 
+   function GetProblemInfo() result(r)
+      type(problem_info_t), pointer ::  r
+      r => problemInfo
+      return
+   end function
+
    subroutine init_outputs(sgg, media, sinpml_fullsize, bounds, control, observationsExists, wiresExists)
       type(SGGFDTDINFO), intent(in) ::  sgg
       type(media_matrices_t), intent(in) :: media
       type(limit_t), dimension(:), intent(in)  ::  SINPML_fullsize
       type(bounds_t) :: bounds
-      type(sim_control_t), intent(inout) :: control
+      type(sim_control_t), intent(in) :: control
       logical, intent(inout) :: wiresExists
       logical, intent(out) :: observationsExists
 
@@ -118,6 +125,11 @@ contains
 
       observationsExists = .false.
       requestedOutputs = get_required_output_count(sgg)
+
+      problemInfo%geometryToMaterialData => media
+      problemInfo%materialList => sgg%Med
+      problemInfo%simulationBounds => bounds
+      problemInfo%problemDimension => SINPML_fullsize
 
       outputs => NULL()
       allocate (outputs(requestedOutputs))
@@ -156,7 +168,7 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-               call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt)
+               call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control, sgg%dt)
                call create_empty_files(outputs(outputCount)%pointProbe)
             case (iJx, iJy, iJz)
                if (wiresExists) then
@@ -164,7 +176,7 @@ contains
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
-                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, sgg%Med, outputTypeExtension, control%mpidir, control%wiresflavor)
+                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control, problemInfo)
                   call create_empty_files(outputs(outputCount)%wireCurrentProbe)
                end if
 
@@ -173,7 +185,7 @@ contains
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
 
                allocate (outputs(outputCount)%wireChargeProbe)
-               call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
+               call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control)
                call create_empty_files(outputs(outputCount)%wireChargeProbe)
 
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
@@ -181,7 +193,7 @@ contains
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
                allocate (outputs(outputCount)%bulkCurrentProbe)
-               call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
+               call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control)
                call create_empty_files(outputs(outputCount)%bulkCurrentProbe)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
@@ -193,7 +205,7 @@ contains
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = MOVIE_PROBE_ID
                   allocate (outputs(outputCount)%movieProbe)
-                  call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, SINPML_fullsize, outputTypeExtension, control%mpidir)
+                  call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control, problemInfo)
                   call create_pvd(outputs(outputCount)%movieProbe%path, outputs(outputCount)%movieProbe%PDVUnit)
 
                else if (domain%domainType == FREQUENCY_DOMAIN) then
@@ -201,7 +213,7 @@ contains
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
                   allocate (outputs(outputCount)%frequencySliceProbe)
-                  call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, outputRequestType, domain, media, sgg%Med, SINPML_fullsize, outputTypeExtension, control%mpidir, sgg%dt)
+                  call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, sgg%dt, outputRequestType, domain, outputTypeExtension, control, problemInfo)
                   call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%PDVUnit)
 
                end if
@@ -211,7 +223,7 @@ contains
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = FAR_FIELD_PROBE_ID
                allocate (outputs(outputCount)%farFieldOutput)
-               call init_solver_output(outputs(outputCount)%farFieldOutput, sgg, lowerBound, upperBound,outputRequestType, domain, sphericRange, control, outputTypeExtension, sgg%Observation(ii)%FileNormalize, eps0, mu0, media, SINPML_fullsize, bounds)
+               call init_solver_output(outputs(outputCount)%farFieldOutput, sgg, lowerBound, upperBound, outputRequestType, domain, sphericRange, outputTypeExtension, sgg%Observation(ii)%FileNormalize, control, problemInfo, eps0, mu0)
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
@@ -304,15 +316,11 @@ contains
       end do
    end subroutine create_output_files
 
-   subroutine update_outputs(geometryMedia, materialList, SINPML_fullsize, control, discreteTimeArray, timeIndx, fieldsReference, bounds)
+   subroutine update_outputs(control, discreteTimeArray, timeIndx, fieldsReference)
       integer(kind=SINGLE), intent(in) :: timeIndx
       real(kind=RKIND_tiempo), dimension(:), intent(in) :: discreteTimeArray
       integer(kind=SINGLE) :: i, id
-      type(media_matrices_t), intent(in) :: geometryMedia
-      type(MediaData_t), dimension(:) :: materialList
-      type(limit_t), dimension(:), intent(in)  ::  SINPML_fullsize
       type(sim_control_t), intent(in) :: control
-      type(bounds_t), intent(in) :: bounds
       real(kind=RKIND), pointer, dimension(:, :, :) :: fieldComponent
       type(field_data_t) :: fieldReference
       type(fields_reference_t), intent(in) :: fieldsReference
@@ -323,62 +331,25 @@ contains
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
-            fieldComponent => get_field_component(outputs(i)%pointProbe%fieldComponent) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
+            fieldComponent => get_field_component(outputs(i)%pointProbe%fieldComponent, fieldsReference) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
             call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent)
          case (WIRE_CURRENT_PROBE_ID)
-         call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, control%wiresflavor, control%wirecrank, InvEps, InvMu)
+         call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, contorl, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
             call update_solver_output(outputs(i)%wireChargeProbe, discreteTime)
          case (BULK_PROBE_ID)
-            fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%fieldComponent)
+            fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%fieldComponent, fieldsReference)
             call update_solver_output(outputs(i)%bulkCurrentProbe, discreteTime, fieldReference)
          case (MOVIE_PROBE_ID)
-       call update_solver_output(outputs(i)%movieProbe, discreteTime, geometryMedia, materialList, SINPML_fullsize, fieldsReference)
+       call update_solver_output(outputs(i)%movieProbe, discreteTime, problemInfo, fieldsReference)
          case (FREQUENCY_SLICE_PROBE_ID)
-            call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, geometryMedia, materialList, SINPML_fullsize, fieldsReference)
+            call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, problemInfo, fieldsReference)
          case (FAR_FIELD_PROBE_ID)
-            call update_solver_output(outputs(i)%farFieldOutput, timeIndx, bounds, fieldsReference)
+            call update_solver_output(outputs(i)%farFieldOutput, timeIndx, problemInfo, fieldsReference)
          case default
             call stoponerror(0, 0, 'Output update not implemented')
          end select
       end do
-
-   contains
-      function get_field_component(fieldId) result(field)
-         integer(kind=SINGLE), intent(in) :: fieldId
-         real(kind=RKIND), pointer, dimension(:, :, :) :: field
-         select case (fieldId)
-         case (iEx); field => fieldsReference%E%x
-         case (iEy); field => fieldsReference%E%y
-         case (iEz); field => fieldsReference%E%z
-         case (iHx); field => fieldsReference%H%x
-         case (iHy); field => fieldsReference%H%y
-         case (iHz); field => fieldsReference%H%z
-         end select
-      end function get_field_component
-
-      function get_field_reference(fieldId) result(field)
-         integer(kind=SINGLE), intent(in) :: fieldId
-         type(field_data_t) :: field
-         select case (fieldId)
-         case (iBloqueJx, iBloqueJy, iBloqueJz)
-            field%x => fieldsReference%E%x
-            field%y => fieldsReference%E%y
-            field%z => fieldsReference%E%z
-
-            field%deltaX => fieldsReference%E%deltax
-            field%deltaY => fieldsReference%E%deltay
-            field%deltaZ => fieldsReference%E%deltaz
-         case (iBloqueMx, iBloqueMy, iBloqueMz)
-            field%x => fieldsReference%H%x
-            field%y => fieldsReference%H%y
-            field%z => fieldsReference%H%z
-
-            field%deltaX => fieldsReference%H%deltax
-            field%deltaY => fieldsReference%H%deltay
-            field%deltaZ => fieldsReference%H%deltaz
-         end select
-      end function get_field_reference
 
    end subroutine update_outputs
 

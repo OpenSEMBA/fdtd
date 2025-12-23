@@ -13,6 +13,8 @@ module mod_outputUtils
    !===========================
    public :: get_coordinates_extension
    public :: get_prefix_extension
+   public :: get_field_component
+   public :: get_field_reference
    public :: open_file
    public :: close_file
    public :: create_or_clear_file
@@ -398,6 +400,30 @@ contains
       end select
    end function
 
+   function get_field_reference(fieldId, fieldReference) result(field)
+      type(fields_reference_t), intent(in) :: fieldReference
+      integer(kind=SINGLE), intent(in) :: fieldId
+      type(field_data_t) :: field
+      select case (fieldId)
+      case (iBloqueJx, iBloqueJy, iBloqueJz)
+         field%x => fieldsReference%E%x
+         field%y => fieldsReference%E%y
+         field%z => fieldsReference%E%z
+
+         field%deltaX => fieldsReference%E%deltax
+         field%deltaY => fieldsReference%E%deltay
+         field%deltaZ => fieldsReference%E%deltaz
+      case (iBloqueMx, iBloqueMy, iBloqueMz)
+         field%x => fieldsReference%H%x
+         field%y => fieldsReference%H%y
+         field%z => fieldsReference%H%z
+
+         field%deltaX => fieldsReference%H%deltax
+         field%deltaY => fieldsReference%H%deltay
+         field%deltaZ => fieldsReference%H%deltaz
+      end select
+   end function get_field_reference
+
    function open_file(fileUnit, fileName) result(iostat)
       character(len=*), intent(in) :: fileName
       integer(kind=SINGLE), intent(in) :: fileUnit
@@ -444,82 +470,65 @@ contains
       end select
    end function
 
-   logical function isThinWire(field, i, j, k, geometryMedia, registeredMedia)
+   logical function isThinWire(field, i, j, k, problem)
       integer(kind=4), intent(in) :: field, i, j, k
-      type(media_matrices_t), intent(in) :: geometryMedia
-      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
+      type(problem_info_t), intent(in) :: problem
 
       integer(kind=SINGLE) :: mediaIndex
 
-      mediaIndex = getMediaIndex(field, i, j, k, geometryMedia)
-      isThinWire = registeredMedia(mediaIndex)%is%ThinWire
+      mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
+      isThinWire = problem%materialList(mediaIndex)%is%ThinWire
    end function
 
-   logical function isPEC(field, i, j, k, geometryMedia, registeredMedia)
+   logical function isPEC(field, i, j, k, problem)
       integer(kind=4), intent(in) :: field, i, j, k
-      type(media_matrices_t), intent(in) :: geometryMedia
-      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
+      type(problem_info_t), intent(in) :: problem
 
       integer(kind=SINGLE) :: mediaIndex
 
-      mediaIndex = getMediaIndex(field, i, j, k, geometryMedia)
-      isPEC = registeredMedia(mediaIndex)%is%PEC
+      mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
+      isPEC = problem%materialList(mediaIndex)%is%PEC
    end function
 
-   logical function isSurface(field, i, j, k, geometryMedia, registeredMedia)
+   logical function isSurface(field, i, j, k, problem)
       integer(kind=4), intent(in) :: field, i, j, k
-      type(media_matrices_t), intent(in) :: geometryMedia
-      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
+      type(problem_info_t), intent(in) :: problem
 
       integer(kind=SINGLE) :: mediaIndex
 
-      mediaIndex = getMediaIndex(field, i, j, k, geometryMedia)
-      isSurface = registeredMedia(mediaIndex)%is%Surface
+      mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
+      isSurface = problem%materialList(mediaIndex)%is%Surface
    end function
 
-   function getMediaIndex(field, i, j, k, media) result(res)
-      type(media_matrices_t), intent(in) :: media
+   logical function isWithinBounds(field, i, j, k, problem)
       integer(kind=4), intent(in) :: field, i, j, k
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: res
-      select case (field)
-      case (iEx); res = media%sggMiEx(i, j, k)
-      case (iEy); res = media%sggMiEy(i, j, k)
-      case (iEz); res = media%sggMiEz(i, j, k)
-      case (iHx); res = media%sggMiHx(i, j, k)
-      case (iHy); res = media%sggMiHy(i, j, k)
-      case (iHz); res = media%sggMiHz(i, j, k)
-      case default; call StopOnError(0, 0, 'Unrecognized field')
-      end select
+      type(problem_info_t), intent(in) :: problem
+
+      isWithinBounds = (i <= problem%problemDimension(field)%XE) .and. &
+                       (j <= problem%problemDimension(field)%YE) .and. &
+                       (k <= problem%problemDimension(field)%ZE)
    end function
 
-   logical function isWithinBounds(field, i, j, k, SINPML_fullsize)
-      implicit none
-      TYPE(limit_t), DIMENSION(:), INTENT(IN) :: SINPML_fullsize
+   logical function isMediaVacuum(field, i, j, k, problem)
       integer(kind=4), intent(in) :: field, i, j, k
-      isWithinBounds = (i <= SINPML_fullsize(field)%XE) .and. &
-                       (j <= SINPML_fullsize(field)%YE) .and. &
-                       (k <= SINPML_fullsize(field)%ZE)
-   end function
+      type(problem_info_t), intent(in) :: problem
 
-   logical function isMediaVacuum(field, i, j, k, media)
-      implicit none
-      TYPE(media_matrices_t), INTENT(IN) :: media
-      integer(kind=4) :: field, i, j, k
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex, vacuum = 1
-      mediaIndex = getMediaIndex(field, i, j, k, media)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), parameter :: vacuum = 1
+
+      mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
       isMediaVacuum = (mediaIndex == vacuum)
    end function
 
-   logical function isSplitOrAdvanced(field, i, j, k, media, simulationMedia)
-      implicit none
-      type(MediaData_t), dimension(:), intent(in) :: simulationMedia
-      type(media_matrices_t), intent(in) :: media
-      integer(kind=4) :: field, i, j, k
-      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
-      mediaIndex = getMediaIndex(field, i, j, k, media)
-      isSplitOrAdvanced = simulationMedia(mediaIndex)%is%split_and_useless .or. &
-                          simulationMedia(mediaIndex)%is%already_YEEadvanced_byconformal
+   logical function isSplitOrAdvanced(field, i, j, k, problem)
+      integer(kind=4), intent(in) :: field, i, j, k
+      type(problem_info_t), intent(in) :: problem
 
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: mediaIndex
+      mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
+
+      isSplitOrAdvanced = problem%materialList(mediaIndex)%is%split_and_useless .or. &
+                          problem%materialList(mediaIndex)%is%already_YEEadvanced_byconformal
    end function
 
    function computej(field, i, j, k, fields_reference) result(res)
