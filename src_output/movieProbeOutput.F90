@@ -17,10 +17,27 @@ module mod_movieProbeOutput
    !===========================
    !  Private interface summary
    !===========================
-   private :: get_measurements_coords
-   private :: save_current_data
+   ! Data Extraction & Processing
+   private :: count_required_coords
+   private :: save_current_module
+   private :: save_current_component
+   private :: save_current
+   private :: save_field_module
+   private :: save_field_component
+   private :: save_field
+
+   ! Output & File Management
    private :: write_vtu_timestep
    private :: update_pvd
+
+   ! Validation Logic (Functions)
+   private :: isValidPointForCurrent
+   private :: isValidPointForField
+   private :: volumicCurrentRequest
+   private :: volumicElectricRequest
+   private :: volumicMagneticRequest
+   private :: componentCurrentRequest
+   private :: componentFieldRequest
    !===========================
 
 contains
@@ -28,7 +45,7 @@ contains
    subroutine init_movie_probe_output(this, lowerBound, upperBound, field, domain, control, problemInfo, outputTypeExtension)
       type(movie_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
-      integer(kind=SINGLE), intent(in) :: mpidir, field
+      integer(kind=SINGLE), intent(in) :: field
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
 
       type(sim_control_t), intent(in) :: control
@@ -36,29 +53,29 @@ contains
 
       type(domain_t), intent(in) :: domain
 
-      this%lowerBound = lowerBound
-      this%upperBound = upperBound
-      this%fieldComponent = field !This can refer to field or currentDensity
+      this%mainCoords = lowerBound
+      this%auxCoords = upperBound
+      this%component = field !This can refer to electric, magnetic or currentDensity
       this%domain = domain
       this%path = get_output_path()
 
-      call get_measurements_coords(this, problemInfo)
+      call count_required_coords(this, problemInfo)
 
       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
 
-      if (any(VOLUMIC_M_MEASURE == this%fieldComponent)) then
-         call alloc_and_init(this%xValueForTime, BuffObse, this%nMeasuredElements, 0.0_RKIND)
-         call alloc_and_init(this%yValueForTime, BuffObse, this%nMeasuredElements, 0.0_RKIND)
-         call alloc_and_init(this%zValueForTime, BuffObse, this%nMeasuredElements, 0.0_RKIND)
+      if (any(VOLUMIC_M_MEASURE == this%component)) then
+         call alloc_and_init(this%xValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
+         call alloc_and_init(this%yValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
+         call alloc_and_init(this%zValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
       else
-         if (any(VOLUMIC_X_MEASURE == this%fieldComponent)) then
-            call alloc_and_init(this%xValueForTime, BuffObse, this%nMeasuredElements, 0.0_RKIND)
-         elseif (any(VOLUMIC_Y_MEASURE == this%fieldComponent)) then
-            call alloc_and_init(this%yValueForTime, BuffObse, this%nMeasuredElements, 0.0_RKIND)
-         elseif (any(VOLUMIC_Z_MEASURE == this%fieldComponent)) then
-            call alloc_and_init(this%zValueForTime, BuffObse, this%nMeasuredElements, 0.0_RKIND)
+         if (any(VOLUMIC_X_MEASURE == this%component)) then
+            call alloc_and_init(this%xValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
+         elseif (any(VOLUMIC_Y_MEASURE == this%component)) then
+            call alloc_and_init(this%yValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
+         elseif (any(VOLUMIC_Z_MEASURE == this%component)) then
+            call alloc_and_init(this%zValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
          else
-            call StopOnError(0, 0, "Unexpected output type for movie probe")
+            call StopOnError(control%layoutnumber, control%size, "Unexpected output type for movie probe")
          end if
       end if
 
@@ -66,7 +83,7 @@ contains
       function get_output_path() result(outputPath)
          character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_coordinates_extension(this%lowerBound, this%upperBound, control%mpidir)
+         probeBoundsExtension = get_coordinates_extension(this%lowerBound, this%auxCoords, control%mpidir)
          prefixFieldExtension = get_prefix_extension(field, control%mpidir)
          outputPath = &
             trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
@@ -82,9 +99,9 @@ contains
       type(fields_reference_t), intent(in) :: fieldsReference
 
       integer(kind=4) :: request
-      request = this%fieldComponent
+      request = this%component
 
-      this%serializedTimeSize = this%serializedTimeSize + 1
+      this%nTime = this%nTime + 1
 
       if (any(VOLUMIC_M_MEASURE == request)) then
          select case (request)
@@ -128,16 +145,18 @@ contains
 
       integer :: i, j, k, coordIdx
 
-      this%timeStep(this%serializedTimeSize) = simTime
+      this%timeStep(this%nTime) = simTime
 
       coordIdx = 0
-      do i = this%lowerBound%x, this%upperBound%x
-      do j = this%lowerBound%y, this%upperBound%y
-      do k = this%lowerBound%z, this%upperBound%z
+      do i = this%mainCoords%x, this%auxCoords%x
+      do j = this%mainCoords%y, this%auxCoords%y
+      do k = this%mainCoords%z, this%auxCoords%z
+         if (isValidForCurrent(iCur, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_current(this%xValueForTime, timeIdx, coordIdx, iEx, i, j, k, fieldsReference, problemInfo)
-            call save_current(this%yValueForTime, timeIdx, coordIdx, iEy, i, j, k, fieldsReference, problemInfo)
-            call save_current(this%zValueForTime, timeIdx, coordIdx, iEz, i, j, k, fieldsReference, problemInfo)
+            call save_current(this%xValueForTime, timeIdx, coordIdx, iEx, i, j, k, fieldsReference)
+            call save_current(this%yValueForTime, timeIdx, coordIdx, iEy, i, j, k, fieldsReference)
+            call save_current(this%zValueForTime, timeIdx, coordIdx, iEz, i, j, k, fieldsReference)
+         end if
       end do
       end do
       end do
@@ -152,51 +171,52 @@ contains
 
       integer :: i, j, k, coordIdx
 
-      this%timeStep(this%serializedTimeSize) = simTime
+      this%timeStep(this%nTime) = simTime
 
       coordIdx = 0
-      do i = this%lowerBound%x, this%upperBound%x
-      do j = this%lowerBound%y, this%upperBound%y
-      do k = this%lowerBound%z, this%upperBound%z
-         coordIdx = coordIdx + 1
-         call save_current(currentData, timeIdx, coordIdx, fieldDir, i, j, k, fieldsReference, problemInfo)
+      do i = this%mainCoords%x, this%auxCoords%x
+      do j = this%mainCoords%y, this%auxCoords%y
+      do k = this%mainCoords%z, this%auxCoords%z
+         if (isValidForCurrent(fieldDir, i, j, k, problemInfo)) then
+            coordIdx = coordIdx + 1
+            call save_current(currentData, timeIdx, coordIdx, fieldDir, i, j, k, fieldsReference)
+         end if
       end do
       end do
       end do
    end subroutine
 
-   subroutine save_current(currentData, timeIdx, coordIdx, field, i, j, k, fieldsReference, problemInfo)
+   subroutine save_current(currentData, timeIdx, coordIdx, field, i, j, k, fieldsReference)
       real(kind=RKIND), intent(inout) :: currentData(:, :)
       integer(kind=SINGLE), intent(in) :: timeIdx, coordIdx, field, i, j, k
       type(fields_reference_t), intent(in) :: fieldsReference
-      type(problem_info_t), intent(in) :: problemInfo
 
       real(kind=RKIND) :: jdir
-      jdir = 0.0
-      if (saveCurrentFrom(field, i,j,k, problemInfo)) then
-         jdir = computeJ(field, i, j, k, fieldsReference)
-      end if
+      jdir = computeJ(field, i, j, k, fieldsReference)
       currentData(timeIdx, coordIdx) = jdir
    end subroutine
 
-   subroutine save_field_module(this, field, simTime, problemInfo)
+   subroutine save_field_module(this, field, simTime, problemInfo, request)
       type(movie_probe_output_t), intent(inout) :: this
       type(field_data_t), pointer :: field
       real(kind=RKIND_tiempo), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
+      integer, intent(in) :: request
 
       integer :: i, j, k, coordIdx
 
-      this%timeStep(this%serializedTimeSize) = simTime
+      this%timeStep(this%nTime) = simTime
 
       coordIdx = 0
-      do i = this%lowerBound%x, this%upperBound%x
-      do j = this%lowerBound%y, this%upperBound%y
-      do k = this%lowerBound%z, this%upperBound%z
-         coordIdx = coordIdx + 1
-         call save_field(this%xValueForTime, timeIdx, coordIdx, iEx, i, j, k, field%x(i, j, k), problemInfo)
-         call save_field(this%yValueForTime, timeIdx, coordIdx, iEy, i, j, k, field%y(i, j, k), problemInfo)
-         call save_field(this%zValueForTime, timeIdx, coordIdx, iEz, i, j, k, field%z(i, j, k), problemInfo)
+      do i = this%mainCoords%x, this%auxCoords%x
+      do j = this%mainCoords%y, this%auxCoords%y
+      do k = this%mainCoords%z, this%auxCoords%z
+         if (isValidPointForField(request, i, j, k, problemInfo)) then
+            coordIdx = coordIdx + 1
+            call save_field(this%xValueForTime, timeIdx, coordIdx, field%x(i, j, k))
+            call save_field(this%yValueForTime, timeIdx, coordIdx, field%y(i, j, k))
+            call save_field(this%zValueForTime, timeIdx, coordIdx, field%z(i, j, k))
+         end if
       end do
       end do
       end do
@@ -205,70 +225,48 @@ contains
 
    subroutine save_field_component(fieldData, fieldComponent, simTime, problemInfo, fieldDir)
       real(kind=RKIND), intent(inout) :: fieldData(:, :)
-      type(field_data_t), intent(in) :: fieldComponent(:,:,:)
+      type(field_data_t), intent(in) :: fieldComponent(:, :, :)
       real(kind=RKIND_tiempo), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir
 
       integer :: i, j, k, coordIdx
 
-      this%timeStep(this%serializedTimeSize) = simTime
+      this%timeStep(this%nTime) = simTime
 
       coordIdx = 0
-      do i = this%lowerBound%x, this%upperBound%x
-      do j = this%lowerBound%y, this%upperBound%y
-      do k = this%lowerBound%z, this%upperBound%z
-         coordIdx = coordIdx + 1
-         call save_field(fieldData, timeIdx, coordIdx, fieldDir, i, j, k, fieldComponent(i,j,k), problemInfo)
+      do i = this%mainCoords%x, this%auxCoords%x
+      do j = this%mainCoords%y, this%auxCoords%y
+      do k = this%mainCoords%z, this%auxCoords%z
+         if (isValidPointForField(fieldDir, i, j, k, problemInfo)) then
+            coordIdx = coordIdx + 1
+            coordIdx = coordIdx + 1
+            call save_field(fieldData, timeIdx, coordIdx, fieldComponent(i, j, k))
+         end if
       end do
       end do
       end do
    end subroutine
 
-   subroutine save_field(fieldData, timeIdx, coordIdx, field, i, j, k, fieldValue, problemInfo)
+   subroutine save_field(fieldData, timeIdx, coordIdx, fieldValue)
       real(kind=RKIND), intent(inout) :: fieldData(:, :)
-      integer(kind=SINGLE), intent(in) :: timeIdx, coordIdx, field, i, j, k
+      integer(kind=SINGLE), intent(in) :: timeIdx, coordIdx
       real(kind=RKIND), intent(in) :: fieldValue
-      type(problem_info_t), intent(in) :: problemInfo
-
-      real(kind=RKIND) :: savedValue
-      savedValue = 0.0
-      if (saveFieldFrom(field, i,j,k, problemInfo)) then
-         savedValue = fieldValue
-      end if
-      fieldData(timeIdx, coordIdx) = savedValue
+      fieldData(timeIdx, coordIdx) = fieldValue
    end subroutine
-
-
-   logical function saveCurrentFrom(field, i,j,k, problemInfo)
-      integer, intent(in) :: i,j,k, field
-      type(problem_info_t) :: problemInfo
-      saveCurrentFrom = isWithinBounds(field, i,j,k,problemInfo%simulationBounds)
-      if(saveCurrentFrom) then
-         saveCurrentFrom = isThinWire(field, i,j,k,problemInfo%geometryToMaterialData, problemInfo%materialList) &
-                          .or.  isPEC(field, i,j,k,problemInfo%geometryToMaterialData, problemInfo%materialList)
-      end if
-   end function
-
-   logical function saveFieldFrom(field, i,j,k, problemInfo)
-      integer, intent(in) :: i,j,k, field
-      type(problem_info_t) :: problemInfo
-      saveCurrentFrom = isWithinBounds(field, i,j,k,problemInfo%simulationBounds)
-   end function
-
 
    subroutine flush_movie_probe_output(this)
       type(movie_probe_output_t), intent(inout) :: this
       integer :: status, i
 
-      do i = 1, this%serializedTimeSize
+      do i = 1, this%nTime
          call update_pvd(this, i, this%PDVUnit)
       end do
       call clear_memory_data()
 
    contains
       subroutine clear_memory_data()
-         this%serializedTimeSize = 0
+         this%nTime = 0
          this%timeStep = 0.0_RKIND
          this%xValueForTime = 0.0_RKIND
          this%yValueForTime = 0.0_RKIND
@@ -276,77 +274,6 @@ contains
       end subroutine clear_memory_data
 
    end subroutine flush_movie_probe_output
-
-   subroutine get_measurements_coords(this, problemInfo)
-      procedure(logical_func), pointer :: checker => null()  ! Pointer to logical function
-      type(movie_probe_output_t), intent(inout) :: this
-      type(problem_info_t), intent(in) :: problemInfo
-
-      integer(kind=4), dimension(3) :: fieldTriplet
-      integer(kind=SINGLE) :: i, j, k, field
-      integer(kind=SINGLE) :: istart, jstart, kstart, iend, jend, kend
-      integer(kind=SINGLE) :: count
-      integer(kind=SINGLE) :: xField, zField
-
-      ! Limites de la región de interés
-      istart = this%lowerBound%x
-      jstart = this%lowerBound%y
-      kstart = this%lowerBound%z
-
-      iend = this%upperBound%x
-      jend = this%upperBound%y
-      kend = this%upperBound%z
-
-      ! Primer barrido para contar cuántos puntos válidos
-      count = 0
-      select case (this%fieldComponent)
-      case (iCur)
-         checker => requiredMeasureForCurrent
-         xField = iEx
-         zField = iEz
-      case (iMEC)
-         checker => requiredMeasureForField
-         xField = iEx
-         zField = iEz
-      case (iMHC)
-         checker => requiredMeasureForField
-         xField = iHx
-         zField = iHz
-      end select
-
-         do i = istart, iend
-         do j = jstart, jend
-         do k = kstart, kend
-         do field = xField, zField
-            if (isWithinBounds(field, i, j, k, problemInfo)) then
-               if (checker(field, i, j, k, problemInfo)) then
-                     count = count + 1
-                  end if
-               end if
-            end do
-         end do
-         end do
-         end do
-
-      this%nMeasuredElements = count
-      allocate (this%coords(3, this%nMeasuredElements))
-
-      count = 0
-      do i = istart, iend
-      do j = jstart, jend
-      do k = kstart, kend
-         do field = xField, zField
-            if (isWithinBounds(field, i, j, k, problemInfo)) then
-               if (checker(field, i, j, k, problemInfo)) then
-                  count = count + 1
-                  this%coords(:, count) = [i, j, k]
-            end if
-            end if
-         end do
-      end do
-      end do
-      end do
-   end subroutine get_measurements_coords
 
    subroutine write_vtu_timestep(this, stepIndex, filename)
       use vtk_fortran
@@ -411,4 +338,126 @@ contains
          '" group="" part="0" file="'//trim(filename)//'"/>'
    end subroutine update_pvd
 
-end module mod_movieProbeOutput
+   subroutine count_required_coords(this, problemInfo)
+      type(movie_probe_output_t), intent(inout) :: this
+      type(problem_info_t), intent(in) :: problemInfo
+
+      procedure(logical_func), pointer :: checker => null()  ! Pointer to logical function
+      integer :: component, count
+      select case (this%component)
+      case (iCur)
+         checker => volumicCurrentRequest
+         component = iCur
+      case (iMEC)
+         checker => volumicElectricRequest
+         component = iMEC
+      case (iMHC)
+         checker => volumicMagneticRequest
+         component = iMHC
+      case (iCurx)
+         checker => componentCurrentRequest
+         component = iEx
+      case (iExC)
+         checker => componentFieldRequest
+         component = iEx
+      case (iHxC)
+         checker => componentFieldRequest
+         component = iHx
+      case (iCurY)
+         checker => componentCurrentRequest
+         component = iEy
+      case (iEyC)
+         checker => componentFieldRequest
+         component = iEy
+      case (iHyC)
+         checker => componentFieldRequest
+         component = iHy
+      case (iCurZ)
+         checker => componentCurrentRequest
+         component = iEz
+      case (iEzC)
+         checker => componentFieldRequest
+         component = iEz
+      case (iHzC)
+         checker => componentFieldRequest
+         component = iHz
+      end select
+
+      count = 0
+      do i = istart, iend
+      do j = jstart, jend
+      do k = kstart, kend
+         if (checker(component, i, j, k, problemInfo)) count = count + 1
+      end do
+      end do
+      end do
+      end do
+      this%nPoints = count
+
+      end subroutine
+
+      logical function isValidPointForCurrent(request, i, j, k, problemInfo)
+         integer, intent(in) :: i, j, k, request
+         type(problem_info_t) :: problemInfo
+         select case (request)
+         case (iCur)
+            isValidPointForCurrent = volumicCurrentRequest(request, i, j, k, problemInfo)
+         case (iEx, iEy, iEz)
+            isValidPointForCurrent = componentCurrentRequest(request, i, j, k, problemInfo)
+         case default
+            isValidPointForCurrent = .false.
+         end select
+      end function
+
+      logical function isValidPointForField(request, i, j, k, problemInfo)
+         integer, intent(in) :: i, j, k, request
+         type(problem_info_t) :: problemInfo
+         select case (request)
+         case (iMEC)
+            isValidPointForField = volumicElectricRequest(request, i, j, k, problemInfo)
+         case (iMHC)
+            isValidPointForField = volumicMagneticRequest(request, i, j, k, problemInfo)
+         case (iEx, iEy, iEz, iHx, iHy, iHz)
+            isValidPointForField = componentFieldRequest(request, i, j, k, problemInfo)
+         case default
+            isValidPointForField = .false.
+         end select
+      end function
+
+      logical function volumicCurrentRequest(request, i, j, k, problemInfo)
+         integer, intent(in) :: i, j, k, request
+         type(problem_info_t) :: problemInfo
+         volumicCurrentRequest = componentCurrentRequest(iEx, i, j, k, problemInfo) &
+                                 .or. componentCurrentRequest(iEy, i, j, k, problemInfo) &
+                                 .or. componentCurrentRequest(iEz, i, j, k, problemInfo)
+      end function
+      logical function volumicElectricRequest(request, i, j, k, problemInfo)
+         integer, intent(in) :: i, j, k, request
+         type(problem_info_t) :: problemInfo
+         volumicCurrentRequest = componentFieldRequest(iEx, i, j, k, problemInfo) &
+                                 .or. componentFieldRequest(iEy, i, j, k, problemInfo) &
+                                 .or. componentFieldRequest(iEz, i, j, k, problemInfo)
+      end function
+      logical function volumicMagneticRequest(request, i, j, k, problemInfo)
+         integer, intent(in) :: i, j, k, request
+         type(problem_info_t) :: problemInfo
+         volumicCurrentRequest = componentFieldRequest(iHx, i, j, k, problemInfo) &
+                                 .or. componentFieldRequest(iHy, i, j, k, problemInfo) &
+                                 .or. componentFieldRequest(iHz, i, j, k, problemInfo)
+      end function
+      logical function componentCurrentRequest(fieldDir, i, j, k, problemInfo)
+         integer, intent(in) :: i, j, k, fieldDir
+         type(problem_info_t) :: problemInfo
+         componentCurrentRequest = isWithinBounds(fieldDir, i, j, k, problemInfo%problemDimension)
+         if (componentCurrentRequest) then
+            componentCurrentRequest = isPEC(fieldDir, i, j, k, problemInfo%geometryToMaterialData, problemInfo%materialList) &
+                                    .or. isThinWire(fieldDir, i, j, k, problemInfo%geometryToMaterialData, problemInfo%materialList)
+         end if
+      end function
+      logical function componentFieldRequest(fieldDir, i, j, k, problemInfo)
+         integer, intent(in) :: i, j, k, fieldDir
+         type(problem_info_t) :: problemInfo
+         componentFieldRequest = isWithinBounds(fieldDir, i, j, k, problemInfo%problemDimension)
+      end function
+
+   end module mod_movieProbeOutput
