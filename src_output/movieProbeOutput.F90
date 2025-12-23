@@ -25,15 +25,14 @@ module mod_movieProbeOutput
 
 contains
 
-   subroutine init_movie_probe_output(this, lowerBound, upperBound, field, domain, geometryMedia, registeredMedia, sinpml_fullsize, outputTypeExtension, mpidir)
+   subroutine init_movie_probe_output(this, lowerBound, upperBound, field, domain, control, problemInfo, outputTypeExtension)
       type(movie_probe_output_t), intent(out) :: this
       type(cell_coordinate_t), intent(in) :: lowerBound, upperBound
       integer(kind=SINGLE), intent(in) :: mpidir, field
       character(len=BUFSIZE), intent(in) :: outputTypeExtension
 
-      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
-      type(media_matrices_t), intent(in) :: geometryMedia
-      type(limit_t), dimension(:), intent(in)  :: sinpml_fullsize
+      type(sim_control_t), intent(in) :: control
+      type(problem_info_t), intent(in) :: problemInfo
 
       type(domain_t), intent(in) :: domain
 
@@ -43,7 +42,7 @@ contains
       this%domain = domain
       this%path = get_output_path()
 
-      call get_measurements_coords(this, geometryMedia, registeredMedia, sinpml_fullsize)
+      call get_measurements_coords(this, problemInfo)
 
       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
 
@@ -67,8 +66,8 @@ contains
       function get_output_path() result(outputPath)
          character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_coordinates_extension(this%lowerBound, this%upperBound, mpidir)
-         prefixFieldExtension = get_prefix_extension(field, mpidir)
+         probeBoundsExtension = get_coordinates_extension(this%lowerBound, this%upperBound, control%mpidir)
+         prefixFieldExtension = get_prefix_extension(field, control%mpidir)
          outputPath = &
             trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
          return
@@ -76,13 +75,10 @@ contains
 
    end subroutine init_movie_probe_output
 
-   subroutine update_movie_probe_output(this, step, geometryMedia, registeredMedia, sinpml_fullsize, fieldsReference)
+   subroutine update_movie_probe_output(this, step, fieldsReference, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
-
-      type(media_matrices_t), intent(in) :: geometryMedia
-      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
-      type(limit_t), dimension(:), intent(in)  :: sinpml_fullsize
+      type(problem_info_t), intent(in) :: problemInfo
       type(fields_reference_t), intent(in) :: fieldsReference
 
       integer(kind=4) :: request
@@ -92,42 +88,43 @@ contains
 
       if (any(VOLUMIC_M_MEASURE == request)) then
          select case (request)
-         case (iCur); call save_current_module(this, fieldsReference, step)
-         case (iMEC); call save_field_module(this, fieldsReference, request, step)
-         case (iMHC); call save_field_module(this, fieldsReference, request, step)
-         case default; StopOnError(0, 0, "Volumic measure not supported")
+         case (iCur); call save_current_module(this, fieldsReference, step, problemInfo)
+         case (iMEC); call save_field_module(this, fieldsReference%E, request, step, problemInfo)
+         case (iMHC); call save_field_module(this, fieldsReference%H, request, step, problemInfo)
+         case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_X_MEASURE == request)) then
          select case (request)
-         case (iCurX); call save_current_component(this%xValueForTime, fieldsReference, step, iEx)
-         case (iExC); call save_field_component(this, fieldsReference, request, step)
-         case (iHxC); call save_field_component(this, fieldsReference, request, step)
-         case default; StopOnError(0, 0, "Volumic measure not supported")
+         case (iCurX); call save_current_component(this%xValueForTime, fieldsReference, step, problemInfo, iEx)
+         case (iExC); call save_field_component(this%xValueForTime, fieldsReference%E%x, step, problemInfo, iEx)
+         case (iHxC); call save_field_component(this%xValueForTime, fieldsReference%H%x, step, problemInfo, iHx)
+         case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Y_MEASURE == request)) then
          select case (request)
-         case (iCurY); call save_current_component(this%yValueForTime, fieldsReference, step, iEy)
-         case (iEyC); call save_field_component(this, fieldsReference, request, step)
-         case (iHyC); call save_field_component(this, fieldsReference, request, step)
-         case default; StopOnError(0, 0, "Volumic measure not supported")
+         case (iCurY); call save_current_component(this%yValueForTime, fieldsReference, step, problemInfo, iEy)
+         case (iEyC); call save_field_component(this%yValueForTime, fieldsReference%E%y, step, problemInfo, iEy)
+         case (iHyC); call save_field_component(this%yValueForTime, fieldsReference%H%y, step, problemInfo, iHy)
+         case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Z_MEASURE == request)) then
          select case (request)
-         case (iCurZ); call save_current_component(this%zValueForTime, fieldsReference, step, iEz)
-         case (iEzC); call save_field_component(this, fieldsReference, request, step)
-         case (iHzC); call save_field_component(this, fieldsReference, request, step)
-         case default; StopOnError(0, 0, "Volumic measure not supported")
+         case (iCurZ); call save_current_component(this%zValueForTime, fieldsReference, step, problemInfo, iEz)
+         case (iEzC); call save_field_component(this%zValueForTime, fieldsReference%E%z, step, problemInfo, iEz)
+         case (iHzC); call save_field_component(this%zValueForTime, fieldsReference%H%z, step, problemInfo, iHz)
+         case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
          end select
       end if
    end subroutine update_movie_probe_output
 
-   subroutine save_current_module(this, fieldsReference, simTime)
+   subroutine save_current_module(this, fieldsReference, simTime, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       type(fields_reference_t), intent(in) :: fieldsReference
       real(kind=RKIND_tiempo), intent(in) :: simTime
+      type(problem_info_t), intent(in) :: problemInfo
 
       integer :: i, j, k, coordIdx
 
@@ -137,21 +134,20 @@ contains
       do i = this%lowerBound%x, this%upperBound%x
       do j = this%lowerBound%y, this%upperBound%y
       do k = this%lowerBound%z, this%upperBound%z
-         if (saveCurrentFrom(i, j, k)) then
             coordIdx = coordIdx + 1
-            call save_current(this%xValueForTime, timeIdx, coordIdx, iEx, i, j, k, fieldsReference)
-            call save_current(this%yValueForTime, timeIdx, coordIdx, iEy, i, j, k, fieldsReference)
-            call save_current(this%zValueForTime, timeIdx, coordIdx, iEz, i, j, k, fieldsReference)
-         end if
+            call save_current(this%xValueForTime, timeIdx, coordIdx, iEx, i, j, k, fieldsReference, problemInfo)
+            call save_current(this%yValueForTime, timeIdx, coordIdx, iEy, i, j, k, fieldsReference, problemInfo)
+            call save_current(this%zValueForTime, timeIdx, coordIdx, iEz, i, j, k, fieldsReference, problemInfo)
       end do
       end do
       end do
    end subroutine
 
-   subroutine save_current_component(currentData, fieldsReference, simTime, fieldDir)
+   subroutine save_current_component(currentData, fieldsReference, simTime, problemInfo, fieldDir)
       real(kind=RKIND), intent(inout) :: currentData(:, :)
       type(fields_reference_t), intent(in) :: fieldsReference
       real(kind=RKIND_tiempo), intent(in) :: simTime
+      type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir
 
       integer :: i, j, k, coordIdx
@@ -162,69 +158,34 @@ contains
       do i = this%lowerBound%x, this%upperBound%x
       do j = this%lowerBound%y, this%upperBound%y
       do k = this%lowerBound%z, this%upperBound%z
-         if (saveCurrentFrom(i, j, k)) then
-            coordIdx = coordIdx + 1
-            call save_current(currentData, timeIdx, coordIdx, fieldDir, i, j, k, fieldsReference)
-         end if
+         coordIdx = coordIdx + 1
+         call save_current(currentData, timeIdx, coordIdx, fieldDir, i, j, k, fieldsReference, problemInfo)
       end do
       end do
       end do
    end subroutine
 
-   subroutine save_current(currentData, timeIdx, coordIdx, field, i, j, k, fieldsReference)
+   subroutine save_current(currentData, timeIdx, coordIdx, field, i, j, k, fieldsReference, problemInfo)
       real(kind=RKIND), intent(inout) :: currentData(:, :)
       integer(kind=SINGLE), intent(in) :: timeIdx, coordIdx, field, i, j, k
       type(fields_reference_t), intent(in) :: fieldsReference
+      type(problem_info_t), intent(in) :: problemInfo
 
       real(kind=RKIND) :: jdir
-      jdir = computeJ(field, i, j, k, fieldsReference)
+      jdir = 0.0
+      if (saveCurrentFrom(field, i,j,k, problemInfo)) then
+         jdir = computeJ(field, i, j, k, fieldsReference)
+      end if
       currentData(timeIdx, coordIdx) = jdir
    end subroutine
 
-   subroutine save_field_module(this, fieldsReference, request, simTime)
+   subroutine save_field_module(this, field, simTime, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
-      type(fields_reference_t), intent(in) :: fieldsReference
-      integer, intent(in) :: request
-      real(kind=RKIND_tiempo), intent(in) :: simTime
-
       type(field_data_t), pointer :: field
-      integer :: i, j, k, coordIdx
-
-      if (request == iMEC) then
-         field => fieldsReference%E
-      else if (request == iMHC) then
-         field => fieldsReference%H
-      end if
-
-      this%timeStep(this%serializedTimeSize) = simTime
-
-      coordIdx = 0
-      do i = this%lowerBound%x, this%upperBound%x
-      do j = this%lowerBound%y, this%upperBound%y
-      do k = this%lowerBound%z, this%upperBound%z
-         if (saveFieldFrom(i, j, k)) then
-            coordIdx = coordIdx + 1
-            this%xValueForTime(timeIdx, coordIdx) = field%x(i, j, k)
-            this%yValueForTime(timeIdx, coordIdx) = field%y(i, j, k)
-            this%zValueForTime(timeIdx, coordIdx) = field%z(i, j, k)
-         end if
-      end do
-      end do
-      end do
-
-   end subroutine
-
-   subroutine save_field_component(fieldData, fieldsReference, request, simTime)
-      real(kind=RKIND), intent(in) :: fieldData
-      type(fields_reference_t), intent(in) :: fieldsReference
-      integer, intent(in) :: request
       real(kind=RKIND_tiempo), intent(in) :: simTime
+      type(problem_info_t), intent(in) :: problemInfo
 
-      real(kind=RKIND), pointer :: fieldComponent(:,:,:)
       integer :: i, j, k, coordIdx
-
-      fieldComponent = get_field_component()
-
 
       this%timeStep(this%serializedTimeSize) = simTime
 
@@ -232,17 +193,68 @@ contains
       do i = this%lowerBound%x, this%upperBound%x
       do j = this%lowerBound%y, this%upperBound%y
       do k = this%lowerBound%z, this%upperBound%z
-         if (saveFieldFrom(i, j, k)) then
-            coordIdx = coordIdx + 1
-            this%xValueForTime(timeIdx, coordIdx) = field%x(i, j, k)
-            this%yValueForTime(timeIdx, coordIdx) = field%y(i, j, k)
-            this%zValueForTime(timeIdx, coordIdx) = field%z(i, j, k)
-         end if
+         coordIdx = coordIdx + 1
+         call save_field(this%xValueForTime, timeIdx, coordIdx, iEx, i, j, k, field%x(i, j, k), problemInfo)
+         call save_field(this%yValueForTime, timeIdx, coordIdx, iEy, i, j, k, field%y(i, j, k), problemInfo)
+         call save_field(this%zValueForTime, timeIdx, coordIdx, iEz, i, j, k, field%z(i, j, k), problemInfo)
       end do
       end do
       end do
 
    end subroutine
+
+   subroutine save_field_component(fieldData, fieldComponent, simTime, problemInfo, fieldDir)
+      real(kind=RKIND), intent(inout) :: fieldData(:, :)
+      type(field_data_t), intent(in) :: fieldComponent(:,:,:)
+      real(kind=RKIND_tiempo), intent(in) :: simTime
+      type(problem_info_t), intent(in) :: problemInfo
+      integer, intent(in) :: fieldDir
+
+      integer :: i, j, k, coordIdx
+
+      this%timeStep(this%serializedTimeSize) = simTime
+
+      coordIdx = 0
+      do i = this%lowerBound%x, this%upperBound%x
+      do j = this%lowerBound%y, this%upperBound%y
+      do k = this%lowerBound%z, this%upperBound%z
+         coordIdx = coordIdx + 1
+         call save_field(fieldData, timeIdx, coordIdx, fieldDir, i, j, k, fieldComponent(i,j,k), problemInfo)
+      end do
+      end do
+      end do
+   end subroutine
+
+   subroutine save_field(fieldData, timeIdx, coordIdx, field, i, j, k, fieldValue, problemInfo)
+      real(kind=RKIND), intent(inout) :: fieldData(:, :)
+      integer(kind=SINGLE), intent(in) :: timeIdx, coordIdx, field, i, j, k
+      real(kind=RKIND), intent(in) :: fieldValue
+      type(problem_info_t), intent(in) :: problemInfo
+
+      real(kind=RKIND) :: savedValue
+      savedValue = 0.0
+      if (saveFieldFrom(field, i,j,k, problemInfo)) then
+         savedValue = fieldValue
+      end if
+      fieldData(timeIdx, coordIdx) = savedValue
+   end subroutine
+
+
+   logical function saveCurrentFrom(field, i,j,k, problemInfo)
+      integer, intent(in) :: i,j,k, field
+      type(problem_info_t) :: problemInfo
+      saveCurrentFrom = isWithinBounds(field, i,j,k,problemInfo%simulationBounds)
+      if(saveCurrentFrom) then
+         saveCurrentFrom = isThinWire(field, i,j,k,problemInfo%geometryToMaterialData, problemInfo%materialList) &
+                          .or.  isPEC(field, i,j,k,problemInfo%geometryToMaterialData, problemInfo%materialList)
+      end if
+   end function
+
+   logical function saveFieldFrom(field, i,j,k, problemInfo)
+      integer, intent(in) :: i,j,k, field
+      type(problem_info_t) :: problemInfo
+      saveCurrentFrom = isWithinBounds(field, i,j,k,problemInfo%simulationBounds)
+   end function
 
 
    subroutine flush_movie_probe_output(this)
@@ -265,15 +277,17 @@ contains
 
    end subroutine flush_movie_probe_output
 
-   subroutine get_measurements_coords(this, geometryMedia, registeredMedia, sinpml_fullsize)
+   subroutine get_measurements_coords(this, problemInfo)
+      procedure(logical_func), pointer :: checker => null()  ! Pointer to logical function
       type(movie_probe_output_t), intent(inout) :: this
-      type(media_matrices_t), intent(in) :: geometryMedia
-      type(MediaData_t), dimension(:), intent(in) :: registeredMedia
-      type(limit_t), dimension(:), intent(in) :: sinpml_fullsize
+      type(problem_info_t), intent(in) :: problemInfo
 
+      integer(kind=4), dimension(3) :: fieldTriplet
       integer(kind=SINGLE) :: i, j, k, field
       integer(kind=SINGLE) :: istart, jstart, kstart, iend, jend, kend
       integer(kind=SINGLE) :: count
+      integer(kind=SINGLE) :: xField, zField
+
       ! Limites de la región de interés
       istart = this%lowerBound%x
       jstart = this%lowerBound%y
@@ -287,12 +301,25 @@ contains
       count = 0
       select case (this%fieldComponent)
       case (iCur)
+         checker => requiredMeasureForCurrent
+         xField = iEx
+         zField = iEz
+      case (iMEC)
+         checker => requiredMeasureForField
+         xField = iEx
+         zField = iEz
+      case (iMHC)
+         checker => requiredMeasureForField
+         xField = iHx
+         zField = iHz
+      end select
+
          do i = istart, iend
          do j = jstart, jend
          do k = kstart, kend
-            do field = iEx, iEz
-               if (isWithinBounds(field, i, j, k, sinpml_fullsize)) then
-                  if (isPEC(field, i, j, k, geometryMedia, registeredMedia)) then
+         do field = xField, zField
+            if (isWithinBounds(field, i, j, k, problemInfo)) then
+               if (checker(field, i, j, k, problemInfo)) then
                      count = count + 1
                   end if
                end if
@@ -300,72 +327,26 @@ contains
          end do
          end do
          end do
-      end select
 
       this%nMeasuredElements = count
-
       allocate (this%coords(3, this%nMeasuredElements))
 
       count = 0
-      select case (this%fieldComponent)
-      case (iCur)
-         do i = istart, iend
-         do j = jstart, jend
-         do k = kstart, kend
-            do field = iEx, iEz
-               if (isWithinBounds(field, i, j, k, sinpml_fullsize)) then
-                  if (isPEC(field, i, j, k, geometryMedia, registeredMedia)) then
-                     count = count + 1
-                     this%coords(:, count) = [i, j, k]
-                  end if
-               end if
-            end do
-         end do
-         end do
-         end do
-      end select
-
-   end subroutine get_measurements_coords
-
-   subroutine save_current_data(this, step, fieldsReference, geometryMedia, registeredMedia, sinpml_fullsize)
-      type(movie_probe_output_t), intent(inout) :: this
-      real(kind=RKIND_tiempo), intent(in) :: step
-      type(fields_reference_t), intent(in) :: fieldsReference
-
-      type(media_matrices_t), intent(in) :: geometryMedia
-      type(MediaData_t), dimension(:) :: registeredMedia
-      type(limit_t), dimension(:), intent(in)  :: sinpml_fullsize
-
-      integer(kind=SINGLE) :: i, j, k, field
-      integer(kind=SINGLE) :: istart, jstart, kstart, iend, jend, kend
-      integer(kind=SINGLE) :: n
-
-      istart = this%lowerBound%x
-      jstart = this%lowerBound%y
-      kstart = this%lowerBound%z
-
-      iend = this%upperBound%x
-      jend = this%upperBound%y
-      kend = this%upperBound%z
-
-      n = 0
       do i = istart, iend
       do j = jstart, jend
       do k = kstart, kend
-         do field = iEx, iEz
-            if (isWithinBounds(field, i, j, k, SINPML_fullsize)) then
-            if (isPEC(field, i, j, k, geometryMedia, registeredMedia)) then
-               n = n + 1
-               call save_current_component()
+         do field = xField, zField
+            if (isWithinBounds(field, i, j, k, problemInfo)) then
+               if (checker(field, i, j, k, problemInfo)) then
+                  count = count + 1
+                  this%coords(:, count) = [i, j, k]
             end if
             end if
          end do
       end do
       end do
       end do
-
-      if (n < this%nMeasuredElements) call StopOnError(0, 0, "Missing measurment to update at movie probe")
-   end subroutine save_current_data
+   end subroutine get_measurements_coords
 
    subroutine write_vtu_timestep(this, stepIndex, filename)
       use vtk_fortran
