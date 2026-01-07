@@ -998,8 +998,7 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
 
-   type(Obses_t)                  :: movieObservable
-   type(cell_coordinate_t)        :: lowerBoundMovieProbe, upperBoundMovieProbe
+   type(Obses_t)                  :: frequencySliceObservable
    type(fields_reference_t)       :: fields
    type(dummyFields_t), target    :: dummyFields
 
@@ -1017,14 +1016,6 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
 
    err = 1
 
-   !--- Probe bounds ---
-   lowerBoundMovieProbe%x = 2
-   lowerBoundMovieProbe%y = 2
-   lowerBoundMovieProbe%z = 2
-   upperBoundMovieProbe%x = 5
-   upperBoundMovieProbe%y = 5
-   upperBoundMovieProbe%z = 5
-
    !--- Setup SGG ---
    call sgg_init(dummysgg)
    call init_time_array(timeArray, nTimeSteps, dt)
@@ -1041,8 +1032,14 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
    call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0,0,0,6,6,6))
 
-   movieObservable = create_movie_observation(2,2,2,5,5,5)
-   call sgg_add_observation(dummysgg, movieObservable)
+   movieCurrentObservable = create_movie_observation(2,2,2,5,5,5, iCur)
+   call sgg_add_observation(dummysgg, movieCurrentObservable)
+
+   movieElectricXObservable = create_movie_observation(2,2,2,5,5,5, iExC)
+   call sgg_add_observation(dummysgg, movieElectricXObservable)
+
+   movieMagneticYObservable = create_movie_observation(2,2,2,5,5,5, iHyC)
+   call sgg_add_observation(dummysgg, movieMagneticYObservable)
 
    call create_geometry_media(media, 0,8,0,8,0,8)
    call assing_material_id_to_media_matrix_coordinate(media,iEy,3,3,3,simulationMaterials(0)%Id)
@@ -1068,15 +1065,16 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    outputs(1)%movieProbe%serializedTimeSize = 1
    outputs(1)%movieProbe%timeStep(1) = 0.5_RKIND_tiempo
    outputs(1)%movieProbe%xValueForTime(1,:) = 0.0_RKIND
-   outputs(1)%movieProbe%yValueForTime(1,:) = [0.1_RKIND,0.2_RKIND,0.3_RKIND,0.4_RKIND]
+   outputs(1)%movieProbe%yValueForTime(1,:) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
    outputs(1)%movieProbe%zValueForTime(1,:) = 0.0_RKIND
 
+
    !--- Dummy second update ---
-   outputs(1)%movieProbe%serializedTimeSize = 2
-   outputs(1)%movieProbe%timeStep(2) = 1.0_RKIND_tiempo
-   outputs(1)%movieProbe%xValueForTime(2,:) = 0.0_RKIND
-   outputs(1)%movieProbe%yValueForTime(2,:) = [0.11_RKIND,0.22_RKIND,0.33_RKIND,0.44_RKIND]
-   outputs(1)%movieProbe%zValueForTime(2,:) = 0.0_RKIND
+   outputs(iOutput)%movieProbe%serializedTimeSize = 2
+   outputs(iOutput)%movieProbe%timeStep(2) = 1.0_RKIND_tiempo
+   outputs(iOutput)%movieProbe%xValueForTime(2,:) = 0.0_RKIND
+   outputs(iOutput)%movieProbe%yValueForTime(2,:) = [0.11_RKIND,0.22_RKIND,0.33_RKIND,0.44_RKIND]
+   outputs(iOutput)%movieProbe%zValueForTime(2,:) = 0.0_RKIND
 
    call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 

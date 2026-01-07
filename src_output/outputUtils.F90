@@ -68,7 +68,7 @@ contains
 
       allocate (array(n1))
       array = initVal
-   END subroutine alloc_and_init_int_1D
+   END subroutine alloc_and_init_time_1D
 
    subroutine alloc_and_init_int_1D(array, n1, initVal)
       integer(SINGLE), allocatable, intent(inout) :: array(:)
@@ -150,6 +150,23 @@ contains
       allocate (array(n1, n2, n3))
       array = initVal
    END subroutine alloc_and_init_complex_3D
+
+   function getMediaIndex(field, i, j, k, CoordToMaterial) result(res)
+      integer, intent(in) :: field, i, j, k
+      type(media_matrices_t), pointer, intent(in) :: CoordToMaterial
+
+      integer :: res
+
+      select case (field)
+      case (iEx); res = CoordToMaterial%sggMiEx(i, j, k)
+      case (iEy); res = CoordToMaterial%sggMiEy(i, j, k)
+      case (iEz); res = CoordToMaterial%sggMiEz(i, j, k)
+      case (iHx); res = CoordToMaterial%sggMiHx(i, j, k)
+      case (iHy); res = CoordToMaterial%sggMiHy(i, j, k)
+      case (iHz); res = CoordToMaterial%sggMiHz(i, j, k)
+      end select
+
+   end function
 
    function get_probe_coords_extension(coordinates, mpidir) result(ext)
       type(cell_coordinate_t) :: coordinates
@@ -391,12 +408,12 @@ contains
       integer(kind=SINGLE), intent(in) :: fieldId
       real(kind=RKIND), pointer, dimension(:, :, :) :: component
       select case (fieldId)
-      case (iEx); component => fieldsReference%E%x
-      case (iEy); component => fieldsReference%E%y
-      case (iEz); component => fieldsReference%E%z
-      case (iHx); component => fieldsReference%H%x
-      case (iHy); component => fieldsReference%H%y
-      case (iHz); component => fieldsReference%H%z
+      case (iEx); component => fieldReference%E%x
+      case (iEy); component => fieldReference%E%y
+      case (iEz); component => fieldReference%E%z
+      case (iHx); component => fieldReference%H%x
+      case (iHy); component => fieldReference%H%y
+      case (iHz); component => fieldReference%H%z
       end select
    end function
 
@@ -406,21 +423,21 @@ contains
       type(field_data_t) :: field
       select case (fieldId)
       case (iBloqueJx, iBloqueJy, iBloqueJz)
-         field%x => fieldsReference%E%x
-         field%y => fieldsReference%E%y
-         field%z => fieldsReference%E%z
+         field%x => fieldReference%E%x
+         field%y => fieldReference%E%y
+         field%z => fieldReference%E%z
 
-         field%deltaX => fieldsReference%E%deltax
-         field%deltaY => fieldsReference%E%deltay
-         field%deltaZ => fieldsReference%E%deltaz
+         field%deltaX => fieldReference%E%deltax
+         field%deltaY => fieldReference%E%deltay
+         field%deltaZ => fieldReference%E%deltaz
       case (iBloqueMx, iBloqueMy, iBloqueMz)
-         field%x => fieldsReference%H%x
-         field%y => fieldsReference%H%y
-         field%z => fieldsReference%H%z
+         field%x => fieldReference%H%x
+         field%y => fieldReference%H%y
+         field%z => fieldReference%H%z
 
-         field%deltaX => fieldsReference%H%deltax
-         field%deltaY => fieldsReference%H%deltay
-         field%deltaZ => fieldsReference%H%deltaz
+         field%deltaX => fieldReference%H%deltax
+         field%deltaY => fieldReference%H%deltay
+         field%deltaZ => fieldReference%H%deltaz
       end select
    end function get_field_reference
 

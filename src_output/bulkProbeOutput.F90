@@ -16,9 +16,9 @@ contains
 
       integer(kind=SINGLE) :: i
 
-      this%lowerBound = lowerBound
-      this%upperBound = upperBound
-      this%fieldComponent = field
+      this%mainCoords = lowerBound
+      this%auxCoords = upperBound
+      this%component = field
 
       this%domain = domain
       this%path = get_output_path()
@@ -28,7 +28,7 @@ contains
       function get_output_path() result(outputPath)
          character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_coordinates_extension(this%lowerBound, this%upperBound, mpidir)
+         probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, mpidir)
          prefixFieldExtension = get_prefix_extension(field, mpidir)
          outputPath = &
             trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
@@ -61,12 +61,12 @@ contains
       real(kind=RKIND), pointer, dimension(:, :, :) :: xF, yF, zF
       real(kind=RKIND), pointer, dimension(:) :: dx, dy, dz
 
-      i1_m = this%lowerBound%x
-      j1_m = this%lowerBound%y
-      k1_m = this%lowerBound%z
-      i2_m = this%upperBound%x
-      j2_m = this%upperBound%y
-      k2_m = this%upperBound%z
+      i1_m = this%mainCoords%x
+      j1_m = this%mainCoords%y
+      k1_m = this%mainCoords%z
+      i2_m = this%auxCoords%x
+      j2_m = this%auxCoords%y
+      k2_m = this%auxCoords%z
 
       i1 = i1_m
       j1 = i2_m
@@ -82,79 +82,79 @@ contains
       dy => field%deltaY
       dz => field%deltaZ
 
-      this%serializedTimeSize = this%serializedTimeSize + 1
-      this%timeStep(this%serializedTimeSize) = step
-      this%valueForTime(this%serializedTimeSize) = 0.0_RKIND !Clear uninitialized value
-      selectcase (this%fieldComponent)
+      this%nTime = this%nTime + 1
+      this%timeStep(this%nTime) = step
+      this%valueForTime(this%nTime) = 0.0_RKIND !Clear uninitialized value
+      selectcase (this%component)
       case (iBloqueJx)
          do JJJ = j1, j2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (yF(i1_m, JJJ, k1_m - 1) - yF(i1_m, JJJ, k2_m))*dy(JJJ)
          end do
          do KKK = k1, k2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (-zF(i1_m, j1_m - 1, KKK) + zF(i1_m, j2_m, KKK))*dz(KKK)
          end do
 
       case (iBloqueJy)
          do KKK = k1, k2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (-zF(i2_m, j1_m, KKK) + zF(i1_m - 1, j1_m, KKK))*dz(KKK)
          end do
          do III = i1, i2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (xF(III, j1_m, k2_m) - xF(III, j1_m, k1_m - 1))*dx(III)
          end do
 
       case (iBloqueJz)
          do III = i1, i2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (xF(III, j1_m - 1, k1_m) - xF(III, j2_m, k1_m))*dx(III)
          end do
          do JJJ = j1, j2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (-yF(i1_m - 1, JJJ, k1_m) + yF(i2_m, JJJ, k1_m))*dy(JJJ)
          end do
 
       case (iBloqueMx)
          do JJJ = j1, j2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (-yF(i1_m, JJJ, k1_m) + yF(i1_m, JJJ, k2_m + 1))*dy(JJJ)
          end do
          do KKK = k1, k2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (zF(i1_m, j1_m, KKK) - zF(i1_m, j2_m + 1, KKK))*dz(KKK)
          end do
 
       case (iBloqueMy)
          do KKK = k1, k2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (zF(i2_m + 1, j1_m, KKK) - zF(i1_m, j1_m, KKK))*dz(KKK)
          end do
          do III = i1, i2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (-xF(III, j1_m, k2_m + 1) + xF(III, j1_m, k1_m))*dx(III)
          end do
 
       case (iBloqueMz)
          do III = i1, i2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (-xF(III, j1_m, k1_m) + xF(III, j2_m + 1, k1_m))*dx(III)
          end do
          do JJJ = j1, j2
-            this%valueForTime(this%serializedTimeSize) = &
-               this%valueForTime(this%serializedTimeSize) + &
+            this%valueForTime(this%nTime) = &
+               this%valueForTime(this%nTime) + &
                (yF(i1_m, JJJ, k1_m) - yF(i2_m + 1, JJJ, k1_m))*dy(JJJ)
          end do
 
@@ -166,7 +166,7 @@ contains
       type(bulk_current_probe_output_t), intent(inout) :: this
       character(len=BUFSIZE) :: filename
       integer :: i
-      if (this%serializedTimeSize <= 0) then
+      if (this%nTime <= 0) then
          print *, "No data to write."
          return
       end if
@@ -174,7 +174,7 @@ contains
       filename = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
       open (unit=this%fileUnitTime, file=filename, status="old", action="write", position="append")
 
-      do i = 1, this%serializedTimeSize
+      do i = 1, this%nTime
          write (this%fileUnitTime, fmt) this%timeStep(i), this%valueForTime(i)
       end do
 
@@ -185,7 +185,7 @@ contains
          this%timeStep = 0.0_RKIND_tiempo
          this%valueForTime = 0.0_RKIND
 
-         this%serializedTimeSize = 0
+         this%nTime = 0
       end subroutine clear_time_data
    end subroutine flush_bulk_probe_output
 

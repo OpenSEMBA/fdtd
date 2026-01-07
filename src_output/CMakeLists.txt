@@ -6,7 +6,6 @@ add_library(fdtd-output
   "pointProbeOutput.F90"
   "wireProbeOutput.F90"
   "bulkProbeOutput.F90"
-  "volumicProbeOutput.F90"
   "movieProbeOutput.F90"
   "frequencySliceProbeOutput.F90"
   "farFieldProbeOutput.F90"

@@ -33,7 +33,7 @@ contains
 
       this%domain = domain
       this%sphericRange = sphericRange
-      this%fieldComponent = field
+      this%component = field
       this%path = get_output_path()
       this%fileUnitFreq = 2025 !Dummy unit for now
 
@@ -58,7 +58,7 @@ contains
       function get_output_path() result(outputPath)
          character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_coordinates_extension(this%lowerBound, this%upperBound, control%mpidir)
+         probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, control%mpidir)
          prefixFieldExtension = get_prefix_extension(field, control%mpidir)
          outputPath = &
             trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))

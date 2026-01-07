@@ -113,17 +113,17 @@ module outputTypes
 ! Concrete probe types
 !=====================================================
    type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
-      real(kind=RKIND)    :: valueForTime(:)
+      real(kind=RKIND), allocatable :: valueForTime(:)
       complex(kind=CKIND), allocatable :: valueForFreq(:)
    end type point_probe_output_t
 
    type, extends(abstract_time_probe_t) :: wire_charge_probe_output_t
       integer(kind=SINGLE) :: sign = +1
-      real(kind=RKIND)     :: chargeValue(:)
+      real(kind=RKIND), allocatable :: chargeValue(:)
       type(CurrentSegments), pointer :: segment
    end type wire_charge_probe_output_t
 
-   type :: wire_current_probe_output_t
+   type, extends(abstract_time_probe_t) :: wire_current_probe_output_t
       integer(kind=SINGLE) :: sign = +1
       type(current_values_t) :: currentValues(BuffObse)
       type(CurrentSegments), pointer :: segment
@@ -137,7 +137,7 @@ module outputTypes
 
    type, extends(abstract_time_probe_t) :: bulk_current_probe_output_t
       type(cell_coordinate_t) :: auxCoords
-      real(kind=RKIND) :: valueForTime(:)
+      real(kind=RKIND), allocatable :: valueForTime(:)
    end type bulk_current_probe_output_t
 
    type, extends(abstract_frequency_probe_t) :: far_field_probe_output_t

@@ -18,9 +18,9 @@ contains
 
       integer(kind=SINGLE) :: i
 
-      this%coordinates = coordinates
+      this%mainCoords = coordinates
 
-      this%fieldComponent = field
+      this%component = field
 
       this%domain = domain
       this%path = get_output_path()
@@ -46,7 +46,7 @@ contains
       function get_output_path() result(outputPath)
          character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
          character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_coordinates_extension(this%coordinates, mpidir)
+         probeBoundsExtension = get_coordinates_extension(this%mainCoords, mpidir)
          prefixFieldExtension = get_prefix_extension(field, mpidir)
          outputPath = &
             trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
@@ -83,22 +83,22 @@ contains
       integer(kind=SINGLE) :: iter
 
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
-         this%serializedTimeSize = this%serializedTimeSize + 1
-         this%timeStep(this%serializedTimeSize) = step
-         this%valueForTime(this%serializedTimeSize) = field(this%coordinates%x, this%coordinates%y, this%coordinates%z)
+         this%nTime = this%nTime + 1
+         this%timeStep(this%nTime) = step
+         this%valueForTime(this%nTime) = field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)
       end if
 
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
-         select case (this%fieldComponent)
+         select case(this%component)
          case (iEx, iEy, iEz)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
-                  this%valueForFreq(iter) + field(this%coordinates%x, this%coordinates%y, this%coordinates%z)*(this%auxExp_E(iter)**step)
+                  this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)*(this%auxExp_E(iter)**step)
             end do
          case (iHx, iHy, iHz)
             do iter = 1, this%nFreq
                this%valueForFreq(iter) = &
-                  this%valueForFreq(iter) + field(this%coordinates%x, this%coordinates%y, this%coordinates%z)*(this%auxExp_H(iter)**step)
+                  this%valueForFreq(iter) + field(this%mainCoords%x, this%mainCoords%y, this%mainCoords%z)*(this%auxExp_H(iter)**step)
             end do
          end select
 
@@ -121,7 +121,7 @@ contains
          integer :: i
          character(len=BUFSIZE) :: filename
 
-         if (this%serializedTimeSize <= 0) then
+         if (this%nTime <= 0) then
             print *, "No data to write."
             return
          end if
@@ -129,7 +129,7 @@ contains
          filename = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
          open (unit=this%fileUnitTime, file=filename, status="old", action="write", position="append")
 
-         do i = 1, this%serializedTimeSize
+         do i = 1, this%nTime
             write (this%fileUnitTime, '(F12.6,1X,F12.6)') this%timeStep(i), this%valueForTime(i)
          end do
 
@@ -164,7 +164,7 @@ contains
          this%timeStep = 0.0_RKIND_tiempo
          this%valueForTime = 0.0_RKIND
 
-         this%serializedTimeSize = 0
+         this%nTime = 0
       end subroutine clear_time_data
 
    end subroutine flush_point_probe_output

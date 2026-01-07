@@ -55,9 +55,9 @@ contains
 
       call find_segment()
 
-      this%coordinates = coordinates
+      this%mainCoords = coordinates
 
-      this%currentComponent = field
+      this%component = field
 
       this%domain = domain
       this%path = get_output_path()
@@ -203,9 +203,9 @@ contains
 
       call find_segment()
 
-      this%coordinates = coordinates
+      this%mainCoords = coordinates
 
-      this%chargeComponent = field
+      this%component = field
 
       this%domain = domain
       this%path = get_output_path()
@@ -313,63 +313,63 @@ contains
 
       select case (trim(adjustl(wiresflavor)))
       case ('holland', 'transition')
-         this%serializedTimeSize = this%serializedTimeSize + 1
-         this%timeStep(this%serializedTimeSize) = step
+         this%nTime = this%nTime + 1
+         this%timeStep(this%nTime) = step
          SegmDumm => this%segment
 
-         this%currentValues(this%serializedTimeSize)%current = this%sign*SegmDumm%currentpast
-         this%currentValues(this%serializedTimeSize)%deltaVoltage = -SegmDumm%Efield_wire2main*SegmDumm%delta
+         this%currentValues(this%nTime)%current = this%sign*SegmDumm%currentpast
+         this%currentValues(this%nTime)%deltaVoltage = -SegmDumm%Efield_wire2main*SegmDumm%delta
 
          if (wirecrank) then
-            this%currentValues(this%serializedTimeSize)%plusVoltage = this%sign* &
+            this%currentValues(this%nTime)%plusVoltage = this%sign* &
                           (((SegmDumm%ChargePlus%ChargePresent)))*SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
-            this%currentValues(this%serializedTimeSize)%minusVoltage = this%sign* &
+            this%currentValues(this%nTime)%minusVoltage = this%sign* &
                          (((SegmDumm%ChargeMinus%ChargePresent)))*SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
          else
-            this%currentValues(this%serializedTimeSize)%plusVoltage = this%sign* &
+            this%currentValues(this%nTime)%plusVoltage = this%sign* &
                                                (((SegmDumm%ChargePlus%ChargePresent + SegmDumm%ChargePlus%ChargePast))/2.0_RKIND)* &
                                                                   SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
-            this%currentValues(this%serializedTimeSize)%minusVoltage = this%sign* &
+            this%currentValues(this%nTime)%minusVoltage = this%sign* &
                                              (((SegmDumm%ChargeMinus%ChargePresent + SegmDumm%ChargeMinus%ChargePast))/2.0_RKIND)* &
                                                                   SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
          end if
 
-         this%currentValues(this%serializedTimeSize)%voltageDiference = &
-            this%currentValues(this%serializedTimeSize)%plusVoltage - this%currentValues(this%serializedTimeSize)%minusVoltage
+         this%currentValues(this%nTime)%voltageDiference = &
+            this%currentValues(this%nTime)%plusVoltage - this%currentValues(this%nTime)%minusVoltage
 
 #ifdef CompileWithBerengerWires
       case ('berenger')
-         this%serializedTimeSize = this%serializedTimeSize + 1
-         this%timeStep(this%serializedTimeSize) = step
+         this%nTime = this%nTime + 1
+         this%timeStep(this%nTime) = step
          SegmDumm_Berenger => this%segmentBerenger
 
-         this%currentValues(this%serializedTimeSize)%current = this%sign*SegmDumm_Berenger%currentpast
-         this%currentValues(this%serializedTimeSize)%deltaVoltage = -SegmDumm_Berenger%field*SegmDumm_Berenger%dl
+         this%currentValues(this%nTime)%current = this%sign*SegmDumm_Berenger%currentpast
+         this%currentValues(this%nTime)%deltaVoltage = -SegmDumm_Berenger%field*SegmDumm_Berenger%dl
 
-         this%currentValues(this%serializedTimeSize)%plusVoltage = this%sign* &
+         this%currentValues(this%nTime)%plusVoltage = this%sign* &
                                                   (((SegmDumm_Berenger%ChargePlus + SegmDumm_Berenger%ChargePlusPast))/2.0_RKIND)* &
                                                   SegmDumm_Berenger%L*(InvMu(SegmDumm_Berenger%imed)*InvEps(SegmDumm_Berenger%imed))
-         this%currentValues(this%serializedTimeSize)%minusVoltage = this%sign* &
+         this%currentValues(this%nTime)%minusVoltage = this%sign* &
                                                 (((SegmDumm_Berenger%ChargeMinus + SegmDumm_Berenger%ChargeMinusPast))/2.0_RKIND)* &
                                                   SegmDumm_Berenger%L*(InvMu(SegmDumm_Berenger%imed)*InvEps(SegmDumm_Berenger%imed))
-         this%currentValues(this%serializedTimeSize)%voltageDiference = &
-            this%currentValues(this%serializedTimeSize)%plusVoltage - this%currentValues(this%serializedTimeSize)%minusVoltage
+         this%currentValues(this%nTime)%voltageDiference = &
+            this%currentValues(this%nTime)%plusVoltage - this%currentValues(this%nTime)%minusVoltage
 
 #endif
 #ifdef CompileWithSlantedWires
       case ('slanted', 'semistructured')
-         this%serializedTimeSize = this%serializedTimeSize + 1
-         this%timeStep(this%serializedTimeSize) = step
+         this%nTime = this%nTime + 1
+         this%timeStep(this%nTime) = step
          SegmDumm_Slanted => this%segmentSlanted
 
-         this%currentValues(this%serializedTimeSize)%current = SegmDumm_Slanted%Currentpast !ojo: slanted ya los orienta bien y no hay que multiplicar por valorsigno
-         this%currentValues(this%serializedTimeSize)%deltaVoltage = -SegmDumm_Slanted%field*SegmDumm_Slanted%dl
-         this%currentValues(this%serializedTimeSize)%plusVoltage = &
+         this%currentValues(this%nTime)%current = SegmDumm_Slanted%Currentpast !ojo: slanted ya los orienta bien y no hay que multiplicar por valorsigno
+         this%currentValues(this%nTime)%deltaVoltage = -SegmDumm_Slanted%field*SegmDumm_Slanted%dl
+         this%currentValues(this%nTime)%plusVoltage = &
             (((SegmDumm_Slanted%Voltage(iPlus)%ptr%Voltage + SegmDumm_Slanted%Voltage(iPlus)%ptr%VoltagePast))/2.0_RKIND)
-         this%currentValues(this%serializedTimeSize)%minusVoltage = &
+         this%currentValues(this%nTime)%minusVoltage = &
             (((SegmDumm_Slanted%Voltage(iMinus)%ptr%Voltage + SegmDumm_Slanted%Voltage(iMinus)%ptr%VoltagePast))/2.0_RKIND)
-         this%currentValues(this%serializedTimeSize)%voltageDiference = &
-            this%currentValues(this%serializedTimeSize)%plusVoltage - this%currentValues(this%serializedTimeSize)%minusVoltage
+         this%currentValues(this%nTime)%voltageDiference = &
+            this%currentValues(this%nTime)%plusVoltage - this%currentValues(this%nTime)%minusVoltage
 #endif
       end select
 
@@ -380,10 +380,10 @@ contains
       real(kind=RKIND_tiempo), intent(in) :: step
       type(CurrentSegments), pointer  ::  segmDumm
 
-      this%serializedTimeSize = this%serializedTimeSize + 1
-      this%timeStep(this%serializedTimeSize) = step
+      this%nTime = this%nTime + 1
+      this%timeStep(this%nTime) = step
       SegmDumm => this%segment
-      this%chargeValue(this%serializedTimeSize) = SegmDumm%ChargeMinus%ChargePresent
+      this%chargeValue(this%nTime) = SegmDumm%ChargeMinus%ChargePresent
    end subroutine update_wire_charge_probe_output
 
    subroutine flush_wire_current_probe_output(this)
@@ -394,7 +394,7 @@ contains
       filename = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
       open (unit=this%fileUnitTime, file=filename, status="old", action="write", position="append")
 
-      do i = 1, this%serializedTimeSize
+      do i = 1, this%nTime
             write (this%fileUnitTime, fmt) this%timeStep(i), &
             this%currentValues%current, &
             this%currentValues%deltaVoltage, &
@@ -415,7 +415,7 @@ contains
          this%currentValues%minusVoltage = 0.0_RKIND
          this%currentValues%voltageDiference = 0.0_RKIND
 
-         this%serializedTimeSize = 0
+         this%nTime = 0
       end subroutine clear_time_data
    end subroutine flush_wire_current_probe_output
 
@@ -427,7 +427,7 @@ contains
       filename = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
       open (unit=this%fileUnitTime, file=filename, status="old", action="write", position="append")
 
-      do i = 1, this%serializedTimeSize
+      do i = 1, this%nTime
             write (this%fileUnitTime, fmt) this%timeStep(i), &
             this%chargeValue
       end do
@@ -439,7 +439,7 @@ contains
 
          this%chargeValue = 0.0_RKIND
 
-         this%serializedTimeSize = 0
+         this%nTime = 0
       end subroutine clear_time_data
    end subroutine flush_wire_charge_probe_output
 end module mod_wireProbeOutput

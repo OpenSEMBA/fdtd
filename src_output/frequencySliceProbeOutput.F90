@@ -51,23 +51,23 @@ contains
       call count_required_coords(this, problemInfo)
 
       if (any(VOLUMIC_M_MEASURE == this%component)) then
-         call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_RKIND, 0.0_RKIND))
-         call alloc_and_init(this%yValueForFreq, this%nFreq, this%nPoints, (0.0_RKIND, 0.0_RKIND))
-         call alloc_and_init(this%zValueForFreq, this%nFreq, this%nPoints, (0.0_RKIND, 0.0_RKIND))
+         call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
+         call alloc_and_init(this%yValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
+         call alloc_and_init(this%zValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
       else
          if (any(VOLUMIC_X_MEASURE == this%component)) then
-            call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_RKIND, 0.0_RKIND))
+            call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
          elseif (any(VOLUMIC_Y_MEASURE == this%component)) then
-            call alloc_and_init(this%yValueForFreq, this%nFreq, this%nPoints, (0.0_RKIND, 0.0_RKIND))
+            call alloc_and_init(this%yValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
          elseif (any(VOLUMIC_Z_MEASURE == this%component)) then
-            call alloc_and_init(this%zValueForFreq, this%nFreq, this%nPoints, (0.0_RKIND, 0.0_RKIND))
+            call alloc_and_init(this%zValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
          else
             call StopOnError(control%layoutnumber, control%size, "Unexpected output type for movie probe")
          end if
       end if
 
-      call alloc_and_init(this%auxExp_E, this%nFreq, (0.0_RKIND, 0.0_RKIND))
-      call alloc_and_init(this%auxExp_H, this%nFreq, (0.0_RKIND, 0.0_RKIND))
+      call alloc_and_init(this%auxExp_E, this%nFreq, (0.0_CKIND, 0.0_CKIND))
+      call alloc_and_init(this%auxExp_H, this%nFreq, (0.0_CKIND, 0.0_CKIND))
 
       do i = 1, this%nFreq
          this%auxExp_E(i) = timeInterval*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*this%frequencySlice(i))   !el dt deberia ser algun tipo de promedio
@@ -87,9 +87,10 @@ contains
 
    end subroutine init_frequency_slice_probe_output
 
-   subroutine update_frequency_slice_probe_output(this, step, fieldsReference, problemInfo)
+   subroutine update_frequency_slice_probe_output(this, step, fieldsReference, control, problemInfo)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
+      type(sim_control_t), intent(in) :: control
       type(problem_info_t), intent(in) :: problemInfo
       type(fields_reference_t), intent(in) :: fieldsReference
 
@@ -99,8 +100,8 @@ contains
       if (any(VOLUMIC_M_MEASURE == request)) then
          select case (request)
          case (iCur); call save_current_module(this, fieldsReference, step, problemInfo)
-         case (iMEC); call save_field_module(this, fieldsReference%E, request, step, problemInfo)
-         case (iMHC); call save_field_module(this, fieldsReference%H, request, step, problemInfo)
+         case (iMEC); call save_field_module(this, fieldsReference%E, step, request, problemInfo)
+         case (iMHC); call save_field_module(this, fieldsReference%H, step, request, problemInfo)
          case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
          end select
 
@@ -114,24 +115,24 @@ contains
 
       else if (any(VOLUMIC_Y_MEASURE == request)) then
          select case (request)
-         case (iCurY); call save_current_component(this%yValueForFreq, fieldsReference, problemInfo, iEy, this%auxExp_E, this%nFreq, step)
-         case (iEyC); call save_field_component(this%yValueForFreq, fieldsReference%E%y, step, problemInfo, iEy)
-         case (iHyC); call save_field_component(this%yValueForFreq, fieldsReference%H%y, step, problemInfo, iHy)
+         case (iCurY); call save_current_component(this, this%yValueForFreq, fieldsReference, problemInfo, iEy, this%auxExp_E, this%nFreq, step)
+         case (iEyC); call save_field_component(this, this%yValueForFreq, fieldsReference%E%y, step, problemInfo, iEy)
+         case (iHyC); call save_field_component(this, this%yValueForFreq, fieldsReference%H%y, step, problemInfo, iHy)
          case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
          end select
 
       else if (any(VOLUMIC_Z_MEASURE == request)) then
          select case (request)
-         case (iCurZ); call save_current_component(this%zValueForFreq, fieldsReference, problemInfo, iEz, this%auxExp_E, this%nFreq, step)
-         case (iEzC); call save_field_component(this%zValueForFreq, fieldsReference%E%z, step, problemInfo, iEz)
-         case (iHzC); call save_field_component(this%zValueForFreq, fieldsReference%H%z, step, problemInfo, iHz)
+         case (iCurZ); call save_current_component(this, this%zValueForFreq, fieldsReference, problemInfo, iEz, this%auxExp_E, this%nFreq, step)
+         case (iEzC); call save_field_component(this, this%zValueForFreq, fieldsReference%E%z, step, problemInfo, iEz)
+         case (iHzC); call save_field_component(this, this%zValueForFreq, fieldsReference%H%z, step, problemInfo, iHz)
          case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
          end select
       end if
    end subroutine update_frequency_slice_probe_output
 
-   subroutine save_current_module(this, fieldsReference, problemInfo, step)
-      type(movie_probe_output_t), intent(inout) :: this
+   subroutine save_current_module(this, fieldsReference, step, problemInfo)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
       type(fields_reference_t), intent(in) :: fieldsReference
       type(problem_info_t), intent(in) :: problemInfo
       real(kind=RKIND_tiempo), intent(in) :: step
@@ -142,34 +143,33 @@ contains
       do i = this%mainCoords%x, this%auxCoords%x
       do j = this%mainCoords%y, this%auxCoords%y
       do k = this%mainCoords%z, this%auxCoords%z
-         if (isValidForCurrent(iCur, i, j, k, problemInfo)) then
+         if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_current(this%xValueForTime, iEx, coordIdx, i, j, k, fieldsReference, auxExp, this%nFreq, step)
-            call save_current(this%yValueForTime, iEy, coordIdx, i, j, k, fieldsReference, auxExp, this%nFreq, step)
-            call save_current(this%zValueForTime, iEz, coordIdx, i, j, k, fieldsReference, auxExp, this%nFreq, step)
+            call save_current(this%xValueForFreq, iEx, coordIdx, i, j, k, fieldsReference, this%auxExp_E, this%nFreq, step)
+            call save_current(this%yValueForFreq, iEy, coordIdx, i, j, k, fieldsReference, this%auxExp_E, this%nFreq, step)
+            call save_current(this%zValueForFreq, iEz, coordIdx, i, j, k, fieldsReference, this%auxExp_E, this%nFreq, step)
          end if
       end do
       end do
       end do
    end subroutine
 
-   subroutine save_current_component(currentData, fieldsReference, problemInfo, fieldDir, auxExp, nFreq, step)
+   subroutine save_current_component(this, currentData, fieldsReference, problemInfo, fieldDir, auxExp, nFreq, step)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
       complex(kind=CKIND), intent(inout) :: currentData(:, :)
       type(fields_reference_t), intent(in) :: fieldsReference
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir, nFreq
-      complex(kind=ckind), intent(in) :: auxExp
+      complex(kind=ckind), intent(in), dimension(:) :: auxExp
       real(kind=RKIND_tiempo), intent(in) :: step
 
       integer :: i, j, k, coordIdx
-
-      this%timeStep(this%nTime) = simTime
 
       coordIdx = 0
       do i = this%mainCoords%x, this%auxCoords%x
       do j = this%mainCoords%y, this%auxCoords%y
       do k = this%mainCoords%z, this%auxCoords%z
-         if (isValidForCurrent(fieldDir, i, j, k, problemInfo)) then
+         if (isValidPointForCurrent(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_current(currentData, fieldDir, coordIdx, i, j, k, fieldsReference, auxExp, nFreq, step)
          end if
@@ -180,7 +180,7 @@ contains
 
    subroutine save_current(valorComplex, direction, coordIdx, i, j, k, fieldsReference, auxExp, nFreq, step)
       integer, intent(in) :: direction
-      complex(kind=CKIND), intent(inout) :: valorComplex
+      complex(kind=CKIND), intent(inout) :: valorComplex(:,:)
       complex(kind=CKIND), intent(in) :: auxExp
       integer, intent(in) :: i, j, k, coordIdx, nFreq
       type(fields_reference_t), intent(in) :: fieldsReference
@@ -188,16 +188,17 @@ contains
 
       integer :: iter
       complex(kind=CKIND) :: z_cplx = (0.0_RKIND, 0.0_RKIND)
+      real(kind=rkind) :: jdir
 
-      jdir = computej(direction, i, j, k, fieldReference)
+      jdir = computej(direction, i, j, k, fieldsReference)
 
       do iter = 1, nFreq
          valorComplex(i, coordIdx) = valorComplex(i, coordIdx) + (auxExp(i)**step)*jdir
       end do
    end subroutine
 
-   subroutine save_field_module(this, field, simTime, problemInfo, request)
-      type(movie_probe_output_t), intent(inout) :: this
+   subroutine save_field_module(this, field, simTime, request, problemInfo)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
       type(field_data_t), pointer :: field
       real(kind=RKIND_tiempo), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
@@ -213,9 +214,9 @@ contains
       do k = this%mainCoords%z, this%auxCoords%z
          if (isValidPointForField(request, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_field(this%xValueForTime, timeIdx, coordIdx, field%x(i, j, k))
-            call save_field(this%yValueForTime, timeIdx, coordIdx, field%y(i, j, k))
-            call save_field(this%zValueForTime, timeIdx, coordIdx, field%z(i, j, k))
+            call save_field(this%xValueForFreq, this%nTime, coordIdx, field%x(i, j, k))
+            call save_field(this%yValueForFreq, this%nTime, coordIdx, field%y(i, j, k))
+            call save_field(this%zValueForFreq, this%nTime, coordIdx, field%z(i, j, k))
          end if
       end do
       end do
@@ -223,16 +224,15 @@ contains
 
    end subroutine
 
-   subroutine save_field_component(fieldData, fieldComponent, simTime, problemInfo, fieldDir)
-      real(kind=RKIND), intent(inout) :: fieldData(:, :)
+   subroutine save_field_component(this, fieldData, fieldComponent, simTime, problemInfo, fieldDir)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      complex(kind=CKIND), intent(inout) :: fieldData(:, :)
       type(field_data_t), intent(in) :: fieldComponent(:, :, :)
       real(kind=RKIND_tiempo), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir
 
       integer :: i, j, k, coordIdx
-
-      this%timeStep(this%nTime) = simTime
 
       coordIdx = 0
       do i = this%mainCoords%x, this%auxCoords%x
@@ -331,22 +331,25 @@ contains
 
       !================= Write arrays to VTK =================
       if (writeX) then
+         requestName = trim(adjustl(requestName))//'X'
          ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-         ierr = vtkOutput%xml_writer%write_dataarray(data_name=trim(adjustl(requestName))//'X', x=Componentx)
+         ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componentx)
          ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
          deallocate (Componentx)
       end if
 
       if (writeY) then
+         requestName = trim(adjustl(requestName))//'X'
          ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-         ierr = vtkOutput%xml_writer%write_dataarray(data_name=trim(adjustl(requestName))//'Y', x=Componenty)
+         ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componenty)
          ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
          deallocate (Componenty)
       end if
 
       if (writeZ) then
+         requestName = trim(adjustl(requestName))//'X'
          ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-         ierr = vtkOutput%xml_writer%write_dataarray(data_name=trim(adjustl(requestName))//'Z', x=Componentz)
+         ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componentz)
          ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
          deallocate (Componentz)
       end if
@@ -377,7 +380,7 @@ contains
    end subroutine update_pvd
 
    subroutine count_required_coords(this, problemInfo)
-      type(movie_probe_output_t), intent(inout) :: this
+      type(frequency_slice_probe_output_t), intent(inout) :: this
       type(problem_info_t), intent(in) :: problemInfo
 
       procedure(logical_func), pointer :: checker => null()  ! Pointer to logical function
@@ -422,9 +425,9 @@ contains
       end select
 
       count = 0
-      do i = istart, iend
-      do j = jstart, jend
-      do k = kstart, kend
+      do i = this%mainCoords%x, this%auxCoords%x
+      do j = this%mainCoords%y, this%auxCoords%y
+      do k = this%mainCoords%z, this%auxCoords%z
          if (checker(component, i, j, k, problemInfo)) count = count + 1
       end do
       end do
@@ -486,16 +489,16 @@ contains
       logical function componentCurrentRequest(fieldDir, i, j, k, problemInfo)
          integer, intent(in) :: i, j, k, fieldDir
          type(problem_info_t) :: problemInfo
-         componentCurrentRequest = isWithinBounds(fieldDir, i, j, k, problemInfo%problemDimension)
+         componentCurrentRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
          if (componentCurrentRequest) then
-            componentCurrentRequest = isPEC(fieldDir, i, j, k, problemInfo%geometryToMaterialData, problemInfo%materialList) &
-                                    .or. isThinWire(fieldDir, i, j, k, problemInfo%geometryToMaterialData, problemInfo%materialList)
+            componentCurrentRequest = isPEC(fieldDir, i, j, k, problemInfo) &
+                                    .or. isThinWire(fieldDir, i, j, k, problemInfo)
          end if
       end function
       logical function componentFieldRequest(fieldDir, i, j, k, problemInfo)
          integer, intent(in) :: i, j, k, fieldDir
          type(problem_info_t) :: problemInfo
-         componentFieldRequest = isWithinBounds(fieldDir, i, j, k, problemInfo%problemDimension)
+         componentFieldRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
       end function
 
    end module mod_frequencySliceProbeOutput
