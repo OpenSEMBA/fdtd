@@ -185,6 +185,10 @@ module  FDETYPES
    integer (kind=4),  parameter :: VOLUMIC_X_MEASURE(3) = [iCurx, iExC, iHxC]
    integer (kind=4),  parameter :: VOLUMIC_Y_MEASURE(3) = [iCury, iEyC, iHyC]
    integer (kind=4),  parameter :: VOLUMIC_Z_MEASURE(3) = [iCurz, iEzC, iHzC]
+
+   integer (kind=4),  parameter :: CURRENT_MEASURE(4) = [iCur, iCurx, iCury, iCurz]
+   integer (kind=4),  parameter :: ELECTRIC_FIELD_MEASURE(4) = [iMEC, iExC, iEyC, iEzC]
+   integer (kind=4),  parameter :: MAGNETIC_FIELD_MEASURE(4) = [iMHC, iHxC, iHyC, iHzC]
    !
    CHARACTER (LEN=*), PARAMETER  ::  SEPARADOR='______________'
    integer (kind=4), PARAMETER  ::  comi=1,fine=2, icoord=1,jcoord=2,kcoord=3

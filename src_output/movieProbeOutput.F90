@@ -283,13 +283,32 @@ contains
       integer, intent(in) :: stepIndex
       character(len=*), intent(in) :: filename
 
+      character(len=BUFSIZE) :: requestName
       type(vtk_file) :: vtkOutput
       integer :: ierr, npts, i
       real(kind=RKIND), allocatable :: x(:), y(:), z(:)
-      real(kind=RKIND), allocatable :: Jx(:), Jy(:), Jz(:)
+      real(kind=RKIND), allocatable :: Componentx(:), Componenty(:), Componentz(:)
+      logical :: writeX, writeY, writeZ
 
-      npts = this%nMeasuredElements
+      !================= Determine the measure type =================
+      select case (this%component)
+      case (CURRENT_MEASURE)
+         requestName = 'Current'
+      case (ELECTRIC_FIELD_MEASURE)
+         requestName = 'Electric'
+      case (MAGNETIC_FIELD_MEASURE)
+         requestName = 'Magnetic'
+      case default
+         requestName = 'Unknown'
+      end select
 
+      !================= Determine which components to write =================
+      writeX = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_X_MEASURE == this%component)
+      writeY = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Y_MEASURE == this%component)
+      writeZ = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Z_MEASURE == this%component)
+
+      !================= Allocate and fill coordinates =================
+      npts = this%nPoints
       allocate (x(npts), y(npts), z(npts))
       do i = 1, npts
          x(i) = this%coords(1, i)
@@ -297,24 +316,55 @@ contains
          z(i) = this%coords(3, i)
       end do
 
-      allocate (Jx(npts), Jy(npts), Jz(npts))
-      do i = 1, npts
-         Jx(i) = this%xValueForTime(stepIndex, i)
-         Jy(i) = this%yValueForTime(stepIndex, i)
-         Jz(i) = this%zValueForTime(stepIndex, i)
-      end do
       ierr = vtkOutput%initialize(format='ASCII', filename=trim(filename), mesh_topology='UnstructuredGrid')
       ierr = vtkOutput%xml_writer%write_geo(n=npts, x=x, y=y, z=z)
-      ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      ierr = vtkOutput%xml_writer%write_dataarray(data_name='CurrentX', x=Jx)
-      ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-      ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      ierr = vtkOutput%xml_writer%write_dataarray(data_name='CurrentY', x=Jy)
-      ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-      ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      ierr = vtkOutput%xml_writer%write_dataarray(data_name='CurrentZ', x=Jz)
-      ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
+
+      !================= Allocate and fill component arrays =================
+      if (writeX) then
+         allocate (Componentx(npts))
+         do i = 1, npts
+            Componentx(i) = this%xValueForTime(stepIndex, i)
+         end do
+      end if
+
+      if (writeY) then
+         allocate (Componenty(npts))
+         do i = 1, npts
+            Componenty(i) = this%xValueForTime(stepIndex, i)
+         end do
+      end if
+
+      if (writeZ) then
+         allocate (Componentz(npts))
+         do i = 1, npts
+            Componentz(i) = this%xValueForTime(frestepIndexq, i)
+         end do
+      end if
+
+      !================= Write arrays to VTK =================
+      if (writeX) then
+         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
+         ierr = vtkOutput%xml_writer%write_dataarray(data_name=trim(adjustl(requestName))//'X', x=Componentx)
+         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
+         deallocate (Componentx)
+      end if
+
+      if (writeY) then
+         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
+         ierr = vtkOutput%xml_writer%write_dataarray(data_name=trim(adjustl(requestName))//'Y', x=Componenty)
+         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
+         deallocate (Componenty)
+      end if
+
+      if (writeZ) then
+         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
+         ierr = vtkOutput%xml_writer%write_dataarray(data_name=trim(adjustl(requestName))//'Z', x=Componentz)
+         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
+         deallocate (Componentz)
+      end if
+
       ierr = vtkOutput%xml_writer%finalize()
+      deallocate (x, y, z)
 
    end subroutine write_vtu_timestep
 
