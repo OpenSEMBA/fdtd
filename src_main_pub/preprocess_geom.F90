@@ -5026,6 +5026,7 @@ CONTAINS
                case(F_Z)
                   media%sggMiHz(cell(1), cell(2), cell(3)) = face_media
                end select
+
             end do
          end do
       end subroutine
@@ -5089,6 +5090,9 @@ CONTAINS
                case(E_Z)
                   media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                end select
+
+
+
             end do
          end do
       end subroutine

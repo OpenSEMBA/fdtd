@@ -86,6 +86,8 @@ module Solver_mod
 #ifdef CompileWithProfiling
    use nvtx
 #endif
+   use conformal_mod
+
    implicit none
 
 
@@ -594,6 +596,8 @@ module Solver_mod
       call initializeSGBC()
       call initializeMultiports()
       call initializeConformalElements()
+      
+      call initializeConformal()
       
       call initializeEDispersives()
       call initializeMDispersives()
@@ -1356,6 +1360,19 @@ contains
          endif
 #endif
       end subroutine initializeMultiports
+
+      subroutine initializeConformal()
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+            write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
+            call initConformal(this%sgg, & 
+                     this%media%sggMiEx, this%media%sggMiEy,this%media%sggMiEz, & 
+                     this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
+                     Ex,Ey,Ez,Hx,Hy,Hz, & 
+                     this%control%layoutnumber)
+            
+      end subroutine
 
       subroutine initializeConformalElements()
          character(len=BUFSIZE) :: dubuf
@@ -2556,7 +2573,8 @@ contains
       IdyE(0:this%bounds%dyE%NY-1) => this%IdyE
       IdzE(0:this%bounds%dzE%NZ-1) => this%IdzE
 
-
+      ! medio = mapa de celda, direccion para E y para H?
+      ! which field updates? how is it defined? what happens with index shifting?
       ! do i=1,size(conformal_size_map)
       !    Idzek=Idze(k)
       !    Idyej=Idye(j)
