@@ -45,7 +45,7 @@ module output
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
    type(solver_output_t), pointer, dimension(:), save  ::  outputs
-   type(problem_info_t), save :: problemInfo
+   type(problem_info_t), save, target :: problemInfo
 
    interface init_solver_output
       module procedure &
@@ -53,7 +53,6 @@ module output
          init_wire_current_probe_output, &
          init_wire_charge_probe_output, &
          init_bulk_probe_output, &
-         init_volumic_probe_output, &
          init_movie_probe_output, &
          init_frequency_slice_probe_output, &
          init_farField_probe_output
@@ -73,7 +72,6 @@ module output
          update_wire_current_probe_output, &
          update_wire_charge_probe_output, &
          update_bulk_probe_output, &
-         update_volumic_probe_output, &
          update_movie_probe_output, &
          update_frequency_slice_probe_output, &
          update_farField_probe_output
@@ -106,9 +104,9 @@ contains
 
    subroutine init_outputs(sgg, media, sinpml_fullsize, bounds, control, observationsExists, wiresExists)
       type(SGGFDTDINFO), intent(in) ::  sgg
-      type(media_matrices_t), intent(in) :: media
-      type(limit_t), dimension(:), intent(in)  ::  SINPML_fullsize
-      type(bounds_t) :: bounds
+      type(media_matrices_t), target, intent(in) :: media
+      type(limit_t), dimension(:), target, intent(in)  ::  SINPML_fullsize
+      type(bounds_t), target :: bounds
       type(sim_control_t), intent(in) :: control
       logical, intent(inout) :: wiresExists
       logical, intent(out) :: observationsExists
@@ -139,12 +137,12 @@ contains
       InvEps(0:sgg%NumMedia - 1) = 1.0_RKIND/(Eps0*sgg%Med(0:sgg%NumMedia - 1)%Epr)
       InvMu(0:sgg%NumMedia - 1) = 1.0_RKIND/(Mu0*sgg%Med(0:sgg%NumMedia - 1)%Mur)
 
-      do ii = 1, sgg%NumberRequest
-      do i = 1, sgg%Observation(ii)%nP
-         call eliminate_unnecesary_observation_points(sgg%Observation(ii)%P(i), output(ii)%item(i), &
-           sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, control%layoutnumber, control%size)
-      end do
-      end do
+      !do ii = 1, sgg%NumberRequest
+      !do i = 1, sgg%Observation(ii)%nP
+      !   call eliminate_unnecesary_observation_points(sgg%Observation(ii)%P(i), output(ii)%item(i), &
+      !     sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, control%layoutnumber, control%size)
+      !end do
+      !end do
 
       do ii = 1, sgg%NumberRequest
          do i = 1, sgg%Observation(ii)%nP
@@ -167,7 +165,7 @@ contains
                outputs(outputCount)%outputID = POINT_PROBE_ID
 
                allocate (outputs(outputCount)%pointProbe)
-               call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control, sgg%dt)
+               call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt)
                call create_empty_files(outputs(outputCount)%pointProbe)
             case (iJx, iJy, iJz)
                if (wiresExists) then
@@ -175,7 +173,7 @@ contains
                   outputs(outputCount)%outputID = WIRE_CURRENT_PROBE_ID
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
-                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control, problemInfo)
+                  call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
                   call create_empty_files(outputs(outputCount)%wireCurrentProbe)
                end if
 
@@ -184,7 +182,7 @@ contains
                outputs(outputCount)%outputID = WIRE_CHARGE_PROBE_ID
 
                allocate (outputs(outputCount)%wireChargeProbe)
-               call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control)
+               call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
                call create_empty_files(outputs(outputCount)%wireChargeProbe)
 
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
@@ -192,11 +190,11 @@ contains
                outputs(outputCount)%outputID = BULK_PROBE_ID
 
                allocate (outputs(outputCount)%bulkCurrentProbe)
-               call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control)
+               call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
                call create_empty_files(outputs(outputCount)%bulkCurrentProbe)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
-            case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEyC, iHxC, iHyC, iHyC)
+            case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
                call adjust_bound_range()
 
                if (domain%domainType == TIME_DOMAIN) then
@@ -204,8 +202,8 @@ contains
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = MOVIE_PROBE_ID
                   allocate (outputs(outputCount)%movieProbe)
-                  call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control, problemInfo)
-                  call create_pvd(outputs(outputCount)%movieProbe%path, outputs(outputCount)%movieProbe%PDVUnit)
+                  call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, control, problemInfo, outputTypeExtension)
+                  call create_pvd(outputs(outputCount)%movieProbe%path, outputs(outputCount)%movieProbe%fileUnitTime)
 
                else if (domain%domainType == FREQUENCY_DOMAIN) then
 
@@ -213,7 +211,7 @@ contains
                   outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
                   allocate (outputs(outputCount)%frequencySliceProbe)
                   call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, sgg%dt, outputRequestType, domain, outputTypeExtension, control, problemInfo)
-                  call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%PDVUnit)
+                  call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%fileUnitFreq)
 
                end if
             case (farfield)
@@ -235,14 +233,14 @@ contains
       subroutine adjust_bound_range()
          select case (outputRequestType)
          case (iExC, iEyC, iHzC, iMhC)
-            lowerBound%z = max(sgg%Sweep(fieldo(field, 'Z'))%ZI, sgg%observation(ii)%P(i)%ZI)
-            upperBound%z = min(sgg%Sweep(fieldo(field, 'Z'))%ZE - 1, sgg%observation(ii)%P(i)%ZE)
+            lowerBound%z = max(sgg%Sweep(fieldo(outputRequestType, 'Z'))%ZI, sgg%observation(ii)%P(i)%ZI)
+            upperBound%z = min(sgg%Sweep(fieldo(outputRequestType, 'Z'))%ZE - 1, sgg%observation(ii)%P(i)%ZE)
          case (iEzC, iHxC, iHyC, iMeC)
-            lowerBound%z = max(sgg%Sweep(fieldo(field, 'Z'))%ZI, sgg%observation(ii)%P(i)%ZI)
-            upperbound%z = min(sgg%Sweep(fieldo(field, 'Z'))%ZE, sgg%observation(ii)%P(i)%ZE)
+            lowerBound%z = max(sgg%Sweep(fieldo(outputRequestType, 'Z'))%ZI, sgg%observation(ii)%P(i)%ZI)
+            upperbound%z = min(sgg%Sweep(fieldo(outputRequestType, 'Z'))%ZE, sgg%observation(ii)%P(i)%ZE)
          case (iCur, iCurX, iCurY, iCurZ)
-            lowerBound%z = max(sgg%Sweep(fieldo(field, 'X'))%ZI, sgg%observation(ii)%P(i)%ZI) !ojo estaba sweep(iEz) para ser conservador...puede dar problemas!! 03/07/15
-            upperbound%z = min(sgg%Sweep(fieldo(field, 'X'))%ZE, sgg%observation(ii)%P(i)%ZE) !ojo estaba sweep(iEz) para ser conservador...puede dar problemas!! 03/07/15
+            lowerBound%z = max(sgg%Sweep(fieldo(outputRequestType, 'X'))%ZI, sgg%observation(ii)%P(i)%ZI) !ojo estaba sweep(iEz) para ser conservador...puede dar problemas!! 03/07/15
+            upperbound%z = min(sgg%Sweep(fieldo(outputRequestType, 'X'))%ZE, sgg%observation(ii)%P(i)%ZE) !ojo estaba sweep(iEz) para ser conservador...puede dar problemas!! 03/07/15
          end select
       end subroutine
       function preprocess_domain(observation, timeArray, simulationTimeStep, finalStepIndex) result(newDomain)
@@ -330,21 +328,21 @@ contains
       do i = 1, size(outputs)
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
-            fieldComponent => get_field_component(outputs(i)%pointProbe%fieldComponent, fieldsReference) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
+            fieldComponent => get_field_component(outputs(i)%pointProbe%component, fieldsReference) !Cada componente requiere de valores deiferentes pero estos valores no se como conseguirlos
             call update_solver_output(outputs(i)%pointProbe, discreteTime, fieldComponent)
          case (WIRE_CURRENT_PROBE_ID)
-            call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, contorl, InvEps, InvMu)
+            call update_solver_output(outputs(i)%wireCurrentProbe, discreteTime, control, InvEps, InvMu)
          case (WIRE_CHARGE_PROBE_ID)
             call update_solver_output(outputs(i)%wireChargeProbe, discreteTime)
          case (BULK_PROBE_ID)
-            fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%fieldComponent, fieldsReference)
+            fieldReference = get_field_reference(outputs(i)%bulkCurrentProbe%component, fieldsReference)
             call update_solver_output(outputs(i)%bulkCurrentProbe, discreteTime, fieldReference)
          case (MOVIE_PROBE_ID)
-            call update_solver_output(outputs(i)%movieProbe, discreteTime, problemInfo, fieldsReference)
+            call update_solver_output(outputs(i)%movieProbe, discreteTime, fieldsReference, control, problemInfo)
          case (FREQUENCY_SLICE_PROBE_ID)
-            call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, problemInfo, fieldsReference)
+            call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, fieldsReference, control, problemInfo)
          case (FAR_FIELD_PROBE_ID)
-            call update_solver_output(outputs(i)%farFieldOutput, timeIndx, problemInfo, fieldsReference)
+            call update_solver_output(outputs(i)%farFieldOutput, timeIndx, problemInfo%simulationBounds, fieldsReference)
          case default
             call stoponerror(0, 0, 'Output update not implemented')
          end select
@@ -436,117 +434,117 @@ contains
       return
    end function
 
- subroutine eliminate_unnecessary_observation_points(observation_probe, output_item, sweep, SINPMLSweep, ZI, ZE, layoutnumber, size)
-      type(item_t), intent(inout) :: output_item
-      type(observable_t), intent(inout) :: observation_probe
-      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep, SINPMLSweep
-      integer(kind=4), intent(in) :: ZI, ZE, layoutnumber, size
-      integer(kind=4) :: field
-
-      ! Initialize output_item trancos
-      output_item%Xtrancos = observation_probe%Xtrancos
-      output_item%Ytrancos = observation_probe%Ytrancos
-      output_item%Ztrancos = observation_probe%Ztrancos
-
-      output_item%XItrancos = ceiling(real(observation_probe%XI)/real(output_item%Xtrancos))
-      output_item%YItrancos = ceiling(real(observation_probe%YI)/real(output_item%Ytrancos))
-      output_item%ZItrancos = ceiling(real(observation_probe%ZI)/real(output_item%Ztrancos))
-
-      output_item%XEtrancos = int(observation_probe%XE/output_item%Xtrancos)
-      output_item%YEtrancos = int(observation_probe%YE/output_item%Ytrancos)
-      output_item%ZEtrancos = int(observation_probe%ZE/output_item%Ztrancos)
-
-#ifdef CompileWithMPI
-      output_item%MPISubComm = -1
-#endif
-
-      field = observation_probe%What
-
-      select case (field)
-      case (iBloqueJx, iBloqueJy, iBloqueMx, iBloqueMy, iExC, iEyC, iHzC, iMhC, iEzC, iHxC, iHyC, iMeC)
-         call eliminate_observation_block(observation_probe, output_item, sweep, field, layoutnumber, size)
-      case (iEx, iVx, iEy, iVy, iHz, iBloqueMz, iJx, iJy, iQx, iQy)
-         call eliminate_observation_range(observation_probe, sweep, field, layoutnumber, size, lower_inclusive=.false.)
-      case (iEz, iVz, iJz, iQz, iBloqueJz, iHx, iHy)
-         call eliminate_observation_range(observation_probe, sweep, field, layoutnumber, size, lower_inclusive=.true.)
-      case (iCur, iCurX, iCurY, iCurZ, mapvtk)
-         call eliminate_observation_current(observation_probe, output_item, sweep, field, layoutnumber, size)
-      case (FarField)
-         call eliminate_observation_farfield(observation_probe, output_item, SINPMLSweep, ZI, ZE, layoutnumber, size)
-      end select
-   end subroutine
-
-! Generic subroutine for block observations
-   subroutine eliminate_observation_block(obs, out, sweep, field, layoutnumber, size)
-      type(observable_t), intent(inout) :: obs
-      type(item_t), intent(inout) :: out
-      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
-      integer, intent(in) :: field, layoutnumber, size
-
-      call eliminate_observation_range_generic(obs, out, sweep(fieldo(field, 'Z'))%ZI, &
-                                               sweep(fieldo(field, 'Z'))%ZE, layoutnumber, size)
-   end subroutine
-
-! Generic Z-range check with optional inclusive lower bound
-   subroutine eliminate_observation_range(obs, sweep, field, layoutnumber, size, lower_inclusive)
-      type(observable_t), intent(inout) :: obs
-      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
-      integer, intent(in) :: field, layoutnumber, size
-      logical, intent(in) :: lower_inclusive
-
-      if (lower_inclusive) then
-         if ((obs%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. (obs%ZI < sweep(fieldo(field, 'Z'))%ZI)) obs%What = nothing
-      else
-        if ((obs%ZI >= sweep(fieldo(field,'Z'))%ZE) .and. (layoutnumber /= size-1) .or. (obs%ZI < sweep(fieldo(field,'Z'))%ZI)) obs%What = nothing
-      end if
-   end subroutine
-
-! Generic subroutine for currents
-   subroutine eliminate_observation_current(obs, out, sweep, field, layoutnumber, size)
-      type(observable_t), intent(inout) :: obs
-      type(item_t), intent(inout) :: out
-      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
-      integer, intent(in) :: field, layoutnumber, size
-
-  call eliminate_observation_range_generic(obs, out, sweep(fieldo(field, 'Z'))%ZI, sweep(fieldo(field, 'Z'))%ZE, layoutnumber, size)
-      if ((field == iCur .or. field == iCurX .or. field == iCurY .or. field == mapvtk)) then
-         obs%ZE = min(obs%ZE, sweep(iHx)%ZE)
-      end if
-   end subroutine
-
-! Far field specialized
-   subroutine eliminate_observation_farfield(obs, out, sweep, ZI, ZE, layoutnumber, size)
-      type(observable_t), intent(inout) :: obs
-      type(item_t), intent(inout) :: out
-      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
-      integer(kind=4), intent(in) :: ZI, ZE, layoutnumber, size
-
-      call eliminate_observation_range_generic(obs, out, sweep(iHz)%ZI, sweep(iHz)%ZE, layoutnumber, size, ZI, ZE)
-   end subroutine
-
-! The ultimate generic routine for MPI and Z-limits
-   subroutine eliminate_observation_range_generic(obs, out, Z_lower, Z_upper, layoutnumber, size, Zstart, Zend)
-      type(observable_t), intent(inout) :: obs
-      type(item_t), intent(inout) :: out
-      integer, intent(in) :: Z_lower, Z_upper, layoutnumber, size
-      integer, optional, intent(in) :: Zstart, Zend
-
-      integer :: zi_local, ze_local
-      zi_local = merge(Zstart, obs%ZI, present(Zstart))
-      ze_local = merge(Zend, obs%ZE, present(Zend))
-
-      if ((zi_local > Z_upper) .or. (ze_local < Z_lower)) then
-         obs%What = nothing
-#ifdef CompileWithMPI
-         out%MPISubComm = -1
-      else
-         out%MPISubComm = 1
-      end if
-      out%MPIRoot = 0
-      if ((obs%ZI >= Z_lower) .and. (obs%ZI <= Z_upper)) out%MPIRoot = layoutnumber
-      call MPIinitSubcomm(layoutnumber, size, out%MPISubComm, out%MPIRoot, out%MPIGroupIndex)
-#endif
-      end if
-      end subroutine
+! subroutine eliminate_unnecessary_observation_points(observation_probe, output_item, sweep, SINPMLSweep, ZI, ZE, layoutnumber, size)
+!      type(item_t), intent(inout) :: output_item
+!      type(observable_t), intent(inout) :: observation_probe
+!      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep, SINPMLSweep
+!      integer(kind=4), intent(in) :: ZI, ZE, layoutnumber, size
+!      integer(kind=4) :: field
+!
+!      ! Initialize output_item trancos
+!      output_item%Xtrancos = observation_probe%Xtrancos
+!      output_item%Ytrancos = observation_probe%Ytrancos
+!      output_item%Ztrancos = observation_probe%Ztrancos
+!
+!      output_item%XItrancos = ceiling(real(observation_probe%XI)/real(output_item%Xtrancos))
+!      output_item%YItrancos = ceiling(real(observation_probe%YI)/real(output_item%Ytrancos))
+!      output_item%ZItrancos = ceiling(real(observation_probe%ZI)/real(output_item%Ztrancos))
+!
+!      output_item%XEtrancos = int(observation_probe%XE/output_item%Xtrancos)
+!      output_item%YEtrancos = int(observation_probe%YE/output_item%Ytrancos)
+!      output_item%ZEtrancos = int(observation_probe%ZE/output_item%Ztrancos)
+!
+!#ifdef CompileWithMPI
+!      output_item%MPISubComm = -1
+!#endif
+!
+!      field = observation_probe%What
+!
+!      select case (field)
+!      case (iBloqueJx, iBloqueJy, iBloqueMx, iBloqueMy, iExC, iEyC, iHzC, iMhC, iEzC, iHxC, iHyC, iMeC)
+!         call eliminate_observation_block(observation_probe, output_item, sweep, field, layoutnumber, size)
+!      case (iEx, iVx, iEy, iVy, iHz, iBloqueMz, iJx, iJy, iQx, iQy)
+!         call eliminate_observation_range(observation_probe, sweep, field, layoutnumber, size, lower_inclusive=.false.)
+!      case (iEz, iVz, iJz, iQz, iBloqueJz, iHx, iHy)
+!         call eliminate_observation_range(observation_probe, sweep, field, layoutnumber, size, lower_inclusive=.true.)
+!      case (iCur, iCurX, iCurY, iCurZ, mapvtk)
+!         call eliminate_observation_current(observation_probe, output_item, sweep, field, layoutnumber, size)
+!      case (FarField)
+!         call eliminate_observation_farfield(observation_probe, output_item, SINPMLSweep, ZI, ZE, layoutnumber, size)
+!      end select
+!   end subroutine
+!
+!! Generic subroutine for block observations
+!   subroutine eliminate_observation_block(obs, out, sweep, field, layoutnumber, size)
+!      type(observable_t), intent(inout) :: obs
+!      type(item_t), intent(inout) :: out
+!      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
+!      integer, intent(in) :: field, layoutnumber, size
+!
+!      call eliminate_observation_range_generic(obs, out, sweep(fieldo(field, 'Z'))%ZI, &
+!                                               sweep(fieldo(field, 'Z'))%ZE, layoutnumber, size)
+!   end subroutine
+!
+!! Generic Z-range check with optional inclusive lower bound
+!   subroutine eliminate_observation_range(obs, sweep, field, layoutnumber, size, lower_inclusive)
+!      type(observable_t), intent(inout) :: obs
+!      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
+!      integer, intent(in) :: field, layoutnumber, size
+!      logical, intent(in) :: lower_inclusive
+!
+!      if (lower_inclusive) then
+!         if ((obs%ZI > sweep(fieldo(field, 'Z'))%ZE) .or. (obs%ZI < sweep(fieldo(field, 'Z'))%ZI)) obs%What = nothing
+!      else
+!        if ((obs%ZI >= sweep(fieldo(field,'Z'))%ZE) .and. (layoutnumber /= size-1) .or. (obs%ZI < sweep(fieldo(field,'Z'))%ZI)) obs%What = nothing
+!      end if
+!   end subroutine
+!
+!! Generic subroutine for currents
+!   subroutine eliminate_observation_current(obs, out, sweep, field, layoutnumber, size)
+!      type(observable_t), intent(inout) :: obs
+!      type(item_t), intent(inout) :: out
+!      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
+!      integer, intent(in) :: field, layoutnumber, size
+!
+!  call eliminate_observation_range_generic(obs, out, sweep(fieldo(field, 'Z'))%ZI, sweep(fieldo(field, 'Z'))%ZE, layoutnumber, size)
+!      if ((field == iCur .or. field == iCurX .or. field == iCurY .or. field == mapvtk)) then
+!         obs%ZE = min(obs%ZE, sweep(iHx)%ZE)
+!      end if
+!   end subroutine
+!
+!! Far field specialized
+!   subroutine eliminate_observation_farfield(obs, out, sweep, ZI, ZE, layoutnumber, size)
+!      type(observable_t), intent(inout) :: obs
+!      type(item_t), intent(inout) :: out
+!      type(XYZlimit_t), dimension(1:6), intent(in) :: sweep
+!      integer(kind=4), intent(in) :: ZI, ZE, layoutnumber, size
+!
+!      call eliminate_observation_range_generic(obs, out, sweep(iHz)%ZI, sweep(iHz)%ZE, layoutnumber, size, ZI, ZE)
+!   end subroutine
+!
+!! The ultimate generic routine for MPI and Z-limits
+!   subroutine eliminate_observation_range_generic(obs, out, Z_lower, Z_upper, layoutnumber, size, Zstart, Zend)
+!      type(observable_t), intent(inout) :: obs
+!      type(item_t), intent(inout) :: out
+!      integer, intent(in) :: Z_lower, Z_upper, layoutnumber, size
+!      integer, optional, intent(in) :: Zstart, Zend
+!
+!      integer :: zi_local, ze_local
+!      zi_local = merge(Zstart, obs%ZI, present(Zstart))
+!      ze_local = merge(Zend, obs%ZE, present(Zend))
+!
+!      if ((zi_local > Z_upper) .or. (ze_local < Z_lower)) then
+!         obs%What = nothing
+!#ifdef CompileWithMPI
+!         out%MPISubComm = -1
+!      else
+!         out%MPISubComm = 1
+!      end if
+!      out%MPIRoot = 0
+!      if ((obs%ZI >= Z_lower) .and. (obs%ZI <= Z_upper)) out%MPIRoot = layoutnumber
+!      call MPIinitSubcomm(layoutnumber, size, out%MPISubComm, out%MPIRoot, out%MPIGroupIndex)
+!#endif
+!      end if
+!      end subroutine
 
    end module output

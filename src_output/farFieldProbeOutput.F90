@@ -15,7 +15,7 @@ module mod_farFieldOutput
    !===========================
 contains
 
-  subroutine init_farField_probe_output(this, sgg, lowerBound, upperBound, field, domain, sphericRange, control, outputTypeExtension, fileNormalize, eps0, mu0, geometricMedia, SINPML_fullsize, bounds)
+  subroutine init_farField_probe_output(this, sgg, lowerBound, upperBound, field, domain, sphericRange, outputTypeExtension, fileNormalize,control, problemInfo, eps0, mu0)
       type(far_field_probe_output_t), intent(out) :: this
       type(domain_t), intent(in) :: domain
       type(SGGFDTDINFO), intent(in) :: sgg
@@ -23,11 +23,9 @@ contains
       integer(kind=SINGLE), intent(in) :: field
       type(spheric_domain_t), intent(in) :: sphericRange
       type(sim_control_t), intent(in) :: control
-      type(media_matrices_t), intent(in) :: geometricMedia
-      type(limit_t), dimension(:), intent(in)  ::  SINPML_fullsize
       character(len=*), intent(in) :: fileNormalize, outputTypeExtension
+      type(problem_info_t), intent(in) :: problemInfo
       real(kind=RKIND), intent(in) :: mu0, eps0
-      type(bounds_t), intent(in) :: bounds
 
       if (domain%domainType /= TIME_DOMAIN) call StopOnError(0, 0, "Unexpected domain type for farField probe")
 
@@ -38,8 +36,9 @@ contains
       this%fileUnitFreq = 2025 !Dummy unit for now
 
       call InitFarField(sgg, &
-         geometricMedia%sggMiEx,geometricMedia%sggMiEy,geometricMedia%sggMiEz,geometricMedia%sggMiHx,geometricMedia%sggMiHy,geometricMedia%sggMiHz, &
-                        control%layoutnumber, control%size, bounds, control%resume, &
+         problemInfo%geometryToMaterialData%sggMiEx, problemInfo%geometryToMaterialData%sggMiEy, problemInfo%geometryToMaterialData%sggMiEz, &
+         problemInfo%geometryToMaterialData%sggMiHx, problemInfo%geometryToMaterialData%sggMiHy, problemInfo%geometryToMaterialData%sggMiHz, &
+                        control%layoutnumber, control%size, problemInfo%simulationBounds, control%resume, &
                         this%fileUnitFreq, this%path, &
                         lowerBound%x, upperBound%x, &
                         lowerBound%y, upperBound%y, &
@@ -47,7 +46,7 @@ contains
                         domain%fstart, domain%fstop, domain%fstep, &
                         sphericRange%phiStart, sphericRange%phiStop, sphericRange%phiStep, &
                         sphericRange%thetaStart, sphericRange%thetaStop, sphericRange%thetaStep, &
-                        fileNormalize, SINPML_fullsize, &
+                        fileNormalize, problemInfo%problemDimension, &
                         control%facesNF2FF, control%NF2FFDecim, &
 #ifdef CompileWithMPI
                         output(ii)%item(i)%MPISubComm, output(ii)%item(i)%MPIRoot, &

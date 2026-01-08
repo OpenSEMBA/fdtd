@@ -296,11 +296,10 @@ contains
       call create_or_clear_file(file_time, this%fileUnitTime, err)
    end subroutine create_wire_charge_probe_output
 
-   subroutine update_wire_current_probe_output(this, step, wiresflavor, wirecrank, InvEps, InvMu)
+   subroutine update_wire_current_probe_output(this, step, control, InvEps, InvMu)
       type(wire_current_probe_output_t), intent(inout) :: this
       real(kind=RKIND_tiempo), intent(in) :: step
-      character(len=*), intent(in) :: wiresflavor
-      logical, intent(in) :: wirecrank
+      type(sim_control_t), intent(in) :: control
       real(KIND=RKIND), pointer, dimension(:), intent(in) :: InvEps, InvMu
 
       type(CurrentSegments), pointer  ::  segmDumm
@@ -311,7 +310,7 @@ contains
       class(Segment), pointer  ::  segmDumm_Slanted
 #endif
 
-      select case (trim(adjustl(wiresflavor)))
+      select case (trim(adjustl(control%wiresflavor)))
       case ('holland', 'transition')
          this%nTime = this%nTime + 1
          this%timeStep(this%nTime) = step
@@ -320,7 +319,7 @@ contains
          this%currentValues(this%nTime)%current = this%sign*SegmDumm%currentpast
          this%currentValues(this%nTime)%deltaVoltage = -SegmDumm%Efield_wire2main*SegmDumm%delta
 
-         if (wirecrank) then
+         if (control%wirecrank) then
             this%currentValues(this%nTime)%plusVoltage = this%sign* &
                           (((SegmDumm%ChargePlus%ChargePresent)))*SegmDumm%Lind*(InvMu(SegmDumm%indexmed)*InvEps(SegmDumm%indexmed))
             this%currentValues(this%nTime)%minusVoltage = this%sign* &

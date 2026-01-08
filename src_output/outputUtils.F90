@@ -31,6 +31,7 @@ module mod_outputUtils
    public :: computeJ1
    public :: computeJ2
    public :: alloc_and_init
+   public :: fieldo
    !===========================
 
    !===========================
