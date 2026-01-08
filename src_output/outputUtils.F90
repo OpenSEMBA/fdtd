@@ -62,9 +62,9 @@ module mod_outputUtils
 
 contains
    subroutine alloc_and_init_time_1D(array, n1, initVal)
-      integer(RKIND_tiempo), allocatable, intent(inout) :: array(:)
+      real(RKIND_tiempo), allocatable, intent(inout) :: array(:)
       integer, intent(IN) :: n1
-      integer(RKIND_tiempo), intent(IN) :: initVal
+      real(RKIND_tiempo), intent(IN) :: initVal
 
       allocate (array(n1))
       array = initVal

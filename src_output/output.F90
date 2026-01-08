@@ -6,7 +6,6 @@ module output
    use mod_pointProbeOutput
    use mod_wireProbeOutput
    use mod_bulkProbeOutput
-   use mod_volumicProbeOutput
    use mod_movieProbeOutput
    use mod_frequencySliceProbeOutput
    use mod_farFieldOutput
@@ -396,8 +395,9 @@ contains
          case (BULK_PROBE_ID)
          case (VOLUMIC_CURRENT_PROBE_ID)
          case (MOVIE_PROBE_ID)
-            call close_pvd(outputs(i)%movieProbe%PDVUnit)
+            call close_pvd(outputs(i)%movieProbe%fileUnitTime)
          case (FREQUENCY_SLICE_PROBE_ID)
+            call close_pvd(outputs(i)%frequencySliceProbe%fileUnitFreq)
          end select
       end do
    end subroutine

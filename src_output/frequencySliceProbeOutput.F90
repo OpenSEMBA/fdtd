@@ -17,11 +17,23 @@ module mod_frequencySliceProbeOutput
    !===========================
    !  Private interface summary
    !===========================
-   private :: get_measurements_coords
-   private :: save_current_data
-   private :: write_vtu_frequency_slice
+   private :: save_field
+   private :: save_field_module
+   private :: save_field_component
+   private :: save_current
+   private :: save_current_module
+   private :: save_current_component
    private :: update_pvd
+   private :: write_vtu_frequency_slice
    !===========================
+
+   abstract interface
+      logical function logical_func(component, i, j, k, problemInfo)
+         import :: problem_info_t
+         type(problem_info_t), intent(in) :: problemInfo
+         integer, intent(in) :: component, i, j, k
+      end function logical_func
+   end interface
 
 contains
 
@@ -107,9 +119,9 @@ contains
 
       else if (any(VOLUMIC_X_MEASURE == request)) then
          select case (request)
-         case (iCurX); call save_current_component(this%xValueForFreq, fieldsReference, problemInfo, iEx, this%auxExp_E, this%nFreq, step)
-         case (iExC); call save_field_component(this%xValueForFreq, fieldsReference%E%x, step, problemInfo, iEx)
-         case (iHxC); call save_field_component(this%xValueForFreq, fieldsReference%H%x, step, problemInfo, iHx)
+         case (iCurX); call save_current_component(this, this%xValueForFreq, fieldsReference, problemInfo, iEx, this%auxExp_E, this%nFreq, step)
+         case (iExC); call save_field_component(this, this%xValueForFreq, fieldsReference%E%x, step, problemInfo, iEx)
+         case (iHxC); call save_field_component(this, this%xValueForFreq, fieldsReference%H%x, step, problemInfo, iHx)
          case default; call StopOnError(control%layoutnumber, control%size, "Volumic measure not supported")
          end select
 
@@ -178,10 +190,10 @@ contains
       end do
    end subroutine
 
-   subroutine save_current(valorComplex, direction, coordIdx, i, j, k, fieldsReference, auxExp, nFreq, step)
+   subroutine save_current(valorComplex, direction, coordIdx, i, j, k, fieldsReference, auxExponential, nFreq, step)
       integer, intent(in) :: direction
-      complex(kind=CKIND), intent(inout) :: valorComplex(:,:)
-      complex(kind=CKIND), intent(in) :: auxExp
+      complex(kind=CKIND), intent(inout) :: valorComplex(:, :)
+      complex(kind=CKIND), intent(in) :: auxExponential(:)
       integer, intent(in) :: i, j, k, coordIdx, nFreq
       type(fields_reference_t), intent(in) :: fieldsReference
       real(kind=RKIND_tiempo), intent(in) :: step
@@ -193,20 +205,22 @@ contains
       jdir = computej(direction, i, j, k, fieldsReference)
 
       do iter = 1, nFreq
-         valorComplex(i, coordIdx) = valorComplex(i, coordIdx) + (auxExp(i)**step)*jdir
+         valorComplex(i, coordIdx) = valorComplex(i, coordIdx) + (auxExponential(i)**step)*jdir
       end do
    end subroutine
 
-   subroutine save_field_module(this, field, simTime, request, problemInfo)
+   subroutine save_field_module(this, fieldInfo, simTime, request, problemInfo)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-      type(field_data_t), pointer :: field
+      type(field_data_t), intent(in) :: fieldInfo
       real(kind=RKIND_tiempo), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: request
 
+      complex(kind=CKIND), dimension(this%nFreq) :: auxExponential
       integer :: i, j, k, coordIdx
 
-      this%timeStep(this%nTime) = simTime
+      if (iMHC == request) auxExponential = this%auxExp_H**simTime
+      if (iMEC == request) auxExponential = this%auxExp_E**simTime
 
       coordIdx = 0
       do i = this%mainCoords%x, this%auxCoords%x
@@ -214,9 +228,9 @@ contains
       do k = this%mainCoords%z, this%auxCoords%z
          if (isValidPointForField(request, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_field(this%xValueForFreq, this%nTime, coordIdx, field%x(i, j, k))
-            call save_field(this%yValueForFreq, this%nTime, coordIdx, field%y(i, j, k))
-            call save_field(this%zValueForFreq, this%nTime, coordIdx, field%z(i, j, k))
+            call save_field(this%xValueForFreq, auxExponential, fieldInfo%x(i, j, k), this%nFreq, coordIdx)
+            call save_field(this%yValueForFreq, auxExponential, fieldInfo%y(i, j, k), this%nFreq, coordIdx)
+            call save_field(this%zValueForFreq, auxExponential, fieldInfo%z(i, j, k), this%nFreq, coordIdx)
          end if
       end do
       end do
@@ -227,12 +241,16 @@ contains
    subroutine save_field_component(this, fieldData, fieldComponent, simTime, problemInfo, fieldDir)
       type(frequency_slice_probe_output_t), intent(inout) :: this
       complex(kind=CKIND), intent(inout) :: fieldData(:, :)
-      type(field_data_t), intent(in) :: fieldComponent(:, :, :)
+      real(kind=RKIND), intent(in) :: fieldComponent(:, :, :)
       real(kind=RKIND_tiempo), intent(in) :: simTime
       type(problem_info_t), intent(in) :: problemInfo
       integer, intent(in) :: fieldDir
 
+      complex(kind=CKIND), dimension(this%nFreq) :: auxExponential
       integer :: i, j, k, coordIdx
+
+      if (any(MAGNETIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%auxExp_H**simTime
+      if (any(ELECTRIC_FIELD_DIRECTION == fieldDir)) auxExponential = this%auxExp_E**simTime
 
       coordIdx = 0
       do i = this%mainCoords%x, this%auxCoords%x
@@ -240,18 +258,24 @@ contains
       do k = this%mainCoords%z, this%auxCoords%z
          if (isValidPointForField(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_field(fieldData, timeIdx, coordIdx, fieldComponent(i, j, k))
+            call save_field(fieldData, auxExponential, fieldComponent(i, j, k), this%nFreq, coordIdx)
          end if
       end do
       end do
       end do
    end subroutine
 
-   subroutine save_field(fieldData, timeIdx, coordIdx, fieldValue)
-      real(kind=RKIND), intent(inout) :: fieldData(:, :)
-      integer(kind=SINGLE), intent(in) :: timeIdx, coordIdx
-      real(kind=RKIND), intent(in) :: fieldValue
-      fieldData(timeIdx, coordIdx) = fieldValue
+   subroutine save_field(valorComplex, auxExp, fieldValue, nFreq, coordIdx)
+      complex(kind=CKIND), intent(inout) :: valorComplex(:, :)
+      complex(kind=CKIND), intent(in) :: auxExp(:)
+      real(KIND=RKIND), intent(in) :: fieldValue
+      integer(KIND=SINGLE), intent(in) :: nFreq, coordIdx
+
+      integer :: freq
+
+      do freq = 1, nFreq
+         valorComplex = valorComplex(freq, coordIdx) + auxExp(freq)*fieldValue
+      end do
    end subroutine
 
    subroutine flush_frequency_slice_probe_output(this)
@@ -259,7 +283,7 @@ contains
       integer :: status, i
 
       do i = 1, this%nFreq
-         call update_pvd(this, i, this%PDVUnit)
+         call update_pvd(this, i, this%fileUnitFreq)
       end do
    end subroutine flush_frequency_slice_probe_output
 
@@ -275,20 +299,13 @@ contains
       type(vtk_file) :: vtkOutput
       integer :: ierr, npts, i
       real(kind=RKIND), allocatable :: x(:), y(:), z(:)
-      complex(kind=CKIND), allocatable :: Componentx(:), Componenty(:), Componentz(:)
+      real(kind=RKIND), allocatable :: Componentx(:), Componenty(:), Componentz(:)
       logical :: writeX, writeY, writeZ
 
       !================= Determine the measure type =================
-      select case (this%component)
-      case (CURRENT_MEASURE)
-         requestName = 'Current'
-      case (ELECTRIC_FIELD_MEASURE)
-         requestName = 'Electric'
-      case (MAGNETIC_FIELD_MEASURE)
-         requestName = 'Magnetic'
-      case default
-         requestName = 'Unknown'
-      end select
+      if (any(CURRENT_MEASURE == this%component)) requestName = 'Current'
+      if (any(ELECTRIC_FIELD_MEASURE == this%component)) requestName = 'Electric'
+      if (any(MAGNETIC_FIELD_MEASURE == this%component)) requestName = 'Magnetic'
 
       !================= Determine which components to write =================
       writeX = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_X_MEASURE == this%component)
@@ -311,21 +328,21 @@ contains
       if (writeX) then
          allocate (Componentx(npts))
          do i = 1, npts
-            Componentx(i) = this%xValueForFreq(freq, i)
+            Componentx(i) = abs(this%xValueForFreq(freq, i))
          end do
       end if
 
       if (writeY) then
          allocate (Componenty(npts))
          do i = 1, npts
-            Componenty(i) = this%yValueForFreq(freq, i)
+            Componenty(i) = abs(this%yValueForFreq(freq, i))
          end do
       end if
 
       if (writeZ) then
          allocate (Componentz(npts))
          do i = 1, npts
-            Componentz(i) = this%zValueForFreq(freq, i)
+            Componentz(i) = abs(this%zValueForFreq(freq, i))
          end do
       end if
 
@@ -384,6 +401,7 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
 
       procedure(logical_func), pointer :: checker => null()  ! Pointer to logical function
+      integer :: i, j, k
       integer :: component, count
       select case (this%component)
       case (iCur)
@@ -432,73 +450,72 @@ contains
       end do
       end do
       end do
-      end do
       this%nPoints = count
 
-      end subroutine
+   end subroutine
 
-      logical function isValidPointForCurrent(request, i, j, k, problemInfo)
-         integer, intent(in) :: i, j, k, request
-         type(problem_info_t) :: problemInfo
-         select case (request)
-         case (iCur)
-            isValidPointForCurrent = volumicCurrentRequest(request, i, j, k, problemInfo)
-         case (iEx, iEy, iEz)
-            isValidPointForCurrent = componentCurrentRequest(request, i, j, k, problemInfo)
-         case default
-            isValidPointForCurrent = .false.
-         end select
-      end function
+   logical function isValidPointForCurrent(request, i, j, k, problemInfo)
+      integer, intent(in) :: i, j, k, request
+      type(problem_info_t), intent(in) :: problemInfo
+      select case (request)
+      case (iCur)
+         isValidPointForCurrent = volumicCurrentRequest(request, i, j, k, problemInfo)
+      case (iEx, iEy, iEz)
+         isValidPointForCurrent = componentCurrentRequest(request, i, j, k, problemInfo)
+      case default
+         isValidPointForCurrent = .false.
+      end select
+   end function
 
-      logical function isValidPointForField(request, i, j, k, problemInfo)
-         integer, intent(in) :: i, j, k, request
-         type(problem_info_t) :: problemInfo
-         select case (request)
-         case (iMEC)
-            isValidPointForField = volumicElectricRequest(request, i, j, k, problemInfo)
-         case (iMHC)
-            isValidPointForField = volumicMagneticRequest(request, i, j, k, problemInfo)
-         case (iEx, iEy, iEz, iHx, iHy, iHz)
-            isValidPointForField = componentFieldRequest(request, i, j, k, problemInfo)
-         case default
-            isValidPointForField = .false.
-         end select
-      end function
+   logical function isValidPointForField(request, i, j, k, problemInfo)
+      integer, intent(in) :: i, j, k, request
+      type(problem_info_t), intent(in) :: problemInfo
+      select case (request)
+      case (iMEC)
+         isValidPointForField = volumicElectricRequest(request, i, j, k, problemInfo)
+      case (iMHC)
+         isValidPointForField = volumicMagneticRequest(request, i, j, k, problemInfo)
+      case (iEx, iEy, iEz, iHx, iHy, iHz)
+         isValidPointForField = componentFieldRequest(request, i, j, k, problemInfo)
+      case default
+         isValidPointForField = .false.
+      end select
+   end function
 
-      logical function volumicCurrentRequest(request, i, j, k, problemInfo)
-         integer, intent(in) :: i, j, k, request
-         type(problem_info_t) :: problemInfo
-         volumicCurrentRequest = componentCurrentRequest(iEx, i, j, k, problemInfo) &
-                                 .or. componentCurrentRequest(iEy, i, j, k, problemInfo) &
-                                 .or. componentCurrentRequest(iEz, i, j, k, problemInfo)
-      end function
-      logical function volumicElectricRequest(request, i, j, k, problemInfo)
-         integer, intent(in) :: i, j, k, request
-         type(problem_info_t) :: problemInfo
-         volumicCurrentRequest = componentFieldRequest(iEx, i, j, k, problemInfo) &
-                                 .or. componentFieldRequest(iEy, i, j, k, problemInfo) &
-                                 .or. componentFieldRequest(iEz, i, j, k, problemInfo)
-      end function
-      logical function volumicMagneticRequest(request, i, j, k, problemInfo)
-         integer, intent(in) :: i, j, k, request
-         type(problem_info_t) :: problemInfo
-         volumicCurrentRequest = componentFieldRequest(iHx, i, j, k, problemInfo) &
-                                 .or. componentFieldRequest(iHy, i, j, k, problemInfo) &
-                                 .or. componentFieldRequest(iHz, i, j, k, problemInfo)
-      end function
-      logical function componentCurrentRequest(fieldDir, i, j, k, problemInfo)
-         integer, intent(in) :: i, j, k, fieldDir
-         type(problem_info_t) :: problemInfo
-         componentCurrentRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
-         if (componentCurrentRequest) then
-            componentCurrentRequest = isPEC(fieldDir, i, j, k, problemInfo) &
-                                    .or. isThinWire(fieldDir, i, j, k, problemInfo)
-         end if
-      end function
-      logical function componentFieldRequest(fieldDir, i, j, k, problemInfo)
-         integer, intent(in) :: i, j, k, fieldDir
-         type(problem_info_t) :: problemInfo
-         componentFieldRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
-      end function
+   logical function volumicCurrentRequest(request, i, j, k, problemInfo)
+      integer, intent(in) :: i, j, k, request
+      type(problem_info_t), intent(in) :: problemInfo
+      volumicCurrentRequest = componentCurrentRequest(iEx, i, j, k, problemInfo) &
+                              .or. componentCurrentRequest(iEy, i, j, k, problemInfo) &
+                              .or. componentCurrentRequest(iEz, i, j, k, problemInfo)
+   end function
+   logical function volumicElectricRequest(request, i, j, k, problemInfo)
+      integer, intent(in) :: i, j, k, request
+      type(problem_info_t), intent(in) :: problemInfo
+      volumicElectricRequest = componentFieldRequest(iEx, i, j, k, problemInfo) &
+                               .or. componentFieldRequest(iEy, i, j, k, problemInfo) &
+                               .or. componentFieldRequest(iEz, i, j, k, problemInfo)
+   end function
+   logical function volumicMagneticRequest(request, i, j, k, problemInfo)
+      integer, intent(in) :: i, j, k, request
+      type(problem_info_t), intent(in) :: problemInfo
+      volumicMagneticRequest = componentFieldRequest(iHx, i, j, k, problemInfo) &
+                               .or. componentFieldRequest(iHy, i, j, k, problemInfo) &
+                               .or. componentFieldRequest(iHz, i, j, k, problemInfo)
+   end function
+   logical function componentCurrentRequest(fieldDir, i, j, k, problemInfo)
+      integer, intent(in) :: i, j, k, fieldDir
+      type(problem_info_t), intent(in) :: problemInfo
+      componentCurrentRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
+      if (componentCurrentRequest) then
+         componentCurrentRequest = isPEC(fieldDir, i, j, k, problemInfo) &
+                                   .or. isThinWire(fieldDir, i, j, k, problemInfo)
+      end if
+   end function
+   logical function componentFieldRequest(fieldDir, i, j, k, problemInfo)
+      integer, intent(in) :: i, j, k, fieldDir
+      type(problem_info_t), intent(in) :: problemInfo
+      componentFieldRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
+   end function
 
-   end module mod_frequencySliceProbeOutput
+end module mod_frequencySliceProbeOutput

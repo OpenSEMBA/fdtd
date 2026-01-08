@@ -186,6 +186,8 @@ module  FDETYPES
    integer (kind=4),  parameter :: VOLUMIC_Y_MEASURE(3) = [iCury, iEyC, iHyC]
    integer (kind=4),  parameter :: VOLUMIC_Z_MEASURE(3) = [iCurz, iEzC, iHzC]
 
+   integer (kind=4),  parameter :: MAGNETIC_FIELD_DIRECTION(3) = [iEx, iEy, iEz]
+   integer (kind=4),  parameter :: ELECTRIC_FIELD_DIRECTION(3) = [iHx, iHy, iHz]
    integer (kind=4),  parameter :: CURRENT_MEASURE(4) = [iCur, iCurx, iCury, iCurz]
    integer (kind=4),  parameter :: ELECTRIC_FIELD_MEASURE(4) = [iMEC, iExC, iEyC, iEzC]
    integer (kind=4),  parameter :: MAGNETIC_FIELD_MEASURE(4) = [iMHC, iHxC, iHyC, iHzC]
