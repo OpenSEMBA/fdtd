@@ -70,6 +70,7 @@ contains
       call count_required_coords(this, problemInfo)
 
       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%coords, 3, this%nPoints, 0_SINGLE)
 
       if (any(VOLUMIC_M_MEASURE == this%component)) then
          call alloc_and_init(this%xValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
@@ -279,10 +280,18 @@ contains
       subroutine clear_memory_data()
          this%nTime = 0
          this%timeStep = 0.0_RKIND
-         this%xValueForTime = 0.0_RKIND
-         this%yValueForTime = 0.0_RKIND
-         this%zValueForTime = 0.0_RKIND
-      end subroutine clear_memory_data
+         if (any(VOLUMIC_M_MEASURE==this%component)) then
+            this%xValueForTime = 0.0_RKIND
+            this%yValueForTime = 0.0_RKIND
+            this%zValueForTime = 0.0_RKIND
+         else if (any(VOLUMIC_X_MEASURE==this%component)) then
+            this%xValueForTime = 0.0_RKIND                        
+         else if (any(VOLUMIC_Y_MEASURE==this%component)) then 
+            this%yValueForTime = 0.0_RKIND
+         else if (any(VOLUMIC_Z_MEASURE==this%component)) then 
+            this%zValueForTime = 0.0_RKIND
+         end if
+         end subroutine clear_memory_data
 
    end subroutine flush_movie_probe_output
 
@@ -341,14 +350,14 @@ contains
       if (writeY) then
          allocate (Componenty(npts))
          do i = 1, npts
-            Componenty(i) = this%xValueForTime(stepIndex, i)
+            Componenty(i) = this%yValueForTime(stepIndex, i)
          end do
       end if
 
       if (writeZ) then
          allocate (Componentz(npts))
          do i = 1, npts
-            Componentz(i) = this%xValueForTime(stepIndex, i)
+            Componentz(i) = this%zValueForTime(stepIndex, i)
          end do
       end if
 

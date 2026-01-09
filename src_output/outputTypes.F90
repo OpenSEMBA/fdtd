@@ -90,20 +90,20 @@ module outputTypes
 
    type, extends(abstract_probe_t) :: abstract_time_probe_t
       integer(kind=SINGLE) :: fileUnitTime
-      integer(kind=SINGLE) :: nTime
+      integer(kind=SINGLE) :: nTime = 0_SINGLE
       real(kind=RKIND_tiempo), allocatable :: timeStep(:)
    end type abstract_time_probe_t
 
    type, extends(abstract_probe_t) :: abstract_frequency_probe_t
       integer(kind=SINGLE) :: fileUnitFreq
-      integer(kind=SINGLE) :: nFreq
+      integer(kind=SINGLE) :: nFreq = 0_SINGLE
       real(kind=RKIND), allocatable    :: frequencySlice(:)
       complex(kind=CKIND), allocatable :: auxExp_E(:), auxExp_H(:)
    end type abstract_frequency_probe_t
 
    type, extends(abstract_probe_t) :: abstract_time_frequency_probe_t
       integer(kind=SINGLE) :: fileUnitTime, fileUnitFreq
-      integer(kind=SINGLE) :: nTime, nFreq
+      integer(kind=SINGLE) :: nTime = 0_SINGLE, nFreq = 0_SINGLE
       real(kind=RKIND_tiempo), allocatable :: timeStep(:)
       real(kind=RKIND), allocatable        :: frequencySlice(:)
       complex(kind=CKIND), allocatable     :: auxExp_E(:), auxExp_H(:)

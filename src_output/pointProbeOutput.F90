@@ -25,10 +25,14 @@ contains
       this%domain = domain
       this%path = get_output_path()
 
+      if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
+         call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
+         call alloc_and_init(this%valueForTime, BUFSIZE, 0.0_RKIND)
+      end if
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          this%nFreq = this%domain%fnum
          allocate (this%frequencySlice(this%domain%fnum))
-         allocate (this%valueForFreq(this%domain%fnum))
+         call alloc_and_init(this%valueForFreq, this%domain%fnum, (0.0_CKIND, 0.0_CKIND))
          do i = 1, this%nFreq
             call init_frequency_slice(this%frequencySlice, this%domain)
          end do

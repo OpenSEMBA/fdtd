@@ -3,6 +3,17 @@ module mod_assertionTools
   implicit none
   
 contains
+   function assert_true(boolean, errorMessage) result(err)
+      logical, intent(in) :: boolean
+      character(*), intent(in) :: errorMessage
+      integer :: err
+      if (boolean) then 
+         err = 0
+      else
+         err = 1
+         print *, 'ASSERTION FAILED: ', trim(errorMessage)
+      end if
+   end function
     function assert_integer_equal(val, expected, errorMessage) result(err)
 
       integer, intent(in) :: val

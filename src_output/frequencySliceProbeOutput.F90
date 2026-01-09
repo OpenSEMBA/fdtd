@@ -56,11 +56,13 @@ contains
       this%path = get_output_path()
 
       this%nFreq = domain%fnum
+      call alloc_and_init(this%frequencySlice, this%nFreq, 0.0_RKIND)
       do i = 1, this%nFreq
          call init_frequency_slice(this%frequencySlice, this%domain)
       end do
 
       call count_required_coords(this, problemInfo)
+      call alloc_and_init(this%coords, 3, this%nPoints, 0_SINGLE)
 
       if (any(VOLUMIC_M_MEASURE == this%component)) then
          call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))

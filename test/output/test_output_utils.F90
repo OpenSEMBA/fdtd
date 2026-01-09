@@ -59,29 +59,29 @@ contains
       call set_observation(obs, P, 'volumicProbe', domain, 'DummyFileNormalize')
    end function create_volumic_probe_observation
 
-   function create_movie_observation(xi, yi, zi, xe, ye, ze) result(observation)
-      integer, intent(in) :: xi, yi, zi, xe, ye, ze
+   function create_movie_observation(xi, yi, zi, xe, ye, ze, request) result(observation)
+      integer, intent(in) :: xi, yi, zi, xe, ye, ze, request
       type(Obses_t) :: observation
 
       type(observable_t), dimension(:), allocatable :: P
       type(observation_domain_t) :: domain
 
       allocate (P(1))
-      P(1) = create_observable(xi, yi, zi, xe, ye, ze, iCur)
+      P(1) = create_observable(xi, yi, zi, xe, ye, ze, request)
       call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
 
       call set_observation(observation, P, 'movieProbe', domain, 'DummyFileNormalize')
    end function create_movie_observation
 
-   function create_frequency_slice_observation(xi, yi, zi, xe, ye, ze) result(observation)
-      integer, intent(in) :: xi, yi, zi, xe, ye, ze
+   function create_frequency_slice_observation(xi, yi, zi, xe, ye, ze, request) result(observation)
+      integer, intent(in) :: xi, yi, zi, xe, ye, ze, request
       type(Obses_t) :: observation
 
       type(observable_t), dimension(:), allocatable :: P
       type(observation_domain_t) :: domain
 
       allocate (P(1))
-      P(1) = create_observable(xi, yi, zi, xe, ye, ze, iCur)
+      P(1) = create_observable(xi, yi, zi, xe, ye, ze, request)
       call initialize_observation_frequency_domain(domain, 0.0_RKIND, 100.0_RKIND, 20.0_RKIND)
 
       call set_observation(observation, P, 'frequency_sliceProbe', domain, 'DummyFileNormalize')

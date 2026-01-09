@@ -2051,7 +2051,7 @@ contains
          integer(kind=4) :: mindum
          IF (this%thereAre%Observation) then
 #ifdef CompileWithNewOutputModule
-            call update_outputs(this%media, this%sgg%Med, this%sinPML_fullsize,this%control, this%sgg%tiempo, this%n + 1, fieldReference, this%bounds)
+            call update_outputs(this%control, this%sgg%tiempo, this%n + 1, fieldReference)
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
                call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
