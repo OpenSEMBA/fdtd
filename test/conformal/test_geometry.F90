@@ -185,7 +185,7 @@ integer function test_geometry_triangle_cell() bind(C) result(err)
     implicit none
     type(triangle_t) :: t
     type(side_t), dimension(3) :: sides
-    integer, dimension(3) :: cell
+    integer(kind=4), dimension(3) :: cell
     err = 0
     
     t%vertices(1)%position = [0.0,0.0,0.0]; t%vertices(2)%position = [0.0,0.0,1.0]; t%vertices(3)%position = [0.0,1.0,0.0]

@@ -244,42 +244,50 @@ contains
                id = this%getIntAt(je, J_ID)
                elementType = this%getStrAt(je, J_TYPE)
                select case (elementType)
-                case (J_ELEM_TYPE_NODE)
+               case (J_ELEM_TYPE_NODE)
                   coordIds = this%getIntsAt(je, J_COORDINATE_IDS)
                   node%coordIds = coordIds
                   call mesh%addElement(id, node)
-                case (J_ELEM_TYPE_POLYLINE)
+               case (J_ELEM_TYPE_POLYLINE)
                   coordIds = this%getIntsAt(je, J_COORDINATE_IDS)
                   polyline%coordIds = coordIds
                   call mesh%addElement(id, polyline)
-                CASE (J_ELEM_TYPE_CELL)
+               CASE (J_ELEM_TYPE_CELL)
                   block
-                     type(cell_region_t) :: cR
-                     type(cell_interval_t), dimension(:), allocatable :: intervals
-                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-                     call mesh%addCellRegion(id, cR)
-                     
-                  end block
-                case (J_ELEM_TYPE_CONF_VOLUME, J_ELEM_TYPE_CONF_SURFACE) 
-                  block 
-                     type(conformal_region_t) :: cV
-                     type(coordinate_t) :: c
-                     integer :: j, k
-                     cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
-                     do k = 1, size(cV%triangles)
-                        do j = 1, 3
-                           c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
-                           cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
-                        end do
-                     end do
-                     cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                     logical :: isConformal
+                     type(json_value), pointer :: triangles
+                     call this%core%get(je, J_CONF_VOLUME_TRIANGLES, triangles, found=isConformal)
+                     if (.not. isConformal) then 
+                        block
+                           type(cell_region_t) :: cR
+                           type(cell_interval_t), dimension(:), allocatable :: intervals
+                           cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                           call mesh%addCellRegion(id, cR)
+                        end block
+                     else 
+                        block 
+                           type(conformal_region_t) :: cV
+                           type(coordinate_t) :: c
+                           integer :: j, k
+                           character (len=:), allocatable :: subtype
+                           cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+                           do k = 1, size(cV%triangles)
+                              do j = 1, 3
+                                 c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
+                                 cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+                              end do
+                           end do
+                           cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                           subtype = this%getStrAt(je, J_SUBTYPE)
 
-                     if (elementType == J_ELEM_TYPE_CONF_VOLUME)  cV%type = REGION_TYPE_VOLUME
-                     if (elementType == J_ELEM_TYPE_CONF_SURFACE) cV%type = REGION_TYPE_SURFACE
+                           if (subtype == J_CONF_SUBTYPE_VOLUME) cV%type = REGION_TYPE_VOLUME
+                           if (subtype == J_CONF_SUBTYPE_SURFACE) cV%type = REGION_TYPE_SURFACE
 
-                     call mesh%addConformalRegion(id, cV)
+                           call mesh%addConformalRegion(id, cV)
+                        end block
+                     end if
                   end block
-                case default
+               case default
                   call WarnErrReport('Invalid element type', .true.)
                end select
             end do
@@ -521,7 +529,8 @@ contains
       type(coords), dimension(:), pointer :: cs
       integer :: i
       
-      mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
+      ! mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
+      mAs = this%getMaterialAssociations([matType],['-'//J_CONF_SUBTYPE_SURFACE, J_ELEM_TYPE_CELL//'    ', '-'//J_CONF_SUBTYPE_VOLUME//' '])
       block
          type(coords), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then 
@@ -588,7 +597,7 @@ contains
       integer :: i, j
       logical :: found
 
-      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC],[J_ELEM_TYPE_CONF_VOLUME, J_ELEM_TYPE_CONF_SURFACE])
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_CONF_SUBTYPE_VOLUME, J_CONF_SUBTYPE_SURFACE])
 
       do i = 1, size(mAs)
          do j = 1, size(mAs(i)%elementIds)
@@ -1560,6 +1569,8 @@ contains
          type(coords), dimension(:), allocatable :: cs
          type(cell_region_t), dimension(:), allocatable :: cRs
 
+         character(len=1) :: direction
+
          cRs = this%mesh%getCellRegions(this%getIntsAt(bp, J_ELEMENTIDS))
          if (size(cRs) /= 1) then
             call WarnErrReport("Bulk current probe must be defined by a single cell region.", .true.)
@@ -1577,6 +1588,15 @@ contains
          res%k1  = cs(1)%zi
          res%k2  = cs(1)%ze
          res%nml = abs(cs(1)%Or)
+         if (res%nml == 0) then !DIR_NULL 
+            direction = this%getStrAt(bp, J_DIR)
+            select case(trim(adjustl(direction)))
+            case(J_DIR_X); res%nml = 1 !DIR_X
+            case(J_DIR_Y); res%nml = 2 !DIR_Y
+            case(J_DIR_Z); res%nml = 3 !DIR_Z
+            case default; call WarnErrReport('Null direction detected for bulk probe. Check definition')
+            end select
+         end if
 
          res%outputrequest = trim(adjustl(this%getStrAt(bp, J_NAME)))
          call setDomain(res, this%getDomain(bp, J_PR_DOMAIN))
@@ -2321,12 +2341,12 @@ contains
       end subroutine
    end function
 
-   function getMaterialAssociations(this, materialTypes, elementTypes) result(res)
+   function getMaterialAssociations(this, materialTypes, elementLabels) result(res)
       class(parser_t) :: this
       character(len=*), intent(in) :: materialTypes(:)
       type(materialAssociation_t), dimension(:), allocatable :: res
       type(json_value), pointer :: allMatAss
-      character(len=*), intent(in), optional :: elementTypes(:)
+      character(len=*), intent(in), optional :: elementLabels(:)
       
       type(json_value), pointer :: mAPtr
       integer :: i, j, k, e
@@ -2343,10 +2363,8 @@ contains
          call this%core%get_child(allMatAss, i, mAPtr)
          do j = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(j)))) then
-               if (present(elementTypes)) then 
-                  do e = 1, size(elementTypes)
-                     if (isAssociatedWithElement(mAPtr, trim(elementTypes(j)))) nMaterials = nMaterials + 1
-                  end do
+               if (present(elementLabels)) then 
+                  if (isAssociatedWithElementLabel(mAPtr, elementLabels)) nMaterials = nMaterials + 1
                else
                   nMaterials = nMaterials + 1
                end if
@@ -2360,13 +2378,11 @@ contains
          call this%core%get_child(allMatAss, i, mAPtr)
          do k = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(k)))) then
-               if (present(elementTypes)) then 
-                  do e = 1, size(elementTypes)
-                     if (isAssociatedWithElement(mAPtr, trim(elementTypes(k)))) then 
-                        res(j) = this%parseMaterialAssociation(mAPtr)
-                        j = j+1
-                     end if
-                  end do
+               if (present(elementLabels)) then 
+                  if (isAssociatedWithElementLabel(mAPtr, elementLabels)) then 
+                     res(j) = this%parseMaterialAssociation(mAPtr)
+                     j = j+1
+                  end if
                else
                   res(j) = this%parseMaterialAssociation(mAPtr)
                   j = j+1
@@ -2388,20 +2404,40 @@ contains
          isAssociatedWithMaterial = this%getStrAt(mat%p, J_TYPE) == materialType
       end function
 
-      logical function isAssociatedWithElement(mAPtr, elementType)
+      logical function isAssociatedWithElementLabel(mAPtr, elementLabels)
          type(json_value), pointer, intent(in) :: mAPtr
-         character (len=*), intent(in) :: elementType
-         
+         character (len=*), intent(in) :: elementLabels(:)
+         character (len=:), allocatable :: trimmedLabel
+         character(len=20) :: elementLabel
          type(materialAssociation_t) :: matAss
          type(json_value_ptr) :: elm
          integer, dimension(:), allocatable :: elementIds
-         integer :: i
+         integer :: i, j
+
+         logical :: negative
          matAss = this%parseMaterialAssociation(mAPtr)
          elementIds = matAss%elementIds
-         isAssociatedWithElement = .false.
+         isAssociatedWithElementLabel = .false.
+
          do i = 1, size(elementIds)
             elm = this%elementTable%getId(elementIds(i))
-            isAssociatedWithElement = isAssociatedWithElement .or. this%getStrAt(elm%p, J_TYPE) == elementType
+            do j = 1, size(elementLabels)
+               if (elementLabels(j)(1:1) == "-") then 
+                  elementLabel = elementLabels(j)(2:)
+                  negative = .true.
+               else
+                  elementLabel = elementLabels(j)(:)
+                  negative = .false.
+               end if
+               trimmedLabel = trim(elementLabel)
+               if (negative) then 
+                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .and. (.not.(this%getStrAt(elm%p, J_TYPE, default="") == trimmedLabel) .and. &
+                                                                              .not.(this%getStrAt(elm%p, J_SUBTYPE, default="") == trimmedLabel))
+               else 
+                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .or. (this%getStrAt(elm%p, J_TYPE, default="") == trimmedLabel .or. & 
+                                                                                    this%getStrAt(elm%p, J_SUBTYPE, default="") == trimmedLabel )
+               end if
+            end do
          end do
       end function
    end function
@@ -2885,6 +2921,7 @@ contains
          type(polyline_t) :: polyline
          type(aux_node_t) :: res
          integer :: cable_index
+         integer :: stat
          call this%core%get_child(termination_list, index, termination)
          
          res%node%termination%termination_type = readTerminationType(termination)
@@ -2898,17 +2935,18 @@ contains
          res%node%side = label
          res%node%conductor_in_cable = index
 
-         call elemIdToCable%get(key(id), value=cable_index)
+         call elemIdToCable%get(key(id), value=cable_index, stat=stat)
+         if (stat == 0) then
          res%node%belongs_to_cable => mtln_res%cables(cable_index)%ptr
 
          polyline = this%mesh%getPolyline(id)
-
-         if (label == TERMINAL_NODE_SIDE_INI) then
-            res%cId = polyline%coordIds(1)
-            res%relPos = this%mesh%getCoordinate(polyline%coordIds(1))
-         else if (label == TERMINAL_NODE_SIDE_END) then
-            res%cId = polyline%coordIds(ubound(polyline%coordIds,1))
-            res%relPos = this%mesh%getCoordinate(polyline%coordIds(ubound(polyline%coordIds,1)))
+            if (label == TERMINAL_NODE_SIDE_INI) then
+               res%cId = polyline%coordIds(1)
+               res%relPos = this%mesh%getCoordinate(polyline%coordIds(1))
+            else if (label == TERMINAL_NODE_SIDE_END) then
+               res%cId = polyline%coordIds(ubound(polyline%coordIds,1))
+               res%relPos = this%mesh%getCoordinate(polyline%coordIds(ubound(polyline%coordIds,1)))
+            end if
          end if
       end function
 
@@ -3339,9 +3377,10 @@ contains
          call elemIdToCable%check_key(key(id), mStat)
          if (mStat /= 0) then
             res => null()
+         else
+            call elemIdToCable%get(key(id), value=index)
+            res => cables(index)%ptr
          end if
-         call elemIdToCable%get(key(id), value=index)
-         res => cables(index)%ptr
       end function
 
       function findConnectorWithId(conn_Id) result(res)
@@ -3643,29 +3682,54 @@ contains
          end do
       end function
 
+      pure integer function clip(i, lo, hi)
+         integer, intent(in) :: i, lo, hi
+         clip = max(lo, min(i, hi))
+      end function clip
+
       function getdualBoxYZ(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         res%min = [-0.5*despl%desY(segment%y-1),-0.5*despl%desZ(segment%z-1)]
-         res%max = [ 0.5*despl%desY(segment%y),   0.5*despl%desZ(segment%z)]
+         integer :: y0, y1, z0, z1
+
+         y0 = clip(segment%y-1, 0, size(despl%desY)-1)
+         y1 = clip(segment%y,   0, size(despl%desY)-1)
+         z0 = clip(segment%z-1, 0, size(despl%desZ)-1)
+         z1 = clip(segment%z,   0, size(despl%desZ)-1)
+
+         res%min = [-0.5 * despl%desY(y0), -0.5 * despl%desZ(z0)]
+         res%max = [ 0.5 * despl%desY(y1),  0.5 * despl%desZ(z1)]
       end function
 
       function getdualBoxXY(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         res%min = [-0.5*despl%desX(segment%x-1),-0.5*despl%desY(segment%y-1)]
-         res%max = [ 0.5*despl%desX(segment%x),   0.5*despl%desY(segment%y)]
+         integer :: x0, x1, y0, y1
+
+         x0 = clip(segment%x-1, 0, size(despl%desX)-1)
+         x1 = clip(segment%x,   0, size(despl%desX)-1)
+         y0 = clip(segment%y-1, 0, size(despl%desY)-1)
+         y1 = clip(segment%y,   0, size(despl%desY)-1)
+
+         res%min = [-0.5 * despl%desX(x0), -0.5 * despl%desY(y0)]
+         res%max = [ 0.5 * despl%desX(x1),  0.5 * despl%desY(y1)]
       end function
 
       function getdualBoxZX(segment, despl) result (res)
          type(Desplazamiento), intent(in) :: despl
          type(segment_t), intent(in) :: segment
          type(box_2d_t) :: res
-         res%min = [-0.5*despl%desZ(segment%z-1),-0.5*despl%desX(segment%x-1)]
-         res%max = [ 0.5*despl%desZ(segment%z),   0.5*despl%desX(segment%x)]
+         integer :: z0, z1, x0, x1
 
+         z0 = clip(segment%z-1, 0, size(despl%desZ)-1)
+         z1 = clip(segment%z,   0, size(despl%desZ)-1)
+         x0 = clip(segment%x-1, 0, size(despl%desX)-1)
+         x1 = clip(segment%x,   0, size(despl%desX)-1)
+
+         res%min = [-0.5 * despl%desZ(z0), -0.5 * despl%desX(x0)]
+         res%max = [ 0.5 * despl%desZ(z1),  0.5 * despl%desX(x1)]
       end function
 
       function buildStepSize(segments, despl) result(res)

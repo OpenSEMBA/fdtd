@@ -129,7 +129,7 @@ contains
       ! cable 1 - wire
       allocate(unshielded_multiwire_t :: expected%mtln%cables(1)%ptr)
       ptr => expected%mtln%cables(1)%ptr
-      call initializeCablePULParameters(ptr)
+      call initializeCablePULParameters(ptr, n=1)
       select type(ptr)
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_0"
@@ -156,7 +156,7 @@ contains
       ! cable 2 - shieldedMultiwire
       allocate(shielded_multiwire_t :: expected%mtln%cables(2)%ptr)
       ptr => expected%mtln%cables(2)%ptr
-      call initializeCablePULParameters(ptr)
+      call initializeCablePULParameters(ptr, n=1)
       select type(ptr)
       type is (shielded_multiwire_t)
          ptr%name = "line_1_0"
@@ -244,7 +244,7 @@ contains
       ! cable 4 - wire
       allocate(unshielded_multiwire_t :: expected%mtln%cables(4)%ptr)
       ptr => expected%mtln%cables(4)%ptr
-      call initializeCablePULParameters(ptr)
+      call initializeCablePULParameters(ptr, n=1)
       select type(ptr)
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_1"
@@ -272,7 +272,7 @@ contains
       ! cable 5 - shieldedMultiwire
       allocate(shielded_multiwire_t :: expected%mtln%cables(5)%ptr)
       ptr => expected%mtln%cables(5)%ptr
-      call initializeCablePULParameters(ptr)
+      call initializeCablePULParameters(ptr, n=1)
       select type(ptr)
       type is (shielded_multiwire_t)
          ptr%name = "line_1_1"
@@ -346,7 +346,7 @@ contains
       ! cable 7 - wire
       allocate(unshielded_multiwire_t :: expected%mtln%cables(7)%ptr)
       ptr => expected%mtln%cables(7)%ptr
-      call initializeCablePULParameters(ptr)
+      call initializeCablePULParameters(ptr, n=1)
       select type(ptr)
       type is (unshielded_multiwire_t)
          ptr%name = "line_0_2"
@@ -374,7 +374,7 @@ contains
       ! cable 8 - shieldedMultiwire
       allocate(shielded_multiwire_t :: expected%mtln%cables(8)%ptr)
       ptr => expected%mtln%cables(8)%ptr
-      call initializeCablePULParameters(ptr)
+      call initializeCablePULParameters(ptr, n=1)
       select type(ptr)
       type is (shielded_multiwire_t)
          ptr%name = "line_1_2"
@@ -408,7 +408,7 @@ contains
       ! cable 9 - shieldedMultiwire
       allocate(shielded_multiwire_t :: expected%mtln%cables(9)%ptr)
       ptr => expected%mtln%cables(9)%ptr
-      call initializeCablePULParameters(ptr,6)
+      call initializeCablePULParameters(ptr,n=6)
       select type(ptr)
       type is (shielded_multiwire_t)
          ptr%name = "line_2_5"

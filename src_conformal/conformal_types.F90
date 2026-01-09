@@ -11,7 +11,8 @@ module conformal_types_mod
     integer, parameter :: EDGE_Y = 2
     integer, parameter :: EDGE_Z = 3
     integer, parameter :: NOT_ON_EDGE = -1
- 
+
+    real, parameter :: POS_TOL = 1e-4
 
     type, public :: coord_t
         real, dimension(3) :: position
@@ -73,9 +74,12 @@ contains
         integer :: edge
         real, dimension(3) :: delta
         delta = (this%position - floor(this%position))
-        coord_isOnEdge = delta(edge) /= 0 .and. &
-                         delta(mod(edge,3) + 1) == 0 .and. &
-                         delta(mod(edge+1,3) + 1) == 0
+        ! coord_isOnEdge = delta(edge) /= 0 .and. &
+        !                  delta(mod(edge,3) + 1) == 0 .and. &
+        !                  delta(mod(edge+1,3) + 1) == 0
+        coord_isOnEdge = (delta(edge) > POS_TOL) .and. &
+                         (delta(mod(edge,3) + 1) < POS_TOL) .and. &
+                         (delta(mod(edge+1,3) + 1) < POS_TOL)
     end function
 
     logical function coord_isOnFace(this, face)
@@ -83,9 +87,12 @@ contains
         integer :: face
         real, dimension(3) :: delta
         delta = (this%position - floor(this%position))
-        coord_isOnFace = delta(face) == 0 .and. &
-                         delta(mod(face,3) + 1) /= 0 .and. &
-                         delta(mod(face+1,3) + 1) /= 0
+        ! coord_isOnFace = delta(face) == 0 .and. &
+        ! delta(mod(face,3) + 1) /= 0 .and. &
+        ! delta(mod(face+1,3) + 1) /= 0
+        coord_isOnFace = (delta(face) < POS_TOL) .and. &
+                         (delta(mod(face,3) + 1) > POS_TOL) .and. &
+                         (delta(mod(face+1,3) + 1) > POS_TOL)
     end function
 
 
@@ -210,7 +217,11 @@ contains
     function triangle_getCell(this) result(res)
         class(triangle_t) :: this
         integer(kind=4), dimension(3) :: res
-        res = floor(this%centroid())
+        real, dimension(3) :: c
+        c(1) = min(this%vertices(1)%position(1), this%vertices(2)%position(1),this%vertices(3)%position(1))
+        c(2) = min(this%vertices(1)%position(2), this%vertices(2)%position(2),this%vertices(3)%position(2))
+        c(3) = min(this%vertices(1)%position(3), this%vertices(2)%position(3),this%vertices(3)%position(3))
+        res = floor(c)
     end function
 
 
@@ -246,7 +257,7 @@ contains
         do i = 1,3
             res = res + this%vertices(i)%position
         end do
-        res = res/3.0
+        res = res/3
     end function
     
     function getNormal(contour) result(res)

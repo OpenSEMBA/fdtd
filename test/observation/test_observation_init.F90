@@ -29,7 +29,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
     ThereAreWires = .false.
     ThereAreFarFields = .false.
 
-    initialtimestep = 0
+    initialtimestep = 1
     lastexecutedtime = 0.0_RKIND_tiempo
 
     SINPML_fullsize = create_limit_t(0,4,0,4,0,4,3,3,3)

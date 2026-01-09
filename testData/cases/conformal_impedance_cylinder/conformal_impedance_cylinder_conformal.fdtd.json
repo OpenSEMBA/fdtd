@@ -4609,7 +4609,8 @@
         "elements": [
             {
                 "id": 1,
-                "type": "conformalVolume",
+                "type": "cell",
+                "subtype": "volume",
                 "intervals": [
                     [
                         [

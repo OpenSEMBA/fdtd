@@ -56,7 +56,8 @@
             },
             {
                 "id": 3,
-                "type": "conformalVolume",
+                "type": "cell",
+                "subtype": "volume",
                 "intervals" : [],
                 "triangles": [
                     [1,2,3],
