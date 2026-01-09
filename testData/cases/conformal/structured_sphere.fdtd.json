@@ -1,0 +1,303 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 3.85167e-11,
+        "numberOfSteps": 1000
+    },
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 10,
+            "order": 2,
+            "reflection": 0.001
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                50,
+                50,
+                50
+            ],
+            "steps": {
+                "x": [
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0
+                ],
+                "y": [
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0
+                ],
+                "z": [
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0,
+                    4.0
+                ]
+            },
+            "origin": [
+                -100.0,
+                -100.0,
+                -100.0
+            ]
+        },
+        "elements": [
+            {
+                "id": 1,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            0,
+                            0,
+                            0
+                        ],
+                        [
+                            25,
+                            25,
+                            25
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 2,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            2,
+                            2,
+                            2
+                        ],
+                        [
+                            23,
+                            23,
+                            23
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "subtype": "volume",
+                "intervals": [],
+                "triangles": []
+            }
+        ],
+        "coordinates": []
+    },
+    "materials": [
+        {
+            "id": 1,
+            "type": "pec"
+        }
+    ],
+    "materialAssociations": [
+        {
+            "materialId": 1,
+            "elementIds": [
+                3
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [
+                1
+            ],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5707963268,
+                "phi": 0.0
+            }
+        }
+    ],
+    "probes": [
+        {
+            "name": "FarField",
+            "type": "farField",
+            "elementIds": [
+                2
+            ],
+            "theta": {
+                "initial": 0.0,
+                "final": 10.0,
+                "step": 10.0
+            },
+            "phi": {
+                "initial": 0.0,
+                "final": 360.0,
+                "step": 10.0
+            },
+            "domain": {
+                "type": "frequency",
+                "initialFrequency": 10000000.0,
+                "finalFrequency": 500000000.0,
+                "numberOfFrequencies": 1,
+                "frequencySpacing": "logarithmic"
+            }
+        },
+        {
+            "name": "electric_field_movie",
+            "type": "movie",
+            "field": "electric",
+            "component": "x",
+            "elementIds": [
+                2
+            ],
+            "domain": {
+                "type": "time",
+                "samplingPeriod": 1e-09
+            }
+        }
+    ]
+}

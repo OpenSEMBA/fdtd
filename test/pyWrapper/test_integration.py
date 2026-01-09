@@ -71,6 +71,129 @@ def test_sphere_case_with_far_field_probe_launches(tmp_path):
     assert p.type == 'movie'
     assert np.all(p.cell_init == np.array([2, 2, 2]))
 
+def test_fill_conformal_vtk_sphere(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_sphere_1mm_rcs_delta.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+
+    assert line_media_dict[0.5] == 12  # PEC line
+    assert line_media_dict[2004] == 24  # Conformal line
+
+    assert face_media_dict[0] == 6  # PEC surface
+    assert face_media_dict[1005] == 24  # Conformal PEC surface
+    assert face_media_dict[1006] == 24  # Conformal PEC surface
+
+def test_fill_conformal_fL_0_005_vtk_large_sphere(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_fL_sphere_rcs.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    assert -0.5 not in line_media_dict.keys()
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+
+    assert -1 not in face_media_dict.keys()
+
+def test_fill_conformal_fL_0_15_vtk_large_sphere(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal_fL_0.15_sphere_rcs.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    assert -0.5 not in line_media_dict.keys()
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+
+    assert -1 not in face_media_dict.keys()
+
+def test_fill_slanted_vtk_large_sphere(tmp_path):
+    fn = CASES_FOLDER + 'conformal/slanted_sphere_rcs.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    assert -0.5 not in line_media_dict.keys()
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+
+    assert -1 not in face_media_dict.keys()
+
+    
+def test_fill_conformal_vtk_corner(tmp_path):
+#          /|
+#        5  |
+#      / |\ |
+#    3___|_4|_______
+#    |   | ||_______|______
+#    |   | |        |      /
+#    |    6|        |    /
+#    |  / \|        |  /
+#    1/____2________|/
+    
+    
+    
+    fn = CASES_FOLDER + 'conformal/conformal_corner.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    
+    assert(0 not in face_media_dict.keys())
+    assert face_media_dict[1005] == 2  # Conformal PEC surface #1
+    assert face_media_dict[1006] == 2  # Conformal PEC surface #2
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 1  # PEC line
+    assert line_media_dict[2004] == 4  # Conformal line #1
+    
 def test_movie_with_frequency_domain(tmp_path):
     fn = CASES_FOLDER + 'observation/movieFrequency.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)

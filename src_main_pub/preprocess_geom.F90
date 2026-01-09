@@ -24,6 +24,7 @@ MODULE Preprocess_m
    USE CONFORMAL_TYPES
    USE Conformal_TimeSteps_m
 #endif
+   USE conformal_mod, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    IMPLICIT NONE
 !!!variables globales del modulo
    REAL (KIND=RKIND), save           ::  cluz,zvac
@@ -55,7 +56,7 @@ CONTAINS
       type(taglist_t) :: tag_numbers
       TYPE (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) :: tama, tama2, tama3, tama4, tama5, tama6, i, j, k, tipotemp, tamaSonda,  &
-      &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones
+      &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones,ci
       CHARACTER (LEN=*), INTENT (IN) :: fichin
       !
       CHARACTER (LEN=BUFSIZE) :: probenumber
@@ -63,7 +64,7 @@ CONTAINS
 
       CHARACTER (LEN=BUFSIZE) :: tag
 
-      TYPE (XYZlimit_t) :: punto, BoundingBox
+      TYPE (XYZlimit_t) :: punto, BoundingBox, conf_bounding_box
       TYPE (XYZlimit_t_scaled) :: punto_s
       INTEGER (KIND=4) :: orientacion,orientacionL,orientacionR, direccion, contamedia,oldcontamedia, maxcontamedia, mincontamedia, inicontamedia, &
          i1, j1, field, k1, pecmedio, ii, medio1, medio2, sondas,CONTACURR,CONTAVOLT,I_,J_
@@ -105,7 +106,10 @@ CONTAINS
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
-!
+      !
+      type(ConformalMedia_t), dimension(:), allocatable :: conformal_media
+      real(kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
+      type(side_tris_map_t), dimension(:), allocatable :: side_to_triangles_maps
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       cluz=1.0_RKIND/sqrt(eps0*mu0)
       zvac=sqrt(mu0/eps0)
@@ -138,6 +142,32 @@ CONTAINS
       sgg%EShared%Conta = 0
       sgg%EShared%MaxConta = 10
       ALLOCATE (sgg%EShared%elem(1:sgg%EShared%MaxConta))
+
+
+      block 
+         integer :: m
+         real :: min_scale_factor = 1.0, dt
+         if (associated(this%conformalRegs%volumes)) then 
+            conformal_media = buildConformalMedia(this%conformalRegs)
+            side_to_triangles_maps = buildSideMaps(this%conformalRegs)
+            do m = 1, ubound(conformal_media,1)
+               if (conformal_media(m)%time_step_scale_factor < min_scale_factor) then 
+                  min_scale_factor = conformal_media(m)%time_step_scale_factor
+               end if
+            end do
+            dt = (1.0_RKIND/(cluz*sqrt(((1.0_RKIND / minval(sgg%DX))**2.0_RKIND) + & 
+                                       ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + & 
+                                       ((1.0_RKIND / minval(sgg%DZ))**2.0_RKIND ))))
+            if (sgg%dt > dt*min_scale_factor) then 
+               write(*,*) '-- Conformal geometry requires a time step change'
+               write(*,*) 'Previous time step: ', sgg%dt
+               sgg%dt = dt*min_scale_factor
+               write(*,*) 'New time step: ', sgg%dt
+            end if
+         else
+            allocate(conformal_media(0))
+         end if
+      end block
 
 
       ! Cuenta los medios
@@ -185,6 +215,15 @@ CONTAINS
       contamedia = contamedia+2 !para acomodar los no_use no_use_notouch
       !!!!!!!!!!!!!
       contamedia = contamedia +1 !para acomodar los nodal sources como caso especial de linea vacia
+
+      ! contamedia = contamedia + this%conformalRegs%nEdges + this%conformalRegs%nFaces
+      
+      edge_ratios = getDifferentEdgeRatios(conformal_media)
+      face_ratios = getDifferentFaceRatios(conformal_media)
+      contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
+      if (findloc(edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+      if (findloc(face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+
       sgg%NumMedia = contamedia
       sgg%AllocMed = contamedia
       !reserva espacio
@@ -255,6 +294,8 @@ CONTAINS
       ALLOCATE (media%sggMiHx(Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE))
       ALLOCATE (media%sggMiHy(Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE))
       ALLOCATE (media%sggMiHz(Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE))
+
+
       !el tag esta voided porque luego el numero va con el del tag
       media%sggMtag (:, :, :) = 0 !LO VOIDEO A 0 EN VEZ DE A -1 PORQUE EL TAG 0 NO VA A EXISTIR NUNCA 141020
       tag_numbers%edge%x(:,:,:) = 0
@@ -271,6 +312,7 @@ CONTAINS
       media%sggMiHx (:, :, :) = 1
       media%sggMiHy (:, :, :) = 1
       media%sggMiHz (:, :, :) = 1
+      
 
       !planeWaves
       !
@@ -434,6 +476,7 @@ CONTAINS
       sgg%Med%Is%SlantedWire = .FALSE.
       sgg%Med%Is%ThinSlot = .FALSE.
       sgg%Med%Is%PEC = .FALSE.
+      sgg%Med%Is%ConformalPEC = .FALSE.
       sgg%Med%Is%PMC = .FALSE.
       sgg%Med%Is%PML = .FALSE.
       sgg%Med%Is%Volume = .FALSE.
@@ -2529,6 +2572,25 @@ CONTAINS
       end do
       !END SLANTED WIRES
 
+      do j = 1, ubound(conformal_media,1)
+
+         call addConformalMedia(sgg, media, conformal_media(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j))
+         numertag = searchtag(tagtype,conformal_media(j)%tag)
+         CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+            & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
+            & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
+            & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
+            & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
+            & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
+            & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, conf_bounding_box, 0)
+
+      end do
+
+      contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
+      if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+
+
       !reporta el bounding box
 
 #ifdef CompileWithMPI
@@ -3905,7 +3967,7 @@ CONTAINS
                sgg%observation(ii)%phiStep    =this%oldSONDA%probes(i)%FarField(j)%probe%phiStep
                sgg%observation(ii)%FileNormalize    =this%oldSONDA%probes(i)%FarField(j)%probe%FileNormalize
 
-               sgg%observation(ii)%outputrequest=trim(adjustl(this%oldSONDA%probes(i)%FarField(j)%probe%outputrequest(1:3)))
+               sgg%observation(ii)%outputrequest=trim(adjustl(this%oldSONDA%probes(i)%FarField(j)%probe%outputrequest))
 
                IF ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
@@ -4766,6 +4828,370 @@ CONTAINS
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+      subroutine initConformalBoundingBox(sgg, bbox)
+         type(sggfdtdinfo), intent(in)    :: sgg
+         type(XYZlimit_t), intent(inout) :: bbox
+         bbox%XI = -sgg%Alloc(iHx)%XI
+         bbox%XE = -sgg%Alloc(iHx)%XE
+         bbox%YI = -sgg%Alloc(iHy)%YI
+         bbox%YE = -sgg%Alloc(iHy)%YE
+         bbox%ZI = -sgg%Alloc(iHz)%ZI
+         bbox%ZE = -sgg%Alloc(iHz)%ZE
+      end subroutine
+
+      function getDifferentEdgeRatios(conformal_media) result(res)
+         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_media
+         integer :: i, j, k
+         real (kind=rkind), dimension(:), allocatable :: aux
+         real (kind=rkind), dimension(:), allocatable :: res
+         logical :: isNew
+         allocate(res(0))
+         do i = 1, ubound(conformal_media,1)
+            do j = 1, ubound(conformal_media(i)%edge_media,1)
+
+               isNew = .true.
+               do k = 1, ubound(res,1)
+                  if (eq_ratio(res(k), conformal_media(i)%edge_media(j)%ratio, EDGE_RATIO_EQ_TOLERANCE)) isNew = .false.
+               end do
+               if (isNew) then 
+                  block 
+                     if (ubound(res,1) == 0) then 
+                        deallocate(res)
+                        allocate(res(1))
+                        res(1) = conformal_media(i)%edge_media(j)%ratio
+                     else
+                        if (allocated(aux)) deallocate(aux)
+                        allocate(aux(ubound(res,1) + 1))
+                        aux(1:ubound(res,1)) = res
+                        aux(ubound(res,1) + 1) = conformal_media(i)%edge_media(j)%ratio
+                        deallocate(res)
+                        allocate(res(ubound(aux,1)))
+                        res = aux
+                     end if
+                  end block
+               end if
+            end do
+         end do
+      end function
+      function getDifferentFaceRatios(conformal_media) result(res)
+         type(ConformalMedia_t), dimension(:), allocatable, intent(in) :: conformal_media
+         integer :: i, j, k
+         real (kind=rkind), dimension(:), allocatable :: res
+         real (kind=rkind), dimension(:), allocatable :: aux
+         logical :: isNew
+         allocate(res(0))
+         do i = 1, ubound(conformal_media,1)
+            do j = 1, ubound(conformal_media(i)%face_media,1)
+
+               isNew = .true.
+               do k = 1, ubound(res,1)
+                  if (eq_ratio(res(k), conformal_media(i)%face_media(j)%ratio, FACE_RATIO_EQ_TOLERANCE)) isNew = .false.
+               end do
+               if (isNew) then 
+                  block 
+                     if (ubound(res,1) == 0) then 
+                        deallocate(res)
+                        allocate(res(1))
+                        res(1) = conformal_media(i)%face_media(j)%ratio
+                     else
+                        if (allocated(aux)) deallocate(aux)
+                        allocate(aux(ubound(res,1) + 1))
+                        aux(1:ubound(res,1)) = res
+                        aux(ubound(res,1) + 1) = conformal_media(i)%face_media(j)%ratio
+                        deallocate(res)
+                        allocate(res(ubound(aux,1)))
+                        res = aux
+                     end if
+                  end block
+               end if
+            end do
+         end do
+      end function
+
+      subroutine addConformalMedia(sgg, media, conformal_media, edge_ratios, face_ratios, contamedia, bbox, side_map)
+         type(sggfdtdinfo), intent(inout)    :: sgg
+         type(media_matrices_t), intent(inout) :: media
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         real(kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios, face_ratios
+         real(kind=rkind), dimension(:), allocatable :: edge_ratios_no_zero, face_ratios_no_zero
+         integer (kind=4), intent(in) :: contamedia
+         integer (kind=4) :: num_media
+         type(XYZlimit_t), intent(inout) :: bbox
+         type(side_tris_map_t), intent(in) :: side_map
+         integer :: i, j
+         call initConformalBoundingBox(sgg,bbox)
+
+         if (findloc(edge_ratios, 0.0, 1) /= 0) then 
+            allocate(edge_ratios_no_zero(ubound(edge_ratios,1) - 1))
+            k = 0
+            do j = 1, ubound(edge_ratios,1)
+               if (edge_ratios(j) /= 0) then 
+                  k = k + 1
+                  edge_ratios_no_zero(k) = edge_ratios(j)
+               end if
+            end do
+         else  
+            edge_ratios_no_zero = edge_ratios
+         end if
+
+         if (findloc(face_ratios, 0.0, 1) /= 0) then 
+            allocate(face_ratios_no_zero(ubound(face_ratios,1) - 1))
+            k = 0
+            do j = 1, ubound(face_ratios,1)
+               if (face_ratios(j) /= 0) then 
+                  k = k + 1
+                  face_ratios_no_zero(k) = face_ratios(j)
+               end if
+            end do
+         else  
+            face_ratios_no_zero = face_ratios
+         end if
+         num_media = contamedia
+         call addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox)
+         num_media = contamedia + ubound(edge_ratios_no_zero,1)
+         call addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios_no_zero, bbox)
+         call addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios_no_zero, bbox, side_map)
+      end subroutine
+
+      subroutine addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios, bbox)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(media_matrices_t), intent(inout) :: media
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(in) :: num_media
+         real (kind=rkind), dimension(:), allocatable, intent(in) :: face_ratios
+
+         integer (kind=4) :: face_media
+         integer (kind=4) :: cell(3)
+         type(XYZlimit_t), intent(inout) :: bbox
+         integer :: j, k
+         do j = 1, conformal_media%n_faces_media
+            if (conformal_media%face_media(j)%ratio /= 0) then 
+               face_media = num_media + findloc(face_ratios, conformal_media%face_media(j)%ratio, 1)
+               sgg%Med(face_media)%Is%ConformalPEC = .TRUE.
+               sgg%Med(face_media)%Is%Needed = .TRUE.
+               sgg%Med(face_media)%Is%Volume = .TRUE.
+               sgg%Med(face_media)%Priority = prior_PEC
+               sgg%Med(face_media)%Epr = this%mats%mats(1)%eps / Eps0
+               sgg%Med(face_media)%Sigma = 1.0e29_RKIND
+               sgg%Med(face_media)%Mur = conformal_media%face_media(j)%ratio * this%mats%mats(1)%mu / Mu0
+               sgg%Med(face_media)%SigmaM = 0.0_RKIND
+            else
+               face_media = 0
+            end if
+            do k = 1, conformal_media%face_media(j)%size
+               cell(:) = conformal_media%face_media(j)%faces(k)%cell(:)
+               if (cell(1) < bbox%xi) bbox%xi = cell(1)
+               if (cell(1) > bbox%xe) bbox%xe = cell(1)
+               if (cell(2) < bbox%yi) bbox%yi = cell(2)
+               if (cell(2) > bbox%ye) bbox%ye = cell(2)
+               if (cell(3) < bbox%zi) bbox%zi = cell(3)
+               if (cell(3) > bbox%ze) bbox%ze = cell(3)
+
+               select case(conformal_media%face_media(j)%faces(k)%direction)
+               case(F_X)
+                  media%sggMiHx(cell(1), cell(2), cell(3)) = face_media
+               case(F_Y)
+                  media%sggMiHy(cell(1), cell(2), cell(3)) = face_media
+               case(F_Z)
+                  media%sggMiHz(cell(1), cell(2), cell(3)) = face_media
+               end select
+            end do
+         end do
+      end subroutine
+
+
+
+      function getEdgeNormalFromTriangles(triangles) result(res)
+         type(triangle_t), dimension(:), allocatable :: triangles
+         real, dimension(3) :: res
+         integer :: i
+         res(:) = 0.0
+         do i = 1, ubound(triangles, 1)
+            res = res + triangles(i)%getNormal()
+         end do
+         res = res/ubound(triangles,1)
+      end function
+
+      subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, bbox)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(media_matrices_t), intent(inout) :: media
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(in) :: num_media
+
+         real (kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
+         integer (kind=4) :: edge_media
+         integer (kind=4) :: cell(3)
+         type(XYZlimit_t), intent(inout) :: bbox
+         integer(kind=4), dimension(4) :: key
+         integer :: j, k
+         real, dimension(3) :: normal
+
+         do j = 1, conformal_media%n_edges_media
+            if (conformal_media%edge_media(j)%ratio /= 0) then 
+               edge_media = num_media + findloc(edge_ratios, conformal_media%edge_media(j)%ratio,1)
+               sgg%Med(edge_media)%Is%ConformalPEC = .TRUE.
+               sgg%Med(edge_media)%Is%Needed = .TRUE.
+               sgg%Med(edge_media)%Is%Volume = .TRUE.
+               sgg%Med(edge_media)%Priority = prior_PEC
+               sgg%Med(edge_media)%Epr = (this%mats%mats(1)%eps / conformal_media%edge_media(j)%ratio ) / Eps0
+               sgg%Med(edge_media)%Sigma = 1.0e29_RKIND
+               sgg%Med(edge_media)%Mur = this%mats%mats(1)%mu / Mu0
+               sgg%Med(edge_media)%SigmaM = 0.0_RKIND
+            else
+               edge_media = 0
+            end if
+            do k = 1, conformal_media%edge_media(j)%size
+               cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
+
+               if (cell(1) < bbox%xi) bbox%xi = cell(1)
+               if (cell(1) > bbox%xe) bbox%xe = cell(1)
+               if (cell(2) < bbox%yi) bbox%yi = cell(2)
+               if (cell(2) > bbox%ye) bbox%ye = cell(2)
+               if (cell(3) < bbox%zi) bbox%zi = cell(3)
+               if (cell(3) > bbox%ze) bbox%ze = cell(3)
+
+               select case(conformal_media%edge_media(j)%edges(k)%direction)
+               case(E_X)
+                  media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+               case(E_Y)
+                  media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+               case(E_Z)
+                  media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+               end select
+            end do
+         end do
+      end subroutine
+
+      subroutine addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios, bbox, side_map)
+         type (SGGFDTDINFO), intent(INOUT)    :: sgg
+         type(media_matrices_t), intent(inout) :: media
+         type(ConformalMedia_t), intent(in) :: conformal_media
+         integer (kind=4), intent(in) :: num_media
+
+         real (kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
+         integer (kind=4) :: edge_media
+         integer (kind=4) :: cell(3)
+         type(XYZlimit_t), intent(inout) :: bbox
+         type(side_tris_map_t), intent(in) :: side_map
+         type(triangle_t), dimension(:), allocatable :: tris
+         integer(kind=4), dimension(4) :: key
+         integer :: j, k
+         real, dimension(3) :: normal
+
+         do j = 1, conformal_media%n_edges_media
+            if (conformal_media%edge_media(j)%ratio == 0) then 
+               edge_media = 0
+               do k = 1, conformal_media%edge_media(j)%size
+                  cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
+                  key(1:3) = cell
+
+                  select case(conformal_media%edge_media(j)%edges(k)%direction)
+                  case(E_X)
+                     key(4) = E_X
+                     if (side_map%hasKey(key)) then
+                        tris = side_map%getTrianglesFromSide(key)
+                        normal = getEdgeNormalFromTriangles(tris)
+                        if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2)+1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1)+1, cell(2), cell(3)) = edge_media
+                        else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then 
+                           media%sggMiHz(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1)+1, cell(2)-1, cell(3)) = edge_media
+                        end if
+                        
+                        if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1)+1, cell(2), cell(3)) = edge_media
+
+                        else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then 
+                           media%sggMiHy(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEz(cell(1)+1, cell(2), cell(3)-1) = edge_media
+
+                        end if
+                     end if
+                  case(E_Y)
+                     key(4) = E_Y
+                     if (edge_media == 0 .and. side_map%hasKey(key)) then
+                        tris = side_map%getTrianglesFromSide(key)
+                        normal = getEdgeNormalFromTriangles(tris)
+                        if (normal(3) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2)+1, cell(3)) = edge_media
+                        else if (normal(3) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)-1))%is%conformalPEC) then 
+                           media%sggMiHx(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)-1) = edge_media
+                           media%sggMiEz(cell(1), cell(2)+1, cell(3)-1) = edge_media
+                        end if
+
+                        if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHz(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2)+1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1)+1, cell(2), cell(3)) = edge_media
+                        else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHz(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHz(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1)-1, cell(2)+1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)) = edge_media
+                        end if
+                     end if
+                  case(E_Z)
+                     key(4) = E_Z
+                     if (edge_media == 0 .and. side_map%hasKey(key)) then
+                        tris = side_map%getTrianglesFromSide(key)
+                        normal = getEdgeNormalFromTriangles(tris)
+                        if (normal(2) < 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2), cell(3)))%is%conformalPEC) then
+                           media%sggMiHx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3))   = edge_media
+                           media%sggMiEy(cell(1), cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3))   = edge_media
+                           media%sggMiEz(cell(1), cell(2)+1, cell(3)) = edge_media
+                        else if (normal(2) > 0 .and. .not. sgg%med(media%sggMiHx(cell(1), cell(2)-1, cell(3)))%is%conformalPEC) then 
+                           media%sggMiHx(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEy(cell(1), cell(2)-1, cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2)-1, cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                        end if
+                        if (normal(1) < 0 .and. .not. sgg%med(media%sggMiHy(cell(1), cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHy(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1), cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1)+1, cell(2), cell(3)) = edge_media
+                        else if (normal(1) > 0 .and. .not. sgg%med(media%sggMiHy(cell(1)-1, cell(2), cell(3)))%is%conformalPEC) then 
+                           media%sggMiHy(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEx(cell(1)-1, cell(2), cell(3)+1) = edge_media
+                           media%sggMiEz(cell(1)-1, cell(2), cell(3)) = edge_media
+                           media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
+                        end if
+                     end if
+                  end select
+               end do
+            end if
+         end do
+      end subroutine
 
       subroutine read_TIMEFRECTRANSFsourcefiles(simu_devia)
          logical :: simu_devia
@@ -6570,6 +6996,15 @@ CONTAINS
                end do
             endif
          end do
+
+         if (associated(this%conformalRegs%volumes)) then 
+            numertag = numertag + 1
+            if (precounting == 1) tagtype%tag(numertag) = this%conformalRegs%volumes(1)%tag
+         end if
+         if (associated(this%conformalRegs%surfaces)) then 
+            numertag = numertag + 1
+            if (precounting == 1) tagtype%tag(numertag) = this%conformalRegs%surfaces(1)%tag
+         end if
 !!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!

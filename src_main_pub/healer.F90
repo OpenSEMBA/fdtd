@@ -31,6 +31,7 @@ MODULE CreateMatrices
    PUBLIC CreatePMLmatrix, Readjust
    PUBLIC CreateVolumeMM, CreateSurfaceMM, CreateLineMM
    PUBLIC CreateSurfaceSlotMM,CreateMagneticSurface
+   public CreateConformalPECVolume
    !
     CONTAINS
     
@@ -53,7 +54,442 @@ MODULE CreateMatrices
             p%ZE = aux
         endif
    END SUBROUTINE
-    
+   
+   SUBROUTINE CreateConformalPECVolume (layoutnumber, Mtag, tags, numertag, MMiEx, MMiEy, MMiEz, MMiHx, &
+   & MMiHy, MMiHz, Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, &
+   & Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, &
+   & Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, &
+   & Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, &
+   & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
+   & NumMedia, BoundingBox,indicemedio)
+      character(len=BUFSIZE) :: buff
+      TYPE (Shared_t) :: Eshared
+
+      INTEGER (KIND=4) :: NumMedia
+      TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
+      !
+      TYPE (XYZlimit_t), INTENT(IN) ::  BoundingBox
+      integer(kind=4), intent(in) :: indicemedio
+      !
+      INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
+      & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
+      & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
+      & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
+      !
+      type(taglist_t) :: tags
+      INTEGER (KIND=IKINDMTAG) numertag
+      INTEGER (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      !
+      INTEGER (KIND=4) :: layoutnumber, i, j, k
+
+      ! faces that should be PEC, bc edges are all PEC
+      do k = BoundingBox%zi, BoundingBox%ze+1
+         do j = BoundingBox%yi, BoundingBox%ye+1
+            do i = BoundingBox%xi, BoundingBox%xe+1
+               call fillBoundaryFaceIfAllEdgesPEC(i,j,k, FACE_X)
+               call fillBoundaryFaceIfAllEdgesPEC(i,j,k, FACE_Y)
+               call fillBoundaryFaceIfAllEdgesPEC(i,j,k, FACE_Z)
+            end do
+         end do
+      end do
+
+      ! raytracing x
+      do k = BoundingBox%zi, BoundingBox%ze+1
+         do j = BoundingBox%yi, BoundingBox%ye+1
+            call fillEdgesInsideVolumeX(j,k)
+         end do
+      end do
+      ! raytracing y
+      do i = BoundingBox%xi, BoundingBox%xe+1
+         do k = BoundingBox%zi, BoundingBox%ze+1
+            call fillEdgesInsideVolumeY(i,k)
+         end do
+      end do
+      ! raytracing z
+      do j = BoundingBox%yi, BoundingBox%ye+1
+         do i = BoundingBox%xi, BoundingBox%xe+1
+            call fillEdgesInsideVolumeZ(i,j)
+         end do
+      end do
+
+      ! faces inside volume, should be PEC
+      do k = BoundingBox%zi, BoundingBox%ze+1
+         do j = BoundingBox%yi, BoundingBox%ye+1
+            do i = BoundingBox%xi, BoundingBox%xe+1
+               call fillPECFaceInsideVolume(i,j,k,FACE_X)
+               call fillPECFaceInsideVolume(i,j,k,FACE_Y)
+               call fillPECFaceInsideVolume(i,j,k,FACE_Z)
+            end do
+         end do
+      end do
+
+   contains
+      subroutine fillBoundaryFaceIfAllEdgesPEC(i,j,k,face)
+         integer(kind=4), intent(in) :: i, j, k, face
+         integer(kind=4) :: m1, m2, m3, m4
+         logical :: on_boundary = .false.
+         select case(face)
+         case(FACE_X)
+            m1 = MMiEy(i,j,k)
+            m2 = MMiEz(i,j,k)
+            m3 = MMiEy(i,j,k+1)
+            m4 = MMiEz(i,j+1,k)
+         case(FACE_Y)
+            m1 = MMiEx(i,j,k)
+            m2 = MMiEz(i,j,k)
+            m3 = MMiEx(i,j,k+1)
+            m4 = MMiEz(i+1,j,k)
+         case(FACE_Z)
+            m1 = MMiEy(i,j,k)
+            m2 = MMiEx(i,j,k)
+            m3 = MMiEy(i+1,j,k)
+            m4 = MMiEx(i,j+1,k)
+         end select
+         on_boundary = (med(m1)%Is%PEC) .and.(med(m2)%Is%PEC) .and. &
+                       (med(m3)%Is%PEC) .and.(med(m4)%Is%PEC)
+         if (on_boundary) then 
+            Mtag(i,j,k) = 64*numertag 
+            select case(face)
+            case(FACE_X)
+               MMiHx (i, j, k) = indicemedio
+               tags%face%x(i,j,k) = 64*numertag
+            case(FACE_Y)
+               MMiHy (i, j, k) = indicemedio
+               tags%face%y(i,j,k) = 64*numertag
+            case(FACE_Z)
+               MMiHz (i, j, k) = indicemedio
+               tags%face%z(i,j,k) = 64*numertag
+            end select
+         end if
+      end subroutine
+
+      logical function hasCrossedPEC(m1,m2,m3,m4)
+         integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: m1,m2,m3,m4
+         hasCrossedPEC = (med(m1)%Is%ConformalPEC .or. med(m1)%Is%PEC) .and. &
+                         (med(m2)%Is%ConformalPEC .or. med(m2)%Is%PEC) .and. &
+                         (med(m3)%Is%ConformalPEC .or. med(m3)%Is%PEC) .and. &
+                         (med(m4)%Is%ConformalPEC .or. med(m4)%Is%PEC)
+      end function 
+      logical function hasCrossedPECOrConformalPEC(m1,m2,m3,m4)
+         integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: m1,m2,m3,m4
+         hasCrossedPECOrConformalPEC = (med(m1)%Is%ConformalPEC .or. med(m1)%Is%PEC) .or. &
+                                       (med(m2)%Is%ConformalPEC .or. med(m2)%Is%PEC) .or. &
+                                       (med(m3)%Is%ConformalPEC .or. med(m3)%Is%PEC) .or. &
+                                       (med(m4)%Is%ConformalPEC .or. med(m4)%Is%PEC)
+      end function 
+
+      subroutine fillPECFaceInsideVolume(i, j, k, face)
+         integer (kind=4), intent(in) :: i, j, k, face
+         integer (kind=4) :: m1,m2,m3,m4, m
+         logical :: on_boundary
+         select case (face)
+         case(FACE_X)
+            m1 = MMiEy (i, j, k)
+            m2 = MMiEz (i, j, k)
+            m3 = MMiEy (i, j, k + 1)
+            m4 = MMiEz (i, j + 1, k)
+            m = MMiHx(i,j,k)
+         case (FACE_Y)
+            m1 = MMiEx (i, j, k)
+            m2 = MMiEz (i, j, k)
+            m3 = MMiEx (i, j, k + 1)
+            m4 = MMiEz (i + 1, j, k)
+            m =  MMiHy(i,j,k)
+         case (FACE_Z)
+            m1 = MMiEy (i, j, k)
+            m2 = MMiEx (i, j, k)
+            m3 = MMiEy (i + 1, j, k)
+            m4 = MMiEx (i, j + 1, k)
+            m =  MMiHz(i,j,k)
+         end select
+
+         on_boundary = (med(m1)%Is%PEC .or. med(m1)%is%conformalPEC) .and. &
+                       (med(m2)%Is%PEC .or. med(m2)%is%conformalPEC) .and. &
+                       (med(m3)%Is%PEC .or. med(m3)%is%conformalPEC) .and. &
+                       (med(m4)%Is%PEC .or. med(m4)%is%conformalPEC)
+
+         if (on_boundary .and. .not. (med(m)%Is%PEC .or. med(m)%Is%ConformalPEC)) then 
+            Mtag(i,j,k)=64*numertag 
+            select case (face)
+            case(FACE_X)
+               MMiHx (i, j, k) = indicemedio
+               tags%face%x(i,j,k) = 64*numertag
+            case(FACE_Y)
+               MMiHy (i, j, k) = indicemedio
+               tags%face%y(i,j,k) = 64*numertag
+            case(FACE_z)
+               MMiHz (i, j, k) = indicemedio
+               tags%face%z(i,j,k) = 64*numertag
+            end select
+         else if (on_boundary .and. (med(m)%Is%PEC .or. med(m)%Is%ConformalPEC)) then 
+            Mtag(i,j,k)=64*numertag
+            select case (face)
+            case(FACE_X)
+               tags%face%x(i,j,k) = 64*numertag
+            case(FACE_Y)
+               tags%face%y(i,j,k) = 64*numertag
+            case(FACE_z)
+               tags%face%z(i,j,k) = 64*numertag
+            end select
+         end if
+
+      end subroutine
+
+
+      subroutine fillEdgesInsideVolumeX(j, k)
+         integer(kind=4), intent(in) :: j,k
+         integer(kind=4) :: i, ii
+         logical :: crossed, inside_volume
+         integer(kind=4) :: mE, mEPrev, n_crosses
+         integer(kind=4), dimension(:), allocatable :: idx_in, idx_out
+         inside_volume = .false.
+         crossed = .false.
+         n_crosses = countCrossesX(j,k)
+         allocate(idx_in(n_crosses/2))
+         allocate(idx_out(n_crosses/2))
+         idx_in(:) = 0
+         idx_out(:) = 0
+         do i = BoundingBox%xi, BoundingBox%xe+1
+            mE = MMiEx(i,j,k)
+            mEPrev = MMiEx(i-1,j,k)
+            if (.not. (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC)) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                     crossed = hasCrossedPEC(MMiHx(i,j,k), MMiHx(i,j-1,k), MMiHx(i,j,k-1), MMiHx(i,j-1,k-1))
+               else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
+                     crossed = hasCrossedPECOrConformalPEC(MMiHx(i,j,k),MMiHx(i,j-1,k), MMiHx(i,j,k-1), MMiHx(i,j-1,k-1))
+                     crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHx(i-1,j,k),MMiHx(i-1,j-1,k), MMiHx(i-1,j,k-1), MMiHx(i-1,j-1,k-1))
+               end if
+            else if (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                     crossed = hasCrossedPECOrConformalPEC(MMiHx(i,j,k),MMiHx(i,j-1,k), MMiHx(i,j,k-1), MMiHx(i,j-1,k-1))
+                     crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHx(i+1,j,k),MMiHx(i+1,j-1,k), MMiHx(i+1,j,k-1), MMiHx(i+1,j-1,k-1))
+               end if
+            end if
+            if (crossed) inside_volume = .not. inside_volume
+            if (crossed .and. inside_volume) idx_in = i
+            if (crossed .and. .not. inside_volume) idx_out = i-1
+         end do
+         do ii = 1, size(idx_in)
+            if (idx_in(ii) /= 0 .and. idx_out(ii) /=0) then 
+               do i = idx_in(ii), idx_out(ii)-1
+                     if (MMiEx (i, j, k) == 1) then 
+                        MMiEx (i, j, k) = indicemedio
+                        Mtag(i,j,k)=64*numertag 
+                        tags%edge%x(i,j,k) = 64*numertag
+                     end if
+               end do
+            end if
+         end do
+
+      end subroutine
+
+      function countCrossesX(j,k) result(res)
+         integer(kind=4), intent(in) :: j,k
+         integer(kind=4) :: res
+         integer(kind=4) :: i, mE, mEPrev
+         logical :: crossed = .false.
+         res = 0
+         do i = BoundingBox%xi, BoundingBox%xe+1
+            mE = MMiEx(i,j,k)
+            mEPrev = MMiEx(i-1,j,k)
+            crossed = .false.
+            if (.not. (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC)) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                     crossed = hasCrossedPEC(MMiHx(i,j,k), MMiHx(i,j-1,k), MMiHx(i,j,k-1), MMiHx(i,j-1,k-1))
+               else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
+                     crossed = hasCrossedPECOrConformalPEC(MMiHx(i,j,k),MMiHx(i,j-1,k), MMiHx(i,j,k-1), MMiHx(i,j-1,k-1))
+                     crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHx(i-1,j,k),MMiHx(i-1,j-1,k), MMiHx(i-1,j,k-1), MMiHx(i-1,j-1,k-1))
+               end if
+            else if (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                     crossed = hasCrossedPECOrConformalPEC(MMiHx(i,j,k),MMiHx(i,j-1,k), MMiHx(i,j,k-1), MMiHx(i,j-1,k-1))
+                     crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHx(i+1,j,k),MMiHx(i+1,j-1,k), MMiHx(i+1,j,k-1), MMiHx(i+1,j-1,k-1))
+               end if
+            end if
+            if (crossed) res = res + 1
+         end do
+         if (res /= 0) then 
+            if (modulo(res,2) /= 0) error stop 'uneven number of crosses'
+         end if
+      end function
+
+      subroutine fillEdgesInsideVolumeY(i, k)
+         integer(kind=4), intent(in) :: i,k
+         integer(kind=4) :: j, jj
+         logical :: crossed, inside_volume
+         integer(kind=4) :: mE, mEPrev, n_crosses
+         integer(kind=4), dimension(:), allocatable :: idx_in, idx_out
+         inside_volume = .false.
+         crossed = .false.
+         n_crosses = countCrossesY(i,k)
+         allocate(idx_in(n_crosses/2))
+         allocate(idx_out(n_crosses/2))
+         idx_in(:) = 0
+         idx_out(:) = 0
+         do j = BoundingBox%yi, BoundingBox%ye+1
+            ! crossing PEC boundary
+            mE = MMiEy(i,j,k)
+            mEPrev = MMiEy(i,j-1,k)
+            crossed = .false.
+
+            if (.not. (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC)) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                  crossed = hasCrossedPEC(MMiHy(i,j,k), MMiHy(i-1,j,k), MMiHy(i,j,k-1), MMiHy(i-1,j,k-1))
+               else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
+                  crossed = hasCrossedPECOrConformalPEC(MMiHy(i,j,k),MMiHy(i,j,k-1),MMiHy(i-1,j,k),MMiHy(i-1,j,k-1))
+                  crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHy(i,j-1,k), MMiHy(i,j-1,k-1),MMiHy(i-1,j-1,k),MMiHy(i-1,j-1,k-1))
+               end if
+            else if (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                  crossed = hasCrossedPECOrConformalPEC(MMiHy(i,j,k),MMiHy(i,j,k-1),MMiHy(i-1,j,k),MMiHy(i-1,j,k-1))
+                  crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHy(i,j+1,k), MMiHy(i,j+1,k-1),MMiHy(i-1,j+1,k),MMiHy(i-1,j+1,k-1))
+               end if
+            end if
+
+            if (crossed) inside_volume = .not. inside_volume
+            if (crossed .and. inside_volume) idx_in = j
+            if (crossed .and. .not. inside_volume) idx_out = j-1
+            
+         end do
+         do jj = 1, size(idx_in)
+            if (idx_in(jj) /= 0 .and. idx_out(jj) /=0) then 
+               do j = idx_in(jj), idx_out(jj)-1
+                  if (MMiEy (i, j, k) == 1) then 
+                     MMiEy (i, j, k) = indicemedio
+                     Mtag(i,j,k)=64*numertag 
+                     tags%edge%y(i,j,k) = 64*numertag
+                  end if
+               end do
+            end if
+         end do
+      end subroutine
+
+      function countCrossesY(i,k) result(res)
+         integer(kind=4), intent(in) :: i,k
+         integer(kind=4) :: res
+         integer(kind=4) :: j, mE, mEPrev
+         logical :: crossed = .false.
+         res = 0
+         do j = BoundingBox%yi, BoundingBox%ye+1
+            ! crossing PEC boundary
+            mE = MMiEy(i,j,k)
+            mEPrev = MMiEy(i,j-1,k)
+            crossed = .false.
+            if (.not. (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC)) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                  crossed = hasCrossedPEC(MMiHy(i,j,k), MMiHy(i-1,j,k), MMiHy(i,j,k-1), MMiHy(i-1,j,k-1))
+               else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
+                  crossed = hasCrossedPECOrConformalPEC(MMiHy(i,j,k),MMiHy(i,j,k-1),MMiHy(i-1,j,k),MMiHy(i-1,j,k-1))
+                  crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHy(i,j-1,k), MMiHy(i,j-1,k-1),MMiHy(i-1,j-1,k),MMiHy(i-1,j-1,k-1))
+               end if
+            else if (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                  crossed = hasCrossedPECOrConformalPEC(MMiHy(i,j,k),MMiHy(i,j,k-1),MMiHy(i-1,j,k),MMiHy(i-1,j,k-1))
+                  crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHy(i,j+1,k), MMiHy(i,j+1,k-1),MMiHy(i-1,j+1,k),MMiHy(i-1,j+1,k-1))
+               end if
+            end if
+
+            if (crossed) res = res + 1
+         end do
+         if (res /= 0) then 
+            if (modulo(res,2) /= 0) then 
+               error stop 'uneven number of crosses'
+            end if
+         end if
+      end function
+
+
+      subroutine fillEdgesInsideVolumeZ(i,j)
+         integer(kind=4), intent(in) :: i,j
+         integer(kind=4) :: k, kk
+         logical :: crossed, inside_volume
+         integer(kind=4) :: mE, mEPrev, n_crosses
+         integer(kind=4), dimension(:), allocatable :: idx_in, idx_out
+         inside_volume = .false.
+         crossed = .false.
+         n_crosses = countCrossesZ(i,j)
+         allocate(idx_in(n_crosses/2))
+         allocate(idx_out(n_crosses/2))
+         idx_in(:) = 0
+         idx_out(:) = 0
+         do k = BoundingBox%zi, BoundingBox%ze+1
+            ! crossing PEC boundary
+            mE = MMiEz(i,j,k)
+            mEPrev = MMiEz(i,j,k-1)
+            if (.not. (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC)) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                  crossed = hasCrossedPEC(MMiHz(i,j,k), MMiHz(i-1,j,k),MMiHz(i,j-1,k),MMiHz(i-1,j-1,k))
+               else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
+                  crossed = hasCrossedPECOrConformalPEC(MMiHz(i,j,k),MMiHz(i-1,j,k),MMiHz(i,j-1,k),MMiHz(i-1,j-1,k))
+                  crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHz(i,j,k-1),MMiHz(i-1,j,k-1),MMiHz(i,j-1,k-1),MMiHz(i-1,j-1,k-1))
+               end if
+            else if (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                  crossed = hasCrossedPECOrConformalPEC(MMiHz(i,j,k),MMiHz(i-1,j,k),MMiHz(i,j-1,k),MMiHz(i-1,j-1,k))
+                  crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHz(i,j,k+1),MMiHz(i-1,j,k+1),MMiHz(i,j-1,k+1),MMiHz(i-1,j-1,k+1))
+               end if
+            end if
+
+            if (crossed) inside_volume = .not. inside_volume
+            if (crossed .and. inside_volume) idx_in = k
+            if (crossed .and. .not. inside_volume) idx_out = k-1
+            
+         end do
+         do kk = 1, size(idx_in)
+            if (idx_in(kk) /= 0 .and. idx_out(kk) /=0) then 
+               do k = idx_in(kk), idx_out(kk)-1
+                  if (MMiEz (i, j, k) == 1) then 
+                     MMiEz (i, j, k) = indicemedio
+                     Mtag(i,j,k)=64*numertag 
+                     tags%edge%z(i,j,k) = 64*numertag
+                  end if
+               end do
+            end if
+         end do
+      end subroutine
+
+      function countCrossesZ(i,j) result(res)
+         integer(kind=4), intent(in) :: i,j
+         integer(kind=4) :: res
+         integer(kind=4) :: k, mE, mEPrev
+         logical :: crossed = .false.
+         res = 0
+         do k = BoundingBox%zi, BoundingBox%ze+1
+            ! crossing PEC boundary
+            mE = MMiEz(i,j,k)
+            mEPrev = MMiEz(i,j,k-1)
+            crossed = .false.
+
+            if (.not. (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC)) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                  crossed = hasCrossedPEC(MMiHz(i,j,k), MMiHz(i-1,j,k),MMiHz(i,j-1,k),MMiHz(i-1,j-1,k))
+               else if (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC) then 
+                  crossed = hasCrossedPECOrConformalPEC(MMiHz(i,j,k),MMiHz(i-1,j,k),MMiHz(i,j-1,k),MMiHz(i-1,j-1,k))
+                  crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHz(i,j,k-1),MMiHz(i-1,j,k-1),MMiHz(i,j-1,k-1),MMiHz(i-1,j-1,k-1))
+               end if
+            else if (med(mE)%Is%ConformalPEC .or. med(mE)%Is%PEC) then 
+               if (.not. (med(mEPrev)%Is%ConformalPEC .or. med(mEPrev)%Is%PEC)) then 
+                  crossed = hasCrossedPECOrConformalPEC(MMiHz(i,j,k),MMiHz(i-1,j,k),MMiHz(i,j-1,k),MMiHz(i-1,j-1,k))
+                  crossed = crossed .or. hasCrossedPECOrConformalPEC(MMiHz(i,j,k+1),MMiHz(i-1,j,k+1),MMiHz(i,j-1,k+1),MMiHz(i-1,j-1,k+1))
+               end if
+            end if
+
+            if (crossed) res = res + 1
+         end do
+         if (res /= 0) then 
+            if (modulo(res,2) /= 0) error stop 'uneven number of crosses'
+         end if
+      end function
+
+
+   end subroutine
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Routine :  CreateVolumeMM :  Sets every field component of a volume voxel to the index of the medium
    ! Inputs :   M(field)%Mediamatrix(i,j,k)  : type of medium at each i,j,k, for each field
