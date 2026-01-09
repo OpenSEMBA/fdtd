@@ -1366,11 +1366,11 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
-            call initConformal(this%sgg, & 
-                     this%media%sggMiEx, this%media%sggMiEy,this%media%sggMiEz, & 
-                     this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
-                     Ex,Ey,Ez,Hx,Hy,Hz, & 
-                     this%control%layoutnumber)
+            ! call initConformal(this%sgg, & 
+            !          this%media%sggMiEx, this%media%sggMiEy,this%media%sggMiEz, & 
+            !          this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
+            !          Ex,Ey,Ez,Hx,Hy,Hz, & 
+            !          this%control%layoutnumber)
             
       end subroutine
 

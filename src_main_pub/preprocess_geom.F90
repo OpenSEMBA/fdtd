@@ -4842,9 +4842,9 @@ CONTAINS
       end function
 
       function changeTimeStepIfConformalNeeded(sgg_dt) result(res)
-         real(kind=rkind), intent(in) :: sgg_dt
-         real(kind=rkind) :: yee_dt, time_scale_factor
-         real(kind=rkind) :: res
+         real(kind=RKIND_tiempo), intent(in) :: sgg_dt
+         real(kind=RKIND_tiempo) :: yee_dt, time_scale_factor
+         real(kind=RKIND_tiempo) :: res
          time_scale_factor = computeConformalTimeFactor(conformal_volumes, conformal_surfaces)
          yee_dt = (1.0_RKIND/(cluz*sqrt(((1.0_RKIND / minval(sgg%DX))**2.0_RKIND) + & 
                   ((1.0_RKIND / minval(sgg%DY))**2.0_RKIND) + & 
