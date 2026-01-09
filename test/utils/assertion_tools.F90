@@ -1,20 +1,21 @@
 module mod_assertionTools
-  use FDETYPES
-  implicit none
-  
+   use FDETYPES
+   use mod_arrayAssertionTools
+   implicit none
+
 contains
    function assert_true(boolean, errorMessage) result(err)
       logical, intent(in) :: boolean
       character(*), intent(in) :: errorMessage
       integer :: err
-      if (boolean) then 
+      if (boolean) then
          err = 0
       else
          err = 1
          print *, 'ASSERTION FAILED: ', trim(errorMessage)
       end if
    end function
-    function assert_integer_equal(val, expected, errorMessage) result(err)
+   function assert_integer_equal(val, expected, errorMessage) result(err)
 
       integer, intent(in) :: val
       integer, intent(in) :: expected
@@ -30,7 +31,7 @@ contains
       end if
    end function assert_integer_equal
 
-  function assert_real_equal(val, expected, tolerance, errorMessage) result(err)
+   function assert_real_equal(val, expected, tolerance, errorMessage) result(err)
 
       real(kind=rkind), intent(in) :: val
       real(kind=rkind), intent(in) :: expected
@@ -64,23 +65,23 @@ contains
       end if
    end function assert_real_time_equal
 
-function assert_complex_equal(val, expected, tolerance, errorMessage) result(err)
-    complex(kind=CKIND), intent(in) :: val, expected
-    real   (kind=RKIND), intent(in) :: tolerance
-    character(len=*), intent(in)    :: errorMessage
-    integer :: err
+   function assert_complex_equal(val, expected, tolerance, errorMessage) result(err)
+      complex(kind=CKIND), intent(in) :: val, expected
+      real(kind=RKIND), intent(in) :: tolerance
+      character(len=*), intent(in)    :: errorMessage
+      integer :: err
 
-    if (abs(val - expected) <= tolerance) then
-        err = 0
-    else
-        err = 1
-        print *, 'ASSERTION FAILED: ', trim(errorMessage)
-        print *, '  Value:    ', val
-        print *, '  Expected: ', expected
-        print *, '  Delta:    ', abs(val - expected)
-        print *, '  Tolerance:', tolerance
-    end if
-end function assert_complex_equal
+      if (abs(val - expected) <= tolerance) then
+         err = 0
+      else
+         err = 1
+         print *, 'ASSERTION FAILED: ', trim(errorMessage)
+         print *, '  Value:    ', val
+         print *, '  Expected: ', expected
+         print *, '  Delta:    ', abs(val - expected)
+         print *, '  Tolerance:', tolerance
+      end if
+   end function assert_complex_equal
 
    function assert_string_equal(val, expected, errorMessage) result(err)
 
@@ -151,8 +152,8 @@ end function assert_complex_equal
       character(len=*), intent(in) :: filename
       integer :: unit, ios
       err = 0
-      open(newunit=unit, file=filename, status='old', iostat=ios)
-      close(unit)
-      if (ios/=0) err = 1
+      open (newunit=unit, file=filename, status='old', iostat=ios)
+      close (unit)
+      if (ios /= 0) err = 1
    end function
 end module mod_assertionTools
