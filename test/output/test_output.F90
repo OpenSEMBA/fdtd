@@ -42,7 +42,6 @@ integer function test_init_point_probe() bind(c) result(err)
    test_err = test_err + assert_true(outputRequested, 'Valid probes not found')
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, POINT_PROBE_ID, 'Unexpected probe id')
-   test_err = test_err + assert_integer_equal(outputs(1)%pointProbe%columnas, 2, 'Unexpected number of columns')
    test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, &
                                              'entradaRoot_poinProbe_Ex_4_4_4', 'Unexpected path')
 
@@ -466,9 +465,6 @@ integer function test_init_movie_probe() bind(c) result(err)
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, &
                                               MOVIE_PROBE_ID, 'Unexpected probe id')
 
-   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%columnas, &
-                                              4, 'Unexpected number of columns')
-
    test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nPoints, &
                                               expectedNumMeasurments, 'Unexpected number of measurements')
 
@@ -587,19 +583,6 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    call update_outputs(dummyControl, dummysgg%tiempo, 1_SINGLE, fields)
 
-   test_err = test_err + assert_integer_equal(outputs(1)%outputID, &
-                                              MOVIE_PROBE_ID, 'Unexpected probe id')
-
-   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%columnas, &
-                                              4, 'Unexpected number of columns')
-
-   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nPoints, &
-                                              expectedNumMeasurments, 'Unexpected number of measurements')
-
-   test_err = test_err + assert_integer_equal( &
-              size(outputs(1)%movieProbe%xValueForTime), &
-              expectedNumMeasurments*BuffObse, 'Unexpected allocation size')
-
    test_err = test_err + assert_real_equal(outputs(1)%movieProbe%yValueForTime(1, 1), &
                                            0.2_RKIND, 1e-5_RKIND, 'Value error')
 
@@ -689,10 +672,21 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
 
+   call assing_material_id_to_media_matrix_coordinate(media, iEx, 3, 3, 3, simulationMaterials(0)%Id)
    call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
-   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iHy, 3, 3, 3, simulationMaterials(0)%Id)
+
+   call assing_material_id_to_media_matrix_coordinate(media, iEx, 3, 4, 3, simulationMaterials(0)%Id)
    call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iHy, 3, 4, 3, simulationMaterials(0)%Id)
+
+   call assing_material_id_to_media_matrix_coordinate(media, iEx, 4, 4, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iHy, 4, 4, 3, simulationMaterials(0)%Id)
+
+   call assing_material_id_to_media_matrix_coordinate(media, iEx, 4, 3, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
+   call assing_material_id_to_media_matrix_coordinate(media, iHy, 4, 3, 3, simulationMaterials(0)%Id)
 
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
@@ -730,20 +724,20 @@ integer function test_flush_movie_probe() bind(c) result(err)
    !--- Dummy second update ---
    !movieCurrentObservable
    outputs(1)%movieProbe%nTime = 2
-   outputs(1)%movieProbe%timeStep(2) = 0.5_RKIND_tiempo
-   outputs(1)%movieProbe%xValueForTime(2, :) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
-   outputs(1)%movieProbe%yValueForTime(2, :) = [0.3_RKIND, 0.4_RKIND, 0.5_RKIND, 0.6_RKIND]
-   outputs(1)%movieProbe%zValueForTime(2, :) = [0.7_RKIND, 0.8_RKIND, 0.9_RKIND, 1.0_RKIND]
+   outputs(1)%movieProbe%timeStep(2) = 0.75_RKIND_tiempo
+   outputs(1)%movieProbe%xValueForTime(2, :) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
+   outputs(1)%movieProbe%yValueForTime(2, :) = [1.3_RKIND, 1.4_RKIND, 1.5_RKIND, 1.6_RKIND]
+   outputs(1)%movieProbe%zValueForTime(2, :) = [1.7_RKIND, 1.8_RKIND, 1.9_RKIND, 2.0_RKIND]
 
    !movieElectricXObservable
    outputs(2)%movieProbe%nTime = 2
-   outputs(2)%movieProbe%timeStep(2) = 0.5_RKIND_tiempo
-   outputs(2)%movieProbe%xValueForTime(2, :) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
+   outputs(2)%movieProbe%timeStep(2) = 0.75_RKIND_tiempo
+   outputs(2)%movieProbe%xValueForTime(2, :) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
 
    !movieMagneticYObservable
    outputs(3)%movieProbe%nTime = 2
-   outputs(3)%movieProbe%timeStep(2) = 0.5_RKIND_tiempo
-   outputs(3)%movieProbe%yValueForTime(2, :) = [0.1_RKIND, 0.2_RKIND, 0.3_RKIND, 0.4_RKIND]
+   outputs(3)%movieProbe%timeStep(2) = 0.75_RKIND_tiempo
+   outputs(3)%movieProbe%yValueForTime(2, :) = [1.1_RKIND, 1.2_RKIND, 1.3_RKIND, 1.4_RKIND]
 
    call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
@@ -901,6 +895,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    type(fields_reference_t)        :: fields
 
    integer(kind=SINGLE)             :: expectedNumMeasurments
+   integer(kind=SINGLE)             :: expectedNumberFrequencies
    integer(kind=SINGLE)             :: mpidir = 3
    integer(kind=SINGLE)             :: iter
    integer(kind=SINGLE)             :: test_err = 0
@@ -935,7 +930,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 3, 3, simulationMaterials(0)%Id)
    call assing_material_id_to_media_matrix_coordinate(media, iEy, 4, 4, 3, simulationMaterials(0)%Id)
    call assing_material_id_to_media_matrix_coordinate(media, iEy, 3, 4, 3, simulationMaterials(0)%Id)
-
+   expectedNumberFrequencies = 6_SINGLE
    expectedNumMeasurments = 4_SINGLE
    mediaPtr => media
 
@@ -966,37 +961,26 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    fields%H%deltaY => dummyFields%dyh
    fields%H%deltaZ => dummyFields%dzh
 
-   dummyFields%Hx(3, 3, 3) = 2.0_RKIND
-   dummyFields%Hy(3, 3, 3) = 5.0_RKIND
-   dummyFields%Hz(3, 3, 3) = 4.0_RKIND
+   call fillGradient(dummyFields, 1, 0.0_RKIND, 10.0_RKIND)
 
-   call update_outputs(dummyControl, dummysgg%tiempo, 1_SINGLE, fields)
+   call update_outputs(dummyControl, dummysgg%tiempo, 2_SINGLE, fields)
 
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, &
                                               FREQUENCY_SLICE_PROBE_ID, 'Unexpected probe id')
-
-   test_err = test_err + assert_integer_equal(outputs(1)%frequencySliceProbe%columnas, &
-                                              4, 'Unexpected number of columns')
 
    test_err = test_err + assert_integer_equal(outputs(1)%frequencySliceProbe%nPoints, &
                                               expectedNumMeasurments, 'Unexpected number of measurements')
 
    test_err = test_err + assert_integer_equal( &
               size(outputs(1)%frequencySliceProbe%frequencySlice), &
-              expectedNumMeasurments*BuffObse, 'Unexpected allocation size')
+              expectedNumberFrequencies, 'Unexpected allocation size')
 
-   test_err = test_err + assert_complex_equal(outputs(1)%frequencySliceProbe%yValueForFreq(3, 1), &
-                                              (0.2_CKIND, 0.2_CKIND), 1e-5_RKIND, 'Value error')
+   !This test generates X Gradient for H. It is expected to detect none Current accros X axis and Opposite values for Y and Z
 
-   test_err = test_err + assert_complex_equal(outputs(1)%frequencySliceProbe%yValueForFreq(3, 2), &
-                                              (0.2_CKIND, 0.2_CKIND), 1e-5_RKIND, 'Value error')
-
-   test_err = test_err + assert_complex_equal(outputs(1)%frequencySliceProbe%yValueForFreq(3, 3), &
-                                              (0.2_CKIND, 0.2_CKIND), 1e-5_RKIND, 'Value error')
-
-   test_err = test_err + assert_complex_equal(outputs(1)%frequencySliceProbe%yValueForFreq(3, 4), &
-                                              (0.2_CKIND, 0.2_CKIND), 1e-5_RKIND, 'Value error')
-
+   test_err = test_err + assert_array_value(outputs(1)%frequencySliceProbe%xValueForFreq, (0.0_CKIND , 0.0_CKIND), errormessage='Detected Current on X Axis for Hx gradient')
+   test_err = test_err + assert_arrays_equal(outputs(1)%frequencySliceProbe%yValueForFreq, &
+                                             -1.0_RKIND * outputs(1)%frequencySliceProbe%zValueForFreq, errormessage='Unequal values for Y and -Z')
+   
    call close_outputs()
 
    err = test_err

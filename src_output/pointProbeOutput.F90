@@ -158,7 +158,7 @@ contains
          open (unit=this%fileUnitFreq, file=filename, status="replace", action="write")
 
          do i = 1, this%nFreq
-            write (this%fileUnitFreq, '(F12.6,1X,F12.6)') this%frequencySlice(i), this%valueForFreq(i)
+            write (this%fileUnitFreq, '(F12.6,1X,F12.6,1X,F12.6)') this%frequencySlice(i), real(this%valueForFreq(i)), aimag(this%valueForFreq(i))
          end do
 
          close (this%fileUnitFreq)

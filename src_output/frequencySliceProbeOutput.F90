@@ -207,7 +207,7 @@ contains
       jdir = computej(direction, i, j, k, fieldsReference)
 
       do iter = 1, nFreq
-         valorComplex(i, coordIdx) = valorComplex(i, coordIdx) + (auxExponential(i)**step)*jdir
+         valorComplex(iter, coordIdx) = valorComplex(iter, coordIdx) + (auxExponential(iter)**step)*jdir
       end do
    end subroutine
 

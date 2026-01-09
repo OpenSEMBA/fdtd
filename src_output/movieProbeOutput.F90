@@ -67,10 +67,9 @@ contains
       this%domain = domain
       this%path = get_output_path()
 
-      call count_required_coords(this, problemInfo)
+      call find_and_store_important_coords(this, problemInfo)
 
       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
-      call alloc_and_init(this%coords, 3, this%nPoints, 0_SINGLE)
 
       if (any(VOLUMIC_M_MEASURE == this%component)) then
          call alloc_and_init(this%xValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
@@ -280,18 +279,18 @@ contains
       subroutine clear_memory_data()
          this%nTime = 0
          this%timeStep = 0.0_RKIND
-         if (any(VOLUMIC_M_MEASURE==this%component)) then
+         if (any(VOLUMIC_M_MEASURE == this%component)) then
             this%xValueForTime = 0.0_RKIND
             this%yValueForTime = 0.0_RKIND
             this%zValueForTime = 0.0_RKIND
-         else if (any(VOLUMIC_X_MEASURE==this%component)) then
-            this%xValueForTime = 0.0_RKIND                        
-         else if (any(VOLUMIC_Y_MEASURE==this%component)) then 
+         else if (any(VOLUMIC_X_MEASURE == this%component)) then
+            this%xValueForTime = 0.0_RKIND
+         else if (any(VOLUMIC_Y_MEASURE == this%component)) then
             this%yValueForTime = 0.0_RKIND
-         else if (any(VOLUMIC_Z_MEASURE==this%component)) then 
+         else if (any(VOLUMIC_Z_MEASURE == this%component)) then
             this%zValueForTime = 0.0_RKIND
          end if
-         end subroutine clear_memory_data
+      end subroutine clear_memory_data
 
    end subroutine flush_movie_probe_output
 
@@ -408,6 +407,15 @@ contains
          '" group="" part="0" file="'//trim(filename)//'"/>'
    end subroutine update_pvd
 
+   subroutine find_and_store_important_coords(this, problemInfo)
+      type(movie_probe_output_t), intent(inout) :: this
+      type(problem_info_t), intent(in) :: problemInfo
+
+      call count_required_coords(this, problemInfo)
+      call alloc_and_init(this%coords, 3, this%nPoints, 0_SINGLE)
+      call store_required_coords(this, problemInfo)
+   end subroutine
+
    subroutine count_required_coords(this, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
       type(problem_info_t), intent(in) :: problemInfo
@@ -416,6 +424,51 @@ contains
 
       procedure(logical_func), pointer :: checker => null()  ! Pointer to logical function
       integer :: component, count
+      call get_checker_and_component(this, checker, component)
+
+      count = 0
+      do i = this%mainCoords%x, this%auxCoords%x
+      do j = this%mainCoords%y, this%auxCoords%y
+      do k = this%mainCoords%z, this%auxCoords%z
+         if (checker(component, i, j, k, problemInfo)) count = count + 1
+      end do
+      end do
+      end do
+
+      this%nPoints = count
+
+   end subroutine
+
+   subroutine store_required_coords(this, problemInfo)
+      type(movie_probe_output_t), intent(inout) :: this
+      type(problem_info_t), intent(in) :: problemInfo
+
+      integer :: i, j, k
+
+      procedure(logical_func), pointer :: checker => null()  ! Pointer to logical function
+      integer :: component, count
+      call get_checker_and_component(this, checker, component)
+
+      count = 0
+      do i = this%mainCoords%x, this%auxCoords%x
+      do j = this%mainCoords%y, this%auxCoords%y
+      do k = this%mainCoords%z, this%auxCoords%z
+         if (checker(component, i, j, k, problemInfo)) then
+            count = count + 1
+            this%coords(1, count) = i
+            this%coords(2, count) = j
+            this%coords(3, count) = k
+         end if
+      end do
+      end do
+      end do
+   end subroutine
+
+   subroutine get_checker_and_component(this, checker, component)
+      type(movie_probe_output_t), intent(in) :: this
+      procedure(logical_func), pointer, intent(out) :: checker
+      integer, intent(out) :: component
+
       select case (this%component)
       case (iCur)
          checker => volumicCurrentRequest
@@ -454,18 +507,6 @@ contains
          checker => componentFieldRequest
          component = iHz
       end select
-
-      count = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
-         if (checker(component, i, j, k, problemInfo)) count = count + 1
-      end do
-      end do
-      end do
-
-      this%nPoints = count
-
    end subroutine
 
    logical function isValidPointForCurrent(request, i, j, k, problemInfo)
