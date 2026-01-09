@@ -170,7 +170,7 @@ module outputTypes
 ! High-level aggregation types
 !=====================================================
    type :: solver_output_t
-      integer(kind=SINGLE) :: outputID
+      integer(kind=SINGLE) :: outputID = -1
       type(point_probe_output_t), allocatable :: pointProbe
       type(wire_current_probe_output_t), allocatable :: wireCurrentProbe
       type(wire_charge_probe_output_t), allocatable  :: wireChargeProbe

@@ -33,7 +33,8 @@ module output
    private :: get_required_output_count
    !===========================
 
-   integer(kind=SINGLE), parameter :: POINT_PROBE_ID = 0, &
+   integer(kind=SINGLE), parameter :: UNDEFINED_PROBE = -1, & 
+                                      POINT_PROBE_ID = 0, &
                                       WIRE_CURRENT_PROBE_ID = 1, &
                                       WIRE_CHARGE_PROBE_ID = 2, &
                                       BULK_PROBE_ID = 3, &
@@ -145,6 +146,8 @@ contains
       !end do
 
       do ii = 1, sgg%NumberRequest
+         domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, control%finaltimestep)
+         if (domain%domainType == UNDEFINED_DOMAIN) cycle
          do i = 1, sgg%Observation(ii)%nP
             lowerBound%x = sgg%observation(ii)%P(i)%XI
             lowerBound%y = sgg%observation(ii)%P(i)%YI
@@ -155,7 +158,6 @@ contains
             upperBound%z = sgg%observation(ii)%P(i)%ZE
             NODE = sgg%observation(ii)%P(i)%NODE
 
-            domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, control%finaltimestep)
             outputTypeExtension = trim(adjustl(control%nEntradaRoot))//'_'//trim(adjustl(sgg%observation(ii)%outputrequest))
 
             outputRequestType = sgg%observation(ii)%P(i)%what
@@ -211,7 +213,7 @@ contains
                   outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
                   allocate (outputs(outputCount)%frequencySliceProbe)
                   call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, sgg%dt, outputRequestType, domain, outputTypeExtension, control, problemInfo)
-                  call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%fileUnitFreq)
+               call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%fileUnitFreq)
 
                end if
             case (farfield)
@@ -221,12 +223,17 @@ contains
                outputs(outputCount)%outputID = FAR_FIELD_PROBE_ID
                allocate (outputs(outputCount)%farFieldOutput)
                call init_solver_output(outputs(outputCount)%farFieldOutput, sgg, lowerBound, upperBound, outputRequestType, domain, sphericRange, outputTypeExtension, sgg%Observation(ii)%FileNormalize, control, problemInfo, eps0, mu0)
+            case (mapvtk)
+               call stoponerror(0, 0, 'mapvtk type not implemented yet on new observations')
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select
          end do
       end do
-
+      if (outputCount /= requestedOutputs) then
+         call remove_unused_outputs(outputs)
+         outputCount = size(outputs)
+      end if
       if (outputCount /= 0) observationsExists = .true.
       return
    contains
@@ -285,7 +292,7 @@ contains
             newDomain%fnum = int((newDomain%fstop - newDomain%fstart)/newDomain%fstep, kind=SINGLE)
 
          else
-            call stoponerror(0, 0, 'No domain present')
+            newDomain = domain_t()
          end if
          return
       end function preprocess_domain
@@ -382,6 +389,33 @@ contains
          end select
       end do
    end subroutine flush_outputs
+
+   subroutine remove_unused_outputs(output_list)
+      implicit none
+      type(solver_output_t), pointer, intent(inout) :: output_list(:)
+
+      type(solver_output_t), allocatable :: tmp(:)
+      integer :: i, n, k
+
+      n = count(output_list%outputID /= UNDEFINED_PROBE)
+
+      allocate (tmp(n))
+
+      ! Copy valid elements
+      k = 0
+      do i = 1, size(output_list)
+         if (output_list(i)%outputID /= UNDEFINED_PROBE) then
+            k = k + 1
+            tmp(k) = output_list(i)   ! deep copy of all allocatable components
+         end if
+      end do
+
+      ! Replace the saved pointer target safely
+      if (associated(output_list)) deallocate (output_list)
+      allocate (output_list(n))
+      output_list = tmp
+
+   end subroutine remove_unused_outputs
 
    subroutine close_outputs()
       integer :: i
@@ -547,4 +581,4 @@ contains
 !      end if
 !      end subroutine
 
-   end module output
+end module output

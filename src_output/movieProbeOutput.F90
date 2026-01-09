@@ -251,7 +251,6 @@ contains
       do k = this%mainCoords%z, this%auxCoords%z
          if (isValidPointForField(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            coordIdx = coordIdx + 1
             call save_field(fieldData, this%nTime, coordIdx, fieldComponent(i, j, k))
          end if
       end do

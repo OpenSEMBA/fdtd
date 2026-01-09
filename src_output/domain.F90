@@ -3,10 +3,11 @@ module mod_domain
    use outputTypes
    implicit none
 
-
+   private
+   public :: domain_t
 
    interface domain_t
-     module procedure new_domain_time, new_domain_freq, new_domain_both
+     module procedure new_domain_time, new_domain_freq, new_domain_both, null_domain
    end interface domain_t
 
 contains
@@ -56,8 +57,11 @@ contains
 
       new_domain%domainType = BOTH_DOMAIN
 
-      
-      
    end function new_domain_both
+
+   function null_domain() result(new_domain)
+      type(domain_t) :: new_domain
+      new_domain%domainType = UNDEFINED_DOMAIN
+   end function 
 
 end module mod_domain

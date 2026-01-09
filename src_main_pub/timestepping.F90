@@ -2051,11 +2051,13 @@ contains
          integer(kind=4) :: mindum
          IF (this%thereAre%Observation) then
 #ifdef CompileWithNewOutputModule
-            call update_outputs(this%control, this%sgg%tiempo, this%n + 1, fieldReference)
-            if (this%n>=this%ini_save+BuffObse)  then
-               mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
-               call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
-            endif
+            if (this%n /= 0) then
+               call update_outputs(this%control, this%sgg%tiempo, this%n, fieldReference)
+               if (this%n>=this%ini_save+BuffObse)  then
+                  mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
+                  call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .FALSE.)
+               endif
+            end if
 #else
             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then
@@ -2762,11 +2764,34 @@ contains
       logical :: dummylog, somethingdone, newsomethingdone
       character(len=bufsize) :: dubuf
 
+#ifdef CompileWithNewOutputModule
+      type(fields_reference_t) :: fieldReference
+#endif
+
+
 #ifdef CompileWithMPI
       integer (kind=4) :: ierr
 #endif
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz;
       dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
+
+#ifdef CompileWithNewOutputModule
+      fieldReference%E%x => this%Ex
+      fieldReference%E%y => this%Ey
+      fieldReference%E%z => this%Ez
+
+      fieldReference%E%deltax => this%dxe
+      fieldReference%E%deltay => this%dye
+      fieldReference%E%deltaz => this%dze
+
+      fieldReference%H%x => this%Hx
+      fieldReference%H%y => this%Hy
+      fieldReference%H%z => this%Hz
+
+      fieldReference%H%deltax => this%dxh
+      fieldReference%H%deltay => this%dyh
+      fieldReference%H%deltaz => this%dzh
+#endif
 
 #ifdef CompileWithProfiling
       call nvtxEndRange
@@ -2813,8 +2838,12 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       if (this%thereAre%Observation) THEN
+#ifdef CompileWithNewOutputModule
+         call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .TRUE.)
+#else 
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
+#endif
 #ifdef CompileWithMTLN      
          if (this%control%use_mtln_wires) then
             call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
