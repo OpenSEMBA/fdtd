@@ -154,11 +154,6 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_ELEM_TYPE_POLYLINE = "polyline"
    character (len=*), parameter :: J_ELEM_TYPE_CELL = "cell"
    character (len=*), parameter :: J_CELL_INTERVALS = "intervals"
-<<<<<<< HEAD
-   character (len=*), parameter :: J_ELEM_TYPE_CONF_VOLUME = "conformalVolume"
-   character (len=*), parameter :: J_ELEM_TYPE_CONF_SURFACE = "conformalSurface"
-=======
->>>>>>> origin/dev
    character (len=*), parameter :: J_CONF_VOLUME_TRIANGLES = "triangles"
    character (len=*), parameter :: J_CONF_VOLUME_INTERVALS = "intervals"
    

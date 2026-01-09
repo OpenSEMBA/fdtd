@@ -1127,7 +1127,6 @@ def test_conformal_delay(tmp_path):
         tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
         assert np.abs(delay - tdelta)/tdelta < 0.01
         
-<<<<<<< HEAD
 def test_conformal_thin_strip_resistance(tmp_path):
     fn = CASES_FOLDER + 'conformal_thin_strip/conformal_thin_strip.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -1155,7 +1154,6 @@ def test_conformal_thin_strip_resistance(tmp_path):
     Rdc_th = 0 
     #impedance comparison 
     assert (np.abs(Vfexc/Ifbulk)[0] == Rdc_th)
-=======
 
 
 def test_bulk_current_outputs(tmp_path):
@@ -1188,4 +1186,3 @@ def test_bulk_current_outputs(tmp_path):
     assert probeBulkZPlane.direction == 'z'
     assert probeBulkYPoint.direction == 'y'
     assert probeBulkZVolume.direction == 'z'
->>>>>>> origin/dev
