@@ -419,8 +419,8 @@ module  FDETYPES
       REAL (KIND=RKIND_wires) :: Series_R_RightEnd, Series_L_RightEnd, Series_C_RightEnd
       type (WireDispersiveParams_t), allocatable, dimension(:) :: disp_LeftEnd, disp_RightEnd
    end type SlantedWires_t
-   !
    TYPE  ::  Lumped_t
+   !
       integer (kind=4)  ::   Orient = 0 !orientation +iEx, -iEx,+iEy.......
 !deprecado 201222      real (kind=RKIND_wires) :: epr,mur,sigma,sigmam
       real (kind=RKIND_wires) :: R,L,C,DiodB,DiodIsat,Rtime_on,Rtime_off
@@ -597,6 +597,7 @@ module  FDETYPES
       type (DispersiveParams_t), dimension( : ), pointer  ::  MDispersive
       type (Anisotropic_t)     , dimension( : ), pointer  ::  Anisotropic
       type (Lumped_t)          , dimension( : ), pointer  ::  Lumped
+      ! type (conformal_feature_t), , dimension( : ), pointer  ::  ConformalSurface
    end type
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
