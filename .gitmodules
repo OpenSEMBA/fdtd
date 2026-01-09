@@ -21,3 +21,7 @@
 [submodule "external/googletest"]
 	path = external/googletest
 	url = https://github.com/google/googletest.git
+	
+[submodule "external/VTKFortran"]
+	path = external/VTKFortran
+	url = https://github.com/szaghi/VTKFortran.git
