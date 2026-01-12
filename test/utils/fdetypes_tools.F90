@@ -597,17 +597,17 @@ contains
 
    function create_vacuum_material() result(mat)
       type(Material) :: mat
-      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, 0.0, 1)
+      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0_RKIND, 0.0_RKIND, 1)
    end function create_vacuum_material
 
    function create_pec_material() result(mat)
       type(Material) :: mat
-      mat = create_material(EPSILON_VACUUM, MU_VACUUM, SIGMA_PEC, 0.0, 0)
+      mat = create_material(EPSILON_VACUUM, MU_VACUUM, SIGMA_PEC, 0.0_RKIND, 0)
    end function create_pec_material
 
    function create_pmc_material() result(mat)
       type(Material) :: mat
-      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0, SIGMA_PMC, 2)
+      mat = create_material(EPSILON_VACUUM, MU_VACUUM, 0.0_RKIND, SIGMA_PMC, 2)
    end function create_pmc_material
 
    function create_empty_materials() result(mats)

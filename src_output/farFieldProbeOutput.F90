@@ -49,7 +49,7 @@ contains
                         fileNormalize, problemInfo%problemDimension, &
                         control%facesNF2FF, control%NF2FFDecim, &
 #ifdef CompileWithMPI
-                        output(ii)%item(i)%MPISubComm, output(ii)%item(i)%MPIRoot, &
+                        0, 0, &
 #endif
                         eps0, mu0)
 

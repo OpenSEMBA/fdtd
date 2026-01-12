@@ -23,6 +23,9 @@ contains
       this%domain = domain
       this%path = get_output_path()
 
+      call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%valueForTime, BuffObse, 0.0_RKIND)
+
    contains
 
       function get_output_path() result(outputPath)
@@ -69,10 +72,10 @@ contains
       k2_m = this%auxCoords%z
 
       i1 = i1_m
-      j1 = i2_m
-      k1 = j1_m
-      i2 = j2_m
-      j2 = k1_m
+      j1 = j1_m
+      k1 = k1_m
+      i2 = i2_m
+      j2 = j2_m
       k2 = k2_m
 
       xF => field%x

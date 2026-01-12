@@ -62,6 +62,8 @@ contains
       this%domain = domain
       this%path = get_output_path()
 
+      call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+
    contains
       subroutine find_segment()
          integer(kind=SINGLE) :: n, iwi, iwj, node2
@@ -176,7 +178,7 @@ contains
          elseif (mpidir == 1) then
             ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
          else
-            call stoponerror('Buggy error in mpidir. ')
+            call stoponerror(0,0,'Buggy error in mpidir. ')
          end if
 #else
          ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
@@ -261,7 +263,7 @@ contains
          elseif (mpidir == 1) then
             ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
          else
-            call stoponerror('Buggy error in mpidir. ')
+            call stoponerror(0,0,'Buggy error in mpidir. ')
          end if
 #else
          ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))

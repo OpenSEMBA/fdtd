@@ -49,7 +49,9 @@ module mod_outputUtils
    end interface get_coordinates_extension
 
    interface alloc_and_init
+#ifndef CompileWithMPI
       procedure alloc_and_init_time_1D
+#endif
       procedure alloc_and_init_int_1D
       procedure alloc_and_init_int_2D
       procedure alloc_and_init_int_3D
@@ -187,7 +189,7 @@ contains
       elseif (mpidir == 1) then
          ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))
       else
-         call stoponerror('Buggy error in mpidir. ')
+         call stoponerror(0,0,'Buggy error in mpidir. ')
       end if
 #else
       ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))
@@ -221,7 +223,7 @@ contains
          ext = trim(adjustl(chark))//'_'//trim(adjustl(chari))//'_'//trim(adjustl(charj))//'__'// &
                trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
       else
-         call stoponerror('Buggy error in mpidir. ')
+         call stoponerror(0,0,'Buggy error in mpidir. ')
       end if
 #else
       ext = trim(adjustl(chari))//'_'//trim(adjustl(charj))//'_'//trim(adjustl(chark))//'__'// &

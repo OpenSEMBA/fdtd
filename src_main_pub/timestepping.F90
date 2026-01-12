@@ -2864,6 +2864,9 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
 
+#ifdef CompileWithNewOutputModule
+#else
+
       write(dubuf,'(a,i9)') 'INIT FINAL Postprocessing frequency domain probes, if any, at n= ',this%n
       call print11(this%control%layoutnumber,dubuf)
       write(dubuf,*) SEPARADOR//separador//separador
@@ -2871,6 +2874,7 @@ contains
       somethingdone=.false.
       at=this%n*this%sgg%dt
       if (this%thereAre%Observation) call PostProcess(this%control%layoutnumber,this%control%size,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
+#endif
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce(somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -2896,7 +2900,6 @@ contains
       somethingdone=.false.
 
       if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
-
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce(somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
