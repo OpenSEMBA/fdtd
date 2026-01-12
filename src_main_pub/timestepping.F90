@@ -597,7 +597,7 @@ module Solver_mod
       call initializeMultiports()
       call initializeConformalElements()
       
-      call initializeConformal()
+      ! call initializeConformal()
       
       call initializeEDispersives()
       call initializeMDispersives()

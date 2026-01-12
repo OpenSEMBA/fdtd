@@ -172,13 +172,9 @@ MODULE NFDETypes
 
    type, extends(conformal_feature_t) :: conformal_edge_media_t
       type(edge_t), dimension(:), allocatable :: edges
-      ! real(kind=rkind) :: ratio
-      ! integer (kind=4) :: size
    end type
    type, extends(conformal_feature_t) :: conformal_face_media_t
       type(face_t), dimension(:), allocatable :: faces
-      ! real(kind=rkind) :: ratio
-      ! integer (kind=4) :: size
    end type
 
    TYPE, PUBLIC :: ConformalMedia_t
@@ -188,8 +184,6 @@ MODULE NFDETypes
       TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: edge_media => NULL ()
       real (kind=rkind) :: time_step_scale_factor = 1.0
       character(len=bufsize) :: tag
-      !! something to deal with region II edges and faces
-      ! type(new_conf_t) :: thin_panels
    END TYPE ConformalMedia_t
 
 

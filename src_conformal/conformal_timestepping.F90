@@ -12,8 +12,7 @@ module conformal_mod
         procedure :: getMedium => media_maps_getMedium
     end type
 
-    ! advanceE avanza con
-    ! formal+PEC+volumen
+    ! advanceE avanza conformal+PEC+volumen
     ! conformal_timestepping comprueba PEC+surface y SIBC
     ! Si es PEC y superficie:
     !     crea 6 mapas de cell:medio (analogas a sggMi)
@@ -74,11 +73,11 @@ contains
                 cell(:) = conformal_volumes%edge_media(i)%edges(j)%cell(:)
                 select case(conformal_volumes%edge_media(i)%edges(j)%direction)
                 case(EDGE_X)
-                    call(res%Ex%set(key(cell)), value = med_number)
+                    call res%Ex%set(key(cell), value = med_number)
                 case(EDGE_Y)
-                    call(res%Ey%set(key(cell)), value = med_number)
+                    call res%Ey%set(key(cell), value = med_number)
                 case(EDGE_Z)
-                    call(res%Ez%set(key(cell)), value = med_number)
+                    call res%Ez%set(key(cell), value = med_number)
                 end select
             end do
         end do
@@ -89,11 +88,11 @@ contains
                 cell(:) = conformal_volumes%face_media(i)%faces(j)%cell(:)
                 select case(conformal_volumes%face_media(i)%faces(j)%direction)
                 case(FACE_X)
-                    call(res%Hx%set(key(cell)), value = med_number)
+                    call res%Hx%set(key(cell), value = med_number)
                 case(FACE_Y)
-                    call(res%Hy%set(key(cell)), value = med_number)
+                    call res%Hy%set(key(cell), value = med_number)
                 case(FACE_Z)
-                    call(res%Hz%set(key(cell)), value = med_number)
+                    call res%Hz%set(key(cell), value = med_number)
                 end select
             end do
         end do
