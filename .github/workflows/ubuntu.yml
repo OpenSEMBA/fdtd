@@ -25,28 +25,28 @@ jobs:
           {name: 'gcc', version: 11}
         ]
         build-type: ["Release"]
-        mpi: ["Yes", "No"]
-        mtln: ["Yes", "No"]
-        hdf: ["Yes"]
-        double-precision: ["No"]
+        mpi: ["ON", "OFF"]
+        mtln: ["ON", "OFF"]
+        hdf: ["ON"]
+        double-precision: ["OFF"]
 
         include:
           # Disable by lack of space on github action
           # - os: ubuntu-latest
           #   compiler: {name: 'nvidia-hpc', version: '24.5'}
           #   build-type: "Release"
-          #   mpi: "No"
-          #   mtln: "No"
-          #   hdf: "No"
-          #   double-precision: "No"
+          #   mpi: "OFF"
+          #   mtln: "OFF"
+          #   hdf: "OFF"
+          #   double-precision: "OFF"
 
           - os: ubuntu-latest # This is the only test with double precision.
             compiler: {name: 'intel', version: '2025.1'}
             build-type: "Release"
-            mpi: "Yes"
-            mtln: "No"
-            hdf: "Yes"
-            double-precision: "Yes"
+            mpi: "ON"
+            mtln: "OFF"
+            hdf: "ON"
+            double-precision: "ON"
             
       fail-fast: false
             
@@ -64,7 +64,7 @@ jobs:
       run: python -m pip install -r requirements.txt
 
     - name: Setup MPI
-      if: matrix.mpi=='Yes' && matrix.compiler.name=='intel'
+      if: matrix.mpi=='ON' && matrix.compiler.name=='intel'
       uses: mpi4py/setup-mpi@v1
       with:
         mpi: 'intelmpi'

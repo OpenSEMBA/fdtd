@@ -12,9 +12,9 @@ jobs:
     strategy:
       matrix: 
         build-type: ["Release"]
-        mpi: ["No"]
-        mtln: ["Yes"]
-        hdf: ["Yes"]
+        mpi: ["OFF"]
+        mtln: ["ON"]
+        hdf: ["ON"]
 
     steps:
 
