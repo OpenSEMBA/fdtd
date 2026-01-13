@@ -3,8 +3,6 @@ module smbjson
 #ifdef CompileWithSMBJSON
    use NFDETypes
 
-   use Report
-
    use NFDETypes_extension
    use smbjson_labels_mod
    use mesh_mod
@@ -15,6 +13,10 @@ module smbjson
 
    use json_module
    use json_kinds
+
+   use conformal_types_mod
+
+   use, intrinsic :: iso_fortran_env , only: error_unit
 
    implicit none
 
@@ -58,6 +60,7 @@ module smbjson
       procedure, private :: readVolumicProbes
       procedure, private :: readThinWires
       procedure, private :: readThinSlots
+      procedure, private :: readConformalRegions
       !
       !
       procedure, private :: getLogicalAt
@@ -109,7 +112,8 @@ module smbjson
    type, private :: domain_t
       real :: tstart = 0.0, tstop = 0.0, tstep = 0.0
       real :: fstart = 0.0, fstop = 0.0
-      integer :: fstep = 0
+      real :: fstep = 0.0
+      ! integer :: fstep = 0
       character(len=:), allocatable :: filename
       integer :: type1 = NP_T1_PLAIN, type2 = NP_T2_TIME
       logical :: isLogarithmicFrequencySpacing = .false.
@@ -150,8 +154,9 @@ contains
       this%elementTable = IdChildTable_t(this%core, this%root, J_MESH//'.'//J_ELEMENTS)
       
       call initializeProblemDescription(res)
+      
       res%switches = this%readAdditionalArguments()
-
+      
       ! Basics
       res%general = this%readGeneral()
       res%matriz = this%readMediaMatrix()
@@ -174,6 +179,9 @@ contains
       res%BloquePrb = this%readBlockProbes()
       res%VolPrb = this%readVolumicProbes()
       
+      ! Conformal elements
+      res%conformalRegs = this%readConformalRegions()
+
       ! Thin elements
       res%tWires = this%readThinWires()
       res%tSlots = this%readThinSlots()
@@ -181,6 +189,7 @@ contains
 #ifdef CompileWithMTLN
       res%mtln = this%readMTLN()
 #endif
+
 
    end function
 
@@ -235,22 +244,50 @@ contains
                id = this%getIntAt(je, J_ID)
                elementType = this%getStrAt(je, J_TYPE)
                select case (elementType)
-                case (J_ELEM_TYPE_NODE)
+               case (J_ELEM_TYPE_NODE)
                   coordIds = this%getIntsAt(je, J_COORDINATE_IDS)
                   node%coordIds = coordIds
                   call mesh%addElement(id, node)
-                case (J_ELEM_TYPE_POLYLINE)
+               case (J_ELEM_TYPE_POLYLINE)
                   coordIds = this%getIntsAt(je, J_COORDINATE_IDS)
                   polyline%coordIds = coordIds
                   call mesh%addElement(id, polyline)
-                CASE (J_ELEM_TYPE_CELL)
+               CASE (J_ELEM_TYPE_CELL)
                   block
-                     type(cell_region_t) :: cR
-                     type(cell_interval_t), dimension(:), allocatable :: intervals
-                     cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
-                     call mesh%addCellRegion(id, cR)
+                     logical :: isConformal
+                     type(json_value), pointer :: triangles
+                     call this%core%get(je, J_CONF_VOLUME_TRIANGLES, triangles, found=isConformal)
+                     if (.not. isConformal) then 
+                        block
+                           type(cell_region_t) :: cR
+                           type(cell_interval_t), dimension(:), allocatable :: intervals
+                           cR%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                           call mesh%addCellRegion(id, cR)
+                        end block
+                     else 
+                        block 
+                           type(conformal_region_t) :: cV
+                           type(coordinate_t) :: c
+                           integer :: j, k
+                           character (len=:), allocatable :: subtype
+                           cV%triangles = readTriangles(je, J_CONF_VOLUME_TRIANGLES)
+                           do k = 1, size(cV%triangles)
+                              do j = 1, 3
+                                 c = mesh%getCoordinate(cV%triangles(k)%vertices(j)%id)
+                                 cV%triangles(k)%vertices(j)%position(1:3) = c%position(1:3)
+                              end do
+                           end do
+                           cV%intervals = readCellIntervals(je, J_CELL_INTERVALS)
+                           subtype = this%getStrAt(je, J_SUBTYPE)
+
+                           if (subtype == J_CONF_SUBTYPE_VOLUME) cV%type = REGION_TYPE_VOLUME
+                           if (subtype == J_CONF_SUBTYPE_SURFACE) cV%type = REGION_TYPE_SURFACE
+
+                           call mesh%addConformalRegion(id, cV)
+                        end block
+                     end if
                   end block
-                case default
+               case default
                   call WarnErrReport('Invalid element type', .true.)
                end select
             end do
@@ -282,6 +319,36 @@ contains
             res(i)%end%cell = cellEnd(1:3)
          end do
       end function
+
+      function readTriangles(place, path) result(res)
+         type(json_value), pointer, intent(in) :: place
+         character (len=*), intent(in) :: path
+         type(triangle_t), dimension(:), allocatable :: res
+
+         type(json_value), pointer :: triangles, triangle_ptr
+         real, dimension(:), allocatable :: triangle
+         integer :: i, j, nTriangles
+         real, dimension(:), allocatable :: cellIni, cellEnd
+
+         logical :: containsTriangles
+         call this%core%get(place, path, triangles, found=containsTriangles)
+         if (.not. containsTriangles) then
+            allocate(res(0))
+            return
+         end if
+         nTriangles = this%core%count(triangles)
+         allocate(res(nTriangles))
+         do i = 1, nTriangles
+            call this%core%get_child(triangles, i, triangle_ptr)
+            call this%core%get(triangle_ptr, triangle)
+            do j = 1, 3
+               res(i)%vertices(j)%id = triangle(j)
+            end do
+         end do
+         
+
+      end function
+
    end function
 
    function readAdditionalArguments(this) result (res)
@@ -462,8 +529,8 @@ contains
       type(coords), dimension(:), pointer :: cs
       integer :: i
       
-      mAs = this%getMaterialAssociations([matType])
-      
+      ! mAs = this%getMaterialAssociations([matType],[J_ELEM_TYPE_CELL])
+      mAs = this%getMaterialAssociations([matType],['-'//J_CONF_SUBTYPE_SURFACE, J_ELEM_TYPE_CELL//'    ', '-'//J_CONF_SUBTYPE_VOLUME//' '])
       block
          type(coords), dimension(:), pointer :: emptyCoords
          if (size(mAs) == 0) then 
@@ -474,7 +541,7 @@ contains
             return
          end if
       end block
-
+      
       do i = 1, size(mAs)
          call this%matAssToCoords(cs, mAs(i), CELL_TYPE_LINEL)
          call appendRegion(res%lins,  res%nLins,  res%nLins_max, cs)
@@ -519,6 +586,78 @@ contains
          end if
       end subroutine         
    end function
+
+   function readConformalRegions(this) result(res)
+      class(parser_t) :: this
+      type(ConformalPECRegions) :: res
+      type(materialAssociation_t), dimension(:), allocatable :: mAs
+      type(conformal_region_t) :: cR
+      type(triangle_t), dimension(:), allocatable :: aux_tris
+      character (len=:), allocatable :: tagName
+      integer :: i, j
+      logical :: found
+
+      mAs = this%getMaterialAssociations([J_MAT_TYPE_PEC], [J_CONF_SUBTYPE_VOLUME, J_CONF_SUBTYPE_SURFACE])
+
+      do i = 1, size(mAs)
+         do j = 1, size(mAs(i)%elementIds)
+            cR = this%mesh%getConformalRegion(mAs(i)%elementIds(j), found)
+            if (found) then 
+               tagName = this%buildTagName(mAs(i)%materialId, mAs(i)%elementIds(j))
+               if (cR%type == REGION_TYPE_VOLUME) then 
+                  call appendRegion(res%volumes, cR, tagName)
+               end if
+               if (cR%type == REGION_TYPE_SURFACE) then 
+                  call appendRegion(res%surfaces, cR, tagName)
+               end if
+            end if
+         end do
+      end do
+
+   contains 
+      subroutine appendRegion(regions, region, tagName)
+         type(ConformalPECElements), dimension(:), pointer :: regions
+         type(conformal_region_t), intent(in) :: region
+         character (len=:), allocatable, intent(in) :: tagName
+
+         type(ConformalPECElements), dimension(:), allocatable :: aux
+         integer :: i
+         if (.not. associated(regions)) then 
+            allocate(regions(1))
+            regions(1)%triangles = region%triangles
+            regions(1)%intervals = copyIntervals(region%intervals)
+            regions(1)%tag = tagName
+         else 
+            allocate(aux(size(regions) + 1))
+            do i = 1, size(regions)
+               aux(i) = regions(i)
+            end do
+            aux(size(regions) + 1)%triangles = region%triangles
+            aux(size(regions) + 1)%intervals = copyIntervals(region%intervals)
+            aux(size(regions) + 1)%tag  = tagName
+            deallocate(regions)
+            
+            allocate(regions(size(aux)))
+            do i = 1, size(aux)
+               regions(i) = aux(i)
+            end do
+
+         end if
+      end subroutine
+
+      function copyIntervals(intervals) result(res)
+         type(cell_interval_t), dimension(:), allocatable, intent(in) :: intervals
+         type(interval_t), dimension(:), allocatable :: res
+         integer :: i
+         allocate(res(size(intervals)))
+         do i = 1, size(res)
+            res(i)%ini%cell(:) = intervals(i)%ini%cell(:)
+            res(i)%end%cell(:) = intervals(i)%end%cell(:)
+         end do
+      end function
+
+   end function
+
 
    function readDielectricRegions(this) result (res)
       class(parser_t), intent(in) :: this
@@ -2027,7 +2166,7 @@ contains
       if (numberOfFrequencies == 0) then
          res%fstep = 0.0
       else
-         res%fstep = res%fstart * numberOfFrequencies
+         res%fstep = (res%fstop - res%fstart) / numberOfFrequencies
       endif
 
       freqSpacing = &
@@ -2202,17 +2341,17 @@ contains
       end subroutine
    end function
 
-   function getMaterialAssociations(this, materialTypes) result(res)
+   function getMaterialAssociations(this, materialTypes, elementLabels) result(res)
       class(parser_t) :: this
       character(len=*), intent(in) :: materialTypes(:)
       type(materialAssociation_t), dimension(:), allocatable :: res
       type(json_value), pointer :: allMatAss
+      character(len=*), intent(in), optional :: elementLabels(:)
       
       type(json_value), pointer :: mAPtr
-      integer :: i, j, k
+      integer :: i, j, k, e
       integer :: nMaterials
       logical :: found
-
       call this%core%get(this%root, J_MATERIAL_ASSOCIATIONS, allMatAss, found)
       if (.not. found) then
          allocate(res(0))
@@ -2224,7 +2363,11 @@ contains
          call this%core%get_child(allMatAss, i, mAPtr)
          do j = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(j)))) then
-               nMaterials = nMaterials + 1
+               if (present(elementLabels)) then 
+                  if (isAssociatedWithElementLabel(mAPtr, elementLabels)) nMaterials = nMaterials + 1
+               else
+                  nMaterials = nMaterials + 1
+               end if
             end if
          end do
       end do
@@ -2235,8 +2378,15 @@ contains
          call this%core%get_child(allMatAss, i, mAPtr)
          do k = 1, size(materialTypes)
             if (isAssociatedWithMaterial(mAPtr, trim(materialTypes(k)))) then
-               res(j) = this%parseMaterialAssociation(mAPtr)
-               j = j+1
+               if (present(elementLabels)) then 
+                  if (isAssociatedWithElementLabel(mAPtr, elementLabels)) then 
+                     res(j) = this%parseMaterialAssociation(mAPtr)
+                     j = j+1
+                  end if
+               else
+                  res(j) = this%parseMaterialAssociation(mAPtr)
+                  j = j+1
+               end if
             end if
          end do
       end do
@@ -2252,6 +2402,43 @@ contains
          matAss = this%parseMaterialAssociation(mAPtr)
          mat = this%matTable%getId(matAss%materialId)
          isAssociatedWithMaterial = this%getStrAt(mat%p, J_TYPE) == materialType
+      end function
+
+      logical function isAssociatedWithElementLabel(mAPtr, elementLabels)
+         type(json_value), pointer, intent(in) :: mAPtr
+         character (len=*), intent(in) :: elementLabels(:)
+         character (len=:), allocatable :: trimmedLabel
+         character(len=20) :: elementLabel
+         type(materialAssociation_t) :: matAss
+         type(json_value_ptr) :: elm
+         integer, dimension(:), allocatable :: elementIds
+         integer :: i, j
+
+         logical :: negative
+         matAss = this%parseMaterialAssociation(mAPtr)
+         elementIds = matAss%elementIds
+         isAssociatedWithElementLabel = .false.
+
+         do i = 1, size(elementIds)
+            elm = this%elementTable%getId(elementIds(i))
+            do j = 1, size(elementLabels)
+               if (elementLabels(j)(1:1) == "-") then 
+                  elementLabel = elementLabels(j)(2:)
+                  negative = .true.
+               else
+                  elementLabel = elementLabels(j)(:)
+                  negative = .false.
+               end if
+               trimmedLabel = trim(elementLabel)
+               if (negative) then 
+                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .and. (.not.(this%getStrAt(elm%p, J_TYPE, default="") == trimmedLabel) .and. &
+                                                                              .not.(this%getStrAt(elm%p, J_SUBTYPE, default="") == trimmedLabel))
+               else 
+                  isAssociatedWithElementLabel = isAssociatedWithElementLabel .or. (this%getStrAt(elm%p, J_TYPE, default="") == trimmedLabel .or. & 
+                                                                                    this%getStrAt(elm%p, J_SUBTYPE, default="") == trimmedLabel )
+               end if
+            end do
+         end do
       end function
    end function
 
@@ -2316,6 +2503,7 @@ contains
          end do
       end function
    end function
+
 
 #ifdef CompileWithMTLN
    function readMTLN(this) result (mtln_res)

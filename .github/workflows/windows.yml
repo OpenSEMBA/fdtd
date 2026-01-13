@@ -24,10 +24,10 @@ jobs:
         os: [windows-latest]
         compiler: [ {name: 'intel', version: '2025.0'} ]
         build-type: ["Release"]
-        mpi: ["No"]
-        mtln: ["Yes", "No"]
-        hdf: ["Yes"]
-        double-precision: ["Yes", "No"]
+        mpi: ["OFF"]
+        mtln: ["ON", "OFF"]
+        hdf: ["ON"]
+        double-precision: ["ON", "OFF"]
 
       fail-fast: false
     runs-on: ${{matrix.os}}

@@ -22,7 +22,7 @@
       "inherits": "dbg",
       "binaryDir": "build-dbg-nomtln/",
       "cacheVariables": {
-        "SEMBA_FDTD_ENABLE_MTLN": "No"
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
     }
   ]

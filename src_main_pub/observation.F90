@@ -3491,6 +3491,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         media = getMedia(field, i, j, k)
         if ((media == 0) .or. (sgg%Med(media)%is%Pec)) then
           res = 0
+         else if (sgg%Med(media)%is%ConformalPec) then 
+            res = 1000+media
         elseif (sgg%Med(media)%is%thinwire) then
           CALL StopOnError(0, 1, 'ERROR: A magnetic field cannot be a thin-wire')
         elseif (isSGBCorMultiport(media)) then
@@ -3528,6 +3530,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
           end if
         elseif ((media == 0) .or. (sgg%Med(media)%is%Pec)) then
           res = 0.5_RKIND
+         else if (sgg%Med(media)%is%ConformalPec) then 
+            res=2000+media
         elseif (isSGBCorMultiport(media)) then
           res = 3.5
         elseif (isDispersive(media)) then
