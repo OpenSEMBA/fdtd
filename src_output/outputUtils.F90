@@ -49,9 +49,6 @@ module mod_outputUtils
    end interface get_coordinates_extension
 
    interface alloc_and_init
-#ifndef CompileWithMPI
-      procedure alloc_and_init_time_1D
-#endif
       procedure alloc_and_init_int_1D
       procedure alloc_and_init_int_2D
       procedure alloc_and_init_int_3D
@@ -64,15 +61,6 @@ module mod_outputUtils
    end interface
 
 contains
-   subroutine alloc_and_init_time_1D(array, n1, initVal)
-      real(RKIND_tiempo), allocatable, intent(inout) :: array(:)
-      integer, intent(IN) :: n1
-      real(RKIND_tiempo), intent(IN) :: initVal
-
-      allocate (array(n1))
-      array = initVal
-   END subroutine alloc_and_init_time_1D
-
    subroutine alloc_and_init_int_1D(array, n1, initVal)
       integer(SINGLE), allocatable, intent(inout) :: array(:)
       integer, intent(IN) :: n1

@@ -191,13 +191,18 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 endif()
 
-add_subdirectory(external/VTKFortran)
+if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
+	add_subdirectory(external/VTKFortran)
+	add_subdirectory(src_output)
+	set(OUTPUT_LIBRARIES fdtd-output)
+endif()
 
 if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
 	add_subdirectory(test)
 endif()
-add_subdirectory(src_output)
+
+
 
 if(SEMBA_FDTD_COMPONENTS_LIB)
 	add_library(semba-components
@@ -262,7 +267,7 @@ if(SEMBA_FDTD_MAIN_LIB)
 	)
 	target_link_libraries(semba-main
 		semba-outputs
-		fdtd-output
+		${OUTPUT_LIBRARIES}
 		${SMBJSON_LIBRARIES} 
 		${MTLN_LIBRARIES})
 endif()

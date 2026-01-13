@@ -1,3 +1,5 @@
+#ifdef CompileWithNewOutputModule
+
 #include <gtest/gtest.h>
 
 extern "C" int test_init_point_probe();
@@ -25,3 +27,4 @@ TEST(output, test_init_frequency_slice)    {EXPECT_EQ(0, test_init_frequency_sli
 TEST(output, test_update_frequency_slice)    {EXPECT_EQ(0, test_update_frequency_slice_probe()); }
 TEST(output, test_flush_frequency_slice)    {EXPECT_EQ(0, test_flush_frequency_slice_probe()); }
 
+#endif
