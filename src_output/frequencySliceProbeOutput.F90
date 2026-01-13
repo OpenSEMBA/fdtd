@@ -3,6 +3,7 @@ module mod_frequencySliceProbeOutput
    use Report
    use outputTypes
    use mod_outputUtils
+   use mod_volumicProbeUtils
    implicit none
    private
 
@@ -27,13 +28,7 @@ module mod_frequencySliceProbeOutput
    private :: write_vtu_frequency_slice
    !===========================
 
-   abstract interface
-      logical function logical_func(component, i, j, k, problemInfo)
-         import :: problem_info_t
-         type(problem_info_t), intent(in) :: problemInfo
-         integer, intent(in) :: component, i, j, k
-      end function logical_func
-   end interface
+   !===========================
 
 contains
 
@@ -53,7 +48,7 @@ contains
       this%auxCoords = upperBound
       this%component = field !This can refer to electric, magnetic or currentDensity
       this%domain = domain
-      this%path = get_output_path()
+      this%path = get_output_path_freq(this, outputTypeExtension, field, control)
 
       this%nFreq = domain%fnum
       call alloc_and_init(this%frequencySlice, this%nFreq, 0.0_RKIND)
@@ -61,8 +56,7 @@ contains
          call init_frequency_slice(this%frequencySlice, this%domain)
       end do
 
-      call count_required_coords(this, problemInfo)
-      call alloc_and_init(this%coords, 3, this%nPoints, 0_SINGLE)
+      call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
 
       if (any(VOLUMIC_M_MEASURE == this%component)) then
          call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
@@ -84,22 +78,24 @@ contains
       call alloc_and_init(this%auxExp_H, this%nFreq, (0.0_CKIND, 0.0_CKIND))
 
       do i = 1, this%nFreq
-         this%auxExp_E(i) = timeInterval*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*this%frequencySlice(i))   !el dt deberia ser algun tipo de promedio
+         this%auxExp_E(i) = timeInterval*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*this%frequencySlice(i))   ! the dt should be some kind of average
          this%auxExp_H(i) = this%auxExp_E(i)*Exp(mcpi2*this%frequencySlice(i)*timeInterval*0.5_RKIND)
       end do
 
-   contains
-      function get_output_path() result(outputPath)
-         character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
-         character(len=BUFSIZE) :: outputPath
-         probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, control%mpidir)
-         prefixFieldExtension = get_prefix_extension(field, control%mpidir)
-         outputPath = &
-            trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
-         return
-      end function get_output_path
-
    end subroutine init_frequency_slice_probe_output
+
+   function get_output_path_freq(this, outputTypeExtension, field, control) result(outputPath)
+      type(frequency_slice_probe_output_t), intent(in) :: this
+      character(len=*), intent(in) :: outputTypeExtension
+      integer(kind=SINGLE), intent(in) :: field
+      type(sim_control_t), intent(in) :: control
+      character(len=BUFSIZE)  :: probeBoundsExtension, prefixFieldExtension
+      character(len=BUFSIZE) :: outputPath
+      probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, control%mpidir)
+      prefixFieldExtension = get_prefix_extension(field, control%mpidir)
+      outputPath = &
+         trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
+   end function get_output_path_freq
 
    subroutine update_frequency_slice_probe_output(this, step, fieldsReference, control, problemInfo)
       type(frequency_slice_probe_output_t), intent(inout) :: this
@@ -386,138 +382,17 @@ contains
       character(len=64) :: ts
       character(len=256) :: filename
 
-      ! Generamos nombre del archivo VTU para este timestep
+      ! Generate VTU file name for this frequency
       write (filename, '(A,A,I4.4,A)') trim(this%path), '_fq', freq, '.vtu'
-
-      ! Escribimos el VTU correspondiente
+ 
+      ! Write the corresponding VTU file
       call write_vtu_frequency_slice(this, freq, filename)
-
-      ! Añadimos entrada en el PVD
+ 
+      ! Add entry in the PVD
       write (ts, '(ES16.8)') this%frequencySlice(freq)
       write (unitPVD, '(A)') '    <DataSet timestep="'//trim(ts)// &
          '" group="" part="0" file="'//trim(filename)//'"/>'
    end subroutine update_pvd
 
-   subroutine count_required_coords(this, problemInfo)
-      type(frequency_slice_probe_output_t), intent(inout) :: this
-      type(problem_info_t), intent(in) :: problemInfo
-
-      procedure(logical_func), pointer :: checker => null()  ! Pointer to logical function
-      integer :: i, j, k
-      integer :: component, count
-      select case (this%component)
-      case (iCur)
-         checker => volumicCurrentRequest
-         component = iCur
-      case (iMEC)
-         checker => volumicElectricRequest
-         component = iMEC
-      case (iMHC)
-         checker => volumicMagneticRequest
-         component = iMHC
-      case (iCurx)
-         checker => componentCurrentRequest
-         component = iEx
-      case (iExC)
-         checker => componentFieldRequest
-         component = iEx
-      case (iHxC)
-         checker => componentFieldRequest
-         component = iHx
-      case (iCurY)
-         checker => componentCurrentRequest
-         component = iEy
-      case (iEyC)
-         checker => componentFieldRequest
-         component = iEy
-      case (iHyC)
-         checker => componentFieldRequest
-         component = iHy
-      case (iCurZ)
-         checker => componentCurrentRequest
-         component = iEz
-      case (iEzC)
-         checker => componentFieldRequest
-         component = iEz
-      case (iHzC)
-         checker => componentFieldRequest
-         component = iHz
-      end select
-
-      count = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
-         if (checker(component, i, j, k, problemInfo)) count = count + 1
-      end do
-      end do
-      end do
-      this%nPoints = count
-
-   end subroutine
-
-   logical function isValidPointForCurrent(request, i, j, k, problemInfo)
-      integer, intent(in) :: i, j, k, request
-      type(problem_info_t), intent(in) :: problemInfo
-      select case (request)
-      case (iCur)
-         isValidPointForCurrent = volumicCurrentRequest(request, i, j, k, problemInfo)
-      case (iEx, iEy, iEz)
-         isValidPointForCurrent = componentCurrentRequest(request, i, j, k, problemInfo)
-      case default
-         isValidPointForCurrent = .false.
-      end select
-   end function
-
-   logical function isValidPointForField(request, i, j, k, problemInfo)
-      integer, intent(in) :: i, j, k, request
-      type(problem_info_t), intent(in) :: problemInfo
-      select case (request)
-      case (iMEC)
-         isValidPointForField = volumicElectricRequest(request, i, j, k, problemInfo)
-      case (iMHC)
-         isValidPointForField = volumicMagneticRequest(request, i, j, k, problemInfo)
-      case (iEx, iEy, iEz, iHx, iHy, iHz)
-         isValidPointForField = componentFieldRequest(request, i, j, k, problemInfo)
-      case default
-         isValidPointForField = .false.
-      end select
-   end function
-
-   logical function volumicCurrentRequest(request, i, j, k, problemInfo)
-      integer, intent(in) :: i, j, k, request
-      type(problem_info_t), intent(in) :: problemInfo
-      volumicCurrentRequest = componentCurrentRequest(iEx, i, j, k, problemInfo) &
-                              .or. componentCurrentRequest(iEy, i, j, k, problemInfo) &
-                              .or. componentCurrentRequest(iEz, i, j, k, problemInfo)
-   end function
-   logical function volumicElectricRequest(request, i, j, k, problemInfo)
-      integer, intent(in) :: i, j, k, request
-      type(problem_info_t), intent(in) :: problemInfo
-      volumicElectricRequest = componentFieldRequest(iEx, i, j, k, problemInfo) &
-                               .or. componentFieldRequest(iEy, i, j, k, problemInfo) &
-                               .or. componentFieldRequest(iEz, i, j, k, problemInfo)
-   end function
-   logical function volumicMagneticRequest(request, i, j, k, problemInfo)
-      integer, intent(in) :: i, j, k, request
-      type(problem_info_t), intent(in) :: problemInfo
-      volumicMagneticRequest = componentFieldRequest(iHx, i, j, k, problemInfo) &
-                               .or. componentFieldRequest(iHy, i, j, k, problemInfo) &
-                               .or. componentFieldRequest(iHz, i, j, k, problemInfo)
-   end function
-   logical function componentCurrentRequest(fieldDir, i, j, k, problemInfo)
-      integer, intent(in) :: i, j, k, fieldDir
-      type(problem_info_t), intent(in) :: problemInfo
-      componentCurrentRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
-      if (componentCurrentRequest) then
-         componentCurrentRequest = isPEC(fieldDir, i, j, k, problemInfo) &
-                                   .or. isThinWire(fieldDir, i, j, k, problemInfo)
-      end if
-   end function
-   logical function componentFieldRequest(fieldDir, i, j, k, problemInfo)
-      integer, intent(in) :: i, j, k, fieldDir
-      type(problem_info_t), intent(in) :: problemInfo
-      componentFieldRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
-   end function
 
 end module mod_frequencySliceProbeOutput

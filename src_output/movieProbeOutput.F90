@@ -3,6 +3,7 @@ module mod_movieProbeOutput
    use Report
    use outputTypes
    use mod_outputUtils
+   use mod_volumicProbeUtils
    use vtk_fortran
    implicit none
    private
@@ -18,39 +19,10 @@ module mod_movieProbeOutput
    !===========================
    ! Private helpers
    !===========================
-   ! Data Extraction & Processing
-   private :: find_and_store_important_coords
-   private :: count_required_coords
-   private :: store_required_coords
-   private :: get_checker_and_component
-   private :: save_current_module
-   private :: save_current_component
-   private :: save_current
-   private :: save_field_module
-   private :: save_field_component
-   private :: save_field
-
    ! Output & File Management
    private :: write_vtu_timestep
    private :: update_pvd
    private :: clear_memory_data
-
-   ! Validation Logic
-   private :: isValidPointForCurrent
-   private :: isValidPointForField
-   private :: volumicCurrentRequest
-   private :: volumicElectricRequest
-   private :: volumicMagneticRequest
-   private :: componentCurrentRequest
-   private :: componentFieldRequest
-
-   abstract interface
-      logical function logical_func(component, i, j, k, problemInfo)
-         import :: problem_info_t
-         type(problem_info_t), intent(in) :: problemInfo
-         integer, intent(in) :: component, i, j, k
-      end function logical_func
-   end interface
 
 contains
 
@@ -73,7 +45,7 @@ contains
       this%domain     = domain
       this%path       = get_output_path(this, outputTypeExtension, field, control%mpidir)
 
-      call find_and_store_important_coords(this, problemInfo)
+      call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
 
       ! Allocate value arrays based on component type
@@ -177,82 +149,6 @@ contains
       path = trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
    end function get_output_path
 
-   subroutine find_and_store_important_coords(this, problemInfo)
-      type(movie_probe_output_t), intent(inout) :: this
-      type(problem_info_t), intent(in) :: problemInfo
-
-      call count_required_coords(this, problemInfo)
-      call alloc_and_init(this%coords, 3, this%nPoints, 0_SINGLE)
-      call store_required_coords(this, problemInfo)
-   end subroutine find_and_store_important_coords
-
-   subroutine count_required_coords(this, problemInfo)
-      type(movie_probe_output_t), intent(inout) :: this
-      type(problem_info_t), intent(in) :: problemInfo
-
-      integer :: i, j, k
-      procedure(logical_func), pointer :: checker => null()
-      integer :: component, count
-
-      call get_checker_and_component(this, checker, component)
-
-      count = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
-         if (checker(component, i, j, k, problemInfo)) count = count + 1
-      end do
-      end do
-      end do
-
-      this%nPoints = count
-   end subroutine count_required_coords
-
-   subroutine store_required_coords(this, problemInfo)
-      type(movie_probe_output_t), intent(inout) :: this
-      type(problem_info_t), intent(in) :: problemInfo
-
-      integer :: i, j, k
-      integer :: count
-      procedure(logical_func), pointer :: checker => null()
-      integer :: component
-
-      call get_checker_and_component(this, checker, component)
-      count = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
-      do k = this%mainCoords%z, this%auxCoords%z
-         if (checker(component, i, j, k, problemInfo)) then
-            count = count + 1
-            this%coords(1, count) = i
-            this%coords(2, count) = j
-            this%coords(3, count) = k
-         end if
-      end do
-      end do
-      end do
-   end subroutine store_required_coords
-
-   subroutine get_checker_and_component(this, checker, component)
-      type(movie_probe_output_t), intent(in)        :: this
-      procedure(logical_func), pointer, intent(out) :: checker
-      integer, intent(out)                          :: component
-
-      select case (this%component)
-      case (iCur); checker => volumicCurrentRequest; component = iCur
-      case (iMEC); checker => volumicElectricRequest; component = iMEC
-      case (iMHC); checker => volumicMagneticRequest; component = iMHC
-      case (iCurx); checker => componentCurrentRequest; component = iEx
-      case (iExC); checker => componentFieldRequest; component = iEx
-      case (iHxC); checker => componentFieldRequest; component = iHx
-      case (iCurY); checker => componentCurrentRequest; component = iEy
-      case (iEyC); checker => componentFieldRequest; component = iEy
-      case (iHyC); checker => componentFieldRequest; component = iHy
-      case (iCurZ); checker => componentCurrentRequest; component = iEz
-      case (iEzC); checker => componentFieldRequest; component = iEz
-      case (iHzC); checker => componentFieldRequest; component = iHz
-      end select
-   end subroutine get_checker_and_component
 
    subroutine save_current_module(this, fieldsReference, simTime, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
@@ -470,75 +366,5 @@ contains
       end if
    end subroutine clear_memory_data
 
-   !===========================
-   ! Validation functions
-   !===========================
-
-   logical function isValidPointForCurrent(request, i, j, k, problemInfo)
-      integer, intent(in)              :: request, i, j, k
-      type(problem_info_t), intent(in) :: problemInfo
-      select case (request)
-      case (iCur)
-         isValidPointForCurrent = volumicCurrentRequest(request, i, j, k, problemInfo)
-      case (iEx, iEy, iEz)
-         isValidPointForCurrent = componentCurrentRequest(request, i, j, k, problemInfo)
-      case default
-         isValidPointForCurrent = .false.
-      end select
-   end function isValidPointForCurrent
-
-   logical function isValidPointForField(request, i, j, k, problemInfo)
-      integer, intent(in)              :: request, i, j, k
-      type(problem_info_t), intent(in) :: problemInfo
-      select case (request)
-      case (iMEC)
-         isValidPointForField = volumicElectricRequest(request, i, j, k, problemInfo)
-      case (iMHC)
-         isValidPointForField = volumicMagneticRequest(request, i, j, k, problemInfo)
-      case (iEx, iEy, iEz, iHx, iHy, iHz)
-         isValidPointForField = componentFieldRequest(request, i, j, k, problemInfo)
-      case default
-         isValidPointForField = .false.
-      end select
-   end function isValidPointForField
-
-   logical function volumicCurrentRequest(request, i, j, k, problemInfo)
-      integer, intent(in)              :: request, i, j, k
-      type(problem_info_t), intent(in) :: problemInfo
-      volumicCurrentRequest = componentCurrentRequest(iEx, i, j, k, problemInfo) .or. &
-                              componentCurrentRequest(iEy, i, j, k, problemInfo) .or. &
-                              componentCurrentRequest(iEz, i, j, k, problemInfo)
-   end function volumicCurrentRequest
-
-   logical function volumicElectricRequest(request, i, j, k, problemInfo)
-      integer, intent(in)              :: request, i, j, k
-      type(problem_info_t), intent(in) :: problemInfo
-      volumicElectricRequest = componentFieldRequest(iEx, i, j, k, problemInfo) .or. &
-                               componentFieldRequest(iEy, i, j, k, problemInfo) .or. &
-                               componentFieldRequest(iEz, i, j, k, problemInfo)
-   end function volumicElectricRequest
-
-   logical function volumicMagneticRequest(request, i, j, k, problemInfo)
-      integer, intent(in)              :: request, i, j, k
-      type(problem_info_t), intent(in) :: problemInfo
-      volumicMagneticRequest = componentFieldRequest(iHx, i, j, k, problemInfo) .or. &
-                               componentFieldRequest(iHy, i, j, k, problemInfo) .or. &
-                               componentFieldRequest(iHz, i, j, k, problemInfo)
-   end function volumicMagneticRequest
-
-   logical function componentCurrentRequest(fieldDir, i, j, k, problemInfo)
-      integer, intent(in)              :: fieldDir, i, j, k
-      type(problem_info_t), intent(in) :: problemInfo
-      componentCurrentRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
-      if (componentCurrentRequest) then
-         componentCurrentRequest = isPEC(fieldDir, i, j, k, problemInfo) .or. isThinWire(fieldDir, i, j, k, problemInfo)
-      end if
-   end function componentCurrentRequest
-
-   logical function componentFieldRequest(fieldDir, i, j, k, problemInfo)
-      integer, intent(in)              :: fieldDir, i, j, k
-      type(problem_info_t), intent(in) :: problemInfo
-      componentFieldRequest = isWithinBounds(fieldDir, i, j, k, problemInfo)
-   end function componentFieldRequest
 
 end module mod_movieProbeOutput
