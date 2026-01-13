@@ -29,7 +29,7 @@ You can compile HDF5 for your specific platform downloading the latest sources f
 Extract to a folder and build and install with the following commands
 
 ```shell
-  cmake -S . -B build -DHDF5_BUILD_FORTRAN=YES -DHDF5_ENABLE_Z_LIB_SUPPORT=NO --fresh
+  cmake -S . -B build -DHDF5_BUILD_FORTRAN=ON -DHDF5_ENABLE_Z_LIB_SUPPORT=NO --fresh
   cmake --build build -j 
   cmake --install build --prefix ~/hdf5-installed 
 ```
@@ -110,10 +110,10 @@ Open a command prompt with OneAPI variables initialised, to do this open a new c
 
 This will load the OneAPI environment for x64.
 
-Navigate to the fdtd root folder, choose between "Debug"/"Release" for `-DCMAKE_BUILD_TYPE`, and "Yes"/"No" for `-DSEMBA_FDTD_ENABLE_MPI`, for example, a Release version with MPI Support would be:
+Navigate to the fdtd root folder, choose between "Debug"/"Release" for `-DCMAKE_BUILD_TYPE`, and "ON"/"OFF" for `-DSEMBA_FDTD_ENABLE_MPI`, for example, a Release version with MPI Support would be:
 
 ```shell
-cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DSEMBA_FDTD_ENABLE_MPI=Yes
+cmake -S . -B build -GNinja -DCMAKE_BUILD_TYPE=Release -DSEMBA_FDTD_ENABLE_MPI=ON
 ```
 
 Then,
