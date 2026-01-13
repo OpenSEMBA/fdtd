@@ -131,6 +131,7 @@ end function
 
 integer function test_flush_point_probe() bind(c) result(err)
    use output
+   use outputTypes
    use mod_pointProbeOutput
    use mod_domain
    use mod_testOutputUtils
@@ -205,6 +206,7 @@ end function test_flush_point_probe
 
 integer function test_multiple_flush_point_probe() bind(c) result(err)
    use output
+   use outputTypes
    use mod_pointProbeOutput
    use mod_domain
    use mod_testOutputUtils
@@ -294,91 +296,6 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 
    err = test_err
 end function test_multiple_flush_point_probe
-
-integer function test_volumic_probe_count_relevant_surfaces() bind(c) result(err)
-!   use output
-!   use mod_testOutputUtils
-!   use FDETYPES_TOOLS
-!   use mod_sggMethods
-!   use mod_assertionTools
-!
-!   type(SGGFDTDINFO)              :: dummysgg
-!   type(sim_control_t)            :: dummyControl
-!   type(bounds_t)                 :: dummyBound
-!   type(solver_output_t), pointer :: outputs(:)
-!
-!   type(media_matrices_t), target :: media
-!   type(media_matrices_t), pointer :: mediaPtr
-!
-!   type(MediaData_t), allocatable, target :: simulationMaterials(:)
-!   type(MediaData_t), pointer     :: simulationMaterialsPtr(:)
-!   type(MediaData_t)              :: thinWireSimulationMaterial
-!
-!   type(limit_t), target          :: sinpml_fullsize(6)
-!   type(limit_t), pointer         :: sinpml_fullsizePtr(:)
-!
-!   type(Obses_t)                  :: volumicProbeObservable
-!
-!   real(kind=RKIND_tiempo), pointer :: timeArray(:)
-!   real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
-!   integer(kind=SINGLE)             :: nTimeSteps = 100_SINGLE
-!
-!   integer(kind=RKIND)              :: iter
-!   integer(kind=SINGLE)             :: mpidir = 3
-!   logical                          :: ThereAreWires = .false.
-!   logical                          :: outputRequested
-!   integer(kind=SINGLE)             :: test_err = 0
-!
-!   err = 1
-!
-!   call sgg_init(dummysgg)
-!   call init_time_array(timeArray, nTimeSteps, dt)
-!   call sgg_set_tiempo(dummysgg, timeArray)
-!   call sgg_set_dt(dummysgg, dt)
-!
-!   do iter = 1, 6
-!      sinpml_fullsize(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
-!   end do
-!   sinpml_fullsizePtr => sinpml_fullsize
-!
-!   call init_simulation_material_list(simulationMaterials)
-!
-!   thinWireSimulationMaterial = create_thinWire_simulation_material(size(simulationMaterials))
-!   call add_simulation_material(simulationMaterials, thinWireSimulationMaterial)
-!
-!   simulationMaterialsPtr => simulationMaterials
-!   call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
-!   call sgg_set_Med(dummysgg, simulationMaterialsPtr)
-!
-!   call create_geometry_media(media, 0, 8, 0, 8, 0, 8)
-!   call assing_material_id_to_media_matrix_coordinate(media, iEy, 1, 1, 1, simulationMaterials(0)%Id)
-!   call assing_material_id_to_media_matrix_coordinate(media, iHz, 1, 1, 1, simulationMaterials(2)%Id)
-!   call assing_material_id_to_media_matrix_coordinate(media, iEx, 2, 2, 2, thinWireSimulationMaterial%Id)
-!   mediaPtr => media
-!
-!   volumicProbeObservable = create_volumic_probe_observation(4, 4, 4, 6, 6, 6)
-!   call sgg_add_observation(dummysgg, volumicProbeObservable)
-!
-!   dummyControl = create_control_flags(mpidir=mpidir, nEntradaRoot='entradaRoot', wiresflavor='holland')
-!
-!   call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
-!                     outputRequested, ThereAreWires)
-!
-!   outputs => GetOutputs()
-!
-!   test_err = test_err + assert_integer_equal(outputs(1)%outputID, &
-!      VOLUMIC_CURRENT_PROBE_ID, 'Unexpected probe id')
-!
-!   test_err = test_err + assert_integer_equal(outputs(1)%volumicCurrentProbe%columnas, &
-!      4, 'Unexpected number of columns')
-!
-!   test_err = test_err + assert_string_equal(outputs(1)%volumicCurrentProbe%path, &
-!      'entradaRoot_volumicProbe_BCX_4_4_4__6_6_6', 'Unexpected path')
-!
-!   call close_outputs()
-!
-!   err = test_err
-end function
 
 integer function test_init_movie_probe() bind(c) result(err)
    use output

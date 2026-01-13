@@ -6,6 +6,17 @@ module mod_pointProbeOutput
 
    implicit none
 
+   private
+
+   !===========================
+   !  Public interface summary
+   !===========================
+   public :: init_point_probe_output
+   public :: create_point_probe_output_files
+   public :: update_point_probe_output
+   public :: flush_point_probe_output
+   !===========================
+
 contains
    subroutine init_point_probe_output(this, coordinates, field, domain, outputTypeExtension, mpidir, timeInterval)
       type(point_probe_output_t), intent(out) :: this
