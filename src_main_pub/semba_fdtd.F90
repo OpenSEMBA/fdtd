@@ -994,7 +994,12 @@ contains
 
       if (this%l%layoutnumber==0) then
 #ifdef CompilePrivateVersion
-         NFDE_FILE => cargar_NFDE_FILE (filename)
+         if (trim(adjustl(extension))=='.nfde') then 
+            NFDE_FILE => cargar_NFDE_FILE (filename)
+         else
+            call carga_raw_info(rawFileInfo, filename, extension)
+            NFDE_FILE => rawFileInfo
+         endif
 #else
          call carga_raw_info(rawFileInfo, filename, extension)
          NFDE_FILE => rawFileInfo
