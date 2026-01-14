@@ -430,7 +430,10 @@ contains
 
       isWithinBounds = (i <= problem%problemDimension(field)%XE) .and. &
                        (j <= problem%problemDimension(field)%YE) .and. &
-                       (k <= problem%problemDimension(field)%ZE)
+                       (k <= problem%problemDimension(field)%ZE) .and. &
+                       (i >= problem%problemDimension(field)%XI) .and. &
+                       (j >= problem%problemDimension(field)%YI) .and. &
+                       (k >= problem%problemDimension(field)%ZI)
    end function
 
    logical function isMediaVacuum(field, i, j, k, problem)

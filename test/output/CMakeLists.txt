@@ -4,6 +4,7 @@ add_library(
     output_test_fortran
     "test_output.F90"
     "test_output_utils.F90"
+    "test_volumic_utils.F90"
 )
 
 target_link_libraries(output_test_fortran

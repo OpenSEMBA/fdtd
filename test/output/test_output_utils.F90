@@ -15,7 +15,15 @@ module mod_testOutputUtils
    public :: create_frequency_slice_observation
    public :: create_dummy_fields
    public :: fillGradient
+   public :: setup_dummy_problem_info
+   public :: clean_dummy_problem_info
    !===========================
+   
+   ! Storage for dummy targets
+   type(media_matrices_t), target :: dummyGeometry
+   type(limit_t), allocatable, target :: dummyProblemDim(:)
+   type(MediaData_t), allocatable, target :: dummyMaterialList(:)
+   type(bounds_t), target :: dummyBounds
 
    !===========================
    !  Private interface summary
@@ -170,5 +178,43 @@ contains
       end select
 
    end subroutine fillGradient
+
+   !--------------------------------------------------------------------------------
+   ! Setup/Teardown
+   !--------------------------------------------------------------------------------
+   subroutine setup_dummy_problem_info(problemInfo)
+      type(problem_info_t), intent(out) :: problemInfo
+
+      integer :: i
+      
+      ! Create a 11x11x11 grid (0..10)
+      if (allocated(dummyProblemDim)) deallocate(dummyProblemDim)
+      allocate(dummyProblemDim(6))
+      do i = 1,6 
+         dummyProblemDim(i) = create_limit_t(0, 10, 0, 10, 0, 10, 1, 1, 1)
+      end do
+      problemInfo%problemDimension => dummyProblemDim
+
+      call create_geometry_media(dummyGeometry, 0, 10, 0, 10, 0, 10)
+      problemInfo%geometryToMaterialData => dummyGeometry
+
+      call init_simulation_material_list(dummyMaterialList)
+      problemInfo%materialList => dummyMaterialList
+      
+      problemInfo%simulationBounds => dummyBounds
+
+   end subroutine setup_dummy_problem_info
+
+   subroutine clean_dummy_problem_info(problemInfo)
+      type(problem_info_t), intent(inout) :: problemInfo
+      
+      if (allocated(dummyProblemDim)) deallocate(dummyProblemDim)
+      if (allocated(dummyMaterialList)) deallocate(dummyMaterialList)
+      
+      nullify(problemInfo%problemDimension)
+      nullify(problemInfo%geometryToMaterialData)
+      nullify(problemInfo%materialList)
+      nullify(problemInfo%simulationBounds)
+   end subroutine clean_dummy_problem_info
 
 end module mod_testOutputUtils
