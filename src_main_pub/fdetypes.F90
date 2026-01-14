@@ -263,7 +263,8 @@ module  FDETYPES
       NodalE  , &
       NodalH  , &
       MagneticMedia, PMLMagneticMedia, &
-      MTLNbundles
+      MTLNbundles, &
+      Conformals
    contains 
       procedure :: reset => logic_reset
    end type
@@ -598,8 +599,8 @@ module  FDETYPES
       type (Anisotropic_t)     , dimension( : ), pointer  ::  Anisotropic
       type (Lumped_t)          , dimension( : ), pointer  ::  Lumped
       ! type (conformal_feature_t), , dimension( : ), pointer  ::  Conformal
-      ! type (conformal_face_t), , dimension( : ), pointer  ::  ConformalFace
-      ! type (conformal_edge_t), , dimension( : ), pointer  ::  ConformalEdge
+      type (edge_t), dimension( : ), pointer  ::  ConformalEdge
+      type (face_t), dimension( : ), pointer  ::  ConformalFace
    end type
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -774,6 +775,7 @@ contains
       this%MagneticMedia = .false.
       this%PMLMagneticMedia= .false.
       this%MTLNbundles = .false.
+      this%Conformals = .false.
    end subroutine 
 
    subroutine setglobal(iu1,iu2)

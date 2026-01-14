@@ -2554,7 +2554,7 @@ CONTAINS
 
       do j = 1, ubound(conformal_volumes,1)
 
-         call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j))
+         call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j), isVolume)
          numertag = searchtag(tagtype,conformal_volumes(j)%tag)
          CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
@@ -2566,9 +2566,13 @@ CONTAINS
 
       end do
 
+      contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
+      if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      ! faces from V and S with same ratio are considered different media, bc they need to perform different operations
       do j = 1, ubound(conformal_surfaces,1)
-
-         ! call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j))
+         
+         call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j), isSurface)
          ! numertag = searchtag(tagtype,conformal_surfaces(j)%tag)
          ! CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
          !    & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
@@ -4939,7 +4943,7 @@ CONTAINS
          end do
       end subroutine
 
-      subroutine addConformalMedia(sgg, media, conformal_volumes, edge_ratios, face_ratios, contamedia, bbox, side_map)
+      subroutine addConformalMedia(sgg, media, conformal_volumes, edge_ratios, face_ratios, contamedia, bbox, side_map, type)
          type(sggfdtdinfo), intent(inout)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_volumes
@@ -4949,6 +4953,7 @@ CONTAINS
          integer (kind=4) :: num_media
          type(XYZlimit_t), intent(inout) :: bbox
          type(side_tris_map_t), intent(in) :: side_map
+         integer (kind=4) :: type
          integer :: i, j
          call initConformalBoundingBox(sgg,bbox)
 
@@ -4978,13 +4983,13 @@ CONTAINS
             face_ratios_no_zero = face_ratios
          end if
          num_media = contamedia
-         call addConformalEdgeMedia(sgg, media, conformal_volumes, num_media, edge_ratios_no_zero, bbox)
+         call addConformalEdgeMedia(sgg, media, conformal_volumes, num_media, edge_ratios_no_zero, bbox, type)
          num_media = contamedia + ubound(edge_ratios_no_zero,1)
-         call addConformalFaceMedia(sgg, media, conformal_volumes, num_media, face_ratios_no_zero, bbox)
+         call addConformalFaceMedia(sgg, media, conformal_volumes, num_media, face_ratios_no_zero, bbox, type)
          call addUndetectedBorderFaces(sgg, media, conformal_volumes, num_media, edge_ratios_no_zero, bbox, side_map)
       end subroutine
 
-      subroutine addConformalFaceMedia(sgg, media, conformal_volumes, num_media, face_ratios, bbox)
+      subroutine addConformalFaceMedia(sgg, media, conformal_volumes, num_media, face_ratios, bbox, type)
          type (SGGFDTDINFO), intent(INOUT)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_volumes
@@ -4994,13 +4999,15 @@ CONTAINS
          integer (kind=4) :: face_media
          integer (kind=4) :: cell(3)
          type(XYZlimit_t), intent(inout) :: bbox
+         integer (kind=4), intent(in) :: type
          integer :: j, k
          do j = 1, conformal_volumes%n_faces_media
             if (conformal_volumes%face_media(j)%ratio /= 0) then 
                face_media = num_media + findloc(face_ratios, conformal_volumes%face_media(j)%ratio, 1)
                sgg%Med(face_media)%Is%ConformalPEC = .TRUE.
                sgg%Med(face_media)%Is%Needed = .TRUE.
-               sgg%Med(face_media)%Is%Volume = .TRUE.
+               if (type == isVolume) sgg%Med(face_media)%Is%Volume = .TRUE.
+               if (type == isSurface) sgg%Med(face_media)%Is%Surface = .TRUE.
                sgg%Med(face_media)%Priority = prior_PEC
                sgg%Med(face_media)%Epr = this%mats%mats(1)%eps / Eps0
                sgg%Med(face_media)%Sigma = 1.0e29_RKIND
@@ -5009,6 +5016,9 @@ CONTAINS
             else
                face_media = 0
             end if
+
+            allocate(sgg%Med(face_media)%ConformalFace,conformal_volumes%face_media(j)%size)
+
             do k = 1, conformal_volumes%face_media(j)%size
                cell(:) = conformal_volumes%face_media(j)%faces(k)%cell(:)
                if (cell(1) < bbox%xi) bbox%xi = cell(1)
@@ -5027,6 +5037,8 @@ CONTAINS
                   media%sggMiHz(cell(1), cell(2), cell(3)) = face_media
                end select
 
+               sgg%Med(face_media)%ConformalFace(k) => conformal_volumes%face_media(j)%faces(k)
+
             end do
          end do
       end subroutine
@@ -5044,7 +5056,7 @@ CONTAINS
          res = res/ubound(triangles,1)
       end function
 
-      subroutine addConformalEdgeMedia(sgg, media, conformal_volumes, num_media, edge_ratios, bbox)
+      subroutine addConformalEdgeMedia(sgg, media, conformal_volumes, num_media, edge_ratios, bbox, type)
          type (SGGFDTDINFO), intent(INOUT)    :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_volumes
@@ -5054,7 +5066,8 @@ CONTAINS
          integer (kind=4) :: edge_media
          integer (kind=4) :: cell(3)
          type(XYZlimit_t), intent(inout) :: bbox
-         integer(kind=4), dimension(4) :: key
+         integer (kind=4), intent(in) :: type
+         ! integer(kind=4), dimension(4) :: key
          integer :: j, k
          real, dimension(3) :: normal
 
@@ -5063,7 +5076,8 @@ CONTAINS
                edge_media = num_media + findloc(edge_ratios, conformal_volumes%edge_media(j)%ratio,1)
                sgg%Med(edge_media)%Is%ConformalPEC = .TRUE.
                sgg%Med(edge_media)%Is%Needed = .TRUE.
-               sgg%Med(edge_media)%Is%Volume = .TRUE.
+               if (type == isVolume) sgg%Med(edge_media)%Is%Volume = .TRUE.
+               if (type == isSurface) sgg%Med(edge_media)%Is%Surface = .TRUE.
                sgg%Med(edge_media)%Priority = prior_PEC
                sgg%Med(edge_media)%Epr = (this%mats%mats(1)%eps / conformal_volumes%edge_media(j)%ratio ) / Eps0
                sgg%Med(edge_media)%Sigma = 1.0e29_RKIND
@@ -5072,6 +5086,10 @@ CONTAINS
             else
                edge_media = 0
             end if
+
+            allocate(sgg%Med(edge_media)%ConformalEdge,conformal_volumes%edge_media(j)%size)
+
+
             do k = 1, conformal_volumes%edge_media(j)%size
                cell(:) = conformal_volumes%edge_media(j)%edges(k)%cell(:)
 
@@ -5091,6 +5109,7 @@ CONTAINS
                   media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                end select
 
+               sgg%Med(edge_media)%ConformalEdge(k) => conformal_volumes%edge_media(j)%edge(k)
 
 
             end do

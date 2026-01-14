@@ -67,6 +67,8 @@ contains
         integer (kind=4) :: cell(3)
         integer :: i, j
 
+        ! el ratio que se busca deberia ser 1-ratio?
+        ! y si no existe, crea medio nuevo?
         do i = 1, conformal_surface%n_edges_media
             med_number = findloc(edge_ratios, conformal_volumes%edge_media(i)%ratio, 1)
             do j = 1, conformal_volumes%edge_media(i)%size
@@ -143,11 +145,19 @@ contains
                                 sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 = 0
                                 sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 = edge%region_II_fields%E
                             else if (edge%ratio == 1) then 
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 = Ey(cell(1)    , cell(2)    , cell(3))
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 = 0
+                                sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
+                                
+                                allocate(sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned, 0.0)
+                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => % 
+                                    sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned
+                                ! sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 = Ey(cell(1)    , cell(2)    , cell(3))
+                                ! sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 = 0
                             else 
                                 sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 => edge%region_II_fields%E
+                                ! sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 => edge%region_II_fields%E
+                                allocate(sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned, 0.0)
+                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => % 
+                                    sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned
                             end if
                             ! Ex(cell(1)    , cell(2) + 1, cell(3))
                             ! Ey(cell(1) + 1, cell(2)    , cell(3))
@@ -187,7 +197,19 @@ contains
 
     end subroutine
 
-    subroutine advanceHz(media_maps)
+    subroutine advanceConformalE(sgg)
+        type (sggfdtdinfo), intent(inout) ::  sgg
+        type(media_maps_t), intent(in) :: media_maps
+        real (kind = rkind), pointer :: E, H1, H2, H3, H4
+        real (kind = rkind), pointer :: rIIE, rIIH1, rIIH2, rIIH3, rIIH4
+        integer :: i, j, medium, direction
+        real (kind = rkind) :: id1, id2
+        integer (kind=4) :: cell(3)
+        logical :: found
+
+    end subroutine
+
+    subroutine advanceConformalH(sgg, media_maps)
         type(media_maps_t), intent(in) :: media_maps
         real (kind = rkind), pointer :: H, E1, E2, E3, E4
         real (kind = rkind), pointer :: rIIH, rIIE1, rIIE2, rIIE3, rIIE4
@@ -195,54 +217,90 @@ contains
         real (kind = rkind) :: id1, id2
         integer (kind=4) :: cell(3)
         logical :: found
+        type (sggfdtdinfo), intent(inout) ::  sgg
 
-        !check if volume/surface
-        do i = 1, conformal_media%n_faces_media
-            do j = 1, conformal_media%face_media(i)%size
-                H  => conformal_media%face_media(i)%faces(j)%region_I_fields%H
-                E1 => conformal_media%face_media(i)%faces(j)%region_I_fields%E1
-                E2 => conformal_media%face_media(i)%faces(j)%region_I_fields%E2
-                E3 => conformal_media%face_media(i)%faces(j)%region_I_fields%E3
-                E4 => conformal_media%face_media(i)%faces(j)%region_I_fields%E4        
-                cell(:) = conformal_media%face_media(i)%faces(j)%cell(:)
-                direction = conformal_media%face_media(j)%faces(k)%direction
-                ! asignacion de medios: esta en otro sitio?  en este esquema, los medios this%g%gm1(medium)
-                ! son = 0, porque se hace todo aquí. El numero de sggMiHx se mantiene, pero ahora hay un confg%g1 ?
-                ! hay que crear medios para las complementarios de los medios conf?
-                medium = media_maps%getMedium(cell, direction, found)
-                if (.not. found) write(*,*) 'error'
-                ! case(FACE_X)
-                !     medium = media_maps%Hx%get(key(cell))
-                !     ! medium = sggMiHx(cell(1), cell(2), cell(3))
-                !     ! id1 = 
-                !     ! id2 = 
-                ! case(FACE_Y)
-                !     medium =sggMiHy(cell(1), cell(2), cell(3))
-                !     ! id1 = 
-                !     ! id2 = 
-                ! case(FACE_Z)
-                !     medium =sggMiHz(cell(1), cell(2), cell(3))
-                !     ! id1 = Idye(cell(2))
-                !     ! id2 = Idxe(cell(1))
-                ! end select
-                ! i.e Hz, E2, E4 => Ex
-                ! if Ex in region II, g1 = 0, g2 = 0, and field = 0
-                H = g%gm1(medium)*H + g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
-                ! H = this%g%gm1(medium)*H + this%g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
-                ! update region II 
-                if (isSurface) then 
-                    rIIH  => conformal_media%face_media(i)%faces(j)%region_II_fields%H
-                    rIIE1 => conformal_media%face_media(i)%faces(j)%region_II_fields%E1
-                    rIIE2 => conformal_media%face_media(i)%faces(j)%region_II_fields%E2
-                    rIIE3 => conformal_media%face_media(i)%faces(j)%region_II_fields%E3
-                    rIIE4 => conformal_media%face_media(i)%faces(j)%region_II_fields%E4        
+        do i=1,sgg%NumMedia
+            if ((sgg%Med(i)%Is%ConformalPEC)) then
+                do j = 1, sgg%Med(i)%conformal%NumFaces
 
-                    rIIH = this%g%gm1(medium)*rIIH + this%g%gm2(medium)*((rIIE2 - rIIE4)*id1 - (rIIE3-rIIE1)*id2)
+                    H  => sgg%Med(i)%conformal%faces(j)%region_I_fields%H%p
+                    E1 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E1%p
+                    E2 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E2%p
+                    E3 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E3%p
+                    E4 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E4%p
 
-                end if
+                    cell(:) = sgg%Med(i)%conformal%faces(j)%cell(:)    
+                    direction = sgg%Med(i)%conformal%faces(k)%direction
+                    medium = media_maps%getMedium(cell, direction, found)
 
-            end do
+                    ! id1, id2?
+
+                    H = g%gm1(medium)*H + g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
+
+                    if (isSurface) then 
+                        rIIH  => sgg%Med(i)%conformal%faces(j)%region_II_fields%H%p
+                        rIIE1 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E1%p
+                        rIIE2 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E2%p
+                        rIIE3 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E3%p
+                        rIIE4 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E4%p
+
+                        ! medium ? 
+                        ! gm1, gm2?
+
+                        rIIH = gm1(medium)*rIIH + gm2(medium)*((rIIE2 - rIIE4)*id1 - (rIIE3-rIIE1)*id2)
+                    end if
+
+                end do
+            end if
         end do
+
+        ! !check if volume/surface
+        ! do i = 1, conformal_media%n_faces_media
+        !     do j = 1, conformal_media%face_media(i)%size
+        !         H  => conformal_media%face_media(i)%faces(j)%region_I_fields%H
+        !         E1 => conformal_media%face_media(i)%faces(j)%region_I_fields%E1
+        !         E2 => conformal_media%face_media(i)%faces(j)%region_I_fields%E2
+        !         E3 => conformal_media%face_media(i)%faces(j)%region_I_fields%E3
+        !         E4 => conformal_media%face_media(i)%faces(j)%region_I_fields%E4        
+        !         cell(:) = conformal_media%face_media(i)%faces(j)%cell(:)
+        !         direction = conformal_media%face_media(j)%faces(k)%direction
+        !         ! asignacion de medios: esta en otro sitio?  en este esquema, los medios this%g%gm1(medium)
+        !         ! son = 0, porque se hace todo aquí. El numero de sggMiHx se mantiene, pero ahora hay un confg%g1 ?
+        !         ! hay que crear medios para las complementarios de los medios conf?
+        !         medium = media_maps%getMedium(cell, direction, found)
+        !         if (.not. found) write(*,*) 'error'
+        !         ! case(FACE_X)
+        !         !     medium = media_maps%Hx%get(key(cell))
+        !         !     ! medium = sggMiHx(cell(1), cell(2), cell(3))
+        !         !     ! id1 = 
+        !         !     ! id2 = 
+        !         ! case(FACE_Y)
+        !         !     medium =sggMiHy(cell(1), cell(2), cell(3))
+        !         !     ! id1 = 
+        !         !     ! id2 = 
+        !         ! case(FACE_Z)
+        !         !     medium =sggMiHz(cell(1), cell(2), cell(3))
+        !         !     ! id1 = Idye(cell(2))
+        !         !     ! id2 = Idxe(cell(1))
+        !         ! end select
+        !         ! i.e Hz, E2, E4 => Ex
+        !         ! if Ex in region II, g1 = 0, g2 = 0, and field = 0
+        !         H = g%gm1(medium)*H + g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
+        !         ! H = this%g%gm1(medium)*H + this%g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
+        !         ! update region II 
+        !         if (isSurface) then 
+        !             rIIH  => conformal_media%face_media(i)%faces(j)%region_II_fields%H
+        !             rIIE1 => conformal_media%face_media(i)%faces(j)%region_II_fields%E1
+        !             rIIE2 => conformal_media%face_media(i)%faces(j)%region_II_fields%E2
+        !             rIIE3 => conformal_media%face_media(i)%faces(j)%region_II_fields%E3
+        !             rIIE4 => conformal_media%face_media(i)%faces(j)%region_II_fields%E4        
+
+        !             rIIH = this%g%gm1(medium)*rIIH + this%g%gm2(medium)*((rIIE2 - rIIE4)*id1 - (rIIE3-rIIE1)*id2)
+
+        !         end if
+
+        !     end do
+        ! end do
     end subroutine
 
 end module

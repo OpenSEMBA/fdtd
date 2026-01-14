@@ -135,7 +135,8 @@ module Solver_mod
       procedure :: step
       procedure :: advanceE, advanceEx, advanceEy, advanceEz
       procedure :: advanceH, advanceHx, advanceHy, advanceHz
-      procedure :: advanceConformalH, advanceConformalHx, advanceConformalHy, advanceConformalHz
+      procedure :: advanceConformalE => solver_advanceConformalE
+      procedure :: advanceConformalH => solver_advanceConformalH
       procedure :: advancePlaneWaveE => solver_advancePlaneWaveE
       procedure :: advancePlaneWaveH => solver_advancePlaneWaveH
       procedure :: advanceWiresE => solver_advanceWiresE
@@ -597,8 +598,9 @@ module Solver_mod
       call initializeMultiports()
       call initializeConformalElements()
       
-      ! call initializeConformal()
-      
+      ! WIP
+      call initializeConformal()
+      !
       call initializeEDispersives()
       call initializeMDispersives()
       call initializePlanewave()
@@ -1366,11 +1368,7 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
-            ! call initConformal(this%sgg, & 
-            !          this%media%sggMiEx, this%media%sggMiEy,this%media%sggMiEz, & 
-            !          this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz, & 
-            !          Ex,Ey,Ez,Hx,Hy,Hz, & 
-            !          this%control%layoutnumber)
+            ! call initConformal(this%sgg, Ex,Ey,Ez,Hx,Hy,Hz)
             
       end subroutine
 
@@ -2095,7 +2093,9 @@ contains
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE()
       call this%advanceE()
-      ! call this%advanceConformalE()
+      ! WIP
+      call this%advanceConformalE()
+      ! 
 #ifdef CompileWithConformal
       if(this%control%input_conformal_flag) call conformal_advance_E()
 #endif
@@ -2119,7 +2119,9 @@ contains
 
       call this%advanceAnisotropicH()
       call this%advanceH()
+      ! WIP
       call this%advanceConformalH()
+      !
       call this%advancePMLbodyH()
       call this%AdvanceMagneticCPML()
       call this%MinusCloneMagneticPMC()
@@ -2532,64 +2534,15 @@ contains
       return
    end subroutine advanceHz
 
-   subroutine advanceConformalH(this)
+   subroutine solver_advanceConformalE(this)
       class(solver_t) :: this
-#ifdef CompileWithProfiling    
-      call nvtxStartRange("Antes del bucle Conformal HX")
-#endif
-      call this%advanceConformalHx()
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-      call nvtxStartRange("Antes del bucle Conformal HY")
-#endif
-      call this%advanceConformalHy()
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-      call nvtxStartRange("Antes del bucle Conformal HZ")
-#endif
-      call this%advanceConformalHz()  
-#ifdef CompileWithProfiling    
-      call nvtxEndRange
-#endif
-   end subroutine advanceConformalH
+      if (this%thereAre%conformals) call advanceConformalE(this%sgg)
+   end subroutine solver_advanceConformalE
 
-   subroutine advanceConformalHx(this)
+   subroutine solver_advanceConformalH(this)
       class(solver_t) :: this
-      ! integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiHx%NX-1,0:this%bounds%sggMiHx%NY-1,0:this%bounds%sggMiHx%NZ-1), intent(in) :: sggMiHx
-
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Hx
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ey
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ez
-      real (kind=rkind), dimension(:), pointer:: IdyE
-      real (kind=rkind), dimension(:), pointer:: IdzE
-      real (kind=rkind) :: Idzek, Idyej
-      integer(kind=4) :: i
-      integer(kind=integersizeofmediamatrices) :: medio
-
-      Hx(0:this%bounds%Hx%NX-1,0:this%bounds%Hx%NY-1,0:this%bounds%Hx%NZ-1) => this%Hx
-      Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
-      Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
-
-      IdyE(0:this%bounds%dyE%NY-1) => this%IdyE
-      IdzE(0:this%bounds%dzE%NZ-1) => this%IdzE
-
-      ! medio = mapa de celda, direccion para E y para H?
-      ! which field updates? how is it defined? what happens with index shifting?
-      ! do i=1,size(conformal_size_map)
-      !    Idzek=Idze(k)
-      !    Idyej=Idye(j)
-      !    medio =sggMiHx(i,j,k)
-      !    Hx(i,j,k)=this%g%gm1(medio)*Hx(i,j,k)+this%g%gm2(medio)*((Ey(i,j,k+1)-Ey(i,j,k))*Idzek-(Ez(i,j+1,k)-Ez(i,j,k))*Idyej)
-      ! end do
-
-      return
-   end subroutine advanceConformalHx
-   subroutine advanceConformalHy(this)
-      class(solver_t) :: this
-   end subroutine advanceConformalHy
-   subroutine advanceConformalHz(this)
-      class(solver_t) :: this
-   end subroutine advanceConformalHz
+      if (this%thereAre%conformals) call advanceConformalH(this%sgg)
+   end subroutine solver_advanceConformalH
 
 
    subroutine solver_advanceEDispersiveE(this)
