@@ -13,17 +13,17 @@ from scipy.special import hankel2 as h
 from scipy.special import h2vp as hp
 
 no_mtln_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "No",
+    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF",
     reason="MTLN is not available",
 )
 
 no_hdf_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_HDF") == "No",
+    os.getenv("SEMBA_FDTD_ENABLE_HDF") == "OFF",
     reason="HDF5 is not available",
 )
 
 no_mpi_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MPI") == "No",
+    os.getenv("SEMBA_FDTD_ENABLE_MPI") == "OFF",
     reason="MPI is not available",
 )
 
