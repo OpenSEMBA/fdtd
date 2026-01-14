@@ -1,5 +1,6 @@
 module FDETYPES_TOOLS
    use FDETYPES
+   use mod_UTILS
    use NFDETypes
    implicit none
    private
@@ -36,7 +37,6 @@ module FDETYPES_TOOLS
 
    !===========================
 
-   
    real(kind=rkind) :: UTILEPS0 = 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
    real(kind=rkind) :: UTILMU0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
    type :: observation_domain_t
@@ -110,27 +110,18 @@ contains
    end function create_tag_list
 
    subroutine create_geometry_media(res, xi, xe, yi, ye, zi, ze)
-      integer(kind=SINGLE) :: xi, yi, zi, xe, ye, ze
+      integer(kind=SINGLE), intent(in) :: xi, xe, yi, ye, zi, ze
       type(media_matrices_t), intent(inout) :: res
 
-      allocate (res%sggMtag(xi:xe, yi:ye, zi:ze))
-
-      allocate (res%sggMiNo(xi:xe, yi:ye, zi:ze))
-      allocate (res%sggMiEx(xi:xe, yi:ye, zi:ze))
-      allocate (res%sggMiEy(xi:xe, yi:ye, zi:ze))
-      allocate (res%sggMiEz(xi:xe, yi:ye, zi:ze))
-      allocate (res%sggMiHx(xi:xe, yi:ye, zi:ze))
-      allocate (res%sggMiHy(xi:xe, yi:ye, zi:ze))
-      allocate (res%sggMiHz(xi:xe, yi:ye, zi:ze))
-
-      res%sggMtag = 1_SINGLE
-      res%sggMiNo = 1_SINGLE
-      res%sggMiEx = 1_SINGLE
-      res%sggMiEy = 1_SINGLE
-      res%sggMiEz = 1_SINGLE
-      res%sggMiHx = 1_SINGLE
-      res%sggMiHy = 1_SINGLE
-      res%sggMiHz = 1_SINGLE
+      ! Allocate each array with its own kind
+      call alloc_and_init(res%sggMtag, xi, xe, yi, ye, zi, ze, 1_IKINDMTAG)
+      call alloc_and_init(res%sggMiNo, xi, xe, yi, ye, zi, ze, 1_INTEGERSIZEOFMEDIAMATRICES)
+      call alloc_and_init(res%sggMiEx, xi, xe, yi, ye, zi, ze, 1_INTEGERSIZEOFMEDIAMATRICES)
+      call alloc_and_init(res%sggMiEy, xi, xe, yi, ye, zi, ze, 1_INTEGERSIZEOFMEDIAMATRICES)
+      call alloc_and_init(res%sggMiEz, xi, xe, yi, ye, zi, ze, 1_INTEGERSIZEOFMEDIAMATRICES)
+      call alloc_and_init(res%sggMiHx, xi, xe, yi, ye, zi, ze, 1_INTEGERSIZEOFMEDIAMATRICES)
+      call alloc_and_init(res%sggMiHy, xi, xe, yi, ye, zi, ze, 1_INTEGERSIZEOFMEDIAMATRICES)
+      call alloc_and_init(res%sggMiHz, xi, xe, yi, ye, zi, ze, 1_INTEGERSIZEOFMEDIAMATRICES)
    end subroutine create_geometry_media
 
    function create_geometry_media_from_sggAlloc(sggAlloc) result(r)

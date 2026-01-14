@@ -191,6 +191,8 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 endif()
 
+add_subdirectory(src_utils)
+
 if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
 	add_subdirectory(external/VTKFortran)
 	add_subdirectory(src_output)

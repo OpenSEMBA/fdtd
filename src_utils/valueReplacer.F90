@@ -1,6 +1,6 @@
-module value_replacer_mod
-  implicit none
+module mod_valueReplacer
   use FDETYPES, only: RKIND, CKIND, SINGLE, RKIND_tiempo
+  implicit none
   private
 
   public :: replace_value
@@ -9,25 +9,21 @@ module value_replacer_mod
      ! Scalars
      module procedure replace_scalar_int
      module procedure replace_scalar_real
-     module procedure replace_scalar_real_t
      module procedure replace_scalar_complex
      
      ! 1D arrays
      module procedure replace_1d_int
      module procedure replace_1d_real
-     module procedure replace_1d_real_t
      module procedure replace_1d_complex
      
      ! 2D arrays
      module procedure replace_2d_int
      module procedure replace_2d_real
-     module procedure replace_2d_real_t
      module procedure replace_2d_complex
      
      ! 3D arrays
      module procedure replace_3d_int
      module procedure replace_3d_real
-     module procedure replace_3d_real_t
      module procedure replace_3d_complex
   end interface
 
@@ -76,13 +72,6 @@ contains
     x(idx1) = val
   end subroutine
 
-  subroutine replace_1d_real_t(x, idx1, val)
-    real(RKIND_tiempo), intent(inout) :: x(:)
-    integer(SINGLE), intent(in) :: idx1
-    real(RKIND_tiempo), intent(in) :: val
-    x(idx1) = val
-  end subroutine
-
   subroutine replace_1d_complex(x, idx1, val)
     complex(CKIND), intent(inout) :: x(:)
     integer(SINGLE), intent(in) :: idx1
@@ -104,13 +93,6 @@ contains
     real(RKIND), intent(inout) :: x(:,:)
     integer(SINGLE), intent(in) :: idx1, idx2
     real(RKIND), intent(in) :: val
-    x(idx1, idx2) = val
-  end subroutine
-
-  subroutine replace_2d_real_t(x, idx1, idx2, val)
-    real(RKIND_tiempo), intent(inout) :: x(:,:)
-    integer(SINGLE), intent(in) :: idx1, idx2
-    real(RKIND_tiempo), intent(in) :: val
     x(idx1, idx2) = val
   end subroutine
 
@@ -138,13 +120,6 @@ contains
     x(idx1, idx2, idx3) = val
   end subroutine
 
-  subroutine replace_3d_real_t(x, idx1, idx2, idx3, val)
-    real(RKIND_tiempo), intent(inout) :: x(:,:,:)
-    integer(SINGLE), intent(in) :: idx1, idx2, idx3
-    real(RKIND_tiempo), intent(in) :: val
-    x(idx1, idx2, idx3) = val
-  end subroutine
-
   subroutine replace_3d_complex(x, idx1, idx2, idx3, val)
     complex(CKIND), intent(inout) :: x(:,:,:)
     integer(SINGLE), intent(in) :: idx1, idx2, idx3
@@ -152,4 +127,4 @@ contains
     x(idx1, idx2, idx3) = val
   end subroutine
 
-end module value_replacer_mod
+end module mod_valueReplacer

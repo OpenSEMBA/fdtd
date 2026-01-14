@@ -1,5 +1,6 @@
 module mod_frequencySliceProbeOutput
    use FDETYPES
+   use mod_UTILS
    use Report
    use outputTypes
    use mod_outputUtils

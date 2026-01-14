@@ -1,5 +1,6 @@
 module mod_volumicProbeUtils
    use FDETYPES
+   USE mod_UTILS
    use outputTypes
    use mod_outputUtils
    implicit none
