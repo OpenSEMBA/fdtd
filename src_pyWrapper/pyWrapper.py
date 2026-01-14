@@ -321,7 +321,7 @@ class FDTD():
             json.dump(self._input, open(self._filename, 'w'))
 
         os.chdir(self.getFolder())
-        self.output = subprocess.run(self.run_command)
+        self.output = subprocess.run(self.run_command, capture_output=True)
         self._hasRun = True
         assert self.hasFinishedSuccessfully()
 
@@ -329,6 +329,10 @@ class FDTD():
         if self._hasRun and (self.output.returncode == 0):
             return True
         else:
+            if self.output.stdout:
+                print(self.output.stdout.decode('utf-8'), end='')
+            if self.output.stderr:
+                print(self.output.stderr.decode('utf-8'), end='')
             return False
 
     def __getitem__(self, key):
