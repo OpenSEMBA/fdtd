@@ -719,8 +719,8 @@ contains
                write(thefileno,'(a)') '# (  100 ,  199 ) '//trim(adjustl('Dispersive electric/magnetic isotropic/anisotropic (+indexmedium)       (Surface) '))
                write(thefileno,'(a)') '# (  2.5 ,  2.5 ) '//trim(adjustl('Dielectric isotropic or anisotropic                                     (Line)'))
                write(thefileno,'(a)') '# (  200 ,  299 ) '//trim(adjustl('Dielectric isotropic or anisotropic (+indexmedium)                      (Surface)'))
-               write(thefileno,'(a)') '# (  3.5 ,  3.5 ) '//trim(adjustl('sgbc/this%l%mibc Isotropic/anisotropic Multiport                               (Line)'))
-               write(thefileno,'(a)') '# (  300 ,  399 ) '//trim(adjustl('sgbc/this%l%mibc Isotropic/anisotropic Multiport (+indexmedium)                (Surface)'))
+               write(thefileno,'(a)') '# (  3.5 ,  3.5 ) '//trim(adjustl('sgbc/this%l%mibc Isotropic/anisotropic Multiport                        (Line)'))
+               write(thefileno,'(a)') '# (  300 ,  399 ) '//trim(adjustl('sgbc/this%l%mibc Isotropic/anisotropic Multiport (+indexmedium)         (Surface)'))
                write(thefileno,'(a)') '# (  4.5 ,  4.5 ) '//trim(adjustl('Thin slot                                                               (Line)'))
                write(thefileno,'(a)') '# (  5.0 ,  5.0 ) '//trim(adjustl('Already_YEEadvanced_byconformal                                         (Surface)'))
                write(thefileno,'(a)') '# (  5.5 ,  5.5 ) '//trim(adjustl('Already_YEEadvanced_byconformal                                         (Line)'))
@@ -730,9 +730,11 @@ contains
                write(thefileno,'(a)') '# (  8.0 ,  8.0 ) '//trim(adjustl('Thin wire segments colliding with structure                             (Line)'))
                write(thefileno,'(a)') '# (  8.5 ,  8.5 ) '//trim(adjustl('Soft/Hard Nodal CURRENT/FIELD ELECTRIC DENSITY SOURCE                   (Line)'))
                write(thefileno,'(a)') '# (  9.0 ,  9.0 ) '//trim(adjustl('Soft/Hard Nodal CURRENT/FIELD MAGNETIC DENSITY SOURCE                   (Line)'))
-               write(thefileno,'(a)') '# (   10 ,   11 ) '//trim(adjustl('LeftEnd/RightEnd/Ending wire segment                                                 (Wire)'))
-               write(thefileno,'(a)') '# (   20 ,   20 ) '//trim(adjustl('Intermediate wire segment +number_holland_parallel or +number_berenger       (Wire) '))
+               write(thefileno,'(a)') '# (   10 ,   11 ) '//trim(adjustl('LeftEnd/RightEnd/Ending wire segment                                    (Wire)'))
+               write(thefileno,'(a)') '# (   20 ,   20 ) '//trim(adjustl('Intermediate wire segment +number_holland_parallel or +number_berenger  (Wire) '))
                write(thefileno,'(a)') '# (  400 ,  499 ) '//trim(adjustl('Thin slot (+indexmedium)                                                (Surface)'))
+               write(thefileno,'(a)') '# ( 1000 , 1999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Surface)'))
+               write(thefileno,'(a)') '# ( 2000 , 2999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Line)'))
                write(thefileno,'(a)') '# ( -0.5 , -0.5 ) '//trim(adjustl('Other types of media                                                    (Line)'))
                write(thefileno,'(a)') '# ( -1.0 , -1.0 ) '//trim(adjustl('Other types of media                                                    (Surface)'))
          close(thefileno)
@@ -992,7 +994,12 @@ contains
 
       if (this%l%layoutnumber==0) then
 #ifdef CompilePrivateVersion
-         NFDE_FILE => cargar_NFDE_FILE (filename)
+         if (trim(adjustl(extension))=='.nfde') then 
+            NFDE_FILE => cargar_NFDE_FILE (filename)
+         else
+            call carga_raw_info(rawFileInfo, filename, extension)
+            NFDE_FILE => rawFileInfo
+         endif
 #else
          call carga_raw_info(rawFileInfo, filename, extension)
          NFDE_FILE => rawFileInfo
@@ -1446,8 +1453,6 @@ contains
 #ifdef CompileWithMPI
       CALL MPI_FINALIZE (this%l%ierr)
 #endif
-   STOP
-   !
    end subroutine semba_end
 
    subroutine initEntrada(input)

@@ -4,26 +4,26 @@ import glob
 import re
 import json
 import numpy as np
-import matplotlib.pyplot as plt
 import pyvista as pv
 from numpy.fft import *
 import pytest
-import h5py
 from os import environ as env
 from sys import platform
+from scipy.special import hankel2 as h
+from scipy.special import h2vp as hp
 
 no_mtln_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "No",
+    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF",
     reason="MTLN is not available",
 )
 
 no_hdf_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_HDF") == "No",
+    os.getenv("SEMBA_FDTD_ENABLE_HDF") == "OFF",
     reason="HDF5 is not available",
 )
 
 no_mpi_skip = pytest.mark.skipif(
-    os.getenv("SEMBA_FDTD_ENABLE_MPI") == "No",
+    os.getenv("SEMBA_FDTD_ENABLE_MPI") == "OFF",
     reason="MPI is not available",
 )
 
@@ -135,3 +135,22 @@ def copyXSpiceModels(temp_dir, sys_name):
     makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'table.cm')
     makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'xtradev.cm')
     makeCopy(temp_dir, SPINIT_FOLDER + sys_name + 'xtraevt.cm')
+
+def RCS(fspace, radius):
+
+    def h_sph(n,z):
+        return np.sqrt(0.5*np.pi*z)*h(n+0.5,z)
+
+    def h_sph_der(n,z):
+        return 0.25*np.pi*(0.5*np.pi*z)**(-0.5)*h(n+0.5,z) + np.sqrt(0.5*np.pi*z)*hp(n+0.5,z)
+
+    a = radius #radius
+    f = fspace
+    l = 3.0e8/f
+    beta = 2*np.pi*f/3.0e8
+
+    res = 0.0
+    for n in range(1,50):
+        res = res + (-1)**n*(2*n+1)/(h_sph_der(n,beta*a)*h_sph(n,beta*a))
+    res = np.abs(res)**2*(l**2/(4*np.pi))
+    return res

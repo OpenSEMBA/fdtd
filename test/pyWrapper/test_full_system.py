@@ -293,6 +293,7 @@ def test_sphere(tmp_path):
 @no_hdf_skip
 @pytest.mark.hdf
 def test_movie_in_planewave_in_box(tmp_path):
+    import h5py
     fn = CASES_FOLDER + 'planewave/pw-in-box-with-movie.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
@@ -1025,6 +1026,108 @@ def test_negative_offset_in_x(tmp_path):
     assert np.corrcoef(probeTotal['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.corrcoef(probeL['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
+    
+def test_conformal_impedance_cylinder(tmp_path):
+    case_name = 'conformal_impedance_cylinder_conformal'
+    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.cleanUp()
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
+
+    case_name = 'conformal_impedance_cylinder_staircase'
+    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.cleanUp()
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
+    
+    #discrete fourier transforms
+    exc_file = "predefinedExcitation.1.exc"
+    exc = pd.read_csv(exc_file, sep='\\s+')
+    exc = exc.rename(columns={
+        exc.columns[0]: 'time',
+        exc.columns[1]: 'V'
+    })
+    new_freqs = np.geomspace(1e3, 1e7, num=100)
+    Vexc = exc["V"].to_numpy()
+    texc = exc["time"].to_numpy()
+    dt_exc = texc[1]-texc[0]
+    Vfexc = dt_exc*np.array([np.sum(Vexc * np.exp(-1j * 2 * np.pi * f * texc)) for f in new_freqs])
+
+    Ibulk = bulk["current"].to_numpy()
+    tbulk = bulk["time"].to_numpy()
+    dt_bulk = tbulk[1]-tbulk[0]
+    Ifbulk = dt_bulk*np.array([np.sum(Ibulk * np.exp(-1j * 2 * np.pi * f * tbulk)) for f in new_freqs])
+
+    Ibulk_conf = bulk_conf["current"].to_numpy()
+    tbulk_conf = bulk_conf["time"].to_numpy()
+    dt_bulk_conf = tbulk_conf[1]-tbulk_conf[0]
+    Ifbulk_conf = dt_bulk_conf*np.array([np.sum(Ibulk_conf * np.exp(-1j * 2 * np.pi * f * tbulk_conf)) for f in new_freqs])
+
+    #impedance comparison
+    assert np.allclose(np.abs(Vfexc/Ifbulk), np.abs(Vfexc/Ifbulk_conf), rtol=0.01, atol=0.001)
+
+    
+def test_conformal_sphere_rcs(tmp_path):
+    case_name = 'conformal_sphere_rcs'
+    solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    far  = Probe(solver.getSolvedProbeFilenames("n2f")[0])
+    ra = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'rcs_arit']
+    rg = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'rcs_geom']
+    ffar  = far.data.loc[(far.data['Theta'] == 90.0) & (far.data['Phi'] ==  0.0), 'freq']
+    
+    # analytical RCS
+    f = np.linspace(1e7,7e8,200)
+    r = 0.5 # in meters
+    rcs = RCS(fspace=f, radius=r)
+    # simulated, interpolated to analytical frequencies
+    rcs_interp = np.interp(f,ffar,rg)
+
+    assert np.allclose(rcs[5:150], rcs_interp[5:150], rtol=0.25, atol=0.15)
+    
+
+def test_conformal_delay(tmp_path):
+    fn = CASES_FOLDER + 'conformal/conformal.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+
+    solver['materialAssociations'][0]['elementIds'] = [4]
+    solver['mesh']['elements'][3]['intervals'] = [[[0,0,4],[2,2,4]]]
+    solver.cleanUp()
+    solver.run()
+    front = Probe(solver.getSolvedProbeFilenames("front")[0])
+    t = front['time']
+    t4 = t[front['field'].argmin()]
+
+    solver['materialAssociations'][0]['elementIds'] = [5]
+    n = 4
+    for i in range(1,n):
+        solver['mesh']['coordinates'][6]["relativePosition"][2]   = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][7]["relativePosition"][2]   = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][8]["relativePosition"][2]   = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][9]["relativePosition"][2]   = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][15]["relativePosition"][2]  = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][16]["relativePosition"][2]  = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][17]["relativePosition"][2]  = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][18]["relativePosition"][2]  = 4.0 + i*1.0/n
+        solver['mesh']['coordinates'][19]["relativePosition"][2]  = 4.0 + i*1.0/n
+
+        solver.cleanUp()
+        solver.run()
+        front = Probe(solver.getSolvedProbeFilenames("front")[0])
+        t = front['time']
+        delay = t[front['field'].argmin()]
+        tdelta = t4 + 2*(i*1.0/n)*0.02/3e8
+        assert np.abs(delay - tdelta)/tdelta < 0.01
+        
+
 
 def test_bulk_current_outputs(tmp_path):
     # This test uses bulk_probe_cases_over_nodal_source.fdtd from input_examples as input.

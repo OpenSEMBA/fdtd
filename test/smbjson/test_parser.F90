@@ -104,3 +104,28 @@ integer function test_parser_read_mesh() bind(C) result(err)
 
 
 end function
+
+integer function test_parser_read_conformal_volume() bind(C) result(err)
+
+   use smbjson
+   use smbjson_testingTools
+   
+   implicit none
+
+   character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'conformal.fdtd.json'
+   type(parser_t) :: parser
+   type(mesh_t) :: mesh
+   logical :: found
+   type(conformal_region_t), dimension(:), allocatable :: conformal_regions
+   type(cell_region_t), dimension(:), allocatable :: cell_regions
+
+   err = 0
+
+   parser = parser_t(filename)
+   mesh = parser%readMesh()
+   conformal_regions = mesh%getConformalRegions([5])
+   if (size(conformal_regions) /= 1) err = err + 1
+   if (size(conformal_regions(1)%triangles) /= 24) err = err + 1
+   cell_regions = mesh%getCellRegions([5])
+   if (size(cell_regions(1)%intervals) /= 1) err = err + 1
+end function

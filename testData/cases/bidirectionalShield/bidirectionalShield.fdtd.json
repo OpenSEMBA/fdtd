@@ -1,0 +1,278 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Shielded pair.",
+	
+    "general": {
+        "timeStep": 5e-11,
+        "numberOfSteps": 4000,
+		"mtlnProblem": false
+    },
+  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6, 
+            "order": 2.0,
+            "reflection": 0.0001
+        }
+    },
+
+	"materials": [
+		{
+			"name": "InnerCoaxial",
+			"id": 1,
+			"type": "shieldedMultiwire",
+			"inductancePerMeter": [
+				[3.13182309e-07, 7.45674981e-08],
+				[7.45674981e-08, 3.13182309e-07]
+			],
+			"capacitancePerMeter": [
+				[85.0e-12, -20.5e-12],
+				[-20.5e-12, 85.0e-12 ]
+			],
+			"transferImpedancePerMeter" : {
+				"resistiveTerm" : 0.0,
+				"inductiveTerm" : 4.0e-9,
+				"direction": "both"
+			}
+		},
+		{
+			"name": "Shield",
+			"id": 2,
+			"type": "unshieldedMultiwire",
+            "inductancePerMeter":  [[3.94244466e-07]],
+            "capacitancePerMeter": [[2.82223377e-11]],
+			"resistancePerMeter": [22.9e-3]
+		},
+		{
+			"name": "leftTerminal",
+			"id": 3,
+			"type": "terminal",
+			"terminations" : [
+				{"type": "series", "resistance": 50.0},
+				{"type": "series", "resistance": 50.0}
+			]
+		},
+		{
+			"name": "shieldTerminal",
+			"id": 4,
+			"type": "terminal",
+			"terminations": [
+				{"type": "series","resistance": 50.0}
+			]
+		},
+		{
+			"name": "50OhmTerminal",
+			"id": 6,
+			"type": "terminal",
+			"terminations": [
+				{"type": "series", "resistance": 50.0}
+			]
+		},
+		{
+			"name": "shortTerminal",
+			"id": 7,
+			"type": "terminal",
+			"terminations": [
+				{"type": "short"}
+			]
+		},
+		{
+			"id": 5,
+			"type": "pec"
+		}
+
+	],
+
+	"mesh": {
+		"grid": {
+			"numberOfCells": [150, 150, 150],
+			"steps": {"x": [0.05], "y": [0.05], "z": [0.0504]}
+		},
+		"coordinates": [
+			{"id": 1, "relativePosition": [70, 70, 74 ] },
+			{"id": 2, "relativePosition": [70, 70, 75] },
+			{"id": 3, "relativePosition": [70, 80, 75] },
+			{"id": 4, "relativePosition": [70, 80, 74 ] },
+
+			{"id": 5, "relativePosition": [70, 70, 74 ] },
+			{"id": 6, "relativePosition": [70, 70, 75] },
+			{"id": 7, "relativePosition": [70, 80, 75] },
+			{"id": 8, "relativePosition": [70, 80, 74 ] },
+
+			{"id": 9, "relativePosition":  [70, 70, 74 ] },
+			{"id": 10, "relativePosition": [70, 70, 75] },
+			{"id": 11, "relativePosition": [70, 80, 75] },
+			{"id": 12, "relativePosition": [70, 80, 74 ] },
+
+			{"id": 13, "relativePosition": [80, 70, 74 ] },
+			{"id": 14, "relativePosition": [80, 70, 75] },
+			{"id": 15, "relativePosition": [80, 80, 75] },
+			{"id": 16, "relativePosition": [80, 80, 74 ] },
+
+			{"id": 17, "relativePosition": [80, 70, 74 ] },
+			{"id": 18, "relativePosition": [80, 70, 75] },
+			{"id": 19, "relativePosition": [80, 80, 75] },
+			{"id": 20, "relativePosition": [80, 80, 74 ] },
+
+			{"id": 21, "relativePosition": [80, 70, 74 ] },
+			{"id": 22, "relativePosition": [80, 70, 75] },
+			{"id": 23, "relativePosition": [80, 80, 75] },
+			{"id": 24, "relativePosition": [80, 80, 74 ] },
+			{"id": 25, "relativePosition": [71, 75, 75 ] },
+			{"id": 26, "relativePosition": [69, 75, 75 ] },
+			{"id": 27, "relativePosition": [70, 75, 74 ] },
+			{"id": 28, "relativePosition": [70, 75, 76 ] },
+			{"id": 29, "relativePosition": [75, 75, 75 ] }
+
+		],
+		"elements": [
+			{ "id": 1, "type": "polyline", "coordinateIds": [1,2,3,4]},
+			{ "id": 2, "type": "node",     "coordinateIds": [1] },
+			{ "id": 3, "type": "node",     "coordinateIds": [4] },
+            { "id": 4, "type": "cell", 	   "intervals": [[[10,10,10], [140,140,140]]] },
+            { "id": 5, "type": "cell", 	   "intervals": [[[20,20,74], [73,130,74]]] },
+			{ "id": 6, "type": "polyline", "coordinateIds": [5,6,7,8]},
+			{ "id": 7, "type": "polyline", "coordinateIds": [9,10,11,12]},
+			{ "id": 8, "type": "polyline", "coordinateIds": [13,14,15,16]},
+			{ "id": 9, "type": "polyline", "coordinateIds": [17,18,19,20]},
+			{ "id": 10, "type": "polyline", "coordinateIds": [21,22,23,24]},
+			{ "id": 11, "type": "node",     "coordinateIds": [13] },
+			{ "id": 12, "type": "node",     "coordinateIds": [16] },
+			{ "id": 13, "type": "node",     "coordinateIds": [25] },
+            { "id": 14, "type": "cell",     "intervals": [[[73,20,74], [130,130,74]]] },
+			{ "id": 15, "type": "node",     "coordinateIds": [5] },
+			{ "id": 16, "type": "node",     "coordinateIds": [26] },
+			{ "id": 17, "type": "node",     "coordinateIds": [27] },
+			{ "id": 18, "type": "node",     "coordinateIds": [28] },
+			{ "id": 19, "type": "node",     "coordinateIds": [29] }
+		]
+	},
+	
+    "sources": [
+		{
+			"name": "voltage_source",
+			"type": "generator",
+			"field": "voltage",
+			"magnitudeFile": "bidirectionalShield.exc", 
+			"elementIds": [15]
+		}
+    ],
+
+
+	"probes": [
+		{
+			"name": "wire_1_end",
+			"type": "wire",
+			"field": "current",
+			"elementIds": [2],
+            "domain": { "type": "time" }
+		},
+		{
+			"name": "wire_1_start",
+			"type": "wire",
+			"field": "current",
+			"elementIds": [3],
+            "domain": { "type": "time" }
+		},
+		{
+			"name": "wire_2_end",
+			"type": "wire",
+			"field": "current",
+			"elementIds": [11],
+            "domain": { "type": "time" }
+		},
+		{
+			"name": "wire_2_start",
+			"type": "wire",
+			"field": "current",
+			"elementIds": [12],
+            "domain": { "type": "time" }
+		},
+		{
+			"name": "electric_field_point_probe_xp",
+			"type": "point",
+			"field": "electric",
+			"elementIds": [13],
+			"directions": ["x", "y", "z"],
+			"domain": { "type": "time" }
+		},
+		{
+			"name": "electric_field_point_probe_xm",
+			"type": "point",
+			"field": "electric",
+			"elementIds": [16],
+			"directions": ["x", "y", "z"],
+			"domain": { "type": "time" }
+		},
+		{
+			"name": "electric_field_point_probe_zp",
+			"type": "point",
+			"field": "electric",
+			"elementIds": [17],
+			"directions": ["x", "y", "z"],
+			"domain": { "type": "time" }
+		},
+		{
+			"name": "electric_field_point_probe_zm",
+			"type": "point",
+			"field": "electric",
+			"elementIds": [18],
+			"directions": ["x", "y", "z"],
+			"domain": { "type": "time" }
+		},
+		{
+			"name": "electric_field_point_probe_mid",
+			"type": "point",
+			"field": "electric",
+			"elementIds": [18],
+			"directions": ["x", "y", "z"],
+			"domain": { "type": "time" }
+		}
+		
+	],
+
+	"materialAssociations": [
+		{
+			"name": "cable_1_shield",
+			"elementIds": [ 1 ],
+			"materialId": 2,
+			"initialTerminalId": 6,
+			"endTerminalId": 6
+		},
+		{
+			"name": "cable_1_wires",
+			"elementIds": [ 6,7 ],
+			"materialId": 1,
+			"initialTerminalId": 3,
+			"endTerminalId": 3,
+			"containedWithinElementId": 1
+		},
+		{
+			"name": "cable_2_shield",
+			"elementIds": [ 8 ],
+			"materialId": 2,
+			"initialTerminalId": 6,
+			"endTerminalId": 6
+		},
+		{
+			"name": "cable_2_wires",
+			"elementIds": [ 9,10 ],
+			"materialId": 1,
+			"initialTerminalId": 3,
+			"endTerminalId": 3,
+			"containedWithinElementId": 8
+		},
+		{
+			"materialId" : 5,
+			"elementIds": [5]
+
+		},
+		{
+			"materialId" : 5,
+			"elementIds": [14]
+
+		}
+
+	]
+}

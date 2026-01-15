@@ -1,0 +1,211 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 3.85167e-11,
+        "numberOfSteps": 1
+    },
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 10,
+            "order": 2,
+            "reflection": 0.001
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [30, 30, 30],
+            "steps": { "x": [0.001], "y": [0.001], "z": [0.001] }
+        },
+        "elements": [
+            {
+                "id": 1,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            10,
+                            10,
+                            10
+                        ],
+                        [
+                            20,
+                            20,
+                            20
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 2,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            8,
+                            8,
+                            8
+                        ],
+                        [
+                            22,
+                            22,
+                            22
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "subtype": "volume",
+                "intervals" : [],
+                "triangles": [
+                    [1,2,3],
+                    [8,1,3 ],
+
+                    [3,2,4],
+                    [3,4,7 ],
+                    [5,3,7 ],
+                    [3,5,6],
+                    [3,6,8 ],
+                    [19,8,6 ],
+                    [19,18,1 ],
+                    [8,19,1 ],
+                    [18,11,1 ],
+                    [2,11,12],
+                    [2,1,11],
+                    [12,4,2 ],
+                    
+                    [5,7,14],
+                    [5,14,13],
+                    [13,17,5], 
+                    [6,5,17], 
+                    [6,17,25],
+                    [6,25,19],
+                    [18,19,25],
+                    [18,25,24],
+                    [18,24,11],
+                    [18,20,11],
+                    [16,12,11],
+                    [16,11,20],
+                    [4,12,16],
+                    [4,16,15],
+                    [7,4,15],
+                    [7,15,14],
+
+                    [23,15,16],
+                    [21,14,15],
+                    [21,15,23],
+                    [21,13,14],
+                    [13,21,22],
+                    [13,22,17],
+                    [25,17,22],
+                    [26,24,25],
+                    [26,25,22],
+                    [24,26,20],
+                    [16,20,26],
+                    [16,26,23],
+
+                    [26,21,23],
+                    [26,22,21]
+
+                ]
+            },
+            {"id": 4, "type": "node", "coordinateIds": [27]}
+        ],
+        "coordinates": [
+            {"id": 1,"relativePosition":  [15.0,               15.0,               14.666700005531311]},
+            {"id": 2,"relativePosition":  [15.0,               16.0,               14.666700005531311]},
+            {"id": 3,"relativePosition":  [16.0,               16.0,               14.666700005531311]},
+            {"id": 4,"relativePosition":  [15.0,               16.333299994468689, 15.0]},
+            {"id": 5,"relativePosition":  [16.333299994468689, 16.0,               15.0]},
+            {"id": 6,"relativePosition":  [16.333299994468689, 15.0,               15.0]},
+            {"id": 7,"relativePosition":  [16.0,               16.333299994468689, 15.0 ]},
+            {"id": 8, "relativePosition": [16.0,               15.0,               14.666700005531311]},
+            {"id": 11,"relativePosition": [14.666700005531311, 15.0,               15.0]},
+            {"id": 12,"relativePosition": [14.666700005531311, 16.0,               15.0]},
+            {"id": 13,"relativePosition": [16.333299994468689, 16.0,               16.0]},
+            {"id": 14,"relativePosition": [16.0,               16.333299994468689, 16.0]},
+            {"id": 15,"relativePosition": [15.0,               16.333299994468689, 16.0]},
+            {"id": 16,"relativePosition": [14.666700005531311, 16.0,               16.0]},            
+            {"id": 17,"relativePosition": [16.333299994468689, 15.0,               16.0]},            
+            {"id": 18,"relativePosition": [15.0,               14.666700005531311, 15.0]},
+            {"id": 19,"relativePosition": [16.0,               14.666700005531311, 15.0]},
+            {"id": 20,"relativePosition": [14.666700005531311, 15.0,               16.0]},            
+            {"id": 21,"relativePosition": [16.0,               16.0,               16.333299994468689]},
+            {"id": 22,"relativePosition": [16.0,               15.0,               16.333299994468689]},            
+            {"id": 23,"relativePosition": [15.0,               16.0,               16.333299994468689]},            
+            {"id": 24,"relativePosition": [15.0,               14.666700005531311, 16.0]},            
+            {"id": 25,"relativePosition": [16.0,               14.666700005531311, 16.0]},            
+            {"id": 26,"relativePosition": [15.0,               15.0,               16.333299994468689]},
+            {"id": 27,"relativePosition": [15.0,               15.0,               15.0]}
+
+            ]    
+        },
+    "materials": [
+        {
+            "id": 1,
+            "type": "pec"
+        }
+    ],
+    "materialAssociations": [
+        {
+            "materialId": 1,
+            "elementIds": [
+                3
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "gauss.exc",
+            "elementIds": [
+                1
+            ],
+            "direction": {
+                "theta": 0.0,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 1.5707963268,
+                "phi": 0.0
+            }
+        }
+    ],
+    "probes": [
+        {
+            "name": "FarField",
+            "type": "farField",
+            "elementIds": [
+                2
+            ],
+            "theta": {
+                "initial": 0.0,
+                "final": 90.0,
+                "step": 90.0
+            },
+            "phi": {
+                "initial": 0.0,
+                "final": 180.0,
+                "step": 90.0
+            },
+            "domain": {
+                "type": "frequency",
+                "initialFrequency": 3e9,
+                "finalFrequency": 2.5e11,
+                "numberOfFrequencies": 100,
+                "frequencySpacing": "logarithmic"
+            }
+        },
+        {
+            "name": "electric_field_point_probe",
+            "type": "point",
+            "field": "electric",
+            "elementIds": [4],
+            "directions": ["x", "y", "z"],
+            "domain": { "type": "time" }
+        }
+
+    ]
+}

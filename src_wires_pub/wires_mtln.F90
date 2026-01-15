@@ -129,6 +129,7 @@ contains
          real(kind=rkind) :: res
          real(kind=rkind) :: curr
          integer (kind=4) :: direction, i
+         res = 0
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
          curr = 0
          do i = 1, mtln_solver%bundles(m)%conductors_in_level(1)

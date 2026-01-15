@@ -137,13 +137,17 @@ module  FDETYPES
    integer (kind=4), parameter  ::  REALSIZE=MPI_DOUBLE_PRECISION
    integer (kind=4), parameter  ::  REALSIZE_wires=MPI_DOUBLE_PRECISION
    integer (kind=4), parameter  ::  COMPLEXSIZE=MPI_DOUBLE_COMPLEX
+   integer (kind=4), parameter  ::  REALSIZE_tiempo=MPI_DOUBLE_PRECISION
 #else
 #ifdef CompileWithReal16
    integer (kind=4), parameter  ::  REALSIZE=MPI_REAL16
    integer (kind=4), parameter  ::  COMPLEXSIZE=MPI_COMPLEX32
+   integer (kind=4), parameter  ::  REALSIZE_tiempo=MPI_REAL_16
 #else
    integer (kind=4), parameter  ::  REALSIZE=MPI_REAL
    integer (kind=4), parameter  ::  REALSIZE_wires=MPI_DOUBLE_PRECISION
+   integer (kind=4), parameter  ::  REALSIZE_tiempo=MPI_DOUBLE_PRECISION
+
 !!!   integer (kind=4), parameter  ::  COMPLEXSIZE=MPI_COMPLEX
    integer (kind=4), parameter  ::  COMPLEXSIZE=MPI_DOUBLE_COMPLEX  !LOS COMPLEJOS LOS VOY A MANEJAR SIEMPRE EN DOBLE PRECISION como minimo !esto debe ir ligado a la definicion de ckind
 #endif
@@ -203,6 +207,14 @@ module  FDETYPES
    
    REAL (KIND=RKIND_tiempo) :: dt0 !aqui para OLDrlo accesible en resume pscale
    
+   integer(kind=4), parameter :: FACE_X = 1
+   integer(kind=4), parameter :: FACE_Y = 2
+   integer(kind=4), parameter :: FACE_Z = 3
+   
+   integer(kind=4), parameter :: EDGE_X = 1
+   integer(kind=4), parameter :: EDGE_Y = 2
+   integer(kind=4), parameter :: EDGE_Z = 3
+
    
 #ifdef CompileWithReal4
    CHARACTER (LEN=*), PARAMETER  ::  fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
@@ -552,6 +564,7 @@ module  FDETYPES
       logical                    ::  &
       PML , &
       PEC , &
+      ConformalPEC , &
       PMC , &
       ThinWire , &
       SlantedWire, &
@@ -637,6 +650,7 @@ module  FDETYPES
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , allocatable , dimension(:,:,:) ::  sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz
       integer (KIND=IKINDMTAG) , allocatable , dimension(:,:,:) :: sggMtag
    end type
+      
 
    type :: constants_t
       real(kind=rkind), pointer, dimension ( : ) ::  g1,g2,gM1,gM2
