@@ -24,6 +24,15 @@ module conformal_mod
     !         gm1 y gm2 dependen del ratio nuevo
     !         los E => a los edges o campos de la region I
 
+    ! t_t alguno de los tipos conformal
+
+    
+    ! type Conformal_t
+    !     integer (kind=simple) :: nConformalMedia
+    !     type(t_t), pointer, dimension(:) :: medium
+    ! end type
+    ! type (Conformal_t), save, target :: conformal
+
 
 contains
 
