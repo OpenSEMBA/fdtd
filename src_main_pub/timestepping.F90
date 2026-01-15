@@ -86,6 +86,8 @@ module Solver_mod
 #ifdef CompileWithProfiling
    use nvtx
 #endif
+   use conformal_mod
+
    implicit none
 
 
@@ -133,6 +135,8 @@ module Solver_mod
       procedure :: step
       procedure :: advanceE, advanceEx, advanceEy, advanceEz
       procedure :: advanceH, advanceHx, advanceHy, advanceHz
+      procedure :: advanceConformalE => solver_advanceConformalE
+      procedure :: advanceConformalH => solver_advanceConformalH
       procedure :: advancePlaneWaveE => solver_advancePlaneWaveE
       procedure :: advancePlaneWaveH => solver_advancePlaneWaveH
       procedure :: advanceWiresE => solver_advanceWiresE
@@ -594,6 +598,9 @@ module Solver_mod
       call initializeMultiports()
       call initializeConformalElements()
       
+      ! WIP
+      call initializeConformal()
+      !
       call initializeEDispersives()
       call initializeMDispersives()
       call initializePlanewave()
@@ -1356,6 +1363,15 @@ contains
 #endif
       end subroutine initializeMultiports
 
+      subroutine initializeConformal()
+#ifdef CompileWithMPI
+            call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+            write(dubuf,*) 'Init Conformal Elements ...';  call print11(this%control%layoutnumber,dubuf)
+            ! call initConformal(this%sgg, Ex,Ey,Ez,Hx,Hy,Hz)
+            
+      end subroutine
+
       subroutine initializeConformalElements()
          character(len=BUFSIZE) :: dubuf
          logical :: l_auxinput, l_auxoutput
@@ -2077,6 +2093,9 @@ contains
       call flushPlanewaveOff(planewave_switched_off, this%still_planewave_time, thereareplanewave)
       call this%AdvanceAnisotropicE()
       call this%advanceE()
+      ! WIP
+      call this%advanceConformalE()
+      ! 
 #ifdef CompileWithConformal
       if(this%control%input_conformal_flag) call conformal_advance_E()
 #endif
@@ -2100,6 +2119,9 @@ contains
 
       call this%advanceAnisotropicH()
       call this%advanceH()
+      ! WIP
+      call this%advanceConformalH()
+      !
       call this%advancePMLbodyH()
       call this%AdvanceMagneticCPML()
       call this%MinusCloneMagneticPMC()
@@ -2511,6 +2533,16 @@ contains
 #endif
       return
    end subroutine advanceHz
+
+   subroutine solver_advanceConformalE(this)
+      class(solver_t) :: this
+      if (this%thereAre%conformals) call advanceConformalE(this%sgg)
+   end subroutine solver_advanceConformalE
+
+   subroutine solver_advanceConformalH(this)
+      class(solver_t) :: this
+      if (this%thereAre%conformals) call advanceConformalH(this%sgg)
+   end subroutine solver_advanceConformalH
 
 
    subroutine solver_advanceEDispersiveE(this)
