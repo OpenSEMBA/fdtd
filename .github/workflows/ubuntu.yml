@@ -29,6 +29,7 @@ jobs:
         mtln: ["Yes", "No"]
         hdf: ["Yes"]
         double-precision: ["No"]
+        new-output-module: ["No","Yes"]
 
         include:
           - os: ubuntu-22.04
@@ -105,13 +106,15 @@ jobs:
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
           -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
           -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
-          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}}
+          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}} \
+          -DSEMBA_FDTD_ENABLE_OUTPUT_MODULE=${{matrix.new-output-module}} \
         cmake --build build -j
       
     - name: Run unit tests 
       run: build/bin/fdtd_tests
 
     - name: Run python tests
+      if: matrix.new-output-module=='No'
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
