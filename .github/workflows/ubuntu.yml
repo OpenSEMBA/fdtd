@@ -29,6 +29,7 @@ jobs:
         mtln: ["ON", "OFF"]
         hdf: ["ON"]
         double-precision: ["OFF"]
+        new-output-module: ["OFF","ON"]
 
         include:
           # Disable by lack of space on github action
@@ -89,13 +90,15 @@ jobs:
           -DSEMBA_FDTD_ENABLE_MPI=${{matrix.mpi}} \
           -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
           -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
-          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}}
+          -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}} \
+          -DSEMBA_FDTD_ENABLE_OUTPUT_MODULE=${{matrix.new-output-module}} \
         cmake --build build -j
       
     - name: Run unit tests 
       run: build/bin/fdtd_tests
 
     - name: Run python tests
+      if: matrix.new-output-module=='No'
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}

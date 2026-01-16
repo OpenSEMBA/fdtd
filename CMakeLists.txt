@@ -16,7 +16,7 @@ option(SEMBA_FDTD_ENABLE_MPI "Use MPI" OFF)
 option(SEMBA_FDTD_ENABLE_HDF "Use HDF" ON)
 option(SEMBA_FDTD_ENABLE_MTLN "Use MTLN" ON)
 option(SEMBA_FDTD_ENABLE_SMBJSON "Use smbjson" ON)
-option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" OFF)
+option(SEMBA_FDTD_ENABLE_DOUBLE_PRECISION "Use double precision (CompileWithReal8)" ON)
 
 option(SEMBA_FDTD_ENABLE_TEST "Compile tests" ON)
 
@@ -27,7 +27,13 @@ option(SEMBA_FDTD_EXECUTABLE "Compiles executable" ON)
 option(SEMBA_FDTD_MAIN_LIB "Compiles main library" ON)
 option(SEMBA_FDTD_COMPONENTS_LIB "Compiles components library" ON)
 option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
+
+option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use new output module" OFF)
+
 # Compilation defines.
+if(SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
+	add_definitions(-DCompileWithNewOutputModule)
+endif()
 if(SEMBA_FDTD_ENABLE_SMBJSON)
 	add_definitions(-DCompileWithSMBJSON)
 endif()
@@ -186,6 +192,13 @@ if (SEMBA_FDTD_ENABLE_MTLN)
 	endif()
 endif()
 
+add_subdirectory(src_utils)
+
+if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
+	add_subdirectory(external/VTKFortran)
+	add_subdirectory(src_output)
+	set(OUTPUT_LIBRARIES fdtd-output)
+endif()
 add_subdirectory(src_conformal)
 set(CONFORMAL_LIBRARIES conformal)
 
@@ -193,6 +206,8 @@ if (SEMBA_FDTD_ENABLE_TEST)
 	add_subdirectory(external/googletest/)
 	add_subdirectory(test)
 endif()
+
+
 
 if(SEMBA_FDTD_COMPONENTS_LIB)
 	add_library(semba-components
@@ -256,7 +271,8 @@ if(SEMBA_FDTD_MAIN_LIB)
 		"src_main_pub/timestepping.F90"
 	)
 	target_link_libraries(semba-main
-		semba-outputs 
+		semba-outputs
+		${OUTPUT_LIBRARIES}
 		${SMBJSON_LIBRARIES} 
 		${MTLN_LIBRARIES})
 endif()

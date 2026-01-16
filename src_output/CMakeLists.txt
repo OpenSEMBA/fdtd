@@ -1,0 +1,19 @@
+add_library(fdtd-output 
+  "output.F90"
+  "outputTypes.F90"
+  "domain.F90"
+  "outputUtils.F90"
+  "volumicProbeUtils.F90"
+  "pointProbeOutput.F90"
+  "wireProbeOutput.F90"
+  "bulkProbeOutput.F90"
+  "movieProbeOutput.F90"
+  "frequencySliceProbeOutput.F90"
+  "farFieldProbeOutput.F90"
+)
+target_link_libraries(fdtd-output
+ semba-types
+ semba-components
+ fdtd-utils
+ VTKFortran::VTKFortran 
+)

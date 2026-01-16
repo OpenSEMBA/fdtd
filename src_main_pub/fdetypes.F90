@@ -6,7 +6,6 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 module  FDETYPES
 
-
 #ifdef CompileWithOpenMP
    use omp_lib
 #endif
@@ -185,6 +184,17 @@ module  FDETYPES
    integer (kind=4),  parameter  ::  iVx=1000*iEx,iVy=1000*iEy,iVz=1000*iEz
    integer (kind=4),  parameter  ::  iBloqueJx=100*iEx,iBloqueJy=100*iEy,iBloqueJz=100*iEz
    integer (kind=4),  parameter  ::  iBloqueMx=100*iHx,iBloqueMy=100*iHy,iBloqueMz=100*iHz
+   !
+   integer (kind=4),  parameter :: VOLUMIC_M_MEASURE(3) = [iCur, iMEC, iMHC] !Module
+   integer (kind=4),  parameter :: VOLUMIC_X_MEASURE(3) = [iCurx, iExC, iHxC]
+   integer (kind=4),  parameter :: VOLUMIC_Y_MEASURE(3) = [iCury, iEyC, iHyC]
+   integer (kind=4),  parameter :: VOLUMIC_Z_MEASURE(3) = [iCurz, iEzC, iHzC]
+
+   integer (kind=4),  parameter :: MAGNETIC_FIELD_DIRECTION(3) = [iEx, iEy, iEz]
+   integer (kind=4),  parameter :: ELECTRIC_FIELD_DIRECTION(3) = [iHx, iHy, iHz]
+   integer (kind=4),  parameter :: CURRENT_MEASURE(4) = [iCur, iCurx, iCury, iCurz]
+   integer (kind=4),  parameter :: ELECTRIC_FIELD_MEASURE(4) = [iMEC, iExC, iEyC, iEzC]
+   integer (kind=4),  parameter :: MAGNETIC_FIELD_MEASURE(4) = [iMHC, iHxC, iHyC, iHzC]
    !
    CHARACTER (LEN=*), PARAMETER  ::  SEPARADOR='______________'
    integer (kind=4), PARAMETER  ::  comi=1,fine=2, icoord=1,jcoord=2,kcoord=3
@@ -585,6 +595,7 @@ module  FDETYPES
 
 
    type  ::  MediaData_t
+      integer(kind=SINGLE) :: Id
       REAL (KIND=RKIND)          ::  Priority,Epr,Sigma,Mur,SigmaM
       logical :: sigmareasignado !solo afecta a un chequeo de errores en lumped 120123
       type (exists_t)            ::  Is
@@ -607,15 +618,15 @@ module  FDETYPES
       REAL (KIND=RKIND_tiempo)  ::  dt
       character (len=BUFSIZE) :: extraswitches
       !!
-      integer (kind=4)   ::  NumMedia,AllocMed
-      integer (kind=4)   ::  IniPMLMedia,EndPMLMedia
-      integer (kind=4)   ::  NumPlaneWaves,TimeSteps,InitialTimeStep
-      integer (kind=4)   ::  NumNodalSources
-      integer (kind=4)   ::  NumberRequest
+      integer (kind=SINGLE)   ::  NumMedia,AllocMed
+      integer (kind=SINGLE)   ::  IniPMLMedia,EndPMLMedia
+      integer (kind=SINGLE)   ::  NumPlaneWaves,TimeSteps,InitialTimeStep
+      integer (kind=SINGLE)   ::  NumNodalSources
+      integer (kind=SINGLE)   ::  NumberRequest = 0_SINGLE
       !!!
       REAL (KIND=RKIND)     , pointer, dimension ( : )        ::  LineX,LineY,LineZ
       REAL (KIND=RKIND)     , pointer, dimension ( : )        ::  DX,DY,DZ
-      integer (kind=4)                                        ::  AllocDxI,AllocDyI,AllocDzI,AllocDxE,AllocDyE,AllocDzE
+      integer (kind=SINGLE)                                        ::  AllocDxI,AllocDyI,AllocDzI,AllocDxE,AllocDyE,AllocDzE
       type (planeonde_t), pointer, dimension ( : )            ::  PlaneWave
       type (Border_t)                                         ::  Border
       type (PML_t)                                            ::  PML
@@ -632,6 +643,7 @@ module  FDETYPES
       logical  :: thereArePMLMagneticMedia
       CHARACTER (LEN=BUFSIZE) :: nEntradaRoot
       type (coorsxyzP)  ::  Punto
+
    end type
 
    type media_matrices_t
@@ -859,6 +871,8 @@ contains
       direction_eq = direction_eq .and. (a%orientation == b%orientation)
 
    end function
+
+   
 end module FDETYPES
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

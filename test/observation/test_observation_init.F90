@@ -19,7 +19,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
 
     type(output_t), pointer, dimension(:) :: output
 
-    sgg = create_base_sgg()
+    sgg = create_base_sgg(dt=0.1_RKIND_tiempo, time_steps=100)
     call set_sgg_data(sgg)
 
     media = create_media(sgg%Alloc)
@@ -35,9 +35,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
     SINPML_fullsize = create_limit_t(0,4,0,4,0,4,3,3,3)
 
     facesNF2FF = create_facesNF2FF(.false., .false., .false., .false., .false., .false.)
-    control = create_control_flags(0, 0, 3, 10, "entryRoot", "wireflavour",&
-                                    .false., .false., .false., .false., .false.,&
-                                    facesNF2FF)
+    control = create_control_flags(nEntradaRoot="entryRoot", wiresflavor="wiresflavour",facesNF2FF=facesNF2FF)
 
     call InitObservation(sgg, media, tag_numbers, &
                             ThereAreObservation, ThereAreWires, ThereAreFarFields,&
@@ -74,7 +72,6 @@ integer function test_init_time_movie_observation() bind(C) result(err)
         err = err + 1
     end if
 
-    !Extra func
     contains
         subroutine set_sgg_data(baseSGG)
             type(SGGFDTDINFO), intent(inout) :: baseSGG
