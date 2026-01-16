@@ -2577,7 +2577,7 @@ CONTAINS
          
          call addConformalMedia(sgg, media, conformal_surfaces(j), s_edge_ratios, s_face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j), isSurface)
          ! numertag = searchtag(tagtype,conformal_surfaces(j)%tag)
-         ! CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+         ! CALL CreateConformalPECSurface (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
          !    & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
          !    & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
          !    & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
@@ -5020,7 +5020,10 @@ CONTAINS
                face_media = 0
             end if
 
-            allocate(sgg%Med(face_media)%ConformalFace,conformal_volumes%face_media(j)%size)
+            if (type == isSurface) then 
+               allocate(sgg%Med(face_media)%ConformalFace(1))
+               allocate(sgg%Med(face_media)%ConformalFace(1)%faces,conformal_volumes%face_media(j)%size)
+            end if
 
             do k = 1, conformal_volumes%face_media(j)%size
                cell(:) = conformal_volumes%face_media(j)%faces(k)%cell(:)
@@ -5040,7 +5043,9 @@ CONTAINS
                   media%sggMiHz(cell(1), cell(2), cell(3)) = face_media
                end select
 
-               sgg%Med(face_media)%ConformalFace(k) => conformal_volumes%face_media(j)%faces(k)
+               if (type == isSurface) then 
+                  sgg%Med(face_media)%ConformalFace(1)%faces(k) => conformal_volumes%face_media(j)%faces(k)
+               end if
 
             end do
          end do
@@ -5090,7 +5095,10 @@ CONTAINS
                edge_media = 0
             end if
 
-            allocate(sgg%Med(edge_media)%ConformalEdge,conformal_volumes%edge_media(j)%size)
+            ! if (type == isSurface) then 
+               allocate(sgg%Med(edge_media)%ConformalEdge(1))
+               allocate(sgg%Med(edge_media)%ConformalEdge(1)%edges,conformal_volumes%edge_media(j)%size)
+            ! end if
 
 
             do k = 1, conformal_volumes%edge_media(j)%size
@@ -5112,8 +5120,9 @@ CONTAINS
                   media%sggMiEz(cell(1), cell(2), cell(3)) = edge_media
                end select
 
-               sgg%Med(edge_media)%ConformalEdge(k) => conformal_volumes%edge_media(j)%edge(k)
-
+               ! if (type == isSuface) then 
+                  sgg%Med(edge_media)%ConformalEdge(1)%edges(k) => conformal_volumes%edge_media(j)%edge(k)
+               ! end if
 
             end do
          end do

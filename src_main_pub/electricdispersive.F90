@@ -112,7 +112,7 @@ contains
          (2.0_RKIND * sgg%Med(tempindex)%Edispersive(1)%eps11+tempo+sgg%Med(tempindex)%Edispersive(1)%Sigma11*sgg%dt)
          G2(tempindex)= 2.0_RKIND * sgg%dt/ (2.0_RKIND * sgg%Med(tempindex)%Edispersive(1)%eps11+tempo+sgg%Med(tempindex)%Edispersive(1)%Sigma11*sgg%dt)
          Do i1=1,NumPolRes
-            Dutton%Medium(jmed)%G3(i1)=G2(tempindex)/2.0_RKIND * (1.0_RKIND+Dutton%Medium(jmed)%Kappa(i1))
+         Dutton%Medium(jmed)% (i1)=G2(tempindex)/2.0_RKIND * (1.0_RKIND+Dutton%Medium(jmed)%Kappa(i1))
          end do
       end do
 

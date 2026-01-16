@@ -33,10 +33,17 @@ module CALC_CONSTANTS
             g%gm2(r)=0.0_RKIND
          else
             if (sgg%Med(R)%Is%ConformalPEC) then
-               g%g1(r)  = 1 
-               g%g2(r)  = sgg%dt /Epsilon
-               g%gm1(r) = 1
-               g%gm2(r) = sgg%dt/ Mu
+               if (sgg%Med(R)%Is%Volume) then 
+                  g%g1(r)  = 1 
+                  g%g2(r)  = sgg%dt /Epsilon
+                  g%gm1(r) = 1
+                  g%gm2(r) = sgg%dt/ Mu
+               else if (sgg%Med(R)%Is%Surface)
+                  g%g1(r)  = 1.0_RKIND
+                  g%g2(r)  = 0.0_RKIND
+                  g%gm1(r) = 1.0_RKIND
+                  g%gm2(r) = 0.0_RKIND
+               end if
             elseif ((sgg%Med(R)%Is%multiport).or.(sgg%Med(R)%Is%AnisMultiport)) then
                g%g1(r)=0.0_RKIND !mull fields on the main procedure (good both for Ian and for me)
                g%g2(r)=0.0_RKIND

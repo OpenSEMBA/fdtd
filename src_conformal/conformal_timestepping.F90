@@ -1,6 +1,7 @@
 module conformal_mod
 
     ! use conformal_mod
+    use fdetypes
     use fhash, only: fhash_tbl_t, key=>fhash_key
 
     integer, parameter :: CONFORMAL_FACE  =  0
@@ -11,6 +12,14 @@ module conformal_mod
     contains
         procedure :: getMedium => media_maps_getMedium
     end type
+
+    type, public :: feature_map_t
+        type(fhash_tbl_t) :: edge_map, face_map
+    contains
+        procedure :: getEdge
+        procedure :: getFace
+    end type
+
 
     ! advanceE avanza conformal+PEC+volumen
     ! conformal_timestepping comprueba PEC+surface y SIBC
@@ -25,14 +34,48 @@ module conformal_mod
     !         los E => a los edges o campos de la region I
 
     ! t_t alguno de los tipos conformal
+    type :: conformal_field_t
+        real(kind=rkind), pointer :: p => null()
+        real(kind=rkind), allocatable :: owned
+    end type
 
+    type :: conformal_edge_fields_t
+        real(kind=rkind), pointer :: E => null()
+        real(kind=rkind), pointer :: H1 => null()
+        real(kind=rkind), pointer :: H2 => null()
+        real(kind=rkind), pointer :: H3 => null()
+        real(kind=rkind), pointer :: H4 => null()
+    end type
+
+    type :: conformal_face_fields_t
+        type(conformal_field_t) :: H
+        type(conformal_field_t) :: E1
+    ! real(kind=rkind), pointer :: H => null()
+        ! real(kind=rkind), pointer :: E1 => null()
+        real(kind=rkind), pointer :: E2 => null()
+        real(kind=rkind), pointer :: E3 => null()
+        real(kind=rkind), pointer :: E4 => null()
+    end type
+
+    type :: conformal_edge_t
+        type(conformal_edge_fields_t) :: rIfields, rIIfields
+        ! type(constants_t) :: gI, gII
+    end type
+    type :: conformal_face_t
+        type(conformal_face_fields_t) :: rIfields, rIIfields
+        ! type(constants_t) :: gI, gII
+    end type
     
+    type t_t
+        type(conformal_edge_t), dimension(:), pointer :: edges
+        type(conformal_face_t), dimension(:), pointer :: faces
+    end type 
+
     type Conformal_t
         integer (kind=simple) :: nConformalMedia
         type(t_t), pointer, dimension(:) :: medium
     end type
     type (Conformal_t), save, target :: conformal
-
 
 contains
 
@@ -67,6 +110,68 @@ contains
     subroutine calc_conf_constants()
 
     end subroutine
+
+
+    function buildFeatureMap(sgg) result(res)
+        type(sggfdtdinfo), intent(in) :: sgg
+        type(feature_map_t), intent(out) :: map
+        integer :: i,j
+        integer (kind=simple) :: k(4)
+        do i = 1, sgg%NumMedia
+            if (sgg%med(i)%Is%ConformalPEC .and. sgg%med(i)%Is%surface) then 
+                if (allocated(sgg%med(i)%ConformalEdge)) then 
+                    do j = 1, size(sgg%med(i)%ConformalEdge%edges) 
+                        k(1:3) = sgg%med(i)%ConformalEdge%edges(j)%cell
+                        k(4) = sgg%med(i)%ConformalEdge%edges(j)%direction
+                        call res%edge_map%set(key(k), value = sgg%med(i)%ConformalEdge%edges(j))
+                    end do
+                else if (allocated(sgg%med(i)%ConformalFace)) then 
+                    do j = 1, size(sgg%med(i)%ConformalFace%faces) 
+                        k(1:3) = sgg%med(i)%ConformalFace%faces(j)%cell
+                        k(4) = sgg%med(i)%ConformalFace%faces(j)%direction
+                        call res%face_map%set(key(k), value = sgg%med(i)%ConformalFace%faces(j))
+                    end do
+                end if
+            end if
+        end do
+    end function
+
+    function getEdge(this, id, found) result(res)
+        class(feature_map_t) :: this
+        logical, intent(inout), optional :: found
+        type(edge_t), intent(out) :: res
+        integer(kind=simple) :: id(4)
+        integer :: stat
+        class(*), allocatable :: d
+
+        if (present(found)) found = .false.
+        call this%edge_map%get(key(k), id, stat)
+        if (stat /= 0) return
+        select type(d)
+            type is (edge_t)
+            res = d
+            if (present(found)) found = .true.
+        end select
+    end function
+
+    function getFace(this, id, found) result(res)
+        class(feature_map_t) :: this
+        logical, intent(inout), optional :: found
+        type(face_t), intent(out) :: res
+        integer(kind=simple) :: id(4)
+        integer :: stat
+        class(*), allocatable :: d
+
+        if (present(found)) found = .false.
+        call this%face_map%get(key(k), id, stat)
+        if (stat /= 0) return
+        select type(d)
+            type is (face_t)
+            res = d
+            if (present(found)) found = .true.
+        end select
+    end function
+
 
     function buildMediaMaps(conformal_surface, edge_ratios, face_ratios, num_media) result(res)
         type(ConformalMedia_t), intent(in) :: conformal_surface
@@ -132,21 +237,53 @@ contains
         Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
         Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
         Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-        integer (kind=simple) :: nmedia
-
+        integer (kind=simple) :: nmedia, cell(3), direction, k(4)
+        integer :: i, j
+        type(feature_map_t) :: feature_map
+        type(edge_t) :: edge
+        logical :: found
         nmedia = 0
         do i = 1, sgg%NumMedia
             if (sgg%med(i)%Is%ConformalPEC .and. sgg%med(i)%Is%surface) then 
                 nmedia = nmedia + 1
             end if
         end do
-
         conformal%nConformalMedia = nmedia
 
+        feature_map = buildFeatureMap(sgg)
+
+        nmedia = 0
         allocate(conformal%medium(nmedia))
         do i = 1, sgg%NumMedia
             if (sgg%med(i)%Is%ConformalPEC .and. sgg%med(i)%Is%surface) then 
+                if (allocated(sgg%med(i)%ConformalFace)) then 
+                    nmedia = nmedia + 1
+                    allocate(conformal%medium(nmedia)%faces,  size(sgg%med(i)%ConformalFace(1)%faces))
+                    do j = 1, size(sgg%med(i)%ConformalFace(1)%faces)
+                        cell(:) = sgg%med(i)%conformalFace(1)%faces(j)%cell(:)
+                        direction = sgg%med(i)%conformalSurface(1)%faces(j)%direction
+                        
+                        select case(direction)
+                        case(FACE_X)
+                            conformal%medium(nmedia)%faces(j)%rIfields%H%p => Hx(cell(1), cell(2), cell(3))
+                        case(FACE_Y)
+                            conformal%medium(nmedia)%faces(j)%rIfields%H%p => Hy(cell(1), cell(2), cell(3))
+                        case(FACE_Z)
+                            conformal%medium(nmedia)%faces(j)%rIfields%H%p => Hz(cell(1), cell(2), cell(3))
+                        end select
 
+                        allocate(conformal%medium(nmedia)%faces(j)%rIIfields%H%owned,0.0)
+                        conformal%medium(nmedia)%faces(j)%rIIfields%H%p => conformal%medium(nmedia)%faces(j)%rIIfields%H%owned
+
+                        k(1:3) = cell
+                        k(4) = direction
+                        edge = feature_map%getEdge(k, found)
+                        if (found) then 
+
+                        end if
+
+                    end do
+                end if
 
             end if
         end do
