@@ -58,11 +58,11 @@ module conformal_mod
     end type
 
     type :: conformal_edge_t
-        type(conformal_edge_fields_t) :: rIfields, rIIfields
+        type(conformal_edge_fields_t) :: r1fields, r2fields
         ! type(constants_t) :: gI, gII
     end type
     type :: conformal_face_t
-        type(conformal_face_fields_t) :: rIfields, rIIfields
+        type(conformal_face_fields_t) :: r1fields, r2fields
         ! type(constants_t) :: gI, gII
     end type
     
@@ -74,6 +74,12 @@ module conformal_mod
     type Conformal_t
         integer (kind=simple) :: nConformalMedia
         type(t_t), pointer, dimension(:) :: medium
+        type(constants_t) :: g
+        type(kind=rkind), pointer, dimension(:) :: ratio
+        type(kind=rkind), pointer, dimension(:) :: id1, id2
+
+    contains
+        procedure :: setFields
     end type
     type (Conformal_t), save, target :: conformal
 
@@ -114,7 +120,7 @@ contains
 
     function buildFeatureMap(sgg) result(res)
         type(sggfdtdinfo), intent(in) :: sgg
-        type(feature_map_t), intent(out) :: map
+        type(feature_map_t), intent(out) :: res
         integer :: i,j
         integer (kind=simple) :: k(4)
         do i = 1, sgg%NumMedia
@@ -228,7 +234,57 @@ contains
         featureIs = (foundType == featureType)
     end function
 
-    subroutine initConformal(sgg, Ex, Ey, Ez, Hx, Hy, Hz)
+    subroutine setFaceFields(this, n, i) 
+        class(Conformal_t) :: this
+        integer (kind=SINGLE) :: n, i
+        allocate(this%medium(n)%faces(i)%r2fields%H%owned, 0.0)
+        this%medium(n)%faces(i)%r2fields%H%p => this%medium(nmedia)%faces(j)%r2fields%H%owned
+
+        allocate(this%medium(n)%faces(i)%r1fields%E1%owned, 0.0)
+        allocate(this%medium(n)%faces(i)%r1fields%E2%owned, 0.0)
+        allocate(this%medium(n)%faces(i)%r1fields%E3%owned, 0.0)
+        allocate(this%medium(n)%faces(i)%r1fields%E4%owned, 0.0)
+        this%medium(n)%faces(i)%r1fields%E1%p => this%medium(nmedia)%faces(j)%r1fields%E1%owned
+        this%medium(n)%faces(i)%r1fields%E2%p => this%medium(nmedia)%faces(j)%r1fields%E2%owned
+        this%medium(n)%faces(i)%r1fields%E3%p => this%medium(nmedia)%faces(j)%r1fields%E3%owned
+        this%medium(n)%faces(i)%r1fields%E4%p => this%medium(nmedia)%faces(j)%r1fields%E4%owned
+
+        allocate(this%medium(n)%faces(i)%r2fields%E1%owned, 0.0)
+        allocate(this%medium(n)%faces(i)%r2fields%E2%owned, 0.0)
+        allocate(this%medium(n)%faces(i)%r2fields%E3%owned, 0.0)
+        allocate(this%medium(n)%faces(i)%r2fields%E4%owned, 0.0)
+        this%medium(n)%faces(i)%r2fields%E1%p => this%medium(nmedia)%faces(j)%r2fields%E1%owned
+        this%medium(n)%faces(i)%r2fields%E2%p => this%medium(nmedia)%faces(j)%r2fields%E2%owned
+        this%medium(n)%faces(i)%r2fields%E3%p => this%medium(nmedia)%faces(j)%r2fields%E3%owned
+        this%medium(n)%faces(i)%r2fields%E4%p => this%medium(nmedia)%faces(j)%r2fields%E4%owned
+    end subroutine
+
+    subroutine setEdgeFields(this, n, i) 
+        class(Conformal_t) :: this
+        integer (kind=SINGLE) :: n, i
+        allocate(this%medium(n)%edges(i)%r2fields%H%owned, 0.0)
+        this%medium(n)%edges(i)%r2fields%E%p => this%medium(nmedia)%edges(j)%r2fields%E%owned
+
+        allocate(this%medium(n)%edges(i)%r1fields%H1%owned, 0.0)
+        allocate(this%medium(n)%edges(i)%r1fields%H2%owned, 0.0)
+        allocate(this%medium(n)%edges(i)%r1fields%H3%owned, 0.0)
+        allocate(this%medium(n)%edges(i)%r1fields%H4%owned, 0.0)
+        this%medium(n)%edges(i)%r1fields%H1%p => this%medium(nmedia)%edges(j)%r1fields%H1%owned
+        this%medium(n)%edges(i)%r1fields%H2%p => this%medium(nmedia)%edges(j)%r1fields%H2%owned
+        this%medium(n)%edges(i)%r1fields%H3%p => this%medium(nmedia)%edges(j)%r1fields%H3%owned
+        this%medium(n)%edges(i)%r1fields%H4%p => this%medium(nmedia)%edges(j)%r1fields%H4%owned
+
+        allocate(this%medium(n)%edges(i)%r2fields%H1%owned, 0.0)
+        allocate(this%medium(n)%edges(i)%r2fields%H2%owned, 0.0)
+        allocate(this%medium(n)%edges(i)%r2fields%H3%owned, 0.0)
+        allocate(this%medium(n)%edges(i)%r2fields%H4%owned, 0.0)
+        this%medium(n)%edges(i)%r2fields%H1%p => this%medium(nmedia)%edges(j)%r2fields%H1%owned
+        this%medium(n)%edges(i)%r2fields%H2%p => this%medium(nmedia)%edges(j)%r2fields%H2%owned
+        this%medium(n)%edges(i)%r2fields%H3%p => this%medium(nmedia)%edges(j)%r2fields%H3%owned
+        this%medium(n)%edges(i)%r2fields%H4%p => this%medium(nmedia)%edges(j)%r2fields%H4%owned
+    end subroutine
+
+    subroutine initConformal(sgg, Ex, Ey, Ez, Hx, Hy, Hz, idxe, idye, idze, idxh, idyh, idzh)
         type (sggfdtdinfo), intent(inout) :: sgg
         real (kind=rkind), intent(in) , target :: &
         Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
@@ -237,6 +293,16 @@ contains
         Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
         Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
         Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+
+        real (kind=rkind), intent(in) :: 
+        Idxe(sgg%alloc(iHx)%XI : sgg%ALLOC(iHx)%XE), &
+        Idye(sgg%alloc(iHy)%YI : sgg%ALLOC(iHy)%YE), &
+        Idze(sgg%alloc(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
+        Idxh(sgg%alloc(iEx)%XI : sgg%ALLOC(iEx)%XE), &
+        Idyh(sgg%alloc(iEy)%YI : sgg%ALLOC(iEy)%YE), &
+        Idzh(sgg%alloc(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
+
+
         integer (kind=simple) :: nmedia, cell(3), direction, k(4)
         integer :: i, j
         type(feature_map_t) :: feature_map
@@ -254,35 +320,91 @@ contains
 
         nmedia = 0
         allocate(conformal%medium(nmedia))
+        allocate(conformal%g(nmedia))
+        allocate(conformal%ratio(nmedia))
+        allocate(conformal%id1(nmedia))
+        allocate(conformal%id2(nmedia))
+
         do i = 1, sgg%NumMedia
             if (sgg%med(i)%Is%ConformalPEC .and. sgg%med(i)%Is%surface) then 
                 if (allocated(sgg%med(i)%ConformalFace)) then 
                     nmedia = nmedia + 1
                     allocate(conformal%medium(nmedia)%faces,  size(sgg%med(i)%ConformalFace(1)%faces))
                     do j = 1, size(sgg%med(i)%ConformalFace(1)%faces)
+
+                        call conformal%setFaceFields(nmedia, j)
+
                         cell(:) = sgg%med(i)%conformalFace(1)%faces(j)%cell(:)
                         direction = sgg%med(i)%conformalSurface(1)%faces(j)%direction
                         
+                        conformal%ratio(nmedia) = sgg%med(i)%conformalSurface(1)%faces(j)%ratio
+                        conformal%g(nmedia)%g1  = 1.0
+                        conformal%g(nmedia)%g2  = sgg%dt / (Eps0*sgg%Med(nmedia)%Epr)
+                        conformal%g(nmedia)%gm1 = 1.0
+                        conformal%g(nmedia)%gm2 = sgg%dt / (Mu0*sgg%Med(nmedia)%Mur)
+                        
                         select case(direction)
                         case(FACE_X)
-                            conformal%medium(nmedia)%faces(j)%rIfields%H%p => Hx(cell(1), cell(2), cell(3))
+                            conformal%medium(nmedia)%faces(j)%r1fields%H%p => Hx(cell(1), cell(2), cell(3))
                         case(FACE_Y)
-                            conformal%medium(nmedia)%faces(j)%rIfields%H%p => Hy(cell(1), cell(2), cell(3))
+                            conformal%medium(nmedia)%faces(j)%r1fields%H%p => Hy(cell(1), cell(2), cell(3))
                         case(FACE_Z)
-                            conformal%medium(nmedia)%faces(j)%rIfields%H%p => Hz(cell(1), cell(2), cell(3))
+                            
+                            conformal%id1 = Idye(cell(2))
+                            conformal%id2 = Idxe(cell(1))
+                            conformal%medium(nmedia)%faces(j)%r1fields%H%p => Hz(cell(1), cell(2), cell(3))
+
+                            k(1:3) = cell; k(4) = EDGE_Y
+                            !del edge solo hace falta el ratio
+                            ! map (n, j, dir) -> edge
+                            ! de donde sale el ratio? hace falta?
+                            ! quiza siempre es puntero a campo ppal, y a campo de region 2
+                            edge = feature_map%getEdge(k, found)
+                            if (found) then 
+                                if (edge%ratio /= 0) then 
+                                    ! deallocate(conformal%medium(nmedia)%faces(j)%r1fields%E1%p)
+                                    conformal%medium(nmedia)%faces(j)%r1fields%E1%p => Ey(k(1), k(2), k(3))
+                                    conformal%medium(nmedia)%faces(j)%r2fields%E1%p => 
+                                        conformal%medium(xxx)%edges(yyy)%r2fields%E%p
+                                end if
+                            end if
+
+                            k(1:3) = cell; k(2) = k(2) + 1; k(4) = EDGE_X
+                            edge = feature_map%getEdge(k, found)
+                            if (found) then 
+                                if (edge%ratio /= 0) then 
+                                    ! deallocate(conformal%medium(nmedia)%faces(j)%r1fields%E1%p)
+                                    conformal%medium(nmedia)%faces(j)%r1fields%E2%p => Ex(k(1), k(2), k(3))
+                                end if
+                            end if
+
+                            k(1:3) = cell; k(1) = k(1) + 1; k(4) = EDGE_Y
+                            edge = feature_map%getEdge(k, found)
+                            if (found) then 
+                                if (edge%ratio /= 0) then 
+                                    ! deallocate(conformal%medium(nmedia)%faces(j)%r1fields%E1%p)
+                                    conformal%medium(nmedia)%faces(j)%r1fields%E3%p => Ey(k(1), k(2), k(3))
+                                end if
+                            end if
+
+                            k(1:3) = cell; k(4) = EDGE_X
+                            edge = feature_map%getEdge(k, found)
+                            if (found) then 
+                                if (edge%ratio /= 0) then 
+                                    ! deallocate(conformal%medium(nmedia)%faces(j)%r1fields%E1%p)
+                                    conformal%medium(nmedia)%faces(j)%r1fields%E4%p => Ex(k(1), k(2), k(3))
+                                end if
+                            end if
+
+
                         end select
 
-                        allocate(conformal%medium(nmedia)%faces(j)%rIIfields%H%owned,0.0)
-                        conformal%medium(nmedia)%faces(j)%rIIfields%H%p => conformal%medium(nmedia)%faces(j)%rIIfields%H%owned
 
-                        k(1:3) = cell
-                        k(4) = direction
-                        edge = feature_map%getEdge(k, found)
-                        if (found) then 
 
-                        end if
 
                     end do
+                else if (allocated(sgg%med(i)%ConformalEdge)) then 
+                !
                 end if
 
             end if
@@ -292,193 +414,170 @@ contains
     end subroutine
 
 
-    subroutine initConformal(sgg, Ex, Ey, Ez, Hx, Hy, Hz, conformal_media)
-        type (sggfdtdinfo), intent(inout) :: sgg
-        real (kind=rkind), intent(in) , target :: &
-        Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
-        Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
-        Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
-        Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
-        Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
-        Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-        type(conformal_media_t), intent(in) :: conformal_media
-        type (edge_t) :: edge
-        integer (kind=4) :: cell(3), k(4), ratioII
-        ! make fields in faces and edges point to the corresponding region I or II fields
-        integer :: i, j
+    ! subroutine initConformal(sgg, Ex, Ey, Ez, Hx, Hy, Hz, conformal_media)
+    !     type (sggfdtdinfo), intent(inout) :: sgg
+    !     real (kind=rkind), intent(in) , target :: &
+    !     Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
+    !     Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
+    !     Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
+    !     Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
+    !     Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
+    !     Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+    !     type(conformal_media_t), intent(in) :: conformal_media
+    !     type (edge_t) :: edge
+    !     integer (kind=4) :: cell(3), k(4), ratioII
+    !     ! make fields in faces and edges point to the corresponding region I or II fields
+    !     integer :: i, j
 
-        do i = 1, sgg%NumMedia    
-            if (sgg%med(i)%Is%conformal .and. sgg%med(i)%Is%surface) then 
-                if (featureIs(sgg%med(i)%conformalSurface(1)), CONFORMAL_FACE) then 
-                    do j = 1, sgg%med(i)%conformalSurface(1)%size 
-                        cell(:) = sgg%med(i)%conformalSurface(1)%faces(j)%cell(:)
-                        select case(sgg%med(i)%conformalSurface(1)%faces(j)%direction)
-                        case(FACE_Z)
-                            sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%H => Hz(cell(1), cell(2), cell(3))
-                            k = [cell, FACE_Z]
-                            ! 1: Ey(cell(1)    , cell(2)    , cell(3))
-                            ! si existe
-                            call edge_map%get(key(k), edge)
-                            if (edge%ratio == 0) then 
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 = 0
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 = edge%region_II_fields%E
-                            else if (edge%ratio == 1) then 
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
+    !     do i = 1, sgg%NumMedia    
+    !         if (sgg%med(i)%Is%conformal .and. sgg%med(i)%Is%surface) then 
+    !             if (featureIs(sgg%med(i)%conformalSurface(1)), CONFORMAL_FACE) then 
+    !                 do j = 1, sgg%med(i)%conformalSurface(1)%size 
+    !                     cell(:) = sgg%med(i)%conformalSurface(1)%faces(j)%cell(:)
+    !                     select case(sgg%med(i)%conformalSurface(1)%faces(j)%direction)
+    !                     case(FACE_Z)
+    !                         sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%H => Hz(cell(1), cell(2), cell(3))
+    !                         k = [cell, FACE_Z]
+    !                         ! 1: Ey(cell(1)    , cell(2)    , cell(3))
+    !                         ! si existe
+    !                         call edge_map%get(key(k), edge)
+    !                         if (edge%ratio == 0) then 
+    !                             sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 = 0
+    !                             sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 = edge%region_II_fields%E
+    !                         else if (edge%ratio == 1) then 
+    !                             sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
                                 
-                                allocate(sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned, 0.0)
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => % 
-                                    sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned
-                                ! sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 = Ey(cell(1)    , cell(2)    , cell(3))
-                                ! sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 = 0
-                            else 
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
-                                ! sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 => edge%region_II_fields%E
-                                allocate(sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned, 0.0)
-                                sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => % 
-                                    sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned
-                            end if
-                            ! Ex(cell(1)    , cell(2) + 1, cell(3))
-                            ! Ey(cell(1) + 1, cell(2)    , cell(3))
-                            ! Ex(cell(1)    , cell(2)    , cell(3))                            
-                        end select
-                    end do
-                end if
-            end  if
-        end do
+    !                             allocate(sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned, 0.0)
+    !                             sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => % 
+    !                                 sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned
+    !                             ! sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 = Ey(cell(1)    , cell(2)    , cell(3))
+    !                             ! sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 = 0
+    !                         else 
+    !                             sgg%med(i)%conformalSurface(1)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
+    !                             ! sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1 => edge%region_II_fields%E
+    !                             allocate(sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned, 0.0)
+    !                             sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%p => % 
+    !                                 sgg%med(i)%conformalSurface(1)%faces(j)%region_II_fields%E1%owned
+    !                         end if
+    !                         ! Ex(cell(1)    , cell(2) + 1, cell(3))
+    !                         ! Ey(cell(1) + 1, cell(2)    , cell(3))
+    !                         ! Ex(cell(1)    , cell(2)    , cell(3))                            
+    !                     end select
+    !                 end do
+    !             end if
+    !         end  if
+    !     end do
 
-        do i = 1, conformal_media%n_faces_media
-            do j = 1, conformal_media%face_media(i)%size
-                cell(:) = conformal_media%face_media(i)%faces(j)%cell(:)
-                select case(conformal_media%face_media(j)%faces(k)%direction)
-                case(FACE_X)
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%H  => Hx(cell(1), cell(2)    , cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E1 => Ez(cell(1), cell(2)    , cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E2 => Ey(cell(1), cell(2)    , cell(3) + 1)
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E3 => Ez(cell(1), cell(2) + 1, cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E4 => Ey(cell(1), cell(2)    , cell(3))
-                case(FACE_Y)
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%H  => Hy(cell(1)    , cell(2), cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E1 => Ex(cell(1)    , cell(2), cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E2 => Ez(cell(1) + 1, cell(2), cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E3 => Ex(cell(1)    , cell(2), cell(3) + 1)
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E4 => Ez(cell(1)    , cell(2), cell(3))
-                case(FACE_Z)
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%H  => Hz(cell(1)    , cell(2)    , cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E2 => Ex(cell(1)    , cell(2) + 1, cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E3 => Ey(cell(1) + 1, cell(2)    , cell(3))
-                    conformal_media%face_media(i)%faces(j)%region_I_fields%E4 => Ex(cell(1)    , cell(2)    , cell(3))
-               end select
-            end do
-        end do
-        ! and fields from region II?
+    !     do i = 1, conformal_media%n_faces_media
+    !         do j = 1, conformal_media%face_media(i)%size
+    !             cell(:) = conformal_media%face_media(i)%faces(j)%cell(:)
+    !             select case(conformal_media%face_media(j)%faces(k)%direction)
+    !             case(FACE_X)
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%H  => Hx(cell(1), cell(2)    , cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E1 => Ez(cell(1), cell(2)    , cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E2 => Ey(cell(1), cell(2)    , cell(3) + 1)
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E3 => Ez(cell(1), cell(2) + 1, cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E4 => Ey(cell(1), cell(2)    , cell(3))
+    !             case(FACE_Y)
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%H  => Hy(cell(1)    , cell(2), cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E1 => Ex(cell(1)    , cell(2), cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E2 => Ez(cell(1) + 1, cell(2), cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E3 => Ex(cell(1)    , cell(2), cell(3) + 1)
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E4 => Ez(cell(1)    , cell(2), cell(3))
+    !             case(FACE_Z)
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%H  => Hz(cell(1)    , cell(2)    , cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E1 => Ey(cell(1)    , cell(2)    , cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E2 => Ex(cell(1)    , cell(2) + 1, cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E3 => Ey(cell(1) + 1, cell(2)    , cell(3))
+    !                 conformal_media%face_media(i)%faces(j)%region_I_fields%E4 => Ex(cell(1)    , cell(2)    , cell(3))
+    !            end select
+    !         end do
+    !     end do
+    !     ! and fields from region II?
 
-    end subroutine
+    ! end subroutine
 
     subroutine advanceConformalE(sgg)
-        type (sggfdtdinfo), intent(inout) ::  sgg
-        type(media_maps_t), intent(in) :: media_maps
+        ! type(SGGFDTDINFO), intent(in) :: sgg
+        ! type(media_maps_t), intent(in) :: media_maps
         real (kind = rkind), pointer :: E, H1, H2, H3, H4
-        real (kind = rkind), pointer :: rIIE, rIIH1, rIIH2, rIIH3, rIIH4
-        integer :: i, j, medium, direction
+        real (kind = rkind) :: g1, g2, gm1, gm2
+        real (kind = rkind) :: id1, id2, ratio
+        ! real (kind = rkind), pointer :: rIIH, rIIE1, rIIE2, rIIE3, rIIE4
+        integer :: i, j
         real (kind = rkind) :: id1, id2
-        integer (kind=4) :: cell(3)
-        logical :: found
 
-    end subroutine
+        do i = 1, conformal%nConformalMedia
+            if (allocated(conformal%medium(i)%edged)) then 
+                do j = 1, size(conformal%medium(i)%edges)
+                    ! E update in region 1
+                    E  => conformal%medium(i)%edges(j)%r1fields%E%p
+                    H1 => conformal%medium(i)%edges(j)%r1fields%H1%p
+                    H2 => conformal%medium(i)%edges(j)%r1fields%H2%p
+                    H3 => conformal%medium(i)%edges(j)%r1fields%H3%p
+                    H4 => conformal%medium(i)%edges(j)%r1fields%H4%p
 
-    subroutine advanceConformalH(sgg, media_maps)
-        type(media_maps_t), intent(in) :: media_maps
-        real (kind = rkind), pointer :: H, E1, E2, E3, E4
-        real (kind = rkind), pointer :: rIIH, rIIE1, rIIE2, rIIE3, rIIE4
-        integer :: i, j, medium, direction
-        real (kind = rkind) :: id1, id2
-        integer (kind=4) :: cell(3)
-        logical :: found
-        type (sggfdtdinfo), intent(inout) ::  sgg
+                    g1 = conformal%g%g1(i)
+                    g2 = conformal%g%g2(i)
+                    id1 = conformal%id1(i)
+                    id2 = conformal%id2(i)
 
-        do i=1,sgg%NumMedia
-            if ((sgg%Med(i)%Is%ConformalPEC)) then
-                do j = 1, sgg%Med(i)%conformal%NumFaces
+                    E = g1*E + g2*((H2 - H4)*id1 - (H3-H1)*id2)
 
-                    H  => sgg%Med(i)%conformal%faces(j)%region_I_fields%H%p
-                    E1 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E1%p
-                    E2 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E2%p
-                    E3 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E3%p
-                    E4 => sgg%Med(i)%conformal%faces(j)%region_I_fields%E4%p
+                    ! E update in region 2
+                    E  => conformal%medium(i)%edges(j)%r2fields%E%p
+                    H1 => conformal%medium(i)%edges(j)%r2fields%H1%p
+                    H2 => conformal%medium(i)%edges(j)%r2fields%H2%p
+                    H3 => conformal%medium(i)%edges(j)%r2fields%H3%p
+                    H4 => conformal%medium(i)%edges(j)%r2fields%H4%p
 
-                    cell(:) = sgg%Med(i)%conformal%faces(j)%cell(:)    
-                    direction = sgg%Med(i)%conformal%faces(k)%direction
-                    medium = media_maps%getMedium(cell, direction, found)
-
-                    ! id1, id2?
-
-                    H = g%gm1(medium)*H + g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
-
-                    if (isSurface) then 
-                        rIIH  => sgg%Med(i)%conformal%faces(j)%region_II_fields%H%p
-                        rIIE1 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E1%p
-                        rIIE2 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E2%p
-                        rIIE3 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E3%p
-                        rIIE4 => sgg%Med(i)%conformal%faces(j)%region_II_fields%E4%p
-
-                        ! medium ? 
-                        ! gm1, gm2?
-
-                        rIIH = gm1(medium)*rIIH + gm2(medium)*((rIIE2 - rIIE4)*id1 - (rIIE3-rIIE1)*id2)
-                    end if
-
+                    ratio = conformal%ratio(i)
+                    g2 = (1-ratio)*g2/ratio
+                    E = g1*E + g2*((H2 - H4)*id1 - (H3-H1)*id2)
                 end do
             end if
         end do
+    end subroutine
 
-        ! !check if volume/surface
-        ! do i = 1, conformal_media%n_faces_media
-        !     do j = 1, conformal_media%face_media(i)%size
-        !         H  => conformal_media%face_media(i)%faces(j)%region_I_fields%H
-        !         E1 => conformal_media%face_media(i)%faces(j)%region_I_fields%E1
-        !         E2 => conformal_media%face_media(i)%faces(j)%region_I_fields%E2
-        !         E3 => conformal_media%face_media(i)%faces(j)%region_I_fields%E3
-        !         E4 => conformal_media%face_media(i)%faces(j)%region_I_fields%E4        
-        !         cell(:) = conformal_media%face_media(i)%faces(j)%cell(:)
-        !         direction = conformal_media%face_media(j)%faces(k)%direction
-        !         ! asignacion de medios: esta en otro sitio?  en este esquema, los medios this%g%gm1(medium)
-        !         ! son = 0, porque se hace todo aquí. El numero de sggMiHx se mantiene, pero ahora hay un confg%g1 ?
-        !         ! hay que crear medios para las complementarios de los medios conf?
-        !         medium = media_maps%getMedium(cell, direction, found)
-        !         if (.not. found) write(*,*) 'error'
-        !         ! case(FACE_X)
-        !         !     medium = media_maps%Hx%get(key(cell))
-        !         !     ! medium = sggMiHx(cell(1), cell(2), cell(3))
-        !         !     ! id1 = 
-        !         !     ! id2 = 
-        !         ! case(FACE_Y)
-        !         !     medium =sggMiHy(cell(1), cell(2), cell(3))
-        !         !     ! id1 = 
-        !         !     ! id2 = 
-        !         ! case(FACE_Z)
-        !         !     medium =sggMiHz(cell(1), cell(2), cell(3))
-        !         !     ! id1 = Idye(cell(2))
-        !         !     ! id2 = Idxe(cell(1))
-        !         ! end select
-        !         ! i.e Hz, E2, E4 => Ex
-        !         ! if Ex in region II, g1 = 0, g2 = 0, and field = 0
-        !         H = g%gm1(medium)*H + g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
-        !         ! H = this%g%gm1(medium)*H + this%g%gm2(medium)*((E2 - E4)*id1 - (E3-E1)*id2)
-        !         ! update region II 
-        !         if (isSurface) then 
-        !             rIIH  => conformal_media%face_media(i)%faces(j)%region_II_fields%H
-        !             rIIE1 => conformal_media%face_media(i)%faces(j)%region_II_fields%E1
-        !             rIIE2 => conformal_media%face_media(i)%faces(j)%region_II_fields%E2
-        !             rIIE3 => conformal_media%face_media(i)%faces(j)%region_II_fields%E3
-        !             rIIE4 => conformal_media%face_media(i)%faces(j)%region_II_fields%E4        
+    subroutine advanceConformalH()
+        ! type(SGGFDTDINFO), intent(in) :: sgg
+        ! type(media_maps_t), intent(in) :: media_maps
+        real (kind = rkind), pointer :: H, E1, E2, E3, E4
+        real (kind = rkind) :: g1, g2, gm1, gm2
+        real (kind = rkind) :: id1, id2, ratio
+        ! real (kind = rkind), pointer :: rIIH, rIIE1, rIIE2, rIIE3, rIIE4
+        integer :: i, j
 
-        !             rIIH = this%g%gm1(medium)*rIIH + this%g%gm2(medium)*((rIIE2 - rIIE4)*id1 - (rIIE3-rIIE1)*id2)
+        do i = 1, conformal%nConformalMedia
+            if (allocated(conformal%medium(i)%faces)) then 
+                do j = 1, size(conformal%medium(i)%faces)
+                    ! H update in region 1
+                    H  => conformal%medium(i)%faces(j)%r1fields%H%p
+                    E1 => conformal%medium(i)%faces(j)%r1fields%E1%p
+                    E2 => conformal%medium(i)%faces(j)%r1fields%E2%p
+                    E3 => conformal%medium(i)%faces(j)%r1fields%E3%p
+                    E4 => conformal%medium(i)%faces(j)%r1fields%E4%p
 
-        !         end if
+                    gm1 = conformal%g%gm1(i)
+                    gm2 = conformal%g%gm2(i)
+                    id1 = conformal%id1(i)
+                    id2 = conformal%id2(i)
 
-        !     end do
-        ! end do
+                    H = gm1*H + gm2*((E2 - E4)*id1 - (E3-E1)*id2)
+
+                    ! H update in region 2
+                    H  => conformal%medium(i)%faces(j)%r2fields%H%p
+                    E1 => conformal%medium(i)%faces(j)%r2fields%E1%p
+                    E2 => conformal%medium(i)%faces(j)%r2fields%E2%p
+                    E3 => conformal%medium(i)%faces(j)%r2fields%E3%p
+                    E4 => conformal%medium(i)%faces(j)%r2fields%E4%p
+
+                    ratio = conformal%ratio(i)
+                    gm2 = gm2*ratio/(1-ratio)
+                    H = gm1*H + gm2*((E2 - E4)*id1 - (E3-E1)*id2)
+                end do
+            end if
+        end do
     end subroutine
 
 end module
