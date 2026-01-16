@@ -108,7 +108,8 @@ CONTAINS
       !
       !
       type(ConformalMedia_t), dimension(:), allocatable :: conformal_volumes, conformal_surfaces
-      real(kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
+      real(kind=rkind), dimension(:), allocatable :: v_edge_ratios, v_face_ratios
+      real(kind=rkind), dimension(:), allocatable :: s_edge_ratios, s_face_ratios
       type(side_tris_map_t), dimension(:), allocatable :: side_to_triangles_maps
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       cluz=1.0_RKIND/sqrt(eps0*mu0)
@@ -194,15 +195,17 @@ CONTAINS
       contamedia = contamedia +1 !para acomodar los nodal sources como caso especial de linea vacia
 
      
-      call getDifferentEdgeRatios(edge_ratios, conformal_volumes)
-      call getDifferentEdgeRatios(edge_ratios, conformal_surfaces)
-      call getDifferentFaceRatios(face_ratios, conformal_volumes)
-      call getDifferentFaceRatios(face_ratios, conformal_surfaces)
-      ! edge_ratios = getDifferentEdgeRatios(conformal_volumes)
-      ! face_ratios = getDifferentFaceRatios(conformal_volumes)
-      contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
-      if (findloc(edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
-      if (findloc(face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+      call getDifferentEdgeRatios(v_edge_ratios, conformal_volumes)
+      call getDifferentFaceRatios(v_face_ratios, conformal_volumes)
+      contamedia = contamedia + ubound(v_edge_ratios,1) + ubound(v_face_ratios,1)
+      if (findloc(v_edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+      if (findloc(v_face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+
+      call getDifferentEdgeRatios(s_edge_ratios, conformal_surfaces)
+      call getDifferentFaceRatios(s_face_ratios, conformal_surfaces)
+      contamedia = contamedia + ubound(s_edge_ratios,1) + ubound(s_face_ratios,1)
+      if (findloc(e_edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
+      if (findloc(e_face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
 
       sgg%NumMedia = contamedia
       sgg%AllocMed = contamedia
@@ -2554,7 +2557,7 @@ CONTAINS
 
       do j = 1, ubound(conformal_volumes,1)
 
-         call addConformalMedia(sgg, media, conformal_volumes(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j), isVolume)
+         call addConformalMedia(sgg, media, conformal_volumes(j), v_edge_ratios, v_face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j), isVolume)
          numertag = searchtag(tagtype,conformal_volumes(j)%tag)
          CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
             & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
@@ -2566,13 +2569,13 @@ CONTAINS
 
       end do
 
-      contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
-      if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
-      if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      contamedia = contamedia + ubound(v_edge_ratios,1) + ubound(v_face_ratios,1)
+      if (findloc(v_edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      if (findloc(v_face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
       ! faces from V and S with same ratio are considered different media, bc they need to perform different operations
       do j = 1, ubound(conformal_surfaces,1)
          
-         call addConformalMedia(sgg, media, conformal_surfaces(j), edge_ratios, face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j), isSurface)
+         call addConformalMedia(sgg, media, conformal_surfaces(j), s_edge_ratios, s_face_ratios, contamedia, conf_bounding_box, side_to_triangles_maps(j), isSurface)
          ! numertag = searchtag(tagtype,conformal_surfaces(j)%tag)
          ! CALL CreateConformalPECVolume (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
          !    & media%sggMiHx, media%sggMiHy, media%sggMiHz,  Alloc_iEx_XI, &
@@ -2584,9 +2587,9 @@ CONTAINS
 
       end do
 
-      contamedia = contamedia + ubound(edge_ratios,1) + ubound(face_ratios,1)
-      if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
-      if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      contamedia = contamedia + ubound(s_edge_ratios,1) + ubound(s_face_ratios,1)
+      if (findloc(s_edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
+      if (findloc(s_face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
 
 
       !reporta el bounding box

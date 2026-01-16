@@ -598,9 +598,10 @@ module  FDETYPES
       type (DispersiveParams_t), dimension( : ), pointer  ::  MDispersive
       type (Anisotropic_t)     , dimension( : ), pointer  ::  Anisotropic
       type (Lumped_t)          , dimension( : ), pointer  ::  Lumped
+      type (conformal_feature_t), dimension(:), pointer :: Conformal
       ! type (conformal_feature_t), , dimension( : ), pointer  ::  Conformal
-      type (edge_t), dimension( : ), pointer  ::  ConformalEdge
-      type (face_t), dimension( : ), pointer  ::  ConformalFace
+      ! type (edge_t), dimension( : ), pointer  ::  ConformalEdge
+      ! type (face_t), dimension( : ), pointer  ::  ConformalFace
    end type
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

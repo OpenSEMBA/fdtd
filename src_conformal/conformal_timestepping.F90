@@ -27,11 +27,11 @@ module conformal_mod
     ! t_t alguno de los tipos conformal
 
     
-    ! type Conformal_t
-    !     integer (kind=simple) :: nConformalMedia
-    !     type(t_t), pointer, dimension(:) :: medium
-    ! end type
-    ! type (Conformal_t), save, target :: conformal
+    type Conformal_t
+        integer (kind=simple) :: nConformalMedia
+        type(t_t), pointer, dimension(:) :: medium
+    end type
+    type (Conformal_t), save, target :: conformal
 
 
 contains
@@ -122,6 +122,38 @@ contains
         end select
         featureIs = (foundType == featureType)
     end function
+
+    subroutine initConformal(sgg, Ex, Ey, Ez, Hx, Hy, Hz)
+        type (sggfdtdinfo), intent(inout) :: sgg
+        real (kind=rkind), intent(in) , target :: &
+        Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
+        Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
+        Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
+        Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
+        Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
+        Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
+        integer (kind=simple) :: nmedia
+
+        nmedia = 0
+        do i = 1, sgg%NumMedia
+            if (sgg%med(i)%Is%ConformalPEC .and. sgg%med(i)%Is%surface) then 
+                nmedia = nmedia + 1
+            end if
+        end do
+
+        conformal%nConformalMedia = nmedia
+
+        allocate(conformal%medium(nmedia))
+        do i = 1, sgg%NumMedia
+            if (sgg%med(i)%Is%ConformalPEC .and. sgg%med(i)%Is%surface) then 
+
+
+            end if
+        end do
+
+
+    end subroutine
+
 
     subroutine initConformal(sgg, Ex, Ey, Ez, Hx, Hy, Hz, conformal_media)
         type (sggfdtdinfo), intent(inout) :: sgg
