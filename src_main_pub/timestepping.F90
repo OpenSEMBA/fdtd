@@ -1553,8 +1553,8 @@ contains
          !this modifies the initwires stuff and must be called after initwires (typically at the end)
          !llamalo siempre aunque no HAYA WIRES!!! para que no se quede colgado en hilos terminales
             if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-               (trim(adjustl(this%control%wiresflavor))=='transition') .or. & 
-               this%control%use_mtln_wires) then
+               (trim(adjustl(this%control%wiresflavor))=='transition'))
+               ! this%control%use_mtln_wires) then
                write(dubuf,*) 'Init MPI Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
                call newInitWiresMPI(this%control%layoutnumber,this%thereAre%wires,this%control%size,this%control%resume,this%sgg%sweep)
                call MPI_Barrier(SUBCOMM_MPI,ierr)

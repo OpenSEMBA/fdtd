@@ -12,6 +12,11 @@ from sys import platform
 from scipy.special import hankel2 as h
 from scipy.special import h2vp as hp
 
+mtln_skip = pytest.mark.skipif(
+    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON",
+    reason="Binary compiled with MTLN. No tests wire wires",
+)
+
 no_mtln_skip = pytest.mark.skipif(
     os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF",
     reason="MTLN is not available",
