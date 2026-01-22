@@ -183,12 +183,13 @@ contains
       res%conformalRegs = this%readConformalRegions()
 
       ! Thin elements
+#ifdef CompileWithMTLN 
+      res%mtln = this%readMTLN()
+#else
       res%tWires = this%readThinWires()
+#endif
       res%tSlots = this%readThinSlots()
 
-#ifdef CompileWithMTLN
-      res%mtln = this%readMTLN()
-#endif
 
 
    end function
@@ -1872,6 +1873,13 @@ contains
       integer :: i, j
       logical :: found
 
+      mwires = this%getMaterialAssociations([ &
+                  J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                  J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+      if (size(mwires) /= 0) then 
+         call WarnErrReport('ERROR: shieldedMultiwires and unshieldedMultiwires can only be defined if compiled with MTLN', .true.)
+      end if
+
       mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
 
       ! Pre-allocates thin wires.
@@ -2514,12 +2522,17 @@ contains
       class(cable_t), pointer :: ptr, read_cable
       integer :: i
 
+      wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
+      if (size(wires) /=0 ) then
+            call WarnErrReport("ERROR: material type 'wire' is not allowed if compiled with MTLN", .true.)
+      end if
 
       cables = this%getMaterialAssociations([ &
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
                 J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
       ! spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
+
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
@@ -2699,8 +2712,8 @@ contains
          
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
-         cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
-                    this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
+         ! cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
+         cables  = [this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
                     this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds
