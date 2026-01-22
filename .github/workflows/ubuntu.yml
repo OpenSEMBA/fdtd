@@ -91,7 +91,7 @@ jobs:
           -DSEMBA_FDTD_ENABLE_HDF=${{matrix.hdf}} \
           -DSEMBA_FDTD_ENABLE_MTLN=${{matrix.mtln}} \
           -DSEMBA_FDTD_ENABLE_DOUBLE_PRECISION=${{matrix.double-precision}} \
-          -DSEMBA_FDTD_ENABLE_OUTPUT_MODULE=${{matrix.new-output-module}} \
+          -DSEMBA_FDTD_ENABLE_OUTPUT_MODULE=${{matrix.new-output-module}}
         cmake --build build -j
       
     - name: Run unit tests 

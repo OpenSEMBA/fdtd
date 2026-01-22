@@ -287,11 +287,11 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    call flush_point_probe_output(probe)
 
    open (unit=probe%fileUnitTime, file=file_time, status='old', action='read')
-   test_err = test_err + assert_file_content(probe%fileUnitTime, expectedTime, 2*n, 2)
+   test_err = test_err + assert_file_content(probe%fileUnitTime, expectedTime, 2*n, 2, 1e-06_RKIND)
    close (probe%fileUnitTime)
 
    open (unit=probe%fileUnitFreq, file=file_freq, status='old', action='read')
-   test_err = test_err + assert_file_content(probe%fileUnitFreq, expectedFreq, n, 2)
+   test_err = test_err + assert_file_content(probe%fileUnitFreq, expectedFreq, n, 2, 1e-06_RKIND)
    close (probe%fileUnitFreq)
 
    err = test_err

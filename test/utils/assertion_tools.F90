@@ -118,11 +118,12 @@ contains
       end if
    end function assert_written_output_file
 
-   integer function assert_file_content(unit, expectedValues, nRows, nCols, headers) result(flag)
+   integer function assert_file_content(unit, expectedValues, nRows, nCols, tolerance, headers) result(flag)
       implicit none
       integer(kind=SINGLE), intent(in) :: unit
       real(kind=RKIND), intent(in) :: expectedValues(:, :)
       integer(kind=SINGLE), intent(in) :: nRows, nCols
+      real(kind=RKIND), intent(in) :: tolerance
       character(len=*), intent(in), optional :: headers(:)
       integer(kind=SINGLE) :: i, j, ios
       real(kind=RKIND), dimension(nCols) :: val
@@ -141,7 +142,7 @@ contains
             return
          end if
          do j = 1, nCols
-            if (abs(val(j) - expectedValues(i, j)) > 1d-6) then
+            if (abs(val(j) - expectedValues(i, j)) > tolerance) then
                flag = flag + 1
             end if
          end do
