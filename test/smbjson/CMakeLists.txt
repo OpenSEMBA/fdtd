@@ -23,10 +23,10 @@ if(SEMBA_FDTD_ENABLE_MTLN)
         "test_read_mtln.F90"
         "test_read_large_airplane_mtln.F90"
         "test_read_unshielded_multiwires_multipolar_expansion.F90"
+        "test_read_towelHanger.F90"
     )
 else()
     target_sources(smbjson_test_fortran PRIVATE
-        "test_read_towelHanger.F90"
         "test_read_holland1981.F90"
     )
 endif()
