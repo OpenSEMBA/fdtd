@@ -1025,7 +1025,7 @@ contains
             call WarnErrReport(buff)
             write(buff,*) 'TAPARRABOS=',this%control%TAPARRABOS,', wiresflavor=',trim(adjustl(this%control%wiresflavor)),', mindistwires=',this%control%mindistwires,', wirecrank=',this%control%wirecrank , 'makeholes=',this%control%makeholes
             call WarnErrReport(buff)
-            write(buff,*) 'use_mtln_wires=', this%control%use_mtln_wires
+            ! write(buff,*) 'use_mtln_wires=', this%control%use_mtln_wires
             write(buff,*) 'connectendings=',this%control%connectendings,', isolategroupgroups=',this%control%isolategroupgroups
             call WarnErrReport(buff)
             write(buff,*) 'wirethickness ', this%control%wirethickness, 'stableradholland=',this%control%stableradholland,'mtlnberenger=',this%control%mtlnberenger,' inductance_model=',trim(adjustl(this%control%inductance_model)), &
@@ -2784,9 +2784,9 @@ contains
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
 #ifdef CompileWithMTLN      
-         if (this%control%use_mtln_wires) then
-            call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
-         end if
+         ! if (this%control%use_mtln_wires) then
+         call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
+         ! end if
 #endif
       endif
       
