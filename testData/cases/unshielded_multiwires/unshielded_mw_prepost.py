@@ -43,7 +43,7 @@ print(L)
 #####################################################
 # %% Run solver
 fn = 'unshielded_multiwires_berenger.fdtd.json'
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'])
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
 

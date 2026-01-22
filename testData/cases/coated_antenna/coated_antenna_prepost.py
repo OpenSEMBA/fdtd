@@ -14,7 +14,7 @@ from pyWrapper import *
 #####################################################
 # %% Run solver
 fn = 'coated_antenna.fdtd.json'
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'])
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("mid_point")

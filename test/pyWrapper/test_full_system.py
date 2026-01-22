@@ -22,7 +22,6 @@ def test_shieldedPair(tmp_path):
     fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
     solver = FDTD(input_filename=fn,
                   path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'],
                   run_in_folder=tmp_path)
     solver.run()
 
@@ -48,7 +47,6 @@ def test_shieldedPair_mpi(tmp_path):
     fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
     solver = FDTD(input_filename=fn,
                   path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'],
                   mpi_command='mpirun -np 2',
                   run_in_folder=tmp_path)
     solver.run()
@@ -82,7 +80,6 @@ def test_coated_antenna(tmp_path):
     solver = FDTD(
         input_filename=fn,
         path_to_exe=SEMBA_EXE,
-        flags=['-mtlnwires'],
         run_in_folder=tmp_path)
     solver.run()
 
@@ -134,7 +131,7 @@ def test_holland(tmp_path):
 def test_holland_mtln(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], run_in_folder=tmp_path)
+                  run_in_folder=tmp_path)
 
     solver.run()
 
@@ -163,21 +160,21 @@ def test_holland_mtln_mpi(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
     # no mpi
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'] ,run_in_folder=tmp_path)
+                  run_in_folder=tmp_path)
     solver.run()
     probe_names = solver.getSolvedProbeFilenames("mid_point")
     probe_mid_no_mpi = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
     # no mpi -np 1
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], mpi_command='mpirun -np 1',run_in_folder=tmp_path)
+                  mpi_command='mpirun -np 1',run_in_folder=tmp_path)
     solver.cleanUp()
     solver.run()
     probe_mid_mpi_1 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
     # no mpi -np 2
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], mpi_command='mpirun -np 2',run_in_folder=tmp_path)
+                  mpi_command='mpirun -np 2',run_in_folder=tmp_path)
     solver.cleanUp()
     solver.run()
     probe_mid_mpi_2 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
@@ -226,7 +223,7 @@ def test_holland_mtln_mpi(tmp_path):
 def test_unshielded_multiwires(tmp_path):
     fn = CASES_FOLDER + 'unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], run_in_folder=tmp_path)
+                  run_in_folder=tmp_path)
 
     solver.run()
 

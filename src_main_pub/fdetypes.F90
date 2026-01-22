@@ -677,7 +677,6 @@ module  FDETYPES
                  permitscaling,mtlnberenger,niapapostprocess, &
                  stochastic, verbose, dontwritevtk, &
                  resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
-               !   use_mtln_wires, resume_fromold, vtkindex,createh5bin,wirecrank,fatalerror
 #ifdef CompileWithConformal
       logical :: input_conformal_flag
 #endif

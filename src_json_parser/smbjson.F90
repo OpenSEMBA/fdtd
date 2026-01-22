@@ -2537,7 +2537,6 @@ contains
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
       if (size(cables) == 0) then 
-         ! mtln_res%has_multiwires = .false.
          mtln_res%time_step = 0
          mtln_res%number_of_steps = 0
          allocate(mtln_res%cables(0))
@@ -2546,7 +2545,6 @@ contains
          return
       end if
 
-      ! mtln_res%has_multiwires = .true.
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 

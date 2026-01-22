@@ -14,7 +14,7 @@ from pyWrapper import *
 #####################################################
 # %% Run solver
 fn = 'shieldedPair.fdtd.json'
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'])
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("wire_start")
@@ -22,7 +22,7 @@ mid_nompi = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
 # %% Run solver
 fn = 'shieldedPair.fdtd.json'
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'],mpi_command='mpirun -np 2')
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE,mpi_command='mpirun -np 2')
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("wire_start")
@@ -30,7 +30,7 @@ mid_mpi2 = Probe(list(filter(lambda x: '_I_75_74_74' in x, probe_names))[0])
 
 # %% Run solver
 fn = 'shieldedPair.fdtd.json'
-solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE, flags=['-mtlnwires'],mpi_command='mpirun -np 3')
+solver = FDTD(input_filename = fn, path_to_exe=SEMBA_EXE,mpi_command='mpirun -np 3')
 solver.cleanUp()
 solver.run()
 probe_names = solver.getSolvedProbeFilenames("wire_start")
