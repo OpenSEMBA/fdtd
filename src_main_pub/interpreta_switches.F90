@@ -88,7 +88,7 @@ module interpreta_switches_m
          noconformalmapvtk, &
          createh5filefromsinglebin, &
          creditosyaprinteados, &
-         use_mtln_wires, &
+         ! use_mtln_wires, &
          read_command_line
 
       integer(kind=4) :: &
@@ -696,8 +696,8 @@ CONTAINS
                l%forceresampled = .true.
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
 
-            case ('-mtlnwires')
-               l%use_mtln_wires = .true.
+            ! case ('-mtlnwires')
+            !    l%use_mtln_wires = .true.
             CASE ('-wirethickness')
                i = i + 1
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
@@ -1488,7 +1488,7 @@ CONTAINS
       CALL print11 (l%layoutnumber, '-wiresflavor {new/Slanted.or.experimental.or.slanted/transition/semistructured l%precision} : model for the wires    ')   
 #endif
       CALL print11(l%layoutnumber, '&                        (default '//trim(adjustl(l%wiresflavor))//')   ')
-      CALL print11(l%layoutnumber, '-mtlnwires             : Use mtln solver to advance wires currents ')
+      ! CALL print11(l%layoutnumber, '-mtlnwires             : Use mtln solver to advance wires currents ')
       CALL print11(l%layoutnumber, '-notaparrabos          : Do not remove extra double tails at the end of the wires ')
       CALL print11(l%layoutnumber, '&                        only available for the native format.             ')
       CALL print11(l%layoutnumber, '-intrawiresimplify     : Disable strict interpretation of .NFDE topology.  ')
@@ -1965,7 +1965,7 @@ CONTAINS
       l%facesNF2FF%ab = .true.
       l%facesNF2FF%ar = .true.
       !defaults
-      l%use_mtln_wires = .false.
+      ! l%use_mtln_wires = .false.
       l%read_command_line = .true.
       l%hay_slanted_wires = .false.
       l%forcing = .FALSE.

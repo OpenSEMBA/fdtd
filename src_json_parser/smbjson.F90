@@ -1869,7 +1869,7 @@ contains
    function readThinWires(this) result (res)
       class(parser_t) :: this
       type(ThinWires) :: res
-      type(materialAssociation_t), dimension(:), allocatable :: mAs
+      type(materialAssociation_t), dimension(:), allocatable :: mAs, mwires
       integer :: i, j
       logical :: found
 
@@ -2518,7 +2518,7 @@ contains
       class(parser_t) :: this
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
-      type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, cables
+      type(materialAssociation_t), dimension(:), allocatable :: wires, cables
       class(cable_t), pointer :: ptr, read_cable
       integer :: i
 
@@ -2537,7 +2537,7 @@ contains
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
       if (size(cables) == 0) then 
-         mtln_res%has_multiwires = .false.
+         ! mtln_res%has_multiwires = .false.
          mtln_res%time_step = 0
          mtln_res%number_of_steps = 0
          allocate(mtln_res%cables(0))
@@ -2546,7 +2546,7 @@ contains
          return
       end if
 
-      mtln_res%has_multiwires = .true.
+      ! mtln_res%has_multiwires = .true.
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 

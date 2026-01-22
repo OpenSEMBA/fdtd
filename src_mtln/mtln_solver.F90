@@ -16,7 +16,7 @@ module mtln_solver_mod
         type(network_manager_t) :: network_manager
         type(probe_t), allocatable, dimension(:) :: probes
         integer :: number_of_bundles
-        logical :: has_multiwires
+        ! logical :: has_multiwires
         integer :: step_i
     contains
 
@@ -70,7 +70,7 @@ contains
             return
         end if
         
-        res%has_multiwires = parsed%has_multiwires
+        ! res%has_multiwires = parsed%has_multiwires
         
         res%dt = pre%dt
         res%time  = 0.0
