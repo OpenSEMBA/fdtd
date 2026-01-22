@@ -17,7 +17,7 @@ module mtln_solver_mod
         type(probe_t), allocatable, dimension(:) :: probes
         integer :: number_of_bundles
         ! logical :: has_multiwires
-        integer :: step_i
+        integer :: number_of_steps
     contains
 
         procedure :: updateBundlesTimeStep
@@ -84,7 +84,7 @@ contains
         call res%updateBundlesTimeStep(res%dt)
         call res%initNodes()
 
-        res%step_i = 0
+        res%number_of_steps = parsed%number_of_steps
 
     end function
 

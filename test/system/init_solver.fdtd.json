@@ -14,18 +14,6 @@
     },
 
     "materials": [
-        {
-            "id": 1,
-            "type": "wire",
-            "radius": 0.02,
-            "resistancePerMeter": 0.0,
-            "inductancePerMeter": 0.0
-        },
-        {
-            "id": 2,
-            "type": "terminal",
-            "terminations": [{"type": "open"}]
-        }
     ],
 
     "mesh": {

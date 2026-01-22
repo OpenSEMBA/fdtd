@@ -102,7 +102,7 @@ def test_coated_antenna(tmp_path):
         p_solved['current_0'].to_numpy(),
         rtol=0.0, atol=10e-8)
 
-
+@mtln_skip
 def test_holland(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(input_filename=fn, 
@@ -245,7 +245,7 @@ def test_unshielded_multiwires(tmp_path):
         p_solved['current_1'], 
         rtol=1e-3, atol=0.01)
 
-
+@mtln_skip
 def test_towelHanger(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -396,6 +396,7 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
     assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
 
+@mtln_skip
 def test_sgbc_structured_resistance(tmp_path):
     fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -406,6 +407,7 @@ def test_sgbc_structured_resistance(tmp_path):
     assert np.allclose(-1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
 
 
+@mtln_skip
 def test_pec_overlapping_sgbcs(tmp_path):
     """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
     """
@@ -588,6 +590,7 @@ def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_p
     assert (solver.getVTKMap()[0] is not None)
 
 
+@mtln_skip
 def test_nodal_source(tmp_path):
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert (os.path.isfile(fn))
@@ -632,6 +635,7 @@ def testCanAssignSameDielectricMaterialToMultipleGeometries(tmp_path):
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
 
+@mtln_skip
 def test_lumped_resistor(tmp_path):
     # This test validates the behavior of lumped resistor materials in a simplified circuit.
     # The circuit consists of a 40mm x 40mm simple loop with a lumped resistor line inserted along one edge.
@@ -690,6 +694,7 @@ def test_lumped_resistor(tmp_path):
     assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
+@mtln_skip
 def test_lumped_capacitor(tmp_path):
     # This test validates the behavior of lumped capacitor materials in a simplified circuit. The lumped capacitor 
     # can be modeled as a capacitor in parallel with a resistor.
@@ -732,6 +737,7 @@ def test_lumped_capacitor(tmp_path):
     assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
+@mtln_skip
 def test_lumped_inductor(tmp_path):
     # This test validates the behavior of lumped inductor materials in a simplified circuit. The lumped inductor
     # can be modeled as an inductor in series with a resistor.
@@ -791,6 +797,7 @@ def test_lumped_inductor(tmp_path):
     assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
+@mtln_skip
 def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
     # This test verifies current splitting behavior in a parallel resistive configuration.
     # The setup consists of a 40mm x 40mm circuit with two parallel elements:
@@ -1028,6 +1035,7 @@ def test_negative_offset_in_x(tmp_path):
     assert np.corrcoef(probeL['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
     
+@mtln_skip    
 def test_conformal_impedance_cylinder(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
