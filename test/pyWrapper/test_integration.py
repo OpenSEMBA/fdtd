@@ -10,7 +10,7 @@ def test_holland_case_checking_number_of_outputs(tmp_path):
 
     if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
         solver['materials'][0] = {"id":1,"type": "wire","radius": 0.02, "resistancePerMeter": 0.0, "inductancePerMeter": 0.0}
-
+        outfile = 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat'
     elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
         solver['general']['numberOfSteps'] = {         
             "id": 1,
@@ -20,7 +20,7 @@ def test_holland_case_checking_number_of_outputs(tmp_path):
             "resistancePerMeter": [0.0],
             "conductancePerMeter": [0.0]
         }
-        
+        outfile = 'holland1981_unshielded.fdtd_mid_point_bundle_single_unshielded_multiwire_I_11_11_12.dat'
     
     
     solver.run()
@@ -28,24 +28,24 @@ def test_holland_case_checking_number_of_outputs(tmp_path):
     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
     assert len(probe_files) == 1
-    assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
+    assert outfile == probe_files[0]
     assert countLinesInFile(probe_files[0]) == number_of_steps + 2
 
-@no_mtln_skip
-def test_holland_case_checking_number_of_outputs_mtln(tmp_path):
-    fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
-    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+# @no_mtln_skip
+# def test_holland_case_checking_number_of_outputs_mtln(tmp_path):
+#     fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
+#     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
-    number_of_steps = 10
-    solver['general']['numberOfSteps'] = number_of_steps
+#     number_of_steps = 10
+#     solver['general']['numberOfSteps'] = number_of_steps
 
-    solver.run()
+#     solver.run()
 
-    probe_files = solver.getSolvedProbeFilenames("mid_point")
+#     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
-    assert len(probe_files) == 1
-    assert 'holland1981_unshielded.fdtd_mid_point_bundle_single_unshielded_multiwire_I_11_11_12.dat' == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
+#     assert len(probe_files) == 1
+#     assert 'holland1981_unshielded.fdtd_mid_point_bundle_single_unshielded_multiwire_I_11_11_12.dat' == probe_files[0]
+#     assert countLinesInFile(probe_files[0]) == number_of_steps + 2
 
 @mtln_skip
 def test_towel_hanger_case_creates_output_probes(tmp_path):
