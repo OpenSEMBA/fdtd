@@ -16,9 +16,21 @@ module mod_allocationUtils
       procedure alloc_and_init_complex_3D
       procedure alloc_and_init_int_3D_tag
       procedure alloc_and_init_int_3D_med
+#ifndef CompileWithReal8
+      procedure alloc_and_init_real_time_1D
+#endif
    end interface
 contains
+#ifndef CompileWithReal8
+   subroutine alloc_and_init_real_time_1D(array, n1, initVal)
+      REAL(RKIND_tiempo), allocatable, intent(inout) :: array(:)
+      integer, intent(IN) :: n1
+      REAL(RKIND_tiempo), intent(IN) :: initVal
 
+      allocate (array(n1))
+      array = initVal
+   END subroutine alloc_and_init_real_time_1D
+#endif
    subroutine alloc_and_init_int_1D(array, n1, initVal)
       integer(SINGLE), allocatable, intent(inout) :: array(:)
       integer, intent(IN) :: n1
