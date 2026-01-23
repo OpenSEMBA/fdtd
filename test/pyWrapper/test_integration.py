@@ -1,6 +1,6 @@
 from utils import *
 
-@mtln_skip
+# @mtln_skip
 def test_holland_case_checking_number_of_outputs(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -8,6 +8,21 @@ def test_holland_case_checking_number_of_outputs(tmp_path):
     number_of_steps = 10
     solver['general']['numberOfSteps'] = number_of_steps
 
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][0] = {"id":1,"type": "wire","radius": 0.02, "resistancePerMeter": 0.0, "inductancePerMeter": 0.0}
+
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['general']['numberOfSteps'] = {         
+            "id": 1,
+            "type": "unshieldedMultiwire",
+            "inductancePerMeter" :  [[6.52188703e-08]],
+            "capacitancePerMeter" : [[1.7060247700000001e-10]],
+            "resistancePerMeter": [0.0],
+            "conductancePerMeter": [0.0]
+        }
+        
+    
+    
     solver.run()
 
     probe_files = solver.getSolvedProbeFilenames("mid_point")
