@@ -437,6 +437,7 @@ def test_pec_overlapping_sgbcs(tmp_path):
     # Checks values are different due to PEC prioritization.
     assert np.all(np.greater(np.abs(iPEC[1000:]), np.abs(iSGBC[1000:])))
 
+@mtln_skip
 def test_sgbc_overlapping_sgbc(tmp_path):
     """ Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss.
     """

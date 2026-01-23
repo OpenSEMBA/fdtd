@@ -563,6 +563,7 @@ def test_wires(tmp_path):
     assert line_media_dict[10] == 6 
     assert line_media_dict[21] == 1 
 
+@mtln_skip
 def test_wires_collision_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/wires_collision_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
