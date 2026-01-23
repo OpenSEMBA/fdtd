@@ -103,6 +103,19 @@ def readSpiceFile(spice_file):
             val = np.append(val, float(l.split()[1]))
     return t, val
 
+def createWire():
+    ret = {"id":1,"type": "wire","radius": 0.02, "resistancePerMeter": 0.0, "inductancePerMeter": 0.0}
+
+def createUnshieldedMultiwre():
+    ret = {         
+        "id": 1,
+        "type": "unshieldedMultiwire",
+        "inductancePerMeter" :  [[6.52188703e-08]],
+        "capacitancePerMeter" : [[1.7060247700000001e-10]],
+        "resistancePerMeter": [0.0],
+        "conductancePerMeter": [0.0]
+    }
+
 
 def createPropertyDictionary(vtkfile, celltype:int, property:str):
     ugrid = pv.UnstructuredGrid(vtkfile)

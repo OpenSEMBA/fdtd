@@ -9,18 +9,11 @@ def test_holland_case_checking_number_of_outputs(tmp_path):
     solver['general']['numberOfSteps'] = number_of_steps
 
     if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
-        solver['materials'][0] = {"id":1,"type": "wire","radius": 0.02, "resistancePerMeter": 0.0, "inductancePerMeter": 0.0}
+        solver['materials'][0] = createWire()
         outfile = 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat'
     elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
-        solver['materials'][0] = {         
-            "id": 1,
-            "type": "unshieldedMultiwire",
-            "inductancePerMeter" :  [[6.52188703e-08]],
-            "capacitancePerMeter" : [[1.7060247700000001e-10]],
-            "resistancePerMeter": [0.0],
-            "conductancePerMeter": [0.0]
-        }
-        outfile = 'holland1981_unshielded.fdtd_mid_point_bundle_single_unshielded_multiwire_I_11_11_12.dat'
+        solver['materials'][0] = createUnshieldedMultiwre()        
+        outfile = 'holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat'
     
     
     solver.run()
@@ -44,7 +37,7 @@ def test_holland_case_checking_number_of_outputs(tmp_path):
 #     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
 #     assert len(probe_files) == 1
-#     assert 'holland1981_unshielded.fdtd_mid_point_bundle_single_unshielded_multiwire_I_11_11_12.dat' == probe_files[0]
+#     assert 'holland1981_unshielded.fdtd_mid_point_single_unshielded_multiwire_I_11_11_12.dat' == probe_files[0]
 #     assert countLinesInFile(probe_files[0]) == number_of_steps + 2
 
 @mtln_skip

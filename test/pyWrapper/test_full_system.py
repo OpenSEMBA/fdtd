@@ -25,10 +25,10 @@ def test_shieldedPair(tmp_path):
                   run_in_folder=tmp_path)
     solver.run()
 
-    probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_out_V_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_start_bundle_line_out_I_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_out_I_75_71_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_out_V_75_71_74.dat']
+    probe_files = ['shieldedPair.fdtd_wire_start_line_out_V_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_start_line_out_I_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_end_line_out_I_75_71_74.dat',
+                   'shieldedPair.fdtd_wire_end_line_out_V_75_71_74.dat']
 
     p_expected = []
     for pf in probe_files:
@@ -51,10 +51,10 @@ def test_shieldedPair_mpi(tmp_path):
                   run_in_folder=tmp_path)
     solver.run()
 
-    probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_out_V_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_start_bundle_line_out_I_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_out_I_75_71_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_out_V_75_71_74.dat']
+    probe_files = ['shieldedPair.fdtd_wire_start_line_out_V_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_start_line_out_I_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_end_line_out_I_75_71_74.dat',
+                   'shieldedPair.fdtd_wire_end_line_out_V_75_71_74.dat']
 
     p_expected = []
     for pf in probe_files:
@@ -87,7 +87,7 @@ def test_coated_antenna(tmp_path):
     probe_files = [probe_current]
 
     p_expected = Probe(
-        OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_bundle_half_1_I_11_11_12.dat')
+        OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_half_1_I_11_11_12.dat')
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
@@ -135,7 +135,7 @@ def test_holland_mtln(tmp_path):
 
     solver.run()
 
-    probe_current = solver.getSolvedProbeFilenames("mid_point_bundle_single_unshielded_multiwire_I")[0]
+    probe_current = solver.getSolvedProbeFilenames("mid_point_single_unshielded_multiwire_I")[0]
     probe_files = [probe_current]
     p_solved = Probe(probe_files[0])
 
@@ -231,7 +231,7 @@ def test_unshielded_multiwires(tmp_path):
     p_solved = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
     p_expected = Probe(
-        OUTPUTS_FOLDER+'unshielded_multiwires_berenger.fdtd_mid_point_bundle_unshielded_two_wire_I_2_11_14.dat')
+        OUTPUTS_FOLDER+'unshielded_multiwires_berenger.fdtd_mid_point_unshielded_two_wire_I_2_11_14.dat')
 
     assert np.allclose(
         p_expected['current_0'], 
