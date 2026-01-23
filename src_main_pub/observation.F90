@@ -4034,6 +4034,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 #endif
 
       mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
       unit = 2000
       do i = 1, size(mtln_solver%bundles)
         do j = 1, size(mtln_solver%bundles(i)%probes)
