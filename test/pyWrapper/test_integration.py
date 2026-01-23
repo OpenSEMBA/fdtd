@@ -30,7 +30,7 @@ def test_holland_case_checking_number_of_outputs_mtln(tmp_path):
 
     assert len(probe_files) == 1
     assert 'holland1981_unshielded.fdtd_mid_point_bundle_single_unshielded_multiwire_I_11_11_12.dat' == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == number_of_steps + 1
+    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
 
 @mtln_skip
 def test_towel_hanger_case_creates_output_probes(tmp_path):

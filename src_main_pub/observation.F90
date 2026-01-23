@@ -4047,8 +4047,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
             buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
           end do
           write (unit, *) trim(buffer)
-          do k = 1, mtln_solver%number_of_steps
-          ! do k = 1, size(mtln_solver%bundles(i)%probes(j)%t)
+          do k = 1, mtln_solver%number_of_steps + 1
             buffer = ""
             write (temp, *) mtln_solver%bundles(i)%probes(j)%t(k)
             buffer = buffer//trim(temp)
