@@ -16,7 +16,7 @@ def test_holland_case_checking_number_of_outputs(tmp_path):
     assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
     assert countLinesInFile(probe_files[0]) == number_of_steps + 2
 
-@mtln_skip
+@no_mtln_skip
 def test_holland_case_checking_number_of_outputs_mtln(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
