@@ -12,7 +12,7 @@ def test_holland_case_checking_number_of_outputs(tmp_path):
         solver['materials'][0] = {"id":1,"type": "wire","radius": 0.02, "resistancePerMeter": 0.0, "inductancePerMeter": 0.0}
         outfile = 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat'
     elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
-        solver['general'][0] = {         
+        solver['materials'][0] = {         
             "id": 1,
             "type": "unshieldedMultiwire",
             "inductancePerMeter" :  [[6.52188703e-08]],
