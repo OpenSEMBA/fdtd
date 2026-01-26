@@ -99,16 +99,23 @@ def test_coated_antenna(tmp_path):
         p_solved['current_0'].to_numpy(),
         rtol=0.0, atol=10e-8)
 
-@mtln_skip
+# @mtln_skip
 def test_holland(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(input_filename=fn, 
                   path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
 
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][0] = createWire(id = 1, r = 0.02)
+        check_var = 'current'
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
+        check_var = 'current_0'
+
     solver.run()
 
-    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
+    probe_current = solver.getSolvedProbeFilenames("mid_point")[0]
     probe_files = [probe_current]
     p_solved = Probe(probe_files[0])
 
@@ -122,35 +129,35 @@ def test_holland(tmp_path):
 
     assert np.allclose(
         expected_i_interp, 
-        -p_solved['current'], 
+        -p_solved[check_var], 
         rtol=1e-4, atol=5e-5)
 
 
-@no_mtln_skip
-@pytest.mark.mtln
-def test_holland_mtln(tmp_path):
-    fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
+# @no_mtln_skip
+# @pytest.mark.mtln
+# def test_holland_mtln(tmp_path):
+#     fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
+#     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+#                   run_in_folder=tmp_path)
 
-    solver.run()
+#     solver.run()
 
-    probe_current = solver.getSolvedProbeFilenames("mid_point_single_unshielded_multiwire_I")[0]
-    probe_files = [probe_current]
-    p_solved = Probe(probe_files[0])
+#     probe_current = solver.getSolvedProbeFilenames("mid_point_single_unshielded_multiwire_I")[0]
+#     probe_files = [probe_current]
+#     p_solved = Probe(probe_files[0])
 
-    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
-    expected_t, expected_i = np.array([]), np.array([])
-    for data in expected_f['datasetColl'][0]['data']:
-        expected_t = np.append(expected_t, float(data['value'][0]))    
-        expected_i = np.append(expected_i, float(data['value'][1]))    
+#     expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
+#     expected_t, expected_i = np.array([]), np.array([])
+#     for data in expected_f['datasetColl'][0]['data']:
+#         expected_t = np.append(expected_t, float(data['value'][0]))    
+#         expected_i = np.append(expected_i, float(data['value'][1]))    
 
-    expected_i_interp = np.interp(p_solved['time']-3.05*1e-9, expected_t, expected_i)
+#     expected_i_interp = np.interp(p_solved['time']-3.05*1e-9, expected_t, expected_i)
 
-    assert np.allclose(
-        expected_i_interp, 
-        p_solved['current_0'], 
-        rtol=1e-4, atol=5e-5)
+#     assert np.allclose(
+#         expected_i_interp, 
+#         p_solved['current_0'], 
+#         rtol=1e-4, atol=5e-5)
 
 @no_mtln_skip
 @no_mpi_skip

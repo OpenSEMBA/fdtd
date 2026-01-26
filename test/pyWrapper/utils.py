@@ -103,18 +103,23 @@ def readSpiceFile(spice_file):
             val = np.append(val, float(l.split()[1]))
     return t, val
 
-def createWire():
-    return {"id":1,"type": "wire","radius": 0.02, "resistancePerMeter": 0.0, "inductancePerMeter": 0.0}
+def createWire(id, r, rpul = 0.0, lpul=0.0):
+    return {"id":id,
+            "type": "wire",
+            "radius": r, 
+            "resistancePerMeter": rpul, 
+            "inductancePerMeter": lpul
+            }
 
-def createUnshieldedMultiwre():
+def createUnshieldedWire(id, lpul, cpul):
     return {         
-        "id": 1,
+        "id": id,
         "type": "unshieldedMultiwire",
-        "inductancePerMeter" :  [[6.52188703e-08]],
-        "capacitancePerMeter" : [[1.7060247700000001e-10]],
+        "inductancePerMeter" :  [[lpul]],
+        "capacitancePerMeter" : [[cpul]],
         "resistancePerMeter": [0.0],
         "conductancePerMeter": [0.0]
-    }
+        }
 
 
 def createPropertyDictionary(vtkfile, celltype:int, property:str):
