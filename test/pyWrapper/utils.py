@@ -104,10 +104,10 @@ def readSpiceFile(spice_file):
     return t, val
 
 def createWire():
-    ret = {"id":1,"type": "wire","radius": 0.02, "resistancePerMeter": 0.0, "inductancePerMeter": 0.0}
+    return {"id":1,"type": "wire","radius": 0.02, "resistancePerMeter": 0.0, "inductancePerMeter": 0.0}
 
 def createUnshieldedMultiwre():
-    ret = {         
+    return {         
         "id": 1,
         "type": "unshieldedMultiwire",
         "inductancePerMeter" :  [[6.52188703e-08]],

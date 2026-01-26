@@ -57,8 +57,8 @@ def test_paul_9_6(tmp_path):
                   Probe(OUTPUTS_FOLDER+'paul_9_6.fdtd_end_voltage_two_wires_V_5_5_795.dat')]
 
     probe_voltage_left = solver.getSolvedProbeFilenames(
-        "start_voltage_bundle")[0]
-    probe_voltage_right = solver.getSolvedProbeFilenames("end_voltage_bundle")[
+        "start_voltage")[0]
+    probe_voltage_right = solver.getSolvedProbeFilenames("end_voltage")[
         0]
     probe_files = [probe_voltage_left, probe_voltage_right]
 
@@ -82,7 +82,7 @@ def test_spice_multilines_opamp(tmp_path):
     p_expected = [
         Probe(OUTPUTS_FOLDER+'multilines_opamp.fdtd_line_end_s2_V_5_5_102.dat')]
 
-    probe_files = [solver.getSolvedProbeFilenames("line_end_bundle")[0]]
+    probe_files = [solver.getSolvedProbeFilenames("line_end")[0]]
 
     p_solved = [Probe(probe_files[0]), Probe(probe_files[0])]
 
