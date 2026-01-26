@@ -111,14 +111,14 @@ def createWire(id, r, rpul = 0.0, lpul=0.0):
             "inductancePerMeter": lpul
             }
 
-def createUnshieldedWire(id, lpul, cpul):
+def createUnshieldedWire(id, lpul, cpul, rpul = 0.0, gpul = 0.0):
     return {         
         "id": id,
         "type": "unshieldedMultiwire",
         "inductancePerMeter" :  [[lpul]],
         "capacitancePerMeter" : [[cpul]],
-        "resistancePerMeter": [0.0],
-        "conductancePerMeter": [0.0]
+        "resistancePerMeter": [rpul],
+        "conductancePerMeter": [gpul]
         }
 
 
