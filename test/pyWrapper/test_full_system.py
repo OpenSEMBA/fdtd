@@ -108,10 +108,8 @@ def test_holland(tmp_path):
 
     if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
         solver['materials'][0] = createWire(id = 1, r = 0.02)
-        check_var = 'current'
     elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
         solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
-        check_var = 'current_0'
 
     solver.run()
 
@@ -127,10 +125,16 @@ def test_holland(tmp_path):
 
     expected_i_interp = np.interp(p_solved['time']-3.05*1e-9, expected_t, expected_i)
 
-    assert np.allclose(
-        expected_i_interp, 
-        -p_solved[check_var], 
-        rtol=1e-4, atol=5e-5)
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        assert np.allclose(
+            expected_i_interp, 
+            -p_solved['current'], 
+            rtol=1e-4, atol=5e-5)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        assert np.allclose(
+            expected_i_interp, 
+            p_solved['current_0'], 
+            rtol=1e-4, atol=5e-5)
 
 
 # @no_mtln_skip
