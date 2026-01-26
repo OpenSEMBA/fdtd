@@ -230,7 +230,6 @@ def test_unshielded_multiwires(tmp_path):
         p_solved['current_1'], 
         rtol=1e-3, atol=0.01)
 
-# @mtln_skip
 def test_towelHanger(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -1056,6 +1055,12 @@ def test_conformal_impedance_cylinder(tmp_path):
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.cleanUp()
+
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
+   
     solver.run()
     assert solver.hasFinishedSuccessfully()
     bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
@@ -1064,6 +1069,12 @@ def test_conformal_impedance_cylinder(tmp_path):
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.cleanUp()
+
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
+
     solver.run()
     assert solver.hasFinishedSuccessfully()
     bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
