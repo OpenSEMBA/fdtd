@@ -388,18 +388,25 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 
     assert np.allclose(fdtd_s21_db, anal_s21_db, rtol=0.05)
 
-@mtln_skip
 def test_sgbc_structured_resistance(tmp_path):
     fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][2] = createWire(id = 3, r = 1e-4)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 5.497210529384488e-07, cpul = 2.0212271390586895e-11)
+
     solver.run()
 
-    i = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0]).data['current']
+    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
     assert np.allclose(i.array[-101:-1], np.ones(100)*i.array[-100], rtol=1e-3)
-    assert np.allclose(-1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        assert np.allclose(-1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        assert np.allclose(1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
 
 
-@mtln_skip
 def test_pec_overlapping_sgbcs(tmp_path):
     """ Test that PEC surfaces overlapping SGBC surfaces prioritize PEC.
     """
@@ -407,6 +414,12 @@ def test_pec_overlapping_sgbcs(tmp_path):
 
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][3] = createWire(id = 3, r = 1e-4)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][3] = createUnshieldedWire(id = 3, lpul = 5.497210529384488e-07, cpul = 2.0212271390586895e-11)
+
     solver.run()
     p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
     t = p['time'].to_numpy()
@@ -432,7 +445,6 @@ def test_pec_overlapping_sgbcs(tmp_path):
     # Checks values are different due to PEC prioritization.
     assert np.all(np.greater(np.abs(iPEC[1000:]), np.abs(iSGBC[1000:])))
 
-@mtln_skip
 def test_sgbc_overlapping_sgbc(tmp_path):
     """ Test that SGBC surfaces overlapping SGBC surfaces prioritize first in MatAss.
     """
@@ -441,6 +453,11 @@ def test_sgbc_overlapping_sgbc(tmp_path):
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     # Changes materialId in first SGBC in MatAss to material with larger conductivity.
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][3] = createWire(id = 3, r = 1e-4)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][3] = createUnshieldedWire(id = 3, lpul = 5.497210529384488e-07, cpul = 2.0212271390586895e-11)
+
     solver['materialAssociations'][1]["materialId"] = 6
     solver.cleanUp()
     solver.run()
@@ -583,11 +600,16 @@ def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_p
     assert (solver.getVTKMap()[0] is not None)
 
 
-@mtln_skip
 def test_nodal_source(tmp_path):
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert (os.path.isfile(fn))
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][1] = createWire(id = 2, r = 0.1e-5, rpul=10000.0)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][1] = createUnshieldedWire(id = 2, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11, rpul = 10000.0)        
+    
+    
     solver.run()
     
     resistanceBulkProbe = Probe( \
