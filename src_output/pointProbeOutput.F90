@@ -9,14 +9,9 @@ module mod_pointProbeOutput
 
    private
 
-   !===========================
-   !  Public interface summary
-   !===========================
    public :: init_point_probe_output
-   public :: create_point_probe_output_files
    public :: update_point_probe_output
    public :: flush_point_probe_output
-   !===========================
 
 contains
    subroutine init_point_probe_output(this, coordinates, field, domain, outputTypeExtension, mpidir, timeInterval)
@@ -40,6 +35,7 @@ contains
       if (any(this%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
          call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
          call alloc_and_init(this%valueForTime, BUFSIZE, 0.0_RKIND)
+         call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
       end if
       if (any(this%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
          this%nFreq = this%domain%fnum
@@ -56,6 +52,7 @@ contains
             this%auxExp_E(i) = timeInterval*(1.0E0_RKIND, 0.0E0_RKIND)*Exp(mcpi2*this%frequencySlice(i))   !el dt deberia ser algun tipo de promedio
             this%auxExp_H(i) = this%auxExp_E(i)*Exp(mcpi2*this%frequencySlice(i)*timeInterval*0.5_RKIND)
          end do
+         call create_data_file(this%filePathFreq, this%path, frequencyExtension, datFileExtension)
       end if
 
    contains
@@ -70,26 +67,6 @@ contains
       end function get_output_path
 
    end subroutine init_point_probe_output
-
-   subroutine create_point_probe_output_files(this)
-      implicit none
-      type(point_probe_output_t), intent(inout) :: this
-      character(len=BUFSIZE) :: file_time, file_freq
-      integer(kind=SINGLE) :: err
-      err = 0
-
-      file_time = trim(adjustl(this%path))//'_'// &
-                  trim(adjustl(timeExtension))//'_'// &
-                  trim(adjustl(datFileExtension))
-
-      file_freq = trim(adjustl(this%path))//'_'// &
-                  trim(adjustl(timeExtension))//'_'// &
-                  trim(adjustl(datFileExtension))
-
-      call create_or_clear_file(file_time, this%fileUnitTime, err)
-      call create_or_clear_file(file_freq, this%fileUnitFreq, err)
-
-   end subroutine create_point_probe_output_files
 
    subroutine update_point_probe_output(this, step, field)
       type(point_probe_output_t), intent(inout) :: this
@@ -135,27 +112,26 @@ contains
       subroutine flush_time_domain(this)
          type(point_probe_output_t), intent(in) :: this
          integer :: i
-         character(len=BUFSIZE) :: filename
+         integer :: unit
 
          if (this%nTime <= 0) then
             print *, "No data to write."
             return
          end if
 
-         filename = trim(adjustl(this%path))//'_'//trim(adjustl(timeExtension))//'_'//trim(adjustl(datFileExtension))
-         open (unit=this%fileUnitTime, file=filename, status="old", action="write", position="append")
+         open (unit=unit, file=this%filePathTime, status="old", action="write", position="append")
 
          do i = 1, this%nTime
-            write (this%fileUnitTime, '(F12.6,1X,F12.6)') this%timeStep(i), this%valueForTime(i)
+            write (unit, '(F12.6,1X,F12.6)') this%timeStep(i), this%valueForTime(i)
          end do
 
-         close (this%fileUnitTime)
+         close (unit)
       end subroutine flush_time_domain
 
       subroutine flush_frequency_domain(this)
          type(point_probe_output_t), intent(in) :: this
-         integer ::i
-         character(len=BUFSIZE) :: filename
+         integer :: i
+         integer :: unit
 
          if (.not. allocated(this%frequencySlice) .or. .not. allocated(this%valueForFreq)) then
             print *, "Error: arrays not allocated."
@@ -166,14 +142,13 @@ contains
             print *, "No data to write."
             return
          end if
-         filename = trim(adjustl(this%path))//'_'//trim(adjustl(frequencyExtension))//'_'//trim(adjustl(datFileExtension))
-         open (unit=this%fileUnitFreq, file=filename, status="replace", action="write")
+         open (unit=unit, file=this%filePathFreq, status="replace", action="write")
 
          do i = 1, this%nFreq
-            write (this%fileUnitFreq, '(F12.6,1X,F12.6,1X,F12.6)') this%frequencySlice(i), real(this%valueForFreq(i)), aimag(this%valueForFreq(i))
+            write (unit, '(F12.6,1X,F12.6,1X,F12.6)') this%frequencySlice(i), real(this%valueForFreq(i)), aimag(this%valueForFreq(i))
          end do
 
-         close (this%fileUnitFreq)
+         close (unit)
       end subroutine flush_frequency_domain
 
       subroutine clear_time_data()

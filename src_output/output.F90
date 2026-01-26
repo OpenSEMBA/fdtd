@@ -59,14 +59,6 @@ module output
          init_farField_probe_output
    end interface
 
-   interface create_empty_files
-      module procedure &
-         create_point_probe_output_files, &
-         create_wire_current_probe_output, &
-         create_wire_charge_probe_output, &
-         create_bulk_probe_output
-   end interface
-
    interface update_solver_output
       module procedure &
          update_point_probe_output, &
@@ -168,7 +160,6 @@ contains
 
                allocate (outputs(outputCount)%pointProbe)
                call init_solver_output(outputs(outputCount)%pointProbe, lowerBound, outputRequestType, domain, outputTypeExtension, control%mpidir, sgg%dt)
-               call create_empty_files(outputs(outputCount)%pointProbe)
             case (iJx, iJy, iJz)
                if (wiresExists) then
                   outputCount = outputCount + 1
@@ -176,7 +167,6 @@ contains
 
                   allocate (outputs(outputCount)%wireCurrentProbe)
                   call init_solver_output(outputs(outputCount)%wireCurrentProbe, lowerBound, NODE, outputRequestType, domain, problemInfo%materialList, outputTypeExtension, control%mpidir, control%wiresflavor)
-                  call create_empty_files(outputs(outputCount)%wireCurrentProbe)
                end if
 
             case (iQx, iQy, iQz)
@@ -185,7 +175,6 @@ contains
 
                allocate (outputs(outputCount)%wireChargeProbe)
                call init_solver_output(outputs(outputCount)%wireChargeProbe, lowerBound, NODE, outputRequestType, domain, outputTypeExtension, control%mpidir, control%wiresflavor)
-               call create_empty_files(outputs(outputCount)%wireChargeProbe)
 
             case (iBloqueJx, iBloqueJy, iBloqueJz, iBloqueMx, iBloqueMy, iBloqueMz)
                outputCount = outputCount + 1
@@ -193,7 +182,6 @@ contains
 
                allocate (outputs(outputCount)%bulkCurrentProbe)
                call init_solver_output(outputs(outputCount)%bulkCurrentProbe, lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, control%mpidir)
-               call create_empty_files(outputs(outputCount)%bulkCurrentProbe)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (iCur, iMEC, iMHC, iCurX, iCurY, iCurZ, iExC, iEyC, iEzC, iHxC, iHyC, iHzC)
@@ -205,7 +193,7 @@ contains
                   outputs(outputCount)%outputID = MOVIE_PROBE_ID
                   allocate (outputs(outputCount)%movieProbe)
                   call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, control, problemInfo, outputTypeExtension)
-                  call create_pvd(outputs(outputCount)%movieProbe%path, outputs(outputCount)%movieProbe%fileUnitTime)
+                  call create_pvd(outputs(outputCount)%movieProbe%path, outputs(outputCount)%movieProbe%pvdPath)
 
                else if (domain%domainType == FREQUENCY_DOMAIN) then
 
@@ -213,7 +201,7 @@ contains
                   outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
                   allocate (outputs(outputCount)%frequencySliceProbe)
                   call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, sgg%dt, outputRequestType, domain, outputTypeExtension, control, problemInfo)
-               call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%fileUnitFreq)
+               call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%pvdPath)
 
                end if
             case (farfield)
@@ -427,35 +415,41 @@ contains
          case (BULK_PROBE_ID)
          case (VOLUMIC_CURRENT_PROBE_ID)
          case (MOVIE_PROBE_ID)
-            call close_pvd(outputs(i)%movieProbe%fileUnitTime)
+            call close_pvd(outputs(i)%movieProbe%pvdPath)
          case (FREQUENCY_SLICE_PROBE_ID)
-            call close_pvd(outputs(i)%frequencySliceProbe%fileUnitFreq)
+            call close_pvd(outputs(i)%frequencySliceProbe%pvdPath)
          end select
       end do
    end subroutine
 
-   subroutine create_pvd(pdvPath, unitPVD)
+   subroutine create_pvd(probePath, pvdPath)
       implicit none
-      character(len=*), intent(in) :: pdvPath
-      integer, intent(out) :: unitPVD
+      character(len=*), intent(in) :: probePath
+      character(len=*), intent(out) :: pvdPath
       integer :: ios
+      integer :: unit
 
-      open (newunit=unitPVD, file=trim(pdvPath)//".pvd", status="replace", action="write", iostat=ios)
+      pvdPath = trim(probePath)//'.pvd'
+      open (newunit=unit, file=trim(pvdPath), status="replace", action="write", iostat=ios)
       if (ios /= 0) stop "Error al crear archivo PVD"
 
       ! Escribimos encabezados XML
-      write (unitPVD, *) '<?xml version="1.0"?>'
-      write (unitPVD, *) '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">'
-      write (unitPVD, *) '  <Collection>'
+      write (unit, *) '<?xml version="1.0"?>'
+      write (unit, *) '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">'
+      write (unit, *) '  <Collection>'
+      close(unit)
    end subroutine create_pvd
 
-   subroutine close_pvd(unitPVD)
+   subroutine close_pvd(pvdPath)
       implicit none
-      integer, intent(in) :: unitPVD
-
-      write (unitPVD, *) '  </Collection>'
-      write (unitPVD, *) '</VTKFile>'
-      close (unitPVD)
+      character(len=*), intent(in) :: pvdPath
+      integer :: unit
+      integer :: ios
+      if (ios /= 0) stop "Error al abrir archivo PVD"
+      open (newunit=unit, file=trim(pvdPath), status="old", action="write", iostat=ios)
+      write (unit, *) '  </Collection>'
+      write (unit, *) '</VTKFile>'
+      close (unit)
    end subroutine close_pvd
 
    function get_required_output_count(sgg) result(count)

@@ -282,7 +282,7 @@ contains
       integer :: status, i
 
       do i = 1, this%nFreq
-         call update_pvd(this, i, this%fileUnitFreq)
+         call update_pvd(this, i, this%filePathFreq)
       end do
    end subroutine flush_frequency_slice_probe_output
 
@@ -375,24 +375,24 @@ contains
 
    end subroutine write_vtu_frequency_slice
 
-   subroutine update_pvd(this, freq, unitPVD)
+   subroutine update_pvd(this, freq, PVDfilePath)
       implicit none
       type(frequency_slice_probe_output_t), intent(in) :: this
       integer, intent(in) :: freq
-      integer, intent(in) :: unitPVD
+      character(len=*), intent(in) :: PVDfilePath
       character(len=64) :: ts
-      character(len=256) :: filename
+      character(len=256) :: newVTUfilename
+      integer :: unit
 
-      ! Generate VTU file name for this frequency
-      write (filename, '(A,A,I4.4,A)') trim(this%path), '_fq', freq, '.vtu'
+
+      write (newVTUfilename, '(A,A,I4.4,A)') trim(this%path), '_fq', freq, '.vtu'
+      call write_vtu_frequency_slice(this, freq, newVTUfilename)
  
-      ! Write the corresponding VTU file
-      call write_vtu_frequency_slice(this, freq, filename)
- 
-      ! Add entry in the PVD
       write (ts, '(ES16.8)') this%frequencySlice(freq)
-      write (unitPVD, '(A)') '    <DataSet timestep="'//trim(ts)// &
-         '" group="" part="0" file="'//trim(filename)//'"/>'
+
+      open (newunit=unit, file=trim(PVDfilePath), status='old', position='append')
+      write (unit, '(A)') '    <DataSet timestep="'//trim(ts)//'" group="" part="0" file="'//trim(newVTUfilename)//'"/>'
+      close(unit)
    end subroutine update_pvd
 
 

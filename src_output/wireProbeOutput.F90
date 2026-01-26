@@ -15,8 +15,6 @@ module mod_wireProbeOutput
    !===========================
    public :: init_wire_current_probe_output
    public :: init_wire_charge_probe_output
-   public :: create_wire_current_probe_output
-   public :: create_wire_charge_probe_output
    public :: update_wire_current_probe_output
    public :: update_wire_charge_probe_output
    public :: flush_wire_current_probe_output
@@ -65,6 +63,7 @@ module mod_wireProbeOutput
       this%path = build_output_path(outputTypeExtension, field, node, mpidir, coordinates)
 
       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
 
    end subroutine init_wire_current_probe_output
 
@@ -87,25 +86,9 @@ module mod_wireProbeOutput
 
       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
       call alloc_and_init(this%chargeValue, BuffObse, 0.0_RKIND)
+      call create_data_file(this%filePathTime, this%path, timeExtension, datFileExtension)
 
    end subroutine init_wire_charge_probe_output
-
-   !======================================================================
-   ! FILE CREATION
-   !======================================================================
-   subroutine create_wire_current_probe_output(this)
-      type(wire_current_probe_output_t), intent(inout) :: this
-      integer(kind=SINGLE) :: err
-      call create_or_clear_file(trim(this%path)//'_'//timeExtension//'_'//datFileExtension, &
-                                this%fileUnitTime, err)
-   end subroutine
-
-   subroutine create_wire_charge_probe_output(this)
-      type(wire_charge_probe_output_t), intent(inout) :: this
-      integer(kind=SINGLE) :: err
-      call create_or_clear_file(trim(this%path)//'_'//timeExtension//'_'//datFileExtension, &
-                                this%fileUnitTime, err)
-   end subroutine
 
    !======================================================================
    ! UPDATE
@@ -149,19 +132,20 @@ module mod_wireProbeOutput
    subroutine flush_wire_current_probe_output(this)
       type(wire_current_probe_output_t), intent(inout) :: this
       integer :: i
+      integer :: unit
 
-      open(this%fileUnitTime, file=trim(this%path)//'_'//timeExtension//'_'//datFileExtension, &
+      open(unit, file=this%filePathTime, &
            status='old', position='append')
 
       do i = 1, this%nTime
-         write(this%fileUnitTime, fmt) this%timeStep(i), &
+         write(unit, fmt) this%timeStep(i), &
             this%currentValues(i)%current, &
             this%currentValues(i)%deltaVoltage, &
             this%currentValues(i)%plusVoltage, &
             this%currentValues(i)%minusVoltage, &
             this%currentValues(i)%voltageDiference
       end do
-      close(this%fileUnitTime)
+      close(unit)
 
       call clear_current_time_data(this)
    end subroutine
@@ -170,14 +154,15 @@ module mod_wireProbeOutput
    subroutine flush_wire_charge_probe_output(this)
       type(wire_charge_probe_output_t), intent(inout) :: this
       integer :: i
+      integer :: unit
 
-      open(this%fileUnitTime, file=trim(this%path)//'_'//timeExtension//'_'//datFileExtension, &
+      open(unit, file=this%filePathTime, &
            status='old', position='append')
 
       do i = 1, this%nTime
-         write(this%fileUnitTime, fmt) this%timeStep(i), this%chargeValue(i)
+         write(unit, fmt) this%timeStep(i), this%chargeValue(i)
       end do
-      close(this%fileUnitTime)
+      close(unit)
 
       call clear_charge_time_data(this)
    end subroutine

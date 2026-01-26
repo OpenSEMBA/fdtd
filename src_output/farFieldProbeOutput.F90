@@ -33,13 +33,11 @@ contains
       this%sphericRange = sphericRange
       this%component = field
       this%path = get_output_path()
-      this%fileUnitFreq = 2025 !Dummy unit for now
-
       call InitFarField(sgg, &
          problemInfo%geometryToMaterialData%sggMiEx, problemInfo%geometryToMaterialData%sggMiEy, problemInfo%geometryToMaterialData%sggMiEz, &
          problemInfo%geometryToMaterialData%sggMiHx, problemInfo%geometryToMaterialData%sggMiHy, problemInfo%geometryToMaterialData%sggMiHz, &
                         control%layoutnumber, control%size, problemInfo%simulationBounds, control%resume, &
-                        this%fileUnitFreq, this%path, &
+                        2025, this%path, &
                         lowerBound%x, upperBound%x, &
                         lowerBound%y, upperBound%y, &
                         lowerBound%z, upperBound%z, &

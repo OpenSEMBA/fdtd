@@ -89,20 +89,20 @@ module outputTypes
    end type abstract_probe_t
 
    type, extends(abstract_probe_t) :: abstract_time_probe_t
-      integer(kind=SINGLE) :: fileUnitTime
+      character(len=BUFSIZE) :: filePathTime
       integer(kind=SINGLE) :: nTime = 0_SINGLE
       real(kind=RKIND_tiempo), allocatable :: timeStep(:)
    end type abstract_time_probe_t
 
    type, extends(abstract_probe_t) :: abstract_frequency_probe_t
-      integer(kind=SINGLE) :: fileUnitFreq
+      character(len=BUFSIZE) :: filePathFreq
       integer(kind=SINGLE) :: nFreq = 0_SINGLE
       real(kind=RKIND), allocatable    :: frequencySlice(:)
       complex(kind=CKIND), allocatable :: auxExp_E(:), auxExp_H(:)
    end type abstract_frequency_probe_t
 
    type, extends(abstract_probe_t) :: abstract_time_frequency_probe_t
-      integer(kind=SINGLE) :: fileUnitTime, fileUnitFreq
+      character(len=BUFSIZE) :: filePathTime, filePathFreq
       integer(kind=SINGLE) :: nTime = 0_SINGLE, nFreq = 0_SINGLE
       real(kind=RKIND_tiempo), allocatable :: timeStep(:)
       real(kind=RKIND), allocatable        :: frequencySlice(:)
@@ -155,6 +155,7 @@ module outputTypes
       real(kind=RKIND), allocatable :: xValueForTime(:, :)
       real(kind=RKIND), allocatable :: yValueForTime(:, :)
       real(kind=RKIND), allocatable :: zValueForTime(:, :)
+      character(len=BUFSIZE) :: pvdPath
    end type movie_probe_output_t
 
    type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
@@ -164,6 +165,7 @@ module outputTypes
       complex(kind=CKIND), allocatable :: xValueForFreq(:, :)
       complex(kind=CKIND), allocatable :: yValueForFreq(:, :)
       complex(kind=CKIND), allocatable :: zValueForFreq(:, :)
+      character(len=BUFSIZE) :: pvdPath
    end type frequency_slice_probe_output_t
 
 !=====================================================

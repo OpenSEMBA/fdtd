@@ -40,11 +40,15 @@ contains
       type(problem_info_t), intent(in)        :: problemInfo
       character(len=BUFSIZE), intent(in)      :: outputTypeExtension
 
+      integer :: error
+
       this%mainCoords = lowerBound
       this%auxCoords  = upperBound
       this%component  = field
       this%domain     = domain
       this%path       = get_output_path(this, outputTypeExtension, field, control%mpidir)
+
+      call create_folder(this%path, error)
 
       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
@@ -129,7 +133,7 @@ contains
       integer :: i
 
       do i = 1, this%nTime
-         call update_pvd(this, i, this%fileUnitTime)
+         call update_pvd(this, i, this%filePathTime)
       end do
 
       call clear_memory_data(this)
@@ -335,18 +339,23 @@ contains
       deallocate(x, y, z)
    end subroutine write_vtu_timestep
 
-   subroutine update_pvd(this, stepIndex, unitPVD)
+   subroutine update_pvd(this, stepIndex, PVDfilePath)
+      implicit none
       type(movie_probe_output_t), intent(in) :: this
-      integer, intent(in)                    :: stepIndex, unitPVD
-      character(len=256)                     :: filename
-      character(len=64)                      :: ts
+      integer, intent(in) :: stepIndex
+      character(len=*), intent(in) :: PVDfilePath
+      character(len=64) :: ts
+      character(len=256) :: newVTUfilename
+      integer :: unit
 
-      write(filename,'(A,A,I4.4,A)') trim(this%path), '_ts', stepIndex, '.vtu'
-      call write_vtu_timestep(this, stepIndex, filename)
+      write(newVTUfilename,'(A,A,I4.4,A)') trim(this%path), '_ts', stepIndex, '.vtu'
+      call write_vtu_timestep(this, stepIndex, newVTUfilename)
 
       write(ts,'(ES16.8)') this%timeStep(stepIndex)
-      write(unitPVD,'(A)') '    <DataSet timestep="'//trim(ts)// &
-                            '" group="" part="0" file="'//trim(filename)//'"/>'
+
+      open (newunit=unit, file=trim(PVDfilePath), status='old', position='append')
+      write(unit,'(A)') '    <DataSet timestep="'//trim(ts)//'" group="" part="0" file="'//trim(newVTUfilename)//'"/>'
+      close(unit)
    end subroutine update_pvd
 
    subroutine clear_memory_data(this)

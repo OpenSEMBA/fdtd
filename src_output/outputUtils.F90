@@ -16,9 +16,6 @@ module mod_outputUtils
    public :: get_prefix_extension
    public :: get_field_component
    public :: get_field_reference
-   public :: open_file
-   public :: close_file
-   public :: create_or_clear_file
    public :: init_frequency_slice
    public :: getBlockCurrentDirection
    public :: isPEC
@@ -32,6 +29,7 @@ module mod_outputUtils
    public :: computeJ1
    public :: computeJ2
    public :: fieldo
+   public :: create_data_file
    !===========================
 
    !===========================
@@ -348,25 +346,6 @@ contains
       end select
    end function get_field_reference
 
-   function open_file(fileUnit, fileName) result(iostat)
-      character(len=*), intent(in) :: fileName
-      integer(kind=SINGLE), intent(in) :: fileUnit
-      integer(kind=SINGLE) :: iostat
-
-      open (unit=fileUnit, file=fileName, status='OLD', action='WRITE', position='APPEND', iostat=iostat)
-      if (iostat /= 0) then
-         open (unit=fileUnit, file=fileName, status='NEW', action='WRITE', iostat=iostat)
-      end if
-      return
-   end function open_file
-
-   function close_file(fileUnit) result(iostat)
-      integer(kind=SINGLE), intent(in) :: fileUnit
-      integer(kind=SINGLE) :: iostat
-
-      close (fileUnit, iostat=iostat)
-   end function close_file
-
    subroutine init_frequency_slice(frequencySlice, domain)
       real(kind=RKIND), dimension(:), intent(out) :: frequencySlice
       type(domain_t), intent(in) :: domain
@@ -622,48 +601,18 @@ contains
       end select
    end function get_delta
 
-   subroutine create_or_clear_file(path, unit_out, err)
-      implicit none
-      character(len=*), intent(in)  :: path
-      integer, intent(out) :: unit_out
-      integer, intent(out) :: err
-      integer :: unit, ios
-      logical :: opened
-      character(len=BUFSIZE) :: fname
-      integer, parameter :: unit_min = 10, unit_max = 99
+   subroutine create_data_file(filePathReference, probePathReference ,domainTypeReference, fileExtension)
+      use mod_directoryUtils
+      character(len=*), intent(out) :: filePathReference
+      character(len=*), intent(in) :: probePathReference
+      character(len=*), intent(in) :: domainTypeReference
+      character(len=*), intent(in) :: fileExtension
+      
+      character(len=1) :: sep = '_'
+      integer :: err
 
-      err = 0
-      unit_out = -1
-
-      ! --- Find a free unit ---
-      do unit = unit_min, unit_max
-         inquire (unit=unit, opened=opened, name=fname)
-         if (.not. opened) exit       ! Found free unit
-         if (trim(fname) == trim(path)) then
-            ! Unit is already associated with the same file -> safe to clear
-            close (unit)
-            exit
-         end if
-      end do
-
-      ! Check if no free unit was found
-      inquire (unit=unit, opened=opened)
-      if (opened) then
-         err = 1
-         return
-      end if
-
-      ! --- Open the file, replacing it if it exists ---
-      open (unit=unit, file=path, status="replace", action="write", iostat=ios)
-      if (ios /= 0) then
-         err = 2
-         return
-      end if
-
-      close (unit)
-
-      ! --- Success ---
-      unit_out = unit
-   end subroutine create_or_clear_file
+      filePathReference = trim(probePathReference)//sep//trim(domainTypeReference)//fileExtension
+      call create_file_with_path(filePathReference, err)
+   end subroutine
 
 end module mod_outputUtils
