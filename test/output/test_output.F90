@@ -2,9 +2,22 @@ integer function test_init_point_probe() bind(c) result(err)
    use FDETYPES
    use FDETYPES_TOOLS
    use output
+   use outputTypes
    use mod_testOutputUtils
    use mod_sggMethods
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
+
+   ! Parameters
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=18), parameter :: test_name = 'initPointProbeTest'
+
+   ! Local variables
+   character(len=1) :: sep
+   character(len=BUFSIZE) :: nEntrada
+   character(len=BUFSIZE) :: expectedProbePath
+   character(len=BUFSIZE) :: expectedDataPath
 
    type(SGGFDTDINFO)              :: sgg
    type(sim_control_t)            :: control
@@ -19,8 +32,15 @@ integer function test_init_point_probe() bind(c) result(err)
    real(kind=RKIND_tiempo), pointer :: timeArray(:)
    real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE)             :: nSteps = 100_SINGLE
-   logical                          :: outputRequested, hasWires = .false.
-   integer(kind=SINGLE)             :: test_err = 0
+
+   logical :: outputRequested
+   logical :: hasWires = .false.
+   integer(kind=SINGLE) :: test_err = 0
+   integer :: ios
+
+   ! Setup
+   sep = get_path_separator()
+   nEntrada = test_folder//sep//test_name
 
    call sgg_init(sgg)
    call init_time_array(timeArray, nSteps, dt)
@@ -34,18 +54,25 @@ integer function test_init_point_probe() bind(c) result(err)
    probe = create_point_probe_observation(4, 4, 4)
    call sgg_add_observation(sgg, probe)
 
-   control = create_control_flags(mpidir=3, nEntradaRoot='entradaRoot', wiresflavor='holland')
+   control = create_control_flags(mpidir=3, nEntradaRoot=trim(nEntrada), wiresflavor='holland')
 
+   ! Action
    call init_outputs(sgg, media, sinpml, bounds, control, outputRequested, hasWires)
-
    outputs => GetOutputs()
+
+   ! Assertions
    test_err = test_err + assert_true(outputRequested, 'Valid probes not found')
-
    test_err = test_err + assert_integer_equal(outputs(1)%outputID, POINT_PROBE_ID, 'Unexpected probe id')
-   test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, &
-                                             'entradaRoot_poinProbe_Ex_4_4_4', 'Unexpected path')
 
-   call close_outputs()
+   expectedProbePath = trim(nEntrada)//wordSeparation//'pointProbe_Ex_4_4_4'
+   expectedDataPath = trim(expectedProbePath)//wordSeparation//timeExtension//datFileExtension
+
+   test_err = test_err + assert_string_equal(outputs(1)%pointProbe%path, expectedProbePath, 'Unexpected path')
+   test_err = test_err + assert_string_equal(outputs(1)%pointProbe%filePathTime, expectedDataPath, 'Unexpected path')
+   test_err = test_err + assert_true(file_exists(expectedDataPath), 'Time data file do not exist')
+
+   ! Cleanup
+   call remove_folder(test_folder, ios)
    deallocate (sgg%Observation, outputs)
 
    err = test_err
@@ -59,6 +86,16 @@ integer function test_update_point_probe() bind(c) result(err)
    use mod_testOutputUtils
    use mod_sggMethods
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
+
+   ! Parameters
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=20), parameter :: test_name = 'updatePointProbeTest'
+
+   ! Local variables
+   character(len=1) :: sep
+   character(len=BUFSIZE) :: nEntrada
 
    type(SGGFDTDINFO)              :: sgg
    type(sim_control_t)            :: control
@@ -76,8 +113,15 @@ integer function test_update_point_probe() bind(c) result(err)
    real(kind=RKIND_tiempo), pointer :: timeArray(:)
    real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
    integer(kind=SINGLE)             :: nSteps = 100_SINGLE
-   logical                          :: outputRequested, hasWires = .false.
-   integer(kind=SINGLE)             :: test_err = 0
+
+   logical :: outputRequested
+   logical :: hasWires = .false.
+   integer(kind=SINGLE) :: test_err = 0
+   integer :: ios
+
+   ! Setup
+   sep = get_path_separator()
+   nEntrada = test_folder//sep//test_name
 
    call sgg_init(sgg)
    call init_time_array(timeArray, nSteps, dt)
@@ -91,8 +135,7 @@ integer function test_update_point_probe() bind(c) result(err)
    materialsPtr => materials
    call sgg_set_Med(sgg, materialsPtr)
 
-   control = create_control_flags(mpidir=3, nEntradaRoot='entradaRoot', wiresflavor='holland')
-
+   control = create_control_flags(mpidir=3, nEntradaRoot=nEntrada, wiresflavor='holland')
    call init_outputs(sgg, media, sinpml, bounds, control, outputRequested, hasWires)
 
    call create_dummy_fields(dummyFields, 1, 10, 0.01_RKIND)
@@ -103,6 +146,7 @@ integer function test_update_point_probe() bind(c) result(err)
    fields%E%deltax => dummyFields%dxe
    fields%E%deltaY => dummyFields%dye
    fields%E%deltaZ => dummyFields%dze
+
    fields%H%x => dummyFields%Hx
    fields%H%y => dummyFields%Hy
    fields%H%z => dummyFields%Hz
@@ -110,11 +154,12 @@ integer function test_update_point_probe() bind(c) result(err)
    fields%H%deltaY => dummyFields%dyh
    fields%H%deltaZ => dummyFields%dzh
 
+   ! Action
    dummyFields%Ex(4, 4, 4) = 5.0_RKIND
    call update_outputs(control, sgg%tiempo, 1_SINGLE, fields)
-
    outputs => GetOutputs()
 
+   ! Assertions
    test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(1), 0.0_RKIND_tiempo, 1e-5_RKIND_tiempo, 'Unexpected timestep 1')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(1), 5.0_RKIND, 1e-5_RKIND, 'Unexpected field 1')
 
@@ -124,7 +169,8 @@ integer function test_update_point_probe() bind(c) result(err)
    test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(2), 0.1_RKIND_tiempo, 1e-5_RKIND_tiempo, 'Unexpected timestep 2')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(2), -4.0_RKIND, 1e-5_RKIND, 'Unexpected field 2')
 
-   call close_outputs()
+   !Cleanup
+   call remove_folder(test_folder, ios)
 
    err = test_err
 end function
@@ -136,19 +182,28 @@ integer function test_flush_point_probe() bind(c) result(err)
    use mod_domain
    use mod_testOutputUtils
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
+
+   ! Parameters
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=19), parameter :: test_name = 'flushPointProbeTest'
+
+   ! Local variables
+   character(len=1) :: sep
+   character(len=BUFSIZE) :: nEntrada
 
    type(point_probe_output_t) :: probe
    type(domain_t)             :: domain
    type(cell_coordinate_t)    :: coordinates
 
-   character(len=BUFSIZE) :: file_time, file_freq
-   character(len=27)      :: test_extension
-
    integer :: n, i
    integer :: test_err = 0
+   integer :: ios
 
-   err = 1
-   test_extension = 'tmp_cases/flush_point_probe'
+   ! Setup
+   sep = get_path_separator()
+   nEntrada = test_folder//sep//test_name
 
    domain = domain_t( &
             0.0_RKIND_tiempo, 10.0_RKIND_tiempo, 0.1_RKIND_tiempo, &
@@ -158,10 +213,9 @@ integer function test_flush_point_probe() bind(c) result(err)
    coordinates%y = 2
    coordinates%z = 2
 
-   call init_point_probe_output(probe, coordinates, iEx, domain, &
-                                test_extension, 3, 0.1_RKIND_tiempo)
-   call create_point_probe_output_files(probe)
+   call init_point_probe_output(probe, coordinates, iEx, domain, nEntrada, 3, 0.1_RKIND_tiempo)
 
+   ! Action
    n = 10
    do i = 1, n
       probe%timeStep(i) = real(i)
@@ -173,25 +227,15 @@ integer function test_flush_point_probe() bind(c) result(err)
    probe%nTime = n
    probe%nFreq = n
 
-   file_time = trim(adjustl(probe%path))//'_'// &
-               trim(adjustl(timeExtension))//'_'// &
-               trim(adjustl(datFileExtension))
-
-   file_freq = trim(adjustl(probe%path))//'_'// &
-               trim(adjustl(timeExtension))//'_'// &  ! intentional: mirrors implementation
-               trim(adjustl(datFileExtension))
-
    call flush_point_probe_output(probe)
 
-   test_err = test_err + assert_written_output_file(file_time)
-   test_err = test_err + assert_written_output_file(file_freq)
+   ! Assertions
+   test_err = test_err + assert_written_output_file(probe%filePathTime)
+   test_err = test_err + assert_written_output_file(probe%filePathFreq)
 
-   test_err = test_err + assert_integer_equal( &
-              probe%nTime, 0, &
-              'ERROR: clear_time_data did not reset serializedTimeSize!')
+   test_err = test_err + assert_integer_equal(probe%nTime, 0, 'ERROR: clear_time_data did not reset serializedTimeSize!')
 
-   if (.not. all(probe%timeStep == 0.0) .or. &
-       .not. all(probe%valueForTime == 0.0)) then
+   if (.not. all(probe%timeStep == 0.0) .or. .not. all(probe%valueForTime == 0.0)) then
       print *, 'ERROR: time arrays not cleared!'
       test_err = test_err + 1
    end if
@@ -201,8 +245,11 @@ integer function test_flush_point_probe() bind(c) result(err)
       test_err = test_err + 1
    end if
 
+   !Cleanup
+   call remove_folder(test_folder, ios)
+
    err = test_err
-end function test_flush_point_probe
+end function
 
 integer function test_multiple_flush_point_probe() bind(c) result(err)
    use output
@@ -211,22 +258,31 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    use mod_domain
    use mod_testOutputUtils
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
+
+   ! Parameters
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=27), parameter :: test_name = 'flushMultiplePointProbeTest'
+
+   ! Local variables
+   character(len=1) :: sep
+   character(len=BUFSIZE) :: nEntrada
 
    type(point_probe_output_t) :: probe
    type(domain_t)             :: domain
    type(cell_coordinate_t)    :: coordinates
 
-   character(len=BUFSIZE) :: file_time, file_freq
-   character(len=36)      :: test_extension
-
    real(kind=RKIND), allocatable :: expectedTime(:, :)
    real(kind=RKIND), allocatable :: expectedFreq(:, :)
 
-   integer :: n, i
+   integer :: n, i, unit
    integer :: test_err = 0
+   integer :: ios
 
-   err = 1
-   test_extension = 'tmp_cases/multiple_flush_point_probe'
+   ! Setup
+   sep = get_path_separator()
+   nEntrada = test_folder//sep//test_name
 
    domain = domain_t( &
             0.0_RKIND_tiempo, 10.0_RKIND_tiempo, 0.1_RKIND_tiempo, &
@@ -236,22 +292,13 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    coordinates%y = 2
    coordinates%z = 2
 
-   call init_point_probe_output(probe, coordinates, iEx, domain, &
-                                test_extension, 3, 0.1_RKIND_tiempo)
-   call create_point_probe_output_files(probe)
-
-   file_time = trim(adjustl(probe%path))//'_'// &
-               trim(adjustl(timeExtension))//'_'// &
-               trim(adjustl(datFileExtension))
-
-   file_freq = trim(adjustl(probe%path))//'_'// &
-               trim(adjustl(frequencyExtension))//'_'// &
-               trim(adjustl(datFileExtension))
+   call init_point_probe_output(probe, coordinates, iEx, domain, nEntrada, 3, 0.1_RKIND_tiempo)
 
    n = 10
    allocate (expectedTime(2*n, 2))
    allocate (expectedFreq(n, 2))
 
+   ! Action - first flush
    do i = 1, n
       probe%timeStep(i) = real(i)
       probe%valueForTime(i) = 10.0*i
@@ -267,9 +314,9 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 
    probe%nTime = n
    probe%nFreq = n
-
    call flush_point_probe_output(probe)
 
+   ! Action - second flush
    do i = 1, n
       probe%timeStep(i) = real(i + 10)
       probe%valueForTime(i) = 10.0*(i + 10)
@@ -283,19 +330,22 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
    end do
 
    probe%nTime = n
-
    call flush_point_probe_output(probe)
 
-   open (unit=probe%fileUnitTime, file=file_time, status='old', action='read')
-   test_err = test_err + assert_file_content(probe%fileUnitTime, expectedTime, 2*n, 2, 1e-06_RKIND)
-   close (probe%fileUnitTime)
+   ! Assertions
+   open (unit=unit, file=probe%filePathTime, status='old', action='read')
+   test_err = test_err + assert_file_content(unit, expectedTime, 2*n, 2, 1e-06_RKIND)
+   close (unit)
 
-   open (unit=probe%fileUnitFreq, file=file_freq, status='old', action='read')
-   test_err = test_err + assert_file_content(probe%fileUnitFreq, expectedFreq, n, 2, 1e-06_RKIND)
-   close (probe%fileUnitFreq)
+   open (unit=unit, file=probe%filePathFreq, status='old', action='read')
+   test_err = test_err + assert_file_content(unit, expectedFreq, n, 2, 1e-06_RKIND)
+   close (unit)
+
+   !Cleanup
+   call remove_folder(test_folder, ios)
 
    err = test_err
-end function test_multiple_flush_point_probe
+end function
 
 integer function test_init_movie_probe() bind(c) result(err)
    use output
@@ -391,8 +441,6 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    test_err = test_err + assert_integer_equal( &
               size(outputs(1)%movieProbe%timeStep), BuffObse, 'Unexpected timestep buffer size')
-
-   call close_outputs()
 
    err = test_err
 end function
@@ -896,8 +944,8 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    test_err = test_err + assert_array_value(outputs(1)%frequencySliceProbe%xValueForFreq, (0.0_CKIND , 0.0_CKIND), errormessage='Detected Current on X Axis for Hx gradient')
    test_err = test_err + assert_arrays_equal(outputs(1)%frequencySliceProbe%yValueForFreq, &
-                                             -1.0_RKIND * outputs(1)%frequencySliceProbe%zValueForFreq, errormessage='Unequal values for Y and -Z')
-   
+                                -1.0_RKIND*outputs(1)%frequencySliceProbe%zValueForFreq, errormessage='Unequal values for Y and -Z')
+
    call close_outputs()
 
    err = test_err
@@ -1001,11 +1049,11 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
       outputs(1)%frequencySliceProbe%yvalueForFreq(freq, :) = [(0.5_RKIND, 0.5_RKIND), (0.6_RKIND, 0.6_RKIND), (0.7_RKIND, 0.7_RKIND), (0.8_RKIND, 0.8_RKIND)]
       outputs(1)%frequencySliceProbe%zvalueForFreq(freq, :) = [(0.9_RKIND, 0.9_RKIND), (1.0_RKIND, 1.0_RKIND), (1.1_RKIND, 1.1_RKIND), (1.2_RKIND, 1.2_RKIND)]
    end do
-   !frequencySliceXObservable 
+   !frequencySliceXObservable
    do freq = 1, expectedNumFrequencies
       outputs(2)%frequencySliceProbe%xvalueForFreq(freq, :) = [(0.1_RKIND, 0.1_RKIND), (0.2_RKIND, 0.2_RKIND), (0.3_RKIND, 0.3_RKIND), (0.4_RKIND, 0.4_RKIND)]
    end do
-   !frequencySliceYObservable 
+   !frequencySliceYObservable
    do freq = 1, expectedNumFrequencies
       outputs(3)%frequencySliceProbe%yvalueForFreq(freq, :) = [(0.1_RKIND, 0.1_RKIND), (0.2_RKIND, 0.2_RKIND), (0.3_RKIND, 0.3_RKIND), (0.4_RKIND, 0.4_RKIND)]
    end do
@@ -1014,7 +1062,7 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
 
    !--- Assert generated files ---
    do iter = 1, expectedNumFrequencies
-      write(freqIdName, '(i3)') iter
+      write (freqIdName, '(i3)') iter
       expectedPath = trim(adjustl(outputs(1)%frequencySliceProbe%path))//'_fq'//'000'//trim(adjustl(freqIdName))//'.vtu'
       test_err = test_err + assert_file_exists(expectedPath)
    end do

@@ -31,6 +31,14 @@ option(SEMBA_FDTD_OUTPUTS_LIB "Compiles outputs library" ON)
 option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use new output module" OFF)
 
 # Compilation defines.
+if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
+add_compile_definitions(_WIN32)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+add_compile_definitions(__APPLE__)
+elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
+add_compile_definitions(__linux__)
+endif()
+
 if(SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
 	add_definitions(-DCompileWithNewOutputModule)
 endif()

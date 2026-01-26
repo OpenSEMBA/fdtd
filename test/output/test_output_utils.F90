@@ -49,7 +49,7 @@ contains
       P(1) = create_observable(x, y, z, x, y, z, iEx)
       call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
 
-      call set_observation(obs, P, 'poinProbe', domain, 'DummyFileNormalize')
+      call set_observation(obs, P, 'pointProbe', domain, 'DummyFileNormalize')
    end function
 
    function create_volumic_probe_observation(xi, yi, zi, xe, ye, ze) result(obs)

@@ -299,15 +299,6 @@ contains
 
    end subroutine init_outputs
 
-   subroutine create_output_files()
-      integer(kind=SINGLE) :: i
-      do i = 1, size(outputs)
-         select case (outputs(i)%outputID)
-         case (POINT_PROBE_ID); call create_empty_files(outputs(i)%pointProbe)
-         end select
-      end do
-   end subroutine create_output_files
-
    subroutine update_outputs(control, discreteTimeArray, timeIndx, fieldsReference)
       integer(kind=SINGLE), intent(in) :: timeIndx
       real(kind=RKIND_tiempo), dimension(:), intent(in) :: discreteTimeArray
