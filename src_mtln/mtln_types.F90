@@ -238,7 +238,7 @@ module mtln_types_mod
       type(connector_t), dimension(:), pointer :: connectors
       real :: time_step = 0.0
       integer :: number_of_steps = 0
-      logical :: has_multiwires = .false.
+      ! logical :: has_multiwires = .false.
    contains
       private
       procedure :: mtln_eq
@@ -252,10 +252,10 @@ contains
       class(mtln_t), intent(in) :: a,b
       integer :: i
 
-      if (a%has_multiwires .neqv. b%has_multiwires) then 
-         mtln_eq = .false.
-         return
-      end if
+      ! if (a%has_multiwires .neqv. b%has_multiwires) then 
+      !    mtln_eq = .false.
+      !    return
+      ! end if
       if (a%time_step /= b%time_step) then 
          mtln_eq = .false.
          return

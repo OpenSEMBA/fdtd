@@ -45,7 +45,7 @@ plt.yscale('log')
 plt.grid()
 
 # %% Prepare solver
-solver = FDTD(input_filename = 'bidirectionalShield.fdtd.json', path_to_exe=SEMBA_EXE, flags=['-mtlnwires'])
+solver = FDTD(input_filename = 'bidirectionalShield.fdtd.json', path_to_exe=SEMBA_EXE)
 solver.cleanUp()
 solver.run()
 # %% Load probes

@@ -7,6 +7,10 @@ from scipy import signal
 def test_lineIntegralProbe(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][0] = createWire(id = 1, r = 0.001)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
     solver.run()
     
     pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
@@ -21,14 +25,13 @@ def test_shieldedPair(tmp_path):
     fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
     solver = FDTD(input_filename=fn,
                   path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'],
                   run_in_folder=tmp_path)
     solver.run()
 
-    probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_out_V_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_start_bundle_line_out_I_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_out_I_75_71_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_out_V_75_71_74.dat']
+    probe_files = ['shieldedPair.fdtd_wire_start_line_out_V_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_start_line_out_I_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_end_line_out_I_75_71_74.dat',
+                   'shieldedPair.fdtd_wire_end_line_out_V_75_71_74.dat']
 
     p_expected = []
     for pf in probe_files:
@@ -47,15 +50,14 @@ def test_shieldedPair_mpi(tmp_path):
     fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
     solver = FDTD(input_filename=fn,
                   path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'],
                   mpi_command='mpirun -np 2',
                   run_in_folder=tmp_path)
     solver.run()
 
-    probe_files = ['shieldedPair.fdtd_wire_start_bundle_line_out_V_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_start_bundle_line_out_I_75_74_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_out_I_75_71_74.dat',
-                   'shieldedPair.fdtd_wire_end_bundle_line_out_V_75_71_74.dat']
+    probe_files = ['shieldedPair.fdtd_wire_start_line_out_V_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_start_line_out_I_75_74_74.dat',
+                   'shieldedPair.fdtd_wire_end_line_out_I_75_71_74.dat',
+                   'shieldedPair.fdtd_wire_end_line_out_V_75_71_74.dat']
 
     p_expected = []
     for pf in probe_files:
@@ -81,7 +83,6 @@ def test_coated_antenna(tmp_path):
     solver = FDTD(
         input_filename=fn,
         path_to_exe=SEMBA_EXE,
-        flags=['-mtlnwires'],
         run_in_folder=tmp_path)
     solver.run()
 
@@ -89,7 +90,7 @@ def test_coated_antenna(tmp_path):
     probe_files = [probe_current]
 
     p_expected = Probe(
-        OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_bundle_half_1_I_11_11_12.dat')
+        OUTPUTS_FOLDER+'coated_antenna.fdtd_mid_point_half_1_I_11_11_12.dat')
 
     p_solved = Probe(probe_files[0])
     assert np.allclose(
@@ -101,16 +102,20 @@ def test_coated_antenna(tmp_path):
         p_solved['current_0'].to_numpy(),
         rtol=0.0, atol=10e-8)
 
-
 def test_holland(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(input_filename=fn, 
                   path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
 
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][0] = createWire(id = 1, r = 0.02)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
+
     solver.run()
 
-    probe_current = solver.getSolvedProbeFilenames("mid_point_Wz")[0]
+    probe_current = solver.getSolvedProbeFilenames("mid_point")[0]
     probe_files = [probe_current]
     p_solved = Probe(probe_files[0])
 
@@ -122,37 +127,18 @@ def test_holland(tmp_path):
 
     expected_i_interp = np.interp(p_solved['time']-3.05*1e-9, expected_t, expected_i)
 
-    assert np.allclose(
-        expected_i_interp, 
-        -p_solved['current'], 
-        rtol=1e-4, atol=5e-5)
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        assert np.allclose(
+            expected_i_interp, 
+            -p_solved['current'], 
+            rtol=1e-4, atol=5e-5)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        assert np.allclose(
+            expected_i_interp, 
+            p_solved['current_0'], 
+            rtol=1e-4, atol=5e-5)
 
 
-@no_mtln_skip
-@pytest.mark.mtln
-def test_holland_mtln(tmp_path):
-    fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], run_in_folder=tmp_path)
-
-    solver.run()
-
-    probe_current = solver.getSolvedProbeFilenames("mid_point_bundle_single_unshielded_multiwire_I")[0]
-    probe_files = [probe_current]
-    p_solved = Probe(probe_files[0])
-
-    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
-    expected_t, expected_i = np.array([]), np.array([])
-    for data in expected_f['datasetColl'][0]['data']:
-        expected_t = np.append(expected_t, float(data['value'][0]))    
-        expected_i = np.append(expected_i, float(data['value'][1]))    
-
-    expected_i_interp = np.interp(p_solved['time']-3.05*1e-9, expected_t, expected_i)
-
-    assert np.allclose(
-        expected_i_interp, 
-        p_solved['current_0'], 
-        rtol=1e-4, atol=5e-5)
 
 @no_mtln_skip
 @no_mpi_skip
@@ -162,21 +148,21 @@ def test_holland_mtln_mpi(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981_unshielded.fdtd.json'
     # no mpi
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'] ,run_in_folder=tmp_path)
+                  run_in_folder=tmp_path)
     solver.run()
     probe_names = solver.getSolvedProbeFilenames("mid_point")
     probe_mid_no_mpi = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
     # no mpi -np 1
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], mpi_command='mpirun -np 1',run_in_folder=tmp_path)
+                  mpi_command='mpirun -np 1',run_in_folder=tmp_path)
     solver.cleanUp()
     solver.run()
     probe_mid_mpi_1 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
     # no mpi -np 2
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], mpi_command='mpirun -np 2',run_in_folder=tmp_path)
+                  mpi_command='mpirun -np 2',run_in_folder=tmp_path)
     solver.cleanUp()
     solver.run()
     probe_mid_mpi_2 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
@@ -225,7 +211,7 @@ def test_holland_mtln_mpi(tmp_path):
 def test_unshielded_multiwires(tmp_path):
     fn = CASES_FOLDER + 'unshielded_multiwires/unshielded_multiwires_berenger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
-                  flags=['-mtlnwires'], run_in_folder=tmp_path)
+                  run_in_folder=tmp_path)
 
     solver.run()
 
@@ -233,7 +219,7 @@ def test_unshielded_multiwires(tmp_path):
     p_solved = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
     p_expected = Probe(
-        OUTPUTS_FOLDER+'unshielded_multiwires_berenger.fdtd_mid_point_bundle_unshielded_two_wire_I_2_11_14.dat')
+        OUTPUTS_FOLDER+'unshielded_multiwires_berenger.fdtd_mid_point_unshielded_two_wire_I_2_11_14.dat')
 
     assert np.allclose(
         p_expected['current_0'], 
@@ -244,26 +230,32 @@ def test_unshielded_multiwires(tmp_path):
         p_solved['current_1'], 
         rtol=1e-3, atol=0.01)
 
-
 def test_towelHanger(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][0] = createWire(id = 1, r = 0.1e-3)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
     solver.run()
 
-    probe_files = [solver.getSolvedProbeFilenames("wire_start")[0],
-                   solver.getSolvedProbeFilenames("wire_mid")[0],
-                   solver.getSolvedProbeFilenames("wire_end")[0]]
+    p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
+                   Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
+                   Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
 
     p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
-                  Probe(OUTPUTS_FOLDER +
-                        'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
+                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
                   Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
 
-    for i in range(3):
-        p_solved = Probe(probe_files[i])
-        assert np.allclose(p_expected[i].data.to_numpy()[:, 0:3], p_solved.data.to_numpy()[
-                           :, 0:3], rtol=5e-2, atol=5e-2)
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        assert np.allclose(p_expected[0]['current'], p_solved[0]['current'], rtol=5e-3, atol=5e-4)
+        assert np.allclose(p_expected[1]['current'], p_solved[1]['current'], rtol=5e-3, atol=5e-4)
+        assert np.allclose(p_expected[2]['current'], p_solved[2]['current'], rtol=5e-3, atol=5e-4)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        assert np.allclose(p_expected[0]['current'], -p_solved[0]['current_0'], rtol=5e-3, atol=5e-4)
+        assert np.allclose(p_expected[1]['current'], -p_solved[1]['current_0'], rtol=5e-3, atol=5e-4)
+        assert np.allclose(p_expected[2]['current'],  p_solved[2]['current_0'], rtol=5e-3, atol=5e-4)
 
 
 @no_hdf_skip
@@ -398,11 +390,20 @@ def test_sgbc_shielding_effectiveness(tmp_path):
 def test_sgbc_structured_resistance(tmp_path):
     fn = CASES_FOLDER + 'sgbcResistance/sgbcResistance.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][2] = createWire(id = 3, r = 1e-4)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 5.497210529384488e-07, cpul = 2.0212271390586895e-11)
+
     solver.run()
 
-    i = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0]).data['current']
+    i = Probe(solver.getSolvedProbeFilenames("Bulk_probe")[0]).data['current']
     assert np.allclose(i.array[-101:-1], np.ones(100)*i.array[-100], rtol=1e-3)
-    assert np.allclose(-1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        assert np.allclose(-1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        assert np.allclose(1/i.array[-101:-1], np.ones(100)*(50+45), rtol=0.05)
 
 
 def test_pec_overlapping_sgbcs(tmp_path):
@@ -412,6 +413,12 @@ def test_pec_overlapping_sgbcs(tmp_path):
 
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][3] = createWire(id = 3, r = 1e-4)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][3] = createUnshieldedWire(id = 3, lpul = 5.497210529384488e-07, cpul = 2.0212271390586895e-11)
+
     solver.run()
     p = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
     t = p['time'].to_numpy()
@@ -445,6 +452,11 @@ def test_sgbc_overlapping_sgbc(tmp_path):
     # Runs case without overlap.
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     # Changes materialId in first SGBC in MatAss to material with larger conductivity.
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][3] = createWire(id = 3, r = 1e-4)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][3] = createUnshieldedWire(id = 3, lpul = 5.497210529384488e-07, cpul = 2.0212271390586895e-11)
+
     solver['materialAssociations'][1]["materialId"] = 6
     solver.cleanUp()
     solver.run()
@@ -591,6 +603,12 @@ def test_nodal_source(tmp_path):
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert (os.path.isfile(fn))
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][1] = createWire(id = 2, r = 0.1e-5, rpul=10000.0)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][1] = createUnshieldedWire(id = 2, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11, rpul = 10000.0)        
+    
+    
     solver.run()
     
     resistanceBulkProbe = Probe( \
@@ -631,6 +649,7 @@ def testCanAssignSameDielectricMaterialToMultipleGeometries(tmp_path):
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
 
+@mtln_skip
 def test_lumped_resistor(tmp_path):
     # This test validates the behavior of lumped resistor materials in a simplified circuit.
     # The circuit consists of a 40mm x 40mm simple loop with a lumped resistor line inserted along one edge.
@@ -689,6 +708,7 @@ def test_lumped_resistor(tmp_path):
     assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
+@mtln_skip
 def test_lumped_capacitor(tmp_path):
     # This test validates the behavior of lumped capacitor materials in a simplified circuit. The lumped capacitor 
     # can be modeled as a capacitor in parallel with a resistor.
@@ -731,6 +751,7 @@ def test_lumped_capacitor(tmp_path):
     assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
+@mtln_skip
 def test_lumped_inductor(tmp_path):
     # This test validates the behavior of lumped inductor materials in a simplified circuit. The lumped inductor
     # can be modeled as an inductor in series with a resistor.
@@ -790,6 +811,7 @@ def test_lumped_inductor(tmp_path):
     assert np.corrcoef(StartLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
     assert np.corrcoef(EndLumpedProbe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
+@mtln_skip
 def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
     # This test verifies current splitting behavior in a parallel resistive configuration.
     # The setup consists of a 40mm x 40mm circuit with two parallel elements:
@@ -1027,11 +1049,18 @@ def test_negative_offset_in_x(tmp_path):
     assert np.corrcoef(probeL['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
     
+@mtln_skip    
 def test_conformal_impedance_cylinder(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.cleanUp()
+
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
+   
     solver.run()
     assert solver.hasFinishedSuccessfully()
     bulk_conf = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])
@@ -1040,6 +1069,12 @@ def test_conformal_impedance_cylinder(tmp_path):
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
     solver.cleanUp()
+
+    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
+        solver['materials'][2] = createWire(id = 3, r = 0.1e-3)
+    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
+        solver['materials'][2] = createUnshieldedWire(id = 3, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
+
     solver.run()
     assert solver.hasFinishedSuccessfully()
     bulk = Probe(solver.getSolvedProbeFilenames("BulkProbe")[0])

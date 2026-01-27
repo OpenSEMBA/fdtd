@@ -183,12 +183,13 @@ contains
       res%conformalRegs = this%readConformalRegions()
 
       ! Thin elements
+#ifdef CompileWithMTLN 
+      res%mtln = this%readMTLN()
+#else
       res%tWires = this%readThinWires()
+#endif
       res%tSlots = this%readThinSlots()
 
-#ifdef CompileWithMTLN
-      res%mtln = this%readMTLN()
-#endif
 
 
    end function
@@ -1868,9 +1869,16 @@ contains
    function readThinWires(this) result (res)
       class(parser_t) :: this
       type(ThinWires) :: res
-      type(materialAssociation_t), dimension(:), allocatable :: mAs
+      type(materialAssociation_t), dimension(:), allocatable :: mAs, mwires
       integer :: i, j
       logical :: found
+
+      mwires = this%getMaterialAssociations([ &
+                  J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                  J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+      if (size(mwires) /= 0) then 
+         call WarnErrReport('ERROR: shieldedMultiwires and unshieldedMultiwires can only be defined if compiled with MTLN', .true.)
+      end if
 
       mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
 
@@ -2510,10 +2518,14 @@ contains
       class(parser_t) :: this
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
-      type(materialAssociation_t), dimension(:), allocatable :: wires, multiwires, cables
+      type(materialAssociation_t), dimension(:), allocatable :: wires, cables
       class(cable_t), pointer :: ptr, read_cable
       integer :: i
 
+      wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
+      if (size(wires) /=0 ) then
+            call WarnErrReport("ERROR: material type 'wire' is not allowed if compiled with MTLN", .true.)
+      end if
 
       cables = this%getMaterialAssociations([ &
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
@@ -2521,10 +2533,10 @@ contains
       ! spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
+
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
       if (size(cables) == 0) then 
-         mtln_res%has_multiwires = .false.
          mtln_res%time_step = 0
          mtln_res%number_of_steps = 0
          allocate(mtln_res%cables(0))
@@ -2533,7 +2545,6 @@ contains
          return
       end if
 
-      mtln_res%has_multiwires = .true.
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
@@ -2699,8 +2710,8 @@ contains
          
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
-         cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
-                    this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
+         ! cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
+         cables  = [this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
                     this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds

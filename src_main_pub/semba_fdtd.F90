@@ -646,6 +646,10 @@ contains
          CALL print11 (this%l%layoutnumber, '---> Conformal thin-gap solver: '//trim(adjustl(dubuf)))
          write(dubuf,*) this%l%run_with_dmma
          CALL print11 (this%l%layoutnumber, '---> DMMA thin-gap solver: '//trim(adjustl(dubuf)))
+#ifdef CompileWithMTLN
+         write(dubuf,'(a)') 'MTLN wires'
+         CALL print11 (this%l%layoutnumber, '---> Wire model: '//trim(adjustl(dubuf)))
+#else
          write(dubuf,'(a)') this%l%wiresflavor
          CALL print11 (this%l%layoutnumber, '---> Wire model: '//trim(adjustl(dubuf)))
          write(dubuf,'(a)') this%l%inductance_model
@@ -664,10 +668,11 @@ contains
          CALL print11 (this%l%layoutnumber, '---> Thin-wire double-tails removed: '//trim(adjustl(dubuf)))
          write(dubuf,*) this%l%fieldtotl                
          CALL print11 (this%l%layoutnumber, '---> Thin-wire -this%l%fieldtotl experimental switch: '//trim(adjustl(dubuf)))
+
          WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          CALL print11 (this%l%layoutnumber, dubuf)
+#endif
       endif
-
       IF (this%l%layoutnumber == 0) THEN
          call erasesignalingfiles(this%l%simu_devia)
       endif

@@ -12,6 +12,11 @@ from sys import platform
 from scipy.special import hankel2 as h
 from scipy.special import h2vp as hp
 
+mtln_skip = pytest.mark.skipif(
+    os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON",
+    reason="Binary compiled with MTLN. No tests wire wires",
+)
+
 no_mtln_skip = pytest.mark.skipif(
     os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF",
     reason="MTLN is not available",
@@ -97,6 +102,24 @@ def readSpiceFile(spice_file):
             t = np.append(t, float(l.split()[0]))
             val = np.append(val, float(l.split()[1]))
     return t, val
+
+def createWire(id, r, rpul = 0.0, lpul=0.0):
+    return {"id":id,
+            "type": "wire",
+            "radius": r, 
+            "resistancePerMeter": rpul, 
+            "inductancePerMeter": lpul
+            }
+
+def createUnshieldedWire(id, lpul, cpul, rpul = 0.0, gpul = 0.0):
+    return {         
+        "id": id,
+        "type": "unshieldedMultiwire",
+        "inductancePerMeter" :  [[lpul]],
+        "capacitancePerMeter" : [[cpul]],
+        "resistancePerMeter": [rpul],
+        "conductancePerMeter": [gpul]
+        }
 
 
 def createPropertyDictionary(vtkfile, celltype:int, property:str):

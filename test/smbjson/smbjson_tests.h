@@ -54,7 +54,6 @@ TEST(smbjson, read_lumped_fixture)       { EXPECT_EQ(0, test_read_lumped_fixture
 
 #ifdef CompileWithMTLN
 TEST(smbjson, read_towelhanger)             { EXPECT_EQ(0, test_read_towelhanger()); }
-TEST(smbjson, read_holland1981)             { EXPECT_EQ(0, test_read_holland1981()); }
 TEST(smbjson, read_holland1981_unshielded)  { EXPECT_EQ(0, test_read_holland1981_unshielded()); }
 TEST(smbjson, read_connectedwires)          { EXPECT_EQ(0, test_read_connectedwires()); }
 TEST(smbjson, read_currentinjection)     { EXPECT_EQ(0, test_read_currentinjection()); }
@@ -63,5 +62,7 @@ TEST(smbjson, read_mtln)                 { EXPECT_EQ(0, test_read_mtln()); }
 TEST(smbjson, read_large_airplane_mtln)  { EXPECT_EQ(0, test_read_large_airplane_mtln()); }
 TEST(smbjson, read_unshielded_multiwires_multipolar_expansion) {
                                            EXPECT_EQ(0,  test_read_unshielded_multiwires_multipolar_expansion()); }
+#else
+TEST(smbjson, read_holland1981)             { EXPECT_EQ(0, test_read_holland1981()); }
 #endif
 

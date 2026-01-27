@@ -92,7 +92,7 @@ contains
 
       
       ! Expected mtln type
-      expected%mtln%has_multiwires = .true.
+      ! expected%mtln%has_multiwires = .true.
       expected%mtln%time_step = 0.43e-10
       expected%mtln%number_of_steps = 700
 

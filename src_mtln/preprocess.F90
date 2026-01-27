@@ -222,7 +222,7 @@ contains
 #endif
         allocate(res(size(lines)))
         do i = 1, size(lines)
-            res(i) = mtldCtor(lines(i)%levels, "bundle_"//lines(i)%levels(1)%lines(1)%name)
+            res(i) = mtldCtor(lines(i)%levels, lines(i)%levels(1)%lines(1)%name)
             if (res(i)%dt < this%dt) then 
                 this%dt = res(i)%dt
             end if

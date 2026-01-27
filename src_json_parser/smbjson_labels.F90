@@ -49,7 +49,6 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_MAT_WIRE_REF_INDUCTANCE = "__referenceInductancePerMeter"
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC = "dielectric"
    character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_RADIUS = "radius"
-   character (len=*), parameter :: J_MAT_WIRE_DIELECTRIC_PERMITTIVITY = "relativePermittivity"
 
    character (len=*), parameter :: J_MAT_LUMPED_MODEL = "model"
    character (len=*), parameter :: J_MAT_LUMPED_MODEL_RESISTOR = "resistor"

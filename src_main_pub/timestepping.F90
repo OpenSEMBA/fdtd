@@ -237,7 +237,6 @@ module Solver_mod
       this%control%stochastic = input%stochastic
       this%control%verbose = input%verbose
       this%control%dontwritevtk = input%dontwritevtk
-      this%control%use_mtln_wires = input%use_mtln_wires
       this%control%resume_fromold = input%resume_fromold
       this%control%vtkindex =  input%vtkindex
       this%control%createh5bin =  input%createh5bin
@@ -1025,7 +1024,6 @@ contains
             call WarnErrReport(buff)
             write(buff,*) 'TAPARRABOS=',this%control%TAPARRABOS,', wiresflavor=',trim(adjustl(this%control%wiresflavor)),', mindistwires=',this%control%mindistwires,', wirecrank=',this%control%wirecrank , 'makeholes=',this%control%makeholes
             call WarnErrReport(buff)
-            write(buff,*) 'use_mtln_wires=', this%control%use_mtln_wires
             write(buff,*) 'connectendings=',this%control%connectendings,', isolategroupgroups=',this%control%isolategroupgroups
             call WarnErrReport(buff)
             write(buff,*) 'wirethickness ', this%control%wirethickness, 'stableradholland=',this%control%stableradholland,'mtlnberenger=',this%control%mtlnberenger,' inductance_model=',trim(adjustl(this%control%inductance_model)), &
@@ -1257,17 +1255,15 @@ contains
          endif
       !!!
 !!
-         if (this%control%use_mtln_wires) then
 #ifdef CompileWithMTLN
 #ifdef CompileWithMPI
-            call MPI_Barrier(SUBCOMM_MPI,ierr)
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-            write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
-            call InitWires_mtln(this%sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles)
+         write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
+         call InitWires_mtln(this%sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles)
 #else
-            write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
+         write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif
-         endif
 
       end subroutine initializeWires
 
@@ -1553,8 +1549,7 @@ contains
          !this modifies the initwires stuff and must be called after initwires (typically at the end)
          !llamalo siempre aunque no HAYA WIRES!!! para que no se quede colgado en hilos terminales
             if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-               (trim(adjustl(this%control%wiresflavor))=='transition') .or. & 
-               this%control%use_mtln_wires) then
+               (trim(adjustl(this%control%wiresflavor))=='transition')) then 
                write(dubuf,*) 'Init MPI Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
                call newInitWiresMPI(this%control%layoutnumber,this%thereAre%wires,this%control%size,this%control%resume,this%sgg%sweep)
                call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2641,18 +2636,16 @@ contains
       class(solver_t) :: this
       character(len=bufsize) :: buff
 
+#ifdef CompileWithMTLN
+      call AdvanceWiresE_mtln(this%sgg,this%Idxh,this%Idyh,this%Idzh,this%eps0,this%mu0)
+#else 
+
       if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &
-            (trim(adjustl(this%control%wiresflavor))=='transition')) .and. .not. this%control%use_mtln_wires) then
+            (trim(adjustl(this%control%wiresflavor))=='transition'))) then
          IF (this%thereAre%Wires) then
             if (this%control%wirecrank) then
                call AdvanceWiresEcrank(this%sgg, this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
             else
-#ifdef CompileWithMTLN
-               if (this%mtln_parsed%has_multiwires) then
-                  write(buff, *) 'ERROR: Multiwires in simulation but -mtlnwires flag has not been selected'
-                  call WarnErrReport(buff)
-               end if
-#endif
                call AdvanceWiresE(this%sgg,this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic,this%control%experimentalVideal,this%control%wirethickness,this%eps0,this%mu0)
             endif
          endif
@@ -2667,13 +2660,7 @@ contains
          call AdvanceWiresE_Slanted(this%sgg,this%n) 
       endif
 #endif
-      if (this%control%use_mtln_wires) then
-#ifdef CompileWithMTLN
-         call AdvanceWiresE_mtln(this%sgg,this%Idxh,this%Idyh,this%Idzh,this%eps0,this%mu0)
-#else
-         write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
 #endif   
-      end if
 
    end subroutine
 
@@ -2780,9 +2767,7 @@ contains
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
 #ifdef CompileWithMTLN      
-         if (this%control%use_mtln_wires) then
-            call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
-         end if
+         call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
 #endif
       endif
       
