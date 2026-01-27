@@ -834,7 +834,7 @@ def test_wire_z_collision_y(tmp_path):
 
 @no_mtln_skip
 def test_multiwires_vtk(tmp_path):
-    fn = CASES_FOLDER + 'observation/multiwires_vtk.fdtd.json'
+    fn = CASES_FOLDER + 'observation/multiwires_vtk_collision.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1
@@ -863,7 +863,7 @@ def test_multiwires_vtk(tmp_path):
     line_media_dict = createPropertyDictionary(
         vtkmapfile, celltype=3, property='mediatype')
     assert line_media_dict[0.5] == 2  # PEC line
-    assert line_media_dict[7] == 1  #MultiWire w/o collision
-    assert line_media_dict[8] == 1  #Multiwire touching non multiwire
-    assert line_media_dict[10] == 2 #Multiwire extreme
+    assert line_media_dict[12] == 1  #MultiWire w/o collision
+    assert line_media_dict[13] == 1  #Multiwire touching non multiwire
+    assert line_media_dict[14] == 2 #Multiwire extreme
 
