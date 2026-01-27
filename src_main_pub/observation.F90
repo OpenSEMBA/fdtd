@@ -1461,7 +1461,7 @@ contains
                         do Efield = iEx, iEz
 
                           if (isWithinBounds(Efield, iii, jjj, kkk)) then
-                            if (isThinWire(Efield, iii, jjj, kkk)) then
+                            if (isThinWire(Efield, iii, jjj, kkk) .or. isMultiwire(Efield, iii, jjj, kkk)) then
                               conta = conta + 1
                             end if
 
@@ -1653,7 +1653,7 @@ contains
                       if (field /= mapvtk) then
                         do Efield = iEx, iEz
                           if (isWithinBounds(Efield, iii, jjj, kkk)) then
-                            if (isThinWire(Efield, iii, jjj, kkk)) then
+                            if (isThinWire(Efield, iii, jjj, kkk) .or. isMultiwire(Efield, iii, jjj, kkk)) then
                               conta = conta + 1
                               call writeSerialized(ii, i, conta, iii, jjj, kkk, &
                                                    currentType(Efield), &
@@ -2284,6 +2284,13 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
         media = getMedia(field, i, j, k)
         isThinWire = sgg%Med(media)%is%ThinWire
+      end function
+
+      logical function isMultiwire(field, i, j, k)
+        integer(kind=4) :: field, i, j, k
+        integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+        media = getMedia(field, i, j, k)
+        isMultiwire = sgg%Med(media)%is%Multiwire
       end function
 
       logical function isPML(field, i, j, k)
@@ -3037,7 +3044,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                             ! refactoring done. Needs tests
                             do Efield = iEx, iEz
                             if (isWithinBounds(Efield, iii, jjj, kkk)) then
-                              if (isThinWire(Efield, iii, jjj, kkk)) then
+                              if (isThinWire(Efield, iii, jjj, kkk) .or. isMultiwire(Efield, iii, jjj, kkk)) then
                                 conta = conta + 1
                                 jdir = computeJ(EField, iii, jjj, kkk)
                                 output(ii)%item(i)%Serialized%valor_x(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
@@ -3209,7 +3216,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                       !saca bul current a lo largo del edge con las sondas icur
                       do Efield = iEx, iEz
                       if (isWithinBounds(Efield, iii, jjj, kkk)) then
-                        if (isThinWire(Efield, iii, jjj, kkk)) then
+                        if (isThinWire(Efield, iii, jjj, kkk) .or. isMultiWire(Efield, iii, jjj, kkk)) then
                           conta = conta + 1
                           jdir = computeJ(EField, iii, jjj, kkk)
 
@@ -3453,6 +3460,13 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         isThinWire = sgg%Med(media)%is%ThinWire
       end function
 
+      logical function isMultiWire(field, i, j, k)
+        integer(kind=4) :: field, i, j, k
+        integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+        media = getMedia(field, i, j, k)
+        isMultiWire = sgg%Med(media)%is%Multiwire
+      end function
+
       logical function isPML(field, i, j, k)
         integer(kind=4) :: field, i, j, k
         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
@@ -3527,6 +3541,12 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
             res = 8
           else
             res = 7
+          end if
+        elseif (sgg%Med(media)%is%multiwire) then
+          if (collidesWithNonThinWire(field, i, j, k)) then
+            res = 13
+          else
+            res = 12
           end if
         elseif ((media == 0) .or. (sgg%Med(media)%is%Pec)) then
           res = 0.5_RKIND
