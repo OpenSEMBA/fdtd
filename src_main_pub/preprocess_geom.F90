@@ -224,6 +224,10 @@ CONTAINS
       if (findloc(edge_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
       if (findloc(face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
 
+#ifdef CompileWithMTLN
+      contamedia = contamedia + this%mtln%n_bundles
+#endif
+
       sgg%NumMedia = contamedia
       sgg%AllocMed = contamedia
       !reserva espacio
@@ -473,6 +477,7 @@ CONTAINS
       sgg%Med%Is%multiportpadding = .FALSE.
       sgg%Med%Is%AnisMultiport = .FALSE.
       sgg%Med%Is%ThinWire = .FALSE.
+      sgg%Med%Is%Multiwire = .FALSE.
       sgg%Med%Is%SlantedWire = .FALSE.
       sgg%Med%Is%ThinSlot = .FALSE.
       sgg%Med%Is%PEC = .FALSE.
@@ -2590,7 +2595,18 @@ CONTAINS
       if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
       if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
 
+      DO j = 1, this%mtln%n_bundles
+         contamedia = contamedia + 1
+         ALLOCATE (sgg%Med(contamedia)%wire(1))
+         sgg%Med(contamedia)%Priority = prior_TW
 
+         sgg%Med(contamedia)%Epr = sgg%Med(1)%Epr
+         sgg%Med(contamedia)%Sigma = sgg%Med(1)%Sigma
+         sgg%Med(contamedia)%Mur = sgg%Med(1)%Mur
+         sgg%Med(contamedia)%SigmaM = sgg%Med(1)%SigmaM
+         sgg%Med(contamedia)%Is%Multiwire = .TRUE.
+
+      end do
       !reporta el bounding box
 
 #ifdef CompileWithMPI

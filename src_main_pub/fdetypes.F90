@@ -557,6 +557,7 @@ module  FDETYPES
       ConformalPEC , &
       PMC , &
       ThinWire , &
+      Multiwire , &
       SlantedWire, &
       EDispersive , &
       MDispersive , &
