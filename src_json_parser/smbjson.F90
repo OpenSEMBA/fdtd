@@ -2534,9 +2534,11 @@ contains
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
       block
-         type(materialAssociation_t), dimension(:), allocatable :: unshielded
+         type(materialAssociation_t), dimension(:), allocatable :: unshielded, shielded
          unshielded = this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE])
-         mtln_res%n_bundles = size(unshielded)
+         mtln_res%n_unsh = size(unshielded)
+         shielded = this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE])
+         mtln_res%n_sh = size(shielded)
       end block
 
       mtln_res%connectors => readConnectors()
@@ -3473,6 +3475,7 @@ contains
          integer :: nConductors
          logical :: found
          character(:), allocatable :: materialType
+         character (len=MAX_LINE) :: tagLabel
          material = this%matTable%getId(j_cable%materialId)
          materialType = this%getStrAt(material%p, J_TYPE)
          select case (materialType)
@@ -3488,6 +3491,8 @@ contains
             select type(res)
             type is(unshielded_multiwire_t)
                call assignInCellProperties(res, material, size(j_cable%elementIds))
+               write(tagLabel, '(i10)') j_cable%elementIds(1)
+               res%tag = trim(adjustl(tagLabel))
             end select
          case default
             call WarnErrReport("Error reading cable: material type is not valid", .true.)
@@ -3497,6 +3502,7 @@ contains
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
          res%name = j_cable%name
          res%segments = buildSegments(j_cable, despl)
+         res%n_segments = size(res%segments)
          res%step_size = buildStepSize(res%segments, despl)
 
       end function

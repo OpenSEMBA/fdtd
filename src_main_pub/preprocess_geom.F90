@@ -225,7 +225,7 @@ CONTAINS
       if (findloc(face_ratios, 0.0, 1) /= 0) contamedia = contamedia - 1
 
 #ifdef CompileWithMTLN
-      contamedia = contamedia + this%mtln%n_bundles
+      contamedia = contamedia + this%mtln%n_unsh
 #endif
 
       sgg%NumMedia = contamedia
@@ -2595,18 +2595,46 @@ CONTAINS
       if (findloc(edge_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
       if (findloc(face_ratios, 0.0,1 ) /= 0) contamedia = contamedia - 1
 
-      DO j = 1, this%mtln%n_bundles
-         contamedia = contamedia + 1
-         ALLOCATE (sgg%Med(contamedia)%wire(1))
-         sgg%Med(contamedia)%Priority = prior_TW
+#ifdef CompileWithMTLN
+      block
+         class(cable_t), pointer :: ptr
+         DO j = 1, this%mtln%n_sh + this%mtln%n_unsh
+            ptr => this%mtln%cables(j)%ptr
+            select type(ptr)
+            type is(unshielded_multiwire_t)
+               contamedia = contamedia + 1
+               ALLOCATE (sgg%Med(contamedia)%multiwire(1))
+               sgg%Med(contamedia)%Priority = prior_TW
 
-         sgg%Med(contamedia)%Epr = sgg%Med(1)%Epr
-         sgg%Med(contamedia)%Sigma = sgg%Med(1)%Sigma
-         sgg%Med(contamedia)%Mur = sgg%Med(1)%Mur
-         sgg%Med(contamedia)%SigmaM = sgg%Med(1)%SigmaM
-         sgg%Med(contamedia)%Is%Multiwire = .TRUE.
+               sgg%Med(contamedia)%Epr = sgg%Med(1)%Epr
+               sgg%Med(contamedia)%Sigma = sgg%Med(1)%Sigma
+               sgg%Med(contamedia)%Mur = sgg%Med(1)%Mur
+               sgg%Med(contamedia)%SigmaM = sgg%Med(1)%SigmaM
+               sgg%Med(contamedia)%Is%Multiwire = .TRUE.
 
-      end do
+               isathinwire = .FALSE.
+               numertag = searchtag(tagtype,this%mtln%cables(j)%ptr%tag)
+               do k = 1, ptr%n_segments
+                  punto%xi = ptr%segments(k)%x
+                  punto%xe = ptr%segments(k)%x
+                  punto%yi = ptr%segments(k)%y
+                  punto%ye = ptr%segments(k)%y
+                  punto%zi = ptr%segments(k)%z
+                  punto%ze = ptr%segments(k)%z
+                  orientacion = ptr%segments(k)%orientation
+                  CALL CreateLineMM (layoutnumber, media%sggMtag, tag_numbers, numertag, media%sggMiEx, media%sggMiEy, media%sggMiEz, &
+                  & media%sggMiHx, media%sggMiHy, media%sggMiHz, Alloc_iEx_XI, &
+                  & Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, Alloc_iEy_XE, Alloc_iEy_YI, &
+                  & Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, Alloc_iEz_YE, Alloc_iEz_ZI, &
+                  & Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, Alloc_iHx_ZE, Alloc_iHy_XI, &
+                  & Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, &
+                  & Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, sgg%Med, sgg%NumMedia, sgg%EShared, BoundingBox, punto, orientacion, &
+                  & contamedia, isathinwire,verbose,numeroasignaciones)
+               end do
+            end select
+         end do
+      end block
+#endif
       !reporta el bounding box
 
 #ifdef CompileWithMPI
@@ -6957,7 +6985,24 @@ CONTAINS
                end do
             endif
          end do
-
+#ifdef CompileWithMTLN
+         block 
+            class(cable_t), pointer :: ptr
+            do i = 1, this%mtln%n_unsh + this%mtln%n_sh
+               ptr => this%mtln%cables(i)%ptr
+               select type(ptr)
+               type is(unshielded_multiwire_t)
+                  numertag = numertag + 1
+               end select  
+               if (precounting == 1) then 
+                  select type(ptr)
+                  type is(unshielded_multiwire_t)
+                     tagtype%tag(numertag) = this%mtln%cables(i)%ptr%tag
+                  end select
+               end if
+            end do
+         end block
+#endif
 
          tama = this%swires%n_sw
          do i=1, tama
