@@ -834,7 +834,7 @@ def test_wire_z_collision_y(tmp_path):
 
 @no_mtln_skip
 def test_multiwires_vtk(tmp_path):
-    fn = CASES_FOLDER + 'observation/multiwires_vtk_collision.fdtd.json'
+    fn = CASES_FOLDER + 'observation/multiwires_z_collision_y.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
     solver['general']['numberOfSteps'] = 1

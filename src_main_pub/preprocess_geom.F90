@@ -1987,6 +1987,7 @@ CONTAINS
       end do !del tama
 
 
+
       !preanalisis de hilos embeddeds en materiales  antes de asignarlos
       tama = this%twires%n_tw
       paraerrhilo=.false.
