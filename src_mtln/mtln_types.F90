@@ -238,7 +238,7 @@ module mtln_types_mod
       type(connector_t), dimension(:), pointer :: connectors
       real :: time_step = 0.0
       integer :: number_of_steps = 0
-      ! logical :: has_multiwires = .false.
+      integer :: n_bundles = 0
    contains
       private
       procedure :: mtln_eq

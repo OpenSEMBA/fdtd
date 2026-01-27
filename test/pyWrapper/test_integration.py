@@ -832,3 +832,38 @@ def test_wire_z_collision_y(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
+@no_mtln_skip
+def test_multiwires_vtk(tmp_path):
+    fn = CASES_FOLDER + 'observation/multiwires_vtk.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 4 #Multiwire
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+    assert line_media_dict[7] == 1  #MultiWire w/o collision
+    assert line_media_dict[8] == 1  #Multiwire touching non multiwire
+    assert line_media_dict[10] == 2 #Multiwire extreme
+

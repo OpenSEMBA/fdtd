@@ -2533,6 +2533,11 @@ contains
       ! spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
 
+      block
+         type(materialAssociation_t), dimension(:), allocatable :: unshielded
+         unshielded = this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE])
+         mtln_res%n_bundles = size(unshielded)
+      end block
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
