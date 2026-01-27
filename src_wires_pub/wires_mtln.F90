@@ -171,6 +171,7 @@ contains
    function GetSolverPtr() result(res)
       type(mtln_solver_t), pointer :: res
       res => mtln_solver
+      return
    end function
 
    subroutine solveMTLNProblem(mtln_parsed)
