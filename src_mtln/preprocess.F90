@@ -360,19 +360,14 @@ contains
             ! precount
             n = 0
             do i = 1, size(cable%segments)
-                direction = cable%segments(i)%orientation
-                position(1) = cable%segments(i)%x
-                position(2) = cable%segments(i)%y
-                position(3) = cable%segments(i)%z
-                if ((position(1) >= Alloc(abs(direction))%XI).and. &
-                    (position(1) <= Alloc(abs(direction))%XE).and. &
-                    (position(2) >= Alloc(abs(direction))%YI).and. &
-                    (position(2) <= Alloc(abs(direction))%YE).and. &
-                    (position(3) >= Alloc(abs(direction))%ZI).and. &
-                    (position(3) <= Alloc(abs(direction))%ZE)) then
-                        if (.not. in_layer) then 
-                            in_layer = .true.
-                        end if
+                ! direction = cable%segments(i)%orientation
+                ! position(1) = cable%segments(i)%x
+                ! position(2) = cable%segments(i)%y
+                ! position(3) = cable%segments(i)%z
+                if (isSegmentWithinAllocBox(cable%segments(i), alloc)) then 
+                    if (.not. in_layer) then 
+                        in_layer = .true.
+                    end if
                 else
                     if (in_layer) then 
                         in_layer = .false.
@@ -386,20 +381,15 @@ contains
             n = 1 
             in_layer = .false.
             do i = 1, size(cable%segments)
-                direction = cable%segments(i)%orientation
-                position(1) = cable%segments(i)%x
-                position(2) = cable%segments(i)%y
-                position(3) = cable%segments(i)%z
-                if ((position(1) >= Alloc(abs(direction))%XI).and. &
-                    (position(1) <= Alloc(abs(direction))%XE).and. &
-                    (position(2) >= Alloc(abs(direction))%YI).and. &
-                    (position(2) <= Alloc(abs(direction))%YE).and. &
-                    (position(3) >= Alloc(abs(direction))%ZI).and. &
-                    (position(3) <= Alloc(abs(direction))%ZE)) then
-                        if (.not. in_layer) then 
-                            res(n,1) = i
-                            in_layer = .true.
-                        end if
+                ! direction = cable%segments(i)%orientation
+                ! position(1) = cable%segments(i)%x
+                ! position(2) = cable%segments(i)%y
+                ! position(3) = cable%segments(i)%z
+                if (isSegmentWithinAllocBox(cable%segments(i), alloc)) then 
+                    if (.not. in_layer) then 
+                        res(n,1) = i
+                        in_layer = .true.
+                    end if
                 else
                     if (in_layer) then 
                         res(n, 2) = i-1
@@ -411,6 +401,16 @@ contains
             if (in_layer) then 
                 res(n, 2) = i - 1
             end if
+        end function
+
+        logical function isSegmentWithinAllocBox(seg, alloc)
+            type(segment_t), intent(in) :: seg
+            type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
+            integer :: p(1:3)
+            p(1) = seg%x; p(2) = seg%y; p(3) = seg%z
+            isSegmentWithinAllocBox = ((p(1) >= alloc(3)%XI).and. (p(1) <= alloc(3)%XE).and. &
+                                       (p(2) >= alloc(3)%YI).and. (p(2) <= alloc(3)%YE).and. &
+                                       (p(3) >= alloc(3)%ZI).and. (p(3) <= alloc(3)%ZE))
         end function
 
     end function
