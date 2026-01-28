@@ -41,12 +41,16 @@ contains
       character(len=BUFSIZE), intent(in)      :: outputTypeExtension
 
       integer :: error
+      character(len=BUFSIZE) :: pdvFileName
 
       this%mainCoords = lowerBound
       this%auxCoords  = upperBound
       this%component  = field
       this%domain     = domain
       this%path       = get_output_path(this, outputTypeExtension, field, control%mpidir)
+      
+      pdvFileName = add_extension(get_last_component(this%path), pdvExtension)
+      this%pvdPath = join_path(this%path, pdvFileName)
 
       call create_folder(this%path, error)
 
@@ -133,7 +137,7 @@ contains
       integer :: i
 
       do i = 1, this%nTime
-         call update_pvd(this, i, this%filePathTime)
+         call update_pvd(this, i, this%pvdPath)
       end do
 
       call clear_memory_data(this)
@@ -345,10 +349,10 @@ contains
       integer, intent(in) :: stepIndex
       character(len=*), intent(in) :: PVDfilePath
       character(len=64) :: ts
-      character(len=256) :: newVTUfilename
+      character(len=BUFSIZE) :: newVTUfilename
       integer :: unit
-
-      write(newVTUfilename,'(A,A,I4.4,A)') trim(this%path), '_ts', stepIndex, '.vtu'
+   
+      write(newVTUfilename,'(A,A,I4.4,A)') trim(remove_extension(this%pvdPath)), '_ts', stepIndex, '.vtu'
       call write_vtu_timestep(this, stepIndex, newVTUfilename)
 
       write(ts,'(ES16.8)') this%timeStep(stepIndex)

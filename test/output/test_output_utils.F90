@@ -93,7 +93,7 @@ contains
       P(1) = create_observable(xi, yi, zi, xe, ye, ze, request)
       call initialize_observation_frequency_domain(domain, 0.0_RKIND, 100.0_RKIND, 20.0_RKIND)
 
-      call set_observation(observation, P, 'frequency_sliceProbe', domain, 'DummyFileNormalize')
+      call set_observation(observation, P, 'frequencySliceProbe', domain, 'DummyFileNormalize')
    end function create_frequency_slice_observation
 
    subroutine create_dummy_fields(this, lower, upper, delta)

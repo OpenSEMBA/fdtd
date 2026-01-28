@@ -21,8 +21,9 @@ module outputTypes
    integer, parameter :: BOTH_DOMAIN       =  2
 
    character(len=4), parameter :: datFileExtension = '.dat'
-   character(len=4), parameter :: timeExtension    = 'tm'
-   character(len=4), parameter :: frequencyExtension = 'fq'
+   character(len=2), parameter :: timeExtension    = 'tm'
+   character(len=2), parameter :: frequencyExtension = 'fq'
+   character(len=1), parameter :: wordseparation = '_'
 
 !=====================================================
 ! Basic helper / geometry types

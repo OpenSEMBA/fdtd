@@ -44,12 +44,19 @@ contains
       type(problem_info_t), intent(in) :: problemInfo
 
       integer :: i
+      integer :: error
+      character(len=BUFSIZE) :: pdvFileName
 
       this%mainCoords = lowerBound
       this%auxCoords = upperBound
       this%component = field !This can refer to electric, magnetic or currentDensity
       this%domain = domain
       this%path = get_output_path_freq(this, outputTypeExtension, field, control)
+
+      pdvFileName = add_extension(get_last_component(this%path), pdvExtension)
+      this%pvdPath = join_path(this%path, pdvFileName)
+
+      call create_folder(this%path, error)
 
       this%nFreq = domain%fnum
       call alloc_and_init(this%frequencySlice, this%nFreq, 0.0_RKIND)
@@ -282,7 +289,7 @@ contains
       integer :: status, i
 
       do i = 1, this%nFreq
-         call update_pvd(this, i, this%filePathFreq)
+         call update_pvd(this, i, this%pvdPath)
       end do
    end subroutine flush_frequency_slice_probe_output
 
@@ -385,7 +392,7 @@ contains
       integer :: unit
 
 
-      write (newVTUfilename, '(A,A,I4.4,A)') trim(this%path), '_fq', freq, '.vtu'
+      write (newVTUfilename, '(A,A,I4.4,A)') trim(remove_extension(this%pvdPath)), '_fq', freq, '.vtu'
       call write_vtu_frequency_slice(this, freq, newVTUfilename)
  
       write (ts, '(ES16.8)') this%frequencySlice(freq)

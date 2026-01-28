@@ -193,15 +193,14 @@ contains
                   outputs(outputCount)%outputID = MOVIE_PROBE_ID
                   allocate (outputs(outputCount)%movieProbe)
                   call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, control, problemInfo, outputTypeExtension)
-                  call create_pvd(outputs(outputCount)%movieProbe%path, outputs(outputCount)%movieProbe%pvdPath)
-
+                  call create_pvd(outputs(outputCount)%movieProbe%pvdPath)
                else if (domain%domainType == FREQUENCY_DOMAIN) then
 
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
                   allocate (outputs(outputCount)%frequencySliceProbe)
                   call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, sgg%dt, outputRequestType, domain, outputTypeExtension, control, problemInfo)
-               call create_pvd(outputs(outputCount)%frequencySliceProbe%path, outputs(outputCount)%frequencySliceProbe%pvdPath)
+                  call create_pvd(outputs(outputCount)%frequencySliceProbe%pvdPath)
 
                end if
             case (farfield)

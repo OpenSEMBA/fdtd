@@ -1,9 +1,14 @@
 module mod_directoryUtils
+   use FDETYPES
    implicit none
    private
 
+   public :: add_extension
    public :: create_folder
+   public :: remove_extension
    public :: folder_exists
+   public :: join_path
+   public :: get_last_component
    public :: remove_folder
    public :: file_exists
    public :: delete_file
@@ -14,12 +19,22 @@ module mod_directoryUtils
 contains
 
    !------------------------------------------------------------
+   ! Add an extension to a filename
+   !------------------------------------------------------------
+   function add_extension(filename, ext) result(fullname)
+       character(len=*), intent(in) :: filename, ext
+       character(len=:), allocatable :: fullname
+
+       fullname = trim(filename) // trim(ext)
+   end function add_extension
+
+   !------------------------------------------------------------
    ! Check if a folder exists
    !------------------------------------------------------------
    function folder_exists(path) result(exists)
       character(len=*), intent(in) :: path
       logical :: exists
-      character(len=256) :: p
+      character(len=BUFSIZE) :: p
 
       p = trim(path)
       if (index(p, '\') > 0) then
@@ -30,6 +45,77 @@ contains
 
       inquire (file=p, exist=exists)
    end function folder_exists
+
+   !------------------------------------------------------------
+   ! Remove the final extension from a filename
+   !------------------------------------------------------------
+   function remove_extension(filename) result(base)
+       character(len=*), intent(in) :: filename
+       character(len=BUFSIZE) :: base
+       integer :: last_dot, n, i
+
+       base = trim(filename)
+       n = len_trim(base)
+       last_dot = 0
+
+       do i = n, 1, -1
+           if (base(i:i) == '.') then
+               last_dot = i
+               exit
+           end if
+       end do
+
+       if (last_dot > 0) then
+           base = base(:last_dot-1)
+       end if
+   end function remove_extension
+
+   !------------------------------------------------------------
+   ! Join two path components into one (simplified)
+   !------------------------------------------------------------
+   function join_path(base, child) result(fullpath)
+      character(len=*), intent(in) :: base, child
+      character(len=:), allocatable :: fullpath
+      character(len=1) :: sep
+      integer :: n
+
+
+      sep = get_path_separator()
+
+
+      fullpath = trim(base)
+      n = len_trim(fullpath)
+
+
+      if (n > 0) then
+      if (fullpath(n:n) /= sep) fullpath = fullpath // sep
+      end if
+
+
+      fullpath = fullpath // trim(child)
+      end function join_path
+
+   !------------------------------------------------------------
+   ! Get the last component of a path (file or folder)
+   !------------------------------------------------------------
+   function get_last_component(path) result(component)
+      character(len=*), intent(in) :: path
+      character(len=BUFSIZE) :: component
+      integer :: last_slash, n
+
+      n = len_trim(path)
+      component = path(:n)
+
+      if (n > 0) then
+         if (component(n:n) == get_path_separator()) component = component(:n - 1)
+      end if
+
+      last_slash = scan(component, get_path_separator())
+
+      if (last_slash > 0) then
+         component = component(last_slash + 1:)
+      end if
+   end function get_last_component
 
    !------------------------------------------------------------
    ! Create a folder (portable)
@@ -105,12 +191,12 @@ contains
    !------------------------------------------------------------
    subroutine list_files(path, files, nfiles, ios)
       character(len=*), intent(in) :: path
-      character(len=256), dimension(:), intent(out) :: files
+      character(len=BUFSIZE), dimension(:), intent(out) :: files
       integer, intent(out) :: nfiles
       integer, intent(out) :: ios
 
-      character(len=512) :: cmd
-      character(len=512) :: line
+      character(len=BUFSIZE) :: cmd
+      character(len=BUFSIZE) :: line
       integer :: i
       integer :: unit
 
@@ -156,13 +242,13 @@ contains
       integer, intent(out) :: ios
       integer :: unit
 
-      character(len=512) :: folder
+      character(len=BUFSIZE) :: folder
       integer :: pos
 
       ios = 0
 
       ! Find last slash or backslash
-      pos = max(index(fullpath, '/'), index(fullpath, '\'))
+      pos = index(fullpath, get_path_separator())
 
       if (pos > 0) then
          folder = adjustl(fullpath(:pos - 1))

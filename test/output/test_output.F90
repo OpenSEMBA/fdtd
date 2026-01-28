@@ -354,6 +354,8 @@ integer function test_init_movie_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
 
    type(SGGFDTDINFO)              :: dummysgg
    type(sim_control_t)            :: dummyControl
@@ -383,7 +385,18 @@ integer function test_init_movie_probe() bind(c) result(err)
    integer(kind=SINGLE)             :: iter
    integer(kind=SINGLE)             :: test_err = 0
 
-   character(len=BUFSIZE) :: test_folder_path = 'tmp_cases/'
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=9), parameter :: test_name = 'initMovie'
+
+   character(len=BUFSIZE) :: nEntrada
+   character(len=1) :: sep
+   character(len=BUFSIZE) :: expectedProbePath
+   character(len=BUFSIZE) :: expectedPDVPath
+   character(len=BUFSIZE) :: pdvFileName
+   integer :: ios
+
+   sep = get_path_separator()
+   nEntrada = test_folder//sep//test_name
 
    err = 1
 
@@ -422,25 +435,29 @@ integer function test_init_movie_probe() bind(c) result(err)
       sinpml(iter) = create_limit_t(0, 8, 0, 8, 0, 8, 10, 10, 10)
    end do
 
-   dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
+   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
 
    outputs => GetOutputs()
 
-   test_err = test_err + assert_integer_equal(outputs(1)%outputID, &
-                                              MOVIE_PROBE_ID, 'Unexpected probe id')
+   test_err = test_err + assert_integer_equal(outputs(1)%outputID, MOVIE_PROBE_ID, 'Unexpected probe id')
+   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nPoints, expectedNumMeasurments, 'Unexpected number of measurements')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%xValueForTime), expectedNumMeasurments*BuffObse, 'Unexpected allocation size')
+   test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), BuffObse, 'Unexpected timestep buffer size')
 
-   test_err = test_err + assert_integer_equal(outputs(1)%movieProbe%nPoints, &
-                                              expectedNumMeasurments, 'Unexpected number of measurements')
+   expectedProbePath = trim(nEntrada)//wordSeparation//'movieProbe_BC_2_2_2__5_5_5'
+   pdvFileName = trim(get_last_component(expectedProbePath))//pdvExtension
+   expectedPDVPath = join_path(expectedProbePath, pdvFileName)
 
-   test_err = test_err + assert_integer_equal( &
-              size(outputs(1)%movieProbe%xValueForTime), &
-              expectedNumMeasurments*BuffObse, 'Unexpected allocation size')
+   test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
+   test_err = test_err + assert_string_equal(outputs(1)%movieProbe%pvdPath, expectedPDVPath, 'Unexpected pdv path')
+   test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Movie folder do not exist')
+   test_err = test_err + assert_true(file_exists(expectedPDVPath), 'PDV file for movie do not exist')
 
-   test_err = test_err + assert_integer_equal( &
-              size(outputs(1)%movieProbe%timeStep), BuffObse, 'Unexpected timestep buffer size')
+   !Cleanup
+   call remove_folder(test_folder, ios)
 
    err = test_err
 end function
@@ -452,6 +469,8 @@ integer function test_update_movie_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
 
    type(SGGFDTDINFO)              :: dummysgg
    type(sim_control_t)            :: dummyControl
@@ -483,7 +502,13 @@ integer function test_update_movie_probe() bind(c) result(err)
    logical                          :: ThereAreWires = .false.
    logical                          :: outputRequested
 
-   character(len=BUFSIZE) :: test_folder_path = 'tmp_cases/'
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=11), parameter :: test_name = 'updateMovie'
+
+   character(len=BUFSIZE) :: nEntrada
+   integer :: ios
+
+   nEntrada = join_path(test_folder, test_name)
 
    err = 1
 
@@ -520,7 +545,7 @@ integer function test_update_movie_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
+   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
@@ -563,7 +588,8 @@ integer function test_update_movie_probe() bind(c) result(err)
    test_err = test_err + assert_integer_equal( &
               size(outputs(1)%movieProbe%timeStep), BuffObse, 'Unexpected timestep buffer size')
 
-   call close_outputs()
+   !Cleanup
+   call remove_folder(test_folder, ios)
 
    err = test_err
 end function
@@ -575,6 +601,8 @@ integer function test_flush_movie_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
 
    type(SGGFDTDINFO)              :: dummysgg
    type(sim_control_t)            :: dummyControl
@@ -606,8 +634,15 @@ integer function test_flush_movie_probe() bind(c) result(err)
    logical                          :: ThereAreWires = .false.
    logical                          :: outputRequested
 
-   character(len=BUFSIZE) :: test_folder_path = 'tmp_cases/'
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=10), parameter :: test_name = 'flushMovie'
+
+   character(len=BUFSIZE) :: nEntrada
    character(len=BUFSIZE) :: expectedPath
+   integer :: outputIdx
+   integer :: ios
+
+   nEntrada = join_path(test_folder, test_name)
 
    err = 1
 
@@ -661,7 +696,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
+   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
@@ -708,17 +743,19 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    ! --- Assert file existance
    do outputIdx = 1, 3
-      expectedPath = trim(adjustl(outputs(outputIdx)%movieProbe%path))//'_ts0001.vtu'
-      test_err = test_err + assert_file_exists(expectedPath)
+      expectedPath = add_extension(remove_extension(outputs(outputIdx)%movieProbe%pvdPath),'_ts0001.vtu')
+      test_err = test_err + assert_true(file_exists(expectedPath), 'Primera iteracion no encontrada')
 
-      expectedPath = trim(adjustl(outputs(outputIdx)%movieProbe%path))//'_ts0002.vtu'
-      test_err = test_err + assert_file_exists(expectedPath)
+      expectedPath = add_extension(remove_extension(outputs(outputIdx)%movieProbe%pvdPath),'_ts0002.vtu')
+      test_err = test_err + assert_true(file_exists(expectedPath), 'Segunda iteracion no encontrada')
    end do
 
    call close_outputs()
 
-   expectedPath = trim(adjustl(outputs(1)%movieProbe%path))//'.pvd'
-   test_err = test_err + assert_file_exists(expectedPath)
+   expectedPath = trim(adjustl(outputs(1)%movieProbe%pvdPath))
+   test_err = test_err + assert_true(file_exists(expectedPath), 'PVD file not found')
+
+   call remove_folder(test_folder, ios)
 
    err = test_err
 end function
@@ -730,6 +767,8 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
 
    type(SGGFDTDINFO)              :: dummysgg
    type(sim_control_t)            :: dummyControl
@@ -759,8 +798,17 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    logical                          :: ThereAreWires = .false.
    logical                          :: outputRequested
 
-   character(len=BUFSIZE) :: test_folder_path = 'tmp_cases/'
 
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=13), parameter :: test_name = 'initFrequency'
+
+   character(len=BUFSIZE) :: nEntrada
+   character(len=BUFSIZE) :: expectedPDVPath
+   character(len=BUFSIZE) :: expectedProbePath
+   character(len=BUFSIZE) :: pdvFileName
+   integer :: ios
+
+   nEntrada = join_path(test_folder, test_name)
    err = 1
 
    call sgg_init(dummysgg)
@@ -799,21 +847,18 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
+   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
 
    outputs => GetOutputs()
 
-   test_err = test_err + assert_integer_equal(outputs(1)%outputID, &
-                                              FREQUENCY_SLICE_PROBE_ID, 'Unexpected probe id')
+   test_err = test_err + assert_integer_equal(outputs(1)%outputID, FREQUENCY_SLICE_PROBE_ID, 'Unexpected probe id')
 
-   test_err = test_err + assert_integer_equal(outputs(1)%frequencySliceProbe%nFreq, &
-                                              6, 'Unexpected number of frequencies')
+   test_err = test_err + assert_integer_equal(outputs(1)%frequencySliceProbe%nFreq, 6, 'Unexpected number of frequencies')
 
-   test_err = test_err + assert_integer_equal(outputs(1)%frequencySliceProbe%nPoints, &
-                                              expectedNumMeasurments, 'Unexpected number of measurements')
+   test_err = test_err + assert_integer_equal(outputs(1)%frequencySliceProbe%nPoints, expectedNumMeasurments, 'Unexpected number of measurements')
 
    test_err = test_err + assert_integer_equal( &
               size(outputs(1)%frequencySliceProbe%xValueForFreq), &
@@ -823,7 +868,16 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
               size(outputs(1)%frequencySliceProbe%frequencySlice), &
               expectedTotalFrequnecies, 'Unexpected frequency count')
 
-   call close_outputs()
+   expectedProbePath = trim(nEntrada)//wordSeparation//'frequencySliceProbe_BC_2_2_2__5_5_5'
+   pdvFileName = trim(get_last_component(expectedProbePath))//pdvExtension
+   expectedPDVPath = join_path(expectedProbePath, pdvFileName)
+
+   test_err = test_err + assert_string_equal(outputs(1)%frequencySliceProbe%path, expectedProbePath, 'Unexpected path')
+   test_err = test_err + assert_string_equal(outputs(1)%frequencySliceProbe%pvdPath, expectedPDVPath, 'Unexpected pdv path')
+   test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Frequency Slice folder do not exist')
+   test_err = test_err + assert_true(file_exists(expectedPDVPath), 'PDV file for Frequency Slice do not exist')
+
+   call remove_folder(test_folder, ios)
 
    err = test_err
 end function
@@ -835,6 +889,8 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
 
    type(SGGFDTDINFO)              :: dummysgg
    type(sim_control_t)            :: dummyControl
@@ -867,8 +923,15 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    logical                          :: ThereAreWires = .false.
    logical                          :: outputRequested
 
-   character(len=BUFSIZE) :: test_folder_path = 'tmp_cases/'
 
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=13), parameter :: test_name = 'initFrequency'
+
+   character(len=BUFSIZE) :: nEntrada
+   integer :: ios
+
+   nEntrada = join_path(test_folder, test_name)
+   
    err = 1
 
    call sgg_init(dummysgg)
@@ -904,7 +967,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
+   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
@@ -946,7 +1009,8 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    test_err = test_err + assert_arrays_equal(outputs(1)%frequencySliceProbe%yValueForFreq, &
                                 -1.0_RKIND*outputs(1)%frequencySliceProbe%zValueForFreq, errormessage='Unequal values for Y and -Z')
 
-   call close_outputs()
+
+   call remove_folder(test_folder, ios)
 
    err = test_err
 end function
@@ -958,6 +1022,8 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    use FDETYPES_TOOLS
    use mod_sggMethods
    use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
 
    type(SGGFDTDINFO)              :: dummysgg
    type(sim_control_t)            :: dummyControl
@@ -992,6 +1058,16 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    character(len=BUFSIZE)           :: test_folder_path = 'tmp_cases/'
    character(len=BUFSIZE)           :: expectedPath
    character(len=3) :: freqIdName
+
+
+   character(len=14), parameter :: test_folder = 'testing_folder'
+   character(len=13), parameter :: test_name = 'initFrequency'
+
+   character(len=BUFSIZE) :: nEntrada
+   integer :: ios
+   integer :: freq
+
+   nEntrada = join_path(test_folder, test_name)
 
    err = 1
 
@@ -1036,7 +1112,7 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    end do
    sinpml_fullsizePtr => sinpml_fullsize
 
-   dummyControl = create_control_flags(nEntradaRoot=test_folder_path, mpidir=mpidir)
+   dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
    call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
@@ -1060,17 +1136,19 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
 
    call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
-   !--- Assert generated files ---
+   ! --- Assert file existance
    do iter = 1, expectedNumFrequencies
       write (freqIdName, '(i3)') iter
-      expectedPath = trim(adjustl(outputs(1)%frequencySliceProbe%path))//'_fq'//'000'//trim(adjustl(freqIdName))//'.vtu'
-      test_err = test_err + assert_file_exists(expectedPath)
+      expectedPath = add_extension(remove_extension(outputs(1)%frequencySliceProbe%pvdPath),'_fq'//'000'//trim(adjustl(freqIdName))//'.vtu')
+      test_err = test_err + assert_true(file_exists(expectedPath), 'Primera iteracion no encontrada')
    end do
 
    call close_outputs()
 
-   expectedPath = trim(adjustl(outputs(1)%frequencySliceProbe%path))//'.pvd'
-   test_err = test_err + assert_file_exists(expectedPath)
+   expectedPath = trim(adjustl(outputs(1)%frequencySliceProbe%pvdPath))
+   test_err = test_err + assert_true(file_exists(expectedPath), 'PVD file not found')
+
+   call remove_folder(test_folder, ios)
 
    err = test_err
 end function
