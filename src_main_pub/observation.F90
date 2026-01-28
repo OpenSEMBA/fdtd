@@ -4880,6 +4880,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
 
       if (init) mtln_local => GetSolverPtr()
+      if (.not. allocated(mtln_local%bundles)) return
       if (geom) then 
         do n = 1, size(mtln_local%bundles)
           do m = 1, size(mtln_local%bundles(n)%external_field_segments)
