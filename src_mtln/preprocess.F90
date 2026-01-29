@@ -1279,8 +1279,6 @@ contains
         integer :: i,j 
         character(256) :: buff
         do i = 1, size(networks)
-            ! description = [description, networks(i)%description]
-            ! call appendToString_tArray(description, networks(i)%description(j))
             do j = 1, size(networks(i)%description)
                 buff = networks(i)%description(j)
                 call appendToStringArray(description, buff)
