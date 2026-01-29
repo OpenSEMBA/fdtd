@@ -46,6 +46,30 @@ def test_shieldedPair(tmp_path):
 @no_mpi_skip
 @pytest.mark.mtln
 @pytest.mark.mpi
+def test_bundles_mpi_n_ranks(tmp_path):
+    fn = CASES_FOLDER + 'mpi/bundles_for_mpi.fdtd.json'
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  mpi_command='mpirun -np 2',
+                  run_in_folder=tmp_path)
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  mpi_command='mpirun -np 3',
+                  run_in_folder=tmp_path)
+    solver.cleanUp()
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    
+    
+
+
+@no_mtln_skip
+@no_mpi_skip
+@pytest.mark.mtln
+@pytest.mark.mpi
 def test_shieldedPair_mpi(tmp_path):
     fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
     solver = FDTD(input_filename=fn,
