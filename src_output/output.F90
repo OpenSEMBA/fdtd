@@ -154,6 +154,9 @@ contains
 
             outputRequestType = sgg%observation(ii)%P(i)%what
             select case (outputRequestType)
+            !case (mapvtk)
+            !   call create_geometry_simulation_vtk(lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, problemInfo, control)
+
             case (iEx, iEy, iEz, iHx, iHy, iHz)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = POINT_PROBE_ID
@@ -412,14 +415,12 @@ contains
       end do
    end subroutine
 
-   subroutine create_pvd(probePath, pvdPath)
+   subroutine create_pvd(pvdPath)
       implicit none
-      character(len=*), intent(in) :: probePath
       character(len=*), intent(out) :: pvdPath
       integer :: ios
       integer :: unit
 
-      pvdPath = trim(probePath)//'.pvd'
       open (newunit=unit, file=trim(pvdPath), status="replace", action="write", iostat=ios)
       if (ios /= 0) stop "Error al crear archivo PVD"
 
@@ -435,8 +436,8 @@ contains
       character(len=*), intent(in) :: pvdPath
       integer :: unit
       integer :: ios
-      if (ios /= 0) stop "Error al abrir archivo PVD"
       open (newunit=unit, file=trim(pvdPath), status="old", action="write", iostat=ios)
+      if (ios /= 0) stop "Error al abrir archivo PVD"
       write (unit, *) '  </Collection>'
       write (unit, *) '</VTKFile>'
       close (unit)

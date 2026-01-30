@@ -1153,3 +1153,29 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    err = test_err
 end function
 
+integer function test_init_wire_probe() bind(c) result(err)
+   use output
+   use outputTypes
+   use mod_testOutputUtils
+   use FDETYPES_TOOLS
+   use mod_sggMethods
+   use mod_assertionTools
+   use mod_directoryUtils
+   implicit none
+
+   type(SGGFDTDINFO)              :: dummysgg
+   type(sim_control_t)            :: dummyControl
+   type(bounds_t)                 :: dummyBound
+   type(solver_output_t), pointer :: outputs(:)
+
+   type(media_matrices_t), target :: media
+   type(media_matrices_t), pointer :: mediaPtr
+
+   type(MediaData_t), allocatable, target :: simulationMaterials(:)
+   type(MediaData_t), pointer     :: simulationMaterialsPtr(:)
+
+   type(limit_t), target          :: sinpml_fullsize(6)
+   type(limit_t), pointer         :: sinpml_fullsizePtr(:)
+
+   type(Obses_t)
+end function
