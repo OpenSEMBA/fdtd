@@ -5,6 +5,7 @@ module mod_frequencySliceProbeOutput
    use outputTypes
    use mod_outputUtils
    use mod_volumicProbeUtils
+   use mod_directoryUtils
    implicit none
    private
 
@@ -53,7 +54,7 @@ contains
       this%domain = domain
       this%path = get_output_path_freq(this, outputTypeExtension, field, control)
 
-      pdvFileName = add_extension(get_last_component(this%path), pdvExtension)
+      pdvFileName = add_extension(get_last_component(this%path), pvdExtension )
       this%pvdPath = join_path(this%path, pdvFileName)
 
       call create_folder(this%path, error)

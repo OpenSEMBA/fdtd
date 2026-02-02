@@ -52,6 +52,22 @@ contains
       call set_observation(obs, P, 'pointProbe', domain, 'DummyFileNormalize')
    end function
 
+   function create_bulk_probe_observation(xi, yi, zi) result(obs)
+      integer, intent(in) :: xi, yi, zi
+      type(Obses_t) :: obs
+
+      type(observable_t), dimension(:), allocatable :: P
+      type(observation_domain_t) :: domain
+
+      allocate (P(1))
+      P(1) = create_observable(xi, yi, zi, xi+1, yi+1, zi+1, iCurX)
+
+      call initialize_observation_time_domain(domain, 0.0_RKIND, 10.0_RKIND, 0.1_RKIND)
+      call initialize_observation_frequency_domain(domain, 0.0_RKIND, 1000.0_RKIND, 50.0_RKIND)
+
+      call set_observation(obs, P, 'bulkProbe', domain, 'DummyFileNormalize')
+   end function create_bulk_probe_observation
+
    function create_volumic_probe_observation(xi, yi, zi, xe, ye, ze) result(obs)
       integer, intent(in) :: xi, yi, zi, xe, ye, ze
       type(Obses_t) :: obs

@@ -448,7 +448,7 @@ integer function test_init_movie_probe() bind(c) result(err)
    test_err = test_err + assert_integer_equal(size(outputs(1)%movieProbe%timeStep), BuffObse, 'Unexpected timestep buffer size')
 
    expectedProbePath = trim(nEntrada)//wordSeparation//'movieProbe_BC_2_2_2__5_5_5'
-   pdvFileName = trim(get_last_component(expectedProbePath))//pdvExtension
+   pdvFileName = trim(get_last_component(expectedProbePath))//pvdExtension
    expectedPDVPath = join_path(expectedProbePath, pdvFileName)
 
    test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
@@ -869,7 +869,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
               expectedTotalFrequnecies, 'Unexpected frequency count')
 
    expectedProbePath = trim(nEntrada)//wordSeparation//'frequencySliceProbe_BC_2_2_2__5_5_5'
-   pdvFileName = trim(get_last_component(expectedProbePath))//pdvExtension
+   pdvFileName = trim(get_last_component(expectedProbePath))//pvdExtension
    expectedPDVPath = join_path(expectedProbePath, pdvFileName)
 
    test_err = test_err + assert_string_equal(outputs(1)%frequencySliceProbe%path, expectedProbePath, 'Unexpected path')
@@ -1151,31 +1151,4 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    call remove_folder(test_folder, ios)
 
    err = test_err
-end function
-
-integer function test_init_wire_probe() bind(c) result(err)
-   use output
-   use outputTypes
-   use mod_testOutputUtils
-   use FDETYPES_TOOLS
-   use mod_sggMethods
-   use mod_assertionTools
-   use mod_directoryUtils
-   implicit none
-
-   type(SGGFDTDINFO)              :: dummysgg
-   type(sim_control_t)            :: dummyControl
-   type(bounds_t)                 :: dummyBound
-   type(solver_output_t), pointer :: outputs(:)
-
-   type(media_matrices_t), target :: media
-   type(media_matrices_t), pointer :: mediaPtr
-
-   type(MediaData_t), allocatable, target :: simulationMaterials(:)
-   type(MediaData_t), pointer     :: simulationMaterialsPtr(:)
-
-   type(limit_t), target          :: sinpml_fullsize(6)
-   type(limit_t), pointer         :: sinpml_fullsizePtr(:)
-
-   type(Obses_t)
 end function

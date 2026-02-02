@@ -20,6 +20,8 @@ module outputTypes
    integer, parameter :: FREQUENCY_DOMAIN  =  1
    integer, parameter :: BOTH_DOMAIN       =  2
 
+
+   character(len=4), parameter :: pvdExtension = '.pvd'
    character(len=4), parameter :: datFileExtension = '.dat'
    character(len=2), parameter :: timeExtension    = 'tm'
    character(len=2), parameter :: frequencyExtension = 'fq'

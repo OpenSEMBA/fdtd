@@ -49,7 +49,7 @@ contains
       this%domain     = domain
       this%path       = get_output_path(this, outputTypeExtension, field, control%mpidir)
       
-      pdvFileName = add_extension(get_last_component(this%path), pdvExtension)
+      pdvFileName = add_extension(get_last_component(this%path), pvdExtension)
       this%pvdPath = join_path(this%path, pdvFileName)
 
       call create_folder(this%path, error)

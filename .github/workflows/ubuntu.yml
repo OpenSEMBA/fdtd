@@ -98,7 +98,7 @@ jobs:
       run: build/bin/fdtd_tests
 
     - name: Run python tests
-      if: matrix.new-output-module=='No'
+      if: matrix.new-output-module=='OFF'
       env:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
