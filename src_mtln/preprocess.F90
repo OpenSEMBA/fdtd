@@ -364,7 +364,7 @@ contains
                 ! position(1) = cable%segments(i)%x
                 ! position(2) = cable%segments(i)%y
                 ! position(3) = cable%segments(i)%z
-                if (isSegmentWithinAllocBox(cable%segments(i), alloc)) then 
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc)) then 
                     if (.not. in_layer) then 
                         in_layer = .true.
                     end if
@@ -385,7 +385,7 @@ contains
                 ! position(1) = cable%segments(i)%x
                 ! position(2) = cable%segments(i)%y
                 ! position(3) = cable%segments(i)%z
-                if (isSegmentWithinAllocBox(cable%segments(i), alloc)) then 
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc)) then 
                     if (.not. in_layer) then 
                         res(n,1) = i
                         in_layer = .true.
@@ -403,15 +403,45 @@ contains
             end if
         end function
 
-        logical function isSegmentWithinAllocBox(seg, alloc)
-            type(segment_t), intent(in) :: seg
+        logical function isSegmentWithinAllocBox(segs, i,  alloc)
+            type(segment_t), intent(in), dimension(:), allocatable :: segs
+            type(segment_t) :: prev
+            integer :: i
             type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
-            integer :: p(1:3)
-            p(1) = seg%x; p(2) = seg%y; p(3) = seg%z
-            isSegmentWithinAllocBox = ((p(1) >= alloc(3)%XI).and. (p(1) <= alloc(3)%XE).and. &
-                                       (p(2) >= alloc(3)%YI).and. (p(2) <= alloc(3)%YE).and. &
-                                       (p(3) >= alloc(3)%ZI).and. (p(3) <= alloc(3)%ZE))
+            integer :: p(1:3), or
+            p(1) = segs(i)%x; p(2) = segs(i)%y; p(3) = segs(i)%z
+            or = segs(i)%orientation
+            isSegmentWithinAllocBox = .false.
+            if (abs(or) == DIRECTION_Z_POS) then 
+                if (i == 1) then 
+                    isSegmentWithinAllocBox = (p(3) >= alloc(3)%zi) .and. (p(3) <= alloc(3)%ze)
+                else if ((i /= 1) .and. (abs(segs(i-1)%orientation) == DIRECTION_Z_POS)) then 
+                    isSegmentWithinAllocBox = (p(3) >= alloc(3)%zi) .and. (p(3) <= alloc(3)%ze)
+                else if ((i /= 1) .and. ((abs(segs(i-1)%orientation) == DIRECTION_X_POS) .or. (abs(segs(i-1)%orientation) == DIRECTION_Y_POS))) then 
+                    if ((p(3) >= alloc(3)%zi) .and. (p(3) <= alloc(3)%ze)) then 
+                        if (segs(i-1)%z > alloc(3)%ze) then 
+                            isSegmentWithinAllocBox =  .true.
+                        else if (segs(i-1)%z == alloc(3)%zi +1) then 
+                            isSegmentWithinAllocBox =  .false.
+                        else if ((segs(i-1)%z > alloc(3)%zi + 1) .and. (segs(i-1)%z <= alloc(3)%ze)) then 
+                            isSegmentWithinAllocBox =  .true.
+                        end if
+                    end if
+                end if
+            else if (abs(or) == DIRECTION_X_POS .or. abs(or) == DIRECTION_Y_POS) then 
+                isSegmentWithinAllocBox = (p(3) > alloc(3)%zi + 1) .and. (p(3) <= alloc(3)%ze)
+            end if
         end function
+        ! logical function isSegmentWithinAllocBox(seg, alloc)
+        !     type(segment_t), intent(in) :: seg
+        !     type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
+        !     integer :: p(1:3), or
+        !     p(1) = seg%x; p(2) = seg%y; p(3) = seg%z
+        !     or = seg%orientation
+        !     isSegmentWithinAllocBox = ((p(1) >= alloc(abs(or))%XI).and. (p(1) <= alloc(abs(or))%XE).and. &
+        !                                (p(2) >= alloc(abs(or))%YI).and. (p(2) <= alloc(abs(or))%YE).and. &
+        !                                (p(3) >= alloc(abs(or))%ZI).and. (p(3) <= alloc(abs(or))%ZE))
+        ! end function
 
     end function
 

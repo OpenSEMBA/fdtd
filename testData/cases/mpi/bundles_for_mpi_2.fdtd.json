@@ -11,7 +11,7 @@
     "boundary": {
         "all": {
             "type": "pml",
-            "layers": 6, 
+            "layers": 1, 
             "order": 2.0,
             "reflection": 0.0001
         }
@@ -19,19 +19,29 @@
 
 	"mesh": {
 		"grid": {
-			"numberOfCells": [10, 10, 10],
+			"numberOfCells": [15, 15, 15],
 			"steps": {"x": [0.1], "y": [0.1], "z": [0.1]}
 		},
 		"coordinates": [
-			{"id": 1, "relativePosition": [1, 5, 1] },
-			{"id": 2, "relativePosition": [1, 5, 9] },
-			{"id": 3, "relativePosition": [5, 5, 9] },
-			{"id": 4, "relativePosition": [5, 5, 1] },
-			{"id": 5, "relativePosition": [9, 5, 1] },
-			{"id": 6, "relativePosition": [9, 5, 9] }
+			{"id": 1, "relativePosition":  [8, 1, 1] },
+			{"id": 2, "relativePosition":  [8, 1, 7] },
+			{"id": 3, "relativePosition":  [8, 3, 7] },
+			{"id": 4, "relativePosition":  [8, 3, 6] },
+			{"id": 5, "relativePosition":  [8, 5, 6] },
+			{"id": 6, "relativePosition":  [8, 5, 3] },
+            {"id": 7, "relativePosition":  [8, 7, 3] },
+			{"id": 8, "relativePosition":  [8, 7, 9] },
+			{"id": 9, "relativePosition":  [8, 9, 9] },
+			{"id": 10, "relativePosition": [8, 9, 10] },
+			{"id": 11, "relativePosition": [8, 10, 10] },
+			{"id": 12, "relativePosition": [8, 10, 6] },
+            {"id": 13, "relativePosition": [8, 11, 6] },
+			{"id": 14, "relativePosition": [8, 11, 4] },
+			{"id": 15, "relativePosition": [8, 12, 4] },
+			{"id": 16, "relativePosition": [8, 12, 12] }
 		],
 		"elements": [
-			{ "id": 1, "type": "polyline", "coordinateIds": [1,2]}
+			{ "id": 1, "type": "polyline", "coordinateIds": [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]}
 		]
 	},
 
