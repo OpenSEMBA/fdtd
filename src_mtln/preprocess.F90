@@ -9,6 +9,12 @@ module preprocess_mod
     use fhash, only: fhash_tbl_t, key=>fhash_key, fhash_key_t
     implicit none
 
+    integer, parameter :: XPOS = 1
+    integer, parameter :: XNEG = -1
+    integer, parameter :: YPOS = 2
+    integer, parameter :: YNEG = -2
+    integer, parameter :: ZPOS = 3
+    integer, parameter :: ZNEG = -3
 
     type, public :: preprocess_t
         type(mtl_bundle_t), dimension(:), allocatable :: bundles
@@ -330,7 +336,7 @@ contains
         do i = 1, nb
             if (present(alloc)) then
                 bundle_in_layer = .true.
-                layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc)
+                layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
                 if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
             endif
             nl = size(cable_bundles(i)%levels)
@@ -350,8 +356,8 @@ contains
 
     contains
 
-        function findIndicesInLayer(cable, alloc) result(res)
-            type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
+        function findIndicesInLayer(cable, alloc_z) result(res)
+            integer(kind=4), dimension(2), intent(in) :: alloc_z
             class (cable_t), pointer, intent(in) :: cable
             integer (kind=4), allocatable, dimension(:,:) :: res
             integer :: n, i, direction, position(1:3)
@@ -360,11 +366,7 @@ contains
             ! precount
             n = 0
             do i = 1, size(cable%segments)
-                ! direction = cable%segments(i)%orientation
-                ! position(1) = cable%segments(i)%x
-                ! position(2) = cable%segments(i)%y
-                ! position(3) = cable%segments(i)%z
-                if (isSegmentWithinAllocBox(cable%segments, i, alloc)) then 
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z)) then 
                     if (.not. in_layer) then 
                         in_layer = .true.
                     end if
@@ -381,11 +383,7 @@ contains
             n = 1 
             in_layer = .false.
             do i = 1, size(cable%segments)
-                ! direction = cable%segments(i)%orientation
-                ! position(1) = cable%segments(i)%x
-                ! position(2) = cable%segments(i)%y
-                ! position(3) = cable%segments(i)%z
-                if (isSegmentWithinAllocBox(cable%segments, i, alloc)) then 
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z)) then 
                     if (.not. in_layer) then 
                         res(n,1) = i
                         in_layer = .true.
@@ -403,45 +401,32 @@ contains
             end if
         end function
 
-        logical function isSegmentWithinAllocBox(segs, i,  alloc)
+        logical function isSegmentWithinAllocBox(segs, i,  z)
             type(segment_t), intent(in), dimension(:), allocatable :: segs
             type(segment_t) :: prev
             integer :: i
-            type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
-            integer :: p(1:3), or
-            p(1) = segs(i)%x; p(2) = segs(i)%y; p(3) = segs(i)%z
-            or = segs(i)%orientation
+            integer(kind=4), dimension(2), intent(in) :: z
             isSegmentWithinAllocBox = .false.
-            if (abs(or) == DIRECTION_Z_POS) then 
-                if (i == 1) then 
-                    isSegmentWithinAllocBox = (p(3) >= alloc(3)%zi) .and. (p(3) <= alloc(3)%ze)
-                else if ((i /= 1) .and. (abs(segs(i-1)%orientation) == DIRECTION_Z_POS)) then 
-                    isSegmentWithinAllocBox = (p(3) >= alloc(3)%zi) .and. (p(3) <= alloc(3)%ze)
-                else if ((i /= 1) .and. ((abs(segs(i-1)%orientation) == DIRECTION_X_POS) .or. (abs(segs(i-1)%orientation) == DIRECTION_Y_POS))) then 
-                    if ((p(3) >= alloc(3)%zi) .and. (p(3) <= alloc(3)%ze)) then 
-                        if (segs(i-1)%z > alloc(3)%ze) then 
-                            isSegmentWithinAllocBox =  .true.
-                        else if (segs(i-1)%z == alloc(3)%zi +1) then 
-                            isSegmentWithinAllocBox =  .false.
-                        else if ((segs(i-1)%z > alloc(3)%zi + 1) .and. (segs(i-1)%z <= alloc(3)%ze)) then 
-                            isSegmentWithinAllocBox =  .true.
-                        end if
+            if (isOrientedAlong(segs(i), ZPOS) .or. isOrientedAlong(segs(i), ZNEG)) then
+                if ((i == 1) .or. (i==size(segs))) then 
+                    isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
+                else 
+                    if ((segs(i)%z == z(1))) then 
+                        isSegmentWithinAllocBox = (isOrientedAlong(segs(i), ZPOS) .and. isOrientedAlong(segs(i+1), ZPOS)) .or. &
+                                                  (isOrientedAlong(segs(i), ZNEG) .and. isOrientedAlong(segs(i-1), ZNEG))
+                    else
+                        isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
                     end if
-                end if
-            else if (abs(or) == DIRECTION_X_POS .or. abs(or) == DIRECTION_Y_POS) then 
-                isSegmentWithinAllocBox = (p(3) > alloc(3)%zi + 1) .and. (p(3) <= alloc(3)%ze)
+                end if                
+            else
+                isSegmentWithinAllocBox = (segs(i)%z > z(1) + 1) .and. (segs(i)%z <= z(2))
             end if
         end function
-        ! logical function isSegmentWithinAllocBox(seg, alloc)
-        !     type(segment_t), intent(in) :: seg
-        !     type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
-        !     integer :: p(1:3), or
-        !     p(1) = seg%x; p(2) = seg%y; p(3) = seg%z
-        !     or = seg%orientation
-        !     isSegmentWithinAllocBox = ((p(1) >= alloc(abs(or))%XI).and. (p(1) <= alloc(abs(or))%XE).and. &
-        !                                (p(2) >= alloc(abs(or))%YI).and. (p(2) <= alloc(abs(or))%YE).and. &
-        !                                (p(3) >= alloc(abs(or))%ZI).and. (p(3) <= alloc(abs(or))%ZE))
-        ! end function
+        logical function isOrientedAlong(seg, orientation)
+            type(segment_t), intent(in) :: seg
+            integer(kind=4) :: orientation
+            isOrientedAlong = (seg%orientation == orientation)
+        end function
 
     end function
 

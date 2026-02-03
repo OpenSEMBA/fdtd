@@ -180,7 +180,7 @@ contains
             call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
             call res%initCommunicators(alloc_z)
             res%layer_indices = layer_indices
-            res%bundle_in_layer = bundle_in_layer
+            res%bundle_in_layer = bundle_in_layer 
         else
             res%step_size =  step_size
             allocate(res%layer_indices(0,0))
@@ -350,6 +350,7 @@ contains
             if (j /= size(layer_indices,1)) then
                 this%step_size(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%step_size(n + layer_indices(j,2) - layer_indices(j,1))
                 this%segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%segments(n + layer_indices(j,2) - layer_indices(j,1))
+                this%segments(n + layer_indices(j,2) - layer_indices(j,1) + 1)%orientation = -1
                 n = n + 1
             end if
             n = n + layer_indices(j,2) - layer_indices(j,1) + 1
@@ -378,6 +379,12 @@ contains
             if (isSegmentZOriented(j) .and. &
                (isSegmentNextToLayerEnd(j,z_end) .or. isSegmentNextToLayerInit(j,z_init))) then
                 
+                if (j /= 1 .and. j/= size(this%segments) .and. isSegmentBeforeLayerEnd(j,z_end)) then
+                    if (isSegmentZPositive(j) .and. .not. isSegmentZOriented(j+1)) cycle
+                    if (isSegmentZNegative(j) .and. .not. isSegmentZOriented(j-1)) cycle
+                    
+                end if
+
                 n = size(this%mpi_comm%comms)
                 deallocate(aux_comm)
                 allocate(aux_comm(n+1))
@@ -438,7 +445,12 @@ contains
 
     logical function isSegmentZPositive(j)
         integer, intent(in) :: j
-        isSegmentZPositive = (this%segments(j)%orientation > 0)
+        isSegmentZPositive = (this%segments(j)%orientation == 3)
+    end function
+
+    logical function isSegmentZNegative(j)
+        integer, intent(in) :: j
+        isSegmentZNegative = (this%segments(j)%orientation == -3)
     end function
 
     logical function isSegmentBeforeLayerEnd(j, z_end)
@@ -473,14 +485,14 @@ contains
         integer, intent(in) :: j, z_end
         integer :: z
         z = this%segments(j)%z
-        isSegmentNextToLayerEnd = (abs(z-z_end)<= 1)
+        isSegmentNextToLayerEnd = (z==z_end) .or. (z==z_end-1)
     end function
 
     logical function isSegmentNextToLayerInit(j, z_init)
         integer, intent(in) :: j, z_init
         integer :: z
         z = this%segments(j)%z
-        isSegmentNextToLayerInit = (abs(z-z_init-1) <= 1)
+        isSegmentNextToLayerInit = (z==z_init) .or. (z==z_init+1)
     end function
 
 
