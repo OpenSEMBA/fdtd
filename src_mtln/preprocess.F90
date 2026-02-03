@@ -1364,6 +1364,7 @@ contains
                             value = d, &
                             stat=stat)
                             if (stat /= 0) network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
+                            if (.not. this%bundles(d)%bundle_in_layer) network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
                     else 
                         network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
                     end if
