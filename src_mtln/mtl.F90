@@ -379,9 +379,10 @@ contains
         z_end = alloc_z(2)
 
         do j = 1, size(this%segments)
+            if (this%segments(j)%orientation == -1) cycle
+            
             z = this%segments(j)%z
-
-            if (.not. isSegmentZOriented(j) .and. (z == z_end) .or. (z == z_init + 1)) then 
+            if (.not. isSegmentZOriented(j) .and. ((z == z_end) .or. (z == z_init + 1))) then 
 
                 n = size(this%mpi_comm%comms)
                 deallocate(aux_comm)
