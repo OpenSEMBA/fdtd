@@ -408,16 +408,18 @@ contains
             integer(kind=4), dimension(2), intent(in) :: z
             isSegmentWithinAllocBox = .false.
             if (isOrientedAlong(segs(i), ZPOS) .or. isOrientedAlong(segs(i), ZNEG)) then
-                if ((i == 1) .or. (i==size(segs))) then 
-                    isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
-                else 
-                    if ((segs(i)%z == z(1))) then 
-                        isSegmentWithinAllocBox = (isOrientedAlong(segs(i), ZPOS) .and. isOrientedAlong(segs(i+1), ZPOS)) .or. &
-                                                  (isOrientedAlong(segs(i), ZNEG) .and. isOrientedAlong(segs(i-1), ZNEG))
+                if ((segs(i)%z == z(1))) then
+                    if (i == 1) then 
+                        isSegmentWithinAllocBox = (isOrientedAlong(segs(i), ZPOS) .and. isOrientedAlong(segs(i+1), ZPOS))
+                    else if (i == size(segs)) then 
+                        isSegmentWithinAllocBox = (isOrientedAlong(segs(i), ZNEG) .and. isOrientedAlong(segs(i-1), ZNEG))
                     else
-                        isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
+                        isSegmentWithinAllocBox = (isOrientedAlong(segs(i), ZPOS) .and. isOrientedAlong(segs(i+1), ZPOS)) .or. &
+                                                (isOrientedAlong(segs(i), ZNEG) .and. isOrientedAlong(segs(i-1), ZNEG))
                     end if
-                end if                
+                else
+                    isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
+                end if
             else
                 isSegmentWithinAllocBox = (segs(i)%z > z(1) + 1) .and. (segs(i)%z <= z(2))
             end if

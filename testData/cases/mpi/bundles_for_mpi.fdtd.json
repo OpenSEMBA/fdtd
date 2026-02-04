@@ -11,7 +11,7 @@
     "boundary": {
         "all": {
             "type": "pml",
-            "layers": 6, 
+            "layers": 1, 
             "order": 2.0,
             "reflection": 0.0001
         }
