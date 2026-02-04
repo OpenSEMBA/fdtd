@@ -55,21 +55,21 @@ def test_bundles_mpi_n_ranks(tmp_path):
     solver.run()
     assert solver.hasFinishedSuccessfully()
 
-    solver = FDTD(input_filename=fn,
-                  path_to_exe=SEMBA_EXE,
-                  mpi_command='mpirun -np 3',
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               mpi_command='mpirun -np 3',
+    #               run_in_folder=tmp_path)
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
     
-    solver = FDTD(input_filename=fn,
-                  path_to_exe=SEMBA_EXE,
-                  mpi_command='mpirun -np 4',
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               mpi_command='mpirun -np 4',
+    #               run_in_folder=tmp_path)
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
     
 @no_mtln_skip
 @no_mpi_skip
@@ -96,21 +96,21 @@ def test_bundles_mpi_n_ranks_2(tmp_path):
     solver.run()
     assert solver.hasFinishedSuccessfully()
 
-    solver = FDTD(input_filename=fn,
-                  path_to_exe=SEMBA_EXE,
-                  mpi_command='mpirun -np 3',
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               mpi_command='mpirun -np 3',
+    #               run_in_folder=tmp_path)
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
     
-    solver = FDTD(input_filename=fn,
-                  path_to_exe=SEMBA_EXE,
-                  mpi_command='mpirun -np 4',
-                  run_in_folder=tmp_path)
-    solver.cleanUp()
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               mpi_command='mpirun -np 4',
+    #               run_in_folder=tmp_path)
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
     
 
 

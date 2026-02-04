@@ -406,28 +406,7 @@ contains
             type(segment_t) :: prev
             integer :: i
             integer(kind=4), dimension(2), intent(in) :: z
-            isSegmentWithinAllocBox = .false.
-            if (isOrientedAlong(segs(i), ZPOS) .or. isOrientedAlong(segs(i), ZNEG)) then
-                if ((segs(i)%z == z(1))) then
-                    if (i == 1) then 
-                        isSegmentWithinAllocBox = (isOrientedAlong(segs(i), ZPOS) .and. isOrientedAlong(segs(i+1), ZPOS))
-                    else if (i == size(segs)) then 
-                        isSegmentWithinAllocBox = (isOrientedAlong(segs(i), ZNEG) .and. isOrientedAlong(segs(i-1), ZNEG))
-                    else
-                        isSegmentWithinAllocBox = (isOrientedAlong(segs(i), ZPOS) .and. isOrientedAlong(segs(i+1), ZPOS)) .or. &
-                                                (isOrientedAlong(segs(i), ZNEG) .and. isOrientedAlong(segs(i-1), ZNEG))
-                    end if
-                else
-                    isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
-                end if
-            else
-                isSegmentWithinAllocBox = (segs(i)%z > z(1) + 1) .and. (segs(i)%z <= z(2))
-            end if
-        end function
-        logical function isOrientedAlong(seg, orientation)
-            type(segment_t), intent(in) :: seg
-            integer(kind=4) :: orientation
-            isOrientedAlong = (seg%orientation == orientation)
+            isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
         end function
 
     end function

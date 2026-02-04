@@ -14,10 +14,14 @@ module mtl_mod
     integer, parameter :: COMM_SEND = 1
     integer, parameter :: COMM_RECV = -1
     integer, parameter :: COMM_NONE = 0
+    integer, parameter :: COMM_FIELD = 1
+    integer, parameter :: COMM_V = 2
+    integer, parameter :: COMM_BOTH = 3
 
     type, public :: communicator_t
         integer :: field_index = -1, v_index = -1
         integer :: comm_task = COMM_NONE
+        integer :: comm_type = COMM_NONE
         integer :: delta_rank = 0
     end type
     type, public :: comm_t
@@ -362,7 +366,7 @@ contains
     subroutine initCommunicators(this, alloc_z)
         class(mtl_t) :: this
         integer (kind =4), dimension(2) :: alloc_z
-        integer :: j, n
+        integer :: j, n, z
         integer :: rank, ierr
         integer (kind =4) :: z_init, z_end
         type(communicator_t), dimension(:), allocatable :: aux_comm
@@ -375,21 +379,41 @@ contains
         z_end = alloc_z(2)
 
         do j = 1, size(this%segments)
-            
-            if (isSegmentZOriented(j) .and. &
-               (isSegmentNextToLayerEnd(j,z_end) .or. isSegmentNextToLayerInit(j,z_init))) then
-                
-                if (j /= 1 .and. j/= size(this%segments) .and. isSegmentBeforeLayerEnd(j,z_end)) then
-                    if (isSegmentZPositive(j) .and. .not. isSegmentZOriented(j+1)) cycle
-                    if (isSegmentZNegative(j) .and. .not. isSegmentZOriented(j-1)) cycle
-                    
-                end if
+            z = this%segments(j)%z
+
+            if (.not. isSegmentZOriented(j) .and. (z == z_end) .or. (z == z_init + 1)) then 
 
                 n = size(this%mpi_comm%comms)
                 deallocate(aux_comm)
                 allocate(aux_comm(n+1))
                 aux_comm(1:n) = this%mpi_comm%comms
+                
                 aux_comm(n+1)%field_index = j
+                aux_comm(n+1)%comm_type = COMM_FIELD
+                aux_comm(n+1)%v_index = -1
+                if (z == z_end) then 
+                    aux_comm(n+1)%delta_rank = 1
+                    aux_comm(n+1)%comm_task = COMM_RECV
+                else if (z == z_init + 1) then 
+                    aux_comm(n+1)%delta_rank = -1
+                    aux_comm(n+1)%comm_task = COMM_SEND
+                end if
+
+                deallocate(this%mpi_comm%comms)
+                allocate(this%mpi_comm%comms(n+1))
+                this%mpi_comm%comms = aux_comm
+
+
+            end if
+            if (isSegmentZOriented(j) .and. &
+               (isSegmentNextToLayerEnd(j,z_end) .or. isSegmentNextToLayerInit(j,z_init))) then
+                
+                n = size(this%mpi_comm%comms)
+                deallocate(aux_comm)
+                allocate(aux_comm(n+1))
+                aux_comm(1:n) = this%mpi_comm%comms
+                aux_comm(n+1)%field_index = j
+                aux_comm(n+1)%comm_type = COMM_BOTH
 
                 if (isSegmentNextToLayerEnd(j,z_end)) then 
                     aux_comm(n+1)%delta_rank = 1
