@@ -24,6 +24,20 @@
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
+    },
+    {
+      "name": "intel2025.1-debug",
+      "displayName": "Intel 2025.1 Debug",
+      "description": "Configure proyect for Intel oneAPI 2025.1 y OpenMP",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-dbg",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Debug",
+        "CMAKE_C_COMPILER": "/opt/intel/oneapi/compiler/2025.1/bin/icx",
+        "CMAKE_CXX_COMPILER": "/opt/intel/oneapi/compiler/2025.1/bin/icpx",
+        "CMAKE_Fortran_COMPILER": "/opt/intel/oneapi/compiler/2025.1/bin/ifx",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "YES"
+      }
     }
   ]
 }

@@ -360,6 +360,9 @@ integer function test_init_movie_probe() bind(c) result(err)
    type(SGGFDTDINFO)              :: dummysgg
    type(sim_control_t)            :: dummyControl
    type(bounds_t)                 :: dummyBound
+   type(XYZlimit_t)               :: dummySweep(6)
+   type(XYZlimit_t)               :: dummySinpmlSweep(6)
+   type(XYZlimit_t)               :: allocationRange(6)
    type(solver_output_t), pointer :: outputs(:)
 
    type(media_matrices_t), target :: media
@@ -412,11 +415,13 @@ integer function test_init_movie_probe() bind(c) result(err)
    simulationMaterialsPtr => simulationMaterials
    call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
    call sgg_set_Med(dummysgg, simulationMaterialsPtr)
-
-   call sgg_set_Sweep(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
-   call sgg_set_SINPMLSweep(dummysgg, create_xyz_limit_array(1, 1, 1, 5, 5, 5))
+   dummySweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(dummysgg, dummySweep)
+   dummySinpmlSweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
+   call sgg_set_SINPMLSweep(dummysgg, dummySinpmlSweep)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
-   call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Alloc(dummysgg, allocationRange)
 
    movieObservable = create_movie_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, movieObservable)
@@ -486,6 +491,10 @@ integer function test_update_movie_probe() bind(c) result(err)
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
 
+   type(XYZlimit_t)               :: dummySweep(6)
+   type(XYZlimit_t)               :: dummySinpmlSweep(6)
+   type(XYZlimit_t)               :: allocationRange(6)
+
    type(Obses_t)                  :: movieObservable
 
    real(kind=RKIND_tiempo), pointer :: timeArray(:)
@@ -522,10 +531,13 @@ integer function test_update_movie_probe() bind(c) result(err)
    call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
    call sgg_set_Med(dummysgg, simulationMaterialsPtr)
 
-   call sgg_set_Sweep(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
-   call sgg_set_SINPMLSweep(dummysgg, create_xyz_limit_array(1, 1, 1, 5, 5, 5))
+   dummySweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(dummysgg, dummySweep)
+   dummySinpmlSweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
+   call sgg_set_SINPMLSweep(dummysgg, dummySinpmlSweep)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
-   call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Alloc(dummysgg, allocationRange)
 
    movieObservable = create_movie_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, movieObservable)
@@ -618,6 +630,10 @@ integer function test_flush_movie_probe() bind(c) result(err)
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
 
+   type(XYZlimit_t)               :: dummySweep(6)
+   type(XYZlimit_t)               :: dummySinpmlSweep(6)
+   type(XYZlimit_t)               :: allocationRange(6)
+
    type(Obses_t)                  :: movieCurrentObservable
    type(Obses_t)                  :: movieElectricXObservable
    type(Obses_t)                  :: movieMagneticYObservable
@@ -656,10 +672,13 @@ integer function test_flush_movie_probe() bind(c) result(err)
    call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
    call sgg_set_Med(dummysgg, simulationMaterialsPtr)
 
-   call sgg_set_Sweep(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
-   call sgg_set_SINPMLSweep(dummysgg, create_xyz_limit_array(1, 1, 1, 5, 5, 5))
+   dummySweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(dummysgg, dummySweep)
+   dummySinpmlSweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
+   call sgg_set_SINPMLSweep(dummysgg, dummySinpmlSweep)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
-   call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Alloc(dummysgg, allocationRange)
 
    movieCurrentObservable = create_movie_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, movieCurrentObservable)
@@ -784,6 +803,10 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
 
+   type(XYZlimit_t)               :: dummySweep(6)
+   type(XYZlimit_t)               :: dummySinpmlSweep(6)
+   type(XYZlimit_t)               :: allocationRange(6)
+
    type(Obses_t)                  :: frequencySliceObservation
 
    real(kind=RKIND_tiempo), pointer :: timeArray(:)
@@ -822,10 +845,13 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
    call sgg_set_Med(dummysgg, simulationMaterialsPtr)
 
-   call sgg_set_Sweep(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
-   call sgg_set_SINPMLSweep(dummysgg, create_xyz_limit_array(1, 1, 1, 5, 5, 5))
+   dummySweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(dummysgg, dummySweep)
+   dummySinpmlSweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
+   call sgg_set_SINPMLSweep(dummysgg, dummySinpmlSweep)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
-   call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Alloc(dummysgg, allocationRange)
 
    frequencySliceObservation = create_frequency_slice_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, frequencySliceObservation)
@@ -906,6 +932,10 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
 
+   type(XYZlimit_t)               :: dummySweep(6)
+   type(XYZlimit_t)               :: dummySinpmlSweep(6)
+   type(XYZlimit_t)               :: allocationRange(6)
+
    type(Obses_t)                  :: frequencySliceObservation
 
    real(kind=RKIND_tiempo), pointer :: timeArray(:)
@@ -944,10 +974,13 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
    call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
    call sgg_set_Med(dummysgg, simulationMaterialsPtr)
 
-   call sgg_set_Sweep(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
-   call sgg_set_SINPMLSweep(dummysgg, create_xyz_limit_array(1, 1, 1, 5, 5, 5))
+   dummySweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(dummysgg, dummySweep)
+   dummySinpmlSweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
+   call sgg_set_SINPMLSweep(dummysgg, dummySinpmlSweep)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
-   call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Alloc(dummysgg, allocationRange)
 
    frequencySliceObservation = create_frequency_slice_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, frequencySliceObservation)
@@ -1039,6 +1072,10 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
 
+   type(XYZlimit_t)               :: dummySweep(6)
+   type(XYZlimit_t)               :: dummySinpmlSweep(6)
+   type(XYZlimit_t)               :: allocationRange(6)
+
    type(Obses_t)                  :: frequencySliceCurrentObservable
    type(Obses_t)                  :: frequencySliceElectricXObservable
    type(Obses_t)                  :: frequencySliceMagneticHObservable
@@ -1082,10 +1119,13 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
    call sgg_set_NumMedia(dummysgg, size(simulationMaterials))
    call sgg_set_Med(dummysgg, simulationMaterialsPtr)
 
-   call sgg_set_Sweep(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
-   call sgg_set_SINPMLSweep(dummysgg, create_xyz_limit_array(1, 1, 1, 5, 5, 5))
+   dummySweep = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Sweep(dummysgg, dummySweep)
+   dummySinpmlSweep = create_xyz_limit_array(1, 1, 1, 5, 5, 5)
+   call sgg_set_SINPMLSweep(dummysgg, dummySinpmlSweep)
    call sgg_set_NumPlaneWaves(dummysgg, 1)
-   call sgg_set_Alloc(dummysgg, create_xyz_limit_array(0, 0, 0, 6, 6, 6))
+   allocationRange = create_xyz_limit_array(0, 0, 0, 6, 6, 6)
+   call sgg_set_Alloc(dummysgg, allocationRange)
 
    frequencySliceCurrentObservable = create_frequency_slice_observation(2, 2, 2, 5, 5, 5, iCur)
    call sgg_add_observation(dummysgg, frequencySliceCurrentObservable)

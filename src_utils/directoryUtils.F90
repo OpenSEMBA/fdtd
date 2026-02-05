@@ -42,8 +42,11 @@ contains
       else
          p = trim(p)//"/"
       end if
-
+#ifdef GNUCompiler
       inquire (file=p, exist=exists)
+#else
+      inquire (directory=p, exist=exists)
+#endif
    end function folder_exists
 
    !------------------------------------------------------------
@@ -129,7 +132,7 @@ contains
          return
       end if
 
-#ifdef _WIN32
+#ifdef __WIN32__
       call execute_command_line("mkdir """//trim(path)//"""", exitstat=ios)
 #else
       call execute_command_line("mkdir -p "//trim(path), exitstat=ios)
@@ -148,7 +151,7 @@ contains
          return
       end if
 
-#ifdef _WIN32
+#ifdef __WIN32__
       call execute_command_line("rmdir /S /Q """//trim(path)//"""", exitstat=ios)
 #else
       call execute_command_line("rm -rf "//trim(path), exitstat=ios)
@@ -178,7 +181,7 @@ contains
          return
       end if
 
-#ifdef _WIN32
+#ifdef __WIN32__
       call execute_command_line("del /Q """//trim(path)//"""", exitstat=ios)
 #else
       call execute_command_line("rm -f "//trim(path), exitstat=ios)
@@ -208,7 +211,7 @@ contains
          return
       end if
 
-#ifdef _WIN32
+#ifdef __WIN32__
       cmd = 'dir /B "'//trim(path)//'"'
 #else
       cmd = 'ls -1 "'//trim(path)//'"'
@@ -264,7 +267,7 @@ contains
    function get_path_separator() result(sep)
       character(len=1) :: sep
 
-#ifdef _WIN32
+#ifdef __WIN32__
       sep = '\'
 #else
       sep = '/'

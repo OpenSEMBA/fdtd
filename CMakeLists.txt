@@ -32,7 +32,7 @@ option(SEMBA_FDTD_ENABLE_OUTPUT_MODULE "Use new output module" OFF)
 
 # Compilation defines.
 if (CMAKE_SYSTEM_NAME STREQUAL "Windows")
-add_compile_definitions(_WIN32)
+add_compile_definitions(__WIN32__)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 add_compile_definitions(__APPLE__)
 elseif (CMAKE_SYSTEM_NAME STREQUAL "Linux")
@@ -57,6 +57,14 @@ add_definitions(
 	-DCompileWithInt2 
 	-DCompileWithOpenMP
 )
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES "GNU")
+	add_definitions(-DGNUCompiler)
+endif()
+if(CMAKE_Fortran_COMPILER_ID MATCHES "IntelLLVM")
+	add_definitions(-DIFXCompiler)
+endif()
+
 
 include("${CMAKE_CURRENT_SOURCE_DIR}/set_precompiled_libraries.cmake")
 
