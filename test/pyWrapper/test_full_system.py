@@ -46,6 +46,78 @@ def test_shieldedPair(tmp_path):
 @no_mpi_skip
 @pytest.mark.mtln
 @pytest.mark.mpi
+def test_bundles_mpi_n_ranks(tmp_path):
+    fn = CASES_FOLDER + 'mpi/bundles_for_mpi.fdtd.json'
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  mpi_command='mpirun -np 2',
+                  run_in_folder=tmp_path)
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               mpi_command='mpirun -np 3',
+    #               run_in_folder=tmp_path)
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
+    
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               mpi_command='mpirun -np 4',
+    #               run_in_folder=tmp_path)
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
+    
+@no_mtln_skip
+@no_mpi_skip
+@pytest.mark.mtln
+@pytest.mark.mpi
+def test_bundles_mpi_n_ranks_2(tmp_path):
+#             (9,10)(10,10)                       
+#                        |  (12,12)
+#           (7,9)   _    |
+#(1,7)(3,7)    _ _ | |   |
+#  _ _        | (9,9)|   |
+# |   | (5,6) |      |   |
+# |   |_ _    |      |_  |
+# | (3,6) |   | (10,6) |_|
+# |       |_ _|    (11,6)(11,4)(12,4)                         
+# |    (5,3)(7,3)                
+# |    
+# (1,1)    
+    fn = CASES_FOLDER + 'mpi/bundles_for_mpi_2.fdtd.json'
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  mpi_command='mpirun -np 2',
+                  run_in_folder=tmp_path)
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               mpi_command='mpirun -np 3',
+    #               run_in_folder=tmp_path)
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
+    
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               mpi_command='mpirun -np 4',
+    #               run_in_folder=tmp_path)
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
+    
+
+
+@no_mtln_skip
+@no_mpi_skip
+@pytest.mark.mtln
+@pytest.mark.mpi
 def test_shieldedPair_mpi(tmp_path):
     fn = CASES_FOLDER + 'shieldedPair/shieldedPair.fdtd.json'
     solver = FDTD(input_filename=fn,
