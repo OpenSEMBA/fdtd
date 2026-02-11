@@ -1,0 +1,106 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 1e-11,
+        "numberOfSteps": 40000,
+        "mtlnProblem" : true
+    },
+    "boundary": {
+        "all": {
+            "type": "mur"
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                25,
+                25,
+                10
+            ],
+            "steps": {
+                "x": [
+                    0.02
+                ],
+                "y": [
+                    0.02
+                ],
+                "z": [
+                    0.02
+                ]
+            }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition":[2.0,12.0,5.0]},
+            {"id": 2, "relativePosition":[22.0,12.0,5.0]},
+            {"id": 3, "relativePosition":[2.0,12.0,5.0]},
+            {"id": 4, "relativePosition":[22.0,12.0,5.0]}
+        ],
+        "elements": [
+            {"id": 1, "type":"polyline", "coordinateIds":[1,2]},
+            {"id": 2, "type":"polyline", "coordinateIds":[3,4]},
+            {"id": 3, "type": "node", "coordinateIds": [2]},
+            {"id": 4, "type": "node", "coordinateIds": [1]}
+        ]
+    },
+    "materials": [
+        {
+            "name": "wire_pair",
+            "id": 1,
+            "type": "unshieldedMultiwire",
+            "inductancePerMeter": [[1.253134134130095e-06, 8.425995727657928e-07],
+                                   [8.425995727657928e-07,1.253129226640305e-06]],
+            "capacitancePerMeter": [[3.035051223217524e-11,-2.448125617728819e-11],
+                                    [-2.448125617728819e-11,3.035064241994616e-11]],
+            "resistancePerMeter": [0.0,0.0],
+            "conductancePerMeter": [0.0,0.0]
+        },
+        {
+            "name": "source_terminations",
+            "id": 2,
+            "type": "terminal",
+            "terminations": [
+                {"type": "series", "resistance": 50.0},
+                {"type": "series", "resistance": 50.0}
+            ]
+        },
+        {
+            "name": "load_terminations",
+            "id": 3,
+            "type": "terminal",
+            "terminations": [
+                {"type": "circuit", "file": "1_5KE.lib", "name": "KE6V8A"},
+                {"type": "series", "resistance": 50.0}
+            ]
+        }
+    ],
+    "materialAssociations": [
+        {
+            "name": "Cable_pair",
+            "type": "cable",
+            "elementIds": [1,2],
+            "materialId": 1,
+            "initialTerminalId": 3,
+            "endTerminalId": 2
+        }
+    ],
+    "sources": [
+        {
+            "name": "Generator",
+            "type": "generator",
+            "magnitudeFile": "waveform_a.exc",
+            "elementIds": [
+                3
+            ],
+            "field": "voltage"
+        }
+    ],
+	"probes": [
+		{
+			"name": "crosstalk",
+			"type": "wire",
+            "field" : "voltage",
+			"elementIds": [4],
+            "domain": { "type": "time" }
+		}
+	]
+}

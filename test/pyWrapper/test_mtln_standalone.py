@@ -161,6 +161,21 @@ def test_spice_opamp_saturation(tmp_path):
     assert np.allclose(p_expected.data.to_numpy()[
                        :-5, :], p_solved.data.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)
 
+@no_mtln_skip
+@pytest.mark.mtln
+@pytest.mark.codemodel
+def test_tvs_diode(tmp_path):
+    fn = CASES_FOLDER + 'tvs_diode/tvs_diode.fdtd.json'
+    # setNgspice(tmp_path)
+
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.run()
+    probe = Probe(solver.getSolvedProbeFilenames("crosstalk")[0])
+
+    assert solver.hasFinishedSuccessfully() 
+
 
 @no_mtln_skip
 @pytest.mark.mtln
