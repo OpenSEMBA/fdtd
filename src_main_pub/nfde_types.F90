@@ -64,7 +64,9 @@ MODULE NFDETypes
    INTEGER (KIND=4), PARAMETER :: diodo = 23
    INTEGER (KIND=4), PARAMETER :: Dielectric = 24
    INTEGER (KIND=4), PARAMETER :: PMLbody = 25
-
+   ! conformal
+   INTEGER (KIND=4), PARAMETER :: isVolume = 1
+   INTEGER (KIND=4), PARAMETER :: isSurface = 2
    !------------------------------------------------------------------------------
    ! TYPES
    !------------------------------------------------------------------------------
@@ -122,39 +124,65 @@ MODULE NFDETypes
    ! Identifies conformal PEC "media"
    !------------------------------------------------------------------------------
 
-   type, public :: ConformalPECElements
+   type, public :: ConformalPECElement
       type(triangle_t), dimension(:), allocatable :: triangles
       type(interval_t), dimension(:), allocatable :: intervals
       character(len=bufsize) :: tag
    end type 
 
    type, public :: ConformalPECRegions
-      type(ConformalPECElements), dimension(:), pointer :: volumes => null()
-      type(ConformalPECElements), dimension(:), pointer :: surfaces => null()
+      type(ConformalPECElement), dimension(:), pointer :: volumes => null()
+      type(ConformalPECElement), dimension(:), pointer :: surfaces => null()
    end type
 
+   type :: conformal_field_t
+      real(kind=rkind), pointer :: p => null()
+      real(kind=rkind), allocatable :: owned
+   end type
+
+   type :: conformal_edge_fields_t
+      real(kind=rkind), pointer :: E => null()
+      real(kind=rkind), pointer :: H1 => null()
+      real(kind=rkind), pointer :: H2 => null()
+      real(kind=rkind), pointer :: H3 => null()
+      real(kind=rkind), pointer :: H4 => null()
+   end type
+
+   type :: conformal_face_fields_t
+      real(kind=rkind), pointer :: H => null()
+      type(conformal_field_t) :: E1
+      ! real(kind=rkind), pointer :: E1 => null()
+      real(kind=rkind), pointer :: E2 => null()
+      real(kind=rkind), pointer :: E3 => null()
+      real(kind=rkind), pointer :: E4 => null()
+   end type
+
+   ! region II not pointers?
 
    type, public :: edge_t 
       integer (kind=4), dimension(3) :: cell
       integer(kind=4) :: direction = -1
       real (kind=rkind) :: ratio = -1
       real (kind=rkind), dimension(2) :: material_coords
+      type(conformal_edge_fields_t) :: region_I_fields, region_II_fields
    end type 
    type, public :: face_t 
       integer (kind=4), dimension(3) :: cell
       integer(kind=4) :: direction = -1
       real (kind=rkind) :: ratio = -1
+      type(conformal_face_fields_t) :: region_I_fields, region_II_fields
    end type 
 
-   type, public :: conformal_edge_media_t
-      type(edge_t), dimension(:), allocatable :: edges
+   type :: conformal_feature_t
       real(kind=rkind) :: ratio
       integer (kind=4) :: size
    end type
-   type, public :: conformal_face_media_t
+
+   type, extends(conformal_feature_t) :: conformal_edge_media_t
+      type(edge_t), dimension(:), allocatable :: edges
+   end type
+   type, extends(conformal_feature_t) :: conformal_face_media_t
       type(face_t), dimension(:), allocatable :: faces
-      real(kind=rkind) :: ratio
-      integer (kind=4) :: size
    end type
 
    TYPE, PUBLIC :: ConformalMedia_t
