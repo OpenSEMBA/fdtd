@@ -11,7 +11,7 @@ def test_paul_8_6_square(tmp_path):
     solver.run()
     
     p_expected = Probe(
-        OUTPUTS_FOLDER+'paul_8_6_square.fdtd_start_voltage_bundle_wire_V_5_5_1.dat')
+        OUTPUTS_FOLDER+'paul_8_6_square.fdtd_start_voltage_wire_V_5_5_1.dat')
 
     probe_voltage = solver.getSolvedProbeFilenames("start_voltage")[0]
     probe_current = solver.getSolvedProbeFilenames("end_current")[0]
@@ -33,7 +33,7 @@ def test_paul_8_6_triangle(tmp_path):
     solver.run()
     
     p_expected = Probe(
-        OUTPUTS_FOLDER+'paul_8_6_triangle.fdtd_start_voltage_bundle_wire_V_5_5_1.dat')
+        OUTPUTS_FOLDER+'paul_8_6_triangle.fdtd_start_voltage_wire_V_5_5_1.dat')
 
     probe_voltage = solver.getSolvedProbeFilenames("start_voltage")[0]
     probe_current = solver.getSolvedProbeFilenames("end_current")[0]
@@ -53,12 +53,12 @@ def test_paul_9_6(tmp_path):
                   run_in_folder=tmp_path)
     solver.run()
     
-    p_expected = [Probe(OUTPUTS_FOLDER+'paul_9_6.fdtd_start_voltage_bundle_two_wires_V_5_5_1.dat'),
-                  Probe(OUTPUTS_FOLDER+'paul_9_6.fdtd_end_voltage_bundle_two_wires_V_5_5_795.dat')]
+    p_expected = [Probe(OUTPUTS_FOLDER+'paul_9_6.fdtd_start_voltage_two_wires_V_5_5_1.dat'),
+                  Probe(OUTPUTS_FOLDER+'paul_9_6.fdtd_end_voltage_two_wires_V_5_5_795.dat')]
 
     probe_voltage_left = solver.getSolvedProbeFilenames(
-        "start_voltage_bundle")[0]
-    probe_voltage_right = solver.getSolvedProbeFilenames("end_voltage_bundle")[
+        "start_voltage")[0]
+    probe_voltage_right = solver.getSolvedProbeFilenames("end_voltage")[
         0]
     probe_files = [probe_voltage_left, probe_voltage_right]
 
@@ -80,9 +80,9 @@ def test_spice_multilines_opamp(tmp_path):
     solver.run()
     
     p_expected = [
-        Probe(OUTPUTS_FOLDER+'multilines_opamp.fdtd_line_end_bundle_s2_V_5_5_102.dat')]
+        Probe(OUTPUTS_FOLDER+'multilines_opamp.fdtd_line_end_s2_V_5_5_102.dat')]
 
-    probe_files = [solver.getSolvedProbeFilenames("line_end_bundle")[0]]
+    probe_files = [solver.getSolvedProbeFilenames("line_end")[0]]
 
     p_solved = [Probe(probe_files[0]), Probe(probe_files[0])]
 
@@ -100,13 +100,13 @@ def test_spice_connectors_diode(tmp_path):
                   run_in_folder=tmp_path)
     solver.run()
     
-    p_expected = [Probe(OUTPUTS_FOLDER+'spice_connectors.fdtd_start_voltage_bundle_wire_V_10_10_8.dat'),
-                  Probe(OUTPUTS_FOLDER+'spice_connectors.fdtd_end_voltage_bundle_wire_V_10_10_12.dat')]
+    p_expected = [Probe(OUTPUTS_FOLDER+'spice_connectors.fdtd_start_voltage_wire_V_10_10_8.dat'),
+                  Probe(OUTPUTS_FOLDER+'spice_connectors.fdtd_end_voltage_wire_V_10_10_12.dat')]
 
     probe_voltage_left = solver.getSolvedProbeFilenames(
-        "start_voltage_bundle_wire")[0]
+        "start_voltage_wire")[0]
     probe_voltage_right = solver.getSolvedProbeFilenames(
-        "end_voltage_bundle_wire")[0]
+        "end_voltage_wire")[0]
     probe_files = [probe_voltage_left, probe_voltage_right]
 
     p_solved = [Probe(probe_files[0]), Probe(probe_files[1])]
@@ -126,10 +126,10 @@ def test_line_multiline_junction(tmp_path):
     
     solver.run()
     
-    p_expected = [Probe(OUTPUTS_FOLDER+'line_multiline_junction.fdtd_s4_end_bundle_s4_V_5_5_159.dat'),
+    p_expected = [Probe(OUTPUTS_FOLDER+'line_multiline_junction.fdtd_s4_end_s4_V_5_5_159.dat'),
                   Probe(
-                      OUTPUTS_FOLDER+'line_multiline_junction.fdtd_s5_end_bundle_s5_V_5_5_159.dat'),
-                  Probe(OUTPUTS_FOLDER+'line_multiline_junction.fdtd_s2_start_bundle_s2_V_5_5_2.dat')]
+                      OUTPUTS_FOLDER+'line_multiline_junction.fdtd_s5_end_s5_V_5_5_159.dat'),
+                  Probe(OUTPUTS_FOLDER+'line_multiline_junction.fdtd_s2_start_s2_V_5_5_2.dat')]
 
     probe_s2 = solver.getSolvedProbeFilenames("s2_start")[0]
     probe_s4 = solver.getSolvedProbeFilenames("s4_end")[0]
@@ -154,9 +154,9 @@ def test_spice_opamp_saturation(tmp_path):
     solver.run()
     
     p_expected = Probe(
-        OUTPUTS_FOLDER+'opamp_saturation.fdtd_opamp_voltage_bundle_wire1_V_10_10_7.dat')
+        OUTPUTS_FOLDER+'opamp_saturation.fdtd_opamp_voltage_wire1_V_10_10_7.dat')
     p_solved = Probe(solver.getSolvedProbeFilenames(
-        "opamp_voltage_bundle_wire1")[0])
+        "opamp_voltage_wire1")[0])
 
     assert np.allclose(p_expected.data.to_numpy()[
                        :-5, :], p_solved.data.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)
@@ -173,7 +173,7 @@ def test_spice_zener(tmp_path):
     solver.run()
     
     p_expected = Probe(
-        OUTPUTS_FOLDER+'zener.fdtd_end_voltage_bundle_wire_V_10_10_12.dat')
+        OUTPUTS_FOLDER+'zener.fdtd_end_voltage_wire_V_10_10_12.dat')
     p_solved = Probe(solver.getSolvedProbeFilenames(
         "end_voltage_")[0])
 

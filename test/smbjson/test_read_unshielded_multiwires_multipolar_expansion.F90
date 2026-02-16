@@ -83,7 +83,7 @@ contains
       ex%plnSrc%nC_max = 1
 
       ! ex mtln type
-      ex%mtln%has_multiwires = .true.
+      ! ex%mtln%has_multiwires = .true.
       ex%mtln%time_step = 3e-11
       ex%mtln%number_of_steps = 1100
       deallocate(ex%mtln%cables)

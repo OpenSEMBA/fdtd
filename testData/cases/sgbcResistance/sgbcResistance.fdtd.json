@@ -70769,18 +70769,7 @@
     ],
     "probes": [
         {
-            "name": "Wire probe",
-            "type": "wire",
-            "field": "current",
-            "elementIds": [
-                3
-            ],
-            "domain": {
-                "type": "time"
-            }
-        },
-        {
-            "name": "Bulk probe",
+            "name": "Bulk_probe",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [

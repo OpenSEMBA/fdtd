@@ -4034,9 +4034,13 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 #endif
 
       mtln_solver => GetSolverPtr()
+      if (.not. allocated(mtln_solver%bundles)) return
       unit = 2000
       do i = 1, size(mtln_solver%bundles)
         do j = 1, size(mtln_solver%bundles(i)%probes)
+#ifdef CompileWithMPI
+          if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
+#endif          
           path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
           open (unit=unit, file=trim(path))
           write (*, *) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)
@@ -4047,7 +4051,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
             buffer = buffer//" "//"conductor_"//trim(adjustl(temp))
           end do
           write (unit, *) trim(buffer)
-          do k = 1, size(mtln_solver%bundles(i)%probes(j)%t)
+          do k = 1, mtln_solver%number_of_steps + 1
             buffer = ""
             write (temp, *) mtln_solver%bundles(i)%probes(j)%t(k)
             buffer = buffer//trim(temp)

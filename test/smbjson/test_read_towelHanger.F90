@@ -194,7 +194,7 @@ contains
       ! expected%tWires%n_tw_max = 1
 
       ! expected mtln bundles
-      expected%mtln%has_multiwires = .true.
+      ! expected%mtln%has_multiwires = .true.
       expected%mtln%time_step = 1e-12
       expected%mtln%number_of_steps = 2000
       deallocate(expected%mtln%cables)
