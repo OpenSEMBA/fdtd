@@ -1857,38 +1857,11 @@ contains
                    endif
                 end do
 #ifdef CompileWithMPI
-                l_aux=this%perform%flushVTK
-                call MPI_AllReduce( l_aux, this%perform%flushVTK, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-                !
-                l_aux=this%perform%flushXdmf
-                call MPI_AllReduce( l_aux, this%perform%flushXdmf, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-                !
-                l_aux=this%perform%flushDATA
-                call MPI_AllReduce( l_aux, this%perform%flushDATA, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-                !
-                l_aux=this%perform%flushFIELDS
-                call MPI_AllReduce( l_aux, this%perform%flushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
-                !
-                l_aux=this%perform%postprocess
-                call MPI_AllReduce( l_aux, this%perform%postprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+                call syncroniceFlushFlags(this%perform, ierr)
 #endif
 !!!!!!!!!!!!
                 if (this%perform%flushFIELDS) then
-                   write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nentradaroot)),separador
-                   call print11(this%control%layoutnumber,dubuf)
-                   write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
-                   call print11(this%control%layoutnumber,dubuf)
-                   call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
-                   Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
-#ifdef CompileWithMPI
-                   call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
-                   write(dubuf,*) SEPARADOR//separador//separador
-                   call print11(this%control%layoutnumber,dubuf)
-                   write(dubuf,*) 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n
-                   call print11(this%control%layoutnumber,dubuf)
-                   write(dubuf,*) SEPARADOR//separador//separador
-                   call print11(this%control%layoutnumber,dubuf)
+                  call performFlushField()
                 endif
                 if (this%perform%isFlush()) then
                       !
@@ -2051,6 +2024,39 @@ contains
       end do ciclo_temporal ! End of the time-stepping loop
 
 contains
+      subroutine syncroniceFlushFlags(performFlags, integerError)
+         type(perform_t), intent(inout) :: performFlags
+         integer, intent(inout) :: integerError
+         logical :: logicalAux
+         logicalAux=performFlags%flushVTK
+         call MPI_AllReduce( logicalAux, performFlags%flushVTK, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         logicalAux=performFlags%flushXdmf
+         call MPI_AllReduce( logicalAux, performFlags%flushXdmf, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         logicalAux=performFlags%flushDATA
+         call MPI_AllReduce( logicalAux, performFlags%flushDATA, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         logicalAux=performFlags%flushFIELDS
+         call MPI_AllReduce( logicalAux, performFlags%flushFIELDS, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+         logicalAux=performFlags%postprocess
+         call MPI_AllReduce( logicalAux, performFlags%postprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
+      end subroutine syncroniceFlushFlags
+
+      subroutine performFlushField()
+         write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nentradaroot)),SEPARADOR
+         call print11(this%control%layoutnumber,dubuf)
+         write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
+         call print11(this%control%layoutnumber,dubuf)
+         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
+         Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) SEPARADOR//SEPARADOR//SEPARADOR
+         call print11(this%control%layoutnumber,dubuf)
+         write(dubuf,*) 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n
+         call print11(this%control%layoutnumber,dubuf)
+         write(dubuf,*) SEPARADOR//SEPARADOR//SEPARADOR
+         call print11(this%control%layoutnumber,dubuf)
+      end subroutine performFlushField
       subroutine updateAndFlush()
          integer(kind=4) :: mindum
          IF (this%thereAre%Observation) then
