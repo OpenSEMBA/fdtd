@@ -293,6 +293,7 @@ if(SEMBA_FDTD_MAIN_LIB)
 	)
 	target_link_libraries(semba-main
 		semba-outputs
+		fdtd-utils
 		${OUTPUT_LIBRARIES}
 		${SMBJSON_LIBRARIES} 
 		${MTLN_LIBRARIES})

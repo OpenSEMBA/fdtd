@@ -15,7 +15,7 @@
 !________________________________________________________________________________________
 
 module Solver_mod
-
+   use mod_logUtils
    use fdetypes
    use report
    use PostProcessing
@@ -1871,9 +1871,7 @@ contains
                       else
                           write(dubuf,'(a,i9)')  ' INIT OBSERVATION DATA FLUSHING n= ',this%n
                       endif
-                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                      call print11(this%control%layoutnumber,dubuf)
-                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                      call printMessageWithSeparator(this%control%layoutnumber,dubuf)
 #ifdef CompileWithNewOutputModule
                       if (this%thereAre%Observation) call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, flushFF)
 #else
@@ -1887,15 +1885,11 @@ contains
                       else
                           write(dubuf,'(a,i9)')  ' Done OBSERVATION DATA FLUSHED n= ',this%n
                       endif
-                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                      call print11(this%control%layoutnumber,dubuf)
-                      call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                      call printMessageWithSeparator(this%control%layoutnumber,dubuf)
     !
                       if (this%perform%postprocess) then
                          write(dubuf,'(a,i9)') 'Postprocessing frequency domain probes, if any, at n= ',this%n
-                         call print11(this%control%layoutnumber,dubuf)
-                         write(dubuf,*) SEPARADOR//separador//separador
-                         call print11(this%control%layoutnumber,dubuf)
+                         call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                          somethingdone=.false.
                          at=this%n*this%sgg%dt
                          if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%size,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
@@ -1906,22 +1900,16 @@ contains
 #endif
                          if (somethingdone) then
                            write(dubuf,*) 'End Postprocessing frequency domain probes.'
-                           call print11(this%control%layoutnumber,dubuf)
-                           write(dubuf,*) SEPARADOR//separador//separador
-                           call print11(this%control%layoutnumber,dubuf)
+                           call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                          else
                            write(dubuf,*) 'No frequency domain probes snapshots found to be postrocessed'
-                           call print11(this%control%layoutnumber,dubuf)
-                           write(dubuf,*) SEPARADOR//separador//separador
-                           call print11(this%control%layoutnumber,dubuf)
+                           call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                          endif
                       endif
                   !!       
                       if (this%perform%flushvtk) then   
                          write(dubuf,'(a,i9)')  ' Post-processing .vtk files n= ',this%n
-                         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                         call print11(this%control%layoutnumber,dubuf)
-                         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                         call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                          somethingdone=.false.
                          if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
 #ifdef CompileWithMPI
@@ -1931,21 +1919,15 @@ contains
 #endif
                           if (somethingdone) then
                                 write(dubuf,*) 'End flushing .vtk snapshots'
-                                call print11(this%control%layoutnumber,dubuf)
-                                write(dubuf,*) SEPARADOR//separador//separador
-                                call print11(this%control%layoutnumber,dubuf)
+                                call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                           else
                                 write(dubuf,*) 'No .vtk snapshots found to be flushed'
-                                call print11(this%control%layoutnumber,dubuf)
-                                write(dubuf,*) SEPARADOR//separador//separador
-                                call print11(this%control%layoutnumber,dubuf)
+                                call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                           endif
                       endif  
                          if (this%perform%flushXdmf) then
                             write(dubuf,'(a,i9)')  ' Post-processing .xdmf files n= ',this%n
-                            call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                            call print11(this%control%layoutnumber,dubuf)
-                            call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                            call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                             somethingdone=.false.
 
                             if (this%thereAre%Observation) call createxdmfOnTheFly(this%sgg,this%control%layoutnumber,this%control%size,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)                          
@@ -1958,14 +1940,10 @@ contains
 #endif
                             if (somethingdone) then
                                       write(dubuf,*) 'End flushing .xdmf snapshots'
-                                      call print11(this%control%layoutnumber,dubuf)
-                                      write(dubuf,*) SEPARADOR//separador//separador
-                                      call print11(this%control%layoutnumber,dubuf)
+                                      call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                              else
                                       write(dubuf,*) 'No .xdmf snapshots found to be flushed'
-                                      call print11(this%control%layoutnumber,dubuf)
-                                      write(dubuf,*) SEPARADOR//separador//separador
-                                      call print11(this%control%layoutnumber,dubuf)
+                                      call printMessageWithEndingSeparator(this%control%layoutnumber,dubuf)
                             endif
                       endif
 
@@ -1974,14 +1952,10 @@ contains
 #endif
                  endif !del if (this%performflushDATA.or....
     !
-
-
                   if (this%control%singlefilewrite.and.this%perform%Unpack) call singleUnpack()
                   if ((this%control%singlefilewrite.and.this%perform%Unpack).or.this%perform%isFlush()) then
                      write(dubuf,'(a,i9)')  ' Continuing simulation at n= ',this%n
-                     call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-                     call print11(this%control%layoutnumber,dubuf)
-                     call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+                     call printMessageWithSeparator(this%control%layoutnumber,dubuf)
                   endif
 
                 endif !!!del if (.not.this%parar)
@@ -2024,6 +1998,7 @@ contains
       end do ciclo_temporal ! End of the time-stepping loop
 
 contains
+#ifdef CompileWithMPI
       subroutine syncroniceFlushFlags(performFlags, integerError)
          type(perform_t), intent(inout) :: performFlags
          integer, intent(inout) :: integerError
@@ -2039,23 +2014,22 @@ contains
          logicalAux=performFlags%postprocess
          call MPI_AllReduce( logicalAux, performFlags%postprocess, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, integerError)
       end subroutine syncroniceFlushFlags
+#endif
 
       subroutine performFlushField()
          write(dubuf,*)  SEPARADOR,trim(adjustl(this%control%nentradaroot)),SEPARADOR
-         call print11(this%control%layoutnumber,dubuf)
+         call printMessage(this%control%layoutnumber,dubuf)
          write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
-         call print11(this%control%layoutnumber,dubuf)
+         call printMessage(this%control%layoutnumber,dubuf)
+
          call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-         write(dubuf,*) SEPARADOR//SEPARADOR//SEPARADOR
-         call print11(this%control%layoutnumber,dubuf)
          write(dubuf,*) 'DONE FLUSHING OF RESTARTING FIELDS n=',this%n
-         call print11(this%control%layoutnumber,dubuf)
-         write(dubuf,*) SEPARADOR//SEPARADOR//SEPARADOR
-         call print11(this%control%layoutnumber,dubuf)
+         call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+
       end subroutine performFlushField
       subroutine updateAndFlush()
          integer(kind=4) :: mindum
@@ -2085,10 +2059,9 @@ contains
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
-         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
          write(dubuf,'(a,i9)')  ' Unpacking .bin files and prostprocessing them at n= ',this%n
-         call print11(this%control%layoutnumber,dubuf)
-         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+         call printMessageWithSeparator(this%control%layoutnumber, dubuf)
+
          if (this%thereAre%Observation) call unpacksinglefiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%control%resume) !dump the remaining to disk
          somethingdone=.false.
          if (this%control%singlefilewrite.and.this%perform%Unpack) then
@@ -2101,9 +2074,7 @@ contains
          somethingdone=newsomethingdone
 #endif
          write(dubuf,'(a,i9)')  ' Done Unpacking .bin files and prostprocessing them at n= ',this%n
-         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-         call print11(this%control%layoutnumber,dubuf)
-         call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
+         call printMessageWithSeparator(this%control%layoutnumber, dubuf)
 
       end subroutine singleUnpack
 
