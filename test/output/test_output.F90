@@ -1,4 +1,8 @@
 integer function test_init_point_probe() bind(c) result(err)
+! This test initializes a single point probe at coordinates (4,4,4).
+! It verifies that the probe is correctly registered in the simulation outputs,
+! that the output ID matches POINT_PROBE_ID, and that the output paths for
+! both the probe and its time data file are correctly set and exist.
    use FDETYPES
    use FDETYPES_TOOLS
    use output
@@ -79,6 +83,10 @@ integer function test_init_point_probe() bind(c) result(err)
 end function
 
 integer function test_update_point_probe() bind(c) result(err)
+! This test updates the values recorded by a single point probe at (4,4,4)
+! over two timesteps. It verifies that the probe correctly stores the time
+! steps and associated field values, ensuring proper temporal tracking of
+! measured quantities.
    use FDETYPES
    use FDETYPES_TOOLS
    use output
@@ -176,6 +184,9 @@ integer function test_update_point_probe() bind(c) result(err)
 end function
 
 integer function test_flush_point_probe() bind(c) result(err)
+! This test validates the flush operation for a point probe. It ensures
+! that time and frequency data are properly written to files, and that
+! internal arrays are cleared/reset after flushing, preserving data integrity.
    use output
    use outputTypes
    use mod_pointProbeOutput
@@ -252,6 +263,9 @@ integer function test_flush_point_probe() bind(c) result(err)
 end function
 
 integer function test_multiple_flush_point_probe() bind(c) result(err)
+! This test verifies that multiple consecutive flushes of a point probe
+! correctly append or overwrite data files without losing previous data.
+! It ensures consistency of both time and frequency outputs across multiple flushes.
    use output
    use outputTypes
    use mod_pointProbeOutput
@@ -348,6 +362,10 @@ integer function test_multiple_flush_point_probe() bind(c) result(err)
 end function
 
 integer function test_init_movie_probe() bind(c) result(err)
+! This test initializes a movie probe over a 3D region from (2,2,2) to (5,5,5).
+! It checks that the probe is correctly allocated, that the number of measurement
+! points and buffer sizes are correct, and that the output folder and PVD file
+! for the movie are properly created.
    use output
    use outputTypes
    use mod_testOutputUtils
@@ -468,6 +486,9 @@ integer function test_init_movie_probe() bind(c) result(err)
 end function
 
 integer function test_update_movie_probe() bind(c) result(err)
+! This test updates a movie probe with field values at a single timestep.
+! It verifies that the probe correctly stores the measured values in the x, y,
+! and z components for all points, and that the timestep buffer is properly populated.
    use output
    use outputTypes
    use mod_testOutputUtils
@@ -607,6 +628,9 @@ integer function test_update_movie_probe() bind(c) result(err)
 end function
 
 integer function test_flush_movie_probe() bind(c) result(err)
+! This test validates flushing movie probes to disk. It ensures that
+! VTU files for each timestep and the PVD file are created, confirming that
+! the temporal sequence of the movie probe is correctly serialized and saved.
    use output
    use outputTypes
    use mod_testOutputUtils
@@ -780,6 +804,9 @@ integer function test_flush_movie_probe() bind(c) result(err)
 end function
 
 integer function test_init_frequency_slice_probe() bind(c) result(err)
+! This test initializes a frequency slice probe over a 3D region (2,2,2) to (5,5,5).
+! It verifies that the probe is correctly set up, that the expected number of measurement
+! points and frequencies are allocated, and that the output folder and PVD file exist.
    use output
    use outputTypes
    use mod_testOutputUtils
@@ -909,6 +936,10 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 end function
 
 integer function test_update_frequency_slice_probe() bind(c) result(err)
+! This test updates a frequency slice probe with field gradients.
+! It checks that no current is detected along the X-axis for H-field gradients
+! and verifies the correct relation between Y and Z values (Y = -Z), ensuring
+! correct handling of field distributions across the frequency slice.
    use output
    use outputTypes
    use mod_testOutputUtils
@@ -1049,6 +1080,10 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 end function
 
 integer function test_flush_frequency_slice_probe() bind(c) result(err)
+! This test validates flushing a frequency slice probe to disk.
+! It ensures that all data corresponding to measured points and frequencies
+! are correctly written to output files and that the PVD file for visualization
+! is properly created.
    use output
    use outputTypes
    use mod_testOutputUtils
