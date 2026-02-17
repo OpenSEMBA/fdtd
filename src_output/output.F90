@@ -9,6 +9,8 @@ module output
    use mod_movieProbeOutput
    use mod_frequencySliceProbeOutput
    use mod_farFieldOutput
+   use mtln_solver_mod
+   use Wire_bundles_mtln_mod
 
    implicit none
    private
@@ -113,6 +115,9 @@ contains
       integer(kind=SINGLE) :: requestedOutputs
       character(len=BUFSIZE) :: outputTypeExtension
 
+#ifdef CompileWithMTLN
+      logical :: thereAreMtlnObservations = .false.
+#endif
       observationsExists = .false.
       requestedOutputs = get_required_output_count(sgg)
 
@@ -136,6 +141,21 @@ contains
       !     sgg%Sweep, sgg%SINPMLSweep, sgg%Observation(ii)%P(1)%ZI, sgg%Observation(ii)%P(1)%ZE, control%layoutnumber, control%size)
       !end do
       !end do
+
+#ifdef CompileWithMTLN
+      block
+        type(mtln_t), pointer :: mtln_solver
+        integer :: i, j
+        mtln_solver => GetSolverPtr()
+        do i = 1, ubound(mtln_solver%bundles, 1)
+          if (ubound(mtln_solver%bundles(i)%probes, 1) /= 0) then
+            do j = 1, ubound(mtln_solver%bundles(i)%probes, 1)
+              if (mtln_solver%bundles(i)%probes(j)%in_layer) thereAreMtlnObservations = .true.
+            end do
+          end if
+        end do
+      end block
+#endif
 
       do ii = 1, sgg%NumberRequest
          domain = preprocess_domain(sgg%Observation(ii), sgg%tiempo, sgg%dt, control%finaltimestep)
@@ -225,6 +245,9 @@ contains
          outputCount = size(outputs)
       end if
       if (outputCount /= 0) observationsExists = .true.
+#ifdef CompileWithMTLN
+      observationsExists = observationsExists .or. thereAreMtlnObservations
+#endif
       return
    contains
       subroutine adjust_bound_range()
