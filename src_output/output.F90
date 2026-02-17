@@ -248,6 +248,7 @@ contains
 #ifdef CompileWithMTLN
       observationsExists = observationsExists .or. thereAreMtlnObservations
 #endif
+      if (observationsExists) call registerOutputFiles(control, outputCount)
       return
    contains
       subroutine adjust_bound_range()
@@ -475,5 +476,50 @@ contains
       end do
       return
    end function
+
+   subroutine registerOutputFiles(control, outputCount)
+      type(sim_control_t), intent(in) :: control
+      integer, intent(in) :: outputCount
+
+      character(LEN=BUFSIZE)  ::  whoami, whoamishort, outputRequestFile
+      integer :: iostat, i, unit
+
+      write (whoamishort, '(i5)') control%layoutnumber + 1
+      write (whoami, '(a,i5,a,i5,a)') '(', control%layoutnumber + 1, '/', control%size, ') '
+      write (outputRequestFile, *) trim(adjustl(control%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(whoamishort))//'.txt'
+
+      call create_file_with_path(outputRequestFile, iostat)
+      if (iostat /= 0) call StopOnError(control%layoutnumber, control%size, 'Error while creating new outputrequestRegister file...')
+
+      open (newunit=unit, file=trim(outputRequestFile), status='old', action='write', position='append', iostat=iostat)
+      do i=1, outputCount
+         select case (outputs(i)%outputID)
+         case (POINT_PROBE_ID)
+            if (any(outputs(i)%pointProbe%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
+               write(unit, *) trim(outputs(i)%pointProbe%filePathTime)
+            end if
+            if (any(outputs(i)%pointProbe%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
+               write(unit, *) trim(outputs(i)%pointProbe%filePathFreq)
+            end if
+         case (WIRE_CURRENT_PROBE_ID)
+            write(unit, *) trim(outputs(i)%wireCurrentProbe%filePathTime)
+         case (WIRE_CHARGE_PROBE_ID)
+            write(unit, *) trim(outputs(i)%wireChargeProbe%filePathTime)
+         case (BULK_PROBE_ID)
+            write(unit, *) trim(outputs(i)%bulkCurrentProbe%filePathTime)
+         case (MOVIE_PROBE_ID)
+            write(unit, *) trim(outputs(i)%movieProbe%filePathTime)
+         case (FREQUENCY_SLICE_PROBE_ID)
+            write(unit, *) trim(outputs(i)%frequencySliceProbe%filePathFreq)
+         case (FAR_FIELD_PROBE_ID)
+            write(unit, *) trim(outputs(i)%farFieldOutput%filePathFreq)
+         case default
+            call stoponerror(0, 0, 'Output update not implemented')
+         end select
+      end do
+
+      write(unit, *) 'END!'
+      close(unit)
+   end subroutine
 
 end module output

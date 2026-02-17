@@ -249,7 +249,6 @@ contains
       integer :: pos
 
       ios = 0
-
       ! Find last slash or backslash
       pos = index(fullpath, get_path_separator())
 
@@ -258,8 +257,7 @@ contains
          call create_folder(trim(folder), ios)
          if (ios /= 0) return
       end if
-
-      open (newunit=unit, file=trim(fullpath), status='replace', action='write', iostat=ios)
+      open (newunit=unit, file=trim(adjustl(fullpath)), status='replace', iostat=ios)
       if (ios == 0) close (unit)
 
    end subroutine create_file_with_path
