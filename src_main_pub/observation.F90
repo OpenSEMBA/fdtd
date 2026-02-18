@@ -4088,6 +4088,9 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
       unit = 2000
       do i = 1, size(mtln_solver%bundles)
         do j = 1, size(mtln_solver%bundles(i)%probes)
+#ifdef CompileWithMPI
+          if (.not. mtln_solver%bundles(i)%probes(j)%in_layer) cycle
+#endif          
           path = trim(trim(nEntradaRoot)//"_"//trim(mtln_solver%bundles(i)%probes(j)%name)//".dat")
           open (unit=unit, file=trim(path))
           write (*, *) 'name: ', trim(mtln_solver%bundles(i)%probes(j)%name)

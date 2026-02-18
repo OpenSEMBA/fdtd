@@ -1139,7 +1139,6 @@ contains
 
       subroutine initializeWires()
          real (kind=rkind_tiempo) :: dtcritico, newdtcritico
-         ! real (kind=rkind) :: dtcritico, newdtcritico
          character(len=BUFSIZE) :: dubuf, buff
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
@@ -1147,6 +1146,7 @@ contains
 #endif
 
          dtcritico=this%sgg%dt
+#ifndef CompileWithMTLN         
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
 #ifdef CompileWithMPI
@@ -1234,10 +1234,21 @@ contains
             endif
          endif
 #endif
+
+
+#else 
+! else of #ifndef CompileWithMTLN          
+#ifdef CompileWithMPI
+         call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
+         write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
+         call InitWires_mtln(this%sgg,Ex,Ey,Ez,this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles, dtcritico)
+#endif
+
+
       !!!sincroniza el dtcritico
 #ifdef CompileWithMPI
          newdtcritico = 0.0
-         ! call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
          call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_tiempo, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
@@ -1246,7 +1257,11 @@ contains
             if ((this%control%layoutnumber==0).and.this%control%verbose) call WarnErrReport(buff)
          else
             if (.not.(this%control%resume.and.this%control%permitscaling)) then !no abortasr solo advertir si permittivity scaling
+#ifdef CompileWithMTLN
+               write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, make dt < ',dtcritico
+#else
                write(buff,'(a,e10.2e3)')  'WIR_ERROR: Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs, use -stableradholland or make dt < ',dtcritico
+#endif
                if (this%control%layoutnumber==0) call WarnErrReport(buff,.true.)
             else
                write(buff,'(a,e10.2e3)')  'WIR_WARNING: Resume and Pscaling with wires. Possibly UNSTABLE dt, decrease wire radius, number of parallel WIREs: dt is over ',dtcritico
@@ -1255,15 +1270,6 @@ contains
          endif
       !!!
 !!
-#ifdef CompileWithMTLN
-#ifdef CompileWithMPI
-         call MPI_Barrier(SUBCOMM_MPI,ierr)
-#endif
-         write(dubuf,*) 'Init MTLN Wires...';  call print11(this%control%layoutnumber,dubuf)
-         call InitWires_mtln(this%sgg,Ex,Ey,Ez,Idxh,Idyh,Idzh,this%eps0, this%mu0, this%mtln_parsed,this%thereAre%MTLNbundles)
-#else
-         write(buff,'(a)') 'WIR_ERROR: Executable was not compiled with MTLN modules.'
-#endif
 
       end subroutine initializeWires
 

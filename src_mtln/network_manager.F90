@@ -83,13 +83,16 @@ contains
         character(*), dimension(:), intent(in) :: description
         real, intent(in) :: final_time, dt
         type(network_manager_t) :: res
-
+        logical :: printInput = .true.
         res%dt = dt
         res%time = 0.0
         res%networks = networks
         call res%circuit%init(copy_node_names(networks), copy_sources(networks))
         res%circuit%dt = dt
-        call res%circuit%readInput(description, .true.)
+#ifdef CompileWithRelease
+        printInput = .false.
+#endif        
+        call res%circuit%readInput(description, printInput)
         call res%circuit%setModStopTimes(dt)
 
     end function
