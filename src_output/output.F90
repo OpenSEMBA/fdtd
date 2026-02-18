@@ -9,8 +9,9 @@ module output
    use mod_movieProbeOutput
    use mod_frequencySliceProbeOutput
    use mod_farFieldOutput
-   use mtln_solver_mod
-   use Wire_bundles_mtln_mod
+   use mtln_solver_mod, only: mtln_solver_t => mtln_t
+   use Wire_bundles_mtln_mod, only: GetSolverPtr
+   
 
    implicit none
    private
@@ -35,7 +36,7 @@ module output
    private :: get_required_output_count
    !===========================
 
-   integer(kind=SINGLE), parameter :: UNDEFINED_PROBE = -1, & 
+   integer(kind=SINGLE), parameter :: UNDEFINED_PROBE = -1, &
                                       POINT_PROBE_ID = 0, &
                                       WIRE_CURRENT_PROBE_ID = 1, &
                                       WIRE_CHARGE_PROBE_ID = 2, &
@@ -144,16 +145,18 @@ contains
 
 #ifdef CompileWithMTLN
       block
-        type(mtln_t), pointer :: mtln_solver
-        integer :: i, j
-        mtln_solver => GetSolverPtr()
-        do i = 1, ubound(mtln_solver%bundles, 1)
-          if (ubound(mtln_solver%bundles(i)%probes, 1) /= 0) then
-            do j = 1, ubound(mtln_solver%bundles(i)%probes, 1)
-              if (mtln_solver%bundles(i)%probes(j)%in_layer) thereAreMtlnObservations = .true.
+         type(mtln_solver_t), pointer :: mtln_solver
+         integer :: i, j
+         mtln_solver => GetSolverPtr()
+         if (mtln_solver%number_of_bundles > 0) then
+            do i = 1, ubound(mtln_solver%bundles, 1)
+               if (ubound(mtln_solver%bundles(i)%probes, 1) /= 0) then
+                  do j = 1, ubound(mtln_solver%bundles(i)%probes, 1)
+                     if (mtln_solver%bundles(i)%probes(j)%in_layer) thereAreMtlnObservations = .true.
+                  end do
+               end if
             end do
-          end if
-        end do
+         end if
       end block
 #endif
 
@@ -174,8 +177,8 @@ contains
 
             outputRequestType = sgg%observation(ii)%P(i)%what
             select case (outputRequestType)
-            !case (mapvtk)
-            !   call create_geometry_simulation_vtk(lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, problemInfo, control)
+               !case (mapvtk)
+               !   call create_geometry_simulation_vtk(lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, problemInfo, control)
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
                outputCount = outputCount + 1
@@ -363,6 +366,7 @@ contains
    end subroutine update_outputs
 
    subroutine flush_outputs(simulationTimeArray, simulationTimeIndex, control, fields, bounds, farFieldFlushRequested)
+      implicit none
       type(fields_reference_t), target :: fields
       type(fields_reference_t), pointer :: fieldsPtr
       type(sim_control_t), intent(in) :: control
@@ -370,26 +374,26 @@ contains
       logical, intent(in) :: farFieldFlushRequested
       real(KIND=RKIND_tiempo), pointer, dimension(:), intent(in) :: simulationTimeArray
       integer, intent(in) :: simulationTimeIndex
-      integer :: i
+      integer :: outIdx
 
       fieldsPtr => fields
 
-      do i = 1, size(outputs)
-         select case (outputs(i)%outputID)
+      do outIdx = 1, size(outputs)
+         select case (outputs(outIdx)%outputID)
          case (POINT_PROBE_ID)
-            call flush_solver_output(outputs(i)%pointProbe)
+            call flush_solver_output(outputs(outIdx)%pointProbe)
          case (WIRE_CURRENT_PROBE_ID)
-            call flush_solver_output(outputs(i)%wireCurrentProbe)
+            call flush_solver_output(outputs(outIdx)%wireCurrentProbe)
          case (WIRE_CHARGE_PROBE_ID)
-            call flush_solver_output(outputs(i)%wireChargeProbe)
+            call flush_solver_output(outputs(outIdx)%wireChargeProbe)
          case (BULK_PROBE_ID)
-            call flush_solver_output(outputs(i)%bulkCurrentProbe)
+            call flush_solver_output(outputs(outIdx)%bulkCurrentProbe)
          case (MOVIE_PROBE_ID)
-            call flush_solver_output(outputs(i)%movieProbe)
+            call flush_solver_output(outputs(outIdx)%movieProbe)
          case (FREQUENCY_SLICE_PROBE_ID)
-            call flush_solver_output(outputs(i)%frequencySliceProbe)
+            call flush_solver_output(outputs(outIdx)%frequencySliceProbe)
          case (FAR_FIELD_PROBE_ID)
-            if (farFieldFlushRequested) call flush_solver_output(outputs(i)%farFieldOutput, simulationTimeArray, simulationTimeIndex, control, fieldsPtr, bounds)
+            if (farFieldFlushRequested) call flush_solver_output(outputs(outIdx)%farFieldOutput, simulationTimeArray, simulationTimeIndex, control, fieldsPtr, bounds)
          case default
          end select
       end do
@@ -452,7 +456,7 @@ contains
       write (unit, *) '<?xml version="1.0"?>'
       write (unit, *) '<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">'
       write (unit, *) '  <Collection>'
-      close(unit)
+      close (unit)
    end subroutine create_pvd
 
    subroutine close_pvd(pvdPath)
@@ -491,35 +495,35 @@ contains
       call create_file_with_path(outputRequestFile, iostat)
       if (iostat /= 0) call StopOnError(control%layoutnumber, control%size, 'Error while creating new outputrequestRegister file...')
 
-      open (newunit=unit, file=trim(outputRequestFile), status='old', action='write', position='append', iostat=iostat)
-      do i=1, outputCount
+      open (newunit=unit, file=trim(adjustl(outputRequestFile)), status='replace', action='write', position='append', iostat=iostat)
+      do i = 1, outputCount
          select case (outputs(i)%outputID)
          case (POINT_PROBE_ID)
             if (any(outputs(i)%pointProbe%domain%domainType == (/TIME_DOMAIN, BOTH_DOMAIN/))) then
-               write(unit, *) trim(outputs(i)%pointProbe%filePathTime)
+               write (unit, *) trim(adjustl(outputs(i)%pointProbe%filePathTime))
             end if
             if (any(outputs(i)%pointProbe%domain%domainType == (/FREQUENCY_DOMAIN, BOTH_DOMAIN/))) then
-               write(unit, *) trim(outputs(i)%pointProbe%filePathFreq)
+               write (unit, *) trim(adjustl(outputs(i)%pointProbe%filePathFreq))
             end if
          case (WIRE_CURRENT_PROBE_ID)
-            write(unit, *) trim(outputs(i)%wireCurrentProbe%filePathTime)
+            write (unit, *) trim(adjustl(outputs(i)%wireCurrentProbe%filePathTime))
          case (WIRE_CHARGE_PROBE_ID)
-            write(unit, *) trim(outputs(i)%wireChargeProbe%filePathTime)
+            write (unit, *) trim(adjustl(outputs(i)%wireChargeProbe%filePathTime))
          case (BULK_PROBE_ID)
-            write(unit, *) trim(outputs(i)%bulkCurrentProbe%filePathTime)
+            write (unit, *) trim(adjustl(outputs(i)%bulkCurrentProbe%filePathTime))
          case (MOVIE_PROBE_ID)
-            write(unit, *) trim(outputs(i)%movieProbe%filePathTime)
+            write (unit, *) trim(adjustl(outputs(i)%movieProbe%filePathTime))
          case (FREQUENCY_SLICE_PROBE_ID)
-            write(unit, *) trim(outputs(i)%frequencySliceProbe%filePathFreq)
+            write (unit, *) trim(adjustl(outputs(i)%frequencySliceProbe%filePathFreq))
          case (FAR_FIELD_PROBE_ID)
-            write(unit, *) trim(outputs(i)%farFieldOutput%filePathFreq)
+            write (unit, *) trim(adjustl(outputs(i)%farFieldOutput%filePathFreq))
          case default
             call stoponerror(0, 0, 'Output update not implemented')
          end select
       end do
 
-      write(unit, *) 'END!'
-      close(unit)
+      write (unit, *) 'END!'
+      close (unit)
    end subroutine
 
 end module output

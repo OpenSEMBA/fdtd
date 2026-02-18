@@ -743,13 +743,15 @@ contains
         type(mtln_solver_t), pointer :: mtln_solver
         integer :: i, j
         mtln_solver => GetSolverPtr()
-        do i = 1, ubound(mtln_solver%bundles, 1)
-          if (ubound(mtln_solver%bundles(i)%probes, 1) /= 0) then
-            do j = 1, ubound(mtln_solver%bundles(i)%probes, 1)
-              if (mtln_solver%bundles(i)%probes(j)%in_layer) ThereAreObservation = .true.
-            end do
-          end if
-        end do
+        if (mtln_solver%number_of_bundles > 0) then
+          do i = 1, ubound(mtln_solver%bundles, 1)
+            if (ubound(mtln_solver%bundles(i)%probes, 1) /= 0) then
+              do j = 1, ubound(mtln_solver%bundles(i)%probes, 1)
+                if (mtln_solver%bundles(i)%probes(j)%in_layer) ThereAreObservation = .true.
+              end do
+            end if
+          end do
+        end if
       end block
 #endif
       !
