@@ -1,0 +1,112 @@
+(ExpressProject "BUF802"
+  (ProjectVersion "19981106")
+  (SoftwareVersion "17.4-2021 S007-[02/04/22]")
+  (ProjectType "Analog or A/D Mixed Mode")
+  (Folder "Design Resources"
+    (Folder "Library"
+      (File ".\library\buf802.olb"
+        (Type "Schematic Library")))
+    (Allegro Netlist Directory "allegro")
+    (DOCKED "TRUE")
+    (DOCKING_POSITION "61215")
+    (NoModify)
+    (File ".\buf802.dsn"
+      (Type "Schematic Design"))
+    (BuildFileAddedOrDeleted "x")
+    (CompileFileAddedOrDeleted "x")
+    (PSPICE_Regenerate_Netlist_Flag "FALSE"))
+  (Folder "Layout")
+  (Folder "Outputs"
+    (File ".\buf802-pspicefiles\schematic1\schematic1.net"
+      (Type "Report")))
+  (Folder "PSpice Resources"
+    (Folder "Simulation Profiles"
+      (ActiveProfile ".\buf802-pspicefiles\schematic1\transient.sim")
+      (File.PSpice.{09528990-3187-11D2-BC7B-00A0C90CBF91}
+         ".\buf802-pspicefiles\schematic1\transient.sim"
+        (DisplayName "SCHEMATIC1-Transient")
+        (Type "PSpice Profile")))
+    (Folder "Model Libraries"
+      (Sort User)
+      (File ".\buf802.lib"
+        (Type "PSpiceLibrary")
+        (DisplayName ".\BUF802.lib")))
+    (Folder "Stimulus Files"
+      (Sort User))
+    (Folder "Include Files"
+      (Sort User)))
+  (DefaultLibraryBrowseDirectory "library\PSpice")
+  (Folder "Logs")
+  (PartMRUSelector
+    (OPAMP
+      (FullPartName "OPAMP.Normal")
+      (LibraryName
+         "C:\CADENCE\PSPICETI\TOOLS\CAPTURE\LIBRARY\PSPICE\ANALOG.OLB")
+      (DeviceIndex "0"))
+    (BUF802
+      (FullPartName "BUF802.Normal")
+      (LibraryName
+         "C:\USERS\A0232073\DESKTOP\GWL_MODELS\BUF802\BUF802-PSPICEFILES\BUF802\BUF802.OLB")
+      (DeviceIndex "0"))
+    (OPA810
+      (FullPartName "OPA810.Normal")
+      (LibraryName "C:\CDS_SPB_HOME\CDSSETUP\PSPTILIBDIR\OPA810.OLB")
+      (DeviceIndex "0"))
+    (OPAx828
+      (FullPartName "OPAx828.Normal")
+      (LibraryName "C:\CDS_SPB_HOME\CDSSETUP\PSPTILIBDIR\OPAX828.OLB")
+      (DeviceIndex "0"))
+    (OPA2810
+      (FullPartName "OPA2810.Normal")
+      (LibraryName "C:\CDS_SPB_HOME\CDSSETUP\PSPTILIBDIR\OPA2810.OLB")
+      (DeviceIndex "0"))
+    (OPA140
+      (FullPartName "OPA140.Normal")
+      (LibraryName "C:\CDS_SPB_HOME\CDSSETUP\PSPTILIBDIR\OPA140.OLB")
+      (DeviceIndex "0"))
+    (BUF802_27CTO85C
+      (FullPartName "BUF802_27CTO85C.Normal")
+      (LibraryName
+         "C:\USERS\A0232073\DESKTOP\GWL_MODELS\BUF802\BUF802-PSPICEFILES\BUF802\BUF802.OLB")
+      (DeviceIndex "0"))
+    (R
+      (FullPartName "R.Normal")
+      (LibraryName
+         "C:\CADENCE\PSPICETI\TOOLS\CAPTURE\LIBRARY\PSPICE\ANALOG.OLB")
+      (DeviceIndex "0"))
+    (L
+      (FullPartName "L.Normal")
+      (LibraryName
+         "C:\CADENCE\PSPICETI\TOOLS\CAPTURE\LIBRARY\PSPICE\ANALOG.OLB")
+      (DeviceIndex "0"))
+    (C
+      (FullPartName "C.Normal")
+      (LibraryName
+         "C:\CADENCE\PSPICETI\TOOLS\CAPTURE\LIBRARY\PSPICE\ANALOG.OLB")
+      (DeviceIndex "0")))
+  (GlobalState
+    (FileView
+      (Path "Design Resources")
+      (Path "Design Resources" ".\buf802.dsn")
+      (Path "Design Resources" ".\buf802.dsn" "SCHEMATIC1")
+      (Path "Design Resources" ".\buf802.dsn" "Design Cache")
+      (Path "Design Resources" "Library")
+      (Select "Design Resources"))
+    (HierarchyView)
+    (Doc
+      (Type "COrCapturePMDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 0 200 0 1031"))
+      (Tab 0))
+    (Doc
+      (Type "COrSchematicDoc")
+      (Frame
+        (Placement "44 0 1 -1 -1 -1 -1 5 1268 24 1049")
+        (Scroll "0 0")
+        (Zoom "140")
+        (Occurrence "/"))
+      (Path
+         "C:\USERS\A0232073\DESKTOP\GWL_MODELS\BUF802\BUF802-PSPICEFILES\BUF802\BUF802.DSN")
+      (Schematic "SCHEMATIC1")
+      (Page "PAGE1")))
+  (MPSSessionName "a0232073"))

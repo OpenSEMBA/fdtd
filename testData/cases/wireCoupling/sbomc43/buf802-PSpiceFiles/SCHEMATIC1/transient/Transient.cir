@@ -1,0 +1,22 @@
+** Profile: "SCHEMATIC1-transient"  [ C:\Users\a0232073\Desktop\GWL_Models\BUF802\BUF802-PSpiceFiles\BUF802\buf802-pspicefiles\schematic1\transient.sim ] 
+
+** Creating circuit file "transient.cir" 
+** WARNING: THIS AUTOMATICALLY GENERATED FILE MAY BE OVERWRITTEN BY SUBSEQUENT SIMULATIONS
+
+*Libraries: 
+* Profile Libraries :
+* Local Libraries :
+.LIB "../../../BUF802.lib" 
+* From [PSPICE NETLIST] section of C:\cds_spb_home\cdssetup\OrCAD_PSpiceTIPSpice_Install\17.4.0\PSpice.ini file:
+.lib "nom_pspti.lib" 
+.lib "nom.lib" 
+
+*Analysis directives: 
+.TRAN  0 1000ns 0 1n 
+.OPTIONS ADVCONV
+.OPTIONS FILEMODELSEARCH
+.PROBE64 N([OUT])
+.INC "..\SCHEMATIC1.net" 
+
+
+.END

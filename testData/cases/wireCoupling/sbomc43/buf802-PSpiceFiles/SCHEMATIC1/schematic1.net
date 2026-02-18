@@ -1,0 +1,25 @@
+* source BUF802
+R_Rload         OUT 0 R_NOISELESS 100
+V_Vs+         VEE 0 -6
+V_Vs-         VCC 0 6
+V_Vin         N1107165 0  AC 1
++SIN 0 2 2e6 0 0 0
+V_Vch         CLH 0 2
+V_Vcl         CLL 0 -2
+R_R5         IN+ N1103326  30.9 TC=0,0 
+V_Vtemp         OC 0 27
+C_C2         0 OUT  0.4p  TC=0,0 
+R_R9         N1107165 IN+  50 TC=0,0 
+R_R3         N1107310 IN+  50 TC=0,0 
+L_L1         N1107310 0  8.2e-9  
+R_R13         0 N1108368  200e3 TC=0,0 
+R_R16         N1108035 0  19e3 TC=0,0 
+R_R4         N1108368 IN+  800e3 TC=0,0 
+R_R8         IN_BIAS N1107890  10e6 TC=0,0 
+R_R10         N1108028 IN_AUX  2e3 TC=0,0 
+C_C11         N1108035 N1108028  82e-12  TC=0,0 
+R_R15         N1108035 OUT  72e3 TC=0,0 
+C_C12         0 IN_AUX  100e-12  TC=0,0 
+C_C7         N1107890 N1103326  330e-12  TC=0,0 
+X_U6         N1107890 OUT VCC VEE CLH CLL IN_BIAS IN_AUX OC BUF802
+E_U7         N1108028 0 VALUE {LIMIT(V(N1108368,N1108035)*1E6,-15V,+15V)}
