@@ -274,7 +274,7 @@ contains
             res = mtl_unshielded( lpul = cable%cell_inductance_per_meter, cpul = cable%cell_capacitance_per_meter, &
                                   rpul = cable%resistance_per_meter, gpul = cable%conductance_per_meter, &
                                   step_size = cable%step_size, name = cable%name, segments = cable%segments,&
-                                  dt = dt, multipolar_expansion = cable%multipolar_expansion &
+                                  dt = dt, multipolar_expansion = cable%multipolar_expansion, radius = cable%radius &
 #ifdef CompileWithMPI
                                  ,layer_indices = layer_indices, bundle_in_layer = bundle_in_layer, alloc_z = alloc_z &
 #endif

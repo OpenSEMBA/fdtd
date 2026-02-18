@@ -82,7 +82,7 @@ contains
             end if
             res = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, parent, conductor, Zt)
         else if (type == MTL_TYPE_UNSHIELDED) then 
-            res = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, mE)
+            res = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, mE, radius = 0.0)
         else
             write(*,*) 'Unrecognized line type'
         end if
