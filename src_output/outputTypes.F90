@@ -23,6 +23,7 @@ module outputTypes
 
    character(len=4), parameter :: pvdExtension = '.pvd'
    character(len=4), parameter :: datFileExtension = '.dat'
+   character(len=4), parameter :: vtkFileExtension = '.vtk'
    character(len=2), parameter :: timeExtension    = 'tm'
    character(len=2), parameter :: frequencyExtension = 'fq'
    character(len=1), parameter :: wordseparation = '_'
@@ -117,6 +118,9 @@ module outputTypes
    
    type, extends(abstract_probe_t) :: mapvtk_output_t
       type(cell_coordinate_t) :: auxCoords
+      integer(kind=SINGLE), allocatable :: coords(:, :)
+      integer(kind=SINGLE), allocatable :: materialTag(:)
+      integer :: nPoints = -1
    end type mapvtk_output_t
    
    type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
@@ -150,14 +154,14 @@ module outputTypes
    type, extends(abstract_frequency_probe_t) :: far_field_probe_output_t
       type(spheric_domain_t)  :: sphericRange
       type(cell_coordinate_t) :: auxCoords
-      integer(kind=SINGLE)    :: nPoints
+      integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)
       complex(kind=CKIND), allocatable :: valueForFreq(:, :)
    end type far_field_probe_output_t
 
    type, extends(abstract_time_probe_t) :: movie_probe_output_t
       type(cell_coordinate_t) :: auxCoords
-      integer(kind=SINGLE)    :: nPoints
+      integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)
       real(kind=RKIND), allocatable :: xValueForTime(:, :)
       real(kind=RKIND), allocatable :: yValueForTime(:, :)
@@ -167,7 +171,7 @@ module outputTypes
 
    type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
       type(cell_coordinate_t) :: auxCoords
-      integer(kind=SINGLE)    :: nPoints
+      integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)
       complex(kind=CKIND), allocatable :: xValueForFreq(:, :)
       complex(kind=CKIND), allocatable :: yValueForFreq(:, :)
@@ -199,6 +203,7 @@ module outputTypes
       type(limit_t), pointer :: problemDimension(:)
       type(bounds_t), pointer :: simulationBounds
       type(MediaData_t), pointer :: materialList(:)
+      type(taglist_t), pointer :: materialTag
    end type problem_info_t
 
 contains

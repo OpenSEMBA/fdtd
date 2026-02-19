@@ -32,6 +32,7 @@ integer function test_init_point_probe() bind(c) result(err)
    type(solver_output_t), pointer :: outputs(:)
    type(MediaData_t), allocatable, target :: materials(:)
    type(MediaData_t), pointer     :: materialsPtr(:)
+   type(taglist_t)                :: tagNumbers
 
    real(kind=RKIND_tiempo), pointer :: timeArray(:)
    real(kind=RKIND_tiempo)          :: dt = 0.1_RKIND_tiempo
@@ -61,7 +62,7 @@ integer function test_init_point_probe() bind(c) result(err)
    control = create_control_flags(mpidir=3, nEntradaRoot=trim(nEntrada), wiresflavor='holland')
 
    ! Action
-   call init_outputs(sgg, media, sinpml, bounds, control, outputRequested, hasWires)
+   call init_outputs(sgg, media, sinpml, tagNumbers, bounds, control, outputRequested, hasWires)
    outputs => GetOutputs()
 
    ! Assertions
@@ -114,6 +115,7 @@ integer function test_update_point_probe() bind(c) result(err)
    type(solver_output_t), pointer :: outputs(:)
    type(MediaData_t), allocatable, target :: materials(:)
    type(MediaData_t), pointer     :: materialsPtr(:)
+   type(taglist_t)                :: tagNumbers
 
    type(dummyFields_t), target    :: dummyFields
    type(fields_reference_t)       :: fields
@@ -144,7 +146,7 @@ integer function test_update_point_probe() bind(c) result(err)
    call sgg_set_Med(sgg, materialsPtr)
 
    control = create_control_flags(mpidir=3, nEntradaRoot=nEntrada, wiresflavor='holland')
-   call init_outputs(sgg, media, sinpml, bounds, control, outputRequested, hasWires)
+   call init_outputs(sgg, media, sinpml, tagNumbers, bounds, control, outputRequested, hasWires)
 
    call create_dummy_fields(dummyFields, 1, 10, 0.01_RKIND)
 
@@ -389,6 +391,8 @@ integer function test_init_movie_probe() bind(c) result(err)
    type(MediaData_t), allocatable, target :: simulationMaterials(:)
    type(MediaData_t), pointer     :: simulationMaterialsPtr(:)
 
+   type(taglist_t)                :: tagNumbers
+
    type(limit_t)                  :: sinpml(6)
 
    type(Obses_t)                  :: movieObservable
@@ -460,7 +464,7 @@ integer function test_init_movie_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
-   call init_outputs(dummysgg, media, sinpml, dummyBound, dummyControl, &
+   call init_outputs(dummysgg, media, sinpml, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
 
    outputs => GetOutputs()
@@ -511,6 +515,8 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
+
+   type(taglist_t)                :: tagNumbers
 
    type(XYZlimit_t)               :: dummySweep(6)
    type(XYZlimit_t)               :: dummySinpmlSweep(6)
@@ -580,7 +586,7 @@ integer function test_update_movie_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
-   call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
+   call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
 
    outputs => GetOutputs()
@@ -653,6 +659,8 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
+
+   type(taglist_t)                :: tagNumbers
 
    type(XYZlimit_t)               :: dummySweep(6)
    type(XYZlimit_t)               :: dummySinpmlSweep(6)
@@ -741,7 +749,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
-   call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
+   call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
 
    outputs => GetOutputs()
@@ -827,6 +835,8 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
    type(MediaData_t), allocatable, target :: simulationMaterials(:)
    type(MediaData_t), pointer     :: simulationMaterialsPtr(:)
 
+   type(taglist_t)                :: tagNumbers
+
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
 
@@ -902,7 +912,7 @@ integer function test_init_frequency_slice_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
-   call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
+   call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
 
    outputs => GetOutputs()
@@ -962,6 +972,8 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
+
+   type(taglist_t)                :: tagNumbers
 
    type(XYZlimit_t)               :: dummySweep(6)
    type(XYZlimit_t)               :: dummySinpmlSweep(6)
@@ -1033,7 +1045,7 @@ integer function test_update_frequency_slice_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
-   call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
+   call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
 
    outputs => GetOutputs()
@@ -1106,6 +1118,8 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
 
    type(limit_t), target          :: sinpml_fullsize(6)
    type(limit_t), pointer         :: sinpml_fullsizePtr(:)
+
+   type(taglist_t)                :: tagNumbers
 
    type(XYZlimit_t)               :: dummySweep(6)
    type(XYZlimit_t)               :: dummySinpmlSweep(6)
@@ -1189,7 +1203,7 @@ integer function test_flush_frequency_slice_probe() bind(c) result(err)
 
    dummyControl = create_control_flags(nEntradaRoot=nEntrada, mpidir=mpidir)
 
-   call init_outputs(dummysgg, media, sinpml_fullsize, dummyBound, dummyControl, &
+   call init_outputs(dummysgg, media, sinpml_fullsize, tagNumbers, dummyBound, dummyControl, &
                      outputRequested, ThereAreWires)
    outputs => GetOutputs()
 

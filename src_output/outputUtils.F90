@@ -19,6 +19,7 @@ module mod_outputUtils
    public :: init_frequency_slice
    public :: getBlockCurrentDirection
    public :: isPEC
+   public :: isPML
    public :: isSplitOrAdvanced
    public :: isThinWire
    public :: isMediaVacuum
@@ -391,6 +392,14 @@ contains
 
       mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
       isPEC = problem%materialList(mediaIndex)%is%PEC
+   end function
+
+   logical function isPML(field, i, j, k, problem)
+        integer(kind=4) :: field, i, j, k
+        integer(kind=SINGLE) :: mediaIndex
+        type(problem_info_t), intent(in) :: problem
+        mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
+        isPML = problem%materialList(mediaIndex)%is%PML
    end function
 
    logical function isSurface(field, i, j, k, problem)

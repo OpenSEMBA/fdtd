@@ -45,7 +45,7 @@ module output
                                       VOLUMIC_CURRENT_PROBE_ID = 4, &
                                       MOVIE_PROBE_ID = 5, &
                                       FREQUENCY_SLICE_PROBE_ID = 6, &
-                                      FAR_FIELD_PROBE_ID = 7
+                                      FAR_FIELD_PROBE_ID = 7, &
                                       MAPVTK_ID = 8
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
@@ -101,12 +101,12 @@ contains
       return
    end function
 
-   subroutine init_outputs(sgg, media, sinpml_fullsize, bounds, control, observationsExists, wiresExists)
+   subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, wiresExists)
       type(SGGFDTDINFO), intent(in) ::  sgg
       type(media_matrices_t), target, intent(in) :: media
       type(limit_t), dimension(:), target, intent(in)  ::  SINPML_fullsize
-      type(bounds_t), target :: bounds
-      type(taglist_t), target :: tagNumbers
+      type(bounds_t),intent(in), target :: bounds
+      type(taglist_t),intent(in), target :: materialTags
       type(sim_control_t), intent(in) :: control
       logical, intent(inout) :: wiresExists
       logical, intent(out) :: observationsExists
@@ -130,7 +130,7 @@ contains
       problemInfo%materialList => sgg%Med
       problemInfo%simulationBounds => bounds
       problemInfo%problemDimension => SINPML_fullsize
-      problemInfo%tagNumbers => tagNumbers
+      problemInfo%materialTag => materialTags
 
       outputs => NULL()
       allocate (outputs(requestedOutputs))
@@ -185,6 +185,8 @@ contains
             case (mapvtk)
                outputCount = outputCount + 1
                outputs(outputCount)%outputID = MAPVTK_ID
+
+               allocate (outputs(outputCount)%mapvtkOutput)
                call init_solver_output(outputs(outputCount)%mapvtkOutput, lowerBound, upperBound, outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
                call create_geometry_simulation_vtk(outputs(outputCount)%mapvtkOutput, problemInfo, control)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
@@ -365,6 +367,7 @@ contains
             call update_solver_output(outputs(i)%frequencySliceProbe, discreteTime, fieldsReference, control, problemInfo)
          case (FAR_FIELD_PROBE_ID)
             call update_solver_output(outputs(i)%farFieldOutput, timeIndx, problemInfo%simulationBounds, fieldsReference)
+         case(MAPVTK_ID)
          case default
             call stoponerror(0, 0, 'Output update not implemented')
          end select
@@ -524,6 +527,8 @@ contains
             write (unit, *) trim(adjustl(outputs(i)%frequencySliceProbe%filePathFreq))
          case (FAR_FIELD_PROBE_ID)
             write (unit, *) trim(adjustl(outputs(i)%farFieldOutput%filePathFreq))
+         case (MAPVTK_ID)
+            write (unit, *) trim(adjustl(outputs(i)%mapvtkOutput%path))
          case default
             call stoponerror(0, 0, 'Output update not implemented')
          end select
