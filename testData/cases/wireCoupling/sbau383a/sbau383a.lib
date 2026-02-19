@@ -1,0 +1,64 @@
+*                IN  OUT
+*                 |    |
+.subckt sbau383a  1    2
+
+.include ../sbomc43/buf802.lib
+xbuf802 IN+ OUT VCC2  VEE2 VCH VCL In_Bias In_Aux 0 BUF802
+* xbuf802 2 11 1 5,8 15 14 3 4 17 BUF802
+
+* connections to VIN #2
+R26 IN+ 5001 1.0e6
+C43 5001 0 2.2e-6
+C44 IN+ 1 100.0e-9
+R29 1 0 50.0
+
+* connections to P1 P2 P3
+Vp VCC  0 6
+Vm VEE  0 -6
+L2 VCC  VCC2 1000
+L3 VEE  VEE2 1000
+C20 VCC2  0 10.0e-6
+C21 VCC2  0 1.0e-6
+C29 VEE2 0 10.0e-6
+C30 VEE2 0 1.0e-6
+
+RP1 VCC2  5001 5.0e3
+RP2 5001 VEE2 5.0e3
+
+* connections to RBIAS
+
+* connections to VCH
+R22 VCC2  VCH 0
+C31 VCH 0 0.1e-6
+C32 VCH 0 1.0e-6
+C33 VCH 0 10.0e-6
+
+* connections to VCL
+R23 VCC2  VCL 0
+C40 VCL 0 100.0e-9
+C41 VCL 0 1.0e-6
+C42 VCL 0 10.0e-6
+
+* connections to OUT
+R24 OUT 27 64.9
+R27 27 0 75.0
+R25 27 2 15.0
+
+* connections to VEE
+C22 VEE2 0 0.1e-6
+C23 VEE2 0 1.0e-6
+C24 VEE2 0 1.0e-6
+C25 VEE2 0 0.1e-6
+C26 VEE2 0 1.0e-6
+C27 VEE2 0 0.1e-6
+C28 VEE2 0 1.0e-6
+
+* connections to VCC
+C34 VCC2  0 0.1e-6
+C35 VCC2  0 1.0e-6
+C36 VCC2  0 1.0e-6
+C37 VCC2  0 0.1e-6
+C38 VCC2  0 1.0e-6
+C39 VCC2  0 1.0e-6
+ 
+* connections to PAD
