@@ -904,7 +904,7 @@ def test_nodal_source_single_wire(tmp_path):
     fn = CASES_FOLDER + "nodalSource/nodalSource.fdtd.json"
     assert (os.path.isfile(fn))
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['materials'][1] = createUnshieldedWire(id = 2, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11, rpul = 10000.0)        
+    solver['materials'][1] = createWire(id = 2, r = 0.1e-5, rpul=10000.0)
     solver.run()
     
     resistanceBulkProbe = Probe( \
