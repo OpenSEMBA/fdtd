@@ -4,13 +4,35 @@ import os
 from sys import platform
 from scipy import signal
 
-def test_lineIntegralProbe(tmp_path):
+@mtln_skip
+def test_lineIntegralProbe_single_wire(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
-        solver['materials'][0] = createWire(id = 1, r = 0.001)
-    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
-        solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
+    solver['materials'][0] = createWire(id = 1, r = 0.001)
+    solver.run()
+    
+    pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
+    li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
+    expected  = Probe(OUTPUTS_FOLDER+pf)
+    np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
+
+@no_mtln_skip
+def test_lineIntegralProbe_wire(tmp_path):
+    fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['materials'][0] = createWire(id = 1, r = 0.001)
+    solver.run()
+    
+    pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
+    li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
+    expected  = Probe(OUTPUTS_FOLDER+pf)
+    np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
+
+@no_mtln_skip
+def test_lineIntegralProbe_unshielded(tmp_path):
+    fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+    solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
     solver.run()
     
     pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
@@ -323,14 +345,31 @@ def test_unshielded_multiwires(tmp_path):
         p_solved['current_1'], 
         rtol=1e-3, atol=0.01)
 
+@mtln_skip
 def test_towelHanger(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
-    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
-        solver['materials'][0] = createWire(id = 1, r = 0.1e-3)
-    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
-        solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
+    solver['materials'][0] = createWire(id = 1, r = 0.1e-3)
+
+    p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
+                   Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
+                   Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
+
+    p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
+                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
+                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
+
+    assert np.allclose(p_expected[0]['current'], p_solved[0]['current'], rtol=5e-3, atol=5e-4)
+    assert np.allclose(p_expected[1]['current'], p_solved[1]['current'], rtol=5e-3, atol=5e-4)
+    assert np.allclose(p_expected[2]['current'], p_solved[2]['current'], rtol=5e-3, atol=5e-4)
+
+@no_mtln_skip
+def test_towelHanger(tmp_path):
+    fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
     solver.run()
 
     p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
@@ -341,14 +380,29 @@ def test_towelHanger(tmp_path):
                   Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
                   Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
 
-    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
-        assert np.allclose(p_expected[0]['current'], p_solved[0]['current'], rtol=5e-3, atol=5e-4)
-        assert np.allclose(p_expected[1]['current'], p_solved[1]['current'], rtol=5e-3, atol=5e-4)
-        assert np.allclose(p_expected[2]['current'], p_solved[2]['current'], rtol=5e-3, atol=5e-4)
-    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
-        assert np.allclose(p_expected[0]['current'], -p_solved[0]['current_0'], rtol=5e-3, atol=5e-4)
-        assert np.allclose(p_expected[1]['current'], -p_solved[1]['current_0'], rtol=5e-3, atol=5e-4)
-        assert np.allclose(p_expected[2]['current'],  p_solved[2]['current_0'], rtol=5e-3, atol=5e-4)
+    assert np.allclose(p_expected[0]['current'], -p_solved[0]['current_0'], rtol=5e-3, atol=5e-4)
+    assert np.allclose(p_expected[1]['current'], -p_solved[1]['current_0'], rtol=5e-3, atol=5e-4)
+    assert np.allclose(p_expected[2]['current'],  p_solved[2]['current_0'], rtol=5e-3, atol=5e-4)
+
+@no_mtln_skip
+def test_towelHanger(tmp_path):
+    fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.5183032590978384e-07, cpul = 1.7046017451862063e-11)        
+    solver.run()
+
+    p_solved = [Probe(solver.getSolvedProbeFilenames("wire_start")[0]),
+                   Probe(solver.getSolvedProbeFilenames("wire_mid")[0]),
+                   Probe(solver.getSolvedProbeFilenames("wire_end")[0])]
+
+    p_expected = [Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat'),
+                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_mid_Wx_35_25_32_s5.dat'),
+                  Probe(OUTPUTS_FOLDER+'towelHanger.fdtd_wire_end_Wz_43_25_30_s4.dat')]
+
+    assert np.allclose(p_expected[0]['current'], -p_solved[0]['current_0'], rtol=5e-3, atol=5e-4)
+    assert np.allclose(p_expected[1]['current'], -p_solved[1]['current_0'], rtol=5e-3, atol=5e-4)
+    assert np.allclose(p_expected[2]['current'],  p_solved[2]['current_0'], rtol=5e-3, atol=5e-4)
 
 
 @no_hdf_skip
