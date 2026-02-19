@@ -191,12 +191,6 @@ contains
 
    end function
 
-   function vectorSize(vector) result(res)
-      real, dimension(:), intent(in) :: vector
-      integer :: n, res
-      n = size(vector,1)
-      res = n
-   end function
 
    function vectorToDiagonalMatrix(vector) result(res)
       real, dimension(:), intent(in) :: vector

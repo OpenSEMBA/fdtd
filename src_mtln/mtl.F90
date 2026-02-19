@@ -6,9 +6,9 @@ module mtl_mod
     use mtln_types_mod, only: segment_t, multipolar_expansion_t
     use multipolar_expansion_mod, only: getCellCapacitanceOnBox, getCellInductanceOnBox
 #ifdef CompileWithMPI
-    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, RKIND_wires
+    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, epsilon_vacuum, RKIND_wires
 #else
-    use fdetypes, only: pi, mu_vacuum, RKIND_wires
+    use fdetypes, only: pi, mu_vacuum, epsilon_vacuum, RKIND_wires
 #endif
     implicit none
 #ifdef CompileWithMPI
@@ -269,10 +269,11 @@ contains
     subroutine computeLCParametersFromRadius(this, rad) 
         class(mtl_t) :: this
         real, intent(in) :: rad
-        REAL (KIND=RKIND_wires) :: invMu
+        REAL (KIND=RKIND_wires) :: invMu, c
         integer :: i
         real :: d1, d2
         invMu = 1.0/mu_vacuum
+        c = 1/sqrt(epsilon_vacuum*mu_vacuum)
         do i = 1, size(this%segments)
             d1 = this%segments(i)%d1
             d2 = this%segments(i)%d2
@@ -289,7 +290,7 @@ contains
                 this%lpul(i,:,:) =  this%lpul(i,:,:) &
                 /(1.0_RKIND_wires-pi*rad**2.0_RKIND_wires /(d1*d2))
             endif
-            this%cpul(i,:,:) = 1.0/this%lpul(i,:,:)
+            this%cpul(i,:,:) = 1.0/(this%lpul(i,:,:)*c**2)
         enddo
         this%cpul(size(this%segments)+1, :,:) = this%cpul(size(this%segments), :,:)
 

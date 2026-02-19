@@ -3563,7 +3563,8 @@ contains
          logical :: areFixedInCell
          logical :: areMultipolarInCell
          logical :: hasRadius
-         
+         real, dimension(:), allocatable :: r, c
+
          allocate(null_matrix(n,n), source = 0.0)
 
          areFixedInCell = &
@@ -3596,13 +3597,13 @@ contains
          else if (hasRadius) then 
             res%cell_inductance_per_meter = null_matrix
             res%cell_capacitance_per_meter = null_matrix
+            allocate(res%multipolar_expansion(0))
             res%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default = 0.0)
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
-            m = vectorSize(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
-            ! resistance = ...
-            if (m == n) then 
+            r = this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found)
+            if (found) then 
                res%resistance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
             else
                res%resistance_per_meter = null_matrix   
@@ -3612,8 +3613,8 @@ contains
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)) then
-            m = vectorSize(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
-            if (m == n) then 
+            c = this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found)
+            if (found) then 
                res%conductance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
             else
                res%conductance_per_meter = null_matrix
@@ -3709,6 +3710,8 @@ contains
             res(i)%orientation = linels(i)%orientation
             if (prevOr == abs(res(i)%orientation)) then 
                res(i)%dualBox = res(i-1)%dualBox
+               res(i)%d1 = res(i-1)%d1
+               res(i)%d2 = res(i-1)%d2
             else 
                select case(abs(res(i)%orientation))
                case(DIR_X)
