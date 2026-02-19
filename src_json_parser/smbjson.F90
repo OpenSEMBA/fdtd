@@ -71,6 +71,7 @@ module smbjson
       procedure, private :: getMatrixAt
       procedure, private :: getStrAt
       procedure, private :: existsAt
+      procedure, private :: dimensionAt
       procedure, private :: getDomain
       procedure, private :: buildPECPMCRegions
       procedure, private :: getMaterialAssociations
@@ -2526,14 +2527,12 @@ contains
       type(materialAssociation_t), dimension(:), allocatable :: cables
       class(cable_t), pointer :: ptr, read_cable
       integer :: i
-
       cables = this%getMaterialAssociations([ &
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
                 J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
                 J_MAT_TYPE_WIRE//'               ' ])
       ! spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
-
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
@@ -3496,7 +3495,6 @@ contains
          case default
             call WarnErrReport("Error reading cable: material type is not valid", .true.)
          end select
-
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
          res%name = j_cable%name
@@ -3583,6 +3581,7 @@ contains
                   "Unshielded multiwires in cell properties must be defined by fixed OR multipolarExpansions, but not both.", .true.)
             end if
          end if
+
          if (areFixedInCell) then
             res%cell_inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
             res%cell_capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
@@ -3602,23 +3601,27 @@ contains
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
-            r = this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found)
-            if (found) then 
-               res%resistance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
+            m = this%dimensionAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)
+            if (m == 0) then 
+               allocate(r(1))
+               r(1) = this%getRealAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found)
             else
-               res%resistance_per_meter = null_matrix   
+               r = this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found)
             end if
+            res%resistance_per_meter = vectorToDiagonalMatrix(r)
          else
             res%resistance_per_meter = null_matrix
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)) then
-            c = this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found)
-            if (found) then 
-               res%conductance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
+            m = this%dimensionAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)
+            if (m == 0) then 
+               allocate(c(1))
+               c(1) = this%getRealAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found)
             else
-               res%conductance_per_meter = null_matrix
+               c = this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found)
             end if
+            res%conductance_per_meter = vectorToDiagonalMatrix(c)
          else
             res%conductance_per_meter = null_matrix
          end if
@@ -4052,6 +4055,14 @@ contains
       type(json_value), pointer :: place
       character(len=*) :: path
       call this%core%info(place, path, found=res)
+   end function
+
+   function dimensionAt(this, place, path) result(res)
+      integer :: res
+      class(parser_t) :: this
+      type(json_value), pointer :: place
+      character(len=*) :: path
+      call this%core%info(place, path, n_children=res)
    end function
 
    function jsonValueFilterByKeyValues(this, srcs, key, values) result (res)
