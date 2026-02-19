@@ -11,6 +11,7 @@ module output
    use mod_farFieldOutput
    use mtln_solver_mod, only: mtln_solver_t => mtln_t
    use Wire_bundles_mtln_mod, only: GetSolverPtr
+   use mod_mapVTKOutput
    
 
    implicit none
@@ -45,6 +46,7 @@ module output
                                       MOVIE_PROBE_ID = 5, &
                                       FREQUENCY_SLICE_PROBE_ID = 6, &
                                       FAR_FIELD_PROBE_ID = 7
+                                      MAPVTK_ID = 8
 
    REAL(KIND=RKIND), save           ::  eps0, mu0
    REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
@@ -59,7 +61,8 @@ module output
          init_bulk_probe_output, &
          init_movie_probe_output, &
          init_frequency_slice_probe_output, &
-         init_farField_probe_output
+         init_farField_probe_output, &
+         init_mapvtk_output
    end interface
 
    interface update_solver_output
@@ -103,6 +106,7 @@ contains
       type(media_matrices_t), target, intent(in) :: media
       type(limit_t), dimension(:), target, intent(in)  ::  SINPML_fullsize
       type(bounds_t), target :: bounds
+      type(taglist_t), target :: tagNumbers
       type(sim_control_t), intent(in) :: control
       logical, intent(inout) :: wiresExists
       logical, intent(out) :: observationsExists
@@ -126,6 +130,7 @@ contains
       problemInfo%materialList => sgg%Med
       problemInfo%simulationBounds => bounds
       problemInfo%problemDimension => SINPML_fullsize
+      problemInfo%tagNumbers => tagNumbers
 
       outputs => NULL()
       allocate (outputs(requestedOutputs))
@@ -177,8 +182,12 @@ contains
 
             outputRequestType = sgg%observation(ii)%P(i)%what
             select case (outputRequestType)
-               !case (mapvtk)
-               !   call create_geometry_simulation_vtk(lowerBound, upperBound, outputRequestType, domain, outputTypeExtension, problemInfo, control)
+            case (mapvtk)
+               outputCount = outputCount + 1
+               outputs(outputCount)%outputID = MAPVTK_ID
+               call init_solver_output(outputs(outputCount)%mapvtkOutput, lowerBound, upperBound, outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
+               call create_geometry_simulation_vtk(outputs(outputCount)%mapvtkOutput, problemInfo, control)
+               !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
                outputCount = outputCount + 1
@@ -236,8 +245,6 @@ contains
                outputs(outputCount)%outputID = FAR_FIELD_PROBE_ID
                allocate (outputs(outputCount)%farFieldOutput)
                call init_solver_output(outputs(outputCount)%farFieldOutput, sgg, lowerBound, upperBound, outputRequestType, domain, sphericRange, outputTypeExtension, sgg%Observation(ii)%FileNormalize, control, problemInfo, eps0, mu0)
-            case (mapvtk)
-               call stoponerror(0, 0, 'mapvtk type not implemented yet on new observations')
             case default
                call stoponerror(0, 0, 'OutputRequestType type not implemented yet on new observations')
             end select

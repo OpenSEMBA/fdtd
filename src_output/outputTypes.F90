@@ -90,7 +90,6 @@ module outputTypes
       integer(kind=SINGLE)      :: component
       character(len=BUFSIZE)    :: path
    end type abstract_probe_t
-
    type, extends(abstract_probe_t) :: abstract_time_probe_t
       character(len=BUFSIZE) :: filePathTime
       integer(kind=SINGLE) :: nTime = 0_SINGLE
@@ -115,6 +114,11 @@ module outputTypes
 !=====================================================
 ! Concrete probe types
 !=====================================================
+   
+   type, extends(abstract_probe_t) :: mapvtk_output_t
+      type(cell_coordinate_t) :: auxCoords
+   end type mapvtk_output_t
+   
    type, extends(abstract_time_frequency_probe_t) :: point_probe_output_t
       real(kind=RKIND), allocatable :: valueForTime(:)
       complex(kind=CKIND), allocatable :: valueForFreq(:)
@@ -183,6 +187,7 @@ module outputTypes
       type(movie_probe_output_t), allocatable         :: movieProbe
       type(frequency_slice_probe_output_t), allocatable :: frequencySliceProbe
       type(far_field_probe_output_t), allocatable     :: farFieldOutput
+      type(mapvtk_output_t), allocatable              :: mapvtkOutput
 #ifdef CompileWithMPI
       integer(kind=4) :: MPISubcomm, MPIRoot, MPIGroupIndex
       integer(kind=4) :: ZIorig, ZEorig

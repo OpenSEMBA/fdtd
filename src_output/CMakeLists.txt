@@ -10,6 +10,7 @@ add_library(fdtd-output
   "movieProbeOutput.F90"
   "frequencySliceProbeOutput.F90"
   "farFieldProbeOutput.F90"
+  "mapVTKOutput.F90"
 )
 target_link_libraries(fdtd-output
  semba-types
