@@ -1,9 +1,28 @@
 module mod_assertionTools
    use FDETYPES
    use mod_arrayAssertionTools
+   use iso_fortran_env, only: real32, real64
    implicit none
 
+   private :: assert_real_equal_impl
+   private :: assert_real_RKIND_equal_impl
+#ifndef CompileWithReal8
+   private :: assert_real_time_equal_impl
+#endif
+   ! Generic interface for real assertions
+   interface assert_real_equal
+      module procedure assert_real_equal_impl
+      module procedure assert_real_RKIND_equal_impl
+#ifndef CompileWithReal8
+      module procedure assert_real_time_equal_impl
+#endif
+   end interface
+
 contains
+
+   !---------------------------------------
+   ! Logical assertion
+   !---------------------------------------
    function assert_true(boolean, errorMessage) result(err)
       logical, intent(in) :: boolean
       character(*), intent(in) :: errorMessage
@@ -15,13 +34,14 @@ contains
          print *, 'ASSERTION FAILED: ', trim(errorMessage)
       end if
    end function
-   function assert_integer_equal(val, expected, errorMessage) result(err)
 
-      integer, intent(in) :: val
-      integer, intent(in) :: expected
+   !---------------------------------------
+   ! Integer equality
+   !---------------------------------------
+   function assert_integer_equal(val, expected, errorMessage) result(err)
+      integer, intent(in) :: val, expected
       character(*), intent(in) :: errorMessage
       integer :: err
-
       if (val == expected) then
          err = 0
       else
@@ -29,48 +49,58 @@ contains
          print *, 'ASSERTION FAILED: ', trim(errorMessage)
          print *, "  Value: ", val, ". Expected: ", expected
       end if
-   end function assert_integer_equal
+   end function
 
-   function assert_real_equal(val, expected, tolerance, errorMessage) result(err)
-
-      real(kind=rkind), intent(in) :: val
-      real(kind=rkind), intent(in) :: expected
-      real(kind=rkind), intent(in) :: tolerance
+   !---------------------------------------
+   ! Real equality implementations
+   !---------------------------------------
+   function assert_real_equal_impl(val, expected, tolerance, errorMessage) result(err)
+      real(real32), intent(in) :: val, expected, tolerance
       character(*), intent(in) :: errorMessage
       integer :: err
-
       if (abs(val - expected) <= tolerance) then
          err = 0
       else
          err = 1
-         print *, 'ASSERTION FAILED: ', trim(errorMessage)
-         print *, "  Value: ", val, ". Expected: ", expected, ". Tolerance: ", tolerance
+         print *, 'ASSERTION FAILED (real32): ', trim(errorMessage)
+         print *, '  Value: ', val, '. Expected: ', expected, '. Tolerance: ', tolerance
       end if
-   end function assert_real_equal
+   end function
 
-   function assert_real_time_equal(val, expected, tolerance, errorMessage) result(err)
-
-      real(kind=RKIND_tiempo), intent(in) :: val
-      real(kind=RKIND_tiempo), intent(in) :: expected
-      real(kind=RKIND_tiempo), intent(in) :: tolerance
+   function assert_real_RKIND_equal_impl(val, expected, tolerance, errorMessage) result(err)
+      real(RKIND), intent(in) :: val, expected, tolerance
       character(*), intent(in) :: errorMessage
       integer :: err
-
       if (abs(val - expected) <= tolerance) then
          err = 0
       else
          err = 1
-         print *, 'ASSERTION FAILED: ', trim(errorMessage)
-         print *, "  Value: ", val, ". Expected: ", expected, ". Tolerance: ", tolerance
+         print *, 'ASSERTION FAILED (RKIND): ', trim(errorMessage)
+         print *, '  Value: ', val, '. Expected: ', expected, '. Tolerance: ', tolerance
       end if
-   end function assert_real_time_equal
+   end function
 
+   function assert_real_time_equal_impl(val, expected, tolerance, errorMessage) result(err)
+      real(kind=RKIND_tiempo), intent(in) :: val, expected, tolerance
+      character(*), intent(in) :: errorMessage
+      integer :: err
+      if (abs(val - expected) <= tolerance) then
+         err = 0
+      else
+         err = 1
+         print *, 'ASSERTION FAILED (time): ', trim(errorMessage)
+         print *, '  Value: ', val, '. Expected: ', expected, '. Tolerance: ', tolerance
+      end if
+   end function
+
+   !---------------------------------------
+   ! Complex equality
+   !---------------------------------------
    function assert_complex_equal(val, expected, tolerance, errorMessage) result(err)
       complex(kind=CKIND), intent(in) :: val, expected
       real(kind=RKIND), intent(in) :: tolerance
-      character(len=*), intent(in)    :: errorMessage
+      character(len=*), intent(in) :: errorMessage
       integer :: err
-
       if (abs(val - expected) <= tolerance) then
          err = 0
       else
@@ -81,15 +111,15 @@ contains
          print *, '  Delta:    ', abs(val - expected)
          print *, '  Tolerance:', tolerance
       end if
-   end function assert_complex_equal
+   end function
 
+   !---------------------------------------
+   ! String equality
+   !---------------------------------------
    function assert_string_equal(val, expected, errorMessage) result(err)
-
-      character(*), intent(in) :: val
-      character(*), intent(in) :: expected
+      character(*), intent(in) :: val, expected
       character(*), intent(in) :: errorMessage
       integer :: err
-
       if (trim(val) == trim(expected)) then
          err = 0
       else
@@ -97,18 +127,17 @@ contains
          print *, 'ASSERTION FAILED: ', trim(errorMessage)
          print *, '  Value: "', trim(val), '". Expected: "', trim(expected), '"'
       end if
-   end function assert_string_equal
+   end function
 
+   !---------------------------------------
+   ! Check if file was written
+   !---------------------------------------
    integer function assert_written_output_file(filename) result(code)
-      implicit none
       character(len=*), intent(in) :: filename
       logical :: ex
       integer :: filesize
-
       code = 0
-
       inquire (file=filename, exist=ex, size=filesize)
-
       if (.not. ex) then
          print *, "ERROR: Output file not created:", trim(filename)
          code = 1
@@ -116,10 +145,12 @@ contains
          print *, "ERROR: Output file is empty:", trim(filename)
          code = 2
       end if
-   end function assert_written_output_file
+   end function
 
+   !---------------------------------------
+   ! Check file content
+   !---------------------------------------
    integer function assert_file_content(unit, expectedValues, nRows, nCols, tolerance, headers) result(flag)
-      implicit none
       integer(kind=SINGLE), intent(in) :: unit
       real(kind=RKIND), intent(in) :: expectedValues(:, :)
       integer(kind=SINGLE), intent(in) :: nRows, nCols
@@ -147,8 +178,11 @@ contains
             end if
          end do
       end do
-   end function assert_file_content
+   end function
 
+   !---------------------------------------
+   ! Check file exists
+   !---------------------------------------
    integer function assert_file_exists(fileName) result(err)
       character(len=*), intent(in) :: filename
       integer :: unit, ios
@@ -157,4 +191,5 @@ contains
       close (unit)
       if (ios /= 0) err = 1
    end function
+
 end module mod_assertionTools

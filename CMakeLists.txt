@@ -219,6 +219,7 @@ if (SEMBA_FDTD_ENABLE_OUTPUT_MODULE)
 	add_subdirectory(external/VTKFortran)
 	add_subdirectory(src_output)
 	set(OUTPUT_LIBRARIES fdtd-output)
+	set(VTK_API_LIBRARIES vtkAPI)
 endif()
 add_subdirectory(src_conformal)
 set(CONFORMAL_LIBRARIES conformal)
@@ -295,6 +296,7 @@ if(SEMBA_FDTD_MAIN_LIB)
 		semba-outputs
 		fdtd-utils
 		${OUTPUT_LIBRARIES}
+		${VTK_API_LIBRARIES}
 		${SMBJSON_LIBRARIES} 
 		${MTLN_LIBRARIES})
 endif()

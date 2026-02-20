@@ -170,13 +170,13 @@ integer function test_update_point_probe() bind(c) result(err)
    outputs => GetOutputs()
 
    ! Assertions
-   test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(1), 0.0_RKIND_tiempo, 1e-5_RKIND_tiempo, 'Unexpected timestep 1')
+   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(1), 0.0_RKIND_tiempo, 1e-5_RKIND_tiempo, 'Unexpected timestep 1')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(1), 5.0_RKIND, 1e-5_RKIND, 'Unexpected field 1')
 
    dummyFields%Ex(4, 4, 4) = -4.0_RKIND
    call update_outputs(control, sgg%tiempo, 2_SINGLE, fields)
 
-   test_err = test_err + assert_real_time_equal(outputs(1)%pointProbe%timeStep(2), 0.1_RKIND_tiempo, 1e-5_RKIND_tiempo, 'Unexpected timestep 2')
+   test_err = test_err + assert_real_equal(outputs(1)%pointProbe%timeStep(2), 0.1_RKIND_tiempo, 1e-5_RKIND_tiempo, 'Unexpected timestep 2')
    test_err = test_err + assert_real_equal(outputs(1)%pointProbe%valueForTime(2), -4.0_RKIND, 1e-5_RKIND, 'Unexpected field 2')
 
    !Cleanup

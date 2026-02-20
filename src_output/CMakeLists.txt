@@ -12,9 +12,16 @@ add_library(fdtd-output
   "farFieldProbeOutput.F90"
   "mapVTKOutput.F90"
 )
+add_library(vtkAPI
+  "vtkAPI.F90"
+)
 target_link_libraries(fdtd-output
  semba-types
  semba-components
  fdtd-utils
  VTKFortran::VTKFortran 
 )
+target_link_libraries(vtkAPI
+ fdtd-utils
+)
+
