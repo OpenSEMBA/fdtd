@@ -71,6 +71,7 @@ module smbjson
       procedure, private :: getMatrixAt
       procedure, private :: getStrAt
       procedure, private :: existsAt
+      procedure, private :: dimensionAt
       procedure, private :: getDomain
       procedure, private :: buildPECPMCRegions
       procedure, private :: getMaterialAssociations
@@ -1225,8 +1226,13 @@ contains
       type(json_value_ptr), dimension(:), allocatable :: ps
 
       integer :: i
+#ifdef CompileWithMTLN
+      character (len=*), dimension(2), parameter :: validTypes = &
+         [J_PR_TYPE_POINT, J_PR_TYPE_LINE]
+#else
       character (len=*), dimension(3), parameter :: validTypes = &
          [J_PR_TYPE_POINT, J_PR_TYPE_WIRE, J_PR_TYPE_LINE]
+#endif
       logical :: found
       character (len=:), allocatable :: fieldLbl, probeLbl
       integer :: filtered_size, n
@@ -2518,21 +2524,15 @@ contains
       class(parser_t) :: this
       type(mtln_t) :: mtln_res
       type(fhash_tbl_t) :: elemIdToPosition, elemIdToCable, connIdToConnector
-      type(materialAssociation_t), dimension(:), allocatable :: wires, cables
+      type(materialAssociation_t), dimension(:), allocatable :: cables
       class(cable_t), pointer :: ptr, read_cable
       integer :: i
-
-      wires = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
-      if (size(wires) /=0 ) then
-            call WarnErrReport("ERROR: material type 'wire' is not allowed if compiled with MTLN", .true.)
-      end if
-
       cables = this%getMaterialAssociations([ &
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
-                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
+                J_MAT_TYPE_WIRE//'               ' ])
       ! spaces are needed to make strings have same length. 
       ! Why? Because of FORTRAN! It only accepts fixed length strings for arrays.
-
 
       mtln_res%connectors => readConnectors()
       call addConnIdToConnectorMap(connIdToConnector, mtln_res%connectors)
@@ -2589,6 +2589,8 @@ contains
             end if
          case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
             res => null()
+         case (J_MAT_TYPE_WIRE)
+            res => null()
          case default
             call WarnErrReport('ERROR: Material type not recognized', .true.)
          end select
@@ -2611,6 +2613,8 @@ contains
                res = getParentPositionInMultiwire(parentId)
             end if
          case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
+            res = 0
+         case (J_MAT_TYPE_WIRE)
             res = 0
          case default
             call WarnErrReport('ERROR: Material type not recognized', .true.)
@@ -2712,7 +2716,8 @@ contains
          allocate(networks_coordinates(0))
          ! cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
          cables  = [this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
-                    this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]) ]
+                    this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]) ,&
+                    this%getMaterialAssociations([J_MAT_TYPE_WIRE]) ]
          do i = 1, size(cables)
             elemIds = cables(i)%elementIds
             terminations_ini => getTerminationsOnSide(cables(i)%initialTerminalId)
@@ -3264,7 +3269,8 @@ contains
 
             mAs = this%getMaterialAssociations([ &
                   J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
-                  J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+                  J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
+                  J_MAT_TYPE_WIRE//'               ' ])
 
             do i = 1, size(mAs)
                polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
@@ -3303,7 +3309,8 @@ contains
 
          mAs = this%getMaterialAssociations([ &
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
-                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
+                J_MAT_TYPE_WIRE//'               ' ])
 
          do i = 1, size(mAs)
             polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
@@ -3336,7 +3343,8 @@ contains
 
          mAs = this%getMaterialAssociations([ &
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
-                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ])
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
+                J_MAT_TYPE_WIRE//'               ' ])
          allocate(res(0))
          do i = 1, size(mAs)
             polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
@@ -3478,7 +3486,7 @@ contains
                res%transfer_impedance = buildTransferImpedance(material)
                call assignPULProperties(res, material, size(j_cable%elementIds))
             end select
-         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE)
+         case (J_MAT_TYPE_UNSHIELDED_MULTIWIRE, J_MAT_TYPE_WIRE)
             allocate(unshielded_multiwire_t :: res)
             select type(res)
             type is(unshielded_multiwire_t)
@@ -3487,7 +3495,6 @@ contains
          case default
             call WarnErrReport("Error reading cable: material type is not valid", .true.)
          end select
-
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
          res%name = j_cable%name
@@ -3548,11 +3555,14 @@ contains
          type(json_value_ptr) :: mat
          type(json_value), pointer :: multipolarExpansionPtr
          integer, intent(in) :: n
+         integer :: m
          real, dimension(:,:), allocatable :: null_matrix
          logical :: found
          logical :: areFixedInCell
          logical :: areMultipolarInCell
-         
+         logical :: hasRadius
+         real, dimension(:), allocatable :: r, c
+
          allocate(null_matrix(n,n), source = 0.0)
 
          areFixedInCell = &
@@ -3560,34 +3570,58 @@ contains
             this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)
          areMultipolarInCell = & 
             this%existsAt(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION)
+         hasRadius = &  
+            this%existsAt(mat%p, J_MAT_WIRE_RADIUS) .and. &
+            this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default = 0.0) /= 0
 
-         if ((areFixedInCell .and. areMultipolarInCell) .or. &
-             (.not. areFixedInCell .and. .not. areMultipolarInCell) ) then
-            call WarnErrReport( &
-               "Unshielded multiwires in cell properties must be defined by fixed OR multipolarExpansions, but not both.", .true.)
+         if (.not. hasRadius) then 
+            if ((areFixedInCell .and. areMultipolarInCell) .or. &
+               (.not. areFixedInCell .and. .not. areMultipolarInCell) ) then
+               call WarnErrReport( &
+                  "Unshielded multiwires in cell properties must be defined by fixed OR multipolarExpansions, but not both.", .true.)
+            end if
          end if
 
          if (areFixedInCell) then
             res%cell_inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
             res%cell_capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
             allocate(res%multipolar_expansion(0))
-         else 
+         else if (areMultipolarInCell) then
             res%cell_inductance_per_meter = null_matrix
             res%cell_capacitance_per_meter = null_matrix
 
             call this%core%get(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION, multipolarExpansionPtr)
             allocate(res%multipolar_expansion(1))         
             res%multipolar_expansion(1) = readMultipolarExpansion(multipolarExpansionPtr)
+         else if (hasRadius) then 
+            res%cell_inductance_per_meter = null_matrix
+            res%cell_capacitance_per_meter = null_matrix
+            allocate(res%multipolar_expansion(0))
+            res%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default = 0.0)
          end if
+
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
-            res%resistance_per_meter = &
-               vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found))
+            m = this%dimensionAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)
+            if (m == 0) then 
+               allocate(r(1))
+               r(1) = this%getRealAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found)
+            else
+               r = this%getRealsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE,found)
+            end if
+            res%resistance_per_meter = vectorToDiagonalMatrix(r)
          else
             res%resistance_per_meter = null_matrix
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)) then
-            res%conductance_per_meter = vectorToDiagonalMatrix(this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found))
+            m = this%dimensionAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE)
+            if (m == 0) then 
+               allocate(c(1))
+               c(1) = this%getRealAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found)
+            else
+               c = this%getRealsAt(mat%p, J_MAT_MULTIWIRE_CONDUCTANCE,found)
+            end if
+            res%conductance_per_meter = vectorToDiagonalMatrix(c)
          else
             res%conductance_per_meter = null_matrix
          end if
@@ -3679,14 +3713,23 @@ contains
             res(i)%orientation = linels(i)%orientation
             if (prevOr == abs(res(i)%orientation)) then 
                res(i)%dualBox = res(i-1)%dualBox
+               res(i)%d1 = res(i-1)%d1
+               res(i)%d2 = res(i-1)%d2
             else 
                select case(abs(res(i)%orientation))
                case(DIR_X)
                   res(i)%dualBox = getdualBoxYZ(res(i), despl)
+                  res(i)%d1 = despl%desY(res(i)%y)
+                  res(i)%d2 = despl%desZ(res(i)%z)
                case(DIR_Y)
                   res(i)%dualBox = getdualBoxZX(res(i), despl)
+                  res(i)%d1 = despl%desZ(res(i)%z)
+                  res(i)%d1 = despl%desX(res(i)%x)
                case(DIR_Z)
                   res(i)%dualBox = getdualBoxXY(res(i), despl)
+                  res(i)%d1 = despl%desX(res(i)%x)
+                  res(i)%d2 = despl%desY(res(i)%y)
+
                end select
             end if
             prevOr = abs(res(i)%orientation)
@@ -4012,6 +4055,14 @@ contains
       type(json_value), pointer :: place
       character(len=*) :: path
       call this%core%info(place, path, found=res)
+   end function
+
+   function dimensionAt(this, place, path) result(res)
+      integer :: res
+      class(parser_t) :: this
+      type(json_value), pointer :: place
+      character(len=*) :: path
+      call this%core%info(place, path, n_children=res)
    end function
 
    function jsonValueFilterByKeyValues(this, srcs, key, values) result (res)

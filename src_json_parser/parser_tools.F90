@@ -191,6 +191,7 @@ contains
 
    end function
 
+
    function vectorToDiagonalMatrix(vector) result(res)
       real, dimension(:), intent(in) :: vector
       real, dimension(:, :), allocatable :: res
