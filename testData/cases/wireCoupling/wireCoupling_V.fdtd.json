@@ -62,7 +62,7 @@
         {
             "id": 4,
             "type": "terminal",
-            "terminations": [{"type": "series", "resitance": 50}]
+            "terminations": [{"type": "series", "resistance": 50}]
         },
         {
             "name": "pec",
@@ -84,7 +84,7 @@
         {
             "id": 8,
             "type": "terminal",
-            "terminations": [{"type": "series", "resitance": 1e6}]
+            "terminations": [{"type": "series", "resistance": 1e6}]
         }
 
     ],

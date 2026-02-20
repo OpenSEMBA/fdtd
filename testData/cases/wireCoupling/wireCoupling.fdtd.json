@@ -44,10 +44,8 @@
     "materials" : [
         {
             "id": 1,
-            "type": "unshieldedMultiwire",
-            "inductancePerMeter":  [[6.0061307789765081e-07]],
-            "capacitancePerMeter": [[1.8499e-11]],
-            "resistancePerMeter":  [52.96e-3]
+            "type": "wire",
+            "radius": 0.322e-3
         },
         {
             "id": 2,
@@ -62,7 +60,7 @@
         {
             "id": 4,
             "type": "terminal",
-            "terminations": [{"type": "series", "resitance": 50}]
+            "terminations": [{"type": "series", "resistance": 50}]
         },
         {
             "name": "pec",
@@ -84,12 +82,12 @@
         {
             "id": 8,
             "type": "terminal",
-            "terminations": [{"type": "circuit", "file": "./sbau383a/sbau383a.lib" , "name": "sbau383a"}]
+            "terminations": [{"type": "circuit", "file": "TL071.301" , "name": "TL071"}]
         },
         {
             "id": 9,
             "type": "terminal",
-            "terminations": [{"type": "series", "resitance": 1e6}]
+            "terminations": [{"type": "series", "resistance": 1e6}]
         }
 
     ],
@@ -98,7 +96,7 @@
             "name": "wire",
             "materialId": 1,
             "initialTerminalId": 4,
-            "endTerminalId": 8,
+            "endTerminalId": 9,
             "elementIds": [1]
         },
         {

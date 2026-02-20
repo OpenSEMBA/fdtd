@@ -4,14 +4,27 @@
 
 R1 1 2 50
 .include ../sbomc43/buf802.lib
-xbuf802 IN+ OUT VCC2  VEE2 VCH VCL In_Bias In_Aux 0 BUF802
-* * xbuf802 2 11 1 5,8 15 14 3 4 17 BUF802
+xbuf802 IN+ OUT VCC2  VEE2 VCH VCL In_Bias In_Aux pad BUF802
+
+* xbuf802 2 11 1 5,8 15 14 3 4 17 BUF802
+
+* Vp VCC2 0 6
+* Vm VEE2 0 -6
+* R26 IN+ 5001 1.0e6
+* C44 IN+ 1 100.0e-9
+* R24 OUT 2 64.9
+* R23 VEE2 VCL 1.0e-10
+* R22 VCC2 VCH 1.0e-10
+* Rpad pad 0 1.0e-10
+* Rbias In_Bias 0 1.0e-10
+* Raux In_Aux 0 1.0e-10
+
 * 
-* connections to VIN #2
-R26 IN+ 5001 1.0e6
-C43 5001 0 2.2e-6
-C44 IN+ 1 100.0e-9
-R29 1 0 50.0
+* * connections to VIN #2
+* R26 IN+ 5001 1.0e6
+* C43 5001 0 2.2e-6
+* C44 IN+ 1 100.0e-9
+* R29 1 0 50.0
 * 
 * * connections to P1 P2 P3
 * Vp VCC2  0 6
