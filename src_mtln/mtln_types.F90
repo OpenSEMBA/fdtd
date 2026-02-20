@@ -180,6 +180,7 @@ module mtln_types_mod
 
    type, extends(direction_t) :: segment_t
       type(box_2d_t) :: dualBox
+      real :: d1, d2
    end type
 
 
@@ -202,6 +203,7 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: cell_capacitance_per_meter
       real, allocatable, dimension(:,:) :: resistance_per_meter
       real, allocatable, dimension(:,:) :: conductance_per_meter
+      real :: radius = 0.0
       ! should multipolar expansion be always present, instead of allocatable,  
       ! but check if it is being used using the size of the field_reconstruction?
       type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion

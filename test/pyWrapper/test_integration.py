@@ -1,20 +1,50 @@
 from utils import *
 
-def test_holland_case_checking_number_of_outputs(tmp_path):
+@mtln_skip
+def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     number_of_steps = 10
     solver['general']['numberOfSteps'] = number_of_steps
 
-    if (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "OFF"):
-        solver['materials'][0] = createWire(id = 1, r = 0.02)
-        outfile = 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat'
-    elif (os.getenv("SEMBA_FDTD_ENABLE_MTLN") == "ON"):
-        solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
-        outfile = 'holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat'
-    
-    
+    solver['materials'][0] = createWire(id = 1, r = 0.02)
+    outfile = 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat'
+    solver.run()
+
+    probe_files = solver.getSolvedProbeFilenames("mid_point")
+
+    assert len(probe_files) == 1
+    assert outfile == probe_files[0]
+    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
+
+@no_mtln_skip
+def test_holland_case_checking_number_of_outputs_wire(tmp_path):
+    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    number_of_steps = 10
+    solver['general']['numberOfSteps'] = number_of_steps
+
+    solver['materials'][0] = createWire(id = 1, r = 0.02)
+    outfile = 'holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat'
+    solver.run()
+
+    probe_files = solver.getSolvedProbeFilenames("mid_point")
+
+    assert len(probe_files) == 1
+    assert outfile == probe_files[0]
+    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
+
+@no_mtln_skip
+def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
+    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    number_of_steps = 10
+    solver['general']['numberOfSteps'] = number_of_steps
+    solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
+    outfile = 'holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat'
     solver.run()
 
     probe_files = solver.getSolvedProbeFilenames("mid_point")

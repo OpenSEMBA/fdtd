@@ -134,18 +134,41 @@ contains
     type(source_t) function setSource(source_path) result(res)
         character(*), intent(in) :: source_path
         real :: time, value
-        integer :: io
-        allocate(res%time(0), res%value(0))
-        if (source_path /= "" ) then 
-            res%has_source = .true.
-            open(unit = 1, file = source_path)
-            do
-                read(1, *, iostat = io) time, value
-                if (io /= 0) exit
-                res%time = [res%time, time]
-                res%value = [res%value, value]
-            end do
+        integer :: io, line_count, i
+        
+        if (source_path == "" ) then 
+            allocate(res%time(0), res%value(0))
+            res%has_source = .false.
+            return
         end if
+        
+        res%has_source = .true.
+        
+        ! First pass: count the number of lines
+        line_count = 0
+        open(unit = 1, file = source_path)
+        do
+            read(1, *, iostat = io) time, value
+            if (io /= 0) exit
+            line_count = line_count + 1
+        end do
+        close(1)
+        
+        ! Allocate arrays with the exact size needed
+        allocate(res%time(line_count))
+        allocate(res%value(line_count))
+        
+        ! Second pass: fill the arrays
+        open(unit = 1, file = source_path)
+        do i = 1, line_count
+            read(1, *, iostat = io) res%time(i), res%value(i)
+            if (io /= 0) then
+                ! Handle unexpected read error
+                close(1)
+                error stop "Error reading excitation file"
+            end if
+        end do
+        close(1)
     end function    
 
     subroutine loadNetlist(this, netlist)
