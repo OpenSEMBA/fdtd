@@ -2545,6 +2545,15 @@ contains
          return
       end if
 
+      block
+         type(materialAssociation_t), dimension(:), allocatable :: unshielded, shielded
+         unshielded = this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE, J_MAT_TYPE_WIRE//'             '])
+         mtln_res%n_unsh = size(unshielded)
+         shielded = this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE])
+         mtln_res%n_sh = size(shielded)
+      end block
+
+
       mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
