@@ -1,5 +1,5 @@
 module mtln_types_mod
-   use fdetypes, ONLY: direction_t
+   use fdetypes, ONLY: direction_t, BUFSIZE
    implicit none
 
    integer, parameter :: TERMINATION_UNDEFINED  = -1
@@ -190,6 +190,8 @@ module mtln_types_mod
       type(segment_t), dimension(:), allocatable :: segments
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
+      character (len=bufsize) :: tag
+      integer :: n_segments
    contains
       private
       procedure :: cable_eq
@@ -240,7 +242,7 @@ module mtln_types_mod
       type(connector_t), dimension(:), pointer :: connectors
       real :: time_step = 0.0
       integer :: number_of_steps = 0
-      ! logical :: has_multiwires = .false.
+      integer :: n_sh = 0, n_unsh = 0
    contains
       private
       procedure :: mtln_eq
