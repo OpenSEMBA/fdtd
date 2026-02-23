@@ -367,6 +367,11 @@ module  FDETYPES
       logical :: orientadoalreves
    end type oriented_point
 
+#ifdef CompileWithMTLN   
+   type  :: Multiwires_t
+   end type
+#endif
+
    type  ::  Wires_t
       REAL (KIND=RKIND_wires)   ::  Radius,R,L,C,P_R,P_L,P_C
       REAL (KIND=RKIND_wires)   ::  Radius_devia,R_devia,L_devia,C_devia
@@ -557,6 +562,7 @@ module  FDETYPES
       ConformalPEC , &
       PMC , &
       ThinWire , &
+      Multiwire , &
       SlantedWire, &
       EDispersive , &
       MDispersive , &
@@ -590,13 +596,16 @@ module  FDETYPES
       type (exists_t)            ::  Is
       type (Wires_t)           , dimension( : ), pointer  ::  Wire
       type (SlantedWires_t)    , dimension( : ), pointer  ::  SlantedWire
-      type (PMLbody_t)        , dimension( : ), pointer  ::  PMLbody
+      type (PMLbody_t)         , dimension( : ), pointer  ::  PMLbody
       type (Multiport_t)       , dimension( : ), pointer  ::  Multiport
       type (AnisMultiport_t)   , dimension( : ), pointer  ::  AnisMultiport
       type (DispersiveParams_t), dimension( : ), pointer  ::  EDispersive
       type (DispersiveParams_t), dimension( : ), pointer  ::  MDispersive
       type (Anisotropic_t)     , dimension( : ), pointer  ::  Anisotropic
       type (Lumped_t)          , dimension( : ), pointer  ::  Lumped
+#ifdef CompileWithMTLN
+      type (Multiwires_t)      , dimension( : ), pointer  ::  Multiwire
+#endif
    end type
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

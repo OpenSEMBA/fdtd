@@ -1504,7 +1504,7 @@ def test_conformal_impedance_cylinder_wire(tmp_path):
     assert np.allclose(np.abs(Vfexc/Ifbulk), np.abs(Vfexc/Ifbulk_conf), rtol=0.01, atol=0.001)
 
 @no_mtln_skip
-def test_conformal_impedance_cylinder(tmp_path):
+def test_conformal_impedance_cylinder_unshielded(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'
     solver = FDTD(input_filename=TEST_DATA_FOLDER+'cases/conformal_impedance_cylinder/'+case_name+'.fdtd.json', path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path)
