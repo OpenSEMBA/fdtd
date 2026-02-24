@@ -164,6 +164,20 @@ def test_spice_opamp_saturation(tmp_path):
 @no_mtln_skip
 @pytest.mark.mtln
 @pytest.mark.codemodel
+def test_spice_buf802(tmp_path):
+    fn = CASES_FOLDER + 'wireCoupling/wireCoupling.fdtd.json'
+    setNgspice(tmp_path)
+
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver["general"]["numberOfSteps"] = 1
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+
+@no_mtln_skip
+@pytest.mark.mtln
+@pytest.mark.codemodel
 def test_tvs_diode(tmp_path):
     fn = CASES_FOLDER + 'tvs_diode/tvs_diode.fdtd.json'
     # setNgspice(tmp_path)

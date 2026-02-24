@@ -66,6 +66,24 @@ libngspice_la_CFLAGS = -static
 libngspice_la_LDFLAGS = -static -version-info @LIB_VERSION@
 ```
 
+##### Running with ngspice
+
+To run semba using wire terminations or interconnections that have ngspice circuits a configuration file `spinit` is needed. A template for this file can be found at `testData\spinit\<SYSTEM>`  where `<SYSTEM>`  is either `linux` or `windows`. This file, and the files with extension `.cm` in said folder should be copied to the folder where semba will be executed.  Before running semba,  the environment variable `SPICE_SCRIPTS` has to be set to that folder, i.e.
+In Linux:
+```
+export SPICE_SCRIPTS="./"
+```
+In Windows
+```
+set SPICE_SCRIPTS=.\
+```
+
+ngspice is compatible with many most of the syntax and variables of other SPICE variants. However, not every command and instruction will necessarily be recognized by ngspice. To overcome these differences a compatibility mode can be selected, adding
+```
+set ngbehavior=x
+```
+to the `spinit` file, where `x` might be `lt` (for ltspice), `ps` (for pspice) or `ki` (for kicad), among others. For a comprehensive list, see [ngspice manual](https://ngspice.sourceforge.io/docs.html), section (12.14.1)
+
 #### MPI
 
 If you use intel oneapi, make sure to load the mpi environment variables:
