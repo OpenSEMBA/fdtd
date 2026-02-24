@@ -11,12 +11,12 @@ contains
 
       ! Print into console
       if (printea) then
-         write (*, '(a)') adjustl(message)
+         write (*, '(a)') trim(adjustl(message))
       end if
 
       ! Print into unitFile 11
       if (layoutnumber == 0) then
-         write (11, '(a)') adjustl(message)
+         write (11, '(a)') trim(adjustl(message))
       end if
    end subroutine printMessage
 
@@ -32,14 +32,14 @@ contains
       ! Print into console
       if (printea) then
          write (*, '(a)') SEPARADOR
-         write (*, '(a)') adjustl(message)
+         write (*, '(a)') trim(adjustl(message))
          write (*, '(a)') SEPARADOR
       end if
 
       ! Print into unitFile 11
       if (layoutnumber == 0) then
          write (11, '(a)') SEPARADOR
-         write (11, '(a)') adjustl(message)
+         write (11, '(a)') trim(adjustl(message))
          write (11, '(a)') SEPARADOR
       end if
 
@@ -57,14 +57,14 @@ contains
       ! Print into console
       if (printea) then
          write (*, '(a)') SEPARADOR
-         write (*, '(a)') adjustl(message)
+         write (*, '(a)') trim(adjustl(message))
          write (*, '(a)') SEPARADOR
       end if
 
       ! Print into unitFile 11
       if (layoutnumber == 0) then
          write (11, '(a)') SEPARADOR
-         write (11, '(a)') adjustl(message)
+         write (11, '(a)') trim(adjustl(message))
          write (11, '(a)') SEPARADOR
       end if
    end subroutine printMessageWithEndingSeparator

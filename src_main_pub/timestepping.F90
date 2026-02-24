@@ -1849,21 +1849,13 @@ contains
             Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
             if (.not.this%parar) then !!! si es por parada se gestiona al final
-!!!!! si esta hecho lo flushea todo pero poniendo de acuerdo a todos los mpi
-                do i=1,this%sgg%NumberRequest
-                   if  (this%sgg%Observation(i)%done.and.(.not.this%sgg%Observation(i)%flushed)) then
-                      this%perform%flushXdmf=.true.
-                      this%perform%flushVTK=.true.
-                   endif
-                end do
-#ifdef CompileWithMPI
-                call syncroniceFlushFlags(this%perform, ierr)
-#endif
-!!!!!!!!!!!!
-                if (this%perform%flushFIELDS) then
+               call request_flush_if_any_observation_is_done()
+
+               if (this%perform%flushFIELDS) then
                   call performFlushField()
-                endif
-                if (this%perform%isFlush()) then
+               endif
+
+               if (this%perform%isFlush()) then
                       !
                       flushFF=this%perform%postprocess
                       if (this%thereAre%FarFields.and.flushFF) then
@@ -1951,7 +1943,6 @@ contains
                      call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
                  endif !del if (this%performflushDATA.or....
-    !
                   if (this%control%singlefilewrite.and.this%perform%Unpack) call singleUnpack()
                   if ((this%control%singlefilewrite.and.this%perform%Unpack).or.this%perform%isFlush()) then
                      write(dubuf,'(a,i9)')  ' Continuing simulation at n= ',this%n
@@ -1998,6 +1989,19 @@ contains
       end do ciclo_temporal ! End of the time-stepping loop
 
 contains
+
+      subroutine request_flush_if_any_observation_is_done()
+         do i=1,this%sgg%NumberRequest
+            if  (this%sgg%Observation(i)%done.and.(.not.this%sgg%Observation(i)%flushed)) then
+               this%perform%flushXdmf=.true.
+               this%perform%flushVTK=.true.
+            endif
+         end do
+#ifdef CompileWithMPI
+         call syncroniceFlushFlags(this%perform, ierr)
+#endif
+      end subroutine
+      
 #ifdef CompileWithMPI
       subroutine syncroniceFlushFlags(performFlags, integerError)
          type(perform_t), intent(inout) :: performFlags

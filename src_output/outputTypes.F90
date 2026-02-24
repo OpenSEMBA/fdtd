@@ -21,6 +21,7 @@ module outputTypes
    integer, parameter :: BOTH_DOMAIN       =  2
 
 
+   character(len=4), parameter :: binaryExtension = '.bin'
    character(len=4), parameter :: pvdExtension = '.pvd'
    character(len=4), parameter :: datFileExtension = '.dat'
    character(len=4), parameter :: vtkFileExtension = '.vtk'
@@ -162,20 +163,20 @@ module outputTypes
    type, extends(abstract_time_probe_t) :: movie_probe_output_t
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
-      integer(kind=SINGLE), allocatable :: coords(:, :)
-      real(kind=RKIND), allocatable :: xValueForTime(:, :)
-      real(kind=RKIND), allocatable :: yValueForTime(:, :)
-      real(kind=RKIND), allocatable :: zValueForTime(:, :)
+      integer(kind=SINGLE), allocatable :: coords(:, :)     !(3, coordIdx)
+      real(kind=RKIND), allocatable :: xValueForTime(:, :)  !(time, coordIdx) 
+      real(kind=RKIND), allocatable :: yValueForTime(:, :)  !(time, coordIdx) 
+      real(kind=RKIND), allocatable :: zValueForTime(:, :)  !(time, coordIdx) 
       character(len=BUFSIZE) :: pvdPath
    end type movie_probe_output_t
 
    type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
-      integer(kind=SINGLE), allocatable :: coords(:, :)
-      complex(kind=CKIND), allocatable :: xValueForFreq(:, :)
-      complex(kind=CKIND), allocatable :: yValueForFreq(:, :)
-      complex(kind=CKIND), allocatable :: zValueForFreq(:, :)
+      integer(kind=SINGLE), allocatable :: coords(:, :)        !(3, coordIdx)
+      complex(kind=CKIND), allocatable :: xValueForFreq(:, :)  !(time, coordIdx)
+      complex(kind=CKIND), allocatable :: yValueForFreq(:, :)  !(time, coordIdx)
+      complex(kind=CKIND), allocatable :: zValueForFreq(:, :)  !(time, coordIdx)
       character(len=BUFSIZE) :: pvdPath
    end type frequency_slice_probe_output_t
 

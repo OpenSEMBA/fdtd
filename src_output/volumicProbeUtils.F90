@@ -46,9 +46,9 @@ contains
       call get_checker_and_component(requestComponent, checker, component)
 
       count = 0
-      do i = lowerBound%x, upperBound%x
-      do j = lowerBound%y, upperBound%y
       do k = lowerBound%z, upperBound%z
+      do j = lowerBound%y, upperBound%y
+      do i = lowerBound%x, upperBound%x
          if (checker(component, i, j, k, problemInfo)) count = count + 1
       end do
       end do
@@ -68,9 +68,9 @@ contains
       call get_checker_and_component(requestComponent, checker, component)
 
       count = 0
-      do i = lowerBound%x, upperBound%x
-      do j = lowerBound%y, upperBound%y
       do k = lowerBound%z, upperBound%z
+      do j = lowerBound%y, upperBound%y
+      do i = lowerBound%x, upperBound%x
          if (checker(component, i, j, k, problemInfo)) then
             count = count + 1
             coords(1, count) = i
