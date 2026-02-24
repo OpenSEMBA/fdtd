@@ -53,24 +53,15 @@ contains
       this%pvdPath = join_path(this%path, pdvFileName)
 
       call create_folder(this%path, error)
+      call create_file_with_path(add_extension(this%path, binaryExtension), error)
 
       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
       call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
 
       ! Allocate value arrays based on component type
-      if (any(VOLUMIC_M_MEASURE == field)) then
          call alloc_and_init(this%xValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
          call alloc_and_init(this%yValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
          call alloc_and_init(this%zValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
-      else if (any(VOLUMIC_X_MEASURE == field)) then
-         call alloc_and_init(this%xValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
-      else if (any(VOLUMIC_Y_MEASURE == field)) then
-         call alloc_and_init(this%yValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
-      else if (any(VOLUMIC_Z_MEASURE == field)) then
-         call alloc_and_init(this%zValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
-      else
-         call StopOnError(control%layoutnumber, control%size, "Unexpected output type for movie probe")
-      end if
    end subroutine init_movie_probe_output
 
    subroutine update_movie_probe_output(this, step, fieldsReference, control, problemInfo)
@@ -136,6 +127,8 @@ contains
       type(movie_probe_output_t), intent(inout) :: this
       integer :: i
 
+      call write_bin_file(this)
+
       do i = 1, this%nTime
          call update_pvd(this, i, this%pvdPath)
       end do
@@ -146,6 +139,48 @@ contains
    !===========================
    ! Private routines
    !===========================
+
+   subroutine write_bin_file(this)
+      type(movie_probe_output_t), intent(inout) :: this
+      integer :: i, t, unit
+
+      open(unit=unit, file=add_extension(this%path, binaryExtension), &
+      status='old', form='unformatted', position='append', access='stream')
+      do t=1, this%nTime
+      do i=1, this%nPoints
+         write(unit) this%timeStep(t), this%coords(1,i), this%coords(2,i), this%coords(3,i), this%xValueForTime(t,i), this%yValueForTime(t,i), this%zValueForTime(t,i)
+      end do
+      end do
+      close(unit)
+      call read_bin_file(this)
+   end subroutine
+
+   subroutine read_bin_file(this)
+      type(movie_probe_output_t), intent(inout) :: this
+      integer :: unit
+      integer :: iostat
+      real(kind=RKIND_tiempo) timeStamp
+      integer(kind=SINGLE) :: x, y, z
+      real(kind=RKIND) :: xVal, yVal, zVal
+      integer(kind=4) :: dataSize
+      
+      ! Open the file for reading
+      open(unit=unit, file=add_extension(this%path, binaryExtension), &
+           status='old', form='unformatted', access='stream', iostat=iostat)
+      if (iostat /= 0) then
+          print *, 'Error opening file!'
+          return
+      end if
+    
+      ! Read until end-of-file
+      do
+          read(unit, iostat=iostat) timeStamp, x, y, z, xVal, yVal, zVal
+          if (iostat /= 0) exit  ! EOF or error
+          print *, timeStamp, x, y, z, xVal, yVal, zVal
+      end do
+    
+      close(unit)
+   end subroutine
 
    function get_output_path(this, outputTypeExtension, field, mpidir) result(path)
       type(movie_probe_output_t), intent(in) :: this
@@ -168,9 +203,9 @@ contains
       integer :: i, j, k, coordIdx
       this%timeStep(this%nTime) = simTime
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
       do k = this%mainCoords%z, this%auxCoords%z
+      do j = this%mainCoords%y, this%auxCoords%y
+      do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(iCur, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_current(this%xValueForTime, this%nTime, coordIdx, iEx, i, j, k, fieldsReference)
@@ -193,9 +228,9 @@ contains
       integer :: i, j, k, coordIdx
       this%timeStep(this%nTime) = simTime
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
       do k = this%mainCoords%z, this%auxCoords%z
+      do j = this%mainCoords%y, this%auxCoords%y
+      do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForCurrent(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_current(currentData, this%nTime, coordIdx, fieldDir, i, j, k, fieldsReference)
@@ -223,9 +258,9 @@ contains
       integer :: i, j, k, coordIdx
       this%timeStep(this%nTime) = simTime
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
       do k = this%mainCoords%z, this%auxCoords%z
+      do j = this%mainCoords%y, this%auxCoords%y
+      do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(request, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_field(this%xValueForTime, this%nTime, coordIdx, field%x(i,j,k))
@@ -248,9 +283,9 @@ contains
       integer :: i, j, k, coordIdx
       this%timeStep(this%nTime) = simTime
       coordIdx = 0
-      do i = this%mainCoords%x, this%auxCoords%x
-      do j = this%mainCoords%y, this%auxCoords%y
       do k = this%mainCoords%z, this%auxCoords%z
+      do j = this%mainCoords%y, this%auxCoords%y
+      do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
             call save_field(fieldData, this%nTime, coordIdx, fieldComponent(i,j,k))

@@ -354,7 +354,7 @@ integer function test_vtkAPI_vtu_content() bind(C) result(error_cnt)
    allocate(types(1)); types=(/10/)
    call ugrid%add_cell_connectivity(conn, offsets, types)
 
-   ! Point scalar
+   ! Point scalarll
    allocate(scalars(4)); scalars=(/1.0,2.0,3.0,4.0/)
    call grid_base%add_scalar('Velocity', scalars)
 

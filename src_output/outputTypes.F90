@@ -120,6 +120,7 @@ module outputTypes
    type, extends(abstract_probe_t) :: mapvtk_output_t
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE), allocatable :: coords(:, :)
+      integer(kind=SINGLE), allocatable :: currentType(:)
       integer(kind=SINGLE), allocatable :: materialTag(:)
       integer :: nPoints = -1
    end type mapvtk_output_t
@@ -148,6 +149,7 @@ module outputTypes
    end type wire_current_probe_output_t
 
    type, extends(abstract_time_probe_t) :: bulk_current_probe_output_t
+      !Binary format: timeStamp, Val. Total register size: 16
       type(cell_coordinate_t) :: auxCoords
       real(kind=RKIND), allocatable :: valueForTime(:)
    end type bulk_current_probe_output_t
@@ -161,6 +163,7 @@ module outputTypes
    end type far_field_probe_output_t
 
    type, extends(abstract_time_probe_t) :: movie_probe_output_t
+      !Binary format: timeStamp, x, y, z, xVal, yVal, zVal. Total register size: 44
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)     !(3, coordIdx)
@@ -171,6 +174,7 @@ module outputTypes
    end type movie_probe_output_t
 
    type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
+      !Binary format: frequencySlice, x, y, z, xVal, yVal, zVal. Total register size: 44
       type(cell_coordinate_t) :: auxCoords
       integer(kind=SINGLE)    :: nPoints = -1
       integer(kind=SINGLE), allocatable :: coords(:, :)        !(3, coordIdx)

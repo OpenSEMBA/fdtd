@@ -82,6 +82,138 @@ contains
       end do
    end subroutine store_required_coords
 
+   subroutine createUnstructuredDataForVTU(counter, coords, currentType, materialTag, Nodes, Edges, Quads, numNodes, numEdges, numQuads)
+      integer, intent(in) :: counter
+      integer(kind=SINGLE), intent(in) :: coords(:, :), currentType(:), materialTag(:)
+
+      integer(kind=4), intent(out):: numNodes, numQuads, numEdges
+      real(kind=RKIND), allocatable, dimension(:, :), intent(out) :: Nodes
+      integer(kind=4), allocatable, dimension(:, :), intent(out) ::  Edges, Quads
+
+      if (counter /= 0) then
+         Allocate (Nodes(3, counter))
+      else
+         return
+      end if
+
+      call countElements(counter, currentType, numEdges, numQuads)
+
+      allocate (Edges(2, numEdges))
+      allocate (Quads(4, numQuads))
+      allocate (Nodes(3, counter*(numEdges + numQuads)))
+
+      call registerElements(counter, coords, currentType, Nodes, Edges, Quads)
+
+   end subroutine
+
+   subroutine registerNode(nodes, nodeIx, x, y, z)
+      real(kind=RKIND), dimension(:, :), intent(inout) :: nodes
+      integer(kind=SINGLE), intent(in) :: nodeIx, x, y, z
+
+      nodes(1, nodeIx) = x*1.0_RKIND
+      nodes(2, nodeIx) = y*1.0_RKIND
+      nodes(3, nodeIx) = z*1.0_RKIND
+   end subroutine
+
+   subroutine registerEdge(edges, edgeIdx, startNodeIdx, endNodeIdx)
+      integer(kind=SINGLE), dimension(:, :), intent(inout) :: edges
+      integer(kind=SINGLE), intent(in) :: edgeIdx, startNodeIdx, endNodeIdx
+
+      edges(1, edgeIdx) = startNodeIdx
+      edges(2, edgeIdx) = endNodeIdx
+   end subroutine
+
+   subroutine registerQuad(quads, quadIdx, firstNodeIdx, secondNodeIdx, thirdNodeIdx, fourthNodeIdx)
+      integer(kind=SINGLE), dimension(:, :), intent(inout) :: quads
+      integer(kind=SINGLE), intent(in) :: quadIdx, firstNodeIdx, secondNodeIdx, thirdNodeIdx, fourthNodeIdx
+
+      quads(1, quadIdx) = firstNodeIdx
+      quads(2, quadIdx) = secondNodeIdx
+      quads(2, quadIdx) = thirdNodeIdx
+      quads(2, quadIdx) = fourthNodeIdx
+   end subroutine
+
+   subroutine countElements(counter, currentType, numEdges, numQuads)
+      integer, intent(in) :: counter
+      integer(kind=SINGLE), intent(in) :: currentType(:)
+      integer(kind=4), intent(out) :: numEdges, numQuads
+      integer :: i
+
+      numEdges = 0
+      numQuads = 0
+
+      do i = 1, counter
+         if ((currentType(i) == iJx) .or. (currentType(i) == iJy) .or. (currentType(i) == iJz)) numEdges = numEdges + 1
+    if ((currentType(i) == iBloqueJx) .or. (currentType(i) == iBloqueJy) .or. (currentType(i) == iBloqueJz)) numQuads = numQuads + 1
+      end do
+   end subroutine
+
+   subroutine registerElements(counter, coords, currentType, Nodes, Edges, Quads)
+      integer, intent(in) :: counter
+      integer(kind=SINGLE), intent(in) :: coords(:, :), currentType(:)
+      real(kind=RKIND), intent(inout) :: Nodes(:, :)
+      integer(kind=4), intent(inout) :: Edges(:, :), Quads(:, :)
+
+      integer :: nodeIdx, quadIdx, edgeIdx
+      integer :: i
+
+      nodeIdx = 0
+      quadIdx = 0
+      edgeIdx = 0
+
+      do i = 1, counter
+         select case (currentType(i))
+         case (iJx)
+            nodeIdx = nodeIdx + 2
+            call registerNode(Nodes, nodeIdx - 1, coords(1, i)    , coords(2, i), coords(3, i)    )
+            call registerNode(Nodes, nodeIdx    , coords(1, i) + 1, coords(2, i), coords(3, i)    )
+            edgeIdx = edgeIdx + 1
+            call registerEdge(Edges, edgeIdx, nodeIdx - 1, nodeIdx)
+
+         case (iJy)
+            nodeIdx = nodeIdx + 2
+            call registerNode(Nodes, nodeIdx - 1, coords(1, i), coords(2, i)    , coords(3, i)    )
+            call registerNode(Nodes, nodeIdx    , coords(1, i), coords(2, i) + 1, coords(3, i)    )
+            edgeIdx = edgeIdx + 1
+            call registerEdge(Edges, edgeIdx, nodeIdx - 1, nodeIdx)
+
+         case (iJz)
+            nodeIdx = nodeIdx + 2
+            call registerNode(Nodes, nodeIdx - 1, coords(1, i), coords(2, i)    , coords(3, i)    )
+            call registerNode(Nodes, nodeIdx    , coords(1, i), coords(2, i)    , coords(3, i) + 1)
+            edgeIdx = edgeIdx + 1
+            call registerEdge(Edges, edgeIdx, nodeIdx - 1, nodeIdx)
+
+         case (iBloqueJx)
+            nodeIdx = nodeIdx + 4
+            call registerNode(Nodes, nodeIdx - 3, coords(1, i), coords(2, i)    , coords(3, i)    )
+            call registerNode(Nodes, nodeIdx - 2, coords(1, i), coords(2, i) + 1, coords(3, i)    )
+            call registerNode(Nodes, nodeIdx - 1, coords(1, i), coords(2, i) + 1, coords(3, i) + 1)
+            call registerNode(Nodes, nodeIdx    , coords(1, i), coords(2, i)    , coords(3, i) + 1)
+            quadIdx = quadIdx + 1
+            call registerQuad(Quads, quadIdx, nodeIdx - 3, nodeIdx - 2, nodeIdx - 1, nodeIdx)
+
+         case (iBloqueJy)
+            nodeIdx = nodeIdx + 4
+            call registerNode(Nodes, nodeIdx - 3, coords(1, i)    , coords(2, i), coords(3, i)    )
+            call registerNode(Nodes, nodeIdx - 2, coords(1, i) + 1, coords(2, i), coords(3, i)    )
+            call registerNode(Nodes, nodeIdx - 1, coords(1, i) + 1, coords(2, i), coords(3, i) + 1)
+            call registerNode(Nodes, nodeIdx    , coords(1, i)    , coords(2, i), coords(3, i) + 1)
+            quadIdx = quadIdx + 1
+            call registerQuad(Quads, quadIdx, nodeIdx - 3, nodeIdx - 2, nodeIdx - 1, nodeIdx)
+
+         case (iBloqueJz)
+            nodeIdx = nodeIdx + 4
+            call registerNode(Nodes, nodeIdx - 3, coords(1, i)    , coords(2, i)    , coords(3, i))
+            call registerNode(Nodes, nodeIdx - 2, coords(1, i) + 1, coords(2, i)    , coords(3, i))
+            call registerNode(Nodes, nodeIdx - 1, coords(1, i) + 1, coords(2, i) + 1, coords(3, i))
+            call registerNode(Nodes, nodeIdx    , coords(1, i)    , coords(2, i) + 1, coords(3, i))
+            quadIdx = quadIdx + 1
+            call registerQuad(Quads, quadIdx, nodeIdx - 3, nodeIdx - 2, nodeIdx - 1, nodeIdx)
+         end select
+      end do
+   end subroutine
+
    subroutine get_checker_and_component(request, checker, component)
       integer(kind=SINGLE), intent(in)              :: request
       procedure(logical_func), pointer, intent(out) :: checker

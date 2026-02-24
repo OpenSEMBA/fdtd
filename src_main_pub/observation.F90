@@ -1791,13 +1791,13 @@ contains
                   if ((SGG%Observation(ii)%TimeDomain) .and. (sgg%observation(ii)%P(1)%what /= mapvtk)) then
                     !
                     read (output(ii)%item(i)%unit) ndum
-              if (output(ii)%item(i)%columnas /= ndum) call stoponerror(layoutnumber, size, 'BUGGYError reading resuming files () ')
+                    if (output(ii)%item(i)%columnas /= ndum) call stoponerror(layoutnumber, size, 'BUGGYError reading resuming files () ')
                     do conta = 1, output(ii)%item(i)%columnas
                       read (output(ii)%item(i)%unit) ndum, ndum, ndum, ndum, ndum
                     end do
                     cutting3: do
                       read (output(ii)%item(i)%unit, end=699) at
-          if (output(ii)%item(i)%columnas /= 0) read (output(ii)%item(i)%unit, end=699) (rdum, conta=1, output(ii)%item(i)%columnas)
+                      if (output(ii)%item(i)%columnas /= 0) read (output(ii)%item(i)%unit, end=699) (rdum, conta=1, output(ii)%item(i)%columnas)
                       output(ii)%TimesWritten = output(ii)%TimesWritten + 1
                       if (at > lastexecutedtime) then
                      print '(i4,a,a,2e19.9e3)', quienmpi, 'Cutting 3 ', trim(adjustl(output(ii)%item(i)%path)), at, lastexecutedtime
