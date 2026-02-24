@@ -91,47 +91,43 @@ contains
       real(kind=RKIND), allocatable, dimension(:, :), intent(out) :: Nodes
       integer(kind=4), allocatable, dimension(:, :), intent(out) ::  Edges, Quads
 
-      if (counter /= 0) then
-         Allocate (Nodes(3, counter))
-      else
-         return
-      end if
+      if (counter == 0) return
 
       call countElements(counter, currentType, numEdges, numQuads)
 
       allocate (Edges(2, numEdges))
       allocate (Quads(4, numQuads))
-      allocate (Nodes(3, counter*(numEdges + numQuads)))
+      allocate (Nodes(3, 2*numEdges + 4*numQuads))
 
       call registerElements(counter, coords, currentType, Nodes, Edges, Quads)
-
+      return
    end subroutine
 
    subroutine registerNode(nodes, nodeIx, x, y, z)
       real(kind=RKIND), dimension(:, :), intent(inout) :: nodes
       integer(kind=SINGLE), intent(in) :: nodeIx, x, y, z
-
-      nodes(1, nodeIx) = x*1.0_RKIND
-      nodes(2, nodeIx) = y*1.0_RKIND
-      nodes(3, nodeIx) = z*1.0_RKIND
+      !We need to avoid using idx 0
+      nodes(1, nodeIx + 1) = x*1.0_RKIND
+      nodes(2, nodeIx + 1) = y*1.0_RKIND
+      nodes(3, nodeIx + 1) = z*1.0_RKIND
    end subroutine
 
    subroutine registerEdge(edges, edgeIdx, startNodeIdx, endNodeIdx)
       integer(kind=SINGLE), dimension(:, :), intent(inout) :: edges
       integer(kind=SINGLE), intent(in) :: edgeIdx, startNodeIdx, endNodeIdx
 
-      edges(1, edgeIdx) = startNodeIdx
-      edges(2, edgeIdx) = endNodeIdx
+      edges(1, edgeIdx + 1) = startNodeIdx
+      edges(2, edgeIdx + 1) = endNodeIdx
    end subroutine
 
    subroutine registerQuad(quads, quadIdx, firstNodeIdx, secondNodeIdx, thirdNodeIdx, fourthNodeIdx)
       integer(kind=SINGLE), dimension(:, :), intent(inout) :: quads
       integer(kind=SINGLE), intent(in) :: quadIdx, firstNodeIdx, secondNodeIdx, thirdNodeIdx, fourthNodeIdx
 
-      quads(1, quadIdx) = firstNodeIdx
-      quads(2, quadIdx) = secondNodeIdx
-      quads(2, quadIdx) = thirdNodeIdx
-      quads(2, quadIdx) = fourthNodeIdx
+      quads(1, quadIdx + 1) = firstNodeIdx
+      quads(2, quadIdx + 1) = secondNodeIdx
+      quads(3, quadIdx + 1) = thirdNodeIdx
+      quads(4, quadIdx + 1) = fourthNodeIdx
    end subroutine
 
    subroutine countElements(counter, currentType, numEdges, numQuads)
@@ -158,9 +154,9 @@ contains
       integer :: nodeIdx, quadIdx, edgeIdx
       integer :: i
 
-      nodeIdx = 0
-      quadIdx = 0
-      edgeIdx = 0
+      nodeIdx = -1
+      quadIdx = -1
+      edgeIdx = -1
 
       do i = 1, counter
          select case (currentType(i))

@@ -72,6 +72,7 @@ contains
       this%nPoints = counter
       call alloc_and_init(this%coords, 3, this%nPoints, -99)
       call alloc_and_init(this%materialTag, this%nPoints, -1)
+      call alloc_and_init(this%currentType, this%nPoints, -1)
 
       counter = 0
       do k = this%mainCoords%Z, this%auxCoords%Z
@@ -81,13 +82,13 @@ contains
             if (isWithinBounds(Hfield, i, j, k, problemInfo)) then
                if (isMaterialExceptPML(Hfield, i, j, k, problemInfo)) then
                   counter = counter + 1
-                  call writeFaceTagInfo(this, counter, i, j, k, problemInfo%materialTag%getFaceTag(Hfield, i, j, k))
+                  call writeFaceTagInfo(this, counter, i, j, k, Hfield, problemInfo%materialTag%getFaceTag(Hfield, i, j, k))
                end if
                if (problemInfo%materialTag%getFaceTag(Hfield, i, j, k) < 0 &
                    .and. (btest(iabs(problemInfo%materialTag%getFaceTag(Hfield, i, j, k)), Hfield - 1)) &
                    .and. .not. isPML(Hfield, i, j, k, problemInfo)) then
                   counter = counter + 1
-                  call writeFaceTagInfo(this, counter, i, j, k, problemInfo%materialTag%getFaceTag(Hfield, i, j, k))
+                  call writeFaceTagInfo(this, counter, i, j, k, Hfield, problemInfo%materialTag%getFaceTag(Hfield, i, j, k))
                end if
             end if
          end do
@@ -103,12 +104,13 @@ contains
       isMaterialExceptPML = isMaterialExceptPML .and. (.not. isPML(field, i, j, k, problemInfo))
    end function isMaterialExceptPML
 
-   subroutine writeFaceTagInfo(this, counter, i, j, k, tag)
+   subroutine writeFaceTagInfo(this, counter, i, j, k, field, tag)
       type(mapvtk_output_t), intent(inout) :: this
-      integer, intent(in) :: i, j, k, counter, tag
+      integer, intent(in) :: i, j, k, counter, tag, field
       this%coords(1, counter) = i
       this%coords(2, counter) = j
       this%coords(3, counter) = k
+      this%currentType(counter) = currentType(field)
       this%materialTag(counter) = tag
    end subroutine
 
@@ -135,22 +137,27 @@ contains
       vtuPath = join_path(this%path, get_last_component(this%path))//vtuFileExtension
 
       call createUnstructuredDataForVTU(this%nPoints, this%coords, this%currentType, nodes, edges, quads, numNodes, numEdges, numQuads)
-      call ugrid%add_points(nodes)
+      call ugrid%add_points(real(nodes, 4))
 
       allocate (conn(2*numEdges + 4*numQuads))
       conn(1:2*numEdges) = reshape(edges, [2*numEdges])
       conn(2*numEdges + 1:2*numEdges + 4*numQuads) = reshape(quads, [4*numQuads])
 
       allocate (offsets(numEdges + numQuads))
-      do i = 1, numEdges
-         if (i == 1) then
-            offsets(i) = 2
+      do i = 1, numEdges + numQuads
+         if (i <= numEdges) then
+            if (i == 1) then
+               offsets(i) = 2
+            else
+               offsets(i) = offsets(i-1) + 2
+            end if
          else
-            offsets(i) = offsets(i - 1) + 2
+            if (i == 1) then
+               offsets(i) = 4
+            else
+               offsets(i) = offsets(i-1) + 4
+            end if
          end if
-      end do
-      do i = 1, numQuads
-         offsets(numEdges + i) = offsets(numEdges + i - 1) + 4
       end do
 
       allocate(types(numEdges+numQuads))
@@ -158,6 +165,16 @@ contains
       types(numEdges+1:numEdges+numQuads) = 9
 
       call ugrid%add_cell_connectivity(conn, offsets, types)
+      if (size(offsets) /= numQuads) then
+         print *, "Problema con offsets"
+      end if
+      if (size(types) /= numQuads) then
+         print *, "Problema con types"
+      end if
+      if (offsets(numQuads) /= size(conn)) then
+         print *, "Tenemos un problema con conn y offset"
+      end if
+
       call ugrid%write_file(vtuPath)
 
       !---------------------------------------------

@@ -31,6 +31,7 @@ module mod_outputUtils
    public :: computeJ2
    public :: fieldo
    public :: create_data_file
+   public :: currentType
    !===========================
 
    !===========================
@@ -574,6 +575,19 @@ contains
          u = 0
       end if
    end function
+
+   integer function currentType(field)
+        integer(kind=4) :: field
+        select case (field)
+        case (iEx); currentType = iJx
+        case (iEy); currentType = iJy
+        case (iEz); currentType = iJz
+        case (iHx); currentType = iBloqueJx
+        case (iHy); currentType = iBloqueJy
+        case (iHz); currentType = iBloqueJz
+        case default; call StopOnError(0, 0, 'field is not a E or H field')
+        end select
+      end function
 
    function get_field(field, i, j, k, fields_reference) result(res)
       implicit none

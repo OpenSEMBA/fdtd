@@ -188,7 +188,7 @@ contains
 
                allocate (outputs(outputCount)%mapvtkOutput)
                call init_solver_output(outputs(outputCount)%mapvtkOutput, lowerBound, upperBound, outputRequestType, outputTypeExtension, control%mpidir, problemInfo)
-               call create_geometry_simulation_vtk(outputs(outputCount)%mapvtkOutput, problemInfo, control)
+               call create_geometry_simulation_vtu(outputs(outputCount)%mapvtkOutput, control)
                !! call adjust_computation_range --- Required due to issues in mpi region edges
 
             case (iEx, iEy, iEz, iHx, iHy, iHz)
