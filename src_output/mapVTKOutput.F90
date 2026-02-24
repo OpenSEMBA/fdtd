@@ -5,6 +5,8 @@ module mod_mapVTKOutput
    use vtk_fortran
    use mod_directoryUtils
    use mod_allocationUtils
+   use mod_vtkAPI
+   use mod_volumicProbeUtils
    use Report
 
    implicit none
@@ -110,38 +112,53 @@ contains
       this%materialTag(counter) = tag
    end subroutine
 
-   subroutine create_geometry_simulation_vtk(this, problemInfo, control)
+   subroutine create_geometry_simulation_vtu(this, control)
       implicit none
 
       type(mapvtk_output_t), intent(in) :: this
-      type(problem_info_t), intent(in) :: problemInfo
       type(sim_control_t), intent(in) :: control
       type(vtk_file) :: vtkOutput
+      type(vtk_unstructured_grid), target :: ugrid
 
       integer :: ierr, i, npts, unit
       real(RKIND), allocatable :: x(:), y(:), z(:), materialTag(:)
       character(len=BUFSIZE) :: info_str
-      character(len=BUFSIZE) :: metadata_filename, vtkPath
+      character(len=BUFSIZE) :: metadata_filename, vtuPath
 
-      !--------------------------------------------- 
-      ! Initialize VTK file 
-      !--------------------------------------------- 
+      integer, allocatable :: conn(:), offsets(:), types(:)
+      integer :: numNodes, numEdges, numQuads
+      real(kind=RKIND), allocatable :: nodes(:, :)
+      integer(kind=SINGLE), allocatable :: edges(:, :), quads(:, :)
+
+
       call create_folder(this%path, ierr)
-      vtkPath = join_path(this%path, get_last_component(this%path))//vtkFileExtension
-      ierr = vtkOutput%initialize(format='ASCII', filename=trim(vtkPath), mesh_topology='UnstructuredGrid') 
-      if (ierr /= 0) call StopOnError(control%layoutnumber, control%size, 'Error initializing VTK') 
+      vtuPath = join_path(this%path, get_last_component(this%path))//vtuFileExtension
 
-      !---------------------------------------------
-      ! Points
-      !---------------------------------------------
-      npts = this%nPoints
-      allocate (x(npts), y(npts), z(npts))
+      call createUnstructuredDataForVTU(this%nPoints, this%coords, this%currentType, nodes, edges, quads, numNodes, numEdges, numQuads)
+      call ugrid%add_points(nodes)
 
-      do i = 1, npts
-         x(i) = this%coords(1, i)
-         y(i) = this%coords(2, i)
-         z(i) = this%coords(3, i)
+      allocate (conn(2*numEdges + 4*numQuads))
+      conn(1:2*numEdges) = reshape(edges, [2*numEdges])
+      conn(2*numEdges + 1:2*numEdges + 4*numQuads) = reshape(quads, [4*numQuads])
+
+      allocate (offsets(numEdges + numQuads))
+      do i = 1, numEdges
+         if (i == 1) then
+            offsets(i) = 2
+         else
+            offsets(i) = offsets(i - 1) + 2
+         end if
       end do
+      do i = 1, numQuads
+         offsets(numEdges + i) = offsets(numEdges + i - 1) + 4
+      end do
+
+      allocate(types(numEdges+numQuads))
+      types(1:numEdges) = 3
+      types(numEdges+1:numEdges+numQuads) = 9
+
+      call ugrid%add_cell_connectivity(conn, offsets, types)
+      call ugrid%write_file(vtuPath)
 
       !---------------------------------------------
       ! Metadata: write to .txt file
@@ -150,7 +167,6 @@ contains
                  'WIRE=7, WIRE-COLISION=8, COMPO=3, DISPER=1, DIEL=2, SLOT=4, '// &
                  'CONF=5/6, OTHER=-1 (ADD +0.5 for borders)'
 
-      ! Create .txt file with same base name as VTK file
       metadata_filename = trim(this%path)//'.txt'
       open (newunit=unit, file=metadata_filename, status='replace', action='write', iostat=ierr)
       if (ierr /= 0) then
@@ -160,35 +176,7 @@ contains
          close (unit)
       end if
 
-      !---------------------------------------------
-      ! Write geometry to VTK
-      !---------------------------------------------
-      ierr = vtkOutput%xml_writer%write_geo(n=npts, x=x, y=y, z=z)
-
-      !---------------------------------------------
-      ! Node data: material tags
-      !---------------------------------------------
-      allocate (materialTag(npts))
-      do i = 1, npts
-         materialTag(i) = this%materialTag(i)
-      end do
-
-      ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      ierr = vtkOutput%xml_writer%write_dataarray(data_name='TagNumber', x=materialTag)
-      ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-
-      !---------------------------------------------
-      ! Clean up
-      !---------------------------------------------
-      deallocate (materialTag)
-      deallocate (x, y, z)
-
-      !---------------------------------------------
-      ! Finalize VTK file
-      !---------------------------------------------
-      ierr = vtkOutput%xml_writer%finalize()
-
-   end subroutine create_geometry_simulation_vtk
+   end subroutine create_geometry_simulation_vtu
 
 end module mod_mapVTKOutput
 

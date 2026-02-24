@@ -25,6 +25,7 @@ module outputTypes
    character(len=4), parameter :: pvdExtension = '.pvd'
    character(len=4), parameter :: datFileExtension = '.dat'
    character(len=4), parameter :: vtkFileExtension = '.vtk'
+   character(len=4), parameter :: vtuFileExtension = '.vtu'
    character(len=2), parameter :: timeExtension    = 'tm'
    character(len=2), parameter :: frequencyExtension = 'fq'
    character(len=1), parameter :: wordseparation = '_'

@@ -10,6 +10,7 @@ module mod_volumicProbeUtils
    public :: find_and_store_important_coords
    public :: isValidPointForCurrent
    public :: isValidPointForField
+   public :: createUnstructuredDataForVTU
 
    abstract interface
       logical function logical_func(component, i, j, k, problemInfo)
@@ -82,9 +83,9 @@ contains
       end do
    end subroutine store_required_coords
 
-   subroutine createUnstructuredDataForVTU(counter, coords, currentType, materialTag, Nodes, Edges, Quads, numNodes, numEdges, numQuads)
+   subroutine createUnstructuredDataForVTU(counter, coords, currentType, Nodes, Edges, Quads, numNodes, numEdges, numQuads)
       integer, intent(in) :: counter
-      integer(kind=SINGLE), intent(in) :: coords(:, :), currentType(:), materialTag(:)
+      integer(kind=SINGLE), intent(in) :: coords(:, :), currentType(:)
 
       integer(kind=4), intent(out):: numNodes, numQuads, numEdges
       real(kind=RKIND), allocatable, dimension(:, :), intent(out) :: Nodes
