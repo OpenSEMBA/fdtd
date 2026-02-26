@@ -3098,6 +3098,7 @@ MODULE CreateMatrices
          med(i)%Is%PEC = .FALSE.
          med(i)%Is%PMC = .FALSE.
          med(i)%Is%ThinWire = .FALSE.
+         med(i)%Is%Multiwire = .FALSE.
          med(i)%Is%SlantedWire = .FALSE.
          med(i)%Is%EDispersive = .FALSE.
          med(i)%Is%MDispersive = .FALSE.

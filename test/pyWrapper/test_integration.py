@@ -1,22 +1,60 @@
 from utils import *
 
-
-def test_holland_case_checking_number_of_outputs(tmp_path):
+@mtln_skip
+def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
 
     number_of_steps = 10
     solver['general']['numberOfSteps'] = number_of_steps
 
+    solver['materials'][0] = createWire(id = 1, r = 0.02)
+    outfile = 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat'
     solver.run()
 
     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
     assert len(probe_files) == 1
-    assert 'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat' == probe_files[0]
+    assert outfile == probe_files[0]
+    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
+
+@no_mtln_skip
+def test_holland_case_checking_number_of_outputs_wire(tmp_path):
+    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    number_of_steps = 10
+    solver['general']['numberOfSteps'] = number_of_steps
+
+    solver['materials'][0] = createWire(id = 1, r = 0.02)
+    outfile = 'holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat'
+    solver.run()
+
+    probe_files = solver.getSolvedProbeFilenames("mid_point")
+
+    assert len(probe_files) == 1
+    assert outfile == probe_files[0]
+    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
+
+@no_mtln_skip
+def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
+    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
+    solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
+
+    number_of_steps = 10
+    solver['general']['numberOfSteps'] = number_of_steps
+    solver['materials'][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
+    outfile = 'holland1981.fdtd_mid_point_single_wire_I_11_11_12.dat'
+    solver.run()
+
+    probe_files = solver.getSolvedProbeFilenames("mid_point")
+
+    assert len(probe_files) == 1
+    assert outfile == probe_files[0]
     assert countLinesInFile(probe_files[0]) == number_of_steps + 2
 
 
+@mtln_skip
 def test_towel_hanger_case_creates_output_probes(tmp_path):
     fn = CASES_FOLDER + 'towelHanger/towelHanger.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -515,6 +553,7 @@ def test_count_bug(tmp_path):
     solver.cleanUp()
     solver.run()
 
+@mtln_skip
 def test_wires(tmp_path):
     fn = CASES_FOLDER + 'observation/wires.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -546,6 +585,7 @@ def test_wires(tmp_path):
     assert line_media_dict[10] == 6 
     assert line_media_dict[21] == 1 
 
+@mtln_skip
 def test_wires_collision_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/wires_collision_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -572,6 +612,7 @@ def test_wires_collision_Jprobe(tmp_path):
     assert line_tag_dict[256] == 4 #Wire3
 
 
+@mtln_skip
 def test_wires_collision(tmp_path):
     fn = CASES_FOLDER + 'observation/wires_collision.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -606,6 +647,7 @@ def test_wires_collision(tmp_path):
     assert line_media_dict[21] == 1 
     assert line_media_dict[0.5] == 2  # PEC line
 
+@mtln_skip
 def test_wire_x_collision_y(tmp_path):
     fn = CASES_FOLDER + 'observation/wire_x_collision_y.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -637,6 +679,7 @@ def test_wire_x_collision_y(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
+@mtln_skip
 def test_wire_x_collision_y_Jprobe(tmp_path):
     fn = CASES_FOLDER + 'observation/wire_x_collision_y_Jprobe.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -659,6 +702,7 @@ def test_wire_x_collision_y_Jprobe(tmp_path):
 
 
 
+@mtln_skip
 def test_wire_x_collision_z(tmp_path):
     fn = CASES_FOLDER + 'observation/wire_x_collision_z.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -690,6 +734,40 @@ def test_wire_x_collision_z(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
+@mtln_skip
+def test_wire_x_long_collision_z(tmp_path):
+    fn = CASES_FOLDER + 'observation/wire_x_long_collision_z.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 8 #Wire
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+    assert line_media_dict[7] == 3  #Wire w/o collision
+    assert line_media_dict[8] == 1  #Wire touching non wire
+    assert line_media_dict[10] == 2 #Wire extreme
+    assert line_media_dict[21] == 2 #Wire extreme
+
+@mtln_skip
 def test_wire_y_collision_x(tmp_path):
     fn = CASES_FOLDER + 'observation/wire_y_collision_x.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -721,6 +799,7 @@ def test_wire_y_collision_x(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
+@mtln_skip
 def test_wire_y_collision_z(tmp_path):
     fn = CASES_FOLDER + 'observation/wire_y_collision_z.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -752,6 +831,7 @@ def test_wire_y_collision_z(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
+@mtln_skip
 def test_wire_z_collision_x(tmp_path):
     fn = CASES_FOLDER + 'observation/wire_z_collision_x.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -783,6 +863,7 @@ def test_wire_z_collision_x(tmp_path):
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
 
+@mtln_skip
 def test_wire_z_collision_y(tmp_path):
     fn = CASES_FOLDER + 'observation/wire_z_collision_y.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
@@ -813,4 +894,252 @@ def test_wire_z_collision_y(tmp_path):
     assert line_media_dict[7] == 1  #Wire w/o collision
     assert line_media_dict[8] == 1  #Wire touching non wire
     assert line_media_dict[10] == 2 #Wire extreme
+
+@no_mtln_skip
+def test_multiwire_z_collision_y(tmp_path):
+    fn = CASES_FOLDER + 'observation/multiwire_z_collision_y.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 4 #Multiwire
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+    assert line_media_dict[12] == 1  #MultiWire w/o collision
+    assert line_media_dict[13] == 1  #Multiwire touching non multiwire
+    assert line_media_dict[14] == 2 #Multiwire extreme
+
+@no_mtln_skip
+def test_multiwire_z_collision_x(tmp_path):
+    fn = CASES_FOLDER + 'observation/multiwire_z_collision_x.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 4 #Multiwire
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+    assert line_media_dict[12] == 1  #MultiWire w/o collision
+    assert line_media_dict[13] == 1  #Multiwire touching non multiwire
+    assert line_media_dict[14] == 2 #Multiwire extreme
+
+@no_mtln_skip
+def test_multiwire_y_collision_x(tmp_path):
+    fn = CASES_FOLDER + 'observation/multiwire_y_collision_x.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 4 #Multiwire
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+    assert line_media_dict[12] == 1  #MultiWire w/o collision
+    assert line_media_dict[13] == 1  #Multiwire touching non multiwire
+    assert line_media_dict[14] == 2 #Multiwire extreme
+
+@no_mtln_skip
+def test_multiwire_y_collision_z(tmp_path):
+    fn = CASES_FOLDER + 'observation/multiwire_y_collision_z.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 4 #Multiwire
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+    assert line_media_dict[12] == 1  #MultiWire w/o collision
+    assert line_media_dict[13] == 1  #Multiwire touching non multiwire
+    assert line_media_dict[14] == 2 #Multiwire extreme
+
+@no_mtln_skip
+def test_multiwire_x_collision_y(tmp_path):
+    fn = CASES_FOLDER + 'observation/multiwire_x_collision_y.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 4 #Multiwire
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+    assert line_media_dict[12] == 1  #MultiWire w/o collision
+    assert line_media_dict[13] == 1  #Multiwire touching non multiwire
+    assert line_media_dict[14] == 2 #Multiwire extreme
+
+@no_mtln_skip
+def test_multiwire_x_collision_z(tmp_path):
+    fn = CASES_FOLDER + 'observation/multiwire_x_collision_z.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 4 #Multiwire
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+    assert line_media_dict[12] == 1  #MultiWire w/o collision
+    assert line_media_dict[13] == 1  #Multiwire touching non multiwire
+    assert line_media_dict[14] == 2 #Multiwire extreme
+
+@no_mtln_skip
+def test_multiwire_x_long_collision_z(tmp_path):
+    fn = CASES_FOLDER + 'observation/multiwire_x_long_collision_z.fdtd.json'
+    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path, flags=['-mapvtk'])
+    solver['general']['numberOfSteps'] = 1
+
+    solver.run()
+
+    vtkmapfile = solver.getVTKMap()
+    assert os.path.isfile(vtkmapfile)
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+
+    face_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='tagnumber')
+    assert len(face_tag_dict) == 0
+
+    line_tag_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='tagnumber')
+    assert line_tag_dict[64] == 2 #PEC
+    assert line_tag_dict[128] == 8 #Multiwire: 
+    # 3 segments w/o collision, 2 of them are also intermediate
+    # 1 segment adjacent something not multiwire, 2 extremes, 
+
+    face_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=9, property='mediatype')
+    assert len(face_media_dict) == 0
+
+    line_media_dict = createPropertyDictionary(
+        vtkmapfile, celltype=3, property='mediatype')
+    assert line_media_dict[0.5] == 2  # PEC line
+    assert line_media_dict[12] == 3  #MultiWire w/o collision
+    assert line_media_dict[13] == 1  #Multiwire touching non multiwire
+    assert line_media_dict[14] == 2  #Multiwire extreme
+    assert line_media_dict[61] == 2  #Intermediate multiwire segment
 

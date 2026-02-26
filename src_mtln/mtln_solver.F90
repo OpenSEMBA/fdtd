@@ -16,8 +16,7 @@ module mtln_solver_mod
         type(network_manager_t) :: network_manager
         type(probe_t), allocatable, dimension(:) :: probes
         integer :: number_of_bundles
-        logical :: has_multiwires
-        integer :: step_i
+        integer :: number_of_steps
     contains
 
         procedure :: updateBundlesTimeStep
@@ -70,8 +69,6 @@ contains
             return
         end if
         
-        res%has_multiwires = parsed%has_multiwires
-        
         res%dt = pre%dt
         res%time  = 0.0
         res%final_time = pre%final_time
@@ -84,7 +81,7 @@ contains
         call res%updateBundlesTimeStep(res%dt)
         call res%initNodes()
 
-        res%step_i = 0
+        res%number_of_steps = parsed%number_of_steps
 
     end function
 
@@ -126,6 +123,10 @@ contains
     subroutine setExternalLongitudinalField(this)
         class(mtln_t) :: this
         integer :: i
+#ifdef CompileWithMPI
+        integer :: ierr
+      call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) call this%bundles(i)%setExternalLongitudinalField()
         end do
@@ -150,10 +151,10 @@ contains
         integer :: i,j
         integer ::b, c, v_idx, i_idx
         integer :: n
-#ifdef CompileWithMPI
-        integer (kind=4) :: ierr
-        call mpi_barrier(subcomm_mpi, ierr)
-#endif
+! #ifdef CompileWithMPI
+!         integer (kind=4) :: ierr
+!         call mpi_barrier(subcomm_mpi, ierr)
+! #endif
         if (this%number_of_bundles /= 0) then 
             do i = 1, size(this%network_manager%networks)
                 do j = 1, size(this%network_manager%networks(i)%nodes)
@@ -191,6 +192,10 @@ contains
     subroutine advanceBundlesCurrent(this)
         class(mtln_t) :: this
         integer :: i
+#ifdef CompileWithMPI
+        integer :: ierr
+        call mpi_barrier(subcomm_mpi, ierr)
+#endif
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) call this%bundles(i)%advanceCurrent()
 

@@ -51,7 +51,7 @@ The following entries are shared by several FDTD-JSON objects and have a common 
 
 + `type` followed by a string, indicates the type of JSON object that. Some examples of types are `planewave` for `sources` objects, and `polyline` for `elements`.
 + `id` is a unique integer identifier for objects that belong to a list and which can be referenced by other objects. For instance, an element in the `elements` list must contain a `id` which can be referenced by a source in `sources` through its list of `elementIds`.
-+ `[name]` is an optional entry which is used to make the FDTD-JSON input human-readable, helping to identify inputs and outputs. Leading and trailing blank spaces are removed. Blank spaces are substituted by underscroes. The following characters are reserved and can't be used in a `name`: `@`.
++ `[name]` is an optional entry which is used to make the FDTD-JSON input human-readable, helping to identify inputs and outputs. Leading and trailing blank spaces are removed. Blank spaces are substituted by underscores. The following characters are reserved and can't be used in a `name`: `@`.
 
 ### `<general>`
 
@@ -60,9 +60,9 @@ This object must always be present and contains general information regarding th
 + `<timeStep>`: A real number indicating the time step used by the solver, in seconds. 
 + `<numberOfSteps>`: An integer for the number of steps which the solver will iterate.
 
-Addtionally, it may contain the following optional entry:
+Additionally, it may contain the following optional entry:
 
-+ `<mtlnProblem>` : A bool indicating whether the problem is a pure MTLN problem and will solved using only the MTLN solver. If it is not present, its default value is `false`
++ `<mtlnProblem>` : A boolean indicating whether the problem is a pure MTLN problem and will solved using only the MTLN solver. If it is not present, its default value is `false`
 + `<additionalArguments>` : A string with flags. Keep in mind that flags passed by console have higher priority. 
 
 **Example:**
@@ -78,7 +78,7 @@ Addtionally, it may contain the following optional entry:
 ### `[boundary]`
 This specifies the boundaries which will be used to terminate the computational domain. 
 If `boundary` is not present it defaults to a `mur` absorbing condition in all bounds.
-The entries within `boundary` are objects labelled with the place where they will be applied:
+The entries within `boundary` are objects labeled with the place where they will be applied:
 
 + `all`, or
 + `xLower`, `xUpper`, `yLower`, `yUpper`, `zLower` `zUpper`.
@@ -359,7 +359,7 @@ A `thinSlot` represents a gap between two conductive surfaces. Therefore it must
 
 ### `wire`
 
-A `wire`, or *thin wire*, represents an electrically conducting wire-like structure with a radius much smaller than the surrounding cell sizes. 
+A `wire`, or *thin wire*, represents an electrically conducting wire-like structure with a radius much smaller than the surrounding cell sizes. Materials of type `wire` can only be defined if the compilation flag for MTLN was OFF, i.e. `SEMBA_FDTD_ENABLE_MTLN = OFF`. Otherwise, the program execution will fail at runtime.
 These structures are solved by an algorithm similar to the one described in:
 
 ```
@@ -387,21 +387,6 @@ Materials of this type must contain:
 }
 ```
 
-A single wire might be surrounded by a dielectric material. In that case, the radius and the relative permittivity of the material are needed. 
-
-**Example:**
-
-```json
-{
-    "name": "WireWithDielectric",
-    "id": 2,
-    "type": "wire",
-    "radius": 0.0001,
-    "resistancePerMeter": 22.9e-3,
-    "dielectric" : {"radius": 0.001, "relativePermittivity" : 3}
-}
-```
-If the `dielectric` field is present but any of `radius` or `relativePermittivity` is absent, the parsing of the dielectric will fail.
 
 ### `shieldedMultiwire`
 
@@ -409,7 +394,7 @@ A `shieldedMultiwire`, models $N+1$ electrical wires inside a bundled. The volta
 
     Paul, C. R. (2007). Analysis of multiconductor transmission lines. John Wiley & Sons.
 
-`shieldedMultiwire` materials are assumed to be contained within a `wire` or another `shieldedMultiwire` which is the external domain and is used as voltage reference. 
+`shieldedMultiwire` materials are assumed to be contained within an `unshieldedMultiwire` or another `shieldedMultiwire` which is the external domain and is used as voltage reference. Materials of type `shieldedMultiwire` and `unshieldedMultiwre` can only be defined if the compilation flag for MTLN was ON, i.e. `SEMBA_FDTD_ENABLE_MTLN = ON`. Otherwise, the program execution will fail at runtime.
 They must contain the following entries:
 
 + `<inductancePerMeter>` and `<capacitancePerMeter>` which must be matrices with a size $N \times N$. If the number of wires is equal to $1$, this property must be a $1 \times 1$ matrix, e.g `[[1e-7]]` 
@@ -449,7 +434,7 @@ They must contain the following entries:
 
 A `unshieldedMultiwire`, models a bundle of $N$ electrical wires. The charges and currents on these wires are solved using the model described in:
 
-    Berenger, J. P. A Multiwire formalism for the FDTD Method. IEEE Transactions on Electromagnetic Compatability. August, 2000.
+    Berenger, J. P. A Multiwire formalism for the FDTD Method. IEEE Transactions on Electromagnetic Compatibility. August, 2000.
 
 They must contain the following entries:
 
@@ -534,8 +519,7 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
 
 ### `connector`
 
-The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire`, a `shieldedMultiwire` or an `unshieldedMultiwire`. 
-This `wire` can be either a single wire or the outermost conductor of a `cable` bundle. The `connector` can have the following properties:
+The `connector` represents the physical connection of a bundle to a structure. `connector` assigns properties to the initial or last segment of a `wire`, a `shieldedMultiwire` or an `unshieldedMultiwire`. The `connector` can have the following properties:
 
 + `[resistances]`, an array of real numbers which will be converted to resistances per unit length and will replace the resistancePerMeter of that segment.
 + `[transferImpedancesPerMeter]`, an array of [transferImpedancePerMeter], as described in the [shieldedMultiwire](#shieldedMultiwire) section. 
@@ -689,7 +673,7 @@ In this example `elementId` points to a volume element, therefore `direction` mu
 }
 ```
 
-One important aspect to keep in mind when working with `bulkCurrent` with `electric field type` is its natural offset. This arises from the fact that to measure the electric current it is necessary to calculate the closed path integral of the magnetic field, then, the electric current is defined on the **dual mesh** of the inserted grid—i.e., the mesh corresponding to the magnetic field. The **dual mesh** is constructed by placing a point at the center of each cell in the original (primal) mesh and connecting these points.
+One important aspect to keep in mind when working with `bulkCurrent` with `electric field type` is its natural offset. This arises from the fact that to measure the electric current it is necessary to calculate the closed path integral of the magnetic field, then, the electric current is defined on the **dual mesh** of the inserted grid -- i.e., the mesh corresponding to the magnetic field. The **dual mesh** is constructed by placing a point at the center of each cell in the original (primal) mesh and connecting these points.
 
 Because of this, the code internally shifts the `bulkCurrent` you define to align with the dual mesh, causing a **half-cell offset**. In the case of surfaces, the coordinates **perpendicular** to the current flowing through the surface experience a **negative offset**, as shown in the figure below:
 
@@ -719,7 +703,7 @@ A `line` probe computes the electric field line integral along a given `polyline
 
 #### `farField`
 
-Probes of type `farField` perform a near to far field transformation of the electric and magnetic vector fields and are typically located in the scattered field region which is defined by a total/scatterd field excitation, e.g. [a planewave](#planewave). 
+Probes of type `farField` perform a near to far field transformation of the electric and magnetic vector fields and are typically located in the scattered field region which is defined by a total/scattered field excitation, e.g. [a planewave](#planewave). 
 They must be defined with a single `cell` element which must contain a single `interval` defining a cuboid. 
 The direction of  the radiated field $\hat{r}(\theta, \phi)$ is defined with `<theta>` and `<phi>`, which must contain `<initial>`, `<final>`, and `<step>`, expressed in degrees.
 The `domain` of a `farField` probe can only be of type `frequency`.

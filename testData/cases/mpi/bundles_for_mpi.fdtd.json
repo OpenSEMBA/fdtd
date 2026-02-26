@@ -1,0 +1,81 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "Shielded pair.",
+	
+    "general": {
+        "timeStep": 0.43e-12,
+        "numberOfSteps": 5,
+		"mtlnProblem": false
+    },
+  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 1, 
+            "order": 2.0,
+            "reflection": 0.0001
+        }
+    },
+
+	"mesh": {
+		"grid": {
+			"numberOfCells": [10, 10, 10],
+			"steps": {"x": [0.1], "y": [0.1], "z": [0.1]}
+		},
+		"coordinates": [
+			{"id": 1, "relativePosition": [1, 5, 1] },
+			{"id": 2, "relativePosition": [1, 5, 9] },
+			{"id": 3, "relativePosition": [5, 5, 9] },
+			{"id": 4, "relativePosition": [5, 5, 1] },
+			{"id": 5, "relativePosition": [9, 5, 1] },
+			{"id": 6, "relativePosition": [9, 5, 9] }
+		],
+		"elements": [
+			{ "id": 1, "type": "polyline", "coordinateIds": [1,2]}
+		]
+	},
+
+	"materials": [
+		{
+			"name": "InnerCoaxial",
+			"id": 1,
+			"type": "unshieldedMultiwire",
+			"inductancePerMeter": [[3.13182309e-07]],
+			"capacitancePerMeter": [[85.0e-12]]
+		},
+		{
+			"name": "leftTerminal",
+			"id": 2,
+			"type": "terminal",
+			"terminations" : [
+				{"type": "series", "resistance": 50.0}
+			]
+		},
+		{
+			"name": "shieldTerminal",
+			"id": 3,
+			"type": "terminal",
+			"terminations": [
+				{"type": "series","resistance": 50.0}
+			]
+		}
+	],
+
+	
+    "sources": [
+    ],
+
+
+	"probes": [
+	],
+
+	"materialAssociations": [
+		{
+			"name": "line",
+			"elementIds": [ 1 ],
+			"materialId": 1,
+			"initialTerminalId": 2,
+			"endTerminalId": 2
+		}
+	]
+}

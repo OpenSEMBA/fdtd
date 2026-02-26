@@ -1,5 +1,5 @@
 module mtln_types_mod
-   use fdetypes, ONLY: direction_t
+   use fdetypes, ONLY: direction_t, BUFSIZE
    implicit none
 
    integer, parameter :: TERMINATION_UNDEFINED  = -1
@@ -180,6 +180,7 @@ module mtln_types_mod
 
    type, extends(direction_t) :: segment_t
       type(box_2d_t) :: dualBox
+      real :: d1, d2
    end type
 
 
@@ -189,6 +190,8 @@ module mtln_types_mod
       type(segment_t), dimension(:), allocatable :: segments
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
+      character (len=bufsize) :: tag
+      integer :: n_segments
    contains
       private
       procedure :: cable_eq
@@ -200,6 +203,7 @@ module mtln_types_mod
       real, allocatable, dimension(:,:) :: cell_capacitance_per_meter
       real, allocatable, dimension(:,:) :: resistance_per_meter
       real, allocatable, dimension(:,:) :: conductance_per_meter
+      real :: radius = 0.0
       ! should multipolar expansion be always present, instead of allocatable,  
       ! but check if it is being used using the size of the field_reconstruction?
       type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
@@ -238,7 +242,7 @@ module mtln_types_mod
       type(connector_t), dimension(:), pointer :: connectors
       real :: time_step = 0.0
       integer :: number_of_steps = 0
-      logical :: has_multiwires = .false.
+      integer :: n_sh = 0, n_unsh = 0
    contains
       private
       procedure :: mtln_eq
@@ -252,10 +256,10 @@ contains
       class(mtln_t), intent(in) :: a,b
       integer :: i
 
-      if (a%has_multiwires .neqv. b%has_multiwires) then 
-         mtln_eq = .false.
-         return
-      end if
+      ! if (a%has_multiwires .neqv. b%has_multiwires) then 
+      !    mtln_eq = .false.
+      !    return
+      ! end if
       if (a%time_step /= b%time_step) then 
          mtln_eq = .false.
          return

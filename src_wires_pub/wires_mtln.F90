@@ -25,7 +25,7 @@ module Wire_bundles_mtln_mod
 contains
 
 
-   subroutine InitWires_mtln(sgg,Ex,Ey,Ez, Idxh, Idyh, Idzh, eps00, mu00, mtln_parsed,thereAreMTLNbundles)
+   subroutine InitWires_mtln(sgg,Ex,Ey,Ez, eps00, mu00, mtln_parsed,thereAreMTLNbundles, dtcritico)
       type (SGGFDTDINFO), intent(IN), target    :: sgg 
       REAL (KIND=RKIND), intent(inout), target :: &
          Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,  &
@@ -37,15 +37,12 @@ contains
          Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,  &
             sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,  &
             sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
-      real (kind=RKIND), dimension (:), intent(in) :: &
-            Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
-            Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
-            Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
    
       real(KIND=RKIND) :: eps00,mu00
    
       type(mtln_t) :: mtln_parsed
       logical :: thereAreMTLNbundles
+      real (kind=rkind_tiempo), intent(inout) :: dtcritico
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
@@ -65,7 +62,7 @@ contains
            thereAreMTLNbundles=.false.
            return
       endif
-
+      if (mtln_solver%dt < dtcritico) dtcritico = mtln_solver%dt
       call pointSegmentsToFields()
       call mtln_solver%updatePULTerms()
 
@@ -171,6 +168,7 @@ contains
    function GetSolverPtr() result(res)
       type(mtln_solver_t), pointer :: res
       res => mtln_solver
+      return
    end function
 
    subroutine solveMTLNProblem(mtln_parsed)

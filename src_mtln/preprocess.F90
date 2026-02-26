@@ -9,6 +9,12 @@ module preprocess_mod
     use fhash, only: fhash_tbl_t, key=>fhash_key, fhash_key_t
     implicit none
 
+    integer, parameter :: XPOS = 1
+    integer, parameter :: XNEG = -1
+    integer, parameter :: YPOS = 2
+    integer, parameter :: YNEG = -2
+    integer, parameter :: ZPOS = 3
+    integer, parameter :: ZNEG = -3
 
     type, public :: preprocess_t
         type(mtl_bundle_t), dimension(:), allocatable :: bundles
@@ -222,7 +228,7 @@ contains
 #endif
         allocate(res(size(lines)))
         do i = 1, size(lines)
-            res(i) = mtldCtor(lines(i)%levels, "bundle_"//lines(i)%levels(1)%lines(1)%name)
+            res(i) = mtldCtor(lines(i)%levels, lines(i)%levels(1)%lines(1)%name)
             if (res(i)%dt < this%dt) then 
                 this%dt = res(i)%dt
             end if
@@ -268,7 +274,7 @@ contains
             res = mtl_unshielded( lpul = cable%cell_inductance_per_meter, cpul = cable%cell_capacitance_per_meter, &
                                   rpul = cable%resistance_per_meter, gpul = cable%conductance_per_meter, &
                                   step_size = cable%step_size, name = cable%name, segments = cable%segments,&
-                                  dt = dt, multipolar_expansion = cable%multipolar_expansion &
+                                  dt = dt, multipolar_expansion = cable%multipolar_expansion, radius = cable%radius &
 #ifdef CompileWithMPI
                                  ,layer_indices = layer_indices, bundle_in_layer = bundle_in_layer, alloc_z = alloc_z &
 #endif
@@ -330,7 +336,7 @@ contains
         do i = 1, nb
             if (present(alloc)) then
                 bundle_in_layer = .true.
-                layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc)
+                layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
                 if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
             endif
             nl = size(cable_bundles(i)%levels)
@@ -350,8 +356,8 @@ contains
 
     contains
 
-        function findIndicesInLayer(cable, alloc) result(res)
-            type (XYZlimit_t), dimension (1:6), intent(in) :: alloc
+        function findIndicesInLayer(cable, alloc_z) result(res)
+            integer(kind=4), dimension(2), intent(in) :: alloc_z
             class (cable_t), pointer, intent(in) :: cable
             integer (kind=4), allocatable, dimension(:,:) :: res
             integer :: n, i, direction, position(1:3)
@@ -360,19 +366,10 @@ contains
             ! precount
             n = 0
             do i = 1, size(cable%segments)
-                direction = cable%segments(i)%orientation
-                position(1) = cable%segments(i)%x
-                position(2) = cable%segments(i)%y
-                position(3) = cable%segments(i)%z
-                if ((position(1) >= Alloc(abs(direction))%XI).and. &
-                    (position(1) <= Alloc(abs(direction))%XE).and. &
-                    (position(2) >= Alloc(abs(direction))%YI).and. &
-                    (position(2) <= Alloc(abs(direction))%YE).and. &
-                    (position(3) >= Alloc(abs(direction))%ZI).and. &
-                    (position(3) <= Alloc(abs(direction))%ZE)) then
-                        if (.not. in_layer) then 
-                            in_layer = .true.
-                        end if
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z)) then 
+                    if (.not. in_layer) then 
+                        in_layer = .true.
+                    end if
                 else
                     if (in_layer) then 
                         in_layer = .false.
@@ -386,20 +383,11 @@ contains
             n = 1 
             in_layer = .false.
             do i = 1, size(cable%segments)
-                direction = cable%segments(i)%orientation
-                position(1) = cable%segments(i)%x
-                position(2) = cable%segments(i)%y
-                position(3) = cable%segments(i)%z
-                if ((position(1) >= Alloc(abs(direction))%XI).and. &
-                    (position(1) <= Alloc(abs(direction))%XE).and. &
-                    (position(2) >= Alloc(abs(direction))%YI).and. &
-                    (position(2) <= Alloc(abs(direction))%YE).and. &
-                    (position(3) >= Alloc(abs(direction))%ZI).and. &
-                    (position(3) <= Alloc(abs(direction))%ZE)) then
-                        if (.not. in_layer) then 
-                            res(n,1) = i
-                            in_layer = .true.
-                        end if
+                if (isSegmentWithinAllocBox(cable%segments, i, alloc_z)) then 
+                    if (.not. in_layer) then 
+                        res(n,1) = i
+                        in_layer = .true.
+                    end if
                 else
                     if (in_layer) then 
                         res(n, 2) = i-1
@@ -411,6 +399,14 @@ contains
             if (in_layer) then 
                 res(n, 2) = i - 1
             end if
+        end function
+
+        logical function isSegmentWithinAllocBox(segs, i,  z)
+            type(segment_t), intent(in), dimension(:), allocatable :: segs
+            type(segment_t) :: prev
+            integer :: i
+            integer(kind=4), dimension(2), intent(in) :: z
+            isSegmentWithinAllocBox = (segs(i)%z >= z(1)) .and. (segs(i)%z <= z(2))
         end function
 
     end function
@@ -1279,8 +1275,6 @@ contains
         integer :: i,j 
         character(256) :: buff
         do i = 1, size(networks)
-            ! description = [description, networks(i)%description]
-            ! call appendToString_tArray(description, networks(i)%description(j))
             do j = 1, size(networks(i)%description)
                 buff = networks(i)%description(j)
                 call appendToStringArray(description, buff)
@@ -1351,6 +1345,7 @@ contains
                             value = d, &
                             stat=stat)
                             if (stat /= 0) network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
+                            if (.not. this%bundles(d)%bundle_in_layer) network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
                     else 
                         network_in_MPIslice(i) = network_in_MPIslice(i) .and. .false.
                     end if

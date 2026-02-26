@@ -646,6 +646,10 @@ contains
          CALL print11 (this%l%layoutnumber, '---> Conformal thin-gap solver: '//trim(adjustl(dubuf)))
          write(dubuf,*) this%l%run_with_dmma
          CALL print11 (this%l%layoutnumber, '---> DMMA thin-gap solver: '//trim(adjustl(dubuf)))
+#ifdef CompileWithMTLN
+         write(dubuf,'(a)') 'MTLN wires'
+         CALL print11 (this%l%layoutnumber, '---> Wire model: '//trim(adjustl(dubuf)))
+#else
          write(dubuf,'(a)') this%l%wiresflavor
          CALL print11 (this%l%layoutnumber, '---> Wire model: '//trim(adjustl(dubuf)))
          write(dubuf,'(a)') this%l%inductance_model
@@ -664,10 +668,11 @@ contains
          CALL print11 (this%l%layoutnumber, '---> Thin-wire double-tails removed: '//trim(adjustl(dubuf)))
          write(dubuf,*) this%l%fieldtotl                
          CALL print11 (this%l%layoutnumber, '---> Thin-wire -this%l%fieldtotl experimental switch: '//trim(adjustl(dubuf)))
+
          WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          CALL print11 (this%l%layoutnumber, dubuf)
+#endif
       endif
-
       IF (this%l%layoutnumber == 0) THEN
          call erasesignalingfiles(this%l%simu_devia)
       endif
@@ -732,6 +737,10 @@ contains
                write(thefileno,'(a)') '# (  9.0 ,  9.0 ) '//trim(adjustl('Soft/Hard Nodal CURRENT/FIELD MAGNETIC DENSITY SOURCE                   (Line)'))
                write(thefileno,'(a)') '# (   10 ,   11 ) '//trim(adjustl('LeftEnd/RightEnd/Ending wire segment                                    (Wire)'))
                write(thefileno,'(a)') '# (   20 ,   20 ) '//trim(adjustl('Intermediate wire segment +number_holland_parallel or +number_berenger  (Wire) '))
+               write(thefileno,'(a)') '# (   12 ,   12 ) '//trim(adjustl('Edge Not colliding multiwires                                           (Multiwire)'))
+               write(thefileno,'(a)') '# (   13 ,   13 ) '//trim(adjustl('Multiwire segments colliding with structure                             (Multiwire)'))
+               write(thefileno,'(a)') '# (   14 ,   15 ) '//trim(adjustl('LeftEnd/RightEnd/Ending multiwire segment                               (Multiwire)'))
+               write(thefileno,'(a)') '# (   60 ,   60 ) '//trim(adjustl('Intermediate multiwire segment + number parallel segments               (Multiwire) '))
                write(thefileno,'(a)') '# (  400 ,  499 ) '//trim(adjustl('Thin slot (+indexmedium)                                                (Surface)'))
                write(thefileno,'(a)') '# ( 1000 , 1999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Surface)'))
                write(thefileno,'(a)') '# ( 2000 , 2999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Line)'))

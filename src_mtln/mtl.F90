@@ -6,7 +6,9 @@ module mtl_mod
     use mtln_types_mod, only: segment_t, multipolar_expansion_t
     use multipolar_expansion_mod, only: getCellCapacitanceOnBox, getCellInductanceOnBox
 #ifdef CompileWithMPI
-    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
+    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, c_vacuum, RKIND_wires
+#else
+    use fdetypes, only: pi, mu_vacuum, c_vacuum, RKIND_wires
 #endif
     implicit none
 #ifdef CompileWithMPI
@@ -14,10 +16,14 @@ module mtl_mod
     integer, parameter :: COMM_SEND = 1
     integer, parameter :: COMM_RECV = -1
     integer, parameter :: COMM_NONE = 0
+    integer, parameter :: COMM_FIELD = 1
+    integer, parameter :: COMM_V = 2
+    integer, parameter :: COMM_BOTH = 3
 
     type, public :: communicator_t
         integer :: field_index = -1, v_index = -1
         integer :: comm_task = COMM_NONE
+        integer :: comm_type = COMM_NONE
         integer :: delta_rank = 0
     end type
     type, public :: comm_t
@@ -55,6 +61,7 @@ module mtl_mod
         procedure :: checkTimeStep
         procedure :: allocatePULMatrices
         procedure :: computeLCParameters
+        procedure :: computeLCParametersFromRadius
         procedure :: initLC
         procedure :: initRG
         procedure :: initDirections
@@ -159,7 +166,7 @@ contains
 
     function mtl_unshielded(lpul, cpul, rpul, gpul, &
                             step_size, name, segments, &
-                            dt, multipolar_expansion, &
+                            dt, multipolar_expansion, radius, &
                             layer_indices, bundle_in_layer, alloc_z) result(res)
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -167,7 +174,7 @@ contains
         type(segment_t), dimension(:), allocatable, intent(in) :: segments
         real, intent(in) :: dt
         type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
-
+        real, intent(in) :: radius
         integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
         integer(kind=4), dimension (2), intent(in), optional :: alloc_z
@@ -180,7 +187,7 @@ contains
             call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
             call res%initCommunicators(alloc_z)
             res%layer_indices = layer_indices
-            res%bundle_in_layer = bundle_in_layer
+            res%bundle_in_layer = bundle_in_layer 
         else
             res%step_size =  step_size
             allocate(res%layer_indices(0,0))
@@ -199,7 +206,9 @@ contains
         call res%allocatePULMatrices()
         if (size(multipolar_expansion) /= 0) then 
             call res%computeLCParameters(multipolar_expansion(1))
-        else
+        else if (radius /= 0.0) then 
+            call res%computeLCParametersFromRadius(radius)
+        else 
             call res%initLC(lpul, cpul)
         end if
         call res%initRG(rpul, gpul)
@@ -255,6 +264,35 @@ contains
             this%cpul(i,:,:) = inv(ppul)
         end do
         this%cpul(size(this%segments)+1, :,:) = this%cpul(size(this%segments), :,:)
+    end subroutine
+
+    subroutine computeLCParametersFromRadius(this, rad) 
+        class(mtl_t) :: this
+        real, intent(in) :: rad
+        REAL (KIND=RKIND_wires) :: invMu
+        integer :: i
+        real :: d1, d2
+        invMu = 1.0/mu_vacuum
+        do i = 1, size(this%segments)
+            d1 = this%segments(i)%d1
+            d2 = this%segments(i)%d2
+            this%lpul(i,:,:) = &
+                (1.0_RKIND_wires / (4.0_RKIND_wires * pi*invMu))*(log((d1**2.0_RKIND_wires +d2**2.0_RKIND_wires )/(4.0_RKIND_wires *rad**2.0_RKIND_wires ))+     &
+                d1/d2*atan(d2/d1) + &
+                d2/d1*atan(d1/d2) + pi*rad**2.0_RKIND_wires /(d2*d1)-3.0_RKIND_wires)
+
+            if ((rad < 0.3_RKIND_wires  *d1).or.(rad < 0.3_RKIND_wires *d2)) then
+                this%lpul(i,:,:) = this%lpul(i,:,:) - 0.57_RKIND_wires/(4.0_RKIND_wires * pi*invMu)
+            endif
+
+            if ((rad > 0.3_RKIND_wires  *d1).or.(rad > 0.3_RKIND_wires *d2)) then
+                this%lpul(i,:,:) =  this%lpul(i,:,:) &
+                /(1.0_RKIND_wires-pi*rad**2.0_RKIND_wires /(d1*d2))
+            endif
+            this%cpul(i,:,:) = 1.0/(this%lpul(i,:,:)*c_vacuum**2)
+        enddo
+        this%cpul(size(this%segments)+1, :,:) = this%cpul(size(this%segments), :,:)
+
     end subroutine
 
 
@@ -350,6 +388,7 @@ contains
             if (j /= size(layer_indices,1)) then
                 this%step_size(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%step_size(n + layer_indices(j,2) - layer_indices(j,1))
                 this%segments(n + layer_indices(j,2) - layer_indices(j,1) + 1) = this%segments(n + layer_indices(j,2) - layer_indices(j,1))
+                this%segments(n + layer_indices(j,2) - layer_indices(j,1) + 1)%orientation = -1
                 n = n + 1
             end if
             n = n + layer_indices(j,2) - layer_indices(j,1) + 1
@@ -361,7 +400,7 @@ contains
     subroutine initCommunicators(this, alloc_z)
         class(mtl_t) :: this
         integer (kind =4), dimension(2) :: alloc_z
-        integer :: j, n
+        integer :: j, n, z
         integer :: rank, ierr
         integer (kind =4) :: z_init, z_end
         type(communicator_t), dimension(:), allocatable :: aux_comm
@@ -374,7 +413,33 @@ contains
         z_end = alloc_z(2)
 
         do j = 1, size(this%segments)
+            if (this%segments(j)%orientation == -1) cycle
             
+            z = this%segments(j)%z
+            if (.not. isSegmentZOriented(j) .and. ((z == z_end) .or. (z == z_init + 1))) then 
+
+                n = size(this%mpi_comm%comms)
+                deallocate(aux_comm)
+                allocate(aux_comm(n+1))
+                aux_comm(1:n) = this%mpi_comm%comms
+                
+                aux_comm(n+1)%field_index = j
+                aux_comm(n+1)%comm_type = COMM_FIELD
+                aux_comm(n+1)%v_index = -1
+                if (z == z_end) then 
+                    aux_comm(n+1)%delta_rank = 1
+                    aux_comm(n+1)%comm_task = COMM_RECV
+                else if (z == z_init + 1) then 
+                    aux_comm(n+1)%delta_rank = -1
+                    aux_comm(n+1)%comm_task = COMM_SEND
+                end if
+
+                deallocate(this%mpi_comm%comms)
+                allocate(this%mpi_comm%comms(n+1))
+                this%mpi_comm%comms = aux_comm
+
+
+            end if
             if (isSegmentZOriented(j) .and. &
                (isSegmentNextToLayerEnd(j,z_end) .or. isSegmentNextToLayerInit(j,z_init))) then
                 
@@ -383,6 +448,7 @@ contains
                 allocate(aux_comm(n+1))
                 aux_comm(1:n) = this%mpi_comm%comms
                 aux_comm(n+1)%field_index = j
+                aux_comm(n+1)%comm_type = COMM_BOTH
 
                 if (isSegmentNextToLayerEnd(j,z_end)) then 
                     aux_comm(n+1)%delta_rank = 1
@@ -438,7 +504,12 @@ contains
 
     logical function isSegmentZPositive(j)
         integer, intent(in) :: j
-        isSegmentZPositive = (this%segments(j)%orientation > 0)
+        isSegmentZPositive = (this%segments(j)%orientation == 3)
+    end function
+
+    logical function isSegmentZNegative(j)
+        integer, intent(in) :: j
+        isSegmentZNegative = (this%segments(j)%orientation == -3)
     end function
 
     logical function isSegmentBeforeLayerEnd(j, z_end)
@@ -473,14 +544,14 @@ contains
         integer, intent(in) :: j, z_end
         integer :: z
         z = this%segments(j)%z
-        isSegmentNextToLayerEnd = (abs(z-z_end)<= 1)
+        isSegmentNextToLayerEnd = (z==z_end) .or. (z==z_end-1)
     end function
 
     logical function isSegmentNextToLayerInit(j, z_init)
         integer, intent(in) :: j, z_init
         integer :: z
         z = this%segments(j)%z
-        isSegmentNextToLayerInit = (abs(z-z_init-1) <= 1)
+        isSegmentNextToLayerInit = (z==z_init) .or. (z==z_init+1)
     end function
 
 
