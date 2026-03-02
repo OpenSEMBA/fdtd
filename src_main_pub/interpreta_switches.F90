@@ -1353,7 +1353,7 @@ CONTAINS
       WRITE (dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       CALL print11(l%layoutnumber, dubuf)
       CALL print11(l%layoutnumber, 'All rights reserved by the University of Granada (Spain)')
-      CALL print11(l%layoutnumber, '       Contact person: Salvador G. Garcia <salva@ugr.es>')
+      CALL print11(l%layoutnumber, '       Contact person: Luis D. Angulo <lmdiazangulo@ugr.es>')
       CALL print11(l%layoutnumber, ' ')
       !*******************************************************************************
 
