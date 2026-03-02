@@ -32,6 +32,7 @@ module mod_outputUtils
    public :: fieldo
    public :: create_data_file
    public :: currentType
+   public :: get_media_from_coord_and_h_neighbours
    !===========================
 
    !===========================
@@ -74,6 +75,39 @@ contains
       end select
 
    end function
+
+   subroutine get_media_from_coord_and_h_neighbours(field, i, j, k, CoordToMaterial, media, firstPositiveMedia, firstNegativeMedia, secondPositiveMedia, secondNegativeMedia)
+      !Returns field media and Hmedia from borders of i,j,k
+      type(media_matrices_t), pointer, intent(in) :: CoordToMaterial
+      integer(4), intent(in) :: field, i, j, k
+      integer(4), intent(out) :: media, firstPositiveMedia, firstNegativeMedia, secondPositiveMedia, secondNegativeMedia
+      integer, parameter :: nFields = 3
+
+      ! Precomputed shifts for first direction
+      integer, dimension(nFields) :: shift_i = [0, -1, 0]
+      integer, dimension(nFields) :: shift_j = [0, 0, -1]
+      integer, dimension(nFields) :: shift_k = [-1, 0, 0]
+
+      ! Precomputed shifts for second direction
+      integer, dimension(nFields) :: shift_i2 = [0, 0, -1]
+      integer, dimension(nFields) :: shift_j2 = [-1, 0, 0]
+      integer, dimension(nFields) :: shift_k2 = [0, -1, 0]
+
+      ! Precomputed neighbor hfield types
+      integer, dimension(nFields) :: HFieldTable = [iHy, iHz, iHx]  ! returns perpendicular field tags from H
+
+      ! Main mediua
+      media = getMediaIndex(field, i, j, k, CoordToMaterial)
+
+      ! Neighboring media
+      !First Direction
+      firstPositiveMedia = getMediaIndex(HFieldTable(field), i, j, k, CoordToMaterial)
+      firstNegativeMedia = getMediaIndex(HFieldTable(field), i + shift_i(field), j + shift_j(field), k + shift_k(field), CoordToMaterial)
+
+      !Second Direction
+      secondPositiveMedia = getMediaIndex(HFieldTable(mod(field, nFields) + 1), i, j, k, CoordToMaterial)
+      secondNegativeMedia = getMediaIndex(HFieldTable(mod(field, nFields) + 1), i + shift_i2(field), j + shift_j2(field), k + shift_k2(field), CoordToMaterial)
+   end subroutine
 
    function get_probe_coords_extension(coordinates, mpidir) result(ext)
       type(cell_coordinate_t) :: coordinates
@@ -396,11 +430,11 @@ contains
    end function
 
    logical function isPML(field, i, j, k, problem)
-        integer(kind=4) :: field, i, j, k
-        integer(kind=SINGLE) :: mediaIndex
-        type(problem_info_t), intent(in) :: problem
-        mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
-        isPML = problem%materialList(mediaIndex)%is%PML
+      integer(kind=4) :: field, i, j, k
+      integer(kind=SINGLE) :: mediaIndex
+      type(problem_info_t), intent(in) :: problem
+      mediaIndex = getMediaIndex(field, i, j, k, problem%geometryToMaterialData)
+      isPML = problem%materialList(mediaIndex)%is%PML
    end function
 
    logical function isSurface(field, i, j, k, problem)
@@ -577,17 +611,17 @@ contains
    end function
 
    integer function currentType(field)
-        integer(kind=4) :: field
-        select case (field)
-        case (iEx); currentType = iJx
-        case (iEy); currentType = iJy
-        case (iEz); currentType = iJz
-        case (iHx); currentType = iBloqueJx
-        case (iHy); currentType = iBloqueJy
-        case (iHz); currentType = iBloqueJz
-        case default; call StopOnError(0, 0, 'field is not a E or H field')
-        end select
-      end function
+      integer(kind=4) :: field
+      select case (field)
+      case (iEx); currentType = iJx
+      case (iEy); currentType = iJy
+      case (iEz); currentType = iJz
+      case (iHx); currentType = iBloqueJx
+      case (iHy); currentType = iBloqueJy
+      case (iHz); currentType = iBloqueJz
+      case default; call StopOnError(0, 0, 'field is not a E or H field')
+      end select
+   end function
 
    function get_field(field, i, j, k, fields_reference) result(res)
       implicit none
@@ -624,13 +658,13 @@ contains
       end select
    end function get_delta
 
-   subroutine create_data_file(filePathReference, probePathReference ,domainTypeReference, fileExtension)
+   subroutine create_data_file(filePathReference, probePathReference, domainTypeReference, fileExtension)
       use mod_directoryUtils
       character(len=*), intent(out) :: filePathReference
       character(len=*), intent(in) :: probePathReference
       character(len=*), intent(in) :: domainTypeReference
       character(len=*), intent(in) :: fileExtension
-      
+
       character(len=1) :: sep = '_'
       integer :: err
 

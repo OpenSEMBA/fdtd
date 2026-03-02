@@ -141,6 +141,7 @@ contains
    !===========================
 
    subroutine write_bin_file(this)
+      ! Check type definition for binary format
       type(movie_probe_output_t), intent(inout) :: this
       integer :: i, t, unit
 
@@ -152,10 +153,10 @@ contains
       end do
       end do
       close(unit)
-      call read_bin_file(this)
    end subroutine
 
    subroutine read_bin_file(this)
+      ! Check type definition for binary format
       type(movie_probe_output_t), intent(inout) :: this
       integer :: unit
       integer :: iostat
@@ -164,7 +165,6 @@ contains
       real(kind=RKIND) :: xVal, yVal, zVal
       integer(kind=4) :: dataSize
       
-      ! Open the file for reading
       open(unit=unit, file=add_extension(this%path, binaryExtension), &
            status='old', form='unformatted', access='stream', iostat=iostat)
       if (iostat /= 0) then

@@ -1868,7 +1868,6 @@ contains
                       if (this%thereAre%Observation) call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, flushFF)
 #else
                       if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
-#endif
 #ifdef CompileWithMPI
                       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1941,6 +1940,7 @@ contains
 
 #ifdef CompileWithMPI
                      call MPI_Barrier(SUBCOMM_MPI,ierr)
+#endif
 #endif
                  endif !del if (this%performflushDATA.or....
                   if (this%control%singlefilewrite.and.this%perform%Unpack) call singleUnpack()
