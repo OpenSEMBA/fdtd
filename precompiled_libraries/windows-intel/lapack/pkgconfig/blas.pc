@@ -1,8 +1,0 @@
-libdir=C:/Users/lm/workspace/fdtd-tests/external/opensemba-fdtd/external/lapack/lapack-windows-install/lib
-includedir=C:/Users/lm/workspace/fdtd-tests/external/opensemba-fdtd/external/lapack/lapack-windows-install/include
-
-Name: BLAS
-Description: FORTRAN reference implementation of BLAS Basic Linear Algebra Subprograms
-Version: 3.12.0
-URL: http://www.netlib.org/blas/
-Libs: -L${libdir} -lblas
