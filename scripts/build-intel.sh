@@ -47,8 +47,8 @@ cmake -S . -B "$BUILD_DIR" \
 # CMake build
 # --------------------------------------------------------------------------- #
 echo ""
-echo "--- CMake build (jobs=$JOBS) ---"
-cmake --build "$BUILD_DIR" -j "$JOBS"
+echo "--- CMake build ---"
+cmake --build "$BUILD_DIR"
 
 echo ""
 echo "Build finished successfully."
