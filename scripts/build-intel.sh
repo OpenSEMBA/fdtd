@@ -26,9 +26,9 @@ if [[ -f "$MPI_VARS" ]]; then
 fi
 set -u
 
-export FC="ifx"
-export CC="icx"
-export CXX="icpx"
+export FC="mpiifx"
+export CC="mpiicx"
+export CXX="mpiicpx"
 echo "Using Intel MPI compiler wrappers: FC=$FC CC=$CC CXX=$CXX"
 
 # --------------------------------------------------------------------------- #
