@@ -8,7 +8,7 @@ ENABLE_MTLN="ON"
 ENABLE_HDF="ON"
 ENABLE_DOUBLE="OFF"
 BUILD_DIR="build-intel"
-JOBS=$(nproc)
+JOBS=8
 
 # --------------------------------------------------------------------------- #
 # Compiler environment setup (Intel oneAPI)
@@ -47,8 +47,8 @@ cmake -S . -B "$BUILD_DIR" \
 # CMake build
 # --------------------------------------------------------------------------- #
 echo ""
-echo "--- CMake build ---"
-cmake --build "$BUILD_DIR"
+echo "--- CMake build (jobs=$JOBS) ---"
+cmake --build "$BUILD_DIR" -j "$JOBS"
 
 echo ""
 echo "Build finished successfully."
