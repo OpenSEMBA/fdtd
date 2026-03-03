@@ -10,6 +10,12 @@ authors:
   - family-names: Gascón
     given-names: Alberto 
     orcid: https://orcid.org/0000-0003-1190-2248
+  - family-names: Ramos-Salas
+    given-names: Carlos Julio
+    orcid: https://orcid.org/0009-0006-9905-4739
+  - family-names: Muñoz Manterola
+    given-names: Alejandro
+    orcid: https://orcid.org/0000-0002-2406-8128
 url: "https://github.com/opensemba/fdtd"
 title: "semba-fdtd"
 date-released: 2024-01-01
