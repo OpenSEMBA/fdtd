@@ -2,7 +2,6 @@ module mod_mapVTKOutput
    use FDETYPES
    use outputTypes
    use mod_outputUtils
-   use vtk_fortran
    use mod_directoryUtils
    use mod_allocationUtils
    use mod_vtkAPI
@@ -132,7 +131,7 @@ contains
       type(sim_control_t), intent(in) :: control
       real(KIND=RKIND), pointer, dimension(:), intent(in) :: realXGrid, realYGrid, realZGrid
 
-      type(vtk_file) :: vtkOutput
+      !type(vtk_file) :: vtkOutput
       type(vtk_unstructured_grid), target :: ugrid
 
       integer :: ierr, i, npts, unit

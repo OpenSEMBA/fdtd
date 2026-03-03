@@ -15,12 +15,13 @@ add_library(fdtd-output
 add_library(vtkAPI
   "vtkAPI.F90"
 )
-target_link_libraries(fdtd-output
- semba-types
- semba-components
- fdtd-utils
- VTKFortran::VTKFortran 
+
+add_library(xdmfAPI
+  "xdmfAPI.F90"
 )
+
+target_include_directories(xdmfAPI PRIVATE ${HDF5_INCLUDE_DIRS})
+
 target_link_libraries(vtkAPI
  fdtd-utils
 )

@@ -26,6 +26,7 @@ if (SEMBA_FDTD_ENABLE_SMBJSON)
         add_subdirectory(output)
         set(OUPUT_TESTS_LIBRARY output_tests)
         set(VTK_API_TESTS_LIBRARY vtkAPI_tests)
+        set(XDMF_API_TESTS_LIBRARY xdmfAPI_tests)
     endif()
     
     if (NOT SEMBA_FDTD_ENABLE_MPI)
@@ -50,6 +51,7 @@ target_link_libraries(fdtd_tests
     ${VTK_TESTS_LIBRARY}
     ${SYSTEM_TESTS_LIBRARY}
     ${VTK_API_TESTS_LIBRARY}
+    ${XDMF_API_TESTS_LIBRARY}
     ${OUPUT_TESTS_LIBRARY}
     ${OBSERVATION_TESTS_LIBRARY}
     GTest::gtest_main
