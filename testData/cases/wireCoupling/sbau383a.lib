@@ -21,25 +21,25 @@ R29 1 0 50.0
 * connections to P1 P2 P3
 Vp VCC2  0 6
 Vm VEE2  0 -6
-C20 VCC2  0 10.0e-6
-C21 VCC2  0 1.0e-6
-C29 VEE2 0 10.0e-6
-C30 VEE2 0 1.0e-6
+* C20 VCC2  0 10.0e-6
+* C21 VCC2  0 1.0e-6
+* C29 VEE2 0 10.0e-6
+* C30 VEE2 0 1.0e-6
 
 * potentiometer
-RP1 VCC2  5001 5.0e3
-RP2 5001 VEE2 5.0e3
+* RP1 VCC2  5001 5.0e3
+* RP2 5001 VEE2 5.0e3
 
 
 * connections to VCH
-C31 VCC2 0 0.1e-6
-C32 VCC2 0 1.0e-6
-C33 VCC2 0 10.0e-6
+* C31 VCC2 0 0.1e-6
+* C32 VCC2 0 1.0e-6
+* C33 VCC2 0 10.0e-6
 
 * connections to VCL
-C40 VEE2 0 100.0e-9
-C41 VEE2 0 1.0e-6
-C42 VEE2 0 10.0e-6
+* C40 VEE2 0 100.0e-9
+* C41 VEE2 0 1.0e-6
+* C42 VEE2 0 10.0e-6
 
 * connections to OUT
 R24 OUT 27 64.9
@@ -47,21 +47,21 @@ R27 27 0 75.0
 R25 27 2 15.0
 
 * connections to VEE
-C22 VEE2 0 0.1e-6
-C23 VEE2 0 1.0e-6
-C24 VEE2 0 1.0e-6
-C25 VEE2 0 0.1e-6
-C26 VEE2 0 1.0e-6
-C27 VEE2 0 0.1e-6
-C28 VEE2 0 1.0e-6
+* C22 VEE2 0 0.1e-6
+* C23 VEE2 0 1.0e-6
+* C24 VEE2 0 1.0e-6
+* C25 VEE2 0 0.1e-6
+* C26 VEE2 0 1.0e-6
+* C27 VEE2 0 0.1e-6
+* C28 VEE2 0 1.0e-6
 
 * connections to VCC
-C34 VCC2  0 0.1e-6
-C35 VCC2  0 1.0e-6
-C36 VCC2  0 1.0e-6
-C37 VCC2  0 0.1e-6
-C38 VCC2  0 1.0e-6
-C39 VCC2  0 1.0e-6
+* C34 VCC2  0 0.1e-6
+* C35 VCC2  0 1.0e-6
+* C36 VCC2  0 1.0e-6
+* C37 VCC2  0 0.1e-6
+* C38 VCC2  0 1.0e-6
+* C39 VCC2  0 1.0e-6
  
 
 .ends
