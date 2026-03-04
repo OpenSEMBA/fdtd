@@ -42,28 +42,62 @@ contains
       character(len=BUFSIZE), intent(in)      :: outputTypeExtension
 
       integer :: error
-      character(len=BUFSIZE) :: pdvFileName
+      character(len=BUFSIZE) :: filename
 
       this%mainCoords = lowerBound
-      this%auxCoords  = upperBound
-      this%component  = field
-      this%domain     = domain
-      this%path       = get_output_path(this, outputTypeExtension, field, control%mpidir)
-      
-      pdvFileName = add_extension(get_last_component(this%path), pvdExtension)
-      this%pvdPath = join_path(this%path, pdvFileName)
-
-      call create_folder(this%path, error)
-      call create_file_with_path(add_extension(this%path, binaryExtension), error)
+      this%auxCoords = upperBound
+      this%component = field
+      this%domain = domain
 
       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
-      call alloc_and_init(this%timeStep, BuffObse, 0.0_RKIND_tiempo)
+      call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
 
       ! Allocate value arrays based on component type
-         call alloc_and_init(this%xValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
-         call alloc_and_init(this%yValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
-         call alloc_and_init(this%zValueForTime, BuffObse, this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%xValueForTime, BUFSIZE, this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%yValueForTime, BUFSIZE, this%nPoints, 0.0_RKIND)
+      call alloc_and_init(this%zValueForTime, BUFSIZE, this%nPoints, 0.0_RKIND)
+
+      this%path = get_output_path(this, outputTypeExtension, field, control%mpidir)
+      filename = get_last_component(this%path)
+      this%filesPath = join_path(this%path, filename)
+
+      call create_folder(this%path, error)
+      call create_bin_file(this%filesPath, error)
+      call create_movie_files(this%filesPath, this%coords ,this%nPoints, error)
    end subroutine init_movie_probe_output
+
+   subroutine create_bin_file(filePath, error)
+      character(len=*), intent(in) :: filePath
+      integer, intent(out) :: error
+      call create_file_with_path(add_extension(filePath, binaryExtension), error)
+   end subroutine 
+
+   subroutine create_movie_files(filePath, coords, nPoints, error)
+      character(len=*), intent(in) :: filePath
+      integer(kind=SINGLE), dimension(:, :), intent(in) :: coords
+      integer, intent(in) :: nPoints
+      integer, intent(out) :: error
+      real(dp), allocatable, dimension(:, :) :: coordsReal
+
+      integer(HID_T) :: file_id
+      character(len=BUFSIZE) :: h5_filename
+
+      h5_filename = add_extension(filePath, ".h5")
+
+      call H5open_f(error)
+      call create_h5_file(trim(h5_filename), file_id)
+
+      allocate (coordsReal(3, nPoints))
+      coordsReal = real(coords, dp)
+      call write_dataset(file_id, "coords", coordsReal)
+      deallocate(coordsReal)
+
+      call init_extendable_2d_dataset(file_id, 'xVal', nPoints, BUFSIZE)
+      call init_extendable_2d_dataset(file_id, 'yVal', nPoints, BUFSIZE)
+      call init_extendable_2d_dataset(file_id, 'zVal', nPoints, BUFSIZE)
+      call H5Fclose_f(file_id, error)
+      call H5close_f(error)
+   end subroutine 
 
    subroutine update_movie_probe_output(this, step, fieldsReference, control, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
@@ -129,7 +163,7 @@ contains
       integer :: i
 
       call write_bin_file(this)
-      call write_to_xdmf(this)
+      call write_to_xdmf_h5(this)
 
       call clear_memory_data(this)
    end subroutine flush_movie_probe_output
@@ -143,16 +177,89 @@ contains
       type(movie_probe_output_t), intent(inout) :: this
       integer :: i, t, unit
 
-      open (unit=unit, file=add_extension(this%path, binaryExtension), &
+      open (unit=unit, file=add_extension(this%filesPath, binaryExtension), &
             status='old', form='unformatted', position='append', access='stream')
       do t = 1, this%nTime
       do i = 1, this%nPoints
          write(unit) this%timeStep(t), this%coords(1,i), this%coords(2,i), this%coords(3,i), this%xValueForTime(t,i), this%yValueForTime(t,i), this%zValueForTime(t,i)
       end do
       end do
+      flush (unit)
       close (unit)
    end subroutine
 
+   subroutine write_to_xdmf_h5(this)
+
+      type(movie_probe_output_t), intent(inout) :: this
+
+      integer(HID_T) :: file_id
+      integer :: t, error, xdmfunit
+      real(dp), allocatable, dimension(:, :) :: coordsReal
+      character(len=256) :: h5_filename, h5_filepath
+      character(len=256) :: xdmf_filename
+      character(len=10) :: dimension_string
+      character(len=10) :: nCoordsString
+      character(len=14) :: stepName
+      h5_filepath = add_extension(this%filesPath, ".h5")
+      h5_filename = get_last_component(h5_filepath)
+
+      call H5open_f(error)
+      call H5Fopen_f(trim(h5_filepath), H5F_ACC_RDWR_F, file_id, error)
+
+      
+      write(dimension_string, '(I0,1X,I0)') this%nPoints, this%nTimesFlushed + this%nTime
+      write(nCoordsString, '(I0, I0)') this%nPoints, 1
+      do t = 1, this%nTime
+         write(stepName, '((I5.5))') this%nTimesFlushed + t
+         call append_rows_dataset(file_id, "xVal", reshape(this%xValueForTime(t, :), [1, this%nPoints]))
+         call append_rows_dataset(file_id, "yVal", reshape(this%yValueForTime(t, :), [1, this%nPoints]))
+         call append_rows_dataset(file_id, "zVal", reshape(this%zValueForTime(t, :), [1, this%nPoints]))
+         if (mod(this%nTimesFlushed + t, 10) == 0) then
+            
+            xdmf_filename = add_extension(add_extension(this%filesPath, ".ts_"//stepName), ".xdmf")
+            open(newunit=xdmfunit, file=trim(xdmf_filename), status='replace', position='append', iostat=error)
+
+            call xdmf_write_header_file(xdmfunit)
+
+            call xdmf_create_grid_step_info(xdmfunit, stepName, real(this%timeStep(t)), trim(h5_filename), this%nPoints)
+            
+            call xdmf_write_attribute(xdmfunit, 'xVal')
+            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
+            call xdmf_write_h5_acces_data_item(xdmfunit, 0, this%nTimesFlushed + t - 1,  this%nPoints, this%nTimesFlushed + this%nTime)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/xVal', dimension_string)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_attribute(xdmfunit)
+
+            call xdmf_write_attribute(xdmfunit, 'yVal')
+            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
+            call xdmf_write_h5_acces_data_item(xdmfunit, 0, this%nTimesFlushed + t - 1,  this%nPoints, this%nTimesFlushed + this%nTime)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/yVal', dimension_string)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_attribute(xdmfunit)
+
+            call xdmf_write_attribute(xdmfunit, 'zVal')
+            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
+            call xdmf_write_h5_acces_data_item(xdmfunit, 0, this%nTimesFlushed + t - 1,  this%nPoints, this%nTimesFlushed + this%nTime)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/zVal', dimension_string)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_attribute(xdmfunit)
+
+            call xdmf_close_grid(xdmfunit)
+         
+            call xdmf_write_footer_file(xdmfunit)
+            close(xdmfunit)
+         endif
+      end do
+
+      call H5Fclose_f(file_id, error)
+      call H5close_f(error)
+   end subroutine write_to_xdmf_h5
 
    subroutine read_bin_file(this)
       ! Check type definition for binary format
@@ -327,7 +434,7 @@ contains
 
    subroutine clear_memory_data(this)
       type(movie_probe_output_t), intent(inout) :: this
-
+      this%nTimesFlushed = this%nTimesFlushed + this%nTime
       this%nTime = 0
       this%timeStep = 0.0_RKIND
       if (any(VOLUMIC_M_MEASURE == this%component)) then

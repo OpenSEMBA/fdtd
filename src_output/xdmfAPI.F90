@@ -3,21 +3,9 @@ module mod_xdmfAPI
    implicit none
 
    ! HDF5 constants
-   private
+
    integer, parameter :: dp = kind(1.0d0)
-   public :: dp
-   public :: xdmf_create_file
-   public :: xdmf_write_timestep
-   public :: xdmf_write_step
-   public :: xdmf_close_file
-   public :: create_h5_file
-   public :: h5_close_file
-   public :: write_dataset
-   public :: xdmf_write_step_header
-   public :: xdmf_write_attribute
-   public :: xdmf_write_step_footer
-   public :: init_extendable_2d_dataset
-   public :: append_rows_dataset
+
 
    interface write_dataset
       module procedure write_1d_dataset
@@ -26,151 +14,86 @@ module mod_xdmfAPI
    end interface
 
 contains
-   subroutine xdmf_create_file(filename)
-      character(len=*), intent(in) :: filename
-      integer :: unit, ierr
-
-      open (newunit=unit, file=filename, status='replace', action='write', &
-            form='formatted', iostat=ierr)
-      if (ierr /= 0) stop "Cannot create XDMF file"
-
+   subroutine xdmf_write_header_file(unit)
+      integer :: unit
       write (unit, '(A)') '<?xml version="1.0" ?>'
       write (unit, '(A)') '<Xdmf Version="3.0">'
       write (unit, '(A)') '  <Domain>'
       write (unit, '(A)') '    <Grid Name="TimeSeries" GridType="Collection" CollectionType="Temporal">'
-      close (unit)
-   end subroutine xdmf_create_file
+   end subroutine 
 
-   subroutine xdmf_write_timestep(filename, time, dataset_path, grid_name, dims)
-      implicit none
-      character(len=*), intent(in) :: filename
-      real(dp), intent(in) :: time
-      character(len=*), intent(in) :: dataset_path
-      character(len=*), intent(in) :: grid_name
-      integer, dimension(:), intent(in) :: dims
+   subroutine xdmf_write_footer_file(unit)
       integer :: unit
-      character(len=50) :: dim_str1, dim_str2
+      write (unit, '(A)') '</Grid>'
+      write (unit, '(A)') '</Domain>'
+      write (unit, '(A)') '</Xdmf>'
+   end subroutine 
 
-      ! Convert dimensions to string
-      write (dim_str1, '(I0," ",I0," ",I0)') dims(3), dims(2), dims(1)
-      write (dim_str2, '(I0," ",I0," ",I0)') dims(1), dims(2), dims(3)
+   subroutine xdmf_create_grid_step_info(unit, stepName, stepValue, h5_filename, ncoords)
+      !Requires file already open
+      !h5_file must contain a coords field
+      integer, intent(in) :: unit
+      character(len=*), intent(in) :: stepName
+      real, intent(in) :: stepValue
+      character(len=*), intent(in) :: h5_filename
+      integer, intent(in) :: ncoords
 
-      open (newunit=unit, file=filename, status='old', action='write', position='append')
+      write (unit, '(A,A,A)'       ) '<Grid Name="', trim(stepName), '" GridType="Uniform">'
+      write (unit, '(A,G0,A)'      ) '<Time Value="',stepValue,'"/>'
 
-      write (unit, '(A)') '      <Grid Name="'//trim(grid_name)//'" GridType="Uniform">'
-      write (unit, '(A,F8.4)') '        <Time Value="', time, '"/>'
-      write (unit, '(A)') '        <Topology TopologyType="3DRectMesh" Dimensions="'//trim(dim_str1)//'"/>'
-      write (unit, '(A)') '        <Geometry GeometryType="Origin_DxDyDz">'
-      write (unit, '(A)') '          <DataItem Dimensions="3" NumberType="Float" Precision="8" Format="XML">0 0 0</DataItem>'
-      write (unit, '(A)') '          <DataItem Dimensions="3" NumberType="Float" Precision="8" Format="XML">1 1 1</DataItem>'
-      write (unit, '(A)') '        </Geometry>'
-      write (unit, '(A)') '        <Attribute Name="Efield" AttributeType="Scalar" Center="Node">'
-      write (unit, '(A)'     ) '          <DataItem Dimensions="'//trim(dim_str2)//'" NumberType="Float" Precision="8" Format="HDF">'//trim(dataset_path)//'</DataItem>'
-      write (unit, '(A)') '        </Attribute>'
-      write (unit, '(A)') '      </Grid>'
+      write (unit, '(A,I0,A)'      ) '<Topology TopologyType="Polyvertex" NumberOfElements="',ncoords,'"/>'
+      write (unit, '(A)'           ) '<Geometry GeometryType="XYZ">'
+      write (unit, '(A,I0,1X,I0,A)') '<DataItem Format="HDF" Dimensions="',ncoords, 3,'" NumberType="Float">'
+      write (unit, '(A,A)'         ) trim(h5_filename),':/coords'
+      write (unit, '(A)'           ) '</DataItem>'
+      write (unit, '(A)'           ) '</Geometry>'
+   end subroutine xdmf_create_grid_step_info
 
-      close (unit)
-   end subroutine xdmf_write_timestep
+   subroutine xdmf_close_grid(unit)
+      !Requires file already open
+      integer, intent(in) :: unit
+      write (unit, '(A)'     ) '</Grid>'
+   end subroutine xdmf_close_grid
 
-   subroutine xdmf_write_step_header(filename, t, time, npoints)
-      character(len=*), intent(in) :: filename
-      integer, intent(in) :: t
-      real(8), intent(in) :: time
-      integer, intent(in) :: npoints
-      integer :: unit
-      character(len=20) :: ts
-
-      write (ts, '(I0)') t
-
-      open (newunit=unit, file=filename, position="append")
-
-      write (unit, '(A)') '  <Grid Name="Step'//trim(ts)//'" GridType="Uniform">'
-      write (unit, '(A,F12.6,A)') '    <Time Value="', time, '"/>'
-      write (unit, '(A,I0,A)') '    <Topology TopologyType="Polyvertex" NumberOfElements="', npoints, '"/>'
-
-      write (unit, '(A)') '    <Geometry GeometryType="XYZ">'
-      write (unit, '(A)') '      <DataItem Dimensions="'//trim(ts)//'" Format="HDF">data.h5:/coords</DataItem>'
-      write (unit, '(A)') '    </Geometry>'
-
-      close (unit)
-   end subroutine xdmf_write_step_header
-
-   subroutine xdmf_write_attribute(filename, t, attr_name, h5_dataset)
-      character(len=*), intent(in) :: filename
-      integer, intent(in) :: t
-      character(len=*), intent(in) :: attr_name
-      character(len=*), intent(in) :: h5_dataset
-      integer :: unit
-      character(len=20) :: ts
-
-      write (ts, '(I0)') t
-      open (newunit=unit, file=filename, position="append")
-
-      write (unit, '(A)') '    <Attribute Name="'//trim(attr_name)//'" Center="Node">'
-   write(unit, '(A,I0,A)') '      <DataItem Dimensions="'//trim(ts)//'" Format="HDF">data.h5:/'//trim(h5_dataset)//'['//trim(ts)//',:]</DataItem>'
-      write (unit, '(A)') '    </Attribute>'
-
-      close (unit)
+   subroutine xdmf_write_attribute(unit, attributeName)
+      integer, intent(in) :: unit
+      character(len=*), intent(in) :: attributeName
+      write (unit, '(A,A,A)'  ) '<Attribute Name="',trim(attributeName),'" AttributeType="Scalar" Center="Node">'
    end subroutine xdmf_write_attribute
 
-   subroutine xdmf_write_step_footer(filename)
-      character(len=*), intent(in) :: filename
-      integer :: unit
+   subroutine xdmf_close_attribute(unit)
+      integer, intent(in) :: unit
+      write (unit, '(A)'      ) '</Attribute>'
+   end subroutine xdmf_close_attribute
 
-      open (newunit=unit, file=filename, position="append")
-      write (unit, '(A)') '  </Grid>'
-      close (unit)
-   end subroutine xdmf_write_step_footer
+   subroutine xdmf_write_hyperslab_data_item(unit, dimension_string)
+      integer, intent(in) :: unit
+      character(len=*), intent(in) :: dimension_string !int writen in space separated format Ex: '2 20 3'
+      write (unit, '(A,A,A)'  ) '<DataItem ItemType="HyperSlab" Dimensions="',trim(dimension_string),'" Type="HyperSlab">'
+   end subroutine xdmf_write_hyperslab_data_item
 
-   subroutine xdmf_write_step(filename, t, time, npoints)
-      character(len=*), intent(in) :: filename
-      integer, intent(in) :: t
-      real(8), intent(in) :: time
-      integer, intent(in) :: npoints
-      integer :: unit
-      character(len=20) :: ts
+   subroutine xdmf_write_h5_acces_data_item(unit, row_offset, column_offset, row_count, column_count)
+      !Used on cases where we acces parts of an h5 array
+      integer, intent(in) :: unit, row_offset, column_offset, row_count, column_count
+      write (unit, '(A,A,A)'  ) '<DataItem Dimensions="3 2" Format="XML" NumberType="Int">'
+      write (unit, '(I0,1X,I0)') row_offset, column_offset
+      write (unit, '(I0,1X,I0)') 1, 1
+      write (unit, '(I0,1X,I0)') row_count, column_count
+   end subroutine xdmf_write_h5_acces_data_item
 
-      write (ts, '(I0)') t
+   subroutine xdmf_write_h5_data_item(unit, h5_filename, h5_data_path, dimension_string)
+      integer, intent(in) :: unit
+      character(len=*), intent(in) :: h5_filename
+      character(len=*), intent(in) :: h5_data_path
+      character(len=*), intent(in) :: dimension_string !int writen in space separated format Ex: '2 20 3'
+      write (unit, '(A,A,A)') '<DataItem Format="HDF" Dimensions="',trim(dimension_string),'" NumberType="Float">'
+      write (unit, '(A,A,A)') h5_filename,':', h5_data_path 
+   end subroutine xdmf_write_h5_data_item
 
-      open (newunit=unit, file=filename, position="append")
-
-      write (unit, '(A)') '  <Grid Name="Step'//trim(ts)//'" GridType="Uniform">'
-      write (unit, '(A,F12.6,A)') '    <Time Value="', time, '"/>'
-
-      write (unit, '(A,I0,A)') '    <Topology TopologyType="Polyvertex" NumberOfElements="', npoints, '"/>'
-
-      write (unit, '(A)') '    <Geometry GeometryType="XYZ">'
-      write (unit, '(A)') '      <DataItem Dimensions="'//trim(ts)//'" Format="HDF">data.h5:/coords</DataItem>'
-      write (unit, '(A)') '    </Geometry>'
-
-      write (unit, '(A)') '    <Attribute Name="Ex" Center="Node">'
-      write (unit, '(A,I0,A)') '      <DataItem Dimensions="'//trim(ts)//'" Format="HDF">data.h5:/Ex['//trim(ts)//',:]</DataItem>'
-      write (unit, '(A)') '    </Attribute>'
-
-      write (unit, '(A)') '    <Attribute Name="Ey" Center="Node">'
-      write (unit, '(A,I0,A)') '      <DataItem Dimensions="'//trim(ts)//'" Format="HDF">data.h5:/Ey['//trim(ts)//',:]</DataItem>'
-      write (unit, '(A)') '    </Attribute>'
-
-      write (unit, '(A)') '    <Attribute Name="Ez" Center="Node">'
-      write (unit, '(A,I0,A)') '      <DataItem Dimensions="'//trim(ts)//'" Format="HDF">data.h5:/Ez['//trim(ts)//',:]</DataItem>'
-      write (unit, '(A)') '    </Attribute>'
-
-      write (unit, '(A)') '  </Grid>'
-
-      close (unit)
-
-   end subroutine
-
-   subroutine xdmf_close_file(filename)
-      character(len=*), intent(in) :: filename
-      integer :: unit
-
-      open (newunit=unit, file=filename, status='old', action='write', position='append')
-      write (unit, '(A)') '    </Grid>'
-      write (unit, '(A)') '  </Domain>'
-      write (unit, '(A)') '</Xdmf>'
-      close (unit)
-   end subroutine xdmf_close_file
+   subroutine xdmf_close_data_item(unit)
+      integer, intent(in) :: unit
+      write (unit, '(A)') '</DataItem>'
+   end subroutine xdmf_close_data_item
 
    subroutine create_h5_file(filename, file_id)
       character(len=*), intent(in) :: filename

@@ -443,7 +443,6 @@ contains
          case (BULK_PROBE_ID)
          case (VOLUMIC_CURRENT_PROBE_ID)
          case (MOVIE_PROBE_ID)
-            
          case (FREQUENCY_SLICE_PROBE_ID)
             call close_pvd(outputs(i)%frequencySliceProbe%pvdPath)
          end select

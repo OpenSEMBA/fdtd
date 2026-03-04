@@ -96,6 +96,7 @@ module outputTypes
    type, extends(abstract_probe_t) :: abstract_time_probe_t
       character(len=BUFSIZE) :: filePathTime
       integer(kind=SINGLE) :: nTime = 0_SINGLE
+      integer(kind=SINGLE) :: nTimesFlushed = 0_SINGLE !times alredy writen in disk
       real(kind=RKIND_tiempo), allocatable :: timeStep(:)
    end type abstract_time_probe_t
 
@@ -171,7 +172,7 @@ module outputTypes
       real(kind=RKIND), allocatable :: xValueForTime(:, :)  !(time, coordIdx) 
       real(kind=RKIND), allocatable :: yValueForTime(:, :)  !(time, coordIdx) 
       real(kind=RKIND), allocatable :: zValueForTime(:, :)  !(time, coordIdx) 
-      character(len=BUFSIZE) :: pvdPath
+      character(len=BUFSIZE) :: filesPath
    end type movie_probe_output_t
 
    type, extends(abstract_frequency_probe_t) :: frequency_slice_probe_output_t
