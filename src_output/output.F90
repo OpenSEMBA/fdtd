@@ -230,15 +230,12 @@ contains
                   outputs(outputCount)%outputID = MOVIE_PROBE_ID
                   allocate (outputs(outputCount)%movieProbe)
                   call init_solver_output(outputs(outputCount)%movieProbe, lowerBound, upperBound, outputRequestType, domain, control, problemInfo, outputTypeExtension)
-                  call create_pvd(outputs(outputCount)%movieProbe%pvdPath)
                else if (domain%domainType == FREQUENCY_DOMAIN) then
 
                   outputCount = outputCount + 1
                   outputs(outputCount)%outputID = FREQUENCY_SLICE_PROBE_ID
                   allocate (outputs(outputCount)%frequencySliceProbe)
                   call init_solver_output(outputs(outputCount)%frequencySliceProbe, lowerBound, upperBound, sgg%dt, outputRequestType, domain, outputTypeExtension, control, problemInfo)
-                  call create_pvd(outputs(outputCount)%frequencySliceProbe%pvdPath)
-
                end if
             case (farfield)
                sphericRange = preprocess_polar_range(sgg%Observation(ii))
@@ -446,7 +443,7 @@ contains
          case (BULK_PROBE_ID)
          case (VOLUMIC_CURRENT_PROBE_ID)
          case (MOVIE_PROBE_ID)
-            call close_pvd(outputs(i)%movieProbe%pvdPath)
+            
          case (FREQUENCY_SLICE_PROBE_ID)
             call close_pvd(outputs(i)%frequencySliceProbe%pvdPath)
          end select

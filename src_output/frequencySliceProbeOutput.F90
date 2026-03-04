@@ -295,7 +295,6 @@ contains
    end subroutine flush_frequency_slice_probe_output
 
    subroutine write_vtu_frequency_slice(this, freq, filename)
-      use vtk_fortran
       implicit none
 
       type(frequency_slice_probe_output_t), intent(in) :: this
@@ -303,84 +302,84 @@ contains
       character(len=*), intent(in) :: filename
 
       character(len=BUFSIZE) :: requestName
-      type(vtk_file) :: vtkOutput
+      !type(vtk_file) :: vtkOutput
       integer :: ierr, npts, i
       real(kind=RKIND), allocatable :: x(:), y(:), z(:)
       real(kind=RKIND), allocatable :: Componentx(:), Componenty(:), Componentz(:)
       logical :: writeX, writeY, writeZ
 
-      !================= Determine the measure type =================
-      if (any(CURRENT_MEASURE == this%component)) requestName = 'Current'
-      if (any(ELECTRIC_FIELD_MEASURE == this%component)) requestName = 'Electric'
-      if (any(MAGNETIC_FIELD_MEASURE == this%component)) requestName = 'Magnetic'
-
-      !================= Determine which components to write =================
-      writeX = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_X_MEASURE == this%component)
-      writeY = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Y_MEASURE == this%component)
-      writeZ = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Z_MEASURE == this%component)
-
-      !================= Allocate and fill coordinates =================
-      npts = this%nPoints
-      allocate (x(npts), y(npts), z(npts))
-      do i = 1, npts
-         x(i) = this%coords(1, i)
-         y(i) = this%coords(2, i)
-         z(i) = this%coords(3, i)
-      end do
-
-      ierr = vtkOutput%initialize(format='ASCII', filename=trim(filename), mesh_topology='UnstructuredGrid')
-      ierr = vtkOutput%xml_writer%write_geo(n=npts, x=x, y=y, z=z)
-
-      !================= Allocate and fill component arrays =================
-      if (writeX) then
-         allocate (Componentx(npts))
-         do i = 1, npts
-            Componentx(i) = abs(this%xValueForFreq(freq, i))
-         end do
-      end if
-
-      if (writeY) then
-         allocate (Componenty(npts))
-         do i = 1, npts
-            Componenty(i) = abs(this%yValueForFreq(freq, i))
-         end do
-      end if
-
-      if (writeZ) then
-         allocate (Componentz(npts))
-         do i = 1, npts
-            Componentz(i) = abs(this%zValueForFreq(freq, i))
-         end do
-      end if
-
-      !================= Write arrays to VTK =================
-      if (writeX) then
-         requestName = trim(adjustl(requestName))//'X'
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-         ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componentx)
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-         deallocate (Componentx)
-      end if
-
-      if (writeY) then
-         requestName = trim(adjustl(requestName))//'X'
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-         ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componenty)
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-         deallocate (Componenty)
-      end if
-
-      if (writeZ) then
-         requestName = trim(adjustl(requestName))//'X'
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-         ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componentz)
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-         deallocate (Componentz)
-      end if
-
-      ierr = vtkOutput%xml_writer%finalize()
-      deallocate (x, y, z)
-
+      !!================= Determine the measure type =================
+      !if (any(CURRENT_MEASURE == this%component)) requestName = 'Current'
+      !if (any(ELECTRIC_FIELD_MEASURE == this%component)) requestName = 'Electric'
+      !if (any(MAGNETIC_FIELD_MEASURE == this%component)) requestName = 'Magnetic'
+!
+      !!================= Determine which components to write =================
+      !writeX = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_X_MEASURE == this%component)
+      !writeY = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Y_MEASURE == this%component)
+      !writeZ = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Z_MEASURE == this%component)
+!
+      !!================= Allocate and fill coordinates =================
+      !npts = this%nPoints
+      !allocate (x(npts), y(npts), z(npts))
+      !do i = 1, npts
+      !   x(i) = this%coords(1, i)
+      !   y(i) = this%coords(2, i)
+      !   z(i) = this%coords(3, i)
+      !end do
+!
+      !ierr = vtkOutput%initialize(format='ASCII', filename=trim(filename), mesh_topology='UnstructuredGrid')
+      !ierr = vtkOutput%xml_writer%write_geo(n=npts, x=x, y=y, z=z)
+!
+      !!================= Allocate and fill component arrays =================
+      !if (writeX) then
+      !   allocate (Componentx(npts))
+      !   do i = 1, npts
+      !      Componentx(i) = abs(this%xValueForFreq(freq, i))
+      !   end do
+      !end if
+!
+      !if (writeY) then
+      !   allocate (Componenty(npts))
+      !   do i = 1, npts
+      !      Componenty(i) = abs(this%yValueForFreq(freq, i))
+      !   end do
+      !end if
+!
+      !if (writeZ) then
+      !   allocate (Componentz(npts))
+      !   do i = 1, npts
+      !      Componentz(i) = abs(this%zValueForFreq(freq, i))
+      !   end do
+      !end if
+!
+      !!================= Write arrays to VTK =================
+      !if (writeX) then
+      !   requestName = trim(adjustl(requestName))//'X'
+      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
+      !   ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componentx)
+      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
+      !   deallocate (Componentx)
+      !end if
+!
+      !if (writeY) then
+      !   requestName = trim(adjustl(requestName))//'X'
+      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
+      !   ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componenty)
+      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
+      !   deallocate (Componenty)
+      !end if
+!
+      !if (writeZ) then
+      !   requestName = trim(adjustl(requestName))//'X'
+      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
+      !   ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componentz)
+      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
+      !   deallocate (Componentz)
+      !end if
+!
+      !ierr = vtkOutput%xml_writer%finalize()
+      !deallocate (x, y, z)
+!
    end subroutine write_vtu_frequency_slice
 
    subroutine update_pvd(this, freq, PVDfilePath)
@@ -393,14 +392,14 @@ contains
       integer :: unit
 
 
-      write (newVTUfilename, '(A,A,I4.4,A)') trim(remove_extension(this%pvdPath)), '_fq', freq, '.vtu'
-      call write_vtu_frequency_slice(this, freq, newVTUfilename)
- 
-      write (ts, '(ES16.8)') this%frequencySlice(freq)
-
-      open (newunit=unit, file=trim(PVDfilePath), status='old', position='append')
-      write (unit, '(A)') '    <DataSet timestep="'//trim(ts)//'" group="" part="0" file="'//trim(newVTUfilename)//'"/>'
-      close(unit)
+!      write (newVTUfilename, '(A,A,I4.4,A)') trim(remove_extension(this%pvdPath)), '_fq', freq, '.vtu'
+!      call write_vtu_frequency_slice(this, freq, newVTUfilename)
+! 
+!      write (ts, '(ES16.8)') this%frequencySlice(freq)
+!
+!      open (newunit=unit, file=trim(PVDfilePath), status='old', position='append')
+!      write (unit, '(A)') '    <DataSet timestep="'//trim(ts)//'" group="" part="0" file="'//trim(newVTUfilename)//'"/>'
+!      close(unit)
    end subroutine update_pvd
 
 

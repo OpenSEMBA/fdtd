@@ -479,7 +479,6 @@ integer function test_init_movie_probe() bind(c) result(err)
    expectedPDVPath = join_path(expectedProbePath, pdvFileName)
 
    test_err = test_err + assert_string_equal(outputs(1)%movieProbe%path, expectedProbePath, 'Unexpected path')
-   test_err = test_err + assert_string_equal(outputs(1)%movieProbe%pvdPath, expectedPDVPath, 'Unexpected pdv path')
    test_err = test_err + assert_true(folder_exists(expectedProbePath), 'Movie folder do not exist')
    test_err = test_err + assert_true(file_exists(expectedPDVPath), 'PDV file for movie do not exist')
 
@@ -792,19 +791,7 @@ integer function test_flush_movie_probe() bind(c) result(err)
 
    call flush_outputs(dummysgg%tiempo, 1_SINGLE, dummyControl, fields, dummyBound, .false.)
 
-   ! --- Assert file existance
-   do outputIdx = 1, 3
-      expectedPath = add_extension(remove_extension(outputs(outputIdx)%movieProbe%pvdPath),'_ts0001.vtu')
-      test_err = test_err + assert_true(file_exists(expectedPath), 'Primera iteracion no encontrada')
-
-      expectedPath = add_extension(remove_extension(outputs(outputIdx)%movieProbe%pvdPath),'_ts0002.vtu')
-      test_err = test_err + assert_true(file_exists(expectedPath), 'Segunda iteracion no encontrada')
-   end do
-
    call close_outputs()
-
-   expectedPath = trim(adjustl(outputs(1)%movieProbe%pvdPath))
-   test_err = test_err + assert_true(file_exists(expectedPath), 'PVD file not found')
 
    call remove_folder(test_folder, ios)
 

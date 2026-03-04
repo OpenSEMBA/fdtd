@@ -5,7 +5,8 @@ module mod_movieProbeOutput
    use outputTypes
    use mod_outputUtils
    use mod_volumicProbeUtils
-   use vtk_fortran
+   use HDF5
+   use mod_xdmfAPI
    implicit none
    private
 
@@ -128,10 +129,7 @@ contains
       integer :: i
 
       call write_bin_file(this)
-
-      do i = 1, this%nTime
-         call update_pvd(this, i, this%pvdPath)
-      end do
+      call write_to_xdmf(this)
 
       call clear_memory_data(this)
    end subroutine flush_movie_probe_output
@@ -145,15 +143,16 @@ contains
       type(movie_probe_output_t), intent(inout) :: this
       integer :: i, t, unit
 
-      open(unit=unit, file=add_extension(this%path, binaryExtension), &
-      status='old', form='unformatted', position='append', access='stream')
-      do t=1, this%nTime
-      do i=1, this%nPoints
+      open (unit=unit, file=add_extension(this%path, binaryExtension), &
+            status='old', form='unformatted', position='append', access='stream')
+      do t = 1, this%nTime
+      do i = 1, this%nPoints
          write(unit) this%timeStep(t), this%coords(1,i), this%coords(2,i), this%coords(3,i), this%xValueForTime(t,i), this%yValueForTime(t,i), this%zValueForTime(t,i)
       end do
       end do
-      close(unit)
+      close (unit)
    end subroutine
+
 
    subroutine read_bin_file(this)
       ! Check type definition for binary format
@@ -164,22 +163,22 @@ contains
       integer(kind=SINGLE) :: x, y, z
       real(kind=RKIND) :: xVal, yVal, zVal
       integer(kind=4) :: dataSize
-      
-      open(unit=unit, file=add_extension(this%path, binaryExtension), &
-           status='old', form='unformatted', access='stream', iostat=iostat)
+
+      open (unit=unit, file=add_extension(this%path, binaryExtension), &
+            status='old', form='unformatted', access='stream', iostat=iostat)
       if (iostat /= 0) then
-          print *, 'Error opening file!'
-          return
+         print *, 'Error opening file!'
+         return
       end if
-    
+
       ! Read until end-of-file
       do
-          read(unit, iostat=iostat) timeStamp, x, y, z, xVal, yVal, zVal
-          if (iostat /= 0) exit  ! EOF or error
-          print *, timeStamp, x, y, z, xVal, yVal, zVal
+         read (unit, iostat=iostat) timeStamp, x, y, z, xVal, yVal, zVal
+         if (iostat /= 0) exit  ! EOF or error
+         print *, timeStamp, x, y, z, xVal, yVal, zVal
       end do
-    
-      close(unit)
+
+      close (unit)
    end subroutine
 
    function get_output_path(this, outputTypeExtension, field, mpidir) result(path)
@@ -189,10 +188,9 @@ contains
       character(len=BUFSIZE)                 :: path, probeBoundsExtension, prefixFieldExtension
 
       probeBoundsExtension = get_coordinates_extension(this%mainCoords, this%auxCoords, mpidir)
-      prefixFieldExtension  = get_prefix_extension(field, mpidir)
+      prefixFieldExtension = get_prefix_extension(field, mpidir)
       path = trim(adjustl(outputTypeExtension))//'_'//trim(adjustl(prefixFieldExtension))//'_'//trim(adjustl(probeBoundsExtension))
    end function get_output_path
-
 
    subroutine save_current_module(this, fieldsReference, simTime, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
@@ -263,9 +261,9 @@ contains
       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(request, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_field(this%xValueForTime, this%nTime, coordIdx, field%x(i,j,k))
-            call save_field(this%yValueForTime, this%nTime, coordIdx, field%y(i,j,k))
-            call save_field(this%zValueForTime, this%nTime, coordIdx, field%z(i,j,k))
+            call save_field(this%xValueForTime, this%nTime, coordIdx, field%x(i, j, k))
+            call save_field(this%yValueForTime, this%nTime, coordIdx, field%y(i, j, k))
+            call save_field(this%zValueForTime, this%nTime, coordIdx, field%z(i, j, k))
          end if
       end do
       end do
@@ -288,7 +286,7 @@ contains
       do i = this%mainCoords%x, this%auxCoords%x
          if (isValidPointForField(fieldDir, i, j, k, problemInfo)) then
             coordIdx = coordIdx + 1
-            call save_field(fieldData, this%nTime, coordIdx, fieldComponent(i,j,k))
+            call save_field(fieldData, this%nTime, coordIdx, fieldComponent(i, j, k))
          end if
       end do
       end do
@@ -313,69 +311,7 @@ contains
       real(kind=RKIND), allocatable :: Componentx(:), Componenty(:), Componentz(:)
       logical :: writeX, writeY, writeZ
       character(len=BUFSIZE) :: requestName
-      type(vtk_file) :: vtkOutput
 
-      !================= Determine measure type =================
-      if (any(CURRENT_MEASURE == this%component)) then
-         requestName = 'Current'
-      else if (any(ELECTRIC_FIELD_MEASURE == this%component)) then
-         requestName = 'Electric'
-      else if (any(MAGNETIC_FIELD_MEASURE == this%component)) then
-         requestName = 'Magnetic'
-      else
-         requestName = 'Unknown'
-      end if
-
-      writeX = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_X_MEASURE == this%component)
-      writeY = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Y_MEASURE == this%component)
-      writeZ = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Z_MEASURE == this%component)
-
-      npts = this%nPoints
-      allocate(x(npts), y(npts), z(npts))
-      do i = 1, npts
-         x(i) = this%coords(1,i)
-         y(i) = this%coords(2,i)
-         z(i) = this%coords(3,i)
-      end do
-
-      ierr = vtkOutput%initialize(format='ASCII', filename=trim(filename), mesh_topology='UnstructuredGrid')
-      ierr = vtkOutput%xml_writer%write_geo(n=npts, x=x, y=y, z=z)
-
-      if (writeX) then
-         allocate(Componentx(npts))
-         do i=1, npts
-            Componentx(i) = this%xValueForTime(stepIndex, i)
-         end do
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-         ierr = vtkOutput%xml_writer%write_dataarray(data_name=trim(adjustl(requestName))//'X', x=Componentx)
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-         deallocate(Componentx)
-      end if
-
-      if (writeY) then
-         allocate(Componenty(npts))
-         do i=1, npts
-            Componenty(i) = this%yValueForTime(stepIndex, i)
-         end do
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-         ierr = vtkOutput%xml_writer%write_dataarray(data_name=trim(adjustl(requestName))//'Y', x=Componenty)
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-         deallocate(Componenty)
-      end if
-
-      if (writeZ) then
-         allocate(Componentz(npts))
-         do i=1, npts
-            Componentz(i) = this%zValueForTime(stepIndex, i)
-         end do
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-         ierr = vtkOutput%xml_writer%write_dataarray(data_name=trim(adjustl(requestName))//'Z', x=Componentz)
-         ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-         deallocate(Componentz)
-      end if
-
-      ierr = vtkOutput%xml_writer%finalize()
-      deallocate(x, y, z)
    end subroutine write_vtu_timestep
 
    subroutine update_pvd(this, stepIndex, PVDfilePath)
@@ -386,15 +322,7 @@ contains
       character(len=64) :: ts
       character(len=BUFSIZE) :: newVTUfilename
       integer :: unit
-   
-      write(newVTUfilename,'(A,A,I4.4,A)') trim(remove_extension(this%pvdPath)), '_ts', stepIndex, '.vtu'
-      call write_vtu_timestep(this, stepIndex, newVTUfilename)
 
-      write(ts,'(ES16.8)') this%timeStep(stepIndex)
-
-      open (newunit=unit, file=trim(PVDfilePath), status='old', position='append')
-      write(unit,'(A)') '    <DataSet timestep="'//trim(ts)//'" group="" part="0" file="'//trim(newVTUfilename)//'"/>'
-      close(unit)
    end subroutine update_pvd
 
    subroutine clear_memory_data(this)
@@ -414,6 +342,5 @@ contains
          this%zValueForTime = 0.0_RKIND
       end if
    end subroutine clear_memory_data
-
 
 end module mod_movieProbeOutput
