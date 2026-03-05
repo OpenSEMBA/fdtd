@@ -3,6 +3,7 @@ integer function test_update_time_movie_observation() bind(C) result(err)
     use FDETYPES_TOOLS
     use Observa
     use observation_testingTools
+    use mod_sggMethods
 
     type(SGGFDTDINFO) ::  sgg
     type(media_matrices_t) :: media
@@ -21,10 +22,10 @@ integer function test_update_time_movie_observation() bind(C) result(err)
 
     type(output_t), pointer, dimension(:) :: output
 
-    sgg = create_base_sgg()
+    call sgg_init(sgg)
     call set_sgg_data(sgg)
 
-    media = create_media(sgg%Alloc)
+    media = create_geometry_media_from_sggAlloc(sgg%Alloc)
     tag_numbers = create_tag_list(sgg%Alloc)
 
     ThereAreObservation = .false.
@@ -37,9 +38,7 @@ integer function test_update_time_movie_observation() bind(C) result(err)
     SINPML_fullsize = create_limit_t(0,4,0,4,0,4,3,3,3)
 
     facesNF2FF = create_facesNF2FF(.false., .false., .false., .false., .false., .false.)
-    control = create_control_flags(0, 0, 3, 10, "entryRoot", "wireflavour",&
-                                    .false., .false., .false., .false., .false.,&
-                                    facesNF2FF)
+    control = create_control_flags(nEntradaRoot="entryRoot", wiresflavor="wireflavour", facesNF2FF=facesNF2FF)
 
     call InitObservation(sgg, media, tag_numbers, &
                             ThereAreObservation, ThereAreWires, ThereAreFarFields,&

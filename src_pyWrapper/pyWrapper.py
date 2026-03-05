@@ -4,6 +4,7 @@ import os
 import shutil
 import glob
 import re
+import warnings
 import pandas as pd
 import numpy as np
 
@@ -305,8 +306,12 @@ class FDTD():
         return res
 
     def _setNewFolder(self, newFolder):
-        assert os.path.isdir(newFolder)
-
+        if not os.path.isdir(newFolder):
+                warnings.warn(
+                    f"Folder does not exist, creating it: {newFolder}",
+                    UserWarning
+                )
+                os.makedirs(newFolder, exist_ok=True)
         oldCaseFolder = self.getFolder()
         usedFiles = self.getUsedFiles()
         for usedFile in usedFiles:
