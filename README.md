@@ -1,5 +1,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+[![DOI](https://zenodo.org/badge/639347947.svg)](https://doi.org/10.5281/zenodo.18862309)
+
 [![ubuntu](https://github.com/OpenSEMBA/fdtd/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/OpenSEMBA/fdtd/actions/workflows/ubuntu.yml)
 [![windows](https://github.com/OpenSEMBA/fdtd/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/OpenSEMBA/fdtd/actions/workflows/windows.yml)
 
@@ -41,7 +43,7 @@ Compilation and debugging instructions can be found [here](doc/development.md).
 
 A short tutorial on usage can be found [here](doc/tutorials/veritasium/veritasium.md).
 
-The main binary is `semba-fdtd` which uses [the SMBJSON format](doc/smbjson.md) as input files.
+The main binary is `semba-fdtd` which uses the `.fdtd.json` format, [described here](doc/fdtdjson.md), as input files.
 It can be run with
 
 ```shell
@@ -55,7 +57,8 @@ Tests must be run from the root folder. `python` wrapper test assumes that `semb
 
 This code is licensed under the terms of the [MIT License](LICENSE). All rights reserved by the University of Granada (Spain)
 
-## Funding
+# Funding
+This repository has been funded by the following grants:
 
 - Spanish Ministry of Science and Innovation (MICIN/AEI) (Grant Number: PID2022-137495OB-C31)
 - European Union, HECATE project. (HE-HORIZON-JU-Clean-Aviation-2022-01)
