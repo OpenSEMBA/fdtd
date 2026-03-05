@@ -5943,7 +5943,7 @@ CONTAINS
       sgg%InitialTimeStep = 0
       sgg%TimeSteps = this%general%nmax
       sgg%dt = this%general%dt
-      if (sgg%dt < abs(tiny(1.0_RKIND)*2.0_RKIND)) sgg%dt=huge(1.0_RKIND)/2.0_RKIND
+      
       !border
       !this%BORDER%PROPIEDADESPML(I)%ORDEN no lo considero porque en el interior de mi programa lo pongo (esta a 2 normalmente)
       sgg%Border%IsBackPEC = .FALSE.
