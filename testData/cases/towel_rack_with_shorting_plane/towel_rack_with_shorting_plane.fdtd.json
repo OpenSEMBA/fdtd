@@ -1,7 +1,7 @@
 {
     "_format": "FDTD Input file",
     "general": {
-        "numberOfSteps": 4285,
+        "numberOfSteps": 10000,
         "additionalArguments": "-mapvtk"
     },
     "boundary": {
@@ -10119,7 +10119,7 @@
                 "id": 5,
                 "type": "node",
                 "coordinateIds": [
-                    2
+                    1
                 ]
             }
         ]
