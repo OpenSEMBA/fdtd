@@ -19,11 +19,11 @@ module CreateMatrices
       integer(kind=4), dimension(1:4) :: tent
    END type
    !matriz para controlar lo punietereos indices de cadacomponente
-   integer(kind=4), dimension(6, 3, 2), PARAMETER, public :: &
+   integer(kind=4), dimension(6, 3, 2), parameter, public :: &
    & in = reshape ( (/ 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, &
    &                   0, 1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 /), (/ 6, 3, 2 /))
    !
-   integer(kind=4), dimension(6, 3, 2), PARAMETER, public :: &
+   integer(kind=4), dimension(6, 3, 2), parameter, public :: &
    &    on = reshape ( (/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, &
    &                      0, 0,-1, 0, 0, 0,-1,-1, 0,-1, 0,-1, 0,-1, 0, 0, &
    -1,-1,-1, 0 /), (/ 6, 3, 2 /))

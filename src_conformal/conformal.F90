@@ -6,8 +6,8 @@ module conformal_mod
                         edge_t, face_t, & 
                         conformal_face_media_t, conformal_edge_media_t, rkind
    
-   real(kind=rkind), PARAMETER :: EDGE_RATIO_EQ_TOLERANCE = 1e-5
-   real(kind=rkind), PARAMETER :: FACE_RATIO_EQ_TOLERANCE = 1e-3
+   real(kind=rkind), parameter :: EDGE_RATIO_EQ_TOLERANCE = 1e-5
+   real(kind=rkind), parameter :: FACE_RATIO_EQ_TOLERANCE = 1e-3
 
 contains
 

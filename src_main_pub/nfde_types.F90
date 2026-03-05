@@ -7,63 +7,63 @@ module NFDETypes
    use conformal_types_mod
    !
    implicit none
-   integer(kind=4), PARAMETER :: RK = RKIND
+   integer(kind=4), parameter :: RK = RKIND
    !------------------------------------------------------------------------------
    ! CONSTANTS FOR THE PARSER
    !------------------------------------------------------------------------------
    ! global variable stochastic
    ! MATERIALS
-   real(kind=RK), PARAMETER :: SIGMA_PEC = 1e19_RK
-   real(kind=RK), PARAMETER :: SIGMA_PMC = 1e19_RK 
+   real(kind=RK), parameter :: SIGMA_PEC = 1e19_RK
+   real(kind=RK), parameter :: SIGMA_PMC = 1e19_RK 
    ! PROBES
    !!!!
-   integer(kind=4), PARAMETER :: NP_T1_PLAIN = 0
-   integer(kind=4), PARAMETER :: NP_T1_AMBOS = 2
-   integer(kind=4), PARAMETER :: NP_T2_TIME = 0
-   integer(kind=4), PARAMETER :: NP_T2_FREQ = 1
-   integer(kind=4), PARAMETER :: NP_T2_TRANSFER = 2
-   integer(kind=4), PARAMETER :: NP_T2_TIMEFREQ  = 3
-   integer(kind=4), PARAMETER :: NP_T2_TIMETRANSF = 4
-   integer(kind=4), PARAMETER :: NP_T2_FREQTRANSF = 5
-   integer(kind=4), PARAMETER :: NP_T2_TIMEFRECTRANSF = 6
-   integer(kind=4), PARAMETER :: NP_COR_EX = 0
-   integer(kind=4), PARAMETER :: NP_COR_EY = 1
-   integer(kind=4), PARAMETER :: NP_COR_EZ = 2
-   integer(kind=4), PARAMETER :: NP_COR_HX = 3
-   integer(kind=4), PARAMETER :: NP_COR_HY = 4
-   integer(kind=4), PARAMETER :: NP_COR_HZ = 5
-   integer(kind=4), PARAMETER :: NP_COR_WIRECURRENT = 6
-   integer(kind=4), PARAMETER :: NP_COR_DDP = 7
-   integer(kind=4), PARAMETER :: NP_COR_LINE = 8
-   integer(kind=4), PARAMETER :: NP_COR_CHARGE = 9
-   LOGICAL, PARAMETER :: BcELECT = .TRUE.
-   LOGICAL, PARAMETER :: BcMAGNE = .FALSE.
+   integer(kind=4), parameter :: NP_T1_PLAIN = 0
+   integer(kind=4), parameter :: NP_T1_AMBOS = 2
+   integer(kind=4), parameter :: NP_T2_TIME = 0
+   integer(kind=4), parameter :: NP_T2_FREQ = 1
+   integer(kind=4), parameter :: NP_T2_TRANSFER = 2
+   integer(kind=4), parameter :: NP_T2_TIMEFREQ  = 3
+   integer(kind=4), parameter :: NP_T2_TIMETRANSF = 4
+   integer(kind=4), parameter :: NP_T2_FREQTRANSF = 5
+   integer(kind=4), parameter :: NP_T2_TIMEFRECTRANSF = 6
+   integer(kind=4), parameter :: NP_COR_EX = 0
+   integer(kind=4), parameter :: NP_COR_EY = 1
+   integer(kind=4), parameter :: NP_COR_EZ = 2
+   integer(kind=4), parameter :: NP_COR_HX = 3
+   integer(kind=4), parameter :: NP_COR_HY = 4
+   integer(kind=4), parameter :: NP_COR_HZ = 5
+   integer(kind=4), parameter :: NP_COR_WIRECURRENT = 6
+   integer(kind=4), parameter :: NP_COR_DDP = 7
+   integer(kind=4), parameter :: NP_COR_LINE = 8
+   integer(kind=4), parameter :: NP_COR_CHARGE = 9
+   LOGICAL, parameter :: BcELECT = .TRUE.
+   LOGICAL, parameter :: BcMAGNE = .FALSE.
    ! THIN WIRES
-   integer(kind=4), PARAMETER :: MATERIAL_CONS = 0
-   integer(kind=4), PARAMETER :: MATERIAL_absorbing = 100
-   integer(kind=4), PARAMETER :: Parallel_CONS = 1
-   integer(kind=4), PARAMETER :: SERIES_CONS = 2
-   integer(kind=4), PARAMETER :: DISPERSIVE_CONS = 3
+   integer(kind=4), parameter :: MATERIAL_CONS = 0
+   integer(kind=4), parameter :: MATERIAL_absorbing = 100
+   integer(kind=4), parameter :: Parallel_CONS = 1
+   integer(kind=4), parameter :: SERIES_CONS = 2
+   integer(kind=4), parameter :: DISPERSIVE_CONS = 3
    ! BORDERS
-   integer(kind=4), PARAMETER :: F_PEC = 1
-   integer(kind=4), PARAMETER :: F_PMC = 2
-   integer(kind=4), PARAMETER :: F_PER = 4
-   integer(kind=4), PARAMETER :: F_MUR = 7
-   integer(kind=4), PARAMETER :: F_PML = 9
-   integer(kind=4), PARAMETER :: F_XL = 1
-   integer(kind=4), PARAMETER :: F_XU = 2
-   integer(kind=4), PARAMETER :: F_YL = 3
-   integer(kind=4), PARAMETER :: F_YU = 4
-   integer(kind=4), PARAMETER :: F_ZL = 5
-   integer(kind=4), PARAMETER :: F_ZU = 6
-   integer(kind=4), PARAMETER :: F_TIMEFRECTRANSF = 0
+   integer(kind=4), parameter :: F_PEC = 1
+   integer(kind=4), parameter :: F_PMC = 2
+   integer(kind=4), parameter :: F_PER = 4
+   integer(kind=4), parameter :: F_MUR = 7
+   integer(kind=4), parameter :: F_PML = 9
+   integer(kind=4), parameter :: F_XL = 1
+   integer(kind=4), parameter :: F_XU = 2
+   integer(kind=4), parameter :: F_YL = 3
+   integer(kind=4), parameter :: F_YU = 4
+   integer(kind=4), parameter :: F_ZL = 5
+   integer(kind=4), parameter :: F_ZU = 6
+   integer(kind=4), parameter :: F_TIMEFRECTRANSF = 0
    ! rlc y diodos
-   integer(kind=4), PARAMETER :: inductor = 20
-   integer(kind=4), PARAMETER :: capacitor = 21
-   integer(kind=4), PARAMETER :: resistor = 22
-   integer(kind=4), PARAMETER :: diodo = 23
-   integer(kind=4), PARAMETER :: Dielectric = 24
-   integer(kind=4), PARAMETER :: PMLbody = 25
+   integer(kind=4), parameter :: inductor = 20
+   integer(kind=4), parameter :: capacitor = 21
+   integer(kind=4), parameter :: resistor = 22
+   integer(kind=4), parameter :: diodo = 23
+   integer(kind=4), parameter :: Dielectric = 24
+   integer(kind=4), parameter :: PMLbody = 25
 
    !------------------------------------------------------------------------------
    ! TYPES

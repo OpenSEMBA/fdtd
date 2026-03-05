@@ -7,7 +7,7 @@ module storeData
    implicit none
    private
    !
-   integer(kind=4), PARAMETER, private :: BLOCK_SIZE = 1024
+   integer(kind=4), parameter, private :: BLOCK_SIZE = 1024
    public store_geomData
    !
 contains

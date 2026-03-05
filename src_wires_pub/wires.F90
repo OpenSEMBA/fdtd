@@ -21,7 +21,7 @@ module HollandWires
    implicit none
    
    
-   real(kind=RKIND_wires), PARAMETER             :: HEUR_RADIUSOVERDELTA=10.0
+   real(kind=RKIND_wires), parameter             :: HEUR_RADIUSOVERDELTA=10.0
    !local variables
 
    logical                                         , save :: thereAreVsources,thereAreIsources,thereAreMurConditions

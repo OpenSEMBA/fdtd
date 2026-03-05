@@ -186,12 +186,12 @@ module  FDETYPES
    integer(kind=4),  parameter  :: iBloqueJx=100*iEx,iBloqueJy=100*iEy,iBloqueJz=100*iEz
    integer(kind=4),  parameter  :: iBloqueMx=100*iHx,iBloqueMy=100*iHy,iBloqueMz=100*iHz
    !
-   character(len=*), PARAMETER  :: SEPARADOR='______________'
-   integer(kind=4), PARAMETER  :: comi=1,fine=2, icoord=1,jcoord=2,kcoord=3
+   character(len=*), parameter  :: SEPARADOR='______________'
+   integer(kind=4), parameter  :: comi=1,fine=2, icoord=1,jcoord=2,kcoord=3
 
-   real(kind=RKIND), PARAMETER :: EPSILON_VACUUM   =   &
+   real(kind=RKIND), parameter :: EPSILON_VACUUM   =   &
    8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
-   real(kind=RKIND), PARAMETER :: MU_VACUUM        =   &
+   real(kind=RKIND), parameter :: MU_VACUUM        =   &
    1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
    real(kind=rkind), parameter :: c_vacuum = 1.0_RKIND/sqrt(EPSILON_VACUUM*MU_VACUUM)
    
@@ -207,15 +207,15 @@ module  FDETYPES
 
    
 #ifdef CompileWithReal4
-   character(len=*), PARAMETER  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
+   character(len=*), parameter  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
 #else
 #ifdef CompileWithReal8
-   character(len=*), PARAMETER  :: fmt='(12(e27.17e3))' !IEEE 754 single-precision 15 to 17 decimals 
+   character(len=*), parameter  :: fmt='(12(e27.17e3))' !IEEE 754 single-precision 15 to 17 decimals 
 #else   
 #ifdef CompileWithReal16
-   character(len=*), PARAMETER  :: fmt='(12(e46.36e3))'  !IEEE 754 single-precision 33 to 36 decimals  
+   character(len=*), parameter  :: fmt='(12(e46.36e3))'  !IEEE 754 single-precision 33 to 36 decimals  
 #else !default
-   character(len=*), PARAMETER  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
+   character(len=*), parameter  :: fmt='(e27.17e3,11(e19.9e3))'  !IEEE 754 single-precision 6 to 9 decimals -1.123456789E-001
 #endif
 #endif
 #endif

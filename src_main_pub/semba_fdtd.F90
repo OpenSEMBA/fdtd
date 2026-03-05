@@ -1163,7 +1163,7 @@ contains
       character(len=BUFSIZE) :: buffer
       integer(kind=4) :: i,tamanio,i0,ascii,offset,ascii_menos1,j,k
       Character (Len=:), Allocatable :: fichero
-      integer(kind=4), PARAMETER :: UNIT_EF = 10
+      integer(kind=4), parameter :: UNIT_EF = 10
 
       integer(kind=4) :: prelines = 0, io
      allocate(rawFileInfo)
