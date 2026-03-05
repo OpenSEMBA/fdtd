@@ -269,7 +269,7 @@ contains
     subroutine computeLCParametersFromRadius(this, rad) 
         class(mtl_t) :: this
         real, intent(in) :: rad
-        REAL (KIND=RKIND_wires) :: invMu
+        real (KIND=RKIND_wires) :: invMu
         integer :: i
         real :: d1, d2
         invMu = 1.0/mu_vacuum

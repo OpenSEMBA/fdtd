@@ -15,7 +15,7 @@ module Wire_bundles_mtln_mod
    use ilumina
    implicit none
    
-   REAL (KIND=RKIND_wires)           ::  eps0,mu0
+   real (KIND=RKIND_wires)           ::  eps0,mu0
    private   
 
    public InitWires_mtln, AdvanceWiresE_mtln, GetSolverPtr, solveMTLNProblem, reportSimulationEnd
@@ -27,7 +27,7 @@ contains
 
    subroutine InitWires_mtln(sgg,Ex,Ey,Ez, eps00, mu00, mtln_parsed,thereAreMTLNbundles, dtcritico)
       type (SGGFDTDINFO), intent(IN), target    :: sgg 
-      REAL (KIND=RKIND), intent(inout), target :: &
+      real (KIND=RKIND), intent(inout), target :: &
          Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,  &
             sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,  &
             sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
@@ -103,7 +103,7 @@ contains
          Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
       real(KIND=RKIND) :: cte,eps00,mu00
       integer (kind=4) :: m, n
-      REAL (KIND=RKIND),pointer:: punt
+      real (KIND=RKIND),pointer:: punt
       eps0 = eps00 
       mu0 = mu00
       

@@ -12,10 +12,10 @@ module ilumina
    IMPLICIT NONE
    private
 
-   REAL (KIND=RKIND), allocatable, dimension (:,:,:)    :: fpw
-   REAL (KIND=RKIND), allocatable, dimension(:,:)       :: distanciaInicial,pxpw,pypw,pzpw,INCERT
-   REAL (KIND=RKIND), allocatable, dimension ( :,: )  ::  evol
-   REAL (KIND=RKIND), allocatable, dimension ( : )  ::  deltaevol
+   real (KIND=RKIND), allocatable, dimension (:,:,:)    :: fpw
+   real (KIND=RKIND), allocatable, dimension(:,:)       :: distanciaInicial,pxpw,pypw,pzpw,INCERT
+   real (KIND=RKIND), allocatable, dimension ( :,: )  ::  evol
+   real (KIND=RKIND), allocatable, dimension ( : )  ::  deltaevol
    integer (kind=4), allocatable, dimension(:)        ::  numus
 
 
@@ -30,8 +30,8 @@ module ilumina
    end type
 
 !!!variables globales del modulo
-      REAL (KIND=RKIND)           ::  cluz,zvac
-      REAL (KIND=RKIND)           ::  eps0,mu0
+      real (KIND=RKIND)           ::  cluz,zvac
+      real (KIND=RKIND)           ::  eps0,mu0
 !!!
    !!!!local variables
    type (coorsxyzP) , save ::   Punto
@@ -53,11 +53,11 @@ contains
       integer (kind=4), intent(in) :: layoutnumber,size
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
       integer j,k,field,i,jjj,maxnumus,maxmodes,kkk
-      REAL (KIND=RKIND) :: modulus,Xd0,Yd0,Zd0,diagonalcaja
+      real (KIND=RKIND) :: modulus,Xd0,Yd0,Zd0,diagonalcaja
       logical, intent(out)  ::  ThereArePlaneWaveBoxes
       logical  ::  abortar, resume
       character(len=BUFSIZE) :: buff
-      REAL (KIND=RKIND), intent(in)   :: eps00,mu00
+      real (KIND=RKIND), intent(in)   :: eps00,mu00
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       cluz=1.0_RKIND/sqrt(eps0*mu0) !lo necesitara incid
       zvac=sqrt(mu0/eps0) !lo necesitan las variables de mas abajo
@@ -750,8 +750,8 @@ contains
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       logical :: still_planewave_time,calledfromobservation
       integer (KIND=4) i,j,k,nfield,jjj,kkk,jdum
-      REAL (KIND=RKIND)  ::  EHI
-      REAL (KIND=RKIND)  ::   time,d,xf,yf,zf
+      real (KIND=RKIND)  ::  EHI
+      real (KIND=RKIND)  ::   time,d,xf,yf,zf
       !
       xf=Punto%PhysCoor(nfield)%x(i)
       yf=Punto%PhysCoor(nfield)%y(j)
@@ -760,7 +760,7 @@ contains
 
       if (calledfromobservation) then     
 #ifdef CompileWithOpenMP
-!$xMP   PARALLEL DO DEFAULT(SHARED) private (d,kkk,jjj) REDUCTION(+:EhI)
+!$xMP   PARALLEL do DEFAULT(SHARED) private (d,kkk,jjj) REDUCTION(+:EhI)
 #endif
             do jdum=1, sgg%numplanewaves !150419 observation debe sumar las planewaves se ha movido aqui desde la llamada
               do kkk=1,sgg%PlaneWave(jdum)%nummodes
@@ -774,7 +774,7 @@ contains
 #endif
       else !si no lo llama observation el jjj ya viene especificado
 #ifdef CompileWithOpenMP
-!$xMP   PARALLEL DO DEFAULT(SHARED) private (d,kkk,) REDUCTION(+:EhI)
+!$xMP   PARALLEL do DEFAULT(SHARED) private (d,kkk,) REDUCTION(+:EhI)
 #endif
               do kkk=1,sgg%PlaneWave(jjj)%nummodes
                  d=(xf*pxpw(jjj,kkk)+yf*pypw(jjj,kkk)+zf*pzpw(jjj,kkk))-distanciaInicial(jjj,kkk)
@@ -792,8 +792,8 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Evolution function to interpolate from the input file
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      REAL (KIND=RKIND) function evolucion(jjj,t,d,still_planewave_time)
-         REAL (KIND=RKIND) t,d
+      real (KIND=RKIND) function evolucion(jjj,t,d,still_planewave_time)
+         real (KIND=RKIND) t,d
          integer (kind=8)  ::  nprev
          integer (kind=4)  ::  jjj
          logical  ::  still_planewave_time
@@ -889,7 +889,7 @@ contains
              Id = Idxh( i_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 k_m = k - b%Ez%ZI
@@ -909,7 +909,7 @@ contains
              Id = Idxh( i_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
              do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
                 k_m = k - b%Ey%ZI
@@ -932,7 +932,7 @@ contains
              Id = Idxh( i_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
              do k = TrFr(jjj)%K%com%Ez, TrFr(jjj)%K%fin%Ez
                 k_m = k - b%Ez%ZI
@@ -952,7 +952,7 @@ contains
              Id = Idxh( i_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
              do k = TrFr(jjj)%K%com%Ey, TrFr(jjj)%K%fin%Ey
                 k_m = k - b%Ey%ZI
@@ -975,7 +975,7 @@ contains
              Id = Idyh( j_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
 #endif
              do k = IzDe(jjj)%K%com%Ex, IzDe(jjj)%K%fin%Ex
                 k_m = k - b%Ex%ZI
@@ -995,7 +995,7 @@ contains
              Id = Idyh( j_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
 #endif
              do k = IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez
                 k_m = k - b%Ez%ZI
@@ -1018,7 +1018,7 @@ contains
              Id = Idyh( j_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
 #endif
              do k = IzDe(jjj)%K%com%Ez, IzDe(jjj)%K%fin%Ez
                 k_m = k - b%Ez%ZI
@@ -1038,7 +1038,7 @@ contains
              Id = Idyh( j_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
 #endif
              do k = IzDe(jjj)%K%com%Ex,IzDe(jjj)%K%fin%Ex
                 k_m = k - b%Ex%ZI
@@ -1061,7 +1061,7 @@ contains
              Id = Idzh( k_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
 #endif
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
                 j_m = j - b%Ex%YI
@@ -1081,7 +1081,7 @@ contains
              Id = Idzh( k_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
 #endif
              do j = AbAr(jjj)%J%com%Ey, AbAr(jjj)%J%fin%Ey
                 j_m = j - b%Ey%YI
@@ -1104,7 +1104,7 @@ contains
              Id = Idzh( k_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
 #endif
              do j = AbAr(jjj)%J%com%Ex, AbAr(jjj)%J%fin%Ex
                 j_m = j - b%Ex%YI
@@ -1124,7 +1124,7 @@ contains
              Id = Idzh( k_m )
              !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
 #endif
              do j = AbAr(jjj)%J%com%Ey, AbAr(jjj)%J%fin%Ey
                 j_m = j - b%Ey%YI
@@ -1190,7 +1190,7 @@ contains
                  Id = Idxe( i_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
                  do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                     k_m = k - b%Hz%ZI
@@ -1210,7 +1210,7 @@ contains
                  Id = Idxe( i_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
                  do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                     k_m = k - b%Hy%ZI
@@ -1233,7 +1233,7 @@ contains
                  Id = Idxe( i_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
                  do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                     k_m = k - b%Hz%ZI
@@ -1253,7 +1253,7 @@ contains
                  Id = Idxe( i_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,j,k,j_m,k_m)
 #endif
                  do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                     k_m = k - b%Hy%ZI
@@ -1276,7 +1276,7 @@ contains
                  Id = Idye( j_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
 #endif
                  do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                     k_m = k - b%Hx%ZI
@@ -1296,7 +1296,7 @@ contains
                  Id = Idye( j_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
 #endif
                  do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                     k_m = k - b%Hz%ZI
@@ -1319,7 +1319,7 @@ contains
                  Id = Idye( j_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
 #endif
                  do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                     k_m = k - b%Hx%ZI
@@ -1339,7 +1339,7 @@ contains
                  Id = Idye( j_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,k,i,k_m,i_m)
 #endif
                  do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                     k_m = k - b%Hz%ZI
@@ -1362,7 +1362,7 @@ contains
                  Id = Idze( k_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
 #endif
                  do j = AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx
                     j_m = j - b%Hx%YI
@@ -1382,7 +1382,7 @@ contains
                  Id = Idze( k_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
 #endif
                  do j = AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy
                     j_m = j - b%Hy%YI
@@ -1405,7 +1405,7 @@ contains
                  Id = Idze( k_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
 #endif
                  do j = AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx
                     j_m = j - b%Hx%YI
@@ -1425,7 +1425,7 @@ contains
                  Id = Idze( k_m )
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (incidente,i,j,i_m,j_m)
 #endif
                  do j = AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy
                     j_m = j - b%Hy%YI
@@ -1504,7 +1504,7 @@ contains
                  i_m = i - b%Hz%XI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m)
 #endif
                  do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                     k_m = k - b%Hz%ZI
@@ -1522,7 +1522,7 @@ contains
                  i_m = i - b%Hy%XI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m)
 #endif
                  do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                     k_m = k - b%Hy%ZI
@@ -1542,7 +1542,7 @@ contains
                  i_m = i - b%Hz%XI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m)
 #endif
                  do k = TrFr(jjj)%K%com%Hz, TrFr(jjj)%K%fin%Hz
                     k_m = k - b%Hz%ZI
@@ -1559,7 +1559,7 @@ contains
                  i_m = i - b%Hy%XI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (j,k,j_m,k_m)
 #endif
                  do k = TrFr(jjj)%K%com%Hy, TrFr(jjj)%K%fin%Hy
                     k_m = k - b%Hy%ZI
@@ -1579,7 +1579,7 @@ contains
                  j_m = j - b%Hx%YI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (k,i,k_m,i_m)
 #endif
                  do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                     k_m = k - b%Hx%ZI
@@ -1596,7 +1596,7 @@ contains
                  j_m = j - b%Hz%YI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (k,i,k_m,i_m)
 #endif
                  do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                     k_m = k - b%Hz%ZI
@@ -1616,7 +1616,7 @@ contains
                  j_m = j - b%Hx%YI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (k,i,k_m,i_m)
 #endif
                  do k = IzDe(jjj)%K%com%Hx, IzDe(jjj)%K%fin%Hx
                     k_m = k - b%Hx%ZI
@@ -1633,7 +1633,7 @@ contains
                  j_m = j - b%Hz%YI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (k,i,k_m,i_m)
 #endif
                  do k = IzDe(jjj)%K%com%Hz, IzDe(jjj)%K%fin%Hz
                     k_m = k - b%Hz%ZI
@@ -1653,7 +1653,7 @@ contains
                  k_m = k - b%Hx%ZI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m)
 #endif
                  do j = AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx
                     j_m = j - b%Hx%YI
@@ -1670,7 +1670,7 @@ contains
                  k_m = k - b%Hy%ZI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m)
 #endif
                  do j = AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy
                     j_m = j - b%Hy%YI
@@ -1690,7 +1690,7 @@ contains
                  k_m = k - b%Hx%ZI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m)
 #endif
                  do j = AbAr(jjj)%J%com%Hx, AbAr(jjj)%J%fin%Hx
                     j_m = j - b%Hx%YI
@@ -1707,7 +1707,7 @@ contains
                  k_m = k - b%Hy%ZI
                  !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j,i_m,j_m)
 #endif
                  do j = AbAr(jjj)%J%com%Hy, AbAr(jjj)%J%fin%Hy
                     j_m = j - b%Hy%YI

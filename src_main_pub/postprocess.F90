@@ -29,9 +29,9 @@ contains
       type(output_t), pointer, dimension( : )  ::  output
       character (LEN=BUFSIZE) :: cabecera,cabeceraNew,path,path2,path3,path_resampled
       integer (kind=4) :: numComp
-      REAL (KIND=RKIND), allocatable, dimension(:,:) :: valores
+      real (KIND=RKIND), allocatable, dimension(:,:) :: valores
       complex (kind=CKIND), allocatable, dimension(:,:) :: valoresDF,valoresDF2
-      REAL (KIND=RKIND_tiempo), allocatable, dimension(:) :: tiempo,samplingtime
+      real (KIND=RKIND_tiempo), allocatable, dimension(:) :: tiempo,samplingtime
 	  integer (kind=4) :: pozi
       logical :: existe,neverprecounted,escribir,escribirBloque,niapapostprocess,forceresampled,somethingdone
       integer (kind=4) :: fqLength,ii,i,i1,j1,field,ns,timesteps,compo,iii,pp,pasadas

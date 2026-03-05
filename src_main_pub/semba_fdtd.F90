@@ -98,7 +98,7 @@ contains
       integer (kind=4) :: finaltimestepantesdecorregir,NEWfinaltimestep,thefileno
       integer (kind=4) :: statuse
       integer (KIND=4) ::  status, i, field
-      INTEGER (KIND=4) ::  verdadero_mpidir
+      integer (KIND=4) ::  verdadero_mpidir
       integer (kind=4) :: my_iostat
 
 
@@ -216,7 +216,7 @@ contains
       WRITE (dubuf,*) 'Paused at              ', this%l%time_out2%fecha(7:8), '/', this%l%time_out2%fecha(5:6), '/', &
       &                this%l%time_out2%fecha(1:4), '  ', this%l%time_out2%hora(1:2), ':', this%l%time_out2%hora(3:4)
       IF (this%l%pausar) CALL print11 (this%l%layoutnumber, dubuf)
-      DO while (this%l%pausar)
+      do while (this%l%pausar)
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
 #endif
@@ -236,7 +236,7 @@ contains
             &                this%l%time_out2%fecha(1:4), ' ', this%l%time_out2%hora(1:2), ':', this%l%time_out2%hora(3:4)
             IF (this%l%pausar) CALL print11 (this%l%layoutnumber, dubuf)
          END IF
-      END DO
+      end do
       !fin del semaphoro
 
 #ifdef keeppause   
@@ -562,7 +562,7 @@ contains
             endif
       endif
       !check that simulation can actually be done for the kind of media requested
-      DO i = 1, this%sgg%nummedia
+      do i = 1, this%sgg%nummedia
          IF (this%sgg%Med(i)%Is%ThinWire) THEN
 #ifndef CompileWithBerengerWires
       if  ((this%l%wiresflavor=='berenger')) then
@@ -590,7 +590,7 @@ contains
          END IF
 #endif
    !    
-      END DO
+      end do
       
       
       IF (this%l%thereare_stoch.and.(.not.this%l%chosenyesornostochastic)) THEN
@@ -850,14 +850,14 @@ contains
             this%sgg%Sweep(1:6)%ZI = this%fullsize(1:6)%ZI
             this%sgg%Sweep(1:6)%ZE = this%fullsize(1:6)%ZE
             !!incluido aqui pq se precisa para clip 16/07/15
-            DO field = iEx, iHz
+            do field = iEx, iHz
                this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
                this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
                this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
                this%sgg%SINPMLSweep(field)%YE = Min (this%SINPML_fullsize(field)%YE, this%sgg%Sweep(field)%YE)
                this%sgg%SINPMLSweep(field)%ZI = Max (this%SINPML_fullsize(field)%ZI, this%sgg%Sweep(field)%ZI)
                this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
-            END DO
+            end do
             !!fin 16/07/15
             WRITE (dubuf,*) 'INIT NFDE --------> GEOM'
             CALL print11 (this%l%layoutnumber, dubuf)
@@ -919,23 +919,23 @@ contains
       
             ! if the layout is pure PML then take at least a line of non PML to build the PML data insider read_geomDAta
             ! Uses extra memory but later matrix sggm is deallocated in favor of smaller sggMIEX, etc
-            DO field = iEx, iHz
+            do field = iEx, iHz
                tempalloc(field)%ZE = this%sgg%Alloc(field)%ZE
                tempalloc(field)%ZI = this%sgg%Alloc(field)%ZI
                this%sgg%Alloc(field)%ZE = Max (this%sgg%Alloc(field)%ZE, this%SINPML_fullsize(field)%ZI+1)
                this%sgg%Alloc(field)%ZI = Min (this%sgg%Alloc(field)%ZI, this%SINPML_fullsize(field)%ZE-1)
-            END DO
+            end do
             !   
             CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)  
             !!incluido aqui pq se precisa para clip 16/07/15
-            DO field = iEx, iHz
+            do field = iEx, iHz
                this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
                this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
                this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
                this%sgg%SINPMLSweep(field)%YE = Min (this%SINPML_fullsize(field)%YE, this%sgg%Sweep(field)%YE)
                this%sgg%SINPMLSweep(field)%ZI = Max (this%SINPML_fullsize(field)%ZI, this%sgg%Sweep(field)%ZI)
                this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
-            END DO
+            end do
             !!fin 16/07/15
             WRITE (dubuf,*) 'INIT NFDE --------> GEOM'
             CALL print11 (this%l%layoutnumber, dubuf)           
@@ -961,10 +961,10 @@ contains
             WRITE (dubuf,*) '[OK] ENDED NFDE --------> GEOM'
             CALL print11 (this%l%layoutnumber, dubuf)
             !restore back the indexes
-            DO field = iEx, iHz
+            do field = iEx, iHz
                this%sgg%Alloc(field)%ZE = tempalloc(field)%ZE
                this%sgg%Alloc(field)%ZI = tempalloc(field)%ZI
-            END DO
+            end do
 #endif
             CONTINUE
          END IF !del this%l%size==1
@@ -974,14 +974,14 @@ contains
          CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
          !!!!!!!!!!!!!lo dejo aqui debajo tambien aunque ya se ha calculado antes para lo del clipping
-         DO field = iEx, iHz
+         do field = iEx, iHz
             this%sgg%SINPMLSweep(field)%XI = Max (this%SINPML_fullsize(field)%XI, this%sgg%Sweep(field)%XI)
             this%sgg%SINPMLSweep(field)%XE = Min (this%SINPML_fullsize(field)%XE, this%sgg%Sweep(field)%XE)
             this%sgg%SINPMLSweep(field)%YI = Max (this%SINPML_fullsize(field)%YI, this%sgg%Sweep(field)%YI)
             this%sgg%SINPMLSweep(field)%YE = Min (this%SINPML_fullsize(field)%YE, this%sgg%Sweep(field)%YE)
             this%sgg%SINPMLSweep(field)%ZI = Max (this%SINPML_fullsize(field)%ZI, this%sgg%Sweep(field)%ZI)
             this%sgg%SINPMLSweep(field)%ZE = Min (this%SINPML_fullsize(field)%ZE, this%sgg%Sweep(field)%ZE)
-         END DO
+         end do
          return
       end subroutine
 
@@ -1086,7 +1086,7 @@ contains
 
    function countLinesInJSONOneLiner(filename, unit) result(res)
       CHARACTER (LEN=*), INTENT (IN) :: filename
-      INTEGER (KIND=4), intent(in) :: unit
+      integer (KIND=4), intent(in) :: unit
       integer (kind=4) :: res
       CHARACTER (LEN=BUFSIZE) :: l_aux
       integer :: size_read, pos, d, io
@@ -1096,7 +1096,7 @@ contains
          READ (unit, '(A)', advance='no', iostat = io, size = size_read) l_aux
          if (size_read == 0) exit
          res = res + 1
-      END DO
+      end do
       CLOSE (unit)
 
    end function
@@ -1104,7 +1104,7 @@ contains
    subroutine readLines(rInfo, filename, unit)
       type (t_NFDE_FILE), POINTER :: rInfo
       CHARACTER (LEN=*), INTENT (IN) :: filename
-      INTEGER (KIND=4), intent(in) :: unit
+      integer (KIND=4), intent(in) :: unit
 
       type (t_linea), POINTER :: linea
       CHARACTER (LEN=BUFSIZE) :: l_aux
@@ -1123,7 +1123,7 @@ contains
          linea => rInfo%lineas (rInfo%numero)
          linea%dato = adjustl(l_aux)
          linea%LEN=len_trim (linea%dato)
-      END DO
+      end do
    2010   CLOSE (unit)
 
    end subroutine
@@ -1131,7 +1131,7 @@ contains
    subroutine readLinesFromJSONOneLiner(rInfo, filename, unit)
       type (t_NFDE_FILE), POINTER :: rInfo
       CHARACTER (LEN=*), INTENT (IN) :: filename
-      INTEGER (KIND=4), intent(in) :: unit
+      integer (KIND=4), intent(in) :: unit
 
       integer (kind=4) :: io, size_read, pos, d
       type (t_linea), POINTER :: linea
@@ -1148,7 +1148,7 @@ contains
          linea => rInfo%lineas (rInfo%numero)
          linea%dato = adjustl(l_aux)
          linea%LEN=len_trim (linea%dato)
-      END DO
+      end do
       CLOSE (unit)
 
    end subroutine
@@ -1161,9 +1161,9 @@ contains
       LOGICAL :: ok
       CHARACTER (LEN=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
-      INTEGER (KIND=4) :: i,tamanio,i0,ascii,offset,ascii_menos1,j,k
+      integer (KIND=4) :: i,tamanio,i0,ascii,offset,ascii_menos1,j,k
       Character (Len=:), Allocatable :: fichero
-      INTEGER (KIND=4), PARAMETER :: UNIT_EF = 10
+      integer (KIND=4), PARAMETER :: UNIT_EF = 10
 
       integer (kind=4) :: prelines = 0, io
       ALLOCATE (rawFileInfo)
@@ -1176,7 +1176,7 @@ contains
          READ (UNIT_EF, '(A)', iostat=io) l_aux
          if (io/=0) exit
          prelines = prelines + 1
-      END DO
+      end do
       CLOSE (UNIT_EF)
 
       if (prelines == 1 .and. trim(adjustl(extension))=='.json') then
@@ -1342,7 +1342,7 @@ contains
                   WRITE (34,*) '!END'
                   CLOSE (34, STATUS='delete')
                END IF
-            END DO buscafile
+            end do buscafile
    76       CONTINUE
             CLOSE (19, STATUS='delete')
             IF (this%l%layoutnumber == 0) THEN

@@ -18,7 +18,7 @@ module Lumped
    
    type (LumpedElem_t), save, target   ::  LumpElem
    
-   REAL (KIND=RKIND), save           ::  eps0,mu0,zvac,cluz
+   real (KIND=RKIND), save           ::  eps0,mu0,zvac,cluz
    
    private
 !!!
@@ -34,18 +34,18 @@ contains
    subroutine InitLumped(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,&
                          IDxe,IDye,IDze,IDxh,IDyh,IDzh, control, &
                          ThereAreLumped,eps00,mu00)
-      REAL (KIND=RKIND)           ::  eps00,mu00
+      real (KIND=RKIND)           ::  eps00,mu00
       type(media_matrices_t), intent(in) :: media
 
       type (SGGFDTDINFO), intent(IN)     ::  sgg
-      REAL (KIND=RKIND)   , intent(in) , target     :: &
+      real (KIND=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
       Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
       Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
       Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
       Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      REAL (KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
+      real (KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
                                                          &  Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
                                                          &  Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
                                                             Idxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
@@ -261,7 +261,7 @@ contains
 
 
    subroutine calc_lumpedconstants(sgg,eps00,mu00)      
-      REAL (KIND=RKIND)           ::  eps00,mu00
+      real (KIND=RKIND)           ::  eps00,mu00
       type (SGGFDTDINFO), intent(IN)     ::  sgg
       integer (kind=4)  ::  conta
       type (Nodes_t), pointer :: lumped_
@@ -432,12 +432,12 @@ contains
    real (KIND=RKIND) :: x
    real (KIND=RKIND) :: x0, xx0, fxx0, dfxx0
    real (KIND=RKIND) :: tol ! Tolerancia error relativo
-   INTEGER, parameter :: nmax=1024  !limite de iteraciones/iteraciones realizadas
-   INTEGER :: clave,i,n      ! Clave de exito
+   integer, parameter :: nmax=1024  !limite de iteraciones/iteraciones realizadas
+   integer :: clave,i,n      ! Clave de exito
 
     clave = 1
     xx0 = x0
-    busca: DO i=1,nmax
+    busca: do i=1,nmax
         fxx0=A*exp(B*xx0)+x+C
         dfxx0=A*B*exp(B*xx0)+1.0_RKIND
         x = xx0 - fxx0/dfxx0
@@ -447,7 +447,7 @@ contains
             EXIT busca
         ENDIF
         xx0 = x
-    END DO busca
+    end do busca
     if (clave /= 0) CALL print11 (0, 'Error convergencia en Newton-Raphson')
     return
    end function newton_raphson

@@ -28,17 +28,17 @@ end type
 
 
 type :: MDfield_t
-   REAL (KIND=RKIND), pointer                 ::  FieldPresent !apunta al campo del background
-   REAL (KIND=RKIND)                          ::  FieldPrevious
+   real (KIND=RKIND), pointer                 ::  FieldPresent !apunta al campo del background
+   real (KIND=RKIND)                          ::  FieldPrevious
    Complex (Kind=CKIND), pointer, dimension ( : )   ::  Current
 end type
 
 
 type  ::  SGBCSurface_t
-   REAL (KIND=RKIND), allocatable, dimension (:) :: E,H,E_past
-   REAL (KIND=RKIND), pointer ::  Efield,Ha_Plus,Ha_Minu,Hb_Plus,Hb_Minu
-   REAL (KIND=RKIND), allocatable, dimension (:)          ::  delta_entreEinterno
-   REAL (KIND=RKIND), dimension (0:1)  ::  g1,g2a,g2b
+   real (KIND=RKIND), allocatable, dimension (:) :: E,H,E_past
+   real (KIND=RKIND), pointer ::  Efield,Ha_Plus,Ha_Minu,Hb_Plus,Hb_Minu
+   real (KIND=RKIND), allocatable, dimension (:)          ::  delta_entreEinterno
+   real (KIND=RKIND), dimension (0:1)  ::  g1,g2a,g2b
 !!!SGBC dispersivos 12/05/16
    type (MDfield_t), allocatable, dimension (:) :: EDis
    integer (kind=4) :: numpolres
@@ -47,17 +47,17 @@ type  ::  SGBCSurface_t
    logical :: correct_ha, correct_hb, es_unfilo_placa
    
    integer (kind=4) :: depth,jmed
-   INTEGER (KIND=4), allocatable, dimension (:) ::capa !!!0121
-   REAL (KIND=RKIND) , allocatable, dimension (:)   :: G2_interno,GM2_interno,G1_interno,GM1_interno   
-   REAL (KIND=RKIND)          :: GM2_externo   !no se precisa gm1_externo porque fuera no hay conductividad magnetica y es trivialmente 1. El gm2_externo tiene sentido almecnarlo porque aun no habiendo conductividad, no es la unidad
-   REAL (KIND=RKIND)          :: Hyee__left, Hyee_right      
+   integer (KIND=4), allocatable, dimension (:) ::capa !!!0121
+   real (KIND=RKIND) , allocatable, dimension (:)   :: G2_interno,GM2_interno,G1_interno,GM1_interno   
+   real (KIND=RKIND)          :: GM2_externo   !no se precisa gm1_externo porque fuera no hay conductividad magnetica y es trivialmente 1. El gm2_externo tiene sentido almecnarlo porque aun no habiendo conductividad, no es la unidad
+   real (KIND=RKIND)          :: Hyee__left, Hyee_right      
 !!!!! Crank-Nicolson 311015
-   REAL (KIND=RKIND) , allocatable, dimension (:)   :: a,b,c,rb,rh,rhm1
-   REAL (KIND=RKIND)                                :: a1,b1,c1,rb1,rh1,an,bn,cn,rbn,rhn 
-   REAL (KIND=RKIND) , allocatable, dimension (:) :: D !termino independiente CRANK-NICOLSON
+   real (KIND=RKIND) , allocatable, dimension (:)   :: a,b,c,rb,rh,rhm1
+   real (KIND=RKIND)                                :: a1,b1,c1,rb1,rh1,an,bn,cn,rbn,rhn 
+   real (KIND=RKIND) , allocatable, dimension (:) :: D !termino independiente CRANK-NICOLSON
    logical :: SGBCCrank
 
-   REAL (KIND=RKIND)  :: transversalDeltaE,transversalDeltaH,alignedlDeltaH
+   real (KIND=RKIND)  :: transversalDeltaE,transversalDeltaH,alignedlDeltaH
    integer (kind=4), dimension (0:1)  :: med
    COMPLEX (kind=ckind), allocatable, dimension (:) :: a11, c11
 END type SGBCSurface_t
@@ -80,9 +80,9 @@ end type Malon_t
 !!!variables globales del modulo  
 type (Malon_t), save, target   ::  malon
 !
-REAL (KIND=RKIND), save           ::  eps0,mu0,zvac,cluz
+real (KIND=RKIND), save           ::  eps0,mu0,zvac,cluz
 logical, save  :: SGBCcrank,SGBCDispersive
-REAL (KIND=RKIND), save  :: SGBCFreq,SGBCresol
+real (KIND=RKIND), save  :: SGBCFreq,SGBCresol
 integer (kind=4), save:: SGBCdepth
 !!!
 public Malon_t,SGBCSurface_t !el tipo es publico
@@ -99,28 +99,28 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
                      eps00,mu00,simu_devia,stochastic)
    type(media_matrices_t), intent(in) :: media
    logical :: simu_devia,stochastic 
-   REAL (KIND=RKIND)           ::  eps00,mu00
+   real (KIND=RKIND)           ::  eps00,mu00
    logical :: temp_SGBCcrank,temp_SGBCDispersive
    type(constants_t), intent(inout) :: g
    type (SGGFDTDINFO), intent(INOUT)     ::  sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
-   REAL (KIND=RKIND)   , intent(in) , target     :: &
+   real (KIND=RKIND)   , intent(in) , target     :: &
    Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
    Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
    Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
    Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
    Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
    Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-   REAL (KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
+   real (KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
                                                       &  Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
                                                       &  Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
                                                          Idxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
                                                          Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
                                                          Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
-   REAL (KIND=RKIND)  :: temp_SGBCFreq,temp_SGBCresol, rra,rrb,rrc,rrd
-   REAL (KIND=RKIND)  :: signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1,Sigmam,Epsilon,Mu,Sigma   
-   REAL (KIND=RKIND)  :: factor
-   REAL (KIND=RKIND) , allocatable, dimension(:,:) :: derivcte
+   real (KIND=RKIND)  :: temp_SGBCFreq,temp_SGBCresol, rra,rrb,rrc,rrd
+   real (KIND=RKIND)  :: signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1,Sigmam,Epsilon,Mu,Sigma   
+   real (KIND=RKIND)  :: factor
+   real (KIND=RKIND) , allocatable, dimension(:,:) :: derivcte
 
    integer (kind=4), intent(in) :: layoutnumber,size,temp_SGBCdepth
    logical, INTENT(IN)  :: resume
@@ -254,11 +254,11 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
               malon%mediosDis(jmed)%numpolres = numpolres
               allocate (malon%mediosDis(jmed)%a11(1:numpolres)) 
               allocate (malon%mediosDis(jmed)%c11(1:numpolres)) 
-              DO i = 1, numpolres
+              do i = 1, numpolres
                 read(7345,*) value1, value2
                 malon%mediosDis(jmed)%c11 (i) = (value1) 
                 malon%mediosDis(jmed)%a11 (i) = - (value2) !el polo de EM esta cambiado de signo !ver tambien preprocess
-              END DO          
+              end do          
               close (7345)
 !!!movido 071118 al calculo de constantes para permit scaling
 !!!!!!!!070717  recalculo y machaco los G1,G2,GM1, y GM2 con los que aparecen en el fichero de dispersivos aunque creo que no se usa para nada
@@ -614,12 +614,12 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
 end subroutine InitSGBCs
 
 subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
-   REAL (KIND=RKIND), intent(IN)           ::  eps00,mu00
+   real (KIND=RKIND), intent(IN)           ::  eps00,mu00
    type (SGGFDTDINFO), intent(IN)     ::  sgg 
-   REAL (KIND=RKIND), pointer, dimension ( : )   ::  gm1,g1,gm2,g2
+   real (KIND=RKIND), pointer, dimension ( : )   ::  gm1,g1,gm2,g2
    type(constants_t) :: g
  integer :: jmed,conta,i
-   REAL (KIND=RKIND) :: sigmam,sigma,mu,epsilon,signo,g1eff_0,g2eff_0,g1eff_1,g2eff_1
+   real (KIND=RKIND) :: sigmam,sigma,mu,epsilon,signo,g1eff_0,g2eff_0,g1eff_1,g2eff_1
    type (SGBCSurface_t), pointer :: compo
    character(len=BUFSIZE) :: buFF
    logical :: stochastic
@@ -691,7 +691,7 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
    endif    
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(none) private (compo,buff) shared(malon,sgg,eps00,mu00,GM2,SGBCDispersive)
+!$OMP  PARALLEL do  DEFAULT(none) private (compo,buff) shared(malon,sgg,eps00,mu00,GM2,SGBCDispersive)
 #endif
  do conta=1,malon%numnodes
      compo => malon%Nodes(conta)
@@ -707,7 +707,7 @@ subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
 !
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(none) private (compo,signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1) shared(malon,gm1,gm2)
+!$OMP  PARALLEL do  DEFAULT(none) private (compo,signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1) shared(malon,gm1,gm2)
 #endif
     do conta=1,malon%numnodes
       compo => malon%Nodes(conta) 
@@ -781,13 +781,13 @@ end subroutine calc_SGBCconstants
                         
  subroutine YeeAdvanceSGBCDispersive (tempnode,numpolres,G3,kappa,beta,dt)
  
-   REAL (KIND=RKIND), intent(IN)     :: dt
+   real (KIND=RKIND), intent(IN)     :: dt
    type (MDfield_t), pointer  ::  tempnode
    integer (kind=4) :: k1,numpolres
    type (val_t) :: Beta,Kappa,G3
    
          Do k1=1,NumPolRes
-            tempnode%fieldPresent=tempnode%FieldPresent-REAL (G3%val(k1)*tempnode%current(k1) )
+            tempnode%fieldPresent=tempnode%FieldPresent-real (G3%val(k1)*tempnode%current(k1) )
          enddo
          Do k1=1,NumPolRes
             tempnode%current(k1)= Kappa%val(k1)  *tempnode%current(k1) + &
@@ -802,20 +802,20 @@ end subroutine calc_SGBCconstants
                          
  subroutine primero_CNAdvanceSGBCDispersive (tempnode,tempD,numpolres,G3,kappa,beta,dt)
  
-   REAL (KIND=RKIND), intent(IN)     :: dt
-   REAL (KIND=RKIND),  pointer  ::  tempD
+   real (KIND=RKIND), intent(IN)     :: dt
+   real (KIND=RKIND),  pointer  ::  tempD
    type (MDfield_t), pointer  ::  tempnode
    integer (kind=4) :: k1,numpolres
    type (val_t) :: Beta,Kappa,G3
          Do k1=1,NumPolRes
-            tempD=tempD-REAL (G3%val(k1)*tempnode%current(k1) )
+            tempD=tempD-real (G3%val(k1)*tempnode%current(k1) )
          enddo
  end subroutine primero_CNAdvanceSGBCDispersive
  
  subroutine segundo_CNAdvanceSGBCDispersive (campocalculado,tempnode,numpolres,G3,kappa,beta,dt)
  
-   REAL (KIND=RKIND) :: campocalculado 
-   REAL (KIND=RKIND), intent(IN)     :: dt
+   real (KIND=RKIND) :: campocalculado 
+   real (KIND=RKIND), intent(IN)     :: dt
    type (MDfield_t), pointer  ::  tempnode
    integer (kind=4) :: k1,numpolres
    type (val_t) :: Beta,Kappa,G3
@@ -837,12 +837,12 @@ end subroutine calc_SGBCconstants
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine AdvanceSGBCE(dt,SGBCDispersive,simu_devia,stochastic)
    logical :: simu_devia,stochastic 
-   REAL (KIND=RKIND), intent(IN)     :: dt
+   real (KIND=RKIND), intent(IN)     :: dt
    logical :: SGBCDispersive
    integer (kind=4)  ::  conta
 !       call AdvanceSGBCE_single_node(dt,SGBCDispersive)
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) private (conta) schedule(guided) 
+!$OMP  PARALLEL do DEFAULT(SHARED) private (conta) schedule(guided) 
 #endif
 do conta=1,malon%numnodes
    !call AdvanceSGBCE_single_node(malon%Nodes(conta), dt,SGBCDispersive)
@@ -858,13 +858,13 @@ contains
    subroutine AdvanceSGBCE_single_node(conta,dt,SGBCDispersive)
       !non argument arguments
       integer (kind=4),  intent(IN) ::  conta
-      REAL (KIND=RKIND), intent(IN) :: dt
+      real (KIND=RKIND), intent(IN) :: dt
       logical,           intent(IN) :: SGBCDispersive
       !local
       integer (kind=4)  ::  i
       type (SGBCSurface_t),pointer   :: compo
       type (MDfield_t) , pointer :: EDIS
-      REAL (KIND=RKIND), pointer :: dDIS
+      real (KIND=RKIND), pointer :: dDIS
       
 
       
@@ -1020,7 +1020,7 @@ subroutine AdvanceSGBCH
 end subroutine AdvanceSGBCH
 
 subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
-   REAL (KIND=RKIND), intent(IN)           ::  eps00,mu00
+   real (KIND=RKIND), intent(IN)           ::  eps00,mu00
    Complex (Kind=CKIND), pointer, dimension ( : )      ::  Beta,Kappa,G3
 !!!!      
    type (SGGFDTDINFO), intent(IN) ::  sgg
@@ -1281,7 +1281,7 @@ subroutine g1g2_Dispersive(dt,epsilon,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c1
      end do
      tempo=0.0_RKIND
      Do i1=1,NumPolRes
-         tempo=tempo+REAL (Beta(i1))
+         tempo=tempo+real (Beta(i1))
      end do
      G1=                        (2.0_RKIND * epsilon + tempo - sigma*dt) / & !ojo No estes tentado de cambiar este signo. Cuadra con han dutton 130516 y con edispersives 
                                 (2.0_RKIND * epsilon + tempo + sigma*dt)
@@ -1364,11 +1364,11 @@ end subroutine
 
 
 subroutine test_stab(G2,GM2)
-   REAL (KIND=RKIND)     , pointer, dimension ( : )   ::   g2, gm2
+   real (KIND=RKIND)     , pointer, dimension ( : )   ::   g2, gm2
    integer (kind=4)  ::  conta
    logical :: unstable
    type (SGBCSurface_t), pointer :: compo
-   REAL (KIND=RKIND) :: heur
+   real (KIND=RKIND) :: heur
    character(len=BUFSIZE) :: buff
 
    heur=1.0_RKIND/sqrt(3.0_RKIND)

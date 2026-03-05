@@ -39,7 +39,7 @@ contains
    subroutine MinusCloneMagneticPMC(sggalloc,sggBorder,Hx,Hy,Hz,c,layoutnumber,size)
 
       type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
-      REAL (KIND=RKIND)   , intent(inout)      :: &
+      real (KIND=RKIND)   , intent(inout)      :: &
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE),&
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE),&
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
@@ -109,7 +109,7 @@ contains
    subroutine CloneMagneticPeriodic(sggalloc,sggBorder,Hx,Hy,Hz,c,layoutnumber,size)
 
       type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
-      REAL (KIND=RKIND)   , intent(inout)      :: &
+      real (KIND=RKIND)   , intent(inout)      :: &
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE),&
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE),&
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)

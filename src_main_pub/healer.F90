@@ -15,15 +15,15 @@ MODULE CreateMatrices
    !
    !
    type crosscheck_t
-      INTEGER (KIND=4) :: actual, NewActual, NewActual2
-      INTEGER (KIND=4), DIMENSION (1:4) :: tent
+      integer (KIND=4) :: actual, NewActual, NewActual2
+      integer (KIND=4), DIMENSION (1:4) :: tent
    END type
    !matriz para controlar lo punietereos indices de cadacomponente
-   INTEGER (KIND=4), DIMENSION (6, 3, 2), PARAMETER, PUBLIC :: &
+   integer (KIND=4), DIMENSION (6, 3, 2), PARAMETER, PUBLIC :: &
    & in = reshape ( (/ 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, &
    &                   0, 1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 /), (/ 6, 3, 2 /))
    !
-   INTEGER (KIND=4), DIMENSION (6, 3, 2), PARAMETER, PUBLIC :: &
+   integer (KIND=4), DIMENSION (6, 3, 2), PARAMETER, PUBLIC :: &
    &    on = reshape ( (/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, &
    &                      0, 0,-1, 0, 0, 0,-1,-1, 0,-1, 0,-1, 0,-1, 0, 0, &
    -1,-1,-1, 0 /), (/ 6, 3, 2 /))
@@ -65,29 +65,29 @@ MODULE CreateMatrices
       character(len=BUFSIZE) :: buff
       type (Shared_t) :: Eshared
 
-      INTEGER (KIND=4) :: NumMedia
+      integer (KIND=4) :: NumMedia
       type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
       type (XYZlimit_t), INTENT(IN) ::  BoundingBox
       integer(kind=4), intent(in) :: indicemedio
       !
-      INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      INTEGER (KIND=IKINDMTAG) numertag
-      INTEGER (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=IKINDMTAG) numertag
+      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       !
-      INTEGER (KIND=4) :: layoutnumber, i, j, k
+      integer (KIND=4) :: layoutnumber, i, j, k
 
       ! faces that should be PEC, bc edges are all PEC
       do k = BoundingBox%zi, BoundingBox%ze+1
@@ -508,33 +508,33 @@ MODULE CreateMatrices
       character(len=BUFSIZE) :: buff
       type (Shared_t) :: Eshared
       !
-      INTEGER (KIND=4) :: NumMedia
+      integer (KIND=4) :: NumMedia
       type (MediaData_t), DIMENSION (0:NumMedia) :: med
-      INTEGER (KIND=4) :: medio
+      integer (KIND=4) :: medio
       !
       type (XYZlimit_t) :: punto, puntoPlus1
       type (XYZlimit_t), INTENT (INOUT) :: point
       type (XYZlimit_t), INTENT(IN) ::  BoundingBox
       !
-      INTEGER (KIND=4) :: indicemedio
+      integer (KIND=4) :: indicemedio
       !
-      INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      INTEGER (KIND=IKINDMTAG) numertag
-      INTEGER (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=IKINDMTAG) numertag
+      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       !
-      INTEGER (KIND=4) :: layoutnumber, i, j, k
+      integer (KIND=4) :: layoutnumber, i, j, k
       !
       med(indicemedio)%Is%Volume = .TRUE.
       !
@@ -552,20 +552,20 @@ MODULE CreateMatrices
       puntoPlus1%YE = Min (point%YE+1, Max(BoundingBox%YI, BoundingBox%YE))
       puntoPlus1%ZE = Min (point%ZE+1, Max(BoundingBox%ZI, BoundingBox%ZE))
       !!!only for volumes the centroid is assigned  !eliminado 03/07/15
-      !!      DO k = punto%ZI, punto%ZE
-      !!        DO j = punto%YI, punto%YE
-      !!          DO i = punto%XI, punto%XE
+      !!      do k = punto%ZI, punto%ZE
+      !!        do j = punto%YI, punto%YE
+      !!          do i = punto%XI, punto%XE
       !!            medio = MMcen (i, j, k)
       !!            IF (med(indicemedio)%Priority >= med(medio)%Priority) THEN
       !!              MMcen (i, j, k) = indicemedio
       !!            END IF
-      !!          END DO
-      !!        END DO
-      !!      END DO
+      !!          end do
+      !!        end do
+      !!      end do
       !only take care of the boundaries for interfacing
-      DO k = punto%ZI, puntoPlus1%ZE
-         DO j = punto%YI, puntoPlus1%YE
-            DO i = punto%XI, punto%XE
+      do k = punto%ZI, puntoPlus1%ZE
+         do j = punto%YI, puntoPlus1%YE
+            do i = punto%XI, punto%XE
                medio = MMiEx (i, j, k)
 !               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -584,13 +584,13 @@ MODULE CreateMatrices
                      !        if (OnSurface) call AddToShared(iEx,i,j,k,indicemedio,medio,Eshared)
                   END IF
 !               END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO k = punto%ZI, puntoPlus1%ZE
-         DO j = punto%YI, punto%YE
-            DO i = punto%XI, puntoPlus1%XE
+      do k = punto%ZI, puntoPlus1%ZE
+         do j = punto%YI, punto%YE
+            do i = punto%XI, puntoPlus1%XE
                medio = MMiEy (i, j, k)
 !               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -606,13 +606,13 @@ MODULE CreateMatrices
                   END IF
                   
  !              END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO k = punto%ZI, punto%ZE
-         DO j = punto%YI, puntoPlus1%YE
-            DO i = punto%XI, puntoPlus1%XE
+      do k = punto%ZI, punto%ZE
+         do j = punto%YI, puntoPlus1%YE
+            do i = punto%XI, puntoPlus1%XE
                medio = MMiEz (i, j, k)
 !               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -627,13 +627,13 @@ MODULE CreateMatrices
                      !        if (OnSurface) call AddToShared(iEz,i,j,k,indicemedio,medio,Eshared)
                   END IF
 !               END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO k = punto%ZI, punto%ZE
-         DO j = punto%YI, punto%YE
-            DO i = punto%XI, puntoPlus1%XE
+      do k = punto%ZI, punto%ZE
+         do j = punto%YI, punto%YE
+            do i = punto%XI, puntoPlus1%XE
                medio = MMiHx (i, j, k)
 !               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -643,13 +643,13 @@ MODULE CreateMatrices
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
                   END IF
 !               END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO k = punto%ZI, punto%ZE
-         DO j = punto%YI, puntoPlus1%YE
-            DO i = punto%XI, punto%XE
+      do k = punto%ZI, punto%ZE
+         do j = punto%YI, puntoPlus1%YE
+            do i = punto%XI, punto%XE
                medio = MMiHy (i, j, k)
 !               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -659,13 +659,13 @@ MODULE CreateMatrices
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);
                   END IF
  !              END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO k = punto%ZI, puntoPlus1%ZE
-         DO j = punto%YI, punto%YE
-            DO i = punto%XI, punto%XE
+      do k = punto%ZI, puntoPlus1%ZE
+         do j = punto%YI, punto%YE
+            do i = punto%XI, punto%XE
                medio = MMiHz (i, j, k)
 !               IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -675,9 +675,9 @@ MODULE CreateMatrices
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
                   END IF
 !               END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
       RETURN
    END SUBROUTINE
@@ -700,7 +700,7 @@ MODULE CreateMatrices
    & Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, &
    & med, NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio)
       character(len=BUFSIZE) :: buff
-      INTEGER (KIND=4) :: NumMedia
+      integer (KIND=4) :: NumMedia
       type (Shared_t) :: Eshared
       type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
@@ -708,25 +708,25 @@ MODULE CreateMatrices
       type (XYZlimit_t), INTENT (INOUT) :: point
       type (XYZlimit_t), INTENT(IN) :: BoundingBox
       !
-      INTEGER (KIND=4) :: indicemedio, orientacion
-      INTEGER (KIND=4) :: layoutnumber, i, j, k
-      INTEGER (KIND=4) :: medio
+      integer (KIND=4) :: indicemedio, orientacion
+      integer (KIND=4) :: layoutnumber, i, j, k
+      integer (KIND=4) :: medio
       !
-      INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI , Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      INTEGER (KIND=IKINDMTAG) numertag
-      INTEGER (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=IKINDMTAG) numertag
+      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       med(indicemedio)%Is%Surface = .TRUE.
 
       call SortInitEndWithIncreasingOrder(point)
@@ -751,9 +751,9 @@ MODULE CreateMatrices
        CASE (iEx)
          !    i=punto%XI
          !    if ((i <= max(BoundingBox%XI,BoundingBox%XE)).and.(i >= min(BoundingBox%XI,BoundingBox%XE))) then
-         DO i = punto%XI, puntoBboxplus1%XE
-            DO j = punto%YI, punto%YE
-               DO k = punto%ZI, puntoPlus1%ZE
+         do i = punto%XI, puntoBboxplus1%XE
+            do j = punto%YI, punto%YE
+               do k = punto%ZI, puntoPlus1%ZE
                   medio = MMiEy (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEy (i, j, k) = indicemedio; 
@@ -762,10 +762,10 @@ MODULE CreateMatrices
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                   END IF
-               END DO
-            END DO
-            DO j = punto%YI, puntoPlus1%YE
-               DO k = punto%ZI, punto%ZE
+               end do
+            end do
+            do j = punto%YI, puntoPlus1%YE
+               do k = punto%ZI, punto%ZE
                   medio = MMiEz (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEz (i, j, k) = indicemedio; 
@@ -774,10 +774,10 @@ MODULE CreateMatrices
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                   END IF
-               END DO
-            END DO  
-            DO j = punto%YI, punto%YE
-               DO k = punto%ZI, punto%ZE
+               end do
+            end do  
+            do j = punto%YI, punto%YE
+               do k = punto%ZI, punto%ZE
                   medio = MMiHx (i, j, k)
 !                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority > med(medio)%Priority) then
@@ -786,16 +786,16 @@ MODULE CreateMatrices
                          tags%face%x(i,j,k) = 64*numertag
                      endif
 !                  END IF
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
          !    endif
        CASE (iEy)
          !    j=punto%YI
          !    if ((j <= max(BoundingBox%YI,BoundingBox%YE)).and.(j >= min(BoundingBox%YI,BoundingBox%YE))) then
-         DO j = punto%YI, puntoBboxplus1%YE
-            DO i = punto%XI, puntoPlus1%XE
-               DO k = punto%ZI, punto%ZE
+         do j = punto%YI, puntoBboxplus1%YE
+            do i = punto%XI, puntoPlus1%XE
+               do k = punto%ZI, punto%ZE
                   medio = MMiEz (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEz (i, j, k) = indicemedio; 
@@ -804,10 +804,10 @@ MODULE CreateMatrices
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                   END IF
-               END DO
-            END DO
-            DO i = punto%XI, punto%XE
-               DO k = punto%ZI, puntoPlus1%ZE
+               end do
+            end do
+            do i = punto%XI, punto%XE
+               do k = punto%ZI, puntoPlus1%ZE
                   medio = MMiEx (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEx (i, j, k) = indicemedio; 
@@ -816,10 +816,10 @@ MODULE CreateMatrices
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                   END IF
-               END DO
-            END DO
-            DO i = punto%XI, punto%XE
-               DO k = punto%ZI, punto%ZE
+               end do
+            end do
+            do i = punto%XI, punto%XE
+               do k = punto%ZI, punto%ZE
                   medio = MMiHy (i, j, k)
 !                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority > med(medio)%Priority) then
@@ -828,16 +828,16 @@ MODULE CreateMatrices
                          tags%face%y(i,j,k) = 64*numertag
                      endif
 !                  END IF
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
          !    endif
        CASE (iEz)
          !    k=punto%ZI
          !    if ((k <= max(BoundingBox%ZI,BoundingBox%ZE)).and.(k >= min(BoundingBox%ZI,BoundingBox%ZE))) then
-         DO k = punto%ZI, puntoBboxplus1%ZE
-            DO i = punto%XI, punto%XE
-               DO j = punto%YI, puntoPlus1%YE
+         do k = punto%ZI, puntoBboxplus1%ZE
+            do i = punto%XI, punto%XE
+               do j = punto%YI, puntoPlus1%YE
                   medio = MMiEx (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEx (i, j, k) = indicemedio; 
@@ -846,10 +846,10 @@ MODULE CreateMatrices
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                   END IF
-               END DO
-            END DO
-            DO i = punto%XI, puntoPlus1%XE
-               DO j = punto%YI, punto%YE
+               end do
+            end do
+            do i = punto%XI, puntoPlus1%XE
+               do j = punto%YI, punto%YE
                   medio = MMiEy (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiEy (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
@@ -857,10 +857,10 @@ MODULE CreateMatrices
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                   END IF
-               END DO
-            END DO
-            DO i = punto%XI, punto%XE
-               DO j = punto%YI, punto%YE
+               end do
+            end do
+            do i = punto%XI, punto%XE
+               do j = punto%YI, punto%YE
                   medio = MMiHz (i, j, k)
 !                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority > med(medio)%Priority) then
@@ -870,9 +870,9 @@ MODULE CreateMatrices
 
                      endif
 !                  END IF
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
          !    endif
       END SELECT
       !
@@ -896,33 +896,33 @@ MODULE CreateMatrices
    & NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio, isathinwire, verbose,numeroasignaciones)
       
       type (Shared_t) :: Eshared
-      INTEGER (KIND=4) :: NumMedia
+      integer (KIND=4) :: NumMedia
       type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
       type (XYZlimit_t) :: punto
       type (XYZlimit_t), INTENT (INOUT) :: point
       type (XYZlimit_t), INTENT(IN) :: BoundingBox
       
-      INTEGER (KIND=4) :: indicemedio, orientacion,numeroasignaciones
+      integer (KIND=4) :: indicemedio, orientacion,numeroasignaciones
       LOGICAL, INTENT (IN) :: isathinwire, verbose
-      INTEGER (KIND=4) :: i, j, k, layoutnumber
-      INTEGER (KIND=4) :: medio
+      integer (KIND=4) :: i, j, k, layoutnumber
+      integer (KIND=4) :: medio
       !
-      INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      INTEGER (KIND=IKINDMTAG) numertag
-      INTEGER (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=IKINDMTAG) numertag
+      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       !
       CHARACTER (LEN=BUFSIZE) :: buff
       med(indicemedio)%Is%Line = .TRUE.
@@ -944,9 +944,9 @@ MODULE CreateMatrices
          !    k=punto%ZI
          !    if ((j <= max(BoundingBox%YI,BoundingBox%YE)).and.(j >= min(BoundingBox%YI,BoundingBox%YE)).and. &
          !        (k <= max(BoundingBox%ZI,BoundingBox%ZE)).and.(k >= min(BoundingBox%ZI,BoundingBox%ZE))) then
-         DO k = punto%ZI, punto%ZE
-            DO j = punto%YI, punto%YE
-               DO i = punto%XI, punto%XE
+         do k = punto%ZI, punto%ZE
+            do j = punto%YI, punto%YE
+               do i = punto%XI, punto%XE
                   medio = MMiEx (i, j, k)
 !                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -972,18 +972,18 @@ MODULE CreateMatrices
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                      END IF
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
          !    endif
        CASE (iEy)
          !    i=punto%XI
          !    k=punto%ZI
          !    if ((i <= max(BoundingBox%XI,BoundingBox%XE)).and.(i >= min(BoundingBox%XI,BoundingBox%XE)).and. &
          !        (k <= max(BoundingBox%ZI,BoundingBox%ZE)).and.(k >= min(BoundingBox%ZI,BoundingBox%ZE))) then
-         DO k = punto%ZI, punto%ZE
-            DO j = punto%YI, punto%YE
-               DO i = punto%XI, punto%XE
+         do k = punto%ZI, punto%ZE
+            do j = punto%YI, punto%YE
+               do i = punto%XI, punto%XE
                   medio = MMiEy (i, j, k)
 !                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -1010,18 +1010,18 @@ MODULE CreateMatrices
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                      END IF
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
          !    endif
        CASE (iEz)
          !    i=punto%XI
          !    j=punto%YI
          !    if ((i <= max(BoundingBox%XI,BoundingBox%XE)).and.(i >= min(BoundingBox%XI,BoundingBox%XE)).and. &
          !        (j <= max(BoundingBox%YI,BoundingBox%YE)).and.(j >= min(BoundingBox%YI,BoundingBox%YE))) then
-         DO k = punto%ZI, punto%ZE
-            DO j = punto%YI, punto%YE
-               DO i = punto%XI, punto%XE
+         do k = punto%ZI, punto%ZE
+            do j = punto%YI, punto%YE
+               do i = punto%XI, punto%XE
                   medio = MMiEz (i, j, k)
 !                  IF (medio /= 0) THEN   !ojo esto estaba antes de 031016 y daba maxima prioridad al medio 0 PEC. Ahora puedo tener medios con mas prioridad!!! !?!? cambio agresivo 031016!!!
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -1049,9 +1049,9 @@ MODULE CreateMatrices
                         CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                      END IF
 
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
          !    endif
       END SELECT
       !
@@ -1077,33 +1077,33 @@ MODULE CreateMatrices
    & NumMedia, Eshared, Hshared, BoundingBox, point, orientacion, direccion, indicemedio)
       character(len=BUFSIZE) :: buff
       type (Shared_t) :: Eshared, Hshared
-      INTEGER (KIND=4) :: NumMedia
+      integer (KIND=4) :: NumMedia
       type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
       type (XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
       type (XYZlimit_t), INTENT (INOUT) :: point
       type (XYZlimit_t), INTENT(IN) :: BoundingBox
       !
-      INTEGER (KIND=4) :: indicemedio, orientacion, direccion
+      integer (KIND=4) :: indicemedio, orientacion, direccion
       !
-      INTEGER (KIND=4) :: layoutnumber, i, j, k, offx, offy, offz
-      INTEGER (KIND=4) :: medio
+      integer (KIND=4) :: layoutnumber, i, j, k, offx, offy, offz
+      integer (KIND=4) :: medio
       !
-      INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      INTEGER (KIND=IKINDMTAG) numertag
-      INTEGER (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=IKINDMTAG) numertag
+      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       med(indicemedio)%Is%Surface = .TRUE.
       !
       call SortInitEndWithIncreasingOrder(point)
@@ -1130,14 +1130,14 @@ MODULE CreateMatrices
       offz = 0
       SELECT CASE (Abs(orientacion))
        CASE (iEx)
-         DO i = punto%XI, puntoBboxplus1%XE
+         do i = punto%XI, puntoBboxplus1%XE
             SELECT CASE (direccion)
              CASE (iEz)
                offx = 0
                offy = 0
                offz = 1
-               DO j = punto%YI, punto%YE
-                  DO k = punto%ZI, puntoPlus1%ZE
+               do j = punto%YI, punto%YE
+                  do k = punto%ZI, puntoPlus1%ZE
                      medio = MMiEy (i, j, k)
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                         MMiEy (i, j, k) = indicemedio
@@ -1147,14 +1147,14 @@ MODULE CreateMatrices
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                      END IF
-                  END DO
-               END DO
+                  end do
+               end do
              CASE (iEy)
                offx = 0
                offy = 1
                offz = 0
-               DO j = punto%YI, puntoPlus1%YE
-                  DO k = punto%ZI, punto%ZE
+               do j = punto%YI, puntoPlus1%YE
+                  do k = punto%ZI, punto%ZE
                      medio = MMiEz (i, j, k)
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                         MMiEz (i, j, k) = indicemedio
@@ -1164,12 +1164,12 @@ MODULE CreateMatrices
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                      END IF
-                  END DO
-               END DO
+                  end do
+               end do
             END SELECT
-            DO j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)), &
+            do j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)), &
             &       Min (punto%YE + offy, Max(BoundingBox%YI, BoundingBox%YE)-1)
-               DO k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
+               do k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
                &       Min (punto%ZE + offz, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
                   medio = MMiHx (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -1181,18 +1181,18 @@ MODULE CreateMatrices
                      !CALL AddToShared (iHx, i, j, k, indicemedio, medio, Hshared)
 
                   END IF
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
        CASE (iEy)
-         DO j = punto%YI, puntoBboxplus1%YE
+         do j = punto%YI, puntoBboxplus1%YE
             SELECT CASE (direccion)
              CASE (iEx)
                offx = 1
                offy = 0
                offz = 0
-               DO i = punto%XI, puntoPlus1%XE
-                  DO k = punto%ZI, punto%ZE
+               do i = punto%XI, puntoPlus1%XE
+                  do k = punto%ZI, punto%ZE
                      medio = MMiEz (i, j, k)
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                         MMiEz (i, j, k) = indicemedio
@@ -1202,14 +1202,14 @@ MODULE CreateMatrices
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                      END IF
-                  END DO
-               END DO
+                  end do
+               end do
              CASE (iEz)
                offx = 0
                offy = 0
                offz = 1
-               DO i = punto%XI, punto%XE
-                  DO k = punto%ZI, puntoPlus1%ZE
+               do i = punto%XI, punto%XE
+                  do k = punto%ZI, puntoPlus1%ZE
                      medio = MMiEx (i, j, k)
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                         MMiEx (i, j, k) = indicemedio
@@ -1219,12 +1219,12 @@ MODULE CreateMatrices
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                      END IF
-                  END DO
-               END DO
+                  end do
+               end do
             END SELECT
-            DO i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
+            do i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
             &       Min (punto%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
-               DO k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
+               do k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
                &       Min (punto%ZE + offz, Max(BoundingBox%ZI, BoundingBox%ZE)-1)
                   medio = MMiHy (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -1235,18 +1235,18 @@ MODULE CreateMatrices
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      !CALL AddToShared (iHy, i, j, k, indicemedio, medio, Hshared)
                   END IF
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
        CASE (iEz)
-         DO k = punto%ZI, puntoBboxplus1%ZE
+         do k = punto%ZI, puntoBboxplus1%ZE
             SELECT CASE (direccion)
              CASE (iEy)
                offx = 0
                offy = 1
                offz = 0
-               DO i = punto%XI, punto%XE
-                  DO j = punto%YI, puntoPlus1%YE
+               do i = punto%XI, punto%XE
+                  do j = punto%YI, puntoPlus1%YE
                      medio = MMiEx (i, j, k)
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                         MMiEx (i, j, k) = indicemedio
@@ -1256,14 +1256,14 @@ MODULE CreateMatrices
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                      END IF
-                  END DO
-               END DO
+                  end do
+               end do
              CASE (iEx)
                offx = 1
                offy = 0
                offz = 0
-               DO i = punto%XI, puntoPlus1%XE
-                  DO j = punto%YI, punto%YE
+               do i = punto%XI, puntoPlus1%XE
+                  do j = punto%YI, punto%YE
                      medio = MMiEy (i, j, k)
                      IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                         MMiEy (i, j, k) = indicemedio
@@ -1273,12 +1273,12 @@ MODULE CreateMatrices
                      ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                         !CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                      END IF
-                  END DO
-               END DO
+                  end do
+               end do
             END SELECT
-            DO i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
+            do i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
             &       Min (punto%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
-               DO j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)),  &
+               do j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)),  &
                &       Min (punto%YE + offy, Max(BoundingBox%YI, BoundingBox%YE)-1)
                   medio = MMiHz (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
@@ -1289,9 +1289,9 @@ MODULE CreateMatrices
                   ELSE IF ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) THEN
                      !CALL AddToShared (iHz, i, j, k, indicemedio, medio, Hshared)
                   END IF
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
       END SELECT
       !
       RETURN
@@ -1315,7 +1315,7 @@ MODULE CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio)
       character(len=BUFSIZE) :: buff
-      INTEGER (KIND=4) :: NumMedia
+      integer (KIND=4) :: NumMedia
       type (Shared_t) :: Eshared
       type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
@@ -1323,25 +1323,25 @@ MODULE CreateMatrices
       type (XYZlimit_t), INTENT (INOUT) :: point
       type (XYZlimit_t), INTENT(IN) :: BoundingBox
       !
-      INTEGER (KIND=4) :: indicemedio, orientacion
-      INTEGER (KIND=4) :: layoutnumber, i, j, k
-      INTEGER (KIND=4) :: medio
+      integer (KIND=4) :: indicemedio, orientacion
+      integer (KIND=4) :: layoutnumber, i, j, k
+      integer (KIND=4) :: medio
       !
-      INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      INTEGER (KIND=IKINDMTAG) numertag
-      INTEGER (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=IKINDMTAG) numertag
+      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       med(indicemedio)%Is%Surface = .TRUE.
       !
       !
@@ -1366,9 +1366,9 @@ MODULE CreateMatrices
       !
       SELECT CASE (Abs(orientacion))
        CASE (iEx)
-         DO i = punto%XI, punto%XE
-            DO j = punto%YI, puntoPlus1%YE
-               DO k = punto%ZI, punto%ZE
+         do i = punto%XI, punto%XE
+            do j = punto%YI, puntoPlus1%YE
+               do k = punto%ZI, punto%ZE
                   medio = MMiHy (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiHy (i, j, k) = indicemedio
@@ -1376,10 +1376,10 @@ MODULE CreateMatrices
                      tags%face%y(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);
                   endif
-               END DO
-            END DO
-            DO j = punto%YI, punto%YE
-               DO k = punto%ZI, puntoPlus1%ZE
+               end do
+            end do
+            do j = punto%YI, punto%YE
+               do k = punto%ZI, puntoPlus1%ZE
                   medio = MMiHz (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiHz (i, j, k) = indicemedio
@@ -1387,10 +1387,10 @@ MODULE CreateMatrices
                      tags%face%z(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
                   endif
-               END DO
-            END DO
-            DO j = punto%YI, puntoPlus1%YE
-               DO k = punto%ZI, puntoPlus1%ZE
+               end do
+            end do
+            do j = punto%YI, puntoPlus1%YE
+               do k = punto%ZI, puntoPlus1%ZE
                   medio = MMiEx (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) then
                      MMiEx (i, j, k) = indicemedio
@@ -1398,13 +1398,13 @@ MODULE CreateMatrices
                      tags%edge%x(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                   endif
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
        CASE (iEy)
-         DO j = punto%YI, punto%YE
-            DO i = punto%XI, punto%XE
-               DO k = punto%ZI, puntoPlus1%ZE
+         do j = punto%YI, punto%YE
+            do i = punto%XI, punto%XE
+               do k = punto%ZI, puntoPlus1%ZE
                   medio = MMiHz (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiHz (i, j, k) = indicemedio
@@ -1412,10 +1412,10 @@ MODULE CreateMatrices
                      tags%face%z(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
                   endif
-               END DO
-            END DO
-            DO i = punto%XI, puntoPlus1%XE
-               DO k = punto%ZI, punto%ZE
+               end do
+            end do
+            do i = punto%XI, puntoPlus1%XE
+               do k = punto%ZI, punto%ZE
                   medio = MMiHx (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiHx (i, j, k) = indicemedio
@@ -1423,10 +1423,10 @@ MODULE CreateMatrices
                      tags%face%x(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
                   END IF
-               END DO
-            END DO
-            DO i = punto%XI, puntoPlus1%XE
-               DO k = punto%ZI, puntoPlus1%ZE
+               end do
+            end do
+            do i = punto%XI, puntoPlus1%XE
+               do k = punto%ZI, puntoPlus1%ZE
                   medio = MMiEy (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) then
                      MMiEy (i, j, k) = indicemedio
@@ -1434,14 +1434,14 @@ MODULE CreateMatrices
                      tags%edge%y(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                   endif
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
          !
        CASE (iEz)
-         DO k = punto%ZI, punto%ZE
-            DO i = punto%XI, puntoPlus1%XE
-               DO j = punto%YI, punto%YE
+         do k = punto%ZI, punto%ZE
+            do i = punto%XI, puntoPlus1%XE
+               do j = punto%YI, punto%YE
                   medio = MMiHx (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiHx (i, j, k) = indicemedio
@@ -1449,10 +1449,10 @@ MODULE CreateMatrices
                      tags%face%x(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
                   END IF
-               END DO
-            END DO
-            DO i = punto%XI, punto%XE
-               DO j = punto%YI, puntoPlus1%YE
+               end do
+            end do
+            do i = punto%XI, punto%XE
+               do j = punto%YI, puntoPlus1%YE
                   medio = MMiHy (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) THEN
                      MMiHy (i, j, k) = indicemedio
@@ -1460,10 +1460,10 @@ MODULE CreateMatrices
                      tags%face%y(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);
                   END IF
-               END DO
-            END DO
-            DO i = punto%XI, puntoPlus1%XE
-               DO j = punto%YI, puntoPlus1%YE
+               end do
+            end do
+            do i = punto%XI, puntoPlus1%XE
+               do j = punto%YI, puntoPlus1%YE
                   medio = MMiEz (i, j, k)
                   IF (med(indicemedio)%Priority > med(medio)%Priority) then
                      MMiEz (i, j, k) = indicemedio
@@ -1471,9 +1471,9 @@ MODULE CreateMatrices
                      tags%edge%z(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
                   endif
-               END DO
-            END DO
-         END DO
+               end do
+            end do
+         end do
 
       END SELECT
       !
@@ -1509,30 +1509,30 @@ MODULE CreateMatrices
       sggMiHz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
       type (XYZlimit_t) :: BoundingBox, BBox
       type (MediaData_t), POINTER, DIMENSION (:) :: med
-      INTEGER (KIND=4), INTENT (INOUT) :: NumMedia
+      integer (KIND=4), INTENT (INOUT) :: NumMedia
       type (Border_t), INTENT (IN) :: Border
       type (MedioExtra_t), INTENT (IN) :: MEDIOEXTRA
       ! Local stuff
-      INTEGER (KIND=4), POINTER, DIMENSION (:) :: tempo
+      integer (KIND=4), POINTER, DIMENSION (:) :: tempo
       type (MediaData_t), POINTER, DIMENSION (:) :: NewMed
-      INTEGER (KIND=4) :: layoutnumber, SIZE, field, medium, i, j, k, NuevoNumeroMediosConPML
-      INTEGER (KIND=4) :: oldNumMedia,oldmed
-      INTEGER (KIND=4), DIMENSION (1:6) :: XIPML, XEPML, YIPML, YEPML, ZIPML, ZEPML
-      REAL (KIND=RKIND) :: oldepr,oldmur,oldsigma,oldsigmam,newepr,newmur,newsigma,newsigmam
+      integer (KIND=4) :: layoutnumber, SIZE, field, medium, i, j, k, NuevoNumeroMediosConPML
+      integer (KIND=4) :: oldNumMedia,oldmed
+      integer (KIND=4), DIMENSION (1:6) :: XIPML, XEPML, YIPML, YEPML, ZIPML, ZEPML
+      real (KIND=RKIND) :: oldepr,oldmur,oldsigma,oldsigmam,newepr,newmur,newsigma,newsigmam
       LOGICAL :: yapuesto
 
       !Increase mediamatrix with PML regions, and remove the minus sign from the mm matrix (this info is no longer needed)
       !FIRST CLIP THE MATRIX
       !readjust boundingbox for PML correct calculation
       !
-      DO field = iEx, iHz
+      do field = iEx, iHz
          XIPML (field) = Max (BBox%XI, fullsize(iHx)%XI)
          XEPML (field) = Min (BBox%XE+on(field, icoord, fine), fullsize(iHx)%XE)
          YIPML (field) = Max (BBox%YI, fullsize(iHy)%YI)
          YEPML (field) = Min (BBox%YE+on(field, jcoord, fine), fullsize(iHy)%YE)
          ZIPML (field) = Max (BBox%ZI, fullsize(iHz)%ZI)
          ZEPML (field) = Min (BBox%ZE+on(field, kcoord, fine), fullsize(iHz)%ZE)
-      END DO
+      end do
       !
       BoundingBox%XI = Max (BBox%XI, SINPML_fullsize(iHx)%XI)
       BoundingBox%XE = Min (BBox%XE, SINPML_fullsize(iHx)%XE)
@@ -1544,282 +1544,282 @@ MODULE CreateMatrices
       ! temporarily assing minus sign to PML media
       ! corners are swept twice to assing the correct media (do not remove AbS!!)
       field = iEx
-      DO j = YIPML (field), YEPML (field)
-         DO k = ZIPML (field), ZEPML (field)
+      do j = YIPML (field), YEPML (field)
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Back
-            DO i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
+            do i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
                sggmiEx (i, j, k) = - Abs (sggmiEx(BoundingBox%XI+in(field, icoord, fine)+1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Front
-            DO i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
+            do i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
                sggmiEx (i, j, k) = - Abs (sggmiEx(BoundingBox%XE+in(field, icoord, comi)-1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO k = ZIPML (field), ZEPML (field)
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Left
-            DO j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
+            do j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
                sggmiEx (i, j, k) = - Abs (sggmiEx(i, BoundingBox%YI+in(field, jcoord, fine)+1, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Right
-            DO j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
+            do j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
                sggmiEx (i, j, k) = - Abs (sggmiEx(i, BoundingBox%YE+in(field, jcoord, comi)-1, k))
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
             !!!!!!**Down
-            DO k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
+            do k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
                sggmiEx (i, j, k) = - Abs (sggmiEx(i, j, BoundingBox%ZI+in(field, kcoord, fine)+1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Up
-            DO k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
+            do k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
                sggmiEx (i, j, k) = - Abs (sggmiEx(i, j, BoundingBox%ZE+in(field, kcoord, comi)-1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
       field = iEy
-      DO j = YIPML (field), YEPML (field)
-         DO k = ZIPML (field), ZEPML (field)
+      do j = YIPML (field), YEPML (field)
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Back
-            DO i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
+            do i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
                sggmiEy (i, j, k) = - Abs (sggmiEy(BoundingBox%XI+in(field, icoord, fine)+1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Front
-            DO i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
+            do i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
                sggmiEy (i, j, k) = - Abs (sggmiEy(BoundingBox%XE+in(field, icoord, comi)-1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO k = ZIPML (field), ZEPML (field)
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Left
-            DO j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
+            do j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
                sggmiEy (i, j, k) = - Abs (sggmiEy(i, BoundingBox%YI+in(field, jcoord, fine)+1, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Right
-            DO j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
+            do j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
                sggmiEy (i, j, k) = - Abs (sggmiEy(i, BoundingBox%YE+in(field, jcoord, comi)-1, k))
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
             !!!!!!**Down
-            DO k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
+            do k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
                sggmiEy (i, j, k) = - Abs (sggmiEy(i, j, BoundingBox%ZI+in(field, kcoord, fine)+1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Up
-            DO k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
+            do k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
                sggmiEy (i, j, k) = - Abs (sggmiEy(i, j, BoundingBox%ZE+in(field, kcoord, comi)-1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
       field = iEz
-      DO j = YIPML (field), YEPML (field)
-         DO k = ZIPML (field), ZEPML (field)
+      do j = YIPML (field), YEPML (field)
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Back
-            DO i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
+            do i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
                sggmiEz (i, j, k) = - Abs (sggmiEz(BoundingBox%XI+in(field, icoord, fine)+1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Front
-            DO i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
+            do i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
                sggmiEz (i, j, k) = - Abs (sggmiEz(BoundingBox%XE+in(field, icoord, comi)-1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO k = ZIPML (field), ZEPML (field)
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Left
-            DO j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
+            do j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
                sggmiEz (i, j, k) = - Abs (sggmiEz(i, BoundingBox%YI+in(field, jcoord, fine)+1, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Right
-            DO j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
+            do j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
                sggmiEz (i, j, k) = - Abs (sggmiEz(i, BoundingBox%YE+in(field, jcoord, comi)-1, k))
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
             !!!!!!**Down
-            DO k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
+            do k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
                sggmiEz (i, j, k) = - Abs (sggmiEz(i, j, BoundingBox%ZI+in(field, kcoord, fine)+1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Up
-            DO k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
+            do k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
                sggmiEz (i, j, k) = - Abs (sggmiEz(i, j, BoundingBox%ZE+in(field, kcoord, comi)-1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
       field = iHx
-      DO j = YIPML (field), YEPML (field)
-         DO k = ZIPML (field), ZEPML (field)
+      do j = YIPML (field), YEPML (field)
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Back
-            DO i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
+            do i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
                sggmiHx (i, j, k) = - Abs (sggmiHx(BoundingBox%XI+in(field, icoord, fine)+1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Front
-            DO i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
+            do i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
                sggmiHx (i, j, k) = - Abs (sggmiHx(BoundingBox%XE+in(field, icoord, comi)-1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO k = ZIPML (field), ZEPML (field)
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Left
-            DO j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
+            do j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
                sggmiHx (i, j, k) = - Abs (sggmiHx(i, BoundingBox%YI+in(field, jcoord, fine)+1, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Right
-            DO j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
+            do j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
                sggmiHx (i, j, k) = - Abs (sggmiHx(i, BoundingBox%YE+in(field, jcoord, comi)-1, k))
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
             !!!!!!**Down
-            DO k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
+            do k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
                sggmiHx (i, j, k) = - Abs (sggmiHx(i, j, BoundingBox%ZI+in(field, kcoord, fine)+1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Up
-            DO k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
+            do k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
                sggmiHx (i, j, k) = - Abs (sggmiHx(i, j, BoundingBox%ZE+in(field, kcoord, comi)-1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
       field = iHy
-      DO j = YIPML (field), YEPML (field)
-         DO k = ZIPML (field), ZEPML (field)
+      do j = YIPML (field), YEPML (field)
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Back
-            DO i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
+            do i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
                sggmiHy (i, j, k) = - Abs (sggmiHy(BoundingBox%XI+in(field, icoord, fine)+1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Front
-            DO i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
+            do i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
                sggmiHy (i, j, k) = - Abs (sggmiHy(BoundingBox%XE+in(field, icoord, comi)-1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO k = ZIPML (field), ZEPML (field)
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Left
-            DO j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
+            do j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
                sggmiHy (i, j, k) = - Abs (sggmiHy(i, BoundingBox%YI+in(field, jcoord, fine)+1, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Right
-            DO j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
+            do j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
                sggmiHy (i, j, k) = - Abs (sggmiHy(i, BoundingBox%YE+in(field, jcoord, comi)-1, k))
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
             !!!!!!**Down
-            DO k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
+            do k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
                sggmiHy (i, j, k) = - Abs (sggmiHy(i, j, BoundingBox%ZI+in(field, kcoord, fine)+1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Up
-            DO k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
+            do k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
                sggmiHy (i, j, k) = - Abs (sggmiHy(i, j, BoundingBox%ZE+in(field, kcoord, comi)-1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
       field = iHz
-      DO j = YIPML (field), YEPML (field)
-         DO k = ZIPML (field), ZEPML (field)
+      do j = YIPML (field), YEPML (field)
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Back
-            DO i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
+            do i = XIPML (field), BoundingBox%XI + in (field, icoord, fine)
                sggmiHz (i, j, k) = - Abs (sggmiHz(BoundingBox%XI+in(field, icoord, fine)+1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Front
-            DO i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
+            do i = BoundingBox%XE + in (field, icoord, comi), XEPML (field)
                sggmiHz (i, j, k) = - Abs (sggmiHz(BoundingBox%XE+in(field, icoord, comi)-1, j, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO k = ZIPML (field), ZEPML (field)
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do k = ZIPML (field), ZEPML (field)
             !!!!!!**Left
-            DO j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
+            do j = YIPML (field), BoundingBox%YI + in (field, jcoord, fine)
                sggmiHz (i, j, k) = - Abs (sggmiHz(i, BoundingBox%YI+in(field, jcoord, fine)+1, k))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Right
-            DO j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
+            do j = BoundingBox%YE + in (field, jcoord, comi), YEPML (field)
                sggmiHz (i, j, k) = - Abs (sggmiHz(i, BoundingBox%YE+in(field, jcoord, comi)-1, k))
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
-      DO i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
-         DO j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
+      do i = XIPML (field), XEPML (field)!barre ahora el total, para incluir aristas y corners
+         do j = YIPML (field), YEPML (field)!barre ahora el total, para incluir aristas y corners
             !!!!!!**Down
-            DO k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
+            do k = ZIPML (field), BoundingBox%ZI + in (field, kcoord, fine)
                sggmiHz (i, j, k) = - Abs (sggmiHz(i, j, BoundingBox%ZI+in(field, kcoord, fine)+1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
+            end do
             !!!!!!**Up
-            DO k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
+            do k = BoundingBox%ZE + in (field, kcoord, comi), ZEPML (field)
                sggmiHz (i, j, k) = - Abs (sggmiHz(i, j, BoundingBox%ZE+in(field, kcoord, comi)-1))
                !para notar medio PML se le cambia el signo al medio
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !compact the info of PML media
       NuevoNumeroMediosConPML = NumMedia
       ALLOCATE (tempo(0:NumMedia))
       tempo = 0 !temporarily stores the index of the PML medium matching each original media
       field = iEx
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiEx (i, j, k)
                IF (medium < 0) THEN
                   IF (tempo(Abs(medium)) == 0) THEN
@@ -1827,13 +1827,13 @@ MODULE CreateMatrices
                      tempo (Abs(medium)) = NuevoNumeroMediosConPML
                   END IF
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iEy
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiEy (i, j, k)
                IF (medium < 0) THEN
                   IF (tempo(Abs(medium)) == 0) THEN
@@ -1841,13 +1841,13 @@ MODULE CreateMatrices
                      tempo (Abs(medium)) = NuevoNumeroMediosConPML
                   END IF
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iEz
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiEz (i, j, k)
                IF (medium < 0) THEN
                   IF (tempo(Abs(medium)) == 0) THEN
@@ -1855,13 +1855,13 @@ MODULE CreateMatrices
                      tempo (Abs(medium)) = NuevoNumeroMediosConPML
                   END IF
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iHx
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiHx (i, j, k)
                IF (medium < 0) THEN
                   IF (tempo(Abs(medium)) == 0) THEN
@@ -1869,13 +1869,13 @@ MODULE CreateMatrices
                      tempo (Abs(medium)) = NuevoNumeroMediosConPML
                   END IF
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iHy
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiHy (i, j, k)
                IF (medium < 0) THEN
                   IF (tempo(Abs(medium)) == 0) THEN
@@ -1883,13 +1883,13 @@ MODULE CreateMatrices
                      tempo (Abs(medium)) = NuevoNumeroMediosConPML
                   END IF
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iHz
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiHz (i, j, k)
                IF (medium < 0) THEN
                   IF (tempo(Abs(medium)) == 0) THEN
@@ -1897,84 +1897,84 @@ MODULE CreateMatrices
                      tempo (Abs(medium)) = NuevoNumeroMediosConPML
                   END IF
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       !
       ALLOCATE (NewMed(NumMedia+1:NuevoNumeroMediosConPML))
       !Reassing the PML media info with the compact indexes
       field = iEx
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiEx (i, j, k)
                IF (medium < 0) THEN
                   sggmiEx (i, j, k) = tempo (Abs(medium))
                   NewMed (tempo(Abs(medium))) = med (Abs(medium))
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iEy
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiEy (i, j, k)
                IF (medium < 0) THEN
                   sggmiEy (i, j, k) = tempo (Abs(medium))
                   NewMed (tempo(Abs(medium))) = med (Abs(medium))
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iEz
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiEz (i, j, k)
                IF (medium < 0) THEN
                   sggmiEz (i, j, k) = tempo (Abs(medium))
                   NewMed (tempo(Abs(medium))) = med (Abs(medium))
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iHx
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiHx (i, j, k)
                IF (medium < 0) THEN
                   sggmiHx (i, j, k) = tempo (Abs(medium))
                   NewMed (tempo(Abs(medium))) = med (Abs(medium))
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iHy
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiHy (i, j, k)
                IF (medium < 0) THEN
                   sggmiHy (i, j, k) = tempo (Abs(medium))
                   NewMed (tempo(Abs(medium))) = med (Abs(medium))
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
       field = iHz
-      DO k = ZIPML (field), ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+      do k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                medium = sggmiHz (i, j, k)
                IF (medium < 0) THEN
                   sggmiHz (i, j, k) = tempo (Abs(medium))
                   NewMed (tempo(Abs(medium))) = med (Abs(medium))
                END IF
-            END DO
-         END DO
-      END DO
+            end do
+         end do
+      end do
 
       !Put PEC and the end if there exists PEC borders in the original problem
       !(PMC are handled with the image technique in the algorithm, no special index is used for PMC)
@@ -1983,174 +1983,174 @@ MODULE CreateMatrices
       !izda y dcha
       IF ((Border%IsLeftPEC)) THEN
          j = YIPML (field)
-         DO i = XIPML (field), XEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do i = XIPML (field), XEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiEx (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       IF ((Border%IsRightPEC)) THEN
          j = YEPML (field)
-         DO i = XIPML (field), XEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do i = XIPML (field), XEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiEx (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !  !Up y Down
       IF ((Border%IsDownPEC)) THEN
          k = ZIPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                sggmiEx (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       IF ((Border%IsUpPEC)) THEN
          k = ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                sggmiEx (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       field = iEy !!!!!PEC solo en fields donde acabe la red
       !front y back
       IF ((Border%IsBackPEC)) THEN
          i = XIPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiEy (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       IF ((Border%IsFrontPEC)) THEN
          i = XEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiEy (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !  !Up y Down
       IF ((Border%IsDownPEC)) THEN
          k = ZIPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                sggmiEy (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       IF ((Border%IsUpPEC)) THEN
          k = ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                sggmiEy (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       field = iEz !!!!!PEC solo en fields donde acabe la red
       !front y back
       IF ((Border%IsBackPEC)) THEN
          i = XIPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiEz (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       IF ((Border%IsFrontPEC)) THEN
          i = XEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiEz (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !izda y dcha
       IF ((Border%IsLeftPEC)) THEN
          j = YIPML (field)
-         DO i = XIPML (field), XEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do i = XIPML (field), XEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiEz (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       IF ((Border%IsRightPEC)) THEN
          j = YEPML (field)
-         DO i = XIPML (field), XEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do i = XIPML (field), XEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiEz (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       field = iHx !!!!!PEC solo en fields donde acabe la red
       !front y back
       IF ((Border%IsBackPEC)) THEN
          i = XIPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiHx (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       IF ((Border%IsFrontPEC)) THEN
          i = XEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiHx (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       field = iHy !!!!!PEC solo en fields donde acabe la red
       !izda y dcha
       IF ((Border%IsLeftPEC)) THEN
          j = YIPML (field)
-         DO i = XIPML (field), XEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do i = XIPML (field), XEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiHy (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       IF ((Border%IsRightPEC)) THEN
          j = YEPML (field)
-         DO i = XIPML (field), XEPML (field)
-            DO k = ZIPML (field), ZEPML (field)
+         do i = XIPML (field), XEPML (field)
+            do k = ZIPML (field), ZEPML (field)
                sggmiHy (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       field = iHz !!!!!PEC solo en fields donde acabe la red
       !  !Up y Down
       IF ((Border%IsDownPEC)) THEN
          k = ZIPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                sggmiHz (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
       !
       IF ((Border%IsUpPEC)) THEN
          k = ZEPML (field)
-         DO j = YIPML (field), YEPML (field)
-            DO i = XIPML (field), XEPML (field)
+         do j = YIPML (field), YEPML (field)
+            do i = XIPML (field), XEPML (field)
                sggmiHz (i, j, k) = 0
-            END DO
-         END DO
+            end do
+         end do
       END IF
 
       !!?!?!?MEDIOEXTRA
@@ -2177,9 +2177,9 @@ MODULE CreateMatrices
          field = iEx
          !izda y dcha
          IF ((Border%IsLeftPML)) THEN
-            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
-               DO i = XIPML (field), XEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+               do i = XIPML (field), XEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiEx (i, j, k)
                      if (oldmed /= 0) then
@@ -2207,15 +2207,15 @@ MODULE CreateMatrices
                         sggmiEx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsRightPML)) THEN
-            DO j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
-               DO i = XIPML (field), XEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+               do i = XIPML (field), XEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiEx (i, j, k)
                      if (oldmed /= 0) then
@@ -2243,15 +2243,15 @@ MODULE CreateMatrices
                         sggmiEx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !  !Up y Down
          IF ((Border%IsDownPML)) THEN
-            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
-               DO j = YIPML (field), YEPML (field)
-                  DO i = XIPML (field), XEPML (field)
+            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+               do j = YIPML (field), YEPML (field)
+                  do i = XIPML (field), XEPML (field)
                      !
                      oldmed   =sggmiEx (i, j, k)
                      if (oldmed /= 0) then
@@ -2279,15 +2279,15 @@ MODULE CreateMatrices
                         sggmiEx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsUpPML)) THEN
-            DO k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
-               DO j = YIPML (field), YEPML (field)
-                  DO i = XIPML (field), XEPML (field)
+            do k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+               do j = YIPML (field), YEPML (field)
+                  do i = XIPML (field), XEPML (field)
                      !
                      oldmed   =sggmiEx (i, j, k)
                      if (oldmed /= 0) then
@@ -2315,17 +2315,17 @@ MODULE CreateMatrices
                         sggmiEx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          field = iEy
          !front y back
          IF ((Border%IsBackPML)) THEN
-            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
-               DO j = YIPML (field), YEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+               do j = YIPML (field), YEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiEy (i, j, k)
                      if (oldmed /= 0) then
@@ -2353,15 +2353,15 @@ MODULE CreateMatrices
                         sggmiEy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsFrontPML)) THEN
-            DO i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
-               DO j = YIPML (field), YEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+               do j = YIPML (field), YEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiEy (i, j, k)
                      if (oldmed /= 0) then
@@ -2389,15 +2389,15 @@ MODULE CreateMatrices
                         sggmiEy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !  !Up y Down
          IF ((Border%IsDownPML)) THEN
-            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
-               DO j = YIPML (field), YEPML (field)
-                  DO i = XIPML (field), XEPML (field)
+            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+               do j = YIPML (field), YEPML (field)
+                  do i = XIPML (field), XEPML (field)
                      !
                      oldmed   =sggmiEy (i, j, k)
                      if (oldmed /= 0) then
@@ -2425,15 +2425,15 @@ MODULE CreateMatrices
                         sggmiEy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsUpPML)) THEN
-            DO k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
-               DO j = YIPML (field), YEPML (field)
-                  DO i = XIPML (field), XEPML (field)
+            do k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+               do j = YIPML (field), YEPML (field)
+                  do i = XIPML (field), XEPML (field)
                      !
                      oldmed   =sggmiEy (i, j, k)
                      if (oldmed /= 0) then
@@ -2461,17 +2461,17 @@ MODULE CreateMatrices
                         sggmiEy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          field = iEz
          !front y back
          IF ((Border%IsBackPML)) THEN
-            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
-               DO j = YIPML (field), YEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+               do j = YIPML (field), YEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiEz (i, j, k)
                      if (oldmed /= 0) then
@@ -2499,15 +2499,15 @@ MODULE CreateMatrices
                         sggmiEz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsFrontPML)) THEN
-            DO i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
-               DO j = YIPML (field), YEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+               do j = YIPML (field), YEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiEz (i, j, k)
                      if (oldmed /= 0) then
@@ -2535,15 +2535,15 @@ MODULE CreateMatrices
                         sggmiEz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !izda y dcha
          IF ((Border%IsLeftPML)) THEN
-            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
-               DO i = XIPML (field), XEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+               do i = XIPML (field), XEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiEz (i, j, k)
                      if (oldmed /= 0) then
@@ -2571,15 +2571,15 @@ MODULE CreateMatrices
                         sggmiEz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsRightPML)) THEN
-            DO j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
-               DO i = XIPML (field), XEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+               do i = XIPML (field), XEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiEz (i, j, k)
                      if (oldmed /= 0) then
@@ -2607,9 +2607,9 @@ MODULE CreateMatrices
                         sggmiEz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          !magneticos
@@ -2619,9 +2619,9 @@ MODULE CreateMatrices
          field = iHx
          !izda y dcha
          IF ((Border%IsLeftPML)) THEN
-            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
-               DO i = XIPML (field), XEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+               do i = XIPML (field), XEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiHx (i, j, k)
                      if (oldmed /= 0) then
@@ -2649,15 +2649,15 @@ MODULE CreateMatrices
                         sggmiHx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsRightPML)) THEN
-            DO j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
-               DO i = XIPML (field), XEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+               do i = XIPML (field), XEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiHx (i, j, k)
                      if (oldmed /= 0) then
@@ -2685,15 +2685,15 @@ MODULE CreateMatrices
                         sggmiHx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !  !Up y Down
          IF ((Border%IsDownPML)) THEN
-            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
-               DO j = YIPML (field), YEPML (field)
-                  DO i = XIPML (field), XEPML (field)
+            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+               do j = YIPML (field), YEPML (field)
+                  do i = XIPML (field), XEPML (field)
                      !
                      oldmed   =sggmiHx (i, j, k)
                      if (oldmed /= 0) then
@@ -2721,15 +2721,15 @@ MODULE CreateMatrices
                         sggmiHx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsUpPML)) THEN
-            DO k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
-               DO j = YIPML (field), YEPML (field)
-                  DO i = XIPML (field), XEPML (field)
+            do k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+               do j = YIPML (field), YEPML (field)
+                  do i = XIPML (field), XEPML (field)
                      !
                      oldmed   =sggmiHx (i, j, k)
                      if (oldmed /= 0) then
@@ -2757,17 +2757,17 @@ MODULE CreateMatrices
                         sggmiHx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          field = iHy
          !front y back
          IF ((Border%IsBackPML)) THEN
-            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
-               DO j = YIPML (field), YEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+               do j = YIPML (field), YEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiHy (i, j, k)
                      if (oldmed /= 0) then
@@ -2795,15 +2795,15 @@ MODULE CreateMatrices
                         sggmiHy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsFrontPML)) THEN
-            DO i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
-               DO j = YIPML (field), YEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+               do j = YIPML (field), YEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiHy (i, j, k)
                      if (oldmed /= 0) then
@@ -2831,15 +2831,15 @@ MODULE CreateMatrices
                         sggmiHy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !  !Up y Down
          IF ((Border%IsDownPML)) THEN
-            DO k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
-               DO j = YIPML (field), YEPML (field)
-                  DO i = XIPML (field), XEPML (field)
+            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+               do j = YIPML (field), YEPML (field)
+                  do i = XIPML (field), XEPML (field)
                      !
                      oldmed   =sggmiHy (i, j, k)
                      if (oldmed /= 0) then
@@ -2867,15 +2867,15 @@ MODULE CreateMatrices
                         sggmiHy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsUpPML)) THEN
-            DO k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
-               DO j = YIPML (field), YEPML (field)
-                  DO i = XIPML (field), XEPML (field)
+            do k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+               do j = YIPML (field), YEPML (field)
+                  do i = XIPML (field), XEPML (field)
                      !
                      oldmed   =sggmiHy (i, j, k)
                      if (oldmed /= 0) then
@@ -2903,17 +2903,17 @@ MODULE CreateMatrices
                         sggmiHy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          field = iHz
          !front y back
          IF ((Border%IsBackPML)) THEN
-            DO i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
-               DO j = YIPML (field), YEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+               do j = YIPML (field), YEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiHz (i, j, k)
                      if (oldmed /= 0) then
@@ -2941,15 +2941,15 @@ MODULE CreateMatrices
                         sggmiHz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsFrontPML)) THEN
-            DO i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
-               DO j = YIPML (field), YEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+               do j = YIPML (field), YEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiHz (i, j, k)
                      if (oldmed /= 0) then
@@ -2977,15 +2977,15 @@ MODULE CreateMatrices
                         sggmiHz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !izda y dcha
          IF ((Border%IsLeftPML)) THEN
-            DO j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
-               DO i = XIPML (field), XEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+               do i = XIPML (field), XEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiHz (i, j, k)
                      if (oldmed /= 0) then
@@ -3013,15 +3013,15 @@ MODULE CreateMatrices
                         sggmiHz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
          IF ((Border%IsRightPML)) THEN
-            DO j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
-               DO i = XIPML (field), XEPML (field)
-                  DO k = ZIPML (field), ZEPML (field)
+            do j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+               do i = XIPML (field), XEPML (field)
+                  do k = ZIPML (field), ZEPML (field)
                      !
                      oldmed   =sggmiHz (i, j, k)
                      if (oldmed /= 0) then
@@ -3049,9 +3049,9 @@ MODULE CreateMatrices
                         sggmiHz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
                      endif
-                  END DO
-               END DO
-            END DO
+                  end do
+               end do
+            end do
          END IF
          !
       endif !del medioextra%exists
@@ -3071,23 +3071,23 @@ MODULE CreateMatrices
       !Inputs and Outputs
       type (MediaData_t), POINTER, DIMENSION (:) :: med
       type (MediaData_t), POINTER, DIMENSION (:) :: dummyMed
-      INTEGER (KIND=4), INTENT (INOUT) :: NumMedia
-      INTEGER (KIND=4), INTENT (IN) :: NewNumMedia
-      INTEGER (KIND=4) :: i
+      integer (KIND=4), INTENT (INOUT) :: NumMedia
+      integer (KIND=4), INTENT (IN) :: NewNumMedia
+      integer (KIND=4) :: i
       !
       ALLOCATE (dummyMed(0:NewNumMedia))
-      DO i = 0, Min (NumMedia, NewNumMedia)
+      do i = 0, Min (NumMedia, NewNumMedia)
          dummyMed (i) = med (i)
-      END DO
+      end do
       !
       DEALLOCATE (med)
       ALLOCATE (med(0:NewNumMedia))
-      DO i = 0, NewNumMedia
+      do i = 0, NewNumMedia
          med (i) = dummyMed (i)
-      END DO
+      end do
       !
       DEALLOCATE (dummyMed)
-      DO i = 1 + NumMedia, NewNumMedia
+      do i = 1 + NumMedia, NewNumMedia
          med(i)%Priority = prior_BV !background
          med(i)%epr=-1.0_RKIND 
          med(i)%MUr=-1.0_RKIND 
@@ -3122,7 +3122,7 @@ MODULE CreateMatrices
          med(i)%Is%Interfase = .FALSE.
          Med(i)%Is%already_YEEadvanced_byconformal = .FALSE.
          Med(i)%Is%split_and_useless = .FALSE.
-      END DO
+      end do
       !Update the final number of media
       NumMedia = NewNumMedia
       !
@@ -3131,8 +3131,8 @@ MODULE CreateMatrices
    SUBROUTINE AddToShared (campo, i1, j1, k1, Sharedmed, ProPmed,  Shared)
       type (SharedElement_t), POINTER, DIMENSION (:) :: temp
       type (Shared_t), INTENT (INOUT) :: Shared
-      INTEGER (KIND=4), INTENT (IN) :: campo, i1, j1, k1, Sharedmed, ProPmed
-      INTEGER (KIND=4) :: conta, n
+      integer (KIND=4), INTENT (IN) :: campo, i1, j1, k1, Sharedmed, ProPmed
+      integer (KIND=4) :: conta, n
       !
       Shared%conta = Shared%conta + 1
       conta = Shared%conta
@@ -3140,7 +3140,7 @@ MODULE CreateMatrices
       IF (conta > Shared%MaxConta) THEN
          !create space on the fly
          ALLOCATE (temp(1:conta-1))
-         DO n = 1, conta - 1
+         do n = 1, conta - 1
             temp(n)%Sharedmed = Shared%elem(n)%Sharedmed
             temp(n)%ProPmed = Shared%elem(n)%ProPmed
             temp(n)%field = Shared%elem(n)%field
@@ -3148,11 +3148,11 @@ MODULE CreateMatrices
             temp(n)%j = Shared%elem(n)%j
             temp(n)%k = Shared%elem(n)%k
             temp(n)%times = Shared%elem(n)%times
-         END DO
+         end do
          DEALLOCATE (Shared%elem)
          Shared%MaxConta = 2*Shared%MaxConta !!! 040717se atrancaba aqui. Ahora allocateo al doble. Antes era + 10000
          ALLOCATE (Shared%elem(1:Shared%MaxConta))
-         DO n = 1, conta - 1
+         do n = 1, conta - 1
             Shared%elem(n)%Sharedmed = temp(n)%Sharedmed
             Shared%elem(n)%ProPmed = temp(n)%ProPmed
             Shared%elem(n)%field = temp(n)%field
@@ -3160,7 +3160,7 @@ MODULE CreateMatrices
             Shared%elem(n)%j = temp(n)%j
             Shared%elem(n)%k = temp(n)%k
             Shared%elem(n)%times = temp(n)%times
-         END DO
+         end do
          DEALLOCATE (temp)
       END IF
       !

@@ -25,8 +25,8 @@ module Mdispersives
    type field_t
       integer (kind=4)   ::  i,j,k
       integer (kind=4)   ::  WhatField
-      REAL (KIND=RKIND), pointer                 ::  FieldPresent !apunta al campo del background
-      REAL (KIND=RKIND)                          ::  FieldPrevious
+      real (KIND=RKIND), pointer                 ::  FieldPresent !apunta al campo del background
+      real (KIND=RKIND)                          ::  FieldPrevious
       Complex (Kind=CKIND), pointer, dimension ( : )   ::  Current
    end type
 
@@ -56,9 +56,9 @@ contains
    subroutine InitMdispersives(sgg,media,ThereAreMdispersives,resume,GM1,GM2,Hx,Hy,Hz)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       type(media_matrices_t), intent(in) :: media
-      REAL (KIND=RKIND)     , intent(inout)      ::  &
+      real (KIND=RKIND)     , intent(inout)      ::  &
       GM1(0 : sgg%NumMedia),GM2(0 : sgg%NumMedia)
-      REAL (KIND=RKIND)   , intent(inout), target      :: &
+      real (KIND=RKIND)   , intent(inout), target      :: &
       Hx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE),&
       Hy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE),&
       Hz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
@@ -67,7 +67,7 @@ contains
       logical, INTENT(OUT)  ::  ThereAreMdispersives
       logical, INTENT(in)  ::  resume
       integer (kind=4)  ::  jmed,j1,conta,k1,i1,tempindex
-      REAL (KIND=RKIND)   ::  tempo
+      real (KIND=RKIND)   ::  tempo
       integer (kind=4)  ::  numpolres
       MDutton%Medium => null()
 
@@ -109,7 +109,7 @@ contains
          numpolres=sgg%Med(tempindex)%Mdispersive(1)%numpolres11
          tempo=0.0_RKIND
          Do i1=1,NumPolRes
-            tempo=tempo+REAL (MDutton%Medium(jmed)%Beta(i1))
+            tempo=tempo+real (MDutton%Medium(jmed)%Beta(i1))
          end do
          GM1(tempindex)=        (2.0_RKIND * sgg%Med(tempindex)%Mdispersive(1)%mu11+tempo-sgg%Med(tempindex)%Mdispersive(1)%Sigmam11*sgg%dt)/ &
          (2.0_RKIND * sgg%Med(tempindex)%Mdispersive(1)%mu11+tempo+sgg%Med(tempindex)%Mdispersive(1)%Sigmam11*sgg%dt)
@@ -290,7 +290,7 @@ contains
          do i1=1,MDutton%Medium(jmed)%NumNodesHx
             tempnode=>MDutton%Medium(jmed)%NodesHx(i1)
             Do k1=1,NumPolRes
-               tempnode%fieldPresent=tempnode%FieldPresent-REAL (MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
+               tempnode%fieldPresent=tempnode%FieldPresent-real (MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
             enddo
             Do k1=1,NumPolRes
                tempnode%current(k1)=MDutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1) + &
@@ -304,7 +304,7 @@ contains
          do i1=1,MDutton%Medium(jmed)%NumNodesHy
             tempnode=>MDutton%Medium(jmed)%NodesHy(i1)
             Do k1=1,NumPolRes
-               tempnode%FieldPresent=tempnode%FieldPresent-REAL (MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
+               tempnode%FieldPresent=tempnode%FieldPresent-real (MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
             enddo
             Do k1=1,NumPolRes
                tempnode%current(k1)=MDutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1)+ &
@@ -317,7 +317,7 @@ contains
          do i1=1,MDutton%Medium(jmed)%NumNodesHz
             tempnode=>MDutton%Medium(jmed)%NodesHz(i1)
             Do k1=1,NumPolRes
-               tempnode%FieldPresent=tempnode%FieldPresent-REAL (MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
+               tempnode%FieldPresent=tempnode%FieldPresent-real (MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
             enddo
             Do k1=1,NumPolRes
                tempnode%current(k1)=MDutton%Medium(jmed)%Kappa(k1)   *tempnode%current(k1)+ &

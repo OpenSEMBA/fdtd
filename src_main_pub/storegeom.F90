@@ -7,7 +7,7 @@ MODULE storeData
    IMPLICIT NONE
    PRIVATE
    !
-   INTEGER (KIND=4), PARAMETER, PRIVATE :: BLOCK_SIZE = 1024
+   integer (KIND=4), PARAMETER, PRIVATE :: BLOCK_SIZE = 1024
    PUBLIC store_geomData
    !
 CONTAINS
@@ -17,10 +17,10 @@ CONTAINS
    !!! Stores the geometrical data given by the parser into disk
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    SUBROUTINE store_geomData (sgg,media, fileFDE)
-      INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) :: INTJ
+      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: INTJ
       type(media_matrices_t), intent(in) :: media
       type (SGGFDTDINFO), intent(IN) :: sgg
-      INTEGER (KIND=4) :: i, j, k, campo, q
+      integer (KIND=4) :: i, j, k, campo, q
       CHARACTER (LEN=*), INTENT (IN) :: fileFDE
       !Writes an ASCII map of the media matrix for each field component
       OPEN (20, FILE=trim(adjustl(fileFDE))//'_MapEx.txt')
@@ -29,11 +29,11 @@ CONTAINS
       OPEN (23, FILE=trim(adjustl(fileFDE))//'_MapHx.txt')
       OPEN (24, FILE=trim(adjustl(fileFDE))//'_MapHy.txt')
       OPEN (25, FILE=trim(adjustl(fileFDE))//'_MapHz.txt')
-      DO campo = 1, 6
+      do campo = 1, 6
          i = 19 + campo
          q = 19 + campo
          WRITE (q,*) '____ 1-Sustrato, -n PML_______'
-         DO j = 0, sgg%NumMedia
+         do j = 0, sgg%NumMedia
             INTJ=J
             WRITE (q,*) '_____________________________'
             WRITE (q,*) 'MEDIO :  ', chartranslate (Intj)
@@ -63,7 +63,7 @@ CONTAINS
             WRITE (q,*) 'Is Volume ', sgg%Med(j)%Is%Volume
             WRITE (q,*) 'Is Surface ', sgg%Med(j)%Is%Surface
             WRITE (q,*) 'Is Line ', sgg%Med(j)%Is%Line
-         END DO
+         end do
          !
          WRITE (i,*) campo, ' con PML IINIC, IFIN ', sgg%sweep(campo)%XI, sgg%sweep(campo)%XE
          WRITE (i,*) campo, ' con PML JINIC, JFIN ', sgg%sweep(campo)%YI, sgg%sweep(campo)%YE
@@ -72,13 +72,13 @@ CONTAINS
          WRITE (i,*) campo, ' sin PML JINIC, JFIN ', sgg%SINPMLsweep(campo)%YI, sgg%SINPMLsweep(campo)%YE
          WRITE (i,*) campo, ' sin PML KINIC, KFIN ', sgg%SINPMLsweep(campo)%ZI, sgg%SINPMLsweep(campo)%ZE
          !
-         DO k = sgg%sweep(campo)%ZI, sgg%sweep(campo)%ZE
+         do k = sgg%sweep(campo)%ZI, sgg%sweep(campo)%ZE
             i = 19 + campo
             WRITE (i, '(A)') '_______________________________________________________________________'
             WRITE (i,*) '!!!!!!** k=', k
             WRITE (19+campo, '(A,400a)') 'I=  |', ('0123456789', i=sgg%Alloc(campo)%XI, sgg%Alloc(campo)%XE+10, 10)
             WRITE (19+campo, '(A)') 'J______________________________________________________________________'
-            DO j = sgg%sweep(campo)%YE, sgg%sweep(campo)%YI, - 1
+            do j = sgg%sweep(campo)%YE, sgg%sweep(campo)%YI, - 1
                SELECT CASE (campo)
                 CASE (iEx)
                   WRITE (19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiEx(i, j, k)), i=sgg%sweep(campo)%XI, &
@@ -99,12 +99,12 @@ CONTAINS
                   WRITE (19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHz(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
                END SELECT
-            END DO
-         END DO
-      END DO
-      DO i = 20, 25
+            end do
+         end do
+      end do
+      do i = 20, 25
          CLOSE (i)
-      END DO
+      end do
       !
       RETURN
       !
@@ -113,7 +113,7 @@ CONTAINS
       !Function to translate media indexes into characters for the mapping files
       !
       FUNCTION chartranslate (entero) RESULT (chara)
-         INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES) entero
+         integer (KIND=INTEGERSIZEOFMEDIAMATRICES) entero
          CHARACTER (LEN=1) chara
          IF (entero == 1) THEN
             chara = '_'

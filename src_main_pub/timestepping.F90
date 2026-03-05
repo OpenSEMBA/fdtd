@@ -175,11 +175,11 @@ module Solver_mod
       type(media_matrices_t), intent(in) :: media
       type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
       logical, intent(in) :: finishedwithsuccess
-      REAL (KIND=RKIND), intent(in) :: eps0,mu0
+      real (KIND=RKIND), intent(in) :: eps0,mu0
       type (tagtype_t), intent(in) :: tagtype
       type(entrada_t), intent(in) :: input
       real (kind=RKIND), intent(in) :: maxSourceValue
-      REAL (kind=8), intent(in) :: time_desdelanzamiento
+      real (kind=8), intent(in) :: time_desdelanzamiento
       type(solver_t) :: res
 
       call res%init_control(input,maxSourceValue, time_desdelanzamiento)
@@ -198,7 +198,7 @@ module Solver_mod
       class(solver_t) :: this
       type(entrada_t), intent(in) :: input
       real (kind=RKIND), intent(in) :: maxSourceValue
-      REAL (kind=8), intent(in) :: time_desdelanzamiento
+      real (kind=8), intent(in) :: time_desdelanzamiento
 
 
       this%control%maxSourceValue = maxSourceValue
@@ -455,7 +455,7 @@ module Solver_mod
          if (this%sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
          if (this%sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
          if (this%sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-      END DO
+      end do
 
       write(whoami,'(a,i5,a,i5,a)') '(',this%control%layoutnumber+1,'/',this%control%size,') '
       !file names
@@ -938,7 +938,7 @@ contains
          logical, intent(inout) :: att
          real(kind=rkind) :: deltaespmax, fmax, skin_depth
          logical :: hayattmedia = .false.
-         REAL (kind = rkind) :: mur,epr
+         real (kind = rkind) :: mur,epr
          character(len=BUFSIZE) :: buff   
          integer :: i
          if (abs(this%control%attfactorc-1.0_RKIND) > 1.0e-12_RKIND) then
@@ -1665,7 +1665,7 @@ contains
          !------------------------>
          type (SGGFDTDINFO), intent(IN)    ::  sgg
          type (bounds_t), intent( IN)  ::  b
-         INTEGER(KIND = IKINDMTAG), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT)     ::  sggMtag
+         integer(KIND = IKINDMTAG), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT)     ::  sggMtag
          integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( IN   )     ::  sggMiHx
          integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( IN   )     ::  sggMiHy
          integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( IN   )     ::  sggMiHz
@@ -1684,7 +1684,7 @@ contains
 
          mediois3=.true.; mediois4=.true.
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
 #endif
          Do k=1,b%sweepHx%NZ
             Do j=1,b%sweepHx%NY
@@ -1707,7 +1707,7 @@ contains
          End do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
-!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
 #endif
          Do k=1,b%sweepHy%NZ
             Do j=1,b%sweepHy%NY
@@ -1728,7 +1728,7 @@ contains
          End do
 #ifdef CompileWithOpenMP
 !$OMP  END PARALLEL DO
-!$OMP  PARALLEL DO  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
+!$OMP  PARALLEL do  DEFAULT(SHARED) private (i,j,k,medio1,medio2,medio3,medio4,medio5,mediois1,mediois2,mediois3,mediois4)
 #endif
          Do k=1,b%sweepHz%NZ
             Do j=1,b%sweepHz%NY
@@ -1776,7 +1776,7 @@ contains
       logical :: call_timing, l_aux, flushFF, somethingdone, newsomethingdone
       integer :: i
       real (kind=rkind) :: pscale_alpha
-      REAL (kind=rkind_tiempo) :: at
+      real (kind=rkind_tiempo) :: at
       character(len=bufsize) :: dubuf
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -1799,7 +1799,7 @@ contains
       Idxe => this%Idxe; Idye => this%Idye; Idze => this%Idze; Idxh => this%Idxh; Idyh => this%Idyh; Idzh => this%Idzh; dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
 
 
-      ciclo_temporal :  DO while (this%n <= this%control%finaltimestep)
+      ciclo_temporal :  do while (this%n <= this%control%finaltimestep)
       
          call this%step()
          call updateAndFlush()
@@ -2260,7 +2260,7 @@ contains
       Idzh(0:this%bounds%dzh%NZ-1) => this%Idzh
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk,Idyhj) 
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk,Idyhj) 
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk,Idyhj)  copyin(Ex,sggMiEx,Hy,Hz,Idyh,Idzh,b,G1,G2) copyout(Ex) 
@@ -2303,7 +2303,7 @@ contains
       Idxh(0:this%bounds%dxh%NX-1) => this%Idxh
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk)  
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzhk)  
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzhk)     copyin(Ey,sggMiEy,Hz,Hx,Idzh,Idxh,b,G1,G2) copyout(Ey) 
@@ -2349,7 +2349,7 @@ contains
       Idxh(0:this%bounds%dxh%NX-1) => this%Idxh
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyhj)    
+!$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyhj)    
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop   DEFAULT(present) collapse (2) private (i,j,k,medio,Idyhj)        copyin(Ez,sggMiEz,Hx,Hy,Idxh,Idyh,b,G1,G2) copyout(Ez) 
@@ -2412,7 +2412,7 @@ contains
 
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek,Idyej)     
+!$OMP  PARALLEL do  DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek,Idyej)     
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek,Idyej)       copyin(Hx,sggMiHx,Ey,Ez,Idye,Idze,b,GM1,GM2) copyout(Hx) 
@@ -2454,7 +2454,7 @@ contains
       IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek)     
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idzek)     
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop DEFAULT(present) collapse (2) private (i,j,k,medio,Idzek)         copyin(Hy,sggMiHy,Ez,Ex,Idze,Idxe,b,GM1,GM2) copyout(Hy) 
@@ -2493,7 +2493,7 @@ contains
       IdxE(0:this%bounds%dxE%NX-1) => this%IdxE
 
 #ifdef CompileWithOpenMP
-!$OMP  PARALLEL DO DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyej)  
+!$OMP  PARALLEL do DEFAULT(SHARED) collapse (2) private (i,j,k,medio,Idyej)  
 #endif
 #ifdef CompileWithACC   
 !$ACC parallel loop  DEFAULT(present) collapse (2) private (i,j,k,medio,Idyej)       copyin(Hz,sggMiHz,Ex,Ey,Idxe,Idye,b,GM1,GM2) copyout(Hz)
@@ -2886,8 +2886,8 @@ contains
       character (len=*) , intent(in)    ::  wiresflavor
       type (Logic_control), intent(IN)  ::  thereare
       type (SGGFDTDINFO), intent(INOUT)     ::  sgg
-      REAL (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : , : , : )  ::  Ex,Ey,Ez,Hx,Hy,Hz
-      REAL (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : )  ::  G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
+      real (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : , : , : )  ::  Ex,Ey,Ez,Hx,Hy,Hz
+      real (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : )  ::  G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 
       call DestroyObservation(sgg)
       Call DestroyNodal(sgg)

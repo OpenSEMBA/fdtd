@@ -33,10 +33,10 @@ module Observa
   private
 
   type Serialized_t
-    REAL(KIND=RKIND), pointer, dimension(:, :)   ::  valor, valor_x, valor_y, valor_z ! (step, valor)
-    REAL(KIND=RKIND), pointer, dimension(:, :)   ::  valorE, valor_Ex, valor_Ey, valor_Ez ! (step, valor)
-    REAL(KIND=RKIND), pointer, dimension(:, :)   ::  valorH, valor_Hx, valor_Hy, valor_Hz ! (step, valor)
-    INTEGER(kind=4), POINTER, DIMENSION(:) :: eI, eJ, eK, currentType, sggmtag
+    real(KIND=RKIND), pointer, dimension(:, :)   ::  valor, valor_x, valor_y, valor_z ! (step, valor)
+    real(KIND=RKIND), pointer, dimension(:, :)   ::  valorE, valor_Ex, valor_Ey, valor_Ez ! (step, valor)
+    real(KIND=RKIND), pointer, dimension(:, :)   ::  valorH, valor_Hx, valor_Hy, valor_Hz ! (step, valor)
+    integer(kind=4), POINTER, DIMENSION(:) :: eI, eJ, eK, currentType, sggmtag
     complex(kind=CKIND), dimension(:, :), allocatable  :: valorComplex_x, valorComplex_y, valorComplex_z
     complex(kind=CKIND), dimension(:, :), allocatable  :: valorComplex_Ex, valorComplex_Ey, valorComplex_Ez
     complex(kind=CKIND), dimension(:, :), allocatable  :: valorComplex_Hx, valorComplex_Hy, valorComplex_Hz
@@ -62,9 +62,9 @@ module Observa
     character(LEN=BUFSIZE)  ::  path
     integer(kind=4) :: unit, unitmaster !to store the unit of the file y en caso de singlefileginario el unitmaster que escribe
     integer(kind=4) :: columnas !number of columns in the output file
-    REAL(KIND=RKIND), pointer, dimension(:)   ::  valor, valor2, valor3, valor4, valor5 !stored values at each time step !not read but calculate !210521 also store -edl+vdrop
-    REAL(KIND=RKIND)    ::  valorsigno !just to store the sign of the current for the wires
-    REAL(KIND=RKIND), pointer, dimension(:, :, :, :)   ::  valor3D !stored values at each time step !not read but calculate
+    real(KIND=RKIND), pointer, dimension(:)   ::  valor, valor2, valor3, valor4, valor5 !stored values at each time step !not read but calculate !210521 also store -edl+vdrop
+    real(KIND=RKIND)    ::  valorsigno !just to store the sign of the current for the wires
+    real(KIND=RKIND), pointer, dimension(:, :, :, :)   ::  valor3D !stored values at each time step !not read but calculate
     type(Serialized_t)  ::  Serialized !para almecenar valores serializados en volumenes en vez de bulk
     !freqdomain probles
     complex(kind=CKIND), dimension(:, :, :, :, :), allocatable  :: valor3DComplex !freqdomain probes
@@ -98,14 +98,14 @@ module Observa
 #endif
 
 #ifdef CompileWithMPI
-  REAL(KIND=RKIND), pointer, dimension(:)   ::  valores, newvalores  !auxiliary for Bloque currents sync
+  real(KIND=RKIND), pointer, dimension(:)   ::  valores, newvalores  !auxiliary for Bloque currents sync
 #endif
 !!!variables globales del modulo
-  REAL(KIND=RKIND), save           ::  eps0, mu0
+  real(KIND=RKIND), save           ::  eps0, mu0
 !!!
    !!!!!!!!!variables local
 
-  REAL(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
+  real(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
   type(output_t), pointer, dimension(:), save  ::  output
 
   public InitObservation, FlushObservationFiles, UpdateObservation, DestroyObservation, CloseObservationFiles, unpacksinglefiles, &
@@ -475,7 +475,7 @@ contains
    type(observable_t), intent(inout) :: observation_probe
    type(XYZlimit_t), dimension(1:6), intent(in) :: SINPMLSweep
    integer, intent(in) :: field
-   INTEGER(kind=4), intent(in) :: ZI, ZE
+   integer(kind=4), intent(in) :: ZI, ZE
    integer(kind=4), intent(in) :: layoutnumber, size
 
    if ((ZI > SINPMLSweep(IHz)%ZE) .or. (ZE < SINPMLSweep(iHz)%ZI)) then   !MPI NO DUPLICAR CALCULOS
@@ -507,7 +507,7 @@ contains
       logical, intent(inout) :: niapapostprocess
 
       integer :: i, frequency_index, klk, timesteps, fqlength, pozi
-      REAL(KIND=RKIND) :: field1
+      real(KIND=RKIND) :: field1
       real(KIND=RKIND_tiempo) :: tiempo1
       real(KIND=RKIND), allocatable, dimension(:) :: signal, fqPos
       real(KIND=RKIND_tiempo), allocatable, dimension(:) :: samplingtime
@@ -582,15 +582,15 @@ contains
 !
         !read the normalization file and find its DFT
         open (15, file=trim(adjustl(observation%FileNormalize)))
-        DO klk = 1, timesteps
+        do klk = 1, timesteps
           READ (15, *) samplingTime(klk), signal(klk)
-        END DO
+        end do
         CLOSE (15)
 !
         !niapa quitar 200120 ojooo
         if (niapapostprocess) then
           print *, 'Correcting in observation ', timesteps, trim(adjustl(observation%FileNormalize))
-          DO klk = 1, timesteps
+          do klk = 1, timesteps
             samplingTime(klk) = real(klk*dt, RKIND_tiempo)
           end do
         end if
@@ -615,7 +615,7 @@ contains
     type(SGGFDTDINFO), intent(IN) ::  sgg
     type(taglist_t) :: tag_numbers
     logical ::  niapapostprocess
-    REAL(KIND=RKIND)           ::  eps00, mu00
+    real(KIND=RKIND)           ::  eps00, mu00
     !---------------------------> inputs <----------------------------------------------------------
     
     
@@ -632,8 +632,8 @@ contains
     character(LEN=BUFSIZE)  ::  chari, charj, chark, chari2, charj2, chark2, charNO
     character(LEN=BUFSIZE)  ::  ext, extpoint, adum, prefix_field
     logical  ::  incident, errnofile, first
-    REAL(KIND=RKIND)    ::  rdum, field1, field2
-    REAL(KIND=RKIND_tiempo)    ::  at, dtevol, tiempo1, tiempo2
+    real(KIND=RKIND)    ::  rdum, field1, field2
+    real(KIND=RKIND_tiempo)    ::  at, dtevol, tiempo1, tiempo2
     integer(kind=4)  ::  unit, ndum, unitmaster, conta, III, JJJ, KKK, pozi, i1t, j1t, k1t
     character(LEN=BUFSIZE)  ::  whoami, whoamishort
     logical :: ok, existe, wrotemaster, found
@@ -647,8 +647,8 @@ contains
     integer(kind=4)  ::  imed, imed1, imed2, imed3, imed4, medium
     integer(kind=4)  ::  thefile !for file management
 !for dft
-    REAL(KIND=RKIND), allocatable, dimension(:) :: signal, fqPos
-    REAL(KIND=RKIND_tiempo), allocatable, dimension(:) :: samplingtime
+    real(KIND=RKIND), allocatable, dimension(:) :: signal, fqPos
+    real(KIND=RKIND_tiempo), allocatable, dimension(:) :: samplingtime
     complex(kind=CKIND), allocatable, dimension(:) :: fqValues
     integer(kind=4) :: timesteps, klk, fqlength
     integer :: my_iostat
@@ -2093,7 +2093,7 @@ call stoponerror(layoutnumber,size,'Data files for resuming non existent (volume
                       call print11(layoutnumber, buff)
                     end if
 
-                    DO N = 1, output(ii)%NumFreqs
+                    do N = 1, output(ii)%NumFreqs
                       read (output(ii)%item(i)%unit) rdum
                       do compo = 1, 3
                       do k1t = output(ii)%item(i)%ZItrancos, output(ii)%item(i)%ZEtrancos
@@ -2516,8 +2516,8 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       type(SGGFDTDINFO), intent(IN)         ::  sgg
       integer(kind=4)  ::  i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
-      REAL(KIND=RKIND)    ::  rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
-      REAL(KIND=RKIND_tiempo)    ::  lastexecutedtime
+      real(KIND=RKIND)    ::  rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
+      real(KIND=RKIND_tiempo)    ::  lastexecutedtime
       character(LEN=BUFSIZE) :: chdum
       character(LEN=BUFSIZE)  ::  whoamishort
       integer :: my_iostat
@@ -2647,7 +2647,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       type(SGGFDTDINFO), intent(IN)         ::  sgg
       integer(kind=4)  ::  i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
-      REAL(KIND=RKIND)    ::  rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
+      real(KIND=RKIND)    ::  rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
       character(LEN=BUFSIZE) :: chdum
       character(LEN=BUFSIZE)  ::  whoamishort
       integer :: my_iostat
@@ -2724,7 +2724,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       !---------------------------> inputs <----------------------------------------------------------
       type(limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
       integer, intent(IN)  ::  nTime, nInit
-      REAL(KIND=RKIND), intent(in), target     :: &
+      real(KIND=RKIND), intent(in), target     :: &
         Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
         Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
         Ez(sgg%alloc(iEz)%XI:sgg%alloc(iEz)%XE, sgg%alloc(iEz)%YI:sgg%alloc(iEz)%YE, sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE), &
@@ -2732,7 +2732,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         Hy(sgg%alloc(iHy)%XI:sgg%alloc(iHy)%XE, sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE, sgg%alloc(iHy)%ZI:sgg%alloc(iHy)%ZE), &
         Hz(sgg%alloc(iHz)%XI:sgg%alloc(iHz)%XE, sgg%alloc(iHz)%YI:sgg%alloc(iHz)%YE, sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
       !--->
-      REAL(KIND=RKIND), dimension(:), intent(in)   :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
+      real(KIND=RKIND), dimension(:), intent(in)   :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
                                                       dyh(sgg%ALLOC(iEy)%YI:sgg%ALLOC(iEy)%YE), &
                                                       dzh(sgg%ALLOC(iEz)%ZI:sgg%ALLOC(iEz)%ZE), &
                                                       dxe(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE), &
@@ -2744,7 +2744,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       integer(kind=4)  :: Efield, HField
       integer(kind=4)  ::  iii, kkk, jjj, jjj_m, iii_m, kkk_m, NtimeforVolumic, imed, imed1, imed2, imed3, imed4, medium
       logical :: esborde, wirecrank
-      REAL(KIND=RKIND_tiempo)    ::  at
+      real(KIND=RKIND_tiempo)    ::  at
       real(kind=RKIND) :: jx, jy, jz, jdir, jdir1, jdir2
       complex(kind=ckind) :: z_cplx
       integer(kind=4) :: conta !para realmente dar tangenciales de campos en los medios superficiales
@@ -3687,7 +3687,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       !!!
       !
       type(SGGFDTDINFO), intent(IN)         ::  sgg
-      REAL(KIND=RKIND), dimension(:), intent(in)   :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
+      real(KIND=RKIND), dimension(:), intent(in)   :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
                                                       dyh(sgg%ALLOC(iEy)%YI:sgg%ALLOC(iEy)%YE), &
                                                       dzh(sgg%ALLOC(iEz)%ZI:sgg%ALLOC(iEz)%ZE), &
                                                       dxe(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE), &
@@ -3697,7 +3697,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       integer(kind=4)  ::  nInit, FinalInstant, unidad, compo, conta
       integer(kind=4)  ::  i, field, N, ii, i1, j1, k1, Ntimeforvolumic, dummy_jjj, i1t, j1t, k1t, i0t
       logical  ::  incident, singlefilewrite, flushff, ISyaopen
-      REAL(KIND=RKIND_tiempo)  ::  at
+      real(KIND=RKIND_tiempo)  ::  at
 
       logical :: ok
       logical :: called_fromobservation, dummy_logical
@@ -3723,7 +3723,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
               K1 = sgg%OBSERVATION(ii)%P(i)%ZI
               !
               !                nInit=max(nint(0.4999999+sgg%OBSERVATION(ii)%InitialTime/sgg%dt),nInit)
-              DO N = nInit, FinalInstant !!! bug octubre'14 mur1.nfde. Quitado --->>>,output(ii)%Trancos  !save only for the requested data
+              do N = nInit, FinalInstant !!! bug octubre'14 mur1.nfde. Quitado --->>>,output(ii)%Trancos  !save only for the requested data
                 if (mod(n, output(ii)%Trancos) == 0) then  !save only for the requested data
                   select case (field)
                   case (iHx, iHy, iHz)
@@ -3838,7 +3838,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                     end select
                   end if
                 end if
-              END DO
+              end do
               if (singlefilewrite .and. ((field == iEx) .or. (field == iEy) .or. (field == iEz) .or. &
                                          (field == iVx) .or. (field == iVy) .or. (field == iVz) .or. &
                                          (field == iJx) .or. (field == iJy) .or. (field == iJz) .or. &
@@ -3865,7 +3865,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                   (field == iBloqueJz) .or. (field == iBloqueMz)) then !only the master
 #endif
                 !                    nInit=max(nint(0.4999999+sgg%OBSERVATION(ii)%InitialTime/sgg%dt),nInit)
-                DO N = nInit, FinalInstant
+                do N = nInit, FinalInstant
                   if (mod(n, output(ii)%Trancos) == 0) then  !save only for the requested data
                     select case (field)
                     case (iBloqueMx, iBloqueMz, iBloqueMy)
@@ -3895,7 +3895,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                       end select
                     end if
                   end if
-                END DO
+                end do
                 call flush (output(ii)%item(i)%unit)
                 !--->
 
@@ -3908,7 +3908,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
               at = sgg%tiempo(FinalInstant)
               if (flushFF) call FlushFarfield(layoutnumber, size, b, dxe, dye, dze, dxh, dyh, dzh, facesNF2FF, at)
             case (iMHC, iHxC, iHyC, iHzC, iMEC, iExC, iEyC, iEzC, icur, iCurX, iCurY, iCurZ, mapvtk)
-              DO N = nInit, FinalInstant
+              do N = nInit, FinalInstant
                 at = sgg%tiempo(N)
                 Ntimeforvolumic = N !!!-nint(0.4999999+sgg%OBSERVATION(ii)%InitialTime/sgg%dt)
                 if (mod(Ntimeforvolumic, output(ii)%Trancos) == 0) then
@@ -3972,7 +3972,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                 !!! &      sgg%observation(ii)%P(i)%YI,sgg%observation(ii)%P(i)%YE, &
                 !!! &      sgg%observation(ii)%P(i)%zI,sgg%observation(ii)%P(i)%ZE
               write (output(ii)%item(i)%unit) at !deteccion errores dft si se resumea a partir de instantes posteriores al ultimo escrito
-              DO N = 1, output(ii)%NumFreqs
+              do N = 1, output(ii)%NumFreqs
                 write (output(ii)%item(i)%unit) output(ii)%Freq(n)
                 do compo = 1, 3
                   do k1t = output(ii)%item(i)%ZItrancos, output(ii)%item(i)%ZEtrancos
@@ -4008,7 +4008,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                   output(ii)%item(i)%Serialized%sggMtag(conta) !added to resuming file 121020
               end do
               write (output(ii)%item(i)%unit) at !deteccion errores dft si se resumea a partir de instantes posteriores al ultimo escrito
-              DO N = 1, output(ii)%NumFreqs
+              do N = 1, output(ii)%NumFreqs
                 write (output(ii)%item(i)%unit) output(ii)%Freq(n)
                 IF (SGG%Observation(ii)%Transfer) then
                   if (output(ii)%item(i)%columnas /= 0) then
@@ -4136,7 +4136,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
       do ii = 1, sgg%NumberRequest
         if (SGG%Observation(ii)%Transfer) deallocate (output(ii)%dftEntrada)
         if (SGG%Observation(ii)%FreqDomain) deallocate (output(ii)%auxExp_E, output(ii)%auxExp_H, output(ii)%Freq)
-        DO i = 1, sgg%Observation(ii)%nP
+        do i = 1, sgg%Observation(ii)%nP
           field = sgg%observation(ii)%P(i)%what
           select case (field)
           case (iQx, iQy, iQz)
@@ -4506,7 +4506,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
     subroutine nodalvtk(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, sggMtag, tag_numbers, &
                         init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
       type(SGGFDTDINFO), intent(IN)         ::  sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      integer (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
 
       type(output_t), pointer, dimension(:)  ::  output
       integer(kind=4), intent(IN) :: i, ii, Ntimeforvolumic
@@ -4868,7 +4868,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 #ifdef CompileWithMTLN
     subroutine multiwireBundlesVTK(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, sggMtag, tag_numbers)
       type(SGGFDTDINFO), intent(IN)   :: sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  & 
+      integer (KIND=IKINDMTAG), intent(in) :: sggMtag  & 
         (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, & 
          sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, & 
          sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
@@ -4943,7 +4943,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
     subroutine wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, sggMtag, tag_numbers)
 
       type(SGGFDTDINFO), intent(IN)   :: sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      integer (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
       type(output_t), pointer, dimension(:)  ::  output
       integer(kind=4), intent(IN) :: i, ii, Ntimeforvolumic
@@ -5165,7 +5165,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
       fqval = 0.0_RKIND
 
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j)
 #endif
       do i = 1, fqSize
         do j = 1, sigSize - 1 !algun delta promedio habra que tomar permit scaling 211118
@@ -5179,7 +5179,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 #endif
 
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (i,j)
+!$OMP PARALLEL do DEFAULT(SHARED) private (i,j)
 #endif
       do i = 1, fqSize
         j = sigSize  !algun delta promedio habra que tomar permit scaling 211118
@@ -5199,7 +5199,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
     real(kind=RKIND) function interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, i, j, k, field, atwhere) result(interp)
 
       type(SGGFDTDINFO), intent(IN) :: sgg
-      REAL(KIND=RKIND), intent(in), target :: &
+      real(KIND=RKIND), intent(in), target :: &
         Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
         Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
         Ez(sgg%alloc(iEz)%XI:sgg%alloc(iEz)%XE, sgg%alloc(iEz)%YI:sgg%alloc(iEz)%YE, sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE), &

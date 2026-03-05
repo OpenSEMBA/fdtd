@@ -15,13 +15,13 @@ module nodalsources
 
    type XYZlimit_t_singlescaled
       integer (kind=4)  :: XI,XE,YI,YE,ZI,ZE
-      REAL (KIND=RKIND)   :: amplitude
+      real (KIND=RKIND)   :: amplitude
    end type
 
 
    type  ::  NodalLocal_t
-      REAL (KIND=RKIND), pointer, dimension (:)  ::  evol
-      REAL (KIND=RKIND)   :: deltaevol
+      real (KIND=RKIND), pointer, dimension (:)  ::  evol
+      real (KIND=RKIND)   :: deltaevol
       integer (kind=4) :: numus
       type (XYZlimit_t_singlescaled)   :: punto
       logical :: IsInitialValue
@@ -290,11 +290,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Evolution function to interpolate from the input file
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   REAL (KIND=RKIND) function evolucion(t,dummy)
-      REAL (KIND=RKIND) t,deltaevol
+   real (KIND=RKIND) function evolucion(t,dummy)
+      real (KIND=RKIND) t,deltaevol
       integer (kind=4)  ::  numus
       integer (kind=8)  ::  nprev
-      REAL (KIND=RKIND), pointer, dimension ( : )  ::  evol
+      real (KIND=RKIND), pointer, dimension ( : )  ::  evol
       type (NodalLocal_t), intent (in) :: dummy
 
       if (dummy%IsInitialValue) then

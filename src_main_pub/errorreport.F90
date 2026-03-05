@@ -8,16 +8,16 @@ module Report
 
    integer (kind=4), parameter  ::  reportingseconds=60
    type :: tiempo_t
-      REAL ( kind = 8)  ::  segundos
+      real ( kind = 8)  ::  segundos
       character ( LEN=BUFSIZE)  ::  hora
       character ( LEN=BUFSIZE)  ::  fecha
    end type
 
 
    !For timing
-   REAL (KIND=8), SAVE ::  time_begin, time_end, time_begin2,time_begin3,time_begin_absoluto, time_end2,time_desdelanzamiento
-   REAL (KIND=RKIND), SAVE ::  megaceldas,megaceldastotales,speedInst, speedGlobInst,speedAvg,speedGlobAvg
-   REAL (KIND=RKIND), SAVE  ::  energy,energyTotal,oldenergyTotal,snapLevel
+   real (KIND=8), SAVE ::  time_begin, time_end, time_begin2,time_begin3,time_begin_absoluto, time_end2,time_desdelanzamiento
+   real (KIND=RKIND), SAVE ::  megaceldas,megaceldastotales,speedInst, speedGlobInst,speedAvg,speedGlobAvg
+   real (KIND=RKIND), SAVE  ::  energy,energyTotal,oldenergyTotal,snapLevel
    type (tiempo_t), SAVE  ::  time_out2
    !
    character (LEN=BUFSIZE), SAVE :: charmeg
@@ -392,9 +392,9 @@ contains
    subroutine InitTiming(sgg, c, t, initialtimestep, maxSourceValue)
       type (SGGFDTDINFO), intent(IN) :: sgg
       type(sim_control_t) , intent(in):: c
-      REAL (KIND=8), intent(in)   :: t
+      real (KIND=8), intent(in)   :: t
       integer (kind=4), intent(in) :: initialtimestep
-      REAL (KIND=RKIND), intent(in)   ::  maxSourceValue
+      real (KIND=RKIND), intent(in)   ::  maxSourceValue
       type (tiempo_t) :: time_out2,time_comienzo
 #ifdef CompileWithMPI
       integer (kind=4) :: ierr
@@ -482,11 +482,11 @@ contains
       data diasenbisiesto /31,60 ,91 ,121,152,182,213,244,274,305,335,366/
       type (tiempo_t), intent(out)  ::  time_out2
 
-      REAL ( kind = 8)  ::  time_out
+      real ( kind = 8)  ::  time_out
 
       !--->
-      REAL ( kind = 8)  ::  s
-      REAL ( kind = 8), save  ::  t_0 = 0.0_RKIND
+      real ( kind = 8)  ::  s
+      real ( kind = 8), save  ::  t_0 = 0.0_RKIND
       !--->
       integer (kind=4)  ::  h, m,month,day,year,cent
       !integer (kind=4)  ::  cent,year
@@ -1869,7 +1869,7 @@ contains
    !!!subroutine writemmdxf(layoutnumber,sgg,sggMiHx,sggMiHy,sggMiHz)
    !!!integer i,j,k,layoutnumber
    !!!type (SGGFDTDINFO), intent(IN)     ::  sgg
-   !!!INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   :: &
+   !!!integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   :: &
    !!!           sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE, &
    !!!                   sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE, &
    !!!                   sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE), &
@@ -2312,7 +2312,7 @@ end function openfile_mpi
       integer (kind=4) :: j
       character(len=BUFSIZE) :: buff
 
-      DO j = 0, sgg%NumMedia
+      do j = 0, sgg%NumMedia
          WRITE (buff,*) '_____________________________'
          call WarnErrReport(Trim(buff))
          WRITE (buff,*) 'MEDIO :  ', j
@@ -2377,7 +2377,7 @@ end function openfile_mpi
          call WarnErrReport(Trim(buff))
          WRITE (buff,*) '_____________________________'
          call WarnErrReport(Trim(buff))
-      END DO
+      end do
       return
    end subroutine reportmedia
 

@@ -20,30 +20,30 @@ CONTAINS
 
 
 
-      INTEGER (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs
+      integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs
       real (kind=4), dimension(minXabs:maxXabs,minYabs:maxYabs,minZabs:maxZabs,1:1)  ::  valor3D
       CHARACTER (LEN=BUFSIZE) :: filename ! File name
       CHARACTER (LEN=BUFSIZE) :: dsetname ! Dataset name
       !
-      INTEGER (HID_T) :: file_id  ! File identifier
-      INTEGER (HID_T) :: dset_id ! Dataset identifier
-      INTEGER (HID_T) :: dspace_id, slice2D_id ! Dataspace identifier
+      integer (HID_T) :: file_id  ! File identifier
+      integer (HID_T) :: dset_id ! Dataset identifier
+      integer (HID_T) :: dspace_id, slice2D_id ! Dataspace identifier
       !
-      INTEGER :: error ! Error flag
-      INTEGER :: rank ! Dataset rank
-      INTEGER (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: DATA_dims ! Dataset dimensions
-      INTEGER (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: offset
-      INTEGER (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: valor3d_dims ! slice dimensions
+      integer :: error ! Error flag
+      integer :: rank ! Dataset rank
+      integer (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: DATA_dims ! Dataset dimensions
+      integer (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: offset
+      integer (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: valor3d_dims ! slice dimensions
       !
       CHARACTER (LEN=BUFSIZE) :: charc
-      INTEGER (KIND=4), INTENT (IN) :: ninstant
+      integer (KIND=4), INTENT (IN) :: ninstant
       !
       !
       !
-      INTEGER (KIND=4) :: indi
-      REAL (KIND=4), ALLOCATABLE, DIMENSION (:) :: att
+      integer (KIND=4) :: indi
+      real (KIND=4), ALLOCATABLE, DIMENSION (:) :: att
       !
-      INTEGER (KIND=4) :: finalstep
+      integer (KIND=4) :: finalstep
       !
       finalstep=1
       !

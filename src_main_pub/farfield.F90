@@ -62,21 +62,21 @@ module farfield_m
       integer (KIND=4) :: NumFreqs,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2, Ndecim
       type (coorsxyzP)  ::  Punto
       real (kind=Rkind) :: InitialFreq,FinalFreq,FreqStep,dtDecim
-      REAL (KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
-      REAL (KIND=RKIND)  ::  phiStart,phiStop,phiStep
+      real (KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
+      real (KIND=RKIND)  ::  phiStart,phiStop,phiStep
       character (LEN=BUFSIZE)  ::   FileNormalize
       integer (KIND=4)    :: unitfarfield
       character (LEN=BUFSIZE)   ::  filefarfield
-      REAL (KIND=RKIND)  :: XDobleAncho,YDobleAncho,ZDobleAncho
-      REAL (KIND=RKIND)  :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
-      REAL (KIND=RKIND)  :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
+      real (KIND=RKIND)  :: XDobleAncho,YDobleAncho,ZDobleAncho
+      real (KIND=RKIND)  :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
+      real (KIND=RKIND)  :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
 #ifdef CompileWithMPI
       integer (kind=4)  :: MPISubComm,MPIRoot
 #endif
    end type
 !!!variables globales del modulo
-   REAL (KIND=RKIND), save           ::  cluz,zvac
-   REAL (KIND=RKIND), save           ::  eps0,mu0
+   real (KIND=RKIND), save           ::  cluz,zvac
+   real (KIND=RKIND), save           ::  eps0,mu0
 !!!
    !
    public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
@@ -99,14 +99,14 @@ contains
    ,MPISubComm,MpiRoot &
 #endif
    ,eps00,mu00)
-      REAL (KIND=RKIND)           ::  eps00,mu00
+      real (KIND=RKIND)           ::  eps00,mu00
 
       type (nf2ff_t) :: facesNF2FF
       LOGICAL :: NF2FFDecim
       type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
       real (kind=Rkind) :: InitialFreq,FinalFreq,FreqStep
-      REAL (KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
-      REAL (KIND=RKIND)  ::  phiStart,phiStop,phiStep
+      real (KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
+      real (KIND=RKIND)  ::  phiStart,phiStop,phiStep
       character (LEN=BUFSIZE)  ::   FileNormalize
       integer (KIND=4)    :: unitfarfield
       character (LEN=BUFSIZE)   ::  filefarfield
@@ -124,7 +124,7 @@ contains
       sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
       sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
       sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      REAL (KIND=RKIND)  ::tiempo1,tiempo2,field1,field2,dtevol
+      real (KIND=RKIND)  ::tiempo1,tiempo2,field1,field2,dtevol
       integer j,k,field,i,layoutnumber,size,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
       logical :: errnofile,error
@@ -1017,13 +1017,13 @@ contains
             FF%expIwdt(ii)=     Exp(mcpi2*(FF%InitialFreq + (ii-1) *FF%FreqStep) *dtevol     )
             !iniciales
             FF%auxExp_E(ii)=   dtevol * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por sgg%dt !bug
-         END DO
+         end do
       else !logaritmico
          do ii=1,FF%NumFreqs
             FF%expIwdt(ii)=     Exp(mcpi2*(10.0_RKIND **(FF%InitialFreq + (ii-1) *FF%FreqStep)) *dtevol     )
             !iniciales
             FF%auxExp_E(ii)=   dtevol * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por sgg%dt !bug 
-         END DO
+         end do
       endif
 
 
@@ -1036,13 +1036,13 @@ contains
          READ (15,*, end=98) tiempo1, field1
          do ii=1,FF%NumFreqs
             FF%dftEntrada(ii) = FF%dftEntrada(ii) + field1 * FF%auxExp_E(ii)
-         END DO
+         end do
          !solo los samples despues de 1 actualizan el valor
          !ver rutina dtft en postprocesws
          do ii=1,FF%NumFreqs
             FF%auxExp_E(ii)=FF%auxExp_E(ii) * FF%expIwdt(ii)
          end do
-      END DO
+      end do
 98    CONTINUE
       CLOSE (15)
 
@@ -1051,11 +1051,11 @@ contains
       if (pozi == 0) then
          do ii=1,FF%NumFreqs
             FF%expIwdt(ii)= Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(FF%InitialFreq + (ii-1) *FF%FreqStep) *FF%dtDecim     ) !en vez uso el dtdecimado 30/01/15
-         END DO
+         end do
       else !logaritmico
          do ii=1,FF%NumFreqs
             FF%expIwdt(ii)= Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(10.0_RKIND **(FF%InitialFreq + (ii-1) *FF%FreqStep)) *FF%dtDecim  ) !en vez uso el decimado 30/01/15
-         END DO
+         end do
       endif
 
       !!
@@ -1065,13 +1065,13 @@ contains
             FF%auxExp_E(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por FF%dtDecim   
             FF%auxExp_H(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND) * &
             Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(FF%InitialFreq + (ii-1) *FF%FreqStep) *(sgg%dt * 0.5_RKIND) )
-         END DO
+         end do
       else !logaritmico
          do ii=1,FF%NumFreqs
             FF%auxExp_E(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND)   !hay que multiplicar por FF%dtDecim 
             FF%auxExp_H(ii)=   FF%dtDecim   * (1.0E0_RKIND, 0.0E0_RKIND) * &
             Exp(-(0.0_RKIND,1.0_RKIND)*2.0_RKIND * pi*(10.0_RKIND **(FF%InitialFreq + (ii-1) *FF%FreqStep)) *(sgg%dt * 0.5_RKIND) )
-         END DO
+         end do
       endif
 
       if (.not.resume) then
@@ -1162,7 +1162,7 @@ contains
          i = FF%TrFr%I%tra%Ez !Back
          i_m = i - b%Ez%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
 #endif
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -1181,7 +1181,7 @@ contains
          i = FF%TrFr%I%tra%Ey  !Back
          i_m = i - b%Ey%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
 #endif
          do k = FF%TrFr%K%com%Ey, FF%TrFr%K%fin%Ey
             k_m = k - b%Ey%ZI
@@ -1203,7 +1203,7 @@ contains
          i = FF%TrFr%I%fro%Ez !Front
          i_m = i - b%Ez%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
 #endif
          do k = FF%TrFr%K%com%Ez, FF%TrFr%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -1222,7 +1222,7 @@ contains
          i = FF%TrFr%I%fro%Ey !Front
          i_m = i - b%Ey%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
 #endif
          do k = FF%TrFr%K%com%Ey, FF%TrFr%K%fin%Ey
             k_m = k - b%Ey%ZI
@@ -1245,7 +1245,7 @@ contains
          j = FF%IzDe%J%izq%Ex  !Left
          j_m = j - b%Ex%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
 #endif
          do k = FF%IzDe%K%com%Ex, FF%IzDe%K%fin%Ex
             k_m = k - b%Ex%ZI
@@ -1264,7 +1264,7 @@ contains
          j = FF%IzDe%J%izq%Ez  !Left
          j_m = j - b%Ez%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
 #endif
          do k = FF%IzDe%K%com%Ez, FF%IzDe%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -1286,7 +1286,7 @@ contains
          j = FF%IzDe%J%der%Ez !Right
          j_m = j - b%Ez%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
 #endif
          do k = FF%IzDe%K%com%Ez, FF%IzDe%K%fin%Ez
             k_m = k - b%Ez%ZI
@@ -1305,7 +1305,7 @@ contains
          j = FF%IzDe%J%der%Ex !Right
          j_m = j - b%Ex%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
 #endif
          do k = FF%IzDe%K%com%Ex,FF%IzDe%K%fin%Ex
             k_m = k - b%Ex%ZI
@@ -1328,7 +1328,7 @@ contains
          k = FF%AbAr%K%aba%Ex  !Down
          k_m = k - b%Ex%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
 #endif
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
             j_m = j - b%Ex%YI
@@ -1347,7 +1347,7 @@ contains
          k = FF%AbAr%K%aba%Ey  !Down
          k_m = k - b%Ey%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
 #endif
          do j = FF%AbAr%J%com%Ey, FF%AbAr%J%fin%Ey
             j_m = j - b%Ey%YI
@@ -1369,7 +1369,7 @@ contains
          k = FF%AbAr%K%arr%Ex  !Up
          k_m = k - b%Ex%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
 #endif
          do j = FF%AbAr%J%com%Ex, FF%AbAr%J%fin%Ex
             j_m = j - b%Ex%YI
@@ -1388,7 +1388,7 @@ contains
          k = FF%AbAr%K%arr%Ey  !Up
          k_m = k - b%Ey%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
 #endif
          do j = FF%AbAr%J%com%Ey, FF%AbAr%J%fin%Ey
             j_m = j - b%Ey%YI
@@ -1414,7 +1414,7 @@ contains
          i = FF%TrFr%I%tra%Hz  !Back
          i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
 #endif
          do k = FF%TrFr%K%com%Hz, FF%TrFr%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -1436,7 +1436,7 @@ contains
          i = FF%TrFr%I%tra%Hy  !Back
          i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
 #endif
          do k = FF%TrFr%K%com%Hy, FF%TrFr%K%fin%Hy
             k_m = k - b%Hy%ZI
@@ -1461,7 +1461,7 @@ contains
          i = FF%TrFr%I%fro%Hz !Front
          i_m = i - b%Hz%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
 #endif
          do k = FF%TrFr%K%com%Hz, FF%TrFr%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -1483,7 +1483,7 @@ contains
          i = FF%TrFr%I%fro%Hy !Front
          i_m = i - b%Hy%XI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,j,k,j_m,k_m)
 #endif
          do k = FF%TrFr%K%com%Hy, FF%TrFr%K%fin%Hy
             k_m = k - b%Hy%ZI
@@ -1509,7 +1509,7 @@ contains
          j = FF%IzDe%J%izq%Hx  !Left
          j_m = j - b%Hx%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
 #endif
          do k = FF%IzDe%K%com%Hx, FF%IzDe%K%fin%Hx
             k_m = k - b%Hx%ZI
@@ -1531,7 +1531,7 @@ contains
          j = FF%IzDe%J%izq%Hz  !Left
          j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
 #endif
          do k = FF%IzDe%K%com%Hz, FF%IzDe%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -1557,7 +1557,7 @@ contains
          j_m = j - b%Hx%YI
          !--->
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
 #endif
          do k = FF%IzDe%K%com%Hx, FF%IzDe%K%fin%Hx
             k_m = k - b%Hx%ZI
@@ -1579,7 +1579,7 @@ contains
          j = FF%IzDe%J%der%Hz !Right
          j_m = j - b%Hz%YI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,k,i,k_m,i_m)
 #endif
          do k = FF%IzDe%K%com%Hz, FF%IzDe%K%fin%Hz
             k_m = k - b%Hz%ZI
@@ -1605,7 +1605,7 @@ contains
          k = FF%AbAr%K%aba%Hx  !Down
          k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
 #endif
          do j = FF%AbAr%J%com%Hx, FF%AbAr%J%fin%Hx
             j_m = j - b%Hx%YI
@@ -1627,7 +1627,7 @@ contains
          k = FF%AbAr%K%aba%Hy  !Down
          k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
 #endif
          do j = FF%AbAr%J%com%Hy, FF%AbAr%J%fin%Hy
             j_m = j - b%Hy%YI
@@ -1652,7 +1652,7 @@ contains
          k = FF%AbAr%K%arr%Hx  !Up
          k_m = k - b%Hx%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
 #endif
          do j = FF%AbAr%J%com%Hx, FF%AbAr%J%fin%Hx
             j_m = j - b%Hx%YI
@@ -1674,7 +1674,7 @@ contains
          k=FF%AbAr%K%arr%Hy  !Up
          k_m = k - b%Hy%ZI
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
+!$OMP PARALLEL do DEFAULT(SHARED) private (ii,i,j,i_m,j_m)
 #endif
          do j = FF%AbAr%J%com%Hy, FF%AbAr%J%fin%Hy
             j_m = j - b%Hy%YI
@@ -2332,7 +2332,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!Subroutine PuntoPhys(nfield,i,j,k,xf,yf,zf)
    !!!!integer (KIND=4) i,j,k,nfield
-   !!!!REAL (KIND=RKIND)  ::   xf,yf,zf
+   !!!!real (KIND=RKIND)  ::   xf,yf,zf
    !!!!!
    !!!!xf=FF%Punto%PhysCoor(nfield)%x(i)
    !!!!yf=FF%Punto%PhysCoor(nfield)%y(j)
@@ -3348,8 +3348,8 @@ contains
                   if (FF%MPIRoot == layoutnumber)  then
 #endif
                   if (pasadas==1) write(FF%unitfarfield,fmt) freq,theta,phi,&
-                  abs(Etheta(2)),ATAN2( AIMAG( Etheta(2)) , REAL( Etheta(2) ) ), & !!! PASADAS=2=GEOMETRICA,, PASADAS=1=ARITMETICA
-                  abs(Ephi(2)) , ATAN2( AIMAG( Ephi(2)  ) , REAL( Ephi(2)   ) ), RCS(1),RCS(2)
+                  abs(Etheta(2)),ATAN2( AIMAG( Etheta(2)) , real( Etheta(2) ) ), & !!! PASADAS=2=GEOMETRICA,, PASADAS=1=ARITMETICA
+                  abs(Ephi(2)) , ATAN2( AIMAG( Ephi(2)  ) , real( Ephi(2)   ) ), RCS(1),RCS(2)
 
 #ifdef CompileWithMPI
                endif
@@ -3510,8 +3510,8 @@ contains
       integer(4) :: pasadas
       Z=(0.0_RKIND,0.0_RKIND)
       if (pasadas ==2 ) then !geometrica
-         phi1=ATAN2(AIMAG(Z1),REAL(Z1))
-         phi2=ATAN2(AIMAG(Z2),REAL(Z2))
+         phi1=ATAN2(AIMAG(Z1),real(Z1))
+         phi2=ATAN2(AIMAG(Z2),real(Z2))
 
 
          !TRAMPA CHINA PARA EVITAR LOS BRANCH CUT EN 0 Y PI

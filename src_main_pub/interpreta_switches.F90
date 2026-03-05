@@ -109,7 +109,7 @@ module interpreta_switches_m
          precision, &
          statuse
 
-      REAL(KIND=RKIND) :: &
+      real(KIND=RKIND) :: &
          maxwireradius, &
          mindistwires, &
          attfactorc, &
@@ -122,7 +122,7 @@ module interpreta_switches_m
          kappamaxpar, &
          alphaOrden
 
-      REAL(KIND=8) :: &
+      real(KIND=8) :: &
          time_begin, &
          time_end
       real(kind=RKIND_wires) :: &
@@ -207,7 +207,7 @@ CONTAINS
 
       IF (n > 0) THEN
          i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
-         DO while (i <= n)
+         do while (i <= n)
             call getcommandargument(l%chaininput, i, l%chain, l%length, statuse, binaryPath)
             IF (statuse /= 0) THEN
                call stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
@@ -260,7 +260,7 @@ CONTAINS
                l%time_begin = l%time_out2%segundos
                WRITE (dubuf, *) 'Paused for (secs) ', pausetime
                CALL print11(l%layoutnumber, dubuf)
-               DO while (l%pausar)
+               do while (l%pausar)
 #ifdef CompileWithMPI
                   call MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
@@ -269,7 +269,7 @@ CONTAINS
                   IF (l%time_end - l%time_begin > pausetime) THEN
                      l%pausar = .false.
                   END IF
-               END DO
+               end do
 #ifdef CompileWithMPI
                CALL MPI_Barrier(SUBCOMM_MPI, l%ierr)
                l%l_aux = l%pausar
@@ -930,7 +930,7 @@ CONTAINS
                CALL stoponerror(l%layoutnumber, l%size, 'Wrong switch '//trim(adjustl(l%chain)), .true.); statuse = -1; !goto 668
             END SELECT
             i = i + 1
-         END DO
+         end do
 
       END IF
       !some checkings
@@ -1193,11 +1193,11 @@ CONTAINS
             OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             donde = 0
-            DO while (donde == 0)
+            do while (donde == 0)
                !the first one is a dummy read
                READ (11, '(a)') l%chdummy
                donde = index(l%chdummy, 'mpirun -n')
-            END DO
+            end do
             CLOSE (11)
             l%file11isopen = .false.
             l%opcionesoriginales = l%chdummy
@@ -1214,11 +1214,11 @@ CONTAINS
             OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             donde = 0
-            DO while (donde == 0)
+            do while (donde == 0)
                !the first one is a dummy read
                READ (11, '(a)') l%chdummy
                donde = index(l%chdummy, '!SLICES')
-            END DO
+            end do
             l%slicesoriginales = trim(adjustl(l%chdummy))
             CLOSE (11)
             l%file11isopen = .false.
@@ -1718,7 +1718,7 @@ CONTAINS
       IF (n > 0) THEN
          num_nfdes = 0
          i = 2
-         DO while (i <= n)
+         do while (i <= n)
             CALL getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
             IF (statuse /= 0) THEN
                CALL stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
@@ -1758,11 +1758,11 @@ CONTAINS
                num_nfdes = num_nfdes + 1
             end select
             i = i + 1
-         END DO
+         end do
          if (num_nfdes > 1) then
             temp_numnfdes = 0
             i = 2 ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
-            DO while (i <= n)
+            do while (i <= n)
                CALL getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
                IF (statuse /= 0) THEN
                   CALL stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
@@ -1837,7 +1837,7 @@ CONTAINS
                   end if
                end select
                i = i + 1
-            END DO
+            end do
          end if
       end if
 #ifdef CompileWithMPI
@@ -1851,7 +1851,7 @@ CONTAINS
       temp_numnfdes = 0
       IF (n > 0) THEN
          i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
-         DO while (i <= n)
+         do while (i <= n)
             CALL getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
             IF (statuse /= 0) THEN
                CALL stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
@@ -1902,7 +1902,7 @@ CONTAINS
             !!!          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain)) // ' ' // trim (adjustl(f))
             END SELECT
             i = i + 1
-         END DO
+         end do
       end if
       !
       ! If no input is present we stop
@@ -1945,7 +1945,7 @@ CONTAINS
       l%prioritizeCOMPOoverPEC = .false.  !pec has default more priority than compo (para siva hay que cambiarlo)
       l%prioritizeTHINWIRE = .false. !solo para visualizacion y experimentacion 231024
       l%prioritizeISOTROPICBODYoverall = .FALSE. !PARA EL SIVA SE CAMBIA POR LINEA DE COMANDO
-      l%mpidir = 3 !DEFAULT DO NOT ROTATE GEOMETRY !JUST TO TAKE PROFIT OF MPI
+      l%mpidir = 3 !DEFAULT do NOT ROTATE GEOMETRY !JUST TO TAKE PROFIT OF MPI
       l%maxwireradius = -1.0_RKIND
       l%boundwireradius = .false.
       l%wirecrank = .FALSE.

@@ -21,8 +21,8 @@ module PMLbodies
    !structures needed by the PMLbody
 
    type  ::  BerPML__t
-      REAL (KIND=RKIND), pointer ::  field,Plus,Minu
-      REAL (KIND=RKIND)          ::  gx2,P_be,P_ce,Psi,transversalDelta,del,posi
+      real (KIND=RKIND), pointer ::  field,Plus,Minu
+      real (KIND=RKIND)          ::  gx2,P_be,P_ce,Psi,transversalDelta,del,posi
       integer (kind=4)  ::  minTotal,maxTotal
    END type BerPML__t
 
@@ -36,10 +36,10 @@ module PMLbodies
    type (berpml_t), save, target   ::  berpmlE,berpmlH
 
    integer (kind=4), parameter :: PMLorden = 2
-   REAL (KIND=RKIND), parameter :: CoeffReflPML=1e-4
+   real (KIND=RKIND), parameter :: CoeffReflPML=1e-4
 
 !!!variables globales del modulo
-   REAL (KIND=RKIND), save           ::  eps0,mu0
+   real (KIND=RKIND), save           ::  eps0,mu0
 !!!
    public AdvancePMLbodyE,AdvancePMLbodyH,InitPMLbodies,DestroyPMLbodies,StorefieldsPMLbodies,calc_pmlbodypar
 
@@ -49,25 +49,25 @@ contains
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitPMLbodies(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
-      REAL (KIND=RKIND)           ::  eps00,mu00
+      real (KIND=RKIND)           ::  eps00,mu00
       type (SGGFDTDINFO), intent(IN)     ::  sgg
       type(media_matrices_t), intent(in) :: media
-      REAL (KIND=RKIND)     , pointer, dimension ( : )   ::   g2,gm2
-      REAL (KIND=RKIND)   , intent(in) , target     :: &
+      real (KIND=RKIND)     , pointer, dimension ( : )   ::   g2,gm2
+      real (KIND=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
       Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
       Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
       Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
       Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      REAL (KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
+      real (KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
                                                          &  Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
                                                          &  Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
                                                             Idxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
                                                             Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
                                                             Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
-      REAL (KIND=RKIND)  :: sigma
+      real (KIND=RKIND)  :: sigma
       logical, INTENT(OUT)  ::  ThereArePMLbodies
       type(sim_control_t), intent(in) :: control
       integer (kind=4)  ::  jmed,j1,conta,k1,i1,orient
@@ -487,7 +487,7 @@ contains
   subroutine calc_pmlbodypar(sgg,eps00,mu00)
 
         type (SGGFDTDINFO), intent(IN)     ::  sgg  
-        REAL (KIND=RKIND)           ::  eps00,mu00
+        real (KIND=RKIND)           ::  eps00,mu00
         integer (kind=4)  ::  conta
         type (BerPML__t), pointer :: PML_
         integer (kind=4) :: nn

@@ -18,7 +18,7 @@ CONTAINS
    
    
       type (SGGFDTDINFO), intent(IN)   :: sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      integer (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       integer (KIND=4) :: mpidir
       logical :: vtkindex,yacreado,dontwritevtk
       !------------------------>
@@ -30,30 +30,30 @@ CONTAINS
       !
       !
 
-      INTEGER (KIND=4), INTENT (IN) :: layoutnumber, size
-      INTEGER (KIND=4) ::  ierr,  posicionMPI,conta,ecurrentType,eei,eej,eek,esggMtag
-      INTEGER (KIND=4) , allocatable , dimension(:) ::   sizeofvalores,NewsizeOfValores
+      integer (KIND=4), INTENT (IN) :: layoutnumber, size
+      integer (KIND=4) ::  ierr,  posicionMPI,conta,ecurrentType,eei,eej,eek,esggMtag
+      integer (KIND=4) , allocatable , dimension(:) ::   sizeofvalores,NewsizeOfValores
 
       real (kind=RKIND) :: time,rdum
       !
       !
       type (output_t), POINTER, DIMENSION (:) :: output
-      INTEGER (KIND=4) :: iroot
+      integer (KIND=4) :: iroot
       !
 #ifdef CompileWithMPI
       type (Serialized_t)  ::  NewSerialized !para sondas Volumic
 #endif
       type (Serialized_t)  ::  Serialized !para almecenar valores serializados en volumenes en vez de Bloque
-      INTEGER (KIND=4) , dimension (:) , allocatable :: PosiMPI,NewPosiMPI
-      INTEGER (KIND=4) :: indi,numberOfSerialized
+      integer (KIND=4) , dimension (:) , allocatable :: PosiMPI,NewPosiMPI
+      integer (KIND=4) :: indi,numberOfSerialized
       real (  KINd=RKIND), ALLOCATABLE, DIMENSION (:) :: att  
       real (  KINd=RKIND) :: att_rkind
       real (  KINd=RKIND_tiempo) :: att_rkind_tiempo
       !
-      INTEGER (KIND=4) :: ii, i1, finalstep
+      integer (KIND=4) :: ii, i1, finalstep
       LOGICAL :: lexis,freqdomain,somethingdone
       character (LEN=BUFSIZE)     ::  dubuf
-      INTEGER (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs
+      integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs
       CHARACTER (LEN=BUFSIZE) :: pathroot
       character (LEN=BUFSIZE)  ::  chari,charj,chark,chari2,charj2,chark2
       character (LEN=BUFSIZE)  ::  extpoint
@@ -62,8 +62,8 @@ CONTAINS
       CHARACTER (LEN=BUFSIZE) :: tag
       !
       CHARACTER (LEN=BUFSIZE) :: whoami, whoamishort
-      INTEGER (kind=4)::  numNodes,numEdges,numQuads , iroot2,iroot1,i_sub_time, total_sub_times
-      INTEGER (kind=4), parameter :: time_phases_param=35
+      integer (kind=4)::  numNodes,numEdges,numQuads , iroot2,iroot1,i_sub_time, total_sub_times
+      integer (kind=4), parameter :: time_phases_param=35
       real (kind= RKIND), allocatable, dimension(:,:) :: Nodes
       integer (kind=4), allocatable, dimension(:,:) :: Elems
       integer (kind=4) :: coldummy
@@ -78,7 +78,7 @@ CONTAINS
       output => GetOutput ()!get the output private info from observation
       !
       somethingdone=.false.
-      barridoprobes: DO ii = 1, sgg%NumberRequest
+      barridoprobes: do ii = 1, sgg%NumberRequest
          IF ((sgg%observation(ii)%Volumic) .and. (sgg%observation(ii)%nP == 1)) then
          if (any(sgg%observation(ii)%P(1)%What == volumicCurrentFlags)) then
             if (sgg%Observation(ii)%done) then 
@@ -293,7 +293,7 @@ CONTAINS
 
                      !LEE CADA TIME STEPO TENIENDO EN CUENTA POSICION MPI
 
-                     bucleindi: DO indi = 1, finalstep
+                     bucleindi: do indi = 1, finalstep
                         if (SGG%Observation(ii)%TimeDomain) then
                            Serialized%Valor = 0.
                            Serialized%Valor_x = 0.
@@ -743,7 +743,7 @@ CONTAINS
                         ENDIF
 
                         !
-                     END DO bucleindi
+                     end do bucleindi
                      CLOSE (output(ii)%item(1)%UNIT)
                      !
                      if (SGG%Observation(ii)%TimeDomain) then 
@@ -866,7 +866,7 @@ CONTAINS
             ENDIF
          ENDIF
 
-      END DO  barridoprobes !barrido puntos de observacion
+      end do  barridoprobes !barrido puntos de observacion
 
 
 
@@ -880,14 +880,14 @@ CONTAINS
    SUBROUTINE createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
       type (SGGFDTDINFO), intent(IN)    :: sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      integer (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
    
       integer (KIND=4) :: mpidir
       logical :: vtkindex,somethingdone
 
-      INTEGER (KIND=4), INTENT (IN) :: layoutnumber, size
+      integer (KIND=4), INTENT (IN) :: layoutnumber, size
       type (output_t), POINTER, DIMENSION (:) :: output
-      INTEGER (KIND=4) :: ii
+      integer (KIND=4) :: ii
       logical :: lexis,dontwritevtk
       character(len=BUFSIZE) :: buff
       character (LEN=BUFSIZE) :: path
@@ -897,7 +897,7 @@ CONTAINS
       output => GetOutput ()!get the output private info from observation
       !
 
-      DO ii = 1, sgg%NumberRequest
+      do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
          IF (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
@@ -918,9 +918,9 @@ CONTAINS
             ENDIF
          ENDIF
 
-      END DO  !barrido puntos de observacion
+      end do  !barrido puntos de observacion
       call createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
-      DO ii = 1, sgg%NumberRequest
+      do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
          IF (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
@@ -939,7 +939,7 @@ CONTAINS
             ENDIF
          ENDIF
 
-      END DO  !barrido puntos de observacion
+      end do  !barrido puntos de observacion
 
       RETURN
    END SUBROUTINE createVTKOnTheFly
@@ -951,18 +951,18 @@ CONTAINS
                               i_sub_time,total_sub_times,FreqDomain,what,sggMtag,que_saco)
    
       type (SGGFDTDINFO), intent(IN)   ::  sgg
-      INTEGER (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      integer (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       CHARACTER (LEN=BUFSIZE), intent(in) :: fichero
 
       type (Serialized_t), intent(in)::  Serialized            
-      INTEGER (kind=4), intent(in):: numberOfSerialized,numNodes,numEdges,NumQuads,iroot2,i_sub_time,total_sub_times    
+      integer (kind=4), intent(in):: numberOfSerialized,numNodes,numEdges,NumQuads,iroot2,i_sub_time,total_sub_times    
       real (kind=RKIND), intent(in) :: time
       real (kind=RKIND) :: phase_x,phase_y,phase_z,raa,rbb,rcc 
       real (kind=RKIND) :: phase_Ex,phase_Ey,phase_Ez
       real (kind=RKIND) :: phase_Hx,phase_Hy,phase_Hz
       LOGICAL, intent(in) :: FREQDOMAIN
       integer (kind=4), intent(in):: what
-      INTEGER (kind=4) :: conta,myunit
+      integer (kind=4) :: conta,myunit
       CHARACTER (LEN=BUFSIZE) :: buff,buff2 ! File name
       real (kind= RKIND), allocatable, dimension(:,:) :: Nodes
       integer (kind=4), allocatable, dimension(:,:) ::  Elems
@@ -1072,9 +1072,9 @@ CONTAINS
          do conta=1,numberOfSerialized             
             select case(que_saco)          
             case('cu')                                      
-               phase_x=atan2(AIMAG(Serialized%valorComplex_x(1,conta)),REAL(Serialized%valorComplex_x(1,conta)))
-               phase_y=atan2(AIMAG(Serialized%valorComplex_y(1,conta)),REAL(Serialized%valorComplex_y(1,conta)))
-               phase_z=atan2(AIMAG(Serialized%valorComplex_z(1,conta)),REAL(Serialized%valorComplex_z(1,conta)))
+               phase_x=atan2(AIMAG(Serialized%valorComplex_x(1,conta)),real(Serialized%valorComplex_x(1,conta)))
+               phase_y=atan2(AIMAG(Serialized%valorComplex_y(1,conta)),real(Serialized%valorComplex_y(1,conta)))
+               phase_z=atan2(AIMAG(Serialized%valorComplex_z(1,conta)),real(Serialized%valorComplex_z(1,conta)))
                raa=abs(Serialized%valorComplex_x(1,conta))*cos(real(i_sub_time)*2.*pi/real(total_sub_times)+phase_x) 
                rbb=abs(Serialized%valorComplex_y(1,conta))*cos(real(i_sub_time)*2.*pi/real(total_sub_times)+phase_y)
                rcc=abs(Serialized%valorComplex_z(1,conta))*cos(real(i_sub_time)*2.*pi/real(total_sub_times)+phase_z)          
@@ -1083,9 +1083,9 @@ CONTAINS
                if (rcc>1.e37)  rcc=1.e37; if (rcc<-1.e37) rcc=-1.e37; if (abs(rcc)<1e-37 ) rcc=0.
                write (myunit,'(3e21.12e3)')  raa,rbb,rcc      
                case('ef')                                  
-               phase_Ex=atan2(AIMAG(Serialized%valorComplex_Ex(1,conta)),REAL(Serialized%valorComplex_Ex(1,conta)))
-               phase_Ey=atan2(AIMAG(Serialized%valorComplex_Ey(1,conta)),REAL(Serialized%valorComplex_Ey(1,conta)))
-               phase_Ez=atan2(AIMAG(Serialized%valorComplex_Ez(1,conta)),REAL(Serialized%valorComplex_Ez(1,conta)))
+               phase_Ex=atan2(AIMAG(Serialized%valorComplex_Ex(1,conta)),real(Serialized%valorComplex_Ex(1,conta)))
+               phase_Ey=atan2(AIMAG(Serialized%valorComplex_Ey(1,conta)),real(Serialized%valorComplex_Ey(1,conta)))
+               phase_Ez=atan2(AIMAG(Serialized%valorComplex_Ez(1,conta)),real(Serialized%valorComplex_Ez(1,conta)))
                raa=abs(Serialized%valorComplex_Ex(1,conta))*cos(real(i_sub_time)*2.*pi/real(total_sub_times)+phase_Ex) 
                rbb=abs(Serialized%valorComplex_Ey(1,conta))*cos(real(i_sub_time)*2.*pi/real(total_sub_times)+phase_Ey)
                rcc=abs(Serialized%valorComplex_Ez(1,conta))*cos(real(i_sub_time)*2.*pi/real(total_sub_times)+phase_Ez)          
@@ -1094,9 +1094,9 @@ CONTAINS
                if (rcc>1.e37)  rcc=1.e37; if (rcc<-1.e37) rcc=-1.e37; if (abs(rcc)<1e-37 ) rcc=0.
                write (myunit,'(3e21.12e3)')  raa,rbb,rcc      
                case('hf')                                  
-               phase_Ex=atan2(AIMAG(Serialized%valorComplex_Ex(1,conta)),REAL(Serialized%valorComplex_Ex(1,conta)))
-               phase_Ey=atan2(AIMAG(Serialized%valorComplex_Ey(1,conta)),REAL(Serialized%valorComplex_Ey(1,conta)))
-               phase_Ez=atan2(AIMAG(Serialized%valorComplex_Ez(1,conta)),REAL(Serialized%valorComplex_Ez(1,conta)))
+               phase_Ex=atan2(AIMAG(Serialized%valorComplex_Ex(1,conta)),real(Serialized%valorComplex_Ex(1,conta)))
+               phase_Ey=atan2(AIMAG(Serialized%valorComplex_Ey(1,conta)),real(Serialized%valorComplex_Ey(1,conta)))
+               phase_Ez=atan2(AIMAG(Serialized%valorComplex_Ez(1,conta)),real(Serialized%valorComplex_Ez(1,conta)))
                raa=abs(Serialized%valorComplex_Ex(1,conta))*cos(real(i_sub_time)*2.*pi/real(total_sub_times)+phase_Ex) 
                rbb=abs(Serialized%valorComplex_Ey(1,conta))*cos(real(i_sub_time)*2.*pi/real(total_sub_times)+phase_Ey)
                rcc=abs(Serialized%valorComplex_Ez(1,conta))*cos(real(i_sub_time)*2.*pi/real(total_sub_times)+phase_Ez)          
@@ -1158,17 +1158,17 @@ CONTAINS
 
    SUBROUTINE creaUnstructData(Serialized,  numberOfSerialized,sgg,Nodes,Numnodes,Elems,NumEdges,NumQuads,vtkindex)
 
-      INTEGER (kind=4), intent(out):: numNodes,numQuads,numEdges
+      integer (kind=4), intent(out):: numNodes,numQuads,numEdges
       real (kind= RKIND), allocatable, dimension(:,:), intent(out) :: Nodes
       integer (kind=4), allocatable, dimension(:,:), intent(out) ::  Elems
       
       logical, intent(IN) :: vtkindex
       type (SGGFDTDINFO), intent(IN)    :: sgg
-      INTEGER (kind=4), intent(in):: numberOfSerialized
+      integer (kind=4), intent(in):: numberOfSerialized
       type (Serialized_t), intent(in)  ::  Serialized
       
       CHARACTER (LEN=BUFSIZE) :: buff ! File name
-      INTEGER (kind=4):: conta
+      integer (kind=4):: conta
 
 
       numNodes=-1

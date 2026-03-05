@@ -14,9 +14,9 @@ module CALC_CONSTANTS
    subroutine calc_g1g2gm1gm2(sgg,g,eps0,mu0)
         type (SGGFDTDINFO), intent(IN)   ::  sgg
         type(constants_t), intent(inout) :: g
-        REAL (KIND=RKIND) , intent(inout) :: Eps0, Mu0
+        real (KIND=RKIND) , intent(inout) :: Eps0, Mu0
         integer :: r,i
-        REAL (KIND=RKIND) :: Sigmam , Epsilon , Mu , Sigma,width, epr
+        real (KIND=RKIND) :: Sigmam , Epsilon , Mu , Sigma,width, epr
         character(len=BUFSIZE) :: buff
         
         do r=0,sgg%NumMedia

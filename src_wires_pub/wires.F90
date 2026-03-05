@@ -26,10 +26,10 @@ module HollandWires
 
    logical                                         , save :: thereAreVsources,thereAreIsources,thereAreMurConditions
    type(Thinwires_t)     , target                  ,save  ::  HWires
-   REAL (KIND=RKIND_wires)     , pointer, dimension ( : ),save  ::  InvEps  ,InvMu, OldInvEps  ,OldInvMu
+   real (KIND=RKIND_wires)     , pointer, dimension ( : ),save  ::  InvEps  ,InvMu, OldInvEps  ,OldInvMu
    
 !!!variables globales del modulo
-   REAL (KIND=RKIND_wires), save           ::  eps0,mu0
+   real (KIND=RKIND_wires), save           ::  eps0,mu0
 !!!
    private
 
@@ -44,13 +44,13 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitWires(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,ThereAreWires,&
    Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, g2,SINPML_fullsize,fullsize, dtcritico, eps00,mu00, control)     
-      REAL (KIND=RKIND), intent(in)           ::  eps00,mu00
-      REAL (KIND=RKIND)           ::  eps000,mu000  !son dummies
+      real (KIND=RKIND), intent(in)           ::  eps00,mu00
+      real (KIND=RKIND)           ::  eps000,mu000  !son dummies
       type (limit_t), dimension(1:6), intent(in)  :: SINPML_fullsize,fullsize
       type (SGGFDTDINFO), intent(INOUT) , target    ::  sgg
-      REAL (KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
-      REAL (KIND=RKIND_tiempo), intent(out) :: dtcritico
-      REAL (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+      real (KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
+      real (KIND=RKIND_tiempo), intent(out) :: dtcritico
+      real (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
            Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
            Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
            Idze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
@@ -58,7 +58,7 @@ contains
            Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
            Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
                                                            
-        REAL (KIND=RKIND)   , intent(in), target      :: &
+        real (KIND=RKIND)   , intent(in), target      :: &
             Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
             Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
             Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
@@ -92,7 +92,7 @@ contains
       integer (kind=4)  ::  conta,i1,j1,k1,i2,j2,k2,iwi,iwj,iwjjj,jmed,nn,nnn,i1libre,j1libre,k1libre, &
       whatfield,whatfield2,origIndex,OrigIndex2,LeftEnd_index,RightEnd_index,nm, &
       i,j,k,indexnode,kmenos1,kmasoffk,kmas1,tipofield,i22,j22,k22,i11,j11,k11,primernorabo,Jprimernorabo=-1
-      REAL (KIND=RKIND_wires)   ::  r0, desp, deltadummy1 ,deltadummy2, deltadummy, oldr0,a,b, &
+      real (KIND=RKIND_wires)   ::  r0, desp, deltadummy1 ,deltadummy2, deltadummy, oldr0,a,b, &
       despT1,despT2,DenominatorFractionMinusDummy,  &
       DenominatorFractionPlusDummy,givenautoin,resist,givenautoin_devia,resist_devia, &
       mindt,maxA,dt0,sigt,totalLind,capaci,autoin,deltax,sigtPlus,sigtMinu
@@ -114,7 +114,7 @@ contains
       integer (kind=4)  ::  int1, int2,ierr,mediox,medioy,medioz,ZI,ZE,offset,offi,offj,offk,NUMESEG,dummy1,dummy2,dummy3,multirabos,dummyfin,medio1,medio2,medio3,medio1m,medio2m,medio3m
       character(len=BUFSIZE) :: buff
 
-      REAL (KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
+      real (KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
       character (LEN=BUFSIZE)  ::  whoami
       character (len=3), dimension(1:3) :: DIR
       
@@ -2404,7 +2404,7 @@ contains
       do i1=1,HWires%NumCurrentSegments
          segmento=>HWires%CurrentSegment(i1)
          if (segmento%TipoWire%VsourceExists) then
-            DO k1=1,segmento%Tipowire%numvoltagesources
+            do k1=1,segmento%Tipowire%numvoltagesources
                if ((segmento%i == segmento%Tipowire%Vsource(k1)%I).and. &
                (segmento%j == segmento%Tipowire%Vsource(k1)%J).and. &
                (segmento%k == segmento%Tipowire%Vsource(k1)%K)) then
@@ -3681,7 +3681,7 @@ contains
       do i1=1,HWires%NumChargeNodes
          If (associated(HWires%ChargeNode(i1)%CurrentPlus_1)) then
             dummy=>HWires%ChargeNode(i1)%CurrentPlus_1
-            DO k1=1,dummy%Tipowire%numcurrentsources
+            do k1=1,dummy%Tipowire%numcurrentsources
                if (dummy%TipoWire%IsourceExists) then
                   if ((dummy%i == dummy%Tipowire%Isource(k1)%I).and. &
                   (dummy%j == dummy%Tipowire%Isource(k1)%J).and. &
@@ -4281,15 +4281,15 @@ subroutine resume_casuistics
 
       logical :: simu_devia
       type (SGGFDTDINFO), intent(IN)      ::  sgg
-      REAL (KIND=RKIND) , pointer, dimension (:),intent(in)      :: G2
+      real (KIND=RKIND) , pointer, dimension (:),intent(in)      :: G2
       character(len=*), INTENT(in) :: wiresflavor
       logical, intent(in) :: fieldtotl
-      REAL (KIND=RKIND),intent(in)            ::  eps00,mu00
-      REAL (KIND=RKIND_wires)           ::  dl
+      real (KIND=RKIND),intent(in)            ::  eps00,mu00
+      real (KIND=RKIND_wires)           ::  dl
       real      (KIND=RKIND_wires), pointer, dimension(:,:) ::  Den
       integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2,i1,NumParallel,imed
 
-      REAL (KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
+      real (KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
 
       type (CurrentSegments), pointer  ::  dummy
       type (ChargeNodes), pointer  ::  Nodo
@@ -5130,7 +5130,7 @@ subroutine resume_casuistics
 
    subroutine AdvanceWiresE(sgg,timeinstant, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)
                     
-      REAL (KIND=RKIND), intent(IN)           ::  eps0,mu0
+      real (KIND=RKIND), intent(IN)           ::  eps0,mu0
       integer, intent(IN) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
       type (SGGFDTDINFO), intent(IN)      ::  sgg
@@ -5138,8 +5138,8 @@ subroutine resume_casuistics
       integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer (kind=4), intent(IN)  ::  timeinstant
-      REAL (KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
-      REAL (KIND=RKIND_wires)   ::  Vincid,Iincid
+      real (KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
+      real (KIND=RKIND_wires)   ::  Vincid,Iincid
       type (CurrentSegments), pointer  ::  Segmento, Segmento2
       type (ChargeNodes), pointer  ::  Nodo
       type (TMultiline), pointer                      ::  Multiline
@@ -5158,7 +5158,7 @@ subroutine resume_casuistics
 
 !!!!!!!!!!!!!!!051223 no pongo a cero los already_YEEadvanced_byconformal_changedtoPECfield !No son cero, sino lo que se updatee mas lo que se inyecte
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
+!!!!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
 !!!#endif
 !!!      do n=1,HWires%NumChargeNodes
 !!!         Nodo => HWires%ChargeNode(n)
@@ -5188,7 +5188,7 @@ subroutine resume_casuistics
 !!!#endif
 !
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED)  private(Iplus,IMinus,Nodo)
+!$OMP PARALLEL do DEFAULT(SHARED)  private(Iplus,IMinus,Nodo)
 #endif
       do n=1,HWires%NumChargeNodes
          Nodo => HWires%ChargeNode(n)
@@ -5294,7 +5294,7 @@ subroutine resume_casuistics
       !Absorbing Mur boundary conditions if necessary in the charges
       if (thereAreMurConditions) then
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
+!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
 #endif
          do n=1,HWires%NumChargeNodes
             Nodo => HWires%ChargeNode(n)
@@ -5351,7 +5351,7 @@ subroutine resume_casuistics
       if (trim(adjustl(wiresflavor))=='transition') then
          !recuerdo intensidades
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED)   private(Segmento)
+!$OMP PARALLEL do DEFAULT(SHARED)   private(Segmento)
 #endif
          do is1 = 1,HWires%NumCurrentSegments
             Segmento => HWires%CurrentSegment(is1)
@@ -5362,7 +5362,7 @@ subroutine resume_casuistics
 #endif
 
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED)   private(Multiline,Segmento,Segmento2,Qplus,QMinus)
+!$OMP PARALLEL do DEFAULT(SHARED)   private(Multiline,Segmento,Segmento2,Qplus,QMinus)
 #endif
          do iw1 = 1,HWires%NumMultilines
             Multiline => HWires%Multilines(iw1)
@@ -5398,7 +5398,7 @@ subroutine resume_casuistics
          !!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED)   private(Segmento,Qplus,QMinus,jmed)
+!$OMP PARALLEL do DEFAULT(SHARED)   private(Segmento,Qplus,QMinus,jmed)
 #endif
          do n=1,HWires%NumCurrentSegments
             Segmento => HWires%CurrentSegment(n)
@@ -5499,7 +5499,7 @@ subroutine resume_casuistics
 !!!machaca el campo que haya metido el wires
 
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
+!!!!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
 !!!#endif
 !!!      do n=1,HWires%NumChargeNodes
 !!!         Nodo => HWires%ChargeNode(n)
@@ -5540,7 +5540,7 @@ subroutine resume_casuistics
 
    subroutine AdvanceWiresH(sgg,timeinstant, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)
                     
-      REAL (KIND=RKIND), intent(IN)           ::  eps0,mu0
+      real (KIND=RKIND), intent(IN)           ::  eps0,mu0
       integer, intent(IN) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
       type (SGGFDTDINFO), intent(IN)      ::  sgg
@@ -5548,8 +5548,8 @@ subroutine resume_casuistics
       integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer (kind=4), intent(IN)  ::  timeinstant
-      REAL (KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
-      REAL (KIND=RKIND_wires)   ::  Vincid,Iincid
+      real (KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
+      real (KIND=RKIND_wires)   ::  Vincid,Iincid
       type (CurrentSegments), pointer  ::  Segmento, Segmento2
       type (ChargeNodes), pointer  ::  Nodo
       type (TMultiline), pointer                      ::  Multiline
@@ -5594,13 +5594,13 @@ subroutine resume_casuistics
       integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer (kind=4), intent(IN)  ::  timeinstant
-      REAL (KIND=RKIND_wires)   ::  Iplus,IMinus,IplusPast,IMinusPast,source,timei
-      REAL (KIND=RKIND_wires)   ::  Vincid,Iincid
+      real (KIND=RKIND_wires)   ::  Iplus,IMinus,IplusPast,IMinusPast,source,timei
+      real (KIND=RKIND_wires)   ::  Vincid,Iincid
       type (CurrentSegments), pointer  ::  Segmento , Segmento2
       type (ChargeNodes), pointer  ::  Nodo
       type (TMultiline), pointer                      ::  Multiline
       character(len=*), INTENT(in) :: wiresflavor
-      REAL (KIND=RKIND_wires) , dimension(1:HWires%NumCurrentSegments)  ::  a,b,c,d,x
+      real (KIND=RKIND_wires) , dimension(1:HWires%NumCurrentSegments)  ::  a,b,c,d,x
       
       timei = sgg%tiempo(timeinstant) 
       !!!
@@ -5611,7 +5611,7 @@ subroutine resume_casuistics
       
 !!!mal a 0624 !comentado en todos los sabores de wires
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
+!!!!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
 !!!#endif
 !!!      do n=1,HWires%NumChargeNodes
 !!!         Nodo => HWires%ChargeNode(n)
@@ -5687,7 +5687,7 @@ subroutine resume_casuistics
       !  n - number of equations
 
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED)   private(Segmento,jmed)
+!$OMP PARALLEL do DEFAULT(SHARED)   private(Segmento,jmed)
 #endif
       do n=1,HWires%NumCurrentSegments
          Segmento => HWires%CurrentSegment(n)
@@ -5706,7 +5706,7 @@ subroutine resume_casuistics
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 #ifdef CompileWithOpenMP
-!$OMP PARALLEL DO DEFAULT(SHARED)  private(Iplus,IMinus,Nodo)
+!$OMP PARALLEL do DEFAULT(SHARED)  private(Iplus,IMinus,Nodo)
 #endif
       do n=1,HWires%NumChargeNodes
          Nodo => HWires%ChargeNode(n)
@@ -5738,7 +5738,7 @@ subroutine resume_casuistics
       
 !!!mal a 1024 !comentado en todos los sabores de wires
 !!!#ifdef CompileWithOpenMP
-!!!!$OMP PARALLEL DO DEFAULT(SHARED)  private(Nodo)
+!!!!$OMP PARALLEL do DEFAULT(SHARED)  private(Nodo)
 !!!#endif
 !!!      do n=1,HWires%NumChargeNodes
 !!!         Nodo => HWires%ChargeNode(n)
@@ -5780,11 +5780,11 @@ subroutine resume_casuistics
    !!! Function to interpolate the evolution files at the desired time
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   REAL (KIND=RKIND_wires)  function evolucion(t,evol,deltaevol,numus)
+   real (KIND=RKIND_wires)  function evolucion(t,evol,deltaevol,numus)
       integer (kind=4)  ::  numus
       integer (kind=8)  ::  nprev
-      REAL (KIND=RKIND_wires) , dimension(0 : numus)  ::  evol
-      REAL (KIND=RKIND_wires)   ::  deltaevol, t
+      real (KIND=RKIND_wires) , dimension(0 : numus)  ::  evol
+      real (KIND=RKIND_wires)   ::  deltaevol, t
       !
       nprev=int((t)/deltaevol)
       if ((nprev+1 > numus).OR.(NPREV+1 <= 0)) then !SI NPREV<0 ES PORQUE SE HA DESBORADO EL ENTERO !BUG MIGEL 130614
@@ -6971,7 +6971,7 @@ subroutine resume_casuistics
       subroutine wiresconstantes(fieldtotl,dummy,G2,sgg)
       
           type (SGGFDTDINFO), intent(IN) , target    ::  sgg
-          REAL (KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
+          real (KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
           
           logical, intent(in) :: fieldtotl
           type (CurrentSegments), pointer  ::  dummy
