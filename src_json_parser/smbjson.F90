@@ -401,7 +401,7 @@ contains
    contains
       subroutine assignDes(path, dest, numberOfCells)
          character(kind=CK, len=*) :: path
-         real (kind=rkind), dimension(:), pointer :: dest
+         real(kind=rkind), dimension(:), pointer :: dest
          real, dimension(:), allocatable :: vec
          integer (kind=4), intent(in) :: numberOfCells
          logical :: found = .false.
@@ -1207,7 +1207,7 @@ contains
          type(json_value), pointer :: dir
          character (len=*), intent(in) :: label
          logical :: found
-         real (kind=rkind), intent(inout) :: initial, final, step
+         real(kind=rkind), intent(inout) :: initial, final, step
 
          call this%core%get(p, label, dir, found=found)
          if (.not. found) then

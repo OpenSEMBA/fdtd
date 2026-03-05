@@ -7,7 +7,7 @@ module PostProcessing
    use Observa
 
 #ifdef CompileWithHDF
-   USE HDF5
+   use HDF5
 #endif
 
    implicit none
@@ -29,23 +29,23 @@ contains
       type(output_t), pointer, dimension( : )  ::  output
       character (LEN=BUFSIZE) :: cabecera,cabeceraNew,path,path2,path3,path_resampled
       integer (kind=4) :: numComp
-      real (KIND=RKIND), allocatable, dimension(:,:) :: valores
+      real(KIND=RKIND), allocatable, dimension(:,:) :: valores
       complex (kind=CKIND), allocatable, dimension(:,:) :: valoresDF,valoresDF2
-      real (KIND=RKIND_tiempo), allocatable, dimension(:) :: tiempo,samplingtime
+      real(KIND=RKIND_tiempo), allocatable, dimension(:) :: tiempo,samplingtime
 	  integer (kind=4) :: pozi
       logical :: existe,neverprecounted,escribir,escribirBloque,niapapostprocess,forceresampled,somethingdone
       integer (kind=4) :: fqLength,ii,i,i1,j1,field,ns,timesteps,compo,iii,pp,pasadas
-      real (kind=RKIND) :: dummy
-      real (kind=RKIND_tiempo) :: rinstant
+      real(kind=RKIND) :: dummy
+      real(kind=RKIND_tiempo) :: rinstant
       !
-      real (kind=RKIND), allocatable, dimension(:)   :: fqPos,signal
-      real (kind=RKIND)   :: fmin,fmax,fstep,value_interp
+      real(kind=RKIND), allocatable, dimension(:)   :: fqPos,signal
+      real(kind=RKIND)   :: fmin,fmax,fstep,value_interp
       complex (kind=CKIND), allocatable, dimension(:) :: fqValues
       character(len=BUFSIZE) :: buff
       character (LEN=BUFSIZE)     ::  dubuf
       !
       character (LEN=BUFSIZE)  ::  whoami,whoamishort
-      real (kind=RKIND) :: t_pedido
+      real(kind=RKIND) :: t_pedido
       integer (kind=4) columna,jjj
       integer :: my_iostat
      !!!!!
@@ -177,7 +177,7 @@ contains
                            fmin=(min(sgg%observation(ii)%FinalFreq,sgg%observation(ii)%InitialFreq))
                            fmax=(max(sgg%observation(ii)%FinalFreq,sgg%observation(ii)%InitialFreq))
 
-                           IF ((sgg%observation(ii)%FreqStep == 0.0_RKIND).or. &
+                           if ((sgg%observation(ii)%FreqStep == 0.0_RKIND).or. &
                            (sgg%observation(ii)%FreqStep > fmax-fmin)) then
                               fstep = fmax-fmin
                            else
@@ -464,9 +464,9 @@ contains
    !
    !
    function almostequal(a,b) result(almost)
-      real (kind=RKIND) a,b,ratio
+      real(kind=RKIND) a,b,ratio
       logical almost
-      real (kind=RKIND), parameter :: tolerancia=0.01
+      real(kind=RKIND), parameter :: tolerancia=0.01
 
       ratio=a/b
       if (abs(ratio)<1.0_RKIND) ratio=1.0_RKIND / ratio
@@ -483,7 +483,7 @@ contains
       character(LEN=BUFSIZE) :: c,cNew,chninstant
       character(LEN=BUFSIZE), dimension(1:columnas) :: c2
       integer :: i,j,k,longi,ii
-      real (kind=RKIND_tiempo) rinstant
+      real(kind=RKIND_tiempo) rinstant
 
       write(chninstant,fmt) rinstant
 
@@ -536,7 +536,7 @@ contains
       logical :: existe,escribir,escribirBloque,somethingdone,niapapostprocess,forceresampled
       integer (kind=4) :: ii,i,field
       character(len=BUFSIZE) :: buff
-      real (kind=RKIND_tiempo) :: rinstant
+      real(kind=RKIND_tiempo) :: rinstant
 
       Output => GetOutput() !get the output private info from observation
       !

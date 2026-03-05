@@ -16,10 +16,10 @@ module Anisotropic
 
    !structures needed by the Anisotropic
    type, public::  Coeff_t
-      real (kind=rkind) :: eexx,eexy,eexz,eeyx,eeyy,eeyz,eezx,eezy,eezz
-      real (kind=rkind) :: ehxx,ehxy,ehxz,ehyx,ehyy,ehyz,ehzx,ehzy,ehzz
-      real (kind=rkind) :: hexx,hexy,hexz,heyx,heyy,heyz,hezx,hezy,hezz
-      real (kind=rkind) :: hhxx,hhxy,hhxz,hhyx,hhyy,hhyz,hhzx,hhzy,hhzz
+      real(kind=rkind) :: eexx,eexy,eexz,eeyx,eeyy,eeyz,eezx,eezy,eezz
+      real(kind=rkind) :: ehxx,ehxy,ehxz,ehyx,ehyy,ehyz,ehzx,ehzy,ehzz
+      real(kind=rkind) :: hexx,hexy,hexz,heyx,heyy,heyz,hezx,hezy,hezz
+      real(kind=rkind) :: hhxx,hhxy,hhxz,hhyx,hhyy,hhyz,hhzx,hhzy,hhzz
    end type
    type, public::  LocalSharedElement_t
       integer (kind=4) :: times
@@ -34,14 +34,14 @@ module Anisotropic
       integer (kind=4), dimension(:), pointer :: Ex_i,Ey_i,Ez_i,Hx_i,Hy_i,Hz_i
       integer (kind=4), dimension(:), pointer :: Ex_j,Ey_j,Ez_j,Hx_j,Hy_j,Hz_j
       integer (kind=4), dimension(:), pointer :: Ex_k,Ey_k,Ez_k,Hx_k,Hy_k,Hz_k
-      real (kind=rkind), dimension(:), pointer :: Ex_value,Ey_value,Ez_value,Hx_value,Hy_value,Hz_value
+      real(kind=rkind), dimension(:), pointer :: Ex_value,Ey_value,Ez_value,Hx_value,Hy_value,Hz_value
       type (LocalSharedElement_t), dimension(:), pointer :: Ex_Shared,Ey_Shared,Ez_Shared
       type (LocalSharedElement_t), dimension(:), pointer :: Hx_Shared,Hy_Shared,Hz_Shared
       !
       type (coeff_t) :: coeff
       logical :: IsOnlyThinSlot
 !
-      real (KIND=RKIND),  DIMENSION(3,3)  ::  sigma,epr,mur,sigmaM  
+      real(KIND=RKIND),  DIMENSION(3,3)  ::  sigma,epr,mur,sigmaM  
    END type Anisotropicinfo_t
 
 
@@ -52,7 +52,7 @@ module Anisotropic
    type (AnisotropicMed_t),save, target :: AniMed
 
 !!!variables globales del modulo
-   real (KIND=RKIND), save           ::  eps0,mu0,cluz,zvac
+   real(KIND=RKIND), save           ::  eps0,mu0,cluz,zvac
 !!!
    public AdvanceAnisotropicE,AdvanceAnisotropich,InitAnisotropic,DestroyAnisotropic,calc_anisotropicconstants
 
@@ -63,14 +63,14 @@ contains
    ! Subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitAnisotropic(sgg,media,ThereAreAnisotropic,ThereAreThinSlot,eps00,mu00)
-      real (KIND=RKIND)           ::  eps00,mu00
+      real(KIND=RKIND)           ::  eps00,mu00
       type (SGGFDTDINFO), intent(IN) , target      ::  sgg
       type(media_matrices_t), intent(in) :: media
       !!!
 
       type (Anisotropic_t), pointer :: DummyAnisProp,dummyAnisShared
 
-      logical, INTENT(OUT)  ::  ThereAreAnisotropic,ThereAreThinSlot
+      logical, intent(out)  ::  ThereAreAnisotropic,ThereAreThinSlot
       integer (kind=4)  ::  jmed,j1,conta,k1,i1,tempindex
 
       eps0=eps00; mu0=mu00;
@@ -633,14 +633,14 @@ contains
 
       type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
 
-      real (KIND=RKIND)   , intent(inout)      :: &
+      real(KIND=RKIND)   , intent(inout)      :: &
       Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
       Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
       Ez(sggalloc(iEz)%XI : sggalloc(iEz)%XE,sggalloc(iEz)%YI : sggalloc(iEz)%YE,sggalloc(iEz)%ZI : sggalloc(iEz)%ZE),&
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE),&
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE),&
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
-      real (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+      real(KIND=RKIND) , dimension (:)   , intent(in)      ::  &
       Idxe(sggalloc(iHx)%XI : sggalloc(iHx)%XE), &
       Idye(sggalloc(iHy)%YI : sggalloc(iHy)%YE), &
       Idze(sggalloc(iHz)%ZI : sggalloc(iHz)%ZE), &
@@ -783,7 +783,7 @@ contains
          end do
       end do
 
-      RETURN
+      return
 
    end subroutine AdvanceAnisotropicE
 
@@ -797,14 +797,14 @@ contains
       type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
 
 
-      real (KIND=RKIND)   , intent(inout)      :: &
+      real(KIND=RKIND)   , intent(inout)      :: &
       Ex(sggAlloc(iEx)%XI : sggAlloc(iEx)%XE,sggAlloc(iEx)%YI : sggAlloc(iEx)%YE,sggAlloc(iEx)%ZI : sggAlloc(iEx)%ZE),&
       Ey(sggAlloc(iEy)%XI : sggAlloc(iEy)%XE,sggAlloc(iEy)%YI : sggAlloc(iEy)%YE,sggAlloc(iEy)%ZI : sggAlloc(iEy)%ZE),&
       Ez(sggAlloc(iEz)%XI : sggAlloc(iEz)%XE,sggAlloc(iEz)%YI : sggAlloc(iEz)%YE,sggAlloc(iEz)%ZI : sggAlloc(iEz)%ZE),&
       Hx(sggAlloc(iHx)%XI : sggAlloc(iHx)%XE,sggAlloc(iHx)%YI : sggAlloc(iHx)%YE,sggAlloc(iHx)%ZI : sggAlloc(iHx)%ZE),&
       Hy(sggAlloc(iHy)%XI : sggAlloc(iHy)%XE,sggAlloc(iHy)%YI : sggAlloc(iHy)%YE,sggAlloc(iHy)%ZI : sggAlloc(iHy)%ZE),&
       Hz(sggAlloc(iHz)%XI : sggAlloc(iHz)%XE,sggAlloc(iHz)%YI : sggAlloc(iHz)%YE,sggAlloc(iHz)%ZI : sggAlloc(iHz)%ZE)
-      real (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+      real(KIND=RKIND) , dimension (:)   , intent(in)      ::  &
       Idxe(sggALLOC(iHx)%XI : sggALLOC(iHx)%XE), &
       Idye(sggALLOC(iHy)%YI : sggALLOC(iHy)%YE), &
       Idze(sggALLOC(iHz)%ZI : sggALLOC(iHz)%ZE), &
@@ -946,7 +946,7 @@ contains
          end do
       end do
 
-      RETURN
+      return
 
    end subroutine AdvanceAnisotropicH
 
@@ -993,8 +993,8 @@ contains
    !found by the mathematica notebook
    Subroutine calc_anisotropicconstants(sgg,eps00,mu00)
         type (SGGFDTDINFO), intent(IN)   ::  sgg
-        real (KIND=RKIND) , intent(inout) :: Eps00, Mu00
-        real (KIND=RKIND),  DIMENSION(3,3) ::  sigma,epr,mur,sigmaM
+        real(KIND=RKIND) , intent(inout) :: Eps00, Mu00
+        real(KIND=RKIND),  DIMENSION(3,3) ::  sigma,epr,mur,sigmaM
         integer (kind=4) :: jmed
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       zvac=sqrt(mu0/eps0)
@@ -1019,8 +1019,8 @@ contains
    Subroutine CalculateCoeff(epr,mur,sigma,sigmam,dt,coeff)
 
       type (coeff_t), intent(out) :: coeff
-      real (KIND=RKIND),  DIMENSION(3,3), intent(in)  ::  sigma,epr,mur,sigmaM
-      real (KIND=RKIND_tiempo) :: dt
+      real(KIND=RKIND),  DIMENSION(3,3), intent(in)  ::  sigma,epr,mur,sigmaM
+      real(KIND=RKIND_tiempo) :: dt
 
       coeff%eexx = ((-((2 * eps0 * epr(1,3) + dt * sigma(1,3)) *(2 * eps0 * epr(2,2) + dt * sigma(2,2))) +(2          &
       * eps0 * epr(1,2) + dt * sigma(1,2)) *(2 * eps0 * epr(2,3) + dt * sigma(2,3))) *((eps0 * epr(3,1))/dt      &

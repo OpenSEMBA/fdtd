@@ -1,5 +1,5 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  SEMBA_FDTD sOLVER MODULE
+!  SEMBA_FDTD sOLVER module
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
@@ -69,13 +69,13 @@ module Solver_mod
 
 
 #ifdef CompileWithConformal
-   USE conformal_time_stepping_m
-   USE CONFORMAL_MAPPED
+   use conformal_time_stepping_m
+   use CONFORMAL_MAPPED
 #endif
-   USE EpsMuTimeScale_m
-   USE CALC_CONSTANTS
+   use EpsMuTimeScale_m
+   use CALC_CONSTANTS
 #ifdef CompileWithPrescale
-   USE P_rescale
+   use P_rescale
 #endif              
 #ifdef CompileWithMTLN
    ! use mtln_solver_mod, mtln_solver_t => mtln_t
@@ -97,8 +97,8 @@ module Solver_mod
       real(kind=rkind), pointer, dimension (:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       type(constants_t) :: g
-      real (kind=RKIND_tiempo) :: lastexecutedtime
-      real (kind=RKIND) :: maxSourceValue
+      real(kind=RKIND_tiempo) :: lastexecutedtime
+      real(kind=RKIND) :: maxSourceValue
 
       integer (kind=4) :: initialtimestep, lastexecutedtimestep, ini_save, n_info, n
 
@@ -113,7 +113,7 @@ module Solver_mod
       type(taglist_t) :: tag_numbers
       type (limit_t), dimension(1:6) :: SINPML_fullsize,fullsize
       logical :: finishedwithsuccess = .false.
-      real (kind=rkind) :: eps0,mu0
+      real(kind=rkind) :: eps0,mu0
       type (tagtype_t) :: tagtype
 
 #ifdef CompileWithMTLN
@@ -175,11 +175,11 @@ module Solver_mod
       type(media_matrices_t), intent(in) :: media
       type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
       logical, intent(in) :: finishedwithsuccess
-      real (KIND=RKIND), intent(in) :: eps0,mu0
+      real(KIND=RKIND), intent(in) :: eps0,mu0
       type (tagtype_t), intent(in) :: tagtype
       type(entrada_t), intent(in) :: input
-      real (kind=RKIND), intent(in) :: maxSourceValue
-      real (kind=8), intent(in) :: time_desdelanzamiento
+      real(kind=RKIND), intent(in) :: maxSourceValue
+      real(kind=8), intent(in) :: time_desdelanzamiento
       type(solver_t) :: res
 
       call res%init_control(input,maxSourceValue, time_desdelanzamiento)
@@ -197,8 +197,8 @@ module Solver_mod
    subroutine solver_init_control(this, input, maxSourceValue, time_desdelanzamiento)
       class(solver_t) :: this
       type(entrada_t), intent(in) :: input
-      real (kind=RKIND), intent(in) :: maxSourceValue
-      real (kind=8), intent(in) :: time_desdelanzamiento
+      real(kind=RKIND), intent(in) :: maxSourceValue
+      real(kind=8), intent(in) :: time_desdelanzamiento
 
 
       this%control%maxSourceValue = maxSourceValue
@@ -362,7 +362,7 @@ module Solver_mod
       class(solver_t) :: this
       integer (kind=4), intent(in) :: field_idx
       integer (kind=4), dimension(2), intent(in) :: i_range, j_range, k_range
-      real (kind=rkind), intent(in) :: field_value
+      real(kind=rkind), intent(in) :: field_value
       
       real(kind=rkind), pointer, dimension (:,:,:) :: field
       integer(kind=4) :: i, j, k
@@ -393,7 +393,7 @@ module Solver_mod
       class(solver_t) :: this
       integer (kind=4), intent(in) :: field_idx
       integer (kind=4), intent(in) :: fi, fj, fk
-      real (kind=rkind) :: res
+      real(kind=rkind) :: res
       
       real(kind=rkind), pointer, dimension (:,:,:) :: field
       select case(field_idx)
@@ -938,7 +938,7 @@ contains
          logical, intent(inout) :: att
          real(kind=rkind) :: deltaespmax, fmax, skin_depth
          logical :: hayattmedia = .false.
-         real (kind = rkind) :: mur,epr
+         real(kind = rkind) :: mur,epr
          character(len=BUFSIZE) :: buff   
          integer :: i
          if (abs(this%control%attfactorc-1.0_RKIND) > 1.0e-12_RKIND) then
@@ -1138,7 +1138,7 @@ contains
       end subroutine initializeLumped
 
       subroutine initializeWires()
-         real (kind=rkind_tiempo) :: dtcritico, newdtcritico
+         real(kind=rkind_tiempo) :: dtcritico, newdtcritico
          character(len=BUFSIZE) :: dubuf, buff
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
@@ -1307,7 +1307,7 @@ contains
          integer(kind=4) :: ierr
 #endif
 
-         IF (this%control%sgbc)  then
+         if (this%control%sgbc)  then
 #ifdef CompileWithMPI
               call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1336,7 +1336,7 @@ contains
          logical :: l_auxinput, l_auxoutput
 
 #ifdef CompileWithNIBC
-         IF (this%control%mibc)  then
+         if (this%control%mibc)  then
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -1637,7 +1637,7 @@ contains
 #endif
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         IF (this%control%resume) then
+         if (this%control%resume) then
             write(dubuf,*)'END PREPROCESSING. RESUMING simulation from n=',this%n
             call print11(this%control%layoutnumber,dubuf)
             write(dubuf,*) SEPARADOR//separador//separador
@@ -1755,7 +1755,7 @@ contains
 
       subroutine crea_timevector(sgg,lastexecutedtimestep,finaltimestep,lastexecutedtime)
          integer (kind=4) :: lastexecutedtimestep,finaltimestep,i
-         real (kind=RKIND_tiempo) :: lastexecutedtime
+         real(kind=RKIND_tiempo) :: lastexecutedtime
          type (SGGFDTDINFO), intent(INOUT)   ::  sgg
          allocate (sgg%tiempo(lastexecutedtimestep:finaltimestep+2))
          sgg%tiempo(lastexecutedtimestep)=lastexecutedtime
@@ -1775,8 +1775,8 @@ contains
 
       logical :: call_timing, l_aux, flushFF, somethingdone, newsomethingdone
       integer :: i
-      real (kind=rkind) :: pscale_alpha
-      real (kind=rkind_tiempo) :: at
+      real(kind=rkind) :: pscale_alpha
+      real(kind=rkind_tiempo) :: at
       character(len=bufsize) :: dubuf
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -2023,7 +2023,7 @@ contains
 contains
       subroutine updateAndFlush()
          integer(kind=4) :: mindum
-         IF (this%thereAre%Observation) then
+         if (this%thereAre%Observation) then
             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
@@ -2035,7 +2035,7 @@ contains
       subroutine singleUnpack()
          character (LEN=BUFSIZE) :: dubuf
          logical :: somethingdone
-         real (kind=rkind_tiempo) :: at
+         real(kind=rkind_tiempo) :: at
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
 #endif
@@ -2084,7 +2084,7 @@ contains
       call this%advanceWiresE()
       call this%advancePMLE()
 #ifdef CompileWithNIBC
-      IF (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(this%sgg%alloc, this%Ex, this%Ey, this%Ez)
+      if (this%thereAre%Multiports.and.(this%control%mibc)) call AdvanceMultiportE(this%sgg%alloc, this%Ex, this%Ey, this%Ez)
 #endif
       call this%AdvancesgbcE()
       call this%advanceLumpedE()
@@ -2108,7 +2108,7 @@ contains
       call this%AdvancesgbcH()
       call this%AdvanceMDispersiveH()
 #ifdef CompileWithNIBC
-      IF (this%thereAre%Multiports .and.(this%control%mibc))  &
+      if (this%thereAre%Multiports .and.(this%control%mibc))  &
          call AdvanceMultiportH (this%sgg%alloc,this%Hx,this%Hy,this%Hz, & 
                                  this%Ex,this%Ey,this%Ez,& 
                                  this%Idxe,this%Idye,this%Idze, & 
@@ -2291,7 +2291,7 @@ contains
       real(kind=rkind), dimension(:), pointer :: Idzh
       real(kind=rkind), dimension(:), pointer :: Idxh
 
-      real (kind=rkind) :: Idzhk
+      real(kind=rkind) :: Idzhk
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
@@ -2330,13 +2330,13 @@ contains
       class(solver_t) :: this
       integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEz%NX-1,0:this%bounds%sggMiEz%NY-1,0:this%bounds%sggMiEz%NZ-1), intent(in) ::  sggMiEz
 
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous :: Ez
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous :: Hx
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
-      real (kind=rkind), dimension(:), pointer ::  Idyh
-      real (kind=rkind), dimension(:), pointer ::  Idxh
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ez
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hx
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
+      real(kind=rkind), dimension(:), pointer ::  Idyh
+      real(kind=rkind), dimension(:), pointer ::  Idxh
       !------------------------> Variables locales
-      real (kind = RKIND)  ::   Idyhj
+      real(kind = RKIND)  ::   Idyhj
       integer(kind = 4)  ::  i, j, k
       integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
 
@@ -2394,12 +2394,12 @@ contains
       class(solver_t) :: this
       integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiHx%NX-1,0:this%bounds%sggMiHx%NY-1,0:this%bounds%sggMiHx%NZ-1), intent(in) :: sggMiHx
 
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Hx
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ey
-      real (kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ez
-      real (kind=rkind), dimension(:), pointer:: IdyE
-      real (kind=rkind), dimension(:), pointer:: IdzE
-      real (kind=rkind) :: Idzek, Idyej
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Hx
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ey
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ez
+      real(kind=rkind), dimension(:), pointer:: IdyE
+      real(kind=rkind), dimension(:), pointer:: IdzE
+      real(kind=rkind) :: Idzek, Idyej
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
@@ -2442,7 +2442,7 @@ contains
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ex
       real(kind=rkind), dimension(:), pointer :: IdzE
       real(kind=rkind), dimension(:), pointer :: IdxE
-      real (kind=rkind) :: Idzek
+      real(kind=rkind) :: Idzek
       integer(kind=4) :: i, j, k
       integer(kind=integersizeofmediamatrices) :: medio
 
@@ -2483,7 +2483,7 @@ contains
       real(kind=rkind), dimension(:), pointer :: IdyE
       real(kind=rkind), dimension(:), pointer :: IdxE
 
-      real (kind = RKIND)  ::  Idyej
+      real(kind = RKIND)  ::  Idyej
       integer(kind = 4)  ::  i, j, k
       integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
@@ -2582,7 +2582,7 @@ contains
 
    subroutine solver_advanceAnisotropicH(this)
       class(solver_t) :: this
-      IF (this%thereAre%Anisotropic) call AdvanceAnisotropicH(this%sgg%alloc, this%ex, this%ey, this%ez, & 
+      if (this%thereAre%Anisotropic) call AdvanceAnisotropicH(this%sgg%alloc, this%ex, this%ey, this%ez, & 
                                                               this%hx, this%hy, this%hz, & 
                                                               this%Idxe, this%Idye, this%Idze, &
                                                               this%Idxh, this%Idyh, this%Idzh)
@@ -2648,7 +2648,7 @@ contains
 
       if (( (trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition'))) then
-         IF (this%thereAre%Wires) then
+         if (this%thereAre%Wires) then
             if (this%control%wirecrank) then
                call AdvanceWiresEcrank(this%sgg, this%n, this%control%layoutnumber,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
             else
@@ -2658,7 +2658,7 @@ contains
       endif
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-         IF (this%thereAre%Wires) call AdvanceWiresE_Berenger(this%sgg,this%n)
+         if (this%thereAre%Wires) call AdvanceWiresE_Berenger(this%sgg,this%n)
       endif
 #endif
 #ifdef CompileWithSlantedWires
@@ -2674,7 +2674,7 @@ contains
       class(solver_t) :: this
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-         IF (this%thereAre%Wires) then
+         if (this%thereAre%Wires) then
             if (this%control%wirecrank) then
                continue
             else
@@ -2769,7 +2769,7 @@ contains
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-      if (this%thereAre%Observation) THEN
+      if (this%thereAre%Observation) then
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
 #ifdef CompileWithMTLN      
@@ -2886,8 +2886,8 @@ contains
       character (len=*) , intent(in)    ::  wiresflavor
       type (Logic_control), intent(IN)  ::  thereare
       type (SGGFDTDINFO), intent(INOUT)     ::  sgg
-      real (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : , : , : )  ::  Ex,Ey,Ez,Hx,Hy,Hz
-      real (KIND=RKIND), intent(INOUT)     , pointer, dimension ( : )  ::  G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
+      real(KIND=RKIND), intent(INOUT)     , pointer, dimension ( : , : , : )  ::  Ex,Ey,Ez,Hx,Hy,Hz
+      real(KIND=RKIND), intent(INOUT)     , pointer, dimension ( : )  ::  G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 
       call DestroyObservation(sgg)
       Call DestroyNodal(sgg)
@@ -2896,7 +2896,7 @@ contains
       call DestroyMultiports(sgg)
 #endif
 
-      call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((this%thereAre%sgbcs).and.(sgbc))
+      call destroysgbcs(sgg) !!todos deben destruir pq alocatean en funcion de sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era if ((this%thereAre%sgbcs).and.(sgbc))
       call destroyLumped(sgg)
       call DestroyEDispersives(sgg)
       call DestroyMDispersives(sgg)
@@ -2936,7 +2936,7 @@ contains
       call DestroyMultiports(this%sgg)
 #endif
 
-      call destroysgbcs(this%sgg) !!todos deben destruir pq alocatean en funcion de this%sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era IF ((this%thereAre%sgbcs).and.(sgbc))
+      call destroysgbcs(this%sgg) !!todos deben destruir pq alocatean en funcion de this%sgg no de si contienen estos materiales que lo controla therearesgbcs. Lo que habia era if ((this%thereAre%sgbcs).and.(sgbc))
       call destroyLumped(this%sgg)
       call DestroyEDispersives(this%sgg)
       call DestroyMDispersives(this%sgg)

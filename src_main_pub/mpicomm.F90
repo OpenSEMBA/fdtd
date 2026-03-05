@@ -15,7 +15,7 @@ module MPIcomm
 
 
    Type buffer_t
-      real (KIND=RKIND_wires), pointer, dimension( : )  ::  SendUP,SendDown,RecUp,RecDown !for the wire exchange
+      real(KIND=RKIND_wires), pointer, dimension( : )  ::  SendUP,SendDown,RecUp,RecDown !for the wire exchange
       integer (kind=4)  ::  SendSizeUp,SendSizeDown,RecSizeUp ,RecSizeDown  !,uno
    end type
 
@@ -47,8 +47,8 @@ module MPIcomm
       integer :: ip_target
       integer :: sizex, sizey, sizez
       logical :: FlushExtraInfo
-      real (kind = RKIND), dimension( :, :), pointer :: buf_x_rx, buf_y_rx, buf_z_rx
-      real (kind = RKIND), dimension( :, :), pointer :: buf_x_tx, buf_y_tx, buf_z_tx
+      real(kind = RKIND), dimension( :, :), pointer :: buf_x_rx, buf_y_rx, buf_z_rx
+      real(kind = RKIND), dimension( :, :), pointer :: buf_x_tx, buf_y_tx, buf_z_tx
    endtype t_databuf
 
    type :: t_databuf_Set
@@ -91,9 +91,9 @@ contains
       integer(kind=4) forced
       logical :: forcing
       integer(kind=4), dimension( : ), pointer ::  trancos
-      real (kind=RKIND), dimension( : ), pointer :: cZI,cZE
-      real (kind=RKIND) :: carga,guess,ZE(1:3),cargaZE(1:3)
-      real (kind=RKIND) :: deltatrancos
+      real(kind=RKIND), dimension( : ), pointer :: cZI,cZE
+      real(kind=RKIND) :: carga,guess,ZE(1:3),cargaZE(1:3)
+      real(kind=RKIND) :: deltatrancos
       character (len=*), intent(in)  ::  slicesoriginales
       character (len=BUFSIZE_LONG)  ::  slices=' '
       character (LEN=BUFSIZE)     ::  dubuf
@@ -359,8 +359,8 @@ contains
    ! FORCES THE TIME STEP TO BE EQUAL BY EVERY LAYER
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIupdateMin(dtlay,dt)
-      real (kind=RKIND), intent(in)  ::  dtlay
-      real (kind=RKIND), intent(out)  ::  dt
+      real(kind=RKIND), intent(in)  ::  dtlay
+      real(kind=RKIND), intent(out)  ::  dt
       integer (kind=4)  ::  ierr
       call MPI_AllReduce(dtlay, dt, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
       return
@@ -371,8 +371,8 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIupdateBloques(layoutnumber,valores,newvalores,SubComm)
       integer (kind=4)  ::  ierr,sizeofvalores,SubComm
-      real (kind=RKIND), intent(in), dimension( 0:BuffObse )  ::  valores
-      real (kind=RKIND), intent(out), dimension( 0:BuffObse )  ::  newvalores
+      real(kind=RKIND), intent(in), dimension( 0:BuffObse )  ::  valores
+      real(kind=RKIND), intent(out), dimension( 0:BuffObse )  ::  newvalores
       integer :: layoutnumber
       
       sizeofvalores=BuffObse+1
@@ -435,7 +435,7 @@ contains
       type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
 !!!! reutilizo esta subroutina para sincronizar matrices de medios. Las de campo las hacen los _Cray 210815
 !!!! ojo hay que cambiar tambien si algun dia se vuelve a esta rutina para comunicar reales INTEGERSIZE por REALSIZE
-!!!!      real (KIND=RKIND)   , intent(inout)      :: &
+!!!!      real(KIND=RKIND)   , intent(inout)      :: &
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , intent(inout)  ::  &
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE), &
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE), &
@@ -520,7 +520,7 @@ contains
       type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
 !!!! reutilizo esta subroutina para sincronizar matrices de medios. Las de campo las hacen los _Cray 210815
 !!!! ojo hay que cambiar tambien si algun dia se vuelve a esta rutina para comunicar reales INTEGERSIZE por REALSIZE
-!!!!      real (KIND=RKIND)   , intent(inout)      :: &
+!!!!      real(KIND=RKIND)   , intent(inout)      :: &
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , intent(inout)  ::  &
       Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
       Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
@@ -614,7 +614,7 @@ contains
 
 
       !Get info from wires
-      IF (therearewires) then
+      if (therearewires) then
          HwiresMPI => GetHwires()
       else
          allocate (HwiresMPI)
@@ -1239,11 +1239,11 @@ contains
    Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------- inputs -----------------------------------------------------------------------
       type( XYZlimit_t), dimension( 1: 6), intent( IN) :: sggalloc, sggsweep
-      real (kind = RKIND), intent( IN), target :: &
+      real(kind = RKIND), intent( IN), target :: &
       Hx( sggalloc( iHx)%XI: sggalloc( iHx)%XE, sggalloc( iHx)%YI: sggalloc( iHx)%YE, sggalloc( iHx)%ZI: sggalloc( iHx)%ZE), &
       Hy( sggalloc( iHy)%XI: sggalloc( iHy)%XE, sggalloc( iHy)%YI: sggalloc( iHy)%YE, sggalloc( iHy)%ZI: sggalloc( iHy)%ZE), &
       Hz( sggalloc( iHz)%XI: sggalloc( iHz)%XE, sggalloc( iHz)%YI: sggalloc( iHz)%YE, sggalloc( iHz)%ZI: sggalloc( iHz)%ZE)
-      real (KIND=RKIND)   , intent( IN),target :: &
+      real(KIND=RKIND)   , intent( IN),target :: &
       Ex( sggalloc( iEx)%XI: sggalloc( iEx)%XE, sggalloc( iEx)%YI: sggalloc( iEx)%YE, sggalloc( iEx)%ZI: sggalloc( iEx)%ZE), &
       Ey( sggalloc( iEy)%XI: sggalloc( iEy)%XE, sggalloc( iEy)%YI: sggalloc( iEy)%YE, sggalloc( iEy)%ZI: sggalloc( iEy)%ZE), &
       Ez( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE)
@@ -1602,11 +1602,11 @@ contains
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), intent( IN) :: &
       sggMiEz( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE), &
       sggMiHz( sggalloc( iHz)%XI: sggalloc( iHz)%XE, sggalloc( iHz)%YI: sggalloc( iHz)%YE, sggalloc( iHz)%ZI: sggalloc( iHz)%ZE)
-      real (KIND=RKIND), intent( IN), target :: &
+      real(KIND=RKIND), intent( IN), target :: &
       Hx( sggalloc( iHx)%XI: sggalloc( iHx)%XE, sggalloc( iHx)%YI: sggalloc( iHx)%YE, sggalloc( iHx)%ZI: sggalloc( iHx)%ZE), &
       Hy( sggalloc( iHy)%XI: sggalloc( iHy)%XE, sggalloc( iHy)%YI: sggalloc( iHy)%YE, sggalloc( iHy)%ZI: sggalloc( iHy)%ZE), &
       Hz( sggalloc( iHz)%XI: sggalloc( iHz)%XE, sggalloc( iHz)%YI: sggalloc( iHz)%YE, sggalloc( iHz)%ZI: sggalloc( iHz)%ZE)
-      real (KIND=RKIND), intent( IN), target :: &
+      real(KIND=RKIND), intent( IN), target :: &
       Ex( sggalloc( iEx)%XI: sggalloc( iEx)%XE, sggalloc( iEx)%YI: sggalloc( iEx)%YE, sggalloc( iEx)%ZI: sggalloc( iEx)%ZE), &
       Ey( sggalloc( iEy)%XI: sggalloc( iEy)%XE, sggalloc( iEy)%YI: sggalloc( iEy)%YE, sggalloc( iEy)%ZI: sggalloc( iEy)%ZE), &
       Ez( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE)
@@ -1740,11 +1740,11 @@ contains
 
 end module
  
-MODULE build_t_linea_mpi
+module build_t_linea_mpi
 
 #ifdef CompileWithMPI
    !
-   USE NFDETypes
+   use NFDETypes
    
 contains
 
@@ -1771,7 +1771,7 @@ contains
     typelist(1) = MPI_INTEGER4
     block_lengths(1) = 1
     displacements(1) = 0
-    !EL SEGUNDO ES CHARACTER
+    !EL SEGUNDO ES character
     typelist(2) =  MPI_CHARACTER
     block_lengths(2) = BUFSIZE
     displacements(2) = 4 !el segundo se desplaza 4 porque el primero tiene 4 bytes
@@ -1797,5 +1797,5 @@ contains
     end subroutine build_derived_t_linea
 
 #endif
-!------------- END SUBROUTINE----------------------------
+!------------- end subroutine----------------------------
 end module build_t_linea_mpi

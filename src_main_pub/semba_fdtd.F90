@@ -1,62 +1,62 @@
 module SEMBA_FDTD_mod
 
-   USE version
-   USE Report
-   USE Getargs
+   use version
+   use Report
+   use Getargs
    !
-   USE fdetypes
-   USE Solver_mod         
-   USE Resuming
+   use fdetypes
+   use Solver_mod         
+   use Resuming
    !nfde parser stuff
-   USE NFDETypes                
+   use NFDETypes                
    use nfde_rotate_m           
 
 
 #ifdef CompilePrivateVersion  
-   USE ParseadorClass
+   use ParseadorClass
 #endif
 
 #ifdef CompileWithSMBJSON
-   USE smbjson, only: fdtdjson_parser_t => parser_t
+   use smbjson, only: fdtdjson_parser_t => parser_t
 #endif
 
-   USE Preprocess_m
-   USE storeData
-   USE xdmf_h5
+   use Preprocess_m
+   use storeData
+   use xdmf_h5
    !
 #ifdef CompileWithMPI
-   USE MPIcomm
-   USE build_t_linea_mpi
+   use MPIcomm
+   use build_t_linea_mpi
 #ifdef CompileWithStochastic
    use MPI_stochastic
 #endif
 #endif
 
 #ifdef CompileWithConformal
-   USE CONFORMAL_INI_CLASS
-   USE CONFORMAL_TOOLS
-   USE CONFORMAL_MAPPED
-   USE CONFORMAL_TYPES
-   USE Conformal_TimeSteps_m
+   use CONFORMAL_INI_CLASS
+   use CONFORMAL_TOOLS
+   use CONFORMAL_MAPPED
+   use CONFORMAL_TYPES
+   use Conformal_TimeSteps_m
 #endif
    use EpsMuTimeScale_m
 
    use interpreta_switches_m
    use, intrinsic:: iso_fortran_env, only: stdin=>input_unit
 
-   IMPLICIT NONE
+   implicit none
 
    ! should eps0 and mu0 be global variables?
 
    type, public :: semba_fdtd_t 
       type (entrada_t) :: l
       type (tiempo_t) :: time_comienzo
-      real (KIND=8) time_desdelanzamiento
+      real(KIND=8) time_desdelanzamiento
       type(media_matrices_t) :: media
       type (SGGFDTDINFO)   :: sgg
-      type (limit_t), DIMENSION (1:6) :: fullsize, SINPML_fullsize
-      real (KIND=RKIND) ::  eps0,mu0,cluz
-      real (KIND=RKIND) :: maxSourceValue
+      type (limit_t), dimension(1:6) :: fullsize, SINPML_fullsize
+      real(KIND=RKIND) ::  eps0,mu0,cluz
+      real(KIND=RKIND) :: maxSourceValue
       character (LEN=BUFSIZE) :: whoami, whoamishort
 #ifdef CompileWithMTLN
       type(mtln_t) :: mtln_parsed
@@ -80,8 +80,8 @@ contains
       class(semba_fdtd_t) :: this
       character (len=*), optional :: input_flags
 
-      real (KIND=RKIND) :: dtantesdecorregir
-      real (KIND=RKIND) ::  dxmin,dymin,dzmin,dtlay
+      real(KIND=RKIND) :: dtantesdecorregir
+      real(KIND=RKIND) ::  dxmin,dymin,dzmin,dtlay
       
       logical :: dummylog,l_auxinput, l_auxoutput, ThereArethinslots
       logical :: hayinput
@@ -108,7 +108,7 @@ contains
          
 #ifdef CompileWithMPI
       LOGICAL :: fatalerror_aux
-      type (XYZlimit_t), DIMENSION (1:6) :: tempalloc
+      type (XYZlimit_t), dimension(1:6) :: tempalloc
 #endif
 
       integer (kind=4) :: conf_err
@@ -191,10 +191,10 @@ contains
 #endif
       call get_secnds(this%time_comienzo)
       !temporarily until later
-      IF (this%l%layoutnumber == 0) THEN
+      if (this%l%layoutnumber == 0) then
          OPEN (11, file='SEMBA_FDTD_temp.log',position='append')
          this%l%file11isopen=.true.
-      END IF
+      end if
       !
 
 #ifdef CompileWithMPI
@@ -215,14 +215,14 @@ contains
       this%l%time_begin = this%l%time_out2%segundos
       WRITE (dubuf,*) 'Paused at              ', this%l%time_out2%fecha(7:8), '/', this%l%time_out2%fecha(5:6), '/', &
       &                this%l%time_out2%fecha(1:4), '  ', this%l%time_out2%hora(1:2), ':', this%l%time_out2%hora(3:4)
-      IF (this%l%pausar) CALL print11 (this%l%layoutnumber, dubuf)
+      if (this%l%pausar) CALL print11 (this%l%layoutnumber, dubuf)
       do while (this%l%pausar)
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
 #endif
          CALL get_secnds (this%l%time_out2)
          this%l%time_end = this%l%time_out2%segundos
-         IF (this%l%time_end-this%l%time_begin > 10.0_RKIND) THEN
+         if (this%l%time_end-this%l%time_begin > 10.0_RKIND) then
             INQUIRE (file='pause', EXIST=this%l%pausar)
 #ifdef CompileWithMPI
             CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
@@ -234,8 +234,8 @@ contains
             this%l%time_begin = this%l%time_out2%segundos
             WRITE (dubuf,*) 'Paused at              ', this%l%time_out2%fecha(7:8), '/', this%l%time_out2%fecha(5:6), '/', &
             &                this%l%time_out2%fecha(1:4), ' ', this%l%time_out2%hora(1:2), ':', this%l%time_out2%hora(3:4)
-            IF (this%l%pausar) CALL print11 (this%l%layoutnumber, dubuf)
-         END IF
+            if (this%l%pausar) CALL print11 (this%l%layoutnumber, dubuf)
+         end if
       end do
       !fin del semaphoro
 
@@ -277,7 +277,7 @@ contains
       else
       ! mira el command_line y el fichero launch 251022
          CALL get_command (this%l%chain2, this%l%length, status)
-         IF (status /= 0) then
+         if (status /= 0) then
             CALL stoponerror (this%l%layoutnumber, this%l%size, 'General error',.true.); goto 652
          endif
       end if
@@ -302,7 +302,7 @@ contains
       call buscaswitchficheroinput(this%l)
       
 
-   IF (status /= 0) then
+   if (status /= 0) then
        CALL stoponerror (this%l%layoutnumber, this%l%size, 'Error in searching input file. Correct and remove pause file',.true.); goto 652
    endif
 !!!!!!!!!!!!!!!!!!!!
@@ -382,7 +382,7 @@ contains
       endif
 #endif
 
-      IF (status /= 0) then
+      if (status /= 0) then
          call print11(this%l%layoutnumber,'Remove running and pause files. If error persists check switches for error.  '//this%l%chain2,.true.)
          call print11(this%l%layoutnumber,' '); call print11(this%l%layoutnumber,' '); call print11(this%l%layoutnumber,' '); call print11(this%l%layoutnumber,' '); call print11(this%l%layoutnumber,' '); call print11(this%l%layoutnumber,' ');  goto 652
       endif
@@ -523,8 +523,8 @@ contains
 ! #else
 !          call AssigLossyOrPECtoNodes(this%sgg,this%sggMiNo,this%sggMiEx,this%sggMiEy,this%sggMiEz)
 ! #endif
-         IF (this%l%createmap) CALL store_geomData (this%sgg,this%media, this%l%geomfile)
-         ! IF (this%l%createmap) CALL store_geomData (this%sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%geomfile)
+         if (this%l%createmap) CALL store_geomData (this%sgg,this%media, this%l%geomfile)
+         ! if (this%l%createmap) CALL store_geomData (this%sgg,this%sggMiEx,this%sggMiEy,this%sggMiEz,this%sggMiHx,this%sggMiHy,this%sggMiHz, this%l%geomfile)
          endif
          !
 #ifdef CompileWithMPI
@@ -534,12 +534,12 @@ contains
       endif
       write(dubuf,*) '[OK] Ended Conformal Mesh';  call print11(this%l%layoutnumber,dubuf)
       if (this%l%finaltimestep==0) this%l%finaltimestep=this%sgg%TimeSteps !no quitar
-      IF (this%l%forcesteps) then
+      if (this%l%forcesteps) then
          this%sgg%TimeSteps = this%l%finaltimestep
       else
          this%l%finaltimestep = this%sgg%TimeSteps
       endif
-      IF (.not.this%l%forcesteps) then
+      if (.not.this%l%forcesteps) then
          finaltimestepantesdecorregir=this%l%finaltimestep
          if (dtantesdecorregir /= 0.0) then
             this%l%finaltimestep=int(dtantesdecorregir/this%sgg%dt*finaltimestepantesdecorregir)
@@ -563,7 +563,7 @@ contains
       endif
       !check that simulation can actually be done for the kind of media requested
       do i = 1, this%sgg%nummedia
-         IF (this%sgg%Med(i)%Is%ThinWire) THEN
+         if (this%sgg%Med(i)%Is%ThinWire) then
 #ifndef CompileWithBerengerWires
       if  ((this%l%wiresflavor=='berenger')) then
             CALL stoponerror (this%l%layoutnumber, this%l%size, 'Berenger Wires without support. Recompile!')
@@ -575,33 +575,33 @@ contains
       endif
 #endif
             CONTINUE
-         END IF
+         end if
          !
-         IF ((this%sgg%Med(i)%Is%AnisMultiport) .OR. (this%sgg%Med(i)%Is%multiport).OR. (this%sgg%Med(i)%Is%SGBC)) THEN
+         if ((this%sgg%Med(i)%Is%AnisMultiport) .OR. (this%sgg%Med(i)%Is%multiport).OR. (this%sgg%Med(i)%Is%SGBC)) then
 #ifndef CompileWithNIBC
             if (this%l%mibc) CALL stoponerror (this%l%layoutnumber, this%l%size, 'this%l%mibc Multiports without support. Recompile!')
 #endif
             CONTINUE
-         END IF
+         end if
    !altair no conformal sgbc 201119
 #ifdef NoConformalSGBC
-         IF (this%sgg%Med(i)%Is%sgbc .and. this%l%input_conformal_flag) THEN
+         if (this%sgg%Med(i)%Is%sgbc .and. this%l%input_conformal_flag) then
             CALL stoponerror (this%l%layoutnumber, this%l%size, 'Conformal sgbc not allowed. ')
-         END IF
+         end if
 #endif
    !    
       end do
       
       
-      IF (this%l%thereare_stoch.and.(.not.this%l%chosenyesornostochastic)) THEN
+      if (this%l%thereare_stoch.and.(.not.this%l%chosenyesornostochastic)) then
          CALL stoponerror (this%l%layoutnumber, this%l%size, '!STOCH found in .nfde. Specify either -stoch or -nostoch')
-      END IF
+      end if
 #ifndef CompileWithSlantedWires
-      IF (this%l%hay_slanted_wires) THEN
+      if (this%l%hay_slanted_wires) then
          CALL stoponerror (this%l%layoutnumber, this%l%size, 'slanted wires without slanted support. Recompile ()')
-      END IF
+      end if
 #endif   
-      IF (this%l%hay_slanted_wires .AND. ((trim(adjustl(this%l%wiresflavor))/='slanted').AND.(trim(adjustl(this%l%wiresflavor))/='semistructured'))) THEN
+      if (this%l%hay_slanted_wires .AND. ((trim(adjustl(this%l%wiresflavor))/='slanted').AND.(trim(adjustl(this%l%wiresflavor))/='semistructured'))) then
          CALL stoponerror (this%l%layoutnumber, this%l%size, 'slanted wires require -this%l%wiresflavor Slanted/semistructured')
       endif
 
@@ -676,7 +676,7 @@ contains
          CALL print11 (this%l%layoutnumber, dubuf)
 #endif
       endif
-      IF (this%l%layoutnumber == 0) THEN
+      if (this%l%layoutnumber == 0) then
          call erasesignalingfiles(this%l%simu_devia)
       endif
       
@@ -755,7 +755,7 @@ contains
 contains 
    subroutine NFDE2sgg     
    !!!!!!!!!      
-         real (kind=rkind) :: dt,finaldt
+         real(kind=rkind) :: dt,finaldt
          logical fatalerror
          ! parser now holds all the .nfde info
          !first read the limits
@@ -843,7 +843,7 @@ contains
          this%sgg%Sweep(1:6)%YI = this%fullsize(1:6)%YI
          this%sgg%Sweep(1:6)%YE = this%fullsize(1:6)%YE
          !
-         IF (this%l%size == 1) THEN
+         if (this%l%size == 1) then
             this%sgg%Alloc(1:6)%ZI = this%fullsize(1:6)%ZI - 1
             this%sgg%Alloc(1:6)%ZE = this%fullsize(1:6)%ZE + 1
             !REDUCE THE SWEEP AREA BY 1
@@ -880,11 +880,11 @@ contains
             slices = '!SLICES'
             WRITE (buff, '(i7)') this%sgg%Sweep(iHz)%ZE - this%sgg%Sweep(iHz)%ZI
             slices = trim (adjustl(slices)) // '_' // trim (adjustl(buff))
-            IF (this%l%resume .AND. (slices /= this%l%slicesoriginales)) THEN
+            if (this%l%resume .AND. (slices /= this%l%slicesoriginales)) then
                buff='Different resumed/original MPI slices: '//trim(adjustl(slices))//' '//&
                & trim(adjustl(this%l%slicesoriginales))
                CALL stoponerror (this%l%layoutnumber, this%l%size, buff)
-            END IF
+            end if
             CALL print11 (this%l%layoutnumber, trim(adjustl(slices)))
             !end writing
             WRITE (buff, '(a,i7,a,i7)') '_________Spanning from z=', this%sgg%Sweep(iHz)%ZI, ' to z=', this%sgg%Sweep(iHz)%ZE
@@ -967,7 +967,7 @@ contains
             end do
 #endif
             CONTINUE
-         END IF !del this%l%size==1
+         end if !del this%l%size==1
          !
 #ifdef CompileWithMPI
          !wait until everything comes out
@@ -1085,10 +1085,10 @@ contains
    end subroutine data_loader
 
    function countLinesInJSONOneLiner(filename, unit) result(res)
-      CHARACTER (LEN=*), INTENT (IN) :: filename
+      character (LEN=*), intent(in) :: filename
       integer (KIND=4), intent(in) :: unit
       integer (kind=4) :: res
-      CHARACTER (LEN=BUFSIZE) :: l_aux
+      character (LEN=BUFSIZE) :: l_aux
       integer :: size_read, pos, d, io
       res = 0
       OPEN (UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
@@ -1103,11 +1103,11 @@ contains
 
    subroutine readLines(rInfo, filename, unit)
       type (t_NFDE_FILE), POINTER :: rInfo
-      CHARACTER (LEN=*), INTENT (IN) :: filename
+      character (LEN=*), intent(in) :: filename
       integer (KIND=4), intent(in) :: unit
 
       type (t_linea), POINTER :: linea
-      CHARACTER (LEN=BUFSIZE) :: l_aux
+      character (LEN=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
       ALLOCATE (rInfo%lineas(rInfo%numero))
@@ -1115,7 +1115,7 @@ contains
       OPEN (UNIT=unit, FILE=trim(adjustl(filename)), STATUS='old',form='formatted')
       DO
          READ (unit, '(A)', end=2010) l_aux
-         IF (len_trim (adjustl(l_aux))>=BUFSIZE) then
+         if (len_trim (adjustl(l_aux))>=BUFSIZE) then
             WRITE (buffer,*) 'Line in .nfde larger than ',BUFSIZE,'Recompile '
             call warnerrreport(buffer,.TRUE.) !ABORTA
          endif
@@ -1130,12 +1130,12 @@ contains
 
    subroutine readLinesFromJSONOneLiner(rInfo, filename, unit)
       type (t_NFDE_FILE), POINTER :: rInfo
-      CHARACTER (LEN=*), INTENT (IN) :: filename
+      character (LEN=*), intent(in) :: filename
       integer (KIND=4), intent(in) :: unit
 
       integer (kind=4) :: io, size_read, pos, d
       type (t_linea), POINTER :: linea
-      CHARACTER (LEN=BUFSIZE) :: l_aux
+      character (LEN=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
       ALLOCATE (rInfo%lineas(rInfo%numero))
@@ -1154,12 +1154,12 @@ contains
    end subroutine
 
    subroutine carga_raw_info (rawFileInfo, filename, extension)
-      CHARACTER (LEN=*), INTENT (IN) :: filename, extension
+      character (LEN=*), intent(in) :: filename, extension
       type (t_NFDE_FILE), POINTER :: rawFileInfo
       
       type (t_linea), POINTER :: linea
       LOGICAL :: ok
-      CHARACTER (LEN=BUFSIZE) :: l_aux
+      character (LEN=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
       integer (KIND=4) :: i,tamanio,i0,ascii,offset,ascii_menos1,j,k
       Character (Len=:), Allocatable :: fichero
@@ -1227,7 +1227,7 @@ contains
       logical :: success
       type (sggfdtdinfo) :: sgg
       type(media_matrices_t) :: media
-      real (kind=rkind) :: eps ,mu
+      real(kind=rkind) :: eps ,mu
       this%finishedwithsuccess = success
       this%sgg = sgg
       this%eps0 = eps
@@ -1242,7 +1242,7 @@ contains
       logical :: dummylog
 
       ! call each simulation   !ojo que los layoutnumbers empiezan en 0
-      IF (this%l%finaltimestep /= 0) THEN
+      if (this%l%finaltimestep /= 0) then
 #ifdef CompileWithMPI
          !wait until everything comes out
          CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
@@ -1262,7 +1262,7 @@ contains
             call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
 #endif
             CALL get_secnds (this%l%time_out2)
-            IF (this%l%layoutnumber == 0) THEN
+            if (this%l%layoutnumber == 0) then
                call print_credits(this%l)
                WRITE (dubuf,*) 'BEGUN '//trim (adjustl(this%l%nEntradaRoot)),' at ', this%time_comienzo%fecha(7:8), &
                & '/', this%time_comienzo%fecha(5:6), '/', this%time_comienzo%fecha(1:4),' , ',  &
@@ -1287,7 +1287,7 @@ contains
 #endif
             stop
          endif
-      END IF
+      end if
       !
 #ifdef CompileWithMPI
       !wait until everything comes out
@@ -1302,7 +1302,7 @@ contains
       logical :: existe  
       character (LEN=BUFSIZE) :: filenombre= ' '
 
-      IF (this%l%layoutnumber == 0) THEN
+      if (this%l%layoutnumber == 0) then
          if (this%l%run) then
             OPEN (38, file='running')
             WRITE (38, '(a)') '!END'
@@ -1316,14 +1316,14 @@ contains
          CALL print11 (this%l%layoutnumber, dubuf)
          call erasesignalingfiles(this%l%simu_devia)
 
-      END IF
+      end if
 
 #ifdef CompileWithMPI
       !wait until everything comes out
       CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
       !
-      IF (this%l%deleteintermediates) THEN
+      if (this%l%deleteintermediates) then
          WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          CALL print11 (this%l%layoutnumber, dubuf)
          WRITE (dubuf,*) 'Attempting to delete all intermediate data files'
@@ -1331,27 +1331,27 @@ contains
          WRITE (dubuf,*) SEPARADOR // SEPARADOR // SEPARADOR
          CALL print11 (this%l%layoutnumber, dubuf)
          INQUIRE (file=trim(adjustl(this%l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(this%whoamishort))//'.txt', EXIST=existe)
-         IF (existe) THEN
+         if (existe) then
             OPEN (19, file=trim(adjustl(this%l%nEntradaRoot))//'_Outputrequests_'//trim(adjustl(this%whoamishort))//'.txt')
             buscafile: DO
                READ (19, '(a)', end=76) filenombre
-               IF (trim(adjustl(filenombre)) == '!END') THEN
+               if (trim(adjustl(filenombre)) == '!END') then
                   EXIT buscafile
                ELSE
                   OPEN (34, file=trim(adjustl(filenombre)))
                   WRITE (34,*) '!END'
                   CLOSE (34, STATUS='delete')
-               END IF
+               end if
             end do buscafile
    76       CONTINUE
             CLOSE (19, STATUS='delete')
-            IF (this%l%layoutnumber == 0) THEN
+            if (this%l%layoutnumber == 0) then
                OPEN (33, file=trim(adjustl(this%l%nEntradaRoot))//'_Outputlists.dat')
                WRITE (33,*) '!END'
                CLOSE (33, STATUS='delete')
-            END IF
-         END IF
-      END IF
+            end if
+         end if
+      end if
       !
 
       !**************************************************************************************************
@@ -1373,7 +1373,7 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,this%l%ierr)
 #endif
       CALL get_secnds (this%l%time_out2)
-      IF (this%l%layoutnumber == 0) THEN
+      if (this%l%layoutnumber == 0) then
          call print_credits(this%l)
          WRITE (dubuf,*) 'BEGUN '//trim (adjustl(this%l%nEntradaRoot)),' at ', this%time_comienzo%fecha(7:8), &
          & '/', this%time_comienzo%fecha(5:6), '/', this%time_comienzo%fecha(1:4),' , ',  &
@@ -1409,8 +1409,8 @@ contains
    endif
 #endif
 
-      IF (this%l%relaunching.and.(.not.this%finishedwithsuccess)) THEN
-         IF (this%l%layoutnumber == 0) THEN
+      if (this%l%relaunching.and.(.not.this%finishedwithsuccess)) then
+         if (this%l%layoutnumber == 0) then
             CALL print11 (this%l%layoutnumber, SEPARADOR//SEPARADOR)
             CALL print11 (this%l%layoutnumber, 'Not finishing solicited either manually or by an error condition. Edit of create launch file and remove pause file ')
             CALL print11 (this%l%layoutnumber, SEPARADOR//SEPARADOR)
@@ -1425,14 +1425,14 @@ contains
 #ifdef CompileWithMPI
          CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
-         IF (this%l%layoutnumber == 0) THEN
+         if (this%l%layoutnumber == 0) then
             CALL CloseReportingFiles
          endif
          ! GO TO 652
-      END IF
+      end if
    !si ha acabado con exito sal borrando signal files
-      IF (this%finishedwithsuccess) THEN
-         IF (this%l%layoutnumber == 0) THEN
+      if (this%finishedwithsuccess) then
+         if (this%l%layoutnumber == 0) then
             OPEN (9, file='pause', FORM='formatted')
             write (9, '(a)') ' '
             CLOSE (9,status='delete')
@@ -1449,7 +1449,7 @@ contains
          CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
 #endif
 
-      IF (this%l%layoutnumber == 0) THEN
+      if (this%l%layoutnumber == 0) then
          CALL CloseReportingFiles
       endif
       !**************************************************************************************************

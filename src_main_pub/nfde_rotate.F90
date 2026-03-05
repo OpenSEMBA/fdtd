@@ -1,15 +1,15 @@
-MODULE nfde_rotate_m
+module nfde_rotate_m
     !       
-   USE NFDETypes
+   use NFDETypes
 
    !
-   IMPLICIT NONE
+   implicit none
    !
-   PUBLIC
+   public
 
-CONTAINS
+contains
     
-   SUBROUTINE nfde_rotate (this,mpidir) 
+   subroutine nfde_rotate (this,mpidir) 
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir
       call  rotate_generateSpaceSteps                (this, mpidir)
@@ -33,24 +33,24 @@ CONTAINS
 
 
 
-      RETURN
-   END SUBROUTINE nfde_rotate
+      return
+   end subroutine nfde_rotate
 
-   SUBROUTINE rotate_generateSpaceSteps (this, mpidir)
+   subroutine rotate_generateSpaceSteps (this, mpidir)
       type (Parseador), INTENT (INOUT) :: this          
       integer (KIND=4) ::  mpidir
       type (Desplazamiento), POINTER :: old_despl => NULL ()      
       type (MatrizMedios), POINTER :: old_matriz => NULL ()
       integer (kind=4) :: oxi,oyi,ozi
-      real (KIND=RK) :: roxi,royi,rozi
-      real (KIND=RK), dimension(:),POINTER :: poxi, poyi, pozi
+      real(KIND=RK) :: roxi,royi,rozi
+      real(KIND=RK), dimension(:),POINTER :: poxi, poyi, pozi
       
       !!! MPI ROTATE           
       allocate(old_despl,source=this%despl)
       allocate(old_matriz,source=this%matriz)
 
       !X->Y->Z->X
-      IF (MPIDIR==2 ) THEN
+      if (MPIDIR==2 ) then
          OXI=old_matriz%totalX
          OYI=old_matriz%totalY
          OZI=old_matriz%totalZ
@@ -99,7 +99,7 @@ CONTAINS
          this%despl%desY => poxi
          this%despl%desZ => poyi
       !X->Z->Y->X
-      ELSEIF (MPIDIR==1 ) THEN
+      ELSEIF (MPIDIR==1 ) then
          OXI=old_matriz%totalX
          OYI=old_matriz%totalY
          OZI=old_matriz%totalZ
@@ -151,10 +151,10 @@ CONTAINS
       ENDIF
       !!!!!!!!! fin rotacion
       deallocate (old_despl,old_matriz)
-      RETURN
-   END SUBROUTINE rotate_generateSpaceSteps
+      return
+   end subroutine rotate_generateSpaceSteps
    
-   SUBROUTINE rotate_generateCurrent_Field_Sources (this,mpidir)  
+   subroutine rotate_generateCurrent_Field_Sources (this,mpidir)  
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
       integer (kind=4) :: tama2,tama3,tama,i,ii
@@ -170,15 +170,15 @@ CONTAINS
             CALL ROTATEMPI_SCALED(mpidir,this%nodsrc%NodalSource(i)%c2P(ii))
           end do         
       end do         
-      RETURN
-   END SUBROUTINE rotate_generateCurrent_Field_Sources
+      return
+   end subroutine rotate_generateCurrent_Field_Sources
   
-   SUBROUTINE rotate_generatePlaneWaves (this, mpidir)
+   subroutine rotate_generatePlaneWaves (this, mpidir)
       type (Parseador), INTENT (INOUT) :: this   
       type (PlaneWaves),  pointer :: old_plnSrc => null ( )
       integer (KIND=4) ::  mpidir
       integer (kind=4) :: oxi,oyi,ozi,oxe,oye,oze
-      real (KIND=RK) :: theta,phi,alpha,beta     
+      real(KIND=RK) :: theta,phi,alpha,beta     
       integer (kind=4) :: tama,i
       
       !!! MPI ROTATE         
@@ -192,7 +192,7 @@ CONTAINS
           alpha = old_plnSrc%collection(i)%alpha 
           beta  = old_plnSrc%collection(i)%beta 
 
-          IF (MPIDIR==2 ) THEN
+          if (MPIDIR==2 ) then
              OXI=  old_plnSrc%collection(i)%coor1 (1)
              OXE=  old_plnSrc%collection(i)%coor2 (1)
              OYI=  old_plnSrc%collection(i)%coor1 (2)
@@ -212,7 +212,7 @@ CONTAINS
              this%plnSrc%collection(i)%alpha = atan2(Sqrt(Cos(alpha)**2.0_RKIND+ Cos(beta)**2*Sin(alpha)**2),Sin(beta)*Sin(alpha))
              this%plnSrc%collection(i)%beta =  atan2(Cos(beta)*Sin(alpha),Cos(alpha))
 
-          ELSEIF (MPIDIR==1 ) THEN
+          ELSEIF (MPIDIR==1 ) then
              OXI=  old_plnSrc%collection(i)%coor1 (1)
              OXE=  old_plnSrc%collection(i)%coor2 (1)
              OYI=  old_plnSrc%collection(i)%coor1 (2)
@@ -237,11 +237,11 @@ CONTAINS
         end do          
         deallocate(old_plnSrc)
 
-      RETURN
+      return
 
-   END SUBROUTINE rotate_generatePlaneWaves
+   end subroutine rotate_generatePlaneWaves
    
-   SUBROUTINE rotate_generateBoxSources (this, mpidir) 
+   subroutine rotate_generateBoxSources (this, mpidir) 
       type (Parseador), INTENT (INOUT) :: this   
       type (Boxes),  pointer :: old_boxSrc => null ( )
       integer (KIND=4) ::  mpidir
@@ -255,7 +255,7 @@ CONTAINS
       do i=1,tama
       
           !MPI  ROTATE BOX
-          IF (MPIDIR==2 ) THEN
+          if (MPIDIR==2 ) then
              OXI=  old_boxSrc%vols(i)%coor1 (1)
              OXE=  old_boxSrc%vols(i)%coor2 (1)
              OYI=  old_boxSrc%vols(i)%coor1 (2)
@@ -269,7 +269,7 @@ CONTAINS
              this%boxSrc%vols(i)%coor2 (2) =OXE
              this%boxSrc%vols(i)%coor1 (3) =OYI
              this%boxSrc%vols(i)%coor2 (3) =OYE
-          ELSEIF (MPIDIR==1 ) THEN
+          ELSEIF (MPIDIR==1 ) then
              OXI=  old_boxSrc%vols(i)%coor1 (1)
              OXE=  old_boxSrc%vols(i)%coor2 (1)
              OYI=  old_boxSrc%vols(i)%coor1 (2)
@@ -287,17 +287,17 @@ CONTAINS
       end do      
      deallocate(old_boxSrc)
       !!!!!
-      RETURN
-   END SUBROUTINE rotate_generateBoxSources
+      return
+   end subroutine rotate_generateBoxSources
    
-   SUBROUTINE rotate_generateFronteras (this,mpidir)
+   subroutine rotate_generateFronteras (this,mpidir)
       type (Parseador), INTENT (INOUT) :: this   
       integer (KIND=4) ::  mpidir       
       integer (kind=4) :: oxl,oxu,oyl,oyu,ozl,ozu  
       type (FronteraPML) :: OPML_XL,OPML_XU,OPML_YL,OPML_YU,OPML_ZL,OPML_ZU
       
       !!! MPI ROTATE
-      IF (MPIDIR==2 ) THEN
+      if (MPIDIR==2 ) then
          OXL=this%front%tipofrontera(1)
          OXU=this%front%tipofrontera(2)
          OYL=this%front%tipofrontera(3)
@@ -356,7 +356,7 @@ CONTAINS
          this%front%propiedadesPML(5)%numCapas = OPML_YL%numCapas
          this%front%propiedadesPML(6)%numCapas = OPML_YU%numCapas
 
-      ELSEIF (MPIDIR==1 ) THEN
+      ELSEIF (MPIDIR==1 ) then
          OXL=this%front%tipofrontera(1)
          OXU=this%front%tipofrontera(2)
          OYL=this%front%tipofrontera(3)
@@ -417,9 +417,9 @@ CONTAINS
 
       !END ROTATE FRONTERAS
       return
-   END SUBROUTINE rotate_generateFronteras
+   end subroutine rotate_generateFronteras
    
-   SUBROUTINE rotate_generatePECs (this,mpidir)   
+   subroutine rotate_generatePECs (this,mpidir)   
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
       integer (kind=4) :: tama,i
@@ -438,10 +438,10 @@ CONTAINS
       do i = 1, tama
         CALL ROTATEMPI(mpidir,this%pecRegs%Lins(i))
       end do
-      RETURN
-   END SUBROUTINE rotate_generatePECs
+      return
+   end subroutine rotate_generatePECs
    
-   SUBROUTINE rotate_generatePMCs (this,mpidir)    
+   subroutine rotate_generatePMCs (this,mpidir)    
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
       integer (kind=4) :: tama,i
@@ -460,10 +460,10 @@ CONTAINS
       do i = 1, tama
         CALL ROTATEMPI(mpidir,this%pmcRegs%Lins(i))
       end do
-      RETURN
-   END SUBROUTINE rotate_generatePMCs
+      return
+   end subroutine rotate_generatePMCs
    
-   SUBROUTINE rotate_generateNONMetals (this,mpidir)       
+   subroutine rotate_generateNONMetals (this,mpidir)       
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
       integer (kind=4) :: tama2,tama3,tama,i,ii
@@ -523,10 +523,10 @@ CONTAINS
             this%DielRegs%lins(i)%DiodOrI = this%DielRegs%lins(i)%c2P(tama3)%Or   !UPDATE diodos POR SI HAY ROTACION. ojo es un chapuz solo valido para diodos de 1p o 2p
          end if
       end do
-      RETURN
-   END SUBROUTINE rotate_generateNONMetals
+      return
+   end subroutine rotate_generateNONMetals
    
-   SUBROUTINE rotate_generateANISOTROPICs (this,mpidir)         
+   subroutine rotate_generateANISOTROPICs (this,mpidir)         
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
       if ((mpidir/=1).and.(this%ANIMATS%nvols+this%ANIMATS%nsurfs+this%ANIMATS%nlins/=0)) then
@@ -535,10 +535,10 @@ CONTAINS
            return
       endif
    !si algun dia lo hubiera es un cut and paste de rotate_generateNONMetals y a la que hay que aniadir la rotacion de la matriz de medios 
-   RETURN
-   END SUBROUTINE rotate_generateANISOTROPICs
+   return
+   end subroutine rotate_generateANISOTROPICs
    
-   SUBROUTINE rotate_generateThinWires (this,mpidir)     
+   subroutine rotate_generateThinWires (this,mpidir)     
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir     
       integer (kind=4) :: tama,tama2,i,ii
@@ -549,7 +549,7 @@ CONTAINS
          tama2 = this%twires%TW(i)%N_TWC
          do ii = 1, tama2
       !!!ROTATE THINWIRE
-             IF (MPIDIR==2 ) THEN
+             if (MPIDIR==2 ) then
                    oldx = this%twires%tw(i)%tWc(ii)%i
                    oldy = this%twires%tw(i)%tWc(ii)%j
                    oldz = this%twires%tw(i)%tWc(ii)%K
@@ -565,7 +565,7 @@ CONTAINS
                     CASE (iEZ)
                       this%twires%tw(i)%tWc(ii)%d = iEx
                    END SELECT
-            ELSEIF (MPIDIR==1 ) THEN
+            ELSEIF (MPIDIR==1 ) then
                       oldx = this%twires%tw(i)%tWc(ii)%i
                       oldy = this%twires%tw(i)%tWc(ii)%j
                       oldz = this%twires%tw(i)%tWc(ii)%K
@@ -586,14 +586,14 @@ CONTAINS
          end do
       end do
      
-      RETURN
-   END SUBROUTINE rotate_generateThinWires
+      return
+   end subroutine rotate_generateThinWires
    
-   SUBROUTINE rotate_generateSlantedWires (this,mpidir)      
+   subroutine rotate_generateSlantedWires (this,mpidir)      
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
       type (SlantedWires), POINTER :: old_swires    
-      real (kind=8) :: oldx, oldy, oldz
+      real(kind=8) :: oldx, oldy, oldz
       integer (kind=4) :: tama,tama2,i,ii
       
       tama = this%swires%n_sw
@@ -602,7 +602,7 @@ CONTAINS
          tama2 = this%swires%sW(i)%N_SWC
          do ii=1,tama2
              !!!ROTATE THINWIRE
-             IF (MPIDIR==2 ) THEN
+             if (MPIDIR==2 ) then
                       oldx = this%swires%sw(i)%swc(ii)%x
                       oldy = this%swires%sw(i)%swc(ii)%y
                       oldz = this%swires%sw(i)%swc(ii)%z
@@ -610,7 +610,7 @@ CONTAINS
                       this%swires%sw(i)%swc(ii)%x = oldz
                       this%swires%sw(i)%swc(ii)%y = oldx
                       this%swires%sw(i)%swc(ii)%z = oldy
-             ELSEIF (MPIDIR==1 ) THEN
+             ELSEIF (MPIDIR==1 ) then
                       oldx = this%swires%sw(i)%swc(ii)%x
                       oldy = this%swires%sw(i)%swc(ii)%y
                       oldz = this%swires%sw(i)%swc(ii)%z
@@ -624,10 +624,10 @@ CONTAINS
       end do   
       allocate(old_swires)
 
-      RETURN
-   END SUBROUTINE rotate_generateSlantedWires
+      return
+   end subroutine rotate_generateSlantedWires
    
-   SUBROUTINE rotate_generateThinSlots (this,mpidir)     
+   subroutine rotate_generateThinSlots (this,mpidir)     
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
       type (ThinSlots), POINTER :: old_tSlots    
@@ -640,7 +640,7 @@ CONTAINS
          tama2 = this%tSlots%Tg(i)%N_Tgc
          do ii = 1, tama2
               !!!ROTATE THIN SLOT
-              IF (MPIDIR==2 ) THEN
+              if (MPIDIR==2 ) then
                        oldx = this%tSlots%Tg(i)%TgC(ii)%i
                        oldy = this%tSlots%Tg(i)%TgC(ii)%j
                        oldz = this%tSlots%Tg(i)%TgC(ii)%K
@@ -656,7 +656,7 @@ CONTAINS
                         CASE (iEZ)
                           this%tSlots%Tg(i)%TgC(ii)%dir = iEx
                        END SELECT
-              ELSEIF (MPIDIR==1 ) THEN
+              ELSEIF (MPIDIR==1 ) then
                        oldx = this%tSlots%Tg(i)%TgC(ii)%i
                        oldy = this%tSlots%Tg(i)%TgC(ii)%j
                        oldz = this%tSlots%Tg(i)%TgC(ii)%K
@@ -676,11 +676,11 @@ CONTAINS
               ENDIF
         end do
       end do      
-      RETURN
+      return
       
-   END SUBROUTINE rotate_generateThinSlots
+   end subroutine rotate_generateThinSlots
 !!   
-   SUBROUTINE rotate_generateLossyThinSurface (this,mpidir)    
+   subroutine rotate_generateLossyThinSurface (this,mpidir)    
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
       integer (kind=4) :: tama2,tama,i,ii
@@ -693,10 +693,10 @@ CONTAINS
           end do   
       end do    
 
-      RETURN
-   END SUBROUTINE rotate_generateLossyThinSurface
+      return
+   end subroutine rotate_generateLossyThinSurface
 
-   SUBROUTINE rotate_generateFDMs (this,mpidir) 
+   subroutine rotate_generateFDMs (this,mpidir) 
       
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
@@ -728,11 +728,11 @@ CONTAINS
          end do
          call rotate_freq_depend_material_properties(mpidir,this%FRQDEPMATS%Lins(i))
       end do
-      RETURN
+      return
       
-   END SUBROUTINE rotate_generateFDMs
+   end subroutine rotate_generateFDMs
    
-   SUBROUTINE rotate_generateSONDAs (this,mpidir) 
+   subroutine rotate_generateSONDAs (this,mpidir) 
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir    
       integer (kind=4) :: tama,tama2,tama3,i,ii,iii  
@@ -753,12 +753,12 @@ CONTAINS
             phistart  =old_FarField%probe%phistart
             phistop   =old_FarField%probe%phistop
             !!!mpirotate angulos farfield .... las coordenadas se rotan luego
-            IF (MPIDIR==2 ) THEN
+            if (MPIDIR==2 ) then
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Cos(phistart)**2*Sin(thetastart)**2),Sin(phistart)*Sin(thetastart))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistart = atan2(Cos(phistart)*Sin(thetastart),Cos(thetastart))      
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Cos(phistop)**2*Sin(thetastop)**2),Sin(phistop)*Sin(thetastop))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistop   = atan2(Cos(phistop)*Sin(thetastop),Cos(thetastop))
-            ELSEIF (MPIDIR==1 ) THEN
+            ELSEIF (MPIDIR==1 ) then
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastart = atan2(Sqrt(Cos(thetastart)**2.0_RKIND+ Sin(phistart)**2*Sin(thetastart)**2),Cos(phistart)*Sin(thetastart))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistart   = atan2(Cos(thetastart),Sin(phistart)*Sin(thetastart))    
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Sin(phistop)**2*Sin(thetastop)**2),Cos(phistop)*Sin(thetastop))
@@ -767,7 +767,7 @@ CONTAINS
             tama3 = (this%oldSONDA%probes(i)%FarField(ii)%probe%n_cord)    
             do iii = 1, tama3
               !!!ROTATE MPI
-              IF (MPIDIR==2 ) THEN
+              if (MPIDIR==2 ) then
                   iox = this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii)
@@ -775,7 +775,7 @@ CONTAINS
                  this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = ioz
                  this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = iox
                  this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = ioy
-              ELSEIF (MPIDIR==1 ) THEN                    
+              ELSEIF (MPIDIR==1 ) then                    
                  iox = this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii)
@@ -796,7 +796,7 @@ CONTAINS
             tama3 = (this%oldSONDA%probes(i)%Electric(ii)%probe%n_cord)    
             do iii = 1, tama3
               !!!ROTATE MPI
-              IF (MPIDIR==2 ) THEN
+              if (MPIDIR==2 ) then
                  iox = this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii)
@@ -804,7 +804,7 @@ CONTAINS
                  this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = ioz
                  this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = iox
                  this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = ioy
-              ELSEIF (MPIDIR==1 ) THEN                    
+              ELSEIF (MPIDIR==1 ) then                    
                  iox = this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii)
@@ -825,7 +825,7 @@ CONTAINS
             tama3 = (this%oldSONDA%probes(i)%Magnetic(ii)%probe%n_cord)    
             do iii = 1, tama3
               !!!ROTATE MPI
-              IF (MPIDIR==2 ) THEN
+              if (MPIDIR==2 ) then
                  iox = this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii)
@@ -833,7 +833,7 @@ CONTAINS
                  this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = ioz
                  this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = iox
                  this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = ioy
-              ELSEIF (MPIDIR==1 ) THEN                    
+              ELSEIF (MPIDIR==1 ) then                    
                  iox = this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii)
                   ioy = this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii)
                   ioz = this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii)
@@ -848,9 +848,9 @@ CONTAINS
        end do
       !
        return
-   END SUBROUTINE rotate_generateSONDAs
+   end subroutine rotate_generateSONDAs
    
-   SUBROUTINE rotate_generateMasSondas (this,mpidir)     
+   subroutine rotate_generateMasSondas (this,mpidir)     
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir                          
       integer (kind=4) :: tama,tama2,i,ii  
@@ -873,10 +873,10 @@ CONTAINS
               TXI=old_MasSonda%Xtrancos      
               TYI=old_MasSonda%Ytrancos
               TZI=old_MasSonda%Ztrancos
-              IF ((OOR/=NP_COR_EX).AND.(OOR/=NP_COR_EY).AND.(OOR/=NP_COR_EZ).AND. &
-              (OOR/=NP_COR_HX).AND.(OOR/=NP_COR_HY).AND.(OOR/=NP_COR_HZ)) RETURN
+              if ((OOR/=NP_COR_EX).AND.(OOR/=NP_COR_EY).AND.(OOR/=NP_COR_EZ).AND. &
+              (OOR/=NP_COR_HX).AND.(OOR/=NP_COR_HY).AND.(OOR/=NP_COR_HZ)) return
               !!LAS IW Y LAS VG NO SE ROTAN
-              IF (MPIDIR==2 ) THEN
+              if (MPIDIR==2 ) then
                  this%Sonda%collection(i)%cordinates(ii)%XI=OZI   
                  this%Sonda%collection(i)%cordinates(ii)%XE=OZE
                  this%Sonda%collection(i)%cordinates(ii)%Xtrancos=TZI
@@ -889,14 +889,14 @@ CONTAINS
                  this%Sonda%collection(i)%cordinates(ii)%ZE=OYE
                  this%Sonda%collection(i)%cordinates(ii)%Ztrancos=TYI
                  
-                 IF (OOR== NP_COR_EX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EY
-                 IF (OOR== NP_COR_EY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EZ
-                 IF (OOR== NP_COR_EZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EX
+                 if (OOR== NP_COR_EX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EY
+                 if (OOR== NP_COR_EY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EZ
+                 if (OOR== NP_COR_EZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EX
                            
-                 IF (OOR== NP_COR_hX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_HY
-                 IF (OOR== NP_COR_hY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_HZ
-                 IF (OOR== NP_COR_hZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_HX
-              ELSEIF (MPIDIR==1 ) THEN
+                 if (OOR== NP_COR_hX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_HY
+                 if (OOR== NP_COR_hY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_HZ
+                 if (OOR== NP_COR_hZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_HX
+              ELSEIF (MPIDIR==1 ) then
                  this%Sonda%collection(i)%cordinates(ii)%XI=OYI
                  this%Sonda%collection(i)%cordinates(ii)%XE=OYE 
                  this%Sonda%collection(i)%cordinates(ii)%Xtrancos= TYI
@@ -909,21 +909,21 @@ CONTAINS
                  this%Sonda%collection(i)%cordinates(ii)%ZE=OXE 
                  this%Sonda%collection(i)%cordinates(ii)%Ztrancos=TXI
                  
-                 IF (OOR== NP_COR_EX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EZ
-                 IF (OOR== NP_COR_EY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EX
-                 IF (OOR== NP_COR_EZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EY
+                 if (OOR== NP_COR_EX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EZ
+                 if (OOR== NP_COR_EY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EX
+                 if (OOR== NP_COR_EZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_EY
                            
-                 IF (OOR== NP_COR_HX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_hZ
-                 IF (OOR== NP_COR_HY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_hX
-                 IF (OOR== NP_COR_HZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_hY
+                 if (OOR== NP_COR_HX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_hZ
+                 if (OOR== NP_COR_HY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_hX
+                 if (OOR== NP_COR_HZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_hY
               ENDIF                                              
               deallocate (old_MasSonda)
          end do
       end do
-      RETURN
-   END SUBROUTINE rotate_generateMasSondas
+      return
+   end subroutine rotate_generateMasSondas
    
-   SUBROUTINE rotate_generateBloqueProbes (this,mpidir)    
+   subroutine rotate_generateBloqueProbes (this,mpidir)    
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir                          
       integer (kind=4) :: tama,i  
@@ -934,7 +934,7 @@ CONTAINS
       do i = 1, tama      
           allocate(old_BloqueProbe,source=this%BloquePRB%BP(i))
           !MPI  ROTATE Bloque CURRENT
-          IF (MPIDIR==2 ) THEN
+          if (MPIDIR==2 ) then
              OXI=  old_BloqueProbe%i1
              OXE=  old_BloqueProbe%i2
              OYI=  old_BloqueProbe%j1
@@ -957,7 +957,7 @@ CONTAINS
                 this%BloquePRB%BP(i)%nml =  iEx
               CASE DEFAULT
              END SELECT
-          ELSEIF (MPIDIR==1 ) THEN
+          ELSEIF (MPIDIR==1 ) then
              OXI=  old_BloqueProbe%i1
              OXE=  old_BloqueProbe%i2
              OYI=  old_BloqueProbe%j1
@@ -986,10 +986,10 @@ CONTAINS
       
           
       !!!!FIN ROTATE
-      RETURN
-   END SUBROUTINE rotate_generateBloqueProbes
+      return
+   end subroutine rotate_generateBloqueProbes
 !!   
-   SUBROUTINE rotate_generateVolumicProbes(this,mpidir)    
+   subroutine rotate_generateVolumicProbes(this,mpidir)    
       type (Parseador), INTENT (INOUT) :: this
       integer (KIND=4) ::  mpidir                          
       integer (kind=4) :: tama,tama2,i,ii  
@@ -1025,13 +1025,13 @@ CONTAINS
               TYI=old_Coordinates%YTRANCOS
               TZI=old_Coordinates%ZTRANCOS
               !
-              IF ((OOR/=iExC).AND.(OOR/=iEyC).AND.(OOR/=iEzC).AND. &
+              if ((OOR/=iExC).AND.(OOR/=iEyC).AND.(OOR/=iEzC).AND. &
               (OOR/=iHxC).AND.(OOR/=iHyC).AND.(OOR/=iHzC).AND. &
               (OOR/=iCurX).AND.(OOR/=iCurY).AND.(OOR/=iCurZ).AND. &
-               (OOR/=iMEC).AND.(OOR/=iMHC).AND.(OOR/=iCur)) RETURN
+               (OOR/=iMEC).AND.(OOR/=iMHC).AND.(OOR/=iCur)) return
               !!LAS IW Y LAS VG NO SE ROTAN.
         !!las imec, imhc e icur no le afecta el oor
-              IF (MPIDIR==2 ) THEN
+              if (MPIDIR==2 ) then
                  this%VolPrb%collection(i)%cordinates(ii)%XI=OZI
                  this%VolPrb%collection(i)%cordinates(ii)%XE=OZE
                  this%VolPrb%collection(i)%cordinates(ii)%YI=OXI
@@ -1043,18 +1043,18 @@ CONTAINS
                  this%VolPrb%collection(i)%cordinates(ii)%YTRANCOS=TXI
                  this%VolPrb%collection(i)%cordinates(ii)%ZTRANCOS=TYI
                  !
-                 IF (OOR== iEXc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iEYc
-                 IF (OOR== iEYc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iEZc
-                 IF (OOR== iEZc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iEXc
+                 if (OOR== iEXc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iEYc
+                 if (OOR== iEYc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iEZc
+                 if (OOR== iEZc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iEXc
                      
-                 IF (OOR== ihXc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iHYc
-                 IF (OOR== ihYc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iHZc
-                 IF (OOR== ihZc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iHXc
+                 if (OOR== ihXc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iHYc
+                 if (OOR== ihYc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iHZc
+                 if (OOR== ihZc)   this%VolPrb%collection(i)%cordinates(ii)%OR= iHXc
                            
-                 IF (OOR== iCurX)  this%VolPrb%collection(i)%cordinates(ii)%OR= iCurY
-                 IF (OOR== iCurY)  this%VolPrb%collection(i)%cordinates(ii)%OR= iCurZ
-                 IF (OOR== iCurZ)  this%VolPrb%collection(i)%cordinates(ii)%OR= iCurX
-              ELSEIF (MPIDIR==1 ) THEN
+                 if (OOR== iCurX)  this%VolPrb%collection(i)%cordinates(ii)%OR= iCurY
+                 if (OOR== iCurY)  this%VolPrb%collection(i)%cordinates(ii)%OR= iCurZ
+                 if (OOR== iCurZ)  this%VolPrb%collection(i)%cordinates(ii)%OR= iCurX
+              ELSEIF (MPIDIR==1 ) then
                  this%VolPrb%collection(i)%cordinates(ii)%XI=OYI
                  this%VolPrb%collection(i)%cordinates(ii)%XE=OYE
                  this%VolPrb%collection(i)%cordinates(ii)%YI=OZI
@@ -1066,31 +1066,31 @@ CONTAINS
                  this%VolPrb%collection(i)%cordinates(ii)%YTRANCOS=TZI
                  this%VolPrb%collection(i)%cordinates(ii)%ZTRANCOS=TXI
                  !
-                 IF (OOR== iEXc)  this%VolPrb%collection(i)%cordinates(ii)%OR= iEZc
-                 IF (OOR== iEYc)  this%VolPrb%collection(i)%cordinates(ii)%OR= iEXc
-                 IF (OOR== iEZc)  this%VolPrb%collection(i)%cordinates(ii)%OR= iEYc
+                 if (OOR== iEXc)  this%VolPrb%collection(i)%cordinates(ii)%OR= iEZc
+                 if (OOR== iEYc)  this%VolPrb%collection(i)%cordinates(ii)%OR= iEXc
+                 if (OOR== iEZc)  this%VolPrb%collection(i)%cordinates(ii)%OR= iEYc
                     
-                 IF (OOR== iHXc)  this%VolPrb%collection(i)%cordinates(ii)%OR= ihZc
-                 IF (OOR== iHYc)  this%VolPrb%collection(i)%cordinates(ii)%OR= ihXc
-                 IF (OOR== iHZc)  this%VolPrb%collection(i)%cordinates(ii)%OR= ihYc
+                 if (OOR== iHXc)  this%VolPrb%collection(i)%cordinates(ii)%OR= ihZc
+                 if (OOR== iHYc)  this%VolPrb%collection(i)%cordinates(ii)%OR= ihXc
+                 if (OOR== iHZc)  this%VolPrb%collection(i)%cordinates(ii)%OR= ihYc
                          
-                 IF (OOR== iCurX) this%VolPrb%collection(i)%cordinates(ii)%OR= iCurZ
-                 IF (OOR== iCurY) this%VolPrb%collection(i)%cordinates(ii)%OR= iCurX
-                 IF (OOR== iCurZ) this%VolPrb%collection(i)%cordinates(ii)%OR= iCurY
+                 if (OOR== iCurX) this%VolPrb%collection(i)%cordinates(ii)%OR= iCurZ
+                 if (OOR== iCurY) this%VolPrb%collection(i)%cordinates(ii)%OR= iCurX
+                 if (OOR== iCurZ) this%VolPrb%collection(i)%cordinates(ii)%OR= iCurY
               ENDIF                                                  
               deallocate (old_Coordinates)
          end do
       end do
       
-      RETURN
-   END SUBROUTINE rotate_generateVolumicProbes
+      return
+   end subroutine rotate_generateVolumicProbes
 
 !!                                                    
 !!!---------------------------------------------------->
 !!!---------------------------------------------------->
 !!!---------------------------------------------------->
 !!
-   SUBROUTINE ROTATEMPI(mpidir,COORDEN)         
+   subroutine ROTATEMPI(mpidir,COORDEN)         
       integer (KIND=4) ::  mpidir    
       type (coords), INTENT (INOUT) :: COORDEN
       integer (KIND=4)   :: OXI, OXE, OYI, OYE,OZI, OZE, OOR,TXI,TYI,TZI
@@ -1104,7 +1104,7 @@ CONTAINS
       OZE=COORDEN%ZE  
       TZI=COORDEN%Ztrancos    
       OOR=COORDEN%OR    
-      IF (MPIDIR==2 ) THEN
+      if (MPIDIR==2 ) then
          COORDEN%XI=OZI
          COORDEN%XE=OZE      
          COORDEN%Xtrancos =TZI    
@@ -1114,13 +1114,13 @@ CONTAINS
          COORDEN%ZI=OYI
          COORDEN%ZE=OYE     
          COORDEN%Ztrancos =TYI 
-         IF (OOR== iEx) COORDEN%OR= iEy
-         IF (OOR==-iEx) COORDEN%OR=-iEy
-         IF (OOR== iEy) COORDEN%OR= iEz
-         IF (OOR==-iEy) COORDEN%OR=-iEz
-         IF (OOR== iEz) COORDEN%OR= iEx
-         IF (OOR==-iEz) COORDEN%OR=-iEx
-      ELSEIF (MPIDIR==1 ) THEN
+         if (OOR== iEx) COORDEN%OR= iEy
+         if (OOR==-iEx) COORDEN%OR=-iEy
+         if (OOR== iEy) COORDEN%OR= iEz
+         if (OOR==-iEy) COORDEN%OR=-iEz
+         if (OOR== iEz) COORDEN%OR= iEx
+         if (OOR==-iEz) COORDEN%OR=-iEx
+      ELSEIF (MPIDIR==1 ) then
          COORDEN%XI=OYI
          COORDEN%XE=OYE         
          COORDEN%Xtrancos =TYI    
@@ -1130,21 +1130,21 @@ CONTAINS
          COORDEN%ZI=OXI
          COORDEN%ZE=OXE 
          COORDEN%Ztrancos =TXI 
-         IF (OOR== iEx) COORDEN%OR= iEz
-         IF (OOR==-iEx) COORDEN%OR=-iEz
-         IF (OOR== iEy) COORDEN%OR= iEx
-         IF (OOR==-iEy) COORDEN%OR=-iEx
-         IF (OOR== iEz) COORDEN%OR= iEy
-         IF (OOR==-iEz) COORDEN%OR=-iEy
+         if (OOR== iEx) COORDEN%OR= iEz
+         if (OOR==-iEx) COORDEN%OR=-iEz
+         if (OOR== iEy) COORDEN%OR= iEx
+         if (OOR==-iEy) COORDEN%OR=-iEx
+         if (OOR== iEz) COORDEN%OR= iEy
+         if (OOR==-iEz) COORDEN%OR=-iEy
       ENDIF
-      RETURN
-   END SUBROUTINE ROTATEMPI
+      return
+   end subroutine ROTATEMPI
 
-   SUBROUTINE ROTATEMPI_SCALED(mpidir,COORDEN)        
+   subroutine ROTATEMPI_SCALED(mpidir,COORDEN)        
       integer (KIND=4) ::  mpidir    
       type (coords_SCALED), INTENT (INOUT) :: COORDEN
       integer (KIND=4)   :: OXI, OXE, OYI, OYE,OZI, OZE,oor
-      real (KIND=RK) :: OXC,OYC,OZC
+      real(KIND=RK) :: OXC,OYC,OZC
       OXI=COORDEN%XI
       OXE=COORDEN%XE
       OYI=COORDEN%YI
@@ -1155,7 +1155,7 @@ CONTAINS
       OYC=COORDEN%YC  
       OZC=COORDEN%ZC
       OOr=COORDEN%or
-      IF (MPIDIR==2 ) THEN
+      if (MPIDIR==2 ) then
          COORDEN%XI=OZI
          COORDEN%XE=OZE
          COORDEN%YI=OXI
@@ -1165,14 +1165,14 @@ CONTAINS
          COORDEN%XC=OzC
          COORDEN%YC=OxC
          COORDEN%ZC=OyC  
-         IF (OOR== iEx) COORDEN%OR= iEy
-         IF (OOR==-iEx) COORDEN%OR=-iEy
-         IF (OOR== iEy) COORDEN%OR= iEz
-         IF (OOR==-iEy) COORDEN%OR=-iEz
-         IF (OOR== iEz) COORDEN%OR= iEx
-         IF (OOR==-iEz) COORDEN%OR=-iEx
+         if (OOR== iEx) COORDEN%OR= iEy
+         if (OOR==-iEx) COORDEN%OR=-iEy
+         if (OOR== iEy) COORDEN%OR= iEz
+         if (OOR==-iEy) COORDEN%OR=-iEz
+         if (OOR== iEz) COORDEN%OR= iEx
+         if (OOR==-iEz) COORDEN%OR=-iEx
 
-      ELSEIF (MPIDIR==1 ) THEN
+      ELSEIF (MPIDIR==1 ) then
          COORDEN%XI=OYI
          COORDEN%XE=OYE
          COORDEN%YI=OZI
@@ -1182,16 +1182,16 @@ CONTAINS
          COORDEN%XC=OyC
          COORDEN%YC=OzC
          COORDEN%ZC=OxC         
-         IF (OOR== iEx) COORDEN%OR= iEz
-         IF (OOR==-iEx) COORDEN%OR=-iEz
-         IF (OOR== iEy) COORDEN%OR= iEx
-         IF (OOR==-iEy) COORDEN%OR=-iEx
-         IF (OOR== iEz) COORDEN%OR= iEy
-         IF (OOR==-iEz) COORDEN%OR=-iEy
+         if (OOR== iEx) COORDEN%OR= iEz
+         if (OOR==-iEx) COORDEN%OR=-iEz
+         if (OOR== iEy) COORDEN%OR= iEx
+         if (OOR==-iEy) COORDEN%OR=-iEx
+         if (OOR== iEz) COORDEN%OR= iEy
+         if (OOR==-iEz) COORDEN%OR=-iEy
 
       ENDIF
-      RETURN
-   END SUBROUTINE ROTATEMPI_SCALED
+      return
+   end subroutine ROTATEMPI_SCALED
      
    subroutine rotate_freq_depend_material_properties(mpidir, freqDepMat)
       integer (KIND=4), intent(in) ::  mpidir    
@@ -1505,4 +1505,4 @@ CONTAINS
    end subroutine
 
 
-END MODULE nfde_rotate_m
+end module nfde_rotate_m

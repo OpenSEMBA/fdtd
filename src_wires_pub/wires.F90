@@ -21,15 +21,15 @@ module HollandWires
    implicit none
    
    
-   real (KIND=RKIND_wires), PARAMETER             :: HEUR_RADIUSOVERDELTA=10.0
+   real(KIND=RKIND_wires), PARAMETER             :: HEUR_RADIUSOVERDELTA=10.0
    !local variables
 
    logical                                         , save :: thereAreVsources,thereAreIsources,thereAreMurConditions
    type(Thinwires_t)     , target                  ,save  ::  HWires
-   real (KIND=RKIND_wires)     , pointer, dimension ( : ),save  ::  InvEps  ,InvMu, OldInvEps  ,OldInvMu
+   real(KIND=RKIND_wires)     , pointer, dimension ( : ),save  ::  InvEps  ,InvMu, OldInvEps  ,OldInvMu
    
 !!!variables globales del modulo
-   real (KIND=RKIND_wires), save           ::  eps0,mu0
+   real(KIND=RKIND_wires), save           ::  eps0,mu0
 !!!
    private
 
@@ -44,13 +44,13 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitWires(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,ThereAreWires,&
    Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, g2,SINPML_fullsize,fullsize, dtcritico, eps00,mu00, control)     
-      real (KIND=RKIND), intent(in)           ::  eps00,mu00
-      real (KIND=RKIND)           ::  eps000,mu000  !son dummies
+      real(KIND=RKIND), intent(in)           ::  eps00,mu00
+      real(KIND=RKIND)           ::  eps000,mu000  !son dummies
       type (limit_t), dimension(1:6), intent(in)  :: SINPML_fullsize,fullsize
       type (SGGFDTDINFO), intent(INOUT) , target    ::  sgg
-      real (KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
-      real (KIND=RKIND_tiempo), intent(out) :: dtcritico
-      real (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+      real(KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
+      real(KIND=RKIND_tiempo), intent(out) :: dtcritico
+      real(KIND=RKIND) , dimension (:)   , intent(in)      ::  &
            Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
            Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
            Idze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
@@ -58,7 +58,7 @@ contains
            Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
            Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
                                                            
-        real (KIND=RKIND)   , intent(in), target      :: &
+        real(KIND=RKIND)   , intent(in), target      :: &
             Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
             Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
             Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
@@ -81,10 +81,10 @@ contains
       
       logical , dimension (:), pointer :: LindProb
 
-      LOGICAL, INTENT(OUT)  ::  ThereAreWires
+      LOGICAL, intent(out)  ::  ThereAreWires
       logical :: proceed,proceed1,proceed2,NodeExists,Is_LeftEnd,Is_RightEnd,IsEnd_norLeft_norRight,repetido,conectado,conectado1,conectado2,asignado
       logical ::  IsPEC , islossy ,IsLossyPlus,IsLossyMinu,IsPecPlus,IsPECminu
-      real (kind=RKIND_wires) :: rlossy,newr0, factorradius,factordelta
+      real(kind=RKIND_wires) :: rlossy,newr0, factorradius,factordelta
       type(sim_control_t), intent(in) :: control
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: med(0:11)=-1
 
@@ -92,7 +92,7 @@ contains
       integer (kind=4)  ::  conta,i1,j1,k1,i2,j2,k2,iwi,iwj,iwjjj,jmed,nn,nnn,i1libre,j1libre,k1libre, &
       whatfield,whatfield2,origIndex,OrigIndex2,LeftEnd_index,RightEnd_index,nm, &
       i,j,k,indexnode,kmenos1,kmasoffk,kmas1,tipofield,i22,j22,k22,i11,j11,k11,primernorabo,Jprimernorabo=-1
-      real (KIND=RKIND_wires)   ::  r0, desp, deltadummy1 ,deltadummy2, deltadummy, oldr0,a,b, &
+      real(KIND=RKIND_wires)   ::  r0, desp, deltadummy1 ,deltadummy2, deltadummy, oldr0,a,b, &
       despT1,despT2,DenominatorFractionMinusDummy,  &
       DenominatorFractionPlusDummy,givenautoin,resist,givenautoin_devia,resist_devia, &
       mindt,maxA,dt0,sigt,totalLind,capaci,autoin,deltax,sigtPlus,sigtMinu
@@ -114,7 +114,7 @@ contains
       integer (kind=4)  ::  int1, int2,ierr,mediox,medioy,medioz,ZI,ZE,offset,offi,offj,offk,NUMESEG,dummy1,dummy2,dummy3,multirabos,dummyfin,medio1,medio2,medio3,medio1m,medio2m,medio3m
       character(len=BUFSIZE) :: buff
 
-      real (KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
+      real(KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
       character (LEN=BUFSIZE)  ::  whoami
       character (len=3), dimension(1:3) :: DIR
       
@@ -525,8 +525,8 @@ contains
                      dummy1=-1
                      dummyfin=1
                   endif
-                  if ( ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).or.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd)) ) THEN
-                     IF (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos/=1) then
+                  if ( ((sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd).or.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd)) ) then
+                     if (sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos/=1) then
                         dummy2=-1
                         buscakk2: do iwjjj=iwj+dummy1,dummyfin,dummy1 !atras o adelante
                            i2=        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%i
@@ -964,12 +964,12 @@ contains
                      repetido = (i1 == i2).and.(j1 == j2).and.(k1 == k2).and.(whatfield == whatfield2)
                      if (repetido) then
                         if     (.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%Is_LeftEnd .or. &
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%Is_RightEnd )) THEN
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%Is_RightEnd )) then
 
                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido=repetido.or. &
                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwjjj)%repetido
                         elseif (.not.(sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_LeftEnd .or. &
-                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd )) THEN
+                        sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%Is_RightEnd )) then
 
                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%repetido=repetido.or. &
                            sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%segm(iwj  )%repetido
@@ -2511,10 +2511,10 @@ contains
          orgmenos1 => null()
          orgmas1 => null()
          if (i1>1) then
-            IF (HWires%CurrentSegment(i1-1)%indexmed==HWires%CurrentSegment(i1)%indexmed) orgmenos1=>HWires%CurrentSegment(i1-1)
+            if (HWires%CurrentSegment(i1-1)%indexmed==HWires%CurrentSegment(i1)%indexmed) orgmenos1=>HWires%CurrentSegment(i1-1)
          endif
          if (i1<NUMESEG) then
-            IF (HWires%CurrentSegment(i1+1)%indexmed==HWires%CurrentSegment(i1)%indexmed) orgmas1=>HWires%CurrentSegment(i1+1)
+            if (HWires%CurrentSegment(i1+1)%indexmed==HWires%CurrentSegment(i1)%indexmed) orgmas1=>HWires%CurrentSegment(i1+1)
          endif
          do j1=1,HWires%NumCurrentSegments
             fin=>HWires%CurrentSegment(j1)
@@ -2566,7 +2566,7 @@ contains
                                        endif
                                     end do b2
                                  endif
-                                 IF (PROCEED2) THEN
+                                 if (PROCEED2) then
                                     b4: do j2=1,2*MaxNumCurrentMinusPlus
                                        if (HWires%ChargeNode(nn)%YESsegment(j2)  < 0 )   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(2)
@@ -2662,7 +2662,7 @@ contains
                                        endif
                                     end do b22
                                  endif
-                                 IF (PROCEED2) THEN
+                                 if (PROCEED2) then
                                     b42: do j2=1,2*MaxNumCurrentMinusPlus
                                        if (HWires%ChargeNode(nn)%YESsegment(j2)  < 0 )   then
                                           HWires%ChargeNode(nn)%YESsegment(j2)  = adj%YESsegment(2)
@@ -3789,7 +3789,7 @@ contains
             sgg%Med(sggmiE)%Is%Lossy ) then
                   call deembed_segment
             !
-                  IF (.not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then !NO NO NO ES UN TERMINAL
+                  if (.not.(IsEnd_norLeft_norRight.or.Is_LeftEnd.or.Is_RightEnd)) then !NO NO NO ES UN TERMINAL
                    if ((sggmiE == 0).or.(sgg%med(sggmiE)%is%pec)) then
                        write (buff,'(a,6i9)')        'wir0_WARNING: YES De-embedding a NON-TERMINAL struct segment from PEC ', sggmiE, &
                                   HWires%CurrentSegment(conta)%origIndex,HWires%CurrentSegment(conta)%i, &
@@ -4281,15 +4281,15 @@ subroutine resume_casuistics
 
       logical :: simu_devia
       type (SGGFDTDINFO), intent(IN)      ::  sgg
-      real (KIND=RKIND) , pointer, dimension (:),intent(in)      :: G2
+      real(KIND=RKIND) , pointer, dimension (:),intent(in)      :: G2
       character(len=*), INTENT(in) :: wiresflavor
       logical, intent(in) :: fieldtotl
-      real (KIND=RKIND),intent(in)            ::  eps00,mu00
-      real (KIND=RKIND_wires)           ::  dl
+      real(KIND=RKIND),intent(in)            ::  eps00,mu00
+      real(KIND=RKIND_wires)           ::  dl
       real      (KIND=RKIND_wires), pointer, dimension(:,:) ::  Den
       integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2,i1,NumParallel,imed
 
-      real (KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
+      real(KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
 
       type (CurrentSegments), pointer  ::  dummy
       type (ChargeNodes), pointer  ::  Nodo
@@ -4748,7 +4748,7 @@ subroutine resume_casuistics
                   adj%IsHeterogeneousJunction=.false.
                   if (adj%Parallel) then
                      if ((second%Is_RightEnd .or. second%Is_LeftEnd .or. second%IsEnd_norLeft_norRight).and. &
-                     (first%Is_RightEnd .or. first%Is_LeftEnd .or. first%IsEnd_norLeft_norRight)) THEN
+                     (first%Is_RightEnd .or. first%Is_LeftEnd .or. first%IsEnd_norLeft_norRight)) then
                         if (RequestedConnection) then
                            write (buff,'(a)')  'wir2_ERROR: Requested connection on non-connected Parallel Adjacent ENDING segments from multiWIREs:  '
                            if ((first%k >= ZI).and.(first%k <= ZE)) call WarnErrReport(buff,.true.)
@@ -4771,7 +4771,7 @@ subroutine resume_casuistics
                      ENDIF
                   else
                      if ((second%Is_RightEnd .or. second%Is_LeftEnd .or. second%IsEnd_norLeft_norRight).and. &
-                     (first%Is_RightEnd .or. first%Is_LeftEnd .or. first%IsEnd_norLeft_norRight)) THEN
+                     (first%Is_RightEnd .or. first%Is_LeftEnd .or. first%IsEnd_norLeft_norRight)) then
                         if (RequestedConnection) then
                            write (buff,'(a)')   'wir2_ERROR: Requested connection on non-connected Non-Parallel Adjacent ENDING segments from multiWIREs:  '
                            if ((first%k >= ZI).and.(first%k <= ZE)) call WarnErrReport(buff)
@@ -4855,7 +4855,7 @@ subroutine resume_casuistics
 !!!!fina aniadido 141218
                   ENDIF
                endif
-            ELSEIF (First%indexmed == second%indexmed) THEN
+            ELSEIF (First%indexmed == second%indexmed) then
                if (adj%Parallel) then !paralelos del mismo hilo
                   if (.not.strictOLD) then
                      adj%is=.false.
@@ -5130,7 +5130,7 @@ subroutine resume_casuistics
 
    subroutine AdvanceWiresE(sgg,timeinstant, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)
                     
-      real (KIND=RKIND), intent(IN)           ::  eps0,mu0
+      real(KIND=RKIND), intent(IN)           ::  eps0,mu0
       integer, intent(IN) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
       type (SGGFDTDINFO), intent(IN)      ::  sgg
@@ -5138,8 +5138,8 @@ subroutine resume_casuistics
       integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer (kind=4), intent(IN)  ::  timeinstant
-      real (KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
-      real (KIND=RKIND_wires)   ::  Vincid,Iincid
+      real(KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
+      real(KIND=RKIND_wires)   ::  Vincid,Iincid
       type (CurrentSegments), pointer  ::  Segmento, Segmento2
       type (ChargeNodes), pointer  ::  Nodo
       type (TMultiline), pointer                      ::  Multiline
@@ -5540,7 +5540,7 @@ subroutine resume_casuistics
 
    subroutine AdvanceWiresH(sgg,timeinstant, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)
                     
-      real (KIND=RKIND), intent(IN)           ::  eps0,mu0
+      real(KIND=RKIND), intent(IN)           ::  eps0,mu0
       integer, intent(IN) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
       type (SGGFDTDINFO), intent(IN)      ::  sgg
@@ -5548,8 +5548,8 @@ subroutine resume_casuistics
       integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer (kind=4), intent(IN)  ::  timeinstant
-      real (KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
-      real (KIND=RKIND_wires)   ::  Vincid,Iincid
+      real(KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
+      real(KIND=RKIND_wires)   ::  Vincid,Iincid
       type (CurrentSegments), pointer  ::  Segmento, Segmento2
       type (ChargeNodes), pointer  ::  Nodo
       type (TMultiline), pointer                      ::  Multiline
@@ -5594,13 +5594,13 @@ subroutine resume_casuistics
       integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer (kind=4), intent(IN)  ::  timeinstant
-      real (KIND=RKIND_wires)   ::  Iplus,IMinus,IplusPast,IMinusPast,source,timei
-      real (KIND=RKIND_wires)   ::  Vincid,Iincid
+      real(KIND=RKIND_wires)   ::  Iplus,IMinus,IplusPast,IMinusPast,source,timei
+      real(KIND=RKIND_wires)   ::  Vincid,Iincid
       type (CurrentSegments), pointer  ::  Segmento , Segmento2
       type (ChargeNodes), pointer  ::  Nodo
       type (TMultiline), pointer                      ::  Multiline
       character(len=*), INTENT(in) :: wiresflavor
-      real (KIND=RKIND_wires) , dimension(1:HWires%NumCurrentSegments)  ::  a,b,c,d,x
+      real(KIND=RKIND_wires) , dimension(1:HWires%NumCurrentSegments)  ::  a,b,c,d,x
       
       timei = sgg%tiempo(timeinstant) 
       !!!
@@ -5780,11 +5780,11 @@ subroutine resume_casuistics
    !!! Function to interpolate the evolution files at the desired time
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   real (KIND=RKIND_wires)  function evolucion(t,evol,deltaevol,numus)
+   real(KIND=RKIND_wires)  function evolucion(t,evol,deltaevol,numus)
       integer (kind=4)  ::  numus
       integer (kind=8)  ::  nprev
-      real (KIND=RKIND_wires) , dimension(0 : numus)  ::  evol
-      real (KIND=RKIND_wires)   ::  deltaevol, t
+      real(KIND=RKIND_wires) , dimension(0 : numus)  ::  evol
+      real(KIND=RKIND_wires)   ::  deltaevol, t
       !
       nprev=int((t)/deltaevol)
       if ((nprev+1 > numus).OR.(NPREV+1 <= 0)) then !SI NPREV<0 ES PORQUE SE HA DESBORADO EL ENTERO !BUG MIGEL 130614
@@ -6753,7 +6753,7 @@ subroutine resume_casuistics
    !!! Functions to get the values of the
    !!! non diagonal elementos of the autoinduction
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   real (KIND=RKIND_wires) function F(A, B, a1, a2, d, phi)
+   real(KIND=RKIND_wires) function F(A, B, a1, a2, d, phi)
       integer (KIND=4)     :: i, j
       real    (KIND=RKIND_wires) :: A, B, a1, a2, d, phi, frac
 
@@ -6769,7 +6769,7 @@ subroutine resume_casuistics
       return
    end function
 
-   real (KIND=RKIND_wires) function Gkl(k, l, A, B, d, phi)
+   real(KIND=RKIND_wires) function Gkl(k, l, A, B, d, phi)
       integer (KIND=4)     :: k, l
       real    (KIND=RKIND_wires) :: A, B, d, phi, Ak, Bl
       Ak = Ai(k, A, d, phi)
@@ -6778,7 +6778,7 @@ subroutine resume_casuistics
       return
    end function
 
-   real (KIND=RKIND_wires) function Hkl(k, l, A, B, d, phi)
+   real(KIND=RKIND_wires) function Hkl(k, l, A, B, d, phi)
       integer (KIND=4)     :: k, l
       real    (KIND=RKIND_wires) :: A, B, d, phi, Ak, Bl
       Ak = Ai(k, A, d, phi)
@@ -6787,7 +6787,7 @@ subroutine resume_casuistics
       return
    end function
 
-   real (KIND=RKIND_wires) function Ai(i, A, d, phi)
+   real(KIND=RKIND_wires) function Ai(i, A, d, phi)
       integer (KIND=4)     :: i
       real    (KIND=RKIND_wires) :: A, d, phi
       ai=-1.0
@@ -6801,7 +6801,7 @@ subroutine resume_casuistics
       return
    end function
 
-   real (KIND=RKIND_wires) function Bi(i, B, d, phi)
+   real(KIND=RKIND_wires) function Bi(i, B, d, phi)
       integer (KIND=4)     :: i
       real    (KIND=RKIND_wires) :: B, d, phi
       bi=-1.0
@@ -6907,8 +6907,8 @@ subroutine resume_casuistics
 
    function Lambert(z)  result(x)
       implicit none
-      real (kind=RKIND_wires) :: x,expx,newx,z
-      real (kind=RKIND_wires) :: eps
+      real(kind=RKIND_wires) :: x,expx,newx,z
+      real(kind=RKIND_wires) :: eps
       integer(kind=4) :: maxn=2**12,n
       x=z
       eps=abs(x/100000.0)
@@ -6944,10 +6944,10 @@ subroutine resume_casuistics
       !  n - number of equations
 
       integer,intent(in) :: n
-      real (kind=RKIND_wires) ,dimension(n),intent(in) :: a,b,c,d
-      real (kind=RKIND_wires) ,dimension(n),intent(out) :: x
-      real (kind=RKIND_wires) ,dimension(n) :: cp,dp
-      real (kind=RKIND_wires)  :: m
+      real(kind=RKIND_wires) ,dimension(n),intent(in) :: a,b,c,d
+      real(kind=RKIND_wires) ,dimension(n),intent(out) :: x
+      real(kind=RKIND_wires) ,dimension(n) :: cp,dp
+      real(kind=RKIND_wires)  :: m
       integer i
 
       !  initialize c-prime and d-prime
@@ -6971,7 +6971,7 @@ subroutine resume_casuistics
       subroutine wiresconstantes(fieldtotl,dummy,G2,sgg)
       
           type (SGGFDTDINFO), intent(IN) , target    ::  sgg
-          real (KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
+          real(KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
           
           logical, intent(in) :: fieldtotl
           type (CurrentSegments), pointer  ::  dummy

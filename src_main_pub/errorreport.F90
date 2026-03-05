@@ -8,22 +8,22 @@ module Report
 
    integer (kind=4), parameter  ::  reportingseconds=60
    type :: tiempo_t
-      real ( kind = 8)  ::  segundos
+      real( kind = 8)  ::  segundos
       character ( LEN=BUFSIZE)  ::  hora
       character ( LEN=BUFSIZE)  ::  fecha
    end type
 
 
    !For timing
-   real (KIND=8), SAVE ::  time_begin, time_end, time_begin2,time_begin3,time_begin_absoluto, time_end2,time_desdelanzamiento
-   real (KIND=RKIND), SAVE ::  megaceldas,megaceldastotales,speedInst, speedGlobInst,speedAvg,speedGlobAvg
-   real (KIND=RKIND), SAVE  ::  energy,energyTotal,oldenergyTotal,snapLevel
+   real(KIND=8), SAVE ::  time_begin, time_end, time_begin2,time_begin3,time_begin_absoluto, time_end2,time_desdelanzamiento
+   real(KIND=RKIND), SAVE ::  megaceldas,megaceldastotales,speedInst, speedGlobInst,speedAvg,speedGlobAvg
+   real(KIND=RKIND), SAVE  ::  energy,energyTotal,oldenergyTotal,snapLevel
    type (tiempo_t), SAVE  ::  time_out2
    !
    character (LEN=BUFSIZE), SAVE :: charmeg
    integer (kind=4), SAVE   ::  reportedinstant,snapStep,snapHowMany,countersnap
    logical, SAVE :: printea,calledStoponerrroonlyprint=.false.,warningfileIsOpen=.false.,verbose,file10isopen,file11isopen
-   CHARACTER (LEN=BUFSIZE), SAVE :: warningFile = ' '
+   character (LEN=BUFSIZE), SAVE :: warningFile = ' '
    character (LEN=BUFSIZE), save  ::  whoami
 
    integer, save ::  thefile !for mpi file management
@@ -31,7 +31,7 @@ module Report
    !
    type (coorsxyzP) , save  ::  Punto
 
-   CHARACTER (LEN=BUFSIZE), SAVE :: mynEntradaRoot
+   character (LEN=BUFSIZE), SAVE :: mynEntradaRoot
 
    !!!logical, SAVE :: dxfFileIsOpen=.false.
    logical, SAVE :: fatalerror=.false.
@@ -97,7 +97,7 @@ contains
 #ifdef keeppause
       if (present(calledfrommain)) then
          if (calledfrommain) then
-            IF (layoutnumber == 0) THEN
+            if (layoutnumber == 0) then
                OPEN (38, FILE='pause')
                WRITE (38, '(a)') '!END'
                CLOSE (38)
@@ -108,7 +108,7 @@ contains
             return
          endif
       else
-         IF (layoutnumber == 0) THEN
+         if (layoutnumber == 0) then
             OPEN (38, FILE='pause')
             WRITE (38, '(a)') '!END'
             CLOSE (38)
@@ -117,7 +117,7 @@ contains
                                    '(correct error and remove to continue)',.true.)
       endif
 #else
-      IF (layoutnumber == 0) THEN
+      if (layoutnumber == 0) then
          ficherito='running'
           call openclosedelete(ficherito)
          !
@@ -183,7 +183,7 @@ contains
 
       !
 
-      IF (c%layoutnumber == 0) THEN  !only the master
+      if (c%layoutnumber == 0) then  !only the master
          if (c%resume) then
             open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted',position='append')
          else
@@ -267,7 +267,7 @@ contains
       call print11(layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
       !!!
       !
-      IF ((thereare%Multiports).or.(thereare%AnisMultiports))     then
+      if ((thereare%Multiports).or.(thereare%AnisMultiports))     then
 #ifdef CompileWithNIBC
          continue
 #else
@@ -300,32 +300,32 @@ contains
          buff=   ' has planewaves'
          call warnerrreport(buff)
       endif
-      IF (thereare%Multiports)     then
+      if (thereare%Multiports)     then
          buff=   ' has MIBC Multiports'
          call warnerrreport(buff)
       endif
-      IF (thereare%AnisMultiports)     then
+      if (thereare%AnisMultiports)     then
          buff=   ' has MIBC Anisotropic Multiports'
          call warnerrreport(buff)
       endif
-      IF (thereare%SGBCs)     then
+      if (thereare%SGBCs)     then
          buff=   ' has Thin metal Materials'
          call warnerrreport(buff)
       endif
-      IF ((thereare%Anisotropic).and.(.not.thereare%ThinSlot))     then
+      if ((thereare%Anisotropic).and.(.not.thereare%ThinSlot))     then
          buff=   ' has pure anisotropic media'
          call warnerrreport(buff)
       endif
-      IF (thereare%ThinSlot)     then
+      if (thereare%ThinSlot)     then
          buff=   ' has Thin Slots'
          call warnerrreport(buff)
       endif
       !
-      IF (thereare%EDispersives)     then
+      if (thereare%EDispersives)     then
          buff=   ' has electric dispersives'
          call warnerrreport(buff)
       endif
-      IF (thereare%MDispersives)     then
+      if (thereare%MDispersives)     then
          buff=   ' has magnetic dispersives'
          call warnerrreport(buff)
       endif
@@ -392,9 +392,9 @@ contains
    subroutine InitTiming(sgg, c, t, initialtimestep, maxSourceValue)
       type (SGGFDTDINFO), intent(IN) :: sgg
       type(sim_control_t) , intent(in):: c
-      real (KIND=8), intent(in)   :: t
+      real(KIND=8), intent(in)   :: t
       integer (kind=4), intent(in) :: initialtimestep
-      real (KIND=RKIND), intent(in)   ::  maxSourceValue
+      real(KIND=RKIND), intent(in)   ::  maxSourceValue
       type (tiempo_t) :: time_out2,time_comienzo
 #ifdef CompileWithMPI
       integer (kind=4) :: ierr
@@ -425,7 +425,7 @@ contains
       write(dubuf,*)  'Total Mcells: ',megaceldastotales
       call print11(c%layoutnumber,dubuf)
 
-      IF (c%flushsecondsFIELDS/=0) then
+      if (c%flushsecondsFIELDS/=0) then
          write(dubuf,*)  'Flushing restarting FIELDS every ',int(c%flushsecondsFIELDS/60.0_RKIND),' minutes'
          call print11(c%layoutnumber,dubuf)
       else
@@ -436,7 +436,7 @@ contains
             call print11(c%layoutnumber,dubuf)
          endif
       endif
-      IF (c%flushsecondsDATA/=0) then
+      if (c%flushsecondsDATA/=0) then
          write(dubuf,*)  'Flushing observation DATA every  ',int(c%flushsecondsDATA/60.0_RKIND),' minutes and every ', &
                           BuffObse,' steps'
          call print11(c%layoutnumber,dubuf)
@@ -482,11 +482,11 @@ contains
       data diasenbisiesto /31,60 ,91 ,121,152,182,213,244,274,305,335,366/
       type (tiempo_t), intent(out)  ::  time_out2
 
-      real ( kind = 8)  ::  time_out
+      real( kind = 8)  ::  time_out
 
       !--->
-      real ( kind = 8)  ::  s
-      real ( kind = 8), save  ::  t_0 = 0.0_RKIND
+      real( kind = 8)  ::  s
+      real( kind = 8), save  ::  t_0 = 0.0_RKIND
       !--->
       integer (kind=4)  ::  h, m,month,day,year,cent
       !integer (kind=4)  ::  cent,year
@@ -555,13 +555,13 @@ contains
       !---------------------------> inputs <----------------------------------------------------------
       type (SGGFDTDINFO), intent(IN)              :: sgg              ! Simulation data.
       type( bounds_t), intent( IN)  ::  b
-      CHARACTER (LEN=BUFSIZE), intent(in) :: opcionestotales
+      character (LEN=BUFSIZE), intent(in) :: opcionestotales
       integer( kind = 4), intent( IN)  ::  layoutnumber, size, n,maxCPUtime
       integer( kind = 4), intent( IN)  ::  flushsecondsFields, flushsecondsData, initialtimestep, finaltimestep
       !--->
-      real (kind = RKIND), dimension( 0: b%Ex%NX-1, 0: b%Ex%NY-1, 0: b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0: b%Ey%NX-1, 0: b%Ey%NY-1, 0: b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0: b%Ez%NX-1, 0: b%Ez%NY-1, 0: b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0: b%Ex%NX-1, 0: b%Ex%NY-1, 0: b%Ex%NZ-1), intent( IN)  ::  Ex
+      real(kind = RKIND), dimension( 0: b%Ey%NX-1, 0: b%Ey%NY-1, 0: b%Ey%NZ-1), intent( IN)  ::  Ey
+      real(kind = RKIND), dimension( 0: b%Ez%NX-1, 0: b%Ez%NY-1, 0: b%Ez%NZ-1), intent( IN)  ::  Ez
       !--->
       !!!
       integer :: my_iostat
@@ -578,7 +578,7 @@ contains
       ! logical, intent( OUT)  ::  performflushFIELDS, performflushDATA,performUnpack,performpostprocess,&
                                  ! performflushXdmf,performflushVTK
       !---------------------------> variables locales <-----------------------------------------------
-      real (kind=rKIND)  ::  valor,maxSourceValue,LA,LV,LB
+      real(kind=rKIND)  ::  valor,maxSourceValue,LA,LV,LB
       logical  ::  hay_timing, l_aux, hay_flushFIELDS, hay_flushDATA, mustflushFIELDS, mustflushDATA,mustUnpack, &
                    mustPostprocess,mustflushXdmf , mustflushVTK ,   &
       pararflushing, pararNOflushing, stoponNaN , stoponNaN_aux,mustSnap,stop_only,stopflushing_only,flush_only,flushdata_only
@@ -587,24 +587,24 @@ contains
       character( LEN=BUFSIZE)  ::  whoamishort,whoami,chinstant
       character (LEN=BUFSIZE)     ::  dubuf
       character (LEN=BUFSIZE)     ::  dondex,dondey,dondez
-      real (kind=rKIND), dimension (1:size) :: NEWlmaxval,NEWlmaxval_x,NEWlmaxval_y,NEWlmaxval_z
+      real(kind=rKIND), dimension (1:size) :: NEWlmaxval,NEWlmaxval_x,NEWlmaxval_y,NEWlmaxval_z
       integer( kind = 4), dimension (1:size) :: NEWlmaxval_i,NEWlmaxval_j,NEWlmaxval_k
-      real (kind=rKIND), dimension (1:size) :: lmaxval,lmaxval_x,lmaxval_y,lmaxval_z
+      real(kind=rKIND), dimension (1:size) :: lmaxval,lmaxval_x,lmaxval_y,lmaxval_z
       integer( kind = 4), dimension (1:size) :: lmaxval_i,lmaxval_j,lmaxval_k
-      real (kind=rKIND) :: qmaxval , qmaxval_x,qmaxval_y,qmaxval_z
+      real(kind=rKIND) :: qmaxval , qmaxval_x,qmaxval_y,qmaxval_z
       integer( kind = 4)  :: qmaxval_i,qmaxval_j,qmaxval_k,thefilenoflu
-      real (kind=rKIND), dimension (1:size) :: NEWlminval,NEWlminval_x,NEWlminval_y,NEWlminval_z
+      real(kind=rKIND), dimension (1:size) :: NEWlminval,NEWlminval_x,NEWlminval_y,NEWlminval_z
       integer( kind = 4), dimension (1:size) :: NEWlminval_i,NEWlminval_j,NEWlminval_k
-      real (kind=rKIND), dimension (1:size) :: lminval,lminval_x,lminval_y,lminval_z
+      real(kind=rKIND), dimension (1:size) :: lminval,lminval_x,lminval_y,lminval_z
       integer( kind = 4), dimension (1:size) :: lminval_i,lminval_j,lminval_k
-      real (kind=rKIND) :: qminval , qminval_x,qminval_y,qminval_z
+      real(kind=rKIND) :: qminval , qminval_x,qminval_y,qminval_z
       integer( kind = 4)  :: qminval_i,qminval_j,qminval_k,dimxsnap,dimysnap,dimzsnap,veces,i1,j1,k1
       integer( kind = 4)  :: ini_ibox,fin_ibox,ini_jbox,fin_jbox,ini_kbox,fin_kbox
       integer( kind = 4)  :: ini_iboxsin,fin_iboxsin,ini_jboxsin,fin_jboxsin,ini_kboxsin,fin_kboxsin
 
       character (LEN=BUFSIZE) :: ficherito
 
-      real (kind=4), dimension(:,:,:,:), allocatable  ::  snap
+      real(kind=4), dimension(:,:,:,:), allocatable  ::  snap
 
 
 !!#ifdef PreventCrayBug
@@ -1027,7 +1027,7 @@ contains
 
          !!!!!!!!!!!!!!!!!!!!!!!
          !escritura del fichero snap a voluntad o cuando se pase un umbral, cada minuto
-         IF (layoutnumber == 0) THEN 
+         if (layoutnumber == 0) then 
             inquire( FILE = 'snap', EXIST = mustSnap)
             if (mustsnap) then
                !  Clear the flushing signaling file
@@ -1160,7 +1160,7 @@ contains
 
          !
          !
-         IF (layoutnumber == 0) THEN
+         if (layoutnumber == 0) then
             !
             write(dubuf,*) SEPARADOR,trim(adjustl(nentradaroot)),separador
             call print11(layoutnumber,dubuf)
@@ -1336,7 +1336,7 @@ contains
       stoponNaN = stoponNaN_aux
 #endif
       if (stoponNaN) then
-         IF (layoutnumber == 0) THEN
+         if (layoutnumber == 0) then
             write(dubuf,*) 'ERROR, ABORTING: UNSTABILITIES. Possible reasons and fixes: '
             call print11(layoutnumber,dubuf)
             write(dubuf,*) '     In case of single wires: reduce WIRE radii and/or reduce sgg%dt'
@@ -1380,7 +1380,7 @@ contains
          time_begin2=time_out2%segundos
          perform%flushFIELDS=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1394,7 +1394,7 @@ contains
          time_begin3=time_out2%segundos
          perform%flushDATA=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1403,7 +1403,7 @@ contains
          mustunpack=.false.
          perform%unpack=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1412,7 +1412,7 @@ contains
          mustpostprocess=.false.
          perform%postprocess=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1421,7 +1421,7 @@ contains
          mustflushXdmf=.false.
          perform%flushXdmf=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1429,7 +1429,7 @@ contains
          !
          mustflushVTK=.false.
          perform%flushVTK=.true.
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1441,7 +1441,7 @@ contains
 
 
 
-   SUBROUTINE INITWARNINGFILE(layoutnumber,size,nEntradaRoot,verbosete,ignoreErrors1)
+   subroutine INITWARNINGFILE(layoutnumber,size,nEntradaRoot,verbosete,ignoreErrors1)
       character(len=*) :: nEntradaRoot
       integer (kind=4), intent(in) :: layoutnumber,size
       !file management
@@ -1460,7 +1460,7 @@ contains
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
       write(whoamishort,'(i5)') layoutnumber+1
 
-      IF (layoutnumber == 0) THEN          
+      if (layoutnumber == 0) then          
 
       !!!inquire(unit=17, opened=itsopen2)
       !!!if (itsopen2) print *,'----------->17 open!!!'
@@ -1469,7 +1469,7 @@ contains
       endif
 
       !!!#ifdef CompileWithMPI
-      !!!IF (SIZE/=0) THEN
+      !!!if (SIZE/=0) then
       !!!    call MPI_Barrier(SUBCOMM_MPI,ierr)
       !!!    call MPI_FILE_open (SUBCOMM_MPI, trim(adjustl(nEntradaRoot))//'_tmpWarnings.txt', &
       !!!                           MPI_MODE_WRONLY + MPI_MODE_CREATE, &
@@ -1495,7 +1495,7 @@ contains
       fatalerror = .false.
       CONTADORDEMENSAJES=0
 
-   END SUBROUTINE INITWARNINGFILE
+   end subroutine INITWARNINGFILE
 
 
    subroutine WarnErrReport(bufff,error)
@@ -1533,7 +1533,7 @@ contains
 
 
 
-   SUBROUTINE CLOSEWARNINGFILE(layoutnumber,size,fatalerror_final,stoch_undivided,simu_devia)
+   subroutine CLOSEWARNINGFILE(layoutnumber,size,fatalerror_final,stoch_undivided,simu_devia)
       integer (kind=4), intent(in) :: layoutnumber,size
       integer (kind=4) :: ierr,posic,i
       character (len=BUFSIZE) :: buf2
@@ -1546,7 +1546,7 @@ contains
       if (.not.WarningFileIsOpen) return
 
       !!!#ifdef CompileWithMPI
-      !!!IF (SIZE/=0) THEN
+      !!!if (SIZE/=0) then
       !!!    call MPI_FILE_close (thefile, ierr)
       !!!ELSE
       !!!    close (17)
@@ -1561,7 +1561,7 @@ contains
 #endif
 
       !arregla los NUL
-      IF ((layoutnumber==0).or.((layoutnumber == size/2).and.stoch_undivided)) THEN
+      if ((layoutnumber==0).or.((layoutnumber == size/2).and.stoch_undivided)) then
          open (88,file=trim(adjustl(WarningFile))//'_Warnings.txt',form='formatted')
          posic=0
          do i=0,size-1
@@ -1634,8 +1634,8 @@ contains
 
       fatalerror_final=(fatalerror_final).and.(.not.ignoreErrors)
 
-      RETURN
-   END SUBROUTINE
+      return
+   end subroutine
 
    subroutine trimnullchar(string)
       character (len=*), intent(inout) :: string
@@ -1669,13 +1669,13 @@ contains
         ! if (soyImpresor) write (*,'(a)') ' '//trim(message(2:))
          if (soyImpresor) write (*,'(a)') trim(message(2:))
 #endif
-        ! IF (layoutnumber == 0)   write (11,'(a)',err=111) ' '//trim(message(2:))
-         IF (layoutnumber == 0)   write (11,'(a)',err=111) trim(message(2:))
+        ! if (layoutnumber == 0)   write (11,'(a)',err=111) ' '//trim(message(2:))
+         if (layoutnumber == 0)   write (11,'(a)',err=111) trim(message(2:))
       else !ajusta a izquierda sin respetar espacios
 #ifndef NoVerbose
          if (soyImpresor) write (*,'(a)') trim(adjustl(message))
 #endif
-         IF (layoutnumber == 0)    then
+         if (layoutnumber == 0)    then
              write (11,'(a)',err=111) trim(adjustl(message))
            !!!  print *,'----11--> ', trim(adjustl(message))
          endif
@@ -1693,7 +1693,7 @@ contains
 
 
 
-   !!!SUBROUTINE INITdxfFILE(layoutnumber,size,nEntradaRoot)
+   !!!subroutine INITdxfFILE(layoutnumber,size,nEntradaRoot)
    !!!character(len=*) :: nEntradaRoot
    !!!integer (kind=4) :: layoutnumber,size
    !!!!file management
@@ -1706,7 +1706,7 @@ contains
    !!!mynEntradaRoot=trim(adjustl(nentradaRoot))
    !!!dxfFileIsOpen=.true.
    !!!
-   !!!IF (layoutnumber == 0) THEN
+   !!!if (layoutnumber == 0) then
    !!!    open (87,file=trim(adjustl(mynEntradaRoot))//trim(adjustl(whoamishort))//'.tmpdxf',form='formatted')
    !!!    write(87,*) '!END'
    !!!    close (87,status='delete')
@@ -1726,7 +1726,7 @@ contains
    !!!    open (97,file=trim(adjustl(mynEntradaRoot))//trim(adjustl(whoamishort))//'.tmpdxf',form='formatted')
    !!!!!!#endif
    !!!
-   !!!IF (layoutnumber == 0) THEN
+   !!!if (layoutnumber == 0) then
    !!!    write(dxfbuff,'(a)') '999'
    !!!    CALL DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)') 'SEMBA_FDTD'
@@ -1771,7 +1771,7 @@ contains
    !!!    CALL DXFWRITE(DXFBUFF)
    !!!endif
    !!!
-   !!!END SUBROUTINE INITdxfFILE
+   !!!end subroutine INITdxfFILE
    !!!
    !!!
    !!!subroutine dxfwrite(bufff)
@@ -1796,7 +1796,7 @@ contains
    !!!
    !!!
    !!!
-   !!!SUBROUTINE CLOSEdxfFILE(layoutnumber,size)
+   !!!subroutine CLOSEdxfFILE(layoutnumber,size)
    !!!integer (kind=4), intent(in) :: layoutnumber,size
    !!!integer (kind=4) :: ierr,i
    !!!integer (kind=8) :: posic
@@ -1820,7 +1820,7 @@ contains
    !!!#endif
    !!!
    !!!!arregla los NUL
-   !!!IF (layoutnumber == 0) THEN
+   !!!if (layoutnumber == 0) then
    !!!    open (988,file=trim(adjustl(mynEntradaRoot))//'.dxf',form='formatted')
    !!!    posic=0
    !!!    do i=0,size-1
@@ -1862,8 +1862,8 @@ contains
    !!!continue
    !!!
    !!!dxfFileIsOpen=.false.
-   !!!RETURN
-   !!!END SUBROUTINE
+   !!!return
+   !!!end subroutine
 
    !!!
    !!!subroutine writemmdxf(layoutnumber,sgg,sggMiHx,sggMiHy,sggMiHz)
@@ -2189,7 +2189,7 @@ end function openfile_mpi
 #endif
 
       !arregla los NUL
-      IF (layoutnumber == 0) THEN
+      if (layoutnumber == 0) then
          open (newunit=thefile8,file=trim(adjustl(nombrefich)),form='formatted' )
          do i=0,size-1
             write(whoamishort,'(i5)') i+1
@@ -2383,7 +2383,7 @@ end function openfile_mpi
 
    subroutine erasesignalingfiles(simu_devia)
       logical :: simu_devia
-      CHARACTER (LEN=BUFSIZE) :: ficherito
+      character (LEN=BUFSIZE) :: ficherito
       if (.not.simu_devia) then
           !!force erasing the signaling files
           ficherito='stop'
@@ -2444,7 +2444,7 @@ end function openfile_mpi
 
    
    subroutine openclosedelete(ficherin)
-      CHARACTER (LEN=*) :: ficherin
+      character (LEN=*) :: ficherin
       integer (kind=4) :: my_iostat, myunit
       my_iostat = 0
 4216  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.'
@@ -2455,7 +2455,7 @@ end function openfile_mpi
    end subroutine openclosedelete
    
    subroutine openclose(ficherin)
-      CHARACTER (LEN=*) :: ficherin
+      character (LEN=*) :: ficherin
       integer (kind=4) :: my_iostat, myunit
       my_iostat = 0
 5216  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.'
@@ -2467,7 +2467,7 @@ end function openfile_mpi
    
    
    subroutine opensolo(myunit,ficherin)
-      CHARACTER (LEN=*) :: ficherin
+      character (LEN=*) :: ficherin
       integer (kind=4) :: my_iostat, myunit
       my_iostat = 0
 6216  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.'

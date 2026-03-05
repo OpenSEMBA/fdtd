@@ -1,20 +1,20 @@
-MODULE VTK
+module VTK
       !
-   USE fdetypes
-   USE Observa
+   use fdetypes
+   use Observa
    use report
    !
    !
    !
    !
-   IMPLICIT NONE
+   implicit none
    !
-   PRIVATE
-   PUBLIC createVTK,createVTKOnTheFly
-CONTAINS
+   private
+   public createVTK,createVTKOnTheFly
+contains
    !Subrutine to parse the volumic probes to create VTK files on PEC and on wires
    !
-   SUBROUTINE createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
+   subroutine createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
    
       type (SGGFDTDINFO), intent(IN)   :: sgg
@@ -22,22 +22,22 @@ CONTAINS
       integer (KIND=4) :: mpidir
       logical :: vtkindex,yacreado,dontwritevtk
       !------------------------>
-      CHARACTER (LEN=BUFSIZE) :: filename ! File name
-      CHARACTER (LEN=BUFSIZE) :: fichero,fichero_input,char_i_sub_time ! File name
+      character (LEN=BUFSIZE) :: filename ! File name
+      character (LEN=BUFSIZE) :: fichero,fichero_input,char_i_sub_time ! File name
       integer (kind=4) :: k
       character (len=32), dimension(3) :: suffFile = (/'_current.vtk', '_efield.vtk ', '_hfield.vtk '/)
       character (len=3), dimension (3) :: suffTag  = (/'cu', 'ef', 'hf'/)
       !
       !
 
-      integer (KIND=4), INTENT (IN) :: layoutnumber, size
+      integer (KIND=4), intent(in) :: layoutnumber, size
       integer (KIND=4) ::  ierr,  posicionMPI,conta,ecurrentType,eei,eej,eek,esggMtag
       integer (KIND=4) , allocatable , dimension(:) ::   sizeofvalores,NewsizeOfValores
 
-      real (kind=RKIND) :: time,rdum
+      real(kind=RKIND) :: time,rdum
       !
       !
-      type (output_t), POINTER, DIMENSION (:) :: output
+      type (output_t), POINTER, dimension(:) :: output
       integer (KIND=4) :: iroot
       !
 #ifdef CompileWithMPI
@@ -46,25 +46,25 @@ CONTAINS
       type (Serialized_t)  ::  Serialized !para almecenar valores serializados en volumenes en vez de Bloque
       integer (KIND=4) , dimension (:) , allocatable :: PosiMPI,NewPosiMPI
       integer (KIND=4) :: indi,numberOfSerialized
-      real (  KINd=RKIND), ALLOCATABLE, DIMENSION (:) :: att  
-      real (  KINd=RKIND) :: att_rkind
-      real (  KINd=RKIND_tiempo) :: att_rkind_tiempo
+      real(  KINd=RKIND), ALLOCATABLE, dimension(:) :: att  
+      real(  KINd=RKIND) :: att_rkind
+      real(  KINd=RKIND_tiempo) :: att_rkind_tiempo
       !
       integer (KIND=4) :: ii, i1, finalstep
       LOGICAL :: lexis,freqdomain,somethingdone
       character (LEN=BUFSIZE)     ::  dubuf
       integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs
-      CHARACTER (LEN=BUFSIZE) :: pathroot
+      character (LEN=BUFSIZE) :: pathroot
       character (LEN=BUFSIZE)  ::  chari,charj,chark,chari2,charj2,chark2
       character (LEN=BUFSIZE)  ::  extpoint
       character(len=BUFSIZE) :: buff
-      CHARACTER (LEN=BUFSIZE) :: charc
-      CHARACTER (LEN=BUFSIZE) :: tag
+      character (LEN=BUFSIZE) :: charc
+      character (LEN=BUFSIZE) :: tag
       !
-      CHARACTER (LEN=BUFSIZE) :: whoami, whoamishort
+      character (LEN=BUFSIZE) :: whoami, whoamishort
       integer (kind=4)::  numNodes,numEdges,numQuads , iroot2,iroot1,i_sub_time, total_sub_times
       integer (kind=4), parameter :: time_phases_param=35
-      real (kind= RKIND), allocatable, dimension(:,:) :: Nodes
+      real(kind= RKIND), allocatable, dimension(:,:) :: Nodes
       integer (kind=4), allocatable, dimension(:,:) :: Elems
       integer (kind=4) :: coldummy
       integer (kind=4), dimension(5) :: volumicCurrentFlags = [iCur, iCurX, iCurY, iCurZ, mapvtk]
@@ -79,7 +79,7 @@ CONTAINS
       !
       somethingdone=.false.
       barridoprobes: do ii = 1, sgg%NumberRequest
-         IF ((sgg%observation(ii)%Volumic) .and. (sgg%observation(ii)%nP == 1)) then
+         if ((sgg%observation(ii)%Volumic) .and. (sgg%observation(ii)%nP == 1)) then
          if (any(sgg%observation(ii)%P(1)%What == volumicCurrentFlags)) then
             if (sgg%Observation(ii)%done) then 
                if (sgg%Observation(ii)%flushed) then 
@@ -100,7 +100,7 @@ CONTAINS
          endif
          endif
          !sondas Volumic traducelas a VTK
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
                if (any(sgg%observation(ii)%P(1)%What == volumicCurrentFlags)) then
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
@@ -284,9 +284,9 @@ CONTAINS
                      !crea informacion unstruct y escribela en el fichero
 #ifdef CompileWithMPI
 
-                     IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                     if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else
-                     IF (layoutnumber == 0) THEN
+                     if (layoutnumber == 0) then
 #endif
                         call creaUnstructData(Serialized,  numberOfSerialized,sgg,Nodes,NumNodes,Elems,NumEdges,NumQuads,vtkindex)
                      endif
@@ -650,9 +650,9 @@ CONTAINS
 
                            endif
                         endif
-                        IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                        if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else
-                        IF (layoutnumber == 0) THEN
+                        if (layoutnumber == 0) then
 #endif
                            !
                            time=att(indi)
@@ -832,9 +832,9 @@ CONTAINS
 
                      !deallocatea
 #ifdef CompileWithMPI
-                     IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                     if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else
-                     IF (layoutnumber == 0) THEN
+                     if (layoutnumber == 0) then
 #endif
                         if (numberOfSerialized/=0) deallocate (Nodes,Elems)
                      endif
@@ -870,14 +870,14 @@ CONTAINS
 
 
 
-      RETURN
-   END SUBROUTINE createVTK
+      return
+   end subroutine createVTK
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-   SUBROUTINE createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
+   subroutine createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
       type (SGGFDTDINFO), intent(IN)    :: sgg
       integer (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
@@ -885,8 +885,8 @@ CONTAINS
       integer (KIND=4) :: mpidir
       logical :: vtkindex,somethingdone
 
-      integer (KIND=4), INTENT (IN) :: layoutnumber, size
-      type (output_t), POINTER, DIMENSION (:) :: output
+      integer (KIND=4), intent(in) :: layoutnumber, size
+      type (output_t), POINTER, dimension(:) :: output
       integer (KIND=4) :: ii
       logical :: lexis,dontwritevtk
       character(len=BUFSIZE) :: buff
@@ -899,12 +899,12 @@ CONTAINS
 
       do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
 
                if ((sgg%observation(ii)%P(1)%What == iCur).or.(sgg%observation(ii)%P(1)%What == iCurX).or. &
                (sgg%observation(ii)%P(1)%What == iCurY).or.(sgg%observation(ii)%P(1)%What == iCurZ).or. &
-               (sgg%observation(ii)%P(1)%What == mapvtk)) THEN !solo corrientes volumicas
+               (sgg%observation(ii)%P(1)%What == mapvtk)) then !solo corrientes volumicas
                   !
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
@@ -922,10 +922,10 @@ CONTAINS
       call createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
       do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
                if ((sgg%observation(ii)%P(1)%What == iCur).or.(sgg%observation(ii)%P(1)%What == iCurX).or.(sgg%observation(ii)%P(1)%What == iCurY).or.(sgg%observation(ii)%P(1)%What == iCurZ).or. &
-               (sgg%observation(ii)%P(1)%What == mapvtk)) THEN !solo corrientes volumicas
+               (sgg%observation(ii)%P(1)%What == mapvtk)) then !solo corrientes volumicas
                   !
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
@@ -941,35 +941,35 @@ CONTAINS
 
       end do  !barrido puntos de observacion
 
-      RETURN
-   END SUBROUTINE createVTKOnTheFly
+      return
+   end subroutine createVTKOnTheFly
 
 
    !!!!!!!
 
-   SUBROUTINE write_VTKfile(sgg,fichero,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time,  &
+   subroutine write_VTKfile(sgg,fichero,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time,  &
                               i_sub_time,total_sub_times,FreqDomain,what,sggMtag,que_saco)
    
       type (SGGFDTDINFO), intent(IN)   ::  sgg
       integer (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
-      CHARACTER (LEN=BUFSIZE), intent(in) :: fichero
+      character (LEN=BUFSIZE), intent(in) :: fichero
 
       type (Serialized_t), intent(in)::  Serialized            
       integer (kind=4), intent(in):: numberOfSerialized,numNodes,numEdges,NumQuads,iroot2,i_sub_time,total_sub_times    
-      real (kind=RKIND), intent(in) :: time
-      real (kind=RKIND) :: phase_x,phase_y,phase_z,raa,rbb,rcc 
-      real (kind=RKIND) :: phase_Ex,phase_Ey,phase_Ez
-      real (kind=RKIND) :: phase_Hx,phase_Hy,phase_Hz
+      real(kind=RKIND), intent(in) :: time
+      real(kind=RKIND) :: phase_x,phase_y,phase_z,raa,rbb,rcc 
+      real(kind=RKIND) :: phase_Ex,phase_Ey,phase_Ez
+      real(kind=RKIND) :: phase_Hx,phase_Hy,phase_Hz
       LOGICAL, intent(in) :: FREQDOMAIN
       integer (kind=4), intent(in):: what
       integer (kind=4) :: conta,myunit
-      CHARACTER (LEN=BUFSIZE) :: buff,buff2 ! File name
-      real (kind= RKIND), allocatable, dimension(:,:) :: Nodes
+      character (LEN=BUFSIZE) :: buff,buff2 ! File name
+      real(kind= RKIND), allocatable, dimension(:,:) :: Nodes
       integer (kind=4), allocatable, dimension(:,:) ::  Elems
       character*2, intent(in) :: que_saco
       
       !!!!!!!
-      !if (what==mapvtk) THEN
+      !if (what==mapvtk) then
       !call fillinparaviewstate
       !open(newunit=myunit,file=trim(adjustl(fichero))//'.pvsm',form='formatted')
       !    write (myunit,'(a)') 'Generador del .pvsm'
@@ -982,7 +982,7 @@ CONTAINS
       open(newunit=myunit,file=trim(adjustl(fichero(1:iroot2)))//'/'//trim(adjustl(fichero)),form='formatted')
       write(myunit,'(a)') '# vtk DataFile Version 1.0'
       !a modo de ayuda saco en el fichero MAP el tipo de material en la segunda linea como manda el standard vtk
-      if (what==mapvtk) THEN
+      if (what==mapvtk) then
          write(myunit,'(a)') 'PEC=0, already_YEEadvanced_byconformal=5, NOTOUCHNOUSE=6, WIRE=7, WIRE-COLISION=8, COMPO=3, DISPER=1, DIEL=2, SLOT=4, CONF=5/6, OTHER=-1 (ADD +0.5 for borders)'
       else                                      
          if (.not.Freqdomain) then
@@ -1027,7 +1027,7 @@ CONTAINS
       write (buff,'(a,i9)') 'CELL_DATA ',numberOfSerialized
       write(myunit,'(a)') trim(adjustl(buff))
       write (buff2,'(e21.12e3)') time
-      if ((what==mapvtk).AND.(que_saco=='vt')) THEN
+      if ((what==mapvtk).AND.(que_saco=='vt')) then
             write (buff,'(a)') 'SCALARS mediatype float 1'
       else                   
          select case(que_saco)           
@@ -1045,7 +1045,7 @@ CONTAINS
       if (.not.Freqdomain) then
          do conta=1,numberOfSerialized
 !  Vectorial 0124
-               if (what==mapvtk) THEN      
+               if (what==mapvtk) then      
                   write (myunit,'(1e21.12e3)')  Serialized%valor(1,conta)      !sin vectores
                else             
                select case(que_saco)          
@@ -1153,13 +1153,13 @@ CONTAINS
 
 
       return
-   END SUBROUTINE write_VTKfile
+   end subroutine write_VTKfile
 
 
-   SUBROUTINE creaUnstructData(Serialized,  numberOfSerialized,sgg,Nodes,Numnodes,Elems,NumEdges,NumQuads,vtkindex)
+   subroutine creaUnstructData(Serialized,  numberOfSerialized,sgg,Nodes,Numnodes,Elems,NumEdges,NumQuads,vtkindex)
 
       integer (kind=4), intent(out):: numNodes,numQuads,numEdges
-      real (kind= RKIND), allocatable, dimension(:,:), intent(out) :: Nodes
+      real(kind= RKIND), allocatable, dimension(:,:), intent(out) :: Nodes
       integer (kind=4), allocatable, dimension(:,:), intent(out) ::  Elems
       
       logical, intent(IN) :: vtkindex
@@ -1167,7 +1167,7 @@ CONTAINS
       integer (kind=4), intent(in):: numberOfSerialized
       type (Serialized_t), intent(in)  ::  Serialized
       
-      CHARACTER (LEN=BUFSIZE) :: buff ! File name
+      character (LEN=BUFSIZE) :: buff ! File name
       integer (kind=4):: conta
 
 
@@ -1410,12 +1410,12 @@ CONTAINS
       endif
 
       return
-   END SUBROUTINE creaUnstructData
+   end subroutine creaUnstructData
 
    !subroutine fillinparaviewstate
    !
    !return
    !end subroutine
-END MODULE VTK
+end module VTK
 !
 !

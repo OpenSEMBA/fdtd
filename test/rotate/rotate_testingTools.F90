@@ -18,7 +18,7 @@ contains
    end subroutine
    subroutine expect_eq_real(test_err, expected, actual, message) 
       integer , intent(inout) :: test_err
-      real (KIND=RK), intent(in) :: expected, actual
+      real(KIND=RK), intent(in) :: expected, actual
       character (len=*), intent(in), optional :: message
       if (abs(expected - actual) > 1.0d-6) then
           test_err = test_err + 1
@@ -30,7 +30,7 @@ contains
 
    subroutine expect_eq_real_vect(err, ex, pr, msg) 
       integer , intent(inout) :: err
-      real (KIND=RK), DIMENSION (:), intent(in) :: ex, pr
+      real(KIND=RK), dimension(:), intent(in) :: ex, pr
       character (len=*), intent(in), optional :: msg
       if (all(ex/=pr)) call testFails(err, msg)
    end subroutine

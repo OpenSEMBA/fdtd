@@ -20,13 +20,13 @@ module BORDERS_MUR
 
 
    type LR
-      real (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Past_Hx,Past_Hz,PastPast_Hx,PastPast_Hz
+      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Past_Hx,Past_Hz,PastPast_Hx,PastPast_Hz
    end type
    type DU
-      real (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Past_Hy,Past_Hx,PastPast_Hy,PastPast_Hx
+      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Past_Hy,Past_Hx,PastPast_Hy,PastPast_Hx
    end type
    type BF
-      real (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Past_Hz,Past_Hy,PastPast_Hz,PastPast_Hy
+      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Past_Hz,Past_Hy,PastPast_Hz,PastPast_Hy
    end type
 
    !!!LOCAL VARIABLES
@@ -35,15 +35,15 @@ module BORDERS_MUR
    type (BF), dimension(back : front) , save ::  regBF
 
 
-   real (kind = RKIND), dimension(  :), allocatable, SAVE ::  back_CAB1, back_CAB3, back_cab4, &
+   real(kind = RKIND), dimension(  :), allocatable, SAVE ::  back_CAB1, back_CAB3, back_cab4, &
    front_CAB1,front_CAB3,front_cab4, &
    left_CAB1, left_CAB3, left_cab4, &
    right_CAB1,right_CAB3,right_cab4, &
    down_CAB1, down_CAB3, down_cab4, &
    up_CAB1,   up_CAB3,   up_cab4
 !!!variables globales del modulo
-   real (KIND=RKIND), save           ::  cluz
-   real (KIND=RKIND), save           ::  eps0,mu0
+   real(KIND=RKIND), save           ::  cluz
+   real(KIND=RKIND), save           ::  eps0,mu0
 !!!
    !
    public  ::  InitMURBorders, AdvanceMagneticMUR,StoreFieldsMURBorders,DestroyMURBorders,calc_murconstants
@@ -55,11 +55,11 @@ contains
    !!! Initializes MUR data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitMURBorders(sgg,ThereAreMURBorders,resume,Idxh,Idyh,Idzh,eps00,mu00)
-      real (KIND=RKIND)           ::  eps00,mu00
+      real(KIND=RKIND)           ::  eps00,mu00
 
       type (SGGFDTDINFO), intent(IN)         ::  sgg
 
-      real (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+      real(KIND=RKIND) , dimension (:)   , intent(in)      ::  &
       Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
       Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
       Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
@@ -80,7 +80,7 @@ contains
       ThereAreMURBorders=.false.
       if (sgg%Border%IsBackMUR.or.sgg%Border%IsFrontMUR.or.sgg%Border%IsLeftMUR.or.sgg%Border%IsRightMUR.or. &
       sgg%Border%IsUpMUR.or.sgg%Border%IsDownMUR) ThereAreMURBorders=.true.
-      IF (.not.(ThereAreMURBorders)) return
+      if (.not.(ThereAreMURBorders)) return
 
       allocate( back_CAB1( 0 :  sgg%NumMedia), back_CAB3( 0 :  sgg%NumMedia), back_cab4( 0 :  sgg%NumMedia), &
       front_CAB1( 0 :  sgg%NumMedia),front_CAB3( 0 :  sgg%NumMedia),front_cab4( 0 :  sgg%NumMedia), &
@@ -138,14 +138,14 @@ contains
       end do
 
       !Fake coms and ends IN CASE OF NO MUR SO THAT NEVER ENTER THE do FOR THESE CASES
-      IF (.not.(sgg%Border%IsDownMUR)) MURc(4:6)%ZI(down)=MURc(4:6)%ZE(down)+100
-      IF (.not.(sgg%Border%IsUpMUR))   MURc(4:6)%ZI(up)  =MURc(4:6)%ZE(up)  +100
+      if (.not.(sgg%Border%IsDownMUR)) MURc(4:6)%ZI(down)=MURc(4:6)%ZE(down)+100
+      if (.not.(sgg%Border%IsUpMUR))   MURc(4:6)%ZI(up)  =MURc(4:6)%ZE(up)  +100
       !
-      IF (.not.(sgg%Border%IsLeftMUR))  MURc(4:6)%ZI(left) =MURc(4:6)%ZE(left) +100
-      IF (.not.(sgg%Border%IsRightMUR)) MURc(4:6)%ZI(right)=MURc(4:6)%ZE(right)+100
+      if (.not.(sgg%Border%IsLeftMUR))  MURc(4:6)%ZI(left) =MURc(4:6)%ZE(left) +100
+      if (.not.(sgg%Border%IsRightMUR)) MURc(4:6)%ZI(right)=MURc(4:6)%ZE(right)+100
       !
-      IF (.not.(sgg%Border%IsFrontMUR)) MURc(4:6)%ZI(front)=MURc(4:6)%ZE(front)+100
-      IF (.not.(sgg%Border%IsBackMUR))  MURc(4:6)%ZI(back) =MURc(4:6)%ZE(back) +100
+      if (.not.(sgg%Border%IsFrontMUR)) MURc(4:6)%ZI(front)=MURc(4:6)%ZE(front)+100
+      if (.not.(sgg%Border%IsBackMUR))  MURc(4:6)%ZI(back) =MURc(4:6)%ZE(back) +100
 
       !MUR Field component matrix allocation
       do REGION =left,right
@@ -293,10 +293,10 @@ contains
 
    subroutine calc_murconstants(sgg,Idxh,Idyh,Idzh,eps00,mu00)
         type (SGGFDTDINFO), intent(IN)         ::  sgg
-        real (KIND=RKIND)           ::  eps00,mu00
+        real(KIND=RKIND)           ::  eps00,mu00
         integer (kind=4)  ::  i,j,k,region,field,i1
-        real (KIND=RKIND)   ::  cnum
-        real (KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+        real(KIND=RKIND)   ::  cnum
+        real(KIND=RKIND) , dimension (:)   , intent(in)      ::  &
         Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
         Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
         Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
@@ -488,9 +488,9 @@ contains
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN)  ::  sggMiHz
       !--->
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
       !---------------------------> variables locales <-----------------------------------------------
       integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicMUR <-------------------------------------
@@ -508,7 +508,7 @@ contains
          !!!!!!?!?!?!?!?!!!!!!!!!!!!!!!!!!!Edges!!!!!!!!!!!!!!!!!!!!!Mur primer orden
          !!!!!!?!?!?!?!?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsLeftMUR) then
+         if (sgg%Border%IsLeftMUR) then
             REGION = left
             j = MURc(iHx)%YI( REGION)
             j_m = j - b%Hx%YI
@@ -551,7 +551,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsRightMUR) then
+         if (sgg%Border%IsRightMUR) then
             REGION = right
             j = MURc(iHx)%YE( REGION)
             j_m = j - b%Hx%YI
@@ -594,7 +594,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsDownMUR) then
+         if (sgg%Border%IsDownMUR) then
             REGION = down
             k = MURc(iHy)%ZI( REGION)
             k_m = k - b%Hy%ZI
@@ -637,7 +637,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsUpMUR) then
+         if (sgg%Border%IsUpMUR) then
             REGION = up
             k = MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI
@@ -680,7 +680,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsBackMUR) then
+         if (sgg%Border%IsBackMUR) then
             REGION =back
             i = MURc(iHz)%XI( REGION)
             i_m = i - b%Hz%XI
@@ -723,7 +723,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsFrontMUR) then
+         if (sgg%Border%IsFrontMUR) then
             REGION =front
             i = MURc(iHz)%XE( REGION)
             i_m = i - b%Hz%XI
@@ -775,7 +775,7 @@ contains
          !!!!!!!!!!!!!!Faces!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!Faces!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-         IF (sgg%Border%IsLeftMUR) then
+         if (sgg%Border%IsLeftMUR) then
             REGION = left
             j = MURc(iHx)%YI( REGION)
             j_m = j - b%Hx%YI
@@ -828,7 +828,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsRightMUR) then
+         if (sgg%Border%IsRightMUR) then
             REGION = right
             j = MURc(iHx)%YE( REGION)
             j_m = j - b%Hx%YI
@@ -881,7 +881,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsDownMUR) then
+         if (sgg%Border%IsDownMUR) then
             REGION = down
             k = MURc(iHy)%ZI( REGION)
             k_m = k - b%Hy%ZI
@@ -934,7 +934,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsUpMUR) then
+         if (sgg%Border%IsUpMUR) then
             REGION = up
             k = MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI
@@ -987,7 +987,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsBackMUR) then
+         if (sgg%Border%IsBackMUR) then
             REGION =back
             i = MURc(iHz)%XI( REGION)
             i_m = i - b%Hz%XI
@@ -1040,7 +1040,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsFrontMUR) then
+         if (sgg%Border%IsFrontMUR) then
             REGION =front
             i = MURc(iHz)%XE( REGION)
             i_m = i - b%Hz%XI
@@ -1105,7 +1105,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       else !first order mur
-         IF (sgg%Border%IsLeftMUR) then
+         if (sgg%Border%IsLeftMUR) then
             REGION = left
             j = MURc(iHx)%YI( REGION)
             j_m = j - b%Hx%YI
@@ -1148,7 +1148,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsRightMUR) then
+         if (sgg%Border%IsRightMUR) then
             REGION = right
             j = MURc(iHx)%YE( REGION)
             j_m = j - b%Hx%YI
@@ -1191,7 +1191,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsDownMUR) then
+         if (sgg%Border%IsDownMUR) then
             REGION = down
             k = MURc(iHy)%ZI( REGION)
             k_m = k - b%Hy%ZI
@@ -1234,7 +1234,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsUpMUR) then
+         if (sgg%Border%IsUpMUR) then
             REGION = up
             k = MURc(iHy)%ZE( REGION)
             k_m = k - b%Hy%ZI
@@ -1277,7 +1277,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsBackMUR) then
+         if (sgg%Border%IsBackMUR) then
             REGION =back
             i = MURc(iHz)%XI( REGION)
             i_m = i - b%Hz%XI
@@ -1320,7 +1320,7 @@ contains
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-         IF (sgg%Border%IsFrontMUR) then
+         if (sgg%Border%IsFrontMUR) then
             REGION =front
             i = MURc(iHz)%XE( REGION)
             i_m = i - b%Hz%XI
@@ -1371,7 +1371,7 @@ contains
       !!!!!!!!!!!!!!Total!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (sgg%Border%IsLeftMUR) then
+      if (sgg%Border%IsLeftMUR) then
          REGION = left
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
@@ -1414,7 +1414,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (sgg%Border%IsRightMUR) then
+      if (sgg%Border%IsRightMUR) then
          REGION = right
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
@@ -1457,7 +1457,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (sgg%Border%IsDownMUR) then
+      if (sgg%Border%IsDownMUR) then
          REGION = down
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
@@ -1500,7 +1500,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (sgg%Border%IsUpMUR) then
+      if (sgg%Border%IsUpMUR) then
          REGION = up
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
@@ -1543,7 +1543,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (sgg%Border%IsBackMUR) then
+      if (sgg%Border%IsBackMUR) then
          REGION =back
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)
@@ -1586,7 +1586,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-      IF (sgg%Border%IsFrontMUR) then
+      if (sgg%Border%IsFrontMUR) then
          REGION =front
 #ifdef CompileWithOpenMP
 !$OMP PARALLEL do DEFAULT(SHARED) private (i,j,k,i_m,j_m,k_m)

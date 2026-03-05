@@ -8,9 +8,9 @@
 
 module farfield_m
    use fdetypes
-   USE REPORT
+   use REPORT
 
-   IMPLICIT NONE
+   implicit none
    private
 
 
@@ -25,12 +25,12 @@ module farfield_m
    end type
 
    type co_t
-      real (kind=RKIND) x_Mx,y_Mx,z_Mx
-      real (kind=RKIND) x_My,y_My,z_My
-      real (kind=RKIND) x_Mz,y_Mz,z_Mz
-      real (kind=RKIND) x_Jx,y_Jx,z_Jx
-      real (kind=RKIND) x_Jy,y_Jy,z_Jy
-      real (kind=RKIND) x_Jz,y_Jz,z_Jz
+      real(kind=RKIND) x_Mx,y_Mx,z_Mx
+      real(kind=RKIND) x_My,y_My,z_My
+      real(kind=RKIND) x_Mz,y_Mz,z_Mz
+      real(kind=RKIND) x_Jx,y_Jx,z_Jx
+      real(kind=RKIND) x_Jy,y_Jy,z_Jy
+      real(kind=RKIND) x_Jz,y_Jz,z_Jz
    end type
 
    type farfield_t
@@ -61,22 +61,22 @@ module farfield_m
       complex( kind = CKIND), dimension( :), allocatable  :: expIwdt,auxExp_E,auxExp_H,dftEntrada
       integer (KIND=4) :: NumFreqs,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2, Ndecim
       type (coorsxyzP)  ::  Punto
-      real (kind=Rkind) :: InitialFreq,FinalFreq,FreqStep,dtDecim
-      real (KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
-      real (KIND=RKIND)  ::  phiStart,phiStop,phiStep
+      real(kind=Rkind) :: InitialFreq,FinalFreq,FreqStep,dtDecim
+      real(KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
+      real(KIND=RKIND)  ::  phiStart,phiStop,phiStep
       character (LEN=BUFSIZE)  ::   FileNormalize
       integer (KIND=4)    :: unitfarfield
       character (LEN=BUFSIZE)   ::  filefarfield
-      real (KIND=RKIND)  :: XDobleAncho,YDobleAncho,ZDobleAncho
-      real (KIND=RKIND)  :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
-      real (KIND=RKIND)  :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
+      real(KIND=RKIND)  :: XDobleAncho,YDobleAncho,ZDobleAncho
+      real(KIND=RKIND)  :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
+      real(KIND=RKIND)  :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
 #ifdef CompileWithMPI
       integer (kind=4)  :: MPISubComm,MPIRoot
 #endif
    end type
 !!!variables globales del modulo
-   real (KIND=RKIND), save           ::  cluz,zvac
-   real (KIND=RKIND), save           ::  eps0,mu0
+   real(KIND=RKIND), save           ::  cluz,zvac
+   real(KIND=RKIND), save           ::  eps0,mu0
 !!!
    !
    public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
@@ -99,14 +99,14 @@ contains
    ,MPISubComm,MpiRoot &
 #endif
    ,eps00,mu00)
-      real (KIND=RKIND)           ::  eps00,mu00
+      real(KIND=RKIND)           ::  eps00,mu00
 
       type (nf2ff_t) :: facesNF2FF
       LOGICAL :: NF2FFDecim
       type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
-      real (kind=Rkind) :: InitialFreq,FinalFreq,FreqStep
-      real (KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
-      real (KIND=RKIND)  ::  phiStart,phiStop,phiStep
+      real(kind=Rkind) :: InitialFreq,FinalFreq,FreqStep
+      real(KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
+      real(KIND=RKIND)  ::  phiStart,phiStop,phiStep
       character (LEN=BUFSIZE)  ::   FileNormalize
       integer (KIND=4)    :: unitfarfield
       character (LEN=BUFSIZE)   ::  filefarfield
@@ -124,7 +124,7 @@ contains
       sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
       sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
       sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      real (KIND=RKIND)  ::tiempo1,tiempo2,field1,field2,dtevol
+      real(KIND=RKIND)  ::tiempo1,tiempo2,field1,field2,dtevol
       integer j,k,field,i,layoutnumber,size,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
       logical :: errnofile,error
@@ -991,10 +991,10 @@ contains
       !
       errnofile = .FALSE.
       INQUIRE (FILE=trim(adjustl(FF%FileNormalize)), EXIST=errnofile)
-      IF ( .NOT. errnofile) THEN
+      if ( .NOT. errnofile) then
          Buff=trim(adjustl(FF%FileNormalize))//' DOES NOT EXIST'
          CALL STOPONERROR (layoutnumber,size,Buff)
-      END IF
+      end if
       OPEN (15, FILE=trim(adjustl(FF%FileNormalize)))
       READ (15,*) tiempo1, field1
       READ (15,*) tiempo2, field2
@@ -1129,7 +1129,7 @@ contains
       endif
 
 
-      RETURN
+      return
    end subroutine InitFarField
 
 
@@ -1138,13 +1138,13 @@ contains
    subroutine UpdateFarField(ntime, b, Ex, Ey, Ez,Hx,Hy,Hz)
       type( bounds_t), intent( IN)  ::  b
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
       !---------------------------> variables locales <-----------------------------------------------
       integer  ::  i, j, k, i_m, j_m, k_m,ii, ntime
       !---------------------------> empieza UpdateFarField <---------------------------------------
@@ -2332,7 +2332,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!Subroutine PuntoPhys(nfield,i,j,k,xf,yf,zf)
    !!!!integer (KIND=4) i,j,k,nfield
-   !!!!real (KIND=RKIND)  ::   xf,yf,zf
+   !!!!real(KIND=RKIND)  ::   xf,yf,zf
    !!!!!
    !!!!xf=FF%Punto%PhysCoor(nfield)%x(i)
    !!!!yf=FF%Punto%PhysCoor(nfield)%y(j)
@@ -2384,21 +2384,21 @@ contains
       type (co_t) :: co,new_co
       type (nf2ff_t) :: facesNF2FF
       type( bounds_t), intent( IN)      ::  b
-      real (kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( IN)  ::  dxe
-      real (kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( IN)  ::  dye
-      real (kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( IN)  ::  dze
+      real(kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( IN)  ::  dxe
+      real(kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( IN)  ::  dye
+      real(kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( IN)  ::  dze
       !--->
-      real (kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  dxh
-      real (kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  dyh
-      real (kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  dzh
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  dxh
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  dyh
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  dzh
 
       integer (kind=4), intent(in) :: layoutnumber,size
 
       integer (kind=4)  ::  ntheta,nphi,ithe,iphi,ii,i,j,k,i_m,j_m,k_m,pasadas
-      real (kind = RKIND) :: theta,phi,sintheta_sinphi,sintheta_cosphi, &
+      real(kind = RKIND) :: theta,phi,sintheta_sinphi,sintheta_cosphi, &
       costheta,cosphi,costheta_cosphi,costheta_sinphi,sintheta,sinphi,&
       freq, NORMAL, SIGNO,  dummy,newdummy1,newdummy2,RCS(1:2)
-      real (kind = RKIND_tiempo) :: rinstant
+      real(kind = RKIND_tiempo) :: rinstant
       integer (kind=4)  ::  ierr,pozi,donde
       complex( kind = CKIND) :: L_theta,L_phi,N_theta,N_phi,Etheta(1:2),Ephi(1:2),Mx,My,Mz,Jx,Jy,Jz,comun
       complex( kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
@@ -2408,8 +2408,8 @@ contains
       complex( kind = CKIND), dimension(:,:,:), pointer :: EcampoX,EcampoY,EcampoZ,HcampoX,HcampoY,HcampoZ,Hcampo2X,Hcampo2Y,Hcampo2Z
       !---------------------------> empieza  <---------------------------------------
       integer (kind=4)  :: number,mt,mf,contaje,m,n
-      real (kind = RKIND), allocatable :: Phimatrix(:,:),sizephi(:),Thetavector(:)
-      real (kind = RKIND) :: thetaini,thetafin,phiini,phifin,solid,ddd,aaa,dfi,dth
+      real(kind = RKIND), allocatable :: Phimatrix(:,:),sizephi(:),Thetavector(:)
+      real(kind = RKIND) :: thetaini,thetafin,phiini,phifin,solid,ddd,aaa,dfi,dth
       integer :: my_iostat
 !
       character(LEN=BUFSIZE) :: chninstant
@@ -2590,7 +2590,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldTr_ClonePMC_DOWN .or. FF%farfieldFr_ClonePMC_DOWN) then
+                              if  ( FF%farfieldTr_ClonePMC_DOWN .or. FF%farfieldFr_ClonePMC_DOWN) then
                                  new_My = - My
                                  new_Mz = + Mz
                                  new_Jy = + Jy
@@ -2615,7 +2615,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP) then
+                              if  ( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP) then
                                  new_My = - My
                                  new_Mz = + Mz
                                  new_Jy = + Jy
@@ -2641,7 +2641,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT) then
+                              if  ( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT) then
                                  new_My = + My
                                  new_Mz = - Mz
                                  new_Jy = - Jy
@@ -2666,7 +2666,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneTrFr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT) then
+                              if  ( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT) then
                                  new_My = + My
                                  new_Mz = - Mz
                                  new_Jy = - Jy
@@ -2706,7 +2706,7 @@ contains
                               If ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)).or. &
-                              (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)) ) THEN
+                              (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)) ) then
                                  sigNo=+1.0_RKIND
                                  If ((( FF%farfieldTr_ClonePEC_DOWN.or.FF%farfieldFr_ClonePEC_DOWN).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                                  (( FF%farfieldTr_ClonePMC_DOWN.or.FF%farfieldFr_ClonePMC_DOWN).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)) ) signo=-1.0_RKIND
@@ -2729,7 +2729,7 @@ contains
                               If ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)).or. &
                               (( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)).or. &
-                              (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)) ) THEN
+                              (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)) ) then
                                  sigNo=+1.0_RKIND
                                  If ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_LEFT.or.FF%farfieldFr_ClonePEC_LEFT)).or. &
                                  (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_LEFT.or.FF%farfieldFr_ClonePMC_LEFT)) )  signo=-1.0_RKIND
@@ -2752,7 +2752,7 @@ contains
                               If ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)).or. &
                               (( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
-                              (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT))) THEN
+                              (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT))) then
                                  sigNo=+1.0_RKIND
                                  If ((( FF%farfieldTr_ClonePEC_UP.or.FF%farfieldFr_ClonePEC_UP).and.( FF%farfieldTr_ClonePEC_RIGHT.or.FF%farfieldFr_ClonePEC_RIGHT)).or. &
                                  (( FF%farfieldTr_ClonePMC_UP.or.FF%farfieldFr_ClonePMC_UP).and.( FF%farfieldTr_ClonePMC_RIGHT.or.FF%farfieldFr_ClonePMC_RIGHT)))  signo=-1.0_RKIND
@@ -2848,7 +2848,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldIz_ClonePMC_DOWN .or. FF%farfieldDe_ClonePMC_DOWN) then
+                              if  ( FF%farfieldIz_ClonePMC_DOWN .or. FF%farfieldDe_ClonePMC_DOWN) then
                                  new_Mx = - Mx
                                  new_Mz = + Mz
                                  new_Jx = + Jx
@@ -2873,7 +2873,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP) then
+                              if  ( FF%farfieldIz_ClonePMC_UP.or.FF%farfieldDe_ClonePMC_UP) then
                                  new_Mx = - Mx
                                  new_Mz = + Mz
                                  new_Jx = + Jx
@@ -2898,7 +2898,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK) then
+                              if  ( FF%farfieldIz_ClonePMC_BACK.or.FF%farfieldDe_ClonePMC_BACK) then
                                  new_Mx = + Mx
                                  new_Mz = - Mz
                                  new_Jx = - Jx
@@ -2923,7 +2923,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneIzDe(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT) then
+                              if  ( FF%farfieldIz_ClonePMC_FRONT.or.FF%farfieldDe_ClonePMC_FRONT) then
                                  new_Mx = + Mx
                                  new_Mz = - Mz
                                  new_Jx = - Jx
@@ -3106,7 +3106,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldAb_ClonePMC_LEFT .or. FF%farfieldAr_ClonePMC_LEFT) then
+                              if  ( FF%farfieldAb_ClonePMC_LEFT .or. FF%farfieldAr_ClonePMC_LEFT) then
                                  new_Mx = - Mx
                                  new_My = + My
                                  new_Jx = + Jx
@@ -3131,7 +3131,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldAb_ClonePMC_RIGHT.or.FF%farfieldAr_ClonePMC_RIGHT) then
+                              if  ( FF%farfieldAb_ClonePMC_RIGHT.or.FF%farfieldAr_ClonePMC_RIGHT) then
                                  new_Mx = - Mx
                                  new_My = + My
                                  new_Jx = + Jx
@@ -3156,7 +3156,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK) then
+                              if  ( FF%farfieldAb_ClonePMC_BACK.or.FF%farfieldAr_ClonePMC_BACK) then
                                  new_Mx = + Mx
                                  new_My = - My
                                  new_Jx = - Jx
@@ -3181,7 +3181,7 @@ contains
                                  call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
                                  call cloneAbAr(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
                               ENDIF
-                              IF  ( FF%farfieldAb_ClonePMC_FRONT.or.FF%farfieldAr_ClonePMC_FRONT) then
+                              if  ( FF%farfieldAb_ClonePMC_FRONT.or.FF%farfieldAr_ClonePMC_FRONT) then
                                  new_Mx = + Mx
                                  new_My = - My
                                  new_Jx = - Jx
@@ -3382,7 +3382,7 @@ contains
       type (co_t) :: co
       complex (KIND=CKIND) :: L_theta,L_phi,Mx,My,Mz,comunMx,comunMy,comunMz,comunJx,comunJy,comunJz,comun
       complex (KIND=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
-      real (KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi
+      real(KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi
       !!puede que me falte un signo en la exponencial aunque no afecta a nada (creo que es -exp[-j k r] taflove 3rd 372 nf2ff) 02/03/15
       comunMx=exp(comun*(co%x_Mx*sintheta_cosphi + co%y_Mx*sintheta_sinphi + co%z_Mx*costheta))
       comunMy=exp(comun*(co%x_My*sintheta_cosphi + co%y_My*sintheta_sinphi + co%z_My*costheta))
@@ -3405,7 +3405,7 @@ contains
       complex( kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
       complex (KIND=CKIND) :: L_theta,L_phi,Mx,My,Mz,comun
       complex (KIND=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
-      real (KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
+      real(KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
       If( FF%farfieldTr_ClonePEC_Front.or.FF%farfieldFr_ClonePEC_Back) then
@@ -3419,7 +3419,7 @@ contains
          new_co%x_Jz= new_co%x_My
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
       ENDIF
-      IF ( FF%farfieldTr_ClonePMC_Front.or.FF%farfieldFr_ClonePMC_Back) then
+      if ( FF%farfieldTr_ClonePMC_Front.or.FF%farfieldFr_ClonePMC_Back) then
          new_My = - My
          new_Mz = - Mz
          new_Jy = + Jy
@@ -3440,7 +3440,7 @@ contains
       complex( kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
       complex (KIND=CKIND) :: L_theta,L_phi,Mx,My,Mz,comun
       complex (KIND=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
-      real (KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
+      real(KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
       If( FF%farfieldIz_ClonePEC_Right.or.FF%farfieldDe_ClonePEC_Left) then
@@ -3454,7 +3454,7 @@ contains
          new_co%y_Jz= new_co%y_Mx
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
       ENDIF
-      IF ( FF%farfieldIz_ClonePMC_Right.or.FF%farfieldDe_ClonePMC_Left) then
+      if ( FF%farfieldIz_ClonePMC_Right.or.FF%farfieldDe_ClonePMC_Left) then
          new_Mx = - Mx !solo en este caso cambian las normales
          new_Mz = - Mz
          new_Jx = + Jx
@@ -3474,7 +3474,7 @@ contains
       complex( kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
       complex (KIND=CKIND) :: L_theta,L_phi,Mx,My,Mz,comun
       complex (KIND=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
-      real (KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
+      real(KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
       If( FF%farfieldAb_ClonePEC_UP.or.FF%farfieldAr_ClonePEC_DOWN) then
@@ -3488,7 +3488,7 @@ contains
          new_co%Z_Jy= new_co%Z_Mx
          call update_LN(comun,new_co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz,L_theta,L_phi,N_theta,N_phi)
       ENDIF
-      IF ( FF%farfieldAb_ClonePMC_UP.or.FF%farfieldAr_ClonePMC_DOWN) then
+      if ( FF%farfieldAb_ClonePMC_UP.or.FF%farfieldAr_ClonePMC_DOWN) then
          new_Mx = - Mx !solo en este caso cambian las normales
          new_My = - My
          new_Jx = + Jx
@@ -3527,7 +3527,7 @@ contains
 
       !!if (abs(z)/abs(zarit) > 1e1) write(3555,'(e18.6e3,a,2e18.6e3,a,2e18.6e3)') abs(z)/abs(zarit),'---> ',abs(z),abs(zarit),' -- ',atan2(AIMAG(z),real(z)),atan2(AIMAG(zarit),real(zarit))
 
-      RETURN
+      return
    END FUNCTION
 
-END MODULE farfield_m
+end module farfield_m

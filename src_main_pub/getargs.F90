@@ -1,7 +1,7 @@
 
 
 Module Getargs
-   USE NFDETYPES , ONLY: BUFSIZE
+   use NFDETYPES , ONLY: BUFSIZE
    implicit none
    private
 

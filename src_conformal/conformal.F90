@@ -6,8 +6,8 @@ module conformal_mod
                         edge_t, face_t, & 
                         conformal_face_media_t, conformal_edge_media_t, rkind
    
-   real (kind=rkind), PARAMETER :: EDGE_RATIO_EQ_TOLERANCE = 1e-5
-   real (kind=rkind), PARAMETER :: FACE_RATIO_EQ_TOLERANCE = 1e-3
+   real(kind=rkind), PARAMETER :: EDGE_RATIO_EQ_TOLERANCE = 1e-5
+   real(kind=rkind), PARAMETER :: FACE_RATIO_EQ_TOLERANCE = 1e-3
 
 contains
 
@@ -37,7 +37,7 @@ contains
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map
-      real (kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
+      real(kind=rkind), dimension(:), allocatable :: edge_ratios, face_ratios
       type(edge_t), dimension(:), allocatable :: edges, filtered_edges
       type(face_t), dimension(:), allocatable :: faces, filtered_faces
       integer :: i
@@ -58,7 +58,7 @@ contains
    subroutine addNewRatios(edges, faces, edge_ratios, face_ratios)
       type(edge_t), dimension(:), allocatable, intent(in) :: edges
       type(face_t), dimension(:), allocatable, intent(in) :: faces
-      real (kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios, face_ratios
+      real(kind=rkind), dimension(:), allocatable, intent(inout) :: edge_ratios, face_ratios
       integer :: i
       allocate(edge_ratios(0))
       allocate(face_ratios(0))
@@ -77,10 +77,10 @@ contains
 
 
    function addEdgeMedia(edges, edge_ratios) result(res)
-      real (kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
+      real(kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
       type(edge_t), dimension(:), allocatable, intent(in) :: edges
       type(edge_t), dimension(:), allocatable :: filtered_edges
-      type (conformal_edge_media_t), DIMENSION (:), POINTER :: res
+      type (conformal_edge_media_t), dimension(:), POINTER :: res
       allocate(res(size(edge_ratios)))
       do i = 1, size(edge_ratios)
          filtered_edges = filterEdgesByMedia(edges, edge_ratios(i))
@@ -92,10 +92,10 @@ contains
    end function
 
    function addFaceMedia(faces, face_ratios) result(res)
-      real (kind=rkind), dimension(:), allocatable, intent(in) :: face_ratios
+      real(kind=rkind), dimension(:), allocatable, intent(in) :: face_ratios
       type(face_t), dimension(:), allocatable, intent(in) :: faces
       type(face_t), dimension(:), allocatable :: filtered_faces
-      type (conformal_face_media_t), DIMENSION (:), POINTER :: res
+      type (conformal_face_media_t), dimension(:), POINTER :: res
       allocate(res(size(face_ratios)))
       do i = 1, size(face_ratios)
          filtered_faces = filterFacesByMedia(faces, face_ratios(i))
@@ -110,7 +110,7 @@ contains
    function computeTimeStepScalingFactor(edges_media, faces_media) result(res)
       type (conformal_face_media_t), dimension(:), intent(in), pointer :: faces_media
       type (conformal_edge_media_t), dimension(:), intent(in), pointer :: edges_media
-      real (kind=rkind) :: res, l_ratio, area
+      real(kind=rkind) :: res, l_ratio, area
       type (cell_ratios_map_t) :: cell_ratio_map
       type (cell_ratios_t) :: cell_ratio_info
       integer (kind=4), dimension(3) :: cell, aux_cell
@@ -259,7 +259,7 @@ contains
       type (edge_t), dimension (:), allocatable, intent(inout) :: edges
       type(side_t), dimension(:), allocatable :: tri_sides
       integer :: j, k, s
-      real (kind=rkind) :: area, ratio
+      real(kind=rkind) :: area, ratio
       integer :: edge, face
       integer, dimension(3) :: cell
       area = 0.0
@@ -345,7 +345,7 @@ contains
       type (face_t), dimension (:), allocatable :: faces
       type(interval_t), intent(in) :: interval
       type(side_t) :: aux
-      real (kind=rkind) :: ratio
+      real(kind=rkind) :: ratio
       ratio = 0.0
       aux%init%position = interval%ini%cell
       aux%end%position = interval%end%cell
@@ -355,7 +355,7 @@ contains
    subroutine fillFaceFromContour(contour, faces)
       type(side_t), dimension(:), allocatable, intent(in) :: contour
       type (face_t), dimension (:), allocatable :: faces
-      real (kind=rkind) :: area
+      real(kind=rkind) :: area
       integer :: face
       integer, dimension(3) :: cell
       cell = findContourCell(contour)
@@ -391,7 +391,7 @@ contains
       type(edge_t), dimension(:), allocatable, intent(inout) :: edges
       integer (kind=4), dimension(3), intent(in) :: cell
       integer (kind=4) :: edge 
-      real (kind=rkind) :: ratio
+      real(kind=rkind) :: ratio
       integer :: i
       isNewEdge = .true.
       do i = 1, size(edges)
@@ -464,8 +464,8 @@ contains
       integer (kind=4) :: edge 
       type(side_t), intent(in) :: side
       type(edge_t) :: new_edge
-      real (kind=rkind) :: ratio
-      real (kind = rkind), dimension(2) :: coords
+      real(kind=rkind) :: ratio
+      real(kind = rkind), dimension(2) :: coords
 
       ratio = 1.0 - side%length()
       allocate(aux(size(edges) + 1))
@@ -486,7 +486,7 @@ contains
       integer (kind=4), dimension(3), intent(in) :: cell
       integer (kind=4) :: face
       type(face_t) :: new_face
-      real (kind=rkind) :: ratio
+      real(kind=rkind) :: ratio
       allocate(aux(size(faces) + 1))
       aux(1:size(faces)) = faces
       new_face = face_t(cell=cell, ratio=ratio, direction=face)
@@ -498,9 +498,9 @@ contains
    end subroutine
 
    subroutine addRatio(ratios, ratio)
-      real (kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
-      real (kind=rkind), dimension(:), allocatable :: aux
-      real (kind=rkind) :: ratio
+      real(kind=rkind), dimension(:), allocatable, intent(inout) :: ratios
+      real(kind=rkind), dimension(:), allocatable :: aux
+      real(kind=rkind) :: ratio
       integer :: i
       logical :: new = .true.
       if (size(ratios) == 0) then 
@@ -518,8 +518,8 @@ contains
    end subroutine
 
    logical function isNewRatio(ratios, ratio, tol)
-      real (kind=rkind), dimension(:), allocatable, intent(in) :: ratios
-      real (kind=rkind), intent(in) :: ratio, tol
+      real(kind=rkind), dimension(:), allocatable, intent(in) :: ratios
+      real(kind=rkind), intent(in) :: ratio, tol
       integer :: i
       isNewRatio = .true.
       do i = 1, size(ratios)
@@ -528,13 +528,13 @@ contains
    end function
 
    logical function eq_ratio(a,b, tol)
-      real (kind=rkind), intent(in) :: a,b, tol
+      real(kind=rkind), intent(in) :: a,b, tol
       eq_ratio = abs(a - b) < tol
    end function
 
    function filterEdgesByMedia(edges, ratio) result(res)
       type(edge_t), dimension(:), allocatable, intent(in) :: edges
-      real (kind=rkind) :: ratio
+      real(kind=rkind) :: ratio
       type(edge_t), dimension(:), allocatable :: res
       integer :: i,n
       n = 0
@@ -553,7 +553,7 @@ contains
 
    function filterFacesByMedia(faces, ratio) result(res)
       type(face_t), dimension(:), allocatable, intent(in) :: faces
-      real (kind=rkind) :: ratio
+      real(kind=rkind) :: ratio
       type(face_t), dimension(:), allocatable :: res
       integer :: i,n
       n = 0

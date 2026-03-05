@@ -18,7 +18,7 @@ module cell_map_mod
     end type
 
     type, public :: cell_ratios_t
-        real (kind=rkind), dimension(3) :: area = [1,1,1], length = [1,1,1]
+        real(kind=rkind), dimension(3) :: area = [1,1,1], length = [1,1,1]
     end type
 
     type, extends(fhash_tbl_t) :: cell_ratios_map_t
@@ -558,7 +558,7 @@ contains
         type(cell_ratios_t) :: aux_cell_ratio
         integer (kind=4), dimension(3), intent(in) :: cell
         integer (kind=4), intent(in) :: direction
-        real (kind=rkind), intent(in) :: ratio
+        real(kind=rkind), intent(in) :: ratio
         type(cell_t), dimension(:), allocatable :: aux_keys
 
         if (this%hasKey(cell)) then 
@@ -590,7 +590,7 @@ contains
         type(cell_ratios_t) :: aux_cell_ratio
         integer (kind=4), dimension(3), intent(in) :: cell
         integer (kind=4), intent(in) :: direction
-        real (kind=rkind), intent(in) :: ratio
+        real(kind=rkind), intent(in) :: ratio
 
         type(cell_t), dimension(:), allocatable :: aux_keys
         if (this%hasKey(cell)) then 

@@ -7,15 +7,15 @@
 
 module ilumina
    use fdetypes
-   USE REPORT
+   use REPORT
 
-   IMPLICIT NONE
+   implicit none
    private
 
-   real (KIND=RKIND), allocatable, dimension (:,:,:)    :: fpw
-   real (KIND=RKIND), allocatable, dimension(:,:)       :: distanciaInicial,pxpw,pypw,pzpw,INCERT
-   real (KIND=RKIND), allocatable, dimension ( :,: )  ::  evol
-   real (KIND=RKIND), allocatable, dimension ( : )  ::  deltaevol
+   real(KIND=RKIND), allocatable, dimension (:,:,:)    :: fpw
+   real(KIND=RKIND), allocatable, dimension(:,:)       :: distanciaInicial,pxpw,pypw,pzpw,INCERT
+   real(KIND=RKIND), allocatable, dimension ( :,: )  ::  evol
+   real(KIND=RKIND), allocatable, dimension ( : )  ::  deltaevol
    integer (kind=4), allocatable, dimension(:)        ::  numus
 
 
@@ -30,8 +30,8 @@ module ilumina
    end type
 
 !!!variables globales del modulo
-      real (KIND=RKIND)           ::  cluz,zvac
-      real (KIND=RKIND)           ::  eps0,mu0
+      real(KIND=RKIND)           ::  cluz,zvac
+      real(KIND=RKIND)           ::  eps0,mu0
 !!!
    !!!!local variables
    type (coorsxyzP) , save ::   Punto
@@ -53,11 +53,11 @@ contains
       integer (kind=4), intent(in) :: layoutnumber,size
       type (limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
       integer j,k,field,i,jjj,maxnumus,maxmodes,kkk
-      real (KIND=RKIND) :: modulus,Xd0,Yd0,Zd0,diagonalcaja
+      real(KIND=RKIND) :: modulus,Xd0,Yd0,Zd0,diagonalcaja
       logical, intent(out)  ::  ThereArePlaneWaveBoxes
       logical  ::  abortar, resume
       character(len=BUFSIZE) :: buff
-      real (KIND=RKIND), intent(in)   :: eps00,mu00
+      real(KIND=RKIND), intent(in)   :: eps00,mu00
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       cluz=1.0_RKIND/sqrt(eps0*mu0) !lo necesitara incid
       zvac=sqrt(mu0/eps0) !lo necesitan las variables de mas abajo
@@ -341,7 +341,7 @@ contains
 !!             fpw(jjj,6,kkk)=(pxpw(jjj,kkk)*fpw(jjj,2,kkk)-pypw(jjj,kkk)*fpw(jjj,1,kkk))/zvac
              !
              !Find the null-phase corner depending on the angle of propagation
-             IF ((pxpw(jjj,kkk) >= 0).and.(pypw(jjj,kkk) >= 0).and.(pzpw(jjj,kkk) >= 0)) then
+             if ((pxpw(jjj,kkk) >= 0).and.(pypw(jjj,kkk) >= 0).and.(pzpw(jjj,kkk) >= 0)) then
                 XD0=sgg%Linex(max(sgg%PlaneWave(jjj)%esqx1-1,SINPML_fullsize(iHx)%XI))
                 YD0=sgg%Liney(max(sgg%PlaneWave(jjj)%esqy1-1,SINPML_fullsize(iHy)%YI))
                 ZD0=sgg%Linez(max(sgg%PlaneWave(jjj)%esqz1-1,SINPML_fullsize(iHz)%ZI))
@@ -737,7 +737,7 @@ contains
 !!!!
       call calc_planewaveconstants(sgg,eps0,mu0)
 !!!
-      RETURN
+      return
    end subroutine InitPlaneWave
 
 
@@ -750,8 +750,8 @@ contains
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       logical :: still_planewave_time,calledfromobservation
       integer (KIND=4) i,j,k,nfield,jjj,kkk,jdum
-      real (KIND=RKIND)  ::  EHI
-      real (KIND=RKIND)  ::   time,d,xf,yf,zf
+      real(KIND=RKIND)  ::  EHI
+      real(KIND=RKIND)  ::   time,d,xf,yf,zf
       !
       xf=Punto%PhysCoor(nfield)%x(i)
       yf=Punto%PhysCoor(nfield)%y(j)
@@ -792,8 +792,8 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!! Evolution function to interpolate from the input file
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      real (KIND=RKIND) function evolucion(jjj,t,d,still_planewave_time)
-         real (KIND=RKIND) t,d
+      real(KIND=RKIND) function evolucion(jjj,t,d,still_planewave_time)
+         real(KIND=RKIND) t,d
          integer (kind=8)  ::  nprev
          integer (kind=4)  ::  jjj
          logical  ::  still_planewave_time
@@ -855,17 +855,17 @@ contains
       !!!
       type( bounds_t), intent( IN)  ::  b
       !--->
-      real (kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( IN)  ::  g2
+      real(kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( IN)  ::  g2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  Idxh
-      real (kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  Idyh
-      real (kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  Idzh
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  Idxh
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  Idyh
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  Idzh
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
       !---------------------------> variables locales <-----------------------------------------------
-      real (kind = RKIND)  ::  timei, G2_1, Id,incidente
+      real(kind = RKIND)  ::  timei, G2_1, Id,incidente
       integer  ::  i, j, k, i_m, j_m, k_m,jjj
       character (LEN=BUFSIZE)     ::  dubuf
       !---------------------------> empieza AdvancePlaneWaveE <---------------------------------------
@@ -1158,17 +1158,17 @@ contains
       !!!
       type( bounds_t), intent( IN)  ::  b
       !--->
-      real (kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( IN)  ::  gm2
+      real(kind = RKIND), dimension( 0 :  sgg%NumMedia), intent( IN)  ::  gm2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( IN)  ::  Idxe
-      real (kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( IN)  ::  Idye
-      real (kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( IN)  ::  Idze
+      real(kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( IN)  ::  Idxe
+      real(kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( IN)  ::  Idye
+      real(kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( IN)  ::  Idze
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
       !---------------------------> variables locales <-----------------------------------------------
-      real (kind = RKIND)  ::  timei, Gm2_1, Id,incidente
+      real(kind = RKIND)  ::  timei, Gm2_1, Id,incidente
       integer (kind=4)  ::  i, j, k, i_m, j_m, k_m,jjj
       character (LEN=BUFSIZE)     ::  dubuf
       !---------------------------> empieza AdvancePlaneWaveH <---------------------------------------
@@ -1464,7 +1464,7 @@ contains
 
     subroutine calc_planewaveconstants(sgg,eps00,mu00)
       type (SGGFDTDINFO), intent(IN)   ::  sgg
-      real (kind = RKIND), intent(in)  ::  eps00,mu00
+      real(kind = RKIND), intent(in)  ::  eps00,mu00
       integer :: jjj,kkk
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       cluz=1.0_RKIND/sqrt(eps0*mu0) !lo necesitara incid
@@ -1486,14 +1486,14 @@ contains
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       type( bounds_t), intent( IN)  ::  b
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
       !---------------------------> variables locales <-----------------------------------------------
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hxvac
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hyvac
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hzvac
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hxvac
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hyvac
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hzvac
       !---------------------------> variables locales <-----------------------------------------------
       integer (kind=4)  ::  i, j, k, i_m, j_m, k_m,jjj
 
@@ -1728,4 +1728,4 @@ contains
     end subroutine corrigeondaplanaH
     
 
-END MODULE ILUMINA
+end module ILUMINA

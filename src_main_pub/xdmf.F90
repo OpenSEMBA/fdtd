@@ -1,48 +1,48 @@
-MODULE xdmf
+module xdmf
    !
-   USE fdetypes
-   USE Observa
+   use fdetypes
+   use Observa
    use report
    use xdmf_h5
    !
    !
    !
    !
-   IMPLICIT NONE
+   implicit none
    !
-   PRIVATE
-   PUBLIC createxdmf,createxdmfOnTheFly,createh5bintxt
+   private
+   public createxdmf,createxdmfOnTheFly,createh5bintxt
    !!!        public create_interpreted_mesh
-CONTAINS
+contains
    ! =================================================================================================
    !                       ====>>>> SALVADOR's CODE <<<<====
    ! =================================================================================================
    !
    !Subrutine to parse the volumic probes to create .xdmf and .h5 files
    !
-   SUBROUTINE createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
+   subroutine createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
       logical, save :: firsttimeenteringcreatexdmf=.true.
       integer (KIND=4) :: mpidir
       logical :: vtkindex,createh5bin
       !------------------------>
-      CHARACTER (LEN=BUFSIZE) :: filename ! File name
+      character (LEN=BUFSIZE) :: filename ! File name
       !
       type (SGGFDTDINFO), intent(IN)        :: sgg
-      integer (KIND=4), INTENT (IN) :: layoutnumber, size
+      integer (KIND=4), intent(in) :: layoutnumber, size
       integer (KIND=4) ::  ierr,  sizeofvalores,COMPO
       complex( kind = CKIND), dimension( :, :, :, :,: ), allocatable  :: valor3DComplex !freqdomain probes
       !
-      type (output_t), POINTER, DIMENSION (:) :: output
+      type (output_t), POINTER, dimension(:) :: output
       integer (KIND=4) :: iroot
       integer (KIND=4) :: myunit
       !
 #ifdef CompileWithMPI
-      real (KIND=RKIND), ALLOCATABLE, DIMENSION (:, :, :, :) :: newvalor3d !para sondas Volumic
+      real(KIND=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: newvalor3d !para sondas Volumic
 #endif
 
 
-      real (KIND=RKIND), ALLOCATABLE, DIMENSION (:, :, :, :) :: valor3d !para sondas Volumic
-      real (  KINd=RKIND_TIEMPO), ALLOCATABLE, DIMENSION (:) :: att
+      real(KIND=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: valor3d !para sondas Volumic
+      real(  KINd=RKIND_TIEMPO), ALLOCATABLE, dimension(:) :: att
 
 
       integer (KIND=4) :: indi,fieldob
@@ -53,15 +53,15 @@ CONTAINS
       character (LEN=BUFSIZE)     ::  dubuf
       integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs 
       integer (KIND=4) :: minXabs_primero,minYabs_primero,minZabs_primero,imdice
-      CHARACTER (LEN=BUFSIZE) :: pathroot
+      character (LEN=BUFSIZE) :: pathroot
       character (LEN=BUFSIZE)  ::  chari,charj,chark,chari2,charj2,chark2
       character (LEN=BUFSIZE)  ::  extpoint
       character(len=BUFSIZE) :: buff
-      real (KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
+      real(KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                              dz_minZabs,dy_minYabs,dx_minXabs                 
       !
-      CHARACTER (LEN=BUFSIZE) :: whoami, whoamishort
-      real (KIND=RKIND)  :: rdum
+      character (LEN=BUFSIZE) :: whoami, whoamishort
+      real(KIND=RKIND)  :: rdum
       integer :: my_iostat
       
       WRITE (whoamishort, '(i5)') layoutnumber + 1
@@ -72,10 +72,10 @@ CONTAINS
       somethingdone=.false.
       barridoprobes: do ii = 1, sgg%NumberRequest
 
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
          if (sgg%observation(ii)%nP == 1) then
          if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What /= mapvtk).AND. &
-             (sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) THEN
+             (sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
             if (sgg%Observation(ii)%done.and.(sgg%Observation(ii)%flushed)) then
                cycle barridoprobes
             elseif (sgg%Observation(ii)%done) then
@@ -95,10 +95,10 @@ CONTAINS
          endif
          !
          !sondas Volumic traducelas a xdfm
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
                if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What /= mapvtk).AND. &
-               (sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) THEN
+               (sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if ((lexis).and.(output(ii)%TimesWritten/=0)) then
                      fieldob=sgg%observation(ii)%P(1)%what
@@ -223,9 +223,9 @@ CONTAINS
 #endif
 
 #ifdef CompileWithMPI
-                     IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                     if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else                 
-                     IF (layoutnumber == 0) THEN
+                     if (layoutnumber == 0) then
 #endif                
                          if (createh5bin) then
                             if (firsttimeenteringcreatexdmf) then         
@@ -284,9 +284,9 @@ CONTAINS
                         endif
 #ifdef CompileWithHDF
 #ifdef CompileWithMPI
-                        IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                        if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else                 
-                        IF (layoutnumber == 0) THEN
+                        if (layoutnumber == 0) then
 #endif                
                            
                            if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase del modulo
@@ -396,9 +396,9 @@ CONTAINS
 !escribe los ficheros de salida
  
 #ifdef CompileWithMPI
-                              IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                              if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else                   
-                              IF (layoutnumber == 0) THEN
+                              if (layoutnumber == 0) then
 #endif                
 #ifdef CompileWithHDF
                                    if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase del modulo
@@ -425,9 +425,9 @@ CONTAINS
                               
 #ifdef CompileWithHDF
 #ifdef CompileWithMPI
-                        IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                        if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else                  
-                        IF (layoutnumber == 0) THEN
+                        if (layoutnumber == 0) then
 #endif   
                            
                            if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase del modulo
@@ -439,9 +439,9 @@ CONTAINS
                      end do buclepasadas
                    !
 #ifdef CompileWithMPI
-                     IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                     if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else              
-                     IF (layoutnumber == 0) THEN
+                     if (layoutnumber == 0) then
 #endif   
                         if (createh5bin) then
                              close(myunit)
@@ -469,18 +469,18 @@ CONTAINS
          ENDIF
       end do barridoprobes !barrido puntos de observacion
                      
-      RETURN
-   END SUBROUTINE createxdmf
+      return
+   end subroutine createxdmf
 
 
-   SUBROUTINE createh5bintxt(sgg,layoutnumber,size)
+   subroutine createh5bintxt(sgg,layoutnumber,size)
       type (SGGFDTDINFO), intent(IN)        :: sgg
-      integer (KIND=4), INTENT (IN) :: layoutnumber, size
+      integer (KIND=4), intent(in) :: layoutnumber, size
       logical :: lexis,algoescrito
       integer (KIND=4) :: ii,ierr
       integer (KIND=4) :: myunit,myunit2
-      CHARACTER (LEN=BUFSIZE) ::  whoamishort
-      CHARACTER (LEN=BUFSIZE) :: pathroot
+      character (LEN=BUFSIZE) ::  whoamishort
+      character (LEN=BUFSIZE) :: pathroot
       integer :: my_iostat
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -515,16 +515,16 @@ CONTAINS
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif     
-   end SUBROUTINE createh5bintxt
+   end subroutine createh5bintxt
 
-   SUBROUTINE createxdmfOnTheFly (sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)
+   subroutine createxdmfOnTheFly (sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)
       integer (KIND=4) :: mpidir
       logical :: vtkindex,createh5bin
       !------------------------>
 
       type (SGGFDTDINFO), intent(IN)        :: sgg
-      integer (KIND=4), INTENT (IN) :: layoutnumber, size
-      type (output_t), POINTER, DIMENSION (:) :: output
+      integer (KIND=4), intent(in) :: layoutnumber, size
+      type (output_t), POINTER, dimension(:) :: output
       integer (KIND=4) :: ii
       logical :: lexis,somethingdone
       character(len=BUFSIZE) :: buff
@@ -534,9 +534,9 @@ CONTAINS
 
       do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
-               if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) THEN
+               if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
                   !
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
@@ -554,9 +554,9 @@ CONTAINS
       call createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
       do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
-               if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) THEN
+               if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
                   !
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
@@ -572,8 +572,8 @@ CONTAINS
 
       end do !barrido puntos de observacion
 
-      RETURN
-   END SUBROUTINE createxdmfOnTheFly
-END MODULE xdmf
+      return
+   end subroutine createxdmfOnTheFly
+end module xdmf
 !
 !

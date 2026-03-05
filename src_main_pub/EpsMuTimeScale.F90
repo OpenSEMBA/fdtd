@@ -6,11 +6,11 @@
 !//===========================================================================//
 module EpsMuTimeScale_m
 
-USE FDETYPES
+use FDETYPES
 private :: new_input_, checkError_
 
 type EpsMuTimeScale_input_parameters_t
-    real (kind=RKind) :: tini, tend, alpha_max
+    real(kind=RKind) :: tini, tend, alpha_max
     logical :: electric, magnetic
     logical :: are_there
 contains
@@ -23,7 +23,7 @@ contains
 
 function get_slope_ (this) result (slope)
     class (EpsMuTimeScale_input_parameters_t) :: this
-    real (kind=RKind) :: slope
+    real(kind=RKind) :: slope
     slope = (this%alpha_max-1.0_Rkind)/(this%tend-this%tini)
 end function get_slope_
 

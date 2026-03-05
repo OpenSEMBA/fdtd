@@ -1,29 +1,29 @@
-MODULE snapxdmf
+module snapxdmf
    !
 
 #ifdef CompileWithHDF
-   USE fdetypes
-   USE HDF5
+   use fdetypes
+   use HDF5
    !
    !
-   IMPLICIT NONE
+   implicit none
    !
-   PRIVATE
-   PUBLIC WRITE_XDMFSNAP
-CONTAINS
+   private
+   public WRITE_XDMFSNAP
+contains
 
    !snaps
 
-   SUBROUTINE write_xdmfsnap(ninstant,filename,minXabs,maxXabs,minYabs,maxYabs,minZabs,maxZabs,valor3D)
+   subroutine write_xdmfsnap(ninstant,filename,minXabs,maxXabs,minYabs,maxYabs,minZabs,maxZabs,valor3D)
 
       !------------------------>
 
 
 
       integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs
-      real (kind=4), dimension(minXabs:maxXabs,minYabs:maxYabs,minZabs:maxZabs,1:1)  ::  valor3D
-      CHARACTER (LEN=BUFSIZE) :: filename ! File name
-      CHARACTER (LEN=BUFSIZE) :: dsetname ! Dataset name
+      real(kind=4), dimension(minXabs:maxXabs,minYabs:maxYabs,minZabs:maxZabs,1:1)  ::  valor3D
+      character (LEN=BUFSIZE) :: filename ! File name
+      character (LEN=BUFSIZE) :: dsetname ! Dataset name
       !
       integer (HID_T) :: file_id  ! File identifier
       integer (HID_T) :: dset_id ! Dataset identifier
@@ -31,17 +31,17 @@ CONTAINS
       !
       integer :: error ! Error flag
       integer :: rank ! Dataset rank
-      integer (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: DATA_dims ! Dataset dimensions
-      integer (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: offset
-      integer (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: valor3d_dims ! slice dimensions
+      integer (HSIZE_T), ALLOCATABLE, dimension(:) :: DATA_dims ! Dataset dimensions
+      integer (HSIZE_T), ALLOCATABLE, dimension(:) :: offset
+      integer (HSIZE_T), ALLOCATABLE, dimension(:) :: valor3d_dims ! slice dimensions
       !
-      CHARACTER (LEN=BUFSIZE) :: charc
-      integer (KIND=4), INTENT (IN) :: ninstant
+      character (LEN=BUFSIZE) :: charc
+      integer (KIND=4), intent(in) :: ninstant
       !
       !
       !
       integer (KIND=4) :: indi
-      real (KIND=4), ALLOCATABLE, DIMENSION (:) :: att
+      real(KIND=4), ALLOCATABLE, dimension(:) :: att
       !
       integer (KIND=4) :: finalstep
       !
@@ -148,11 +148,11 @@ CONTAINS
 
       DEALLOCATE (ATT)
 
-      RETURN
-   END SUBROUTINE write_xdmfsnap
+      return
+   end subroutine write_xdmfsnap
 #endif
 
 
-END MODULE snapxdmf
+end module snapxdmf
 !
 !

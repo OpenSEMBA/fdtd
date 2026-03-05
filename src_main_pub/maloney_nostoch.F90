@@ -28,17 +28,17 @@ end type
 
 
 type :: MDfield_t
-   real (KIND=RKIND), pointer                 ::  FieldPresent !apunta al campo del background
-   real (KIND=RKIND)                          ::  FieldPrevious
+   real(KIND=RKIND), pointer                 ::  FieldPresent !apunta al campo del background
+   real(KIND=RKIND)                          ::  FieldPrevious
    Complex (Kind=CKIND), pointer, dimension ( : )   ::  Current
 end type
 
 
 type  ::  SGBCSurface_t
-   real (KIND=RKIND), allocatable, dimension (:) :: E,H,E_past
-   real (KIND=RKIND), pointer ::  Efield,Ha_Plus,Ha_Minu,Hb_Plus,Hb_Minu
-   real (KIND=RKIND), allocatable, dimension (:)          ::  delta_entreEinterno
-   real (KIND=RKIND), dimension (0:1)  ::  g1,g2a,g2b
+   real(KIND=RKIND), allocatable, dimension (:) :: E,H,E_past
+   real(KIND=RKIND), pointer ::  Efield,Ha_Plus,Ha_Minu,Hb_Plus,Hb_Minu
+   real(KIND=RKIND), allocatable, dimension (:)          ::  delta_entreEinterno
+   real(KIND=RKIND), dimension (0:1)  ::  g1,g2a,g2b
 !!!SGBC dispersivos 12/05/16
    type (MDfield_t), allocatable, dimension (:) :: EDis
    integer (kind=4) :: numpolres
@@ -48,16 +48,16 @@ type  ::  SGBCSurface_t
    
    integer (kind=4) :: depth,jmed
    integer (KIND=4), allocatable, dimension (:) ::capa !!!0121
-   real (KIND=RKIND) , allocatable, dimension (:)   :: G2_interno,GM2_interno,G1_interno,GM1_interno   
-   real (KIND=RKIND)          :: GM2_externo   !no se precisa gm1_externo porque fuera no hay conductividad magnetica y es trivialmente 1. El gm2_externo tiene sentido almecnarlo porque aun no habiendo conductividad, no es la unidad
-   real (KIND=RKIND)          :: Hyee__left, Hyee_right      
+   real(KIND=RKIND) , allocatable, dimension (:)   :: G2_interno,GM2_interno,G1_interno,GM1_interno   
+   real(KIND=RKIND)          :: GM2_externo   !no se precisa gm1_externo porque fuera no hay conductividad magnetica y es trivialmente 1. El gm2_externo tiene sentido almecnarlo porque aun no habiendo conductividad, no es la unidad
+   real(KIND=RKIND)          :: Hyee__left, Hyee_right      
 !!!!! Crank-Nicolson 311015
-   real (KIND=RKIND) , allocatable, dimension (:)   :: a,b,c,rb,rh,rhm1
-   real (KIND=RKIND)                                :: a1,b1,c1,rb1,rh1,an,bn,cn,rbn,rhn 
-   real (KIND=RKIND) , allocatable, dimension (:) :: D !termino independiente CRANK-NICOLSON
+   real(KIND=RKIND) , allocatable, dimension (:)   :: a,b,c,rb,rh,rhm1
+   real(KIND=RKIND)                                :: a1,b1,c1,rb1,rh1,an,bn,cn,rbn,rhn 
+   real(KIND=RKIND) , allocatable, dimension (:) :: D !termino independiente CRANK-NICOLSON
    logical :: SGBCCrank
 
-   real (KIND=RKIND)  :: transversalDeltaE,transversalDeltaH,alignedlDeltaH
+   real(KIND=RKIND)  :: transversalDeltaE,transversalDeltaH,alignedlDeltaH
    integer (kind=4), dimension (0:1)  :: med
    COMPLEX (kind=ckind), allocatable, dimension (:) :: a11, c11
 END type SGBCSurface_t
@@ -80,9 +80,9 @@ end type Malon_t
 !!!variables globales del modulo  
 type (Malon_t), save, target   ::  malon
 !
-real (KIND=RKIND), save           ::  eps0,mu0,zvac,cluz
+real(KIND=RKIND), save           ::  eps0,mu0,zvac,cluz
 logical, save  :: SGBCcrank,SGBCDispersive
-real (KIND=RKIND), save  :: SGBCFreq,SGBCresol
+real(KIND=RKIND), save  :: SGBCFreq,SGBCresol
 integer (kind=4), save:: SGBCdepth
 !!!
 public Malon_t,SGBCSurface_t !el tipo es publico
@@ -99,32 +99,32 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
                      eps00,mu00,simu_devia,stochastic)
    type(media_matrices_t), intent(in) :: media
    logical :: simu_devia,stochastic 
-   real (KIND=RKIND)           ::  eps00,mu00
+   real(KIND=RKIND)           ::  eps00,mu00
    logical :: temp_SGBCcrank,temp_SGBCDispersive
    type(constants_t), intent(inout) :: g
    type (SGGFDTDINFO), intent(INOUT)     ::  sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
-   real (KIND=RKIND)   , intent(in) , target     :: &
+   real(KIND=RKIND)   , intent(in) , target     :: &
    Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
    Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
    Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
    Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
    Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
    Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-   real (KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
+   real(KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
                                                       &  Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
                                                       &  Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
                                                          Idxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
                                                          Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
                                                          Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
-   real (KIND=RKIND)  :: temp_SGBCFreq,temp_SGBCresol, rra,rrb,rrc,rrd
-   real (KIND=RKIND)  :: signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1,Sigmam,Epsilon,Mu,Sigma   
-   real (KIND=RKIND)  :: factor
-   real (KIND=RKIND) , allocatable, dimension(:,:) :: derivcte
+   real(KIND=RKIND)  :: temp_SGBCFreq,temp_SGBCresol, rra,rrb,rrc,rrd
+   real(KIND=RKIND)  :: signo,g1eff_0,g1eff_1,g2eff_0,g2eff_1,Sigmam,Epsilon,Mu,Sigma   
+   real(KIND=RKIND)  :: factor
+   real(KIND=RKIND) , allocatable, dimension(:,:) :: derivcte
 
    integer (kind=4), intent(in) :: layoutnumber,size,temp_SGBCdepth
-   logical, INTENT(IN)  :: resume
-   logical, INTENT(OUT)  ::  ThereAreSGBCs
+   logical, intent(in)  :: resume
+   logical, intent(out)  ::  ThereAreSGBCs
    integer (kind=4)  ::  jmed,j1,conta,k1,i1,SGBCdir,i,filo_placas,idummy,numpolres,ient,incert,maxnumcapas,ii
    character(len=BUFSIZE) :: buff
    character (LEN=BUFSIZE)  ::  whoami
@@ -614,12 +614,12 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
 end subroutine InitSGBCs
 
 subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
-   real (KIND=RKIND), intent(IN)           ::  eps00,mu00
+   real(KIND=RKIND), intent(IN)           ::  eps00,mu00
    type (SGGFDTDINFO), intent(IN)     ::  sgg 
-   real (KIND=RKIND), pointer, dimension ( : )   ::  gm1,g1,gm2,g2
+   real(KIND=RKIND), pointer, dimension ( : )   ::  gm1,g1,gm2,g2
    type(constants_t) :: g
  integer :: jmed,conta,i
-   real (KIND=RKIND) :: sigmam,sigma,mu,epsilon,signo,g1eff_0,g2eff_0,g1eff_1,g2eff_1
+   real(KIND=RKIND) :: sigmam,sigma,mu,epsilon,signo,g1eff_0,g2eff_0,g1eff_1,g2eff_1
    type (SGBCSurface_t), pointer :: compo
    character(len=BUFSIZE) :: buFF
    logical :: stochastic
@@ -781,13 +781,13 @@ end subroutine calc_SGBCconstants
                         
  subroutine YeeAdvanceSGBCDispersive (tempnode,numpolres,G3,kappa,beta,dt)
  
-   real (KIND=RKIND), intent(IN)     :: dt
+   real(KIND=RKIND), intent(IN)     :: dt
    type (MDfield_t), pointer  ::  tempnode
    integer (kind=4) :: k1,numpolres
    type (val_t) :: Beta,Kappa,G3
    
          Do k1=1,NumPolRes
-            tempnode%fieldPresent=tempnode%FieldPresent-real (G3%val(k1)*tempnode%current(k1) )
+            tempnode%fieldPresent=tempnode%FieldPresent-real(G3%val(k1)*tempnode%current(k1) )
          enddo
          Do k1=1,NumPolRes
             tempnode%current(k1)= Kappa%val(k1)  *tempnode%current(k1) + &
@@ -802,20 +802,20 @@ end subroutine calc_SGBCconstants
                          
  subroutine primero_CNAdvanceSGBCDispersive (tempnode,tempD,numpolres,G3,kappa,beta,dt)
  
-   real (KIND=RKIND), intent(IN)     :: dt
-   real (KIND=RKIND),  pointer  ::  tempD
+   real(KIND=RKIND), intent(IN)     :: dt
+   real(KIND=RKIND),  pointer  ::  tempD
    type (MDfield_t), pointer  ::  tempnode
    integer (kind=4) :: k1,numpolres
    type (val_t) :: Beta,Kappa,G3
          Do k1=1,NumPolRes
-            tempD=tempD-real (G3%val(k1)*tempnode%current(k1) )
+            tempD=tempD-real(G3%val(k1)*tempnode%current(k1) )
          enddo
  end subroutine primero_CNAdvanceSGBCDispersive
  
  subroutine segundo_CNAdvanceSGBCDispersive (campocalculado,tempnode,numpolres,G3,kappa,beta,dt)
  
-   real (KIND=RKIND) :: campocalculado 
-   real (KIND=RKIND), intent(IN)     :: dt
+   real(KIND=RKIND) :: campocalculado 
+   real(KIND=RKIND), intent(IN)     :: dt
    type (MDfield_t), pointer  ::  tempnode
    integer (kind=4) :: k1,numpolres
    type (val_t) :: Beta,Kappa,G3
@@ -837,7 +837,7 @@ end subroutine calc_SGBCconstants
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine AdvanceSGBCE(dt,SGBCDispersive,simu_devia,stochastic)
    logical :: simu_devia,stochastic 
-   real (KIND=RKIND), intent(IN)     :: dt
+   real(KIND=RKIND), intent(IN)     :: dt
    logical :: SGBCDispersive
    integer (kind=4)  ::  conta
 !       call AdvanceSGBCE_single_node(dt,SGBCDispersive)
@@ -858,13 +858,13 @@ contains
    subroutine AdvanceSGBCE_single_node(conta,dt,SGBCDispersive)
       !non argument arguments
       integer (kind=4),  intent(IN) ::  conta
-      real (KIND=RKIND), intent(IN) :: dt
+      real(KIND=RKIND), intent(IN) :: dt
       logical,           intent(IN) :: SGBCDispersive
       !local
       integer (kind=4)  ::  i
       type (SGBCSurface_t),pointer   :: compo
       type (MDfield_t) , pointer :: EDIS
-      real (KIND=RKIND), pointer :: dDIS
+      real(KIND=RKIND), pointer :: dDIS
       
 
       
@@ -981,7 +981,7 @@ contains
             compo%Hyee_Right = compo%H( compo%depth-1)              
             
          else !yee
-            IF (compo%depth/=0) THEN
+            if (compo%depth/=0) then
                do i=-compo%depth , compo%depth-1
                   compo%H(i) = compo%GM1_interno(i) *compo%H(i) +  compo%GM2_interno(i) *( compo%E(i+1) - compo%E(i) )  !E y H se usan reciprocamente siempre con el mismo signo
                end do
@@ -1020,22 +1020,22 @@ subroutine AdvanceSGBCH
 end subroutine AdvanceSGBCH
 
 subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
-   real (KIND=RKIND), intent(IN)           ::  eps00,mu00
+   real(KIND=RKIND), intent(IN)           ::  eps00,mu00
    Complex (Kind=CKIND), pointer, dimension ( : )      ::  Beta,Kappa,G3
 !!!!      
    type (SGGFDTDINFO), intent(IN) ::  sgg
    type (SGBCSurface_t), pointer, intent(INOUT) :: compo
    character(len=BUFSIZE) :: buff
 !!!variables locales
- real (kind=RKIND) :: width,sigmatemp,eprtemp,sigmamtemp,murtemp,epsilon,sigma,mu,sigmam,g1,g2,gm1,gm2,delta_entreEinterno_temp,epr_adyacentei,sig_adyacentei
- real (kind=RKIND), dimension(0:1) :: epr_adyacente,sig_adyacente
+ real(kind=RKIND) :: width,sigmatemp,eprtemp,sigmamtemp,murtemp,epsilon,sigma,mu,sigmam,g1,g2,gm1,gm2,delta_entreEinterno_temp,epr_adyacentei,sig_adyacentei
+ real(kind=RKIND), dimension(0:1) :: epr_adyacente,sig_adyacente
  integer (kind=4) :: i,ib,ib_ady
  logical :: SGBCDispersive
  eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
    
 
 
-   IF (compo%depth==0) then
+   if (compo%depth==0) then
          !!!!!!! compo%delta_entreeinterno=0.0 !!no se usa nunca !ojoooo revisar caso 0121 
          !!!!!!!averagefactor  = width / compo%transversaldeltah /factor !!! sgg promediados buenos filo_placas 201115
          !!!!!!!epsilon = (1.0_rkind - averagefactor ) * (epr_adyacente(0)+epr_adyacente(1))/2.0_rkind  * eps0 + &
@@ -1224,9 +1224,9 @@ end subroutine calc_g1g2gm1gm2_compo
 
 !!!!!!!
 subroutine g1g2(dt,epsilon,sigma,G1,G2)
-   real (kind=RKIND_tiempo), intent(in) :: dt
-   real (kind=RKIND), intent(in) :: epsilon,sigma
-   real (kind=RKIND), intent(out) :: g1,g2
+   real(kind=RKIND_tiempo), intent(in) :: dt
+   real(kind=RKIND), intent(in) :: epsilon,sigma
+   real(kind=RKIND), intent(out) :: g1,g2
 
    G1=(1.0_RKIND  - Sigma * dt / (2.0_RKIND * epsilon ) ) / &
       (1.0_RKIND  + Sigma * dt / (2.0_RKIND * epsilon ) )
@@ -1244,9 +1244,9 @@ end subroutine g1g2
 
 !!!!!!!
 subroutine gm1gm2(dt,mu,sigmam,Gm1,Gm2)
-   real (kind=RKIND_tiempo), intent(in) :: dt
-   real (kind=RKIND), intent(in) :: mu,sigmam
-   real (kind=RKIND), intent(out) :: gm1,gm2
+   real(kind=RKIND_tiempo), intent(in) :: dt
+   real(kind=RKIND), intent(in) :: mu,sigmam
+   real(kind=RKIND), intent(out) :: gm1,gm2
 
    Gm1=(1.0_RKIND  - Sigmam * dt / (2.0_RKIND * mu) ) / &
       (1.0_RKIND  + Sigmam * dt / (2.0_RKIND * mu ) )
@@ -1264,12 +1264,12 @@ end subroutine gm1gm2
 
 !!!!!!! medios dispersivos sgg 12/05/16 
 subroutine g1g2_Dispersive(dt,epsilon,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c11)
-   real (kind=RKIND), intent(in) :: epsilon,sigma
-   real (kind=RKIND_tiempo), intent(in) :: dt
-   real (kind=RKIND), intent(out) :: g1,g2
+   real(kind=RKIND), intent(in) :: epsilon,sigma
+   real(kind=RKIND_tiempo), intent(in) :: dt
+   real(kind=RKIND), intent(out) :: g1,g2
    COMPLEX (kind=ckind), intent(in), allocatable, dimension(:) :: a11, c11
    integer (kind=4) :: numpolres, i1
-   real (kind=RKIND) :: tempo
+   real(kind=RKIND) :: tempo
 !!!SGBC dispersivos 12/05/16
    Complex (Kind=CKIND), pointer, dimension ( : )      ::  Beta,Kappa,G3
 
@@ -1281,7 +1281,7 @@ subroutine g1g2_Dispersive(dt,epsilon,sigma,G1,G2,Beta,Kappa,G3,numpolres,a11,c1
      end do
      tempo=0.0_RKIND
      Do i1=1,NumPolRes
-         tempo=tempo+real (Beta(i1))
+         tempo=tempo+real(Beta(i1))
      end do
      G1=                        (2.0_RKIND * epsilon + tempo - sigma*dt) / & !ojo No estes tentado de cambiar este signo. Cuadra con han dutton 130516 y con edispersives 
                                 (2.0_RKIND * epsilon + tempo + sigma*dt)
@@ -1364,11 +1364,11 @@ end subroutine
 
 
 subroutine test_stab(G2,GM2)
-   real (KIND=RKIND)     , pointer, dimension ( : )   ::   g2, gm2
+   real(KIND=RKIND)     , pointer, dimension ( : )   ::   g2, gm2
    integer (kind=4)  ::  conta
    logical :: unstable
    type (SGBCSurface_t), pointer :: compo
-   real (KIND=RKIND) :: heur
+   real(KIND=RKIND) :: heur
    character(len=BUFSIZE) :: buff
 
    heur=1.0_RKIND/sqrt(3.0_RKIND)
@@ -1395,7 +1395,7 @@ end subroutine test_stab
 
 subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth) 
  type (SGGFDTDINFO), intent(IN)     ::  sgg
- real (kind=rkind) :: SGBCFreq,SGBCresol,sigma, epr,epsilon,skin_depth,width,widthtotal
+ real(kind=rkind) :: SGBCFreq,SGBCresol,sigma, epr,epsilon,skin_depth,width,widthtotal
  integer (kind=4) :: jmed,i,SGBCdepth,numcapas,precuenta,celdafinal,celdainicial,anchocapa
  integer (kind=4) , pointer, dimension(:) :: capa
  logical :: ultimacapamas1
@@ -1508,13 +1508,13 @@ subroutine solve_tridiag_distintos(aa,bb,cc,a1,b1,c1,an,bn,cn,d,x,n)
    !  n - number of equations
 
    integer,intent(in) :: n
- real (kind=RKIND) ,intent(in),dimension(n) :: aa,bb,cc
- real (kind=RKIND) ,intent(in)   :: a1,b1,c1,an,bn,cn
- real (kind=RKIND) ,dimension(1:n) :: a,b,c
-   real (kind=RKIND) ,dimension(n),intent(in) :: d
-   real (kind=RKIND) ,dimension(n),intent(out) :: x
-   real (kind=RKIND) ,dimension(n) :: cp,dp
-   real (kind=RKIND)  :: m
+ real(kind=RKIND) ,intent(in),dimension(n) :: aa,bb,cc
+ real(kind=RKIND) ,intent(in)   :: a1,b1,c1,an,bn,cn
+ real(kind=RKIND) ,dimension(1:n) :: a,b,c
+   real(kind=RKIND) ,dimension(n),intent(in) :: d
+   real(kind=RKIND) ,dimension(n),intent(out) :: x
+   real(kind=RKIND) ,dimension(n) :: cp,dp
+   real(kind=RKIND)  :: m
    integer i
 
    a(1)=a1
@@ -1556,12 +1556,12 @@ end subroutine solve_tridiag_distintos
    !  n - number of equations
 
    integer,intent(in) :: n
-   real (kind=RKIND) ,intent(in) :: aa,bb,cc,a1,b1,c1,an,bn,cn
-   real (kind=RKIND) ,dimension(n) :: a,b,c
-   real (kind=RKIND) ,dimension(n),intent(in) :: d
-   real (kind=RKIND) ,dimension(n),intent(out) :: x
-   real (kind=RKIND) ,dimension(n) :: cp,dp
-   real (kind=RKIND)  :: m
+   real(kind=RKIND) ,intent(in) :: aa,bb,cc,a1,b1,c1,an,bn,cn
+   real(kind=RKIND) ,dimension(n) :: a,b,c
+   real(kind=RKIND) ,dimension(n),intent(in) :: d
+   real(kind=RKIND) ,dimension(n),intent(out) :: x
+   real(kind=RKIND) ,dimension(n) :: cp,dp
+   real(kind=RKIND)  :: m
    integer i
 
    a(1)=a1

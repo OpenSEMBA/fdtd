@@ -29,7 +29,7 @@ module Observa
   use farfield_m
   use nodalsources
 !
-  IMPLICIT NONE
+  implicit none
   private
 
   type Serialized_t
@@ -118,7 +118,7 @@ module Observa
 #endif
 contains
 
-  SUBROUTINE allocate_for_time_domain(this, numberOfSerialized)
+  subroutine allocate_for_time_domain(this, numberOfSerialized)
     class(Serialized_t), intent(inout) :: this
     integer(kind=4) :: numberOfSerialized
 
@@ -152,9 +152,9 @@ contains
     this%Valor_Hy = 0.
     this%Valor_Hz = 0.
 
-  END SUBROUTINE
+  end subroutine
 
-  SUBROUTINE deallocate_for_time_domain(this)
+  subroutine deallocate_for_time_domain(this)
     class(Serialized_t), intent(inout) :: this
 
     DEALLOCATE (this%Valor)
@@ -172,9 +172,9 @@ contains
     DEALLOCATE (this%Valor_Hy)
     DEALLOCATE (this%Valor_Hz)
 
-  END SUBROUTINE
+  end subroutine
 
-  SUBROUTINE allocate_for_frequency_domain(this, numberOfSerialized)
+  subroutine allocate_for_frequency_domain(this, numberOfSerialized)
     class(Serialized_t), intent(inout) :: this
     integer(kind=4) :: numberOfSerialized
 
@@ -204,9 +204,9 @@ contains
     this%ValorComplex_Hy = 0.
     this%ValorComplex_Hz = 0.
 
-  END SUBROUTINE
+  end subroutine
 
-  SUBROUTINE deallocate_for_frequency_domain(this)
+  subroutine deallocate_for_frequency_domain(this)
     class(Serialized_t), intent(inout) :: this
     call this%deallocate_for_time_domain()
 
@@ -222,9 +222,9 @@ contains
     DEALLOCATE (this%ValorComplex_Hy)
     DEALLOCATE (this%ValorComplex_Hz)
 
-  END SUBROUTINE
+  end subroutine
 
-  SUBROUTINE allocate_current_value(this, numberOfSerialized)
+  subroutine allocate_current_value(this, numberOfSerialized)
     class(Serialized_t), intent(inout) :: this
     integer(kind=4) :: numberOfSerialized
 
@@ -241,9 +241,9 @@ contains
 
     this%currentType = 0
     this%sggMtag = 0
-  END SUBROUTINE
+  end subroutine
 
-  SUBROUTINE deallocate_current_value(this)
+  subroutine deallocate_current_value(this)
     class(Serialized_t), intent(inout) :: this
     DEALLOCATE (this%eI)
     DEALLOCATE (this%eJ)
@@ -251,7 +251,7 @@ contains
 
     DEALLOCATE (this%currentType)
     DEALLOCATE (this%sggMtag)
-  END SUBROUTINE
+  end subroutine
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -755,7 +755,7 @@ contains
       !
       memo = 0
       !
-      IF (ThereAreObservation) then
+      if (ThereAreObservation) then
 #ifdef CompileWithMPI
         allocate (valores(0:BuffObse), newvalores(0:BuffObse))
         valores = 0.0_RKIND
@@ -1544,7 +1544,7 @@ contains
                 !allocateo
 
                 !
-                IF (SGG%Observation(ii)%TimeDomain) THEN
+                if (SGG%Observation(ii)%TimeDomain) then
                   !ojo por si algun dia esto molestara a Cray
                   !replico los ifs de transferencia y escritura
                   ntini = 0
@@ -1606,7 +1606,7 @@ contains
                   output(ii)%item(i)%Serialized%Valor_Hx = 0.0_RKIND
                   output(ii)%item(i)%Serialized%Valor_Hy = 0.0_RKIND
                   output(ii)%item(i)%Serialized%Valor_Hz = 0.0_RKIND
-                ELSEIF (SGG%Observation(ii)%FreqDomain) THEN
+                ELSEIF (SGG%Observation(ii)%FreqDomain) then
                   memo = memo + RKIND*output(ii)%NumFreqs*output(ii)%item(i)%columnas + 16*output(ii)%item(i)%columnas ! 4 integers de 4 bytes
                   if (memo > MaxMemoryProbes) then
                     call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the probes.'// &
@@ -1971,7 +1971,7 @@ contains
                                               (sgg%observation(ii)%P(i)%ZE - sgg%observation(ii)%P(i)%ZI + 1)
                 !
                 !ojo por si algun dia esto molestara a Cray
-                IF (SGG%Observation(ii)%TimeDomain) THEN
+                if (SGG%Observation(ii)%TimeDomain) then
 
                   !replico los ifs de transferencia y escritura
                   ntini = 0
@@ -2013,7 +2013,7 @@ contains
                                                        output(ii)%item(i)%ZItrancos:output(ii)%item(i)%ZEtrancos))
                   output(ii)%item(i)%valor3D = 0.0_RKIND
 
-                ELSEIF (SGG%Observation(ii)%FreqDomain) THEN
+                ELSEIF (SGG%Observation(ii)%FreqDomain) then
                   memo = memo + RKIND*output(ii)%NumFreqs*output(ii)%item(i)%columnas + 16*output(ii)%item(i)%columnas ! 4 integers de 4 bytes
                   if (memo > MaxMemoryProbes) then
                     call stoponerror(layoutnumber, size, 'ERROR: Recompile: excesive memory for the probes.'// &
@@ -3679,7 +3679,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!! Flushes the observed magnitudes to disk
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,size, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
-      USE ILUMINA !is needed to also calculate the incident field in the observed points
+      use ILUMINA !is needed to also calculate the incident field in the observed points
       !solo lo precisa de entrada farfield
       type(bounds_t)  ::  b
       !
@@ -3977,7 +3977,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                 do compo = 1, 3
                   do k1t = output(ii)%item(i)%ZItrancos, output(ii)%item(i)%ZEtrancos
                     do j1t = output(ii)%item(i)%YItrancos, output(ii)%item(i)%YEtrancos
-                      IF (SGG%Observation(ii)%Transfer) then
+                      if (SGG%Observation(ii)%Transfer) then
              write (output(ii)%item(i)%unit) (output(ii)%item(i)%valor3DComplex(N, compo, i1t, j1t, k1t)/output(ii)%dftEntrada(n), &
                        &                                             i1t=output(ii)%item(i)%XItrancos, output(ii)%item(i)%XEtrancos)
                       else !solo la transformada sin normalizar
@@ -4010,7 +4010,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
               write (output(ii)%item(i)%unit) at !deteccion errores dft si se resumea a partir de instantes posteriores al ultimo escrito
               do N = 1, output(ii)%NumFreqs
                 write (output(ii)%item(i)%unit) output(ii)%Freq(n)
-                IF (SGG%Observation(ii)%Transfer) then
+                if (SGG%Observation(ii)%Transfer) then
                   if (output(ii)%item(i)%columnas /= 0) then
                     do i1 = 1, output(ii)%item(i)%columnas
                       write (output(ii)%item(i)%unit) &
@@ -4030,7 +4030,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
                     end do
                   end if
 
-                END IF
+                end if
               end do
               close (output(ii)%item(i)%unit)
             end select
@@ -4365,44 +4365,44 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
       esborde = .false.
       contaborde = 0
       !esta primera opcion solo considera bordes los externos
-      IF (imed /= 1) THEN
+      if (imed /= 1) then
         !    if     (sgg%med(imed )%is%SGBC) then
-        !        if (sgg%med(imed1)%is%SGBC) THEN
+        !        if (sgg%med(imed1)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
-        !        if (sgg%med(imed2)%is%SGBC) THEN
+        !        if (sgg%med(imed2)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
-        !        if (sgg%med(imed3)%is%SGBC) THEN
+        !        if (sgg%med(imed3)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
-        !        if (sgg%med(imed4)%is%SGBC) THEN
+        !        if (sgg%med(imed4)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
         !   elseif  (sgg%med(imed )%is%Multiport) then
-        !        if (sgg%med(imed1)%is%Multiport) THEN
+        !        if (sgg%med(imed1)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
-        !        if (sgg%med(imed2)%is%Multiport) THEN
+        !        if (sgg%med(imed2)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
-        !        if (sgg%med(imed3)%is%Multiport) THEN
+        !        if (sgg%med(imed3)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
-        !        if (sgg%med(imed4)%is%Multiport) THEN
+        !        if (sgg%med(imed4)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
         !    elseif (sgg%med(imed )%is%AnisMultiport) then
-        !        if (sgg%med(imed1)%is%AnisMultiport) THEN
+        !        if (sgg%med(imed1)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
-        !        if (sgg%med(imed2)%is%AnisMultiport) THEN
+        !        if (sgg%med(imed2)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
-        !        if (sgg%med(imed3)%is%AnisMultiport) THEN
+        !        if (sgg%med(imed3)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
-        !        if (sgg%med(imed4)%is%AnisMultiport) THEN
+        !        if (sgg%med(imed4)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
         !        endif
         !    else
@@ -4414,66 +4414,66 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
         !    if (contaborde <=1) esborde=.true.
          !!!!alternativa
         if (sgg%med(imed)%is%SGBC) then
-          if (sgg%med(imed1)%is%SGBC) THEN
+          if (sgg%med(imed1)%is%SGBC) then
                if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed1 /= 1) THEN
+          elseif (imed1 /= 1) then
             contaborde = contaborde + 1
           end if
-          if (sgg%med(imed2)%is%SGBC) THEN
+          if (sgg%med(imed2)%is%SGBC) then
                if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed2 /= 1) THEN
+          elseif (imed2 /= 1) then
             contaborde = contaborde + 1
           end if
-          if (sgg%med(imed3)%is%SGBC) THEN
+          if (sgg%med(imed3)%is%SGBC) then
                if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed3 /= 1) THEN
+          elseif (imed3 /= 1) then
             contaborde = contaborde + 1
           end if
-          if (sgg%med(imed4)%is%SGBC) THEN
+          if (sgg%med(imed4)%is%SGBC) then
                if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed4 /= 1) THEN
+          elseif (imed4 /= 1) then
             contaborde = contaborde + 1
           end if
         elseif (sgg%med(imed)%is%Multiport) then
-          if (sgg%med(imed1)%is%Multiport) THEN
+          if (sgg%med(imed1)%is%Multiport) then
                if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed1 /= 1) THEN
+          elseif (imed1 /= 1) then
             contaborde = contaborde + 1
           end if
-          if (sgg%med(imed2)%is%Multiport) THEN
+          if (sgg%med(imed2)%is%Multiport) then
                if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed2 /= 1) THEN
+          elseif (imed2 /= 1) then
             contaborde = contaborde + 1
           end if
-          if (sgg%med(imed3)%is%Multiport) THEN
+          if (sgg%med(imed3)%is%Multiport) then
                if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed3 /= 1) THEN
+          elseif (imed3 /= 1) then
             contaborde = contaborde + 1
           end if
-          if (sgg%med(imed4)%is%Multiport) THEN
+          if (sgg%med(imed4)%is%Multiport) then
                if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed4 /= 1) THEN
+          elseif (imed4 /= 1) then
             contaborde = contaborde + 1
           end if
         elseif (sgg%med(imed)%is%AnisMultiport) then
-          if (sgg%med(imed1)%is%AnisMultiport) THEN
+          if (sgg%med(imed1)%is%AnisMultiport) then
                if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed1)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed1 /= 1) THEN
+          elseif (imed1 /= 1) then
             contaborde = contaborde + 1
           end if
-          if (sgg%med(imed2)%is%AnisMultiport) THEN
+          if (sgg%med(imed2)%is%AnisMultiport) then
                if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed2)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed2 /= 1) THEN
+          elseif (imed2 /= 1) then
             contaborde = contaborde + 1
           end if
-          if (sgg%med(imed3)%is%AnisMultiport) THEN
+          if (sgg%med(imed3)%is%AnisMultiport) then
                if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed3)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed3 /= 1) THEN
+          elseif (imed3 /= 1) then
             contaborde = contaborde + 1
           end if
-          if (sgg%med(imed4)%is%AnisMultiport) THEN
+          if (sgg%med(imed4)%is%AnisMultiport) then
                if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))/=trim(adjustl(sgg%Med(imed4)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-          elseif (imed4 /= 1) THEN
+          elseif (imed4 /= 1) then
             contaborde = contaborde + 1
           end if
         else
@@ -4499,7 +4499,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
         end if
       else
         esborde = .false.
-      END IF !DEL IMED1
+      end if !DEL IMED1
       return
     end subroutine contabordes
 
@@ -4528,7 +4528,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
       !!!!!!!!!!!!
 
       if (init) call getnodal(rNodal_Ex, rNodal_Ey, rNodal_Ez, rNodal_Hx, rNodal_Hy, rNodal_Hz)
-      IF (ELECTRIC) THEN
+      if (ELECTRIC) then
         do sweep = 1, rNodal_Ex%numHard
           do nk = rNodal_Ex%nodHard(sweep)%punto%zi, rNodal_Ex%nodHard(sweep)%punto%ze
             k_m = nk
@@ -4709,9 +4709,9 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
             End do
           end do
         end do
-      END IF !DEL ELECTRIC
+      end if !DEL ELECTRIC
 
-      IF (MAGNETIC) THEN
+      if (MAGNETIC) then
 
         do sweep = 1, rNodal_Hx%numHard
           do nk = rNodal_Hx%nodHard(sweep)%punto%zi, rNodal_Hx%nodHard(sweep)%punto%ze
@@ -4857,7 +4857,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
             End do
           end do
         end do
-      END IF
+      end if
 
       !!!!!!
 
@@ -5209,7 +5209,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
       integer, intent(in) :: i, j, k
       integer, intent(in) :: field, atwhere
-   !! real (kind=RKIND) :: interp
+   !! real(kind=RKIND) :: interp
 
       ! Index variables for each field
       integer :: im1_Ex, ip1_Ex, jm1_Ex, jp1_Ex, km1_Ex, kp1_Ex

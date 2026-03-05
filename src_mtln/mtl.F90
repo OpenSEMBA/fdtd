@@ -269,7 +269,7 @@ contains
     subroutine computeLCParametersFromRadius(this, rad) 
         class(mtl_t) :: this
         real, intent(in) :: rad
-        real (KIND=RKIND_wires) :: invMu
+        real(KIND=RKIND_wires) :: invMu
         integer :: i
         real :: d1, d2
         invMu = 1.0/mu_vacuum
@@ -359,7 +359,7 @@ contains
     subroutine setTimeStep(this, numberOfSteps, finalTime)
         class(mtl_t) :: this
         integer, intent(in) :: numberOfSteps
-        real, intent (in) ::finalTime
+        real, intent(in) ::finalTime
         this%dt = finalTime/numberOfSteps
     end subroutine
 

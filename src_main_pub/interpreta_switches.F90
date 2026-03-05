@@ -1,13 +1,13 @@
 module interpreta_switches_m
 
-   USE FDETYPES
-   USE Getargs
+   use FDETYPES
+   use Getargs
    use EpsMuTimeScale_m
    use Report
    use version
 
-   IMPLICIT NONE
-   PRIVATE
+   implicit none
+   private
    !
    type entrada_t
 
@@ -134,8 +134,8 @@ module interpreta_switches_m
       type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
       type(tiempo_t)  ::                         time_out2
 
-!pgi        CHARACTER (LEN=BUFSIZE_LONG) ::   &
-      CHARACTER(LEN=BUFSIZE) :: &
+!pgi        character (LEN=BUFSIZE_LONG) ::   &
+      character(LEN=BUFSIZE) :: &
          prefix, &
          prefixopci, &
          prefixopci1, &
@@ -144,7 +144,7 @@ module interpreta_switches_m
          slicesoriginales, &
          chdummy
 
-      CHARACTER(LEN=BUFSIZE) :: chaininput, &
+      character(LEN=BUFSIZE) :: chaininput, &
                                 chain, &
                                 chain2, &
                                 fichin, &
@@ -161,11 +161,11 @@ module interpreta_switches_m
 
    end type entrada_t
 
-   PUBLIC interpreta, insertalogtmp, print_help, print_basic_help, print_credits, &
+   public interpreta, insertalogtmp, print_help, print_basic_help, print_credits, &
       removeintraspaces, buscaswitchficheroinput, default_flags
-   PUBLIC entrada_t
+   public entrada_t
    !
-CONTAINS
+contains
 
    subroutine interpreta(l, statuse)
 
@@ -174,7 +174,7 @@ CONTAINS
       integer(kind=4), intent(out) :: statuse
 !!!!!!!!!
 
-      CHARACTER(LEN=BUFSIZE) :: chari, f, dubuf, buff, binaryPath
+      character(LEN=BUFSIZE) :: chari, f, dubuf, buff, binaryPath
       logical :: existiarunningigual, mpidirset, resume3
       integer(kind=4) :: i, j, donde, n, newmpidir
       real(KIND=RKIND) :: pausetime
@@ -189,30 +189,30 @@ CONTAINS
    !!!!!!!!!!!!!!!
       binaryPath = getBinaryPath()
       n = commandargumentcount(l%chaininput, binaryPath)
-      IF (n == 0) THEN
+      if (n == 0) then
          call print_basic_help(l)
       call stoponerror(l%layoutnumber,l%size,'Error: NO arguments neither command line nor in launch file. Correct and remove pause...',.true.)
          statuse = -1
-      END IF
+      end if
       l%opcionestotales = ''
       do i = 1, n
          CALL getcommandargument(l%chaininput, i, l%chain, l%length, statuse, binaryPath)
-         IF (statuse /= 0) THEN
+         if (statuse /= 0) then
             CALL stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
             statuse = -1
-         END IF
+         end if
          l%opcionestotales = trim(adjustl(l%opcionestotales))//' '//trim(adjustl(l%chain))
       end do
       CALL print11(l%layoutnumber, 'Switches '//trim(adjustl(l%opcionestotales)))
 
-      IF (n > 0) THEN
+      if (n > 0) then
          i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
          do while (i <= n)
             call getcommandargument(l%chaininput, i, l%chain, l%length, statuse, binaryPath)
-            IF (statuse /= 0) THEN
+            if (statuse /= 0) then
                call stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
                statuse = -1
-            END IF
+            end if
             select case (trim(adjustl(l%chain)))
             case ('-i')
                i = i + 1
@@ -247,7 +247,7 @@ CONTAINS
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                read (f, *, iostat=iostatus) pausetime
                if (iostatus /= 0) call stoponerror(l%layoutnumber, l%size, 'Invalid pause time', .true.)
-               if (pausetime <= 0) THEN
+               if (pausetime <= 0) then
                   call stoponerror(l%layoutnumber, l%size, 'Invalid pause time: zero or negative value', .true.)
                   statuse = -1
                end if
@@ -266,9 +266,9 @@ CONTAINS
 #endif
                   CALL get_secnds(l%time_out2)
                   l%time_end = l%time_out2%segundos
-                  IF (l%time_end - l%time_begin > pausetime) THEN
+                  if (l%time_end - l%time_begin > pausetime) then
                      l%pausar = .false.
-                  END IF
+                  end if
                end do
 #ifdef CompileWithMPI
                CALL MPI_Barrier(SUBCOMM_MPI, l%ierr)
@@ -355,10 +355,10 @@ CONTAINS
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                READ (f, *, iostat=iostatus) l%maxCPUtime
                if (iostatus /= 0) call stoponerror(l%layoutnumber, l%size, 'Invalid CPU maximum time', .true.)
-               if (l%maxCPUtime <= 0) THEN
+               if (l%maxCPUtime <= 0) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid CPU maximum time', .true.)
                   statuse = -1
-               END IF
+               end if
 
             CASE ('-s')
                l%freshstart = .TRUE.
@@ -367,19 +367,19 @@ CONTAINS
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                READ (f, *, iostat=iostatus) l%flushminutesFields
                if (iostatus /= 0) call stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
-               IF (l%flushminutesFields <= 0) THEN
+               if (l%flushminutesFields <= 0) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
                   statuse = -1
-               END IF
+               end if
             CASE ('-flushdata')
                i = i + 1
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                READ (f, *, iostat=iostatus) l%flushminutesData
                if (iostatus /= 0) call stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
-401            IF (l%flushminutesData <= 0) THEN
+401            if (l%flushminutesData <= 0) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid flushing interval', .true.)
                   statuse = -1
-               END IF
+               end if
             CASE ('-run')
                l%run = .TRUE.
             CASE ('-map')
@@ -427,18 +427,18 @@ CONTAINS
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                l%conformal_file_input_name = trim(adjustl(f)); 
                INQUIRE (file=trim(adjustl(f)), EXIST=l%existeNFDE)
-               IF (.NOT. l%existeNFDE) THEN
+               if (.NOT. l%existeNFDE) then
                   l%input_conformal_flag = .FALSE.; 
                   buff = 'The conformal input file was not found '//trim(adjustl(l%fichin)); 
                   call WarnErrReport(Trim(buff), .true.)
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))
 #endif
 #ifndef CompileWithConformal
-               IF (l%input_conformal_flag) THEN
+               if (l%input_conformal_flag) then
                   buff = ''; buff = 'Conformal without conformal support. Recompile!'; 
                   call WarnErrReport(Trim(buff), .true.)
-               END IF
+               end if
 #endif
 
             CASE ('-takeintcripte')
@@ -488,11 +488,11 @@ CONTAINS
 7621           CALL stoponerror(l%layoutnumber, l%size, 'Invalid CPML alpha factor', .true.)
                statuse = -1
                !goto 668
-8621           IF (l%alphamaxpar < 0.0_RKIND) THEN
+8621           if (l%alphamaxpar < 0.0_RKIND) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid CPML alpha factor', .true.)
                   statuse = -1
                   !goto 668
-               END IF
+               end if
                i = i + 1
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
                CALL getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
@@ -502,11 +502,11 @@ CONTAINS
 7121           CALL stoponerror(l%layoutnumber, l%size, 'Invalid CPML order factor', .true.)
                statuse = -1
                !goto 668
-8121           IF (l%alphaOrden < 0.0_RKIND) THEN
+8121           if (l%alphaOrden < 0.0_RKIND) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid CPML alpha factor', .true.)
                   statuse = -1
                   !goto 668
-               END IF
+               end if
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
             CASE ('-pmlkappa')
                i = i + 1
@@ -517,11 +517,11 @@ CONTAINS
 7622           CALL stoponerror(l%layoutnumber, l%size, 'Invalid CPML kappa factor', .true.)
                statuse = -1
                !goto 668
-8622           IF (l%kappamaxpar < 1.0_RKIND) THEN
+8622           if (l%kappamaxpar < 1.0_RKIND) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid CPML kappa factor', .true.)
                   statuse = -1
                   !goto 668
-               END IF
+               end if
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
             CASE ('-pmlcorr')
                l%MEDIOEXTRA%exists = .true.
@@ -533,11 +533,11 @@ CONTAINS
 7672           CALL stoponerror(l%layoutnumber, l%size, 'Invalid pmlcorr sigma factor', .true.)
                statuse = -1
                !goto 668
-8672           IF (l%MEDIOEXTRA%sigma < 0.0_RKIND) THEN
+8672           if (l%MEDIOEXTRA%sigma < 0.0_RKIND) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid pmlcorr sigma factor', .true.)
                   statuse = -1
                   !goto 668
-               END IF
+               end if
                l%MEDIOEXTRA%sigmam = -1.0_RKIND!voids it. later overriden
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
                i = i + 1
@@ -548,9 +548,9 @@ CONTAINS
 7662           CALL stoponerror(l%layoutnumber, l%size, 'Invalid pmlcorr depth factor', .true.)
                statuse = -1
                !goto 668
-8662           IF (l%MEDIOEXTRA%size < 0) THEN
+8662           if (l%MEDIOEXTRA%size < 0) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid pmlcorr depth factor', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                !          l%opcionespararesumeo = trim (adjustl(l%opcionespararesumeo)) // ' ' // trim (adjustl(l%chain))// ' ' // trim (adjustl(f))
             CASE ('-attc')
                i = i + 1
@@ -559,9 +559,9 @@ CONTAINS
                READ (f, *, ERR=766) l%attfactorc
                GO TO 866
 766            CALL stoponerror(l%layoutnumber, l%size, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
-866            IF ((l%attfactorc <= -1.0_RKIND) .or. (l%attfactorc > 1.0_RKIND)) THEN
+866            if ((l%attfactorc <= -1.0_RKIND) .or. (l%attfactorc > 1.0_RKIND)) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-sgbcdepth')
                l%mibc = .false.
@@ -572,9 +572,9 @@ CONTAINS
                READ (f, *, ERR=7466) l%sgbcdepth
                GO TO 8466
 7466           CALL stoponerror(l%layoutnumber, l%size, 'Invalid sgbc depth ', .true.); statuse = -1; !goto 668
-8466           IF (l%sgbcdepth < -1) THEN
+8466           if (l%sgbcdepth < -1) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid sgbc depth', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-sgbcfreq')
                l%sgbc = .true.
@@ -585,9 +585,9 @@ CONTAINS
                READ (f, *, ERR=74616) l%sgbcfreq
                GO TO 84616
 74616          CALL stoponerror(l%layoutnumber, l%size, 'Invalid sgbc freq ', .true.); statuse = -1; !goto 668
-84616          IF (l%sgbcfreq < 0.) THEN
+84616          if (l%sgbcfreq < 0.) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid sgbc freq', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-sgbcresol')
                l%mibc = .false.
@@ -598,9 +598,9 @@ CONTAINS
                READ (f, *, ERR=74626) l%sgbcresol
                GO TO 84626
 74626          CALL stoponerror(l%layoutnumber, l%size, 'Invalid sgbc decay ', .true.); statuse = -1; !goto 668
-84626          IF (l%sgbcresol < 0.0) THEN
+84626          if (l%sgbcresol < 0.0) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid sgbc decay', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-sgbcyee')
                l%sgbc = .true.
@@ -633,9 +633,9 @@ CONTAINS
                READ (f, *, ERR=732) l%attfactorw
                GO TO 832
 732            CALL stoponerror(l%layoutnumber, l%size, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
-832            IF ((l%attfactorw <= -1.0_RKIND) .or. (l%attfactorw > 1.0_RKIND)) THEN
+832            if ((l%attfactorw <= -1.0_RKIND) .or. (l%attfactorw > 1.0_RKIND)) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-maxwireradius')
                l%boundwireradius = .true.
@@ -645,9 +645,9 @@ CONTAINS
                READ (f, *, ERR=737) l%maxwireradius
                GO TO 837
 737            CALL stoponerror(l%layoutnumber, l%size, 'Invalid dissipation factor', .true.); statuse = -1; !goto 668
-837            IF ((l%maxwireradius <= 0.0_RKIND)) THEN
+837            if ((l%maxwireradius <= 0.0_RKIND)) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid maximumwireradius', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-mindistwires')
                i = i + 1
@@ -656,9 +656,9 @@ CONTAINS
                READ (f, *, ERR=1732) l%mindistwires
                GO TO 1832
 1732           CALL stoponerror(l%layoutnumber, l%size, 'Invalid minimum distance between wires', .true.); statuse = -1; !goto 668
-1832           IF (l%mindistwires <= 0.0_RKIND) THEN
+1832           if (l%mindistwires <= 0.0_RKIND) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid minimum distance between wires', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-makeholes')
                l%makeholes = .TRUE.
@@ -702,9 +702,9 @@ CONTAINS
                READ (f, *, ERR=7416) l%wirethickness
                GO TO 8416
 7416           CALL stoponerror(l%layoutnumber, l%size, 'Invalid l%wirethickness ', .true.); statuse = -1; !goto 668
-8416           IF (l%sgbcdepth < -1) THEN
+8416           if (l%sgbcdepth < -1) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid l%wirethickness', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-wiresflavor')
                i = i + 1
@@ -731,14 +731,14 @@ CONTAINS
                   READ (f, *, ERR=2561) l%precision
                   GO TO 2562
 2561              CALL stoponerror(l%layoutnumber, l%size, 'Invalid l%precision for semistructured', .true.); statuse = -1; !goto 668
-2562              IF (l%precision < 0) THEN
+2562              if (l%precision < 0) then
                      CALL stoponerror(l%layoutnumber, l%size, 'Invalid l%precision for semistructured', .true.); statuse = -1; !goto 668
-                  END IF
+                  end if
                   !
                end select
                GO TO 4621
 3621           CALL stoponerror(l%layoutnumber, l%size, 'Invalid wires flavor', .true.); statuse = -1; !goto 668
-4621           IF (((trim(adjustl(l%wiresflavor)) /= 'holland') .AND. &
+4621           if (((trim(adjustl(l%wiresflavor)) /= 'holland') .AND. &
                     (trim(adjustl(l%wiresflavor)) /= 'transition') .AND. &
                     (trim(adjustl(l%wiresflavor)) /= 'berenger') .AND. &
                     (trim(adjustl(l%wiresflavor)) /= 'slanted') .and. &
@@ -747,9 +747,9 @@ CONTAINS
                           (trim(adjustl(l%wiresflavor)) == 'transition') .xor. &
                           (trim(adjustl(l%wiresflavor)) == 'berenger') .xor. &
                           (trim(adjustl(l%wiresflavor)) == 'slanted') .xor. &
-                          (trim(adjustl(l%wiresflavor)) == 'semistructured'))) THEN
+                          (trim(adjustl(l%wiresflavor)) == 'semistructured'))) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid wires flavor->'//trim(adjustl(l%wiresflavor)), .true.); statuse = -1; !goto 668
-               END IF
+               end if
 #ifndef CompileWithThickWires
                select case (trim(adjustl(l%wiresflavor)))
                case ('holland', 'transition')
@@ -799,10 +799,10 @@ CONTAINS
                READ (f, '(a)', ERR=361) l%inductance_model
                GO TO 461
 361            CALL stoponerror(l%layoutnumber, l%size, 'Invalid inductance model', .true.); statuse = -1; !goto 668
-461            IF ((l%inductance_model /= 'ledfelt') .AND. (l%inductance_model /= 'berenger') .AND. &
-                       &    (l%inductance_model /= 'boutayeb')) THEN
+461            if ((l%inductance_model /= 'ledfelt') .AND. (l%inductance_model /= 'berenger') .AND. &
+                       &    (l%inductance_model /= 'boutayeb')) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid inductance model', .true.); statuse = -1; !goto 668
-               END IF
+               end if
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-inductanceorder')
                i = i + 1
@@ -823,7 +823,7 @@ CONTAINS
                READ (f, *, ERR=3762) l%cfltemp
                GO TO 3862
 3762           CALL stoponerror(l%layoutnumber, l%size, 'Invalid Courant Number', .true.); statuse = -1; !goto 668
-3862           IF (l%cfltemp <= 0.0) THEN
+3862           if (l%cfltemp <= 0.0) then
                   call print11(l%layoutnumber, '------> Ignoring negative or null l%cfl Courant Number')
 !!!!!!!!!               CALL stoponerror (l%layoutnumber, l%size, 'Invalid negative or null l%cfl Courant Number',.true.); statuse=-1; !goto 668 !!!sgg 151216 para evitar el error l%cfl 0 del problem-type sigue como si no estuviera
                   l%forcecfl = .false.
@@ -831,7 +831,7 @@ CONTAINS
                   l%cfl = l%cfltemp
                   l%forcecfl = .true.
                   l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
-               END IF
+               end if
             CASE ('-noconformalmapvtk')
                l%noconformalmapvtk = .true.
             CASE ('-niapapostprocess')
@@ -874,7 +874,7 @@ CONTAINS
                GO TO 33862
 33762          CALL stoponerror(l%layoutnumber, l%size, 'Invalid pscale parameters', .true.); statuse = -1; !goto 668
 33862          continue
-               IF (l%EpsMuTimeScale_input_parameters%checkError() /= 0) THEN
+               if (l%EpsMuTimeScale_input_parameters%checkError() /= 0) then
                   CALL stoponerror(l%layoutnumber, l%size, &
      &'Invalid -pscale parameters: some parameters have to be greater than 0.0: -pscale t0(>=0) tend slope(>0)'&
                     &, .true.); statuse = -1; !goto 668
@@ -890,9 +890,9 @@ CONTAINS
                READ (f, *, ERR=602) l%finaltimestep
                GO TO 702
 602            CALL stoponerror(l%layoutnumber, l%size, 'Invalid time step', .true.); statuse = -1; !goto 668
-702            IF (l%finaltimestep < -2) THEN
+702            if (l%finaltimestep < -2) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Invalid time step', .true.); statuse = -1; !goto 668
-               END IF
+               end if
 !!!!!!
             CASE ('-factorradius')
                i = i + 1
@@ -932,53 +932,53 @@ CONTAINS
             i = i + 1
          end do
 
-      END IF
+      end if
       !some checkings
       !just to be sure that I do not have stupid errors
 #ifdef CompileWithMPI
-      IF ((sizeof(MPI_DOUBLE_PRECISION) /= 4) .OR. (sizeof(MPI_REAL) /= 4)) THEN
+      if ((sizeof(MPI_DOUBLE_PRECISION) /= 4) .OR. (sizeof(MPI_REAL) /= 4)) then
          CALL stoponerror(l%layoutnumber, l%size, 'SEVERE COMPILATION ERROR: MPI_REAL l%size is not 4. ')
-      END IF
+      end if
 #endif
 
-      IF (l%connectendings .AND. l%strictOLD) THEN
+      if (l%connectendings .AND. l%strictOLD) then
          CALL stoponerror(l%layoutnumber, l%size, 'l%strictOLD option not compatible with -l%connectendings', .true.); statuse = -1; !goto 668
-      END IF
-      IF (l%TAPARRABOS .AND. (.not. l%strictOLD)) THEN
+      end if
+      if (l%TAPARRABOS .AND. (.not. l%strictOLD)) then
          CALL stoponerror(l%layoutnumber, l%size, '-nostrictOLD option requires -notaparrabos ', .true.); statuse = -1; !goto 668
-      END IF
-      IF (l%isolategroupgroups .AND. l%strictOLD) THEN
+      end if
+      if (l%isolategroupgroups .AND. l%strictOLD) then
          CALL stoponerror(l%layoutnumber, l%size, '-intrawiresimplify option not compatible with -l%isolategroupgroups', .true.); statuse = -1; !goto 668
-      END IF
+      end if
 
-      IF ((l%sgbc .AND. l%mibc)) THEN
+      if ((l%sgbc .AND. l%mibc)) then
          CALL stoponerror(l%layoutnumber, l%size, 'Use only one of -sgbc -l%mibc', .true.); statuse = -1; !goto 668
-      END IF
-      IF (l%freshstart .AND. l%resume) THEN
+      end if
+      if (l%freshstart .AND. l%resume) then
          CALL stoponerror(l%layoutnumber, l%size, 'Fresh Start option -s not compatible with restarting -r', .true.); statuse = -1; !goto 668
-      END IF
-      IF (l%freshstart .AND. l%resume_fromold) THEN
+      end if
+      if (l%freshstart .AND. l%resume_fromold) then
          CALL stoponerror(l%layoutnumber, l%size, 'Fresh Start option -s not compatible with -old', .true.); statuse = -1; !goto 668
-      END IF
-      IF ((.NOT. l%resume) .and. (.not. l%run) .AND. l%resume_fromold) THEN
+      end if
+      if ((.NOT. l%resume) .and. (.not. l%run) .AND. l%resume_fromold) then
          CALL stoponerror(l%layoutnumber, l%size, 'l%resume option -r must be used if issuing -old', .true.); statuse = -1; !goto 668
-      END IF
-      IF ((l%flushminutesFields /= 0) .AND. (l%deleteintermediates)) THEN
+      end if
+      if ((l%flushminutesFields /= 0) .AND. (l%deleteintermediates)) then
          CALL stoponerror(l%layoutnumber, l%size, '-delete is not compatible with -flush', .true.); statuse = -1; !goto 668
-      END IF
+      end if
       if (l%run_with_abrezanjas .and. l%run_with_dmma) then
          CALL stoponerror(l%layoutnumber, l%size, '-abrezanjas is not compatible with -dmma', .true.); statuse = -1; !goto 668
-      END IF
+      end if
       if (l%stochastic .and. (trim(adjustl(l%wiresflavor)) /= 'holland')) then
          CALL stoponerror(l%layoutnumber, l%size, 'Old wires flavor is the only supported with l%stochastic', .true.); statuse = -1; !goto 668
-      END IF
+      end if
       if (l%stochastic .and. l%wirecrank) then
          CALL stoponerror(l%layoutnumber, l%size, 'Wires Crank Nicolson is unsupported with l%stochastic', .true.); statuse = -1; !goto 668
-      END IF
+      end if
    !!!si esta soportado 170719
    !! if (l%permitscaling.and.l%resume) then
    !!   CALL stoponerror (l%layoutnumber, l%size, 'Resuming with Permittivity scaling unsupported',.true.); statuse=-1; !goto 668
-   !!END IF
+   !!end if
       if (l%permitscaling .and. (l%kappamaxpar .gt. 1.000001_rkind)) then
    !!!061118 no lo permito porque cpml toca los idxe, idye, idze en funcion del kappa y permittivity scaling conflicta
             CALL stoponerror (l%layoutnumber, l%size, 'Unsupported CPML kappa factor since 061118 because conflicts with Idxe...in permittivity scaling',.true.)
@@ -1054,21 +1054,21 @@ CONTAINS
       end if
       !
       !
-      IF (l%resume_fromold) THEN
+      if (l%resume_fromold) then
          INQUIRE (file=trim(adjustl(l%nresumeable2))//'.old', EXIST=resume3)
       ELSE
          INQUIRE (file=trim(adjustl(l%nresumeable2)), EXIST=resume3)
-      END IF
-      IF (l%resume) THEN
-         IF (.NOT. resume3) THEN
+      end if
+      if (l%resume) then
+         if (.NOT. resume3) then
             CALL stoponerror(l%layoutnumber, l%size, 'l%resume fields not present', .true.); statuse = -1; !goto 668
-         END IF
+         end if
          WRITE (dubuf, *) 'RESUMING simulation ', trim(adjustl(l%nEntradaRoot)), ' until n= ', l%finaltimestep
          CALL print11(l%layoutnumber, dubuf)
       ELSE
-         IF (resume3 .AND. (.NOT. l%freshstart) .and. (.not. l%run)) THEN
+         if (resume3 .AND. (.NOT. l%freshstart) .and. (.not. l%run)) then
          CALL stoponerror (l%layoutnumber, l%size, 'Restarting file exists. Either specify -r to l%resume, -s to do a fresh START, or -run to run in whatever the case',.true.); statuse = -1; !goto 668
-         ELSEIF (resume3 .and. (l%run)) THEN
+         ELSEIF (resume3 .and. (l%run)) then
             l%resume = .true.
          ELSE
             OPEN (35, file=trim(adjustl(l%nresumeable2)))
@@ -1077,8 +1077,8 @@ CONTAINS
             OPEN (35, file=trim(adjustl(l%nresumeable2))//'.old')
             WRITE (35, '(a)') '!END'
             CLOSE (35, status='DELETE')
-         END IF
-      END IF
+         end if
+      end if
 !
 !
 !
@@ -1105,30 +1105,30 @@ CONTAINS
       end if
 
       !
-      IF (((l%forcesteps) .AND. (.NOT. l%freshstart)) .and. (statuse /= -1)) THEN
+      if (((l%forcesteps) .AND. (.NOT. l%freshstart)) .and. (statuse /= -1)) then
          !in case of option -n withouth the l%freshstart option -s, it will l%resume or do a fresh start
          !depending on wether the resuming files are present or not
-         IF (l%resume_fromold) THEN
+         if (l%resume_fromold) then
             INQUIRE (file=trim(adjustl(l%nresumeable2))//'.old', EXIST=l%resume)
          ELSE
             INQUIRE (file=trim(adjustl(l%nresumeable2)), EXIST=l%resume)
-         END IF
-         IF (l%resume) THEN
-            IF ((l%layoutnumber == 0) .or. ((l%layoutnumber == l%size/2) .and. l%stochastic)) THEN
+         end if
+         if (l%resume) then
+            if ((l%layoutnumber == 0) .or. ((l%layoutnumber == l%size/2) .and. l%stochastic)) then
                !the temporary
                CLOSE (11)
                l%file11isopen = .false.
                OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted', POSITION='append')
                l%file11isopen = .true.
  !!!           if (l%layoutnumber==0) call insertalogtmp !ojo lo quito aqui porque borra el _log con la info de credits
-               IF (l%resume_fromold) THEN
+               if (l%resume_fromold) then
                   CALL print11(l%layoutnumber, 'Resuming from .fields.old files')
                ELSE
                   CALL print11(l%layoutnumber, 'Resuming from .fields files')
-               END IF
-            END IF
+               end if
+            end if
          ELSE
-         !!!IF ((l%layoutnumber==0).or.((l%layoutnumber == l%size/2).and.l%stochastic)) THEN
+         !!!if ((l%layoutnumber==0).or.((l%layoutnumber == l%size/2).and.l%stochastic)) then
          !!!   !the temporary
          !!!   CLOSE (11)
          !!!   l%file11isopen=.false.
@@ -1136,13 +1136,13 @@ CONTAINS
          !!!   l%file11isopen=.true.
          !!!   if (l%layoutnumber==0) call insertalogtmp
          !!!   CALL print11 (l%layoutnumber, 'Doing a new simulation from n=1')
-         !!!END IF
+         !!!end if
             l%freshstart = .TRUE.
             l%resume_fromold = .FALSE.
-         END IF
-         IF (((l%layoutnumber == 0) .or. ((l%layoutnumber == l%size/2) .and. l%stochastic)) .and. l%file11isopen) close (11)
+         end if
+         if (((l%layoutnumber == 0) .or. ((l%layoutnumber == l%size/2) .and. l%stochastic)) .and. l%file11isopen) close (11)
          l%file11isopen = .false.
-      END IF
+      end if
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1184,9 +1184,9 @@ CONTAINS
       !open ReportingFiles
       !only the master
 
-      IF (((l%layoutnumber == 0) .or. ((l%layoutnumber == l%size/2) .and. l%stochastic)) .and. (statuse /= -1)) THEN
+      if (((l%layoutnumber == 0) .or. ((l%layoutnumber == l%size/2) .and. l%stochastic)) .and. (statuse /= -1)) then
          print *, 'Opening _Report.txt file'
-         IF (l%resume) THEN
+         if (l%resume) then
             !the temporary
             CLOSE (11)
             l%file11isopen = .false.
@@ -1204,10 +1204,10 @@ CONTAINS
 !
             call removeintraspaces(l%opcionespararesumeo)
             call removeintraspaces(l%opcionesoriginales)
-            IF (trim(adjustl(l%opcionesoriginales)) /= trim(adjustl(l%opcionespararesumeo))) THEN
+            if (trim(adjustl(l%opcionesoriginales)) /= trim(adjustl(l%opcionespararesumeo))) then
    CALL stoponerror(l%layoutnumber, l%size, 'Different resumed/original switches: '//trim(adjustl(l%opcionespararesumeo))//' <> '//&
                         & trim(adjustl(l%opcionesoriginales)), .true.); statuse = -1; !goto 668
-            END IF
+            end if
             !
          !!!!!!!!!        CLOSE (11, status='delete')
          !!!!!!!!!        l%file11isopen=.false.
@@ -1231,7 +1231,7 @@ CONTAINS
             OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             if (l%layoutnumber == 0) call insertalogtmp(l)
-         END IF
+         end if
          !
          CALL get_secnds(l%time_out2)
          call print_credits(l)
@@ -1271,7 +1271,7 @@ CONTAINS
          write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
          WRITE (dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
          CALL print11(l%layoutnumber, dubuf)
-      END IF
+      end if
       !
       !
       !in seconds
@@ -1279,9 +1279,9 @@ CONTAINS
       !in seconds
       l%flushsecondsData = l%flushminutesData*60
 
-      IF ((.NOT. l%existeNFDE) .AND. (.NOT. l%existeh5)) THEN
+      if ((.NOT. l%existeNFDE) .AND. (.NOT. l%existeh5)) then
          CALL stoponerror(l%layoutnumber, l%size, 'Some input file missing .h5/.nfde/.conf', .true.); statuse = -1; !goto 668
-      END IF
+      end if
       !
       !
 #ifdef CompileWithMPI
@@ -1300,7 +1300,7 @@ CONTAINS
 
    subroutine insertalogtmp(l) !para 100920
       type(entrada_t), intent(INOUT) :: l
-      CHARACTER(LEN=BUFSIZE) ::  dubuf
+      character(LEN=BUFSIZE) ::  dubuf
       integer(kind=4) :: MYUNIT11
       CALL OffPrint !no reimprimas, esto ya estaba por pantalla
       OPEN (newunit=myunit11, file='SEMBA_FDTD_temp.log')
@@ -1328,7 +1328,7 @@ CONTAINS
 
    subroutine print_credits(l)
       type(entrada_t), intent(INOUT) :: l
-      CHARACTER(LEN=BUFSIZE) ::  dubuf
+      character(LEN=BUFSIZE) ::  dubuf
 
       if (l%creditosyaprinteados) return
       l%creditosyaprinteados = .true.
@@ -1386,7 +1386,7 @@ CONTAINS
 
    subroutine print_help(l)
       type(entrada_t), intent(INOUT) :: l
-      CHARACTER(LEN=BUFSIZE) :: buff
+      character(LEN=BUFSIZE) :: buff
       CALL print11(l%layoutnumber, '___________________________________________________________________________')
       CALL print11(l%layoutnumber, 'Command line arguments: ')
       CALL print11(l%layoutnumber, '___________________________________________________________________________')
@@ -1669,7 +1669,7 @@ CONTAINS
    end subroutine print_help
 
    subroutine removeintraspaces(a)
-      CHARACTER(LEN=*), intent(inout):: a
+      character(LEN=*), intent(inout):: a
       integer(Kind=4) :: i, longi
       logical correc
       correc = .true.
@@ -1697,9 +1697,9 @@ CONTAINS
       type(entrada_t), intent(INOUT) :: l
 !!!!!!!!!
 
-      CHARACTER(LEN=BUFSIZE) :: dato, buff, f, binaryPath
+      character(LEN=BUFSIZE) :: dato, buff, f, binaryPath
       integer(kind=4) :: i, n, statuse, NUM_NFDES, TEMP_NUMNFDES, p
-      CHARACTER(LEN=5) :: NFDEEXTENSION, CONFEXTENSION, CMSHEXTENSION
+      character(LEN=5) :: NFDEEXTENSION, CONFEXTENSION, CMSHEXTENSION
 
 !!!
 
@@ -1708,22 +1708,22 @@ CONTAINS
    !!!!!!!!!!!!!!!
       binaryPath = getBinaryPath()
       n = commandargumentcount(l%chain2, binaryPath)
-      IF (n == 0) THEN
+      if (n == 0) then
          call print_basic_help(l)
       call stoponerror(l%layoutnumber,l%size,'Error: NO arguments neither command line nor in launch file. Correct and remove pause...',.true.)
          statuse = -1
          goto 667
-      END IF
+      end if
 
-      IF (n > 0) THEN
+      if (n > 0) then
          num_nfdes = 0
          i = 2
          do while (i <= n)
             CALL getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
-            IF (statuse /= 0) THEN
+            if (statuse /= 0) then
                CALL stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
                goto 667
-            END IF
+            end if
             !
             SELECT CASE (trim(adjustl(l%chain)))
             CASE ('-mpidir')
@@ -1764,10 +1764,10 @@ CONTAINS
             i = 2 ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
             do while (i <= n)
                CALL getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
-               IF (statuse /= 0) THEN
+               if (statuse /= 0) then
                   CALL stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
                   goto 667
-               END IF
+               end if
                !
                SELECT CASE (trim(adjustl(l%chain)))
                CASE ('-i')
@@ -1775,48 +1775,48 @@ CONTAINS
                   i = i + 1
                   CALL getcommandargument(l%chain2, i, f, l%length, statuse, binaryPath)
                   p = LEN_trim(adjustl(f))
-                  IF ((p - 4) >= 1) THEN
-                     IF (f((p - 4):(p - 4)) == NFDEEXTENSION(1:1)) THEN
+                  if ((p - 4) >= 1) then
+                     if (f((p - 4):(p - 4)) == NFDEEXTENSION(1:1)) then
                         NFDEEXTENSION = f((p - 4):p)
                         l%extension = NFDEEXTENSION
                         l%fichin = f(1:p - 5)
                      ELSE
                         l%fichin = f(1:p)
-                     END IF
-                  ELSE IF (p >= 1) THEN
+                     end if
+                  ELSE if (p >= 1) then
                      l%fichin = f(1:p)
                   ELSE
                      CALL stoponerror(l%layoutnumber, l%size, 'There is not a .nfde file for input', .true.)
                      statuse = -1
                      goto 667
-                  END IF
+                  end if
                   INQUIRE (file=trim(adjustl(l%fichin))//NFDEEXTENSION, EXIST=l%existeNFDE)
-                  IF (.NOT. l%existeNFDE) THEN
+                  if (.NOT. l%existeNFDE) then
                      buff = 'The input file was not found '//trim(adjustl(l%fichin))//NFDEEXTENSION
                      CALL stoponerror(l%layoutnumber, l%size, buff, .true.)
                      statuse = -1
                      goto 667
-                  END IF
+                  end if
 !aniadido para chequear que no haya .conf sin haber invocado el -conf 15/12/16 sgg
                   INQUIRE (file=trim(adjustl(l%fichin))//CONFEXTENSION, EXIST=l%existeconf)
-                  IF ((l%existeconf) .AND. (.not. (l%input_conformal_flag))) THEN
+                  if ((l%existeconf) .AND. (.not. (l%input_conformal_flag))) then
  buff = 'No -conf issued but existing file '//trim(adjustl(l%fichin))//confEXTENSION//' . Either remove file or relaunch with -conf'
                      CALL stoponerror(l%layoutnumber, l%size, buff, .true.)
                      statuse = -1
                      goto 667
-                  END IF
+                  end if
                   INQUIRE (file=trim(adjustl(l%fichin))//CMSHEXTENSION, EXIST=l%existecmsh)
-                  IF ((l%existecmsh) .AND. (.not. (l%input_conformal_flag))) THEN
+                  if ((l%existecmsh) .AND. (.not. (l%input_conformal_flag))) then
  buff = 'No -conf issued but existing file '//trim(adjustl(l%fichin))//CMSHEXTENSION//' . Either remove file or relaunch with -conf'
                      CALL stoponerror(l%layoutnumber, l%size, buff, .true.)
                      statuse = -1
                      goto 667
-                  END IF
+                  end if
 !
                   if (temp_numnfdes == 1) then !solo el primero
-                     IF (l%layoutnumber == 0) open (194, file='multi_'//trim(adjustl(l%fichin))//NFDEEXTENSION, form='formatted')
+                     if (l%layoutnumber == 0) open (194, file='multi_'//trim(adjustl(l%fichin))//NFDEEXTENSION, form='formatted')
                   end if
-                  IF (l%layoutnumber == 0) then
+                  if (l%layoutnumber == 0) then
                      open (196, file=trim(adjustl(l%fichin))//NFDEEXTENSION, form='formatted')
                      do
                         read (196, '(a)', end=197) dato
@@ -1830,7 +1830,7 @@ CONTAINS
 197                  close (196)
                   end if
                   if (temp_numnfdes == num_nfdes) then !solo el primero
-                     IF (l%layoutnumber == 0) then
+                     if (l%layoutnumber == 0) then
                         write (194, '(a)') '!END'
                         close (194)
                      end if
@@ -1849,14 +1849,14 @@ CONTAINS
       !fin concatenado
 
       temp_numnfdes = 0
-      IF (n > 0) THEN
+      if (n > 0) then
          i = 2  ! se empieza en 2 porque el primer argumento es siempre el nombre del ejecutable
          do while (i <= n)
             CALL getcommandargument(l%chain2, i, l%chain, l%length, statuse, binaryPath)
-            IF (statuse /= 0) THEN
+            if (statuse /= 0) then
                CALL stoponerror(l%layoutnumber, l%size, 'Reading input', .true.)
                goto 667
-            END IF
+            end if
             !
             SELECT CASE (trim(adjustl(l%chain)))
                !
@@ -1867,33 +1867,33 @@ CONTAINS
                   !
                   CALL getcommandargument(l%chain2, i, f, l%length, statuse, binaryPath)
                   p = LEN_trim(adjustl(f))
-                  IF ((p - 4) >= 1) THEN
-                     IF (f((p - 4):(p - 4)) == NFDEEXTENSION(1:1)) THEN
+                  if ((p - 4) >= 1) then
+                     if (f((p - 4):(p - 4)) == NFDEEXTENSION(1:1)) then
                         NFDEEXTENSION = f((p - 4):p)
                         l%extension = NFDEEXTENSION
                         l%fichin = f(1:p - 5)
                      ELSE
                         l%fichin = f(1:p)
-                     END IF
-                  ELSE IF (p >= 1) THEN
+                     end if
+                  ELSE if (p >= 1) then
                      l%fichin = f(1:p)
                   ELSE
                      CALL stoponerror(l%layoutnumber, l%size, 'There is not a .nfde file for input', .true.)
                      statuse = -1
                      goto 667
-                  END IF
+                  end if
                   block
-                     CHARACTER(len=255) :: cwd
+                     character(len=255) :: cwd
                      CALL getcwd(cwd)
                      WRITE (*, *) TRIM(cwd)
                   end block
                   INQUIRE (file=trim(adjustl(l%fichin))//NFDEEXTENSION, EXIST=l%existeNFDE)
-                  IF (.NOT. l%existeNFDE) THEN
+                  if (.NOT. l%existeNFDE) then
                      buff = 'The input file was not found '//trim(adjustl(l%fichin))//NFDEEXTENSION
                      CALL stoponerror(l%layoutnumber, l%size, buff, .true.)
                      statuse = -1
                      goto 667
-                  END IF
+                  end if
                elseif (temp_numnfdes == 2) then
                   l%fichin = 'multi_'//trim(adjustl(l%fichin))
                else
@@ -1906,9 +1906,9 @@ CONTAINS
       end if
       !
       ! If no input is present we stop
-      IF (len(trim(adjustl(l%fichin))) <= 0) THEN
+      if (len(trim(adjustl(l%fichin))) <= 0) then
          CALL stoponerror(l%layoutnumber, l%size, 'ERROR! -> No input file was specified. Use -i ****.nfde', .true.); statuse = -1; goto 667
-      END IF
+      end if
 
       l%fileFDE = trim(adjustl(l%fichin))//NFDEEXTENSION
       l%fileH5 = trim(adjustl(l%fichin))//'.h5'

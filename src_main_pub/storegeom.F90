@@ -1,27 +1,27 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Module to handle the storing of the geometry in ascii files
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-MODULE storeData
-   USE fdetypes
+module storeData
+   use fdetypes
    !
-   IMPLICIT NONE
-   PRIVATE
+   implicit none
+   private
    !
-   integer (KIND=4), PARAMETER, PRIVATE :: BLOCK_SIZE = 1024
-   PUBLIC store_geomData
+   integer (KIND=4), PARAMETER, private :: BLOCK_SIZE = 1024
+   public store_geomData
    !
-CONTAINS
+contains
    !
    !
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Stores the geometrical data given by the parser into disk
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   SUBROUTINE store_geomData (sgg,media, fileFDE)
+   subroutine store_geomData (sgg,media, fileFDE)
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: INTJ
       type(media_matrices_t), intent(in) :: media
       type (SGGFDTDINFO), intent(IN) :: sgg
       integer (KIND=4) :: i, j, k, campo, q
-      CHARACTER (LEN=*), INTENT (IN) :: fileFDE
+      character (LEN=*), intent(in) :: fileFDE
       !Writes an ASCII map of the media matrix for each field component
       OPEN (20, FILE=trim(adjustl(fileFDE))//'_MapEx.txt')
       OPEN (21, FILE=trim(adjustl(fileFDE))//'_MapEy.txt')
@@ -106,28 +106,28 @@ CONTAINS
          CLOSE (i)
       end do
       !
-      RETURN
+      return
       !
-   CONTAINS
+   contains
       !
       !Function to translate media indexes into characters for the mapping files
       !
       FUNCTION chartranslate (entero) RESULT (chara)
          integer (KIND=INTEGERSIZEOFMEDIAMATRICES) entero
-         CHARACTER (LEN=1) chara
-         IF (entero == 1) THEN
+         character (LEN=1) chara
+         if (entero == 1) then
             chara = '_'
-         ELSE IF (entero == 0) THEN
+         ELSE if (entero == 0) then
             chara = '0'
-         ELSE IF (entero ==-1) THEN
+         ELSE if (entero ==-1) then
             chara = '#'
          ELSE
             chara = char (48+Abs(entero))
-         END IF
-         RETURN
+         end if
+         return
       END FUNCTION chartranslate
       !
-   END SUBROUTINE store_geomData
+   end subroutine store_geomData
    !
-END MODULE storeData
+end module storeData
 !

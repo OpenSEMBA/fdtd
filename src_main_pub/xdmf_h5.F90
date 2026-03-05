@@ -1,30 +1,30 @@
-MODULE xdmf_h5
+module xdmf_h5
 #ifdef CompileWithHDF
 
-    USE fdetypes
-    USE HDF5
-    IMPLICIT NONE
+    use fdetypes
+    use HDF5
+    implicit none
  
     integer (HID_T) :: file_id ! File identifier
     integer (HID_T) :: dset_id ! Dataset identifier
     integer (HID_T) :: dspace_id, slice2D_id ! Dataspace identifier
-    integer (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: DATA_dims ! Dataset dimensions
-    integer (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: offset
-    integer (HSIZE_T), ALLOCATABLE, DIMENSION (:) :: valor3d_dims ! slice dimensions
+    integer (HSIZE_T), ALLOCATABLE, dimension(:) :: DATA_dims ! Dataset dimensions
+    integer (HSIZE_T), ALLOCATABLE, dimension(:) :: offset
+    integer (HSIZE_T), ALLOCATABLE, dimension(:) :: valor3d_dims ! slice dimensions
    
     !
-    PRIVATE
-    PUBLIC openh5file,writeh5file,closeh5file,createh5filefromsinglebin
+    private
+    public openh5file,writeh5file,closeh5file,createh5filefromsinglebin
     
-CONTAINS
+contains
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine openh5file(filename,finalstep,minXabs,maxXabs, minYabs,maxYabs, minZabs,maxZabs)
       
         integer :: error ! Error flag
-        CHARACTER (LEN=BUFSIZE) :: filename ! File name
-        CHARACTER (LEN=BUFSIZE) :: dsetname ! Dataset name
+        character (LEN=BUFSIZE) :: filename ! File name
+        character (LEN=BUFSIZE) :: dsetname ! Dataset name
         !
         integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs,finalstep
 
@@ -67,18 +67,18 @@ CONTAINS
                           linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                           dz_minZabs,dy_minYabs,dx_minXabs,&
                           minZabs_primero,minYabs_primero,minXabs_primero,finalstep,vtkindex)
-        real (  KINd=RKIND_tiempo) :: attindi
-        CHARACTER (LEN=BUFSIZE) :: filename
+        real(  KINd=RKIND_tiempo) :: attindi
+        character (LEN=BUFSIZE) :: filename
         logical :: vtkindex
       !
-        CHARACTER (LEN=BUFSIZE) :: dsetname ! Dataset name
+        character (LEN=BUFSIZE) :: dsetname ! Dataset name
         integer (KIND=4) :: indi
-        real (KIND=RKIND), DIMENSION (:, :, :, :) :: valor3d
+        real(KIND=RKIND), dimension(:, :, :, :) :: valor3d
         integer :: error ! Error flag
-        CHARACTER (LEN=BUFSIZE) :: charc
+        character (LEN=BUFSIZE) :: charc
         integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs, &
                             minZabs_primero,minYabs_primero,minXabs_primero,finalstep
-        real (KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
+        real(KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                              dz_minZabs,dy_minYabs,dx_minXabs                 
         
         
@@ -146,10 +146,10 @@ CONTAINS
    subroutine closeh5file(finalstep,att)
       !
         integer :: rank ! Dataset rank
-        real (  KINd=RKIND_tiempo), DIMENSION (:) :: att
+        real(  KINd=RKIND_tiempo), dimension(:) :: att
         integer :: error ! Error flag
         integer (KIND=4) :: finalstep
-        CHARACTER (LEN=BUFSIZE) :: dsetname ! Dataset name
+        character (LEN=BUFSIZE) :: dsetname ! Dataset name
 
         
         DEALLOCATE(DATA_dims,valor3d_dims,offset)
@@ -196,13 +196,13 @@ CONTAINS
 
    subroutine createh5filefromsinglebin(filename,vtkindex)
         integer (KIND=4) :: myunit,fieldob,pasadas,pasadastotales
-        CHARACTER (LEN=BUFSIZE) :: filename,fichin ! File name
-        real (  KINd=RKIND_tiempo), ALLOCATABLE, DIMENSION (:) :: att
-        real (KIND=RKIND), ALLOCATABLE, DIMENSION (:, :, :, :) :: valor3d !para sondas Volumic
+        character (LEN=BUFSIZE) :: filename,fichin ! File name
+        real(  KINd=RKIND_tiempo), ALLOCATABLE, dimension(:) :: att
+        real(KIND=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: valor3d !para sondas Volumic
         logical :: vtkindex,SGGObservationiiTimeDomain
         integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs, &
                             minZabs_primero,minYabs_primero,minXabs_primero,finalstep,indi,i1,j1,k1
-        real (KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
+        real(KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                              dz_minZabs,dy_minYabs,dx_minXabs    
         character (LEN=BUFSIZE)     ::  dubuf
 
@@ -278,4 +278,4 @@ CONTAINS
 
 #endif               
 
-END MODULE xdmf_h5 
+end module xdmf_h5 

@@ -8,20 +8,20 @@
 module nodalsources
 
    use fdetypes
-   USE REPORT
+   use REPORT
 
-   IMPLICIT NONE
+   implicit none
    private
 
    type XYZlimit_t_singlescaled
       integer (kind=4)  :: XI,XE,YI,YE,ZI,ZE
-      real (KIND=RKIND)   :: amplitude
+      real(KIND=RKIND)   :: amplitude
    end type
 
 
    type  ::  NodalLocal_t
-      real (KIND=RKIND), pointer, dimension (:)  ::  evol
-      real (KIND=RKIND)   :: deltaevol
+      real(KIND=RKIND), pointer, dimension (:)  ::  evol
+      real(KIND=RKIND)   :: deltaevol
       integer (kind=4) :: numus
       type (XYZlimit_t_singlescaled)   :: punto
       logical :: IsInitialValue
@@ -52,7 +52,7 @@ contains
    subroutine InitnodalSources(sgg,layoutnumber,NumNodalSources,sggNodalSource,sggSweep,ThereAreNodalE,ThereAreNodalH)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
       !!!
-      integer, intent (in) :: NumNodalSources
+      integer, intent(in) :: NumNodalSources
       type (NodalSource_t), dimension(1:NumNodalSources),intent(in)           ::  sggNodalSource
 
       integer (kind=4):: layoutnumber,j,i
@@ -62,7 +62,7 @@ contains
       numNodalHard_Ex,numNodalHard_Ey,numNodalHard_Ez, &
       numNodalHard_Hx,numNodalHard_Hy,numNodalHard_Hz
 
-      real (kind=rkind) :: amplit
+      real(kind=rkind) :: amplit
       type (XYZlimit_t), dimension (1:6)    ::  sggSweep
 
       !!!
@@ -221,8 +221,8 @@ contains
       subroutine createnodal(layoutnumber,dummy,sggdummy,sggSweep,index,amplit)
 
          type (nodsou), intent (inout) :: dummy
-         type (NodalSource_t), intent (in), target :: sggdummy
-         real (kind=rkind), intent(in) :: amplit
+         type (NodalSource_t), intent(in), target :: sggdummy
+         real(kind=rkind), intent(in) :: amplit
          integer (kind=4), intent(in) :: index
          integer (kind=4) :: layoutnumber,i,j,k
          type (XYZlimit_t)    ::  sggSweep
@@ -290,12 +290,12 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Evolution function to interpolate from the input file
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   real (KIND=RKIND) function evolucion(t,dummy)
-      real (KIND=RKIND) t,deltaevol
+   real(KIND=RKIND) function evolucion(t,dummy)
+      real(KIND=RKIND) t,deltaevol
       integer (kind=4)  ::  numus
       integer (kind=8)  ::  nprev
-      real (KIND=RKIND), pointer, dimension ( : )  ::  evol
-      type (NodalLocal_t), intent (in) :: dummy
+      real(KIND=RKIND), pointer, dimension ( : )  ::  evol
+      type (NodalLocal_t), intent(in) :: dummy
 
       if (dummy%IsInitialValue) then
         !!!evolucion=1.0_RKIND
@@ -381,18 +381,18 @@ contains
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN)  ::  sggMiEy
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN)  ::  sggMiEz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  g2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  g2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  Idxh
-      real (kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  Idyh
-      real (kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  Idzh
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  Idxh
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  Idyh
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  Idzh
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
 
       !---------------------------> variables locales <-----------------------------------------------
-      real (kind = RKIND)  ::  timei,amp
+      real(kind = RKIND)  ::  timei,amp
       integer  ::  i, j, k, i_m, j_m, k_m,ii,medio
       !---------------------------> empieza AdvancenodalE <---------------------------------------
 
@@ -569,20 +569,20 @@ contains
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN)  ::  sggMiHy
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN)  ::  sggMiHz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  Idxe
-      real (kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  Idye
-      real (kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  Idze
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  Idxe
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  Idye
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  Idze
 
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
       !---------------------------> variables locales <-----------------------------------------------
-      real (kind = RKIND)  ::  timei,amp
+      real(kind = RKIND)  ::  timei,amp
       integer (kind=4)  ::  i, j, k, i_m, j_m, k_m,ii,medio
-      real (kind = RKIND)  ::  GM2_1
+      real(kind = RKIND)  ::  GM2_1
       !!!
       if (simu_devia) then
           print *,'Devia H nodal/field sources untested. Aborting'
@@ -738,5 +738,5 @@ contains
       return
    end subroutine
 
-END MODULE nodalsources
+end module nodalsources
  

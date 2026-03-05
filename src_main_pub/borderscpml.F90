@@ -11,7 +11,7 @@ module BORDERS_CPML
    private
    !
    !
-   real (KIND=RKIND), parameter  ::  StaticFrequency=1.0e14_RKIND
+   real(KIND=RKIND), parameter  ::  StaticFrequency=1.0e14_RKIND
    ! Limits of the PML region
    type XYZlimit_tvar
       integer (kind=4), dimension(1:6)  ::  XI,XE,YI,YE,ZI,ZE
@@ -19,16 +19,16 @@ module BORDERS_CPML
    type (XYZlimit_tvar), dimension(1:6)  ::    PMLc
 
    type LR
-      real (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Exy,Psi_Ezy,Psi_Hxy,Psi_Hzy
-      real (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Exyvac,Psi_Ezyvac,Psi_Hxyvac,Psi_Hzyvac
+      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Exy,Psi_Ezy,Psi_Hxy,Psi_Hzy
+      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Exyvac,Psi_Ezyvac,Psi_Hxyvac,Psi_Hzyvac
    end type
    type DU
-      real (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Eyz,Psi_Exz,Psi_Hyz,Psi_Hxz
-      real (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Eyzvac,Psi_Exzvac,Psi_Hyzvac,Psi_Hxzvac
+      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Eyz,Psi_Exz,Psi_Hyz,Psi_Hxz
+      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Eyzvac,Psi_Exzvac,Psi_Hyzvac,Psi_Hxzvac
    end type
    type BF
-      real (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Ezx,Psi_Eyx,Psi_Hzx,Psi_Hyx
-      real (KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Ezxvac,Psi_Eyxvac,Psi_Hzxvac,Psi_Hyxvac
+      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Ezx,Psi_Eyx,Psi_Hzx,Psi_Hyx
+      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Psi_Ezxvac,Psi_Eyxvac,Psi_Hzxvac,Psi_Hyxvac
    end type
 
 
@@ -37,23 +37,23 @@ module BORDERS_CPML
    type (LR), dimension(left : right) , save ::  regLR
    type (DU), dimension(down : up)    , save ::  regDU
    type (BF), dimension(back : front) , save ::  regBF
-   real (KIND=RKIND) , pointer, dimension ( : , : ) , SAVE  ::   sig_max
-   real (KIND=RKIND) , pointer, dimension ( : , : ) , SAVE  ::   aPar_max ,kPar_max
-   real (KIND=RKIND) , pointer, dimension ( : ) , SAVE ::   P_ce_x ,P_ce_y ,P_ce_z ,P_be_x ,P_be_y ,P_be_z,&
+   real(KIND=RKIND) , pointer, dimension ( : , : ) , SAVE  ::   sig_max
+   real(KIND=RKIND) , pointer, dimension ( : , : ) , SAVE  ::   aPar_max ,kPar_max
+   real(KIND=RKIND) , pointer, dimension ( : ) , SAVE ::   P_ce_x ,P_ce_y ,P_ce_z ,P_be_x ,P_be_y ,P_be_z,&
    P_cm_x ,P_cm_y,P_cm_z ,P_bm_x ,P_bm_y ,P_bm_z
-   real (KIND=RKIND) , pointer, dimension ( : ), SAVE  ::  ce_x ,ce_y ,ce_z ,cm_x ,cm_y ,cm_z , &
+   real(KIND=RKIND) , pointer, dimension ( : ), SAVE  ::  ce_x ,ce_y ,ce_z ,cm_x ,cm_y ,cm_z , &
    Ice_x ,Ice_y ,Ice_z ,Icm_x ,Icm_y ,Icm_z
 
 !!!variables globales del modulo
-   real (KIND=RKIND), save           ::  zvac
-   real (KIND=RKIND), save           ::  eps0,mu0
+   real(KIND=RKIND), save           ::  zvac
+   real(KIND=RKIND), save           ::  eps0,mu0
 !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   real (KIND=RKIND), save     ::  alphamaxpar,alphaOrden,kappamaxpar
+   real(KIND=RKIND), save     ::  alphamaxpar,alphaOrden,kappamaxpar
 !cpml stretching maximum parameters !!alphamaxpar=StaticFrequency*2*pi*Eps0
    type (limit_t), dimension(1:6), save  ::  SINPML_fullsize
-   real (KIND=RKIND) , dimension (:)   ,  allocatable, save    :: dxe, dye,dze,dxh,dyh,dzh
+   real(KIND=RKIND) , dimension (:)   ,  allocatable, save    :: dxe, dye,dze,dxh,dyh,dzh
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !
@@ -67,16 +67,16 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitCPMLBorders(sgg,temp_SINPML_Fullsize,ThereArePMLBorders, control, &
    temp_dxe,temp_dye,temp_dze,temp_dxh,temp_dyh,temp_dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
-      real (KIND=RKIND)           ::  eps00,mu00
+      real(KIND=RKIND)           ::  eps00,mu00
       type (SGGFDTDINFO), intent(IN)         ::  sgg
-      real (KIND=RKIND) , dimension (:)   ,  intent(in)    ::  &
+      real(KIND=RKIND) , dimension (:)   ,  intent(in)    ::  &
       temp_dxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
       temp_dye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
       temp_dze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
       temp_dxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
       temp_dyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
       temp_dzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
-      real (KIND=RKIND) , dimension (:)   , intent(inout)      ::  &
+      real(KIND=RKIND) , dimension (:)   , intent(inout)      ::  &
       Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
       Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
       Idze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
@@ -117,7 +117,7 @@ contains
       ThereArePMLBorders=.false.
       if (sgg%Border%IsBackPML.or.sgg%Border%IsFrontPML.or.sgg%Border%IsLeftPML.or.sgg%Border%IsRightPML.or. &
       sgg%Border%IsUpPML.or.sgg%Border%IsDownPML) ThereArePMLBorders=.true.
-      IF (.not.(ThereArePMLBorders)) return
+      if (.not.(ThereArePMLBorders)) return
 
 
       !Find the limits of each of the 6 padding PML regions for each field component
@@ -281,14 +281,14 @@ contains
       call calc_cpmlconstants(sgg,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps0,mu0)
 
       !Fake coms and ends IN CASE OF NO pml SO THAT NEVER ENTER THE do FOR THESE CASES
-      IF (.not.(sgg%Border%IsDownPML)) PMLc(1:6)%ZI(down)=PMLc(1:6)%ZE(down)+100
-      IF (.not.(sgg%Border%IsUpPML))   PMLc(1:6)%ZI(up)  =PMLc(1:6)%ZE(up)  +100
+      if (.not.(sgg%Border%IsDownPML)) PMLc(1:6)%ZI(down)=PMLc(1:6)%ZE(down)+100
+      if (.not.(sgg%Border%IsUpPML))   PMLc(1:6)%ZI(up)  =PMLc(1:6)%ZE(up)  +100
       !
-      IF (.not.(sgg%Border%IsLeftPML))  PMLc(1:6)%ZI(left) =PMLc(1:6)%ZE(left) +100
-      IF (.not.(sgg%Border%IsRightPML)) PMLc(1:6)%ZI(right)=PMLc(1:6)%ZE(right)+100
+      if (.not.(sgg%Border%IsLeftPML))  PMLc(1:6)%ZI(left) =PMLc(1:6)%ZE(left) +100
+      if (.not.(sgg%Border%IsRightPML)) PMLc(1:6)%ZI(right)=PMLc(1:6)%ZE(right)+100
       !
-      IF (.not.(sgg%Border%IsFrontPML)) PMLc(1:6)%ZI(front)=PMLc(1:6)%ZE(front)+100
-      IF (.not.(sgg%Border%IsBackPML))  PMLc(1:6)%ZI(back) =PMLc(1:6)%ZE(back) +100
+      if (.not.(sgg%Border%IsFrontPML)) PMLc(1:6)%ZI(front)=PMLc(1:6)%ZE(front)+100
+      if (.not.(sgg%Border%IsBackPML))  PMLc(1:6)%ZI(back) =PMLc(1:6)%ZE(back) +100
 
 
 
@@ -532,15 +532,15 @@ contains
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN)  ::  sggMiEy
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN)  ::  sggMiEz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  g2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  g2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
       !---------------------------> variables locales <-----------------------------------------------
       integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceelectricCPML <-------------------------------------
@@ -829,15 +829,15 @@ contains
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN)  ::  sggMiHy
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN)  ::  sggMiHz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
       !---------------------------> variables locales <-----------------------------------------------
       integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
@@ -1125,18 +1125,18 @@ contains
 !!!      integer, intent( IN)  ::  NumMedia
 !!!      type( bounds_t), intent( IN)  ::  b
 !!!      !--->
-!!!      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
+!!!      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
 !!!      !--->
-!!!      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-!!!      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-!!!      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+!!!      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
+!!!      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
+!!!      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
 !!!      !---------------------------> inputs/outputs <--------------------------------------------------
-!!!      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-!!!      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-!!!      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+!!!      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
+!!!      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
+!!!      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
 !!!      !---------------------------> variables locales <-----------------------------------------------
 !!!      integer (kind=4)  ::  REGION, i, j, k, i_m, j_m, k_m
-!!!      real (kind = RKIND)  ::  GM2_1
+!!!      real(kind = RKIND)  ::  GM2_1
 !!!      GM2_1=GM2(1)
 !!!      !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------
 !!!      !Hetic Fields PML Zone
@@ -1406,8 +1406,8 @@ contains
 
 subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
       type (SGGFDTDINFO), intent(IN)         ::  sgg
-      real (KIND=RKIND), intent (in)  ::  eps00,mu00
-      real (KIND=RKIND) , dimension (:)   , intent(inout)      ::  &
+      real(KIND=RKIND), intent(in)  ::  eps00,mu00
+      real(KIND=RKIND) , dimension (:)   , intent(inout)      ::  &
       Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
       Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
       Idze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
@@ -1415,7 +1415,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
       Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
       Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
       integer :: i,j,k,o,p
-      real (KIND=RKIND) :: del,sigmae,kpare,apare,sigmam,kparm,aparm
+      real(KIND=RKIND) :: del,sigmae,kpare,apare,sigmam,kparm,aparm
       character(len=BUFSIZE) :: buff
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       zvac=sqrt(mu0/eps0)
@@ -1581,7 +1581,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             !
             WRITE (buff,'(a,i4,a,5e9.2e2)') 'back(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             (sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsBackPML).and.(i>sgg%ALLOC(iHx)%XI)) CALL print11 (control%layoutnumber, buff)
+            !if ((sgg%Border%IsBackPML).and.(i>sgg%ALLOC(iHx)%XI)) CALL print11 (control%layoutnumber, buff)
          elseif (i >= SINPML_Fullsize(iHx)%XE )  then !front
             if ((sgg%PML%orden(1,2) == 0)) then
                Sigmam=    Sig_max(1,2)
@@ -1597,7 +1597,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             !
             !WRITE (buff,'(a,i4,a,5e9.2e2)') 'front(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsFrontPML).and.(i<sgg%ALLOC(iHx)%XE-1))  CALL print11 (control%layoutnumber, buff)
+            !if ((sgg%Border%IsFrontPML).and.(i<sgg%ALLOC(iHx)%XE-1))  CALL print11 (control%layoutnumber, buff)
          endif
       end do
       do j=sgg%ALLOC(iHy)%YI,sgg%ALLOC(iHy)%YE
@@ -1616,7 +1616,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             !
             !WRITE (buff,'(a,i4,a,5e9.2e2)') 'left(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsLeftPML).and.(j>sgg%ALLOC(iHy)%YI)) CALL print11 (control%layoutnumber, buff)
+            !if ((sgg%Border%IsLeftPML).and.(j>sgg%ALLOC(iHy)%YI)) CALL print11 (control%layoutnumber, buff)
          elseif (j >= SINPML_Fullsize(iHy)%YE ) then  !Right
             if ((sgg%PML%orden(2,2) == 0)) then
                Sigmam=    Sig_max(2,2)
@@ -1632,7 +1632,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             !
             !WRITE (buff,'(a,i4,a,5e9.2e2)') 'right(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsRightPML).and.(j<sgg%ALLOC(iHy)%YE-1)) CALL print11 (control%layoutnumber, buff)
+            !if ((sgg%Border%IsRightPML).and.(j<sgg%ALLOC(iHy)%YE-1)) CALL print11 (control%layoutnumber, buff)
          endif
       end do
       do k=sgg%ALLOC(iHz)%ZI,sgg%ALLOC(iHz)%ZE
@@ -1651,7 +1651,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             !
             !WRITE (buff,'(a,i4,a,5e9.2e2)') 'down(',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsDownPML).and.(k>sgg%ALLOC(iHz)%ZI)) CALL print11 (control%layoutnumber, buff)
+            !if ((sgg%Border%IsDownPML).and.(k>sgg%ALLOC(iHz)%ZI)) CALL print11 (control%layoutnumber, buff)
          elseif (k >= SINPML_Fullsize(iHz)%ZE ) then !Up
             if ((sgg%PML%orden(3,2) == 0)) then
                Sigmam=    Sig_max(3,2)
@@ -1667,7 +1667,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             !
             !WRITE (buff,'(a,i4,a,5e9.2e2)') 'up   (',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
-            !IF ((sgg%Border%IsUpPML).and.(k<sgg%ALLOC(iHz)%ZE-1)) CALL print11 (control%layoutnumber, buff)
+            !if ((sgg%Border%IsUpPML).and.(k<sgg%ALLOC(iHz)%ZE-1)) CALL print11 (control%layoutnumber, buff)
          endif
       end do
 
@@ -1687,15 +1687,15 @@ end subroutine calc_cpmlconstants
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN)  ::  sggMiEy
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN)  ::  sggMiEz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  g2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  g2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
       !---------------------------> variables locales <-----------------------------------------------
       integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceelectricCPML <-------------------------------------
@@ -1984,15 +1984,15 @@ end subroutine calc_cpmlconstants
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN)  ::  sggMiHy
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN)  ::  sggMiHz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
       !---------------------------> variables locales <-----------------------------------------------
       integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicCPML <-------------------------------------

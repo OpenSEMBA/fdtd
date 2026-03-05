@@ -64,7 +64,7 @@ module mtl_bundle_mod
     type :: external_field_segment_t
         integer, dimension(3) ::position
         integer :: direction = 0
-        real (kind=rkind) , pointer  ::  field => null()      
+        real(kind=rkind) , pointer  ::  field => null()      
     end type
 
 contains
