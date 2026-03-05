@@ -1,8 +1,7 @@
 {
     "_format": "FDTD Input file",
     "general": {
-        "numberOfSteps": 2000,
-        "additionalArguments": "-mapvtk"
+        "numberOfSteps": 2000
     },
     "boundary": {
         "all": {

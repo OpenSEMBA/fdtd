@@ -7,9 +7,12 @@ import scipy.constants
 from skrf.media import Freespace
 from skrf.frequency import Frequency
 
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../publico/', 'src_pyWrapper'))
-SEMBA_EXE = '/home/luis/ugrfdtd/build-intel-rls/bin/ugrfdtd'
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '../../../', 'src_pyWrapper'))
+SEMBA_EXE = '/home/luis/ugrfdtd/publico/build-rls/bin/semba-fdtd'
 from pyWrapper import *
+
+case_dir = os.path.dirname(os.path.abspath(__file__))
+
 
 # Source Intel oneAPI compiler + MPI environment variables into the current
 # process so that any subprocess (e.g. the FDTD solver) inherits them.
@@ -27,6 +30,25 @@ for _line in _result.stdout.split('\0'):
 
 
 
+def dtft(signal, time, freqs):
+	"""Continuous-time DTFT approximation using trapezoidal integration."""
+	signal = np.asarray(signal)
+	time = np.asarray(time)
+	res = np.empty_like(freqs, dtype=complex)
+	for i, f in enumerate(freqs):
+		res[i] = np.trapz(signal * np.exp(-1j * 2 * np.pi * f * time), time)
+	return res
+
+def compute_impedance(probe_path, time_exc, voltage_exc, freqs):
+	probe = Probe(probe_path)
+	time_I = probe["time"].to_numpy()
+	current = probe["current_0"].to_numpy()
+	V_interp = np.interp(time_I, time_exc, voltage_exc)
+	I_f = dtft(current, time_I, freqs)
+	V_f = dtft(V_interp, time_I, freqs)
+	Z = V_f / I_f
+	return time_I, current, Z
+
 # %% Generate excitation and visualize
 dt = 1e-12
 w0 = 0.1e-8    # ~ 200 MHz bandwidth
@@ -40,7 +62,7 @@ plt.plot(t,f)
 data = np.zeros((len(t), 2))
 data[:,0] = t
 data[:,1] = f
-np.savetxt('gauss.exc', data)
+np.savetxt(os.path.join(case_dir, 'gauss.exc'), data)
  
 fq = fftfreq(len(t))/dt
 F = fft(f)
@@ -60,66 +82,49 @@ plt.yscale('log')
 plt.grid()
 
 # %% Run simulation
+CASE_NAME = "towel_rack_with_shorting_plane.fdtd.json"
+FOLDER_WITH_SHORTING_PLANE = "with_shorting_plane"
+FOLDER_WITHOUT_SHORTING_PLANE = "without_shorting_plane"
+
+os.makedirs(os.path.join(case_dir, FOLDER_WITH_SHORTING_PLANE), exist_ok=True)
 solver = FDTD(
-	input_filename = 'towel_rack_with_shorting_plane.fdtd.json', 
-	path_to_exe=SEMBA_EXE
+	input_filename = os.path.join(case_dir, CASE_NAME),
+	path_to_exe=SEMBA_EXE,
+	run_in_folder=os.path.join(case_dir, FOLDER_WITH_SHORTING_PLANE)
 )
 solver.cleanUp()
 solver.run()
 
-# %% Postprocessing
-case_dir = os.path.dirname(__file__)
+os.makedirs(os.path.join(case_dir, FOLDER_WITHOUT_SHORTING_PLANE), exist_ok=True)
+solver = FDTD(
+	input_filename = os.path.join(case_dir, CASE_NAME),
+	path_to_exe=SEMBA_EXE,
+	run_in_folder=os.path.join(case_dir, FOLDER_WITHOUT_SHORTING_PLANE)
+)
+solver['materialAssociations'][0]['elementIds'] = [1]
+solver.cleanUp()
+solver.run()
+PROBE_NAME = solver.getSolvedProbeFilenames("Wire probe")[0]
 
+# %% Postprocessing
 excitation_filename = os.path.join(case_dir, 'gauss.exc')
 exc = ExcitationFile(excitation_filename)
 
 time_exc = exc["time"].to_numpy()
-excitation = exc["value"].to_numpy()
+voltage_exc = exc["value"].to_numpy()
+
+freqs = np.geomspace(1e3, 1e9, 61)
 
 
-def compute_impedance(probe_path: str):
-	"""Compute time signal and input impedance Z_in(f) for a given probe file."""
-	probe = Probe(os.path.join(case_dir, probe_path))
-	time_I = probe["time"].to_numpy()
-	current = probe["current_0"].to_numpy()
+probe_with_path    = os.path.join(case_dir, FOLDER_WITH_SHORTING_PLANE,    PROBE_NAME)
+probe_without_path = os.path.join(case_dir, FOLDER_WITHOUT_SHORTING_PLANE, PROBE_NAME)
 
-	# Interpolate excitation voltage onto this current probe time grid
-	V_interp = np.interp(time_I, time_exc, excitation)
+time_I_w,  current_w,  Z_in_w  = compute_impedance(probe_with_path,    time_exc, voltage_exc, freqs)
+time_I_wo, current_wo, Z_in_wo = compute_impedance(probe_without_path, time_exc, voltage_exc, freqs)
 
-	# DTFT of current and voltage on this time grid
-	I_f = dtft(current, time_I, freqs)
-	V_f = dtft(V_interp, time_I, freqs)
-
-	Z_in = V_f / I_f
-	return time_I, current, Z_in
-
-# DTFT 
-f_min = 1e3
-f_max = 1e9
-points_per_decade = 10
-num_points = int((np.log10(f_max) - np.log10(f_min)) * points_per_decade) + 1
-freqs = np.logspace(np.log10(f_min), np.log10(f_max), num=num_points)
-
-
-def dtft(signal, time, freqs):
-	"""Continuous-time DTFT approximation using trapezoidal integration."""
-	signal = np.asarray(signal)
-	time = np.asarray(time)
-	res = np.empty_like(freqs, dtype=complex)
-	for i, f in enumerate(freqs):
-		res[i] = np.trapz(signal * np.exp(-1j * 2 * np.pi * f * time), time)
-	return res
-
-# Compute impedances for both simulations
-# probe_without = 'towel_rack_without_shorting_plane.fdtd_Wire probe_Wx_72_44_44_s33.dat'
-probe_with = 'towel_rack_with_shorting_plane.fdtd_Wire probe_Cable_I_65_30_30.dat'
-
-# time_I_wo, current_wo, Z_in_wo = compute_impedance(probe_without)
-time_I_w, current_w, Z_in_w = compute_impedance(probe_with)
-
-#  Time-domain comparison
+# %% Time-domain comparison
 plt.figure()
-plt.plot(time_exc, excitation, label="Excitation")
+plt.plot(time_exc, voltage_exc, label="Excitation")
 plt.xlabel("Time [s]")
 plt.ylabel("Excitation [V]")
 plt.grid(which="both")
@@ -127,26 +132,22 @@ plt.legend()
 plt.tight_layout()
 
 plt.figure()
-plt.plot(time_I_w, current_w, label="Current with shorting plane")
+plt.plot(time_I_w,  current_w,  label="With shorting plane")
+plt.plot(time_I_wo, current_wo, label="Without shorting plane")
 plt.xlabel("Time [s]")
 plt.ylabel("Current [A]")
 plt.grid(which="both")
 plt.legend()
 plt.tight_layout()
 
-
-# %% Impedance comparison (magnitude and phase)
+# %% Impedance comparison
 plt.figure()
-plt.semilogx(freqs, 20 * np.log10(np.abs(Z_in_w)), label="With shorting plane")
+plt.semilogx(freqs, 20 * np.log10(np.abs(Z_in_w)),  label="With shorting plane")
+plt.semilogx(freqs, 20 * np.log10(np.abs(Z_in_wo)), label="Without shorting plane")
+plt.xlabel("Frequency [Hz]")
 plt.ylabel("|Z(j2πf)| [dB]")
 plt.grid(which="both")
 plt.legend()
-
-plt.figure()
-plt.semilogx(freqs, np.angle(Z_in_w), label="With shorting plane")
-plt.ylabel("Phase Z(j2πf)")
-plt.grid(which="both")
-plt.legend()
-plt.show()
+plt.tight_layout()
 
 print("=== END ===")

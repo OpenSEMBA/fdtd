@@ -24,6 +24,14 @@
       "cacheVariables": {
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
       }
+    },
+    {
+      "name": "rls-nomtln",
+      "inherits": "rls",
+      "binaryDir": "build-rls-nomtln/",
+      "cacheVariables": {
+        "SEMBA_FDTD_ENABLE_MTLN": "OFF"
+      }
     }
   ]
 }
