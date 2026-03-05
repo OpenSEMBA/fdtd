@@ -183,7 +183,7 @@ module outputTypes
       complex(kind=CKIND), allocatable :: xValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: yValueForFreq(:, :)  !(time, coordIdx)
       complex(kind=CKIND), allocatable :: zValueForFreq(:, :)  !(time, coordIdx)
-      character(len=BUFSIZE) :: pvdPath
+      character(len=BUFSIZE) :: filesPath
    end type frequency_slice_probe_output_t
 
 !=====================================================

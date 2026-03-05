@@ -2817,6 +2817,7 @@ contains
       if (this%thereAre%Observation) THEN
 #ifdef CompileWithNewOutputModule
          call flush_outputs(this%sgg%tiempo, this%n, this%control, fieldReference, this%bounds, .TRUE.)
+         call close_outputs()
 #else 
          call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
          call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk

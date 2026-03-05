@@ -87,6 +87,10 @@ module output
          flush_farField_probe_output
 
    end interface
+
+   interface close_solver_output
+      module procedure close_frequency_slice_probe_output
+   end interface
 contains
 
    function GetOutputs() result(r)
@@ -444,7 +448,7 @@ contains
          case (VOLUMIC_CURRENT_PROBE_ID)
          case (MOVIE_PROBE_ID)
          case (FREQUENCY_SLICE_PROBE_ID)
-            call close_pvd(outputs(i)%frequencySliceProbe%pvdPath)
+            call close_solver_output(outputs(i)%frequencySliceProbe)
          end select
       end do
    end subroutine

@@ -6,6 +6,8 @@ module mod_frequencySliceProbeOutput
    use mod_outputUtils
    use mod_volumicProbeUtils
    use mod_directoryUtils
+   use HDF5
+   use mod_xdmfAPI
    implicit none
    private
 
@@ -15,6 +17,7 @@ module mod_frequencySliceProbeOutput
    public :: init_frequency_slice_probe_output
    public :: update_frequency_slice_probe_output
    public :: flush_frequency_slice_probe_output
+   public :: close_frequency_slice_probe_output
    !===========================
 
    !===========================
@@ -26,8 +29,6 @@ module mod_frequencySliceProbeOutput
    private :: save_current
    private :: save_current_module
    private :: save_current_component
-   private :: update_pvd
-   private :: write_vtu_frequency_slice
    !===========================
 
    !===========================
@@ -46,20 +47,14 @@ contains
 
       integer :: i
       integer :: error
-      character(len=BUFSIZE) :: pdvFileName
+      character(len=BUFSIZE) :: filename
 
       this%mainCoords = lowerBound
       this%auxCoords = upperBound
       this%component = field !This can refer to electric, magnetic or currentDensity
       this%domain = domain
-      this%path = get_output_path_freq(this, outputTypeExtension, field, control)
-
-      pdvFileName = add_extension(get_last_component(this%path), pvdExtension )
-      this%pvdPath = join_path(this%path, pdvFileName)
-
-      call create_folder(this%path, error)
-
       this%nFreq = domain%fnum
+
       call alloc_and_init(this%frequencySlice, this%nFreq, 0.0_RKIND)
       do i = 1, this%nFreq
          call init_frequency_slice(this%frequencySlice, this%domain)
@@ -67,21 +62,9 @@ contains
 
       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
 
-      if (any(VOLUMIC_M_MEASURE == this%component)) then
-         call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
-         call alloc_and_init(this%yValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
-         call alloc_and_init(this%zValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
-      else
-         if (any(VOLUMIC_X_MEASURE == this%component)) then
-            call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
-         elseif (any(VOLUMIC_Y_MEASURE == this%component)) then
-            call alloc_and_init(this%yValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
-         elseif (any(VOLUMIC_Z_MEASURE == this%component)) then
-            call alloc_and_init(this%zValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
-         else
-            call StopOnError(control%layoutnumber, control%size, "Unexpected output type for movie probe")
-         end if
-      end if
+      call alloc_and_init(this%xValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
+      call alloc_and_init(this%yValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
+      call alloc_and_init(this%zValueForFreq, this%nFreq, this%nPoints, (0.0_CKIND, 0.0_CKIND))
 
       call alloc_and_init(this%auxExp_E, this%nFreq, (0.0_CKIND, 0.0_CKIND))
       call alloc_and_init(this%auxExp_H, this%nFreq, (0.0_CKIND, 0.0_CKIND))
@@ -91,7 +74,104 @@ contains
          this%auxExp_H(i) = this%auxExp_E(i)*Exp(mcpi2*this%frequencySlice(i)*timeInterval*0.5_RKIND)
       end do
 
+      this%path = get_output_path_freq(this, outputTypeExtension, field, control)
+
+      filename = get_last_component(this%path)
+      this%filesPath = join_path(this%path, filename)
+
+      call create_folder(this%path, error)
+      call create_bin_file(this%filesPath, error)
    end subroutine init_frequency_slice_probe_output
+
+   subroutine create_bin_file(filePath, error)
+      character(len=*), intent(in) :: filePath
+      integer, intent(out) :: error
+      call create_file_with_path(add_extension(filePath, binaryExtension), error)
+   end subroutine 
+
+   subroutine write_bin_file(this)
+      ! Check type definition for binary format
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      integer :: i, f, unit
+      !We rewrite the binary as simulation continues
+      open (unit=unit, file=add_extension(this%filesPath, binaryExtension), &
+            status='old', form='unformatted', action='write', access='stream')
+      do f = 1, this%nFreq
+      do i = 1, this%nPoints
+         write(unit) this%frequencySlice(f), this%coords(1,i), this%coords(2,i), this%coords(3,i), this%xValueForFreq(f,i), this%yValueForFreq(f,i), this%xValueForFreq(f,i)
+      end do
+      end do
+      flush (unit)
+      close (unit)
+   end subroutine
+
+   subroutine write_to_xdmf_h5(this)
+      !If we call to this subrutine it will always replace old values
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+
+      integer(HID_T) :: file_id
+      integer :: f, error, xdmfunit
+      real(dp), allocatable, dimension(:, :) :: coordsReal
+      character(len=256) :: h5_filename, h5_filepath
+      character(len=256) :: xdmf_filename
+      character(len=10) :: dimension_string
+      character(len=10) :: nCoordsString
+      character(len=14) :: stepName
+      h5_filepath = add_extension(this%filesPath, ".h5")
+      h5_filename = get_last_component(h5_filepath)
+
+      call H5open_f(error)
+      call H5Fopen_f(trim(h5_filepath), H5F_ACC_RDWR_F, file_id, error)
+      write(dimension_string, '(I0,1X,I0)') this%nPoints, this%nFreq
+      write(nCoordsString, '(I0, I0)') this%nPoints, 1
+      do f = 1, this%nFreq
+         write(stepName, '((I5.5))') f
+         call append_rows_dataset(file_id, "xVal", reshape(real(abs(this%xValueForFreq(f, :)), dp), [1, this%nPoints]))
+         call append_rows_dataset(file_id, "yVal", reshape(real(abs(this%yValueForFreq(f, :)), dp), [1, this%nPoints]))
+         call append_rows_dataset(file_id, "zVal", reshape(real(abs(this%zValueForFreq(f, :)), dp), [1, this%nPoints]))
+
+         xdmf_filename = add_extension(add_extension(this%filesPath, ".fs_"//stepName), ".xdmf")
+            open(newunit=xdmfunit, file=trim(xdmf_filename), status='replace', position='append', iostat=error)
+
+            call xdmf_write_header_file(xdmfunit)
+
+            call xdmf_create_grid_step_info(xdmfunit, stepName, real(this%frequencySlice(f)), trim(h5_filename), this%nPoints)
+            
+            call xdmf_write_attribute(xdmfunit, 'xVal')
+            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
+            call xdmf_write_h5_acces_data_item(xdmfunit, 0, f - 1,  this%nPoints, this%nFreq)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/xVal', dimension_string)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_attribute(xdmfunit)
+
+            call xdmf_write_attribute(xdmfunit, 'yVal')
+            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
+            call xdmf_write_h5_acces_data_item(xdmfunit, 0, f - 1,  this%nPoints, this%nFreq)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/yVal', dimension_string)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_attribute(xdmfunit)
+
+            call xdmf_write_attribute(xdmfunit, 'zVal')
+            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
+            call xdmf_write_h5_acces_data_item(xdmfunit, 0, f - 1,  this%nPoints, this%nFreq)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/zVal', dimension_string)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_data_item(xdmfunit)
+            call xdmf_close_attribute(xdmfunit)
+
+            call xdmf_close_grid(xdmfunit)
+         
+            call xdmf_write_footer_file(xdmfunit)
+            close(xdmfunit)
+      end do
+      call H5Fclose_f(file_id, error)
+      call H5close_f(error)
+   end subroutine
 
    function get_output_path_freq(this, outputTypeExtension, field, control) result(outputPath)
       type(frequency_slice_probe_output_t), intent(in) :: this
@@ -287,120 +367,14 @@ contains
 
    subroutine flush_frequency_slice_probe_output(this)
       type(frequency_slice_probe_output_t), intent(inout) :: this
-      integer :: status, i
-
-      do i = 1, this%nFreq
-         call update_pvd(this, i, this%pvdPath)
-      end do
+      call write_bin_file(this)
    end subroutine flush_frequency_slice_probe_output
 
-   subroutine write_vtu_frequency_slice(this, freq, filename)
-      implicit none
+   subroutine close_frequency_slice_probe_output(this)
+      type(frequency_slice_probe_output_t), intent(inout) :: this
+      call write_to_xdmf_h5(this)
+   end subroutine
 
-      type(frequency_slice_probe_output_t), intent(in) :: this
-      integer, intent(in) :: freq
-      character(len=*), intent(in) :: filename
-
-      character(len=BUFSIZE) :: requestName
-      !type(vtk_file) :: vtkOutput
-      integer :: ierr, npts, i
-      real(kind=RKIND), allocatable :: x(:), y(:), z(:)
-      real(kind=RKIND), allocatable :: Componentx(:), Componenty(:), Componentz(:)
-      logical :: writeX, writeY, writeZ
-
-      !!================= Determine the measure type =================
-      !if (any(CURRENT_MEASURE == this%component)) requestName = 'Current'
-      !if (any(ELECTRIC_FIELD_MEASURE == this%component)) requestName = 'Electric'
-      !if (any(MAGNETIC_FIELD_MEASURE == this%component)) requestName = 'Magnetic'
-!
-      !!================= Determine which components to write =================
-      !writeX = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_X_MEASURE == this%component)
-      !writeY = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Y_MEASURE == this%component)
-      !writeZ = any(VOLUMIC_M_MEASURE == this%component) .or. any(VOLUMIC_Z_MEASURE == this%component)
-!
-      !!================= Allocate and fill coordinates =================
-      !npts = this%nPoints
-      !allocate (x(npts), y(npts), z(npts))
-      !do i = 1, npts
-      !   x(i) = this%coords(1, i)
-      !   y(i) = this%coords(2, i)
-      !   z(i) = this%coords(3, i)
-      !end do
-!
-      !ierr = vtkOutput%initialize(format='ASCII', filename=trim(filename), mesh_topology='UnstructuredGrid')
-      !ierr = vtkOutput%xml_writer%write_geo(n=npts, x=x, y=y, z=z)
-!
-      !!================= Allocate and fill component arrays =================
-      !if (writeX) then
-      !   allocate (Componentx(npts))
-      !   do i = 1, npts
-      !      Componentx(i) = abs(this%xValueForFreq(freq, i))
-      !   end do
-      !end if
-!
-      !if (writeY) then
-      !   allocate (Componenty(npts))
-      !   do i = 1, npts
-      !      Componenty(i) = abs(this%yValueForFreq(freq, i))
-      !   end do
-      !end if
-!
-      !if (writeZ) then
-      !   allocate (Componentz(npts))
-      !   do i = 1, npts
-      !      Componentz(i) = abs(this%zValueForFreq(freq, i))
-      !   end do
-      !end if
-!
-      !!================= Write arrays to VTK =================
-      !if (writeX) then
-      !   requestName = trim(adjustl(requestName))//'X'
-      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      !   ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componentx)
-      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-      !   deallocate (Componentx)
-      !end if
-!
-      !if (writeY) then
-      !   requestName = trim(adjustl(requestName))//'X'
-      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      !   ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componenty)
-      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-      !   deallocate (Componenty)
-      !end if
-!
-      !if (writeZ) then
-      !   requestName = trim(adjustl(requestName))//'X'
-      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='open')
-      !   ierr = vtkOutput%xml_writer%write_dataarray(data_name=requestName, x=Componentz)
-      !   ierr = vtkOutput%xml_writer%write_dataarray(location='node', action='close')
-      !   deallocate (Componentz)
-      !end if
-!
-      !ierr = vtkOutput%xml_writer%finalize()
-      !deallocate (x, y, z)
-!
-   end subroutine write_vtu_frequency_slice
-
-   subroutine update_pvd(this, freq, PVDfilePath)
-      implicit none
-      type(frequency_slice_probe_output_t), intent(in) :: this
-      integer, intent(in) :: freq
-      character(len=*), intent(in) :: PVDfilePath
-      character(len=64) :: ts
-      character(len=256) :: newVTUfilename
-      integer :: unit
-
-
-!      write (newVTUfilename, '(A,A,I4.4,A)') trim(remove_extension(this%pvdPath)), '_fq', freq, '.vtu'
-!      call write_vtu_frequency_slice(this, freq, newVTUfilename)
-! 
-!      write (ts, '(ES16.8)') this%frequencySlice(freq)
-!
-!      open (newunit=unit, file=trim(PVDfilePath), status='old', position='append')
-!      write (unit, '(A)') '    <DataSet timestep="'//trim(ts)//'" group="" part="0" file="'//trim(newVTUfilename)//'"/>'
-!      close(unit)
-   end subroutine update_pvd
 
 
 end module mod_frequencySliceProbeOutput

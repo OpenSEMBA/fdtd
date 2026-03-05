@@ -22,8 +22,6 @@ module mod_movieProbeOutput
    ! Private helpers
    !===========================
    ! Output & File Management
-   private :: write_vtu_timestep
-   private :: update_pvd
    private :: clear_memory_data
 
 contains
@@ -261,33 +259,6 @@ contains
       call H5close_f(error)
    end subroutine write_to_xdmf_h5
 
-   subroutine read_bin_file(this)
-      ! Check type definition for binary format
-      type(movie_probe_output_t), intent(inout) :: this
-      integer :: unit
-      integer :: iostat
-      real(kind=RKIND_tiempo) timeStamp
-      integer(kind=SINGLE) :: x, y, z
-      real(kind=RKIND) :: xVal, yVal, zVal
-      integer(kind=4) :: dataSize
-
-      open (unit=unit, file=add_extension(this%path, binaryExtension), &
-            status='old', form='unformatted', access='stream', iostat=iostat)
-      if (iostat /= 0) then
-         print *, 'Error opening file!'
-         return
-      end if
-
-      ! Read until end-of-file
-      do
-         read (unit, iostat=iostat) timeStamp, x, y, z, xVal, yVal, zVal
-         if (iostat /= 0) exit  ! EOF or error
-         print *, timeStamp, x, y, z, xVal, yVal, zVal
-      end do
-
-      close (unit)
-   end subroutine
-
    function get_output_path(this, outputTypeExtension, field, mpidir) result(path)
       type(movie_probe_output_t), intent(in) :: this
       character(len=*), intent(in)           :: outputTypeExtension
@@ -407,30 +378,6 @@ contains
 
       fieldData(timeIdx, coordIdx) = fieldValue
    end subroutine save_field
-
-   subroutine write_vtu_timestep(this, stepIndex, filename)
-      type(movie_probe_output_t), intent(in) :: this
-      integer, intent(in)                    :: stepIndex
-      character(len=*), intent(in)           :: filename
-
-      integer :: npts, i, ierr
-      real(kind=RKIND), allocatable :: x(:), y(:), z(:)
-      real(kind=RKIND), allocatable :: Componentx(:), Componenty(:), Componentz(:)
-      logical :: writeX, writeY, writeZ
-      character(len=BUFSIZE) :: requestName
-
-   end subroutine write_vtu_timestep
-
-   subroutine update_pvd(this, stepIndex, PVDfilePath)
-      implicit none
-      type(movie_probe_output_t), intent(in) :: this
-      integer, intent(in) :: stepIndex
-      character(len=*), intent(in) :: PVDfilePath
-      character(len=64) :: ts
-      character(len=BUFSIZE) :: newVTUfilename
-      integer :: unit
-
-   end subroutine update_pvd
 
    subroutine clear_memory_data(this)
       type(movie_probe_output_t), intent(inout) :: this
