@@ -1,5 +1,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
 
+[![DOI](https://zenodo.org/badge/639347947.svg)](https://doi.org/10.5281/zenodo.18862309)
+
 [![ubuntu](https://github.com/OpenSEMBA/fdtd/actions/workflows/ubuntu.yml/badge.svg?branch=main)](https://github.com/OpenSEMBA/fdtd/actions/workflows/ubuntu.yml)
 [![windows](https://github.com/OpenSEMBA/fdtd/actions/workflows/windows.yml/badge.svg?branch=main)](https://github.com/OpenSEMBA/fdtd/actions/workflows/windows.yml)
 
