@@ -81,7 +81,7 @@ contains
       character (len=*), optional :: input_flags
 
       real (KIND=RKIND) :: dtantesdecorregir
-      real (KIND=RKIND)   ::  dxmin,dymin,dzmin,dtlay
+      real (KIND=RKIND) ::  dxmin,dymin,dzmin,dtlay
       
       logical :: dummylog,l_auxinput, l_auxoutput, ThereArethinslots
       logical :: hayinput
@@ -325,20 +325,18 @@ contains
 
    call data_loader(this%l%filefde, parser)
 
+   this%sgg%extraswitches=parser%switches
+!!!da preferencia a los switches por linea de comando
+   CALL getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse, getBinaryPath())
 
-
-      this%sgg%extraswitches=parser%switches
-   !!!da preferencia a los switches por linea de comando
-      CALL getcommandargument (this%l%chain2, 1, chaindummy, this%l%length, statuse, getBinaryPath())
-
-      this%l%chain2=trim(adjustl(this%l%chain2))
-      chaindummy=trim(adjustl(chaindummy))
-      this%l%length=len(trim(adjustl(chaindummy)))
-      this%l%chain2=trim(adjustl(chaindummy))//' '//trim(adjustl(this%sgg%extraswitches))//' '//trim(adjustl(this%l%chain2(this%l%length+1:)))               
-      this%l%chaininput=trim(adjustl(this%l%chain2))
-   !!!!
-      call interpreta(this%l,status )      
-      this%sgg%nEntradaRoot=trim (adjustl(this%l%nEntradaRoot))
+   this%l%chain2=trim(adjustl(this%l%chain2))
+   chaindummy=trim(adjustl(chaindummy))
+   this%l%length=len(trim(adjustl(chaindummy)))
+   this%l%chain2=trim(adjustl(chaindummy))//' '//trim(adjustl(this%sgg%extraswitches))//' '//trim(adjustl(this%l%chain2(this%l%length+1:)))               
+   this%l%chaininput=trim(adjustl(this%l%chain2))
+!!!!
+   call interpreta(this%l,status )      
+   this%sgg%nEntradaRoot=trim (adjustl(this%l%nEntradaRoot))
 
 #ifdef CompileWithMPI            
       CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
@@ -542,12 +540,17 @@ contains
          this%l%finaltimestep = this%sgg%TimeSteps
       endif
       IF (.not.this%l%forcesteps) then
-            finaltimestepantesdecorregir=this%l%finaltimestep
+         finaltimestepantesdecorregir=this%l%finaltimestep
+         if (dtantesdecorregir /= 0.0) then
             this%l%finaltimestep=int(dtantesdecorregir/this%sgg%dt*finaltimestepantesdecorregir)
+         end if
 #ifdef CompileWithMPI
-            call MPI_AllReduce( this%l%finaltimestep, NEWfinaltimestep, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, this%l%ierr)
-            CALL MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
-            this%l%finaltimestep=NEWfinaltimestep
+         call MPI_AllReduce( this%l%finaltimestep, NEWfinaltimestep, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, this%l%ierr)
+         call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
+         this%l%finaltimestep=NEWfinaltimestep
+#endif
+#ifdef CompileWithMTLN
+            this%mtln_parsed%number_of_steps = this%l%finaltimestep 
 #endif
             if (finaltimestepantesdecorregir/=this%l%finaltimestep) then
                write(dubuf,*) SEPARADOR//separador//separador
@@ -737,6 +740,10 @@ contains
                write(thefileno,'(a)') '# (  9.0 ,  9.0 ) '//trim(adjustl('Soft/Hard Nodal CURRENT/FIELD MAGNETIC DENSITY SOURCE                   (Line)'))
                write(thefileno,'(a)') '# (   10 ,   11 ) '//trim(adjustl('LeftEnd/RightEnd/Ending wire segment                                    (Wire)'))
                write(thefileno,'(a)') '# (   20 ,   20 ) '//trim(adjustl('Intermediate wire segment +number_holland_parallel or +number_berenger  (Wire) '))
+               write(thefileno,'(a)') '# (   12 ,   12 ) '//trim(adjustl('Edge Not colliding multiwires                                           (Multiwire)'))
+               write(thefileno,'(a)') '# (   13 ,   13 ) '//trim(adjustl('Multiwire segments colliding with structure                             (Multiwire)'))
+               write(thefileno,'(a)') '# (   14 ,   15 ) '//trim(adjustl('LeftEnd/RightEnd/Ending multiwire segment                               (Multiwire)'))
+               write(thefileno,'(a)') '# (   60 ,   60 ) '//trim(adjustl('Intermediate multiwire segment + number parallel segments               (Multiwire) '))
                write(thefileno,'(a)') '# (  400 ,  499 ) '//trim(adjustl('Thin slot (+indexmedium)                                                (Surface)'))
                write(thefileno,'(a)') '# ( 1000 , 1999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Surface)'))
                write(thefileno,'(a)') '# ( 2000 , 2999 ) '//trim(adjustl('Conformal Volume PEC (+indexmedium)                                     (Line)'))
@@ -758,7 +765,6 @@ contains
          CALL read_limits_nogeom (this%l%layoutnumber,this%l%size, this%sgg, this%fullsize, this%SINPML_fullsize, parser,this%l%MurAfterPML,this%l%mur_exist)
       
          dtantesdecorregir=this%sgg%dt
-         !!!!!corrige el delta de t si es necesario !sgg15 310715 bug distintos sgg%dt !!!!!!!!!!
 
          dxmin=minval(this%sgg%DX)
          dymin=minval(this%sgg%DY)
@@ -770,13 +776,6 @@ contains
          call MPIupdateMin(dtlay,dt)
 #endif
 
-         !!!write(dubuf,*) SEPARADOR//separador//separador
-         !!!call print11(this%l%layoutnumber,dubuf)
-         !!!write(dubuf,*) '--->dt,dxmin,dymin,dzmin,sgg%dt  ',dt,dxmin,dymin,dzmin,sgg%dt
-         !!!call print11(this%l%layoutnumber,dubuf)
-         !!!write(dubuf,*) SEPARADOR//separador//separador
-         !!!call print11(this%l%layoutnumber,dubuf)
-
          if (this%l%forcecfl) then
             this%sgg%dt=dt*this%l%cfl
             write(dubuf,*) SEPARADOR//separador//separador
@@ -786,15 +785,15 @@ contains
             write(dubuf,*) SEPARADOR//separador//separador
             call print11(this%l%layoutnumber,dubuf)
          else
-            if (this%sgg%dt > dt*heurCFL) then
+            if (dtantesdecorregir == 0.0 .or. this%sgg%dt > dt*heurCFL) then
                write(dubuf,*) SEPARADOR//separador//separador
                call print11(this%l%layoutnumber,dubuf)
                write(dubuf,*) 'Automatically correcting dt for stability reasons: '
                call print11(this%l%layoutnumber,dubuf)
-               write(dubuf,*) 'Original dt: ',this%sgg%dt
+               write(dubuf,*) 'Original dt: ', this%sgg%dt
                call print11(this%l%layoutnumber,dubuf)
                this%sgg%dt=dt*heurCFL
-               write(dubuf,*) 'New dt: ',this%sgg%dt
+               write(dubuf,*) 'New dt: ', this%sgg%dt
                call print11(this%l%layoutnumber,dubuf)
                write(dubuf,*) SEPARADOR//separador//separador
                call print11(this%l%layoutnumber,dubuf)

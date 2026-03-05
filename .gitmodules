@@ -1,6 +1,6 @@
 [submodule "external/json-fortran"]
 	path = external/json-fortran
-	url = https://github.com/lmdiazangulo/json-fortran.git
+	url = https://github.com/OpenSEMBA/json-fortran.git
 	ignore = dirty
 
 [submodule "external/fhash"]
@@ -10,7 +10,7 @@
 
 [submodule "external/lapack"]
 	path = external/lapack
-	url = https://github.com/Reference-LAPACK/lapack.git
+	url = https://github.com/OpenSEMBA/lapack.git
 	ignore = dirty
 
 [submodule "external/ngspice"]
@@ -20,8 +20,4 @@
 	
 [submodule "external/googletest"]
 	path = external/googletest
-	url = https://github.com/google/googletest.git
-	
-[submodule "external/VTKFortran"]
-	path = external/VTKFortran
-	url = https://github.com/szaghi/VTKFortran.git
+	url = https://github.com/OpenSEMBA/googletest.git

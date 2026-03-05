@@ -6,7 +6,9 @@ module mtl_mod
     use mtln_types_mod, only: segment_t, multipolar_expansion_t
     use multipolar_expansion_mod, only: getCellCapacitanceOnBox, getCellInductanceOnBox
 #ifdef CompileWithMPI
-    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
+    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, c_vacuum, RKIND_wires
+#else
+    use fdetypes, only: pi, mu_vacuum, c_vacuum, RKIND_wires
 #endif
     implicit none
 #ifdef CompileWithMPI
@@ -59,6 +61,7 @@ module mtl_mod
         procedure :: checkTimeStep
         procedure :: allocatePULMatrices
         procedure :: computeLCParameters
+        procedure :: computeLCParametersFromRadius
         procedure :: initLC
         procedure :: initRG
         procedure :: initDirections
@@ -163,7 +166,7 @@ contains
 
     function mtl_unshielded(lpul, cpul, rpul, gpul, &
                             step_size, name, segments, &
-                            dt, multipolar_expansion, &
+                            dt, multipolar_expansion, radius, &
                             layer_indices, bundle_in_layer, alloc_z) result(res)
         real, intent(in), dimension(:,:) :: lpul, cpul, rpul, gpul
         real, intent(in), dimension(:) :: step_size
@@ -171,7 +174,7 @@ contains
         type(segment_t), dimension(:), allocatable, intent(in) :: segments
         real, intent(in) :: dt
         type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
-
+        real, intent(in) :: radius
         integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
         integer(kind=4), dimension (2), intent(in), optional :: alloc_z
@@ -203,7 +206,9 @@ contains
         call res%allocatePULMatrices()
         if (size(multipolar_expansion) /= 0) then 
             call res%computeLCParameters(multipolar_expansion(1))
-        else
+        else if (radius /= 0.0) then 
+            call res%computeLCParametersFromRadius(radius)
+        else 
             call res%initLC(lpul, cpul)
         end if
         call res%initRG(rpul, gpul)
@@ -259,6 +264,35 @@ contains
             this%cpul(i,:,:) = inv(ppul)
         end do
         this%cpul(size(this%segments)+1, :,:) = this%cpul(size(this%segments), :,:)
+    end subroutine
+
+    subroutine computeLCParametersFromRadius(this, rad) 
+        class(mtl_t) :: this
+        real, intent(in) :: rad
+        REAL (KIND=RKIND_wires) :: invMu
+        integer :: i
+        real :: d1, d2
+        invMu = 1.0/mu_vacuum
+        do i = 1, size(this%segments)
+            d1 = this%segments(i)%d1
+            d2 = this%segments(i)%d2
+            this%lpul(i,:,:) = &
+                (1.0_RKIND_wires / (4.0_RKIND_wires * pi*invMu))*(log((d1**2.0_RKIND_wires +d2**2.0_RKIND_wires )/(4.0_RKIND_wires *rad**2.0_RKIND_wires ))+     &
+                d1/d2*atan(d2/d1) + &
+                d2/d1*atan(d1/d2) + pi*rad**2.0_RKIND_wires /(d2*d1)-3.0_RKIND_wires)
+
+            if ((rad < 0.3_RKIND_wires  *d1).or.(rad < 0.3_RKIND_wires *d2)) then
+                this%lpul(i,:,:) = this%lpul(i,:,:) - 0.57_RKIND_wires/(4.0_RKIND_wires * pi*invMu)
+            endif
+
+            if ((rad > 0.3_RKIND_wires  *d1).or.(rad > 0.3_RKIND_wires *d2)) then
+                this%lpul(i,:,:) =  this%lpul(i,:,:) &
+                /(1.0_RKIND_wires-pi*rad**2.0_RKIND_wires /(d1*d2))
+            endif
+            this%cpul(i,:,:) = 1.0/(this%lpul(i,:,:)*c_vacuum**2)
+        enddo
+        this%cpul(size(this%segments)+1, :,:) = this%cpul(size(this%segments), :,:)
+
     end subroutine
 
 

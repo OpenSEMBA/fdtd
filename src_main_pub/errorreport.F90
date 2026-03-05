@@ -2333,6 +2333,8 @@ end function openfile_mpi
          call WarnErrReport(Trim(buff))
          WRITE (buff,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
          call WarnErrReport(Trim(buff))
+         WRITE (buff,*) 'Is MULTIWIRE ', sgg%Med(j)%Is%Multiwire
+         call WarnErrReport(Trim(buff))
          WRITE (buff,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
          call WarnErrReport(Trim(buff))
          WRITE (buff,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive

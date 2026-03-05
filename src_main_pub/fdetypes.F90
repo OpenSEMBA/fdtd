@@ -203,7 +203,7 @@ module  FDETYPES
    8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
    real (KIND=RKIND), PARAMETER :: MU_VACUUM        =   &
    1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
-
+   real (kind=rkind), parameter :: c_vacuum = 1.0_RKIND/sqrt(EPSILON_VACUUM*MU_VACUUM)
    
    REAL (KIND=RKIND_tiempo) :: dt0 !aqui para OLDrlo accesible en resume pscale
    
@@ -376,6 +376,11 @@ module  FDETYPES
       logical :: repetido,multirabo !marca segmentos que aparecen repetidos en un mismo thin wire!los bundles deberan estar thin-wires distintos
       logical :: orientadoalreves
    end type oriented_point
+
+#ifdef CompileWithMTLN   
+   type  :: Multiwires_t
+   end type
+#endif
 
    type  ::  Wires_t
       REAL (KIND=RKIND_wires)   ::  Radius,R,L,C,P_R,P_L,P_C
@@ -567,6 +572,7 @@ module  FDETYPES
       ConformalPEC , &
       PMC , &
       ThinWire , &
+      Multiwire , &
       SlantedWire, &
       EDispersive , &
       MDispersive , &
@@ -601,13 +607,16 @@ module  FDETYPES
       type (exists_t)            ::  Is
       type (Wires_t)           , dimension( : ), pointer  ::  Wire
       type (SlantedWires_t)    , dimension( : ), pointer  ::  SlantedWire
-      type (PMLbody_t)        , dimension( : ), pointer  ::  PMLbody
+      type (PMLbody_t)         , dimension( : ), pointer  ::  PMLbody
       type (Multiport_t)       , dimension( : ), pointer  ::  Multiport
       type (AnisMultiport_t)   , dimension( : ), pointer  ::  AnisMultiport
       type (DispersiveParams_t), dimension( : ), pointer  ::  EDispersive
       type (DispersiveParams_t), dimension( : ), pointer  ::  MDispersive
       type (Anisotropic_t)     , dimension( : ), pointer  ::  Anisotropic
       type (Lumped_t)          , dimension( : ), pointer  ::  Lumped
+#ifdef CompileWithMTLN
+      type (Multiwires_t)      , dimension( : ), pointer  ::  Multiwire
+#endif
    end type
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

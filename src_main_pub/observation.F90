@@ -1463,7 +1463,7 @@ contains
                         do Efield = iEx, iEz
 
                           if (isWithinBounds(Efield, iii, jjj, kkk)) then
-                            if (isThinWire(Efield, iii, jjj, kkk)) then
+                            if (isThinWire(Efield, iii, jjj, kkk) .or. isMultiwire(Efield, iii, jjj, kkk)) then
                               conta = conta + 1
                             end if
 
@@ -1497,6 +1497,9 @@ contains
                                 init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
 
                   call wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, media%sggMtag, tag_numbers)
+#ifdef CompileWithMTLN
+                  call multiwirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, media%sggMtag, tag_numbers)
+#endif
                 end if
                      !!!
                 do kkk = sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -1655,7 +1658,7 @@ contains
                       if (field /= mapvtk) then
                         do Efield = iEx, iEz
                           if (isWithinBounds(Efield, iii, jjj, kkk)) then
-                            if (isThinWire(Efield, iii, jjj, kkk)) then
+                            if (isThinWire(Efield, iii, jjj, kkk) .or. isMultiwire(Efield, iii, jjj, kkk)) then
                               conta = conta + 1
                               call writeSerialized(ii, i, conta, iii, jjj, kkk, &
                                                    currentType(Efield), &
@@ -1698,6 +1701,10 @@ contains
                   call nodalvtk(sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz,media%sggMtag,tag_numbers, &
                                 init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
                   call wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, media%sggMtag, tag_numbers)
+#ifdef CompileWithMTLN
+                  call multiwirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, media%sggMtag, tag_numbers)
+#endif
+
                 end if
                      !!!
                 do kkk = sgg%Observation(ii)%P(i)%ZI, sgg%Observation(ii)%P(i)%ZE
@@ -2286,6 +2293,13 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
         media = getMedia(field, i, j, k)
         isThinWire = sgg%Med(media)%is%ThinWire
+      end function
+
+      logical function isMultiwire(field, i, j, k)
+        integer(kind=4) :: field, i, j, k
+        integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+        media = getMedia(field, i, j, k)
+        isMultiwire = sgg%Med(media)%is%Multiwire
       end function
 
       logical function isPML(field, i, j, k)
@@ -3039,7 +3053,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                             ! refactoring done. Needs tests
                             do Efield = iEx, iEz
                             if (isWithinBounds(Efield, iii, jjj, kkk)) then
-                              if (isThinWire(Efield, iii, jjj, kkk)) then
+                              if (isThinWire(Efield, iii, jjj, kkk) .or. isMultiwire(Efield, iii, jjj, kkk)) then
                                 conta = conta + 1
                                 jdir = computeJ(EField, iii, jjj, kkk)
                                 output(ii)%item(i)%Serialized%valor_x(Ntimeforvolumic, conta) = merge(jdir, 0.0_RKIND, Efield == iEx)
@@ -3093,6 +3107,10 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                                     init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
 
                       call wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, media%sggMtag, tag_numbers)
+#ifdef CompileWithMTLN
+                      call multiwirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, media%sggMtag, tag_numbers)
+#endif
+
                     end if
                            !!!
                     do KKK = k1, k2
@@ -3211,7 +3229,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                       !saca bul current a lo largo del edge con las sondas icur
                       do Efield = iEx, iEz
                       if (isWithinBounds(Efield, iii, jjj, kkk)) then
-                        if (isThinWire(Efield, iii, jjj, kkk)) then
+                        if (isThinWire(Efield, iii, jjj, kkk) .or. isMultiWire(Efield, iii, jjj, kkk)) then
                           conta = conta + 1
                           jdir = computeJ(EField, iii, jjj, kkk)
 
@@ -3455,6 +3473,13 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         isThinWire = sgg%Med(media)%is%ThinWire
       end function
 
+      logical function isMultiWire(field, i, j, k)
+        integer(kind=4) :: field, i, j, k
+        integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
+        media = getMedia(field, i, j, k)
+        isMultiWire = sgg%Med(media)%is%Multiwire
+      end function
+
       logical function isPML(field, i, j, k)
         integer(kind=4) :: field, i, j, k
         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: media
@@ -3530,6 +3555,12 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
           else
             res = 7
           end if
+        elseif (sgg%Med(media)%is%multiwire) then
+          if (collidesWithNonMultiwire(field, i, j, k)) then
+            res = 13
+          else
+            res = 12
+          end if
         elseif ((media == 0) .or. (sgg%Med(media)%is%Pec)) then
           res = 0.5_RKIND
          else if (sgg%Med(media)%is%ConformalPec) then 
@@ -3575,6 +3606,25 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         idx = assignIndices3(field, i, j, k)
       collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(field,3),idx(1),idx(2),idx(3)))%is%thinWire)
       collidesWithNonThinWire = collidesWithNonThinWire .or. (getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6)))%is%thinWire)
+
+      end function
+
+      logical function collidesWithNonMultiwire(field, i, j, k)
+        integer(kind=4) :: field, i, j, k
+        integer(kind=4) :: idx(6)
+
+        collidesWithNonMultiwire = .false.
+        collidesWithNonMultiwire = collidesWithNonMultiwire .or. (getMedia(1+mod(field,3),i,j,k)/=1 .and. .not.   sgg%med(getMedia(1+mod(field,3),i,j,k))%is%multiwire)
+        collidesWithNonMultiwire = collidesWithNonMultiwire .or. (getMedia(1+mod(field+1,3),i,j,k)/=1 .and. .not. sgg%med(getMedia(1+mod(field+1,3),i,j,k))%is%multiwire)
+          idx = assignIndices1(field, i, j, k)
+        collidesWithNonMultiwire = collidesWithNonMultiwire .or. (getMedia(1+mod(field,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(field,3),idx(1),idx(2),idx(3)))%is%multiwire)
+        collidesWithNonMultiwire = collidesWithNonMultiwire .or. (getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6)))%is%multiwire)
+          idx = assignIndices2(field, i, j, k)
+        collidesWithNonMultiwire = collidesWithNonMultiwire .or. (getMedia(1+mod(field,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(field,3),idx(1),idx(2),idx(3)))%is%multiwire)
+        collidesWithNonMultiwire = collidesWithNonMultiwire .or. (getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6)))%is%multiwire)
+          idx = assignIndices3(field, i, j, k)
+        collidesWithNonMultiwire = collidesWithNonMultiwire .or. (getMedia(1+mod(field,3),idx(1),idx(2),idx(3))/=1 .and. .not.   sgg%med(getMedia(1+mod(field,3),idx(1),idx(2),idx(3)))%is%multiwire)
+        collidesWithNonMultiwire = collidesWithNonMultiwire .or. (getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6))/=1 .and. .not. sgg%med(getMedia(1+mod(field+1,3),idx(4),idx(5),idx(6)))%is%multiwire)
 
       end function
 
@@ -4817,6 +4867,81 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
       return
     end subroutine
 
+#ifdef CompileWithMTLN
+    subroutine multiwireBundlesVTK(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, sggMtag, tag_numbers)
+      type(SGGFDTDINFO), intent(IN)   :: sgg
+      INTEGER (KIND=IKINDMTAG), intent(in) :: sggMtag  & 
+        (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, & 
+         sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, & 
+         sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+
+      type(taglist_t) :: tag_numbers
+      type(output_t), pointer, dimension(:)  ::  output
+      integer(kind=4), intent(IN) :: i, ii, Ntimeforvolumic
+      logical, intent(IN) :: geom, asigNa, init
+      integer(kind=4) :: conta, ni, nj, nk, n, m, r, parallel
+
+      type(mtln_solver_t), pointer, save  ::  mtln_local
+
+
+      if (init) mtln_local => GetSolverPtr()
+      if (.not. allocated(mtln_local%bundles)) return
+      if (geom) then 
+        do n = 1, size(mtln_local%bundles)
+          do m = 1, size(mtln_local%bundles(n)%external_field_segments)
+            conta = conta + 1
+            ni = mtln_local%bundles(n)%external_field_segments(m)%position(1)
+            nj = mtln_local%bundles(n)%external_field_segments(m)%position(2)
+            nk = mtln_local%bundles(n)%external_field_segments(m)%position(3)
+
+            output(ii)%item(i)%Serialized%eI(conta) = ni
+            output(ii)%item(i)%Serialized%eJ(conta) = nj
+            output(ii)%item(i)%Serialized%eK(conta) = nk
+
+            select case (mtln_local%bundles(n)%external_field_segments(m)%direction)
+            case (iEx)
+              output(ii)%item(i)%Serialized%currentType(conta) = iJx
+              output(ii)%item(i)%Serialized%sggMtag(conta) = iabs(tag_numbers%edge%x(ni, nj, nk))
+            case (iEy)
+              output(ii)%item(i)%Serialized%currentType(conta) = iJy
+              output(ii)%item(i)%Serialized%sggMtag(conta) = iabs(tag_numbers%edge%y(ni, nj, nk))
+            case (iEz)
+              output(ii)%item(i)%Serialized%currentType(conta) = iJz
+              output(ii)%item(i)%Serialized%sggMtag(conta) = iabs(tag_numbers%edge%z(ni, nj, nk))
+            end select
+          end do
+        end do
+
+      elseif (asigna) then
+        do n = 1, size(mtln_local%bundles)
+          parallel = 0
+          do r = 1, size(mtln_local%bundles(n)%conductors_in_level)
+            parallel = parallel + mtln_local%bundles(n)%conductors_in_level(r)
+          end do
+          do m = 1, size(mtln_local%bundles(n)%external_field_segments)
+            conta = conta + 1
+            if (m == 1 .or. m == size(mtln_local%bundles(n)%external_field_segments)) then 
+              output(ii)%item(i)%Serialized%valor(Ntimeforvolumic, conta) = 14
+            ! elseif (Hwireslocal%CurrentSegment(n)%IsEnd_norLeft_norRight) then
+            !   output(ii)%item(i)%Serialized%valor(Ntimeforvolumic, conta) = 11
+            else
+              output(ii)%item(i)%Serialized%valor(Ntimeforvolumic, conta) = 60 + parallel
+            end if
+          end do
+
+        end do
+      else
+        do n = 1, size(mtln_local%bundles)
+          do m = 1, size(mtln_local%bundles(n)%external_field_segments)
+            conta = conta + 1
+          end do
+        end do
+      end if
+    end subroutine
+
+#endif
+
+
     subroutine wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, sggMtag, tag_numbers)
 
       type(SGGFDTDINFO), intent(IN)   :: sgg
@@ -4825,7 +4950,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
       type(output_t), pointer, dimension(:)  ::  output
       integer(kind=4), intent(IN) :: i, ii, Ntimeforvolumic
       logical, intent(IN) :: geom, asigNa, init
-      integer(kind=4) conta, ni, nj, nk, n
+      integer(kind=4) :: conta, ni, nj, nk, n
       character(len=*), INTENT(in) :: wiresflavor
       integer(kind=4), SAVE :: MINIMED
 
