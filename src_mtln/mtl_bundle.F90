@@ -16,9 +16,13 @@ module mtl_bundle_mod
         real, allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
         integer  :: number_of_conductors = 0, number_of_divisions = 0
         real, dimension(:), allocatable :: step_size
-        real, allocatable, dimension(:,:) :: v, i, e_L
+        real, allocatable, dimension(:,:) :: v, i
+        real, allocatable, dimension(:,:) :: v_source, i_source, e_L
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         real :: time = 0.0, dt = 1e10
+
+        ! type homogen
+        type(bundle_source_t), allocatable, dimension(:) :: sources
 
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
@@ -42,7 +46,7 @@ module mtl_bundle_mod
         procedure :: addProbe
         procedure :: updateLRTerms
         procedure :: updateCGTerms
-
+        procedure :: collectAndInitSources
         procedure :: updateSources => bundle_updateSources
         procedure :: advanceVoltage => bundle_advanceVoltage
         procedure :: advanceCurrent => bundle_advanceCurrent
@@ -91,6 +95,8 @@ contains
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
 
+        call res%collectAndInitSources(levels)
+
 #ifdef CompileWithMPI
         res%bundle_in_layer = levels(1)%lines(1)%bundle_in_layer
         res%layer_indices = levels(1)%lines(1)%layer_indices
@@ -110,6 +116,9 @@ contains
         allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
         allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0)
+
+        allocate(this%v_source(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
+        allocate(this%i_source(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         
         allocate(this%i_term(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
         allocate(this%v_diff(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
@@ -197,6 +206,30 @@ contains
         end do
 
     end subroutine
+
+    subroutine collectAndInitSources(this, levels)
+        class(mtl_bundle_t) :: this
+        type(transmission_line_level_t), dimension(:), intent(in) :: levels
+        integer :: i, j, k, n_sources
+        n_sources = 0
+        do i = 1, size(levels)
+            do j = 1, size(levels(i)%lines)
+                n_sources = n_sources + size(levels(i)%lines(j)%sources)
+            end do
+        end do
+        allocate(this%sources(n_sources))
+        n_sources = 1
+        do i = 1, size(levels)
+            do j = 1, size(levels(i)%lines)
+                do k = 1, size(levels(i)%lines(j)%sources)
+                    this%sources(n_sources) = levels(i)%lines(j)%sources(k)
+                    n_sources = n_sources + 1
+                end do
+            end do
+        end do
+
+    end subroutine
+
 
     function buildExternalFieldSegments(levels) result(res)
         type(transmission_line_level_t), dimension(:), intent(in) :: levels
@@ -336,7 +369,39 @@ contains
     subroutine bundle_updateSources(this, time, dt)
         class(mtl_bundle_t) ::this
         real, intent(in) :: time, dt
+        real :: val
+        integer :: i
         !TODO
+        do i = 1, size(this%sources) 
+            val = interpolate(this%sources(i), time)
+            if (this%sources(i)%type == SOURCE_TYPE_VOLTAGE) then 
+                this%v_source(this%sources(i)%conductor, this%sources(i)%index) = val
+            else if (this%sources(i)%type == SOURCE_TYPE_CURRENT) then 
+                this%i_source(this%sources(i)%conductor, this%sources(i)%index) = val
+            end if
+        end do
+    ! contains 
+    !     real function interpolate(source, time) result(res)
+    !         class(source_t) :: this
+    !         real :: time, dt, x1,x2, y1, y2
+    !         integer :: index
+    !         real, dimension(:), allocatable :: timediff
+    !         timediff = this%time - time + dt
+    !         index = maxloc(timediff, 1, (timediff) <= 0)
+    !         if (index == 0) index = 1
+    !         x1 = this%time(index)
+    !         y1 = this%value(index)
+    !         if (index+1 > size(this%time)) then
+    !             x2 = x1
+    !             y2 = y1
+    !         else 
+    !             x2 = this%time(index+1)
+    !             y2 = this%value(index+1)
+    !         end if
+                    
+    !         res = (time*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
+    !     end function
+    
     end subroutine
 
     subroutine bundle_advanceVoltage(this)
@@ -368,7 +433,8 @@ contains
         do i = 1, this%number_of_divisions 
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
                           matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
-                                                      this%e_L(:,i) * this%step_size(i)) - &
+                                                      this%e_L(:,i) * this%step_size(i) - &
+                                                      this%v_source(:,i)) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
         !TODO - revisar

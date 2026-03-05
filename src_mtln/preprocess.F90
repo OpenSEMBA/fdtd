@@ -70,11 +70,14 @@ contains
         call mpi_barrier(subcomm_mpi, ierr)
     
 #endif
+
+        ! Group cables into bundles
         cable_bundles = buildCableBundles(parsed%cables)
 
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
+        ! Create mtl objets from cables
         if (present(alloc)) then 
             line_bundles = buildLineBundles(cable_bundles, res%dt, alloc)
         else 
@@ -84,6 +87,7 @@ contains
 #ifdef CompileWithMPI
         call mpi_barrier(subcomm_mpi, ierr)
 #endif
+        ! create mlt_bundles from mtl objects
         res%bundles = res%buildMTLBundles(line_bundles)
         if (size(res%bundles) == 0) then 
             return

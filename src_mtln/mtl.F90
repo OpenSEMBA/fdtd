@@ -50,7 +50,7 @@ module mtl_mod
         type(transfer_impedance_per_meter_t), dimension(:), allocatable :: initial_connector_transfer_impedances, end_connector_transfer_impedances
         type(segment_t), dimension(:), allocatable :: segments
 
-        ! type(interior_source_t), dimension(:,:), allocatable :: sources
+        ! type(tl_source_t), dimension(:), allocatable :: sources
 
 
 #ifdef CompileWithMPI
