@@ -1,30 +1,3 @@
-# The `smbjson` parser module
-
-This module allows to read the [FDTD-JSON format](#the-fdtd-json-format) and parse it into the semba-fdtd data structures.
-
-## Compilation and testing
-
-### Compilation with GNU Fortran (Linux)
-
-Assuming `gfortran` and `cmake` are accessible from path, this module can be compiled from the project main directory run
-
-    cmake -S . -B <BUILD_DIR> -G Ninja
-    cmake --build <BUILD_DIR> -j
-
-### Compilation with Intel compilers (Windows)
-
-Use the Intel provided scripts to set environment variables and use same command as for `gfortran`.
-
-### Compilation with NVIDIA Fortran compiler
-
-Not supported. Tested to work with `-O0` optimizations. Higher optimizations produce SEGFAULTs.
-
-### Testing
-
-This project uses the googletest. Once build, from project root folder run,
-
-    <PATH_TO_BUILD>/bin/smbjson_tests
-
 # The FDTD-JSON format
 
 This format aims to provide a way to input data for a full FDTD simulation.
@@ -57,7 +30,7 @@ The following entries are shared by several FDTD-JSON objects and have a common 
 
 This object must always be present and contains general information regarding the solver. It must contain the following entries:
 
-+ `<timeStep>`: A real number indicating the time step used by the solver, in seconds. 
++ `[timeStep]`: A real number indicating the time step used by the solver, in seconds. If not specified, one will be automatically computed ensuring stability.
 + `<numberOfSteps>`: An integer for the number of steps which the solver will iterate.
 
 Additionally, it may contain the following optional entry:

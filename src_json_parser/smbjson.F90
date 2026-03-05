@@ -362,7 +362,7 @@ contains
    function readGeneral(this) result (res)
       class(parser_t) :: this
       type(NFDEGeneral) :: res
-      res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
+      res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
@@ -2554,7 +2554,7 @@ contains
       end block
 
 
-      mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP)
+      mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
       allocate (mtln_res%cables(size(cables)))
@@ -3928,7 +3928,7 @@ contains
       logical, intent(in) :: defaultPresent
       character(len=BUFSIZE) :: errorMsg
       if (.not. found .and. .not. defaultPresent) then
-         write(errorMsg,*) 'ERROR expecting a value at: '//path
+         write(errorMsg,*) 'ERROR expecting a value at: '//path 
          call WarnErrReport(errorMsg, .true.)
       end if
    end subroutine
