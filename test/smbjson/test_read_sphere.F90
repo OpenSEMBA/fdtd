@@ -61,7 +61,7 @@ contains
       ex%pecRegs%nSurfs = 1
       ex%pecRegs%nSurfs_max = 1
       allocate(ex%pecRegs%Surfs(1))
-      ! -- specific surfs not included DO NOT use comparison --
+      ! -- specific surfs not included do NOT use comparison --
 
       ! Expected sources.
       allocate(ex%plnSrc%collection(1))

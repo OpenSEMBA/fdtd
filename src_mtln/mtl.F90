@@ -36,7 +36,7 @@ module mtl_mod
 #endif
 
     type, public :: mtl_t
-        character (len=:), allocatable :: name
+        character(len=:), allocatable :: name
         integer  :: number_of_conductors
         real, allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
         real, allocatable, dimension(:) :: step_size
@@ -44,7 +44,7 @@ module mtl_mod
         type(dispersive_lumped_t) :: lumped_elements
         real :: time = 0.0, dt = 0.0
 
-        character (len=:), allocatable :: parent_name
+        character(len=:), allocatable :: parent_name
         integer :: conductor_in_parent
         type(transfer_impedance_per_meter_t) :: transfer_impedance
         type(transfer_impedance_per_meter_t), dimension(:), allocatable :: initial_connector_transfer_impedances, end_connector_transfer_impedances
@@ -52,7 +52,7 @@ module mtl_mod
 
 #ifdef CompileWithMPI
         type(comm_t) :: mpi_comm
-        integer (kind=4), allocatable, dimension(:,:) :: layer_indices
+        integer(kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .true.
 #endif
 
@@ -122,16 +122,16 @@ contains
         integer, intent(in) :: conductor_in_parent
         type(transfer_impedance_per_meter_t), intent(in) :: transfer_impedance
 
-        integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
+        integer(kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
-        integer(kind=4), dimension (2), intent(in), optional :: alloc_z
+        integer(kind=4), dimension(2), intent(in), optional :: alloc_z
         
         type(mtl_t) :: res
 
         real :: max_dt
 
 #ifdef CompileWithMPI
-        integer (kind=4) :: sizeof, ierr
+        integer(kind=4) :: sizeof, ierr
         if (present(layer_indices)) then 
             call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
             call res%initCommunicators(alloc_z)
@@ -175,14 +175,14 @@ contains
         real, intent(in) :: dt
         type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
         real, intent(in) :: radius
-        integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
+        integer(kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
-        integer(kind=4), dimension (2), intent(in), optional :: alloc_z
+        integer(kind=4), dimension(2), intent(in), optional :: alloc_z
         
         type(mtl_t) :: res
         real :: max_dt
 #ifdef CompileWithMPI
-        integer (kind=4) :: sizeof, ierr
+        integer(kind=4) :: sizeof, ierr
         if (present(layer_indices)) then 
             call res%initStepSizeAndFieldSegments(step_size, segments, layer_indices)
             call res%initCommunicators(alloc_z)
@@ -269,7 +269,7 @@ contains
     subroutine computeLCParametersFromRadius(this, rad) 
         class(mtl_t) :: this
         real, intent(in) :: rad
-        REAL (KIND=RKIND_wires) :: invMu
+        real(kind=RKIND_wires) :: invMu
         integer :: i
         real :: d1, d2
         invMu = 1.0/mu_vacuum
@@ -359,7 +359,7 @@ contains
     subroutine setTimeStep(this, numberOfSteps, finalTime)
         class(mtl_t) :: this
         integer, intent(in) :: numberOfSteps
-        real, intent (in) ::finalTime
+        real, intent(in) ::finalTime
         this%dt = finalTime/numberOfSteps
     end subroutine
 
@@ -370,7 +370,7 @@ contains
         class(mtl_t) :: this
         real, intent(in), dimension(:) :: step_size
         type(segment_t), intent(in), dimension(:) :: segments
-        integer (kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
+        integer(kind=4), allocatable, dimension(:,:), intent(in) :: layer_indices
         integer :: n, j
         n =  0
         do j = 1, size(layer_indices, 1)
@@ -399,10 +399,10 @@ contains
 
     subroutine initCommunicators(this, alloc_z)
         class(mtl_t) :: this
-        integer (kind =4), dimension(2) :: alloc_z
+        integer(kind =4), dimension(2) :: alloc_z
         integer :: j, n, z
         integer :: rank, ierr
-        integer (kind =4) :: z_init, z_end
+        integer(kind =4) :: z_init, z_end
         type(communicator_t), dimension(:), allocatable :: aux_comm
 
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)

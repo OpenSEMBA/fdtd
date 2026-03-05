@@ -1,42 +1,35 @@
-
-    
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  Nodal  Feeding modules
-!  Creation date Date :  June0, 21, 2011
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 module nodalsources
 
    use fdetypes
-   USE REPORT
+   use REPORT
 
-   IMPLICIT NONE
+   implicit none
    private
 
    type XYZlimit_t_singlescaled
-      integer (kind=4)  :: XI,XE,YI,YE,ZI,ZE
-      REAL (KIND=RKIND)   :: amplitude
+      integer(kind=4) :: XI,XE,YI,YE,ZI,ZE
+      real(kind=RKIND) :: amplitude
    end type
 
 
-   type  ::  NodalLocal_t
-      REAL (KIND=RKIND), pointer, dimension (:)  ::  evol
-      REAL (KIND=RKIND)   :: deltaevol
-      integer (kind=4) :: numus
-      type (XYZlimit_t_singlescaled)   :: punto
+   type  :: NodalLocal_t
+      real(kind=RKIND), pointer, dimension(:) :: evol
+      real(kind=RKIND) :: deltaevol
+      integer(kind=4) :: numus
+      type(XYZlimit_t_singlescaled) :: punto
       logical :: IsInitialValue
    end type NodalLocal_t
 
 
    type :: nodsou
-      integer (kind=4) :: NumHard = 0 , NumSoft = 0
-      type (NodalLocal_t), pointer, dimension(:) :: nodHard,nodSoft
+      integer(kind=4) :: NumHard = 0 , NumSoft = 0
+      type(NodalLocal_t), pointer, dimension(:) :: nodHard,nodSoft
    end type
 
    !!!!!variables locales
 
-   type (nodsou), save, target :: Nodal_Ex,Nodal_Ey,Nodal_Ez
-   type (nodsou), save, target :: Nodal_Hx,Nodal_Hy,Nodal_Hz
+   type(nodsou), save, target :: Nodal_Ex,Nodal_Ey,Nodal_Ez
+   type(nodsou), save, target :: Nodal_Hx,Nodal_Hy,Nodal_Hz
 
    public :: initNodalSources,AdvanceNodalE,AdvanceNodalH,DestroyNodal,nodsou,getnodal
 
@@ -50,20 +43,20 @@ contains
    !!! Initializes Nodal Source data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitnodalSources(sgg,layoutnumber,NumNodalSources,sggNodalSource,sggSweep,ThereAreNodalE,ThereAreNodalH)
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
       !!!
-      integer, intent (in) :: NumNodalSources
-      type (NodalSource_t), dimension(1:NumNodalSources),intent(in)           ::  sggNodalSource
+      integer, intent(in) :: NumNodalSources
+      type(NodalSource_t), dimension(1:NumNodalSources),intent(in) :: sggNodalSource
 
-      integer (kind=4):: layoutnumber,j,i
-      logical, intent(out)  ::  ThereArenodalE,ThereArenodalH
+      integer(kind=4):: layoutnumber,j,i
+      logical, intent(out) :: ThereArenodalE,ThereArenodalH
       integer :: numNodalSoft_Ex,numNodalSoft_Ey,numNodalSoft_Ez, &
       numNodalSoft_Hx,numNodalSoft_Hy,numNodalSoft_Hz, &
       numNodalHard_Ex,numNodalHard_Ey,numNodalHard_Ez, &
       numNodalHard_Hx,numNodalHard_Hy,numNodalHard_Hz
 
-      real (kind=rkind) :: amplit
-      type (XYZlimit_t), dimension (1:6)    ::  sggSweep
+      real(kind=rkind) :: amplit
+      type(XYZlimit_t), dimension(1:6) :: sggSweep
 
       !!!
 
@@ -138,25 +131,25 @@ contains
 
       if (NumNodalSoft_Ex+NumNodalSoft_Ey+NumNodalSoft_Ez /= 0) then
          ThereArenodalE =.true.
-         ALLOCATE (Nodal_Ex%nodSoft(1:numNodalSoft_Ex), &
+        allocate(Nodal_Ex%nodSoft(1:numNodalSoft_Ex), &
          Nodal_Ey%nodSoft(1:numNodalSoft_Ey), &
          Nodal_Ez%nodSoft(1:numNodalSoft_Ez))
       endif
       if (NumNodalHard_Ex+NumNodalHard_Ey+NumNodalHard_Ez /= 0) then
          ThereArenodalE =.true.
-         ALLOCATE (Nodal_Ex%nodHard(1:numNodalHard_Ex), &
+        allocate(Nodal_Ex%nodHard(1:numNodalHard_Ex), &
          Nodal_Ey%nodHard(1:numNodalHard_Ey), &
          Nodal_Ez%nodHard(1:numNodalHard_Ez))
       endif
       if (NumNodalSoft_Hx+NumNodalSoft_Hy+NumNodalSoft_Hz /= 0) then
          ThereArenodalH =.true.
-         ALLOCATE (Nodal_Hx%nodSoft(1:numNodalSoft_Hx), &
+        allocate(Nodal_Hx%nodSoft(1:numNodalSoft_Hx), &
          Nodal_Hy%nodSoft(1:numNodalSoft_Hy), &
          Nodal_Hz%nodSoft(1:numNodalSoft_Hz))
       endif
       if (NumNodalHard_Hx+NumNodalHard_Hy+NumNodalHard_Hz /= 0) then
          ThereArenodalH =.true.
-         ALLOCATE (Nodal_Hx%nodHard(1:numNodalHard_Hx), &
+        allocate(Nodal_Hx%nodHard(1:numNodalHard_Hx), &
          Nodal_Hy%nodHard(1:numNodalHard_Hy), &
          Nodal_Hz%nodHard(1:numNodalHard_Hz))
       endif
@@ -220,12 +213,12 @@ contains
 
       subroutine createnodal(layoutnumber,dummy,sggdummy,sggSweep,index,amplit)
 
-         type (nodsou), intent (inout) :: dummy
-         type (NodalSource_t), intent (in), target :: sggdummy
-         real (kind=rkind), intent(in) :: amplit
-         integer (kind=4), intent(in) :: index
-         integer (kind=4) :: layoutnumber,i,j,k
-         type (XYZlimit_t)    ::  sggSweep
+         type(nodsou), intent (inout) :: dummy
+         type(NodalSource_t), intent(in), target :: sggdummy
+         real(kind=rkind), intent(in) :: amplit
+         integer(kind=4), intent(in) :: index
+         integer(kind=4) :: layoutnumber,i,j,k
+         type(XYZlimit_t) :: sggSweep
 
          character(len=BUFSIZE) :: buff
          
@@ -290,12 +283,12 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Evolution function to interpolate from the input file
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   REAL (KIND=RKIND) function evolucion(t,dummy)
-      REAL (KIND=RKIND) t,deltaevol
-      integer (kind=4)  ::  numus
-      integer (kind=8)  ::  nprev
-      REAL (KIND=RKIND), pointer, dimension ( : )  ::  evol
-      type (NodalLocal_t), intent (in) :: dummy
+   real(kind=RKIND) function evolucion(t,dummy)
+      real(kind=RKIND) t,deltaevol
+      integer(kind=4) :: numus
+      integer(kind=8) :: nprev
+      real(kind=RKIND), pointer, dimension( : ) :: evol
+      type(NodalLocal_t), intent(in) :: dummy
 
       if (dummy%IsInitialValue) then
         !!!evolucion=1.0_RKIND
@@ -338,32 +331,32 @@ contains
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine DestroyNodal(sgg)
-      type (SGGFDTDINFO), intent(INOUT)         ::  sgg
+      type(SGGFDTDINFO), intent(INOUT) :: sgg
 
 
       if (Nodal_Ex%NumSoft+Nodal_Ey%NumSoft+Nodal_Ez%NumSoft /= 0) then
-         if (associated(Nodal_Ex%nodSoft)) deALLOCATE (Nodal_Ex%nodSoft)
-         if (associated(Nodal_Ey%nodSoft)) deALLOCATE (Nodal_Ey%nodSoft)
-         if (associated(Nodal_Ez%nodSoft)) deALLOCATE (Nodal_Ez%nodSoft)
+         if (associated(Nodal_Ex%nodSoft)) deallocate(Nodal_Ex%nodSoft)
+         if (associated(Nodal_Ey%nodSoft)) deallocate(Nodal_Ey%nodSoft)
+         if (associated(Nodal_Ez%nodSoft)) deallocate(Nodal_Ez%nodSoft)
       endif
       if (Nodal_Ex%NumHard+Nodal_Ey%NumHard+Nodal_Ez%NumHard /= 0) then
-         if (associated(Nodal_Ex%nodHard)) deALLOCATE (Nodal_Ex%nodHard)
-         if (associated(Nodal_Ey%nodHard)) deALLOCATE (Nodal_Ey%nodHard)
-         if (associated(Nodal_Ez%nodHard)) deALLOCATE (Nodal_Ez%nodHard)
+         if (associated(Nodal_Ex%nodHard)) deallocate(Nodal_Ex%nodHard)
+         if (associated(Nodal_Ey%nodHard)) deallocate(Nodal_Ey%nodHard)
+         if (associated(Nodal_Ez%nodHard)) deallocate(Nodal_Ez%nodHard)
       endif
       if (Nodal_Hx%NumSoft+Nodal_Hy%NumSoft+Nodal_Hz%NumSoft /= 0) then
-         if (associated(Nodal_Hx%nodSoft)) deALLOCATE (Nodal_Hx%nodSoft)
-         if (associated(Nodal_Hy%nodSoft)) deALLOCATE (Nodal_Hy%nodSoft)
-         if (associated(Nodal_Hz%nodSoft)) deALLOCATE (Nodal_Hz%nodSoft)
+         if (associated(Nodal_Hx%nodSoft)) deallocate(Nodal_Hx%nodSoft)
+         if (associated(Nodal_Hy%nodSoft)) deallocate(Nodal_Hy%nodSoft)
+         if (associated(Nodal_Hz%nodSoft)) deallocate(Nodal_Hz%nodSoft)
       endif
       if (Nodal_Hx%NumHard+Nodal_Hy%NumHard+Nodal_Hz%NumHard /= 0) then
-         if (associated(Nodal_Hx%nodHard)) deALLOCATE (Nodal_Hx%nodHard)
-         if (associated(Nodal_Hy%nodHard)) deALLOCATE (Nodal_Hy%nodHard)
-         if (associated(Nodal_Hz%nodHard)) deALLOCATE (Nodal_Hz%nodHard)
+         if (associated(Nodal_Hx%nodHard)) deallocate(Nodal_Hx%nodHard)
+         if (associated(Nodal_Hy%nodHard)) deallocate(Nodal_Hy%nodHard)
+         if (associated(Nodal_Hz%nodHard)) deallocate(Nodal_Hz%nodHard)
       endif
 
 
-      if (associated(sgg%NodalSource)) deallocate (sgg%NodalSource)
+      if (associated(sgg%NodalSource)) deallocate(sgg%NodalSource)
    end subroutine DestroyNodal
 
 
@@ -371,29 +364,29 @@ contains
    !**************************************************************************************************
    subroutine AdvancenodalE(sgg,sggMiEx, sggMiEy, sggMiEz,NumMedia,timeinstant, b, g2,Idxh,Idyh,Idzh,Ex,Ey,Ez,simu_devia)
       !---------------------------> inputs <----------------------------------------------------------
-      type (SGGFDTDINFO), intent(IN)     , target  ::  sgg
+      type(SGGFDTDINFO), intent(in)     , target  :: sgg
       logical, intent(in) :: simu_devia
-      integer, intent( IN)  ::  NumMedia, timeinstant
+      integer, intent( IN) :: NumMedia, timeinstant
       !!!
-      type( bounds_t), intent( IN)  ::  b
+      type( bounds_t), intent( IN) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent( IN)  ::  sggMiEx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN)  ::  sggMiEy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN)  ::  sggMiEz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEx%NX-1, 0 :  b%sggMiEx%NY-1, 0 :  b%sggMiEx%NZ-1), intent( IN) :: sggMiEx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEy%NX-1, 0 :  b%sggMiEy%NY-1, 0 :  b%sggMiEy%NZ-1), intent( IN) :: sggMiEy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiEz%NX-1, 0 :  b%sggMiEz%NY-1, 0 :  b%sggMiEz%NZ-1), intent( IN) :: sggMiEz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  g2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: g2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  Idxh
-      real (kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  Idyh
-      real (kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  Idzh
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN) :: Idxh
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: Idyh
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: Idzh
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( INOUT) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( INOUT) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( INOUT) :: Ez
 
       !---------------------------> variables locales <-----------------------------------------------
-      real (kind = RKIND)  ::  timei,amp
-      integer  ::  i, j, k, i_m, j_m, k_m,ii,medio
+      real(kind = RKIND) :: timei,amp
+      integer  :: i, j, k, i_m, j_m, k_m,ii,medio
       !---------------------------> empieza AdvancenodalE <---------------------------------------
 
       !!!
@@ -559,30 +552,30 @@ contains
    !**************************************************************************************************
    subroutine AdvancenodalH(sgg,sggMiHx, sggMiHy, sggMiHz,NumMedia,timeinstant, b,gm2,Idxe,Idye,Idze,Hx,Hy,Hz,simu_devia)
       !---------------------------> inputs <----------------------------------------------------------
-      type (SGGFDTDINFO), intent(IN)     , target  ::  sgg
+      type(SGGFDTDINFO), intent(in)     , target  :: sgg
       logical , intent(in) :: simu_devia !ojo untested con simu_devia este tipo de fuentes
-      integer, intent( IN)  ::  NumMedia, timeinstant
+      integer, intent( IN) :: NumMedia, timeinstant
       !!!
-      type( bounds_t), intent( IN)  ::  b
+      type( bounds_t), intent( IN) :: b
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN)  ::  sggMiHx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN)  ::  sggMiHy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN)  ::  sggMiHz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN) :: sggMiHx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN) :: sggMiHy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN) :: sggMiHz
       !--->
-      real (kind = RKIND), dimension( 0 :  NumMedia), intent( IN)  ::  gm2
+      real(kind = RKIND), dimension( 0 :  NumMedia), intent( IN) :: gm2
       !--->
-      real (kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  Idxe
-      real (kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  Idye
-      real (kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  Idze
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN) :: Idxe
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: Idye
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: Idze
 
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      real (kind = RKIND)  ::  timei,amp
-      integer (kind=4)  ::  i, j, k, i_m, j_m, k_m,ii,medio
-      real (kind = RKIND)  ::  GM2_1
+      real(kind = RKIND) :: timei,amp
+      integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii,medio
+      real(kind = RKIND) :: GM2_1
       !!!
       if (simu_devia) then
           print *,'Devia H nodal/field sources untested. Aborting'
@@ -724,8 +717,8 @@ contains
 
    subroutine getnodal(rNodal_Ex,rNodal_Ey,rNodal_Ez,rNodal_Hx,rNodal_Hy,rNodal_Hz)
 
-      type (nodsou), pointer :: rNodal_Ex ,rNodal_Ey ,rNodal_Ez
-      type (nodsou), pointer :: rNodal_Hx ,rNodal_Hy ,rNodal_Hz
+      type(nodsou), pointer :: rNodal_Ex ,rNodal_Ey ,rNodal_Ez
+      type(nodsou), pointer :: rNodal_Hx ,rNodal_Hy ,rNodal_Hz
 
       rNodal_Ex  => Nodal_Ex
       rNodal_Ey  => Nodal_Ey
@@ -738,5 +731,5 @@ contains
       return
    end subroutine
 
-END MODULE nodalsources
+end module nodalsources
  
