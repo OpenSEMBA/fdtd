@@ -100,7 +100,7 @@ jobs:
         SEMBA_FDTD_ENABLE_MPI: ${{ matrix.mpi }}
         SEMBA_FDTD_ENABLE_MTLN: ${{ matrix.mtln }}
         SEMBA_FDTD_ENABLE_HDF: ${{ matrix.hdf }}
-      run: python -m pytest test/
+      run: python -m pytest test/ --durations=20
         
        
       
