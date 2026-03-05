@@ -20,14 +20,14 @@ module PMLbodies
    private
    !structures needed by the PMLbody
 
-   TYPE  ::  BerPML__t
+   type  ::  BerPML__t
       REAL (KIND=RKIND), pointer ::  field,Plus,Minu
       REAL (KIND=RKIND)          ::  gx2,P_be,P_ce,Psi,transversalDelta,del,posi
       integer (kind=4)  ::  minTotal,maxTotal
-   END TYPE BerPML__t
+   END type BerPML__t
 
 
-   TYPE  ::  berpml_t
+   type  ::  berpml_t
       integer (kind=4)   ::   NumNodes,orient
       type (BerPML__t), allocatable, dimension (:) :: nodes
    end type berpml_t

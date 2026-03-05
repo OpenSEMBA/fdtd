@@ -32,7 +32,7 @@ CONTAINS
       INTEGER (KIND=4) ::  ierr,  sizeofvalores,COMPO
       complex( kind = CKIND), dimension( :, :, :, :,: ), allocatable  :: valor3DComplex !freqdomain probes
       !
-      TYPE (output_t), POINTER, DIMENSION (:) :: output
+      type (output_t), POINTER, DIMENSION (:) :: output
       INTEGER (KIND=4) :: iroot
       integer (KIND=4) :: myunit
       !
@@ -524,7 +524,7 @@ CONTAINS
 
       type (SGGFDTDINFO), intent(IN)        :: sgg
       INTEGER (KIND=4), INTENT (IN) :: layoutnumber, size
-      TYPE (output_t), POINTER, DIMENSION (:) :: output
+      type (output_t), POINTER, DIMENSION (:) :: output
       INTEGER (KIND=4) :: ii
       logical :: lexis,somethingdone
       character(len=BUFSIZE) :: buff

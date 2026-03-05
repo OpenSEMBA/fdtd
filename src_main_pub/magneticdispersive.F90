@@ -30,11 +30,11 @@ module Mdispersives
       Complex (Kind=CKIND), pointer, dimension ( : )   ::  Current
    end type
 
-   TYPE Mdispersive_t
+   type Mdispersive_t
       integer (kind=4)  ::  indexmed,numnodesHx,numnodesHy,numnodesHz,numpolres11
       Complex (Kind=CKIND), pointer, dimension ( : )      ::  Beta,Kappa,GM3
       type (field_t), pointer, dimension ( : )      ::   NodesHx,NodesHy,NodesHz
-   END TYPE Mdispersive_t
+   END type Mdispersive_t
 
 
    type  Mdispersive_t2

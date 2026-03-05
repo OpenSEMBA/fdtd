@@ -50,7 +50,7 @@ module SEMBA_FDTD_mod
 
    type, public :: semba_fdtd_t 
       type (entrada_t) :: l
-      TYPE (tiempo_t) :: time_comienzo
+      type (tiempo_t) :: time_comienzo
       real (KIND=8) time_desdelanzamiento
       type(media_matrices_t) :: media
       type (SGGFDTDINFO)   :: sgg
@@ -86,7 +86,7 @@ contains
       logical :: dummylog,l_auxinput, l_auxoutput, ThereArethinslots
       logical :: hayinput
       logical :: lexis
-      logical :: newrotate !300124 tiramos con el rotador antiguo
+      logical :: newrotate
 
       character (LEN=BUFSIZE) ::  f= ' ', chain = ' ', chain3 = ' ',chain4 = ' ', chaindummy= ' '
       character (LEN=BUFSIZE_LONG) :: slices = ' '
@@ -108,19 +108,19 @@ contains
          
 #ifdef CompileWithMPI
       LOGICAL :: fatalerror_aux
-      TYPE (XYZlimit_t), DIMENSION (1:6) :: tempalloc
+      type (XYZlimit_t), DIMENSION (1:6) :: tempalloc
 #endif
 
-   integer (kind=4) :: conf_err
+      integer (kind=4) :: conf_err
 #ifdef CompileWithConformal
       type (conf_conflicts_t), pointer  :: conf_conflicts
 #endif
       call initEntrada(this%l) 
-      newrotate=.false.       !!ojo tocar luego                     
 #ifdef CompileWithSMBJSON
-   newrotate=.true.
+      newrotate=.false.
+#else
+      newrotate=.true.
 #endif
-   !!200918 !!!si se lanza con -pscal se overridea esto
       this%eps0= 8.8541878176203898505365630317107502606083701665994498081024171524053950954599821142852891607182008932e-12
       this%mu0 = 1.2566370614359172953850573533118011536788677597500423283899778369231265625144835994512139301368468271e-6
       this%cluz=1.0_RKIND/sqrt(this%eps0*this%mu0)
@@ -990,7 +990,7 @@ contains
       character(LEN=BUFSIZE), intent(in) :: filename, extension
       integer (kind=4) :: mpi_t_linea_t,longitud4
       integer(KIND=8) :: rawInfoBuffer, numeroLineasFichero, i8, longitud8
-      TYPE (t_NFDE_FILE), POINTER :: rawFileInfo
+      type (t_NFDE_FILE), POINTER :: rawFileInfo
 
       write (dubuf,*) 'INIT Reading file '//trim (adjustl(this%whoami))//' ', trim (adjustl(filename))
 
@@ -1102,11 +1102,11 @@ contains
    end function
 
    subroutine readLines(rInfo, filename, unit)
-      TYPE (t_NFDE_FILE), POINTER :: rInfo
+      type (t_NFDE_FILE), POINTER :: rInfo
       CHARACTER (LEN=*), INTENT (IN) :: filename
       INTEGER (KIND=4), intent(in) :: unit
 
-      TYPE (t_linea), POINTER :: linea
+      type (t_linea), POINTER :: linea
       CHARACTER (LEN=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
@@ -1129,12 +1129,12 @@ contains
    end subroutine
 
    subroutine readLinesFromJSONOneLiner(rInfo, filename, unit)
-      TYPE (t_NFDE_FILE), POINTER :: rInfo
+      type (t_NFDE_FILE), POINTER :: rInfo
       CHARACTER (LEN=*), INTENT (IN) :: filename
       INTEGER (KIND=4), intent(in) :: unit
 
       integer (kind=4) :: io, size_read, pos, d
-      TYPE (t_linea), POINTER :: linea
+      type (t_linea), POINTER :: linea
       CHARACTER (LEN=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
@@ -1155,9 +1155,9 @@ contains
 
    subroutine carga_raw_info (rawFileInfo, filename, extension)
       CHARACTER (LEN=*), INTENT (IN) :: filename, extension
-      TYPE (t_NFDE_FILE), POINTER :: rawFileInfo
+      type (t_NFDE_FILE), POINTER :: rawFileInfo
       
-      TYPE (t_linea), POINTER :: linea
+      type (t_linea), POINTER :: linea
       LOGICAL :: ok
       CHARACTER (LEN=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer

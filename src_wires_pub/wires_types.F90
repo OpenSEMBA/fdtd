@@ -42,7 +42,7 @@ module wiresHolland_constants
       type (CurrentSegments), pointer         ::  MPISharedCurrent
 #endif
 
-   END TYPE ChargeNodes
+   end type ChargeNodes
 
 #ifdef CompileWithThickWires    
    type container                
@@ -105,7 +105,7 @@ module wiresHolland_constants
 !!!se aniade siempre aunque solo lo use stochastic
       REAL (KIND=RKIND_wires)      ::  qplus_qminus_for_devia,current_for_devia,Efield_main2wire_for_devia ,Lind_devia
       REAL (KIND=RKIND_wires)                           ::  cte1_for_devia ,cte2_for_devia ,cte3_for_devia  
-   END TYPE CurrentSegments
+   end type CurrentSegments
    !
 
    !dama

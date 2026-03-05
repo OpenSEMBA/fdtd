@@ -30,11 +30,11 @@ module EDispersives
       Complex (Kind=CKIND), pointer, dimension ( : )   ::  Current
    end type
 
-   TYPE EDispersive_t
+   type EDispersive_t
       integer (kind=4)  ::  indexmed,numnodesEx,numnodesEy,numnodesEz,numpolres11
       Complex (Kind=CKIND), pointer, dimension ( : )      ::  Beta,Kappa,G3
       type (field_t), pointer, dimension ( : )      ::   NodesEx,NodesEy,NodesEz
-   END TYPE EDispersive_t
+   END type EDispersive_t
 
 
    type  EDispersive_t2

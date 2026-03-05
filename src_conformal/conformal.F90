@@ -80,7 +80,7 @@ contains
       real (kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios
       type(edge_t), dimension(:), allocatable, intent(in) :: edges
       type(edge_t), dimension(:), allocatable :: filtered_edges
-      TYPE (conformal_edge_media_t), DIMENSION (:), POINTER :: res
+      type (conformal_edge_media_t), DIMENSION (:), POINTER :: res
       allocate(res(size(edge_ratios)))
       do i = 1, size(edge_ratios)
          filtered_edges = filterEdgesByMedia(edges, edge_ratios(i))
@@ -95,7 +95,7 @@ contains
       real (kind=rkind), dimension(:), allocatable, intent(in) :: face_ratios
       type(face_t), dimension(:), allocatable, intent(in) :: faces
       type(face_t), dimension(:), allocatable :: filtered_faces
-      TYPE (conformal_face_media_t), DIMENSION (:), POINTER :: res
+      type (conformal_face_media_t), DIMENSION (:), POINTER :: res
       allocate(res(size(face_ratios)))
       do i = 1, size(face_ratios)
          filtered_faces = filterFacesByMedia(faces, face_ratios(i))
@@ -108,8 +108,8 @@ contains
    end function
 
    function computeTimeStepScalingFactor(edges_media, faces_media) result(res)
-      TYPE (conformal_face_media_t), dimension(:), intent(in), pointer :: faces_media
-      TYPE (conformal_edge_media_t), dimension(:), intent(in), pointer :: edges_media
+      type (conformal_face_media_t), dimension(:), intent(in), pointer :: faces_media
+      type (conformal_edge_media_t), dimension(:), intent(in), pointer :: edges_media
       real (kind=rkind) :: res, l_ratio, area
       type (cell_ratios_map_t) :: cell_ratio_map
       type (cell_ratios_t) :: cell_ratio_info

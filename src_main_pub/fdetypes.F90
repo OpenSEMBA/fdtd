@@ -236,7 +236,7 @@ module  FDETYPES
       type (coorsxyz), dimension(1:6)  ::  PhysCoor
    end type coorsxyzP
 
-   TYPE MedioExtra_t
+   type MedioExtra_t
       integer (kind=4) :: size,index
       real (kind=rkind) :: sigma,sigmam
       logical :: exists
@@ -425,20 +425,20 @@ module  FDETYPES
       type (WireDispersiveParams_t), allocatable, dimension(:) :: disp_LeftEnd, disp_RightEnd
    end type SlantedWires_t
    !
-   TYPE  ::  Lumped_t
+   type  ::  Lumped_t
       integer (kind=4)  ::   Orient = 0 !orientation +iEx, -iEx,+iEy.......
 !deprecado 201222      real (kind=RKIND_wires) :: epr,mur,sigma,sigmam
       real (kind=RKIND_wires) :: R,L,C,DiodB,DiodIsat,Rtime_on,Rtime_off
       logical :: resistor , inductor , capacitor , diodo 
       real (kind=RKIND_wires) ::R_devia,L_devia,C_devia
-   END TYPE Lumped_t
+   END type Lumped_t
 !!!
    !end wires
-   TYPE  ::  PMLbody_t
+   type  ::  PMLbody_t
       integer (kind=4)   :: orient = 0 !orientation +iEx, -iEx,+iEy.......el signo aqui es intranscendente
-   END TYPE PMLbody_t
+   END type PMLbody_t
 !!!
-   TYPE  ::  Multiport_t
+   type  ::  Multiport_t
       integer (kind=4)   ::   Multiportdir = 0 !orientation +iEx, -iEx,+iEy.......
       character (LEN=BUFSIZE)                            ::   multiportFileZ11,multiportFileZ22,multiportFileZ12,multiportFileZ21
       real (kind=rkind), dimension( : ), pointer :: epr,mur,sigma,sigmam,width   
@@ -448,14 +448,14 @@ module  FDETYPES
 !!old pre 17/08/115: no es valido para mallados NO uniformes. Hay que hacerlo punto a punto
 !!!                     real (kind=rkind) :: transversalSpaceDelta
       integer (kind=4)   :: numcapas
-   END TYPE Multiport_t
+   END type Multiport_t
    !
-   TYPE  ::  AnisMultiport_t
+   type  ::  AnisMultiport_t
       integer (kind=4)   ::   Multiportdir = 0 !orientation +iEx, -iEx,+iEy.......
       character (LEN=BUFSIZE)                            ::   MultiportFileZ11,MultiportFileZ22, &
       MultiportFileZ12,MultiportFileZ21
       real (kind=rkind), pointer, dimension( : ) :: epr,mur,sigma,sigmam,width
-   END TYPE AnisMultiport_t
+   END type AnisMultiport_t
    !
    type planeonde_t
       REAL (KIND=RKIND) :: INCERTMAX
@@ -700,7 +700,7 @@ module  FDETYPES
       integer (kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
                           mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, size
       
-      TYPE (MedioExtra_t) :: MEDIOEXTRA
+      type (MedioExtra_t) :: MEDIOEXTRA
       type (nf2ff_T) :: facesNF2FF
 
    end type sim_control_t

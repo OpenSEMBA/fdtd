@@ -37,7 +37,7 @@ CONTAINS
       real (kind=RKIND) :: time,rdum
       !
       !
-      TYPE (output_t), POINTER, DIMENSION (:) :: output
+      type (output_t), POINTER, DIMENSION (:) :: output
       INTEGER (KIND=4) :: iroot
       !
 #ifdef CompileWithMPI
@@ -886,7 +886,7 @@ CONTAINS
       logical :: vtkindex,somethingdone
 
       INTEGER (KIND=4), INTENT (IN) :: layoutnumber, size
-      TYPE (output_t), POINTER, DIMENSION (:) :: output
+      type (output_t), POINTER, DIMENSION (:) :: output
       INTEGER (KIND=4) :: ii
       logical :: lexis,dontwritevtk
       character(len=BUFSIZE) :: buff

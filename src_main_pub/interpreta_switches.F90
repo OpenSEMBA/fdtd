@@ -130,7 +130,7 @@ module interpreta_switches_m
          factordelta
 
       type(nf2ff_T) ::                           facesNF2FF
-      TYPE(MedioExtra_t) ::                      MEDIOEXTRA
+      type(MedioExtra_t) ::                      MEDIOEXTRA
       type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
       type(tiempo_t)  ::                         time_out2
 

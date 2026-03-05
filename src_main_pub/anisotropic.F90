@@ -28,7 +28,7 @@ module Anisotropic
       type (coeff_t) :: coeff
    end type
 
-   TYPE, public :: Anisotropicinfo_t
+   type, public :: Anisotropicinfo_t
       integer (kind=4)  ::  indexmed,numnodesEx,numnodesEy,numnodesEz
       integer (kind=4)  ::           numnodesHx,numnodesHy,numnodesHz
       integer (kind=4), dimension(:), pointer :: Ex_i,Ey_i,Ez_i,Hx_i,Hy_i,Hz_i
@@ -42,7 +42,7 @@ module Anisotropic
       logical :: IsOnlyThinSlot
 !
       REAL (KIND=RKIND),  DIMENSION(3,3)  ::  sigma,epr,mur,sigmaM  
-   END TYPE Anisotropicinfo_t
+   END type Anisotropicinfo_t
 
 
    type, public ::  AnisotropicMed_t

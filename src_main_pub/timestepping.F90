@@ -1631,7 +1631,7 @@ contains
 
       subroutine printSimulationStart()
          character(len=bufsize) :: dubuf
-         TYPE (tiempo_t) :: time_out2
+         type (tiempo_t) :: time_out2
 #ifdef CompileWithMPI
          integer (kind=4) :: ierr
 #endif

@@ -43,18 +43,18 @@ CONTAINS
       logical :: simu_devia,verbose,hay_slanted_wires
       REAL (KIND=RKIND)           ::  eps00,mu00
 
-      TYPE (MedioExtra_t), INTENT (INout) :: MEDIOEXTRA
+      type (MedioExtra_t), INTENT (INout) :: MEDIOEXTRA
       !
       CHARACTER (LEN=BUFSIZE), intent(in) :: wiresflavor
       logical, intent (in) :: updateshared,run_with_dmma,ignoresamplingerrors
       LOGICAL, INTENT (INout) :: mibc,SGBC,CLIPREGION,boundwireradius,SGBCDispersive,skindepthpre
       LOGICAL, INTENT (INout) :: createmapvtk
-      TYPE (limit_t), DIMENSION (1:6) :: SINPML_fullsize, fullsize
+      type (limit_t), DIMENSION (1:6) :: SINPML_fullsize, fullsize
       type (SGGFDTDINFO), intent(INOUT)    :: sgg
       character(len=BUFSIZE) :: extraswitches
 
       type(taglist_t) :: tag_numbers
-      TYPE (Parseador), INTENT (INOUT) :: this
+      type (Parseador), INTENT (INOUT) :: this
       INTEGER (KIND=4) :: tama, tama2, tama3, tama4, tama5, tama6, i, j, k, tipotemp, tamaSonda,  &
       &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones,ci
       CHARACTER (LEN=*), INTENT (IN) :: fichin
@@ -64,8 +64,8 @@ CONTAINS
 
       CHARACTER (LEN=BUFSIZE) :: tag
 
-      TYPE (XYZlimit_t) :: punto, BoundingBox, conf_bounding_box
-      TYPE (XYZlimit_t_scaled) :: punto_s
+      type (XYZlimit_t) :: punto, BoundingBox, conf_bounding_box
+      type (XYZlimit_t_scaled) :: punto_s
       INTEGER (KIND=4) :: orientacion,orientacionL,orientacionR, direccion, contamedia,oldcontamedia, maxcontamedia, mincontamedia, inicontamedia, &
          i1, j1, field, k1, pecmedio, ii, medio1, medio2, sondas,CONTACURR,CONTAVOLT,I_,J_
       !
@@ -97,7 +97,7 @@ CONTAINS
       INTEGER (KIND=4) :: i11, j11
       !
       type (tagtype_t) :: tagtype
-      TYPE (FreqDepenMaterial), POINTER :: fdgeom
+      type (FreqDepenMaterial), POINTER :: fdgeom
       !
       INTEGER (KIND=4) :: numertag
       INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
@@ -4207,10 +4207,10 @@ CONTAINS
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = punto%YE
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = punto%ZE
                      IF (this%BloquePRB%BP(i)%t) THEN
-                        !electric TYPE
+                        !electric type
                         sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iBloqueJx
                      ELSE
-                        !MAGNETIC TYPE
+                        !MAGNETIC type
                         sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iBloqueMx
                      END IF
                   END DO
@@ -4224,10 +4224,10 @@ CONTAINS
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = k
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = punto%ZE
                      IF (this%BloquePRB%BP(i)%t) THEN
-                        !electric TYPE
+                        !electric type
                         sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iBloqueJy
                      ELSE
-                        !MAGNETIC TYPE
+                        !MAGNETIC type
                         sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iBloqueMy
                      END IF
                   END DO
@@ -4241,10 +4241,10 @@ CONTAINS
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = punto%YE
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = k
                      IF (this%BloquePRB%BP(i)%t) THEN
-                        !electric TYPE
+                        !electric type
                         sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iBloqueJz
                      ELSE
-                        !MAGNETIC TYPE
+                        !MAGNETIC type
                         sgg%observation(ii)%P(sgg%observation(ii)%nP)%What = iBloqueMz
                      END IF
                   END DO
@@ -5604,7 +5604,7 @@ CONTAINS
       end subroutine asignawiredisper
 
       subroutine asignadisper(fdgeom)
-         TYPE (FreqDepenMaterial), POINTER :: fdgeom
+         type (FreqDepenMaterial), POINTER :: fdgeom
 
          IF (fdgeom%l+fdgeom%LM /=0 ) THEN
             BUFF='ERROR: SECOND ORDER DISPERSIVE MEDIA UNSUPPORTED. TRANSLATE THEM TO FIRST ORDER ()'
@@ -5815,10 +5815,10 @@ CONTAINS
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    SUBROUTINE read_limits_nogeom (layoutnumber,size, sgg, fullsize, SINPML_fullsize, this,MurAfterPML,mur_exist)
-      TYPE (limit_t), DIMENSION (1:6) :: fullsize, SINPML_fullsize
+      type (limit_t), DIMENSION (1:6) :: fullsize, SINPML_fullsize
       type (SGGFDTDINFO), intent(INOUT)    :: sgg
 
-      TYPE (Parseador), INTENT (IN) :: this
+      type (Parseador), INTENT (IN) :: this
       INTEGER (KIND=4) :: tama, i, field,j,k
       character(len=BUFSIZE) :: buff
       logical MurAfterPML,mur_exist
@@ -6294,7 +6294,7 @@ CONTAINS
    subroutine prepro_skindepth(this,fichin)
       integer pozi,tama,j,k
       character (LEN=BUFSIZE)       ::   multiportFile
-      TYPE (Parseador), INTENT (IN) :: this
+      type (Parseador), INTENT (IN) :: this
       CHARACTER (LEN=*), INTENT (IN) :: fichin
       character (LEN=BUFSIZE)  ::  restocadena
       integer :: my_iostat
@@ -6665,7 +6665,7 @@ CONTAINS
       CHARACTER (LEN=*), INTENT (IN) :: fichin
       INTEGER (KIND=4), INTENT (IN) :: layoutnumber
 
-      TYPE (Parseador), INTENT (INOUT) :: this
+      type (Parseador), INTENT (INOUT) :: this
       LOGICAL :: foundDuplicate
       integer (Kind=4) :: numertag, i,j, k, m, tama,tama2,tama3,tama2p,tama3p,precounting,acum,thefileno
       CHARACTER(LEN=BUFSIZE) :: tagToCheck

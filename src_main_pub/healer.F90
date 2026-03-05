@@ -14,10 +14,10 @@ MODULE CreateMatrices
    PRIVATE
    !
    !
-   TYPE crosscheck_t
+   type crosscheck_t
       INTEGER (KIND=4) :: actual, NewActual, NewActual2
       INTEGER (KIND=4), DIMENSION (1:4) :: tent
-   END TYPE
+   END type
    !matriz para controlar lo punietereos indices de cadacomponente
    INTEGER (KIND=4), DIMENSION (6, 3, 2), PARAMETER, PUBLIC :: &
    & in = reshape ( (/ 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, &
@@ -63,12 +63,12 @@ MODULE CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, BoundingBox,indicemedio)
       character(len=BUFSIZE) :: buff
-      TYPE (Shared_t) :: Eshared
+      type (Shared_t) :: Eshared
 
       INTEGER (KIND=4) :: NumMedia
-      TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
+      type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
-      TYPE (XYZlimit_t), INTENT(IN) ::  BoundingBox
+      type (XYZlimit_t), INTENT(IN) ::  BoundingBox
       integer(kind=4), intent(in) :: indicemedio
       !
       INTEGER (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
@@ -506,15 +506,15 @@ MODULE CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, BoundingBox, point, indicemedio)
       character(len=BUFSIZE) :: buff
-      TYPE (Shared_t) :: Eshared
+      type (Shared_t) :: Eshared
       !
       INTEGER (KIND=4) :: NumMedia
-      TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
+      type (MediaData_t), DIMENSION (0:NumMedia) :: med
       INTEGER (KIND=4) :: medio
       !
-      TYPE (XYZlimit_t) :: punto, puntoPlus1
-      TYPE (XYZlimit_t), INTENT (INOUT) :: point
-      TYPE (XYZlimit_t), INTENT(IN) ::  BoundingBox
+      type (XYZlimit_t) :: punto, puntoPlus1
+      type (XYZlimit_t), INTENT (INOUT) :: point
+      type (XYZlimit_t), INTENT(IN) ::  BoundingBox
       !
       INTEGER (KIND=4) :: indicemedio
       !
@@ -701,12 +701,12 @@ MODULE CreateMatrices
    & med, NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio)
       character(len=BUFSIZE) :: buff
       INTEGER (KIND=4) :: NumMedia
-      TYPE (Shared_t) :: Eshared
-      TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
+      type (Shared_t) :: Eshared
+      type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
-      TYPE (XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
-      TYPE (XYZlimit_t), INTENT (INOUT) :: point
-      TYPE (XYZlimit_t), INTENT(IN) :: BoundingBox
+      type (XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
+      type (XYZlimit_t), INTENT (INOUT) :: point
+      type (XYZlimit_t), INTENT(IN) :: BoundingBox
       !
       INTEGER (KIND=4) :: indicemedio, orientacion
       INTEGER (KIND=4) :: layoutnumber, i, j, k
@@ -895,13 +895,13 @@ MODULE CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio, isathinwire, verbose,numeroasignaciones)
       
-      TYPE (Shared_t) :: Eshared
+      type (Shared_t) :: Eshared
       INTEGER (KIND=4) :: NumMedia
-      TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
+      type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
-      TYPE (XYZlimit_t) :: punto
-      TYPE (XYZlimit_t), INTENT (INOUT) :: point
-      TYPE (XYZlimit_t), INTENT(IN) :: BoundingBox
+      type (XYZlimit_t) :: punto
+      type (XYZlimit_t), INTENT (INOUT) :: point
+      type (XYZlimit_t), INTENT(IN) :: BoundingBox
       
       INTEGER (KIND=4) :: indicemedio, orientacion,numeroasignaciones
       LOGICAL, INTENT (IN) :: isathinwire, verbose
@@ -1076,13 +1076,13 @@ MODULE CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, Hshared, BoundingBox, point, orientacion, direccion, indicemedio)
       character(len=BUFSIZE) :: buff
-      TYPE (Shared_t) :: Eshared, Hshared
+      type (Shared_t) :: Eshared, Hshared
       INTEGER (KIND=4) :: NumMedia
-      TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
+      type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
-      TYPE (XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
-      TYPE (XYZlimit_t), INTENT (INOUT) :: point
-      TYPE (XYZlimit_t), INTENT(IN) :: BoundingBox
+      type (XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
+      type (XYZlimit_t), INTENT (INOUT) :: point
+      type (XYZlimit_t), INTENT(IN) :: BoundingBox
       !
       INTEGER (KIND=4) :: indicemedio, orientacion, direccion
       !
@@ -1316,12 +1316,12 @@ MODULE CreateMatrices
    & NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio)
       character(len=BUFSIZE) :: buff
       INTEGER (KIND=4) :: NumMedia
-      TYPE (Shared_t) :: Eshared
-      TYPE (MediaData_t), DIMENSION (0:NumMedia) :: med
+      type (Shared_t) :: Eshared
+      type (MediaData_t), DIMENSION (0:NumMedia) :: med
       !
-      TYPE (XYZlimit_t) :: punto, puntoPlus1   !,puntoBboxplus1
-      TYPE (XYZlimit_t), INTENT (INOUT) :: point
-      TYPE (XYZlimit_t), INTENT(IN) :: BoundingBox
+      type (XYZlimit_t) :: punto, puntoPlus1   !,puntoBboxplus1
+      type (XYZlimit_t), INTENT (INOUT) :: point
+      type (XYZlimit_t), INTENT(IN) :: BoundingBox
       !
       INTEGER (KIND=4) :: indicemedio, orientacion
       INTEGER (KIND=4) :: layoutnumber, i, j, k
@@ -1497,7 +1497,7 @@ MODULE CreateMatrices
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    SUBROUTINE CreatePMLmatrix (layoutnumber, SIZE, sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, SINPML_fullsize, fullsize, BBox, med, NumMedia, Border, MEDIOEXTRA)
       !
-      TYPE (limit_t), DIMENSION (1:6) :: SINPML_fullsize, fullsize
+      type (limit_t), DIMENSION (1:6) :: SINPML_fullsize, fullsize
       !Inputs and Outputs
       type (SGGFDTDINFO), intent(INOUT)        :: sgg
       integer (KIND=INTEGERSIZEOFMEDIAMATRICES)   ::  &
@@ -1507,14 +1507,14 @@ MODULE CreateMatrices
       sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE), &
       sggMiHy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE), &
       sggMiHz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
-      TYPE (XYZlimit_t) :: BoundingBox, BBox
-      TYPE (MediaData_t), POINTER, DIMENSION (:) :: med
+      type (XYZlimit_t) :: BoundingBox, BBox
+      type (MediaData_t), POINTER, DIMENSION (:) :: med
       INTEGER (KIND=4), INTENT (INOUT) :: NumMedia
-      TYPE (Border_t), INTENT (IN) :: Border
-      TYPE (MedioExtra_t), INTENT (IN) :: MEDIOEXTRA
+      type (Border_t), INTENT (IN) :: Border
+      type (MedioExtra_t), INTENT (IN) :: MEDIOEXTRA
       ! Local stuff
       INTEGER (KIND=4), POINTER, DIMENSION (:) :: tempo
-      TYPE (MediaData_t), POINTER, DIMENSION (:) :: NewMed
+      type (MediaData_t), POINTER, DIMENSION (:) :: NewMed
       INTEGER (KIND=4) :: layoutnumber, SIZE, field, medium, i, j, k, NuevoNumeroMediosConPML
       INTEGER (KIND=4) :: oldNumMedia,oldmed
       INTEGER (KIND=4), DIMENSION (1:6) :: XIPML, XEPML, YIPML, YEPML, ZIPML, ZEPML
@@ -3069,8 +3069,8 @@ MODULE CreateMatrices
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    SUBROUTINE Readjust (NumMedia, med, NewNumMedia)
       !Inputs and Outputs
-      TYPE (MediaData_t), POINTER, DIMENSION (:) :: med
-      TYPE (MediaData_t), POINTER, DIMENSION (:) :: dummyMed
+      type (MediaData_t), POINTER, DIMENSION (:) :: med
+      type (MediaData_t), POINTER, DIMENSION (:) :: dummyMed
       INTEGER (KIND=4), INTENT (INOUT) :: NumMedia
       INTEGER (KIND=4), INTENT (IN) :: NewNumMedia
       INTEGER (KIND=4) :: i
@@ -3129,8 +3129,8 @@ MODULE CreateMatrices
    END SUBROUTINE
 
    SUBROUTINE AddToShared (campo, i1, j1, k1, Sharedmed, ProPmed,  Shared)
-      TYPE (SharedElement_t), POINTER, DIMENSION (:) :: temp
-      TYPE (Shared_t), INTENT (INOUT) :: Shared
+      type (SharedElement_t), POINTER, DIMENSION (:) :: temp
+      type (Shared_t), INTENT (INOUT) :: Shared
       INTEGER (KIND=4), INTENT (IN) :: campo, i1, j1, k1, Sharedmed, ProPmed
       INTEGER (KIND=4) :: conta, n
       !

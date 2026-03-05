@@ -395,7 +395,7 @@ contains
       REAL (KIND=8), intent(in)   :: t
       integer (kind=4), intent(in) :: initialtimestep
       REAL (KIND=RKIND), intent(in)   ::  maxSourceValue
-      TYPE (tiempo_t) :: time_out2,time_comienzo
+      type (tiempo_t) :: time_out2,time_comienzo
 #ifdef CompileWithMPI
       integer (kind=4) :: ierr
 #endif

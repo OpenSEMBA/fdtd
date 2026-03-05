@@ -34,7 +34,7 @@ type :: MDfield_t
 end type
 
 
-TYPE  ::  SGBCSurface_t
+type  ::  SGBCSurface_t
    REAL (KIND=RKIND), allocatable, dimension (:) :: E,H,E_past
    REAL (KIND=RKIND), pointer ::  Efield,Ha_Plus,Ha_Minu,Hb_Plus,Hb_Minu
    REAL (KIND=RKIND), allocatable, dimension (:)          ::  delta_entreEinterno
@@ -60,7 +60,7 @@ TYPE  ::  SGBCSurface_t
    REAL (KIND=RKIND)  :: transversalDeltaE,transversalDeltaH,alignedlDeltaH
    integer (kind=4), dimension (0:1)  :: med
    COMPLEX (kind=ckind), allocatable, dimension (:) :: a11, c11
-END TYPE SGBCSurface_t
+END type SGBCSurface_t
 
 
 type :: MalDisp_t
@@ -68,7 +68,7 @@ type :: MalDisp_t
     COMPLEX (kind=ckind), allocatable, dimension (:) :: a11, c11
 end type
 
-TYPE  ::  Malon_t
+type  ::  Malon_t
     logical :: SGBCdispersive
    integer (kind=4)   ::   NumNodes
    type (SGBCSurface_t), allocatable, dimension (:) :: nodes

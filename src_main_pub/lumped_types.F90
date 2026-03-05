@@ -4,7 +4,7 @@ module lumped_vars
     !structures needed by the Lumped
    use fdetypes   
    
-   TYPE, public  ::  Nodes_t
+   type, public  ::  Nodes_t
       REAL (KIND=RKIND) :: EfieldPrev,EfieldPrevPrev,Jcur,sigmaEffResistInduct,alignedDeltaE ,transversalDeltaHa ,transversalDeltaHb, currentCoeff 
       REAL (KIND=RKIND) :: diodepreA,diodeB
       REAL (KIND=RKIND), pointer ::  Efield,Ha_Plus,Ha_Minu,Hb_Plus,Hb_Minu
@@ -22,10 +22,10 @@ module lumped_vars
       REAL (KIND=RKIND)          ::  g1_usual_devia
       REAL (KIND=RKIND)          ::  g2a_usual_devia,g2b_usual_devia
 #endif 
-   END TYPE Nodes_t
+   END type Nodes_t
 
 
-   TYPE, public  ::  LumpedElem_t
+   type, public  ::  LumpedElem_t
       integer (kind=4)   ::   NumNodes
       type (Nodes_t), allocatable, dimension (:) :: nodes
    end type LumpedElem_t
