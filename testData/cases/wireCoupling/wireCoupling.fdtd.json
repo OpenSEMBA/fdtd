@@ -3,7 +3,7 @@
     "__comments": "Planewave exciting a circuit-ended thin wire",
     "general": {
         "timeStep": 2e-11,
-        "numberOfSteps": 8000
+        "numberOfSteps": 3000
     },
     "boundary": {
         "all": {
@@ -95,6 +95,7 @@
                 "id": 1,
                 "type": "polyline",
                 "coordinateIds": [
+                    6, 
                     1,
                     4,
                     2,
@@ -241,14 +242,14 @@
                 "type": "polyline",
                 "coordinateIds": [
                     5,
-                    1
+                    6
                 ]
             },
             {
                 "id": 12,
                 "type": "node",
                 "coordinateIds": [
-                    1
+                    6
                 ]
             },
             {
@@ -256,7 +257,7 @@
                 "type": "cell",
                 "name": "big-case",
                 "intervals": [
-                    [
+                    [                        
                         [
                             17,
                             40,
@@ -283,6 +284,54 @@
                 "coordinateIds": [
                     7,
                     5
+                ]
+            },
+            {
+                "id": 16,
+                "type": "cell",
+                "name": "hollow-case-1",
+                "intervals": [
+                    [[30,40,54],[17,40,46]]
+                ]
+            },
+            {
+                "id": 17,
+                "type": "cell",
+                "name": "hollow-case-2",
+                "intervals": [
+                    [[17,50,46],[30,50,54]]
+                ]
+            },
+            {
+                "id": 18,
+                "type": "cell",
+                "name": "hollow-case-3",
+                "intervals": [
+                    [[17,50,54],[17,40,46]]
+                ]
+            },
+            {
+                "id": 19,
+                "type": "cell",
+                "name": "hollow-case-4",
+                "intervals": [
+                    [[30,40,46],[30,50,54]]
+                ]
+            },
+            {
+                "id": 20,
+                "type": "cell",
+                "name": "hollow-case-5",
+                "intervals": [
+                    [[30,50,46],[17,40,46]]
+                ]
+            },
+            {
+                "id": 21,
+                "type": "cell",
+                "name": "hollow-case-6",
+                "intervals": [
+                    [[17,40,54],[30,50,54]]
                 ]
             }
         ]
@@ -386,7 +435,7 @@
             "name": "segment1",
             "materialId": 1,
             "initialTerminalId": 9,
-            "endTerminalId": 3,
+            "endTerminalId": 4,
             "elementIds": [
                 11
             ]
@@ -395,14 +444,14 @@
             "name": "case",
             "materialId": 5,
             "elementIds": [
-                13
+                16, 17, 18, 19, 20, 21
             ]
         }
     ],
     "sources": [
         {
             "type": "planewave",
-            "magnitudeFile": "sin_80M_45Vm.exc",
+            "magnitudeFile": "sin_80M_180Vm.exc",
             "elementIds": [
                 2
             ],
