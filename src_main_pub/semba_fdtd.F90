@@ -549,6 +549,9 @@ contains
          call MPI_Barrier (SUBCOMM_MPI, this%l%ierr)
          this%l%finaltimestep=NEWfinaltimestep
 #endif
+#ifdef CompileWithMTLN
+            this%mtln_parsed%number_of_steps = this%l%finaltimestep 
+#endif
             if (finaltimestepantesdecorregir/=this%l%finaltimestep) then
                write(dubuf,*) SEPARADOR//separador//separador
                call print11(this%l%layoutnumber,dubuf)
