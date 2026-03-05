@@ -40,6 +40,13 @@ module mtln_types_mod
    integer, parameter :: DIRECTION_Z_NEG   =  -3
 
 
+   type interior_source_t
+      character(len=256) :: path_to_excitation = ""
+      integer :: source_type = SOURCE_TYPE_UNDEFINED
+      type(cable_t), pointer :: cable
+      real :: resistance
+      integer :: index
+   end type
 
    type node_source_t
       character(len=256) :: path_to_excitation = ""
