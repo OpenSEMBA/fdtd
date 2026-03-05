@@ -80,8 +80,8 @@ solver = FDTD(input_filename = 'wireCoupling.fdtd.json', path_to_exe=SEMBA_EXE)
 # solver["mesh"]["elements"][10]["coordinateIds"] = [5,6]
 # solver["mesh"]["elements"][11]["coordinateIds"] = [6]
 # solver["materialAssociations"][1]["initialTerminalId"] = 4
-solver["materials"][5]["relativePermittivity"] = 2.5
-solver["materials"][6]["relativePermittivity"] = 1.3
+# solver["materials"][5]["relativePermittivity"] = 2.5
+# solver["materials"][6]["relativePermittivity"] = 1.3
 solver.cleanUp()
 solver.run() 
 
@@ -102,9 +102,9 @@ plt.plot(v_input['time'], v_input['voltage_0'],'-', label='input, no plane')
 plt.plot(v_output['time'], v_output['voltage_0']-offset,'--', label='output, no plane')
 plt.grid(which='both')
 plt.xlabel('time [s]')
-# plt.ylabel('V [V]')
-plt.xlim(0,0.8e-7)
-plt.ylim(-2,2)
+plt.ylabel('V [V]')
+# plt.xlim(0,0.8e-7)
+# plt.ylim(-3,3)
 plt.legend()
 
 #%% 
