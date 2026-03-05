@@ -1,11 +1,3 @@
-
- 
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  Current on Huygens Box
-!  Taken from planewaves
-!  Creation date Date :  Oct, 10, 2012
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
 module farfield_m
    use fdetypes
    use REPORT
@@ -13,15 +5,14 @@ module farfield_m
    implicit none
    private
 
-
    type ehxyz
-      integer (kind=4)  ::  Ex=-15,Ey=-15,Ez=-15,Hx=-15,Hy=-15,Hz=-15
+      integer(kind=4) :: Ex=-15,Ey=-15,Ez=-15,Hx=-15,Hy=-15,Hz=-15
    end type
    type tfidaa
-      type (ehxyz)  ::   com,fin,tra,fro,izq,der,aba,arr
+      type(ehxyz) :: com,fin,tra,fro,izq,der,aba,arr
    end type
    type ijk
-      type (tfidaa)  ::  i,j,k
+      type(tfidaa) :: i,j,k
    end type
 
    type co_t
@@ -34,55 +25,55 @@ module farfield_m
    end type
 
    type farfield_t
-      type (ijk)  ::  TrFr,IzDe,AbAr
-      logical  ::  farfieldTr,farfieldFr,farfieldIz,farfieldDe,farfieldAr,farfieldAb
+      type(ijk) :: TrFr,IzDe,AbAr
+      logical  :: farfieldTr,farfieldFr,farfieldIz,farfieldDe,farfieldAr,farfieldAb
 
-      logical  ::  farfieldTr_ClonePEC_Front,farfieldTr_ClonePEC_Left,farfieldTr_ClonePEC_Right,farfieldTr_ClonePEC_Up,farfieldTr_ClonePEC_Down
-      logical  ::  farfieldTr_ClonePMC_Front,farfieldTr_ClonePMC_Left,farfieldTr_ClonePMC_Right,farfieldTr_ClonePMC_Up,farfieldTr_ClonePMC_Down
+      logical  :: farfieldTr_ClonePEC_Front,farfieldTr_ClonePEC_Left,farfieldTr_ClonePEC_Right,farfieldTr_ClonePEC_Up,farfieldTr_ClonePEC_Down
+      logical  :: farfieldTr_ClonePMC_Front,farfieldTr_ClonePMC_Left,farfieldTr_ClonePMC_Right,farfieldTr_ClonePMC_Up,farfieldTr_ClonePMC_Down
 
-      logical  ::  farfieldFr_ClonePEC_Back,farfieldFr_ClonePEC_Left,farfieldFr_ClonePEC_Right,farfieldFr_ClonePEC_Up,farfieldFr_ClonePEC_Down
-      logical  ::  farfieldFr_ClonePMC_Back,farfieldFr_ClonePMC_Left,farfieldFr_ClonePMC_Right,farfieldFr_ClonePMC_Up,farfieldFr_ClonePMC_Down
+      logical  :: farfieldFr_ClonePEC_Back,farfieldFr_ClonePEC_Left,farfieldFr_ClonePEC_Right,farfieldFr_ClonePEC_Up,farfieldFr_ClonePEC_Down
+      logical  :: farfieldFr_ClonePMC_Back,farfieldFr_ClonePMC_Left,farfieldFr_ClonePMC_Right,farfieldFr_ClonePMC_Up,farfieldFr_ClonePMC_Down
 
-      logical  ::  farfieldIz_ClonePEC_Back,farfieldIz_ClonePEC_Front,farfieldIz_ClonePEC_Right,farfieldIz_ClonePEC_Up,farfieldIz_ClonePEC_Down
-      logical  ::  farfieldIz_ClonePMC_Back,farfieldIz_ClonePMC_Front,farfieldIz_ClonePMC_Right,farfieldIz_ClonePMC_Up,farfieldIz_ClonePMC_Down
+      logical  :: farfieldIz_ClonePEC_Back,farfieldIz_ClonePEC_Front,farfieldIz_ClonePEC_Right,farfieldIz_ClonePEC_Up,farfieldIz_ClonePEC_Down
+      logical  :: farfieldIz_ClonePMC_Back,farfieldIz_ClonePMC_Front,farfieldIz_ClonePMC_Right,farfieldIz_ClonePMC_Up,farfieldIz_ClonePMC_Down
 
-      logical  ::  farfieldDe_ClonePEC_Back,farfieldDe_ClonePEC_Front,farfieldDe_ClonePEC_Left,farfieldDe_ClonePEC_Up,farfieldDe_ClonePEC_Down
-      logical  ::  farfieldDe_ClonePMC_Back,farfieldDe_ClonePMC_Front,farfieldDe_ClonePMC_Left,farfieldDe_ClonePMC_Up,farfieldDe_ClonePMC_Down
+      logical  :: farfieldDe_ClonePEC_Back,farfieldDe_ClonePEC_Front,farfieldDe_ClonePEC_Left,farfieldDe_ClonePEC_Up,farfieldDe_ClonePEC_Down
+      logical  :: farfieldDe_ClonePMC_Back,farfieldDe_ClonePMC_Front,farfieldDe_ClonePMC_Left,farfieldDe_ClonePMC_Up,farfieldDe_ClonePMC_Down
 
-      logical  ::  farfieldAr_ClonePEC_Back,farfieldAr_ClonePEC_Front,farfieldAr_ClonePEC_Left,farfieldAr_ClonePEC_Right,farfieldAr_ClonePEC_Down
-      logical  ::  farfieldAr_ClonePMC_Back,farfieldAr_ClonePMC_Front,farfieldAr_ClonePMC_Left,farfieldAr_ClonePMC_Right,farfieldAr_ClonePMC_Down
+      logical  :: farfieldAr_ClonePEC_Back,farfieldAr_ClonePEC_Front,farfieldAr_ClonePEC_Left,farfieldAr_ClonePEC_Right,farfieldAr_ClonePEC_Down
+      logical  :: farfieldAr_ClonePMC_Back,farfieldAr_ClonePMC_Front,farfieldAr_ClonePMC_Left,farfieldAr_ClonePMC_Right,farfieldAr_ClonePMC_Down
 
-      logical  ::  farfieldAb_ClonePEC_Back,farfieldAb_ClonePEC_Front,farfieldAb_ClonePEC_Left,farfieldAb_ClonePEC_Right,farfieldAb_ClonePEC_Up
-      logical  ::  farfieldAb_ClonePMC_Back,farfieldAb_ClonePMC_Front,farfieldAb_ClonePMC_Left,farfieldAb_ClonePMC_Right,farfieldAb_ClonePMC_Up
+      logical  :: farfieldAb_ClonePEC_Back,farfieldAb_ClonePEC_Front,farfieldAb_ClonePEC_Left,farfieldAb_ClonePEC_Right,farfieldAb_ClonePEC_Up
+      logical  :: farfieldAb_ClonePMC_Back,farfieldAb_ClonePMC_Front,farfieldAb_ClonePMC_Left,farfieldAb_ClonePMC_Right,farfieldAb_ClonePMC_Up
 
-      complex( kind = CKIND), dimension( :,:,:), allocatable ::  ExIz,ExDe,ExAb,ExAr,EyFr,EyTr,EyAb,EyAr,EzIz,EzDe,EzFr,EzTr
-      complex( kind = CKIND), dimension( :,:,:), allocatable ::  HxIz,HxDe,HxAb,HxAr,HyFr,HyTr,HyAb,HyAr,HzIz,HzDe,HzFr,HzTr
-      complex( kind = CKIND), dimension( :,:,:), allocatable ::  HxIz2,HxDe2,HxAb2,HxAr2,HyFr2,HyTr2,HyAb2,HyAr2,HzIz2,HzDe2,HzFr2,HzTr2 !to compute the scheneider geometric mean
+      complex( kind = CKIND), dimension( :,:,:), allocatable :: ExIz,ExDe,ExAb,ExAr,EyFr,EyTr,EyAb,EyAr,EzIz,EzDe,EzFr,EzTr
+      complex( kind = CKIND), dimension( :,:,:), allocatable :: HxIz,HxDe,HxAb,HxAr,HyFr,HyTr,HyAb,HyAr,HzIz,HzDe,HzFr,HzTr
+      complex( kind = CKIND), dimension( :,:,:), allocatable :: HxIz2,HxDe2,HxAb2,HxAr2,HyFr2,HyTr2,HyAb2,HyAr2,HzIz2,HzDe2,HzFr2,HzTr2 !to compute the scheneider geometric mean
       complex( kind = CKIND), dimension( :), allocatable  :: expIwdt,auxExp_E,auxExp_H,dftEntrada
-      integer (KIND=4) :: NumFreqs,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2, Ndecim
-      type (coorsxyzP)  ::  Punto
+      integer(kind=4) :: NumFreqs,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2, Ndecim
+      type(coorsxyzP) :: Punto
       real(kind=Rkind) :: InitialFreq,FinalFreq,FreqStep,dtDecim
-      real(KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
-      real(KIND=RKIND)  ::  phiStart,phiStop,phiStep
-      character (LEN=BUFSIZE)  ::   FileNormalize
-      integer (KIND=4)    :: unitfarfield
-      character (LEN=BUFSIZE)   ::  filefarfield
-      real(KIND=RKIND)  :: XDobleAncho,YDobleAncho,ZDobleAncho
-      real(KIND=RKIND)  :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
-      real(KIND=RKIND)  :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
+      real(kind=RKIND) :: thetaStart,thetaStop,thetaStep
+      real(kind=RKIND) :: phiStart,phiStop,phiStep
+      character(len=BUFSIZE) :: FileNormalize
+      integer(kind=4) :: unitfarfield
+      character(len=BUFSIZE) :: filefarfield
+      real(kind=RKIND) :: XDobleAncho,YDobleAncho,ZDobleAncho
+      real(kind=RKIND) :: XOffsetPlus,YOffsetPlus,ZOffsetPlus
+      real(kind=RKIND) :: XOffsetMinus,YOffsetMinus,ZOffsetMinus
 #ifdef CompileWithMPI
-      integer (kind=4)  :: MPISubComm,MPIRoot
+      integer(kind=4) :: MPISubComm,MPIRoot
 #endif
    end type
 !!!variables globales del modulo
-   real(KIND=RKIND), save           ::  cluz,zvac
-   real(KIND=RKIND), save           ::  eps0,mu0
+   real(kind=RKIND), save           :: cluz,zvac
+   real(kind=RKIND), save           :: eps0,mu0
 !!!
    !
    public UpdateFarField,InitFarField,Destroyfarfield,FlushFarfield,StoreFarfields
    public farfield_t
    !
-   type (farfield_t), save, target :: FF
+   type(farfield_t), save, target :: FF
 
 contains
 
@@ -99,32 +90,32 @@ contains
    ,MPISubComm,MpiRoot &
 #endif
    ,eps00,mu00)
-      real(KIND=RKIND)           ::  eps00,mu00
+      real(kind=RKIND) :: eps00,mu00
 
-      type (nf2ff_t) :: facesNF2FF
+      type(nf2ff_t) :: facesNF2FF
       LOGICAL :: NF2FFDecim
-      type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
+      type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
       real(kind=Rkind) :: InitialFreq,FinalFreq,FreqStep
-      real(KIND=RKIND)  ::  thetaStart,thetaStop,thetaStep
-      real(KIND=RKIND)  ::  phiStart,phiStop,phiStep
-      character (LEN=BUFSIZE)  ::   FileNormalize
-      integer (KIND=4)    :: unitfarfield
-      character (LEN=BUFSIZE)   ::  filefarfield
-      integer (kind=4)  :: MPISubComm,MPIRoot
+      real(kind=RKIND) :: thetaStart,thetaStop,thetaStep
+      real(kind=RKIND) :: phiStart,phiStop,phiStep
+      character(len=BUFSIZE) :: FileNormalize
+      integer(kind=4) :: unitfarfield
+      character(len=BUFSIZE) :: filefarfield
+      integer(kind=4) :: MPISubComm,MPIRoot
 
       !---------------------------> inputs <----------------------------------------------------------
-      type( bounds_t), intent( IN)  ::  b
+      type( bounds_t), intent( IN) :: b
       !
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
-      logical , intent(in)   ::  resume
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   ::  &
+      type(SGGFDTDINFO), intent(in) :: sgg
+      logical , intent(in) :: resume
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &
       sggMiEy(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE), &
       sggMiEz(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE), &
       sggMiHx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE), &
       sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
       sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      real(KIND=RKIND)  ::tiempo1,tiempo2,field1,field2,dtevol
+      real(kind=RKIND) ::tiempo1,tiempo2,field1,field2,dtevol
       integer j,k,field,i,layoutnumber,size,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
       logical :: errnofile,error
@@ -935,7 +926,7 @@ contains
          call stoponerror(layoutnumber,size,Buff)
       endif
 
-      ALLOCATE (FF%expIwdt(1:FF%NumFreqs),FF%auxExp_E(1:FF%NumFreqs),FF%auxExp_H(1:FF%NumFreqs),FF%dftEntrada(1:FF%NumFreqs))
+     allocate(FF%expIwdt(1:FF%NumFreqs),FF%auxExp_E(1:FF%NumFreqs),FF%auxExp_H(1:FF%NumFreqs),FF%dftEntrada(1:FF%NumFreqs))
       !
       if( FF%farfieldIz) then
          allocate (FF%ExIz( 0 :  b%Ex%NX-1, 0 :  b%Ex%NZ-1, 1:FF%NumFreqs))
@@ -993,7 +984,7 @@ contains
       INQUIRE (FILE=trim(adjustl(FF%FileNormalize)), EXIST=errnofile)
       if ( .NOT. errnofile) then
          Buff=trim(adjustl(FF%FileNormalize))//' DOES NOT EXIST'
-         CALL STOPONERROR (layoutnumber,size,Buff)
+         call STOPONERROR (layoutnumber,size,Buff)
       end if
       OPEN (15, FILE=trim(adjustl(FF%FileNormalize)))
       READ (15,*) tiempo1, field1
@@ -1136,17 +1127,17 @@ contains
 
    !**************************************************************************************************
    subroutine UpdateFarField(ntime, b, Ex, Ey, Ez,Hx,Hy,Hz)
-      type( bounds_t), intent( IN)  ::  b
+      type( bounds_t), intent( IN) :: b
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN) :: Ez
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer  ::  i, j, k, i_m, j_m, k_m,ii, ntime
+      integer  :: i, j, k, i_m, j_m, k_m,ii, ntime
       !---------------------------> empieza UpdateFarField <---------------------------------------
 
 
@@ -1710,9 +1701,9 @@ contains
    !
    !
    subroutine StoreFarFields(B)
-      type( bounds_t), intent( IN)  ::  b
+      type( bounds_t), intent( IN) :: b
 
-      integer (kind=4)  ::  i, j, k, i_m, j_m, k_m,ii
+      integer(kind=4) :: i, j, k, i_m, j_m, k_m,ii
 
       !---------------------------> empieza  <---------------------------------------
       do ii=1,FF%NumFreqs
@@ -2022,10 +2013,10 @@ contains
    !
 
    subroutine ReadFarfield(b)
-      type( bounds_t), intent( IN)  ::  b
+      type( bounds_t), intent( IN) :: b
 
 
-      integer ::  i, j, k, i_m, j_m, k_m,ii
+      integer :: i, j, k, i_m, j_m, k_m,ii
 
       !---------------------------> empieza  <---------------------------------------
       do ii=1,FF%NumFreqs
@@ -2330,9 +2321,9 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Calculate the physical point coordinates of index i,j,k
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!!!Subroutine PuntoPhys(nfield,i,j,k,xf,yf,zf)
-   !!!!integer (KIND=4) i,j,k,nfield
-   !!!!real(KIND=RKIND)  ::   xf,yf,zf
+   !!!!subroutine PuntoPhys(nfield,i,j,k,xf,yf,zf)
+   !!!!integer(kind=4) i,j,k,nfield
+   !!!!real(kind=RKIND) :: xf,yf,zf
    !!!!!
    !!!!xf=FF%Punto%PhysCoor(nfield)%x(i)
    !!!!yf=FF%Punto%PhysCoor(nfield)%y(j)
@@ -2340,39 +2331,39 @@ contains
    !!!!
    !!!!return
    !!!!!
-   !!!!end Subroutine PuntoPhys
+   !!!!end subroutine PuntoPhys
    !embebido en el codigo para evitar errores con OMP 29/01/15
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine Destroyfarfield
-      integer (kind=4)  ::  field
+      integer(kind=4) :: field
 
       do field=iEx,iHz
-         if (associated(FF%Punto%PhysCoor(field)%x)) deallocate (FF%Punto%PhysCoor(field)%x)
-         if (associated(FF%Punto%PhysCoor(field)%y)) deallocate (FF%Punto%PhysCoor(field)%y)
-         if (associated(FF%Punto%PhysCoor(field)%z)) deallocate (FF%Punto%PhysCoor(field)%z)
+         if (associated(FF%Punto%PhysCoor(field)%x)) deallocate(FF%Punto%PhysCoor(field)%x)
+         if (associated(FF%Punto%PhysCoor(field)%y)) deallocate(FF%Punto%PhysCoor(field)%y)
+         if (associated(FF%Punto%PhysCoor(field)%z)) deallocate(FF%Punto%PhysCoor(field)%z)
       end do
       !
-      if (allocated(FF%expIwdt)) deALLOCATE (FF%expIwdt)
+      if (allocated(FF%expIwdt)) deallocate(FF%expIwdt)
       !
       if( FF%farfieldIz) then
-         if (allocated(FF%ExIz)) deallocate (FF%ExIz,FF%EzIz,FF%HxIz,FF%HzIz,FF%HxIz2,FF%HzIz2)
+         if (allocated(FF%ExIz)) deallocate(FF%ExIz,FF%EzIz,FF%HxIz,FF%HzIz,FF%HxIz2,FF%HzIz2)
       endif
       if( FF%farfieldDe) then
-         if (allocated(FF%ExDe)) deallocate (FF%ExDe,FF%EzDe,FF%HxDe,FF%HzDe,FF%HxDe2,FF%HzDe2)
+         if (allocated(FF%ExDe)) deallocate(FF%ExDe,FF%EzDe,FF%HxDe,FF%HzDe,FF%HxDe2,FF%HzDe2)
       endif
       if( FF%farfieldAb) then
-         if (allocated(FF%ExAb)) deallocate (FF%ExAb,FF%EyAb,FF%HxAb,FF%HyAb,FF%HxAb2,FF%HyAb2)
+         if (allocated(FF%ExAb)) deallocate(FF%ExAb,FF%EyAb,FF%HxAb,FF%HyAb,FF%HxAb2,FF%HyAb2)
       endif
       if( FF%farfieldAr) then
-         if (allocated(FF%ExAr)) deallocate (FF%ExAr,FF%EyAr,FF%HxAr,FF%HyAr,FF%HxAr2,FF%HyAr2)
+         if (allocated(FF%ExAr)) deallocate(FF%ExAr,FF%EyAr,FF%HxAr,FF%HyAr,FF%HxAr2,FF%HyAr2)
       endif
       if( FF%farfieldFr) then
-         if (allocated(FF%EyFr)) deallocate (FF%EyFr,FF%EzFr,FF%HyFr,FF%HzFr,FF%HyFr2,FF%HzFr2)
+         if (allocated(FF%EyFr)) deallocate(FF%EyFr,FF%EzFr,FF%HyFr,FF%HzFr,FF%HyFr2,FF%HzFr2)
       endif
       if( FF%farfieldTr) then
-         if (allocated(FF%EyTr)) deallocate (FF%EyTr,FF%EzTr,FF%HyTr,FF%HzTr,FF%HyTr2,FF%HzTr2)
+         if (allocated(FF%EyTr)) deallocate(FF%EyTr,FF%EzTr,FF%HyTr,FF%HzTr,FF%HyTr2,FF%HzTr2)
       endif
 
    end subroutine Destroyfarfield
@@ -2381,38 +2372,38 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!calculo del far field propiamente dicho y volcado en fichero
 
    subroutine FlushFarfield(layoutnumber,size, b, dxe, dye, dze, dxh, dyh, dzh,facesNF2FF,rinstant)
-      type (co_t) :: co,new_co
-      type (nf2ff_t) :: facesNF2FF
-      type( bounds_t), intent( IN)      ::  b
-      real(kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( IN)  ::  dxe
-      real(kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( IN)  ::  dye
-      real(kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( IN)  ::  dze
+      type(co_t) :: co,new_co
+      type(nf2ff_t) :: facesNF2FF
+      type( bounds_t), intent( IN) :: b
+      real(kind = RKIND), dimension( 0 :  b%dxe%NX-1), intent( IN) :: dxe
+      real(kind = RKIND), dimension( 0 :  b%dye%NY-1), intent( IN) :: dye
+      real(kind = RKIND), dimension( 0 :  b%dze%NZ-1), intent( IN) :: dze
       !--->
-      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN)  ::  dxh
-      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN)  ::  dyh
-      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN)  ::  dzh
+      real(kind = RKIND), dimension( 0 :  b%dxh%NX-1), intent( IN) :: dxh
+      real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: dyh
+      real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: dzh
 
-      integer (kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,size
 
-      integer (kind=4)  ::  ntheta,nphi,ithe,iphi,ii,i,j,k,i_m,j_m,k_m,pasadas
+      integer(kind=4) :: ntheta,nphi,ithe,iphi,ii,i,j,k,i_m,j_m,k_m,pasadas
       real(kind = RKIND) :: theta,phi,sintheta_sinphi,sintheta_cosphi, &
       costheta,cosphi,costheta_cosphi,costheta_sinphi,sintheta,sinphi,&
       freq, NORMAL, SIGNO,  dummy,newdummy1,newdummy2,RCS(1:2)
       real(kind = RKIND_tiempo) :: rinstant
-      integer (kind=4)  ::  ierr,pozi,donde
+      integer(kind=4) :: ierr,pozi,donde
       complex( kind = CKIND) :: L_theta,L_phi,N_theta,N_phi,Etheta(1:2),Ephi(1:2),Mx,My,Mz,Jx,Jy,Jz,comun
       complex( kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
       complex( kind = CKIND) :: L_theta_final,L_phi_final,N_theta_final,N_phi_final
-      character (LEN=BUFSIZE)     ::  dubuf
+      character(len=BUFSIZE) :: dubuf
       logical :: GOahead
       complex( kind = CKIND), dimension(:,:,:), pointer :: EcampoX,EcampoY,EcampoZ,HcampoX,HcampoY,HcampoZ,Hcampo2X,Hcampo2Y,Hcampo2Z
       !---------------------------> empieza  <---------------------------------------
-      integer (kind=4)  :: number,mt,mf,contaje,m,n
+      integer(kind=4) :: number,mt,mf,contaje,m,n
       real(kind = RKIND), allocatable :: Phimatrix(:,:),sizephi(:),Thetavector(:)
       real(kind = RKIND) :: thetaini,thetafin,phiini,phifin,solid,ddd,aaa,dfi,dth
       integer :: my_iostat
 !
-      character(LEN=BUFSIZE) :: chninstant
+      character(len=BUFSIZE) :: chninstant
       write(chninstant,fmt) rinstant
 
       write(dubuf,'(a)')  ' NF2FF: INIT ' ! mpimaster=',LAYOUTNUMBER
@@ -3363,9 +3354,9 @@ contains
 !
       end do !del de frecuencias
       !fin calculo
-      if (allocated(Thetavector)) deallocate (Thetavector)
-      if (allocated(sizephi)) deallocate (sizephi)
-      if (allocated(Phimatrix)) deallocate (Phimatrix)
+      if (allocated(Thetavector)) deallocate(Thetavector)
+      if (allocated(sizephi)) deallocate(sizephi)
+      if (allocated(Phimatrix)) deallocate(Phimatrix)
 
       CLOSE (FF%unitfarfield)
 
@@ -3379,10 +3370,10 @@ contains
 
    subroutine update_LN(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi)
 
-      type (co_t) :: co
-      complex (KIND=CKIND) :: L_theta,L_phi,Mx,My,Mz,comunMx,comunMy,comunMz,comunJx,comunJy,comunJz,comun
-      complex (KIND=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
-      real(KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi
+      type(co_t) :: co
+      complex(kind=CKIND) :: L_theta,L_phi,Mx,My,Mz,comunMx,comunMy,comunMz,comunJx,comunJy,comunJz,comun
+      complex(kind=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
+      real(kind=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi
       !!puede que me falte un signo en la exponencial aunque no afecta a nada (creo que es -exp[-j k r] taflove 3rd 372 nf2ff) 02/03/15
       comunMx=exp(comun*(co%x_Mx*sintheta_cosphi + co%y_Mx*sintheta_sinphi + co%z_Mx*costheta))
       comunMy=exp(comun*(co%x_My*sintheta_cosphi + co%y_My*sintheta_sinphi + co%z_My*costheta))
@@ -3401,11 +3392,11 @@ contains
 
 
    subroutine cloneTrFr(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
-      type (co_t) :: co,new_co
+      type(co_t) :: co,new_co
       complex( kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
-      complex (KIND=CKIND) :: L_theta,L_phi,Mx,My,Mz,comun
-      complex (KIND=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
-      real(KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
+      complex(kind=CKIND) :: L_theta,L_phi,Mx,My,Mz,comun
+      complex(kind=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
+      real(kind=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
       If( FF%farfieldTr_ClonePEC_Front.or.FF%farfieldFr_ClonePEC_Back) then
@@ -3436,11 +3427,11 @@ contains
 
 
    subroutine cloneIzDe(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
-      type (co_t) :: co,new_co
+      type(co_t) :: co,new_co
       complex( kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
-      complex (KIND=CKIND) :: L_theta,L_phi,Mx,My,Mz,comun
-      complex (KIND=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
-      real(KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
+      complex(kind=CKIND) :: L_theta,L_phi,Mx,My,Mz,comun
+      complex(kind=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
+      real(kind=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
       If( FF%farfieldIz_ClonePEC_Right.or.FF%farfieldDe_ClonePEC_Left) then
@@ -3470,11 +3461,11 @@ contains
 
 
    subroutine cloneAbAr(comun,co,sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,Mx,My,Mz,Jx,Jy,Jz,L_theta,L_phi,N_theta,N_phi,NORMAL)
-      type (co_t) :: co,new_co
+      type(co_t) :: co,new_co
       complex( kind = CKIND) :: new_Mx,new_My,new_Mz,new_Jx,new_Jy,new_Jz
-      complex (KIND=CKIND) :: L_theta,L_phi,Mx,My,Mz,comun
-      complex (KIND=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
-      real(KIND=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
+      complex(kind=CKIND) :: L_theta,L_phi,Mx,My,Mz,comun
+      complex(kind=CKIND) :: N_theta,N_phi,Jx,Jy,Jz
+      real(kind=RKIND) :: sintheta_cosphi,sintheta_sinphi,costheta,costheta_cosphi,costheta_sinphi,sintheta,sinphi,cosphi,NORMAL
 
       new_co=co; new_Mx=Mx; new_My=My; new_Mz=Mz; new_Jx=Jx; new_Jy=Jy; new_Jz=Jz;
       If( FF%farfieldAb_ClonePEC_UP.or.FF%farfieldAr_ClonePEC_DOWN) then
@@ -3505,8 +3496,8 @@ contains
 
    !!!!!!!COMPUTE THE GEOMETRIC AVERAGE OF TWO COMPLEX NUMBERS
    function average (pasadas,z1,z2) result (z)
-      complex (KIND=CKIND) :: Z1,Z2,Z
-      real  (KIND=RKIND) :: phi1,phi2,nphi1,nphi2
+      complex(kind=CKIND) :: Z1,Z2,Z
+      real(kind=RKIND) :: phi1,phi2,nphi1,nphi2
       integer(4) :: pasadas
       Z=(0.0_RKIND,0.0_RKIND)
       if (pasadas ==2 ) then !geometrica
@@ -3528,6 +3519,6 @@ contains
       !!if (abs(z)/abs(zarit) > 1e1) write(3555,'(e18.6e3,a,2e18.6e3,a,2e18.6e3)') abs(z)/abs(zarit),'---> ',abs(z),abs(zarit),' -- ',atan2(AIMAG(z),real(z)),atan2(AIMAG(zarit),real(zarit))
 
       return
-   END FUNCTION
+   end function
 
 end module farfield_m

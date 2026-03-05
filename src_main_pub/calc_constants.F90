@@ -12,11 +12,11 @@ module CALC_CONSTANTS
     public calc_g1g2gm1gm2
     contains
    subroutine calc_g1g2gm1gm2(sgg,g,eps0,mu0)
-        type (SGGFDTDINFO), intent(IN)   ::  sgg
+        type(SGGFDTDINFO), intent(in) :: sgg
         type(constants_t), intent(inout) :: g
-        real(KIND=RKIND) , intent(inout) :: Eps0, Mu0
+        real(kind=RKIND) , intent(inout) :: Eps0, Mu0
         integer :: r,i
-        real(KIND=RKIND) :: Sigmam , Epsilon , Mu , Sigma,width, epr
+        real(kind=RKIND) :: Sigmam , Epsilon , Mu , Sigma,width, epr
         character(len=BUFSIZE) :: buff
         
         do r=0,sgg%NumMedia
@@ -111,7 +111,7 @@ module CALC_CONSTANTS
                g%gm2(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives
             elseif  ((sgg%Med(r)%Is%MdispersiveANIS).OR.(sgg%Med(r)%Is%EdispersiveANIS)) then
                BUFF='ERROR: ANISOTROPIC DISPERSIVE CURRENTLY UNSUPPORTED IN THE ENGINE'
-               CALL StopOnError (0,0,buff)  !lo deberia reportar y parar antes SEMBA_FDTD.F90 !quitar algun dia para que no ralentice 170719
+               call StopOnError (0,0,buff)  !lo deberia reportar y parar antes SEMBA_FDTD.F90 !quitar algun dia para que no ralentice 170719
             else
                g%g1(r)=(1 -  Sigma * sgg%dt / (2.0_RKIND * Epsilon ) ) / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * Epsilon ))
                g%g2(r)=sgg%dt /Epsilon                        / (1.0_RKIND + Sigma * sgg%dt / (2.0_RKIND * Epsilon ))
@@ -143,7 +143,7 @@ end module CALC_CONSTANTS
 !!!!!!UNSUPPORTED       !!!      elseif((trim(adjustl(wiresflavor))=='slanted').or.(trim(adjustl(wiresflavor))=='semistructured')) then
 !!!!!!UNSUPPORTED       !!!         call InitWires_Slanted()
 !!!!!!UNSUPPORTED       !!!      endif
-!!!!!!DONE       !               CALL InitLumped()
+!!!!!!DONE       !               call InitLumped()
 !!!!!!DONE       !               call InitAnisotropic()
 !!!!!!DONE       !               call InitSGBCs()
 !!!!!!UNSUPPORTED       !!!      call InitMultiports        ()

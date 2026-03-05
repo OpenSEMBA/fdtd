@@ -24,7 +24,7 @@ contains
    function ctor(core, root, path) result(res)
       type(json_core) :: core
       type(json_value), pointer :: root
-      character (len=*), intent(in) :: path
+      character(len=*), intent(in) :: path
       type(IdChildTable_t) :: res
       type(json_value), pointer :: jentries, jentry
       integer :: id

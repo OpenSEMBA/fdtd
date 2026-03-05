@@ -21,15 +21,15 @@ module HollandWires
    implicit none
    
    
-   real(KIND=RKIND_wires), PARAMETER             :: HEUR_RADIUSOVERDELTA=10.0
+   real(kind=RKIND_wires), PARAMETER             :: HEUR_RADIUSOVERDELTA=10.0
    !local variables
 
    logical                                         , save :: thereAreVsources,thereAreIsources,thereAreMurConditions
-   type(Thinwires_t)     , target                  ,save  ::  HWires
-   real(KIND=RKIND_wires)     , pointer, dimension ( : ),save  ::  InvEps  ,InvMu, OldInvEps  ,OldInvMu
+   type(Thinwires_t)     , target                  ,save  :: HWires
+   real(kind=RKIND_wires)     , pointer, dimension( : ),save  :: InvEps  ,InvMu, OldInvEps  ,OldInvMu
    
 !!!variables globales del modulo
-   real(KIND=RKIND_wires), save           ::  eps0,mu0
+   real(kind=RKIND_wires), save           :: eps0,mu0
 !!!
    private
 
@@ -40,17 +40,17 @@ module HollandWires
 contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to initialize the parameters
+   ! subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitWires(sgg,sggMiNo,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,ThereAreWires,&
    Ex,Ey,Ez,Hx,Hy,Hz,Idxe,Idye,Idze,Idxh,Idyh,Idzh, g2,SINPML_fullsize,fullsize, dtcritico, eps00,mu00, control)     
-      real(KIND=RKIND), intent(in)           ::  eps00,mu00
-      real(KIND=RKIND)           ::  eps000,mu000  !son dummies
-      type (limit_t), dimension(1:6), intent(in)  :: SINPML_fullsize,fullsize
-      type (SGGFDTDINFO), intent(INOUT) , target    ::  sgg
-      real(KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
-      real(KIND=RKIND_tiempo), intent(out) :: dtcritico
-      real(KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+      real(kind=RKIND), intent(in) :: eps00,mu00
+      real(kind=RKIND) :: eps000,mu000  !son dummies
+      type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
+      type(SGGFDTDINFO), intent(INOUT) , target    :: sgg
+      real(kind=RKIND) , pointer, dimension(:), intent(in) :: G2
+      real(kind=RKIND_tiempo), intent(out) :: dtcritico
+      real(kind=RKIND) , dimension(:)   , intent(in) :: &
            Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
            Idye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
            Idze(sgg%ALLOC(iHz)%ZI : sgg%ALLOC(iHz)%ZE), &
@@ -58,7 +58,7 @@ contains
            Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
            Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
                                                            
-        real(KIND=RKIND)   , intent(in), target      :: &
+        real(kind=RKIND)   , intent(in), target      :: &
             Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
             Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
             Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE),&
@@ -67,56 +67,56 @@ contains
             Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
 
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
               sggMiNo(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(inout)   ::  &
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(inout) :: &
               sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
               sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
               sggMiEz(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE), &
               sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE), &
               sggMiHy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE), &
               sggMiHz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: sggMiE 
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: sggMiE 
       
       
-      logical , dimension (:), pointer :: LindProb
+      logical , dimension(:), pointer :: LindProb
 
-      LOGICAL, intent(out)  ::  ThereAreWires
+      LOGICAL, intent(out) :: ThereAreWires
       logical :: proceed,proceed1,proceed2,NodeExists,Is_LeftEnd,Is_RightEnd,IsEnd_norLeft_norRight,repetido,conectado,conectado1,conectado2,asignado
-      logical ::  IsPEC , islossy ,IsLossyPlus,IsLossyMinu,IsPecPlus,IsPECminu
+      logical :: IsPEC , islossy ,IsLossyPlus,IsLossyMinu,IsPecPlus,IsPECminu
       real(kind=RKIND_wires) :: rlossy,newr0, factorradius,factordelta
       type(sim_control_t), intent(in) :: control
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: med(0:11)=-1
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: med(0:11)=-1
 
-      type (adyacc)  ::  adj
-      integer (kind=4)  ::  conta,i1,j1,k1,i2,j2,k2,iwi,iwj,iwjjj,jmed,nn,nnn,i1libre,j1libre,k1libre, &
+      type(adyacc) :: adj
+      integer(kind=4) :: conta,i1,j1,k1,i2,j2,k2,iwi,iwj,iwjjj,jmed,nn,nnn,i1libre,j1libre,k1libre, &
       whatfield,whatfield2,origIndex,OrigIndex2,LeftEnd_index,RightEnd_index,nm, &
       i,j,k,indexnode,kmenos1,kmasoffk,kmas1,tipofield,i22,j22,k22,i11,j11,k11,primernorabo,Jprimernorabo=-1
-      real(KIND=RKIND_wires)   ::  r0, desp, deltadummy1 ,deltadummy2, deltadummy, oldr0,a,b, &
+      real(kind=RKIND_wires) :: r0, desp, deltadummy1 ,deltadummy2, deltadummy, oldr0,a,b, &
       despT1,despT2,DenominatorFractionMinusDummy,  &
       DenominatorFractionPlusDummy,givenautoin,resist,givenautoin_devia,resist_devia, &
       mindt,maxA,dt0,sigt,totalLind,capaci,autoin,deltax,sigtPlus,sigtMinu
-      type (CurrentSegments), pointer  ::  dummy , org  ,fin ,orgmenos1 ,orgmas1 ,finmenos1,finmas1 ,segmento
-      type (ChargeNodes), pointer  ::  nodo
+      type(CurrentSegments), pointer  :: dummy , org  ,fin ,orgmenos1 ,orgmas1 ,finmenos1,finmas1 ,segmento
+      type(ChargeNodes), pointer  :: nodo
 
       !dama
-      integer   (KIND=4)                          ::  NumMultilines, NumParallel
-      integer   (KIND=4)                          ::  iw1, is1, in1
-      integer   (KIND=4)                          ::  iw2, is2, in2
-      integer   (KIND=4)                          ::  contsgm, contmtln, contprll
-      integer   (KIND=4)                          ::  contnds, contchgm, contchgp
-      integer   (KIND=4)                          ::  imed, N
-      real      (kind=RKIND_wires)							::  dl, dx1, dx2,Ceq
-      real      (kind=RKIND_wires)							::  dist, phi
-      real      (KIND=RKIND_wires), pointer, dimension(:,:) ::  Den
+      integer   (kind=4)                          :: NumMultilines, NumParallel
+      integer   (kind=4)                          :: iw1, is1, in1
+      integer   (kind=4)                          :: iw2, is2, in2
+      integer   (kind=4)                          :: contsgm, contmtln, contprll
+      integer   (kind=4)                          :: contnds, contchgm, contchgp
+      integer   (kind=4)                          :: imed, N
+      real      (kind=RKIND_wires)							:: dl, dx1, dx2,Ceq
+      real      (kind=RKIND_wires)							:: dist, phi
+      real      (kind=RKIND_wires), pointer, dimension(:,:) :: Den
       !dama fin
       logical :: esPML
-      integer (kind=4)  ::  int1, int2,ierr,mediox,medioy,medioz,ZI,ZE,offset,offi,offj,offk,NUMESEG,dummy1,dummy2,dummy3,multirabos,dummyfin,medio1,medio2,medio3,medio1m,medio2m,medio3m
+      integer(kind=4) :: int1, int2,ierr,mediox,medioy,medioz,ZI,ZE,offset,offi,offj,offk,NUMESEG,dummy1,dummy2,dummy3,multirabos,dummyfin,medio1,medio2,medio3,medio1m,medio2m,medio3m
       character(len=BUFSIZE) :: buff
 
-      real(KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
-      character (LEN=BUFSIZE)  ::  whoami
-      character (len=3), dimension(1:3) :: DIR
+      real(kind=RKIND_wires) :: df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
+      character(len=BUFSIZE) :: whoami
+      character(len=3), dimension(1:3) :: DIR
       
       !!!
 !
@@ -1706,7 +1706,7 @@ contains
             end do
          endif
       end do
-      deallocate (LindProb)
+      deallocate(LindProb)
 
 
       !!!!solo para pruebas
@@ -2310,8 +2310,8 @@ contains
          do iw1 = 1,NumMultilines
             N = HWires%Multilines(iw1)%NumParallel
             do i1 = 2,N
-               HWires%Multilines(iw1)%Segments(i1)%ptr%x = HWires%Multilines(iw1)%Segments(i1)%ptr%x+cos(real(i1-2,KIND=RKIND_wires)/real(N-1,KIND=RKIND_wires)*2.0_RKIND_wires * pi)*0.25_RKIND_wires
-               HWires%Multilines(iw1)%Segments(i1)%ptr%y = HWires%Multilines(iw1)%Segments(i1)%ptr%y+sin(real(i1-2,KIND=RKIND_wires)/real(N-1,KIND=RKIND_wires)*2.0_RKIND_wires * pi)*0.25_RKIND_wires
+               HWires%Multilines(iw1)%Segments(i1)%ptr%x = HWires%Multilines(iw1)%Segments(i1)%ptr%x+cos(real(i1-2,kind=RKIND_wires)/real(N-1,kind=RKIND_wires)*2.0_RKIND_wires * pi)*0.25_RKIND_wires
+               HWires%Multilines(iw1)%Segments(i1)%ptr%y = HWires%Multilines(iw1)%Segments(i1)%ptr%y+sin(real(i1-2,kind=RKIND_wires)/real(N-1,kind=RKIND_wires)*2.0_RKIND_wires * pi)*0.25_RKIND_wires
             end do
          end do
 
@@ -3743,7 +3743,7 @@ contains
    
    subroutine deembed_peclossyconformal_segments(sggmiE)
     
-       integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: sggMiE
+       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: sggMiE
       
    !primero los conformal 130220 %Is%split_and_useless
        if ((sgg%Med(sggmiE)%Is%split_and_useless).and. &
@@ -4077,7 +4077,7 @@ end subroutine deembed_segment
    logical embed
    integer :: ib,jb,kb,tipofieldb
    integer :: io,jo,ko,tipofieldo
-   type (CurrentSegments), pointer  ::  dummy
+   type(CurrentSegments), pointer  :: dummy
   !!!!!!!!!!!!!!!!! embed=.true.; return !!!!ojoooo sgg tocado a mano para ver bug conformal 220323 
    
     embed=.false.
@@ -4162,7 +4162,7 @@ end subroutine deembed_segment
    logical embed
    integer :: ib,jb,kb,tipofieldb
    integer :: io,jo,ko,tipofieldo
-   type (CurrentSegments), pointer  ::  dummy
+   type(CurrentSegments), pointer  :: dummy
         ib = dummy%i
         jb = dummy%j
         kb = dummy%k
@@ -4280,20 +4280,20 @@ subroutine resume_casuistics
     subroutine calc_wirehollandconstants(sgg,G2,fieldtotl,wiresflavor,mu00,eps00,simu_devia)
 
       logical :: simu_devia
-      type (SGGFDTDINFO), intent(IN)      ::  sgg
-      real(KIND=RKIND) , pointer, dimension (:),intent(in)      :: G2
+      type(SGGFDTDINFO), intent(in) :: sgg
+      real(kind=RKIND) , pointer, dimension(:),intent(in) :: G2
       character(len=*), INTENT(in) :: wiresflavor
       logical, intent(in) :: fieldtotl
-      real(KIND=RKIND),intent(in)            ::  eps00,mu00
-      real(KIND=RKIND_wires)           ::  dl
-      real      (KIND=RKIND_wires), pointer, dimension(:,:) ::  Den
-      integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2,i1,NumParallel,imed
+      real(kind=RKIND),intent(in)            :: eps00,mu00
+      real(kind=RKIND_wires) :: dl
+      real      (kind=RKIND_wires), pointer, dimension(:,:) :: Den
+      integer(kind=4) :: n,jmed,layoutnumber,iw1,is1,is2,i1,NumParallel,imed
 
-      real(KIND=RKIND_wires)           ::  df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
+      real(kind=RKIND_wires) :: df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
 
-      type (CurrentSegments), pointer  ::  dummy
-      type (ChargeNodes), pointer  ::  Nodo
-      type (TMultiline), pointer                      ::  Multiline
+      type(CurrentSegments), pointer  :: dummy
+      type(ChargeNodes), pointer  :: Nodo
+      type(TMultiline), pointer                      :: Multiline
    
 
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
@@ -4398,13 +4398,13 @@ subroutine resume_casuistics
    !
 
    function TestAdjacency(first,numfirst,second,numsecond,connectendings,isolategroupgroups,strictOLD,ZI,ZE,NUMESEG,firstmenos1,FIRSTMAS1,secondmenos1,secondmas1,verbose) RESULT(adj)
-      type(CurrentSegments), pointer, intent(in)        ::  first ,second,firstmenos1 ,firstmas1 ,secondmenos1 ,secondmas1
-      type(CurrentSegments), pointer     ::  firstprevio,secondprevio
-      type (adyacc)  ::  adj
+      type(CurrentSegments), pointer, intent(in) :: first ,second,firstmenos1 ,firstmas1 ,secondmenos1 ,secondmas1
+      type(CurrentSegments), pointer     :: firstprevio,secondprevio
+      type(adyacc) :: adj
       logical :: verbose
       logical :: conexionados,RRConnected,RLConnected,LLConnected,LRConnected,EndingsConnected,connectendings,isolategroupgroups,RequestedConnection,strictOLD,success,entro1,entro2,entro3
-      integer (kind=4) :: numfirst,numsecond,ZI,ZE,void,offx,offy,offz,NUMESEG
-      character (len=3), dimension(1:3) :: DIR
+      integer(kind=4) :: numfirst,numsecond,ZI,ZE,void,offx,offy,offz,NUMESEG
+      character(len=3), dimension(1:3) :: DIR
       character(len=BUFSIZE) :: buff
       RequestedConnection=.false. ;
 
@@ -5130,19 +5130,19 @@ subroutine resume_casuistics
 
    subroutine AdvanceWiresE(sgg,timeinstant, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)
                     
-      real(KIND=RKIND), intent(IN)           ::  eps0,mu0
-      integer, intent(IN) :: wirethickness
+      real(kind=RKIND), intent(in) :: eps0,mu0
+      integer, intent(in) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
-      type (SGGFDTDINFO), intent(IN)      ::  sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
 
-      integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2
+      integer(kind=4) :: n,jmed,layoutnumber,iw1,is1,is2
 
-      integer (kind=4), intent(IN)  ::  timeinstant
-      real(KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
-      real(KIND=RKIND_wires)   ::  Vincid,Iincid
-      type (CurrentSegments), pointer  ::  Segmento, Segmento2
-      type (ChargeNodes), pointer  ::  Nodo
-      type (TMultiline), pointer                      ::  Multiline
+      integer(kind=4), intent(in) :: timeinstant
+      real(kind=RKIND_wires) :: Iplus,IMinus,Qplus,QMinus,timei
+      real(kind=RKIND_wires) :: Vincid,Iincid
+      type(CurrentSegments), pointer  :: Segmento, Segmento2
+      type(ChargeNodes), pointer  :: Nodo
+      type(TMultiline), pointer                      :: Multiline
       character(len=*), INTENT(in) :: wiresflavor
       timei = sgg%tiempo(timeinstant) 
       !!!
@@ -5326,7 +5326,7 @@ subroutine resume_casuistics
       do n=1,HWires%NumCurrentSegments
          Segmento => HWires%CurrentSegment(n)
          if (.not.Segmento%IsShielded) then
-!171216quitado            Segmento%Efield_wire2main_past = real(Segmento%Efield_wire2main,KIND=RKIND_wires)
+!171216quitado            Segmento%Efield_wire2main_past = real(Segmento%Efield_wire2main,kind=RKIND_wires)
 #ifdef CompileWithThickWires
              if (wirethickness>1) then
                 call Advance_Thick_Efield_wire2main(sgg,segmento,eps0,mu0,wirethickness)
@@ -5379,7 +5379,7 @@ subroutine resume_casuistics
                   Multiline%b2I(is1,is2)*(Segmento2%fractionPlus*Qplus-Segmento2%fractionMinus*QMinus)
                   if(.not.(Segmento%IsShielded.and.Segmento2%IsShielded)) then
                       !!!lo he descomentado a 300523 porque creo que estaba mal. ojo si algun dia se usa el flavor transition. pongo un stop para avisar
-                     Segmento%Current = Segmento%Current + Multiline%b3I(is1,is2)*real(Segmento2%Efield_main2wire,KIND=RKIND_wires)
+                     Segmento%Current = Segmento%Current + Multiline%b3I(is1,is2)*real(Segmento2%Efield_main2wire,kind=RKIND_wires)
                      stop
                   end if
                end do
@@ -5419,7 +5419,7 @@ subroutine resume_casuistics
 #endif                            
                    if (wirethickness==1) then
                      Segmento%Current = Segmento%Current + &
-                         Segmento%cte2*real(Segmento%Efield_main2wire,KIND=RKIND_wires)
+                         Segmento%cte2*real(Segmento%Efield_main2wire,kind=RKIND_wires)
                    endif           
                endif
             endif
@@ -5540,19 +5540,19 @@ subroutine resume_casuistics
 
    subroutine AdvanceWiresH(sgg,timeinstant, layoutnumber,wiresflavor,simu_devia,stochastic,experimentalVideal,wirethickness,eps0,mu0)
                     
-      real(KIND=RKIND), intent(IN)           ::  eps0,mu0
-      integer, intent(IN) :: wirethickness
+      real(kind=RKIND), intent(in) :: eps0,mu0
+      integer, intent(in) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
-      type (SGGFDTDINFO), intent(IN)      ::  sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
 
-      integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2
+      integer(kind=4) :: n,jmed,layoutnumber,iw1,is1,is2
 
-      integer (kind=4), intent(IN)  ::  timeinstant
-      real(KIND=RKIND_wires)   ::  Iplus,IMinus,Qplus,QMinus,timei
-      real(KIND=RKIND_wires)   ::  Vincid,Iincid
-      type (CurrentSegments), pointer  ::  Segmento, Segmento2
-      type (ChargeNodes), pointer  ::  Nodo
-      type (TMultiline), pointer                      ::  Multiline
+      integer(kind=4), intent(in) :: timeinstant
+      real(kind=RKIND_wires) :: Iplus,IMinus,Qplus,QMinus,timei
+      real(kind=RKIND_wires) :: Vincid,Iincid
+      type(CurrentSegments), pointer  :: Segmento, Segmento2
+      type(ChargeNodes), pointer  :: Nodo
+      type(TMultiline), pointer                      :: Multiline
       character(len=*), INTENT(in) :: wiresflavor
       timei = sgg%tiempo(timeinstant) 
    
@@ -5586,21 +5586,21 @@ subroutine resume_casuistics
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine AdvanceWiresEcrank(sgg,timeinstant,layoutnumber,wiresflavor,simu_devia,stochastic)
-      type (SGGFDTDINFO), intent(IN)      ::  sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
       logical :: simu_devia,stochastic
 
       !!!
 
-      integer (kind=4)  :: n,jmed,layoutnumber,iw1,is1,is2
+      integer(kind=4) :: n,jmed,layoutnumber,iw1,is1,is2
 
-      integer (kind=4), intent(IN)  ::  timeinstant
-      real(KIND=RKIND_wires)   ::  Iplus,IMinus,IplusPast,IMinusPast,source,timei
-      real(KIND=RKIND_wires)   ::  Vincid,Iincid
-      type (CurrentSegments), pointer  ::  Segmento , Segmento2
-      type (ChargeNodes), pointer  ::  Nodo
-      type (TMultiline), pointer                      ::  Multiline
+      integer(kind=4), intent(in) :: timeinstant
+      real(kind=RKIND_wires) :: Iplus,IMinus,IplusPast,IMinusPast,source,timei
+      real(kind=RKIND_wires) :: Vincid,Iincid
+      type(CurrentSegments), pointer  :: Segmento , Segmento2
+      type(ChargeNodes), pointer  :: Nodo
+      type(TMultiline), pointer                      :: Multiline
       character(len=*), INTENT(in) :: wiresflavor
-      real(KIND=RKIND_wires) , dimension(1:HWires%NumCurrentSegments)  ::  a,b,c,d,x
+      real(kind=RKIND_wires) , dimension(1:HWires%NumCurrentSegments) :: a,b,c,d,x
       
       timei = sgg%tiempo(timeinstant) 
       !!!
@@ -5648,7 +5648,7 @@ subroutine resume_casuistics
       do n=1,HWires%NumCurrentSegments
          Segmento => HWires%CurrentSegment(n)
 !171216quitado         Segmento%Efield_wire2main_past = Segmento%Efield_wire2main
-         Segmento%Efield_wire2main=real(Segmento%Efield_wire2main,KIND=RKIND_wires) - Segmento%cte5 * Segmento%Current
+         Segmento%Efield_wire2main=real(Segmento%Efield_wire2main,kind=RKIND_wires) - Segmento%cte5 * Segmento%Current
       end do
 
 
@@ -5665,7 +5665,7 @@ subroutine resume_casuistics
          d(n)=        segmento%rightCU       * Segmento%Current
          d(n)= d(n) + segmento%rightCHminus  * Segmento%ChargeMinus%ChargePresent
          d(n)= d(n) + segmento%rightCHplus   * Segmento%ChargePlus%ChargePresent
-         d(n)= d(n) + real(Segmento%Efield_wire2main,KIND=RKIND_wires)
+         d(n)= d(n) + real(Segmento%Efield_wire2main,kind=RKIND_wires)
          if (Segmento%ChargeMinus%NumCurrentMinus==1) d(n)= d(n) + segmento%rightCUminus  * Segmento%ChargeMinus%CurrentMinus_1%Current
          if (Segmento%ChargePlus%NumCurrentPlus==1  ) d(n)= d(n) + segmento%rightCUplus   * Segmento%ChargePlus%CurrentPlus_1%Current
          if (.not.simu_devia) then             
@@ -5780,11 +5780,11 @@ subroutine resume_casuistics
    !!! Function to interpolate the evolution files at the desired time
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   real(KIND=RKIND_wires)  function evolucion(t,evol,deltaevol,numus)
-      integer (kind=4)  ::  numus
-      integer (kind=8)  ::  nprev
-      real(KIND=RKIND_wires) , dimension(0 : numus)  ::  evol
-      real(KIND=RKIND_wires)   ::  deltaevol, t
+   real(kind=RKIND_wires)  function evolucion(t,evol,deltaevol,numus)
+      integer(kind=4) :: numus
+      integer(kind=8) :: nprev
+      real(kind=RKIND_wires) , dimension(0 : numus) :: evol
+      real(kind=RKIND_wires) :: deltaevol, t
       !
       nprev=int((t)/deltaevol)
       if ((nprev+1 > numus).OR.(NPREV+1 <= 0)) then !SI NPREV<0 ES PORQUE SE HA DESBORADO EL ENTERO !BUG MIGEL 130614
@@ -5802,7 +5802,7 @@ subroutine resume_casuistics
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine StoreFieldsWires
-      integer (kind=4)  ::  i1
+      integer(kind=4) :: i1
 
       !store data for resuming
       do i1=1,HWires%NumChargeNodes
@@ -5838,25 +5838,25 @@ subroutine resume_casuistics
    !Routine to free-up memory upon termination
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   Subroutine DestroyWires(sgg)
-      type (SGGFDTDINFO), intent(INOUT)      ::  sgg
-      integer (kind=4)  ::  i
+   subroutine DestroyWires(sgg)
+      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      integer(kind=4) :: i
 
       !free up memory !ojo no se como hacerlo
       do i=1,sgg%NumMedia
          if (sgg%Med(i)%Is%ThinWire) then
-            if (associated(sgg%Med(i)%wire(1)%Vsource)) deallocate (sgg%Med(i)%wire(1)%Vsource)
-            if (associated(sgg%Med(i)%wire(1)%Isource)) deallocate (sgg%Med(i)%wire(1)%Isource)
-            if (associated(sgg%Med(i)%wire)) deallocate (sgg%Med(i)%wire)
+            if (associated(sgg%Med(i)%wire(1)%Vsource)) deallocate(sgg%Med(i)%wire(1)%Vsource)
+            if (associated(sgg%Med(i)%wire(1)%Isource)) deallocate(sgg%Med(i)%wire(1)%Isource)
+            if (associated(sgg%Med(i)%wire)) deallocate(sgg%Med(i)%wire)
          endif
       end do
 
-      if (associated(HWires%WireTipoMedio )) deallocate (HWires%WireTipoMedio )
-      if (associated(HWires%CurrentSegment)) deallocate (HWires%CurrentSegment)
-      if (associated(HWires%ChargeNode    )) deallocate (HWires%ChargeNode    )
+      if (associated(HWires%WireTipoMedio )) deallocate(HWires%WireTipoMedio )
+      if (associated(HWires%CurrentSegment)) deallocate(HWires%CurrentSegment)
+      if (associated(HWires%ChargeNode    )) deallocate(HWires%ChargeNode    )
 #ifdef CompileWithMPI
-      if (Hwires%NumNeededCurrentUpMPI>0)   deallocate (HWires%MPIUpNeededCurrentSegment)
-      if (Hwires%NumNeededCurrentDownMPI>0) deallocate (HWires%MPIDownNeededCurrentSegment)
+      if (Hwires%NumNeededCurrentUpMPI>0)   deallocate(HWires%MPIUpNeededCurrentSegment)
+      if (Hwires%NumNeededCurrentDownMPI>0) deallocate(HWires%MPIDownNeededCurrentSegment)
 #endif
    end subroutine
 
@@ -5865,7 +5865,7 @@ subroutine resume_casuistics
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    function GetHwires() result(r)
-      type(Thinwires_t), pointer  ::  r
+      type(Thinwires_t), pointer  :: r
       r=>Hwires
       return
    end function
@@ -5881,17 +5881,17 @@ subroutine resume_casuistics
 
       logical :: paralelos,groundwires,therearewires,Terminal,IsHeterogeneousJunction,paraErr,strictOLD,verbose
       character(len=BUFSIZE) :: buff
-      integer (kind=4)  ::  i1,j1,layoutnumber,zi,ze,ierr,size,indio
-      integer (kind=4)  ::  mini=1000000000,minj=1000000000,mink=1000000000,maxi=-1000000000,maxj=-1000000000,maxk=-1000000000
-      type (CurrentSegments), pointer  ::  org,fin
-      character (len=3), dimension(1:3) :: DIR
-      character (LEN=BUFSIZE) :: ig
-      type (ChargeNodes), pointer :: nodo
+      integer(kind=4) :: i1,j1,layoutnumber,zi,ze,ierr,size,indio
+      integer(kind=4) :: mini=1000000000,minj=1000000000,mink=1000000000,maxi=-1000000000,maxj=-1000000000,maxk=-1000000000
+      type(CurrentSegments), pointer  :: org,fin
+      character(len=3), dimension(1:3) :: DIR
+      character(len=BUFSIZE) :: ig
+      type(ChargeNodes), pointer :: nodo
       type :: nodosopentoair_t 
-        integer (kind=4) :: i,j,k,indexnode
+        integer(kind=4) :: i,j,k,indexnode
       end type
       
-      type (nodosopentoair_t), allocatable, dimension(:) :: nodosopentoair
+      type(nodosopentoair_t), allocatable, dimension(:) :: nodosopentoair
 
 
       dir(iEx)=' X '
@@ -6619,7 +6619,7 @@ subroutine resume_casuistics
             endif
         end do
       end do
-      deallocate (nodosopentoair)
+      deallocate(nodosopentoair)
 
 
 
@@ -6641,97 +6641,97 @@ subroutine resume_casuistics
       !!!!writes the lines in a DXF file if requested with -map
       !!!    do i1=1,HWires%NumCurrentSegments
       !!!        write(dxfbuff,'(a)') 'LINE'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '8'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%indexmed+20
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '62'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%indexmed+20
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!    select case(HWires%CurrentSegment(i1)%tipofield)
       !!!    case(iEx)
       !!!        write(dxfbuff,'(a)') '10'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%i
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '20'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%J
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '30'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%K
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '11'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%i+1
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '21'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%J
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '31'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%K
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '0'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!    case(iEy)
       !!!        write(dxfbuff,'(a)') '10'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%i
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '20'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%J
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '30'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%K
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '11'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%i
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '21'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%J+1
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '31'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%K
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '0'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!    case(iEz)
       !!!        write(dxfbuff,'(a)') '10'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%i
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '20'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%J
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '30'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%K
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '11'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%i
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '21'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%J
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '31'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(i7)') HWires%CurrentSegment(i1)%K+1
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!        write(dxfbuff,'(a)') '0'
-      !!!        CALL DXFWRITE(DXFBUFF)
+      !!!        call DXFWRITE(DXFBUFF)
       !!!    end select
       !!!    end do
       !!!!END DXFOUT by LAYER 0 and COLOR 0
@@ -6753,9 +6753,9 @@ subroutine resume_casuistics
    !!! Functions to get the values of the
    !!! non diagonal elementos of the autoinduction
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   real(KIND=RKIND_wires) function F(A, B, a1, a2, d, phi)
-      integer (KIND=4)     :: i, j
-      real    (KIND=RKIND_wires) :: A, B, a1, a2, d, phi, frac
+   real(kind=RKIND_wires) function F(A, B, a1, a2, d, phi)
+      integer(kind=4) :: i, j
+      real    (kind=RKIND_wires) :: A, B, a1, a2, d, phi, frac
 
       frac = 1.0_RKIND_wires / (8.0_RKIND_wires * A*B);
       F = pi*a2*a2*(1.0_RKIND_wires-2.0_RKIND_wires * log(a2/d))-3.0_RKIND_wires / (2.0_RKIND_wires * frac);
@@ -6769,27 +6769,27 @@ subroutine resume_casuistics
       return
    end function
 
-   real(KIND=RKIND_wires) function Gkl(k, l, A, B, d, phi)
-      integer (KIND=4)     :: k, l
-      real    (KIND=RKIND_wires) :: A, B, d, phi, Ak, Bl
+   real(kind=RKIND_wires) function Gkl(k, l, A, B, d, phi)
+      integer(kind=4) :: k, l
+      real    (kind=RKIND_wires) :: A, B, d, phi, Ak, Bl
       Ak = Ai(k, A, d, phi)
       Bl = Bi(l, B, d, phi)
       Gkl = Ak*Bl*log((Ak*Ak+Bl*Bl)/(d*d))
       return
    end function
 
-   real(KIND=RKIND_wires) function Hkl(k, l, A, B, d, phi)
-      integer (KIND=4)     :: k, l
-      real    (KIND=RKIND_wires) :: A, B, d, phi, Ak, Bl
+   real(kind=RKIND_wires) function Hkl(k, l, A, B, d, phi)
+      integer(kind=4) :: k, l
+      real    (kind=RKIND_wires) :: A, B, d, phi, Ak, Bl
       Ak = Ai(k, A, d, phi)
       Bl = Bi(l, B, d, phi)
       Hkl = Ak*Ak*atan(Bl/Ak)+Bl*Bl*atan(Ak/Bl)
       return
    end function
 
-   real(KIND=RKIND_wires) function Ai(i, A, d, phi)
-      integer (KIND=4)     :: i
-      real    (KIND=RKIND_wires) :: A, d, phi
+   real(kind=RKIND_wires) function Ai(i, A, d, phi)
+      integer(kind=4) :: i
+      real    (kind=RKIND_wires) :: A, d, phi
       ai=-1.0
       select case(i)
        case (1)
@@ -6801,9 +6801,9 @@ subroutine resume_casuistics
       return
    end function
 
-   real(KIND=RKIND_wires) function Bi(i, B, d, phi)
-      integer (KIND=4)     :: i
-      real    (KIND=RKIND_wires) :: B, d, phi
+   real(kind=RKIND_wires) function Bi(i, B, d, phi)
+      integer(kind=4) :: i
+      real    (kind=RKIND_wires) :: B, d, phi
       bi=-1.0
       select case(i)
        case (1)
@@ -6818,17 +6818,17 @@ subroutine resume_casuistics
    !Rutina de inversionde matrices
    subroutine MatInv(N, M)
       !soubroutine parameters
-      integer (kind=4), intent(in)                ::  N
-      real    (kind=RKIND_wires), intent(inout)             ::  M(1:N, 1:N)
+      integer(kind=4), intent(in)                :: N
+      real    (kind=RKIND_wires), intent(inout)             :: M(1:N, 1:N)
 
       !local variables
-      real      (kind=RKIND_wires), pointer, dimension(:,:) ::  B, eye
-      integer   (kind=4), pointer, dimension(:)   ::  P
-      real      (kind=RKIND_wires), pointer, dimension(:)   ::  y
-      integer   (kind=4)                          ::  i, j, k
-      integer   (kind=4)                          ::  pivot, tmpi
-      real      (kind=RKIND_wires)                          ::  tmpr, val
-      character (len=BUFSIZE)                         ::  buff
+      real      (kind=RKIND_wires), pointer, dimension(:,:) :: B, eye
+      integer   (kind=4), pointer, dimension(:) :: P
+      real      (kind=RKIND_wires), pointer, dimension(:) :: y
+      integer   (kind=4)                          :: i, j, k
+      integer   (kind=4)                          :: pivot, tmpi
+      real      (kind=RKIND_wires)                          :: tmpr, val
+      character(len=BUFSIZE)                         :: buff
       pivot=-1
       !function body
       allocate(P(1:N),y(1:N))
@@ -6947,7 +6947,7 @@ subroutine resume_casuistics
       real(kind=RKIND_wires) ,dimension(n),intent(in) :: a,b,c,d
       real(kind=RKIND_wires) ,dimension(n),intent(out) :: x
       real(kind=RKIND_wires) ,dimension(n) :: cp,dp
-      real(kind=RKIND_wires)  :: m
+      real(kind=RKIND_wires) :: m
       integer i
 
       !  initialize c-prime and d-prime
@@ -6970,11 +6970,11 @@ subroutine resume_casuistics
 
       subroutine wiresconstantes(fieldtotl,dummy,G2,sgg)
       
-          type (SGGFDTDINFO), intent(IN) , target    ::  sgg
-          real(KIND=RKIND) , pointer, dimension (:), intent(in)      :: G2
+          type(SGGFDTDINFO), intent(in) , target    :: sgg
+          real(kind=RKIND) , pointer, dimension(:), intent(in) :: G2
           
           logical, intent(in) :: fieldtotl
-          type (CurrentSegments), pointer  ::  dummy
+          type(CurrentSegments), pointer  :: dummy
 !!!ojooooo 110517 acumulo en %lind toda la autoinduccion para que los calculos de capacidad la tengan en cuenta completa    
          if (.not.fieldtotl) then
              dummy%cte5 = G2(dummy%indexmed)/(dummy%deltaTransv1*dummy%deltaTransv2)

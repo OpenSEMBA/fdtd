@@ -7,7 +7,7 @@ module storeData
    implicit none
    private
    !
-   integer (KIND=4), PARAMETER, private :: BLOCK_SIZE = 1024
+   integer(kind=4), PARAMETER, private :: BLOCK_SIZE = 1024
    public store_geomData
    !
 contains
@@ -17,11 +17,11 @@ contains
    !!! Stores the geometrical data given by the parser into disk
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine store_geomData (sgg,media, fileFDE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: INTJ
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: INTJ
       type(media_matrices_t), intent(in) :: media
-      type (SGGFDTDINFO), intent(IN) :: sgg
-      integer (KIND=4) :: i, j, k, campo, q
-      character (LEN=*), intent(in) :: fileFDE
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4) :: i, j, k, campo, q
+      character(len=*), intent(in) :: fileFDE
       !Writes an ASCII map of the media matrix for each field component
       OPEN (20, FILE=trim(adjustl(fileFDE))//'_MapEx.txt')
       OPEN (21, FILE=trim(adjustl(fileFDE))//'_MapEy.txt')
@@ -98,7 +98,7 @@ contains
                 CASE (iHz)
                   WRITE (19+campo, '(I3,A,4000a)') j, ' |', (chartranslate(media%sggMiHz(i, j, k)), i=sgg%sweep(campo)%XI, &
                   & sgg%sweep(campo)%XE)
-               END SELECT
+               end select
             end do
          end do
       end do
@@ -112,9 +112,9 @@ contains
       !
       !Function to translate media indexes into characters for the mapping files
       !
-      FUNCTION chartranslate (entero) RESULT (chara)
-         integer (KIND=INTEGERSIZEOFMEDIAMATRICES) entero
-         character (LEN=1) chara
+      function chartranslate (entero) RESULT (chara)
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) entero
+         character(len=1) chara
          if (entero == 1) then
             chara = '_'
          ELSE if (entero == 0) then
@@ -125,7 +125,7 @@ contains
             chara = char (48+Abs(entero))
          end if
          return
-      END FUNCTION chartranslate
+      end function chartranslate
       !
    end subroutine store_geomData
    !

@@ -54,7 +54,7 @@ end subroutine setup_thin_wires_test
 subroutine init_thin_wire_component_data(this, twidx, twcidx, i1, j1, k1, nd, d, m, tag)
     type(Parseador), intent(inout) :: this
     integer, intent(in) :: twidx, twcidx, i1, j1, k1, nd, d
-    real(KIND=8), intent(in) :: m
+    real(kind=8), intent(in) :: m
     character(len=*), intent(in) :: tag
 
     this%tWires%tw(twidx)%twc(twcidx)%i = i1

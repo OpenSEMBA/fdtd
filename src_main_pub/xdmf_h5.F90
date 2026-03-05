@@ -5,12 +5,12 @@ module xdmf_h5
     use HDF5
     implicit none
  
-    integer (HID_T) :: file_id ! File identifier
-    integer (HID_T) :: dset_id ! Dataset identifier
-    integer (HID_T) :: dspace_id, slice2D_id ! Dataspace identifier
-    integer (HSIZE_T), ALLOCATABLE, dimension(:) :: DATA_dims ! Dataset dimensions
-    integer (HSIZE_T), ALLOCATABLE, dimension(:) :: offset
-    integer (HSIZE_T), ALLOCATABLE, dimension(:) :: valor3d_dims ! slice dimensions
+    integer(HID_T) :: file_id ! File identifier
+    integer(HID_T) :: dset_id ! Dataset identifier
+    integer(HID_T) :: dspace_id, slice2D_id ! Dataspace identifier
+    integer(HSIZE_T), ALLOCATABLE, dimension(:) :: DATA_dims ! Dataset dimensions
+    integer(HSIZE_T), ALLOCATABLE, dimension(:) :: offset
+    integer(HSIZE_T), ALLOCATABLE, dimension(:) :: valor3d_dims ! slice dimensions
    
     !
     private
@@ -23,10 +23,10 @@ contains
    subroutine openh5file(filename,finalstep,minXabs,maxXabs, minYabs,maxYabs, minZabs,maxZabs)
       
         integer :: error ! Error flag
-        character (LEN=BUFSIZE) :: filename ! File name
-        character (LEN=BUFSIZE) :: dsetname ! Dataset name
+        character(len=BUFSIZE) :: filename ! File name
+        character(len=BUFSIZE) :: dsetname ! Dataset name
         !
-        integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs,finalstep
+        integer(kind=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs,finalstep
 
         integer :: rank ! Dataset rank
       !
@@ -44,14 +44,14 @@ contains
         valor3d_dims (4) = 1
         
         dsetname = 'data'
-        CALL h5open_f (error)
-        CALL h5fcreate_f (trim(adjustl(filename))//'.h5', H5F_ACC_TRUNC_F, file_id, error)
-        CALL h5screate_simple_f (rank, DATA_dims, dspace_id, error)
-        CALL h5screate_simple_f (rank, valor3d_dims, slice2D_id, error)
+        call h5open_f (error)
+        call h5fcreate_f (trim(adjustl(filename))//'.h5', H5F_ACC_TRUNC_F, file_id, error)
+        call h5screate_simple_f (rank, DATA_dims, dspace_id, error)
+        call h5screate_simple_f (rank, valor3d_dims, slice2D_id, error)
 #ifdef CompileWithReal8
-        CALL h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_DOUBLE, dspace_id, dset_id, error)
+        call h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_DOUBLE, dspace_id, dset_id, error)
 #else
-        CALL h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_REAL , dspace_id, dset_id, error)
+        call h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_REAL , dspace_id, dset_id, error)
 #endif
 
 !xdmf part
@@ -68,17 +68,17 @@ contains
                           dz_minZabs,dy_minYabs,dx_minXabs,&
                           minZabs_primero,minYabs_primero,minXabs_primero,finalstep,vtkindex)
         real(  KINd=RKIND_tiempo) :: attindi
-        character (LEN=BUFSIZE) :: filename
+        character(len=BUFSIZE) :: filename
         logical :: vtkindex
       !
-        character (LEN=BUFSIZE) :: dsetname ! Dataset name
-        integer (KIND=4) :: indi
-        real(KIND=RKIND), dimension(:, :, :, :) :: valor3d
+        character(len=BUFSIZE) :: dsetname ! Dataset name
+        integer(kind=4) :: indi
+        real(kind=RKIND), dimension(:, :, :, :) :: valor3d
         integer :: error ! Error flag
-        character (LEN=BUFSIZE) :: charc
-        integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs, &
+        character(len=BUFSIZE) :: charc
+        integer(kind=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs, &
                             minZabs_primero,minYabs_primero,minXabs_primero,finalstep
-        real(KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
+        real(kind=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                              dz_minZabs,dy_minYabs,dx_minXabs                 
         
         
@@ -87,15 +87,15 @@ contains
         offset (3) = 0
         offset (4) = indi - 1
         !
-        CALL h5sselect_hyperslab_f (dspace_id, H5S_SELECT_SET_F, offset, valor3d_dims, error)
+        call h5sselect_hyperslab_f (dspace_id, H5S_SELECT_SET_F, offset, valor3d_dims, error)
 #ifdef CompileWithReal8
-        CALL h5dwrite_f (dset_id, H5T_NATIVE_DOUBLE, valor3d, valor3d_dims, error, slice2D_id, &
+        call h5dwrite_f (dset_id, H5T_NATIVE_DOUBLE, valor3d, valor3d_dims, error, slice2D_id, &
         & dspace_id)
 #elif CompileWithReal16
-        CALL h5dwrite_f (dset_id, H5T_NATIVE_LDOUBLE, valor3d, valor3d_dims, error, slice2D_id, &
+        call h5dwrite_f (dset_id, H5T_NATIVE_LDOUBLE, valor3d, valor3d_dims, error, slice2D_id, &
         & dspace_id)
 #else
-        CALL h5dwrite_f (dset_id, H5T_NATIVE_REAL, valor3d, valor3d_dims, error, slice2D_id, &
+        call h5dwrite_f (dset_id, H5T_NATIVE_REAL, valor3d, valor3d_dims, error, slice2D_id, &
         & dspace_id)
 #endif
 
@@ -148,40 +148,40 @@ contains
         integer :: rank ! Dataset rank
         real(  KINd=RKIND_tiempo), dimension(:) :: att
         integer :: error ! Error flag
-        integer (KIND=4) :: finalstep
-        character (LEN=BUFSIZE) :: dsetname ! Dataset name
+        integer(kind=4) :: finalstep
+        character(len=BUFSIZE) :: dsetname ! Dataset name
 
         
         DEALLOCATE(DATA_dims,valor3d_dims,offset)
         
         !timedata
-        CALL h5dclose_f (dset_id, error)
+        call h5dclose_f (dset_id, error)
 
         dsetname='Time'
         rank = 1
         ALLOCATE(DATA_dims(rank))
         data_dims(1) = finalstep
 
-        CALL h5screate_simple_f (rank, DATA_dims, dspace_id, error)
+        call h5screate_simple_f (rank, DATA_dims, dspace_id, error)
 #ifdef CompileWithReal8
-        CALL h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_DOUBLE, dspace_id, dset_id, error)
-        CALL h5dwrite_f (dset_id, H5T_NATIVE_DOUBLE, att, DATA_dims, error)
+        call h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_DOUBLE, dspace_id, dset_id, error)
+        call h5dwrite_f (dset_id, H5T_NATIVE_DOUBLE, att, DATA_dims, error)
 #elif CompileWithReal16
-        CALL h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_LDOUBLE, dspace_id, dset_id, error)
-        CALL h5dwrite_f (dset_id, H5T_NATIVE_REAL, att, DATA_dims, error)
+        call h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_LDOUBLE, dspace_id, dset_id, error)
+        call h5dwrite_f (dset_id, H5T_NATIVE_REAL, att, DATA_dims, error)
 #else
-        CALL h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_REAL, dspace_id, dset_id, error)
-        CALL h5dwrite_f (dset_id, H5T_NATIVE_REAL, att, DATA_dims, error)
+        call h5dcreate_f (file_id, trim(adjustl(dsetname)), H5T_NATIVE_REAL, dspace_id, dset_id, error)
+        call h5dwrite_f (dset_id, H5T_NATIVE_REAL, att, DATA_dims, error)
 #endif
         cALL h5dclose_f (dset_id, error)
 
-        CALL h5sclose_f (slice2D_id, error)
-        CALL h5sclose_f (dspace_id, error)
+        call h5sclose_f (slice2D_id, error)
+        call h5sclose_f (dspace_id, error)
    
                         
                         
-        CALL h5fclose_f (file_id, error)
-        CALL h5close_f (error)
+        call h5fclose_f (file_id, error)
+        call h5close_f (error)
         !
                         !
         WRITE (18, '(a)') '</Grid>'
@@ -195,16 +195,16 @@ contains
    end subroutine closeh5file
 
    subroutine createh5filefromsinglebin(filename,vtkindex)
-        integer (KIND=4) :: myunit,fieldob,pasadas,pasadastotales
-        character (LEN=BUFSIZE) :: filename,fichin ! File name
+        integer(kind=4) :: myunit,fieldob,pasadas,pasadastotales
+        character(len=BUFSIZE) :: filename,fichin ! File name
         real(  KINd=RKIND_tiempo), ALLOCATABLE, dimension(:) :: att
-        real(KIND=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: valor3d !para sondas Volumic
+        real(kind=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: valor3d !para sondas Volumic
         logical :: vtkindex,SGGObservationiiTimeDomain
-        integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs, &
+        integer(kind=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs, &
                             minZabs_primero,minYabs_primero,minXabs_primero,finalstep,indi,i1,j1,k1
-        real(KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
+        real(kind=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                              dz_minZabs,dy_minYabs,dx_minXabs    
-        character (LEN=BUFSIZE)     ::  dubuf
+        character(len=BUFSIZE) :: dubuf
 
         filename=filename(1:index(filename,'.h5bin')-1); filename=trim(adjustl(filename))
    
@@ -212,7 +212,7 @@ contains
         read (myunit)            finalstep,minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs,fieldob, &
                                  SGGObservationiiTimeDomain,pasadastotales
         
-        ALLOCATE (valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
+       allocate(valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
         allocate (att(1:finalstep))
         
         buclepasadas: do pasadas=1,pasadastotales                                     
@@ -269,8 +269,8 @@ contains
     
         close(myunit)
         
-        DEALLOCATE (valor3d)
-        DEALLOCATE (ATT)
+        deallocate(valor3d)
+        deallocate(ATT)
              
    
    end subroutine createh5filefromsinglebin

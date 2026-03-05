@@ -148,7 +148,7 @@ contains
 
    function create_xyz_limit_array(XI,YI,ZI,XE,YE,ZE) result(arr)
       type(XYZlimit_t), dimension(1:6) :: arr
-      integer (kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
+      integer(kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
       integer :: i
       do i = 1, 6
          arr(i)%XI = XI

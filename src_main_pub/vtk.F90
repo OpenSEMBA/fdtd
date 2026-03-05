@@ -17,57 +17,57 @@ contains
    subroutine createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
    
-      type (SGGFDTDINFO), intent(IN)   :: sgg
-      integer (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
-      integer (KIND=4) :: mpidir
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      integer(kind=4) :: mpidir
       logical :: vtkindex,yacreado,dontwritevtk
       !------------------------>
-      character (LEN=BUFSIZE) :: filename ! File name
-      character (LEN=BUFSIZE) :: fichero,fichero_input,char_i_sub_time ! File name
-      integer (kind=4) :: k
-      character (len=32), dimension(3) :: suffFile = (/'_current.vtk', '_efield.vtk ', '_hfield.vtk '/)
-      character (len=3), dimension (3) :: suffTag  = (/'cu', 'ef', 'hf'/)
+      character(len=BUFSIZE) :: filename ! File name
+      character(len=BUFSIZE) :: fichero,fichero_input,char_i_sub_time ! File name
+      integer(kind=4) :: k
+      character(len=32), dimension(3) :: suffFile = (/'_current.vtk', '_efield.vtk ', '_hfield.vtk '/)
+      character(len=3), dimension(3) :: suffTag  = (/'cu', 'ef', 'hf'/)
       !
       !
 
-      integer (KIND=4), intent(in) :: layoutnumber, size
-      integer (KIND=4) ::  ierr,  posicionMPI,conta,ecurrentType,eei,eej,eek,esggMtag
-      integer (KIND=4) , allocatable , dimension(:) ::   sizeofvalores,NewsizeOfValores
+      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4) :: ierr,  posicionMPI,conta,ecurrentType,eei,eej,eek,esggMtag
+      integer(kind=4) , allocatable , dimension(:) :: sizeofvalores,NewsizeOfValores
 
       real(kind=RKIND) :: time,rdum
       !
       !
-      type (output_t), POINTER, dimension(:) :: output
-      integer (KIND=4) :: iroot
+      type(output_t), pointer, dimension(:) :: output
+      integer(kind=4) :: iroot
       !
 #ifdef CompileWithMPI
-      type (Serialized_t)  ::  NewSerialized !para sondas Volumic
+      type(Serialized_t) :: NewSerialized !para sondas Volumic
 #endif
-      type (Serialized_t)  ::  Serialized !para almecenar valores serializados en volumenes en vez de Bloque
-      integer (KIND=4) , dimension (:) , allocatable :: PosiMPI,NewPosiMPI
-      integer (KIND=4) :: indi,numberOfSerialized
+      type(Serialized_t) :: Serialized !para almecenar valores serializados en volumenes en vez de Bloque
+      integer(kind=4) , dimension(:) , allocatable :: PosiMPI,NewPosiMPI
+      integer(kind=4) :: indi,numberOfSerialized
       real(  KINd=RKIND), ALLOCATABLE, dimension(:) :: att  
       real(  KINd=RKIND) :: att_rkind
       real(  KINd=RKIND_tiempo) :: att_rkind_tiempo
       !
-      integer (KIND=4) :: ii, i1, finalstep
+      integer(kind=4) :: ii, i1, finalstep
       LOGICAL :: lexis,freqdomain,somethingdone
-      character (LEN=BUFSIZE)     ::  dubuf
-      integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs
-      character (LEN=BUFSIZE) :: pathroot
-      character (LEN=BUFSIZE)  ::  chari,charj,chark,chari2,charj2,chark2
-      character (LEN=BUFSIZE)  ::  extpoint
+      character(len=BUFSIZE) :: dubuf
+      integer(kind=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs
+      character(len=BUFSIZE) :: pathroot
+      character(len=BUFSIZE) :: chari,charj,chark,chari2,charj2,chark2
+      character(len=BUFSIZE) :: extpoint
       character(len=BUFSIZE) :: buff
-      character (LEN=BUFSIZE) :: charc
-      character (LEN=BUFSIZE) :: tag
+      character(len=BUFSIZE) :: charc
+      character(len=BUFSIZE) :: tag
       !
-      character (LEN=BUFSIZE) :: whoami, whoamishort
-      integer (kind=4)::  numNodes,numEdges,numQuads , iroot2,iroot1,i_sub_time, total_sub_times
-      integer (kind=4), parameter :: time_phases_param=35
+      character(len=BUFSIZE) :: whoami, whoamishort
+      integer(kind=4):: numNodes,numEdges,numQuads , iroot2,iroot1,i_sub_time, total_sub_times
+      integer(kind=4), parameter :: time_phases_param=35
       real(kind= RKIND), allocatable, dimension(:,:) :: Nodes
-      integer (kind=4), allocatable, dimension(:,:) :: Elems
-      integer (kind=4) :: coldummy
-      integer (kind=4), dimension(5) :: volumicCurrentFlags = [iCur, iCurX, iCurY, iCurZ, mapvtk]
+      integer(kind=4), allocatable, dimension(:,:) :: Elems
+      integer(kind=4) :: coldummy
+      integer(kind=4), dimension(5) :: volumicCurrentFlags = [iCur, iCurX, iCurY, iCurZ, mapvtk]
 !      print *,'RKIND,CKIND,REALSIZE,COMPLEXSIZE,MPI_DOUBLE_PRECISION, MPI_DOUBLE_COMPLEX',RKIND,CKIND,REALSIZE,COMPLEXSIZE,MPI_DOUBLE_PRECISION, MPI_DOUBLE_COMPLEX
       yacreado=.false.
       numNodes=0; numEdges=0;numQuads=0;
@@ -155,7 +155,7 @@ contains
 #ifdef CompileWithMPI
                      if (size>1) then
                         if (output(ii)%item(1)%MPISubComm /= -1) then
-                           !!! CALL print11 (layoutnumber, trim(adjustl(whoami))////' Init processing file '//trim(adjustl(filename)), .TRUE.) !enforces print
+                           !!! call print11 (layoutnumber, trim(adjustl(whoami))////' Init processing file '//trim(adjustl(filename)), .TRUE.) !enforces print
                            continue
                         endif
                      endif
@@ -174,7 +174,7 @@ contains
                         NewsizeOfValores=0
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                           CALL MPI_AllReduce (sizeofvalores, newSizeofvalores, size, MPI_INTEGER, MPI_SUM, &
+                           call MPI_AllReduce (sizeofvalores, newSizeofvalores, size, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
                         endif
                         sizeofvalores = newSizeofvalores
@@ -185,7 +185,7 @@ contains
                         numberOfSerialized=numberOfSerialized + sizeofvalores(i1)
                      end do
                      !asumo solamente un time step por lectura
-                     ALLOCATE (PosiMPI(1:numberOfSerialized))
+                    allocate(PosiMPI(1:numberOfSerialized))
 
                      if (SGG%Observation(ii)%TimeDomain) then
                         call Serialized%allocate_for_time_domain(numberOfSerialized)      
@@ -206,7 +206,7 @@ contains
                               posicionMPI=posicionMPI+sizeofvalores(i1)
                            end do buscaMPI
                         endif
-                        ALLOCATE (newPosiMPI(1:numberOfSerialized))
+                       allocate(newPosiMPI(1:numberOfSerialized))
                         if (SGG%Observation(ii)%TimeDomain) then
                            call NewSerialized%allocate_for_time_domain(numberOfSerialized)
                         elseif (SGG%Observation(ii)%FreqDomain) then
@@ -221,7 +221,7 @@ contains
                      read(output(ii)%item(1)%unit) coldummy
                      if (coldummy/= output(ii)%item(1)%columnas) then
                            write (buff,'(a,2i9)') 'ERROR: Buggy error creating .vtk',coldummy, output(ii)%item(1)%columnas
-                           CALL print11(0_4, buff)
+                           call print11(0_4, buff)
                      endif
                      do conta=1,output(ii)%item(1)%columnas
                         read(output(ii)%item(1)%unit) eei,eej,eek,ecurrentType,esggMtag
@@ -239,42 +239,42 @@ contains
                         newPosiMPI=-1
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                           CALL MPI_AllReduce (PosiMPI, newPosiMPI, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
+                           call MPI_AllReduce (PosiMPI, newPosiMPI, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
                         endif
                         PosiMPI = newPosiMPI
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                           CALL MPI_AllReduce (Serialized%eI, newSerialized%eI, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
+                           call MPI_AllReduce (Serialized%eI, newSerialized%eI, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
                         endif
                         Serialized%eI = newSerialized%eI
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                           CALL MPI_AllReduce (Serialized%eJ, newSerialized%eJ, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
+                           call MPI_AllReduce (Serialized%eJ, newSerialized%eJ, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
                         endif
                         Serialized%eJ = newSerialized%eJ
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                           CALL MPI_AllReduce (Serialized%eK, newSerialized%eK, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
+                           call MPI_AllReduce (Serialized%eK, newSerialized%eK, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
                         endif
                         Serialized%eK = newSerialized%eK
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                           CALL MPI_AllReduce (Serialized%currentType, newSerialized%currentType, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
+                           call MPI_AllReduce (Serialized%currentType, newSerialized%currentType, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
                         endif
                         Serialized%currentType = newSerialized%currentType
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                           CALL MPI_AllReduce (Serialized%sggMtag, newSerialized%sggMtag, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
+                           call MPI_AllReduce (Serialized%sggMtag, newSerialized%sggMtag, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
                         endif
                         Serialized%sggMtag = newSerialized%sggMtag
@@ -357,64 +357,64 @@ contains
                            if (output(ii)%item(1)%MPISubComm /= -1) then
 
                               if (SGG%Observation(ii)%TimeDomain) then
-                                 CALL MPI_AllReduce (Serialized%Valor, newSerialized%Valor, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor, newSerialized%Valor, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor = newSerialized%Valor
                                  !
-                                 CALL MPI_AllReduce (Serialized%Valor_x, newSerialized%Valor_x, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor_x, newSerialized%Valor_x, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor_x = newSerialized%Valor_x
                                  !
-                                 CALL MPI_AllReduce (Serialized%Valor_y, newSerialized%Valor_y, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor_y, newSerialized%Valor_y, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor_y = newSerialized%Valor_y
                                  !
-                                 CALL MPI_AllReduce (Serialized%Valor_z, newSerialized%Valor_z, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor_z, newSerialized%Valor_z, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor_z = newSerialized%Valor_z
                                  !electric
                                  
-                                 CALL MPI_AllReduce (Serialized%ValorE, newSerialized%ValorE, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%ValorE, newSerialized%ValorE, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%ValorE = newSerialized%ValorE
                                  !
-                                 CALL MPI_AllReduce (Serialized%Valor_Ex, newSerialized%Valor_Ex, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor_Ex, newSerialized%Valor_Ex, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor_Ex = newSerialized%Valor_Ex
                                  !
-                                 CALL MPI_AllReduce (Serialized%Valor_Ey, newSerialized%Valor_Ey, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor_Ey, newSerialized%Valor_Ey, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor_Ey = newSerialized%Valor_Ey
                                  !
-                                 CALL MPI_AllReduce (Serialized%Valor_Ez, newSerialized%Valor_Ez, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor_Ez, newSerialized%Valor_Ez, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor_Ez = newSerialized%Valor_Ez
                                  !magnetic
                                  
-                                 CALL MPI_AllReduce (Serialized%ValorH, newSerialized%ValorH, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%ValorH, newSerialized%ValorH, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%ValorH = newSerialized%ValorH
                                  !
-                                 CALL MPI_AllReduce (Serialized%Valor_Hx, newSerialized%Valor_Hx, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor_Hx, newSerialized%Valor_Hx, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor_Hx = newSerialized%Valor_Hx
                                  !
-                                 CALL MPI_AllReduce (Serialized%Valor_Hy, newSerialized%Valor_Hy, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor_Hy, newSerialized%Valor_Hy, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor_Hy = newSerialized%Valor_Hy
                                  !
-                                 CALL MPI_AllReduce (Serialized%Valor_Hz, newSerialized%Valor_Hz, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                 call MPI_AllReduce (Serialized%Valor_Hz, newSerialized%Valor_Hz, numberOfSerialized, REALSIZE, MPI_SUM, &
                                  &                     output(ii)%item(1)%MPISubComm, ierr)
                                  call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                  Serialized%Valor_Hz = newSerialized%Valor_Hz
@@ -425,7 +425,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_x(1,posicionMPI+conta)=real(Serialized%ValorComplex_x(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%Valor_x, newSerialized%Valor_x, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_x, newSerialized%Valor_x, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -437,7 +437,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_x(1,posicionMPI+conta)=aimag(Serialized%ValorComplex_x(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%Valor_x, newSerialized%Valor_x, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_x, newSerialized%Valor_x, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -450,7 +450,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_y(1,posicionMPI+conta)=real(Serialized%ValorComplex_y(1,posicionMPI+conta))
                                  end do                            
-                                    CALL MPI_AllReduce (Serialized%Valor_y, newSerialized%Valor_y, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_y, newSerialized%Valor_y, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -462,7 +462,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_y(1,posicionMPI+conta)=aimag(Serialized%ValorComplex_y(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%Valor_y, newSerialized%Valor_y, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_y, newSerialized%Valor_y, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -475,7 +475,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%valor_z(1,posicionMPI+conta)=real(Serialized%ValorComplex_z(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%valor_z, newSerialized%valor_z, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%valor_z, newSerialized%valor_z, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -487,7 +487,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%valor_z(1,posicionMPI+conta)=aimag(Serialized%ValorComplex_z(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%valor_z, newSerialized%valor_z, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%valor_z, newSerialized%valor_z, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -501,7 +501,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_Ex(1,posicionMPI+conta)=real(Serialized%ValorComplex_Ex(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%Valor_Ex, newSerialized%Valor_Ex, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_Ex, newSerialized%Valor_Ex, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -513,7 +513,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_Ex(1,posicionMPI+conta)=aimag(Serialized%ValorComplex_Ex(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%Valor_Ex, newSerialized%Valor_Ex, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_Ex, newSerialized%Valor_Ex, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -526,7 +526,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_Ey(1,posicionMPI+conta)=real(Serialized%ValorComplex_Ey(1,posicionMPI+conta))
                                  end do                            
-                                    CALL MPI_AllReduce (Serialized%Valor_Ey, newSerialized%Valor_Ey, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_Ey, newSerialized%Valor_Ey, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -538,7 +538,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_Ey(1,posicionMPI+conta)=aimag(Serialized%ValorComplex_Ey(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%Valor_Ey, newSerialized%Valor_Ey, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_Ey, newSerialized%Valor_Ey, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -551,7 +551,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%valor_Ez(1,posicionMPI+conta)=real(Serialized%ValorComplex_Ez(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%valor_Ez, newSerialized%valor_Ez, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%valor_Ez, newSerialized%valor_Ez, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -563,7 +563,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%valor_Ez(1,posicionMPI+conta)=aimag(Serialized%ValorComplex_Ez(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%valor_Ez, newSerialized%valor_Ez, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%valor_Ez, newSerialized%valor_Ez, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -577,7 +577,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_Hx(1,posicionMPI+conta)=real(Serialized%ValorComplex_Hx(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%Valor_Hx, newSerialized%Valor_Hx, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_Hx, newSerialized%Valor_Hx, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -589,7 +589,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_Hx(1,posicionMPI+conta)=aimag(Serialized%ValorComplex_Hx(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%Valor_Hx, newSerialized%Valor_Hx, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_Hx, newSerialized%Valor_Hx, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -602,7 +602,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_Hy(1,posicionMPI+conta)=real(Serialized%ValorComplex_Hy(1,posicionMPI+conta))
                                  end do                            
-                                    CALL MPI_AllReduce (Serialized%Valor_Hy, newSerialized%Valor_Hy, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_Hy, newSerialized%Valor_Hy, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -614,7 +614,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%Valor_Hy(1,posicionMPI+conta)=aimag(Serialized%ValorComplex_Hy(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%Valor_Hy, newSerialized%Valor_Hy, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%Valor_Hy, newSerialized%Valor_Hy, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -627,7 +627,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%valor_Hz(1,posicionMPI+conta)=real(Serialized%ValorComplex_Hz(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%valor_Hz, newSerialized%valor_Hz, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%valor_Hz, newSerialized%valor_Hz, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -639,7 +639,7 @@ contains
                                     do conta=1,output(ii)%item(1)%columnas
                                           Serialized%valor_Hz(1,posicionMPI+conta)=aimag(Serialized%ValorComplex_Hz(1,posicionMPI+conta))
                                     end do
-                                    CALL MPI_AllReduce (Serialized%valor_Hz, newSerialized%valor_Hz, numberOfSerialized, REALSIZE, MPI_SUM, &
+                                    call MPI_AllReduce (Serialized%valor_Hz, newSerialized%valor_Hz, numberOfSerialized, REALSIZE, MPI_SUM, &
                                     &                     output(ii)%item(1)%MPISubComm, ierr)
                                     call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                     do conta=1,numberOfSerialized
@@ -677,7 +677,7 @@ contains
                                           ! write(*,*) "dir exists! "//trim(probeName)
                                        else
                                           ! workaround: it calls an extern program...  
-                                          CALL SYSTEM('mkdir ' // trim(adjustl(fichero(1:iroot2))))  
+                                          call SYSTEM('mkdir ' // trim(adjustl(fichero(1:iroot2))))  
                                        end if     
                                     end block
                                  endif 
@@ -685,7 +685,7 @@ contains
                                        fichero_input=fichero(1:iroot1-1)//'.vtk'  
                                        i_sub_time=-30 !cualquier cosa
                                        total_sub_times=-12 !cualquier cosa
-                                       CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
+                                       call write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
                                                             i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'vt')  
                                  else
                                     if (freqDomain) then
@@ -695,7 +695,7 @@ contains
                                           do k = 1, 3
                                              fichero_input = fichero(1:iroot1-1)//'_n_'//trim(adjustl(char_i_sub_time))//suffFile(k)
                                           
-                                             CALL write_VTKfile( sgg, fichero_input, iroot2, Serialized, numberOfSerialized, &
+                                             call write_VTKfile( sgg, fichero_input, iroot2, Serialized, numberOfSerialized, &
                                                                  Nodes, Numnodes, Elems, NumEdges, NumQuads, time, &
                                                                  i_sub_time, total_sub_times, freqDomain, sgg%observation(ii)%P(1)%What, sggMtag, &
                                                                  suffTag(k) )
@@ -711,14 +711,14 @@ contains
                                        fichero_input=fichero(1:iroot1-1)//'_current.vtk'  
                                        i_sub_time=-30 !cualquier cosa
                                        total_sub_times=-12 !cualquier cosa
-                                       CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
+                                       call write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
                                                             i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'cu')  
                                        !electric
                                     
                                        fichero_input=fichero(1:iroot1-1)//'_efield.vtk'  
                                        i_sub_time=-30 !cualquier cosa
                                        total_sub_times=-12 !cualquier cosa
-                                       CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
+                                       call write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
                                                             i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'ef')
                                     
                                     
@@ -727,13 +727,13 @@ contains
                                        fichero_input=fichero(1:iroot1-1)//'_hfield.vtk'  
                                        i_sub_time=-30 !cualquier cosa
                                        total_sub_times=-12 !cualquier cosa
-                                       CALL write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
+                                       call write_VTKfile(sgg,fichero_input,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time, &
                                                             i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'hf')
                                     
                                     
                                     endif        
                                     
-                                    !!! CALL print11 (layoutnumber, trim(adjustl(whoami))////' Written into file '//trim(adjustl(fichero)), .TRUE.) !enforces print
+                                    !!! call print11 (layoutnumber, trim(adjustl(whoami))////' Written into file '//trim(adjustl(fichero)), .TRUE.) !enforces print
                                  endif !DEL VTK
                            else
                                  write(dubuf,'(a,i9,a,i9)')  trim(adjustl(whoamishort))//' Requesting not to dump .vtk ----> file '//trim(adjustl(fichero))//' ',indi,'/',finalstep
@@ -747,86 +747,86 @@ contains
                      CLOSE (output(ii)%item(1)%UNIT)
                      !
                      if (SGG%Observation(ii)%TimeDomain) then 
-                        DEALLOCATE (Serialized%Valor)
-                        DEALLOCATE (Serialized%Valor_x)
-                        DEALLOCATE (Serialized%Valor_y)
-                        DEALLOCATE (Serialized%Valor_z)
-                        DEALLOCATE (Serialized%ValorE)
-                        DEALLOCATE (Serialized%Valor_Ex)
-                        DEALLOCATE (Serialized%Valor_Ey)
-                        DEALLOCATE (Serialized%Valor_Ez)
-                        DEALLOCATE (Serialized%ValorH)
-                        DEALLOCATE (Serialized%Valor_Hx)
-                        DEALLOCATE (Serialized%Valor_Hy)
-                        DEALLOCATE (Serialized%Valor_Hz)
+                        deallocate(Serialized%Valor)
+                        deallocate(Serialized%Valor_x)
+                        deallocate(Serialized%Valor_y)
+                        deallocate(Serialized%Valor_z)
+                        deallocate(Serialized%ValorE)
+                        deallocate(Serialized%Valor_Ex)
+                        deallocate(Serialized%Valor_Ey)
+                        deallocate(Serialized%Valor_Ez)
+                        deallocate(Serialized%ValorH)
+                        deallocate(Serialized%Valor_Hx)
+                        deallocate(Serialized%Valor_Hy)
+                        deallocate(Serialized%Valor_Hz)
                      elseif (SGG%Observation(ii)%FreqDomain) then    
-                        DEALLOCATE (Serialized%Valor)
-                        DEALLOCATE (Serialized%Valor_x)
-                        DEALLOCATE (Serialized%Valor_y)
-                        DEALLOCATE (Serialized%Valor_z)    
-                        DEALLOCATE (Serialized%ValorComplex_x)
-                        DEALLOCATE (Serialized%ValorComplex_y)
-                        DEALLOCATE (Serialized%ValorComplex_z)
+                        deallocate(Serialized%Valor)
+                        deallocate(Serialized%Valor_x)
+                        deallocate(Serialized%Valor_y)
+                        deallocate(Serialized%Valor_z)    
+                        deallocate(Serialized%ValorComplex_x)
+                        deallocate(Serialized%ValorComplex_y)
+                        deallocate(Serialized%ValorComplex_z)
                         
-                        DEALLOCATE (Serialized%ValorE)
-                        DEALLOCATE (Serialized%Valor_Ex)
-                        DEALLOCATE (Serialized%Valor_Ey)
-                        DEALLOCATE (Serialized%Valor_Ez)    
-                        DEALLOCATE (Serialized%ValorComplex_Ex)
-                        DEALLOCATE (Serialized%ValorComplex_Ey)
-                        DEALLOCATE (Serialized%ValorComplex_Ez)
+                        deallocate(Serialized%ValorE)
+                        deallocate(Serialized%Valor_Ex)
+                        deallocate(Serialized%Valor_Ey)
+                        deallocate(Serialized%Valor_Ez)    
+                        deallocate(Serialized%ValorComplex_Ex)
+                        deallocate(Serialized%ValorComplex_Ey)
+                        deallocate(Serialized%ValorComplex_Ez)
                         
-                        DEALLOCATE (Serialized%ValorH)
-                        DEALLOCATE (Serialized%Valor_Hx)
-                        DEALLOCATE (Serialized%Valor_Hy)
-                        DEALLOCATE (Serialized%Valor_Hz)    
-                        DEALLOCATE (Serialized%ValorComplex_Hx)
-                        DEALLOCATE (Serialized%ValorComplex_Hy)
-                        DEALLOCATE (Serialized%ValorComplex_Hz)
+                        deallocate(Serialized%ValorH)
+                        deallocate(Serialized%Valor_Hx)
+                        deallocate(Serialized%Valor_Hy)
+                        deallocate(Serialized%Valor_Hz)    
+                        deallocate(Serialized%ValorComplex_Hx)
+                        deallocate(Serialized%ValorComplex_Hy)
+                        deallocate(Serialized%ValorComplex_Hz)
                      endif
-                     deallocate (Serialized%eI)
-                     deallocate (Serialized%eJ)
-                     deallocate (Serialized%eK)
-                     deallocate (Serialized%currentType)
-                     deallocate (Serialized%sggMtag)
+                     deallocate(Serialized%eI)
+                     deallocate(Serialized%eJ)
+                     deallocate(Serialized%eK)
+                     deallocate(Serialized%currentType)
+                     deallocate(Serialized%sggMtag)
 #ifdef CompileWithMPI
                      if (size>1) then
                         if (SGG%Observation(ii)%TimeDomain) then  
-                           DEALLOCATE (NewSerialized%Valor)
-                           DEALLOCATE (NewSerialized%Valor_x)
-                           DEALLOCATE (NewSerialized%Valor_y)
-                           DEALLOCATE (NewSerialized%Valor_z)
-                           DEALLOCATE (NewSerialized%ValorE)
-                           DEALLOCATE (NewSerialized%Valor_Ex)
-                           DEALLOCATE (NewSerialized%Valor_Ey)
-                           DEALLOCATE (NewSerialized%Valor_Ez)
-                           DEALLOCATE (NewSerialized%ValorH)
-                           DEALLOCATE (NewSerialized%Valor_Hx)
-                           DEALLOCATE (NewSerialized%Valor_Hy)
-                           DEALLOCATE (NewSerialized%Valor_Hz)
+                           deallocate(NewSerialized%Valor)
+                           deallocate(NewSerialized%Valor_x)
+                           deallocate(NewSerialized%Valor_y)
+                           deallocate(NewSerialized%Valor_z)
+                           deallocate(NewSerialized%ValorE)
+                           deallocate(NewSerialized%Valor_Ex)
+                           deallocate(NewSerialized%Valor_Ey)
+                           deallocate(NewSerialized%Valor_Ez)
+                           deallocate(NewSerialized%ValorH)
+                           deallocate(NewSerialized%Valor_Hx)
+                           deallocate(NewSerialized%Valor_Hy)
+                           deallocate(NewSerialized%Valor_Hz)
                         elseif (SGG%Observation(ii)%FreqDomain) then  
-                           DEALLOCATE (NewSerialized%Valor) !auxiliar
-                           DEALLOCATE (NewSerialized%Valor_x) !auxiliar
-                           DEALLOCATE (NewSerialized%Valor_y) !auxiliar
-                           DEALLOCATE (NewSerialized%Valor_z) !auxiliar
-   !!                          DEALLOCATE (NewSerialized%ValorComplex)
+                           deallocate(NewSerialized%Valor) !auxiliar
+                           deallocate(NewSerialized%Valor_x) !auxiliar
+                           deallocate(NewSerialized%Valor_y) !auxiliar
+                           deallocate(NewSerialized%Valor_z) !auxiliar
+   !!                          deallocate(NewSerialized%ValorComplex)
                            
-                           DEALLOCATE (NewSerialized%ValorE) !auxiliar
-                           DEALLOCATE (NewSerialized%Valor_Ex) !auxiliar
-                           DEALLOCATE (NewSerialized%Valor_Ey) !auxiliar
-                           DEALLOCATE (NewSerialized%Valor_Ez) !auxiliar
-   !!                          DEALLOCATE (NewSerialized%ValorComplexE)
-                           DEALLOCATE (NewSerialized%ValorH) !auxiliar
-                           DEALLOCATE (NewSerialized%Valor_Hx) !auxiliar
-                           DEALLOCATE (NewSerialized%Valor_Hy) !auxiliar
-                           DEALLOCATE (NewSerialized%Valor_Hz) !auxiliar
-   !!                          DEALLOCATE (NewSerialized%ValorComplexH)
+                           deallocate(NewSerialized%ValorE) !auxiliar
+                           deallocate(NewSerialized%Valor_Ex) !auxiliar
+                           deallocate(NewSerialized%Valor_Ey) !auxiliar
+                           deallocate(NewSerialized%Valor_Ez) !auxiliar
+   !!                          deallocate(NewSerialized%ValorComplexE)
+                           deallocate(NewSerialized%ValorH) !auxiliar
+                           deallocate(NewSerialized%Valor_Hx) !auxiliar
+                           deallocate(NewSerialized%Valor_Hy) !auxiliar
+                           deallocate(NewSerialized%Valor_Hz) !auxiliar
+   !!                          deallocate(NewSerialized%ValorComplexH)
                         endif
-                        deallocate (newSerialized%eI)
-                        deallocate (newSerialized%eJ)
-                        deallocate (newSerialized%eK)
-                        deallocate (newSerialized%currentType)
-                        deallocate (newSerialized%sggMtag)
+                        deallocate(newSerialized%eI)
+                        deallocate(newSerialized%eJ)
+                        deallocate(newSerialized%eK)
+                        deallocate(newSerialized%currentType)
+                        deallocate(newSerialized%sggMtag)
                      ENDIF
 #endif
 
@@ -836,27 +836,27 @@ contains
 #else
                      if (layoutnumber == 0) then
 #endif
-                        if (numberOfSerialized/=0) deallocate (Nodes,Elems)
+                        if (numberOfSerialized/=0) deallocate(Nodes,Elems)
                      endif
 
 #ifdef CompileWithMPI
                      if (size>1) then
-                        DEALLOCATE (newSizeofvalores,newPosiMPI)
+                        deallocate(newSizeofvalores,newPosiMPI)
                      endif
 #endif
-                     DEALLOCATE (SIZEOFVALORES,PosiMPI)
-                     DEALLOCATE (ATT)
+                     deallocate(SIZEOFVALORES,PosiMPI)
+                     deallocate(ATT)
 #ifdef CompileWithMPI
                      if (size>1) then
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                         endif
-                        !!! CALL print11 (layoutnumber, trim(adjustl(whoami))////' End processing file '//trim(adjustl(filename)), .TRUE.) !enforces print
+                        !!! call print11 (layoutnumber, trim(adjustl(whoami))////' End processing file '//trim(adjustl(filename)), .TRUE.) !enforces print
                      endif
 #endif
                   else !del lexis
                      buff='NOT PROCESSING: Ignoring: Inexistent or void file '//trim(adjustl(output(ii)%item(1)%path))
-                     CALL print11(layoutnumber, buff,.true.)
+                     call print11(layoutnumber, buff,.true.)
                   endif !del lexis
 
 
@@ -879,18 +879,18 @@ contains
 
    subroutine createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
-      type (SGGFDTDINFO), intent(IN)    :: sgg
-      integer (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
    
-      integer (KIND=4) :: mpidir
+      integer(kind=4) :: mpidir
       logical :: vtkindex,somethingdone
 
-      integer (KIND=4), intent(in) :: layoutnumber, size
-      type (output_t), POINTER, dimension(:) :: output
-      integer (KIND=4) :: ii
+      integer(kind=4), intent(in) :: layoutnumber, size
+      type(output_t), pointer, dimension(:) :: output
+      integer(kind=4) :: ii
       logical :: lexis,dontwritevtk
       character(len=BUFSIZE) :: buff
-      character (LEN=BUFSIZE) :: path
+      character(len=BUFSIZE) :: path
 
 
       !
@@ -909,7 +909,7 @@ contains
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
-                     CALL print11(layoutnumber, buff,.true.)
+                     call print11(layoutnumber, buff,.true.)
                      return
                   ELSE
                      close (output(ii)%item(1)%unit)
@@ -930,7 +930,7 @@ contains
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
-                     CALL print11(layoutnumber, buff,.true.)
+                     call print11(layoutnumber, buff,.true.)
                      return
                   ELSE
                      open (output(ii)%item(1)%unit,file=trim(adjustl(output(ii)%item(1)%path)),FORM='unformatted',position='append')
@@ -950,22 +950,22 @@ contains
    subroutine write_VTKfile(sgg,fichero,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time,  &
                               i_sub_time,total_sub_times,FreqDomain,what,sggMtag,que_saco)
    
-      type (SGGFDTDINFO), intent(IN)   ::  sgg
-      integer (KIND=IKINDMTAG), intent(in) ::  sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
-      character (LEN=BUFSIZE), intent(in) :: fichero
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      character(len=BUFSIZE), intent(in) :: fichero
 
-      type (Serialized_t), intent(in)::  Serialized            
-      integer (kind=4), intent(in):: numberOfSerialized,numNodes,numEdges,NumQuads,iroot2,i_sub_time,total_sub_times    
+      type(Serialized_t), intent(in):: Serialized            
+      integer(kind=4), intent(in):: numberOfSerialized,numNodes,numEdges,NumQuads,iroot2,i_sub_time,total_sub_times    
       real(kind=RKIND), intent(in) :: time
       real(kind=RKIND) :: phase_x,phase_y,phase_z,raa,rbb,rcc 
       real(kind=RKIND) :: phase_Ex,phase_Ey,phase_Ez
       real(kind=RKIND) :: phase_Hx,phase_Hy,phase_Hz
       LOGICAL, intent(in) :: FREQDOMAIN
-      integer (kind=4), intent(in):: what
-      integer (kind=4) :: conta,myunit
-      character (LEN=BUFSIZE) :: buff,buff2 ! File name
+      integer(kind=4), intent(in):: what
+      integer(kind=4) :: conta,myunit
+      character(len=BUFSIZE) :: buff,buff2 ! File name
       real(kind= RKIND), allocatable, dimension(:,:) :: Nodes
-      integer (kind=4), allocatable, dimension(:,:) ::  Elems
+      integer(kind=4), allocatable, dimension(:,:) :: Elems
       character*2, intent(in) :: que_saco
       
       !!!!!!!
@@ -1158,17 +1158,17 @@ contains
 
    subroutine creaUnstructData(Serialized,  numberOfSerialized,sgg,Nodes,Numnodes,Elems,NumEdges,NumQuads,vtkindex)
 
-      integer (kind=4), intent(out):: numNodes,numQuads,numEdges
+      integer(kind=4), intent(out):: numNodes,numQuads,numEdges
       real(kind= RKIND), allocatable, dimension(:,:), intent(out) :: Nodes
-      integer (kind=4), allocatable, dimension(:,:), intent(out) ::  Elems
+      integer(kind=4), allocatable, dimension(:,:), intent(out) :: Elems
       
-      logical, intent(IN) :: vtkindex
-      type (SGGFDTDINFO), intent(IN)    :: sgg
-      integer (kind=4), intent(in):: numberOfSerialized
-      type (Serialized_t), intent(in)  ::  Serialized
+      logical, intent(in) :: vtkindex
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4), intent(in):: numberOfSerialized
+      type(Serialized_t), intent(in) :: Serialized
       
-      character (LEN=BUFSIZE) :: buff ! File name
-      integer (kind=4):: conta
+      character(len=BUFSIZE) :: buff ! File name
+      integer(kind=4):: conta
 
 
       numNodes=-1
@@ -1406,7 +1406,7 @@ contains
 
       if ((NumEdges+1)+(NumQuads+1)/=numberofSerialized) then
          buff='ERROR: Buggy error sumas creating .vtk'
-         CALL print11(0_4, buff)
+         call print11(0_4, buff)
       endif
 
       return

@@ -15,15 +15,15 @@ module CreateMatrices
    !
    !
    type crosscheck_t
-      integer (KIND=4) :: actual, NewActual, NewActual2
-      integer (KIND=4), dimension(1:4) :: tent
+      integer(kind=4) :: actual, NewActual, NewActual2
+      integer(kind=4), dimension(1:4) :: tent
    END type
    !matriz para controlar lo punietereos indices de cadacomponente
-   integer (KIND=4), dimension(6, 3, 2), PARAMETER, public :: &
+   integer(kind=4), dimension(6, 3, 2), PARAMETER, public :: &
    & in = reshape ( (/ 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, &
    &                   0, 1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1 /), (/ 6, 3, 2 /))
    !
-   integer (KIND=4), dimension(6, 3, 2), PARAMETER, public :: &
+   integer(kind=4), dimension(6, 3, 2), PARAMETER, public :: &
    &    on = reshape ( (/ 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, &
    &                      0, 0,-1, 0, 0, 0,-1,-1, 0,-1, 0,-1, 0,-1, 0, 0, &
    -1,-1,-1, 0 /), (/ 6, 3, 2 /))
@@ -37,7 +37,7 @@ module CreateMatrices
     
    subroutine SortInitEndWithIncreasingOrder(p)
         type(XYZlimit_t), intent(inout) :: p
-        integer (kind=4) :: aux
+        integer(kind=4) :: aux
         if (p%XI > p%XE) then
             aux = p%XI
             p%XI = p%XE
@@ -63,31 +63,31 @@ module CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, BoundingBox,indicemedio)
       character(len=BUFSIZE) :: buff
-      type (Shared_t) :: Eshared
+      type(Shared_t) :: Eshared
 
-      integer (KIND=4) :: NumMedia
-      type (MediaData_t), dimension(0:NumMedia) :: med
+      integer(kind=4) :: NumMedia
+      type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type (XYZlimit_t), intent(in) ::  BoundingBox
+      type(XYZlimit_t), intent(in) :: BoundingBox
       integer(kind=4), intent(in) :: indicemedio
       !
-      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer(kind=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      integer (KIND=IKINDMTAG) numertag
-      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=IKINDMTAG) numertag
+      integer(kind=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       !
-      integer (KIND=4) :: layoutnumber, i, j, k
+      integer(kind=4) :: layoutnumber, i, j, k
 
       ! faces that should be PEC, bc edges are all PEC
       do k = BoundingBox%zi, BoundingBox%ze+1
@@ -171,14 +171,14 @@ module CreateMatrices
       end subroutine
 
       logical function hasCrossedPEC(m1,m2,m3,m4)
-         integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: m1,m2,m3,m4
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: m1,m2,m3,m4
          hasCrossedPEC = (med(m1)%Is%ConformalPEC .or. med(m1)%Is%PEC) .and. &
                          (med(m2)%Is%ConformalPEC .or. med(m2)%Is%PEC) .and. &
                          (med(m3)%Is%ConformalPEC .or. med(m3)%Is%PEC) .and. &
                          (med(m4)%Is%ConformalPEC .or. med(m4)%Is%PEC)
       end function 
       logical function hasCrossedPECOrConformalPEC(m1,m2,m3,m4)
-         integer (kind=INTEGERSIZEOFMEDIAMATRICES) :: m1,m2,m3,m4
+         integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: m1,m2,m3,m4
          hasCrossedPECOrConformalPEC = (med(m1)%Is%ConformalPEC .or. med(m1)%Is%PEC) .or. &
                                        (med(m2)%Is%ConformalPEC .or. med(m2)%Is%PEC) .or. &
                                        (med(m3)%Is%ConformalPEC .or. med(m3)%Is%PEC) .or. &
@@ -186,8 +186,8 @@ module CreateMatrices
       end function 
 
       subroutine fillPECFaceInsideVolume(i, j, k, face)
-         integer (kind=4), intent(in) :: i, j, k, face
-         integer (kind=4) :: m1,m2,m3,m4, m
+         integer(kind=4), intent(in) :: i, j, k, face
+         integer(kind=4) :: m1,m2,m3,m4, m
          logical :: on_boundary
          select case (face)
          case(FACE_X)
@@ -506,35 +506,35 @@ module CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, BoundingBox, point, indicemedio)
       character(len=BUFSIZE) :: buff
-      type (Shared_t) :: Eshared
+      type(Shared_t) :: Eshared
       !
-      integer (KIND=4) :: NumMedia
-      type (MediaData_t), dimension(0:NumMedia) :: med
-      integer (KIND=4) :: medio
+      integer(kind=4) :: NumMedia
+      type(MediaData_t), dimension(0:NumMedia) :: med
+      integer(kind=4) :: medio
       !
-      type (XYZlimit_t) :: punto, puntoPlus1
-      type (XYZlimit_t), INTENT (INOUT) :: point
-      type (XYZlimit_t), intent(in) ::  BoundingBox
+      type(XYZlimit_t) :: punto, puntoPlus1
+      type(XYZlimit_t), intent(inout) :: point
+      type(XYZlimit_t), intent(in) :: BoundingBox
       !
-      integer (KIND=4) :: indicemedio
+      integer(kind=4) :: indicemedio
       !
-      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer(kind=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      integer (KIND=IKINDMTAG) numertag
-      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=IKINDMTAG) numertag
+      integer(kind=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       !
-      integer (KIND=4) :: layoutnumber, i, j, k
+      integer(kind=4) :: layoutnumber, i, j, k
       !
       med(indicemedio)%Is%Volume = .TRUE.
       !
@@ -700,33 +700,33 @@ module CreateMatrices
    & Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, &
    & med, NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio)
       character(len=BUFSIZE) :: buff
-      integer (KIND=4) :: NumMedia
-      type (Shared_t) :: Eshared
-      type (MediaData_t), dimension(0:NumMedia) :: med
+      integer(kind=4) :: NumMedia
+      type(Shared_t) :: Eshared
+      type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type (XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
-      type (XYZlimit_t), INTENT (INOUT) :: point
-      type (XYZlimit_t), intent(in) :: BoundingBox
+      type(XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
+      type(XYZlimit_t), intent(inout) :: point
+      type(XYZlimit_t), intent(in) :: BoundingBox
       !
-      integer (KIND=4) :: indicemedio, orientacion
-      integer (KIND=4) :: layoutnumber, i, j, k
-      integer (KIND=4) :: medio
+      integer(kind=4) :: indicemedio, orientacion
+      integer(kind=4) :: layoutnumber, i, j, k
+      integer(kind=4) :: medio
       !
-      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer(kind=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI , Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      integer (KIND=IKINDMTAG) numertag
-      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=IKINDMTAG) numertag
+      integer(kind=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       med(indicemedio)%Is%Surface = .TRUE.
 
       call SortInitEndWithIncreasingOrder(point)
@@ -760,7 +760,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                      tags%edge%y(i,j,k) = 64*numertag
                   ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
+                     call AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                   end if
                end do
             end do
@@ -772,7 +772,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
                      tags%edge%z(i,j,k) = 64*numertag
                   ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
+                     call AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                   end if
                end do
             end do  
@@ -802,7 +802,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
                      tags%edge%z(i,j,k) = 64*numertag
                   ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
+                     call AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                   end if
                end do
             end do
@@ -814,7 +814,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                      tags%edge%x(i,j,k) = 64*numertag
                   ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
+                     call AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                   end if
                end do
             end do
@@ -844,7 +844,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                      tags%edge%x(i,j,k) = 64*numertag
                   ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
+                     call AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                   end if
                end do
             end do
@@ -855,7 +855,7 @@ module CreateMatrices
                      MMiEy (i, j, k) = indicemedio; Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                      tags%edge%y(i,j,k) = 64*numertag
                   ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
+                     call AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                   end if
                end do
             end do
@@ -874,7 +874,7 @@ module CreateMatrices
             end do
          end do
          !    endif
-      END SELECT
+      end select
       !
       return
    end subroutine
@@ -895,36 +895,36 @@ module CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio, isathinwire, verbose,numeroasignaciones)
       
-      type (Shared_t) :: Eshared
-      integer (KIND=4) :: NumMedia
-      type (MediaData_t), dimension(0:NumMedia) :: med
+      type(Shared_t) :: Eshared
+      integer(kind=4) :: NumMedia
+      type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type (XYZlimit_t) :: punto
-      type (XYZlimit_t), INTENT (INOUT) :: point
-      type (XYZlimit_t), intent(in) :: BoundingBox
+      type(XYZlimit_t) :: punto
+      type(XYZlimit_t), intent(inout) :: point
+      type(XYZlimit_t), intent(in) :: BoundingBox
       
-      integer (KIND=4) :: indicemedio, orientacion,numeroasignaciones
+      integer(kind=4) :: indicemedio, orientacion,numeroasignaciones
       LOGICAL, intent(in) :: isathinwire, verbose
-      integer (KIND=4) :: i, j, k, layoutnumber
-      integer (KIND=4) :: medio
+      integer(kind=4) :: i, j, k, layoutnumber
+      integer(kind=4) :: medio
       !
-      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer(kind=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      integer (KIND=IKINDMTAG) numertag
-      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=IKINDMTAG) numertag
+      integer(kind=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       !
-      character (LEN=BUFSIZE) :: buff
+      character(len=BUFSIZE) :: buff
       med(indicemedio)%Is%Line = .TRUE.
       !
       !
@@ -970,7 +970,7 @@ module CreateMatrices
                             ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                         endif
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
+                        call AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                      end if
                end do
             end do
@@ -1008,7 +1008,7 @@ module CreateMatrices
                         endif
                         
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
+                        call AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                      end if
                end do
             end do
@@ -1046,14 +1046,14 @@ module CreateMatrices
                         endif
                         
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
+                        call AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                      end if
 
                end do
             end do
          end do
          !    endif
-      END SELECT
+      end select
       !
       return
    end subroutine
@@ -1076,34 +1076,34 @@ module CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, Hshared, BoundingBox, point, orientacion, direccion, indicemedio)
       character(len=BUFSIZE) :: buff
-      type (Shared_t) :: Eshared, Hshared
-      integer (KIND=4) :: NumMedia
-      type (MediaData_t), dimension(0:NumMedia) :: med
+      type(Shared_t) :: Eshared, Hshared
+      integer(kind=4) :: NumMedia
+      type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type (XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
-      type (XYZlimit_t), INTENT (INOUT) :: point
-      type (XYZlimit_t), intent(in) :: BoundingBox
+      type(XYZlimit_t) :: punto, puntoPlus1,puntoBboxplus1
+      type(XYZlimit_t), intent(inout) :: point
+      type(XYZlimit_t), intent(in) :: BoundingBox
       !
-      integer (KIND=4) :: indicemedio, orientacion, direccion
+      integer(kind=4) :: indicemedio, orientacion, direccion
       !
-      integer (KIND=4) :: layoutnumber, i, j, k, offx, offy, offz
-      integer (KIND=4) :: medio
+      integer(kind=4) :: layoutnumber, i, j, k, offx, offy, offz
+      integer(kind=4) :: medio
       !
-      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer(kind=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      integer (KIND=IKINDMTAG) numertag
-      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=IKINDMTAG) numertag
+      integer(kind=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       med(indicemedio)%Is%Surface = .TRUE.
       !
       call SortInitEndWithIncreasingOrder(point)
@@ -1145,7 +1145,7 @@ module CreateMatrices
                         tags%edge%y(i,j,k) = 64*numertag
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
+                        !call AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
@@ -1162,11 +1162,11 @@ module CreateMatrices
                         tags%edge%z(i,j,k) = 64*numertag
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
+                        !call AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
-            END SELECT
+            end select
             do j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)), &
             &       Min (punto%YE + offy, Max(BoundingBox%YI, BoundingBox%YE)-1)
                do k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
@@ -1178,7 +1178,7 @@ module CreateMatrices
                      tags%face%x(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
                   ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     !CALL AddToShared (iHx, i, j, k, indicemedio, medio, Hshared)
+                     !call AddToShared (iHx, i, j, k, indicemedio, medio, Hshared)
 
                   end if
                end do
@@ -1200,7 +1200,7 @@ module CreateMatrices
                         tags%edge%z(i,j,k) = 64*numertag
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !CALL AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
+                        !call AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
@@ -1217,11 +1217,11 @@ module CreateMatrices
                         tags%edge%x(i,j,k) = 64*numertag
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
+                        !call AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
-            END SELECT
+            end select
             do i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
             &       Min (punto%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
                do k = Max (punto%ZI - offz, Min(BoundingBox%ZI, BoundingBox%ZE)),  &
@@ -1233,7 +1233,7 @@ module CreateMatrices
                      tags%face%y(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);
                   ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     !CALL AddToShared (iHy, i, j, k, indicemedio, medio, Hshared)
+                     !call AddToShared (iHy, i, j, k, indicemedio, medio, Hshared)
                   end if
                end do
             end do
@@ -1254,7 +1254,7 @@ module CreateMatrices
                         tags%edge%x(i,j,k) = 64*numertag
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !CALL AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
+                        !call AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
@@ -1271,11 +1271,11 @@ module CreateMatrices
                         tags%edge%y(i,j,k) = 64*numertag
                         ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                        !CALL AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
+                        !call AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
                      end if
                   end do
                end do
-            END SELECT
+            end select
             do i = Max (punto%XI - offx, Min(BoundingBox%XI, BoundingBox%XE)),  &
             &       Min (punto%XE + offx, Max(BoundingBox%XI, BoundingBox%XE)-1)
                do j = Max (punto%YI - offy, Min(BoundingBox%YI, BoundingBox%YE)),  &
@@ -1287,12 +1287,12 @@ module CreateMatrices
                      tags%face%z(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
                   ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
-                     !CALL AddToShared (iHz, i, j, k, indicemedio, medio, Hshared)
+                     !call AddToShared (iHz, i, j, k, indicemedio, medio, Hshared)
                   end if
                end do
             end do
          end do
-      END SELECT
+      end select
       !
       return
    end subroutine
@@ -1315,33 +1315,33 @@ module CreateMatrices
    & Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE, med, &
    & NumMedia, Eshared, BoundingBox, point, orientacion, indicemedio)
       character(len=BUFSIZE) :: buff
-      integer (KIND=4) :: NumMedia
-      type (Shared_t) :: Eshared
-      type (MediaData_t), dimension(0:NumMedia) :: med
+      integer(kind=4) :: NumMedia
+      type(Shared_t) :: Eshared
+      type(MediaData_t), dimension(0:NumMedia) :: med
       !
-      type (XYZlimit_t) :: punto, puntoPlus1   !,puntoBboxplus1
-      type (XYZlimit_t), INTENT (INOUT) :: point
-      type (XYZlimit_t), intent(in) :: BoundingBox
+      type(XYZlimit_t) :: punto, puntoPlus1   !,puntoBboxplus1
+      type(XYZlimit_t), intent(inout) :: point
+      type(XYZlimit_t), intent(in) :: BoundingBox
       !
-      integer (KIND=4) :: indicemedio, orientacion
-      integer (KIND=4) :: layoutnumber, i, j, k
-      integer (KIND=4) :: medio
+      integer(kind=4) :: indicemedio, orientacion
+      integer(kind=4) :: layoutnumber, i, j, k
+      integer(kind=4) :: medio
       !
-      integer (KIND=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
+      integer(kind=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
       & Alloc_iEy_XE, Alloc_iEy_YI, Alloc_iEy_YE, Alloc_iEy_ZI, Alloc_iEy_ZE, Alloc_iEz_XI, Alloc_iEz_XE, Alloc_iEz_YI, &
       & Alloc_iEz_YE, Alloc_iEz_ZI, Alloc_iEz_ZE, Alloc_iHx_XI, Alloc_iHx_XE, Alloc_iHx_YI, Alloc_iHx_YE, Alloc_iHx_ZI, &
       & Alloc_iHx_ZE, Alloc_iHy_XI, Alloc_iHy_XE, Alloc_iHy_YI, Alloc_iHy_YE, Alloc_iHy_ZI, Alloc_iHy_ZE, Alloc_iHz_XI, &
       & Alloc_iHz_XE, Alloc_iHz_YI, Alloc_iHz_YE, Alloc_iHz_ZI, Alloc_iHz_ZE
       !
       type(taglist_t) :: tags
-      integer (KIND=IKINDMTAG) numertag
-      integer (KIND=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=IKINDMTAG) numertag
+      integer(kind=IKINDMTAG ) :: Mtag  (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEx (Alloc_iEx_XI:Alloc_iEx_XE, Alloc_iEx_YI:Alloc_iEx_YE, Alloc_iEx_ZI:Alloc_iEx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEy (Alloc_iEy_XI:Alloc_iEy_XE, Alloc_iEy_YI:Alloc_iEy_YE, Alloc_iEy_ZI:Alloc_iEy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiEz (Alloc_iEz_XI:Alloc_iEz_XE, Alloc_iEz_YI:Alloc_iEz_YE, Alloc_iEz_ZI:Alloc_iEz_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHx (Alloc_iHx_XI:Alloc_iHx_XE, Alloc_iHx_YI:Alloc_iHx_YE, Alloc_iHx_ZI:Alloc_iHx_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHy (Alloc_iHy_XI:Alloc_iHy_XE, Alloc_iHy_YI:Alloc_iHy_YE, Alloc_iHy_ZI:Alloc_iHy_ZE)
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: MMiHz (Alloc_iHz_XI:Alloc_iHz_XE, Alloc_iHz_YI:Alloc_iHz_YE, Alloc_iHz_ZI:Alloc_iHz_ZE)
       med(indicemedio)%Is%Surface = .TRUE.
       !
       !
@@ -1475,7 +1475,7 @@ module CreateMatrices
             end do
          end do
 
-      END SELECT
+      end select
       !
       return
    end subroutine
@@ -1497,28 +1497,28 @@ module CreateMatrices
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine CreatePMLmatrix (layoutnumber, SIZE, sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, SINPML_fullsize, fullsize, BBox, med, NumMedia, Border, MEDIOEXTRA)
       !
-      type (limit_t), dimension(1:6) :: SINPML_fullsize, fullsize
+      type(limit_t), dimension(1:6) :: SINPML_fullsize, fullsize
       !Inputs and Outputs
-      type (SGGFDTDINFO), intent(INOUT)        :: sgg
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES)   ::  &
+      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: &
       sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
       sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &
       sggMiEz(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE), &
       sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE,sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE,sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE), &
       sggMiHy(sgg%Alloc(iHy)%XI : sgg%Alloc(iHy)%XE,sgg%Alloc(iHy)%YI : sgg%Alloc(iHy)%YE,sgg%Alloc(iHy)%ZI : sgg%Alloc(iHy)%ZE), &
       sggMiHz(sgg%Alloc(iHz)%XI : sgg%Alloc(iHz)%XE,sgg%Alloc(iHz)%YI : sgg%Alloc(iHz)%YE,sgg%Alloc(iHz)%ZI : sgg%Alloc(iHz)%ZE)
-      type (XYZlimit_t) :: BoundingBox, BBox
-      type (MediaData_t), POINTER, dimension(:) :: med
-      integer (KIND=4), INTENT (INOUT) :: NumMedia
-      type (Border_t), intent(in) :: Border
-      type (MedioExtra_t), intent(in) :: MEDIOEXTRA
+      type(XYZlimit_t) :: BoundingBox, BBox
+      type(MediaData_t), pointer, dimension(:) :: med
+      integer(kind=4), intent(inout) :: NumMedia
+      type(Border_t), intent(in) :: Border
+      type(MedioExtra_t), intent(in) :: MEDIOEXTRA
       ! Local stuff
-      integer (KIND=4), POINTER, dimension(:) :: tempo
-      type (MediaData_t), POINTER, dimension(:) :: NewMed
-      integer (KIND=4) :: layoutnumber, SIZE, field, medium, i, j, k, NuevoNumeroMediosConPML
-      integer (KIND=4) :: oldNumMedia,oldmed
-      integer (KIND=4), dimension(1:6) :: XIPML, XEPML, YIPML, YEPML, ZIPML, ZEPML
-      real(KIND=RKIND) :: oldepr,oldmur,oldsigma,oldsigmam,newepr,newmur,newsigma,newsigmam
+      integer(kind=4), pointer, dimension(:) :: tempo
+      type(MediaData_t), pointer, dimension(:) :: NewMed
+      integer(kind=4) :: layoutnumber, SIZE, field, medium, i, j, k, NuevoNumeroMediosConPML
+      integer(kind=4) :: oldNumMedia,oldmed
+      integer(kind=4), dimension(1:6) :: XIPML, XEPML, YIPML, YEPML, ZIPML, ZEPML
+      real(kind=RKIND) :: oldepr,oldmur,oldsigma,oldsigmam,newepr,newmur,newsigma,newsigmam
       LOGICAL :: yapuesto
 
       !Increase mediamatrix with PML regions, and remove the minus sign from the mm matrix (this info is no longer needed)
@@ -1814,7 +1814,7 @@ module CreateMatrices
       end do
       !compact the info of PML media
       NuevoNumeroMediosConPML = NumMedia
-      ALLOCATE (tempo(0:NumMedia))
+     allocate(tempo(0:NumMedia))
       tempo = 0 !temporarily stores the index of the PML medium matching each original media
       field = iEx
       do k = ZIPML (field), ZEPML (field)
@@ -1901,7 +1901,7 @@ module CreateMatrices
          end do
       end do
       !
-      ALLOCATE (NewMed(NumMedia+1:NuevoNumeroMediosConPML))
+     allocate(NewMed(NumMedia+1:NuevoNumeroMediosConPML))
       !Reassing the PML media info with the compact indexes
       field = iEx
       do k = ZIPML (field), ZEPML (field)
@@ -2158,7 +2158,7 @@ module CreateMatrices
       !
       !adjust constitutive parameters, matrices
       oldNumMedia = NumMedia !save it since the next subroutine overwrites it
-      CALL Readjust (NumMedia, med, NuevoNumeroMediosConPML)
+      call Readjust (NumMedia, med, NuevoNumeroMediosConPML)
       sgg%AllocMed=NumMedia
       !copy the new media
       med (1+oldNumMedia:NuevoNumeroMediosConPML) = NewMed (1+oldNumMedia:NuevoNumeroMediosConPML)
@@ -2167,7 +2167,7 @@ module CreateMatrices
       med(1+oldNumMedia:NuevoNumeroMediosConPML)%Is%SlantedWire = .FALSE. !put any wire touching the PML to non-wire though treat it with mur
       med(1+oldNumMedia:NuevoNumeroMediosConPML)%Is%Needed=.true. !sgg 220817 por defecto lo he puesto en readjust a false
       !
-      DEALLOCATE (NewMed, tempo)
+      deallocate(NewMed, tempo)
 
       !solo lo creo para las tangenciales electricas
       if (MEDIOEXTRA%exists) then
@@ -2195,7 +2195,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2231,7 +2231,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2267,7 +2267,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2303,7 +2303,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2341,7 +2341,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2377,7 +2377,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2413,7 +2413,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2449,7 +2449,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2487,7 +2487,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2523,7 +2523,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2559,7 +2559,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2595,7 +2595,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2637,7 +2637,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2673,7 +2673,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2709,7 +2709,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2745,7 +2745,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2783,7 +2783,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2819,7 +2819,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2855,7 +2855,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2891,7 +2891,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2929,7 +2929,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2965,7 +2965,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -3001,7 +3001,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -3037,7 +3037,7 @@ module CreateMatrices
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              CALL STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            endif
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -3069,24 +3069,24 @@ module CreateMatrices
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine Readjust (NumMedia, med, NewNumMedia)
       !Inputs and Outputs
-      type (MediaData_t), POINTER, dimension(:) :: med
-      type (MediaData_t), POINTER, dimension(:) :: dummyMed
-      integer (KIND=4), INTENT (INOUT) :: NumMedia
-      integer (KIND=4), intent(in) :: NewNumMedia
-      integer (KIND=4) :: i
+      type(MediaData_t), pointer, dimension(:) :: med
+      type(MediaData_t), pointer, dimension(:) :: dummyMed
+      integer(kind=4), intent(inout) :: NumMedia
+      integer(kind=4), intent(in) :: NewNumMedia
+      integer(kind=4) :: i
       !
-      ALLOCATE (dummyMed(0:NewNumMedia))
+     allocate(dummyMed(0:NewNumMedia))
       do i = 0, Min (NumMedia, NewNumMedia)
          dummyMed (i) = med (i)
       end do
       !
-      DEALLOCATE (med)
-      ALLOCATE (med(0:NewNumMedia))
+      deallocate(med)
+     allocate(med(0:NewNumMedia))
       do i = 0, NewNumMedia
          med (i) = dummyMed (i)
       end do
       !
-      DEALLOCATE (dummyMed)
+      deallocate(dummyMed)
       do i = 1 + NumMedia, NewNumMedia
          med(i)%Priority = prior_BV !background
          med(i)%epr=-1.0_RKIND 
@@ -3129,17 +3129,17 @@ module CreateMatrices
    end subroutine
 
    subroutine AddToShared (campo, i1, j1, k1, Sharedmed, ProPmed,  Shared)
-      type (SharedElement_t), POINTER, dimension(:) :: temp
-      type (Shared_t), INTENT (INOUT) :: Shared
-      integer (KIND=4), intent(in) :: campo, i1, j1, k1, Sharedmed, ProPmed
-      integer (KIND=4) :: conta, n
+      type(SharedElement_t), pointer, dimension(:) :: temp
+      type(Shared_t), intent(inout) :: Shared
+      integer(kind=4), intent(in) :: campo, i1, j1, k1, Sharedmed, ProPmed
+      integer(kind=4) :: conta, n
       !
       Shared%conta = Shared%conta + 1
       conta = Shared%conta
       !
       if (conta > Shared%MaxConta) then
          !create space on the fly
-         ALLOCATE (temp(1:conta-1))
+        allocate(temp(1:conta-1))
          do n = 1, conta - 1
             temp(n)%Sharedmed = Shared%elem(n)%Sharedmed
             temp(n)%ProPmed = Shared%elem(n)%ProPmed
@@ -3149,9 +3149,9 @@ module CreateMatrices
             temp(n)%k = Shared%elem(n)%k
             temp(n)%times = Shared%elem(n)%times
          end do
-         DEALLOCATE (Shared%elem)
+         deallocate(Shared%elem)
          Shared%MaxConta = 2*Shared%MaxConta !!! 040717se atrancaba aqui. Ahora allocateo al doble. Antes era + 10000
-         ALLOCATE (Shared%elem(1:Shared%MaxConta))
+        allocate(Shared%elem(1:Shared%MaxConta))
          do n = 1, conta - 1
             Shared%elem(n)%Sharedmed = temp(n)%Sharedmed
             Shared%elem(n)%ProPmed = temp(n)%ProPmed
@@ -3161,7 +3161,7 @@ module CreateMatrices
             Shared%elem(n)%k = temp(n)%k
             Shared%elem(n)%times = temp(n)%times
          end do
-         DEALLOCATE (temp)
+         deallocate(temp)
       end if
       !
       if (conta == 1) allocate (Shared%elem(1:Shared%MaxConta))

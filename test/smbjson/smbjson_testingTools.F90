@@ -9,7 +9,7 @@ contains
    subroutine expect_eq_int(err, ex, pr, msg) 
       integer, intent(inout) :: err
       integer, intent(in) :: ex, pr
-      character (len=*), intent(in), optional :: msg
+      character(len=*), intent(in), optional :: msg
       if (ex /= pr) call testFails(err, msg)
    end subroutine
 

@@ -32,7 +32,7 @@ module cells_mod
    end type
 
    type, extends(cell_t) :: voxel_t
-      character (len=:), allocatable :: tag
+      character(len=:), allocatable :: tag
    end type
 
    type :: cell_interval_t

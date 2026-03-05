@@ -9,15 +9,15 @@ module BORDERS_other
    implicit none
    private
    !
-   public  ::  InitOtherBorders, MinusCloneMagneticPMC,CloneMagneticPeriodic
+   public  :: InitOtherBorders, MinusCloneMagneticPMC,CloneMagneticPeriodic
 
 contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes PEC and PML data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitOtherBorders(sgg,thereAre)
-      type (SGGFDTDINFO), intent(IN) ::  sgg
-      type (Logic_control), intent(inout) :: thereAre
+      type(SGGFDTDINFO), intent(in) :: sgg
+      type(Logic_control), intent(inout) :: thereAre
 
       thereAre%PeriodicBorders=.false.
       if (sgg%Border%IsBackPeriodic.or.sgg%Border%IsFrontPeriodic.or.sgg%Border%IsLeftPeriodic.or.sgg%Border%IsRightPeriodic.or. &
@@ -38,15 +38,15 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MinusCloneMagneticPMC(sggalloc,sggBorder,Hx,Hy,Hz,c,layoutnumber,size)
 
-      type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
-      real(KIND=RKIND)   , intent(inout)      :: &
+      type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
+      real(kind=RKIND)   , intent(inout) :: &
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE),&
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE),&
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
 
-      type (XYZlimit_t), dimension(1:6)  ::  c
+      type(XYZlimit_t), dimension(1:6) :: c
       integer , intent(in) :: layoutnumber,size
-      type (Border_t), intent(in)                                         ::  sggBorder
+      type(Border_t), intent(in)                                         :: sggBorder
 
       !Hx Down
       if (sggBorder%IsDownPMC) then
@@ -108,15 +108,15 @@ contains
 
    subroutine CloneMagneticPeriodic(sggalloc,sggBorder,Hx,Hy,Hz,c,layoutnumber,size)
 
-      type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
-      real(KIND=RKIND)   , intent(inout)      :: &
+      type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
+      real(kind=RKIND)   , intent(inout) :: &
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE),&
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE),&
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
 
-      type (XYZlimit_t), dimension(1:6)  ::  c
-      integer (kind=4), intent(in) :: layoutnumber,size
-      type (Border_t), intent(in)                                         ::  sggBorder
+      type(XYZlimit_t), dimension(1:6) :: c
+      integer(kind=4), intent(in) :: layoutnumber,size
+      type(Border_t), intent(in)                                         :: sggBorder
 
       !Hx Down
       if (sggBorder%IsDownPeriodic) then

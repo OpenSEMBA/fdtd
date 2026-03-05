@@ -10,18 +10,18 @@ Module Getargs
 contains
 
    function getBinaryPath() result(res)
-      character (LEN=BUFSIZE) :: res
-      CALL getarg(0, res)
+      character(len=BUFSIZE) :: res
+      call getarg(0, res)
    end function
 
    subroutine getcommandargument(chain2,posic,argum,length,status, binaryPath)
-      character (LEN=BUFSIZE)  ::chain2, argum, argument, binaryPath
-      integer (kind=4)  :: length, status, posic, binaryPathLenght, argumentStart, argumentEnd
-      integer (kind=4) :: n, i, j
+      character(len=BUFSIZE) ::chain2, argum, argument, binaryPath
+      integer(kind=4) :: length, status, posic, binaryPathLenght, argumentStart, argumentEnd
+      integer(kind=4) :: n, i, j
 
-      CALL removeDoubleWhiteSpaces(chain2)
+      call removeDoubleWhiteSpaces(chain2)
 
-      ! CALL getarg(0, binaryPath)
+      ! call getarg(0, binaryPath)
       binaryPathLenght = len(trim(adjustl(binaryPath)))
 
       !!Check if binary path is surrounded by double quotes. In that case, returns corrected binary path and lenght
@@ -70,7 +70,7 @@ contains
 
    subroutine removeDoubleWhiteSpaces(chain2)
       integer(kind=4) :: i, j
-      character(LEN=BUFSIZE) :: chain2
+      character(len=BUFSIZE) :: chain2
 
       do i=1,len(trim(adjustl(chain2)))
          if (chain2(i : i)==' ') then
@@ -86,12 +86,12 @@ contains
    end subroutine
 
    function commandargumentcount(chain2, binaryPath)
-      character (LEN=BUFSIZE)  ::  chain2, binaryPath
-      integer (kind=4)  ::  status,n,commandargumentcount, binaryPathLenght, i
+      character(len=BUFSIZE) :: chain2, binaryPath
+      integer(kind=4) :: status,n,commandargumentcount, binaryPathLenght, i
 
-      CALL removeDoubleWhiteSpaces(chain2)
+      call removeDoubleWhiteSpaces(chain2)
 
-      ! CALL getarg(0, binaryPath)
+      ! call getarg(0, binaryPath)
       binaryPathLenght = len(trim(adjustl(binaryPath)))
 
       !!Check if binary path is surrounded by double quotes. In that case, returns corrected binary path and lenght

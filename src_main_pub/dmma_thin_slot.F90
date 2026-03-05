@@ -35,25 +35,25 @@ contains
       !
       implicit none
       !
-      real(KIND=RKIND)           ::  eps0,mu0
-      real(KIND=RKIND), intent(in) :: incx, incy, incz
-      integer (KIND=4), intent(in) :: orientacion, direccion
-      real(KIND=RKIND), intent(in) :: thickness
-      real(KIND=RKIND), intent(in) :: efm, ufm
-      real(KIND=RKIND), intent(in), dimension(3) :: dir
+      real(kind=RKIND) :: eps0,mu0
+      real(kind=RKIND), intent(in) :: incx, incy, incz
+      integer(kind=4), intent(in) :: orientacion, direccion
+      real(kind=RKIND), intent(in) :: thickness
+      real(kind=RKIND), intent(in) :: efm, ufm
+      real(kind=RKIND), intent(in), dimension(3) :: dir
       !real(kind=RKIND),intent(in),dimension(3,3) :: epr
       !real(kind=RKIND),intent(in),dimension(3,3) :: mur
-      real(KIND=RKIND), intent(out), dimension(3, 3) :: epse, mue
+      real(kind=RKIND), intent(out), dimension(3, 3) :: epse, mue
       !
       ! Maximum frequency allowed by the cell size
-      real(KIND=RKIND) :: maxfreq
+      real(kind=RKIND) :: maxfreq
       ! Absolut epsilon and mu of the filling media
-      real(KIND=RKIND) :: eabs, uabs
+      real(kind=RKIND) :: eabs, uabs
       ! Speed of light in the filling media
-      real(KIND=RKIND) :: cfm
-      real(KIND=RKIND) :: omega
+      real(kind=RKIND) :: cfm
+      real(kind=RKIND) :: omega
       ! Capacitance of the Slot line
-      real(KIND=RKIND) :: cap,E0,U0
+      real(kind=RKIND) :: cap,E0,U0
       !
       E0=EPS0
       U0=MU0

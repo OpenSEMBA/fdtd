@@ -1,9 +1,3 @@
-
- 
-!//===========================================================================//
-!// HYSTORY & VERSION:                                                        //
-!//    DATE beginning: 2018-12-18 17:17:09                                   //
-!//===========================================================================//
 module EpsMuTimeScale_m
 
 use FDETYPES
@@ -30,7 +24,7 @@ end function get_slope_
 subroutine new_input_ (this)
     class (EpsMuTimeScale_input_parameters_t) :: this
     this%alpha_max = 1.0_Rkind
-    this%tini        = 1e20_Rkind
+    this%tini      = 1e20_Rkind
     this%tend      = 1e20_Rkind
     this%electric = .false.
     this%magnetic  = .false.

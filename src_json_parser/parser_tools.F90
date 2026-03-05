@@ -62,7 +62,7 @@ contains
    function cellRegionToCoords(cellRegion, cellType, tag) result(res)
       type(cell_region_t), intent(in) :: cellRegion
       integer, intent(in), optional :: cellType
-      character (LEN=BUFSIZE), optional, intent(in) :: tag
+      character(len=BUFSIZE), optional, intent(in) :: tag
       type(coords), dimension(:), allocatable :: res
 
       type(cell_interval_t), dimension(:), allocatable :: intervals
@@ -119,7 +119,7 @@ contains
       type(cell_interval_t), dimension(:), allocatable :: intervals
       type(coords), dimension(:), allocatable :: cs
       type(coords_scaled), dimension(:), allocatable :: scaledCoords
-      character (LEN=BUFSIZE), optional, intent(in) :: tag
+      character(len=BUFSIZE), optional, intent(in) :: tag
 
       intervals = getIntervalsInCellRegions(cellRegions, CELL_TYPE_LINEL)
       if (present(tag)) then
@@ -136,7 +136,7 @@ contains
       type(coords), dimension(:), pointer :: res
       type(cell_interval_t), dimension(:), intent(in) :: ivls
       integer :: i
-      character (LEN=BUFSIZE), optional, intent(in) :: tag
+      character(len=BUFSIZE), optional, intent(in) :: tag
 
       allocate(res(size(ivls)))
       do i = 1, size(ivls)

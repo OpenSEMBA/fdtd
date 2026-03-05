@@ -15,7 +15,7 @@ module Wire_bundles_mtln_mod
    use ilumina
    implicit none
    
-   real(KIND=RKIND_wires)           ::  eps0,mu0
+   real(kind=RKIND_wires) :: eps0,mu0
    private   
 
    public InitWires_mtln, AdvanceWiresE_mtln, GetSolverPtr, solveMTLNProblem, reportSimulationEnd
@@ -26,8 +26,8 @@ contains
 
 
    subroutine InitWires_mtln(sgg,Ex,Ey,Ez, eps00, mu00, mtln_parsed,thereAreMTLNbundles, dtcritico)
-      type (SGGFDTDINFO), intent(IN), target    :: sgg 
-      real(KIND=RKIND), intent(inout), target :: &
+      type(SGGFDTDINFO), intent(in), target    :: sgg 
+      real(kind=RKIND), intent(inout), target :: &
          Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,  &
             sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,  &
             sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
@@ -38,7 +38,7 @@ contains
             sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,  &
             sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
    
-      real(KIND=RKIND) :: eps00,mu00
+      real(kind=RKIND) :: eps00,mu00
    
       type(mtln_t) :: mtln_parsed
       logical :: thereAreMTLNbundles
@@ -69,7 +69,7 @@ contains
    contains
 
       subroutine pointSegmentsToFields()
-         integer (kind=4) :: i, j, k, m, n, direction
+         integer(kind=4) :: i, j, k, m, n, direction
 #ifdef CompileWithMPI      
          integer(kind=4) :: ierr, rank
          call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
@@ -96,14 +96,14 @@ contains
    endsubroutine InitWires_mtln
 
    subroutine AdvanceWiresE_mtln(sgg,Idxh, Idyh, Idzh, eps00,mu00)  
-      type (SGGFDTDINFO), intent(IN), target    :: sgg      
-      real(kind=RKIND), dimension (:), intent(in) :: &
+      type(SGGFDTDINFO), intent(in), target    :: sgg      
+      real(kind=RKIND), dimension(:), intent(in) :: &
          Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
          Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
          Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)  
-      real(KIND=RKIND) :: cte,eps00,mu00
-      integer (kind=4) :: m, n
-      real(KIND=RKIND),pointer:: punt
+      real(kind=RKIND) :: cte,eps00,mu00
+      integer(kind=4) :: m, n
+      real(kind=RKIND),pointer:: punt
       eps0 = eps00 
       mu0 = mu00
       
@@ -125,7 +125,7 @@ contains
          integer(kind=4), intent(in) :: m, n
          real(kind=rkind) :: res
          real(kind=rkind) :: curr
-         integer (kind=4) :: direction, i
+         integer(kind=4) :: direction, i
          res = 0
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
          curr = 0
@@ -139,7 +139,7 @@ contains
          integer(kind=4), intent(in) :: m, n
          real(kind=rkind) :: dS_inverse, factor
          real(kind=rkind) :: res
-         integer (kind=4) :: i, j, k, direction
+         integer(kind=4) :: i, j, k, direction
          direction = mtln_solver%bundles(m)%external_field_segments(n)%direction
          call readGridIndices(i, j, k, mtln_solver%bundles(m)%external_field_segments(n))      
          select case (abs(direction))  
@@ -178,8 +178,8 @@ contains
    end subroutine
 
    subroutine reportSimulationEnd(layoutnumber)
-      character (len=bufsize) :: dubuf
-      integer (kind=4), intent(in) ::  layoutnumber
+      character(len=bufsize) :: dubuf
+      integer(kind=4), intent(in) :: layoutnumber
       write(dubuf, *) 'MTLN simulation finished. Init flusing probe data to output files'
       call print11(layoutnumber,dubuf)
 

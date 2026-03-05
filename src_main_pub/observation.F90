@@ -33,10 +33,10 @@ module Observa
   private
 
   type Serialized_t
-    real(KIND=RKIND), pointer, dimension(:, :)   ::  valor, valor_x, valor_y, valor_z ! (step, valor)
-    real(KIND=RKIND), pointer, dimension(:, :)   ::  valorE, valor_Ex, valor_Ey, valor_Ez ! (step, valor)
-    real(KIND=RKIND), pointer, dimension(:, :)   ::  valorH, valor_Hx, valor_Hy, valor_Hz ! (step, valor)
-    integer(kind=4), POINTER, DIMENSION(:) :: eI, eJ, eK, currentType, sggmtag
+    real(kind=RKIND), pointer, dimension(:, :) :: valor, valor_x, valor_y, valor_z ! (step, valor)
+    real(kind=RKIND), pointer, dimension(:, :) :: valorE, valor_Ex, valor_Ey, valor_Ez ! (step, valor)
+    real(kind=RKIND), pointer, dimension(:, :) :: valorH, valor_Hx, valor_Hy, valor_Hz ! (step, valor)
+    integer(kind=4), pointer, DIMENSION(:) :: eI, eJ, eK, currentType, sggmtag
     complex(kind=CKIND), dimension(:, :), allocatable  :: valorComplex_x, valorComplex_y, valorComplex_z
     complex(kind=CKIND), dimension(:, :), allocatable  :: valorComplex_Ex, valorComplex_Ey, valorComplex_Ez
     complex(kind=CKIND), dimension(:, :), allocatable  :: valorComplex_Hx, valorComplex_Hy, valorComplex_Hz
@@ -51,62 +51,62 @@ module Observa
   end type Serialized_t
   type item_t
 
-    type(CurrentSegments), pointer  ::  segmento !segmento de hilo que se observa si lo hubiere
+    type(CurrentSegments), pointer  :: segmento !segmento de hilo que se observa si lo hubiere
 
 #ifdef CompileWithBerengerWires
-    type(TSegment), pointer  ::  segmento_Berenger !segmento de hilo que se observa si lo hubiere
+    type(TSegment), pointer  :: segmento_Berenger !segmento de hilo que se observa si lo hubiere
 #endif
 #ifdef CompileWithSlantedWires
-    class(Segment), pointer  ::  segmento_Slanted !segmento de hilo que se observa si lo hubiere
+    class(Segment), pointer  :: segmento_Slanted !segmento de hilo que se observa si lo hubiere
 #endif
-    character(LEN=BUFSIZE)  ::  path
+    character(len=BUFSIZE) :: path
     integer(kind=4) :: unit, unitmaster !to store the unit of the file y en caso de singlefileginario el unitmaster que escribe
     integer(kind=4) :: columnas !number of columns in the output file
-    real(KIND=RKIND), pointer, dimension(:)   ::  valor, valor2, valor3, valor4, valor5 !stored values at each time step !not read but calculate !210521 also store -edl+vdrop
-    real(KIND=RKIND)    ::  valorsigno !just to store the sign of the current for the wires
-    real(KIND=RKIND), pointer, dimension(:, :, :, :)   ::  valor3D !stored values at each time step !not read but calculate
-    type(Serialized_t)  ::  Serialized !para almecenar valores serializados en volumenes en vez de bulk
+    real(kind=RKIND), pointer, dimension(:) :: valor, valor2, valor3, valor4, valor5 !stored values at each time step !not read but calculate !210521 also store -edl+vdrop
+    real(kind=RKIND) :: valorsigno !just to store the sign of the current for the wires
+    real(kind=RKIND), pointer, dimension(:, :, :, :) :: valor3D !stored values at each time step !not read but calculate
+    type(Serialized_t) :: Serialized !para almecenar valores serializados en volumenes en vez de bulk
     !freqdomain probles
     complex(kind=CKIND), dimension(:, :, :, :, :), allocatable  :: valor3DComplex !freqdomain probes
 #ifdef CompileWithMPI
-    integer(kind=4)      ::  MPISubcomm, MPIRoot, MPIGroupIndex
-    integer(kind=4)      :: ZIorig, ZEorig
+    integer(kind=4) :: MPISubcomm, MPIRoot, MPIGroupIndex
+    integer(kind=4) :: ZIorig, ZEorig
 #endif
-    integer(kind=4)      :: Xtrancos, Ytrancos, Ztrancos
-    integer(kind=4)      :: XItrancos, YItrancos, ZItrancos
-    integer(kind=4)      :: XEtrancos, YEtrancos, ZEtrancos
+    integer(kind=4) :: Xtrancos, Ytrancos, Ztrancos
+    integer(kind=4) :: XItrancos, YItrancos, ZItrancos
+    integer(kind=4) :: XEtrancos, YEtrancos, ZEtrancos
   end type
 
   type output_t
-    type(item_t), dimension(:), pointer  ::  item !path con el output y sus valores
-    integer(kind=4)      ::  Trancos
-    logical  ::  SaveAll
+    type(item_t), dimension(:), pointer  :: item !path con el output y sus valores
+    integer(kind=4) :: Trancos
+    logical  :: SaveAll
     integer(kind=4) :: TimesWritten !to control the volumic probes
     !freqdomain probles
-    integer(KIND=4) :: NumFreqs
+    integer(kind=4) :: NumFreqs
     real(kind=Rkind), dimension(:), allocatable  :: Freq
     real(kind=Rkind) :: InitialFreq, FinalFreq, FreqStep
     complex(kind=CKIND), dimension(:), allocatable  :: auxExp_E, auxExp_H, dftEntrada   !para sondas freqdomain
   end type output_t
 
-  type(Thinwires_t), pointer  ::  Hwireslocal
+  type(Thinwires_t), pointer  :: Hwireslocal
 #ifdef CompileWithBerengerWires
-  type(TWires), pointer  ::  Hwireslocal_Berenger
+  type(TWires), pointer  :: Hwireslocal_Berenger
 #endif
 #ifdef CompileWithSlantedWires
-  type(WiresData), pointer  ::  Hwireslocal_Slanted
+  type(WiresData), pointer  :: Hwireslocal_Slanted
 #endif
 
 #ifdef CompileWithMPI
-  real(KIND=RKIND), pointer, dimension(:)   ::  valores, newvalores  !auxiliary for Bloque currents sync
+  real(kind=RKIND), pointer, dimension(:) :: valores, newvalores  !auxiliary for Bloque currents sync
 #endif
 !!!variables globales del modulo
-  real(KIND=RKIND), save           ::  eps0, mu0
+  real(kind=RKIND), save           :: eps0, mu0
 !!!
    !!!!!!!!!variables local
 
-  real(KIND=RKIND), pointer, dimension(:), save  ::  InvEps, InvMu
-  type(output_t), pointer, dimension(:), save  ::  output
+  real(kind=RKIND), pointer, dimension(:), save  :: InvEps, InvMu
+  type(output_t), pointer, dimension(:), save  :: output
 
   public InitObservation, FlushObservationFiles, UpdateObservation, DestroyObservation, CloseObservationFiles, unpacksinglefiles, &
     GetOutput, preprocess_observation
@@ -122,20 +122,20 @@ contains
     class(Serialized_t), intent(inout) :: this
     integer(kind=4) :: numberOfSerialized
 
-    ALLOCATE (this%Valor(1, 1:numberOfSerialized))
-    ALLOCATE (this%Valor_x(1, 1:numberOfSerialized))
-    ALLOCATE (this%Valor_y(1, 1:numberOfSerialized))
-    ALLOCATE (this%Valor_z(1, 1:numberOfSerialized))
+   allocate(this%Valor(1, 1:numberOfSerialized))
+   allocate(this%Valor_x(1, 1:numberOfSerialized))
+   allocate(this%Valor_y(1, 1:numberOfSerialized))
+   allocate(this%Valor_z(1, 1:numberOfSerialized))
 
-    ALLOCATE (this%ValorE(1, 1:numberOfSerialized))
-    ALLOCATE (this%Valor_Ex(1, 1:numberOfSerialized))
-    ALLOCATE (this%Valor_Ey(1, 1:numberOfSerialized))
-    ALLOCATE (this%Valor_Ez(1, 1:numberOfSerialized))
+   allocate(this%ValorE(1, 1:numberOfSerialized))
+   allocate(this%Valor_Ex(1, 1:numberOfSerialized))
+   allocate(this%Valor_Ey(1, 1:numberOfSerialized))
+   allocate(this%Valor_Ez(1, 1:numberOfSerialized))
 
-    ALLOCATE (this%ValorH(1, 1:numberOfSerialized))
-    ALLOCATE (this%Valor_Hx(1, 1:numberOfSerialized))
-    ALLOCATE (this%Valor_Hy(1, 1:numberOfSerialized))
-    ALLOCATE (this%Valor_Hz(1, 1:numberOfSerialized))
+   allocate(this%ValorH(1, 1:numberOfSerialized))
+   allocate(this%Valor_Hx(1, 1:numberOfSerialized))
+   allocate(this%Valor_Hy(1, 1:numberOfSerialized))
+   allocate(this%Valor_Hz(1, 1:numberOfSerialized))
 
     this%Valor = 0.
     this%Valor_x = 0.
@@ -157,20 +157,20 @@ contains
   subroutine deallocate_for_time_domain(this)
     class(Serialized_t), intent(inout) :: this
 
-    DEALLOCATE (this%Valor)
-    DEALLOCATE (this%Valor_x)
-    DEALLOCATE (this%Valor_y)
-    DEALLOCATE (this%Valor_z)
+    deallocate(this%Valor)
+    deallocate(this%Valor_x)
+    deallocate(this%Valor_y)
+    deallocate(this%Valor_z)
 
-    DEALLOCATE (this%ValorE)
-    DEALLOCATE (this%Valor_Ex)
-    DEALLOCATE (this%Valor_Ey)
-    DEALLOCATE (this%Valor_Ez)
+    deallocate(this%ValorE)
+    deallocate(this%Valor_Ex)
+    deallocate(this%Valor_Ey)
+    deallocate(this%Valor_Ez)
 
-    DEALLOCATE (this%ValorH)
-    DEALLOCATE (this%Valor_Hx)
-    DEALLOCATE (this%Valor_Hy)
-    DEALLOCATE (this%Valor_Hz)
+    deallocate(this%ValorH)
+    deallocate(this%Valor_Hx)
+    deallocate(this%Valor_Hy)
+    deallocate(this%Valor_Hz)
 
   end subroutine
 
@@ -180,17 +180,17 @@ contains
 
     call this%allocate_for_time_domain(numberOfSerialized)
 
-    ALLOCATE (this%ValorComplex_x(1, 1:numberOfSerialized))
-    ALLOCATE (this%ValorComplex_y(1, 1:numberOfSerialized))
-    ALLOCATE (this%ValorComplex_z(1, 1:numberOfSerialized))
+   allocate(this%ValorComplex_x(1, 1:numberOfSerialized))
+   allocate(this%ValorComplex_y(1, 1:numberOfSerialized))
+   allocate(this%ValorComplex_z(1, 1:numberOfSerialized))
 
-    ALLOCATE (this%ValorComplex_Ex(1, 1:numberOfSerialized))
-    ALLOCATE (this%ValorComplex_Ey(1, 1:numberOfSerialized))
-    ALLOCATE (this%ValorComplex_Ez(1, 1:numberOfSerialized))
+   allocate(this%ValorComplex_Ex(1, 1:numberOfSerialized))
+   allocate(this%ValorComplex_Ey(1, 1:numberOfSerialized))
+   allocate(this%ValorComplex_Ez(1, 1:numberOfSerialized))
 
-    ALLOCATE (this%ValorComplex_Hx(1, 1:numberOfSerialized))
-    ALLOCATE (this%ValorComplex_Hy(1, 1:numberOfSerialized))
-    ALLOCATE (this%ValorComplex_Hz(1, 1:numberOfSerialized))
+   allocate(this%ValorComplex_Hx(1, 1:numberOfSerialized))
+   allocate(this%ValorComplex_Hy(1, 1:numberOfSerialized))
+   allocate(this%ValorComplex_Hz(1, 1:numberOfSerialized))
 
     this%ValorComplex_x = 0.
     this%ValorComplex_y = 0.
@@ -210,17 +210,17 @@ contains
     class(Serialized_t), intent(inout) :: this
     call this%deallocate_for_time_domain()
 
-    DEALLOCATE (this%ValorComplex_x)
-    DEALLOCATE (this%ValorComplex_y)
-    DEALLOCATE (this%ValorComplex_z)
+    deallocate(this%ValorComplex_x)
+    deallocate(this%ValorComplex_y)
+    deallocate(this%ValorComplex_z)
 
-    DEALLOCATE (this%ValorComplex_Ex)
-    DEALLOCATE (this%ValorComplex_Ey)
-    DEALLOCATE (this%ValorComplex_Ez)
+    deallocate(this%ValorComplex_Ex)
+    deallocate(this%ValorComplex_Ey)
+    deallocate(this%ValorComplex_Ez)
 
-    DEALLOCATE (this%ValorComplex_Hx)
-    DEALLOCATE (this%ValorComplex_Hy)
-    DEALLOCATE (this%ValorComplex_Hz)
+    deallocate(this%ValorComplex_Hx)
+    deallocate(this%ValorComplex_Hy)
+    deallocate(this%ValorComplex_Hz)
 
   end subroutine
 
@@ -228,12 +228,12 @@ contains
     class(Serialized_t), intent(inout) :: this
     integer(kind=4) :: numberOfSerialized
 
-    ALLOCATE (this%eI(1:numberOfSerialized))
-    ALLOCATE (this%eJ(1:numberOfSerialized))
-    ALLOCATE (this%eK(1:numberOfSerialized))
+   allocate(this%eI(1:numberOfSerialized))
+   allocate(this%eJ(1:numberOfSerialized))
+   allocate(this%eK(1:numberOfSerialized))
 
-    ALLOCATE (this%currentType(1:numberOfSerialized))
-    ALLOCATE (this%sggMtag(1:numberOfSerialized))
+   allocate(this%currentType(1:numberOfSerialized))
+   allocate(this%sggMtag(1:numberOfSerialized))
 
     this%eI = 0
     this%eJ = 0
@@ -245,12 +245,12 @@ contains
 
   subroutine deallocate_current_value(this)
     class(Serialized_t), intent(inout) :: this
-    DEALLOCATE (this%eI)
-    DEALLOCATE (this%eJ)
-    DEALLOCATE (this%eK)
+    deallocate(this%eI)
+    deallocate(this%eJ)
+    deallocate(this%eK)
 
-    DEALLOCATE (this%currentType)
-    DEALLOCATE (this%sggMtag)
+    deallocate(this%currentType)
+    deallocate(this%sggMtag)
   end subroutine
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes observation stuff
@@ -503,16 +503,16 @@ contains
       type(Obses_t), intent(inout) :: observation
       type(output_t), intent(inout) :: privateOutput
       integer(kind=4), intent(in) :: layoutnumber, size
-      real(KIND=RKIND_tiempo), intent(in) :: dt
+      real(kind=RKIND_tiempo), intent(in) :: dt
       logical, intent(inout) :: niapapostprocess
 
       integer :: i, frequency_index, klk, timesteps, fqlength, pozi
-      real(KIND=RKIND) :: field1
-      real(KIND=RKIND_tiempo) :: tiempo1
-      real(KIND=RKIND), allocatable, dimension(:) :: signal, fqPos
-      real(KIND=RKIND_tiempo), allocatable, dimension(:) :: samplingtime
+      real(kind=RKIND) :: field1
+      real(kind=RKIND_tiempo) :: tiempo1
+      real(kind=RKIND), allocatable, dimension(:) :: signal, fqPos
+      real(kind=RKIND_tiempo), allocatable, dimension(:) :: samplingtime
       complex(kind=CKIND), allocatable, dimension(:) :: fqValues
-      character(LEN=BUFSIZE) :: buff
+      character(len=BUFSIZE) :: buff
       logical :: errnofile
 
 
@@ -602,7 +602,7 @@ contains
         fqPos(1:fqLength) = privateOutput%Freq(1:fqLength)
         call dtft(fqValues, fqPos, fqLength, samplingTime, signal, timesteps)
         privateOutput%dftEntrada = fqValues
-        deallocate (samplingTime, signal, fqValues, fqPos)
+        deallocate(samplingTime, signal, fqValues, fqPos)
       end if
     end subroutine init_frequency_output
 
@@ -611,44 +611,44 @@ contains
                              SINPML_fullsize, eps00, mu00, b, control)
     !solo lo precisa de entrada farfield
     type(media_matrices_t), intent(in) :: media
-    type(bounds_t)  ::  b
-    type(SGGFDTDINFO), intent(IN) ::  sgg
+    type(bounds_t) :: b
+    type(SGGFDTDINFO), intent(in) :: sgg
     type(taglist_t) :: tag_numbers
-    logical ::  niapapostprocess
-    real(KIND=RKIND)           ::  eps00, mu00
+    logical :: niapapostprocess
+    real(kind=RKIND) :: eps00, mu00
     !---------------------------> inputs <----------------------------------------------------------
     
     
-    type(limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
+    type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
     
     logical  :: INIT, GEOM, ASIGNA, electric, magnetic
-    character(LEN=BUFSIZE)  ::  p1, p2
+    character(len=BUFSIZE) :: p1, p2
     real(kind=RKIND_tiempo) :: lastexecutedtime
 
-    integer (kind=4)  ::  i,field,ii,i1,j1,k1,n,i2,j2,k2,initialtimestep,NO,NO2,iwi,iwj,compo,ntime,ntimeforvolumic,iff1,i0t
+    integer(kind=4) :: i,field,ii,i1,j1,k1,n,i2,j2,k2,initialtimestep,NO,NO2,iwi,iwj,compo,ntime,ntimeforvolumic,iff1,i0t
     integer(kind=4) :: Efield, HField
-    logical, intent(inout)   ::  ThereAreObservation, ThereAreFarFields
-    logical, intent(in)      ::  ThereAreWires 
-    character(LEN=BUFSIZE)  ::  chari, charj, chark, chari2, charj2, chark2, charNO
-    character(LEN=BUFSIZE)  ::  ext, extpoint, adum, prefix_field
-    logical  ::  incident, errnofile, first
-    real(KIND=RKIND)    ::  rdum, field1, field2
-    real(KIND=RKIND_tiempo)    ::  at, dtevol, tiempo1, tiempo2
-    integer(kind=4)  ::  unit, ndum, unitmaster, conta, III, JJJ, KKK, pozi, i1t, j1t, k1t
-    character(LEN=BUFSIZE)  ::  whoami, whoamishort
+    logical, intent(inout) :: ThereAreObservation, ThereAreFarFields
+    logical, intent(in) :: ThereAreWires 
+    character(len=BUFSIZE) :: chari, charj, chark, chari2, charj2, chark2, charNO
+    character(len=BUFSIZE) :: ext, extpoint, adum, prefix_field
+    logical  :: incident, errnofile, first
+    real(kind=RKIND) :: rdum, field1, field2
+    real(kind=RKIND_tiempo) :: at, dtevol, tiempo1, tiempo2
+    integer(kind=4) :: unit, ndum, unitmaster, conta, III, JJJ, KKK, pozi, i1t, j1t, k1t
+    character(len=BUFSIZE) :: whoami, whoamishort
     logical :: ok, existe, wrotemaster, found
-    integer(kind=8)  :: memo, ntini, ntfin
-    character(LEN=BUFSIZE) :: buff, path, buff2
+    integer(kind=8) :: memo, ntini, ntfin
+    character(len=BUFSIZE) :: buff, path, buff2
 #ifdef CompileWithMPI
     integer(kind=MPI_OFFSET_KIND) disp
-    integer(kind=4)  ::  ierr
+    integer(kind=4) :: ierr
 #endif
     logical :: Esborde
-    integer(kind=4)  ::  imed, imed1, imed2, imed3, imed4, medium
-    integer(kind=4)  ::  thefile !for file management
+    integer(kind=4) :: imed, imed1, imed2, imed3, imed4, medium
+    integer(kind=4) :: thefile !for file management
 !for dft
-    real(KIND=RKIND), allocatable, dimension(:) :: signal, fqPos
-    real(KIND=RKIND_tiempo), allocatable, dimension(:) :: samplingtime
+    real(kind=RKIND), allocatable, dimension(:) :: signal, fqPos
+    real(kind=RKIND_tiempo), allocatable, dimension(:) :: samplingtime
     complex(kind=CKIND), allocatable, dimension(:) :: fqValues
     integer(kind=4) :: timesteps, klk, fqlength
     integer :: my_iostat
@@ -991,7 +991,7 @@ contains
                 if ((.not. found) .and. ((field == iQx) .or. (field == iQy) .or. (field == iQz))) then
                   sgg%Observation(ii)%P(i)%What = nothing
                   write (buff, '(a,4i7,a)') 'ERROR: CHARGE probe ', no, i1, j1, k1, ' DOES NOT EXIST'
-                  CALL WarnErrReport(buff, .true.)
+                  call WarnErrReport(buff, .true.)
                 end if
 
               end if
@@ -1057,7 +1057,7 @@ contains
                   sgg%Observation(ii)%P(i)%What = nothing
                   !ojoo 010423 para debugeo lbb1
                   write (buff, '(a,4i7,a)') 'ERROR: WIRE probe ', no, i1, j1, k1, ' DOES NOT EXIST'
-                  CALL WarnErrReport(buff, .true.)
+                  call WarnErrReport(buff, .true.)
                 end if
               end if
 
@@ -1102,7 +1102,7 @@ contains
                 if ((.not. found) .and. ((((field == iJx) .or. (field == iJy) .or. (field == iJz))))) then
                   sgg%Observation(ii)%P(i)%What = nothing
                   write (buff, '(a,4i7,a)') 'ERROR: WIRE probe ', no, i1, j1, k1, ' DOES NOT EXIST'
-                  CALL WarnErrReport(buff, .TRUE.)
+                  call WarnErrReport(buff, .TRUE.)
                 end if
               end if
 #endif
@@ -1151,7 +1151,7 @@ contains
 
                   !ojoo 010423 para debugeo lbb1
                   write (buff, '(a,4i7,a)') 'ERROR: WIRE probe ', no, i1, j1, k1, ' DOES NOT EXIST'
-                  CALL WarnErrReport(buff, .true.)
+                  call WarnErrReport(buff, .true.)
                 end if
               end if
 #endif
@@ -2513,13 +2513,13 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!! Closes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine CloseObservationFiles(sgg, layoutnumber, size, singlefilewrite, initialtimestep, lastexecutedtime, resume)
-      type(SGGFDTDINFO), intent(IN)         ::  sgg
-      integer(kind=4)  ::  i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
-      real(KIND=RKIND)    ::  rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
-      real(KIND=RKIND_tiempo)    ::  lastexecutedtime
-      character(LEN=BUFSIZE) :: chdum
-      character(LEN=BUFSIZE)  ::  whoamishort
+      real(kind=RKIND) :: rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
+      real(kind=RKIND_tiempo) :: lastexecutedtime
+      character(len=BUFSIZE) :: chdum
+      character(len=BUFSIZE) :: whoamishort
       integer :: my_iostat
       real(kind=RKIND_tiempo) :: at
       !!!
@@ -2644,12 +2644,12 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!! Upacks .bin files observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine UnpackSingleFiles(sgg, layoutnumber, size, singlefilewrite, initialtimestep, resume)
-      type(SGGFDTDINFO), intent(IN)         ::  sgg
-      integer(kind=4)  ::  i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
-      real(KIND=RKIND)    ::  rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
-      character(LEN=BUFSIZE) :: chdum
-      character(LEN=BUFSIZE)  ::  whoamishort
+      real(kind=RKIND) :: rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
+      character(len=BUFSIZE) :: chdum
+      character(len=BUFSIZE) :: whoamishort
       integer :: my_iostat
       !!!
       write (whoamishort, '(i5)') layoutnumber + 1
@@ -2716,15 +2716,15 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                       nTime, nInit, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh, wiresflavor, SINPML_fullsize, wirecrank, &
                                  noconformalmapvtk, b)
       !solo lo precisa de entrada farfield
-      type(bounds_t)  ::  b
+      type(bounds_t) :: b
       logical :: noconformalmapvtk
-      type(SGGFDTDINFO), intent(IN)         ::  sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
       type(taglist_t) :: tag_numbers
       !---------------------------> inputs <----------------------------------------------------------
-      type(limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
-      integer, intent(IN)  ::  nTime, nInit
-      real(KIND=RKIND), intent(in), target     :: &
+      type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
+      integer, intent(in) :: nTime, nInit
+      real(kind=RKIND), intent(in), target     :: &
         Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
         Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
         Ez(sgg%alloc(iEz)%XI:sgg%alloc(iEz)%XE, sgg%alloc(iEz)%YI:sgg%alloc(iEz)%YE, sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE), &
@@ -2732,7 +2732,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         Hy(sgg%alloc(iHy)%XI:sgg%alloc(iHy)%XE, sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE, sgg%alloc(iHy)%ZI:sgg%alloc(iHy)%ZE), &
         Hz(sgg%alloc(iHz)%XI:sgg%alloc(iHz)%XE, sgg%alloc(iHz)%YI:sgg%alloc(iHz)%YE, sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
       !--->
-      real(KIND=RKIND), dimension(:), intent(in)   :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
+      real(kind=RKIND), dimension(:), intent(in) :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
                                                       dyh(sgg%ALLOC(iEy)%YI:sgg%ALLOC(iEy)%YE), &
                                                       dzh(sgg%ALLOC(iEz)%ZI:sgg%ALLOC(iEz)%ZE), &
                                                       dxe(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE), &
@@ -2740,11 +2740,11 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
                                                       dze(sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
 
       !---------------------------> variables locales <-----------------------------------------------
-   integer( kind = 4)  ::  i, ii, i1, i2, j1, j2, k1, k2, i1_m, i2_m, j1_m, j2_m, k1_m, k2_m, field,jjx,jjy,jjz,if1,i1t,j1t,k1t,iff1
-      integer(kind=4)  :: Efield, HField
-      integer(kind=4)  ::  iii, kkk, jjj, jjj_m, iii_m, kkk_m, NtimeforVolumic, imed, imed1, imed2, imed3, imed4, medium
+   integer( kind = 4) :: i, ii, i1, i2, j1, j2, k1, k2, i1_m, i2_m, j1_m, j2_m, k1_m, k2_m, field,jjx,jjy,jjz,if1,i1t,j1t,k1t,iff1
+      integer(kind=4) :: Efield, HField
+      integer(kind=4) :: iii, kkk, jjj, jjj_m, iii_m, kkk_m, NtimeforVolumic, imed, imed1, imed2, imed3, imed4, medium
       logical :: esborde, wirecrank
-      real(KIND=RKIND_tiempo)    ::  at
+      real(kind=RKIND_tiempo) :: at
       real(kind=RKIND) :: jx, jy, jz, jdir, jdir1, jdir2
       complex(kind=ckind) :: z_cplx
       integer(kind=4) :: conta !para realmente dar tangenciales de campos en los medios superficiales
@@ -2753,17 +2753,17 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       real(RKIND), pointer :: fieldReference(:,:,:), xField(:,:,:), yField(:,:,:), zField(:,:,:)
       complex(kind=CKIND), pointer, dimension(:) :: auxExp
 
-      type(CurrentSegments), pointer  ::  segmDumm !segmento de hilo que se observa si lo hubiere
+      type(CurrentSegments), pointer  :: segmDumm !segmento de hilo que se observa si lo hubiere
       !
 #ifdef CompileWithBerengerWires
-      type(TSegment), pointer  ::  segmDumm_Berenger !segmento de hilo que se observa si lo hubiere
+      type(TSegment), pointer  :: segmDumm_Berenger !segmento de hilo que se observa si lo hubiere
 #endif
       !
 #ifdef CompileWithSlantedWires
-      class(Segment), pointer  ::  segmDumm_Slanted !segmento de hilo que se observa si lo hubiere
+      class(Segment), pointer  :: segmDumm_Slanted !segmento de hilo que se observa si lo hubiere
 #endif
 
-      logical ::  INIT, GEOM, ASIGNA, electric, magnetic
+      logical :: INIT, GEOM, ASIGNA, electric, magnetic
 
       at = -1; jx = -1; jy = -1; jz = -1; jdir = -1; jdir1 = -1; jdir2 = -1  !para que gfortran no me diga que no las inicializo
       pointObservationCases = [iEx, iEy, iEz, iHx, iHy, iHz]
@@ -3311,7 +3311,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       subroutine updateValueComplex(valorComplex, auxExp, fieldValue)
         complex(kind=CKIND), intent(inout) :: valorComplex
         complex(kind=CKIND), intent(in) :: auxExp
-        real(KIND=RKIND), intent(in) :: fieldValue
+        real(kind=RKIND), intent(in) :: fieldValue
 
         valorComplex = valorComplex + auxExp * fieldValue
 
@@ -3519,7 +3519,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
          else if (sgg%Med(media)%is%ConformalPec) then 
             res = 1000+media
         elseif (sgg%Med(media)%is%thinwire) then
-          CALL StopOnError(0, 1, 'ERROR: A magnetic field cannot be a thin-wire')
+          call StopOnError(0, 1, 'ERROR: A magnetic field cannot be a thin-wire')
         elseif (isSGBCorMultiport(media)) then
           res = 300 + media
         elseif (isDispersive(media)) then
@@ -3627,7 +3627,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       end function
 
       function assignIndices1(field, i, j, k) result(res)
-        integer(kind=4), intent(in)  :: field, i, j, k
+        integer(kind=4), intent(in) :: field, i, j, k
         integer(kind=4) :: res(6)
         res(1) = i - merge(1, 0, 1 + mod(field, 3) == iEx)
         res(2) = j - merge(1, 0, 1 + mod(field, 3) == iEy)
@@ -3637,7 +3637,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         res(6) = k - merge(1, 0, 1 + mod(field + 1, 3) == iEz)
       end function
       function assignIndices2(field, i, j, k) result(res)
-        integer(kind=4), intent(in)  :: field, i, j, k
+        integer(kind=4), intent(in) :: field, i, j, k
         integer(kind=4) :: res(6)
         res(1) = i + merge(1, 0, field == iEx)
         res(2) = j + merge(1, 0, field == iEy)
@@ -3647,7 +3647,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
         res(6) = k + merge(1, 0, field == iEz)
       end function
       function assignIndices3(field, i, j, k) result(res)
-        integer(kind=4), intent(in)  :: field, i, j, k
+        integer(kind=4), intent(in) :: field, i, j, k
         integer(kind=4) :: res(6)
         res(1) = i + merge(1, 0, field == iEx) - merge(1, 0, 1 + mod(field, 3) == iEx)
         res(2) = j + merge(1, 0, field == iEy) - merge(1, 0, 1 + mod(field, 3) == iEy)
@@ -3681,29 +3681,29 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,size, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
       use ILUMINA !is needed to also calculate the incident field in the observed points
       !solo lo precisa de entrada farfield
-      type(bounds_t)  ::  b
+      type(bounds_t) :: b
       !
       type(nf2ff_t) :: facesNF2FF
       !!!
       !
-      type(SGGFDTDINFO), intent(IN)         ::  sgg
-      real(KIND=RKIND), dimension(:), intent(in)   :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
+      type(SGGFDTDINFO), intent(in) :: sgg
+      real(kind=RKIND), dimension(:), intent(in) :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
                                                       dyh(sgg%ALLOC(iEy)%YI:sgg%ALLOC(iEy)%YE), &
                                                       dzh(sgg%ALLOC(iEz)%ZI:sgg%ALLOC(iEz)%ZE), &
                                                       dxe(sgg%alloc(iHx)%XI:sgg%alloc(iHx)%XE), &
                                                       dye(sgg%alloc(iHy)%YI:sgg%alloc(iHy)%YE), &
                                                       dze(sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
       integer(kind=4), intent(in) :: layoutnumber, size
-      integer(kind=4)  ::  nInit, FinalInstant, unidad, compo, conta
-      integer(kind=4)  ::  i, field, N, ii, i1, j1, k1, Ntimeforvolumic, dummy_jjj, i1t, j1t, k1t, i0t
-      logical  ::  incident, singlefilewrite, flushff, ISyaopen
-      real(KIND=RKIND_tiempo)  ::  at
+      integer(kind=4) :: nInit, FinalInstant, unidad, compo, conta
+      integer(kind=4) :: i, field, N, ii, i1, j1, k1, Ntimeforvolumic, dummy_jjj, i1t, j1t, k1t, i0t
+      logical  :: incident, singlefilewrite, flushff, ISyaopen
+      real(kind=RKIND_tiempo) :: at
 
       logical :: ok
       logical :: called_fromobservation, dummy_logical
       integer :: my_iostat
 
-      character(LEN=BUFSIZE)  ::  whoami
+      character(len=BUFSIZE) :: whoami
       !!!
       write (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
       called_fromobservation = .true.
@@ -4071,13 +4071,13 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
 #ifdef CompileWithMTLN
     subroutine FlushMTLNObservationFiles(nEntradaRoot, mtlnProblem)
-      character(len=*), intent(in)  ::  nEntradaRoot
+      character(len=*), intent(in) :: nEntradaRoot
       logical, intent(in) :: mtlnProblem
       type(mtln_solver_t), pointer :: mtln_solver
       integer :: i, j, k, n
       integer :: unit
-      character(len=bufsize)  ::  temp
-      character(len=bufsize)  ::  path
+      character(len=bufsize) :: temp
+      character(len=bufsize) :: path
       character(len=:), allocatable :: buffer
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -4123,31 +4123,31 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
    !!! Free up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine DestroyObservation(sgg)
-      type(SGGFDTDINFO), intent(INOUT)         ::  sgg
-      integer(kind=4)  ::  ii, i, field
+      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      integer(kind=4) :: ii, i, field
 
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
 
 #ifdef CompileWithMPI
-      if (associated(valores)) deallocate (valores, newvalores)
+      if (associated(valores)) deallocate(valores, newvalores)
 #endif
       do ii = 1, sgg%NumberRequest
-        if (SGG%Observation(ii)%Transfer) deallocate (output(ii)%dftEntrada)
-        if (SGG%Observation(ii)%FreqDomain) deallocate (output(ii)%auxExp_E, output(ii)%auxExp_H, output(ii)%Freq)
+        if (SGG%Observation(ii)%Transfer) deallocate(output(ii)%dftEntrada)
+        if (SGG%Observation(ii)%FreqDomain) deallocate(output(ii)%auxExp_E, output(ii)%auxExp_H, output(ii)%Freq)
         do i = 1, sgg%Observation(ii)%nP
           field = sgg%observation(ii)%P(i)%what
           select case (field)
           case (iQx, iQy, iQz)
-            deallocate (output(ii)%item(i)%valor)
+            deallocate(output(ii)%item(i)%valor)
           case (iJx, iJy, iJz)
-            deallocate (output(ii)%item(i)%valor)
-            deallocate (output(ii)%item(i)%valor2, output(ii)%item(i)%valor3, output(ii)%item(i)%valor4, output(ii)%item(i)%valor5)  !en caso de hilos se necesitan
+            deallocate(output(ii)%item(i)%valor)
+            deallocate(output(ii)%item(i)%valor2, output(ii)%item(i)%valor3, output(ii)%item(i)%valor4, output(ii)%item(i)%valor5)  !en caso de hilos se necesitan
           case (iBloqueJx, iBloqueJy, iBloqueMx, iBloqueMy)
-            deallocate (output(ii)%item(i)%valor)
+            deallocate(output(ii)%item(i)%valor)
           case (lineIntegral)
-            deallocate (output(ii)%item(i)%valor)
+            deallocate(output(ii)%item(i)%valor)
 #ifdef CompileWithMPI
             if (output(ii)%item(i)%MPISubComm /= -1) then
               call MPI_Group_free(output(ii)%item(i)%MPIgroupindex, ierr)
@@ -4159,31 +4159,31 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
               call MPI_Group_free(output(ii)%item(i)%MPIgroupindex, ierr)
             end if
 #endif
-            if (SGG%Observation(ii)%TimeDomain) deallocate (output(ii)%item(i)%valor3D)
-            if (SGG%Observation(ii)%FreqDomain) deallocate (output(ii)%item(i)%valor3DComplex)
+            if (SGG%Observation(ii)%TimeDomain) deallocate(output(ii)%item(i)%valor3D)
+            if (SGG%Observation(ii)%FreqDomain) deallocate(output(ii)%item(i)%valor3DComplex)
           case (iCur, iCurX, iCurY, iCurZ, mapvtk) !!!
 #ifdef CompileWithMPI
             if (output(ii)%item(i)%MPISubComm /= -1) then
               call MPI_Group_free(output(ii)%item(i)%MPIgroupindex, ierr)
             end if
 #endif
-            if (SGG%Observation(ii)%TimeDomain) deallocate (output(ii)%item(i)%Serialized%valor, &
+            if (SGG%Observation(ii)%TimeDomain) deallocate(output(ii)%item(i)%Serialized%valor, &
                                                             output(ii)%item(i)%Serialized%valor_x, &
                                                             output(ii)%item(i)%Serialized%valor_y, &
                                                             output(ii)%item(i)%Serialized%valor_z)
             if (SGG%Observation(ii)%FreqDomain) then
-              deallocate (output(ii)%item(i)%Serialized%valorComplex_x)
-              deallocate (output(ii)%item(i)%Serialized%valorComplex_y)
-              deallocate (output(ii)%item(i)%Serialized%valorComplex_z)
+              deallocate(output(ii)%item(i)%Serialized%valorComplex_x)
+              deallocate(output(ii)%item(i)%Serialized%valorComplex_y)
+              deallocate(output(ii)%item(i)%Serialized%valorComplex_z)
             end if
-            deallocate (output(ii)%item(i)%Serialized%eI)
-            deallocate (output(ii)%item(i)%Serialized%eJ)
-            deallocate (output(ii)%item(i)%Serialized%eK)
-            deallocate (output(ii)%item(i)%Serialized%currentType)
-            deallocate (output(ii)%item(i)%Serialized%sggMtag)
+            deallocate(output(ii)%item(i)%Serialized%eI)
+            deallocate(output(ii)%item(i)%Serialized%eJ)
+            deallocate(output(ii)%item(i)%Serialized%eK)
+            deallocate(output(ii)%item(i)%Serialized%currentType)
+            deallocate(output(ii)%item(i)%Serialized%sggMtag)
 
           case (iBloqueMz, iBloqueJz, iEx, iEy, iEz, iHx, iHy, iHz)
-            deallocate (output(ii)%item(i)%valor)
+            deallocate(output(ii)%item(i)%valor)
           case (farfield)
             call DestroyFarField
 #ifdef CompileWithMPI
@@ -4193,21 +4193,21 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 #endif
           end select
         end do
-        if (associated(sgg%Observation(ii)%P)) deallocate (sgg%Observation(ii)%P)
-        if (associated(output(ii)%item)) deallocate (output(ii)%item)
+        if (associated(sgg%Observation(ii)%P)) deallocate(sgg%Observation(ii)%P)
+        if (associated(output(ii)%item)) deallocate(output(ii)%item)
 
       end do
 
-      if (associated(sgg%Observation)) deallocate (sgg%Observation)
-      if (associated(output)) deallocate (output)
+      if (associated(sgg%Observation)) deallocate(sgg%Observation)
+      if (associated(output)) deallocate(output)
 
     end subroutine
 
    !!!!!!!!!!!!!!!!!!!!!
 
     function prefix(campo) result(ext)
-      integer(kind=4)  ::  campo
-      character(len=BUFSIZE)  ::  ext
+      integer(kind=4) :: campo
+      character(len=BUFSIZE) :: ext
 
       select case (campo)
       case (iEx)
@@ -4289,9 +4289,9 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
     end function prefix
 
     function suffix(campo, incid) result(ext)
-      integer(kind=4)  ::  campo
-      character(LEN=BUFSIZE)  ::  ext
-      logical  ::  incid
+      integer(kind=4) :: campo
+      character(len=BUFSIZE) :: ext
+      logical  :: incid
 
       ext = ' '
 
@@ -4307,7 +4307,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
     end function suffix
 
     function fieldo(field, dir) result(fieldo2)
-      integer  ::  fieldo2, field
+      integer  :: fieldo2, field
       character(len=1) :: dir
       fieldo2 = -1
       select case (field)
@@ -4333,7 +4333,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
           fieldo2 = iEY
         CASE ('Z', 'z')
           fieldo2 = iEz
-        END SELECT
+        end select
       case (iMHC)
         select case (dir)
         CASE ('X', 'x')
@@ -4342,7 +4342,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
           fieldo2 = iHY
         CASE ('Z', 'z')
           fieldo2 = iHz
-        END SELECT
+        end select
       case (iCur, iCurX, icurY, icurZ, mapvtk)  !los pongo en efield para evitar problemas con el MPI
         select case (dir)
         CASE ('X', 'x')
@@ -4351,14 +4351,14 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
           fieldo2 = iEY
         CASE ('Z', 'z')
           fieldo2 = iEz
-        END SELECT
+        end select
       end select
     end function
 
    !!!cuenta los bordes adyacentes
     subroutine contabordes(sgg, imed, imed1, imed2, imed3, imed4, EsBorde, SINPML_fullsize, campo, iii, jjj, kkk)
-      type(SGGFDTDINFO), intent(IN)       ::  sgg
-      type(limit_t), dimension(1:6), intent(in)  ::  SINPML_fullsize
+      type(SGGFDTDINFO), intent(in) :: sgg
+      type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
       integer(Kind=4) imed, imed1, imed2, imed3, imed4, contaborde, campo, iii, jjj, kkk
       logical :: esborde
       !!!!
@@ -4505,16 +4505,16 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     subroutine nodalvtk(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, sggMtag, tag_numbers, &
                         init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
-      type(SGGFDTDINFO), intent(IN)         ::  sgg
-      integer (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
 
-      type(output_t), pointer, dimension(:)  ::  output
-      integer(kind=4), intent(IN) :: i, ii, Ntimeforvolumic
+      type(output_t), pointer, dimension(:) :: output
+      integer(kind=4), intent(in) :: i, ii, Ntimeforvolumic
 
       logical geom, asigNa, init, electric, magnetic
       integer(kind=4) conta, sweep, ni, nj, nk, i_m, j_m, k_m, IMED
       type(taglist_t) :: tag_numbers
-      integer(KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   :: &
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
         sggMiEx(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
         sggMiEy(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
         sggMiEz(sgg%alloc(iEz)%XI:sgg%alloc(iEz)%XE, sgg%alloc(iEz)%YI:sgg%alloc(iEz)%YE, sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE), &
@@ -4867,19 +4867,19 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
 #ifdef CompileWithMTLN
     subroutine multiwireBundlesVTK(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, sggMtag, tag_numbers)
-      type(SGGFDTDINFO), intent(IN)   :: sgg
-      integer (KIND=IKINDMTAG), intent(in) :: sggMtag  & 
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=IKINDMTAG), intent(in) :: sggMtag  & 
         (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, & 
          sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, & 
          sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
 
       type(taglist_t) :: tag_numbers
-      type(output_t), pointer, dimension(:)  ::  output
-      integer(kind=4), intent(IN) :: i, ii, Ntimeforvolumic
-      logical, intent(IN) :: geom, asigNa, init
+      type(output_t), pointer, dimension(:) :: output
+      integer(kind=4), intent(in) :: i, ii, Ntimeforvolumic
+      logical, intent(in) :: geom, asigNa, init
       integer(kind=4) :: conta, ni, nj, nk, n, m, r, parallel
 
-      type(mtln_solver_t), pointer, save  ::  mtln_local
+      type(mtln_solver_t), pointer, save  :: mtln_local
 
 
       if (init) mtln_local => GetSolverPtr()
@@ -4942,24 +4942,24 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     subroutine wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, sggMtag, tag_numbers)
 
-      type(SGGFDTDINFO), intent(IN)   :: sgg
-      integer (KIND=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
-      type(output_t), pointer, dimension(:)  ::  output
-      integer(kind=4), intent(IN) :: i, ii, Ntimeforvolumic
-      logical, intent(IN) :: geom, asigNa, init
+      type(output_t), pointer, dimension(:) :: output
+      integer(kind=4), intent(in) :: i, ii, Ntimeforvolumic
+      logical, intent(in) :: geom, asigNa, init
       integer(kind=4) :: conta, ni, nj, nk, n
       character(len=*), INTENT(in) :: wiresflavor
       integer(kind=4), SAVE :: MINIMED
 
-      type(Thinwires_t), pointer, save  ::  Hwireslocal
+      type(Thinwires_t), pointer, save  :: Hwireslocal
       !
 #ifdef CompileWithBerengerWires
-      type(TWires), pointer, save  ::  Hwireslocal_Berenger
+      type(TWires), pointer, save  :: Hwireslocal_Berenger
 #endif
 #ifdef CompileWithSlantedWires
       !
-      type(WiresData), pointer, save  ::  Hwireslocal_Slanted
+      type(WiresData), pointer, save  :: Hwireslocal_Slanted
 #endif
 
       !print *,'----antes wires init,geom,asigna,conta,i,ii',init,geom,asigna,conta,i,ii
@@ -5131,7 +5131,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
     function GetOutput() result(r)
-      type(output_t), pointer, dimension(:)  ::  r
+      type(output_t), pointer, dimension(:) :: r
 
       r => output
       return
@@ -5153,7 +5153,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
       ! Fourier transform value.
       complex(kind=CKIND), intent(out), dimension(fqSize) :: fqVal
       ! Vector of frequencies to compute the values.
-      real(kind=RKIND), intent(in), dimension(fqSize) ::  fq
+      real(kind=RKIND), intent(in), dimension(fqSize) :: fq
       ! Input signal.
       real(kind=RKIND), intent(in), dimension(sigSize) :: sig
       ! Input signal sampling time.
@@ -5198,8 +5198,8 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     real(kind=RKIND) function interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, i, j, k, field, atwhere) result(interp)
 
-      type(SGGFDTDINFO), intent(IN) :: sgg
-      real(KIND=RKIND), intent(in), target :: &
+      type(SGGFDTDINFO), intent(in) :: sgg
+      real(kind=RKIND), intent(in), target :: &
         Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
         Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &
         Ez(sgg%alloc(iEz)%XI:sgg%alloc(iEz)%XE, sgg%alloc(iEz)%YI:sgg%alloc(iEz)%YE, sgg%alloc(iEz)%ZI:sgg%alloc(iEz)%ZE), &

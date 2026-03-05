@@ -22,46 +22,46 @@ contains
    !
    subroutine createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
       logical, save :: firsttimeenteringcreatexdmf=.true.
-      integer (KIND=4) :: mpidir
+      integer(kind=4) :: mpidir
       logical :: vtkindex,createh5bin
       !------------------------>
-      character (LEN=BUFSIZE) :: filename ! File name
+      character(len=BUFSIZE) :: filename ! File name
       !
-      type (SGGFDTDINFO), intent(IN)        :: sgg
-      integer (KIND=4), intent(in) :: layoutnumber, size
-      integer (KIND=4) ::  ierr,  sizeofvalores,COMPO
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4) :: ierr,  sizeofvalores,COMPO
       complex( kind = CKIND), dimension( :, :, :, :,: ), allocatable  :: valor3DComplex !freqdomain probes
       !
-      type (output_t), POINTER, dimension(:) :: output
-      integer (KIND=4) :: iroot
-      integer (KIND=4) :: myunit
+      type(output_t), pointer, dimension(:) :: output
+      integer(kind=4) :: iroot
+      integer(kind=4) :: myunit
       !
 #ifdef CompileWithMPI
-      real(KIND=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: newvalor3d !para sondas Volumic
+      real(kind=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: newvalor3d !para sondas Volumic
 #endif
 
 
-      real(KIND=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: valor3d !para sondas Volumic
+      real(kind=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: valor3d !para sondas Volumic
       real(  KINd=RKIND_TIEMPO), ALLOCATABLE, dimension(:) :: att
 
 
-      integer (KIND=4) :: indi,fieldob
+      integer(kind=4) :: indi,fieldob
       !
-      integer (KIND=4) :: ii, i1, j1, k1, finalstep
-      integer (KIND=4) :: minx, maxx, miny, maxy, minz, maxz,pasadas,pasadastotales
+      integer(kind=4) :: ii, i1, j1, k1, finalstep
+      integer(kind=4) :: minx, maxx, miny, maxy, minz, maxz,pasadas,pasadastotales
       LOGICAL :: lexis,somethingdone
-      character (LEN=BUFSIZE)     ::  dubuf
-      integer (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs 
-      integer (KIND=4) :: minXabs_primero,minYabs_primero,minZabs_primero,imdice
-      character (LEN=BUFSIZE) :: pathroot
-      character (LEN=BUFSIZE)  ::  chari,charj,chark,chari2,charj2,chark2
-      character (LEN=BUFSIZE)  ::  extpoint
+      character(len=BUFSIZE) :: dubuf
+      integer(kind=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs 
+      integer(kind=4) :: minXabs_primero,minYabs_primero,minZabs_primero,imdice
+      character(len=BUFSIZE) :: pathroot
+      character(len=BUFSIZE) :: chari,charj,chark,chari2,charj2,chark2
+      character(len=BUFSIZE) :: extpoint
       character(len=BUFSIZE) :: buff
-      real(KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
+      real(kind=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                              dz_minZabs,dy_minYabs,dx_minXabs                 
       !
-      character (LEN=BUFSIZE) :: whoami, whoamishort
-      real(KIND=RKIND)  :: rdum
+      character(len=BUFSIZE) :: whoami, whoamishort
+      real(kind=RKIND) :: rdum
       integer :: my_iostat
       
       WRITE (whoamishort, '(i5)') layoutnumber + 1
@@ -206,7 +206,7 @@ contains
                        allocate (att(1:finalstep))
                           att = 0.0_RKIND !aquiiiii
                        pasadastotales=1
-                       ALLOCATE (valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
+                      allocate(valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
                      elseif (SGG%Observation(ii)%FreqDomain) then
                        !este read solo se precisa para la frecuencial y es dummy 
                        read(output(ii)%item(1)%unit) rdum !instante en el que se ha escrito la info frequencial
@@ -214,12 +214,12 @@ contains
                        allocate (att(1:finalstep))
                           att = 0.0_RKIND  !aquiiiii
                        pasadastotales=2
-                       ALLOCATE (valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
-                       ALLOCATE (valor3dCOMPLEX(1,1:3,minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs))
+                      allocate(valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
+                      allocate(valor3dCOMPLEX(1,1:3,minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs))
                      endif
 
 #ifdef CompileWithMPI
-                     ALLOCATE (newvalor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
+                    allocate(newvalor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
 #endif
 
 #ifdef CompileWithMPI
@@ -385,7 +385,7 @@ contains
                                   if (output(ii)%item(1)%MPISubComm /= -1) then
                                      sizeofvalores = (maxXabs-minXabs+1) * (maxYabs-minYabs+1) * (maxZabs-minZabs+1)
                                      call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                                     CALL MPI_AllReduce (valor3d, newvalor3d, sizeofvalores, REALSIZE, MPI_SUM, &
+                                     call MPI_AllReduce (valor3d, newvalor3d, sizeofvalores, REALSIZE, MPI_SUM, &
                                      &                     output(ii)%item(1)%MPISubComm, ierr)
                                   endif
                                   valor3d = newvalor3d
@@ -432,7 +432,7 @@ contains
                            
                            if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase del modulo
                               call closeh5file(finalstep,att)
-                              CALL print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(filename))//'.h5', .TRUE.) !enforces print
+                              call print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(filename))//'.h5', .TRUE.) !enforces print
                            endif
                         endif                        
 #endif                 
@@ -445,23 +445,23 @@ contains
 #endif   
                         if (createh5bin) then
                              close(myunit)
-                             CALL print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(sgg%nEntradaRoot))//'.h5bin', .TRUE.)
+                             call print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(sgg%nEntradaRoot))//'.h5bin', .TRUE.)
                         endif
                      endif                     
 
-                     DEALLOCATE (valor3d)
+                     deallocate(valor3d)
                      if (SGG%Observation(ii)%FreqDomain) then
-                        DEALLOCATE (valor3dCOMPLEX)
+                        deallocate(valor3dCOMPLEX)
                      ENDIF
 #ifdef CompileWithMPI
-                     DEALLOCATE (newvalor3d)
+                     deallocate(newvalor3d)
 #endif
-                     DEALLOCATE (ATT)
+                     deallocate(ATT)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                     
                      CLOSE (output(ii)%item(1)%UNIT)
                   else !del lexis
                      buff='NOT PROCESSING: Ignoring: Inexistent or void file '//trim(adjustl(output(ii)%item(1)%path))
-                     CALL print11(layoutnumber, buff)
+                     call print11(layoutnumber, buff)
                   ENDIF !DEL LEXIS
                somethingdone=.true.
                ENDIF
@@ -474,13 +474,13 @@ contains
 
 
    subroutine createh5bintxt(sgg,layoutnumber,size)
-      type (SGGFDTDINFO), intent(IN)        :: sgg
-      integer (KIND=4), intent(in) :: layoutnumber, size
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber, size
       logical :: lexis,algoescrito
-      integer (KIND=4) :: ii,ierr
-      integer (KIND=4) :: myunit,myunit2
-      character (LEN=BUFSIZE) ::  whoamishort
-      character (LEN=BUFSIZE) :: pathroot
+      integer(kind=4) :: ii,ierr
+      integer(kind=4) :: myunit,myunit2
+      character(len=BUFSIZE) :: whoamishort
+      character(len=BUFSIZE) :: pathroot
       integer :: my_iostat
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -518,14 +518,14 @@ contains
    end subroutine createh5bintxt
 
    subroutine createxdmfOnTheFly (sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)
-      integer (KIND=4) :: mpidir
+      integer(kind=4) :: mpidir
       logical :: vtkindex,createh5bin
       !------------------------>
 
-      type (SGGFDTDINFO), intent(IN)        :: sgg
-      integer (KIND=4), intent(in) :: layoutnumber, size
-      type (output_t), POINTER, dimension(:) :: output
-      integer (KIND=4) :: ii
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber, size
+      type(output_t), pointer, dimension(:) :: output
+      integer(kind=4) :: ii
       logical :: lexis,somethingdone
       character(len=BUFSIZE) :: buff
       !
@@ -541,7 +541,7 @@ contains
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
-                     CALL print11(layoutnumber, buff)
+                     call print11(layoutnumber, buff)
                      return
                   ELSE
                      close (output(ii)%item(1)%unit)
@@ -561,7 +561,7 @@ contains
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
-                     CALL print11(layoutnumber, buff)
+                     call print11(layoutnumber, buff)
                      return
                   ELSE
                      open (output(ii)%item(1)%unit,file=trim(adjustl(output(ii)%item(1)%path)),FORM='unformatted',position='append')

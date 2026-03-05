@@ -94,30 +94,30 @@ module Solver_mod
       type(Logic_control) :: thereAre
       type(perform_t) :: perform, d_perform
 
-      real(kind=rkind), pointer, dimension (:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
-      real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind), pointer, dimension(:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
+      real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
       type(constants_t) :: g
       real(kind=RKIND_tiempo) :: lastexecutedtime
       real(kind=RKIND) :: maxSourceValue
 
-      integer (kind=4) :: initialtimestep, lastexecutedtimestep, ini_save, n_info, n
+      integer(kind=4) :: initialtimestep, lastexecutedtimestep, ini_save, n_info, n
 
       type(bounds_t) :: bounds
-      type (EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
+      type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
 
       logical :: parar, everflushed = .false., still_planewave_time
 
       ! semba variables 
-      type (sggfdtdinfo) :: sgg
+      type(sggfdtdinfo) :: sgg
       type(media_matrices_t) :: media
       type(taglist_t) :: tag_numbers
-      type (limit_t), dimension(1:6) :: SINPML_fullsize,fullsize
+      type(limit_t), dimension(1:6) :: SINPML_fullsize,fullsize
       logical :: finishedwithsuccess = .false.
       real(kind=rkind) :: eps0,mu0
-      type (tagtype_t) :: tagtype
+      type(tagtype_t) :: tagtype
 
 #ifdef CompileWithMTLN
-      type (mtln_t) :: mtln_parsed
+      type(mtln_t) :: mtln_parsed
 #endif
 
    contains
@@ -170,13 +170,13 @@ module Solver_mod
 
    function solver_ctor(sgg,media,tag_numbers,SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
                         input, maxSourceValue, time_desdelanzamiento) result(res)
-      type (SGGFDTDINFO), intent(in)   ::  sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
       type(taglist_t), intent(in) :: tag_numbers
       type(media_matrices_t), intent(in) :: media
-      type (limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
+      type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
       logical, intent(in) :: finishedwithsuccess
-      real(KIND=RKIND), intent(in) :: eps0,mu0
-      type (tagtype_t), intent(in) :: tagtype
+      real(kind=RKIND), intent(in) :: eps0,mu0
+      type(tagtype_t), intent(in) :: tagtype
       type(entrada_t), intent(in) :: input
       real(kind=RKIND), intent(in) :: maxSourceValue
       real(kind=8), intent(in) :: time_desdelanzamiento
@@ -286,9 +286,9 @@ module Solver_mod
 #ifdef CompileWithMTLN
    subroutine launch_mtln_simulation(this, mtln_parsed, nEntradaRoot, layoutnumber)
       class(solver_t) :: this
-      type (mtln_t) :: mtln_parsed
-      character (len=*), intent(in)  ::  nEntradaRoot
-      integer (kind=4), intent(in) ::  layoutnumber
+      type(mtln_t) :: mtln_parsed
+      character(len=*), intent(in) :: nEntradaRoot
+      integer(kind=4), intent(in) :: layoutnumber
 
       call solveMTLNProblem(mtln_parsed)
       call reportSimulationEnd(layoutnumber)
@@ -360,11 +360,11 @@ module Solver_mod
 
    subroutine set_field_value(this, field_idx, i_range,j_range,k_range, field_value)
       class(solver_t) :: this
-      integer (kind=4), intent(in) :: field_idx
-      integer (kind=4), dimension(2), intent(in) :: i_range, j_range, k_range
+      integer(kind=4), intent(in) :: field_idx
+      integer(kind=4), dimension(2), intent(in) :: i_range, j_range, k_range
       real(kind=rkind), intent(in) :: field_value
       
-      real(kind=rkind), pointer, dimension (:,:,:) :: field
+      real(kind=rkind), pointer, dimension(:,:,:) :: field
       integer(kind=4) :: i, j, k
       select case(field_idx)
       case(iEx)
@@ -391,11 +391,11 @@ module Solver_mod
 
    function get_field_value(this, field_idx, fi,fj,fk) result(res)
       class(solver_t) :: this
-      integer (kind=4), intent(in) :: field_idx
-      integer (kind=4), intent(in) :: fi, fj, fk
+      integer(kind=4), intent(in) :: field_idx
+      integer(kind=4), intent(in) :: fi, fj, fk
       real(kind=rkind) :: res
       
-      real(kind=rkind), pointer, dimension (:,:,:) :: field
+      real(kind=rkind), pointer, dimension(:,:,:) :: field
       select case(field_idx)
       case(iEx)
          field => this%Ex
@@ -424,14 +424,14 @@ module Solver_mod
       class(solver_t) :: this
 
       integer(kind=4) :: i, j, k, field
-      character (len=bufsize)  ::  whoami, chari, layoutcharID
+      character(len=bufsize) :: whoami, chari, layoutcharID
 
-      real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
-      real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+      real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
 
       real(kind=RKIND_tiempo) :: ultimodt
       
-      character (len=bufsize) :: dubuf
+      character(len=bufsize) :: dubuf
       logical :: attinformado = .false.
 
 ! #ifdef compileWithMPI
@@ -621,7 +621,7 @@ module Solver_mod
       call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue)
 
 
-      CALL CLOSEWARNINGFILE(this%control%layoutnumber,this%control%size,this%control%fatalerror,.false.,this%control%simu_devia) !aqui ya esta dividido el stochastic y hay dos this%control%layoutnumber=0
+      call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%size,this%control%fatalerror,.false.,this%control%simu_devia) !aqui ya esta dividido el stochastic y hay dos this%control%layoutnumber=0
 
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
@@ -649,7 +649,7 @@ contains
 
       subroutine findbounds(b)
          !
-         type (bounds_t), intent(out)  ::  b
+         type(bounds_t), intent(out) :: b
          !
 
          !No tocar. Dejar como estan alocateados
@@ -1044,7 +1044,7 @@ contains
          character(len=BUFSIZE) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
-         integer (kind=4) :: ierr
+         integer(kind=4) :: ierr
 #endif
          write(dubuf,*) 'Init Other Borders...';  call print11(this%control%layoutnumber,dubuf)
          call InitOtherBorders    (this%sgg,this%thereAre)
@@ -1123,7 +1123,7 @@ contains
 
          !init lumped debe ir antes de wires porque toca la conductividad del material !mmmm ojoooo 120123
          write(dubuf,*) 'Init Lumped Elements...';  call print11(this%control%layoutnumber,dubuf)
-         CALL InitLumped(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,this%eps0,this%mu0)
+         call InitLumped(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,this%control,this%thereAre%Lumpeds,this%eps0,this%mu0)
          l_auxinput=this%thereAre%Lumpeds
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1394,7 +1394,7 @@ contains
       end subroutine initializeConformalElements
 
       subroutine initializeEDispersives()
-         character (len=bufsize) :: dubuf
+         character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
@@ -1419,7 +1419,7 @@ contains
       end subroutine initializeEDispersives
 
       subroutine initializeMDispersives()
-         character (len=bufsize) :: dubuf
+         character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
@@ -1444,7 +1444,7 @@ contains
       end subroutine initializeMDispersives
 
       subroutine initializePlanewave()
-         character (len=bufsize) :: dubuf
+         character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
@@ -1469,7 +1469,7 @@ contains
       end subroutine initializePlanewave
 
       subroutine initializeNodalSources()
-         character (len=bufsize) :: dubuf
+         character(len=bufsize) :: dubuf
          logical :: l_auxinput, l_auxoutput
 #ifdef CompileWithMPI
          integer(kind=4) :: ierr
@@ -1631,9 +1631,9 @@ contains
 
       subroutine printSimulationStart()
          character(len=bufsize) :: dubuf
-         type (tiempo_t) :: time_out2
+         type(tiempo_t) :: time_out2
 #ifdef CompileWithMPI
-         integer (kind=4) :: ierr
+         integer(kind=4) :: ierr
 #endif
 
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1650,7 +1650,7 @@ contains
 #ifdef CompileWithMPI
             call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
-            CALL get_secnds (time_out2)
+            call get_secnds (time_out2)
             write(dubuf,*)  'Start Date/time ', time_out2%fecha( 7: 8),'/',&
                &time_out2%fecha( 5: 6),'   ',time_out2%hora( 1: 2), ':',&
                &time_out2%hora( 3: 4),':',time_out2%hora( 5: 6)
@@ -1663,20 +1663,20 @@ contains
       subroutine fillMtag(sgg,sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b, tag_numbers)
 
          !------------------------>
-         type (SGGFDTDINFO), intent(IN)    ::  sgg
-         type (bounds_t), intent( IN)  ::  b
-         integer(KIND = IKINDMTAG), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT)     ::  sggMtag
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( IN   )     ::  sggMiHx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( IN   )     ::  sggMiHy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( IN   )     ::  sggMiHz
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( IN   )     ::  sggMiEx
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( IN   )     ::  sggMiEy
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension ( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( IN   )     ::  sggMiEz
-         type (taglist_t) :: tag_numbers
+         type(SGGFDTDINFO), intent(in) :: sgg
+         type(bounds_t), intent( IN) :: b
+         integer(KIND = IKINDMTAG), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT) :: sggMtag
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( IN   ) :: sggMiHx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHy%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHy%NZ-1 )  , intent( IN   ) :: sggMiHy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHz%NX-1 , 0 : b%sggMiHz%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( IN   ) :: sggMiHz
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEx%NX-1 , 0 : b%sggMiEx%NY-1 , 0 : b%sggMiEx%NZ-1 )  , intent( IN   ) :: sggMiEx
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEy%NX-1 , 0 : b%sggMiEy%NY-1 , 0 : b%sggMiEy%NZ-1 )  , intent( IN   ) :: sggMiEy
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiEz%NX-1 , 0 : b%sggMiEz%NY-1 , 0 : b%sggMiEz%NZ-1 )  , intent( IN   ) :: sggMiEz
+         type(taglist_t) :: tag_numbers
          !------------------------> Variables locales
-         integer(kind = 4)  ::  i, j, k
-         integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio1,medio2,medio3,medio4,medio5
-         logical  ::  mediois1,mediois2,mediois3,mediois4
+         integer(kind = 4) :: i, j, k
+         integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio1,medio2,medio3,medio4,medio5
+         logical  :: mediois1,mediois2,mediois3,mediois4
          integer, dimension(3) :: lbx, lby, lbz
          lbx = lbound(tag_numbers%face%x)
          lby = lbound(tag_numbers%face%y)   
@@ -1754,9 +1754,9 @@ contains
       end subroutine fillMtag
 
       subroutine crea_timevector(sgg,lastexecutedtimestep,finaltimestep,lastexecutedtime)
-         integer (kind=4) :: lastexecutedtimestep,finaltimestep,i
+         integer(kind=4) :: lastexecutedtimestep,finaltimestep,i
          real(kind=RKIND_tiempo) :: lastexecutedtime
-         type (SGGFDTDINFO), intent(INOUT)   ::  sgg
+         type(SGGFDTDINFO), intent(INOUT) :: sgg
          allocate (sgg%tiempo(lastexecutedtimestep:finaltimestep+2))
          sgg%tiempo(lastexecutedtimestep)=lastexecutedtime
          do i=lastexecutedtimestep+1,finaltimestep+2
@@ -1770,8 +1770,8 @@ contains
    subroutine solver_run(this)
       class(solver_t) :: this
 
-      real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
-      real(kind=rkind), pointer, dimension (:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+      real(kind=rkind), pointer, dimension(:) :: Idxe, Idye, Idze, Idxh, Idyh, Idzh, dxe, dye, dze, dxh, dyh, dzh
 
       logical :: call_timing, l_aux, flushFF, somethingdone, newsomethingdone
       integer :: i
@@ -2033,7 +2033,7 @@ contains
       end subroutine
 
       subroutine singleUnpack()
-         character (LEN=BUFSIZE) :: dubuf
+         character(len=BUFSIZE) :: dubuf
          logical :: somethingdone
          real(kind=rkind_tiempo) :: at
 #ifdef CompileWithMPI
@@ -2166,7 +2166,7 @@ contains
    subroutine flushPlanewaveOff(pw_switched_off, pw_still_time, pw_thereAre)
       logical, intent(inout) :: pw_switched_off, pw_still_time, pw_thereAre
       logical :: pw_still_time_aux, pw_thereAre_aux
-      integer (kind=4) :: ierr
+      integer(kind=4) :: ierr
       character(len=bufsize) :: dubuf
       if (.not.pw_switched_off) then
          pw_still_time = pw_still_time.and.this%thereAre%PlaneWaveBoxes
@@ -2188,7 +2188,7 @@ contains
    end subroutine 
 
 
-!       !PML E-field advancing (IT IS IMPORTANT TO FIRST CALL THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
+!       !PML E-field advancing (IT IS IMPORTANT TO FIRST call THE PML ADVANCING ROUTINES, SINCE THE DISPERSIVE
 !       !ROUTINES INJECT THE POLARIZATION CURRENTS EVERYWHERE (PML INCLUDED)
 !       !SO THAT DISPERSIVE MATERIALS CAN ALSO BE TRUNCATED BY CPML)
    end subroutine step
@@ -2196,7 +2196,7 @@ contains
 #ifdef CompileWithMPI
    subroutine init_MPIConformalProbes(this)
       class(solver_t) :: this
-      integer (kind=4) :: group_conformalprobes_dummy, ierr
+      integer(kind=4) :: group_conformalprobes_dummy, ierr
 !!!!sgg250424 niapa para que funcionen sondas conformal mpi
 !todos deben crear el subcomunicador mpi una sola vez   
       if (input_conformal_flag) then
@@ -2242,9 +2242,9 @@ contains
       class(solver_t) :: this
       integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEx%NX-1,0:this%bounds%sggMiEx%NY-1,0:this%bounds%sggMiEx%NZ-1), intent(in) :: sggMiEx
 
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Ex
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hy
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hz
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ex
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hz
       real(kind=rkind), dimension(:), pointer :: Idyh
       real(kind=rkind), dimension(:), pointer :: Idzh
 
@@ -2283,11 +2283,11 @@ contains
 
    subroutine advanceEy(this,sggMiEy)
       class(solver_t) :: this
-      integer(kind=integersizeofmediamatrices), dimension (0:this%bounds%sggMiEy%NX-1,0:this%bounds%sggMiEy%NY-1,0:this%bounds%sggMiEy%NZ-1), intent(in) :: sggMiEy
+      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEy%NX-1,0:this%bounds%sggMiEy%NY-1,0:this%bounds%sggMiEy%NZ-1), intent(in) :: sggMiEy
 
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Ey
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hz
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous ::  Hx
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ey
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hz
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hx
       real(kind=rkind), dimension(:), pointer :: Idzh
       real(kind=rkind), dimension(:), pointer :: Idxh
 
@@ -2328,17 +2328,17 @@ contains
 
    subroutine advanceEz(this,sggMiEz)
       class(solver_t) :: this
-      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEz%NX-1,0:this%bounds%sggMiEz%NY-1,0:this%bounds%sggMiEz%NZ-1), intent(in) ::  sggMiEz
+      integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiEz%NX-1,0:this%bounds%sggMiEz%NY-1,0:this%bounds%sggMiEz%NZ-1), intent(in) :: sggMiEz
 
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Ez
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hx
       real(kind=rkind), dimension(:,:,:), pointer, contiguous :: Hy
-      real(kind=rkind), dimension(:), pointer ::  Idyh
-      real(kind=rkind), dimension(:), pointer ::  Idxh
+      real(kind=rkind), dimension(:), pointer :: Idyh
+      real(kind=rkind), dimension(:), pointer :: Idxh
       !------------------------> Variables locales
-      real(kind = RKIND)  ::   Idyhj
-      integer(kind = 4)  ::  i, j, k
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
+      real(kind = RKIND) :: Idyhj
+      integer(kind = 4) :: i, j, k
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
 
 
       Ez(0:this%bounds%Ez%NX-1,0:this%bounds%Ez%NY-1,0:this%bounds%Ez%NZ-1) => this%Ez
@@ -2394,9 +2394,9 @@ contains
       class(solver_t) :: this
       integer(kind=integersizeofmediamatrices), dimension(0:this%bounds%sggMiHx%NX-1,0:this%bounds%sggMiHx%NY-1,0:this%bounds%sggMiHx%NZ-1), intent(in) :: sggMiHx
 
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Hx
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ey
-      real(kind=rkind), dimension(:,:,:), pointer, contiguous  ::  Ez
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous  :: Hx
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous  :: Ey
+      real(kind=rkind), dimension(:,:,:), pointer, contiguous  :: Ez
       real(kind=rkind), dimension(:), pointer:: IdyE
       real(kind=rkind), dimension(:), pointer:: IdzE
       real(kind=rkind) :: Idzek, Idyej
@@ -2483,9 +2483,9 @@ contains
       real(kind=rkind), dimension(:), pointer :: IdyE
       real(kind=rkind), dimension(:), pointer :: IdxE
 
-      real(kind = RKIND)  ::  Idyej
-      integer(kind = 4)  ::  i, j, k
-      integer(kind = INTEGERSIZEOFMEDIAMATRICES)  ::  medio
+      real(kind = RKIND) :: Idyej
+      integer(kind = 4) :: i, j, k
+      integer(kind = INTEGERSIZEOFMEDIAMATRICES) :: medio
       Hz(0:this%bounds%Hz%NX-1,0:this%bounds%Hz%NY-1,0:this%bounds%Hz%NZ-1) => this%Hz
       Ex(0:this%bounds%EX%NX-1,0:this%bounds%EX%NY-1,0:this%bounds%EX%NZ-1) => this%Ex
       Ey(0:this%bounds%Ey%NX-1,0:this%bounds%Ey%NY-1,0:this%bounds%Ey%NZ-1) => this%Ey
@@ -2712,15 +2712,15 @@ contains
    subroutine solver_end(this)
       class(solver_t) :: this
 
-      real(kind=rkind), pointer, dimension (:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
-      real(kind=rkind), pointer, dimension (:) :: dxe, dye, dze, dxh, dyh, dzh
+      real(kind=rkind), pointer, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
+      real(kind=rkind), pointer, dimension(:) :: dxe, dye, dze, dxh, dyh, dzh
       real(kind=rkind_tiempo) :: at
-      integer (kind=4) :: ndummy
+      integer(kind=4) :: ndummy
       logical :: dummylog, somethingdone, newsomethingdone
       character(len=bufsize) :: dubuf
 
 #ifdef CompileWithMPI
-      integer (kind=4) :: ierr
+      integer(kind=4) :: ierr
 #endif
       Ex => this%Ex; Ey => this%Ey; Ez => this%Ez; Hx => this%Hx; Hy => this%Hy; Hz => this%Hz;
       dxe => this%dxe; dye => this%dye; dze => this%dze; dxh => this%dxh; dyh => this%dyh; dzh => this%dzh
@@ -2883,11 +2883,11 @@ contains
 
    !las sggmixx se desctruyen el en main pq se alocatean alli
    subroutine Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,wiresflavor )
-      character (len=*) , intent(in)    ::  wiresflavor
-      type (Logic_control), intent(IN)  ::  thereare
-      type (SGGFDTDINFO), intent(INOUT)     ::  sgg
-      real(KIND=RKIND), intent(INOUT)     , pointer, dimension ( : , : , : )  ::  Ex,Ey,Ez,Hx,Hy,Hz
-      real(KIND=RKIND), intent(INOUT)     , pointer, dimension ( : )  ::  G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
+      character(len=*) , intent(in) :: wiresflavor
+      type(Logic_control), intent(in) :: thereare
+      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      real(kind=RKIND), intent(INOUT)     , pointer, dimension( : , : , : ) :: Ex,Ey,Ez,Hx,Hy,Hz
+      real(kind=RKIND), intent(INOUT)     , pointer, dimension( : ) :: G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 
       call DestroyObservation(sgg)
       Call DestroyNodal(sgg)
@@ -2919,10 +2919,10 @@ contains
       call DestroyPMLbodies(sgg)
       call DestroyMURBorders
       !Destroy the remaining
-      deallocate (sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
-      deallocate (G1,G2,GM1,GM2)
-      deallocate (Ex, Ey, Ez, Hx, Hy, Hz)
-      deallocate (dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh )
+      deallocate(sgg%Med,sgg%LineX,sgg%LineY,sgg%LineZ,sgg%DX,sgg%DY,sgg%DZ,sgg%tiempo)
+      deallocate(G1,G2,GM1,GM2)
+      deallocate(Ex, Ey, Ez, Hx, Hy, Hz)
+      deallocate(dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh )
       return
    end subroutine Destroy_All_exceptSGGMxx
 
@@ -2959,10 +2959,10 @@ contains
       call DestroyPMLbodies(this%sgg)
       call DestroyMURBorders
       !Destroy the remaining
-      deallocate (this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%tiempo)
+      deallocate(this%sgg%Med,this%sgg%LineX,this%sgg%LineY,this%sgg%LineZ,this%sgg%DX,this%sgg%DY,this%sgg%DZ,this%sgg%tiempo)
       call this%g%destroy()
-      deallocate (this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
-      deallocate (this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)
+      deallocate(this%Ex, this%Ey, this%Ez, this%Hx, this%Hy, this%Hz)
+      deallocate(this%dxe, this%dye, this%dze, this%Idxe, this%Idye, this%Idze, this%dxh, this%dyh, this%dzh, this%Idxh, this%Idyh, this%Idzh)
       return
    end subroutine destroy_and_deallocate
 

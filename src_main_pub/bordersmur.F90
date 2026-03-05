@@ -13,40 +13,40 @@ module BORDERS_MUR
    !
    ! Limits of the MUR region
    type XYZlimit_tvar
-      integer (kind=4), dimension(1:6)  ::  XI,XE,YI,YE,ZI,ZE
+      integer(kind=4), dimension(1:6) :: XI,XE,YI,YE,ZI,ZE
    end type XYZlimit_tvar
-   type (XYZlimit_tvar), dimension(4:6)  ::    MURc
+   type(XYZlimit_tvar), dimension(4:6) ::  MURc
 
 
 
    type LR
-      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Past_Hx,Past_Hz,PastPast_Hx,PastPast_Hz
+      real(kind=RKIND) , pointer, dimension( : , : , : ) :: Past_Hx,Past_Hz,PastPast_Hx,PastPast_Hz
    end type
    type DU
-      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Past_Hy,Past_Hx,PastPast_Hy,PastPast_Hx
+      real(kind=RKIND) , pointer, dimension( : , : , : ) :: Past_Hy,Past_Hx,PastPast_Hy,PastPast_Hx
    end type
    type BF
-      real(KIND=RKIND) , pointer, dimension ( : , : , : )  ::  Past_Hz,Past_Hy,PastPast_Hz,PastPast_Hy
+      real(kind=RKIND) , pointer, dimension( : , : , : ) :: Past_Hz,Past_Hy,PastPast_Hz,PastPast_Hy
    end type
 
    !!!LOCAL VARIABLES
-   type (LR), dimension(left : right) , save ::  regLR
-   type (DU), dimension(down : up)    , save ::  regDU
-   type (BF), dimension(back : front) , save ::  regBF
+   type(LR), dimension(left : right) , save :: regLR
+   type(DU), dimension(down : up)    , save :: regDU
+   type(BF), dimension(back : front) , save :: regBF
 
 
-   real(kind = RKIND), dimension(  :), allocatable, SAVE ::  back_CAB1, back_CAB3, back_cab4, &
+   real(kind = RKIND), dimension(  :), allocatable, SAVE :: back_CAB1, back_CAB3, back_cab4, &
    front_CAB1,front_CAB3,front_cab4, &
    left_CAB1, left_CAB3, left_cab4, &
    right_CAB1,right_CAB3,right_cab4, &
    down_CAB1, down_CAB3, down_cab4, &
    up_CAB1,   up_CAB3,   up_cab4
 !!!variables globales del modulo
-   real(KIND=RKIND), save           ::  cluz
-   real(KIND=RKIND), save           ::  eps0,mu0
+   real(kind=RKIND), save           :: cluz
+   real(kind=RKIND), save           :: eps0,mu0
 !!!
    !
-   public  ::  InitMURBorders, AdvanceMagneticMUR,StoreFieldsMURBorders,DestroyMURBorders,calc_murconstants
+   public  :: InitMURBorders, AdvanceMagneticMUR,StoreFieldsMURBorders,DestroyMURBorders,calc_murconstants
 
 
 contains
@@ -55,21 +55,21 @@ contains
    !!! Initializes MUR data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitMURBorders(sgg,ThereAreMURBorders,resume,Idxh,Idyh,Idzh,eps00,mu00)
-      real(KIND=RKIND)           ::  eps00,mu00
+      real(kind=RKIND) :: eps00,mu00
 
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
 
-      real(KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+      real(kind=RKIND) , dimension(:)   , intent(in) :: &
       Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
       Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
       Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
       !!!
       !
-      logical  ::  ThereAreMURBorders,resume
-      integer (kind=4)  ::  i,j,k,region,field,i1
+      logical  :: ThereAreMURBorders,resume
+      integer(kind=4) :: i,j,k,region,field,i1
 
-      !character (len=BUFSIZE) :: donde
-      !integer (KIND=4) :: layoutnumber
+      !character(len=BUFSIZE) :: donde
+      !integer(kind=4) :: layoutnumber
 !
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       cluz=1.0_RKIND/sqrt(eps0*mu0)
@@ -292,11 +292,11 @@ contains
    end subroutine InitMURBorders
 
    subroutine calc_murconstants(sgg,Idxh,Idyh,Idzh,eps00,mu00)
-        type (SGGFDTDINFO), intent(IN)         ::  sgg
-        real(KIND=RKIND)           ::  eps00,mu00
-        integer (kind=4)  ::  i,j,k,region,field,i1
-        real(KIND=RKIND)   ::  cnum
-        real(KIND=RKIND) , dimension (:)   , intent(in)      ::  &
+        type(SGGFDTDINFO), intent(in) :: sgg
+        real(kind=RKIND) :: eps00,mu00
+        integer(kind=4) :: i,j,k,region,field,i1
+        real(kind=RKIND) :: cnum
+        real(kind=RKIND) , dimension(:)   , intent(in) :: &
         Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
         Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
         Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE)
@@ -346,7 +346,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine StoreFieldsMURBorders
 
-      integer (kind=4)  ::  region,i,j,k
+      integer(kind=4) :: region,i,j,k
 
 
       do REGION =left,right
@@ -436,27 +436,27 @@ contains
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine DestroyMURBorders
-      integer (kind=4)  ::  region
+      integer(kind=4) :: region
 
       do REGION =left,right
-         if (associated(regLR(region)%Past_Hx)) deallocate (regLR(region)%Past_Hx,regLR(region)%Past_Hz)
+         if (associated(regLR(region)%Past_Hx)) deallocate(regLR(region)%Past_Hx,regLR(region)%Past_Hz)
       end do
       do REGION =down,up
-         if (associated(regDU(region)%Past_Hy)) deallocate (regDU(region)%Past_Hy,regDU(region)%Past_Hx)
+         if (associated(regDU(region)%Past_Hy)) deallocate(regDU(region)%Past_Hy,regDU(region)%Past_Hx)
       end do
       do REGION =back,front
-         if (associated(regBF(region)%Past_Hz)) deallocate (regBF(region)%Past_Hz,regBF(region)%Past_Hy)
+         if (associated(regBF(region)%Past_Hz)) deallocate(regBF(region)%Past_Hz,regBF(region)%Past_Hy)
       end do
 
 
       do REGION =left,right
-         if (associated(regLR(region)%PastPast_Hx)) deallocate (regLR(region)%PastPast_Hx,regLR(region)%PastPast_Hz)
+         if (associated(regLR(region)%PastPast_Hx)) deallocate(regLR(region)%PastPast_Hx,regLR(region)%PastPast_Hz)
       end do
       do REGION =down,up
-         if (associated(regDU(region)%PastPast_Hy)) deallocate (regDU(region)%PastPast_Hy,regDU(region)%PastPast_Hx)
+         if (associated(regDU(region)%PastPast_Hy)) deallocate(regDU(region)%PastPast_Hy,regDU(region)%PastPast_Hx)
       end do
       do REGION =back,front
-         if (associated(regBF(region)%PastPast_Hz)) deallocate (regBF(region)%PastPast_Hz,regBF(region)%PastPast_Hy)
+         if (associated(regBF(region)%PastPast_Hz)) deallocate(regBF(region)%PastPast_Hz,regBF(region)%PastPast_Hy)
       end do
 
 
@@ -479,20 +479,20 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine AdvanceMagneticMUR(b, sgg,sggMiHx, sggMiHy, sggMiHz, Hx, Hy, Hz,mur_second)
       !---------------------------> inputs <----------------------------------------------------------
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
-      type( bounds_t), intent( IN)  ::  b
+      type(SGGFDTDINFO), intent(in) :: sgg
+      type( bounds_t), intent( IN) :: b
       logical :: mur_second
       !--->
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN)  ::  sggMiHx
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN)  ::  sggMiHy
-      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN)  ::  sggMiHz
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHx%NX-1, 0 :  b%sggMiHx%NY-1, 0 :  b%sggMiHx%NZ-1), intent( IN) :: sggMiHx
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHy%NX-1, 0 :  b%sggMiHy%NY-1, 0 :  b%sggMiHy%NZ-1), intent( IN) :: sggMiHy
+      integer( kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 :  b%sggMiHz%NX-1, 0 :  b%sggMiHz%NY-1, 0 :  b%sggMiHz%NZ-1), intent( IN) :: sggMiHz
       !--->
       !---------------------------> inputs/outputs <--------------------------------------------------
-      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT)  ::  Hx
-      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT)  ::  Hy
-      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( INOUT) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( INOUT) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer (kind=4)  ::  REGION, i, j, k, medio, i_m, j_m, k_m
+      integer(kind=4) :: REGION, i, j, k, medio, i_m, j_m, k_m
       !---------------------------> empieza AdvanceMagneTicMUR <-------------------------------------
 
       !Hetic Fields MUR Zone

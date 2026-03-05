@@ -13,7 +13,7 @@ module probes_mod
         real, allocatable, dimension(:,:) :: val
         real :: dt
         integer :: index, current_frame
-        character (len=:), allocatable :: name
+        character(len=:), allocatable :: name
         logical :: in_layer = .true.
 
     contains
@@ -36,8 +36,8 @@ contains
         integer, intent(in) :: probe_type
         real, intent(in) :: dt
         real, dimension(3) :: position
-        character (len=:), allocatable :: name
-        integer (kind=4), dimension(:,:), intent(in), optional :: layer_indices
+        character(len=:), allocatable :: name
+        integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
         integer :: i, slice
 #ifdef CompileWithMPI
         integer :: layer_index, ierr, sizeof

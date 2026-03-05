@@ -11,28 +11,28 @@ module MPIcomm
    implicit none
    private
 
-   type(Thinwires_t), pointer  ::  HwiresMPI
+   type(Thinwires_t), pointer  :: HwiresMPI
 
 
    Type buffer_t
-      real(KIND=RKIND_wires), pointer, dimension( : )  ::  SendUP,SendDown,RecUp,RecDown !for the wire exchange
-      integer (kind=4)  ::  SendSizeUp,SendSizeDown,RecSizeUp ,RecSizeDown  !,uno
+      real(kind=RKIND_wires), pointer, dimension( : ) :: SendUP,SendDown,RecUp,RecDown !for the wire exchange
+      integer(kind=4) :: SendSizeUp,SendSizeDown,RecSizeUp ,RecSizeDown  !,uno
    end type
 
    Type ibuffer_t
-      integer (KIND=4), pointer, dimension( : )  ::  SendUP,SendDown,RecUp,RecDown !for the wire exchange
-      integer (kind=4)  ::  SendSizeUp,SendSizeDown,RecSizeUp,RecSizeDown !,uno
+      integer(kind=4), pointer, dimension( : ) :: SendUP,SendDown,RecUp,RecDown !for the wire exchange
+      integer(kind=4) :: SendSizeUp,SendSizeDown,RecSizeUp,RecSizeDown !,uno
    end type
 
    !!!LOCAL VARIABLES
-   type (buffer_t) , save ::  buffer
-   type (ibuffer_t), save  ::  ibuffer
+   type(buffer_t) , save :: buffer
+   type(ibuffer_t), save  :: ibuffer
 
    Logical, SAVE :: FlushExtraInfoDown,FlushExtraInfoUp
-   integer (kind=4), SAVE  ::  sizeHx,sizeHy,HxXI,HxXE,HyXI,HyXE,HxYI,HxYE,HyYI,HyYE,comZ,finZ
-   integer (kind=4), SAVE  ::  sizeEx,sizeEy,ExXI,ExXE,EyXI,EyXE,ExYI,ExYE,EyYI,EyYE
-   integer (kind=4), SAVE  ::  sizeEz,sizeHz,EzXI,EzXE,HzXI,HzXE,EzYI,EzYE,HzYI,HzYE
-   integer (kind=4), SAVE,pointer, dimension(:) :: mpiZcom ,mpiZfin
+   integer(kind=4), SAVE  :: sizeHx,sizeHy,HxXI,HxXE,HyXI,HyXE,HxYI,HxYE,HyYI,HyYE,comZ,finZ
+   integer(kind=4), SAVE  :: sizeEx,sizeEy,ExXI,ExXE,EyXI,EyXE,ExYI,ExYE,EyYI,EyYE
+   integer(kind=4), SAVE  :: sizeEz,sizeHz,EzXI,EzXE,HzXI,HzXE,EzYI,EzYE,HzYI,HzYE
+   integer(kind=4), SAVE,pointer, dimension(:) :: mpiZcom ,mpiZfin
 
 
    public FlushMPI_E,FlushMPI_H,InitMPI,MPIupdateMin, InitGeneralMPI,MPIdivide
@@ -59,8 +59,8 @@ module MPIcomm
       type( t_databuf) :: databuf_Down
    endtype t_databuf_Set
    !
-   type (t_databuf_Set),save, target :: databuf_SetH
-   type (t_databuf_Set),save, target :: databuf_SetE
+   type(t_databuf_Set),save, target :: databuf_SetH
+   type(t_databuf_Set),save, target :: databuf_SetE
    public FlushMPI_E_Cray,FlushMPI_H_Cray,InitMPI_Cray
 
    public InitExtraFlushMPI_Cray
@@ -69,9 +69,9 @@ contains
 
 
    subroutine InitGeneralMPI(layoutnumber,size)
-      integer (kind=4) :: layoutnumber,size  !ojo he quitado el , intent(in) pq ambas son de salida 031218
-      character (len=MPI_MAX_PROCESSOR_NAME)  ::  name
-      integer (kind=4) namelen, ierr
+      integer(kind=4) :: layoutnumber,size  !ojo he quitado el , intent(in) pq ambas son de salida 031218
+      character(len=MPI_MAX_PROCESSOR_NAME) :: name
+      integer(kind=4) namelen, ierr
       call MPI_INIT (ierr)
       call MPI_COMM_SIZE (MPI_COMM_WORLD, size, ierr)
       call MPI_COMM_RANK (MPI_COMM_WORLD, layoutnumber, ierr)
@@ -85,21 +85,21 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIdivide(sgg,fullsize,SINPML_FULLSIZE,layoutnumber,size,forcing,forced,slicesoriginales,resume,fatalerror)
 
-      type (SGGFDTDINFO), intent(INOUT)         ::  sgg
-      type (limit_t), dimension(1:6)  ::  fullsize,SINPML_fullsize
+      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(limit_t), dimension(1:6) :: fullsize,SINPML_fullsize
       integer(kind=4) size, layoutnumber,ilay,padding,index(1:1),j
       integer(kind=4) forced
       logical :: forcing
-      integer(kind=4), dimension( : ), pointer ::  trancos
+      integer(kind=4), dimension( : ), pointer :: trancos
       real(kind=RKIND), dimension( : ), pointer :: cZI,cZE
       real(kind=RKIND) :: carga,guess,ZE(1:3),cargaZE(1:3)
       real(kind=RKIND) :: deltatrancos
-      character (len=*), intent(in)  ::  slicesoriginales
-      character (len=BUFSIZE_LONG)  ::  slices=' '
-      character (LEN=BUFSIZE)     ::  dubuf
+      character(len=*), intent(in) :: slicesoriginales
+      character(len=BUFSIZE_LONG) :: slices=' '
+      character(len=BUFSIZE) :: dubuf
       logical :: resume,fatalerror,originalPML_up_or_down
       character(len=BUFSIZE) :: buff 
-      character (len=BUFSIZE)  ::  whoami
+      character(len=BUFSIZE) :: whoami
       integer(kind=4), dimension( 1:2 ) :: sggPMLNumLayers_original
       
       
@@ -308,7 +308,7 @@ contains
    ! INITIALIZES THE BOUNDS AND SIZES TO COMMUNICATE
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitMPI(sggsweep,sggalloc)
-      type (XYZlimit_t), dimension(1:6)  ::  sggalloc,sggsweep
+      type(XYZlimit_t), dimension(1:6) :: sggalloc,sggsweep
       !not necessary at this moment since nothing is read at this mmoment
       FlushExtraInfoDown=.false.
       FlushExtraInfoUp=.false.
@@ -359,9 +359,9 @@ contains
    ! FORCES THE TIME STEP TO BE EQUAL BY EVERY LAYER
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIupdateMin(dtlay,dt)
-      real(kind=RKIND), intent(in)  ::  dtlay
-      real(kind=RKIND), intent(out)  ::  dt
-      integer (kind=4)  ::  ierr
+      real(kind=RKIND), intent(in) :: dtlay
+      real(kind=RKIND), intent(out) :: dt
+      integer(kind=4) :: ierr
       call MPI_AllReduce(dtlay, dt, 1_4, REALSIZE, MPI_MIN, SUBCOMM_MPI, ierr)
       return
    end subroutine
@@ -370,9 +370,9 @@ contains
    ! Sync the Bloque current data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIupdateBloques(layoutnumber,valores,newvalores,SubComm)
-      integer (kind=4)  ::  ierr,sizeofvalores,SubComm
-      real(kind=RKIND), intent(in), dimension( 0:BuffObse )  ::  valores
-      real(kind=RKIND), intent(out), dimension( 0:BuffObse )  ::  newvalores
+      integer(kind=4) :: ierr,sizeofvalores,SubComm
+      real(kind=RKIND), intent(in), dimension( 0:BuffObse ) :: valores
+      real(kind=RKIND), intent(out), dimension( 0:BuffObse ) :: newvalores
       integer :: layoutnumber
       
       sizeofvalores=BuffObse+1
@@ -383,11 +383,11 @@ contains
    ! Init the sync the Bloque current data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIinitSubcomm(layoutnumber,size,SubComm,Root,group1)
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4)  ::  count,i
-      integer (kind=4)  ::  ierr,wgroup,GROUP1,SubComm,Root,NewRoot
-      logical, pointer, dimension( : )  ::  newallranks ,allranks
-      integer (kind=4), pointer, dimension( : )   ::  NGroup
+      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4) :: count,i
+      integer(kind=4) :: ierr,wgroup,GROUP1,SubComm,Root,NewRoot
+      logical, pointer, dimension( : ) :: newallranks ,allranks
+      integer(kind=4), pointer, dimension( : ) :: NGroup
       allocate (allranks(0 : size-1),newallranks(0 : size-1))
       !         
       allranks=.false.
@@ -411,9 +411,9 @@ contains
       end do
       !all must create the same subcomm group though only some will synchronize
       if (count >= 0) then
-         CALL MPI_COMM_GROUP(SUBCOMM_MPI, WGROUP, IERR) ! get default group
-         CALL MPI_GROUP_INCL(WGROUP, COUNT+1_4, NGroup, GROUP1, IERR) !create a group called group1
-         CALL MPI_COMM_CREATE(SUBCOMM_MPI, GROUP1, SUBCOMM, IERR)!create a communicator for group1
+         call MPI_COMM_GROUP(SUBCOMM_MPI, WGROUP, IERR) ! get default group
+         call MPI_GROUP_INCL(WGROUP, COUNT+1_4, NGroup, GROUP1, IERR) !create a group called group1
+         call MPI_COMM_CREATE(SUBCOMM_MPI, GROUP1, SUBCOMM, IERR)!create a communicator for group1
       else
          SUBCOMM=-1
          group1=-1
@@ -421,8 +421,8 @@ contains
       endif
       if (.not.newallranks(layoutnumber)) subcomm=-1 !override it since it will never synchronize
       !print *,'Init lay,count, subcomm',layoutnumber+1,count,subcomm
-      deallocate (allranks,newallranks)
-      deallocate (NGroup)
+      deallocate(allranks,newallranks)
+      deallocate(NGroup)
       return
    end subroutine
 
@@ -432,11 +432,11 @@ contains
    ! TRANSFERS THE FIELDS AMONG LAYERS
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine FlushMPI_H(sggalloc,layoutnumber,size, Hx,Hy,Hz)
-      type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
+      type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
 !!!! reutilizo esta subroutina para sincronizar matrices de medios. Las de campo las hacen los _Cray 210815
 !!!! ojo hay que cambiar tambien si algun dia se vuelve a esta rutina para comunicar reales INTEGERSIZE por REALSIZE
-!!!!      real(KIND=RKIND)   , intent(inout)      :: &
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , intent(inout)  ::  &
+!!!!      real(kind=RKIND)   , intent(inout) :: &
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) , intent(inout) :: &
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE), &
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE), &
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
@@ -444,11 +444,11 @@ contains
 
 
 
-      integer (kind=4)  ::  ierr1,ierr2,ierr3,ierr4,ierr5,ierr6,ierr7,ierr8,ierr9,ierr10,ierr11,ierr12,ierr100,ierr100b
-      integer (kind=4)  ::  jerr1,jerr2,jerr3,jerr4,jerr5,jerr6,jerr7,jerr8,jerr9,jerr10,jerr11,jerr12,jerr100,jerr100b
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4)  ::  req1 (1 : 4),req2 (1 : 4),status1 (MPI_STATUS_SIZE,1 : 4),status2 (MPI_STATUS_SIZE,1 : 4)
-      integer (kind=4)  ::  req1b(1 : 2),req2b(1 : 2),status1b(MPI_STATUS_SIZE,1 : 2),status2b(MPI_STATUS_SIZE,1 : 2)
+      integer(kind=4) :: ierr1,ierr2,ierr3,ierr4,ierr5,ierr6,ierr7,ierr8,ierr9,ierr10,ierr11,ierr12,ierr100,ierr100b
+      integer(kind=4) :: jerr1,jerr2,jerr3,jerr4,jerr5,jerr6,jerr7,jerr8,jerr9,jerr10,jerr11,jerr12,jerr100,jerr100b
+      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4) :: req1 (1 : 4),req2 (1 : 4),status1 (MPI_STATUS_SIZE,1 : 4),status2 (MPI_STATUS_SIZE,1 : 4)
+      integer(kind=4) :: req1b(1 : 2),req2b(1 : 2),status1b(MPI_STATUS_SIZE,1 : 2),status2b(MPI_STATUS_SIZE,1 : 2)
 
 
 
@@ -517,11 +517,11 @@ contains
    !
 
    subroutine FlushMPI_E(sggalloc,layoutnumber,size, Ex,Ey,Ez)
-      type (XYZlimit_t), dimension (1:6), intent(in)                      ::  sggAlloc
+      type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
 !!!! reutilizo esta subroutina para sincronizar matrices de medios. Las de campo las hacen los _Cray 210815
 !!!! ojo hay que cambiar tambien si algun dia se vuelve a esta rutina para comunicar reales INTEGERSIZE por REALSIZE
-!!!!      real(KIND=RKIND)   , intent(inout)      :: &
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES) , intent(inout)  ::  &
+!!!!      real(kind=RKIND)   , intent(inout) :: &
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES) , intent(inout) :: &
       Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
       Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
       Ez(sggalloc(iEz)%XI : sggalloc(iEz)%XE,sggalloc(iEz)%YI : sggalloc(iEz)%YE,sggalloc(iEz)%ZI : sggalloc(iEz)%ZE)
@@ -529,11 +529,11 @@ contains
 
 
 
-      integer (kind=4)  ::  ierr1,ierr2,ierr3,ierr4,ierr5,ierr6,ierr7,ierr8,ierr9,ierr10,ierr11,ierr12,ierr100,ierr100b
-      integer (kind=4)  ::  jerr1,jerr2,jerr3,jerr4,jerr5,jerr6,jerr7,jerr8,jerr9,jerr10,jerr11,jerr12,jerr100,jerr100b
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4)  ::  req1 (1 : 2),req2 (1 : 2),status1 (MPI_STATUS_SIZE,1 : 2),status2 (MPI_STATUS_SIZE,1 : 2)
-      integer (kind=4)  ::  req1b(1 : 4),req2b(1 : 4),status1b(MPI_STATUS_SIZE,1 : 4),status2b(MPI_STATUS_SIZE,1 : 4)
+      integer(kind=4) :: ierr1,ierr2,ierr3,ierr4,ierr5,ierr6,ierr7,ierr8,ierr9,ierr10,ierr11,ierr12,ierr100,ierr100b
+      integer(kind=4) :: jerr1,jerr2,jerr3,jerr4,jerr5,jerr6,jerr7,jerr8,jerr9,jerr10,jerr11,jerr12,jerr100,jerr100b
+      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4) :: req1 (1 : 2),req2 (1 : 2),status1 (MPI_STATUS_SIZE,1 : 2),status2 (MPI_STATUS_SIZE,1 : 2)
+      integer(kind=4) :: req1b(1 : 4),req2b(1 : 4),status1b(MPI_STATUS_SIZE,1 : 4),status2b(MPI_STATUS_SIZE,1 : 4)
 
       ierr1=0;ierr2=0;ierr3=0;ierr4=0;ierr5=0;ierr6=0;ierr7=0;ierr8=0;ierr9=0;ierr10=0;ierr11=0;ierr12=0;ierr100=0;ierr100b=0;
       jerr1=0;jerr2=0;jerr3=0;jerr4=0;jerr5=0;jerr6=0;jerr7=0;jerr8=0;jerr9=0;jerr10=0;jerr11=0;jerr12=0;jerr100=0;jerr100b=0;
@@ -598,17 +598,17 @@ contains
 
 
    subroutine newInitWiresMPI(layoutnumber,therearewires,size,resume,c)
-      type (XYZlimit_t), dimension(1:6), intent(in)  ::  c
+      type(XYZlimit_t), dimension(1:6), intent(in) :: c
       !
-      logical, intent(in)  ::  resume,therearewires  !controls wether to read something for resuming
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4)  ::  i1,i,j
-      integer (kind=4)  ::  SharescontaMPIdown,SharescontaMPIup,NeedscontaMPIdown,NeedscontaMPIup
+      logical, intent(in) :: resume,therearewires  !controls wether to read something for resuming
+      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4) :: i1,i,j
+      integer(kind=4) :: SharescontaMPIdown,SharescontaMPIup,NeedscontaMPIdown,NeedscontaMPIup
 
 
-      integer (kind=4)  ::  ni,nj,nk,norigindex,idum
-      type (CurrentSegments), pointer  :: segmento
-      character (LEN=BUFSIZE)  ::  whoami
+      integer(kind=4) :: ni,nj,nk,norigindex,idum
+      type(CurrentSegments), pointer  :: segmento
+      character(len=BUFSIZE) :: whoami
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
 
 
@@ -764,7 +764,7 @@ contains
          iBuffer%SendDown(4*i  )  =HwiresMPI%CurrentSegment(HwiresMPI%MPIDownSharedCurrentSegment(i)%EquivalentIndex)%origindex
       end do
 
-      CALL newFlushWiresMPIorigindexInfo(layoutnumber,size)
+      call newFlushWiresMPIorigindexInfo(layoutnumber,size)
 
       do j=1,NeedscontaMPIdown
          ni       =IBuffer%RecDown(4*j-3)
@@ -801,7 +801,7 @@ contains
             endif
          end do busca2
       end do
-      deallocate (iBuffer%SendUp,ibuffer%SendDown,iBuffer%RecUp,ibuffer%RecDown)
+      deallocate(iBuffer%SendUp,ibuffer%SendDown,iBuffer%RecUp,ibuffer%RecDown)
 
 
       return
@@ -812,11 +812,11 @@ contains
    ! FLUSH WIRE DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine newFlushWiresMPIorigindexInfo(layoutnumber,size)
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4)  ::  ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
-      integer  ::  status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
-      integer  ::  req1,req2,req11,req21
-      character (LEN=BUFSIZE)  ::  whoami
+      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
+      integer  :: status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
+      integer  :: req1,req2,req11,req21
+      character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: buff
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
 
@@ -867,11 +867,11 @@ contains
    ! FLUSH WIRE DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine newFlushWiresMPI(layoutnumber,size)
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4)  ::  ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0,i
-      integer ::  status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
-      integer ::  req1,req2,req11,req21
-      character (LEN=BUFSIZE)  ::  whoami
+      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0,i
+      integer :: status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
+      integer :: req1,req2,req11,req21
+      character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: buff
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
 
@@ -937,11 +937,11 @@ contains
    ! FLUSH WIRE additional info DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine FlushWiresMPIorigindexInfo(layoutnumber,size)
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4)  ::  ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0,i
+      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0,i
       integer :: status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
       integer :: req1,req2,req11,req21
-      character (LEN=BUFSIZE)  ::  whoami
+      character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: buff
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
 
@@ -1009,11 +1009,11 @@ contains
    !!!! FLUSH WIRE DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!subroutine FlushWiresMPI(layoutnumber,size)
-   !!!integer (kind=4), intent(in) :: layoutnumber,size
-   !!!integer (kind=4)  ::  ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
-   !!!integer (kind=4)  ::  status1(MPI_STATUS_SIZE,1 : 2),status2(MPI_STATUS_SIZE,1 : 2),i
-   !!!integer (kind=4)  ::  req1,req2,req11,req21
-   !!!character (LEN=BUFSIZE)  ::  whoami
+   !!!integer(kind=4), intent(in) :: layoutnumber,size
+   !!!integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
+   !!!integer(kind=4) :: status1(MPI_STATUS_SIZE,1 : 2),status2(MPI_STATUS_SIZE,1 : 2),i
+   !!!integer(kind=4) :: req1,req2,req11,req21
+   !!!character(len=BUFSIZE) :: whoami
    !!!write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
    !!!
    !!!
@@ -1090,11 +1090,11 @@ contains
    !! no se usa. detectado y comentado 260815 bug gra_simple.nfde en sync mpi de hilos que se doblan sobre si mismos y comparten tramos coincidentes
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!subroutine newFlushWiresMPIindexmedInfo(layoutnumber,size)
-   !!!   integer (kind=4)  ::  ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
-   !!!   integer (kind=4)  ::  status1(MPI_STATUS_SIZE,1 : 2),status2(MPI_STATUS_SIZE,1 : 2)
-   !!!   integer (kind=4), intent(in) :: layoutnumber,size
-   !!!   integer (kind=4)  ::  req1,req2,req11,req21
-   !!!   character (LEN=BUFSIZE)  ::  whoami
+   !!!   integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
+   !!!   integer(kind=4) :: status1(MPI_STATUS_SIZE,1 : 2),status2(MPI_STATUS_SIZE,1 : 2)
+   !!!   integer(kind=4), intent(in) :: layoutnumber,size
+   !!!   integer(kind=4) :: req1,req2,req11,req21
+   !!!   character(len=BUFSIZE) :: whoami
    !!!   character(len=BUFSIZE) :: buff
    !!!   write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
    !!!
@@ -1142,15 +1142,15 @@ contains
    !!!end subroutine newFlushWiresMPIindexmedInfo
 
    subroutine InitExtraFlushMPI (layoutnumber,sggsweep,sggalloc,med,nummed,sggmiez,sggMiHz)
-      type (XYZlimit_t), dimension(1:6)  ::  sggalloc,sggsweep
-      integer (kind=4) :: layoutnumber
-      integer (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   :: &
+      type(XYZlimit_t), dimension(1:6) :: sggalloc,sggsweep
+      integer(kind=4) :: layoutnumber
+      integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
       sggMiEz(sggalloc(iEz)%XI : sggalloc(iEz)%XE,sggalloc(iEz)%YI : sggalloc(iEz)%YE,sggalloc(iEz)%ZI : sggalloc(iEz)%ZE), &
       sggMiHz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
 
-      integer (kind=4)  ::  j1,i1,jmed
-      integer (kind=4) , intent(in) :: nummed
-      type (MediaData_t), dimension ( 0:NumMed ), intent(in) :: med
+      integer(kind=4) :: j1,i1,jmed
+      integer(kind=4) , intent(in) :: nummed
+      type(MediaData_t), dimension( 0:NumMed ), intent(in) :: med
 
       !thanks to overlapping of media matrix to detect media
       !an anistropic boundary will be detected both by the upper and the lower layouts
@@ -1243,7 +1243,7 @@ contains
       Hx( sggalloc( iHx)%XI: sggalloc( iHx)%XE, sggalloc( iHx)%YI: sggalloc( iHx)%YE, sggalloc( iHx)%ZI: sggalloc( iHx)%ZE), &
       Hy( sggalloc( iHy)%XI: sggalloc( iHy)%XE, sggalloc( iHy)%YI: sggalloc( iHy)%YE, sggalloc( iHy)%ZI: sggalloc( iHy)%ZE), &
       Hz( sggalloc( iHz)%XI: sggalloc( iHz)%XE, sggalloc( iHz)%YI: sggalloc( iHz)%YE, sggalloc( iHz)%ZI: sggalloc( iHz)%ZE)
-      real(KIND=RKIND)   , intent( IN),target :: &
+      real(kind=RKIND)   , intent( IN),target :: &
       Ex( sggalloc( iEx)%XI: sggalloc( iEx)%XE, sggalloc( iEx)%YI: sggalloc( iEx)%YE, sggalloc( iEx)%ZI: sggalloc( iEx)%ZE), &
       Ey( sggalloc( iEy)%XI: sggalloc( iEy)%XE, sggalloc( iEy)%YI: sggalloc( iEy)%YE, sggalloc( iEy)%ZI: sggalloc( iEy)%ZE), &
       Ez( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE)
@@ -1602,11 +1602,11 @@ contains
       integer( kind = INTEGERSIZEOFMEDIAMATRICES), intent( IN) :: &
       sggMiEz( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE), &
       sggMiHz( sggalloc( iHz)%XI: sggalloc( iHz)%XE, sggalloc( iHz)%YI: sggalloc( iHz)%YE, sggalloc( iHz)%ZI: sggalloc( iHz)%ZE)
-      real(KIND=RKIND), intent( IN), target :: &
+      real(kind=RKIND), intent( IN), target :: &
       Hx( sggalloc( iHx)%XI: sggalloc( iHx)%XE, sggalloc( iHx)%YI: sggalloc( iHx)%YE, sggalloc( iHx)%ZI: sggalloc( iHx)%ZE), &
       Hy( sggalloc( iHy)%XI: sggalloc( iHy)%XE, sggalloc( iHy)%YI: sggalloc( iHy)%YE, sggalloc( iHy)%ZI: sggalloc( iHy)%ZE), &
       Hz( sggalloc( iHz)%XI: sggalloc( iHz)%XE, sggalloc( iHz)%YI: sggalloc( iHz)%YE, sggalloc( iHz)%ZI: sggalloc( iHz)%ZE)
-      real(KIND=RKIND), intent( IN), target :: &
+      real(kind=RKIND), intent( IN), target :: &
       Ex( sggalloc( iEx)%XI: sggalloc( iEx)%XE, sggalloc( iEx)%YI: sggalloc( iEx)%YE, sggalloc( iEx)%ZI: sggalloc( iEx)%ZE), &
       Ey( sggalloc( iEy)%XI: sggalloc( iEy)%XE, sggalloc( iEy)%YI: sggalloc( iEy)%YE, sggalloc( iEy)%ZI: sggalloc( iEy)%ZE), &
       Ez( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE)
