@@ -1,5 +1,7 @@
 program SEMBA_FDTD_launcher
+
    use SEMBA_FDTD_mod
+
    implicit none
 
    type(semba_fdtd_t) :: semba
@@ -7,7 +9,6 @@ program SEMBA_FDTD_launcher
    call semba%init()
    call semba%launch()
    call semba%end()
-
 
 end program SEMBA_FDTD_launcher
 

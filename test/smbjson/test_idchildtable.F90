@@ -57,7 +57,7 @@ integer function test_idchildtable() bind(C) result(err)
 
    if (tbl%totalSize() /= 2) err = err + 1
    block
-      character (len=:), allocatable :: matType
+      character(len=:), allocatable :: matType
       logical :: found
 
       mat = tbl%getId(1)

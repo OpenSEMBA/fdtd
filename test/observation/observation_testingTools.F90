@@ -137,9 +137,9 @@ contains
       real(kind=RKIND_tiempo), pointer, dimension(:) :: arr
       allocate (arr(array_size))
 
-      DO i = 1, array_size
+      do i = 1, array_size
          arr(i) = (i - 1)*interval
-      END DO
+      end do
    end function create_time_array
 
    function create_limit_type() result(r)
@@ -148,7 +148,7 @@ contains
 
    function create_xyz_limit_array(XI,YI,ZI,XE,YE,ZE) result(arr)
       type(XYZlimit_t), dimension(1:6) :: arr
-      integer (kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
+      integer(kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
       integer :: i
       do i = 1, 6
          arr(i)%XI = XI

@@ -7,13 +7,14 @@ module PostProcessing
    use Observa
 
 #ifdef CompileWithHDF
-   USE HDF5
+   use HDF5
 #endif
 
    implicit none
 
    private
    public PostProcess,postprocessonthefly
+
 contains
 
    !
@@ -22,39 +23,39 @@ contains
    subroutine PostProcess(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
 
 
-      type (SGGFDTDINFO), intent(IN)     ::  sgg
-      integer (kind=4), intent(in)  :: layoutnumber,size
-      character (len=*), intent(in) :: nEntradaRoot
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber,size
+      character(len=*), intent(in) :: nEntradaRoot
 
-      type(output_t), pointer, dimension( : )  ::  output
-      character (LEN=BUFSIZE) :: cabecera,cabeceraNew,path,path2,path3,path_resampled
-      integer (kind=4) :: numComp
-      REAL (KIND=RKIND), allocatable, dimension(:,:) :: valores
-      complex (kind=CKIND), allocatable, dimension(:,:) :: valoresDF,valoresDF2
-      REAL (KIND=RKIND_tiempo), allocatable, dimension(:) :: tiempo,samplingtime
-	  integer (kind=4) :: pozi
+      type(output_t), pointer, dimension( : ) :: output
+      character(len=BUFSIZE) :: cabecera,cabeceraNew,path,path2,path3,path_resampled
+      integer(kind=4) :: numComp
+      real(kind=RKIND), allocatable, dimension(:,:) :: valores
+      complex(kind=CKIND), allocatable, dimension(:,:) :: valoresDF,valoresDF2
+      real(kind=RKIND_tiempo), allocatable, dimension(:) :: tiempo,samplingtime
+	   integer(kind=4) :: pozi
       logical :: existe,neverprecounted,escribir,escribirBloque,niapapostprocess,forceresampled,somethingdone
-      integer (kind=4) :: fqLength,ii,i,i1,j1,field,ns,timesteps,compo,iii,pp,pasadas
-      real (kind=RKIND) :: dummy
-      real (kind=RKIND_tiempo) :: rinstant
+      integer(kind=4) :: fqLength,ii,i,i1,j1,field,ns,timesteps,compo,iii,pp,pasadas
+      real(kind=RKIND) :: dummy
+      real(kind=RKIND_tiempo) :: rinstant
       !
-      real (kind=RKIND), allocatable, dimension(:)   :: fqPos,signal
-      real (kind=RKIND)   :: fmin,fmax,fstep,value_interp
-      complex (kind=CKIND), allocatable, dimension(:) :: fqValues
+      real(kind=RKIND), allocatable, dimension(:) :: fqPos,signal
+      real(kind=RKIND) :: fmin,fmax,fstep,value_interp
+      complex(kind=CKIND), allocatable, dimension(:) :: fqValues
       character(len=BUFSIZE) :: buff
-      character (LEN=BUFSIZE)     ::  dubuf
+      character(len=BUFSIZE) :: dubuf
       !
-      character (LEN=BUFSIZE)  ::  whoami,whoamishort
-      real (kind=RKIND) :: t_pedido
-      integer (kind=4) columna,jjj
+      character(len=BUFSIZE) :: whoami,whoamishort
+      real(kind=RKIND) :: t_pedido
+      integer(kind=4) columna,jjj
       integer :: my_iostat
-     !!!!!
+     
       if (niapapostprocess) then  !niapa 200120 ojooo
            print *,'Copiar a mano los .dat en tiempo para que se postrocesen bien...'
            pause
            print *,'Continuing...'
       endif
-     !!!!! 
+      
       write(whoamishort,'(i5)') layoutnumber+1
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
 
@@ -114,7 +115,7 @@ contains
 178                           continue
                               close (output(ii)%item(i)%unit)
                               timesteps=timesteps-1 !le resto 1 para evitar lo del ultimo time step a tiempos grandes que saca en el .exc !sgg 180516
-                              if (allocated(valores)) deallocate (valores,tiempo,signal)
+                              if (allocated(valores)) deallocate(valores,tiempo,signal)
                               allocate (valores(1:timesteps,1:numComp))
                               allocate (tiempo(1:timesteps))
                               allocate (signal(1:timesteps))
@@ -177,7 +178,7 @@ contains
                            fmin=(min(sgg%observation(ii)%FinalFreq,sgg%observation(ii)%InitialFreq))
                            fmax=(max(sgg%observation(ii)%FinalFreq,sgg%observation(ii)%InitialFreq))
 
-                           IF ((sgg%observation(ii)%FreqStep == 0.0_RKIND).or. &
+                           if ((sgg%observation(ii)%FreqStep == 0.0_RKIND).or. &
                            (sgg%observation(ii)%FreqStep > fmax-fmin)) then
                               fstep = fmax-fmin
                            else
@@ -247,7 +248,7 @@ contains
 778                                 continue
                                     close (34)
                                     timesteps=timesteps-1 !le resto 1 para evitar lo del ultimo time step a tiempos grandes que saca en el .exc !sgg 180516
-                                    if (allocated(valores)) deallocate (valores,tiempo,signal)
+                                    if (allocated(valores)) deallocate(valores,tiempo,signal)
                                     allocate (valores(1:timesteps,1:1))
                                     allocate (tiempo(1:timesteps))
                                     allocate (signal(1:timesteps))
@@ -391,7 +392,7 @@ contains
 5178                           continue
                               close (output(ii)%item(i)%unit)
                               timesteps=timesteps-1 !le resto 1 para evitar lo del ultimo time step a tiempos grandes que saca en el .exc !sgg 180516
-                              if (allocated(valores)) deallocate (valores,tiempo,signal)
+                              if (allocated(valores)) deallocate(valores,tiempo,signal)
                               allocate (valores(1:timesteps,1:numComp))
                               allocate (tiempo(1:timesteps))
                               allocate (signal(1:timesteps))
@@ -464,9 +465,9 @@ contains
    !
    !
    function almostequal(a,b) result(almost)
-      real (kind=RKIND) a,b,ratio
+      real(kind=RKIND) a,b,ratio
       logical almost
-      real (kind=RKIND), parameter :: tolerancia=0.01
+      real(kind=RKIND), parameter :: tolerancia=0.01
 
       ratio=a/b
       if (abs(ratio)<1.0_RKIND) ratio=1.0_RKIND / ratio
@@ -480,10 +481,10 @@ contains
 
    subroutine conviertecabecera(c,cNew,columnas,rinstant)
       integer :: columnas
-      character(LEN=BUFSIZE) :: c,cNew,chninstant
-      character(LEN=BUFSIZE), dimension(1:columnas) :: c2
+      character(len=BUFSIZE) :: c,cNew,chninstant
+      character(len=BUFSIZE), dimension(1:columnas) :: c2
       integer :: i,j,k,longi,ii
-      real (kind=RKIND_tiempo) rinstant
+      real(kind=RKIND_tiempo) rinstant
 
       write(chninstant,fmt) rinstant
 
@@ -527,16 +528,16 @@ contains
    subroutine postprocessonthefly(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
 
 
-      type (SGGFDTDINFO), intent(IN)     ::  sgg
-      integer (kind=4), intent(in)  :: layoutnumber,size
-      character (len=*), intent(in) :: nEntradaRoot
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber,size
+      character(len=*), intent(in) :: nEntradaRoot
 
-      type(output_t), pointer, dimension( : )  ::  output
-      character (LEN=BUFSIZE) :: path
+      type(output_t), pointer, dimension( : ) :: output
+      character(len=BUFSIZE) :: path
       logical :: existe,escribir,escribirBloque,somethingdone,niapapostprocess,forceresampled
-      integer (kind=4) :: ii,i,field
+      integer(kind=4) :: ii,i,field
       character(len=BUFSIZE) :: buff
-      real (kind=RKIND_tiempo) :: rinstant
+      real(kind=RKIND_tiempo) :: rinstant
 
       Output => GetOutput() !get the output private info from observation
       !

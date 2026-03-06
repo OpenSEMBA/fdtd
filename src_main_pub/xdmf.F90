@@ -1,67 +1,67 @@
-MODULE xdmf
+module xdmf
    !
-   USE fdetypes
-   USE Observa
+   use fdetypes
+   use Observa
    use report
    use xdmf_h5
    !
    !
    !
    !
-   IMPLICIT NONE
+   implicit none
    !
-   PRIVATE
-   PUBLIC createxdmf,createxdmfOnTheFly,createh5bintxt
+   private
+   public createxdmf,createxdmfOnTheFly,createh5bintxt
    !!!        public create_interpreted_mesh
-CONTAINS
+contains
    ! =================================================================================================
    !                       ====>>>> SALVADOR's CODE <<<<====
    ! =================================================================================================
    !
    !Subrutine to parse the volumic probes to create .xdmf and .h5 files
    !
-   SUBROUTINE createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
+   subroutine createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
       logical, save :: firsttimeenteringcreatexdmf=.true.
-      integer (KIND=4) :: mpidir
+      integer(kind=4) :: mpidir
       logical :: vtkindex,createh5bin
       !------------------------>
-      CHARACTER (LEN=BUFSIZE) :: filename ! File name
+      character(len=BUFSIZE) :: filename ! File name
       !
-      type (SGGFDTDINFO), intent(IN)        :: sgg
-      INTEGER (KIND=4), INTENT (IN) :: layoutnumber, size
-      INTEGER (KIND=4) ::  ierr,  sizeofvalores,COMPO
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4) :: ierr,  sizeofvalores,COMPO
       complex( kind = CKIND), dimension( :, :, :, :,: ), allocatable  :: valor3DComplex !freqdomain probes
       !
-      TYPE (output_t), POINTER, DIMENSION (:) :: output
-      INTEGER (KIND=4) :: iroot
-      integer (KIND=4) :: myunit
+      type(output_t), pointer, dimension(:) :: output
+      integer(kind=4) :: iroot
+      integer(kind=4) :: myunit
       !
 #ifdef CompileWithMPI
-      REAL (KIND=RKIND), ALLOCATABLE, DIMENSION (:, :, :, :) :: newvalor3d !para sondas Volumic
+      real(kind=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: newvalor3d !para sondas Volumic
 #endif
 
 
-      REAL (KIND=RKIND), ALLOCATABLE, DIMENSION (:, :, :, :) :: valor3d !para sondas Volumic
-      real (  KINd=RKIND_TIEMPO), ALLOCATABLE, DIMENSION (:) :: att
+      real(kind=RKIND), ALLOCATABLE, dimension(:, :, :, :) :: valor3d !para sondas Volumic
+      real(  KINd=RKIND_TIEMPO), ALLOCATABLE, dimension(:) :: att
 
 
-      INTEGER (KIND=4) :: indi,fieldob
+      integer(kind=4) :: indi,fieldob
       !
-      INTEGER (KIND=4) :: ii, i1, j1, k1, finalstep
-      INTEGER (KIND=4) :: minx, maxx, miny, maxy, minz, maxz,pasadas,pasadastotales
+      integer(kind=4) :: ii, i1, j1, k1, finalstep
+      integer(kind=4) :: minx, maxx, miny, maxy, minz, maxz,pasadas,pasadastotales
       LOGICAL :: lexis,somethingdone
-      character (LEN=BUFSIZE)     ::  dubuf
-      INTEGER (KIND=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs 
-      INTEGER (KIND=4) :: minXabs_primero,minYabs_primero,minZabs_primero,imdice
-      CHARACTER (LEN=BUFSIZE) :: pathroot
-      character (LEN=BUFSIZE)  ::  chari,charj,chark,chari2,charj2,chark2
-      character (LEN=BUFSIZE)  ::  extpoint
+      character(len=BUFSIZE) :: dubuf
+      integer(kind=4) :: minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs 
+      integer(kind=4) :: minXabs_primero,minYabs_primero,minZabs_primero,imdice
+      character(len=BUFSIZE) :: pathroot
+      character(len=BUFSIZE) :: chari,charj,chark,chari2,charj2,chark2
+      character(len=BUFSIZE) :: extpoint
       character(len=BUFSIZE) :: buff
-      REAL (KIND=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
+      real(kind=RKIND) :: linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                              dz_minZabs,dy_minYabs,dx_minXabs                 
       !
-      CHARACTER (LEN=BUFSIZE) :: whoami, whoamishort
-      REAL (KIND=RKIND)  :: rdum
+      character(len=BUFSIZE) :: whoami, whoamishort
+      real(kind=RKIND) :: rdum
       integer :: my_iostat
       
       WRITE (whoamishort, '(i5)') layoutnumber + 1
@@ -70,12 +70,12 @@ CONTAINS
       output => GetOutput ()!get the output private info from observation
 
       somethingdone=.false.
-      barridoprobes: DO ii = 1, sgg%NumberRequest
+      barridoprobes: do ii = 1, sgg%NumberRequest
 
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
          if (sgg%observation(ii)%nP == 1) then
          if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What /= mapvtk).AND. &
-             (sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) THEN
+             (sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
             if (sgg%Observation(ii)%done.and.(sgg%Observation(ii)%flushed)) then
                cycle barridoprobes
             elseif (sgg%Observation(ii)%done) then
@@ -95,10 +95,10 @@ CONTAINS
          endif
          !
          !sondas Volumic traducelas a xdfm
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
                if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What /= mapvtk).AND. &
-               (sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) THEN
+               (sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if ((lexis).and.(output(ii)%TimesWritten/=0)) then
                      fieldob=sgg%observation(ii)%P(1)%what
@@ -206,7 +206,7 @@ CONTAINS
                        allocate (att(1:finalstep))
                           att = 0.0_RKIND !aquiiiii
                        pasadastotales=1
-                       ALLOCATE (valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
+                      allocate(valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
                      elseif (SGG%Observation(ii)%FreqDomain) then
                        !este read solo se precisa para la frecuencial y es dummy 
                        read(output(ii)%item(1)%unit) rdum !instante en el que se ha escrito la info frequencial
@@ -214,18 +214,18 @@ CONTAINS
                        allocate (att(1:finalstep))
                           att = 0.0_RKIND  !aquiiiii
                        pasadastotales=2
-                       ALLOCATE (valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
-                       ALLOCATE (valor3dCOMPLEX(1,1:3,minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs))
+                      allocate(valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
+                      allocate(valor3dCOMPLEX(1,1:3,minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs))
                      endif
 
 #ifdef CompileWithMPI
-                     ALLOCATE (newvalor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
+                    allocate(newvalor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
 #endif
 
 #ifdef CompileWithMPI
-                     IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                     if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else                 
-                     IF (layoutnumber == 0) THEN
+                     if (layoutnumber == 0) then
 #endif                
                          if (createh5bin) then
                             if (firsttimeenteringcreatexdmf) then         
@@ -284,9 +284,9 @@ CONTAINS
                         endif
 #ifdef CompileWithHDF
 #ifdef CompileWithMPI
-                        IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                        if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else                 
-                        IF (layoutnumber == 0) THEN
+                        if (layoutnumber == 0) then
 #endif                
                            
                            if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase del modulo
@@ -295,27 +295,27 @@ CONTAINS
                         endif
 #endif               
                            
-                        bucleindi: DO indi = 1, finalstep
+                        bucleindi: do indi = 1, finalstep
                                if (pasadas == 1) then !solo es preciso leer los datos una vez
                                    READ (output(ii)%item(1)%UNIT) att(indi)
                                    write(dubuf,*)  ' ----> .xdmf file ',att(indi),'(',indi,'/',finalstep,')'
                                    call print11(layoutnumber,dubuf)
                               
                                    if (SGG%Observation(ii)%TimeDomain) then
-                                     DO k1 = minz, maxz
-                                        DO j1 = miny, maxy
+                                     do k1 = minz, maxz
+                                        do j1 = miny, maxy
                                            READ (output(ii)%item(1)%UNIT) (valor3d(i1, j1, k1, 1), i1=minx, maxx)
-                                        END DO
-                                     END DO
+                                        end do
+                                     end do
                                      !
                                    elseif (SGG%Observation(ii)%FreqDomain) then
-                                     DO COMPO=1,3
-                                        DO k1 = minz, maxz
-                                           DO j1 = miny, maxy
+                                     do COMPO=1,3
+                                        do k1 = minz, maxz
+                                           do j1 = miny, maxy
                                               READ (output(ii)%item(1)%UNIT) (valor3dCOMPLEX(1,COMPO,i1, j1, k1), i1=minx, maxx)
-                                           END DO
-                                        END DO
-                                     END DO
+                                           end do
+                                        end do
+                                     end do
                                    endif
                                endif !del if (pasadas==1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                                                   
@@ -325,9 +325,9 @@ CONTAINS
                                     select case (fieldob)
                                     case(iMEC,iMHC)
                                          !modulo 
-                                         DO k1 = minz, maxz
-                                            DO j1 = miny, maxy
-                                               DO i1=minx, maxx
+                                         do k1 = minz, maxz
+                                            do j1 = miny, maxy
+                                               do i1=minx, maxx
                                                   if (pasadas==1) then      !modulo
                                                      valor3d(i1, j1, k1, 1)=SQRT( ABS(valor3dCOMPLEX(1,1,i1, j1, k1))**2. + &
                                                                                   ABS(valor3dCOMPLEX(1,2,i1, j1, k1))**2. + &
@@ -335,45 +335,45 @@ CONTAINS
                                                   else !phase
                                                       valor3d=0.0_RKIND !LA fase no tiene sentido para el modulo del vector
                                                   endif
-                                               END DO
-                                            END DO
-                                         END DO
+                                               end do
+                                            end do
+                                         end do
                                     case(iExC,iHxC)
-                                         DO k1 = minz, maxz
-                                            DO j1 = miny, maxy
-                                               DO i1=minx, maxx
+                                         do k1 = minz, maxz
+                                            do j1 = miny, maxy
+                                               do i1=minx, maxx
                                                   if (pasadas==1) then    !modulo
                                                       valor3d(i1, j1, k1, 1)= ABS(valor3dCOMPLEX(1,1,i1, j1, k1)) 
                                                    else   !phase
-                                                      valor3d(i1, j1, k1, 1)= ATAN2(AIMAG(valor3dCOMPLEX(1,1,i1, j1, k1)),REAL(valor3dCOMPLEX(1,1,i1, j1, k1)))
+                                                      valor3d(i1, j1, k1, 1)= ATAN2(AIMAG(valor3dCOMPLEX(1,1,i1, j1, k1)),real(valor3dCOMPLEX(1,1,i1, j1, k1)))
                                                    endif
-                                               END DO
-                                            END DO
-                                         END DO
+                                               end do
+                                            end do
+                                         end do
                                     case(iEyC,iHyC) 
-                                         DO k1 = minz, maxz
-                                            DO j1 = miny, maxy
-                                               DO i1=minx, maxx
+                                         do k1 = minz, maxz
+                                            do j1 = miny, maxy
+                                               do i1=minx, maxx
                                                   if (pasadas==1) then       !modulo 
                                                       valor3d(i1, j1, k1, 1)=ABS(valor3dCOMPLEX(1,2,i1, j1, k1))
                                                   else    !phase
-                                                      valor3d(i1, j1, k1, 1)= ATAN2(AIMAG(valor3dCOMPLEX(1,2,i1, j1, k1)),REAL(valor3dCOMPLEX(1,2,i1, j1, k1)))
+                                                      valor3d(i1, j1, k1, 1)= ATAN2(AIMAG(valor3dCOMPLEX(1,2,i1, j1, k1)),real(valor3dCOMPLEX(1,2,i1, j1, k1)))
                                                   endif
-                                               END DO
-                                            END DO
-                                         END DO
+                                               end do
+                                            end do
+                                         end do
                                     case(iEzC,iHzC)
-                                         DO k1 = minz, maxz
-                                            DO j1 = miny, maxy
-                                               DO i1=minx, maxx
+                                         do k1 = minz, maxz
+                                            do j1 = miny, maxy
+                                               do i1=minx, maxx
                                                   if (pasadas==1) then      !modulo 
                                                      valor3d(i1, j1, k1, 1)=ABS(valor3dCOMPLEX(1,3,i1, j1, k1))
                                                   else                 !phase
-                                                     valor3d(i1, j1, k1, 1)= ATAN2(AIMAG(valor3dCOMPLEX(1,3,i1, j1, k1)),REAL(valor3dCOMPLEX(1,3,i1, j1, k1)))
+                                                     valor3d(i1, j1, k1, 1)= ATAN2(AIMAG(valor3dCOMPLEX(1,3,i1, j1, k1)),real(valor3dCOMPLEX(1,3,i1, j1, k1)))
                                                   endif
-                                               END DO
-                                            END DO
-                                         END DO
+                                               end do
+                                            end do
+                                         end do
                                     case default
                                           print *,'Buggy error in valor3d. Not processing continuing. '
                                           continue
@@ -385,7 +385,7 @@ CONTAINS
                                   if (output(ii)%item(1)%MPISubComm /= -1) then
                                      sizeofvalores = (maxXabs-minXabs+1) * (maxYabs-minYabs+1) * (maxZabs-minZabs+1)
                                      call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                                     CALL MPI_AllReduce (valor3d, newvalor3d, sizeofvalores, REALSIZE, MPI_SUM, &
+                                     call MPI_AllReduce (valor3d, newvalor3d, sizeofvalores, REALSIZE, MPI_SUM, &
                                      &                     output(ii)%item(1)%MPISubComm, ierr)
                                   endif
                                   valor3d = newvalor3d
@@ -396,9 +396,9 @@ CONTAINS
 !escribe los ficheros de salida
  
 #ifdef CompileWithMPI
-                              IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                              if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else                   
-                              IF (layoutnumber == 0) THEN
+                              if (layoutnumber == 0) then
 #endif                
 #ifdef CompileWithHDF
                                    if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase del modulo
@@ -413,74 +413,74 @@ CONTAINS
                                        write (myunit) linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero
                                        write (myunit) dz_minZabs,dy_minYabs,dx_minXabs
                                        WRITE (myunit) att(indi)
-                                       DO k1 = minzabs, maxzabs
-                                          DO j1 = minyabs, maxyabs
+                                       do k1 = minzabs, maxzabs
+                                          do j1 = minyabs, maxyabs
                                              WRITE (myunit) (valor3d(i1, j1, k1, 1), i1=minxabs, maxxabs)
-                                          END DO
-                                       END DO
+                                          end do
+                                       end do
                                    endif
                               endif                  
                           
-                        END DO bucleindi
+                        end do bucleindi
                               
 #ifdef CompileWithHDF
 #ifdef CompileWithMPI
-                        IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                        if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else                  
-                        IF (layoutnumber == 0) THEN
+                        if (layoutnumber == 0) then
 #endif   
                            
                            if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase del modulo
                               call closeh5file(finalstep,att)
-                              CALL print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(filename))//'.h5', .TRUE.) !enforces print
+                              call print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(filename))//'.h5', .TRUE.) !enforces print
                            endif
                         endif                        
 #endif                 
                      end do buclepasadas
                    !
 #ifdef CompileWithMPI
-                     IF (layoutnumber == output(ii)%item(1)%MPIRoot) THEN
+                     if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else              
-                     IF (layoutnumber == 0) THEN
+                     if (layoutnumber == 0) then
 #endif   
                         if (createh5bin) then
                              close(myunit)
-                             CALL print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(sgg%nEntradaRoot))//'.h5bin', .TRUE.)
+                             call print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(sgg%nEntradaRoot))//'.h5bin', .TRUE.)
                         endif
                      endif                     
 
-                     DEALLOCATE (valor3d)
+                     deallocate(valor3d)
                      if (SGG%Observation(ii)%FreqDomain) then
-                        DEALLOCATE (valor3dCOMPLEX)
+                        deallocate(valor3dCOMPLEX)
                      ENDIF
 #ifdef CompileWithMPI
-                     DEALLOCATE (newvalor3d)
+                     deallocate(newvalor3d)
 #endif
-                     DEALLOCATE (ATT)
+                     deallocate(ATT)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                     
                      CLOSE (output(ii)%item(1)%UNIT)
                   else !del lexis
                      buff='NOT PROCESSING: Ignoring: Inexistent or void file '//trim(adjustl(output(ii)%item(1)%path))
-                     CALL print11(layoutnumber, buff)
+                     call print11(layoutnumber, buff)
                   ENDIF !DEL LEXIS
                somethingdone=.true.
                ENDIF
             ENDIF
          ENDIF
-      END DO barridoprobes !barrido puntos de observacion
+      end do barridoprobes !barrido puntos de observacion
                      
-      RETURN
-   END SUBROUTINE createxdmf
+      return
+   end subroutine createxdmf
 
 
-   SUBROUTINE createh5bintxt(sgg,layoutnumber,size)
-      type (SGGFDTDINFO), intent(IN)        :: sgg
-      INTEGER (KIND=4), INTENT (IN) :: layoutnumber, size
+   subroutine createh5bintxt(sgg,layoutnumber,size)
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber, size
       logical :: lexis,algoescrito
-      INTEGER (KIND=4) :: ii,ierr
-      integer (KIND=4) :: myunit,myunit2
-      CHARACTER (LEN=BUFSIZE) ::  whoamishort
-      CHARACTER (LEN=BUFSIZE) :: pathroot
+      integer(kind=4) :: ii,ierr
+      integer(kind=4) :: myunit,myunit2
+      character(len=BUFSIZE) :: whoamishort
+      character(len=BUFSIZE) :: pathroot
       integer :: my_iostat
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -515,33 +515,33 @@ CONTAINS
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif     
-   end SUBROUTINE createh5bintxt
+   end subroutine createh5bintxt
 
-   SUBROUTINE createxdmfOnTheFly (sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)
-      integer (KIND=4) :: mpidir
+   subroutine createxdmfOnTheFly (sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)
+      integer(kind=4) :: mpidir
       logical :: vtkindex,createh5bin
       !------------------------>
 
-      type (SGGFDTDINFO), intent(IN)        :: sgg
-      INTEGER (KIND=4), INTENT (IN) :: layoutnumber, size
-      TYPE (output_t), POINTER, DIMENSION (:) :: output
-      INTEGER (KIND=4) :: ii
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4), intent(in) :: layoutnumber, size
+      type(output_t), pointer, dimension(:) :: output
+      integer(kind=4) :: ii
       logical :: lexis,somethingdone
       character(len=BUFSIZE) :: buff
       !
       output => GetOutput ()!get the output private info from observation
       !
 
-      DO ii = 1, sgg%NumberRequest
+      do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
-               if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) THEN
+               if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
                   !
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
-                     CALL print11(layoutnumber, buff)
+                     call print11(layoutnumber, buff)
                      return
                   ELSE
                      close (output(ii)%item(1)%unit)
@@ -550,18 +550,18 @@ CONTAINS
             ENDIF
          ENDIF
 
-      END DO !barrido puntos de observacion
+      end do !barrido puntos de observacion
       call createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
-      DO ii = 1, sgg%NumberRequest
+      do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
-         IF (sgg%observation(ii)%Volumic) then
+         if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
-               if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) THEN
+               if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
                   !
                   INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
-                     CALL print11(layoutnumber, buff)
+                     call print11(layoutnumber, buff)
                      return
                   ELSE
                      open (output(ii)%item(1)%unit,file=trim(adjustl(output(ii)%item(1)%path)),FORM='unformatted',position='append')
@@ -570,10 +570,10 @@ CONTAINS
             ENDIF
          ENDIF
 
-      END DO !barrido puntos de observacion
+      end do !barrido puntos de observacion
 
-      RETURN
-   END SUBROUTINE createxdmfOnTheFly
-END MODULE xdmf
+      return
+   end subroutine createxdmfOnTheFly
+end module xdmf
 !
 !

@@ -16,9 +16,9 @@ module Lumped
 
    implicit none
    
-   type (LumpedElem_t), save, target   ::  LumpElem
+   type(LumpedElem_t), save, target   :: LumpElem
    
-   REAL (KIND=RKIND), save           ::  eps0,mu0,zvac,cluz
+   real(kind=RKIND), save           :: eps0,mu0,zvac,cluz
    
    private
 !!!
@@ -29,35 +29,35 @@ module Lumped
 contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to initialize the parameters
+   ! subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitLumped(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,&
                          IDxe,IDye,IDze,IDxh,IDyh,IDzh, control, &
                          ThereAreLumped,eps00,mu00)
-      REAL (KIND=RKIND)           ::  eps00,mu00
+      real(kind=RKIND) :: eps00,mu00
       type(media_matrices_t), intent(in) :: media
 
-      type (SGGFDTDINFO), intent(IN)     ::  sgg
-      REAL (KIND=RKIND)   , intent(in) , target     :: &
+      type(SGGFDTDINFO), intent(in) :: sgg
+      real(kind=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
       Ez(sgg%alloc(iEz)%XI : sgg%alloc(iEz)%XE,sgg%alloc(iEz)%YI : sgg%alloc(iEz)%YE,sgg%alloc(iEz)%ZI : sgg%alloc(iEz)%ZE),&
       Hx(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE,sgg%alloc(iHx)%YI : sgg%alloc(iHx)%YE,sgg%alloc(iHx)%ZI : sgg%alloc(iHx)%ZE),&
       Hy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE),&
       Hz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
-      REAL (KIND=RKIND) , dimension (:)   , intent(in)   :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
+      real(kind=RKIND) , dimension(:)   , intent(in) :: Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
                                                          &  Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE), &
                                                          &  Idzh(sgg%ALLOC(iEz)%ZI : sgg%ALLOC(iEz)%ZE), &
                                                             Idxe(sgg%alloc(iHx)%XI : sgg%alloc(iHx)%XE), &
                                                             Idye(sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE), &
                                                             Idze(sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
 
-      logical, INTENT(OUT)  ::  ThereAreLumped
+      logical, intent(out) :: ThereAreLumped
       type(sim_control_t), intent(in) :: control
-      integer (kind=4)  ::  jmed,j1,conta,k1,i1
+      integer(kind=4) :: jmed,j1,conta,k1,i1
       character(len=BUFSIZE) :: buff
-      character (LEN=BUFSIZE)  ::  whoami
-      type (Nodes_t), pointer :: lumped_
+      character(len=BUFSIZE) :: whoami
+      type(Nodes_t), pointer :: lumped_
       logical :: unstable
 !
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
@@ -211,16 +211,16 @@ contains
 
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to advance the E field in the Lumped: Usual Yee
+   ! subroutine to advance the E field in the Lumped: Usual Yee
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
    subroutine AdvanceLumpedE(sgg,timestep,simu_devia,stochastic)
       logical :: simu_devia,stochastic 
-      type (SGGFDTDINFO), intent(IN) ::  sgg
-      integer (kind=4)  ::  conta,timestep
-      real (KIND=RKIND) :: Enplus1, fieldC,A
-      type (Nodes_t), pointer :: lumped_
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4) :: conta,timestep
+      real(kind=RKIND) :: Enplus1, fieldC,A
+      type(Nodes_t), pointer :: lumped_
       do conta=1,LumpElem%numnodes
          lumped_ => LumpElem%Nodes(conta)
          if (sgg%med(lumped_%jmed)%lumped(1)%inductor) then
@@ -261,16 +261,16 @@ contains
 
 
    subroutine calc_lumpedconstants(sgg,eps00,mu00)      
-      REAL (KIND=RKIND)           ::  eps00,mu00
-      type (SGGFDTDINFO), intent(IN)     ::  sgg
-      integer (kind=4)  ::  conta
-      type (Nodes_t), pointer :: lumped_
+      real(kind=RKIND) :: eps00,mu00
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4) :: conta
+      type(Nodes_t), pointer :: lumped_
 !!!variables locales
-      integer (kind=4) :: jmed
-      integer (kind=4) :: orient
-      real (kind=RKIND) :: epsilon,sigma,g1,g2,Resist,Induct,Capaci,sigmaeff,epsiloneff,DiodB,DiodIsat
-      real (kind=RKIND) :: g1_usual,g2_usual
-      real (kind=RKIND) :: epsilonEffCapac    ,sigmaEffResistInduct,sigmaEffResist   ,sigmaEffResistCapac ,sigmaEffResistDiode, &
+      integer(kind=4) :: jmed
+      integer(kind=4) :: orient
+      real(kind=RKIND) :: epsilon,sigma,g1,g2,Resist,Induct,Capaci,sigmaeff,epsiloneff,DiodB,DiodIsat
+      real(kind=RKIND) :: g1_usual,g2_usual
+      real(kind=RKIND) :: epsilonEffCapac    ,sigmaEffResistInduct,sigmaEffResist   ,sigmaEffResistCapac ,sigmaEffResistDiode, &
                            alignedDeltaE,transversalDeltaHa,transversalDeltaHb,  currentCoeff
       
       character(len=BUFSIZE) :: buff
@@ -374,7 +374,7 @@ contains
                 lumped_%diodepreA = -DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb) 
             else
                 WRITE (buff, *)    'Buggy ERROR: In lumped orientations. '
-                CALL WarnErrReport (buff,.TRUE.)
+                call WarnErrReport (buff,.TRUE.)
             endif   
         
 #ifdef CompileWithStochastic
@@ -388,8 +388,8 @@ contains
 
    subroutine StoreFieldsLumpeds(stochastic)
          logical :: stochastic
-         integer (kind=4) :: conta
-         type (Nodes_t), pointer :: lumped_
+         integer(kind=4) :: conta
+         type(Nodes_t), pointer :: lumped_
          do conta=1,LumpElem%numnodes
             lumped_ => LumpElem%Nodes(conta)
             write(14,err=634) lumped_%EfieldPrevPrev,lumped_%EfieldPrev,lumped_%Jcur !olvide almacenar jcur 071118
@@ -412,48 +412,48 @@ contains
 
    subroutine DestroyLumped(sgg)
 
-      type (SGGFDTDINFO), intent(INOUT)         ::  sgg
-      integer (kind=4)  ::  i
+      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      integer(kind=4) :: i
 
       !free up memory
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%Lumped).and.(.not.sgg%Med(i)%Is%PML)) then
-            if (associated(sgg%Med(i)%Lumped)) deallocate (sgg%Med(i)%Lumped)
+            if (associated(sgg%Med(i)%Lumped)) deallocate(sgg%Med(i)%Lumped)
          endif
       end do
 
 
-      if(allocated(LumpElem%nodes)) deallocate (LumpElem%nodes)
+      if(allocated(LumpElem%nodes)) deallocate(LumpElem%nodes)
 
    end subroutine
 
    function newton_raphson(A,B,C) result (x)
-   real (KIND=RKIND), intent (in) :: A,B,C
-   real (KIND=RKIND) :: x
-   real (KIND=RKIND) :: x0, xx0, fxx0, dfxx0
-   real (KIND=RKIND) :: tol ! Tolerancia error relativo
-   INTEGER, parameter :: nmax=1024  !limite de iteraciones/iteraciones realizadas
-   INTEGER :: clave,i,n      ! Clave de exito
+   real(kind=RKIND), intent(in) :: A,B,C
+   real(kind=RKIND) :: x
+   real(kind=RKIND) :: x0, xx0, fxx0, dfxx0
+   real(kind=RKIND) :: tol ! Tolerancia error relativo
+   integer, parameter :: nmax=1024  !limite de iteraciones/iteraciones realizadas
+   integer :: clave,i,n      ! Clave de exito
 
     clave = 1
     xx0 = x0
-    busca: DO i=1,nmax
+    busca: do i=1,nmax
         fxx0=A*exp(B*xx0)+x+C
         dfxx0=A*B*exp(B*xx0)+1.0_RKIND
         x = xx0 - fxx0/dfxx0
-        IF (ABS(x-xx0) < tol*ABS(x) ) THEN
+        if (ABS(x-xx0) < tol*ABS(x) ) then
             clave = 0
             n = i
             EXIT busca
         ENDIF
         xx0 = x
-    END DO busca
-    if (clave /= 0) CALL print11 (0, 'Error convergencia en Newton-Raphson')
+    end do busca
+    if (clave /= 0) call print11 (0, 'Error convergencia en Newton-Raphson')
     return
    end function newton_raphson
 
    function Getlumped() result(r)
-      type(LumpedElem_t), pointer  ::  r
+      type(LumpedElem_t), pointer  :: r
       r=>LumpElem
       return
    end function

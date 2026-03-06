@@ -56,10 +56,10 @@ module resuming
 
    
 !!!variables globales del modulo
-   REAL (KIND=RKIND), save           ::  zvac,cluz
-   REAL (KIND=RKIND), save           ::  eps0,mu0
+   real(kind=RKIND), save           :: zvac,cluz
+   real(kind=RKIND), save           :: eps0,mu0
 !!!   
-   integer (kind=4), parameter, private  ::  BLOCK_SIZE = 1024
+   integer(kind=4), parameter, private  :: BLOCK_SIZE = 1024
    public ReadFields,flush_and_save_resume
 
 
@@ -71,17 +71,17 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine ReadFields(sggalloc,lastexecutedtimestep,lastexecutedtime,ultimodt,eps00,mu00,Ex,Ey,Ez,Hx,Hy,Hz)
 
-      type (XYZlimit_t), dimension(1:6)  ::  sggalloc
-      REAL (KIND=RKIND)   , intent(inout)      :: &
+      type(XYZlimit_t), dimension(1:6) :: sggalloc
+      real(kind=RKIND)   , intent(inout) :: &
       Ex(sggalloc(iEx)%XI : sggalloc(iEx)%XE,sggalloc(iEx)%YI : sggalloc(iEx)%YE,sggalloc(iEx)%ZI : sggalloc(iEx)%ZE),&
       Ey(sggalloc(iEy)%XI : sggalloc(iEy)%XE,sggalloc(iEy)%YI : sggalloc(iEy)%YE,sggalloc(iEy)%ZI : sggalloc(iEy)%ZE),&
       Ez(sggalloc(iEz)%XI : sggalloc(iEz)%XE,sggalloc(iEz)%YI : sggalloc(iEz)%YE,sggalloc(iEz)%ZI : sggalloc(iEz)%ZE),&
       Hx(sggalloc(iHx)%XI : sggalloc(iHx)%XE,sggalloc(iHx)%YI : sggalloc(iHx)%YE,sggalloc(iHx)%ZI : sggalloc(iHx)%ZE),&
       Hy(sggalloc(iHy)%XI : sggalloc(iHy)%XE,sggalloc(iHy)%YI : sggalloc(iHy)%YE,sggalloc(iHy)%ZI : sggalloc(iHy)%ZE),&
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
-      REAL (KIND=RKIND_tiempo) :: lastexecutedtime,ultimodt
-      REAL (KIND=RKIND) :: eps00,mu00
-      integer (kind=4)  ::  lastexecutedtimestep,i,j,k,i_block,n_block,ini,fin
+      real(kind=RKIND_tiempo) :: lastexecutedtime,ultimodt
+      real(kind=RKIND) :: eps00,mu00
+      integer(kind=4) :: lastexecutedtimestep,i,j,k,i_block,n_block,ini,fin
 
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
       zvac=sqrt(mu0/eps0)
@@ -172,31 +172,31 @@ contains
    subroutine flush_and_save_resume(sgg, b, layoutnumber, size, nentradaroot, nresumeable2, thereare, fin,eps00,mu00, everflushed,  &
    Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
       logical :: simu_devia,stochastic
-      type (SGGFDTDINFO), intent(IN)    :: sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
       !---------------------------> inputs <----------------------------------------------------------
       character(len=*), INTENT(in) :: wiresflavor
-      integer (kind=4) :: ierr
-      type( bounds_t), intent( IN)  ::  b
-      integer( kind = 4), intent( IN)  ::  layoutnumber, size
+      integer(kind=4) :: ierr
+      type( bounds_t), intent( IN) :: b
+      integer( kind = 4), intent( IN) :: layoutnumber, size
       !--->
-      character( LEN=*), intent( IN)  ::  nresumeable2, nEntradaRoot
-      type( logic_control), intent( IN)  ::  thereare
-      integer( kind=4), intent( IN)  ::  fin
+      character( LEN=*), intent( IN) :: nresumeable2, nEntradaRoot
+      type( logic_control), intent( IN) :: thereare
+      integer( kind=4), intent( IN) :: fin
       logical :: existe
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN) :: Ez
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN) :: Hz
       !---------------------------> output <----------------------------------------------------------
-      logical, intent( OUT)  ::  everflushed
+      logical, intent( OUT) :: everflushed
       !---------------------------> variables locales <-----------------------------------------------
-      character (LEN=BUFSIZE)  ::  whoami
-      character (LEN=BUFSIZE)     ::  dubuf
-      real (kind = RKIND) :: eps00,mu00
+      character(len=BUFSIZE) :: whoami
+      character(len=BUFSIZE) :: dubuf
+      real(kind = RKIND) :: eps00,mu00
       !---------------------------> empieza flush_and_save_resume <-----------------------------------
       integer :: my_iostat
       
@@ -210,7 +210,7 @@ contains
       !!!!  Flush observation data to disk
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !SYNC TO DISK ENERGY AND REPORTING FILES
-      IF (layoutnumber == 0) THEN
+      if (layoutnumber == 0) then
          call flush(11)
          call flush(10)
       endif
@@ -340,20 +340,20 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine StoreFields( sgg,finaltimestep,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------------------> inputs <----------------------------------------------------------
-      type (SGGFDTDINFO), intent(IN)   ::  sgg
-      type( bounds_t), intent( IN)  ::  b
-      integer( kind = 4), intent(IN)  ::  finaltimestep
+      type(SGGFDTDINFO), intent(in) :: sgg
+      type( bounds_t), intent( IN) :: b
+      integer( kind = 4), intent(in) :: finaltimestep
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0 :  b%Ex%NX-1, 0 :  b%Ex%NY-1, 0 :  b%Ex%NZ-1), intent( IN) :: Ex
+      real(kind = RKIND), dimension( 0 :  b%Ey%NX-1, 0 :  b%Ey%NY-1, 0 :  b%Ey%NZ-1), intent( IN) :: Ey
+      real(kind = RKIND), dimension( 0 :  b%Ez%NX-1, 0 :  b%Ez%NY-1, 0 :  b%Ez%NZ-1), intent( IN) :: Ez
       !--->
-      real (kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN)  ::  Hx
-      real (kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN)  ::  Hy
-      real (kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN)  ::  Hz
+      real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( IN) :: Hx
+      real(kind = RKIND), dimension( 0 :  b%Hy%NX-1, 0 :  b%Hy%NY-1, 0 :  b%Hy%NZ-1), intent( IN) :: Hy
+      real(kind = RKIND), dimension( 0 :  b%Hz%NX-1, 0 :  b%Hz%NY-1, 0 :  b%Hz%NZ-1), intent( IN) :: Hz
       !---------------------------> variables locales <-----------------------------------------------
-      integer( kind = 4)  ::  i, j, k, i_block, n_block, ini, fin
-      real (kind = RKIND) :: eps0,mu0,cluz,zvac
+      integer( kind = 4) :: i, j, k, i_block, n_block, ini, fin
+      real(kind = RKIND) :: eps0,mu0,cluz,zvac
       !---------------------------> empieza StoreFields <---------------------------------------------
       write(14,err=634) finaltimestep,sgg%tiempo(finaltimestep),sgg%dt,eps0,mu0
       !--->

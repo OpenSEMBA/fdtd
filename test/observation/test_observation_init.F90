@@ -4,18 +4,18 @@ integer function test_init_time_movie_observation() bind(C) result(err)
     use Observa
     use observation_testingTools
 
-    type(SGGFDTDINFO) ::  sgg
+    type(SGGFDTDINFO) :: sgg
     type(media_matrices_t) :: media
     type(taglist_t) :: tag_numbers
     logical :: ThereAreObservation, ThereAreWires, ThereAreFarFields
     integer :: initialtimestep
     real(kind=RKIND_tiempo) :: lastexecutedtime
     type(limit_t), dimension(1:6) :: SINPML_fullsize
-    type(bounds_t)  ::  bounds
+    type(bounds_t) :: bounds
     type(sim_control_t) :: control
     type(nf2ff_t) :: facesNF2FF
     real(kind=RKIND) :: eps = EPSILON_VACUUM, mu = MU_VACUUM
-    character(LEN=BUFSIZE)  ::  chari, charj, chark, chari2, charj2, chark2, expectedOutputPath
+    character(len=BUFSIZE) :: chari, charj, chark, chari2, charj2, chark2, expectedOutputPath
 
     type(output_t), pointer, dimension(:) :: output
 
@@ -111,7 +111,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
 
         function create_time_movie_observable(XI,YI,ZI,XE,YE,ZE) result(observable)
             type(observable_t) :: observable
-            integer (kind=4)  ::  XI,YI,ZI,XE,YE,ZE
+            integer(kind=4) :: XI,YI,ZI,XE,YE,ZE
 
             observable%XI = XI
             observable%YI = YI
