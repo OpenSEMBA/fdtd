@@ -180,4 +180,30 @@ def test_spice_zener(tmp_path):
     assert np.allclose(p_expected.data.to_numpy()[
                        :-5, :], p_solved.data.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)
     
+@no_mtln_skip
+@pytest.mark.mtln
+def test_mtln_sources(tmp_path):
+    fn = CASES_FOLDER + 'sources/sources.fdtd.json'
+
+    # interior voltage source
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver["sources"][0]["field"] = "voltage"
+    solver["sources"][0]["elemendIds"] = [1]
+    solver["sources"][0]["magnitudeFile"] = "current_source_1A.exc"
+    solver.cleanUp()
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
+    
+    # interior current source
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver["sources"][0]["field"] = "current"
+    solver["sources"][0]["elemendIds"] = [1]
+    solver["sources"][0]["magnitudeFile"] = "voltage_source_1V.exc"
+    solver.cleanUp()
+    solver.run()
+    assert solver.hasFinishedSuccessfully()
     

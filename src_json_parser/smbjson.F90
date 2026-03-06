@@ -2574,6 +2574,7 @@ contains
          end select
       end do
       
+      mtln_res%sources = readWireGenerators()
       mtln_res%probes = readMultiwireProbes()
       mtln_res%networks = buildNetworks()
 
@@ -3145,6 +3146,164 @@ contains
 
       end function
 
+      function readWireGenerators() result(res)
+         type(wire_source_t), dimension(:), allocatable :: res
+         type(json_value), pointer :: sources
+         type(json_value_ptr), dimension(:), allocatable :: wire_generators
+         logical :: found
+         integer :: id
+
+         call this%core%get(this%root, J_sources, sources, found)
+         if (.not. found) then 
+            allocate(res(0))
+            return
+         end if
+         wire_generators = [this%jsonValueFilterByKeyValue(probes, J_TYPE, J_SRC_TYPE_GEN)]
+         n = countWireGenerators(wire_generators)
+         allocate(res(n))
+         if (n == 0) return
+         n = 1
+         do i = 1, size(wire_generators)
+            if (IsGeneratorOnWire(wire_generators(i)%p)) then 
+
+               id = getPolylineElemIdOfGenerator(wire_probes(i)%p)
+               generator_node_coord = getGeneratorNodeCoordinate(wire_probes(i)%p)
+               
+               ! do j = 1, size(ids)
+               ! functions to be written
+               res(n)%generator_name = readGeneratorName(wire_probes(i)%p)
+               res(n)%generator_type = readGeneratorType(wire_probes(i)%p)
+               res(n)%generator_position = probe_node_coord%position
+               
+               call elemIdToCable%get(key(ids(j)), value=index)
+               pl = this%mesh%getPolyline(ids(j))
+               linels = this%mesh%polylineToLinels(pl)
+               res(n)%index = findProbeIndexInLinels(probe_node_coord, linels)
+
+               cable_ptr => mtln_res%cables(index)%ptr
+               ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
+               ! Outside, cable_t does not have the parent_cable member
+               ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable  
+               parent_cable_found = .false. 
+               do while (.not. parent_cable_found)
+                  select type(cable_ptr)
+                  type is(shielded_multiwire_t)
+                     if (associated(cable_ptr%parent_cable)) then
+                        aux_ptr => cable_ptr%parent_cable   
+                     else
+                        parent_cable_found = .true.
+                     end if
+                  type is(unshielded_multiwire_t)
+                     parent_cable_found = .true.
+                  end select
+                  if (.not. parent_cable_found) then 
+                     cable_ptr => aux_ptr
+                  end if
+               end do
+               res(n)%attached_to_cable => cable_ptr
+               n = n + 1
+               ! end do
+
+
+            end if
+
+         end do
+      end function
+
+      function countWireGenerators(generators) result(res)
+         type(json_value_ptr), dimension(:), allocatable :: generators
+         integer :: res
+
+         character (len=:), allocatable :: fieldLabel
+         logical :: found
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j, k
+         integer :: cId
+         type(polyline_t) :: polyline
+         res = 0
+         do k = 1, size(generators)
+            fieldLabel = this%getStrAt(generators(k)%p, J_FIELD, found=found)
+            if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
+               call WarnErrReport('field type not recognized', .true.)
+               return 
+            end if
+
+            block
+               type(pixel_t) :: pixel
+               integer, dimension(:), allocatable :: eIds
+               eIds = this%getIntsAt(generators(k)%p, J_ELEMENTIDS)
+               pixel = getPixelFromElementId(this%mesh, eIds(1))
+               cId = pixel%tag
+            end block
+
+            mAs = this%getMaterialAssociations([ &
+                  J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                  J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
+                  J_MAT_TYPE_WIRE//'               ' ])
+
+            do i = 1, size(mAs)
+               polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+               do j = 2, size(polyline%coordIds)-1
+                  if (polyline%coordIds(j) == cId) then
+                     if (fieldLabel == J_FIELD_VOLTAGE .and. &
+                         (mAs%matAssType == J_MAT_TYPE_WIRE .or. &
+                          mAs%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
+                        call WarnErrReport('voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
+                     end if
+                     res = res + 1
+                  end if
+               end do
+            end do
+         end do
+         
+      end function
+
+      logical function IsGeneratorOnWire(p)
+         type(json_value), pointer :: p
+         character (len=:), allocatable :: fieldLabel
+         logical :: found
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j, k
+         integer :: cId
+         type(polyline_t) :: polyline
+         IsGeneratorOnWire = .false.
+         fieldLabel = this%getStrAt(p, J_FIELD, found=found)
+         if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
+            IsGeneratorOnWire = .false.
+            call WarnErrReport('field type not recognized', .true.)
+            return 
+         end if
+
+         block
+            type(pixel_t) :: pixel
+            integer, dimension(:), allocatable :: eIds
+            eIds = this%getIntsAt(p, J_ELEMENTIDS)
+            pixel = getPixelFromElementId(this%mesh, eIds(1))
+            cId = pixel%tag
+         end block
+
+         mAs = this%getMaterialAssociations([ &
+               J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+               J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
+               J_MAT_TYPE_WIRE//'               ' ])
+
+         do i = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+            do j = 2, size(polyline%coordIds)-1
+               if (polyline%coordIds(j) == cId) then
+                  if (fieldLabel == J_FIELD_VOLTAGE .and. &
+                        (mAs%matAssType == J_MAT_TYPE_WIRE .or. &
+                        mAs%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
+                     call WarnErrReport('voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
+                  end if
+                  IsGeneratorOnWire = .true.
+                  return
+               end if
+            end do
+         end do
+         
+      end function
+      
       function readMultiwireProbes() result(res)
          type(probe_t), dimension(:), allocatable :: res
          type(json_value_ptr), dimension(:), allocatable :: wire_probes
@@ -3363,6 +3522,38 @@ contains
                end if
             end do
          end do
+      end function
+
+      function getPolylineElemIdOfGenerator(p) result(res)
+         type(json_value), pointer :: p
+         type(polyline_t) :: polyline
+         integer :: res
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         integer :: i, j
+         integer :: cId
+         
+         block
+            type(pixel_t) :: pixel
+            integer, dimension(:), allocatable :: eIds
+            eIds = this%getIntsAt(p, J_ELEMENTIDS)
+            pixel = getPixelFromElementId(this%mesh, eIds(1))
+            cId = pixel%tag
+         end block
+
+         mAs = this%getMaterialAssociations([ &
+                J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
+                J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
+                J_MAT_TYPE_WIRE//'               ' ])
+         res = 0
+         do i = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+            do j = 2, size(polyline%coordIds)-1
+               if (polyline%coordIds(j) == cId) then
+                  res = mAs(i)%elementIds(1)
+               end if
+            end do
+         end do
+         if (res == 0) call WarnErrReport('Generator does not belong to any wire, unshielded multiwire or shielded multiwire', .true.)
       end function
 
       function readProbeType(probe) result(res)
