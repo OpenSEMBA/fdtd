@@ -47,7 +47,7 @@ contains
 
     function findContourCell(contour) result(res)
         type(side_t), dimension(:), allocatable, intent(in) :: contour
-        integer (kind=4), dimension(3) :: res
+        integer(kind=4), dimension(3) :: res
         integer :: i 
         do i = 1, size(contour)
             if (contour(i)%isOnAnyFace()) then 

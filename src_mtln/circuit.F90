@@ -31,7 +31,7 @@ module circuit_mod
     end type nodes_t
 
     type, public :: circuit_t
-        character (len=:), allocatable :: name
+        character(len=:), allocatable :: name
         real :: time = 0.0, dt = 0.0
         logical :: errorFlag = .false.
         type(nodes_t) :: nodes, saved_nodes   
