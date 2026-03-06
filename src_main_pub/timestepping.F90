@@ -1,19 +1,3 @@
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-!  SEMBA_FDTD sOLVER module
-!  Creation date Date :  April, 8, 2010
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-!__________________________________________________________________________________________________
-!******************************** REVISAR PARA PGI (CRAY) *****************************************
-!---> AdvanceMultiportE
-!---> AdvanceAnisMultiportE
-!---> AdvanceMultiportH
-!---> AdvanceAnisMultiportH
-!---> dfUpdateE
-!---> dfUpdateH
-!---> MinusCloneMagneticPMC
-!________________________________________________________________________________________
-
 module Solver_mod
 
    use fdetypes
