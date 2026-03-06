@@ -40,7 +40,7 @@ module mtln_types_mod
    integer, parameter :: DIRECTION_Z_NEG   =  -3
 
 
-   type wire_source_t
+   type generator_t
       character(len=256) :: path_to_excitation = ""
       integer :: source_type = SOURCE_TYPE_UNDEFINED
       type(cable_t), pointer :: attached_to_cable
@@ -51,6 +51,14 @@ module mtln_types_mod
       procedure :: wire_source_eq
       generic, public :: operator(==) => wire_source_eq
    end type
+
+   type mtl_source_t
+      integer :: index, conductor
+      real, dimension(:), allocatable :: time, value
+      integer :: source_type = SOURCE_TYPE_UNDEFINED
+   end type
+
+
 
    type node_source_t
       character(len=256) :: path_to_excitation = ""
@@ -250,8 +258,8 @@ module mtln_types_mod
       type(cable_abstract_t), dimension(:), allocatable :: cables
       type(terminal_network_t), dimension(:), allocatable :: networks
       type(probe_t), dimension(:), allocatable :: probes
+      type(generator_t), dimension(:), allocatable :: wireGenerators
       type(connector_t), dimension(:), pointer :: connectors
-      type(wire_source_t), dimension(:), pointer :: wire_sources
       real :: time_step = 0.0
       integer :: number_of_steps = 0
       integer :: n_sh = 0, n_unsh = 0
@@ -439,15 +447,15 @@ contains
    end function
 
 
-   elemental logical function wire_source_eq(a,b)
-      class(wire_source_t), intent(in) :: a, b
+   logical function wire_source_eq(a,b)
+      class(generator_t), intent(in) :: a, b
       wire_source_eq = &
          (a%path_to_excitation == b%path_to_excitation) .and. &
          (a%source_type == b%source_type) .and. &
          (a%resistance == b%resistance) .and. &
          (a%index == b%index)
       if (.not. associated(a%attached_to_cable) .or. .not. associated(b%attached_to_cable)) then 
-         wire_source_eq = wire_source_eq .and. .false
+         wire_source_eq = wire_source_eq .and. .false.
       else 
          wire_source_eq = wire_source_eq .and. (a%attached_to_cable == b%attached_to_cable)
       end if

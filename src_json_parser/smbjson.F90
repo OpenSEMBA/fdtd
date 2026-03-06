@@ -101,7 +101,7 @@ module smbjson
       character(:), allocatable :: name
       integer :: materialId
       integer, dimension(:), allocatable :: elementIds
-      character(:), allocatable :: matAssType
+      character(len=:), allocatable :: matAssType
       ! Cable specific fields.
       integer :: initialTerminalId = -1
       integer :: endTerminalId = -1
@@ -2395,10 +2395,12 @@ contains
                if (present(elementLabels)) then 
                   if (isAssociatedWithElementLabel(mAPtr, elementLabels)) then 
                      res(j) = this%parseMaterialAssociation(mAPtr)
+                     res(j)%matAssType = trim(materialTypes(k))
                      j = j+1
                   end if
                else
                   res(j) = this%parseMaterialAssociation(mAPtr)
+                  res(j)%matAssType = trim(materialTypes(k))
                   j = j+1
                end if
             end if
@@ -2574,7 +2576,7 @@ contains
          end select
       end do
       
-      mtln_res%sources = readWireGenerators()
+      mtln_res%wireGenerators = readWireGenerators()
       mtln_res%probes = readMultiwireProbes()
       mtln_res%networks = buildNetworks()
 
@@ -3147,66 +3149,57 @@ contains
       end function
 
       function readWireGenerators() result(res)
-         type(wire_source_t), dimension(:), allocatable :: res
+         type(generator_t), dimension(:), allocatable :: res
          type(json_value), pointer :: sources
-         type(json_value_ptr), dimension(:), allocatable :: wire_generators
+         type(json_value_ptr), dimension(:), allocatable :: gens
+         ! class(cable_t), pointer :: cable_ptr
          logical :: found
-         integer :: id
+         integer :: i, n
+         type(linel_t), dimension(:), allocatable :: linels
+         type(polyline_t) :: pl
+         type(coordinate_t) :: coord
+         integer :: id, index
 
          call this%core%get(this%root, J_sources, sources, found)
          if (.not. found) then 
             allocate(res(0))
             return
          end if
-         wire_generators = [this%jsonValueFilterByKeyValue(probes, J_TYPE, J_SRC_TYPE_GEN)]
-         n = countWireGenerators(wire_generators)
+         gens = [this%jsonValueFilterByKeyValue(sources, J_TYPE, J_SRC_TYPE_GEN)]
+
+         n = countWireGenerators(gens)
          allocate(res(n))
          if (n == 0) return
          n = 1
-         do i = 1, size(wire_generators)
-            if (IsGeneratorOnWire(wire_generators(i)%p)) then 
 
-               id = getPolylineElemIdOfGenerator(wire_probes(i)%p)
-               generator_node_coord = getGeneratorNodeCoordinate(wire_probes(i)%p)
+         do i = 1, size(gens)
+            if (IsGeneratorOnWire(gens(i)%p)) then 
+               if (.not. this%existsAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)) then
+                  call WarnErrReport('magnitudeFile of source missing', .true.)
+               end if
+               select case(this%getStrAt(gens(i)%p, J_FIELD))
+                case (J_FIELD_VOLTAGE)
+                  res(n)%source_type = J_FIELD_VOLTAGE
+                case (J_FIELD_CURRENT)
+                  res(n)%source_type = J_FIELD_CURRENT
+               case default
+                  call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
+               end select
+               res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
+               res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0)
+
                
-               ! do j = 1, size(ids)
-               ! functions to be written
-               res(n)%generator_name = readGeneratorName(wire_probes(i)%p)
-               res(n)%generator_type = readGeneratorType(wire_probes(i)%p)
-               res(n)%generator_position = probe_node_coord%position
-               
-               call elemIdToCable%get(key(ids(j)), value=index)
-               pl = this%mesh%getPolyline(ids(j))
+               id = getPolylineElemIdOfGenerator(gens(i)%p)
+               call elemIdToCable%get(key(id), value=index)
+               coord = GetCoordinateFromElemIdNode(gens(i)%p)
+               pl = this%mesh%getPolyline(id)
                linels = this%mesh%polylineToLinels(pl)
-               res(n)%index = findProbeIndexInLinels(probe_node_coord, linels)
 
-               cable_ptr => mtln_res%cables(index)%ptr
-               ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
-               ! Outside, cable_t does not have the parent_cable member
-               ! aux_ptr is used insted of cable_ptr => cable_ptr%parent_cable  
-               parent_cable_found = .false. 
-               do while (.not. parent_cable_found)
-                  select type(cable_ptr)
-                  type is(shielded_multiwire_t)
-                     if (associated(cable_ptr%parent_cable)) then
-                        aux_ptr => cable_ptr%parent_cable   
-                     else
-                        parent_cable_found = .true.
-                     end if
-                  type is(unshielded_multiwire_t)
-                     parent_cable_found = .true.
-                  end select
-                  if (.not. parent_cable_found) then 
-                     cable_ptr => aux_ptr
-                  end if
-               end do
-               res(n)%attached_to_cable => cable_ptr
+               res(n)%index = findIndexInLinels(coord, linels)
+               res(n)%attached_to_cable => mtln_res%cables(index)%ptr
+
                n = n + 1
-               ! end do
-
-
             end if
-
          end do
       end function
 
@@ -3246,8 +3239,8 @@ contains
                do j = 2, size(polyline%coordIds)-1
                   if (polyline%coordIds(j) == cId) then
                      if (fieldLabel == J_FIELD_VOLTAGE .and. &
-                         (mAs%matAssType == J_MAT_TYPE_WIRE .or. &
-                          mAs%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
+                         (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. &
+                          mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
                         call WarnErrReport('voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
                      end if
                      res = res + 1
@@ -3292,8 +3285,8 @@ contains
             do j = 2, size(polyline%coordIds)-1
                if (polyline%coordIds(j) == cId) then
                   if (fieldLabel == J_FIELD_VOLTAGE .and. &
-                        (mAs%matAssType == J_MAT_TYPE_WIRE .or. &
-                        mAs%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
+                        (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. &
+                         mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
                      call WarnErrReport('voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
                   end if
                   IsGeneratorOnWire = .true.
@@ -3329,7 +3322,7 @@ contains
          do i = 1, size(wire_probes)
             if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) then 
                ids = getPolylineElemIdOfMultiwireProbe(wire_probes(i)%p)
-               probe_node_coord = getProbeNodeCoordinate(wire_probes(i)%p)
+               probe_node_coord = GetCoordinateFromElemIdNode(wire_probes(i)%p)
                
                do j = 1, size(ids)
                   res(n)%probe_name = readProbeName(wire_probes(i)%p)
@@ -3339,7 +3332,7 @@ contains
                   call elemIdToCable%get(key(ids(j)), value=index)
                   pl = this%mesh%getPolyline(ids(j))
                   linels = this%mesh%polylineToLinels(pl)
-                  res(n)%index = findProbeIndexInLinels(probe_node_coord, linels)
+                  res(n)%index = findIndexInLinels(probe_node_coord, linels)
 
                   cable_ptr => mtln_res%cables(index)%ptr
                   ! Inside select type, cable_ptr is shielded_multiwire_t but parent_cable is cable_t
@@ -3368,20 +3361,40 @@ contains
          end do
       end function
 
-      function getProbeNodeCoordinate(probe) result (res)
-         type(json_value), pointer, intent(in) :: probe
+      function GetCoordinateFromElemIdNode(object) result (res)
+         type(json_value), pointer, intent(in) :: object
          type(coordinate_t) :: res
 
          integer, dimension(:), allocatable :: elemIds
          type(node_t) :: node
          
-         elemIds = this%getIntsAt(probe, J_ELEMENTIDS)
+         elemIds = this%getIntsAt(object, J_ELEMENTIDS)
          node = this%mesh%getNode(elemIds(1))
          res = this%mesh%getCoordinate(node%coordIds(1))
       end function
 
-      function findProbeIndexInLinels(probe_coord, linels) result(res)
-         type(coordinate_t) :: probe_coord
+      function findIndexPositionInLinels(elemIds, linels) result(res)
+         integer, dimension(:), intent(in) :: elemIds
+         type(linel_t), dimension(:), intent(in) :: linels
+         type(pixel_t) :: pixel
+         integer :: res
+         integer :: i
+         
+         pixel = this%mesh%nodeToPixel(this%mesh%getNode(elemIds(1)))
+         do i = 1, size(linels)
+            if (linels(i)%tag == pixel%tag) then
+               res = i
+               return
+            end if
+         end do
+
+         call WarnErrReport("Source could not be found in linels.", .true.)
+
+      end function
+
+
+      function findIndexInLinels(coord, linels) result(res)
+         type(coordinate_t) :: coord
          type(linel_t), dimension(:), allocatable :: linels
          type(coordinate_t), dimension(:), allocatable :: linelCoords
 
@@ -3404,7 +3417,7 @@ contains
          
          allocate(distance_to_linel_cell(size(linelCoords)))
          do i = 1, size(linelCoords)
-            distance_to_linel_cell(i) = norm2(linelCoords(i)%position-probe_coord%position)
+            distance_to_linel_cell(i) = norm2(linelCoords(i)%position-coord%position)
          end do
          m = minloc(distance_to_linel_cell)
          res = m(1)

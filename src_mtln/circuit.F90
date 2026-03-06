@@ -54,7 +54,6 @@ module circuit_mod
         procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
-        procedure :: loadCodeModels
         procedure :: printCWD
 
     end type circuit_t

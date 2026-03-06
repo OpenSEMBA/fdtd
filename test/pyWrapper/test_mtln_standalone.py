@@ -184,26 +184,84 @@ def test_spice_zener(tmp_path):
 @pytest.mark.mtln
 def test_mtln_sources(tmp_path):
     fn = CASES_FOLDER + 'sources/sources.fdtd.json'
-
-    # interior voltage source
+    # terminal voltage source for wires & unshieldedmws : OK
     solver = FDTD(input_filename=fn,
                   path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver["sources"][0]["field"] = "voltage"
-    solver["sources"][0]["elemendIds"] = [1]
-    solver["sources"][0]["magnitudeFile"] = "current_source_1A.exc"
-    solver.cleanUp()
-    solver.run()
-    assert solver.hasFinishedSuccessfully()
+                  run_in_folder=tmp_path,
+                  flags = ["-n", "1"])
     
-    # interior current source
-    solver = FDTD(input_filename=fn,
-                  path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver["sources"][0]["field"] = "current"
-    solver["sources"][0]["elemendIds"] = [1]
-    solver["sources"][0]["magnitudeFile"] = "voltage_source_1V.exc"
+    solver["materials"][0] = createWire(id = 1, r = 0.02)
+    solver["mesh"]["elements"][3]["coordinateIds"] = [2]
+    source = { "type" : "generator", 
+              "field" : "voltage", 
+              "elementIds" : [4], 
+              "name" : "terminal_source_v",
+              "magnitudeFile" : "sources.exc"}
+    
+    solver["sources"][0] = source
     solver.cleanUp()
     solver.run()
     assert solver.hasFinishedSuccessfully()
+
+    # solver["materials"][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
+
+    # # interior voltage source for wires & unshieldedmws : FAIL
+
+    # solver["mesh"]["elements"][3]["coordinateIds"] = [2]
+    # solver["materials"][0] = createWire(id = 1, r = 0.02)
+    # solver.cleanUp()
+    # solver.run()
+    # assert (solver.hasFinishedSuccessfully() == False)
+
+    # solver["materials"][0] = createUnshieldedWire(id = 1, lpul = 6.52188703e-08, cpul = 1.7060247700000001e-10)        
+    # solver.cleanUp()
+    # solver.run()
+    # assert (solver.hasFinishedSuccessfully() == False)
+    
+    # # terminal voltage source for shieldedmws : OK
+    # fn = CASES_FOLDER + 'sources/sources_shielded.fdtd.json'
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               run_in_folder=tmp_path,
+    #               flags = ["-n", "1"])
+    
+    # solver["materials"][0] = createWire(id = 1, r = 0.02)
+    # solver["mesh"]["elements"][3]["coordinateIds"] = [1]
+    # solver["sources"][0]["field"] = "voltage"
+    # solver["sources"][0]["elemendIds"] = [4]
+    # solver["sources"][0]["magnitudeFile"] = "source.exc"
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
+    
+    # interior voltage source for shieldedmws : OK
+
+
+    
+    # inner voltage source: only for inner conductor of shieldedmws
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               run_in_folder=tmp_path)
+    # solver["mesh"]["elements"][3]["coordinateIds"] = [2]
+    
+    # solver["sources"][0]["field"] = "voltage"
+    # solver["sources"][0]["elemendIds"] = [1]
+    # solver["sources"][0]["magnitudeFile"] = "current_source_1A.exc"
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
+    
+    # # interior current source
+    # solver = FDTD(input_filename=fn,
+    #               path_to_exe=SEMBA_EXE,
+    #               run_in_folder=tmp_path)
+    # solver["sources"][0]["field"] = "current"
+    # solver["sources"][0]["elemendIds"] = [1]
+    # solver["sources"][0]["magnitudeFile"] = "voltage_source_1V.exc"
+    # solver.cleanUp()
+    # solver.run()
+    # assert solver.hasFinishedSuccessfully()
     

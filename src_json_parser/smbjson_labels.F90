@@ -195,6 +195,7 @@ module smbjson_labels_mod
    character (len=*), parameter :: J_SRC_TYPE_NS = "nodalSource"
    character (len=*), parameter :: J_SRC_TYPE_GEN = "generator"
    character (len=*), parameter :: J_SRC_ATTACHED_ID = "attachedToLineId"
+   character (len=*), parameter :: J_SRC_RESISTANCE_GEN = "resistance"
 
    ! type(Planewave)
    character (len=*), parameter :: J_SRC_PW_DIRECTION = "direction"

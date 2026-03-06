@@ -1,0 +1,136 @@
+{
+    "format": "FDTD Input file",
+    "__comments": "1m linear antenna illuminated by a pulse : Holland, R. Finite-Difference Analysis of EMP Coupling to Thin Struts and Wires. 2000. IEEE-TEMC.",
+
+    "general": {
+        "timeStep": 30e-12,
+        "numberOfSteps": 1000
+    },
+  
+    "boundary": {
+        "all": {
+            "type": "pml",
+            "layers": 6, 
+            "order": 2.0,
+            "reflection": 0.001
+        }
+    },
+
+    "materials": [
+		{
+			"name": "InnerCoaxial",
+			"id": 2,
+			"type": "shieldedMultiwire",
+			"inductancePerMeter": [
+				[3.13182309e-07, 7.45674981e-08],
+				[7.45674981e-08, 3.13182309e-07]
+			],
+			"capacitancePerMeter": [
+				[85.0e-12, -20.5e-12],
+				[-20.5e-12, 85.0e-12 ]
+			],
+			"transferImpedancePerMeter" : {
+				"resistiveTerm" : 0.0,
+				"inductiveTerm" : 4.0e-9,
+				"direction": "both"
+			}
+		},
+		{
+			"name": "Shield",
+			"id": 1,
+			"type": "unshieldedMultiwire",
+            "inductancePerMeter": [[0.0]],
+            "capacitancePerMeter": [[0.0]],
+			"resistancePerMeter": [22.9e-3]
+		},
+        {
+            "id": 2,
+            "type": "terminal",
+            "terminations": [{"type": "series", "resistance": 50}]
+        }
+    ],
+
+    "mesh": {
+        "grid": {
+            "numberOfCells": [20, 20, 22],
+            "steps": { "x": [0.1], "y": [0.1], "z": [0.1] }
+        },
+        "coordinates": [
+            {"id": 1, "relativePosition": [11, 11,  7]},
+            {"id": 2, "relativePosition": [11, 11, 12]},
+            {"id": 3, "relativePosition": [11, 11, 17]},
+            {"id": 4, "relativePosition": [12, 11, 17]}
+        ],
+        "elements": [
+            {"id": 1, "type": "node", "coordinateIds": [2]},
+            {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
+            {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [19, 19, 21]]] },
+            {"id": 4, "type": "node", "coordinateIds": [1]}
+        ]
+    },
+
+    "materialAssociations": [
+        { 
+            "name" : "single_wire",
+            "materialId": 1,
+            "initialTerminalId": 2,
+            "endTerminalId": 2,
+            "elementIds": [2]
+        }
+    ],
+
+    "sources": [
+        {
+            "type": "planewave",
+            "magnitudeFile": "holland.exc",
+            "elementIds": [3],
+            "direction": {
+                "theta": 1.5708,
+                "phi": 0.0
+            },
+            "polarization": {
+                "theta": 0.0,
+                "phi": 0.0
+            }
+        },
+        {
+            "name" : "terminal_source_v",
+            "type" : "generator",
+            "magnitudeFile" : "towelHanger.exc",
+            "elementIds" : [1],
+            "field" : "voltage"
+        },
+        {
+            "name" : "terminal_source_i",
+            "type" : "generator",
+            "magnitudeFile" : "towelHanger.exc",
+            "elementIds" : [1],
+            "field" : "current"
+        },
+        {
+            "name" : "inner_source_v",
+            "type" : "generator",
+            "magnitudeFile" : "towelHanger.exc",
+            "elementIds" : [1],
+            "field" : "voltage"
+        }
+        {
+            "name" : "inner_source_i",
+            "type" : "generator",
+            "magnitudeFile" : "towelHanger.exc",
+            "elementIds" : [1],
+            "field" : "current"
+        }
+
+    ],
+
+    "probes": [
+        {
+            "name": "mid_point",
+            "type": "wire",
+            "field": "current",
+            "elementIds": [1],
+            "domain": { "type": "time" }
+        }
+    ]
+}

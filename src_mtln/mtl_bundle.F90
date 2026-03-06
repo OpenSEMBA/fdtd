@@ -9,6 +9,7 @@ module mtl_bundle_mod
 #else
     use fdetypes, only: RKIND
 #endif
+    use mtln_types_mod, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     implicit none
 
     type, public :: mtl_bundle_t
@@ -22,7 +23,7 @@ module mtl_bundle_mod
         real :: time = 0.0, dt = 1e10
 
         ! type homogen
-        type(bundle_source_t), allocatable, dimension(:) :: sources
+        type(mtl_source_t), allocatable, dimension(:) :: sources
 
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
@@ -374,33 +375,33 @@ contains
         !TODO
         do i = 1, size(this%sources) 
             val = interpolate(this%sources(i), time)
-            if (this%sources(i)%type == SOURCE_TYPE_VOLTAGE) then 
+            if (this%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
                 this%v_source(this%sources(i)%conductor, this%sources(i)%index) = val
-            else if (this%sources(i)%type == SOURCE_TYPE_CURRENT) then 
+            else if (this%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
                 this%i_source(this%sources(i)%conductor, this%sources(i)%index) = val
             end if
         end do
-    ! contains 
-    !     real function interpolate(source, time) result(res)
-    !         class(source_t) :: this
-    !         real :: time, dt, x1,x2, y1, y2
-    !         integer :: index
-    !         real, dimension(:), allocatable :: timediff
-    !         timediff = this%time - time + dt
-    !         index = maxloc(timediff, 1, (timediff) <= 0)
-    !         if (index == 0) index = 1
-    !         x1 = this%time(index)
-    !         y1 = this%value(index)
-    !         if (index+1 > size(this%time)) then
-    !             x2 = x1
-    !             y2 = y1
-    !         else 
-    !             x2 = this%time(index+1)
-    !             y2 = this%value(index+1)
-    !         end if
+    contains 
+        real function interpolate(source, t) result(res)
+            class(mtl_source_t) :: source
+            real :: t, x1, x2, y1, y2
+            integer :: index
+            real, dimension(:), allocatable :: timediff
+            timediff = source%time - t
+            index = maxloc(timediff, 1, (timediff) <= 0)
+            if (index == 0) index = 1
+            x1 = source%time(index)
+            y1 = source%value(index)
+            if (index+1 > size(source%time)) then
+                x2 = x1
+                y2 = y1
+            else 
+                x2 = source%time(index+1)
+                y2 = source%value(index+1)
+            end if
                     
-    !         res = (time*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
-    !     end function
+            res = (t*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
+        end function
     
     end subroutine
 
