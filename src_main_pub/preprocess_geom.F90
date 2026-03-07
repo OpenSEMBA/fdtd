@@ -136,7 +136,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-      WRITE (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
       write(whoamishort,'(i5)') layoutnumber+1
       !create space for the etangential shared info
       sgg%EShared%Conta = 0
@@ -321,7 +321,7 @@ contains
       !planeWaves
       !
       tama = (this%plnSrc%nc)
-!!!      WRITE (buff,*) 'More than 1 Huygens box unsupported'
+!!!      write(buff,*) 'More than 1 Huygens box unsupported'
 !!!      if (tama > 1) call STOPONERROR(layoutnumber,size,buff)
       !LO PONGO A MANO ojo
       amplitud = 1.0_RKIND
@@ -430,7 +430,7 @@ contains
             !!!if (Abs(py) < 1e-4) py = 0.0_RKIND
             !!!if (Abs(pz) < 1e-4) pz = 0.0_RKIND
             if (Abs(px*ex+py*ey+pz*ez) >= 1e-4) then
-               WRITE (buff,*) 'NO TEM PLANEWAVE',ex,ey,ez,px,py,pz,(px*ex+py*ey+pz*ez),this%plnSrc%collection(i)%alpha,  &
+               write(buff,*) 'NO TEM PLANEWAVE',ex,ey,ez,px,py,pz,(px*ex+py*ey+pz*ez),this%plnSrc%collection(i)%alpha,  &
                   this%plnSrc%collection(i)%beta,this%plnSrc%collection(i)%theta,this%plnSrc%collection(i)%phi
                call STOPONERROR(layoutnumber,size,buff)
             end if
@@ -894,7 +894,7 @@ contains
             sgg%Med(contamedia)%lumped(1)%orient = this%DielRegs%lins(i)%DiodOri
          elseif (this%DielRegs%lins(i)%diodo) then
 !!!27/08/15 diodos aun no soportados
-            WRITE (buff, '(a)')    'Lumped Diodes currently unsupported. .'
+            write(buff, '(a)')    'Lumped Diodes currently unsupported. .'
             call STOPONERROR(layoutnumber,size,buff)
 !!!
             sgg%Med(contamedia)%Is%Lumped = .true.
@@ -915,7 +915,7 @@ contains
          else
             sgg%Med(contamedia)%Is%Lumped = .false.
             if (.not. this%DielRegs%lins(i)%plain) then
-               WRITE (buff, '(a)')    'Buggy error 1 in preprocess lumped. .'
+               write(buff, '(a)')    'Buggy error 1 in preprocess lumped. .'
                call STOPONERROR(layoutnumber,size,buff)
             endif
          endif
@@ -1243,7 +1243,7 @@ contains
             this%LossyThinSurfs%cs(J)%thk_devia(1)=0.0_RKIND
             !!!
             !!!comentado el 120219 pq no se lleva bien con Semba !no entiendo ahora el comentario de malonyedispersive!!!120219
-            !!!     WRITE (buff, '(a)')    'pre1_Error:  SGBC materials must have at least one layyer even in dummy for malonyedispersive'
+            !!!     write(buff, '(a)')    'pre1_Error:  SGBC materials must have at least one layyer even in dummy for malonyedispersive'
             !!!     call WarnErrReport (buff,.true.)
          ENDIF
 
@@ -1252,7 +1252,7 @@ contains
             this%LossyThinSurfs%cs(j)%SigmaM = 0.0_RKIND
             if (.not.mibc) then
                !if (this%LossyThinSurfs%cs(j)%numcapas >1) then
-               !   WRITE (buff, '(a)')    'pre1_Warning:  SGBC materials are just averaged for multilayered structures.'// &
+               !   write(buff, '(a)')    'pre1_Warning:  SGBC materials are just averaged for multilayered structures.'// &
                !   ' Use preferably -mibc instead.'
                !   call WarnErrReport (buff)
                !endif
@@ -1291,7 +1291,7 @@ contains
                  allocate(sgg%Med(contamedia)%multiport(1))
                   !
                   if ((this%LossyThinSurfs%cs(j)%numcapas >1).and.SGBCDispersive) then
-                     WRITE (buff, *)    'ERROR in SGBCs Number of layers >1 still unsupported for SGBCDispersive. '
+                     write(buff, *)    'ERROR in SGBCs Number of layers >1 still unsupported for SGBCDispersive. '
                      call StopOnError (0,0,buff)
                   endif
                   !
@@ -1314,17 +1314,17 @@ contains
                   !!!!!!!!estaba antes  maaaal. bug 140815verano
                   if(.not.((puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE))) then
                      puntoXI= sgg%allocDxI
-                     WRITE (buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
+                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
                   endif
                   if(.not.((puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE))) then
                      puntoYI= sgg%allocDyI
-                     WRITE (buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
+                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
                   endif
                   if(.not.((puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE))) then
                      puntoZI= sgg%allocDzI
-                     WRITE (buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
+                     write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
                   endif
                   dentro = (puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE).and. &
@@ -1340,11 +1340,11 @@ contains
                       case (iEz)
                         delta=(sgg%DZ(puntoZI)+sgg%Dz(puntoZI-1))/2.0_RKIND
                       case default
-                        WRITE (buff, '(a)')    'Buggy error 1 in preprocess composites. .'
+                        write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
                         call STOPONERROR(layoutnumber,size,buff)
                      end select
                   ELSE
-                     WRITE (buff, '(a)')    'Buggy error 2 in preprocess composites. .'
+                     write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
                      call STOPONERROR(layoutnumber,size,buff)
                   ENDIF
                   sgg%Med(contamedia)%Multiport(1)%numcapas = this%LossyThinSurfs%cs(j)%numcapas
@@ -1372,7 +1372,7 @@ contains
 
                   rdummy=maxval(abs(this%LossyThinSurfs%cs(j)%MU_devia))+maxval(abs(this%LossyThinSurfs%cs(j)%SigmaM_devia))
                   if (rdummy>1.0e-15_RKIND) then
-                     WRITE (buff, '(a)')    'Non null deviations found in sigmam or mu in composites. Still unsupported.'
+                     write(buff, '(a)')    'Non null deviations found in sigmam or mu in composites. Still unsupported.'
                      call STOPONERROR(layoutnumber,size,buff)
                   endif
 
@@ -1394,7 +1394,7 @@ contains
                      sgg%Med(contamedia)%Is%Lossy = .true.
                      if (SGBCDispersive)   sgg%Med(contamedia)%Is%SGBCDispersive = .TRUE.
                   else
-                     WRITE (buff, '(a)')    'Some -mibc -sgbc switch should be used for Composites.'
+                     write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Composites.'
                      call STOPONERROR(layoutnumber,size,buff)
                   endif
                   sgg%Med(contamedia)%Is%Dielectric = .FALSE.
@@ -1420,10 +1420,10 @@ contains
                      errnofile4=.false.
                      pozi=index(sgg%Med(contamedia)%Multiport(1)%multiportFileZ11,'_z11.txt')
                      multiportfile2=trim(adjustl(sgg%Med(contamedia)%Multiport(1)%multiportFileZ11(1:pozi-1)))
-                     INQUIRE (file=trim(adjustl(multiportfile2)), EXIST=errnofile1)
-                     INQUIRE (file=trim(adjustl(sgg%Med(contamedia)%Multiport(1)%multiportFileZ11)), EXIST=errnofile2)
-                     INQUIRE (file=trim(adjustl(sgg%Med(contamedia)%Multiport(1)%multiportFileZ12)), EXIST=errnofile3)
-                     INQUIRE (file=trim(adjustl(sgg%Med(contamedia)%Multiport(1)%multiportFileZ22)), EXIST=errnofile4)
+                     inquire(file=trim(adjustl(multiportfile2)), EXIST=errnofile1)
+                     inquire(file=trim(adjustl(sgg%Med(contamedia)%Multiport(1)%multiportFileZ11)), EXIST=errnofile2)
+                     inquire(file=trim(adjustl(sgg%Med(contamedia)%Multiport(1)%multiportFileZ12)), EXIST=errnofile3)
+                     inquire(file=trim(adjustl(sgg%Med(contamedia)%Multiport(1)%multiportFileZ22)), EXIST=errnofile4)
 
                      if (.not.(errnofile1.or.(errnofile2.and.errnofile3.and.errnofile4))) then
                         buff='Neither New nor Old style mibc FILE '//trim(adjustl(multiportfile2))//' EXISTS.'
@@ -1495,7 +1495,7 @@ contains
                   !
 
                   if (this%LossyThinSurfs%cs(j)%numcapas >1) then
-                     WRITE (buff, '(a)')    'pre1_ERROR:  Anisotropic multiport materials unsupported for multilayered structures.'
+                     write(buff, '(a)')    'pre1_ERROR:  Anisotropic multiport materials unsupported for multilayered structures.'
                      call WarnErrReport (buff,.TRUE.)
                   endif
                   puntoXI = Max (punto%XI, Min(BoundingBox%XI, BoundingBox%XE)) !copiado de healer
@@ -1507,7 +1507,7 @@ contains
                   if(.not.((puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE))) puntoXI= sgg%allocDxI
                   if(.not.((puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE))) puntoYI= sgg%allocDyI
                   if(.not.((puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE))) puntoZI= sgg%allocDzI
-                  WRITE (buff, '(a)')    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)'
+                  write(buff, '(a)')    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)'
                   call WarnErrReport (buff,.TRUE.)
 
                   dentro = (puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE).and. &
@@ -1523,11 +1523,11 @@ contains
                       case (iEz)
                         delta=(sgg%DZ(puntoZI)+sgg%Dz(puntoZI-1))/2.0_RKIND
                       case default
-                        WRITE (buff, '(a)')    'Buggy error 1 in preprocess composites. .'
+                        write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
                         call STOPONERROR(layoutnumber,size,buff)
                      end select
                   ELSE
-                     WRITE (buff, '(a)')    'Buggy error 2 in preprocess composites. .'
+                     write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
                      call STOPONERROR(layoutnumber,size,buff)
                   ENDIF
                   sgg%Med(contamedia)%AnisMultiport(1)%Multiportdir = this%LossyThinSurfs%cs(j)%C(i)%or
@@ -1546,7 +1546,7 @@ contains
                      sgg%Med(contamedia)%Is%Anismultiport = .TRUE.
                      sgg%Med(contamedia)%Is%Lossy = .TRUE.
                   else
-                     WRITE (buff, '(a)')    'Some -mibc -sgbc switch should be used for Anisotropic Composites.'
+                     write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Anisotropic Composites.'
                      call STOPONERROR(layoutnumber,size,buff)
                   endif
 
@@ -1880,7 +1880,7 @@ contains
             +abs(sgg%Med(contamedia)%wire(1)%Series_C_RightEnd_devia)   &
             +abs(sgg%Med(contamedia)%wire(1)%Series_C_LeftEnd_devia)
          if (rdummy>1.0e-15_RKIND) then
-            WRITE (buff, '(a)')    'Non null deviations found in L, C or radius in wires stoch. Still unsupported.'
+            write(buff, '(a)')    'Non null deviations found in L, C or radius in wires stoch. Still unsupported.'
             call STOPONERROR(layoutnumber,size,buff)
          endif
 !fin stoch
@@ -2021,17 +2021,17 @@ contains
                 case (iEx)
                   if ((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)) then
                      paraerrhilo=.true.
-                     WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   x-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
+                     write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   x-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) call WarnErrReport (buff)
                   elseif (media%sggMiEx(i,j,k) /= 1) then
                      islossy = (sgg%Med(media%sggMiEx(i,j,k))%Sigma /= 0.0_RKIND)
                      if (islossy) then
                         paraerrhilo=.true.
-                        WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k, &
                            ' embedded within LOSSY medium ', &
                            media%sggMiEx(i,j,k)
                      else
-                        WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
+                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
                            media%sggMiEx(i,j,k)
                      endif
                      if (verbose) call WarnErrReport (buff)
@@ -2043,12 +2043,12 @@ contains
                   &     ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
-                        WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i, j, k, &
                            ' touching PEC'
                         if (verbose) call WarnErrReport (buff)
                      else
                         continue
-                        !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
+                        !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      endif
                   elseif ((((media%sggMiEy(i+1,j,k) ==0).or.(sgg%med(media%sggMiEy(i+1,j,k) )%is%pec)).or.&
@@ -2058,48 +2058,48 @@ contains
                   &         ((media%sggMiEx(i  ,j,k) /=0).and.(.not.(sgg%med(media%sggMiEx(i  ,j,k) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
-                        WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i+1, j, k, &
+                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of x-WIRE at  ',OrigIndex, i+1, j, k, &
                            ' touching PEC'
                         if (verbose) call WarnErrReport (buff)
                      else
                         continue
-                        !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i+1, j, k,' touching PEC'
+                        !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i+1, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      endif
                   elseif (((media%sggMiEy(i  ,j,k) /= 1)).and. &
                      (media%sggMiEx(i  ,j,k) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i,j,k)
                      if (verbose) call WarnErrReport (buff)
                   elseif (((media%sggMiEz(i  ,j,k) /= 1)).and. &
                      (media%sggMiEx(i  ,j,k) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEz(i,j,k)
                      if (verbose) call WarnErrReport (buff)
                   elseif (((media%sggMiEy(i+1,j,k) /= 1)).and. &
                      (media%sggMiEx(i  ,j,k) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i+1,j,k)
                      if (verbose) call WarnErrReport (buff)
                   elseif (((media%sggMiEz(i+1,j,k) /= 1)).and. &
                      (media%sggMiEx(i  ,j,k) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
                      &                                  media%sggMiEz(i+1,j,k)
                      if (verbose) call WarnErrReport (buff)
                   endif
                 case (iEy)
                   if ((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)) then
                      paraerrhilo=.true.
-                     WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   y-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
+                     write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   y-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) call WarnErrReport (buff)
                   elseif (media%sggMiEy(i,j,k) /= 1) then
                      islossy = (sgg%Med(media%sggMiEy(i,j,k))%Sigma /= 0.0_RKIND)
                      if (islossy) then
                         paraerrhilo=.true.
-                        WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: Y-WIRE at ',OrigIndex, i, j, k,' embedded within LOSSY medium ', &
+                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: Y-WIRE at ',OrigIndex, i, j, k,' embedded within LOSSY medium ', &
                            media%sggMiEY(i,j,k)
                      else
-                        WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
+                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
                            media%sggMiEy(i,j,k)
                      ENDIF
                      if (verbose) call WarnErrReport (buff)
@@ -2111,12 +2111,12 @@ contains
                   &     ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
-                        WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j, k, &
                            ' touching PEC'
                         if (verbose) call WarnErrReport (buff)
                      else
                         continue
-                        !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
+                        !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      endif
                   elseif ((((media%sggMiEx(i,j+1,k) ==0).or.(sgg%med(media%sggMiEx(i,j+1,k) )%is%pec)).or. &
@@ -2126,49 +2126,49 @@ contains
                   &         ((media%sggMiEy(i,j  ,k) /=0).and.(.not.(sgg%med(media%sggMiEy(i,j  ,k) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
-                        WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j+1, k, &
+                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of y-WIRE at ',OrigIndex, i, j+1, k, &
                            ' touching PEC'
                         if (verbose) call WarnErrReport (buff)
                      else
                         continue
-                        !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j+1, k,' touching PEC'
+                        !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j+1, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      endif
                   elseif (((media%sggMiEx(i,j  ,k) /= 1)).and. &
                   &         (media%sggMiEy(i,j  ,k) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j,k)
                      if (verbose) call WarnErrReport (buff)
                   elseif (((media%sggMiEz(i,j  ,k) /= 1)).and. &
                   &         (media%sggMiEy(i,j  ,k) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEz(i,j,k)
                      if (verbose) call WarnErrReport (buff)
                   elseif (((media%sggMiEx(i,j+1,k) /= 1)).and. &
                   &         (media%sggMiEy(i,j  ,k) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j+1,k)
                      if (verbose) call WarnErrReport (buff)
                   elseif (((media%sggMiEz(i,j+1,k) /= 1)).and. &
                   &         (media%sggMiEy(i,j  ,k) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
                      &                                  media%sggMiEz(i,j+1,k)
                      if (verbose) call WarnErrReport (buff)
                   endif
                 case (iEz)
                   if ((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)) then
                      paraerrhilo=.true.
-                     WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   z-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
+                     write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   z-WIRE at ',OrigIndex, i, j, k,' embedded within PEC'
                      if (verbose) call WarnErrReport (buff)
                   elseif (media%sggMiEz(i,j,k) /= 1) then
                      islossy = (sgg%Med(media%sggMiEz(i,j,k))%Sigma /= 0.0_RKIND)
                      if (islossy) then
                         paraerrhilo=.true.
-                        WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: Y-WIRE at ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: Y-WIRE at ',OrigIndex, i, j, k, &
                            ' embedded within LOSSY medium ', &
                            media%sggMiEz(i,j,k)
                      else
-                        WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
+                        write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
                            media%sggMiEz(i,j,k)
                      ENDIF
                      if (verbose) call WarnErrReport (buff)
@@ -2180,12 +2180,12 @@ contains
                   &     ((media%sggMiEz(i,j,k  ) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k  ) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
-                        WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k, &
+                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k, &
                            ' touching PEC'
                         if (verbose)  call WarnErrReport (buff)
                      else
                         continue
-                        !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
+                        !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      endif
                   elseif ((((media%sggMiEx(i,j  ,k+1) ==0).or.(sgg%med(media%sggMiEx(i,j  ,k+1) )%is%pec)).or. &
@@ -2195,32 +2195,32 @@ contains
                   &         (((media%sggMiEz(i,j,k  ) /=0).and.(.not.(sgg%med(media%sggMiEz(i,j,k  ) )%is%pec))).or.(.not.(sgg%med(media%sggMiEz(i,j,k  ) )%is%pec)))) then
                      if ((i1 /= 1) .and. (i1 /= tama2)) then !solo en LeftEnd y RightEnd pueden tocar
                         paraerrhilo=.true.
-                        WRITE (buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k+1, &
+                        write(buff, '(a,i7,3i5,a)')    'pre1_WARNING:   intermediate node of z-WIRE at ',OrigIndex, i, j, k+1, &
                            ' touching PEC'
                         if (verbose) call WarnErrReport (buff)
                      else
                         continue
-                        !WRITE (buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k+1,' touching PEC'
+                        !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k+1,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
                      endif
                   elseif (((media%sggMiEx(i,j,k  ) /= 1)).and. &
                   &         (media%sggMiEz(i,j,k  ) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j,k)
                      if (verbose) call WarnErrReport (buff)
                   elseif (((media%sggMiEy(i,j,k  ) /= 1)).and. &
                   &         (media%sggMiEz(i,j,k  ) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i,j,k)
                      if (verbose) call WarnErrReport (buff)
                   elseif (((media%sggMiEy(i,j,k+1) /= 1)).and. &
                   &         (media%sggMiEz(i,j,k  ) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEy(i,j,k+1)
                      if (verbose) call WarnErrReport (buff)
                   elseif (((media%sggMiEx(i,j,k+1) /= 1)).and. &
                   &         (media%sggMiEz(i,j,k  ) == 1)) then
-                     WRITE (buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
+                     write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j,k+1)
                      if (verbose) call WarnErrReport (buff)
                   endif
@@ -2287,7 +2287,7 @@ contains
                   ((this%twires%TW(j)%TWC(i)%k).eq.(this%twires%TW(j)%TWC(i-1)%k)).and. &
                   ((this%twires%TW(j)%TWC(i)%D).eq.(this%twires%TW(j)%TWC(i-1)%D))) then
                   sgg%Med(contamedia)%wire(1)%numsegmentos = 1
-                  WRITE (buff, '(a,1i7,a)')    'pre1_SEVEREWARNING: removing a repeteated segment from a 2-segment wire. Index= ',this%twires%TW(j)%TWC(i)%nd,'. Double check that no wire probes was attached to it'
+                  write(buff, '(a,1i7,a)')    'pre1_SEVEREWARNING: removing a repeteated segment from a 2-segment wire. Index= ',this%twires%TW(j)%TWC(i)%nd,'. Double check that no wire probes was attached to it'
                   call WarnErrReport (buff)
                   exit hilosbarre
                endif
@@ -2654,7 +2654,7 @@ contains
       bboxwirYE=dummy_bboxwirYE
       bboxwirZE=dummy_bboxwirZE
 #endif
-      WRITE (buff, '(a, 6I12)')    'pre1_INFO:  Bounding Box for WIREs min_x,min_y,min_z, MAX_x,MAX_y,MAX_z',bboxwirXI,bboxwirYI,bboxwirZI,bboxwirXE,bboxwirYE,bboxwirZE
+      write(buff, '(a, 6I12)')    'pre1_INFO:  Bounding Box for WIREs min_x,min_y,min_z, MAX_x,MAX_y,MAX_z',bboxwirXI,bboxwirYI,bboxwirZI,bboxwirXE,bboxwirYE,bboxwirZE
       if (((bboxwirXI<2**20).or.(bboxwirYI<2**20).or.(bboxwirZI<2**20).or.(bboxwirXE>-(2**20)).or.(bboxwirYE>-(2**20)).or.(bboxwirZE>-(2**20))).or.(VERBOSE)) then
          call WarnErrReport (buff)
       ENDIF
@@ -3634,12 +3634,12 @@ contains
       end do
       !
       if (sondas > Maxprobes) then
-         WRITE (buff,*) 'Too many probes= ', sondas, 'Either  or reduce the number of probes below ', &
+         write(buff,*) 'Too many probes= ', sondas, 'Either  or reduce the number of probes below ', &
          & Maxprobes
          call STOPONERROR(layoutnumber,size,buff)
       end if
       if (sondas > 1024) then
-         WRITE (buff,*) 'Number of probes ', &
+         write(buff,*) 'Number of probes ', &
          &   ' is over 1024. UNIX limit is typically 1024'// &
             ' Check! It will crash if ulimit -n is not set > ', sondas
          call WarnErrReport(buff)
@@ -3647,7 +3647,7 @@ contains
 
       !luego chequeo las memoria de las sondas si se van de memoria en observation.f90
       !      if (sondas*BuffObse*4 > MaxMemoryProbes) then
-      !        WRITE (buff,*) 'Too much memory for the probes= ', sondas * BuffObse * 4, 'Probes= ', sondas,   &
+      !        write(buff,*) 'Too much memory for the probes= ', sondas * BuffObse * 4, 'Probes= ', sondas,   &
       !         &     'Either reduce the number o&
       !       &f probes or recompile decreasing BuffObse ', BuffObse, 'or increasing ', MaxMemoryProbes
       !        call STOPONERROR(layoutnumber,size,buff)
@@ -3727,7 +3727,7 @@ contains
                continue
             end if
             !
-            WRITE (probenumber, '(i7)') ii
+            write(probenumber, '(i7)') ii
             !        sgg%observation(ii)%outputrequest=trim(adjustl(probenumber))//'_'// &
             !                                          trim(adjustl(this%Sonda%collection(i)%outputrequest))
             sgg%observation(ii)%outputrequest = trim (adjustl(this%Sonda%collection(i)%outputrequest))
@@ -3743,7 +3743,7 @@ contains
             if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                (sgg%observation(ii)%FreqStep <= 1e-9)) then
-               WRITE (buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
+               write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,size,buff)
             ENDIF
             !!!
@@ -3973,7 +3973,7 @@ contains
             sgg%observation(ii)%TRANSFER = .FALSE.
             !farfields (no es time domain pero una forma especial de ellos)
             tama2 = (this%oldSONDA%probes(i)%n_FarField)
-            WRITE (buff,*) 'More than 1 Far Field box unsupported'
+            write(buff,*) 'More than 1 Far Field box unsupported'
             if (tama2 > 1) call STOPONERROR(layoutnumber,size,buff)
             !
             do j = 1, tama2
@@ -4017,7 +4017,7 @@ contains
                if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep <= 1e-9)) then
-                  WRITE (buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
+                  write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,size,buff)
                ENDIF
                !
@@ -4033,7 +4033,7 @@ contains
                buff='TAMANIOS DE PROBES EH RAROS'
                if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6))  &
                &                call STOPONERROR(layoutnumber,size,buff)
-               WRITE (probenumber, '(i7)') ii
+               write(probenumber, '(i7)') ii
                do k = 1, tama3
                   punto%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
                   punto%YI = this%oldSONDA%probes(i)%Electric(j)%probe%j(k)
@@ -4176,7 +4176,7 @@ contains
                end if
                !!!          end if
                !
-               WRITE (probenumber, '(i7)') ii
+               write(probenumber, '(i7)') ii
                !        sgg%observation(ii)%outputrequest=trim(adjustl(probenumber))//'_'// &
                !                                          trim(adjustl(this%BloquePRB%BP(i)%outputrequest))
                sgg%observation(ii)%outputrequest = trim (adjustl(this%BloquePRB%BP(i)%outputrequest))
@@ -4192,7 +4192,7 @@ contains
                if ((sgg%observation(ii)%InitialFreq < 0.).or. &
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep <= 1e-9) ) then
-                  WRITE (buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
+                  write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,size,buff)
                ENDIF
                !FIN COMPATIBILIDAD 15/07/15
@@ -4278,7 +4278,7 @@ contains
                sgg%observation(ii)%FileNormalize = ''
                tama2 = 1
                if (tama2 >1 ) then
-                  WRITE (buff,*) 'Only 1 Volumic probe allown per section'
+                  write(buff,*) 'Only 1 Volumic probe allown per section'
                   call STOPONERROR(layoutnumber,size,buff)
                end if
                do j = 1, tama2
@@ -4301,7 +4301,7 @@ contains
                   &    ((punto%ZE >= BoundingBox%ZI) .OR. (punto%ZE <= BoundingBox%ZE))) then
 
                      !
-                     WRITE (probenumber, '(i7)') ii
+                     write(probenumber, '(i7)') ii
                      !            sgg%observation(ii)%outputrequest=trim(adjustl(probenumber))//'_'// &
                      !                                              trim(adjustl(this%BloquePrb%BP(i)%outputrequest))
                      !
@@ -4398,7 +4398,7 @@ contains
                sgg%observation(ii)%nP = 0
                tama2 = (this%VolPrb%collection(i)%len_cor)
                if (tama2 >1 ) then
-                  WRITE (buff,*) 'Only 1 Volumic probe allown per section'
+                  write(buff,*) 'Only 1 Volumic probe allown per section'
                   call STOPONERROR(layoutnumber,size,buff)
                end if
                do j = 1, tama2
@@ -4420,7 +4420,7 @@ contains
                   &    ((punto%ZE >= BoundingBox%ZI) .OR. (punto%ZE <= BoundingBox%ZE))) then
 
                      !
-                     WRITE (probenumber, '(i7)') ii
+                     write(probenumber, '(i7)') ii
                      !            sgg%observation(ii)%outputrequest=trim(adjustl(probenumber))//'_'// &
                      !                                              trim(adjustl(this%BloquePrb%BP(i)%outputrequest))
                      !
@@ -4647,12 +4647,12 @@ contains
             ii = i + tamaSonda + tamaoldSONDA + tamaBloquePrb !Bug 040718
             if (sgg%observation(ii)%nP /=1) then
 !para 040718
-               WRITE (buff,*) '----> Volumic probe ii. np=',sgg%observation(ii)%nP
+               write(buff,*) '----> Volumic probe ii. np=',sgg%observation(ii)%nP
                call print11 (layoutnumber, buff)
-               WRITE (buff,*) '----> Volumic probe ii. outputrequest=',trim(adjustl(sgg%observation(ii)%outputrequest))
+               write(buff,*) '----> Volumic probe ii. outputrequest=',trim(adjustl(sgg%observation(ii)%outputrequest))
                call print11 (layoutnumber, buff)
 !fin para debugear
-               WRITE (buff,*) 'Buggy error in Volumic probes. np/=1. , np=',sgg%observation(ii)%nP
+               write(buff,*) 'Buggy error in Volumic probes. np/=1. , np=',sgg%observation(ii)%nP
                call STOPONERROR(layoutnumber,size,buff)
             endif
          end do
@@ -4660,7 +4660,7 @@ contains
 
          !luego chequeo las sondas  si se van de memoria en observation.f90
          !        if ((memo+sondas)*BuffObse*4 > MaxMemoryProbes) then
-         !          WRITE (buff,*) 'Too much memory for the probes= ', (memo+sondas)*BuffObse*4, 'Probes= ', (memo+sondas), &
+         !          write(buff,*) 'Too much memory for the probes= ', (memo+sondas)*BuffObse*4, 'Probes= ', (memo+sondas), &
          !         & 'Either reduce the number of probes or recompile decreasing BuffObse ', BuffObse, 'or increasing ', MaxMemoryProbes
          !          call STOPONERROR(layoutnumber,size,buff)
          !        end if
@@ -4673,9 +4673,9 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !Update the number of the shared fields
       if (updateshared) then !!aqui se pierde mucho tiempo aniadido flag -noshared para evitarlo 040717
-         WRITE (buff,*) 'INIT UPDATING SHARED INFO. This process may take time!'
+         write(buff,*) 'INIT UPDATING SHARED INFO. This process may take time!'
          call print11 (layoutnumber, buff)
-         WRITE (buff,*) 'Launch with -noshared to skip this process (just relevant for structured NIBC CFCs and Anisot.)'
+         write(buff,*) 'Launch with -noshared to skip this process (just relevant for structured NIBC CFCs and Anisot.)'
          call print11 (layoutnumber, buff)
          do i1 = 1, sgg%EShared%conta
             do j1 = i1 + 1, sgg%EShared%conta
@@ -4715,7 +4715,7 @@ contains
          end do
          !end shared
 8        continue
-         WRITE (buff,*) '[OK] END UPDATING SHARED INFO'
+         write(buff,*) '[OK] END UPDATING SHARED INFO'
          call print11 (layoutnumber, buff)
       end if !del updateshared
 
@@ -4806,7 +4806,7 @@ contains
          !
          if (sgg%observation(ii)%TRANSFER) then
             errnofile = .FALSE.
-            INQUIRE (file=trim(adjustl(sgg%observation(ii)%FileNormalize)), EXIST=errnofile)
+            inquire(file=trim(adjustl(sgg%observation(ii)%FileNormalize)), EXIST=errnofile)
             if ( .NOT. errnofile) then
                buff=trim(adjustl(sgg%observation(ii)%FileNormalize))//' DOES NOT EXIST'
                call STOPONERROR(layoutnumber,size,buff)
@@ -5254,12 +5254,12 @@ contains
                if (sgg%Med(i)%wire(1)%VsourceExists) then
                   do CONTAVOLT=1,sgg%Med(i)%wire(1)%NUMVOLTAGESOURCES
                      errnofile = .FALSE.
-                     INQUIRE (file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)), EXIST=errnofile)
+                     inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,size,buff)
                      end if
-                     OPEN (15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)),action='read')
+                     open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
                      READ (15,*) tiempo2, field2
                      sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%deltaSamples = tiempo2 - tiempo1
@@ -5271,12 +5271,12 @@ contains
                         if (field1/minspacestep > maxSourceValue) maxSourceValue=field1/minspacestep
                         nsurfs = nsurfs + 1
                      end do
-77                   CONTINUE
+77                   continue
                      CLOSE (15)
                      numus = nsurfs - 2
                      sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NumSamples = numus
                     allocate(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%Samples(0:numus))
-                     OPEN (15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)),action='read')
+                     open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)),action='read')
                      do k = 0, numus
                         tiempoant=tiempo1
                         READ (15,*) tiempo1, sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%Samples(k)
@@ -5306,12 +5306,12 @@ contains
                if (sgg%Med(i)%wire(1)%IsourceExists) then
                   do CONTACURR=1,sgg%Med(i)%wire(1)%NUMCURRENTSOURCES
                      errnofile = .FALSE.
-                     INQUIRE (file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)), EXIST=errnofile)
+                     inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,size,buff)
                      end if
-                     OPEN (15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)),action='read')
+                     open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
                      READ (15,*) tiempo2, field2
                      sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%deltaSamples = tiempo2 - tiempo1
@@ -5323,12 +5323,12 @@ contains
                         if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !!? repensar
                         nsurfs = nsurfs + 1
                      end do
-79                   CONTINUE
+79                   continue
                      CLOSE (15)
                      numus = nsurfs - 2
                      sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NumSamples = numus
                     allocate(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%Samples(0:numus))
-                     OPEN (15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)),action='read')
+                     open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)),action='read')
                      do k = 0, numus
                         tiempoant=tiempo1
                         READ (15,*) tiempo1, sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%Samples(k)
@@ -5360,12 +5360,12 @@ contains
                do j = 1,sgg%Med(i)%SlantedWire(1)%numNodes
                   if (sgg%Med(i)%SlantedWire(1)%nodes(j)%VsourceExists) then
                      errnofile = .FALSE.
-                     INQUIRE (file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)), EXIST=errnofile)
+                     inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,size,buff)
                      end if
-                     OPEN (15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)),action='read')
+                     open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
                      READ (15,*) tiempo2, field2
                      sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%deltaSamples = tiempo2 - tiempo1
@@ -5377,12 +5377,12 @@ contains
                         if (field1/minspacestep > maxSourceValue) maxSourceValue=field1/minspacestep
                         nsurfs = nsurfs + 1
                      end do
-179                  CONTINUE
+179                  continue
                      CLOSE (15)
                      numus = nsurfs - 2
                      sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NumSamples = numus
                     allocate(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%Samples(0:numus))
-                     OPEN (15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)),action='read')
+                     open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)),action='read')
                      do k = 0, numus
                         tiempoant=tiempo1
                         READ (15,*) tiempo1, sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%Samples(k)
@@ -5409,12 +5409,12 @@ contains
                   end if
                   if (sgg%Med(i)%SlantedWire(1)%nodes(j)%IsourceExists) then
                      errnofile = .FALSE.
-                     INQUIRE (file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)), EXIST=errnofile)
+                     inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%name))//' DOES NOT EXIST'
                         call STOPONERROR(layoutnumber,size,buff)
                      end if
-                     OPEN (15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)),action='read')
+                     open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
                      READ (15,*) tiempo2, field2
                      sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%deltaSamples = tiempo2 - tiempo1
@@ -5426,12 +5426,12 @@ contains
                         if (field1/minspacestep**2.0_RKIND > maxSourceValue) maxSourceValue=field1/minspacestep**2.0_RKIND !aqui no tengo feeling, pero estas fuentes no se usan !!? repensar
                         nsurfs = nsurfs + 1
                      end do
-279                  CONTINUE
+279                  continue
                      CLOSE (15)
                      numus = nsurfs - 2
                      sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NumSamples = numus
                     allocate(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%Samples(0:numus))
-                     OPEN (15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)),action='read')
+                     open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)),action='read')
                      do k = 0, numus
                         tiempoant=tiempo1
                         READ (15,*) tiempo1, sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%Samples(k)
@@ -5465,12 +5465,12 @@ contains
             !
             if (.not.sgg%NodalSource(j)%IsInitialValue) then
                errnofile = .FALSE.
-               INQUIRE (file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)), EXIST=errnofile)
+               inquire(file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)), EXIST=errnofile)
                if ( .NOT. errnofile) then
                   buff=trim(adjustl(sgg%NodalSource(j)%fichero%name))//' DOES NOT EXIST'
                   call STOPONERROR(layoutnumber,size,buff)
                end if
-               OPEN (15, file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)),action='read')
+               open(15, file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)),action='read')
                READ (15,*) tiempo1, field1
                READ (15,*) tiempo2, field2
                sgg%NodalSource(j)%fichero%deltaSamples = tiempo2 - tiempo1
@@ -5484,11 +5484,11 @@ contains
                   endif
                   nsurfs = nsurfs + 1
                end do
-78             CONTINUE
+78             continue
                CLOSE (15)
                numus = nsurfs - 2
               allocate(sgg%NodalSource(j)%fichero%Samples(0:numus))
-               OPEN (15, file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)),action='read')
+               open(15, file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)),action='read')
                do k = 0, numus
                   tiempoant=tiempo1
                   READ (15,*) tiempo1, sgg%NodalSource(j)%fichero%Samples(k)
@@ -5525,12 +5525,12 @@ contains
             !Read the time evolution file
             !
             errnofile = .FALSE.
-            INQUIRE (file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)), EXIST=errnofile)
+            inquire(file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)), EXIST=errnofile)
             if ( .NOT. errnofile) then
                buff=trim(adjustl(sgg%PlaneWave(j)%fichero%name))//' DOES NOT EXIST'
                call STOPONERROR(layoutnumber,size,buff)
             end if
-            OPEN (15, file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)),action='read')
+            open(15, file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)),action='read')
             READ (15,*) tiempo1, field1
             READ (15,*) tiempo2, field2
             sgg%PlaneWave(j)%fichero%deltaSamples = tiempo2 - tiempo1
@@ -5540,11 +5540,11 @@ contains
                if (field1 > maxSourceValue) maxSourceValue=field1
                nsurfs = nsurfs + 1
             end do
-98          CONTINUE
+98          continue
             CLOSE (15)
             numus = nsurfs - 2
            allocate(sgg%PlaneWave(j)%fichero%Samples(0:numus))
-            OPEN (15, file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)),action='read')
+            open(15, file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)),action='read')
             do k = 0, numus
                tiempoant=tiempo1
                READ (15,*) tiempo1, sgg%PlaneWave(j)%fichero%Samples(k)
@@ -6547,7 +6547,7 @@ contains
             alpha=alpha2
          else
             goto 2
-            ! WRITE (buff,*) 'Error generando direcciones aleatorias para RC planewaves. '
+            ! write(buff,*) 'Error generando direcciones aleatorias para RC planewaves. '
             ! call STOPONERROR(0,0,buff)
          endif
          !!! beta1=atan2(-2.0*1.0/Tan(alpha)*1.0/Tan(theta)*Sin(phi) + Sqrt(2.0)*1.0/Tan(phi)*1.0/Sin(alpha)**2.0*1.0/Sin(theta)**2.0*Sqrt(-((Cos(2.0*alpha) + Cos(2.0*theta))*Sin(alpha)**2.0*Sin(phi)**2.0*Sin(theta)**2.0)), &
@@ -6575,15 +6575,15 @@ contains
          !!!if (Abs(planewave%py(KKK)) < 1e-4) planewave%py(KKK) = 0.0_RKIND
          !!!if (Abs(planewave%pz(KKK)) < 1e-4) planewave%pz(KKK) = 0.0_RKIND
          if (abs(planewave%px(KKK)**2.+planewave%py(KKK)**2.+planewave%pz(KKK)**2.-1.)>1e-4) then
-!!!            WRITE (buff,*) 'NO TEM PLANEWAVE in RC routine'
+!!!            write(buff,*) 'NO TEM PLANEWAVE in RC routine'
             goto 1 !call STOPONERROR(0,0,buff)
          end if
          if (abs(planewave%ex(KKK)**2.+planewave%ey(KKK)**2.+planewave%ez(KKK)**2.-amplitud**2.)>1e-4) then
-!!!            WRITE (buff,*) 'NO TEM PLANEWAVE in RC routine'
+!!!            write(buff,*) 'NO TEM PLANEWAVE in RC routine'
             goto 1 !call STOPONERROR(0,0,buff)
          end if
          if (Abs(planewave%px(KKK)*planewave%ex(KKK)+planewave%py(KKK)*planewave%ey(KKK)+planewave%pz(KKK)*planewave%ez(KKK)) >= 1e-4) then
-!!!            WRITE (buff,*) 'NO TEM PLANEWAVE in RC routine'
+!!!            write(buff,*) 'NO TEM PLANEWAVE in RC routine'
             goto 1 !call STOPONERROR(0,0,buff)
          end if
 !!!         write (777,'(i5,12e19.9e3)') kkk,theta, phi, alpha, beta,factor

@@ -64,8 +64,8 @@ contains
       real(kind=RKIND) :: rdum
       integer :: my_iostat
       
-      WRITE (whoamishort, '(i5)') layoutnumber + 1
-      WRITE (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoamishort, '(i5)') layoutnumber + 1
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
       !
       output => GetOutput ()!get the output private info from observation
 
@@ -99,7 +99,7 @@ contains
             if (sgg%observation(ii)%nP == 1) then
                if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What /= mapvtk).AND. &
                (sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
-                  INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
+                  inquire(FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if ((lexis).and.(output(ii)%TimesWritten/=0)) then
                      fieldob=sgg%observation(ii)%P(1)%what
 !inicializaciones varias
@@ -197,7 +197,7 @@ contains
                      dy_minYabs                = sgg%dy(minYabs)*output(ii)%item(1)%Ytrancos
                      dx_minXabs                = sgg%dx(minXabs)*output(ii)%item(1)%Xtrancos
                      
-                     OPEN (output(ii)%item(1)%UNIT, FILE=trim(adjustl(output(ii)%item(1)%path)), FORM='unformatted')
+                     open(output(ii)%item(1)%UNIT, FILE=trim(adjustl(output(ii)%item(1)%path)), FORM='unformatted')
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                                      
                      READ (output(ii)%item(1)%UNIT) minx, maxx , miny, maxy, minz, maxz    !ya deben venir bien escritos incluyendo correccion de TRANCOS
 !!!allocate space                     
@@ -230,7 +230,7 @@ contains
                          if (createh5bin) then
                             if (firsttimeenteringcreatexdmf) then         
                                 open(newunit=myunit,file=trim(adjustl(sgg%nEntradaRoot))//'_'//trim(adjustl(whoamishort))//'_h5bin.txt',form='formatted') !lista de todos los .h5bin     
-                                WRITE (myunit, '(a)') '!END'      
+                                write(myunit, '(a)') '!END'      
                                 close(myunit,status='delete')
                                 firsttimeenteringcreatexdmf=.false.
                             endif        
@@ -412,10 +412,10 @@ contains
                                        write (myunit) (minZabs_primero),(minYabs_primero), (minXabs_primero)      
                                        write (myunit) linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero
                                        write (myunit) dz_minZabs,dy_minYabs,dx_minXabs
-                                       WRITE (myunit) att(indi)
+                                       write(myunit) att(indi)
                                        do k1 = minzabs, maxzabs
                                           do j1 = minyabs, maxyabs
-                                             WRITE (myunit) (valor3d(i1, j1, k1, 1), i1=minxabs, maxxabs)
+                                             write(myunit) (valor3d(i1, j1, k1, 1), i1=minxabs, maxxabs)
                                           end do
                                        end do
                                    endif
@@ -494,8 +494,8 @@ contains
           open(newunit=myunit,file=trim(adjustl(sgg%nEntradaRoot))//'_h5bin.txt',form='formatted',err=9138,iostat=my_iostat,status='new',action='write') !lista de todos los .h5bin   
           algoescrito=.false.
           do ii=0,size-1 !auna todos los _h5bin.txt 
-             WRITE (whoamishort, '(i5)') ii + 1
-             INQUIRE (FILE=trim(adjustl(trim(adjustl(sgg%nEntradaRoot))//'_'//trim(adjustl(whoamishort))//'_h5bin.txt')), EXIST=lexis)
+             write(whoamishort, '(i5)') ii + 1
+             inquire(FILE=trim(adjustl(trim(adjustl(sgg%nEntradaRoot))//'_'//trim(adjustl(whoamishort))//'_h5bin.txt')), EXIST=lexis)
              if (lexis) then
                  open(newunit=myunit2,file=trim(adjustl(sgg%nEntradaRoot))//'_'//trim(adjustl(whoamishort))//'_h5bin.txt',form='formatted')
                  do  
@@ -538,7 +538,7 @@ contains
             if (sgg%observation(ii)%nP == 1) then
                if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
                   !
-                  INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
+                  inquire(FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
                      call print11(layoutnumber, buff)
@@ -558,7 +558,7 @@ contains
             if (sgg%observation(ii)%nP == 1) then
                if ((sgg%observation(ii)%P(1)%What /= nothing).AND.(sgg%observation(ii)%P(1)%What /= iCur).AND.(sgg%observation(ii)%P(1)%What  /=  iCurX).AND.(sgg%observation(ii)%P(1)%What  /=  iCurY).AND.(sgg%observation(ii)%P(1)%What  /=  iCurZ)) then
                   !
-                  INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
+                  inquire(FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
                      call print11(layoutnumber, buff)

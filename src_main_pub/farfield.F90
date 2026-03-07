@@ -981,12 +981,12 @@ contains
       !Read the time evolution file
       !
       errnofile = .FALSE.
-      INQUIRE (FILE=trim(adjustl(FF%FileNormalize)), EXIST=errnofile)
+      inquire(FILE=trim(adjustl(FF%FileNormalize)), EXIST=errnofile)
       if ( .NOT. errnofile) then
          Buff=trim(adjustl(FF%FileNormalize))//' DOES NOT EXIST'
          call STOPONERROR (layoutnumber,size,Buff)
       end if
-      OPEN (15, FILE=trim(adjustl(FF%FileNormalize)))
+      open(15, FILE=trim(adjustl(FF%FileNormalize)))
       READ (15,*) tiempo1, field1
       READ (15,*) tiempo2, field2
       CLOSE (15)
@@ -1021,7 +1021,7 @@ contains
       !read the normalization file and find its DFT
 
 
-      OPEN (15, FILE=trim(adjustl(FF%FileNormalize)))
+      open(15, FILE=trim(adjustl(FF%FileNormalize)))
       READ (15,*) tiempo1, field1
       DO
          READ (15,*, end=98) tiempo1, field1
@@ -1034,7 +1034,7 @@ contains
             FF%auxExp_E(ii)=FF%auxExp_E(ii) * FF%expIwdt(ii)
          end do
       end do
-98    CONTINUE
+98    continue
       CLOSE (15)
 
       !!

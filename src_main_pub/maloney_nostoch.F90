@@ -207,9 +207,9 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    !!          ficheropolos=trim(adjustl(ficheropolos(1:i1-1)))
    !!  !
    !!          errnofile=.false.
-   !!          INQUIRE (FILE=trim(adjustl(ficheropolos)), EXIST=errnofile)
+   !!          inquire(FILE=trim(adjustl(ficheropolos)), EXIST=errnofile)
    !!          if (errnofile) then
-   !!               WRITE (buff, *)    'ERROR: -sgbcdispersive not used and poles files exist. Correct .nfde or issue -sgbcdispersive'
+   !!               write(buff, *)    'ERROR: -sgbcdispersive not used and poles files exist. Correct .nfde or issue -sgbcdispersive'
    !!               call WarnErrReport (buff,.false.)
    !!               stop
    !!               SGG%Med(jmed)%Is%SGBCDispersive=.true.
@@ -233,7 +233,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
               ficheropolos=trim(adjustl(ficheropolos(1:i1-1)))
       !
               errnofile=.false.
-              INQUIRE (FILE=trim(adjustl(ficheropolos)), EXIST=errnofile)
+              inquire(FILE=trim(adjustl(ficheropolos)), EXIST=errnofile)
               if (.not.errnofile) then
                  buff='FILE '//trim(adjustl(ficheropolos))//' DOES NOT EXIST'
                  call StopOnError(layoutnumber,size,buff)
@@ -323,11 +323,11 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                   compo%Correct_Hb=.true.
                   compo%Correct_Ha=.false.
                 case DEFAULT
-                  WRITE (buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Buggy ERROR: In SGBCs. '
                   call WarnErrReport (buff,.TRUE.)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
-                  WRITE (buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Buggy ERROR: In SGBCs. '
                   call WarnErrReport (buff,.TRUE.)
                endif
 !!!!!!!!!
@@ -341,7 +341,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
                elseif (compo%depth<0) then
-                  WRITE (buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
+                  write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
                   call WarnErrReport (buff,.TRUE.)
                else
                     compo%SGBCCrank=SGBCCrank
@@ -412,11 +412,11 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                   compo%Correct_Ha=.false.
                   compo%Correct_Hb=.true.
                 case DEFAULT
-                  WRITE (buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Buggy ERROR: In SGBCs. '
                   call WarnErrReport (buff,.TRUE.)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
-                  WRITE (buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Buggy ERROR: In SGBCs. '
                   call WarnErrReport (buff,.TRUE.)
                endif
 !!!!   
@@ -430,7 +430,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
                elseif (compo%depth<0) then
-                  WRITE (buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
+                  write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
                   call WarnErrReport (buff,.TRUE.)
                else
                     compo%SGBCCrank=SGBCcrank
@@ -501,11 +501,11 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                   compo%Correct_Ha=.false.
                   compo%Correct_Hb=.true.
                 case DEFAULT
-                  WRITE (buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Buggy ERROR: In SGBCs. '
                   call WarnErrReport (buff,.TRUE.)
                end select
                if ((compo%med(1) == 0).or.(compo%med(0) == 0).or.(sgg%med(compo%med(1))%Is%PEC).or.(sgg%med(compo%med(0))%Is%PEC)) then
-                  WRITE (buff, *)    'Buggy ERROR: In SGBCs. '
+                  write(buff, *)    'Buggy ERROR: In SGBCs. '
                   call WarnErrReport (buff,.TRUE.)
                endif
 !!!!!!!!!
@@ -519,7 +519,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
                if (compo%depth==0) then
                     compo%SGBCCrank=.false.
                elseif (compo%depth<0) then
-                  WRITE (buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
+                  write(buff, *)    'Buggy ERROR: In SGBCs compo%depth<0. ',compo%depth
                   call WarnErrReport (buff,.TRUE.)
                else
                     compo%SGBCCrank=SGBCcrank
@@ -564,7 +564,7 @@ Do k1=sgg%SINPMLSweep(iEx)%ZI,sgg%SINPMLSweep(iEx)%ZE
       endif
     end do
 
-    WRITE (buff, *)  ' Maximum SGBC depth= ',2*i,' for medium jmed= ',jmed
+    write(buff, *)  ' Maximum SGBC depth= ',2*i,' for medium jmed= ',jmed
     call WarnErrReport (buff)
 
 
@@ -1012,7 +1012,7 @@ subroutine AdvanceSGBCH
          compo%Hb_Plus = compo%Hb_Plus -  compo%gm2_externo* (compo%Efield - compo%E( compo%depth))
          compo%Hb_Minu = compo%Hb_Minu +  compo%gm2_externo* (compo%Efield - compo%E(-compo%depth))
       else     
-         WRITE (buff, *)    'Buggy ERROR: In SGBCs. '
+         write(buff, *)    'Buggy ERROR: In SGBCs. '
          call StopOnError (0,0,buff)
       endif
    end do
@@ -1049,7 +1049,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
            !  epr_adyacente(i) = Sgg%Med(compo%med(i))%epr   
            !  sig_adyacente(i) = Sgg%Med(compo%med(i))%sigma 
            !  if (((epr_adyacente(i)-1.0_RKIND>1E-3).OR.(sig_adyacente(i)>1E-3)).AND.(.NOT.(SGG%Med(compo%med(i))%Is%SGBC)) )  then 
-           !           WRITE (buff, *)    '(WARNING) Collision of composite with non free-space medium. Assuming free-space, instead ', compo%med(i), epr_adyacente(i), sig_adyacente(i)
+           !           write(buff, *)    '(WARNING) Collision of composite with non free-space medium. Assuming free-space, instead ', compo%med(i), epr_adyacente(i), sig_adyacente(i)
                       epr_adyacente(i) = 1.0_RKIND
                       sig_adyacente(i) = 0.0_RKIND
            !           call WarnErrReport (buff,.false.)
@@ -1118,7 +1118,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          ! epr_adyacente(i) = Sgg%Med(compo%med(i))%epr   
          ! sig_adyacente(i) = Sgg%Med(compo%med(i))%sigma 
          ! if (((epr_adyacente(i)-1.0_RKIND>1E-3).OR.(sig_adyacente(i)>1E-3)).AND.(.NOT.(SGG%Med(compo%med(i))%Is%SGBC)) )  then 
-         !         WRITE (buff, *)    '(WARNING) Collision of composite with non free-space medium. Assuming free-space, instead ', compo%med(i), epr_adyacente(i), sig_adyacente(i)
+         !         write(buff, *)    '(WARNING) Collision of composite with non free-space medium. Assuming free-space, instead ', compo%med(i), epr_adyacente(i), sig_adyacente(i)
                   epr_adyacente(i) = 1.0_RKIND
                   sig_adyacente(i) = 0.0_RKIND
          !         call WarnErrReport (buff,.false.)
@@ -1174,7 +1174,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
          ib=compo%capa(i)         
          ib_ady=compo%capa(i-1)         
          if ((ib<1).or.(ib>sgg%Med(compo%jmed)%multiport(1)%numcapas)) then
-             WRITE (buff, *)   'Buggy error in ib fuera de rango en compo numcapas. Contact '
+             write(buff, *)   'Buggy error in ib fuera de rango en compo numcapas. Contact '
              call StopOnError (0,0,buff)
              stop
          endif
@@ -1203,7 +1203,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
      barridoporcapasH: do i=-compo%depth,compo%depth-1   !0121
          ib=compo%capa(i)         
          if ((ib<1).or.(ib>sgg%Med(compo%jmed)%multiport(1)%numcapas)) then
-             WRITE (buff, *)   'Buggy error in ib fuera de rango en compo numcapas. '
+             write(buff, *)   'Buggy error in ib fuera de rango en compo numcapas. '
              call StopOnError (0,0,buff)
              stop
          endif
@@ -1385,7 +1385,7 @@ subroutine test_stab(G2,GM2)
    end do
 
    if (unstable) then
-        WRITE (buff, *)    'ERROR: SGBCs may become unstable. Reduce cfl'
+        write(buff, *)    'ERROR: SGBCs may become unstable. Reduce cfl'
         call WarnErrReport (buff,.true.)
    endif
 
@@ -1437,7 +1437,7 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
                                  Sin(atan2(2*Pi*Epsilon*Mu0, -(Mu0*Sigma)/SGBCFreq)/2.0_RKIND))
          if (SGBCdepth==0) then !numcapas debe ser necesariamente 1
              if (numcapas > 1) then
-                WRITE (buff, *)   'SGBCDepth=0 and numcapas>1 not compatible. Please, relaunch'
+                write(buff, *)   'SGBCDepth=0 and numcapas>1 not compatible. Please, relaunch'
                 call StopOnError (0,0,buff)
              else
                  anchocapa=1 !numcapas es necesariamente 1 si continua
@@ -1479,7 +1479,7 @@ subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth)
      end do
      if (precuenta==1) then
          if ((celdafinal/=compo%depth-1).and.(compo%depth/=0)) then
-                WRITE (buff, *)   'Buggy error redondeo final ultima capa. '
+                write(buff, *)   'Buggy error redondeo final ultima capa. '
                 call StopOnError (0,0,buff)
          endif
      endif
