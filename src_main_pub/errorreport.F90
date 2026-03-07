@@ -98,8 +98,8 @@ contains
       if (present(calledfrommain)) then
          if (calledfrommain) then
             if (layoutnumber == 0) then
-               OPEN (38, FILE='pause')
-               WRITE (38, '(a)') '!END'
+               open(38, FILE='pause')
+               write(38, '(a)') '!END'
                CLOSE (38)
             endif
             call print11(layoutnumber,'Trying to relaunch. Correct error, create launch, and remove pause/warning '// &
@@ -109,8 +109,8 @@ contains
          endif
       else
          if (layoutnumber == 0) then
-            OPEN (38, FILE='pause')
-            WRITE (38, '(a)') '!END'
+            open(38, FILE='pause')
+            write(38, '(a)') '!END'
             CLOSE (38)
          endif
          call print11(layoutnumber,'Stopping, but creating the signal file pause to prevent queuing losses!!! '// & '
@@ -210,9 +210,9 @@ contains
       if (c%resume) then
          errnofile=.false.
          if (c%resume_fromold) then
-            INQUIRE (FILE=trim(adjustl(c%nresumeable2))//'.old', EXIST=errnofile)
+            inquire(FILE=trim(adjustl(c%nresumeable2))//'.old', EXIST=errnofile)
          else
-            INQUIRE (FILE=trim(adjustl(c%nresumeable2)), EXIST=errnofile)
+            inquire(FILE=trim(adjustl(c%nresumeable2)), EXIST=errnofile)
          endif
          if (.not.errnofile) then
             if (c%resume_fromold) then
@@ -1626,7 +1626,7 @@ contains
       if (fatalerror_final.and.(ignoreErrors)) then
          write(dubuf,*) SEPARADOR//separador//separador
          call print11(layoutnumber,dubuf)
-         write(dubuf,*) 'There are ERRORS: The simulation will CONTINUE but Revise *Warnings file '
+         write(dubuf,*) 'There are ERRORS: The simulation will continue but Revise *Warnings file '
          call print11(layoutnumber,dubuf)
          write(dubuf,*) SEPARADOR//separador//separador
          call print11(layoutnumber,dubuf)
@@ -2313,69 +2313,69 @@ end function openfile_mpi
       character(len=BUFSIZE) :: buff
 
       do j = 0, sgg%NumMedia
-         WRITE (buff,*) '_____________________________'
+         write(buff,*) '_____________________________'
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'MEDIO :  ', j
+         write(buff,*) 'MEDIO :  ', j
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Priority ', sgg%Med(j)%Priority
+         write(buff,*) 'Priority ', sgg%Med(j)%Priority
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Epr ', sgg%Med(j)%Epr
+         write(buff,*) 'Epr ', sgg%Med(j)%Epr
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Sigma ', sgg%Med(j)%Sigma
+         write(buff,*) 'Sigma ', sgg%Med(j)%Sigma
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Mur ', sgg%Med(j)%Mur
+         write(buff,*) 'Mur ', sgg%Med(j)%Mur
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'SigmaM ', sgg%Med(j)%SigmaM
+         write(buff,*) 'SigmaM ', sgg%Med(j)%SigmaM
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is PML ', sgg%Med(j)%Is%PML
+         write(buff,*) 'Is PML ', sgg%Med(j)%Is%PML
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is PEC ', sgg%Med(j)%Is%PEC
+         write(buff,*) 'Is PEC ', sgg%Med(j)%Is%PEC
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
+         write(buff,*) 'Is ThinWIRE ', sgg%Med(j)%Is%ThinWire
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is MULTIWIRE ', sgg%Med(j)%Is%Multiwire
+         write(buff,*) 'Is MULTIWIRE ', sgg%Med(j)%Is%Multiwire
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
+         write(buff,*) 'Is SlantedWIRE ', sgg%Med(j)%Is%SlantedWire
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
+         write(buff,*) 'Is EDispersive ', sgg%Med(j)%Is%EDispersive
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is EDispersiveaANIS', sgg%Med(j)%Is%EDispersiveANIS
+         write(buff,*) 'Is EDispersiveaANIS', sgg%Med(j)%Is%EDispersiveANIS
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
+         write(buff,*) 'Is MDispersive ', sgg%Med(j)%Is%MDispersive
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is MDispersiveANIS ', sgg%Med(j)%Is%MDispersiveANIS
+         write(buff,*) 'Is MDispersiveANIS ', sgg%Med(j)%Is%MDispersiveANIS
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
+         write(buff,*) 'Is SGBC ', sgg%Med(j)%Is%SGBC
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
+         write(buff,*) 'Is Lossy ', sgg%Med(j)%Is%Lossy
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
+         write(buff,*) 'Is Multiport ', sgg%Med(j)%Is%multiport
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
+         write(buff,*) 'Is AnisMultiport ', sgg%Med(j)%Is%anismultiport
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
+         write(buff,*) 'Is MultiportPadding ', sgg%Med(j)%Is%multiportpadding
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Dielectric ', sgg%Med(j)%Is%dielectric
+         write(buff,*) 'Is Dielectric ', sgg%Med(j)%Is%dielectric
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
+         write(buff,*) 'Is ThinSlot ', sgg%Med(j)%Is%ThinSlot
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
+         write(buff,*) 'Is Anisotropic ', sgg%Med(j)%Is%Anisotropic
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Needed ', sgg%Med(j)%Is%Needed
+         write(buff,*) 'Is Needed ', sgg%Med(j)%Is%Needed
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
+         write(buff,*) 'Is already_YEEadvanced_byconformal ', sgg%Med(j)%Is%already_YEEadvanced_byconformal
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Iss split_and_useless ', sgg%Med(j)%Is%split_and_useless
+         write(buff,*) 'Iss split_and_useless ', sgg%Med(j)%Is%split_and_useless
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Volume ', sgg%Med(j)%Is%Volume
+         write(buff,*) 'Is Volume ', sgg%Med(j)%Is%Volume
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Surface ', sgg%Med(j)%Is%Surface
+         write(buff,*) 'Is Surface ', sgg%Med(j)%Is%Surface
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) 'Is Line ', sgg%Med(j)%Is%Line
+         write(buff,*) 'Is Line ', sgg%Med(j)%Is%Line
          call WarnErrReport(Trim(buff))
-         WRITE (buff,*) '_____________________________'
+         write(buff,*) '_____________________________'
          call WarnErrReport(Trim(buff))
       end do
       return

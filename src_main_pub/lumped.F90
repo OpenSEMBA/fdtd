@@ -373,7 +373,7 @@ contains
                 lumped_%diodeB    = -lumped_%diodeB * alignedDeltaE / 2.0_RKIND
                 lumped_%diodepreA = -DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb) 
             else
-                WRITE (buff, *)    'Buggy ERROR: In lumped orientations. '
+                write(buff, *)    'Buggy ERROR: In lumped orientations. '
                 call WarnErrReport (buff,.TRUE.)
             endif   
         

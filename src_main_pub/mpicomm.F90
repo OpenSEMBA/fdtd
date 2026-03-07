@@ -106,7 +106,7 @@ contains
       sggPMLNumLayers_original(:)=sgg%PML%NumLayers(3,:) !bug 310124 slices justo en PML
       originalPML_up_or_down=sgg%Border%IsUpPML.or.sgg%Border%IsDownPML !bug 310124 slices justo en PML
       
-      WRITE (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
       cZE => null(); cZI=> null(); trancos=> null(); mpizcom=> null(); mpizfin=> null();
       !
       !clip the simulation region
