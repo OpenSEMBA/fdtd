@@ -1426,7 +1426,7 @@ contains
          end if
 
          pixel = getPixelFromElementId(this%mesh, elemIds(1))
-
+         
          typeLabel = this%getStrAt(p, J_TYPE, found=typeLabelFound)
          if (.not. typeLabelFound) then
             call WarnErrReport("Point probe type label not found.", .true.)
@@ -1436,7 +1436,7 @@ contains
             allocate(res%cordinates(1))
             fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_VOLTAGE)
             res%cordinates(1)%tag = outputName
-            res%cordinates(1)%Xi = pixel%tag
+            res%cordinates(1)%Xi = getSegmentIndexWhichMatchesTag(pixel%tag)
             res%cordinates(1)%Yi = 0
             res%cordinates(1)%Zi = 0
             res%cordinates(1)%Or = strToFieldType(fieldLabel)            

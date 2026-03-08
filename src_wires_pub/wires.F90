@@ -296,7 +296,7 @@ contains
       end do
 
 
-      if (.not.therearewires) Return
+      if (.not.therearewires) return
 
       write (buff,'(a)')  '----------------------------------------------------------------'
       call WarnErrReport(buff)
@@ -1125,7 +1125,7 @@ contains
             end do
          end do
          if (conta==0) therearewires=.false.
-         if (.not.therearewires) Return
+         if (.not.therearewires) return
          !Report duplicated segments
          do iwi=1,HWires%NumDifferentWires
             do iwj=1,sgg%Med(HWires%WireTipoMedio(iwi))%wire(1)%numsegmentos
