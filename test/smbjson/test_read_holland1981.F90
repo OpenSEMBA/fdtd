@@ -89,7 +89,7 @@ contains
       allocate(ex%Sonda%collection(1)%cordinates(1))
       ex%Sonda%collection(1)%len_cor = 1
       ex%Sonda%collection(1)%cordinates(1)%tag = "mid_point"
-      ex%Sonda%collection(1)%cordinates(1)%Xi = 2 ! Coord id as tag.
+      ex%Sonda%collection(1)%cordinates(1)%Xi = 6 ! Segment id as tag.
       ex%Sonda%collection(1)%cordinates(1)%Yi = 0
       ex%Sonda%collection(1)%cordinates(1)%Zi = 0
       ex%Sonda%collection(1)%cordinates(1)%Or = NP_COR_WIRECURRENT
@@ -110,10 +110,7 @@ contains
       ex%tWires%tw(1)%twc(1:10)%j = 11
       ex%tWires%tw(1)%twc(1:10)%k = [(i, i=7, 16)]
       ex%tWires%tw(1)%twc(1:10)%d = DIR_Z
-      ex%tWires%tw(1)%twc(1:10)%nd = -1
-      ex%tWires%tw(1)%twc(1)%nd  = 1
-      ex%tWires%tw(1)%twc(6)%nd  = 2
-      ex%tWires%tw(1)%twc(10)%nd = 3
+      ex%tWires%tw(1)%twc(1:10)%nd = [(i, i=1, 10)]
       
       ex%tWires%tw(1)%twc(1:10)%tag = trim(adjustl("2"))   ! The polyline id is used as tag.
       

@@ -1451,9 +1451,9 @@ contains
             allocate(res%cordinates(size(dirLabels)))
             do j = 1, size(dirLabels)
                res%cordinates(j)%tag = outputName
-               res%cordinates(j)%Xi = int (pixel%cell(1))
-               res%cordinates(j)%Yi = int (pixel%cell(2))
-               res%cordinates(j)%Zi = int (pixel%cell(3))
+               res%cordinates(j)%Xi = int(pixel%cell(1))
+               res%cordinates(j)%Yi = int(pixel%cell(2))
+               res%cordinates(j)%Zi = int(pixel%cell(3))
                res%cordinates(j)%Or = strToFieldType(fieldLabel, dirLabels(j))
             end do
          end select
@@ -1540,6 +1540,28 @@ contains
           case default
             call WarnErrReport("Invalid field label for point/wire probe.", .true.)
          end select
+      end function
+
+      function getSegmentIndexWhichMatchesTag(tagId) result(res)
+         integer :: res
+         integer, intent(in) :: tagId
+         type(materialAssociation_t), dimension(:), allocatable :: mAs
+         type(linel_t), dimension(:), allocatable :: linels
+         type(polyline_t) :: polyline
+         integer :: i, j
+
+         res = 0
+         mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
+         do i = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
+            linels = this%mesh%polylineToLinels(polyline)
+            do j = 1, size(linels)
+               if (linels(j)%tag == tagId) then
+                  res = j
+                  return
+               end if
+            end do
+         end do
       end function
    end function
 
