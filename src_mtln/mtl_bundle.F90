@@ -13,7 +13,7 @@ module mtl_bundle_mod
     implicit none
 
     type, public :: mtl_bundle_t
-        character (len=:), allocatable :: name
+        character(len=:), allocatable :: name
         real, allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
         integer  :: number_of_conductors = 0, number_of_divisions = 0
         real, dimension(:), allocatable :: step_size
@@ -36,7 +36,7 @@ module mtl_bundle_mod
         logical :: bundle_in_layer = .true.
         
 #ifdef CompileWithMPI
-        integer (kind=4), allocatable, dimension(:,:) :: layer_indices
+        integer(kind=4), allocatable, dimension(:,:) :: layer_indices
         type(comm_t) :: mpi_comm
 #endif
 
@@ -69,7 +69,7 @@ module mtl_bundle_mod
     type :: external_field_segment_t
         integer, dimension(3) ::position
         integer :: direction = 0
-        real (kind=rkind) , pointer  ::  field => null()      
+        real(kind=rkind) , pointer  :: field => null()      
     end type
 
 contains
@@ -252,8 +252,8 @@ contains
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
         real, dimension(3) :: position
-        character (len=:), allocatable :: name
-        integer (kind=4), dimension(:,:), intent(in), optional :: layer_indices
+        character(len=:), allocatable :: name
+        integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
         type(probe_t), allocatable, dimension(:) :: aux_probes
         type(probe_t) :: newProbe
 
@@ -422,7 +422,7 @@ contains
         integer :: i
         real :: eps_r
 #ifdef CompileWithMPI
-        integer (kind=4) :: sizeof, ierr
+        integer(kind=4) :: sizeof, ierr
 
 #endif
 #ifdef CompileWithMPI

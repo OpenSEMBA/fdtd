@@ -47,13 +47,13 @@ contains
 
     function mtlnCtor(parsed, alloc) result(res)
         type(parsed_mtln_t) :: parsed
-        type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
+        type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
         type(mtln_t) :: res
         integer :: i
         type(preprocess_t) :: pre
 
 #ifdef CompileWithMPI
-        integer (kind=4) :: sizeof, ierr
+        integer(kind=4) :: sizeof, ierr
 #endif
 
 #ifdef CompileWithMPI
@@ -152,7 +152,7 @@ contains
         integer ::b, c, v_idx, i_idx
         integer :: n
 ! #ifdef CompileWithMPI
-!         integer (kind=4) :: ierr
+!         integer(kind=4) :: ierr
 !         call mpi_barrier(subcomm_mpi, ierr)
 ! #endif
         if (this%number_of_bundles /= 0) then 

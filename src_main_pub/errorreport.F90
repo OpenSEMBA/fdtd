@@ -6,37 +6,37 @@ module Report
    implicit none
    private
 
-   integer (kind=4), parameter  ::  reportingseconds=60
+   integer(kind=4), parameter  :: reportingseconds=60
    type :: tiempo_t
-      REAL ( kind = 8)  ::  segundos
-      character ( LEN=BUFSIZE)  ::  hora
-      character ( LEN=BUFSIZE)  ::  fecha
+      real( kind = 8) :: segundos
+      character( LEN=BUFSIZE) :: hora
+      character( LEN=BUFSIZE) :: fecha
    end type
 
 
    !For timing
-   REAL (KIND=8), SAVE ::  time_begin, time_end, time_begin2,time_begin3,time_begin_absoluto, time_end2,time_desdelanzamiento
-   REAL (KIND=RKIND), SAVE ::  megaceldas,megaceldastotales,speedInst, speedGlobInst,speedAvg,speedGlobAvg
-   REAL (KIND=RKIND), SAVE  ::  energy,energyTotal,oldenergyTotal,snapLevel
-   type (tiempo_t), SAVE  ::  time_out2
+   real(kind=8), SAVE :: time_begin, time_end, time_begin2,time_begin3,time_begin_absoluto, time_end2,time_desdelanzamiento
+   real(kind=RKIND), SAVE :: megaceldas,megaceldastotales,speedInst, speedGlobInst,speedAvg,speedGlobAvg
+   real(kind=RKIND), SAVE  :: energy,energyTotal,oldenergyTotal,snapLevel
+   type(tiempo_t), SAVE  :: time_out2
    !
-   character (LEN=BUFSIZE), SAVE :: charmeg
-   integer (kind=4), SAVE   ::  reportedinstant,snapStep,snapHowMany,countersnap
+   character(len=BUFSIZE), SAVE :: charmeg
+   integer(kind=4), SAVE   :: reportedinstant,snapStep,snapHowMany,countersnap
    logical, SAVE :: printea,calledStoponerrroonlyprint=.false.,warningfileIsOpen=.false.,verbose,file10isopen,file11isopen
-   CHARACTER (LEN=BUFSIZE), SAVE :: warningFile = ' '
-   character (LEN=BUFSIZE), save  ::  whoami
+   character(len=BUFSIZE), SAVE :: warningFile = ' '
+   character(len=BUFSIZE), save  :: whoami
 
-   integer, save ::  thefile !for mpi file management
+   integer, save :: thefile !for mpi file management
    logical, save :: ignoreerrors
    !
-   type (coorsxyzP) , save  ::  Punto
+   type(coorsxyzP) , save  :: Punto
 
-   CHARACTER (LEN=BUFSIZE), SAVE :: mynEntradaRoot
+   character(len=BUFSIZE), SAVE :: mynEntradaRoot
 
    !!!logical, SAVE :: dxfFileIsOpen=.false.
    logical, SAVE :: fatalerror=.false.
    integer, SAVE :: CONTADORDEMENSAJES
-   integer, save ::  thefile2 !for mpi file management
+   integer, save :: thefile2 !for mpi file management
    !!public StopOnError_OnlyPrint
 
    public StopOnError,InitReporting,ReportExistence,InitTiming,Timing,CloseReportingFiles, &
@@ -70,14 +70,14 @@ contains
    end subroutine
    !!!!!!!!!!!!!!!!!
    subroutine StopOnError(layoutnumber,size,message,calledfrommain)
-      character (LEN=BUFSIZE) :: ficherito
-      logical , optional  ::  calledfrommain
-      character (len=*), intent( IN) :: message
-      integer (kind=4), optional  ::  layoutnumber,size
+      character(len=BUFSIZE) :: ficherito
+      logical , optional  :: calledfrommain
+      character(len=*), intent( IN) :: message
+      integer(kind=4), optional  :: layoutnumber,size
 #ifdef CompileWithMPI
-      integer (kind=4)  ::  ierr
+      integer(kind=4) :: ierr
 #endif
-      character (LEN=BUFSIZE)  ::  whoami
+      character(len=BUFSIZE) :: whoami
 
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
 
@@ -88,8 +88,8 @@ contains
 
       !hay que revisar los stoponerror y hacerlos mas elegantes. De momento aborto a lo bestia comentanod sin cerrar ni warning ni dxf (To do)
 
-      !CALL CLOSEWARNINGFILE(layoutnumber,size)
-      !!!!CALL CLOSEdxfFILE(layoutnumber,size)
+      !call CLOSEWARNINGFILE(layoutnumber,size)
+      !!!!call CLOSEdxfFILE(layoutnumber,size)
 
 
 
@@ -97,7 +97,7 @@ contains
 #ifdef keeppause
       if (present(calledfrommain)) then
          if (calledfrommain) then
-            IF (layoutnumber == 0) THEN
+            if (layoutnumber == 0) then
                OPEN (38, FILE='pause')
                WRITE (38, '(a)') '!END'
                CLOSE (38)
@@ -108,7 +108,7 @@ contains
             return
          endif
       else
-         IF (layoutnumber == 0) THEN
+         if (layoutnumber == 0) then
             OPEN (38, FILE='pause')
             WRITE (38, '(a)') '!END'
             CLOSE (38)
@@ -117,7 +117,7 @@ contains
                                    '(correct error and remove to continue)',.true.)
       endif
 #else
-      IF (layoutnumber == 0) THEN
+      if (layoutnumber == 0) then
          ficherito='running'
           call openclosedelete(ficherito)
          !
@@ -136,10 +136,7 @@ contains
 #endif
       call CloseReportingFiles
  
-
-
-      STOP
-
+      STOP "stop on error"
 
       return
 
@@ -165,12 +162,12 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine InitReporting(sgg,c)
-      type (SGGFDTDINFO), intent(INout)         ::  sgg
+      type(SGGFDTDINFO), intent(INout) :: sgg
       type(sim_control_t) :: c
 #ifdef CompileWithMPI
-      integer (kind=4)  ::  ierr
+      integer(kind=4) :: ierr
 #endif
-      Logical  ::  errnofile
+      Logical  :: errnofile
       character(len=BUFSIZE) :: buff, whoami
 
       write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%size,') '
@@ -183,7 +180,7 @@ contains
 
       !
 
-      IF (c%layoutnumber == 0) THEN  !only the master
+      if (c%layoutnumber == 0) then  !only the master
          if (c%resume) then
             open (10,file=trim(adjustl(c%nEntradaRoot))//'_Energy.dat',form='formatted',position='append')
          else
@@ -247,14 +244,14 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine ReportExistence(sgg,layoutnumber,size,thereare,mur_second,MurAfterPML)
       logical :: mur_second,MurAfterPML
-      type (SGGFDTDINFO), intent(IN)  ::  sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
       !
-      type (logic_control), intent(in)  ::  thereare
-      integer (kind=4), intent(in) :: layoutnumber,size
+      type(logic_control), intent(in) :: thereare
+      integer(kind=4), intent(in) :: layoutnumber,size
 #ifdef CompileWithMPI
-      integer (kind=4)  ::  ierr
+      integer(kind=4) :: ierr
 #endif
-      character (LEN=BUFSIZE)  ::  whoami
+      character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: buff
 
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
@@ -267,7 +264,7 @@ contains
       call print11(layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
       !!!
       !
-      IF ((thereare%Multiports).or.(thereare%AnisMultiports))     then
+      if ((thereare%Multiports).or.(thereare%AnisMultiports))     then
 #ifdef CompileWithNIBC
          continue
 #else
@@ -300,32 +297,32 @@ contains
          buff=   ' has planewaves'
          call warnerrreport(buff)
       endif
-      IF (thereare%Multiports)     then
+      if (thereare%Multiports)     then
          buff=   ' has MIBC Multiports'
          call warnerrreport(buff)
       endif
-      IF (thereare%AnisMultiports)     then
+      if (thereare%AnisMultiports)     then
          buff=   ' has MIBC Anisotropic Multiports'
          call warnerrreport(buff)
       endif
-      IF (thereare%SGBCs)     then
+      if (thereare%SGBCs)     then
          buff=   ' has Thin metal Materials'
          call warnerrreport(buff)
       endif
-      IF ((thereare%Anisotropic).and.(.not.thereare%ThinSlot))     then
+      if ((thereare%Anisotropic).and.(.not.thereare%ThinSlot))     then
          buff=   ' has pure anisotropic media'
          call warnerrreport(buff)
       endif
-      IF (thereare%ThinSlot)     then
+      if (thereare%ThinSlot)     then
          buff=   ' has Thin Slots'
          call warnerrreport(buff)
       endif
       !
-      IF (thereare%EDispersives)     then
+      if (thereare%EDispersives)     then
          buff=   ' has electric dispersives'
          call warnerrreport(buff)
       endif
-      IF (thereare%MDispersives)     then
+      if (thereare%MDispersives)     then
          buff=   ' has magnetic dispersives'
          call warnerrreport(buff)
       endif
@@ -390,17 +387,17 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitTiming(sgg, c, t, initialtimestep, maxSourceValue)
-      type (SGGFDTDINFO), intent(IN) :: sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
       type(sim_control_t) , intent(in):: c
-      REAL (KIND=8), intent(in)   :: t
-      integer (kind=4), intent(in) :: initialtimestep
-      REAL (KIND=RKIND), intent(in)   ::  maxSourceValue
-      TYPE (tiempo_t) :: time_out2,time_comienzo
+      real(kind=8), intent(in) :: t
+      integer(kind=4), intent(in) :: initialtimestep
+      real(kind=RKIND), intent(in) :: maxSourceValue
+      type(tiempo_t) :: time_out2,time_comienzo
 #ifdef CompileWithMPI
-      integer (kind=4) :: ierr
+      integer(kind=4) :: ierr
 #endif
-      character (LEN=BUFSIZE)  ::  whoami
-      character (LEN=BUFSIZE)     ::  dubuf
+      character(len=BUFSIZE) :: whoami
+      character(len=BUFSIZE) :: dubuf
       write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%size,') '
       
       time_desdelanzamiento=t
@@ -425,7 +422,7 @@ contains
       write(dubuf,*)  'Total Mcells: ',megaceldastotales
       call print11(c%layoutnumber,dubuf)
 
-      IF (c%flushsecondsFIELDS/=0) then
+      if (c%flushsecondsFIELDS/=0) then
          write(dubuf,*)  'Flushing restarting FIELDS every ',int(c%flushsecondsFIELDS/60.0_RKIND),' minutes'
          call print11(c%layoutnumber,dubuf)
       else
@@ -436,7 +433,7 @@ contains
             call print11(c%layoutnumber,dubuf)
          endif
       endif
-      IF (c%flushsecondsDATA/=0) then
+      if (c%flushsecondsDATA/=0) then
          write(dubuf,*)  'Flushing observation DATA every  ',int(c%flushsecondsDATA/60.0_RKIND),' minutes and every ', &
                           BuffObse,' steps'
          call print11(c%layoutnumber,dubuf)
@@ -477,27 +474,27 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !---------------------------------------------------->
    subroutine get_secnds(time_out2)
-      integer (kind=4), dimension(0:11)  ::  diasen, diasenbisiesto
+      integer(kind=4), dimension(0:11) :: diasen, diasenbisiesto
       data diasen /31,59 ,90 ,120,151,181,212,243,273,304,334,365/
       data diasenbisiesto /31,60 ,91 ,121,152,182,213,244,274,305,335,366/
-      type (tiempo_t), intent(out)  ::  time_out2
+      type(tiempo_t), intent(out) :: time_out2
 
-      REAL ( kind = 8)  ::  time_out
-
-      !--->
-      REAL ( kind = 8)  ::  s
-      REAL ( kind = 8), save  ::  t_0 = 0.0_RKIND
-      !--->
-      integer (kind=4)  ::  h, m,month,day,year,cent
-      !integer (kind=4)  ::  cent,year
+      real( kind = 8) :: time_out
 
       !--->
+      real( kind = 8) :: s
+      real( kind = 8), save  :: t_0 = 0.0_RKIND
+      !--->
+      integer(kind=4) :: h, m,month,day,year,cent
+      !integer(kind=4) :: cent,year
 
       !--->
-      character ( LEN=BUFSIZE)  ::  caux
-      character ( LEN=BUFSIZE)  ::  caux2
-      character(5)  :: zone
-      integer (kind=4) ,dimension(8) :: values
+
+      !--->
+      character( LEN=BUFSIZE) :: caux
+      character( LEN=BUFSIZE) :: caux2
+      character(5) :: zone
+      integer(kind=4) ,dimension(8) :: values
       !------------------------------------------------->
       !   if( esprimeravez) then
       !        call date_and_time( time = caux,date=caux2)
@@ -553,58 +550,58 @@ contains
    
       logical :: simu_devia,dontwritevtk,stopdontwritevtk,stopflushingdontwritevtk,flushdontwritevtk,stoponlydontwritevtk
       !---------------------------> inputs <----------------------------------------------------------
-      type (SGGFDTDINFO), intent(IN)              :: sgg              ! Simulation data.
-      type( bounds_t), intent( IN)  ::  b
-      CHARACTER (LEN=BUFSIZE), intent(in) :: opcionestotales
-      integer( kind = 4), intent( IN)  ::  layoutnumber, size, n,maxCPUtime
-      integer( kind = 4), intent( IN)  ::  flushsecondsFields, flushsecondsData, initialtimestep, finaltimestep
+      type(SGGFDTDINFO), intent(in)              :: sgg              ! Simulation data.
+      type( bounds_t), intent( IN) :: b
+      character(len=BUFSIZE), intent(in) :: opcionestotales
+      integer( kind = 4), intent( IN) :: layoutnumber, size, n,maxCPUtime
+      integer( kind = 4), intent( IN) :: flushsecondsFields, flushsecondsData, initialtimestep, finaltimestep
       !--->
-      real (kind = RKIND), dimension( 0: b%Ex%NX-1, 0: b%Ex%NY-1, 0: b%Ex%NZ-1), intent( IN)  ::  Ex
-      real (kind = RKIND), dimension( 0: b%Ey%NX-1, 0: b%Ey%NY-1, 0: b%Ey%NZ-1), intent( IN)  ::  Ey
-      real (kind = RKIND), dimension( 0: b%Ez%NX-1, 0: b%Ez%NY-1, 0: b%Ez%NZ-1), intent( IN)  ::  Ez
+      real(kind = RKIND), dimension( 0: b%Ex%NX-1, 0: b%Ex%NY-1, 0: b%Ex%NZ-1), intent( IN) :: Ex
+      real(kind = RKIND), dimension( 0: b%Ey%NX-1, 0: b%Ey%NY-1, 0: b%Ey%NZ-1), intent( IN) :: Ey
+      real(kind = RKIND), dimension( 0: b%Ez%NX-1, 0: b%Ez%NY-1, 0: b%Ez%NZ-1), intent( IN) :: Ez
       !--->
       !!!
       integer :: my_iostat
       !--->
-      logical, intent( IN)  ::  forcetiming, everflushed,permitscaling
+      logical, intent( IN) :: forcetiming, everflushed,permitscaling
       !
-      character (LEN=BUFSIZE) :: fichsnap,minmax,quien_es
-      character( len = *), intent( IN)  ::  nEntradaRoot
+      character(len=BUFSIZE) :: fichsnap,minmax,quien_es
+      character( len = *), intent( IN) :: nEntradaRoot
       !---------------------------> input/output <----------------------------------------------------
-      integer (kind=4), intent( INOUT)  ::  n_info
-      logical, intent( INOUT)  ::  parar
+      integer(kind=4), intent( INOUT) :: n_info
+      logical, intent( INOUT) :: parar
       !---------------------------> outputS <---------------------------------------------------------
       type(perform_t), intent(out) :: perform
-      ! logical, intent( OUT)  ::  performflushFIELDS, performflushDATA,performUnpack,performpostprocess,&
+      ! logical, intent( OUT) :: performflushFIELDS, performflushDATA,performUnpack,performpostprocess,&
                                  ! performflushXdmf,performflushVTK
       !---------------------------> variables locales <-----------------------------------------------
-      real (kind=rKIND)  ::  valor,maxSourceValue,LA,LV,LB
-      logical  ::  hay_timing, l_aux, hay_flushFIELDS, hay_flushDATA, mustflushFIELDS, mustflushDATA,mustUnpack, &
+      real(kind=rKIND) :: valor,maxSourceValue,LA,LV,LB
+      logical  :: hay_timing, l_aux, hay_flushFIELDS, hay_flushDATA, mustflushFIELDS, mustflushDATA,mustUnpack, &
                    mustPostprocess,mustflushXdmf , mustflushVTK ,   &
       pararflushing, pararNOflushing, stoponNaN , stoponNaN_aux,mustSnap,stop_only,stopflushing_only,flush_only,flushdata_only
       logical :: stopflushingonlydontwritevtk,flushonlydontwritevtk,flushdataonlydontwritevtk,flushdatadontwritevtk
-      integer( kind = 4)  ::  in_aux, ini_i, fin_i, ini_j, fin_j, ini_k, fin_k, i, j, k
-      character( LEN=BUFSIZE)  ::  whoamishort,whoami,chinstant
-      character (LEN=BUFSIZE)     ::  dubuf
-      character (LEN=BUFSIZE)     ::  dondex,dondey,dondez
-      real (kind=rKIND), dimension (1:size) :: NEWlmaxval,NEWlmaxval_x,NEWlmaxval_y,NEWlmaxval_z
-      integer( kind = 4), dimension (1:size) :: NEWlmaxval_i,NEWlmaxval_j,NEWlmaxval_k
-      real (kind=rKIND), dimension (1:size) :: lmaxval,lmaxval_x,lmaxval_y,lmaxval_z
-      integer( kind = 4), dimension (1:size) :: lmaxval_i,lmaxval_j,lmaxval_k
-      real (kind=rKIND) :: qmaxval , qmaxval_x,qmaxval_y,qmaxval_z
-      integer( kind = 4)  :: qmaxval_i,qmaxval_j,qmaxval_k,thefilenoflu
-      real (kind=rKIND), dimension (1:size) :: NEWlminval,NEWlminval_x,NEWlminval_y,NEWlminval_z
-      integer( kind = 4), dimension (1:size) :: NEWlminval_i,NEWlminval_j,NEWlminval_k
-      real (kind=rKIND), dimension (1:size) :: lminval,lminval_x,lminval_y,lminval_z
-      integer( kind = 4), dimension (1:size) :: lminval_i,lminval_j,lminval_k
-      real (kind=rKIND) :: qminval , qminval_x,qminval_y,qminval_z
-      integer( kind = 4)  :: qminval_i,qminval_j,qminval_k,dimxsnap,dimysnap,dimzsnap,veces,i1,j1,k1
-      integer( kind = 4)  :: ini_ibox,fin_ibox,ini_jbox,fin_jbox,ini_kbox,fin_kbox
-      integer( kind = 4)  :: ini_iboxsin,fin_iboxsin,ini_jboxsin,fin_jboxsin,ini_kboxsin,fin_kboxsin
+      integer( kind = 4) :: in_aux, ini_i, fin_i, ini_j, fin_j, ini_k, fin_k, i, j, k
+      character( LEN=BUFSIZE) :: whoamishort,whoami,chinstant
+      character(len=BUFSIZE) :: dubuf
+      character(len=BUFSIZE) :: dondex,dondey,dondez
+      real(kind=rKIND), dimension(1:size) :: NEWlmaxval,NEWlmaxval_x,NEWlmaxval_y,NEWlmaxval_z
+      integer( kind = 4), dimension(1:size) :: NEWlmaxval_i,NEWlmaxval_j,NEWlmaxval_k
+      real(kind=rKIND), dimension(1:size) :: lmaxval,lmaxval_x,lmaxval_y,lmaxval_z
+      integer( kind = 4), dimension(1:size) :: lmaxval_i,lmaxval_j,lmaxval_k
+      real(kind=rKIND) :: qmaxval , qmaxval_x,qmaxval_y,qmaxval_z
+      integer( kind = 4) :: qmaxval_i,qmaxval_j,qmaxval_k,thefilenoflu
+      real(kind=rKIND), dimension(1:size) :: NEWlminval,NEWlminval_x,NEWlminval_y,NEWlminval_z
+      integer( kind = 4), dimension(1:size) :: NEWlminval_i,NEWlminval_j,NEWlminval_k
+      real(kind=rKIND), dimension(1:size) :: lminval,lminval_x,lminval_y,lminval_z
+      integer( kind = 4), dimension(1:size) :: lminval_i,lminval_j,lminval_k
+      real(kind=rKIND) :: qminval , qminval_x,qminval_y,qminval_z
+      integer( kind = 4) :: qminval_i,qminval_j,qminval_k,dimxsnap,dimysnap,dimzsnap,veces,i1,j1,k1
+      integer( kind = 4) :: ini_ibox,fin_ibox,ini_jbox,fin_jbox,ini_kbox,fin_kbox
+      integer( kind = 4) :: ini_iboxsin,fin_iboxsin,ini_jboxsin,fin_jboxsin,ini_kboxsin,fin_kboxsin
 
-      character (LEN=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: ficherito
 
-      real (kind=4), dimension(:,:,:,:), allocatable  ::  snap
+      real(kind=4), dimension(:,:,:,:), allocatable  :: snap
 
 
 !!#ifdef PreventCrayBug
@@ -617,7 +614,7 @@ contains
 
 
 #ifdef CompileWithMPI
-      integer (kind=4)  ::  ierr
+      integer(kind=4) :: ierr
 #endif
       !!!
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
@@ -1027,7 +1024,7 @@ contains
 
          !!!!!!!!!!!!!!!!!!!!!!!
          !escritura del fichero snap a voluntad o cuando se pase un umbral, cada minuto
-         IF (layoutnumber == 0) THEN 
+         if (layoutnumber == 0) then 
             inquire( FILE = 'snap', EXIST = mustSnap)
             if (mustsnap) then
                !  Clear the flushing signaling file
@@ -1145,7 +1142,7 @@ contains
             !             close (35)
 
             write(dubuf,*)     trim(adjustl(whoami))//' Written Snap file at n= ',n,' max field over ',maxval(snap),'>',snapLevel
-            deallocate (snap)
+            deallocate(snap)
             call print11(layoutnumber,dubuf,.true.)
             if (countersnap >= snapHowMany) then
                mustsnap=.false.
@@ -1160,7 +1157,7 @@ contains
 
          !
          !
-         IF (layoutnumber == 0) THEN
+         if (layoutnumber == 0) then
             !
             write(dubuf,*) SEPARADOR,trim(adjustl(nentradaroot)),separador
             call print11(layoutnumber,dubuf)
@@ -1336,7 +1333,7 @@ contains
       stoponNaN = stoponNaN_aux
 #endif
       if (stoponNaN) then
-         IF (layoutnumber == 0) THEN
+         if (layoutnumber == 0) then
             write(dubuf,*) 'ERROR, ABORTING: UNSTABILITIES. Possible reasons and fixes: '
             call print11(layoutnumber,dubuf)
             write(dubuf,*) '     In case of single wires: reduce WIRE radii and/or reduce sgg%dt'
@@ -1380,7 +1377,7 @@ contains
          time_begin2=time_out2%segundos
          perform%flushFIELDS=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1394,7 +1391,7 @@ contains
          time_begin3=time_out2%segundos
          perform%flushDATA=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1403,7 +1400,7 @@ contains
          mustunpack=.false.
          perform%unpack=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1412,7 +1409,7 @@ contains
          mustpostprocess=.false.
          perform%postprocess=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1421,7 +1418,7 @@ contains
          mustflushXdmf=.false.
          perform%flushXdmf=.true.
          !  Clear the flushing signaling file
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1429,7 +1426,7 @@ contains
          !
          mustflushVTK=.false.
          perform%flushVTK=.true.
-         IF (layoutnumber == 0) THEN !only the master proc mush erase this
+         if (layoutnumber == 0) then !only the master proc mush erase this
              call erasesignalingfiles(simu_devia)
          endif
       endif
@@ -1441,18 +1438,18 @@ contains
 
 
 
-   SUBROUTINE INITWARNINGFILE(layoutnumber,size,nEntradaRoot,verbosete,ignoreErrors1)
+   subroutine INITWARNINGFILE(layoutnumber,size,nEntradaRoot,verbosete,ignoreErrors1)
       character(len=*) :: nEntradaRoot
-      integer (kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,size
       !file management
-      character (LEN=BUFSIZE) ::  whoamishort
+      character(len=BUFSIZE) :: whoamishort
 #ifdef CompileWithMPI
       integer(kind=MPI_OFFSET_KIND) disp
-      integer (kind=4) :: ierr
+      integer(kind=4) :: ierr
 #endif
       logical verbosete,ignoreerrors1       , itsopen2
       integer :: my_iostat
-      character (LEN=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: ficherito
       verbose=verbosete
 
       ignoreerrors=ignoreerrors1
@@ -1460,7 +1457,7 @@ contains
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
       write(whoamishort,'(i5)') layoutnumber+1
 
-      IF (layoutnumber == 0) THEN          
+      if (layoutnumber == 0) then          
 
       !!!inquire(unit=17, opened=itsopen2)
       !!!if (itsopen2) print *,'----------->17 open!!!'
@@ -1469,7 +1466,7 @@ contains
       endif
 
       !!!#ifdef CompileWithMPI
-      !!!IF (SIZE/=0) THEN
+      !!!if (SIZE/=0) then
       !!!    call MPI_Barrier(SUBCOMM_MPI,ierr)
       !!!    call MPI_FILE_open (SUBCOMM_MPI, trim(adjustl(nEntradaRoot))//'_tmpWarnings.txt', &
       !!!                           MPI_MODE_WRONLY + MPI_MODE_CREATE, &
@@ -1495,15 +1492,15 @@ contains
       fatalerror = .false.
       CONTADORDEMENSAJES=0
 
-   END SUBROUTINE INITWARNINGFILE
+   end subroutine INITWARNINGFILE
 
 
    subroutine WarnErrReport(bufff,error)
-      !
+      use iso_fortran_env, only : error_unit
       logical :: itsopen
       logical, optional :: error
 #ifdef CompileWithMPI
-      integer (kind=4) :: ierr
+      integer(kind=4) :: ierr
 #endif
 
       character(len=*), intent(in) :: bufff
@@ -1522,6 +1519,7 @@ contains
       call trimnullchar(buff2)
 
       write (17,'(a)',err=154) trim(adjustl(buff3))
+      write (error_unit,'(a)') trim(adjustl(buff3))
 
       goto 155
 154   inquire(unit=17, opened=itsopen) 
@@ -1533,20 +1531,20 @@ contains
 
 
 
-   SUBROUTINE CLOSEWARNINGFILE(layoutnumber,size,fatalerror_final,stoch_undivided,simu_devia)
-      integer (kind=4), intent(in) :: layoutnumber,size
-      integer (kind=4) :: ierr,posic,i
-      character (len=BUFSIZE) :: buf2
-      character (LEN=BUFSIZE)     ::  dubuf
+   subroutine CLOSEWARNINGFILE(layoutnumber,size,fatalerror_final,stoch_undivided,simu_devia)
+      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4) :: ierr,posic,i
+      character(len=BUFSIZE) :: buf2
+      character(len=BUFSIZE) :: dubuf
       logical :: fatalerror_final , lexis,stoch_undivided,simu_devia        , itsopen2
-      character( LEN=BUFSIZE)  ::  whoamishort,whoami,chinstant
+      character( LEN=BUFSIZE) :: whoamishort,whoami,chinstant
       integer :: my_iostat,file87
-      character (LEN=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: ficherito
 
       if (.not.WarningFileIsOpen) return
 
       !!!#ifdef CompileWithMPI
-      !!!IF (SIZE/=0) THEN
+      !!!if (SIZE/=0) then
       !!!    call MPI_FILE_close (thefile, ierr)
       !!!ELSE
       !!!    close (17)
@@ -1557,11 +1555,11 @@ contains
 
 #ifdef CompileWithMPI
       !wait until everything is closed
-      CALL MPI_Barrier (SUBCOMM_MPI, ierr)
+      call MPI_Barrier (SUBCOMM_MPI, ierr)
 #endif
 
       !arregla los NUL
-      IF ((layoutnumber==0).or.((layoutnumber == size/2).and.stoch_undivided)) THEN
+      if ((layoutnumber==0).or.((layoutnumber == size/2).and.stoch_undivided)) then
          open (88,file=trim(adjustl(WarningFile))//'_Warnings.txt',form='formatted')
          posic=0
          do i=0,size-1
@@ -1634,11 +1632,11 @@ contains
 
       fatalerror_final=(fatalerror_final).and.(.not.ignoreErrors)
 
-      RETURN
-   END SUBROUTINE
+      return
+   end subroutine
 
    subroutine trimnullchar(string)
-      character (len=*), intent(inout) :: string
+      character(len=*), intent(inout) :: string
       integer :: i,longi
       integer :: ind
       longi=len(string)
@@ -1655,10 +1653,10 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine print11(layoutnumber,message,forceprint2)
-      character (len=*), intent( IN) :: message
-      integer (kind=4), intent( IN)  ::  layoutnumber
+      character(len=*), intent( IN) :: message
+      integer(kind=4), intent( IN) :: layoutnumber
       logical :: soyImpresor,forceprint
-      logical , optional  ::  forceprint2
+      logical , optional  :: forceprint2
 
       forceprint=.false.
       if (present(forceprint2)) forceprint=forceprint2
@@ -1669,13 +1667,13 @@ contains
         ! if (soyImpresor) write (*,'(a)') ' '//trim(message(2:))
          if (soyImpresor) write (*,'(a)') trim(message(2:))
 #endif
-        ! IF (layoutnumber == 0)   write (11,'(a)',err=111) ' '//trim(message(2:))
-         IF (layoutnumber == 0)   write (11,'(a)',err=111) trim(message(2:))
+        ! if (layoutnumber == 0)   write (11,'(a)',err=111) ' '//trim(message(2:))
+         if (layoutnumber == 0)   write (11,'(a)',err=111) trim(message(2:))
       else !ajusta a izquierda sin respetar espacios
 #ifndef NoVerbose
          if (soyImpresor) write (*,'(a)') trim(adjustl(message))
 #endif
-         IF (layoutnumber == 0)    then
+         if (layoutnumber == 0)    then
              write (11,'(a)',err=111) trim(adjustl(message))
            !!!  print *,'----11--> ', trim(adjustl(message))
          endif
@@ -1693,20 +1691,20 @@ contains
 
 
 
-   !!!SUBROUTINE INITdxfFILE(layoutnumber,size,nEntradaRoot)
+   !!!subroutine INITdxfFILE(layoutnumber,size,nEntradaRoot)
    !!!character(len=*) :: nEntradaRoot
-   !!!integer (kind=4) :: layoutnumber,size
+   !!!integer(kind=4) :: layoutnumber,size
    !!!!file management
-   !!!character (LEN=BUFSIZE) whoamishort
+   !!!character(len=BUFSIZE) whoamishort
    !!!#ifdef CompileWithMPI
    !!!integer(kind=MPI_OFFSET_KIND) disp
-   !!!integer (kind=4) :: ierr
+   !!!integer(kind=4) :: ierr
    !!!#endif
    !!!write(whoamishort,'(i5)') layoutnumber+1
    !!!mynEntradaRoot=trim(adjustl(nentradaRoot))
    !!!dxfFileIsOpen=.true.
    !!!
-   !!!IF (layoutnumber == 0) THEN
+   !!!if (layoutnumber == 0) then
    !!!    open (87,file=trim(adjustl(mynEntradaRoot))//trim(adjustl(whoamishort))//'.tmpdxf',form='formatted')
    !!!    write(87,*) '!END'
    !!!    close (87,status='delete')
@@ -1726,58 +1724,58 @@ contains
    !!!    open (97,file=trim(adjustl(mynEntradaRoot))//trim(adjustl(whoamishort))//'.tmpdxf',form='formatted')
    !!!!!!#endif
    !!!
-   !!!IF (layoutnumber == 0) THEN
+   !!!if (layoutnumber == 0) then
    !!!    write(dxfbuff,'(a)') '999'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)') 'SEMBA_FDTD'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '0'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  'SECTION'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '2'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  'HEADER'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '9'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '$ACADVER'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '1'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  'AC1009'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '9'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '$SHADEDGE'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '70'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '1'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '0'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  'ENDSEC'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '0'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  'SECTION'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '2'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  'ENTITIES'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!    write(dxfbuff,'(a)')  '0'
-   !!!    CALL DXFWRITE(DXFBUFF)
+   !!!    call DXFWRITE(DXFBUFF)
    !!!endif
    !!!
-   !!!END SUBROUTINE INITdxfFILE
+   !!!end subroutine INITdxfFILE
    !!!
    !!!
    !!!subroutine dxfwrite(bufff)
    !!!!
    !!!#ifdef CompileWithMPI
-   !!!integer (kind=4) :: ierr
+   !!!integer(kind=4) :: ierr
    !!!#endif
    !!!
    !!!character(len=dxflinesize) :: bufff,buff2
@@ -1796,13 +1794,13 @@ contains
    !!!
    !!!
    !!!
-   !!!SUBROUTINE CLOSEdxfFILE(layoutnumber,size)
-   !!!integer (kind=4), intent(in) :: layoutnumber,size
-   !!!integer (kind=4) :: ierr,i
-   !!!integer (kind=8) :: posic
-   !!!character (len=dxflinesize) :: buf2
-   !!!character (LEN=BUFSIZE)     ::  dubuf
-   !!!character (LEN=BUFSIZE) ::  whoamishort
+   !!!subroutine CLOSEdxfFILE(layoutnumber,size)
+   !!!integer(kind=4), intent(in) :: layoutnumber,size
+   !!!integer(kind=4) :: ierr,i
+   !!!integer(kind=8) :: posic
+   !!!character(len=dxflinesize) :: buf2
+   !!!character(len=BUFSIZE) :: dubuf
+   !!!character(len=BUFSIZE) :: whoamishort
    !!!logical lexis
    !!!
    !!!if (.not.dxfFileIsOpen) return
@@ -1820,7 +1818,7 @@ contains
    !!!#endif
    !!!
    !!!!arregla los NUL
-   !!!IF (layoutnumber == 0) THEN
+   !!!if (layoutnumber == 0) then
    !!!    open (988,file=trim(adjustl(mynEntradaRoot))//'.dxf',form='formatted')
    !!!    posic=0
    !!!    do i=0,size-1
@@ -1862,14 +1860,14 @@ contains
    !!!continue
    !!!
    !!!dxfFileIsOpen=.false.
-   !!!RETURN
-   !!!END SUBROUTINE
+   !!!return
+   !!!end subroutine
 
    !!!
    !!!subroutine writemmdxf(layoutnumber,sgg,sggMiHx,sggMiHy,sggMiHz)
    !!!integer i,j,k,layoutnumber
-   !!!type (SGGFDTDINFO), intent(IN)     ::  sgg
-   !!!INTEGER (KIND=INTEGERSIZEOFMEDIAMATRICES), intent(in)   :: &
+   !!!type(SGGFDTDINFO), intent(in) :: sgg
+   !!!integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
    !!!           sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE, &
    !!!                   sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE, &
    !!!                   sgg%Alloc(iHx)%ZI : sgg%Alloc(iHx)%ZE), &
@@ -1886,71 +1884,71 @@ contains
    !!!              Do i=sgg%SINPMLSweep(iHx)%XI,sgg%SINPMLSweep(iHx)%XE
    !!!                if ((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec))  then
    !!!                    write(dxfbuff,'(a)') '3DFACE'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '8'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') sggMiHx(i,j,k)+20
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '62'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') sggMiHx(i,j,k)+20
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '10'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '20'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '30'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '11'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '21'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '31'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '12'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '22'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '32'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '13'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '23'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '33'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '0'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                endif
    !!!            end do
    !!!        end do
@@ -1961,70 +1959,70 @@ contains
    !!!              Do i=sgg%SINPMLSweep(iHy)%XI,sgg%SINPMLSweep(iHy)%XE
    !!!                if ((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec))  then
    !!!                    write(dxfbuff,'(a)') '3DFACE'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '8'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') sggMiHy(i,j,k)+20
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '62'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') sggMiHy(i,j,k)+20
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '10'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '20'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '30'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '11'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '21'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '31'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '12'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '22'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '32'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '13'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '23'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '33'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '0'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                endif
    !!!            end do
    !!!        end do
@@ -2035,71 +2033,71 @@ contains
    !!!              Do i=sgg%SINPMLSweep(iHz)%XI,sgg%SINPMLSweep(iHz)%XE
    !!!                if ((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec))  then
    !!!                    write(dxfbuff,'(a)') '3DFACE'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '8'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') sggMiHz(i,j,k)+20
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '62'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') sggMiHz(i,j,k)+20
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '10'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '20'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '30'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '11'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '21'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '31'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '12'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '22'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '32'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '13'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') i
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '23'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') j+1
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(a)') '33'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    write(dxfbuff,'(i5)') k
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                    !
    !!!                    write(dxfbuff,'(a)') '0'
-   !!!                    CALL DXFWRITE(DXFBUFF)
+   !!!                    call DXFWRITE(DXFBUFF)
    !!!                endif
    !!!            end do
    !!!        end do
@@ -2145,12 +2143,12 @@ end function openfile_mpi
 
    subroutine writefile_mpi(layoutnumber, thefile8,buff2)
 
-      integer (kind=4)  ::  thefile8
+      integer(kind=4) :: thefile8
 #ifdef CompileWithMPI
-      integer (kind=4)  ::  ierr
+      integer(kind=4) :: ierr
 #endif
-      integer (kind=4), intent(in) :: layoutnumber
-      character (LEN=BUFSIZE) :: buff2,buff3
+      integer(kind=4), intent(in) :: layoutnumber
+      character(len=BUFSIZE) :: buff2,buff3
 
       buff3=CHAR(13)//CHAR(10)//trim(adjustl(buff2))
       !!!#ifdef CompileWithMPI
@@ -2163,17 +2161,17 @@ end function openfile_mpi
 
    subroutine closefile_mpi(layoutnumber,size,nombrefich,thefile8)
 
-      integer (kind=4)  ::  thefile8,thefile19
+      integer(kind=4) :: thefile8,thefile19
 #ifdef CompileWithMPI
-      integer (kind=4)  ::  ierr
+      integer(kind=4) :: ierr
 #endif
-      integer (kind=4), intent(in) :: layoutnumber,size
-      character (LEN=BUFSIZE) :: buff2
-      character (LEN=BUFSIZE) :: nombrefich
-      integer (kind=4) :: conta,i
-      character (LEN=BUFSIZE) ::  whoamishort
+      integer(kind=4), intent(in) :: layoutnumber,size
+      character(len=BUFSIZE) :: buff2
+      character(len=BUFSIZE) :: nombrefich
+      integer(kind=4) :: conta,i
+      character(len=BUFSIZE) :: whoamishort
       logical lexis
-      character (LEN=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: ficherito
 
 
       !!!!#ifdef CompileWithMPI
@@ -2189,7 +2187,7 @@ end function openfile_mpi
 #endif
 
       !arregla los NUL
-      IF (layoutnumber == 0) THEN
+      if (layoutnumber == 0) then
          open (newunit=thefile8,file=trim(adjustl(nombrefich)),form='formatted' )
          do i=0,size-1
             write(whoamishort,'(i5)') i+1
@@ -2225,9 +2223,9 @@ end function openfile_mpi
 
    function creaPuntos(sgg)  result(punto) !crea coordenadas fisicas
       !
-      type (SGGFDTDINFO), intent(INout)         ::  sgg
-      type (coorsxyzP)  ::  Punto
-      integer (Kind=4) :: i,j,k,field
+      type(SGGFDTDINFO), intent(INout) :: sgg
+      type(coorsxyzP) :: Punto
+      integer(Kind=4) :: i,j,k,field
 
 
       do field=iEx,iHz
@@ -2308,11 +2306,11 @@ end function openfile_mpi
    end function
 
    subroutine reportmedia(sgg)
-      type (SGGFDTDINFO), intent(IN)         ::  sgg
-      integer (kind=4) :: j
+      type(SGGFDTDINFO), intent(in) :: sgg
+      integer(kind=4) :: j
       character(len=BUFSIZE) :: buff
 
-      DO j = 0, sgg%NumMedia
+      do j = 0, sgg%NumMedia
          WRITE (buff,*) '_____________________________'
          call WarnErrReport(Trim(buff))
          WRITE (buff,*) 'MEDIO :  ', j
@@ -2377,13 +2375,13 @@ end function openfile_mpi
          call WarnErrReport(Trim(buff))
          WRITE (buff,*) '_____________________________'
          call WarnErrReport(Trim(buff))
-      END DO
+      end do
       return
    end subroutine reportmedia
 
    subroutine erasesignalingfiles(simu_devia)
       logical :: simu_devia
-      CHARACTER (LEN=BUFSIZE) :: ficherito
+      character(len=BUFSIZE) :: ficherito
       if (.not.simu_devia) then
           !!force erasing the signaling files
           ficherito='stop'
@@ -2444,8 +2442,8 @@ end function openfile_mpi
 
    
    subroutine openclosedelete(ficherin)
-      CHARACTER (LEN=*) :: ficherin
-      integer (kind=4) :: my_iostat, myunit
+      character(len=*) :: ficherin
+      integer(kind=4) :: my_iostat, myunit
       my_iostat = 0
 4216  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.'
       open  (newunit=myunit,file=trim(adjustl(ficherin)),form='formatted',err=4216,iostat=my_iostat)
@@ -2455,8 +2453,8 @@ end function openfile_mpi
    end subroutine openclosedelete
    
    subroutine openclose(ficherin)
-      CHARACTER (LEN=*) :: ficherin
-      integer (kind=4) :: my_iostat, myunit
+      character(len=*) :: ficherin
+      integer(kind=4) :: my_iostat, myunit
       my_iostat = 0
 5216  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.'
       open  (newunit=myunit,file=trim(adjustl(ficherin)),form='formatted',err=5216,iostat=my_iostat)
@@ -2467,8 +2465,8 @@ end function openfile_mpi
    
    
    subroutine opensolo(myunit,ficherin)
-      CHARACTER (LEN=*) :: ficherin
-      integer (kind=4) :: my_iostat, myunit
+      character(len=*) :: ficherin
+      integer(kind=4) :: my_iostat, myunit
       my_iostat = 0
 6216  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.'
       open  (unit=myunit,file=trim(adjustl(ficherin)),form='formatted',err=6216,iostat=my_iostat)
@@ -2476,7 +2474,7 @@ end function openfile_mpi
    end subroutine opensolo
    
    subroutine closesolo(myunit)
-      integer (kind=4) :: my_iostat, myunit
+      integer(kind=4) :: my_iostat, myunit
       my_iostat = 0
 7216  if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.'
       close  (unit=myunit,err=7216,iostat=my_iostat)

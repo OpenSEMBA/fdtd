@@ -53,13 +53,13 @@ contains
 
     function preprocess(parsed, alloc) result(res)
         type(parsed_mtln_t), intent(in):: parsed
-        type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
+        type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
         type(preprocess_t) :: res
         type(fhash_tbl_t) :: cable_name_to_bundle_id
         type(transmission_line_bundle_t), dimension(:), allocatable :: line_bundles
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
 #ifdef CompileWithMPI
-        integer (kind=4) :: ierr, rank
+        integer(kind=4) :: ierr, rank
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
 
 #endif
@@ -236,7 +236,7 @@ contains
         type(fhash_tbl_t) :: conductors_before_cable
         integer :: i
 #ifdef CompileWithMPI
-        integer (kind=4) :: ierr
+        integer(kind=4) :: ierr
 #endif
 
 #ifdef CompileWithMPI
@@ -259,15 +259,15 @@ contains
     function buildLineFromCable(cable, dt, layer_indices, bundle_in_layer, alloc_z) result(res)
         class(cable_t), pointer, intent(in) :: cable
         real, intent(in) :: dt
-        integer (kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
+        integer(kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
-        integer(kind=4), dimension (2), intent(in), optional :: alloc_z
+        integer(kind=4), dimension(2), intent(in), optional :: alloc_z
         type(mtl_t) :: res
         
         integer :: conductor_in_parent = 0
         character(len=:), allocatable :: parent_name
 
-        select type (cable)
+        select type(cable)
         type is (shielded_multiwire_t)
             if (associated(cable%parent_cable)) then 
                 parent_name = cable%parent_cable%name
@@ -337,12 +337,12 @@ contains
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
         type(transmission_line_bundle_t), dimension(:), allocatable :: res
         real, intent(in) :: dt
-        type (XYZlimit_t), dimension (1:6), intent(in), optional :: alloc
+        type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
-        integer (kind=4), allocatable, dimension(:,:) :: layer_indices
+        integer(kind=4), allocatable, dimension(:,:) :: layer_indices
         logical :: bundle_in_layer = .true.
-        integer (kind=4), dimension(2) :: alloc_z
+        integer(kind=4), dimension(2) :: alloc_z
         if (present(alloc)) then
             alloc_z(1) = alloc(3)%zi
             alloc_z(2) = alloc(3)%ze
@@ -375,7 +375,7 @@ contains
         function findIndicesInLayer(cable, alloc_z) result(res)
             integer(kind=4), dimension(2), intent(in) :: alloc_z
             class (cable_t), pointer, intent(in) :: cable
-            integer (kind=4), allocatable, dimension(:,:) :: res
+            integer(kind=4), allocatable, dimension(:,:) :: res
             integer :: n, i, direction, position(1:3)
             logical :: in_layer
             in_layer = .false.
@@ -506,7 +506,7 @@ contains
         integer :: i
         integer, dimension(:), allocatable :: parent_ids
 #ifdef CompileWithMPI
-        integer (kind=4) :: ierr
+        integer(kind=4) :: ierr
 #endif
 
 #ifdef CompileWithMPI
@@ -1022,7 +1022,7 @@ contains
 
     contains
         function nodeSideToString(side) result(cSide)
-            character (len=:), allocatable :: cSide
+            character(len=:), allocatable :: cSide
             integer, intent(in) :: side
             select case (side)
             case (TERMINAL_NODE_SIDE_INI)
@@ -1403,7 +1403,7 @@ contains
         integer :: i, d
         integer :: stat
         type(mtl_bundle_t), target :: tbundle
-        character (len=:), allocatable :: probe_name
+        character(len=:), allocatable :: probe_name
 
         do i = 1, size(parsed_probes)
             call this%cable_name_to_bundle_id%get(key = key(parsed_probes(i)%attached_to_cable%name), &

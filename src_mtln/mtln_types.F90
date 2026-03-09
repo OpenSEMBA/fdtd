@@ -204,12 +204,12 @@ module mtln_types_mod
 
 
    type, public :: cable_t
-      character (len=:), allocatable :: name
+      character(len=:), allocatable :: name
       real, allocatable, dimension(:) :: step_size
       type(segment_t), dimension(:), allocatable :: segments
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
-      character (len=bufsize) :: tag
+      character(len=bufsize) :: tag
       integer :: n_segments
    contains
       private
@@ -242,7 +242,7 @@ module mtln_types_mod
       class(cable_t), pointer :: attached_to_cable => null()
       integer :: index
       integer :: probe_type = PROBE_TYPE_UNDEFINED
-      character (len=:), allocatable :: probe_name
+      character(len=:), allocatable :: probe_name
       real, dimension(3) :: probe_position
    contains
       private

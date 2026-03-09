@@ -13,7 +13,7 @@ module EDispersives
 
 
    use fdetypes
-   USE REPORT
+   use REPORT
    implicit none
    private
 
@@ -22,26 +22,26 @@ module EDispersives
 
 
    type field_t
-      integer (kind=4)   ::  i,j,k
-      integer (kind=4)   ::  WhatField
+      integer(kind=4) :: i,j,k
+      integer(kind=4) :: WhatField
 
-      REAL (KIND=RKIND), pointer                 ::  FieldPresent !apunta al campo del background
-      REAL (KIND=RKIND)                          ::  FieldPrevious
-      Complex (Kind=CKIND), pointer, dimension ( : )   ::  Current
+      real(kind=RKIND), pointer                 :: FieldPresent !apunta al campo del background
+      real(kind=RKIND)                          :: FieldPrevious
+      complex(Kind=CKIND), pointer, dimension( : ) :: Current
    end type
 
-   TYPE EDispersive_t
-      integer (kind=4)  ::  indexmed,numnodesEx,numnodesEy,numnodesEz,numpolres11
-      Complex (Kind=CKIND), pointer, dimension ( : )      ::  Beta,Kappa,G3
-      type (field_t), pointer, dimension ( : )      ::   NodesEx,NodesEy,NodesEz
-   END TYPE EDispersive_t
+   type EDispersive_t
+      integer(kind=4) :: indexmed,numnodesEx,numnodesEy,numnodesEz,numpolres11
+      complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
+      type(field_t), pointer, dimension( : ) :: NodesEx,NodesEy,NodesEz
+   END type EDispersive_t
 
 
    type  EDispersive_t2
-      integer (kind=4)  ::  NumEDispersives
-      type (EDispersive_t), pointer, dimension( : )  ::  Medium
+      integer(kind=4) :: NumEDispersives
+      type(EDispersive_t), pointer, dimension( : ) :: Medium
    end type
-   type (EDispersive_t2) , save , target ::  Dutton
+   type(EDispersive_t2) , save , target :: Dutton
 
 
    public AdvanceEDispersiveE,InitEDispersives,StoreFieldsEDispersives,DestroyEDispersives
@@ -49,24 +49,24 @@ module EDispersives
 contains
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to initialize the parameters
+   ! subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitEDispersives(sgg,media,ThereAreEDispersives,resume,g1,g2,ex,ey,ez)
-      type (SGGFDTDINFO), intent(IN)     ::  sgg
+      type(SGGFDTDINFO), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
-      REAL (KIND=RKIND)     , intent(inout)      ::  &
+      real(kind=RKIND)     , intent(inout) :: &
       G1(0 : sgg%NumMedia),G2(0 : sgg%NumMedia)
-      REAL (KIND=RKIND)   , intent(inout), target      :: &
+      real(kind=RKIND)   , intent(inout), target      :: &
       Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE),&
       Ey(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE),&
       Ez(sgg%Alloc(iEz)%XI : sgg%Alloc(iEz)%XE,sgg%Alloc(iEz)%YI : sgg%Alloc(iEz)%YE,sgg%Alloc(iEz)%ZI : sgg%Alloc(iEz)%ZE)
 
       !habria que ir deprecando lo de pasar el EDispersive, etc.. porque hay acceso directo a sgg%Med%Dispersiv
-      logical, INTENT(OUT)  ::  ThereAreEDispersives
-      logical, INTENT(in)  ::  resume
-      integer (kind=4)  ::  jmed,j1,conta,k1,i1,tempindex
-      REAL (KIND=RKIND)   ::  tempo
-      integer (kind=4)  ::  numpolres
+      logical, intent(out) :: ThereAreEDispersives
+      logical, INTENT(in) :: resume
+      integer(kind=4) :: jmed,j1,conta,k1,i1,tempindex
+      real(kind=RKIND) :: tempo
+      integer(kind=4) :: numpolres
 
       ThereAreEDispersives=.FALSE.
       conta=0
@@ -106,7 +106,7 @@ contains
          numpolres=sgg%Med(tempindex)%EDispersive(1)%numpolres11
          tempo=0.0_RKIND
          Do i1=1,NumPolRes
-            tempo=tempo+REAL (Dutton%Medium(jmed)%Beta(i1))
+            tempo=tempo+real(Dutton%Medium(jmed)%Beta(i1))
          end do
          G1(tempindex)=        (2.0_RKIND * sgg%Med(tempindex)%Edispersive(1)%eps11+tempo-sgg%Med(tempindex)%Edispersive(1)%Sigma11*sgg%dt)/ &
          (2.0_RKIND * sgg%Med(tempindex)%Edispersive(1)%eps11+tempo+sgg%Med(tempindex)%Edispersive(1)%Sigma11*sgg%dt)
@@ -269,17 +269,17 @@ contains
    end subroutine InitEDispersives
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   ! Subroutine to advance the E field in the EDispersive (no need to advance the magnetic field)
+   ! subroutine to advance the E field in the EDispersive (no need to advance the magnetic field)
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine AdvanceEDispersiveE(sgg)
 
-      type (SGGFDTDINFO), intent(IN)              :: sgg              ! Simulation data.
+      type(SGGFDTDINFO), intent(in)              :: sgg              ! Simulation data.
       !!!
 
-      integer (kind=4)  ::  jmed,i1,k1,numpolres
+      integer(kind=4) :: jmed,i1,k1,numpolres
 
-      type (field_t), pointer  ::  tempnode
+      type(field_t), pointer  :: tempnode
       !!!
 
       do jmed=1,Dutton%NumEDispersives
@@ -288,7 +288,7 @@ contains
          do i1=1,Dutton%Medium(jmed)%NumNodesEx
             tempnode=>Dutton%Medium(jmed)%NodesEx(i1)
             Do k1=1,NumPolRes
-               tempnode%fieldPresent=tempnode%FieldPresent-REAL (Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1) )
+               tempnode%fieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1) )
             enddo
             Do k1=1,NumPolRes
                tempnode%current(k1)=Dutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1) + &
@@ -302,7 +302,7 @@ contains
          do i1=1,Dutton%Medium(jmed)%NumNodesEy
             tempnode=>Dutton%Medium(jmed)%NodesEy(i1)
             Do k1=1,NumPolRes
-               tempnode%FieldPresent=tempnode%FieldPresent-REAL (Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
+               tempnode%FieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
             enddo
 
 
@@ -317,7 +317,7 @@ contains
          do i1=1,Dutton%Medium(jmed)%NumNodesEz
             tempnode=>Dutton%Medium(jmed)%NodesEz(i1)
             Do k1=1,NumPolRes
-               tempnode%FieldPresent=tempnode%FieldPresent-REAL (Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
+               tempnode%FieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
             enddo
             Do k1=1,NumPolRes
                tempnode%current(k1)=Dutton%Medium(jmed)%Kappa(k1)   *tempnode%current(k1)+ &
@@ -335,7 +335,7 @@ contains
 
    subroutine StoreFieldsEDispersives
 
-      integer (kind=4)  ::  jmed,numpolres,i1,k1
+      integer(kind=4) :: jmed,numpolres,i1,k1
 
 
       do jmed=1,Dutton%NumEDispersives
@@ -372,44 +372,44 @@ contains
    end subroutine StoreFieldsEDispersives
 
    subroutine DestroyEDispersives(sgg)
-      type (SGGFDTDINFO), intent(INOUT)         ::  sgg
+      type(SGGFDTDINFO), intent(INOUT) :: sgg
 
-      integer (kind=4)  ::  jmed,i1,i
+      integer(kind=4) :: jmed,i1,i
 
 
       !free up memory
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%EDispersive).and.(.not.sgg%Med(i)%Is%PML).and.(.not.sgg%Med(i)%Is%EDispersiveAnis))  then
-            deallocate (sgg%Med(i)%EDispersive(1)%C11,sgg%Med(i)%EDispersive(1)%a11)
+            deallocate(sgg%Med(i)%EDispersive(1)%C11,sgg%Med(i)%EDispersive(1)%a11)
          endif
       end do
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%EDispersive).and.(.not.sgg%Med(i)%Is%PML).and.(.not.sgg%Med(i)%Is%EDispersiveAnis))  then
-            deallocate (sgg%Med(i)%EDispersive)
+            deallocate(sgg%Med(i)%EDispersive)
          endif
       end do
 
       do jmed=1,Dutton%NumEDispersives
-         deallocate (Dutton%Medium(jmed)%Beta,Dutton%Medium(jmed)%Kappa,Dutton%Medium(jmed)%G3)
+         deallocate(Dutton%Medium(jmed)%Beta,Dutton%Medium(jmed)%Kappa,Dutton%Medium(jmed)%G3)
 
          do i1=1,Dutton%Medium(jmed)%NumNodesEx
-            deallocate (Dutton%Medium(jmed)%NodesEx(i1)%Current)
+            deallocate(Dutton%Medium(jmed)%NodesEx(i1)%Current)
          end do
-         deallocate (Dutton%Medium(jmed)%NodesEx)
+         deallocate(Dutton%Medium(jmed)%NodesEx)
          !
          do i1=1,Dutton%Medium(jmed)%NumNodesEy
-            deallocate (Dutton%Medium(jmed)%NodesEy(i1)%Current)
+            deallocate(Dutton%Medium(jmed)%NodesEy(i1)%Current)
          end do
-         deallocate (Dutton%Medium(jmed)%NodesEy)
+         deallocate(Dutton%Medium(jmed)%NodesEy)
          !
          do i1=1,Dutton%Medium(jmed)%NumNodesEz
-            deallocate (Dutton%Medium(jmed)%NodesEz(i1)%Current)
+            deallocate(Dutton%Medium(jmed)%NodesEz(i1)%Current)
          end do
-         deallocate (Dutton%Medium(jmed)%NodesEz)
+         deallocate(Dutton%Medium(jmed)%NodesEz)
       end do
 
 
-      if (associated(Dutton%Medium)) deallocate (Dutton%Medium)
+      if (associated(Dutton%Medium)) deallocate(Dutton%Medium)
 
    end subroutine
 
