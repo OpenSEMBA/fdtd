@@ -278,9 +278,6 @@ def test_holland_mtln_mpi(tmp_path):
 
     expected_i_interp = np.interp(probe_mid_no_mpi['time']-3.05*1e-9, expected_t, expected_i)
 
-    p_expected = Probe(
-        OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
-
     assert np.allclose(
         expected_i_interp, 
         probe_mid_no_mpi['current_0'], 
