@@ -29,7 +29,7 @@ module Report
    integer, save :: thefile !for mpi file management
    logical, save :: ignoreerrors
    !
-   type(coorsxyzP) , save  :: Punto
+   type(coorsxyzP_t) , save  :: Punto
 
    character(len=BUFSIZE), SAVE :: mynEntradaRoot
 
@@ -165,7 +165,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine InitReporting(sgg,c)
-      type(SGGFDTDINFO), intent(INout) :: sgg
+      type(SGGFDTDINFO_t), intent(INout) :: sgg
       type(sim_control_t) :: c
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -247,9 +247,9 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine ReportExistence(sgg,layoutnumber,size,thereare,mur_second,MurAfterPML)
       logical :: mur_second,MurAfterPML
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       !
-      type(logic_control), intent(in) :: thereare
+      type(logic_control_t), intent(in) :: thereare
       integer(kind=4), intent(in) :: layoutnumber,size
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
@@ -390,7 +390,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitTiming(sgg, c, t, initialtimestep, maxSourceValue)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(sim_control_t) , intent(in):: c
       real(kind=8), intent(in) :: t
       integer(kind=4), intent(in) :: initialtimestep
@@ -553,7 +553,7 @@ contains
    
       logical :: simu_devia,dontwritevtk,stopdontwritevtk,stopflushingdontwritevtk,flushdontwritevtk,stoponlydontwritevtk
       !---------------------------> inputs <----------------------------------------------------------
-      type(SGGFDTDINFO), intent(in)              :: sgg              ! Simulation data.
+      type(SGGFDTDINFO_t), intent(in)              :: sgg              ! Simulation data.
       type( bounds_t), intent( IN) :: b
       character(len=BUFSIZE), intent(in) :: opcionestotales
       integer( kind = 4), intent( IN) :: layoutnumber, size, n,maxCPUtime
@@ -1868,7 +1868,7 @@ contains
    !!!
    !!!subroutine writemmdxf(layoutnumber,sgg,sggMiHx,sggMiHy,sggMiHz)
    !!!integer i,j,k,layoutnumber
-   !!!type(SGGFDTDINFO), intent(in) :: sgg
+   !!!type(SGGFDTDINFO_t), intent(in) :: sgg
    !!!integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
    !!!           sggMiHx(sgg%Alloc(iHx)%XI : sgg%Alloc(iHx)%XE, &
    !!!                   sgg%Alloc(iHx)%YI : sgg%Alloc(iHx)%YE, &
@@ -2225,8 +2225,8 @@ end function openfile_mpi
 
    function creaPuntos(sgg)  result(punto) !crea coordenadas fisicas
       !
-      type(SGGFDTDINFO), intent(INout) :: sgg
-      type(coorsxyzP) :: Punto
+      type(SGGFDTDINFO_t), intent(INout) :: sgg
+      type(coorsxyzP_t) :: Punto
       integer(Kind=4) :: i,j,k,field
 
 
@@ -2308,7 +2308,7 @@ end function openfile_mpi
    end function
 
    subroutine reportmedia(sgg)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: j
       character(len=BUFSIZE) :: buff
 

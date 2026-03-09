@@ -19,7 +19,7 @@ contains
    subroutine store_geomData (sgg,media, fileFDE)
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: INTJ
       type(media_matrices_t), intent(in) :: media
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: i, j, k, campo, q
       character(len=*), intent(in) :: fileFDE
       !Writes an ASCII map of the media matrix for each field component

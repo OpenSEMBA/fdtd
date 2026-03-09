@@ -37,13 +37,13 @@ module Mdispersives
    END type Mdispersive_t
 
 
-   type  Mdispersive_t2
+   type  Mdispersive2_t
       integer(kind=4) :: NumMdispersives
       type(Mdispersive_t), pointer, dimension( : ) :: Medium
    end type
 
    !!!LOCAL VARIABLES
-   type(Mdispersive_t2) , save :: MDutton
+   type(Mdispersive2_t) , save :: MDutton
 
 
    public AdvanceMdispersiveH,InitMdispersives,StoreFieldsMdispersives,DestroyMdispersives
@@ -54,7 +54,7 @@ contains
    ! subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitMdispersives(sgg,media,ThereAreMdispersives,resume,GM1,GM2,Hx,Hy,Hz)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
       real(kind=RKIND)     , intent(inout) :: &
       GM1(0 : sgg%NumMedia),GM2(0 : sgg%NumMedia)
@@ -276,7 +276,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine AdvanceMdispersiveH(sgg)
-      type(SGGFDTDINFO), intent(in)              :: sgg              ! Simulation data.
+      type(SGGFDTDINFO_t), intent(in)              :: sgg              ! Simulation data.
       !!!
 
       integer(kind=4) :: jmed,i1,k1,numpolres
@@ -372,7 +372,7 @@ contains
    end subroutine StoreFieldsMdispersives
 
    subroutine DestroyMdispersives(sgg)
-      type(SGGFDTDINFO), intent(INout) :: sgg
+      type(SGGFDTDINFO_t), intent(INout) :: sgg
 
       integer(kind=4) :: jmed,i1,i
 

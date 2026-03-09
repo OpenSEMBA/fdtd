@@ -228,20 +228,20 @@ module  FDETYPES
         integer(Kind=4) :: numertags
     end type
 
-   type coorsxyz
+   type coorsxyz_t
       real(kind=RKIND), pointer, dimension( : ) :: x,y,z
-   end type coorsxyz
+   end type coorsxyz_t
    !
-   type coorsxyzP
-      type(coorsxyz), dimension(1:6) :: PhysCoor
-   end type coorsxyzP
+   type coorsxyzP_t
+      type(coorsxyz_t), dimension(1:6) :: PhysCoor
+   end type coorsxyzP_t
 
    type MedioExtra_t
       integer(kind=4) :: size,index
       real(kind=rkind) :: sigma,sigmam
       logical :: exists
    end type
-   type logic_control
+   type logic_control_t
       LOGICAL  :: Wires  , &
       PMLbodies  , &
       MultiportS  , &
@@ -286,7 +286,7 @@ module  FDETYPES
    type XYZlimit_t
       integer(kind=4) :: XI,XE,YI,YE,ZI,ZE
    end type
-   type XYZlimit_t_scaled
+   type xyzlimit_scaled_t
       integer(kind=4) :: XI,XE,YI,YE,ZI,ZE
       real(kind=RKIND) :: xc,yc,zc
       integer(kind=4) :: Or   !to include possible orientations (nodal sources 180915)
@@ -330,14 +330,14 @@ module  FDETYPES
    !
 
    !wires
-   type  :: fichevol_t_wires
+   type  :: fichevol_wires_t
       character(len=BUFSIZE) :: Name
       integer(kind=4) :: NumSamples
       real(kind=RKIND_wires) :: DeltaSamples
       real(kind=RKIND_wires), dimension( : ), pointer  :: Samples
    end type
-   type  :: source
-      type(fichevol_t_wires) :: Fichero
+   type  :: source_t
+      type(fichevol_wires_t) :: Fichero
       real(kind=RKIND_wires) :: Resistance
       real(kind=RKIND_wires) :: Multiplier
       logical :: soft
@@ -346,7 +346,7 @@ module  FDETYPES
 
    type  :: NodalSource_t
       type(fichevol_t) :: Fichero
-      type(XYZlimit_t_scaled), pointer, dimension(:) :: punto
+      type(xyzlimit_scaled_t), pointer, dimension(:) :: punto
       integer(kind=4) :: numpuntos
       logical :: IsInitialValue
       logical :: IsHard
@@ -359,13 +359,13 @@ module  FDETYPES
       complex(kind=CKIND)                        :: d, e
    end type
 
-   type  :: oriented_point
+   type  :: oriented_point_t
       integer(kind=4) :: ori
       integer(kind=4) :: i,j,k,origIndex,ilibre,jlibre,klibre,multiraboDE !si es multirabo de que indice lo es
       logical :: Is_LeftEnd,Is_RightEnd,IsEnd_norLeft_norRight
       logical :: repetido,multirabo !marca segmentos que aparecen repetidos en un mismo thin wire!los bundles deberan estar thin-wires distintos
       logical :: orientadoalreves
-   end type oriented_point
+   end type oriented_point_t
 
 #ifdef CompileWithMTLN   
    type  :: Multiwires_t
@@ -377,9 +377,9 @@ module  FDETYPES
       real(kind=RKIND_wires) :: Radius_devia,R_devia,L_devia,C_devia
       type(WireDispersiveParams_t), allocatable, dimension(:) :: disp
       integer(kind=4) :: numsegmentos,NUMVOLTAGESOURCES,NUMCURRENTSOURCES
-      type(oriented_point), pointer, dimension( : ) :: segm
-      type(source), pointer, dimension( : ) :: Vsource
-      type(source), pointer, dimension( : ) :: Isource
+      type(oriented_point_t), pointer, dimension( : ) :: segm
+      type(source_t), pointer, dimension( : ) :: Vsource
+      type(source_t), pointer, dimension( : ) :: Isource
       logical  :: VsourceExists ,IsourceExists
       logical  :: HasParallel_LeftEnd ,HasParallel_RightEnd ,&
                    HasSeries_LeftEnd ,HasSeries_RightEnd,HasAbsorbing_LeftEnd,HasAbsorbing_RightEnd
@@ -405,7 +405,7 @@ module  FDETYPES
       integer(kind=4) :: index
       real(kind=RKIND_wires) :: x, y, z
       logical                 :: VsourceExists, IsourceExists
-      type(source), pointer  :: Vsource, Isource
+      type(source_t), pointer  :: Vsource, Isource
    end type SlantedNode_t
    
    type  :: SlantedWires_t
@@ -611,7 +611,7 @@ module  FDETYPES
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! This is the  class which stores all the simulation data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   type  :: SGGFDTDINFO
+   type  :: SGGFDTDINFO_t
       real(kind=RKIND_tiempo)     , pointer, dimension( : ) :: tiempo !para permit scaling
       real(kind=RKIND_tiempo) :: dt
       character(len=BUFSIZE) :: extraswitches
@@ -640,7 +640,7 @@ module  FDETYPES
       logical  :: thereAreMagneticMedia
       logical  :: thereArePMLMagneticMedia
       character(len=BUFSIZE) :: nEntradaRoot
-      type(coorsxyzP) :: Punto
+      type(coorsxyzP_t) :: Punto
    end type
 
    type media_matrices_t
@@ -756,7 +756,7 @@ contains
    end subroutine 
 
    subroutine logic_reset(this)
-      class(logic_control) :: this
+      class(logic_control_t) :: this
       this%Wires = .false.
       this%PMLbodies = .false.
       this%MultiportS = .false.

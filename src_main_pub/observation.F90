@@ -51,7 +51,7 @@ module Observa
   end type Serialized_t
   type item_t
 
-    type(CurrentSegments), pointer  :: segmento !segmento de hilo que se observa si lo hubiere
+    type(CurrentSegments_t), pointer  :: segmento !segmento de hilo que se observa si lo hubiere
 
 #ifdef CompileWithBerengerWires
     type(TSegment), pointer  :: segmento_Berenger !segmento de hilo que se observa si lo hubiere
@@ -612,7 +612,7 @@ contains
     !solo lo precisa de entrada farfield
     type(media_matrices_t), intent(in) :: media
     type(bounds_t) :: b
-    type(SGGFDTDINFO), intent(in) :: sgg
+    type(SGGFDTDINFO_t), intent(in) :: sgg
     type(taglist_t) :: tag_numbers
     logical :: niapapostprocess
     real(kind=RKIND) :: eps00, mu00
@@ -2513,7 +2513,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!! Closes observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine CloseObservationFiles(sgg, layoutnumber, size, singlefilewrite, initialtimestep, lastexecutedtime, resume)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
       real(kind=RKIND) :: rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
@@ -2644,7 +2644,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!! Upacks .bin files observation stuff
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine UnpackSingleFiles(sgg, layoutnumber, size, singlefilewrite, initialtimestep, resume)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: i, ii, layoutnumber, field, initialtimestep, unidad, size, idum
       logical :: singlefilewrite, resume, incident, existe, wrotemaster
       real(kind=RKIND) :: rdum1, rdum2, rdum3, rdum4, rdum5, rdum6, rdum
@@ -2718,7 +2718,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       !solo lo precisa de entrada farfield
       type(bounds_t) :: b
       logical :: noconformalmapvtk
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
       type(taglist_t) :: tag_numbers
       !---------------------------> inputs <----------------------------------------------------------
@@ -2753,7 +2753,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       real(RKIND), pointer :: fieldReference(:,:,:), xField(:,:,:), yField(:,:,:), zField(:,:,:)
       complex(kind=CKIND), pointer, dimension(:) :: auxExp
 
-      type(CurrentSegments), pointer  :: segmDumm !segmento de hilo que se observa si lo hubiere
+      type(CurrentSegments_t), pointer  :: segmDumm !segmento de hilo que se observa si lo hubiere
       !
 #ifdef CompileWithBerengerWires
       type(TSegment), pointer  :: segmDumm_Berenger !segmento de hilo que se observa si lo hubiere
@@ -3686,7 +3686,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
       type(nf2ff_t) :: facesNF2FF
       !!!
       !
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND), dimension(:), intent(in) :: dxh(sgg%ALLOC(iEx)%XI:sgg%ALLOC(iEx)%XE), &
                                                       dyh(sgg%ALLOC(iEy)%YI:sgg%ALLOC(iEy)%YE), &
                                                       dzh(sgg%ALLOC(iEz)%ZI:sgg%ALLOC(iEz)%ZE), &
@@ -4123,7 +4123,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
    !!! Free up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     subroutine DestroyObservation(sgg)
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=4) :: ii, i, field
 
 #ifdef CompileWithMPI
@@ -4357,7 +4357,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
    !!!cuenta los bordes adyacentes
     subroutine contabordes(sgg, imed, imed1, imed2, imed3, imed4, EsBorde, SINPML_fullsize, campo, iii, jjj, kkk)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
       integer(Kind=4) imed, imed1, imed2, imed3, imed4, contaborde, campo, iii, jjj, kkk
       logical :: esborde
@@ -4505,7 +4505,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     subroutine nodalvtk(sgg, sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz, sggMtag, tag_numbers, &
                         init, geom, asigna, electric, magnetic, conta, i, ii, output, Ntimeforvolumic)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
 
       type(output_t), pointer, dimension(:) :: output
@@ -4523,8 +4523,8 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
         sggMiHz(sgg%alloc(iHz)%XI:sgg%alloc(iHz)%XE, sgg%alloc(iHz)%YI:sgg%alloc(iHz)%YE, sgg%alloc(iHz)%ZI:sgg%alloc(iHz)%ZE)
 
       !to fetch info of nodal sources for the vtkmap
-      type(nodsou), pointer, save :: rNodal_Ex, rNodal_Ey, rNodal_Ez
-      type(nodsou), pointer, save :: rNodal_Hx, rNodal_Hy, rNodal_Hz
+      type(nodsou_t), pointer, save :: rNodal_Ex, rNodal_Ey, rNodal_Ez
+      type(nodsou_t), pointer, save :: rNodal_Hx, rNodal_Hy, rNodal_Hz
       !!!!!!!!!!!!
 
       if (init) call getnodal(rNodal_Ex, rNodal_Ey, rNodal_Ez, rNodal_Hx, rNodal_Hy, rNodal_Hz)
@@ -4867,7 +4867,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
 #ifdef CompileWithMTLN
     subroutine multiwireBundlesVTK(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, sggMtag, tag_numbers)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  & 
         (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, & 
          sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, & 
@@ -4942,7 +4942,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     subroutine wirebundlesvtk(sgg, init, geom, asigna, conta, i, ii, output, Ntimeforvolumic, wiresflavor, sggMtag, tag_numbers)
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       type(taglist_t) :: tag_numbers
       type(output_t), pointer, dimension(:) :: output
@@ -5198,7 +5198,7 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     real(kind=RKIND) function interpolate_field_atwhere(sgg, Ex, Ey, Ez, Hx, Hy, Hz, i, j, k, field, atwhere) result(interp)
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND), intent(in), target :: &
         Ex(sgg%alloc(iEx)%XI:sgg%alloc(iEx)%XE, sgg%alloc(iEx)%YI:sgg%alloc(iEx)%YE, sgg%alloc(iEx)%ZI:sgg%alloc(iEx)%ZE), &
         Ey(sgg%alloc(iEy)%XI:sgg%alloc(iEy)%XE, sgg%alloc(iEy)%YI:sgg%alloc(iEy)%YE, sgg%alloc(iEy)%ZI:sgg%alloc(iEy)%ZE), &

@@ -102,7 +102,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    real(kind=RKIND) :: eps00,mu00
    logical :: temp_SGBCcrank,temp_SGBCDispersive
    type(constants_t), intent(inout) :: g
-   type(SGGFDTDINFO), intent(INOUT) :: sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
+   type(SGGFDTDINFO_t), intent(INOUT) :: sgg !ojo pq se machacan los epr, mur, sigma, sigmam en caso de materiales dispersivos
    real(kind=RKIND)   , intent(in) , target     :: &
    Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
    Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -615,7 +615,7 @@ end subroutine InitSGBCs
 
 subroutine calc_SGBCconstants(sgg,g,eps00,mu00,stochastic)
    real(kind=RKIND), intent(in) :: eps00,mu00
-   type(SGGFDTDINFO), intent(in) :: sgg 
+   type(SGGFDTDINFO_t), intent(in) :: sgg 
    real(kind=RKIND), pointer, dimension( : ) :: gm1,g1,gm2,g2
    type(constants_t) :: g
  integer :: jmed,conta,i
@@ -1023,7 +1023,7 @@ subroutine calc_g1g2gm1gm2_compo(sgg,compo,eps00,mu00,SGBCDispersive)
    real(kind=RKIND), intent(in) :: eps00,mu00
    complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
 !!!!      
-   type(SGGFDTDINFO), intent(in) :: sgg
+   type(SGGFDTDINFO_t), intent(in) :: sgg
    type(SGBCSurface_t), pointer, intent(INOUT) :: compo
    character(len=BUFSIZE) :: buff
 !!!variables locales
@@ -1327,7 +1327,7 @@ end subroutine StoreFieldsSGBCs
 
 subroutine DestroySGBCs(sgg)
 
-   type(SGGFDTDINFO), intent(INOUT) :: sgg
+   type(SGGFDTDINFO_t), intent(INOUT) :: sgg
    integer(kind=4) :: i,conta
 
    !free up memory
@@ -1394,7 +1394,7 @@ subroutine test_stab(G2,GM2)
 end subroutine test_stab
 
 subroutine depth(compo,sgg,jmed,SGBCFreq,SGBCresol,SGBCdepth) 
- type(SGGFDTDINFO), intent(in) :: sgg
+ type(SGGFDTDINFO_t), intent(in) :: sgg
  real(kind=rkind) :: SGBCFreq,SGBCresol,sigma, epr,epsilon,skin_depth,width,widthtotal
  integer(kind=4) :: jmed,i,SGBCdepth,numcapas,precuenta,celdafinal,celdainicial,anchocapa
  integer(kind=4) , pointer, dimension(:) :: capa

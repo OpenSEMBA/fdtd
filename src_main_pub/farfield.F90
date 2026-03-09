@@ -5,14 +5,14 @@ module farfield_m
    implicit none
    private
 
-   type ehxyz
+   type ehxyz_t
       integer(kind=4) :: Ex=-15,Ey=-15,Ez=-15,Hx=-15,Hy=-15,Hz=-15
    end type
-   type tfidaa
-      type(ehxyz) :: com,fin,tra,fro,izq,der,aba,arr
+   type tfidaa_t
+      type(ehxyz_t) :: com,fin,tra,fro,izq,der,aba,arr
    end type
-   type ijk
-      type(tfidaa) :: i,j,k
+   type ijk_t
+      type(tfidaa_t) :: i,j,k
    end type
 
    type co_t
@@ -25,7 +25,7 @@ module farfield_m
    end type
 
    type farfield_t
-      type(ijk) :: TrFr,IzDe,AbAr
+      type(ijk_t) :: TrFr,IzDe,AbAr
       logical  :: farfieldTr,farfieldFr,farfieldIz,farfieldDe,farfieldAr,farfieldAb
 
       logical  :: farfieldTr_ClonePEC_Front,farfieldTr_ClonePEC_Left,farfieldTr_ClonePEC_Right,farfieldTr_ClonePEC_Up,farfieldTr_ClonePEC_Down
@@ -51,7 +51,7 @@ module farfield_m
       complex( kind = CKIND), dimension( :,:,:), allocatable :: HxIz2,HxDe2,HxAb2,HxAr2,HyFr2,HyTr2,HyAb2,HyAr2,HzIz2,HzDe2,HzFr2,HzTr2 !to compute the scheneider geometric mean
       complex( kind = CKIND), dimension( :), allocatable  :: expIwdt,auxExp_E,auxExp_H,dftEntrada
       integer(kind=4) :: NumFreqs,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2, Ndecim
-      type(coorsxyzP) :: Punto
+      type(coorsxyzP_t) :: Punto
       real(kind=Rkind) :: InitialFreq,FinalFreq,FreqStep,dtDecim
       real(kind=RKIND) :: thetaStart,thetaStop,thetaStep
       real(kind=RKIND) :: phiStart,phiStop,phiStep
@@ -106,7 +106,7 @@ contains
       !---------------------------> inputs <----------------------------------------------------------
       type( bounds_t), intent( IN) :: b
       !
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       logical , intent(in) :: resume
       integer(kind=INTEGERSIZEOFMEDIAMATRICES), intent(in) :: &
       sggMiEx(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE), &

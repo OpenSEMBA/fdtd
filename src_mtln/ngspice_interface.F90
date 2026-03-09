@@ -3,7 +3,7 @@ module ngspice_interface_mod
     use iso_c_binding
     implicit none
 
-    type, bind(c) :: vectorInfo
+    type, bind(c) :: vectorInfo_t
         type(c_ptr) :: vName
         integer(c_int) :: vType
         integer(c_short) :: vFlags

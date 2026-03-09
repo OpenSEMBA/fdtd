@@ -2,7 +2,7 @@ module conformal_mod
 
    use geometry_mod
    use cell_map_mod
-   use NFDETypes, only: ConformalPECRegions, ConformalPECElements, ConformalMedia_t, & 
+   use NFDETypes, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, & 
                         edge_t, face_t, & 
                         conformal_face_media_t, conformal_edge_media_t, rkind
    
@@ -12,7 +12,7 @@ module conformal_mod
 contains
 
    function buildSideMaps(regions) result(res)
-      type(ConformalPECRegions), intent(in) :: regions
+      type(ConformalPECRegions_t), intent(in) :: regions
       type(side_tris_map_t), dimension(:), allocatable :: res
       integer :: i
       allocate(res(size(regions%volumes)))
@@ -22,7 +22,7 @@ contains
    end function
 
    function buildConformalMedia(regions) result(res)
-      type(ConformalPECRegions), intent(in) :: regions
+      type(ConformalPECRegions_t), intent(in) :: regions
       type(ConformalMedia_t), dimension(:), allocatable :: res
       integer :: i
       allocate(res(size(regions%volumes)))
@@ -33,7 +33,7 @@ contains
 
 
    function buildConformalVolume(volume) result(res)
-      type(ConformalPECElements), intent(in) :: volume
+      type(ConformalPECElements_t), intent(in) :: volume
       type(ConformalMedia_t) :: res
 
       type(cell_map_t) :: cell_map

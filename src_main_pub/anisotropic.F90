@@ -64,7 +64,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitAnisotropic(sgg,media,ThereAreAnisotropic,ThereAreThinSlot,eps00,mu00)
       real(kind=RKIND) :: eps00,mu00
-      type(SGGFDTDINFO), intent(in) , target      :: sgg
+      type(SGGFDTDINFO_t), intent(in) , target      :: sgg
       type(media_matrices_t), intent(in) :: media
       !!!
 
@@ -952,7 +952,7 @@ contains
 
 
    subroutine DestroyAnisotropic(sgg)
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       !
       integer(kind=4) :: jmed,i
       !free up memory
@@ -992,7 +992,7 @@ contains
 
    !found by the mathematica notebook
    subroutine calc_anisotropicconstants(sgg,eps00,mu00)
-        type(SGGFDTDINFO), intent(in) :: sgg
+        type(SGGFDTDINFO_t), intent(in) :: sgg
         real(kind=RKIND) , intent(inout) :: Eps00, Mu00
         real(kind=RKIND),  DIMENSION(3,3) :: sigma,epr,mur,sigmaM
         integer(kind=4) :: jmed

@@ -10,7 +10,7 @@ module nfde_rotate_m
 contains
     
    subroutine nfde_rotate (this,mpidir) 
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir
       call  rotate_generateSpaceSteps                (this, mpidir)
       call  rotate_generateCurrent_Field_Sources     (this, mpidir)
@@ -37,10 +37,10 @@ contains
    end subroutine nfde_rotate
 
    subroutine rotate_generateSpaceSteps (this, mpidir)
-      type(Parseador), intent(inout) :: this          
+      type(Parseador_t), intent(inout) :: this          
       integer(kind=4) :: mpidir
-      type(Desplazamiento), pointer :: old_despl => NULL ()      
-      type(MatrizMedios), pointer :: old_matriz => NULL ()
+      type(Desplazamiento_t), pointer :: old_despl => NULL ()      
+      type(MatrizMedios_t), pointer :: old_matriz => NULL ()
       integer(kind=4) :: oxi,oyi,ozi
       real(kind=RK) :: roxi,royi,rozi
       real(kind=RK), dimension(:),pointer :: poxi, poyi, pozi
@@ -155,7 +155,7 @@ contains
    end subroutine rotate_generateSpaceSteps
    
    subroutine rotate_generateCurrent_Field_Sources (this,mpidir)  
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       integer(kind=4) :: tama2,tama3,tama,i,ii
       
@@ -174,8 +174,8 @@ contains
    end subroutine rotate_generateCurrent_Field_Sources
   
    subroutine rotate_generatePlaneWaves (this, mpidir)
-      type(Parseador), intent(inout) :: this   
-      type(PlaneWaves),  pointer :: old_plnSrc => null ( )
+      type(Parseador_t), intent(inout) :: this   
+      type(PlaneWaves_t),  pointer :: old_plnSrc => null ( )
       integer(kind=4) :: mpidir
       integer(kind=4) :: oxi,oyi,ozi,oxe,oye,oze
       real(kind=RK) :: theta,phi,alpha,beta     
@@ -242,8 +242,8 @@ contains
    end subroutine rotate_generatePlaneWaves
    
    subroutine rotate_generateBoxSources (this, mpidir) 
-      type(Parseador), intent(inout) :: this   
-      type(Boxes),  pointer :: old_boxSrc => null ( )
+      type(Parseador_t), intent(inout) :: this   
+      type(Boxes_t),  pointer :: old_boxSrc => null ( )
       integer(kind=4) :: mpidir
       integer(kind=4) :: oxi,oyi,ozi,oxe,oye,oze
       integer(kind=4) :: tama,i
@@ -291,10 +291,10 @@ contains
    end subroutine rotate_generateBoxSources
    
    subroutine rotate_generateFronteras (this,mpidir)
-      type(Parseador), intent(inout) :: this   
+      type(Parseador_t), intent(inout) :: this   
       integer(kind=4) :: mpidir       
       integer(kind=4) :: oxl,oxu,oyl,oyu,ozl,ozu  
-      type(FronteraPML) :: OPML_XL,OPML_XU,OPML_YL,OPML_YU,OPML_ZL,OPML_ZU
+      type(FronteraPML_t) :: OPML_XL,OPML_XU,OPML_YL,OPML_YU,OPML_ZL,OPML_ZU
       
       !!! MPI ROTATE
       if (MPIDIR==2 ) then
@@ -420,7 +420,7 @@ contains
    end subroutine rotate_generateFronteras
    
    subroutine rotate_generatePECs (this,mpidir)   
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       integer(kind=4) :: tama,i
       
@@ -442,7 +442,7 @@ contains
    end subroutine rotate_generatePECs
    
    subroutine rotate_generatePMCs (this,mpidir)    
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       integer(kind=4) :: tama,i
       
@@ -464,7 +464,7 @@ contains
    end subroutine rotate_generatePMCs
    
    subroutine rotate_generateNONMetals (this,mpidir)       
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       integer(kind=4) :: tama2,tama3,tama,i,ii
                   
@@ -527,7 +527,7 @@ contains
    end subroutine rotate_generateNONMetals
    
    subroutine rotate_generateANISOTROPICs (this,mpidir)         
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       if ((mpidir/=1).and.(this%ANIMATS%nvols+this%ANIMATS%nsurfs+this%ANIMATS%nlins/=0)) then
            print *,'Rotations in anisotropic unsupported'
@@ -539,7 +539,7 @@ contains
    end subroutine rotate_generateANISOTROPICs
    
    subroutine rotate_generateThinWires (this,mpidir)     
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir     
       integer(kind=4) :: tama,tama2,i,ii
       integer(kind=4) :: oldx, oldy, oldz
@@ -590,9 +590,9 @@ contains
    end subroutine rotate_generateThinWires
    
    subroutine rotate_generateSlantedWires (this,mpidir)      
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
-      type(SlantedWires), pointer :: old_swires    
+      type(SlantedWiresInfo_t), pointer :: old_swires    
       real(kind=8) :: oldx, oldy, oldz
       integer(kind=4) :: tama,tama2,i,ii
       
@@ -628,9 +628,9 @@ contains
    end subroutine rotate_generateSlantedWires
    
    subroutine rotate_generateThinSlots (this,mpidir)     
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
-      type(ThinSlots), pointer :: old_tSlots    
+      type(ThinSlots_t), pointer :: old_tSlots    
       integer(kind=4) :: tama,tama2,i,ii
       integer(kind=4) :: oldx, oldy, oldz
       
@@ -681,7 +681,7 @@ contains
    end subroutine rotate_generateThinSlots
 !!   
    subroutine rotate_generateLossyThinSurface (this,mpidir)    
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       integer(kind=4) :: tama2,tama,i,ii
                                          
@@ -698,7 +698,7 @@ contains
 
    subroutine rotate_generateFDMs (this,mpidir) 
       
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       integer(kind=4) :: tama,tama2,i,ii
       
@@ -733,12 +733,12 @@ contains
    end subroutine rotate_generateFDMs
    
    subroutine rotate_generateSONDAs (this,mpidir) 
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir    
       integer(kind=4) :: tama,tama2,tama3,i,ii,iii  
-      type(FarField_Sonda), pointer :: old_FarField => NULL ()
-      type(Electric_Sonda), pointer :: old_Electric => NULL ()
-      type(Magnetic_Sonda), pointer :: old_Magnetic => NULL ()
+      type(FarField_Sonda_t), pointer :: old_FarField => NULL ()
+      type(Electric_Sonda_t), pointer :: old_Electric => NULL ()
+      type(Magnetic_Sonda_t), pointer :: old_Magnetic => NULL ()
       real(kind=RK) :: THETASTART,THETASTOP,PHISTART,PHISTOP
       integer :: iox, ioy, ioz
       
@@ -851,11 +851,11 @@ contains
    end subroutine rotate_generateSONDAs
    
    subroutine rotate_generateMasSondas (this,mpidir)     
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir                          
       integer(kind=4) :: tama,tama2,i,ii  
       integer(kind=4) :: oxi,oyi,ozi,oxe,oye,oze,oor,TXI,TYI,TZI  
-      type(Coords), pointer :: old_MasSonda => NULL ()
+      type(coords_t), pointer :: old_MasSonda => NULL ()
       
       tama = this%Sonda%length       
       ! tres posibilidades FarField, Electric,Magnetic
@@ -924,11 +924,11 @@ contains
    end subroutine rotate_generateMasSondas
    
    subroutine rotate_generateBloqueProbes (this,mpidir)    
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir                          
       integer(kind=4) :: tama,i  
       integer(kind=4) :: oxi,oyi,ozi,oxe,oye,oze  
-      type(BloqueProbe), pointer :: old_BloqueProbe => NULL ()
+      type(BloqueProbe_t), pointer :: old_BloqueProbe => NULL ()
       
       tama = this%BloquePRB%N_BP   
       do i = 1, tama      
@@ -990,11 +990,11 @@ contains
    end subroutine rotate_generateBloqueProbes
 !!   
    subroutine rotate_generateVolumicProbes(this,mpidir)    
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: mpidir                          
       integer(kind=4) :: tama,tama2,i,ii  
       integer(kind=4) :: oxi,oyi,ozi,oxe,oye,oze,oor,TXI,TYI,TZI  
-      type(Coords), pointer :: old_Coordinates => NULL ()
+      type(coords_t), pointer :: old_Coordinates => NULL ()
       
       tama = this%VolPrb%length
       ! tres posibilidades FarField, Electric,Magnetic
@@ -1092,7 +1092,7 @@ contains
 !!
    subroutine ROTATEMPI(mpidir,COORDEN)         
       integer(kind=4) :: mpidir    
-      type(coords), intent(inout) :: COORDEN
+      type(coords_t), intent(inout) :: COORDEN
       integer(kind=4) :: OXI, OXE, OYI, OYE,OZI, OZE, OOR,TXI,TYI,TZI
       OXI=COORDEN%XI
       OXE=COORDEN%XE        
@@ -1142,7 +1142,7 @@ contains
 
    subroutine ROTATEMPI_SCALED(mpidir,COORDEN)        
       integer(kind=4) :: mpidir    
-      type(coords_SCALED), intent(inout) :: COORDEN
+      type(coords_scaled_t), intent(inout) :: COORDEN
       integer(kind=4) :: OXI, OXE, OYI, OYE,OZI, OZE,oor
       real(kind=RK) :: OXC,OYC,OZC
       OXI=COORDEN%XI
@@ -1195,7 +1195,7 @@ contains
      
    subroutine rotate_freq_depend_material_properties(mpidir, freqDepMat)
       integer(kind=4), intent(in) :: mpidir    
-      type(FreqDepenMaterial), intent(inout) :: freqDepMat
+      type(FreqDepenMaterial_t), intent(inout) :: freqDepMat
       complex, dimension(:), pointer :: po11, po12, po13, po22, po23, po33
       real(kind=RK) :: ro11, ro12, ro13, ro22, ro23, ro33
       integer(kind=4) :: io11, io12, io13, io22, io23, io33

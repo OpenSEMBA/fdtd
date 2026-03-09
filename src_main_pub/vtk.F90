@@ -17,7 +17,7 @@ contains
    subroutine createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
    
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       integer(kind=4) :: mpidir
       logical :: vtkindex,yacreado,dontwritevtk
@@ -879,7 +879,7 @@ contains
 
    subroutine createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
    
       integer(kind=4) :: mpidir
@@ -950,7 +950,7 @@ contains
    subroutine write_VTKfile(sgg,fichero,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time,  &
                               i_sub_time,total_sub_times,FreqDomain,what,sggMtag,que_saco)
    
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       character(len=BUFSIZE), intent(in) :: fichero
 
@@ -1163,7 +1163,7 @@ contains
       integer(kind=4), allocatable, dimension(:,:), intent(out) :: Elems
       
       logical, intent(in) :: vtkindex
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4), intent(in):: numberOfSerialized
       type(Serialized_t), intent(in) :: Serialized
       

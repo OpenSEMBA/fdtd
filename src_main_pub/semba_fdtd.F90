@@ -53,7 +53,7 @@ module SEMBA_FDTD_mod
       type(tiempo_t) :: time_comienzo
       real(kind=8) time_desdelanzamiento
       type(media_matrices_t) :: media
-      type(SGGFDTDINFO) :: sgg
+      type(SGGFDTDINFO_t) :: sgg
       type(limit_t), dimension(1:6) :: fullsize, SINPML_fullsize
       real(kind=RKIND) :: eps0,mu0,cluz
       real(kind=RKIND) :: maxSourceValue
@@ -102,8 +102,8 @@ contains
       integer(kind=4) :: my_iostat
 
 
-      type(Parseador), pointer :: parser
-      type(t_NFDE_FILE), pointer :: NFDE_FILE
+      type(Parseador_t), pointer :: parser
+      type(t_NFDE_FILE_t), pointer :: NFDE_FILE
       type(solver_t) :: solver 
          
 #ifdef CompileWithMPI
@@ -990,7 +990,7 @@ contains
       character(len=BUFSIZE), intent(in) :: filename, extension
       integer(kind=4) :: mpi_t_linea_t,longitud4
       integer(kind=8) :: rawInfoBuffer, numeroLineasFichero, i8, longitud8
-      type(t_NFDE_FILE), pointer :: rawFileInfo
+      type(t_NFDE_FILE_t), pointer :: rawFileInfo
 
       write (dubuf,*) 'INIT Reading file '//trim (adjustl(this%whoami))//' ', trim (adjustl(filename))
 
@@ -1048,7 +1048,7 @@ contains
 #endif
    subroutine data_loader(filename, parsedProblem)
       character(len=1024), intent(in) :: filename
-      type(Parseador), pointer :: parsedProblem
+      type(Parseador_t), pointer :: parsedProblem
       type(fdtdjson_parser_t) :: parsed_t
 
       write (dubuf,*) 'INIT interpreting geometrical data from ', trim (adjustl(filename))
@@ -1102,11 +1102,11 @@ contains
    end function
 
    subroutine readLines(rInfo, filename, unit)
-      type(t_NFDE_FILE), pointer :: rInfo
+      type(t_NFDE_FILE_t), pointer :: rInfo
       character(len=*), intent(in) :: filename
       integer(kind=4), intent(in) :: unit
 
-      type(t_linea), pointer :: linea
+      type(t_linea_t), pointer :: linea
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
@@ -1129,12 +1129,12 @@ contains
    end subroutine
 
    subroutine readLinesFromJSONOneLiner(rInfo, filename, unit)
-      type(t_NFDE_FILE), pointer :: rInfo
+      type(t_NFDE_FILE_t), pointer :: rInfo
       character(len=*), intent(in) :: filename
       integer(kind=4), intent(in) :: unit
 
       integer(kind=4) :: io, size_read, pos, d
-      type(t_linea), pointer :: linea
+      type(t_linea_t), pointer :: linea
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
 
@@ -1155,9 +1155,9 @@ contains
 
    subroutine carga_raw_info (rawFileInfo, filename, extension)
       character(len=*), intent(in) :: filename, extension
-      type(t_NFDE_FILE), pointer :: rawFileInfo
+      type(t_NFDE_FILE_t), pointer :: rawFileInfo
       
-      type(t_linea), pointer :: linea
+      type(t_linea_t), pointer :: linea
       LOGICAL :: ok
       character(len=BUFSIZE) :: l_aux
       character(len=BUFSIZE) :: buffer
@@ -1225,7 +1225,7 @@ contains
    subroutine semba_update_after_simulation(this, success, sgg, eps, mu, media)
       class(semba_fdtd_t) :: this
       logical :: success
-      type(sggfdtdinfo) :: sgg
+      type(SGGFDTDINFO_t) :: sgg
       type(media_matrices_t) :: media
       real(kind=rkind) :: eps ,mu
       this%finishedwithsuccess = success

@@ -50,11 +50,11 @@ contains
       LOGICAL, INTENT (INout) :: mibc,SGBC,CLIPREGION,boundwireradius,SGBCDispersive,skindepthpre
       LOGICAL, INTENT (INout) :: createmapvtk
       type(limit_t), dimension(1:6) :: SINPML_fullsize, fullsize
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       character(len=BUFSIZE) :: extraswitches
 
       type(taglist_t) :: tag_numbers
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       integer(kind=4) :: tama, tama2, tama3, tama4, tama5, tama6, i, j, k, tipotemp, tamaSonda,  &
       &      tamaoldSONDA, tamaBloquePrb, tamaScrPrb,pozi,tama2bis,numeroasignaciones,ci
       character(len=*), intent(in) :: fichin
@@ -65,7 +65,7 @@ contains
       character(len=BUFSIZE) :: tag
 
       type(XYZlimit_t) :: punto, BoundingBox, conf_bounding_box
-      type(XYZlimit_t_scaled) :: punto_s
+      type(xyzlimit_scaled_t) :: punto_s
       integer(kind=4) :: orientacion,orientacionL,orientacionR, direccion, contamedia,oldcontamedia, maxcontamedia, mincontamedia, inicontamedia, &
          i1, j1, field, k1, pecmedio, ii, medio1, medio2, sondas,CONTACURR,CONTAVOLT,I_,J_
       !
@@ -97,7 +97,7 @@ contains
       integer(kind=4) :: i11, j11
       !
       type(tagtype_t) :: tagtype
-      type(FreqDepenMaterial), pointer :: fdgeom
+      type(FreqDepenMaterial_t), pointer :: fdgeom
       !
       integer(kind=4) :: numertag
       integer(kind=4) :: Alloc_iEx_XI, Alloc_iEx_XE, Alloc_iEx_YI, Alloc_iEx_YE, Alloc_iEx_ZI, Alloc_iEx_ZE, Alloc_iEy_XI, &
@@ -4875,7 +4875,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
       subroutine initConformalBoundingBox(sgg, bbox)
-         type(sggfdtdinfo), intent(in) :: sgg
+         type(SGGFDTDINFO_t), intent(in) :: sgg
          type(XYZlimit_t), intent(inout) :: bbox
          bbox%XI = -sgg%Alloc(iHx)%XI
          bbox%XE = -sgg%Alloc(iHx)%XE
@@ -4955,7 +4955,7 @@ contains
       end function
 
       subroutine addConformalMedia(sgg, media, conformal_media, edge_ratios, face_ratios, contamedia, bbox, side_map)
-         type(sggfdtdinfo), intent(inout) :: sgg
+         type(SGGFDTDINFO_t), intent(inout) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          real(kind=rkind), dimension(:), allocatable, intent(in) :: edge_ratios, face_ratios
@@ -5000,7 +5000,7 @@ contains
       end subroutine
 
       subroutine addConformalFaceMedia(sgg, media, conformal_media, num_media, face_ratios, bbox)
-         type(SGGFDTDINFO), intent(INOUT) :: sgg
+         type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer(kind=4), intent(in) :: num_media
@@ -5059,7 +5059,7 @@ contains
       end function
 
       subroutine addConformalEdgeMedia(sgg, media, conformal_media, num_media, edge_ratios, bbox)
-         type(SGGFDTDINFO), intent(INOUT) :: sgg
+         type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer(kind=4), intent(in) :: num_media
@@ -5109,7 +5109,7 @@ contains
       end subroutine
 
       subroutine addUndetectedBorderFaces(sgg, media, conformal_media, num_media, edge_ratios, bbox, side_map)
-         type(SGGFDTDINFO), intent(INOUT) :: sgg
+         type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          type(media_matrices_t), intent(inout) :: media
          type(ConformalMedia_t), intent(in) :: conformal_media
          integer(kind=4), intent(in) :: num_media
@@ -5604,7 +5604,7 @@ contains
       end subroutine asignawiredisper
 
       subroutine asignadisper(fdgeom)
-         type(FreqDepenMaterial), pointer :: fdgeom
+         type(FreqDepenMaterial_t), pointer :: fdgeom
 
          if (fdgeom%l+fdgeom%LM /=0 ) then
             BUFF='ERROR: SECOND ORDER DISPERSIVE MEDIA UNSUPPORTED. TRANSLATE THEM TO FIRST ORDER ()'
@@ -5816,9 +5816,9 @@ contains
 
    subroutine read_limits_nogeom (layoutnumber,size, sgg, fullsize, SINPML_fullsize, this,MurAfterPML,mur_exist)
       type(limit_t), dimension(1:6) :: fullsize, SINPML_fullsize
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
 
-      type(Parseador), intent(in) :: this
+      type(Parseador_t), intent(in) :: this
       integer(kind=4) :: tama, i, field,j,k
       character(len=BUFSIZE) :: buff
       logical MurAfterPML,mur_exist
@@ -6294,7 +6294,7 @@ contains
    subroutine prepro_skindepth(this,fichin)
       integer pozi,tama,j,k
       character(len=BUFSIZE) :: multiportFile
-      type(Parseador), intent(in) :: this
+      type(Parseador_t), intent(in) :: this
       character(len=*), intent(in) :: fichin
       character(len=BUFSIZE) :: restocadena
       integer :: my_iostat
@@ -6338,7 +6338,7 @@ contains
 #else
    subroutine AssigLossyOrPECtoNodes(sgg,media)
 #endif
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       type(media_matrices_t), intent(inout) :: media
 
       logical :: ispec, isSGBC, IsComposite, islossy, input_conformal_flag,NODALMENTEIGUALES,iguaSGM,iguaSIG,iguaMUR,iguaPEC,iguaLOS,iguaEPR,ISconformal
@@ -6665,7 +6665,7 @@ contains
       character(len=*), intent(in) :: fichin
       integer(kind=4), intent(in) :: layoutnumber
 
-      type(Parseador), intent(inout) :: this
+      type(Parseador_t), intent(inout) :: this
       LOGICAL :: foundDuplicate
       integer(Kind=4) :: numertag, i,j, k, m, tama,tama2,tama3,tama2p,tama3p,precounting,acum,thefileno
       character(len=BUFSIZE) :: tagToCheck
@@ -7270,8 +7270,8 @@ contains
    end subroutine
 
    subroutine checkLossyTags(component, prev_components, n_prev, numertag, tagtype, precounting)
-      type(LossyThinSurface), intent(in) :: component        ! Current component
-      type(LossyThinSurface), intent(in) :: prev_components(:) ! Array of previous components
+      type(LossyThinSurface_t), intent(in) :: component        ! Current component
+      type(LossyThinSurface_t), intent(in) :: prev_components(:) ! Array of previous components
       integer, intent(in) :: n_prev                         ! Number of previous components
       integer, intent(inout) :: numertag
       type(tagtype_t), intent(inout) :: tagtype

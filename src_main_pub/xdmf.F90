@@ -27,7 +27,7 @@ contains
       !------------------------>
       character(len=BUFSIZE) :: filename ! File name
       !
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4), intent(in) :: layoutnumber, size
       integer(kind=4) :: ierr,  sizeofvalores,COMPO
       complex( kind = CKIND), dimension( :, :, :, :,: ), allocatable  :: valor3DComplex !freqdomain probes
@@ -474,7 +474,7 @@ contains
 
 
    subroutine createh5bintxt(sgg,layoutnumber,size)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4), intent(in) :: layoutnumber, size
       logical :: lexis,algoescrito
       integer(kind=4) :: ii,ierr
@@ -522,7 +522,7 @@ contains
       logical :: vtkindex,createh5bin
       !------------------------>
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4), intent(in) :: layoutnumber, size
       type(output_t), pointer, dimension(:) :: output
       integer(kind=4) :: ii

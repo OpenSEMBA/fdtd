@@ -1499,7 +1499,7 @@ module CreateMatrices
       !
       type(limit_t), dimension(1:6) :: SINPML_fullsize, fullsize
       !Inputs and Outputs
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: &
       sggMiEx(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,sgg%Alloc(iEx)%ZI : sgg%Alloc(iEx)%ZE), &
       sggMiEy(sgg%Alloc(iEy)%XI : sgg%Alloc(iEy)%XE,sgg%Alloc(iEy)%YI : sgg%Alloc(iEy)%YE,sgg%Alloc(iEy)%ZI : sgg%Alloc(iEy)%ZE), &

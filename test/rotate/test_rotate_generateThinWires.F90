@@ -7,7 +7,7 @@ module test_rotate_generateThinWires_m
 contains
 
 integer function test_rotate_generate_thin_wires() bind(C) result(err)
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     
@@ -35,7 +35,7 @@ integer function test_rotate_generate_thin_wires() bind(C) result(err)
 end function test_rotate_generate_thin_wires
 
 subroutine setup_thin_wires_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     
     allocate(this%tWires)
     this%tWires%n_tw = 1
@@ -52,7 +52,7 @@ subroutine setup_thin_wires_test(this)
 end subroutine setup_thin_wires_test
 
 subroutine init_thin_wire_component_data(this, twidx, twcidx, i1, j1, k1, nd, d, m, tag)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: twidx, twcidx, i1, j1, k1, nd, d
     real(kind=8), intent(in) :: m
     character(len=*), intent(in) :: tag
@@ -70,7 +70,7 @@ end subroutine init_thin_wire_component_data
 
 subroutine verify_thin_wire_rotation(test_err, this, mpidir)
     integer, intent(inout) :: test_err
-    type(Parseador), intent(in) :: this
+    type(Parseador_t), intent(in) :: this
     integer, intent(in) :: mpidir
     if (mpidir==2) then
         call expect_eq_int(test_err, 3, this%tWires%tw(1)%twc(1)%i, "rotate_generateThinWires: i(1) should be rotated with mpidir 2")
@@ -105,7 +105,7 @@ subroutine verify_thin_wire_rotation(test_err, this, mpidir)
 end subroutine verify_thin_wire_rotation
 
 subroutine cleanup_thin_wires_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer :: i
     
     if (this%tWires%n_tw > 0) then

@@ -50,7 +50,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitPMLbodies(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
       real(kind=RKIND) :: eps00,mu00
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
       real(kind=RKIND)     , pointer, dimension( : ) :: g2,gm2
       real(kind=RKIND)   , intent(in) , target     :: &
@@ -486,7 +486,7 @@ contains
 
   subroutine calc_pmlbodypar(sgg,eps00,mu00)
 
-        type(SGGFDTDINFO), intent(in) :: sgg  
+        type(SGGFDTDINFO_t), intent(in) :: sgg  
         real(kind=RKIND) :: eps00,mu00
         integer(kind=4) :: conta
         type(BerPML__t), pointer :: PML_
@@ -574,7 +574,7 @@ contains
 
    subroutine DestroyPMLbodies(sgg)
 
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=4) :: i
 
       !free up memory

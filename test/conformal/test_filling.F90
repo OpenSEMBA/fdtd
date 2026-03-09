@@ -17,7 +17,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
     type(triangle_t), dimension(:), allocatable :: tris
 
     type(coord_t) :: c1, c2, c3
-    type(ConformalPECRegions) :: cR
+    type(ConformalPECRegions_t) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(coord_t), dimension(3) :: vertices
@@ -108,7 +108,7 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
     type(triangle_t), dimension(:), allocatable :: tris
 
     type(coord_t) :: c1, c2, c3
-    type(ConformalPECRegions) :: cR
+    type(ConformalPECRegions_t) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(coord_t), dimension(3) :: vertices
@@ -206,7 +206,7 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
     type(triangle_t), dimension(:), allocatable :: tris
 
     type(coord_t) :: c1, c2, c3
-    type(ConformalPECRegions) :: cR
+    type(ConformalPECRegions_t) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(coord_t), dimension(3) :: vertices
@@ -299,7 +299,7 @@ integer function test_conformal_filling_open() bind(C) result(err)
     type(triangle_t), dimension(:), allocatable :: tris
 
     type(coord_t) :: c1, c2, c3
-    type(ConformalPECRegions) :: cR
+    type(ConformalPECRegions_t) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(cell_map_t) :: cell_map
@@ -360,7 +360,7 @@ integer function test_conformal_filling_closed() bind(C) result(err)
     type(triangle_t), dimension(:), allocatable :: tris
 
     type(coord_t) :: c1, c2, c3, c4
-    type(ConformalPECRegions) :: cR
+    type(ConformalPECRegions_t) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(cell_map_t) :: cell_map
@@ -416,7 +416,7 @@ integer function  test_conformal_edge_next_cell() bind(C) result(err)
     type(triangle_t), dimension(:), allocatable :: tris
 
     type(coord_t) :: c1, c2, c3, c4, c5, c6
-    type(ConformalPECRegions) :: cR
+    type(ConformalPECRegions_t) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(cell_map_t) :: cell_map
@@ -489,7 +489,7 @@ integer function test_conformal_filling_closed_corner() bind(C) result(err)
     type(triangle_t), dimension(:), allocatable :: tris
 
     type(coord_t) :: c1, c2, c3, c4, c5, c6
-    type(ConformalPECRegions) :: cR
+    type(ConformalPECRegions_t) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(cell_map_t) :: cell_map
@@ -572,7 +572,7 @@ integer function test_conformal_filling_block_and_corner() bind(C) result(err)
     type(triangle_t), dimension(:), allocatable :: tris
 
     type(coord_t) :: c1, c2, c3, c4, c5, c6, c7, c8, c9, c10
-    type(ConformalPECRegions) :: cR
+    type(ConformalPECRegions_t) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(cell_map_t) :: cell_map
@@ -677,7 +677,7 @@ integer function test_conformal_filling_cylinder_base_on_grid_plane() bind(C) re
     type(triangle_t), dimension(:), allocatable :: tris
 
     type(coord_t), dimension(24) :: c
-    type(ConformalPECRegions) :: cR
+    type(ConformalPECRegions_t) :: cR
     type(ConformalMedia_t), dimension(:), allocatable :: cMs
     type(ConformalMedia_t) :: cM
     type(cell_map_t) :: cell_map

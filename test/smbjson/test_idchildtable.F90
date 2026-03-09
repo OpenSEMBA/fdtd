@@ -23,7 +23,7 @@ end function
 integer function test_idchildtable() bind(C) result(err)
    use idchildtable_mod
    use smbjson_labels_mod
-   use parser_tools_mod, only: json_value_ptr
+   use parser_tools_mod, only: json_value_ptr_t
    use smbjson_testingTools
    use json_module
 
@@ -35,7 +35,7 @@ integer function test_idchildtable() bind(C) result(err)
    type(json_file) :: jsonfile
    type(json_core) :: core
    type(json_value), pointer :: root => null()
-   type(json_value_ptr) :: mat
+   type(json_value_ptr_t) :: mat
 
    err = 0
    call jsonfile%initialize()
