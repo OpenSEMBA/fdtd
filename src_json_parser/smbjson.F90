@@ -3167,7 +3167,10 @@ contains
          end if
          gens = [this%jsonValueFilterByKeyValue(sources, J_TYPE, J_SRC_TYPE_GEN)]
 
-         n = countWireGenerators(gens)
+         n = 0
+         do i =1, size(gens)
+            if (IsGeneratorOnWire(gens(i)%p)) n = n + 1
+         end do
          allocate(res(n))
          if (n == 0) return
          n = 1
@@ -3203,60 +3206,12 @@ contains
          end do
       end function
 
-      function countWireGenerators(generators) result(res)
-         type(json_value_ptr), dimension(:), allocatable :: generators
-         integer :: res
-
-         character (len=:), allocatable :: fieldLabel
-         logical :: found
-         type(materialAssociation_t), dimension(:), allocatable :: mAs
-         integer :: i, j, k
-         integer :: cId
-         type(polyline_t) :: polyline
-         res = 0
-         do k = 1, size(generators)
-            fieldLabel = this%getStrAt(generators(k)%p, J_FIELD, found=found)
-            if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
-               call WarnErrReport('field type not recognized', .true.)
-               return 
-            end if
-
-            block
-               type(pixel_t) :: pixel
-               integer, dimension(:), allocatable :: eIds
-               eIds = this%getIntsAt(generators(k)%p, J_ELEMENTIDS)
-               pixel = getPixelFromElementId(this%mesh, eIds(1))
-               cId = pixel%tag
-            end block
-
-            mAs = this%getMaterialAssociations([ &
-                  J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
-                  J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
-                  J_MAT_TYPE_WIRE//'               ' ])
-
-            do i = 1, size(mAs)
-               polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
-               do j = 2, size(polyline%coordIds)-1
-                  if (polyline%coordIds(j) == cId) then
-                     if (fieldLabel == J_FIELD_VOLTAGE .and. &
-                         (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. &
-                          mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
-                        call WarnErrReport('Voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
-                     end if
-                     res = res + 1
-                  end if
-               end do
-            end do
-         end do
-         
-      end function
-
       logical function IsGeneratorOnWire(p)
          type(json_value), pointer :: p
          character (len=:), allocatable :: fieldLabel
          logical :: found
          type(materialAssociation_t), dimension(:), allocatable :: mAs
-         integer :: i, j, k
+         integer :: i, j, k, l
          integer :: cId
          type(polyline_t) :: polyline
          IsGeneratorOnWire = .false.
@@ -3281,17 +3236,19 @@ contains
                J_MAT_TYPE_WIRE//'               ' ])
 
          do i = 1, size(mAs)
-            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
-            do j = 2, size(polyline%coordIds)-1
-               if (polyline%coordIds(j) == cId) then
-                  if (fieldLabel == J_FIELD_VOLTAGE .and. &
-                        (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. &
-                         mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
-                     call WarnErrReport('Voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
+            do l = 1, size(mAs(i)%elementIds)
+               polyline = this%mesh%getPolyline(mAs(i)%elementIds(l))
+               do j = 2, size(polyline%coordIds)-1
+                  if (polyline%coordIds(j) == cId) then
+                     if (fieldLabel == J_FIELD_VOLTAGE .and. &
+                           (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. &
+                           mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
+                        call WarnErrReport('Voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
+                     end if
+                     IsGeneratorOnWire = .true.
+                     return
                   end if
-                  IsGeneratorOnWire = .true.
-                  return
-               end if
+               end do
             end do
          end do
          

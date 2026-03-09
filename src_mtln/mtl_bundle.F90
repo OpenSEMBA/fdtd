@@ -96,7 +96,7 @@ contains
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
 
-        call res%collectAndInitSources(levels)
+        ! call res%collectAndInitSources(levels)
 
 #ifdef CompileWithMPI
         res%bundle_in_layer = levels(1)%lines(1)%bundle_in_layer

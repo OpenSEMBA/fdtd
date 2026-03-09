@@ -1499,8 +1499,6 @@ contains
 
 
    subroutine WarnErrReport(bufff,error)
-      ! USE ISO_FORTRAN_ENV, ONLY : ERROR_UNIT
-
       !
       logical :: itsopen
       logical, optional :: error
@@ -1523,8 +1521,7 @@ contains
       buff2=CHAR(13)//CHAR(10)//trim(adjustl(buff3))
       call trimnullchar(buff2)
 
-      write (ERROR_UNIT,'(a)',err=154) trim(adjustl(buff3))
-      ! write (ERROR_UNIT,'(a)') trim(adjustl(buff3))
+      write (17,'(a)',err=154) trim(adjustl(buff3))
 
       goto 155
 154   inquire(unit=17, opened=itsopen) 

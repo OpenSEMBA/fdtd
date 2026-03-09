@@ -18,6 +18,14 @@
 
     "materials": [
 		{
+			"name": "Shield",
+			"id": 1,
+			"type": "unshieldedMultiwire",
+            "inductancePerMeter": [[0.0]],
+            "capacitancePerMeter": [[0.0]],
+			"resistancePerMeter": [22.9e-3]
+		},
+		{
 			"name": "InnerCoaxial",
 			"id": 2,
 			"type": "shieldedMultiwire",
@@ -35,18 +43,16 @@
 				"direction": "both"
 			}
 		},
-		{
-			"name": "Shield",
-			"id": 1,
-			"type": "unshieldedMultiwire",
-            "inductancePerMeter": [[0.0]],
-            "capacitancePerMeter": [[0.0]],
-			"resistancePerMeter": [22.9e-3]
-		},
         {
-            "id": 2,
+            "id": 3,
             "type": "terminal",
             "terminations": [{"type": "series", "resistance": 50}]
+        },
+        {
+            "id": 4,
+            "type": "terminal",
+            "terminations": [{"type": "series", "resistance": 50},
+                             {"type": "series", "resistance": 50}]
         }
     ],
 
@@ -59,69 +65,51 @@
             {"id": 1, "relativePosition": [11, 11,  7]},
             {"id": 2, "relativePosition": [11, 11, 12]},
             {"id": 3, "relativePosition": [11, 11, 17]},
-            {"id": 4, "relativePosition": [12, 11, 17]}
+            {"id": 4, "relativePosition": [12, 11, 17]},
+            {"id": 5, "relativePosition": [11, 11,  7]},
+            {"id": 6, "relativePosition": [11, 11, 12]},
+            {"id": 7, "relativePosition": [11, 11, 17]},
+            {"id": 8, "relativePosition": [11, 11,  7]},
+            {"id": 9, "relativePosition": [11, 11, 12]},
+            {"id": 10, "relativePosition": [11, 11, 17]}
         ],
         "elements": [
             {"id": 1, "type": "node", "coordinateIds": [2]},
             {"id": 2, "type": "polyline", "coordinateIds": [1, 2, 3] },
             {"id": 3, "type": "cell", "intervals": [[[1, 1, 1], [19, 19, 21]]] },
-            {"id": 4, "type": "node", "coordinateIds": [1]}
+            {"id": 4, "type": "node", "coordinateIds": [9]},
+            {"id": 5, "type": "polyline", "coordinateIds": [5, 6, 7] },
+            {"id": 6, "type": "polyline", "coordinateIds": [8, 9, 10] }
         ]
     },
 
     "materialAssociations": [
         { 
-            "name" : "single_wire",
+            "name" : "shield",
             "materialId": 1,
-            "initialTerminalId": 2,
-            "endTerminalId": 2,
+            "initialTerminalId": 3,
+            "endTerminalId": 3,
             "elementIds": [2]
+        },
+        { 
+            "name" : "inner_wires",
+            "materialId": 2,
+            "initialTerminalId": 4,
+            "endTerminalId": 4,
+            "elementIds": [5,6],
+            "containedWithinElementId": 2
+
         }
     ],
 
     "sources": [
         {
-            "type": "planewave",
-            "magnitudeFile": "holland.exc",
-            "elementIds": [3],
-            "direction": {
-                "theta": 1.5708,
-                "phi": 0.0
-            },
-            "polarization": {
-                "theta": 0.0,
-                "phi": 0.0
-            }
-        },
-        {
-            "name" : "terminal_source_v",
-            "type" : "generator",
-            "magnitudeFile" : "towelHanger.exc",
-            "elementIds" : [1],
-            "field" : "voltage"
-        },
-        {
-            "name" : "terminal_source_i",
-            "type" : "generator",
-            "magnitudeFile" : "towelHanger.exc",
-            "elementIds" : [1],
-            "field" : "current"
-        },
-        {
             "name" : "inner_source_v",
             "type" : "generator",
-            "magnitudeFile" : "towelHanger.exc",
-            "elementIds" : [1],
+            "magnitudeFile" : "sources.exc",
+            "elementIds" : [4],
             "field" : "voltage"
         }
-        {
-            "name" : "inner_source_i",
-            "type" : "generator",
-            "magnitudeFile" : "towelHanger.exc",
-            "elementIds" : [1],
-            "field" : "current"
-        }
-
     ],
 
     "probes": [
