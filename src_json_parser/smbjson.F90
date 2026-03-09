@@ -3241,7 +3241,7 @@ contains
                      if (fieldLabel == J_FIELD_VOLTAGE .and. &
                          (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. &
                           mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
-                        call WarnErrReport('voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
+                        call WarnErrReport('Voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
                      end if
                      res = res + 1
                   end if
@@ -3287,7 +3287,7 @@ contains
                   if (fieldLabel == J_FIELD_VOLTAGE .and. &
                         (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. &
                          mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
-                     call WarnErrReport('voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
+                     call WarnErrReport('Voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
                   end if
                   IsGeneratorOnWire = .true.
                   return
