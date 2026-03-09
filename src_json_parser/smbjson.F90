@@ -3158,7 +3158,7 @@ contains
          type(linel_t), dimension(:), allocatable :: linels
          type(polyline_t) :: pl
          type(coordinate_t) :: coord
-         integer :: id, index
+         integer :: idAndPos(2), index
 
          call this%core%get(this%root, J_sources, sources, found)
          if (.not. found) then 
@@ -3191,13 +3191,14 @@ contains
                res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
                res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0)
 
-               
-               id = getPolylineElemIdOfGenerator(gens(i)%p)
-               call elemIdToCable%get(key(id), value=index)
+               idAndPos = getPolylineElemIdAndConductorOfGenerator(gens(i)%p)
+               ! id = getPolylineElemIdOfGenerator(gens(i)%p)
+               call elemIdToCable%get(key(idAndPos(1)), value=index)
                coord = GetCoordinateFromElemIdNode(gens(i)%p)
-               pl = this%mesh%getPolyline(id)
+               pl = this%mesh%getPolyline(idAndPos(1))
                linels = this%mesh%polylineToLinels(pl)
 
+               res(n)%conductor = idAndPos(2)
                res(n)%index = findIndexInLinels(coord, linels)
                res(n)%attached_to_cable => mtln_res%cables(index)%ptr
 
@@ -3205,6 +3206,8 @@ contains
             end if
          end do
       end function
+
+
 
       logical function IsGeneratorOnWire(p)
          type(json_value), pointer :: p
@@ -3272,9 +3275,14 @@ contains
             return
          end if
          wire_probes = [this%jsonValueFilterByKeyValue(probes, J_TYPE, J_PR_TYPE_WIRE)]
-         n = countOutputProbes(wire_probes)
+
+         n = 0
+         do i = 1, size(wire_probes)
+            if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) n = n + 1
+         end do
          allocate(res(n))
          if (n == 0) return
+
          n = 1
          do i = 1, size(wire_probes)
             if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) then 
@@ -3380,48 +3388,6 @@ contains
          res = m(1)
       end function
 
-      function countOutputProbes(probes) result(res)
-         type(json_value_ptr), dimension(:), allocatable :: probes
-         integer :: res
-
-         character (len=:), allocatable :: fieldLabel
-         logical :: found
-         type(materialAssociation_t), dimension(:), allocatable :: mAs
-         integer :: i, j, k
-         integer :: cId
-         type(polyline_t) :: polyline
-         res = 0
-         do k = 1, size(probes)
-            fieldLabel = this%getStrAt(probes(k)%p, J_FIELD, found=found)
-            if (.not. found .or. (fieldLabel /= J_FIELD_CURRENT .and. fieldLabel /= J_FIELD_VOLTAGE)) then
-               continue
-            end if
-
-            block
-               type(pixel_t) :: pixel
-               integer, dimension(:), allocatable :: eIds
-               eIds = this%getIntsAt(probes(k)%p, J_ELEMENTIDS)
-               pixel = getPixelFromElementId(this%mesh, eIds(1))
-               cId = pixel%tag
-            end block
-
-            mAs = this%getMaterialAssociations([ &
-                  J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
-                  J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
-                  J_MAT_TYPE_WIRE//'               ' ])
-
-            do i = 1, size(mAs)
-               polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
-               do j = 1, size(polyline%coordIds)
-                  if (polyline%coordIds(j) == cId) then
-                     res = res + 1
-                  end if
-               end do
-            end do
-         end do
-         
-      end function
-
       logical function isProbeDefinedOnMultiwire(p)
          type(json_value), pointer :: p
          character (len=:), allocatable :: fieldLabel
@@ -3494,12 +3460,12 @@ contains
          end do
       end function
 
-      function getPolylineElemIdOfGenerator(p) result(res)
+      function getPolylineElemIdAndConductorOfGenerator(p) result(res)
          type(json_value), pointer :: p
          type(polyline_t) :: polyline
-         integer :: res
+         integer :: res(2)
          type(materialAssociation_t), dimension(:), allocatable :: mAs
-         integer :: i, j
+         integer :: i, j, k
          integer :: cId
          
          block
@@ -3514,16 +3480,19 @@ contains
                 J_MAT_TYPE_SHIELDED_MULTIWIRE//'  ',&
                 J_MAT_TYPE_UNSHIELDED_MULTIWIRE    ,&
                 J_MAT_TYPE_WIRE//'               ' ])
-         res = 0
+         res(:) = 0
          do i = 1, size(mAs)
-            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
-            do j = 2, size(polyline%coordIds)-1
-               if (polyline%coordIds(j) == cId) then
-                  res = mAs(i)%elementIds(1)
-               end if
+            do k = 1, size(mAs(i)%elementIds)
+               polyline = this%mesh%getPolyline(mAs(i)%elementIds(k))
+               do j = 2, size(polyline%coordIds)-1
+                  if (polyline%coordIds(j) == cId) then
+                     res(1) = mAs(i)%elementIds(k)
+                     res(2) = k
+                  end if
+               end do
             end do
          end do
-         if (res == 0) call WarnErrReport('Generator does not belong to any wire, unshielded multiwire or shielded multiwire', .true.)
+         if (all(res(:) == 0)) call WarnErrReport('Generator does not belong to any wire, unshielded multiwire or shielded multiwire', .true.)
       end function
 
       function readProbeType(probe) result(res)

@@ -43,9 +43,9 @@ module mtln_types_mod
    type generator_t
       character(len=256) :: path_to_excitation = ""
       integer :: source_type = SOURCE_TYPE_UNDEFINED
-      type(cable_t), pointer :: attached_to_cable
-      real :: resistance
-      integer :: index
+      type(cable_t), pointer :: attached_to_cable => null()
+      real :: resistance = 0.0
+      integer :: index = -1, conductor = -1
    contains
       private
       procedure :: wire_source_eq
