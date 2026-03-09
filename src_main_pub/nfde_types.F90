@@ -265,8 +265,8 @@ module NFDETypes
       real(kind=RK), dimension(:), pointer :: betam => NULL ()
       real(kind=RK), dimension(:), pointer :: gammam => NULL ()
       type(coords_t), dimension(:), pointer :: c => NULL ()
-      real(kind=RK) ::  eps11 = 0.0_RKIND ,    eps12 = 0.0_RKIND ,    eps13 = 0.0_RKIND ,    eps22 = 0.0_RKIND ,    eps23 = 0.0_RKIND ,    eps33 = 0.0_RKIND
-      real(kind=RK) ::   mu11 = 0.0_RKIND ,     mu12 = 0.0_RKIND ,     mu13 = 0.0_RKIND ,     mu22 = 0.0_RKIND ,     mu23 = 0.0_RKIND ,     mu33 = 0.0_RKIND
+      real(kind=RK) :: eps11 = 0.0_RKIND ,    eps12 = 0.0_RKIND ,    eps13 = 0.0_RKIND ,    eps22 = 0.0_RKIND ,    eps23 = 0.0_RKIND ,    eps33 = 0.0_RKIND
+      real(kind=RK) :: mu11 = 0.0_RKIND ,     mu12 = 0.0_RKIND ,     mu13 = 0.0_RKIND ,     mu22 = 0.0_RKIND ,     mu23 = 0.0_RKIND ,     mu33 = 0.0_RKIND
       real(kind=RK) :: sigma11 = 0.0_RKIND ,  sigma12 = 0.0_RKIND ,  sigma13 = 0.0_RKIND ,  sigma22 = 0.0_RKIND ,  sigma23 = 0.0_RKIND ,  sigma33 = 0.0_RKIND
       real(kind=RK) :: sigmam11 = 0.0_RKIND , sigmam12 = 0.0_RKIND , sigmam13 = 0.0_RKIND , sigmam22 = 0.0_RKIND , sigmam23 = 0.0_RKIND , sigmam33 = 0.0_RKIND
       integer(kind=4) :: K11 = 0
@@ -784,35 +784,35 @@ module NFDETypes
    type, public :: Parseador_t
       character(len=BUFSIZE) :: switches=' '  
       ! Basics
-      type(NFDEGeneral_t), pointer ::         general => NULL ()
-      type(MatrizMedios_t), pointer ::        matriz => NULL ()
-      type(Desplazamiento_t), pointer ::      despl => NULL ()
-      type(Frontera_t), pointer ::            front => NULL ()
+      type(NFDEGeneral_t), pointer :: general => NULL ()
+      type(MatrizMedios_t), pointer :: matriz => NULL ()
+      type(Desplazamiento_t), pointer :: despl => NULL ()
+      type(Frontera_t), pointer :: front => NULL ()
       ! Materials
-      type(Materials_t), pointer ::           Mats => NULL ()
-      type(PECRegions_t), pointer ::          pecRegs => NULL ()
-      type(PECRegions_t), pointer ::          pmcRegs => NULL ()
-      type(DielectricRegions_t), pointer ::   DielRegs => NULL ()
-      type(LossyThinSurfaces_t), pointer ::   LossyThinSurfs => NULL ()
-      type(FreqDepenMaterials_t), pointer ::  frqDepMats => NULL ()
+      type(Materials_t), pointer :: Mats => NULL ()
+      type(PECRegions_t), pointer :: pecRegs => NULL ()
+      type(PECRegions_t), pointer :: pmcRegs => NULL ()
+      type(DielectricRegions_t), pointer :: DielRegs => NULL ()
+      type(LossyThinSurfaces_t), pointer :: LossyThinSurfs => NULL ()
+      type(FreqDepenMaterials_t), pointer :: frqDepMats => NULL ()
       type(ANISOTROPICelements_t), pointer :: aniMats => NULL ()
       ! Sources
-      type(Boxes_t), pointer ::               boxSrc => NULL ()
-      type(PlaneWaves_t), pointer ::          plnSrc => NULL ()
-      type(NodSource_t), pointer ::           nodSrc => NULL ()
+      type(Boxes_t), pointer :: boxSrc => NULL ()
+      type(PlaneWaves_t), pointer :: plnSrc => NULL ()
+      type(NodSource_t), pointer :: nodSrc => NULL ()
       ! Probes
-      type(Sondas_t), pointer ::              oldSONDA => NULL ()
-      type(MasSondas_t), pointer ::           Sonda => NULL ()
-      type(BloqueProbes_t), pointer ::        BloquePrb => NULL ()
-      type(VolProbes_t), pointer ::           VolPrb => NULL ()
+      type(Sondas_t), pointer :: oldSONDA => NULL ()
+      type(MasSondas_t), pointer :: Sonda => NULL ()
+      type(BloqueProbes_t), pointer :: BloquePrb => NULL ()
+      type(VolProbes_t), pointer :: VolPrb => NULL ()
       ! Thin Elements                         
-      type(ThinWires_t), pointer ::           tWires => NULL ()
-      type(SlantedWiresInfo_t), pointer ::    sWires => NULL ()
-      type(ThinSlots_t), pointer ::           tSlots => NULL ()
+      type(ThinWires_t), pointer :: tWires => NULL ()
+      type(SlantedWiresInfo_t), pointer :: sWires => NULL ()
+      type(ThinSlots_t), pointer :: tSlots => NULL ()
       ! Conformal
-      type(ConformalPECRegions_t), pointer ::  conformalRegs => NULL()
+      type(ConformalPECRegions_t), pointer :: conformalRegs => NULL()
 #ifdef CompileWithMTLN
-      type(mtln_t), pointer ::              mtln => NULL () 
+      type(mtln_t), pointer :: mtln => NULL () 
 #endif
    end type Parseador_t
    

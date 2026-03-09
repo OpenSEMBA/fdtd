@@ -129,10 +129,10 @@ module interpreta_switches_m
          factorradius, &
          factordelta
 
-      type(nf2ff_T) ::                         facesNF2FF
-      type(MedioExtra_t) ::                    MEDIOEXTRA
+      type(nf2ff_T) :: facesNF2FF
+      type(MedioExtra_t) :: MEDIOEXTRA
       type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
-      type(tiempo_t) ::                       time_out2
+      type(tiempo_t) :: time_out2
 
 !pgi        character(len=BUFSIZE_LONG) :: &
       character(len=BUFSIZE) :: &

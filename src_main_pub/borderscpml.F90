@@ -16,7 +16,7 @@ module BORDERS_CPML
    type xyzlimit_var_t
       integer(kind=4), dimension(1:6) :: XI,XE,YI,YE,ZI,ZE
    end type xyzlimit_var_t
-   type(xyzlimit_var_t), dimension(1:6) ::  PMLc
+   type(xyzlimit_var_t), dimension(1:6) :: PMLc
 
    type LR_t
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Exy,Psi_Ezy,Psi_Hxy,Psi_Hzy

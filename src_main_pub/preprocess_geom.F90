@@ -5823,7 +5823,7 @@ contains
       character(len=BUFSIZE) :: buff
       logical MurAfterPML,mur_exist
       integer(kind=4), intent(in) :: layoutnumber,size
-      real(kind=RKIND), pointer, dimension(:) ::  DummyD
+      real(kind=RKIND), pointer, dimension(:) :: DummyD
       real(kind=RKIND) :: delta
       !
       real(kind=RKIND), pointer, dimension(:) :: lineasX, lineasY, lineasZ

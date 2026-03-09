@@ -391,11 +391,11 @@ module  FDETYPES
       real(kind=RKIND_wires) :: Series_C_RightEnd,Series_C_LeftEnd
 !
       real(kind=RKIND_wires) :: Parallel_R_RightEnd_devia ,Parallel_R_LeftEnd_devia
-      real(kind=RKIND_wires) ::  Series_R_RightEnd_devia ,  Series_R_LeftEnd_devia
+      real(kind=RKIND_wires) :: Series_R_RightEnd_devia ,  Series_R_LeftEnd_devia
       real(kind=RKIND_wires) :: Parallel_L_RightEnd_devia ,Parallel_L_LeftEnd_devia
-      real(kind=RKIND_wires) ::  Series_L_RightEnd_devia ,  Series_L_LeftEnd_devia
+      real(kind=RKIND_wires) :: Series_L_RightEnd_devia ,  Series_L_LeftEnd_devia
       real(kind=RKIND_wires) :: Parallel_C_RightEnd_devia ,Parallel_C_LeftEnd_devia
-      real(kind=RKIND_wires) ::  Series_C_RightEnd_devia ,  Series_C_LeftEnd_devia
+      real(kind=RKIND_wires) :: Series_C_RightEnd_devia ,  Series_C_LeftEnd_devia
       type(WireDispersiveParams_t), allocatable, dimension(:) :: disp_LeftEnd, disp_RightEnd
       ! integer(kind=4) :: LextremoI,LextremoJ,LextremoK,RextremoI,RextremoJ,RextremoK !no ncesario: yo luego calculo bien los extremos
       integer(kind=4) :: LeftEnd,RightEnd

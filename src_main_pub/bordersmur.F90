@@ -15,7 +15,7 @@ module BORDERS_MUR
    type xyzlimit_var_t
       integer(kind=4), dimension(1:6) :: XI,XE,YI,YE,ZI,ZE
    end type xyzlimit_var_t
-   type(xyzlimit_var_t), dimension(4:6) ::  MURc
+   type(xyzlimit_var_t), dimension(4:6) :: MURc
 
 
 

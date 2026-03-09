@@ -30,7 +30,7 @@ module Anisotropic
 
    type, public :: Anisotropicinfo_t
       integer(kind=4) :: indexmed,numnodesEx,numnodesEy,numnodesEz
-      integer(kind=4) ::         numnodesHx,numnodesHy,numnodesHz
+      integer(kind=4) :: numnodesHx,numnodesHy,numnodesHz
       integer(kind=4), dimension(:), pointer :: Ex_i,Ey_i,Ez_i,Hx_i,Hy_i,Hz_i
       integer(kind=4), dimension(:), pointer :: Ex_j,Ey_j,Ez_j,Hx_j,Hy_j,Hz_j
       integer(kind=4), dimension(:), pointer :: Ex_k,Ey_k,Ez_k,Hx_k,Hy_k,Hz_k
