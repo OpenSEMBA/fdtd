@@ -128,7 +128,7 @@ elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
 		set(CMAKE_C_FLAGS_DEBUG "/Zi /Od /RTC1")
 		
 		# Release flags
-		set(CMAKE_Fortran_FLAGS_RELEASE "/O3 /Qipo")
+		set(CMAKE_Fortran_FLAGS_RELEASE "/O3")
 		set(CMAKE_CXX_FLAGS_RELEASE "/O2")
 		set(CMAKE_C_FLAGS_RELEASE "/O2")
 
