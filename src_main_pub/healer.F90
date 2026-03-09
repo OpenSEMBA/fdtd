@@ -17,7 +17,7 @@ module CreateMatrices
    type crosscheck_t
       integer(kind=4) :: actual, NewActual, NewActual2
       integer(kind=4), dimension(1:4) :: tent
-   END type
+   end type
    !matriz para controlar lo punietereos indices de cadacomponente
    integer(kind=4), dimension(6, 3, 2), parameter, public :: &
    & in = reshape ( (/ 0, 1, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 0, &

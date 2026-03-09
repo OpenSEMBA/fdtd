@@ -42,7 +42,7 @@ module Anisotropic
       logical :: IsOnlyThinSlot
 !
       real(kind=RKIND),  DIMENSION(3,3) :: sigma,epr,mur,sigmaM  
-   END type Anisotropicinfo_t
+   end type Anisotropicinfo_t
 
 
    type, public :: AnisotropicMed_t

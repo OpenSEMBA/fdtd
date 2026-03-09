@@ -34,7 +34,7 @@ module EDispersives
       integer(kind=4) :: indexmed,numnodesEx,numnodesEy,numnodesEz,numpolres11
       complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
       type(field_t), pointer, dimension( : ) :: NodesEx,NodesEy,NodesEz
-   END type EDispersive_t
+   end type EDispersive_t
 
 
    type  EDispersive2_t

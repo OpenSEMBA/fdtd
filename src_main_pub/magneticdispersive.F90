@@ -34,7 +34,7 @@ module Mdispersives
       integer(kind=4) :: indexmed,numnodesHx,numnodesHy,numnodesHz,numpolres11
       complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,GM3
       type(field_t), pointer, dimension( : ) :: NodesHx,NodesHy,NodesHz
-   END type Mdispersive_t
+   end type Mdispersive_t
 
 
    type  Mdispersive2_t

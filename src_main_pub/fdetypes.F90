@@ -431,12 +431,12 @@ module  FDETYPES
       real(kind=RKIND_wires) :: R,L,C,DiodB,DiodIsat,Rtime_on,Rtime_off
       logical :: resistor , inductor , capacitor , diodo 
       real(kind=RKIND_wires) ::R_devia,L_devia,C_devia
-   END type Lumped_t
+   end type Lumped_t
 !!!
    !end wires
    type  :: PMLbody_t
       integer(kind=4) :: orient = 0 !orientation +iEx, -iEx,+iEy.......el signo aqui es intranscendente
-   END type PMLbody_t
+   end type PMLbody_t
 !!!
    type  :: Multiport_t
       integer(kind=4) :: Multiportdir = 0 !orientation +iEx, -iEx,+iEy.......
@@ -448,14 +448,14 @@ module  FDETYPES
 !!old pre 17/08/115: no es valido para mallados NO uniformes. Hay que hacerlo punto a punto
 !!!                     real(kind=rkind) :: transversalSpaceDelta
       integer(kind=4) :: numcapas
-   END type Multiport_t
+   end type Multiport_t
    !
    type  :: AnisMultiport_t
       integer(kind=4) :: Multiportdir = 0 !orientation +iEx, -iEx,+iEy.......
       character(len=BUFSIZE)                            :: MultiportFileZ11,MultiportFileZ22, &
       MultiportFileZ12,MultiportFileZ21
       real(kind=rkind), pointer, dimension( : ) :: epr,mur,sigma,sigmam,width
-   END type AnisMultiport_t
+   end type AnisMultiport_t
    !
    type planeonde_t
       real(kind=RKIND) :: INCERTMAX

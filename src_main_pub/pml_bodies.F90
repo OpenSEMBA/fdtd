@@ -24,7 +24,7 @@ module PMLbodies
       real(kind=RKIND), pointer :: field,Plus,Minu
       real(kind=RKIND) :: gx2,P_be,P_ce,Psi,transversalDelta,del,posi
       integer(kind=4) :: minTotal,maxTotal
-   END type BerPML__t
+   end type BerPML__t
 
 
    type  :: berpml_t

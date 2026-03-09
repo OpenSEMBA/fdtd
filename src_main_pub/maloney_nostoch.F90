@@ -60,7 +60,7 @@ type  :: SGBCSurface_t
    real(kind=RKIND) :: transversalDeltaE,transversalDeltaH,alignedlDeltaH
    integer(kind=4), dimension(0:1) :: med
    complex(kind=ckind), allocatable, dimension(:) :: a11, c11
-END type SGBCSurface_t
+end type SGBCSurface_t
 
 
 type :: MalDisp_t
