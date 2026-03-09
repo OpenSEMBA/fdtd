@@ -19,7 +19,7 @@ module preprocess_mod
     type, public :: preprocess_t
         type(mtl_bundle_t), dimension(:), allocatable :: bundles
         type(network_manager_t) :: network_manager
-        type(probe_t), dimension(:), allocatable :: probes
+        ! type(probe_t), dimension(:), allocatable :: probes
         type(fhash_tbl_t) :: conductors_before_cable
         type(fhash_tbl_t) :: cable_name_to_bundle_id
         real :: final_time, dt
@@ -94,11 +94,23 @@ contains
         end if
 
         res%cable_name_to_bundle_id = mapCablesToBundlesId(line_bundles, res%bundles)
-        if (size(parsed%probes) /= 0) then
-            res%probes = res%addProbesWithId(parsed%probes)
-        else 
-            allocate(res%probes(0))
-        end if
+
+        ! if (size(parsed%probes) /= 0) then
+        !     ! res%probes = res%addProbesWithId(parsed%probes)
+        call res%addProbesWithId(parsed%probes)
+        !     allocate(res%probes(0))
+        ! else 
+        !     allocate(res%probes(0))
+        !     allocate(probes(0))
+        ! end if
+
+        ! if (size(parsed%generators) /= 0) then 
+        !     addGenerators(parsed%generators)
+        ! end if
+        
+
+
+
         res%network_manager = res%buildNetworkManager(parsed%networks)
     end function
 
@@ -1380,17 +1392,19 @@ contains
 
     end function
 
+    ! function addGenerators() result(res)
 
-    function addProbesWithId(this, parsed_probes) result(res)
+    ! end function
+
+
+    subroutine addProbesWithId(this, parsed_probes)
         class(preprocess_t) :: this
         type(parsed_probe_t), dimension(:), allocatable :: parsed_probes
-        type(probe_t), dimension(:), allocatable :: res
         integer :: i, d
         integer :: stat
         type(mtl_bundle_t), target :: tbundle
         character (len=:), allocatable :: probe_name
 
-        allocate(res(size(parsed_probes)))
         do i = 1, size(parsed_probes)
             call this%cable_name_to_bundle_id%get(key = key(parsed_probes(i)%attached_to_cable%name), &
                                                value = d, &
@@ -1400,16 +1414,16 @@ contains
             probe_name = parsed_probes(i)%probe_name//"_"//this%bundles(d)%name
 
 
-            res(i) =  this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
-                                               probe_type = parsed_probes(i)%probe_type,&
-                                               name = probe_name,&
-                                               position =parsed_probes(i)%probe_position &
+            call this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
+                                          probe_type = parsed_probes(i)%probe_type,&
+                                          name = probe_name,&
+                                          position =parsed_probes(i)%probe_position &
 #ifdef CompileWithMPI                                               
-                                               ,layer_indices = this%bundles(d)%layer_indices & 
+                                          ,layer_indices = this%bundles(d)%layer_indices & 
 #endif                        
-                                              )
+                                          )
         end do
-    end function
+    end subroutine
 
 
 end module

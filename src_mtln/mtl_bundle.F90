@@ -247,7 +247,7 @@ contains
         end do
     end function
 
-    type(probe_t) function addProbe(this, index, probe_type, name, position, layer_indices) result(res)
+    subroutine addProbe(this, index, probe_type, name, position, layer_indices)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
@@ -255,19 +255,20 @@ contains
         character (len=:), allocatable :: name
         integer (kind=4), dimension(:,:), intent(in), optional :: layer_indices
         type(probe_t), allocatable, dimension(:) :: aux_probes
+        type(probe_t) :: newProbe
 
         aux_probes = this%probes
         deallocate(this%probes)
         allocate(this%probes(size(aux_probes)+1))
 
 #ifdef CompileWithMPI
-        res = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
+        newProbe = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
 #else
-        res = probeCtor(index, probe_type, this%dt, name, position)
+        newProbe = probeCtor(index, probe_type, this%dt, name, position)
 #endif
         this%probes(1:size(this%probes)-1) = aux_probes
-        this%probes(size(aux_probes)+1) = res
-    end function
+        this%probes(size(aux_probes)+1) = newProbe
+    end subroutine
 
     subroutine bundle_setConnectorTransferImpedance(this, index, conductor_out, range_in, transfer_impedance)
         class(mtl_bundle_t) :: this
