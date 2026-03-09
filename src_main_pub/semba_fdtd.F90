@@ -310,7 +310,7 @@ contains
    call print_credits(this%l)
 
 #ifdef CompileWithMPI
-   call initialize_MPI_process(this%l%filefde,this%l%extension)
+   call initialize_MPI_process(this%l%filefde,this%l%extension) 
 #else
 #ifdef CompilePrivateVersion
    if (trim(adjustl(this%l%extension))=='.nfde') then 
@@ -999,6 +999,10 @@ contains
       if (this%l%layoutnumber==0) then
 #ifdef CompilePrivateVersion
          if (trim(adjustl(extension))=='.nfde') then 
+#ifdef CompileWithMTLN
+            call stoponerror(this%l%layoutnumber, this%l%size, &
+               'NFDE files are not supported when compiling with MTLN', .true.)
+#endif
             NFDE_FILE => cargar_NFDE_FILE (filename)
          else
             call carga_raw_info(rawFileInfo, filename, extension)
