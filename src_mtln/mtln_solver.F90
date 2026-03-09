@@ -139,7 +139,7 @@ contains
 
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) then 
-                ! call this%bundles(i)%updateSources(this%time, this%dt)
+                call this%bundles(i)%updateGenerators(this%time, this%dt)
                 call this%bundles(i)%advanceVoltage()
             end if
         end do

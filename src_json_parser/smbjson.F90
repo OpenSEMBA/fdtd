@@ -3149,7 +3149,7 @@ contains
       end function
 
       function readWireGenerators() result(res)
-         type(generator_t), dimension(:), allocatable :: res
+         type(parsed_generator_t), dimension(:), allocatable :: res
          type(json_value), pointer :: sources
          type(json_value_ptr), dimension(:), allocatable :: gens
          ! class(cable_t), pointer :: cable_ptr
@@ -3182,9 +3182,9 @@ contains
                end if
                select case(this%getStrAt(gens(i)%p, J_FIELD))
                 case (J_FIELD_VOLTAGE)
-                  res(n)%source_type = J_FIELD_VOLTAGE
+                  res(n)%generator_type = SOURCE_TYPE_VOLTAGE
                 case (J_FIELD_CURRENT)
-                  res(n)%source_type = J_FIELD_CURRENT
+                  res(n)%generator_type = SOURCE_TYPE_CURRENT
                case default
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select

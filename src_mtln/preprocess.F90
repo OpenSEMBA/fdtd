@@ -33,6 +33,7 @@ module preprocess_mod
         procedure :: connectNodesToSubcircuit
         procedure :: addNodeWithId
         procedure :: addProbesWithId
+        procedure :: addGenerators
     end type preprocess_t
 
     interface preprocess_t
@@ -105,7 +106,7 @@ contains
         ! end if
 
         ! if (size(parsed%generators) /= 0) then 
-        !     addGenerators(parsed%generators)
+        call res%addGenerators(parsed%wireGenerators)
         ! end if
         
 
@@ -1392,16 +1393,29 @@ contains
 
     end function
 
-    ! function addGenerators() result(res)
+    subroutine addGenerators(this, parsed_generators)
+        class(preprocess_t) :: this
+        type(parsed_generator_t), dimension(:), allocatable :: parsed_generators
+        integer :: i, d, stat, n
 
-    ! end function
+        do i = 1, size(parsed_generators)
+            call this%cable_name_to_bundle_id%get(key = key(parsed_generators(i)%attached_to_cable%name), &
+                                               value = d, &
+                                               stat=stat)
+            if (stat /= 0) return
+            call this%conductors_before_cable%get(key(parsed_generators(i)%attached_to_cable%name), n)
+            call this%bundles(d)%addGenerator(index = parsed_generators(i)%index, &
+                                              conductor = n + parsed_generators(i)%conductor, &
+                                              gen_type = parsed_generators(i)%generator_type, &
+                                              path = parsed_generators(i)%path_to_excitation)
+        end do
+    end subroutine
 
 
     subroutine addProbesWithId(this, parsed_probes)
         class(preprocess_t) :: this
         type(parsed_probe_t), dimension(:), allocatable :: parsed_probes
-        integer :: i, d
-        integer :: stat
+        integer :: i, d, stat
         type(mtl_bundle_t), target :: tbundle
         character(len=:), allocatable :: probe_name
 
@@ -1412,7 +1426,7 @@ contains
 
             if (stat /= 0) return
             probe_name = parsed_probes(i)%probe_name//"_"//this%bundles(d)%name
-
+            
 
             call this%bundles(d)%addProbe(index = parsed_probes(i)%index, &
                                           probe_type = parsed_probes(i)%probe_type,&

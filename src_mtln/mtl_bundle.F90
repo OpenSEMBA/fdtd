@@ -2,6 +2,7 @@ module mtl_bundle_mod
 
     use utils_mod
     use probes_mod
+    use generators_m
     use dispersive_mod
     use mtl_mod
 #ifdef CompileWithMPI
@@ -23,7 +24,7 @@ module mtl_bundle_mod
         real :: time = 0.0, dt = 1e10
 
         ! type homogen
-        type(mtl_source_t), allocatable, dimension(:) :: sources
+        type(generator_t), allocatable, dimension(:) :: generators
 
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
@@ -45,10 +46,10 @@ module mtl_bundle_mod
         procedure :: mergeDispersiveMatrices
         procedure :: initialAllocation
         procedure :: addProbe
+        procedure :: addGenerator
         procedure :: updateLRTerms
         procedure :: updateCGTerms
-        procedure :: collectAndInitSources
-        procedure :: updateSources => bundle_updateSources
+        procedure :: updateGenerators => bundle_updateGenerators
         procedure :: advanceVoltage => bundle_advanceVoltage
         procedure :: advanceCurrent => bundle_advanceCurrent
         procedure :: addTransferImpedance => bundle_addTransferImpedance
@@ -84,6 +85,7 @@ contains
             res%name = name
         endif   
         allocate(res%probes(0))
+        allocate(res%generators(0))
 
         res%number_of_conductors = countNumberOfConductors(levels)
         res%dt = levels(1)%lines(1)%dt
@@ -95,8 +97,6 @@ contains
 
         call res%mergePULMatrices(levels)
         call res%mergeDispersiveMatrices(levels)
-
-        ! call res%collectAndInitSources(levels)
 
 #ifdef CompileWithMPI
         res%bundle_in_layer = levels(1)%lines(1)%bundle_in_layer
@@ -208,30 +208,6 @@ contains
 
     end subroutine
 
-    subroutine collectAndInitSources(this, levels)
-        class(mtl_bundle_t) :: this
-        type(transmission_line_level_t), dimension(:), intent(in) :: levels
-        integer :: i, j, k, n_sources
-        n_sources = 0
-        do i = 1, size(levels)
-            do j = 1, size(levels(i)%lines)
-                n_sources = n_sources + size(levels(i)%lines(j)%sources)
-            end do
-        end do
-        allocate(this%sources(n_sources))
-        n_sources = 1
-        do i = 1, size(levels)
-            do j = 1, size(levels(i)%lines)
-                do k = 1, size(levels(i)%lines(j)%sources)
-                    this%sources(n_sources) = levels(i)%lines(j)%sources(k)
-                    n_sources = n_sources + 1
-                end do
-            end do
-        end do
-
-    end subroutine
-
-
     function buildExternalFieldSegments(levels) result(res)
         type(transmission_line_level_t), dimension(:), intent(in) :: levels
         type(external_field_segment_t), dimension(:), allocatable :: res
@@ -255,19 +231,39 @@ contains
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
         type(probe_t), allocatable, dimension(:) :: aux_probes
-        type(probe_t) :: newProbe
+        type(probe_t) :: new_probe
 
         aux_probes = this%probes
         deallocate(this%probes)
         allocate(this%probes(size(aux_probes)+1))
 
 #ifdef CompileWithMPI
-        newProbe = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
+        new_probe = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
 #else
-        newProbe = probeCtor(index, probe_type, this%dt, name, position)
+        new_probe = probeCtor(index, probe_type, this%dt, name, position)
 #endif
         this%probes(1:size(this%probes)-1) = aux_probes
-        this%probes(size(aux_probes)+1) = newProbe
+        this%probes(size(aux_probes)+1) = new_probe
+    end subroutine
+
+    subroutine addGenerator(this, index, conductor, gen_type, path)
+        class(mtl_bundle_t) :: this
+        integer, intent(in) :: index, conductor, gen_type
+        character(*), intent(in) :: path
+
+        type(generator_t), allocatable, dimension(:) :: aux_generators
+        type(generator_t) :: new_generator
+        aux_generators = this%generators
+        deallocate(this%generators)
+        allocate(this%generators(size(aux_generators)+1))
+#ifdef CompileWithMPI
+        ! new_generator = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
+#else
+        new_generator = generatorCtor(index, conductor, gen_type, path)
+#endif
+        this%generators(1:size(this%generators)-1) = aux_generators
+        this%generators(size(aux_generators)+1) = new_generator
+
     end subroutine
 
     subroutine bundle_setConnectorTransferImpedance(this, index, conductor_out, range_in, transfer_impedance)
@@ -368,41 +364,20 @@ contains
        
     end subroutine
 
-    subroutine bundle_updateSources(this, time, dt)
+    subroutine bundle_updateGenerators(this, time, dt)
         class(mtl_bundle_t) ::this
         real, intent(in) :: time, dt
         real :: val
         integer :: i
         !TODO
-        do i = 1, size(this%sources) 
-            val = interpolate(this%sources(i), time)
-            if (this%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-                this%v_source(this%sources(i)%conductor, this%sources(i)%index) = val
-            else if (this%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                this%i_source(this%sources(i)%conductor, this%sources(i)%index) = val
+        do i = 1, size(this%generators) 
+            val = this%generators(i)%interpolate(time)
+            if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
+                this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val
+            else if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then 
+                this%i_source(this%generators(i)%conductor, this%generators(i)%index) = val
             end if
         end do
-    contains 
-        real function interpolate(source, t) result(res)
-            class(mtl_source_t) :: source
-            real :: t, x1, x2, y1, y2
-            integer :: index
-            real, dimension(:), allocatable :: timediff
-            timediff = source%time - t
-            index = maxloc(timediff, 1, (timediff) <= 0)
-            if (index == 0) index = 1
-            x1 = source%time(index)
-            y1 = source%value(index)
-            if (index+1 > size(source%time)) then
-                x2 = x1
-                y2 = y1
-            else 
-                x2 = source%time(index+1)
-                y2 = source%value(index+1)
-            end if
-                    
-            res = (t*(y2-y1) + x2*y1 - x1*y2)/(x2-x1)
-        end function
     
     end subroutine
 
@@ -412,6 +387,7 @@ contains
         do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
                            matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
+                        ! +i_source                           
         end do
     end subroutine
 
