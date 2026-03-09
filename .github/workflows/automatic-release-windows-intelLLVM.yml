@@ -32,7 +32,7 @@ jobs:
       id: setup-fortran
       with:
         compiler: intel
-        version: '2025.2'    
+        version: '2025.2.1'    
     
     - name: Setup ninja
       uses: seanmiddleditch/gha-setup-ninja@master
