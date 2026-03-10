@@ -145,6 +145,7 @@ module smbjson_labels_mod
    
    character(len=*), parameter :: J_GRID_NUMBER_OF_CELLS = "numberOfCells"
    character(len=*), parameter :: J_GRID_STEPS = "steps"
+   character(len=*), parameter :: J_GRID_ORIGIN = "origin"
    
    character(len=*), parameter :: J_COORDINATE_IDS = "coordinateIds"
    character(len=*), parameter :: J_COORDINATE_POS = "relativePosition"
