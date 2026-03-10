@@ -3298,20 +3298,18 @@ contains
          end if
          wire_probes = [this%jsonValueFilterByKeyValue(probes, J_TYPE, J_PR_TYPE_WIRE)]
 
-         n = 0
-         do i = 1, size(wire_probes)
-            if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) n = n + 1
-         end do
+         n = countNumberOfMultiwireProbes(wire_probes)
          allocate(res(n))
          if (n == 0) return
 
-         n = 1
+         n = 0
          do i = 1, size(wire_probes)
             if (isProbeDefinedOnMultiwire(wire_probes(i)%p)) then 
                ids = getPolylineElemIdOfMultiwireProbe(wire_probes(i)%p)
                probe_node_coord = GetCoordinateFromElemIdNode(wire_probes(i)%p)
                
                do j = 1, size(ids)
+                  n = n + 1
                   res(n)%probe_name = readProbeName(wire_probes(i)%p)
                   res(n)%probe_type = readProbeType(wire_probes(i)%p)
                   res(n)%probe_position = probe_node_coord%position
@@ -3342,7 +3340,6 @@ contains
                      end if
                   end do
                   res(n)%attached_to_cable => cable_ptr
-                  n = n + 1
                end do
             end if
          end do
@@ -3449,6 +3446,20 @@ contains
          end do
 
          isProbeDefinedOnMultiwire = .false.
+      end function
+
+      function countNumberOfMultiwireProbes(probes) result(res)
+         type(json_value_ptr), dimension(:), allocatable :: probes
+         integer :: i
+         integer, dimension(:), allocatable :: ids
+         integer :: res
+         res = 0      
+         do i = 1, size(probes)
+            if (isProbeDefinedOnMultiwire(probes(i)%p)) then 
+               ids = getPolylineElemIdOfMultiwireProbe(probes(i)%p)
+               res = res + size(ids)
+            end if
+         end do
       end function
 
       function getPolylineElemIdOfMultiwireProbe(p) result(res)
@@ -3884,16 +3895,16 @@ contains
                select case(abs(res(i)%orientation))
                case(DIR_X)
                   res(i)%dualBox = getdualBoxYZ(res(i), despl)
-                  res(i)%d1 = despl%desY(res(i)%y)
-                  res(i)%d2 = despl%desZ(res(i)%z)
+                  res(i)%d1 = despl%desY(res(i)%y-1)
+                  res(i)%d2 = despl%desZ(res(i)%z-1)
                case(DIR_Y)
                   res(i)%dualBox = getdualBoxZX(res(i), despl)
-                  res(i)%d1 = despl%desZ(res(i)%z)
-                  res(i)%d1 = despl%desX(res(i)%x)
+                  res(i)%d1 = despl%desZ(res(i)%z-1)
+                  res(i)%d1 = despl%desX(res(i)%x-1)
                case(DIR_Z)
                   res(i)%dualBox = getdualBoxXY(res(i), despl)
-                  res(i)%d1 = despl%desX(res(i)%x)
-                  res(i)%d2 = despl%desY(res(i)%y)
+                  res(i)%d1 = despl%desX(res(i)%x-1)
+                  res(i)%d2 = despl%desY(res(i)%y-1)
 
                end select
             end if
