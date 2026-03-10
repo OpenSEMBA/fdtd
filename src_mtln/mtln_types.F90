@@ -268,10 +268,6 @@ contains
       class(mtln_t), intent(in) :: a,b
       integer :: i
 
-      ! if (a%has_multiwires .neqv. b%has_multiwires) then 
-      !    mtln_eq = .false.
-      !    return
-      ! end if
       if (a%time_step /= b%time_step) then 
          mtln_eq = .false.
          return
