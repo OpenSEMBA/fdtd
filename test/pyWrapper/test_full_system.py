@@ -196,26 +196,7 @@ def test_coated_antenna(tmp_path):
         p_solved['current_0'].to_numpy(),
         rtol=0.0, atol=10e-8)
 
-@mtln_skip
-def test_holland_single_wire(tmp_path):
-    fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
-    solver = FDTD(input_filename=fn, 
-                  path_to_exe=SEMBA_EXE,
-                  run_in_folder=tmp_path)
-    solver['materials'][0] = createWire(id = 1, r = 0.02)
-    solver.run()
-    p = Probe(solver.getSolvedProbeFilenames("mid_point")[0])
-    
-    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
-    expected_t, expected_i = np.array([]), np.array([])
-    for data in expected_f['datasetColl'][0]['data']:
-        expected_t = np.append(expected_t, float(data['value'][0]))    
-        expected_i = np.append(expected_i, float(data['value'][1]))    
 
-    expected_i_interp = np.interp(p['time']-3.05*1e-9, expected_t, expected_i)
-    assert np.allclose(expected_i_interp, -p['current'], rtol=1e-4, atol=5e-5)
-
-@no_mtln_skip
 def test_holland_wire(tmp_path):
     fn = CASES_FOLDER + 'holland/holland1981.fdtd.json'
     solver = FDTD(input_filename=fn, 
@@ -225,7 +206,7 @@ def test_holland_wire(tmp_path):
     solver.run()
     p = Probe(solver.getSolvedProbeFilenames("mid_point")[0])
     
-    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
+    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981_mid_point_expected_current.json'))
     expected_t, expected_i = np.array([]), np.array([])
     for data in expected_f['datasetColl'][0]['data']:
         expected_t = np.append(expected_t, float(data['value'][0]))    
@@ -244,7 +225,7 @@ def test_holland_unshielded(tmp_path):
     solver.run()
     p = Probe(solver.getSolvedProbeFilenames("mid_point")[0])
     
-    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
+    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981_mid_point_expected_current.json'))
     expected_t, expected_i = np.array([]), np.array([])
     for data in expected_f['datasetColl'][0]['data']:
         expected_t = np.append(expected_t, float(data['value'][0]))    
@@ -289,16 +270,13 @@ def test_holland_mtln_mpi(tmp_path):
     # solver.run()
     # probe_mid_mpi_3 = Probe(list(filter(lambda x: '_I_' in x, probe_names))[0])
 
-    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2_12.json'))
+    expected_f = json.load(open(OUTPUTS_FOLDER+'holland1981_mid_point_expected_current.json'))
     expected_t, expected_i = np.array([]), np.array([])
     for data in expected_f['datasetColl'][0]['data']:
         expected_t = np.append(expected_t, float(data['value'][0]))    
         expected_i = np.append(expected_i, float(data['value'][1]))    
 
     expected_i_interp = np.interp(probe_mid_no_mpi['time']-3.05*1e-9, expected_t, expected_i)
-
-    p_expected = Probe(
-        OUTPUTS_FOLDER+'holland1981.fdtd_mid_point_Wz_11_11_12_s2.dat')
 
     assert np.allclose(
         expected_i_interp, 

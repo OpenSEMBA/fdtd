@@ -9,8 +9,8 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '../../../', 'src_pyWrap
 from pyWrapper import *
 
 case_dir = os.path.dirname(os.path.abspath(__file__))
-SEMBA_MTLN_EXE    = os.path.normpath(os.path.join(case_dir, '../../../build-rls/bin/semba-fdtd'))
-SEMBA_NOMTLN_EXE  = os.path.normpath(os.path.join(case_dir, '../../../build-rls-nomtln/bin/semba-fdtd'))
+SEMBA_MTLN_EXE    = os.path.normpath(os.path.join(case_dir, '../../../build-intel-rls/bin/semba-fdtd'))
+SEMBA_NOMTLN_EXE  = os.path.normpath(os.path.join(case_dir, '../../../build-intel-rls-nomtln/bin/semba-fdtd'))
 fn = os.path.join(case_dir, 'holland1981.fdtd.json')
 
 # %% Run solvers
