@@ -191,7 +191,7 @@ def test_mtln_sources(tmp_path):
                   flags = ["-n", "1"])
     
     solver["materials"][0] = createWire(id = 1, r = 0.02)
-    solver["mesh"]["elements"][3]["coordinateIds"] = [2]
+    solver["mesh"]["elements"][3]["coordinateIds"] = [1]
     source = { "type" : "generator", 
               "field" : "voltage", 
               "elementIds" : [4], 
