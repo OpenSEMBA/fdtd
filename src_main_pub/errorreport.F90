@@ -136,10 +136,7 @@ contains
 #endif
       call CloseReportingFiles
  
-
-
-      STOP
-
+      STOP "stop on error"
 
       return
 
@@ -1499,7 +1496,7 @@ contains
 
 
    subroutine WarnErrReport(bufff,error)
-      !
+      use iso_fortran_env, only : error_unit
       logical :: itsopen
       logical, optional :: error
 #ifdef CompileWithMPI
@@ -1522,6 +1519,7 @@ contains
       call trimnullchar(buff2)
 
       write (17,'(a)',err=154) trim(adjustl(buff3))
+      write (error_unit,'(a)') trim(adjustl(buff3))
 
       goto 155
 154   inquire(unit=17, opened=itsopen) 
