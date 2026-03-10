@@ -3174,7 +3174,6 @@ contains
          type(parsed_generator_t), dimension(:), allocatable :: res
          type(json_value), pointer :: sources
          type(json_value_ptr), dimension(:), allocatable :: gens
-         ! class(cable_t), pointer :: cable_ptr
          logical :: found
          integer :: i, n
          type(linel_t), dimension(:), allocatable :: linels
@@ -3211,10 +3210,14 @@ contains
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
                res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
-               res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0)
 
+               if (.not. this%existsAt(gens(i)%p, J_SRC_RESISTANCE_GEN)) then
+                  call WarnErrReport('Generator resistance missing', .true.)
+               end if
+               res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0)
+               if (res(n)%resistance == 0.0) call WarnErrReport('Generator resistance equal to 0', .false.)
+               
                idAndPos = getPolylineElemIdAndConductorOfGenerator(gens(i)%p)
-               ! id = getPolylineElemIdOfGenerator(gens(i)%p)
                call elemIdToCable%get(key(idAndPos(1)), value=index)
                coord = GetCoordinateFromElemIdNode(gens(i)%p)
                pl = this%mesh%getPolyline(idAndPos(1))

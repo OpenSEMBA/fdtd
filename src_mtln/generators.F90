@@ -8,6 +8,7 @@ module generators_m
     type generator_t
         integer :: index, conductor
         real, dimension(:), allocatable :: time, value
+        real :: resistance
         integer :: source_type = SOURCE_TYPE_UNDEFINED
     contains
         procedure :: initGenerator
@@ -21,13 +22,15 @@ module generators_m
 
 contains
 
-    function generatorCtor(index, conductor, gen_type, path) result(res)
+    function generatorCtor(index, conductor, gen_type, resistance, path) result(res)
         type(generator_t) :: res
         integer, intent(in) :: index, conductor, gen_type
+        real :: resistance
         character(*), intent(in) :: path
 
         res%index = index
         res%conductor = conductor
+        res%resistance = resistance
         res%source_type = gen_type
         call res%initGenerator(path)
     end function

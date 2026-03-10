@@ -1407,6 +1407,7 @@ contains
             call this%bundles(d)%addGenerator(index = parsed_generators(i)%index, &
                                               conductor = n + parsed_generators(i)%conductor, &
                                               gen_type = parsed_generators(i)%generator_type, &
+                                              resistance = parsed_generators(i)%resistance, &
                                               path = parsed_generators(i)%path_to_excitation)
         end do
     end subroutine

@@ -246,9 +246,10 @@ contains
         this%probes(size(aux_probes)+1) = new_probe
     end subroutine
 
-    subroutine addGenerator(this, index, conductor, gen_type, path)
+    subroutine addGenerator(this, index, conductor, gen_type, resistance, path)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index, conductor, gen_type
+        real :: resistance
         character(*), intent(in) :: path
 
         type(generator_t), allocatable, dimension(:) :: aux_generators
@@ -259,10 +260,16 @@ contains
 #ifdef CompileWithMPI
         ! new_generator = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
 #else
-        new_generator = generatorCtor(index, conductor, gen_type, path)
+        new_generator = generatorCtor(index, conductor, gen_type, resistance, path)
 #endif
         this%generators(1:size(this%generators)-1) = aux_generators
         this%generators(size(aux_generators)+1) = new_generator
+
+        if (gen_type == SOURCE_TYPE_VOLTAGE) then 
+            this%rpul(index, conductor, conductor) = resistance 
+        else if (new_generator%source_type == SOURCE_TYPE_CURRENT) then
+            this%gpul(index, conductor, conductor) = resistance 
+        end if
 
     end subroutine
 
@@ -375,7 +382,7 @@ contains
             if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
                 this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val
             else if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                this%i_source(this%generators(i)%conductor, this%generators(i)%index) = val
+                this%i_source(this%generators(i)%conductor, this%generators(i)%index)   = val
             end if
         end do
     
