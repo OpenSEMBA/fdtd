@@ -389,23 +389,10 @@ contains
       call assignDes(P//'.'//J_GRID_STEPS//'.y', res%desY, res%nY)
       call assignDes(P//'.'//J_GRID_STEPS//'.z', res%desZ, res%nZ)
 
-      block 
-         real, dimension(3) :: origin
-         logical :: origin_found
-         
-         origin = this%getRealsAt(this%root, P//'.'//J_GRID_ORIGIN, &
-            found=origin_found)
-         if (origin_found) then
-            res%originx = origin(1)
-            res%originy = origin(2)
-            res%originz = origin(3)
-         else 
-            res%originx = 0.0
-            res%originy = 0.0
-            res%originz = 0.0
-         end if
-      end block
-
+      res%originx = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(1)', default=0.0)
+      res%originy = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(2)', default=0.0)
+      res%originz = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(3)', default=0.0)
+      
       res%mx1 = 0
       res%my1 = 0
       res%mz1 = 0
@@ -422,7 +409,7 @@ contains
          integer(kind=4), intent(in) :: numberOfCells
          logical :: found = .false.
 
-         vec= this%getRealsAt(this%root, path, found)
+         vec = this%getRealsAt(this%root, path, found)
 
          if (.not. found) then
             call WarnErrReport('Error reading grid: steps not found.', .true.)
