@@ -43,13 +43,11 @@
       }
     },
     {
-      "name": "intel-dbg-nomtln",
+      "name": "intel-rls-nomtln",
       "inherits": "intel-rls",
-      "binaryDir": "build-intel-dbg-nomtln/",
+      "binaryDir": "build-intel-rls-nomtln/",
       "cacheVariables": {
-        "CMAKE_BUILD_TYPE": "Debug",
         "SEMBA_FDTD_ENABLE_MTLN": "OFF"
-        
       }
     }
   ]
