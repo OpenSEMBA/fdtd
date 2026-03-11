@@ -26,18 +26,18 @@ contains
       expected%general%nmax = 700
 
       ! Excected media matrix.
-      expected%matriz%totalX = 150
-      expected%matriz%totalY = 150
-      expected%matriz%totalZ = 150
+      expected%matriz%totalX = 151
+      expected%matriz%totalY = 151
+      expected%matriz%totalZ = 151
 
       ! Expected grid.
-      expected%despl%nX = 150
-      expected%despl%nY = 150
-      expected%despl%nZ = 150
+      expected%despl%nX = 1
+      expected%despl%nY = 1
+      expected%despl%nZ = 1
 
-      allocate(expected%despl%desX(150))
-      allocate(expected%despl%desY(150))
-      allocate(expected%despl%desZ(150))
+      allocate(expected%despl%desX(1:1))
+      allocate(expected%despl%desY(1:1))
+      allocate(expected%despl%desZ(1:1))
       expected%despl%desX = 0.180
       expected%despl%desY = 0.180
       expected%despl%desZ = 0.0504

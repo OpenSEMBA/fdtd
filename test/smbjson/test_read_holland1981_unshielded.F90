@@ -27,18 +27,18 @@ contains
       ex%general%nmax = 1000
 
       ! Excected media matrix.
-      ex%matriz%totalX = 20
-      ex%matriz%totalY = 20
-      ex%matriz%totalZ = 22
+      ex%matriz%totalX = 21
+      ex%matriz%totalY = 21
+      ex%matriz%totalZ = 23
 
       ! Expected grid.
-      ex%despl%nX = 20
-      ex%despl%nY = 20
-      ex%despl%nZ = 22
+      ex%despl%nX = 1
+      ex%despl%nY = 1
+      ex%despl%nZ = 1
 
-      allocate(ex%despl%desX(20))
-      allocate(ex%despl%desY(20))
-      allocate(ex%despl%desZ(22))
+      allocate(ex%despl%desX(1:1))
+      allocate(ex%despl%desY(1:1))
+      allocate(ex%despl%desZ(1:1))
       ex%despl%desX = 0.1
       ex%despl%desY = 0.1
       ex%despl%desZ = 0.1

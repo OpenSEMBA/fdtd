@@ -369,21 +369,25 @@ contains
       class(parser_t) :: this
       type(MatrizMedios) :: res
       character(len=*), parameter :: P = J_MESH//'.'//J_GRID//'.'//J_GRID_NUMBER_OF_CELLS
-      res%totalX = this%getIntAt(this%root, P//'(1)')
-      res%totalY = this%getIntAt(this%root, P//'(2)')
-      res%totalZ = this%getIntAt(this%root, P//'(3)')
+      res%totalX = this%getIntAt(this%root, P//'(1)') + 1 
+      res%totalY = this%getIntAt(this%root, P//'(2)') + 1
+      res%totalZ = this%getIntAt(this%root, P//'(3)') + 1
    end function
 
    function readGrid(this) result (res)
       class(parser_t) :: this
       type(Desplazamiento) :: res
-      real, dimension(:), allocatable :: vec
-      
+      integer(kind=4) :: nX, nY, nZ
+
       character(len=*), parameter :: P = J_MESH//'.'//J_GRID
 
-      res%nX = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(1)')
-      res%nY = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(2)')
-      res%nZ = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(3)')
+      nX = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(1)')
+      nY = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(2)')
+      nZ = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(3)')
+
+      res%nX = nX
+      res%nY = nY
+      res%nZ = nZ
 
       call assignDes(P//'.'//J_GRID_STEPS//'.x', res%desX, res%nX)
       call assignDes(P//'.'//J_GRID_STEPS//'.y', res%desY, res%nY)
@@ -392,21 +396,20 @@ contains
       res%originx = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(1)', default=0.0_RKIND)
       res%originy = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(2)', default=0.0_RKIND)
       res%originz = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(3)', default=0.0_RKIND)
-      
+
       res%mx1 = 0
       res%my1 = 0
       res%mz1 = 0
-      res%mx2 = res%nX
-      res%my2 = res%nY
-      res%mz2 = res%nZ
-
+      res%mx2 = nX
+      res%my2 = nY
+      res%mz2 = nZ
 
    contains
-      subroutine assignDes(path, dest, numberOfCells)
+      subroutine assignDes(path, dest, n)
          character(kind=CK, len=*) :: path
-         real(kind=rkind), dimension(:), pointer :: dest
-         real, dimension(:), allocatable :: vec
-         integer(kind=4), intent(in) :: numberOfCells
+         real(kind=RKIND), dimension(:), pointer :: dest
+         integer(kind=4), intent(inout) :: n
+         real(kind=RKIND), dimension(:), allocatable :: vec
          logical :: found = .false.
 
          vec = this%getRealsAt(this%root, path, found)
@@ -414,14 +417,16 @@ contains
          if (.not. found) then
             call WarnErrReport('Error reading grid: steps not found.', .true.)
          endif
-         if (size(vec) /= 1 .and. size(vec) /= numberOfCells) then
+         if (size(vec) /= 1 .and. size(vec) /= n) then
             call WarnErrReport( 'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.', .true.)
          end if
 
-         allocate(dest(0 : numberOfCells-1))
          if (size(vec) == 1) then
-            dest(:) = vec(1)
+            n = 1
+            allocate(dest(1:1))
+            dest(1) = vec(1)
          else
+            allocate(dest(0 : n-1))
             dest = vec
          end if
       end subroutine
@@ -745,8 +750,8 @@ contains
          ! Fills rest of dielectric data.
          res%sigma  = this%getRealAt(matPtr%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
          res%sigmam = this%getRealAt(matPtr%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
-         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND*EPSILON_VACUUM)
-         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0_RKIND*MU_VACUUM)
+         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND) * EPSILON_VACUUM
+         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0_RKIND) * MU_VACUUM
 
       end function
 
@@ -944,8 +949,8 @@ contains
             call this%core%get_child(layers, i, layer)
             res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
             res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
-            res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND * EPSILON_VACUUM)
-            res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0_RKIND * MU_VACUUM)
+            res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND) * EPSILON_VACUUM
+            res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0_RKIND) * MU_VACUUM
             res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
             if (.not. found) then
                call WarnErrReport(errorMsgInit // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
@@ -3610,7 +3615,7 @@ contains
             this%existsAt(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION)
          hasRadius = &  
             this%existsAt(mat%p, J_MAT_WIRE_RADIUS) .and. &
-            this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND /= 0)
+            this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND) /= 0_RKIND
 
          if (.not. hasRadius) then 
             if ((areFixedInCell .and. areMultipolarInCell) .or. &

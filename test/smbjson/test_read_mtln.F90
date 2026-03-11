@@ -27,9 +27,9 @@ contains
       expected%general%nmax = 1000
 
       ! Excected media matrix.
-      expected%matriz%totalX = 100
-      expected%matriz%totalY = 7
-      expected%matriz%totalZ = 2
+      expected%matriz%totalX = 101
+      expected%matriz%totalY = 8
+      expected%matriz%totalZ = 3
 
       ! Expected grid.
       expected%despl%nX = 100
