@@ -73,7 +73,7 @@ contains
          cs = cellIntervalsToCoords(intervals, tag)
       else
          cs = cellIntervalsToCoords(intervals)
-      endif
+      end if
       res = cs
    end
 
@@ -126,7 +126,7 @@ contains
          cs = cellIntervalsToCoords(intervals, tag)
       else
          cs = cellIntervalsToCoords(intervals)
-      endif
+      end if
       scaledCoords = coordsToScaledCoords(cs)
       allocate(res(size(scaledCoords)))
       res = scaledCoords

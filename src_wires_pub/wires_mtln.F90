@@ -61,7 +61,7 @@ contains
         else    
            thereAreMTLNbundles=.false.
            return
-      endif
+      end if
       if (mtln_solver%dt < dtcritico) dtcritico = mtln_solver%dt
       call pointSegmentsToFields()
       call mtln_solver%updatePULTerms()

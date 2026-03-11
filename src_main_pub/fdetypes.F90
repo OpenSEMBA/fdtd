@@ -812,7 +812,7 @@ contains
         prior_TW   = 1500   !cambiado a 231024 y puesto con maxima prioridad. es solo experimental y por visualizacion    
       else !opcion correcta. lo anterior es solo experimental y por visualizacion      
         prior_TW   = 15   !prioridad del thin-wire por debajo de todos (excepto del background)  
-      endif  
+      end if  
 !      prior_pmlbody = prior_TW-1 !el hilo tiene prioridad sobre el pmlbody (prueba HOLD coax sgg 251019)
       prior_pmlbody = prior_BV+1 !el pml body puede ser penetrado por todo 311019 sgg
       !!!!
@@ -820,12 +820,12 @@ contains
          prior_CS=prior_PEC+2
       else
          prior_CS=prior_PEC-2       !composites has lower than PEC to properly handle junctions PEC-composite !(ss's 210312 mail)
-      endif
+      end if
       if (prioritizeISOTROPICBODYoverall) then  ! Isotropic body
          prior_IB      = 200   !SOLO PARA EL CASO DEL SIVA SACAR BOCADOS DE vacio 
       else
          prior_IB      =   20 !EL SUSUAL
-      endif 
+      end if 
       return
       
 

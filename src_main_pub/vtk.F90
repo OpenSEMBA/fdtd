@@ -87,18 +87,18 @@ contains
                else
                   sgg%Observation(ii)%flushed=.true.
                   continue
-               endif
+               end if
             else
                if (sgg%Observation(ii)%Begun) then 
                   continue
                else
                   cycle barridoprobes
-               endif
-            endif
+               end if
+            end if
          else 
                cycle barridoprobes
-         endif
-         endif
+         end if
+         end if
          !sondas Volumic traducelas a VTK
          if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
@@ -137,7 +137,7 @@ contains
                                     trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
                         else
                            call stoponerror(layoutnumber,size,'Buggy error in mpidir. ')
-                        endif
+                        end if
                      !fin mpidir
                      !
                      iroot=index(output(ii)%item(1)%path,'__',.true.)
@@ -157,8 +157,8 @@ contains
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            !!! call print11 (layoutnumber, trim(adjustl(whoami))////' Init processing file '//trim(adjustl(filename)), .TRUE.) !enforces print
                            continue
-                        endif
-                     endif
+                        end if
+                     end if
 #endif
                      finalstep=output(ii)%TimesWritten
                      allocate (att(1:finalstep))
@@ -176,9 +176,9 @@ contains
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                            call MPI_AllReduce (sizeofvalores, newSizeofvalores, size, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
-                        endif
+                        end if
                         sizeofvalores = newSizeofvalores
-                     endif
+                     end if
 #endif
                      !
                      do i1=0,size-1
@@ -193,7 +193,7 @@ contains
                      elseif (SGG%Observation(ii)%FreqDomain) then
                         call Serialized%allocate_for_frequency_domain(numberOfSerialized)
                         freqdomain=.true.
-                     endif
+                     end if
                      call Serialized%allocate_current_value(numberOfSerialized)
                      PosiMPI=0
 
@@ -205,16 +205,16 @@ contains
                            buscaMPI: do i1=0,layoutnumber-1
                               posicionMPI=posicionMPI+sizeofvalores(i1)
                            end do buscaMPI
-                        endif
+                        end if
                        allocate(newPosiMPI(1:numberOfSerialized))
                         if (SGG%Observation(ii)%TimeDomain) then
                            call NewSerialized%allocate_for_time_domain(numberOfSerialized)
                         elseif (SGG%Observation(ii)%FreqDomain) then
                            call NewSerialized%allocate_for_frequency_domain(numberOfSerialized)
-                        endif
+                        end if
                         call NewSerialized%allocate_current_value(numberOfSerialized)
                         NewPosiMPI=0
-                     endif
+                     end if
 #endif
                      !LEE INFO GEOMETRICA TENIENDO EN CUENTA POSICION MPI
                      open(output(ii)%item(1)%UNIT, FILE=trim(adjustl(output(ii)%item(1)%path)), FORM='unformatted')
@@ -222,7 +222,7 @@ contains
                      if (coldummy/= output(ii)%item(1)%columnas) then
                            write (buff,'(a,2i9)') 'ERROR: Buggy error creating .vtk',coldummy, output(ii)%item(1)%columnas
                            call print11(0_4, buff)
-                     endif
+                     end if
                      do conta=1,output(ii)%item(1)%columnas
                         read(output(ii)%item(1)%unit) eei,eej,eek,ecurrentType,esggMtag
                         PosiMPI(posicionMPI+conta)=posicionMPI+conta
@@ -241,44 +241,44 @@ contains
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                            call MPI_AllReduce (PosiMPI, newPosiMPI, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
-                        endif
+                        end if
                         PosiMPI = newPosiMPI
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                            call MPI_AllReduce (Serialized%eI, newSerialized%eI, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
-                        endif
+                        end if
                         Serialized%eI = newSerialized%eI
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                            call MPI_AllReduce (Serialized%eJ, newSerialized%eJ, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
-                        endif
+                        end if
                         Serialized%eJ = newSerialized%eJ
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                            call MPI_AllReduce (Serialized%eK, newSerialized%eK, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
-                        endif
+                        end if
                         Serialized%eK = newSerialized%eK
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                            call MPI_AllReduce (Serialized%currentType, newSerialized%currentType, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
-                        endif
+                        end if
                         Serialized%currentType = newSerialized%currentType
                         !
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                            call MPI_AllReduce (Serialized%sggMtag, newSerialized%sggMtag, numberOfSerialized, MPI_INTEGER, MPI_SUM, &
                            &                     output(ii)%item(1)%MPISubComm, ierr)
-                        endif
+                        end if
                         Serialized%sggMtag = newSerialized%sggMtag
-                     endif
+                     end if
 #endif
 
                      !crea informacion unstruct y escribela en el fichero
@@ -289,7 +289,7 @@ contains
                      if (layoutnumber == 0) then
 #endif
                         call creaUnstructData(Serialized,  numberOfSerialized,sgg,Nodes,NumNodes,Elems,NumEdges,NumQuads,vtkindex)
-                     endif
+                     end if
 
                      !LEE CADA TIME STEPO TENIENDO EN CUENTA POSICION MPI
 
@@ -327,7 +327,7 @@ contains
                                                                               Serialized%valor_Hy(1,posicionMPI+conta), &
                                                                               Serialized%valor_Hz(1,posicionMPI+conta) !lo meto en el unico step
                                  end do
-                           endif
+                           end if
                         elseif (SGG%Observation(ii)%FreqDomain) then    
                            Serialized%ValorComplex_x = 0.
                            Serialized%ValorComplex_y = 0.
@@ -347,9 +347,9 @@ contains
                                           Serialized%valorComplex_y(1,posicionMPI+conta), &
                                           Serialized%valorComplex_z(1,posicionMPI+conta)
                                     end do
-                           endif
+                           end if
 
-                        endif
+                        end if
                         !SINCRONIZA TODOS LOS LAYERS Y SOLO EL ROOT LLAMA A LA RUTINA DE ESCRITURA
 #ifdef CompileWithMPI
                         call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
@@ -646,10 +646,10 @@ contains
                                           Serialized%ValorComplex_Hz(1,conta)=Serialized%ValorComplex_Hz(1,conta)+cmplx(0.0_RKIND,newSerialized%valor_Hz(1,conta))
                                     end do   
                                  
-                              endif
+                              end if
 
-                           endif
-                        endif
+                           end if
+                        end if
                         if (layoutnumber == output(ii)%item(1)%MPIRoot) then
 #else
                         if (layoutnumber == 0) then
@@ -680,7 +680,7 @@ contains
                                           call SYSTEM('mkdir ' // trim(adjustl(fichero(1:iroot2))))  
                                        end if     
                                     end block
-                                 endif 
+                                 end if 
                                  if (sgg%observation(ii)%P(1)%What==mapvtk) then
                                        fichero_input=fichero(1:iroot1-1)//'.vtk'  
                                        i_sub_time=-30 !cualquier cosa
@@ -731,16 +731,16 @@ contains
                                                             i_sub_time,total_sub_times,freqDomain,sgg%observation(ii)%P(1)%What,sggMtag,'hf')
                                     
                                     
-                                    endif        
+                                    end if        
                                     
                                     !!! call print11 (layoutnumber, trim(adjustl(whoami))////' Written into file '//trim(adjustl(fichero)), .TRUE.) !enforces print
-                                 endif !DEL VTK
+                                 end if !DEL VTK
                            else
                                  write(dubuf,'(a,i9,a,i9)')  trim(adjustl(whoamishort))//' Requesting not to dump .vtk ----> file '//trim(adjustl(fichero))//' ',indi,'/',finalstep
                                  call print11(layoutnumber,dubuf,.true.)
-                           endif
+                           end if
                                  
-                        ENDIF
+                        end if
 
                         !
                      end do bucleindi
@@ -783,7 +783,7 @@ contains
                         deallocate(Serialized%ValorComplex_Hx)
                         deallocate(Serialized%ValorComplex_Hy)
                         deallocate(Serialized%ValorComplex_Hz)
-                     endif
+                     end if
                      deallocate(Serialized%eI)
                      deallocate(Serialized%eJ)
                      deallocate(Serialized%eK)
@@ -821,13 +821,13 @@ contains
                            deallocate(NewSerialized%Valor_Hy) !auxiliar
                            deallocate(NewSerialized%Valor_Hz) !auxiliar
    !!                          deallocate(NewSerialized%ValorComplexH)
-                        endif
+                        end if
                         deallocate(newSerialized%eI)
                         deallocate(newSerialized%eJ)
                         deallocate(newSerialized%eK)
                         deallocate(newSerialized%currentType)
                         deallocate(newSerialized%sggMtag)
-                     ENDIF
+                     end if
 #endif
 
                      !deallocatea
@@ -837,12 +837,12 @@ contains
                      if (layoutnumber == 0) then
 #endif
                         if (numberOfSerialized/=0) deallocate(Nodes,Elems)
-                     endif
+                     end if
 
 #ifdef CompileWithMPI
                      if (size>1) then
                         deallocate(newSizeofvalores,newPosiMPI)
-                     endif
+                     end if
 #endif
                      deallocate(SIZEOFVALORES,PosiMPI)
                      deallocate(ATT)
@@ -850,21 +850,21 @@ contains
                      if (size>1) then
                         if (output(ii)%item(1)%MPISubComm /= -1) then
                            call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
-                        endif
+                        end if
                         !!! call print11 (layoutnumber, trim(adjustl(whoami))////' End processing file '//trim(adjustl(filename)), .TRUE.) !enforces print
-                     endif
+                     end if
 #endif
                   else !del lexis
                      buff='NOT PROCESSING: Ignoring: Inexistent or void file '//trim(adjustl(output(ii)%item(1)%path))
                      call print11(layoutnumber, buff,.true.)
-                  endif !del lexis
+                  end if !del lexis
 
 
                somethingdone=.true.
 
-               ENDIF !DEL WHAT
-            ENDIF
-         ENDIF
+               end if !DEL WHAT
+            end if
+         end if
 
       end do  barridoprobes !barrido puntos de observacion
 
@@ -913,10 +913,10 @@ contains
                      return
                   ELSE
                      close (output(ii)%item(1)%unit)
-                  ENDIF !DEL LEXIS
-               ENDIF
-            ENDIF
-         ENDIF
+                  end if !DEL LEXIS
+               end if
+            end if
+         end if
 
       end do  !barrido puntos de observacion
       call createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
@@ -934,10 +934,10 @@ contains
                      return
                   ELSE
                      open (output(ii)%item(1)%unit,file=trim(adjustl(output(ii)%item(1)%path)),FORM='unformatted',position='append')
-                  ENDIF !DEL LEXIS
-               ENDIF
-            ENDIF
-         ENDIF
+                  end if !DEL LEXIS
+               end if
+            end if
+         end if
 
       end do  !barrido puntos de observacion
 
@@ -974,7 +974,7 @@ contains
       !open(newunit=myunit,file=trim(adjustl(fichero))//'.pvsm',form='formatted')
       !    write (myunit,'(a)') 'Generador del .pvsm'
       !close(myunit)
-      !endif
+      !end if
 
       !!!! 
       open(newunit=myunit,file=trim(adjustl(fichero(1:iroot2)))//'/'//trim(adjustl(fichero)),form='formatted')
@@ -989,8 +989,8 @@ contains
             write(myunit,'(a,e21.12e3)') 'Time= ',time
          else
             write(myunit,'(a,e21.12e3)') 'Frequency= ',time   
-         endif
-      endif
+         end if
+      end if
       write(myunit,'(a)') 'ASCII'
       write(myunit,'(a)') ' '
       write(myunit,'(a)') 'DATASET UNSTRUCTURED_GRID'
@@ -1011,7 +1011,7 @@ contains
             write (myunit,'(i2,2i9)')  2,Elems(conta,1), Elems(conta,2)
          else
             write (myunit,'(i2,4i9)')  4,Elems(conta,1), Elems(conta,2), Elems(conta,3), Elems(conta,4)
-         endif
+         end if
       end do
       write(myunit,'(a)') ' '
       write (buff,'(a,i9)') 'CELL_TYPES ',(NumEdges+1)+(NumQuads+1)
@@ -1021,7 +1021,7 @@ contains
             write (myunit,'(i2)')  3
          else
             write (myunit,'(i2)')  9
-         endif
+         end if
       end do
       write(myunit,'(a)') ' '
       write (buff,'(a,i9)') 'CELL_DATA ',numberOfSerialized
@@ -1038,7 +1038,7 @@ contains
          case('hf')    
             write (buff,'(a)') 'SCALARS hfield_f float 3'
          end select
-      endif
+      end if
       write(myunit,'(a)') trim(adjustl(buff))
       write(myunit,'(a)') 'LOOKUP_TABLE default'
 
@@ -1066,7 +1066,7 @@ contains
                if (rbb>1.e37)  rbb=1.e37; if (rbb<-1.e37) rbb=-1.e37; if (abs(rbb)<1e-37 ) rbb=0.
                if (rcc>1.e37)  rcc=1.e37; if (rcc<-1.e37) rcc=-1.e37; if (abs(rcc)<1e-37 ) rcc=0.
                write (myunit,'(3e21.12e3)')  raa,rbb,rcc
-               endif
+               end if
          end do
       else
          do conta=1,numberOfSerialized             
@@ -1107,7 +1107,7 @@ contains
                end select
                                              
          end do
-      endif
+      end if
 
       write(myunit,'(a)') ' '
       !!!info del tag 240220
@@ -1136,12 +1136,12 @@ contains
                            write (myunit,'(i7)')  sggMtag(Serialized%eI(conta),Serialized%eJ(conta),Serialized%eK(conta)) !!! esto estaba mal en MPI: bug OLD vtk 121090  !
                      else
                            write (myunit,'(i7)')  Serialized%sggMtag(conta)  
-                     endif
+                     end if
                !      else
                !          write (myunit,'(i4)')  -1
-               !      endif
+               !      end if
                         
-               !endif
+               !end if
          end do
          !!!fin info tag  
 
@@ -1180,7 +1180,7 @@ contains
          allocate (Elems(1:numberOfSerialized, 4) )
       else
          return
-      endif
+      end if
       !
       do conta=1,numberOfSerialized
          select case (Serialized%currentType(conta))
@@ -1202,7 +1202,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(1 + Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(    Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(    Serialized%eK(conta))
-            endif
+            end if
             !
             numEdges=numEdges + 1
             Elems(conta,1)=NumNodes - 1
@@ -1226,7 +1226,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(    Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(1 + Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(    Serialized%eK(conta))
-            endif
+            end if
             !
 
             numEdges=numEdges + 1
@@ -1251,7 +1251,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(    Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(    Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(1 + Serialized%eK(conta))
-            endif
+            end if
             !
             numEdges=numEdges + 1
             Elems(conta,1)=NumNodes - 1
@@ -1268,7 +1268,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(Serialized%eK(conta))
-            endif
+            end if
             numNodes=numNodes+1
             if (vtkindex) then
                Nodes(numNodes,1)=(    Serialized%eI(conta))*1.0_RKIND
@@ -1278,7 +1278,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(    Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(1 + Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(    Serialized%eK(conta))
-            endif
+            end if
             numNodes=numNodes+1
             if (vtkindex) then
                Nodes(numNodes,1)=(    Serialized%eI(conta))*1.0_RKIND
@@ -1288,7 +1288,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(    Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(1 + Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(1 + Serialized%eK(conta))
-            endif
+            end if
             numNodes=numNodes+1
             if (vtkindex) then
                Nodes(numNodes,1)=(    Serialized%eI(conta))*1.0_RKIND
@@ -1298,7 +1298,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(    Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(    Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(1 + Serialized%eK(conta))
-            endif
+            end if
             !
 
             numQuads=numQuads + 1
@@ -1316,7 +1316,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(Serialized%eK(conta))
-            endif
+            end if
             numNodes=numNodes+1
             if (vtkindex) then
                Nodes(numNodes,1)=(1 + Serialized%eI(conta))*1.0_RKIND
@@ -1326,7 +1326,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(1 + Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(    Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(    Serialized%eK(conta))
-            endif
+            end if
             numNodes=numNodes+1
             if (vtkindex) then
                Nodes(numNodes,1)=(1 + Serialized%eI(conta))*1.0_RKIND
@@ -1336,7 +1336,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(1 + Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(    Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(1 + Serialized%eK(conta))
-            endif
+            end if
             numNodes=numNodes+1
             if (vtkindex) then
                Nodes(numNodes,1)=(    Serialized%eI(conta))*1.0_RKIND
@@ -1346,7 +1346,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(    Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(    Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(1 + Serialized%eK(conta))
-            endif
+            end if
             !
             numQuads=numQuads + 1
             Elems(conta,1)=NumNodes - 3
@@ -1363,7 +1363,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(Serialized%eK(conta))
-            endif
+            end if
             numNodes=numNodes+1
             if (vtkindex) then
                Nodes(numNodes,1)=(1 + Serialized%eI(conta))*1.0_RKIND
@@ -1373,7 +1373,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(1 + Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(    Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(    Serialized%eK(conta))
-            endif
+            end if
             numNodes=numNodes+1
             if (vtkindex) then
                Nodes(numNodes,1)=(1 + Serialized%eI(conta))*1.0_RKIND
@@ -1383,7 +1383,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(1 + Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(1 + Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(    Serialized%eK(conta))
-            endif
+            end if
             numNodes=numNodes+1
             if (vtkindex) then
                Nodes(numNodes,1)=(    Serialized%eI(conta))*1.0_RKIND
@@ -1393,7 +1393,7 @@ contains
                Nodes(numNodes,1)=sgg%LineX(    Serialized%eI(conta))
                Nodes(numNodes,2)=sgg%Liney(1 + Serialized%eJ(conta))
                Nodes(numNodes,3)=sgg%Linez(    Serialized%eK(conta))
-            endif
+            end if
             !
 
             numQuads=numQuads + 1
@@ -1407,7 +1407,7 @@ contains
       if ((NumEdges+1)+(NumQuads+1)/=numberofSerialized) then
          buff='ERROR: Buggy error sumas creating .vtk'
          call print11(0_4, buff)
-      endif
+      end if
 
       return
    end subroutine creaUnstructData

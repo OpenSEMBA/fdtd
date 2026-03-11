@@ -267,7 +267,7 @@ contains
         do i = 1,100
             if (f_output(i) == c_null_char) exit
             res%name(i:i) = f_output(i)
-        enddo
+        end do
         res%length = i-1
 
     end function

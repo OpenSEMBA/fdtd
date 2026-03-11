@@ -67,7 +67,7 @@ contains
                 layer_index = layer_index + res%index - layer_indices(i,1) + 1
             end if
             res%index = layer_index
-        endif
+        end if
 #endif
         res%name = res%name//name//"_"
         if (probe_type == PROBE_TYPE_VOLTAGE) then
@@ -110,7 +110,7 @@ contains
                 call this%saveFrame(t + 0.5*this%dt, i(:,this%index - 1))
             else 
                 call this%saveFrame( t+ 0.5*this%dt, i(:,this%index))
-            endif
+            end if
         end if  
 
     end subroutine

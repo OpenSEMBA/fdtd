@@ -77,7 +77,7 @@ contains
         res%name = ""
         if (present(name)) then
             res%name = name
-        endif   
+        end if   
         allocate(res%probes(0))
 
         res%number_of_conductors = countNumberOfConductors(levels)
@@ -370,7 +370,7 @@ contains
                           matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
                                                       this%e_L(:,i) * this%step_size(i)) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
-        enddo
+        end do
         !TODO - revisar
         i_now = this%i
         call this%transfer_impedance%updatePhi(i_prev, i_now)

@@ -53,7 +53,7 @@ module CALC_CONSTANTS
                if (g%gm1(r) < 0.0_RKIND) then !exponential time stepping
                    g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                    g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
-               endif
+               end if
             elseif (sgg%Med(R)%Is%SGBC) then
 !!!!! 090519 He quitado todo este calculo que luego hara InitSGBCs para no duplicar codigo propenso a errores. Uso valores absurdos por lo que truene.
 !!!!! ojo que los parametros stochastic tambien se obtendran en InitSGBCs, por eso lo he quitado esto de aqui
@@ -76,14 +76,14 @@ module CALC_CONSTANTS
 !!!!!                     if (g%g1(r) < 0.0_RKIND) then !exponential time stepping
 !!!!!                        g%g1(r)=exp(- Sigma * sgg%dt / (Epsilon ))
 !!!!!                        g%g2(r)=(1.0_RKIND-g%g1(r))/ Sigma
-!!!!!                     endif
+!!!!!                     end if
 !!!!! hasta aqui lo comentado a 090519. Los calculos de g%gm1 y g%gm2 no los hace InitSGBCs y sus incertidumbres son nulas. asi que los hago aqui                       
                           g%gm1(r)=(1- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                           g%gm2(r)=sgg%dt/ Mu                   /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                           if (g%gm1(r) < 0.0_RKIND) then !exponential time stepping
                              g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                              g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
-                          endif
+                          end if
             elseif (sgg%Med(R)%Is%Anisotropic) then
                g%g1(r)=1.0_RKIND !para que no haga nada en el bucle principal evitando los ifs
                g%g2(r)=0.0_RKIND
@@ -98,7 +98,7 @@ module CALC_CONSTANTS
                if (g%gm1(r) < 0.0_RKIND) then !exponential time stepping
                   g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                   g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
-               endif
+               end if
             elseif  ((sgg%Med(R)%Is%MDispersive).and.(.not.sgg%Med(R)%Is%EDispersive).and.(.not.sgg%Med(r)%Is%MdispersiveANIS)) then
                !solo cierto para ISOTROPOS
                g%g1(r)=(1.0_RKIND- Sigma*sgg%dt/(2.0_RKIND * Epsilon)) / (1.0_RKIND + Sigma*sgg%dt/(2.0_RKIND * Epsilon))
@@ -106,7 +106,7 @@ module CALC_CONSTANTS
                if (g%g1(r) < 0.0_RKIND) then !exponential time stepping
                   g%g1(r)=exp(- Sigma * sgg%dt / (Epsilon ))
                   g%g2(r)=(1.0_RKIND-g%g1(r))/ Sigma
-               endif
+               end if
                g%gm1(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives !when written this routine
                g%gm2(r)=0.0_RKIND !will be overwritten by own values created by InitMDispersives
             elseif  ((sgg%Med(r)%Is%MdispersiveANIS).OR.(sgg%Med(r)%Is%EdispersiveANIS)) then
@@ -118,15 +118,15 @@ module CALC_CONSTANTS
                if (g%g1(r) < 0.0_RKIND) then !exponential time stepping
                   g%g1(r)=exp(- Sigma * sgg%dt / (Epsilon ))
                   g%g2(r)=(1.0_RKIND-g%g1(r))/ Sigma
-               endif
+               end if
                g%gm1(r)=(1- SigmaM*sgg%dt/(2.0_RKIND *  Mu )) /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                g%gm2(r)=sgg%dt/ Mu                   /(1.0_RKIND + SigmaM*sgg%dt/(2.0_RKIND *  Mu ))
                if (g%gm1(r) < 0.0_RKIND) then !exponential time stepping
                   g%gm1(r)=exp(- Sigmam * sgg%dt / (Mu ))
                   g%gm2(r)=(1.0_RKIND-g%gm1(r))/ Sigmam
-               endif
-            endif !Multiports
-         endif
+               end if
+            end if !Multiports
+         end if
       End do
    end subroutine calc_g1g2gm1gm2
 
@@ -142,7 +142,7 @@ end module CALC_CONSTANTS
 !!!!!!UNSUPPORTED       !!!         call InitWires_Berenger()
 !!!!!!UNSUPPORTED       !!!      elseif((trim(adjustl(wiresflavor))=='slanted').or.(trim(adjustl(wiresflavor))=='semistructured')) then
 !!!!!!UNSUPPORTED       !!!         call InitWires_Slanted()
-!!!!!!UNSUPPORTED       !!!      endif
+!!!!!!UNSUPPORTED       !!!      end if
 !!!!!!DONE       !               call InitLumped()
 !!!!!!DONE       !               call InitAnisotropic()
 !!!!!!DONE       !               call InitSGBCs()

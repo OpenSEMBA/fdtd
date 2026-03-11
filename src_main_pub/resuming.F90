@@ -213,7 +213,7 @@ contains
       if (layoutnumber == 0) then
          call flush(11)
          call flush(10)
-      endif
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!  Open unit 14 and store the fields of each module for resuming pruposesdata
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -227,7 +227,7 @@ contains
          write( 14, '(a)',err=634) '!END'
          close ( 14, status = 'delete',err=634)
          call rename(trim(adjustl( nresumeable2)),trim(adjustl( nresumeable2))//'.old')
-      endif
+      end if
 #endif
       !
 #ifdef CompileWithMPI
@@ -256,19 +256,19 @@ contains
              (trim(adjustl(wiresflavor))=='transition')) then
              if ((size>1).and.(thereare%wires))   then
                 call newFlushWiresMPI(layoutnumber,size)
-             endif
+             end if
 #ifdef CompileWithStochastic
              if (stochastic)  then
                 call syncstoch_mpi_wires(simu_devia,layoutnumber,size)
-             endif
+             end if
 #endif             
-             endif
+             end if
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             call FlushWiresMPI_Berenger(layoutnumber,size)
-         endif
+         end if
 #endif
-      endif
+      end if
       
 
 #endif
@@ -276,25 +276,25 @@ contains
          if ((trim(adjustl(wiresflavor))=='holland') .or. &
              (trim(adjustl(wiresflavor))=='transition')) then
             call StoreFieldsWires
-         endif
+         end if
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(wiresflavor))=='berenger') then
             call StoreFieldsWires_Berenger
-         endif
+         end if
 #endif
 #ifdef CompileWithSlantedWires
          if((trim(adjustl(wiresflavor))=='slanted').or.(trim(adjustl(wiresflavor))=='semistructured')) then
             call StoreFieldsWires_Slanted
-         endif
+         end if
 #endif
-      endif
+      end if
 
       
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
       if (stochastic)  then
          call syncstoch_mpi_lumped(simu_devia,layoutnumber,size)
-      endif
+      end if
 #endif    
 #endif    
       if (ThereAre%Lumpeds) call StoreFieldsLumpeds(stochastic)
@@ -303,12 +303,12 @@ contains
 #ifdef CompileWithStochastic
       if (stochastic)  then
          call syncstoch_mpi_SGBCs(simu_devia,layoutnumber,size)
-      endif
+      end if
 #endif    
 #endif    
       if( Thereare%SGBCs)       then
           call StoreFieldsSGBCs(stochastic)
-      endif      
+      end if      
 #ifdef CompileWithNIBC
       if( Thereare%Multiports)       call StoreFieldsMultiports
 #endif
@@ -365,10 +365,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Ex( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Ex( i, j, k), i = ini, b%Ex%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Ey%NZ-1
          do j= 0, b%Ey%NY-1
@@ -378,10 +378,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Ey( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Ey(i,j,k), i = ini, b%Ey%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Ez%NZ-1
          do j = 0, b%Ez%NY-1
@@ -391,10 +391,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Ez( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Ez( i, j, k), i = ini, b%Ez%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Hx%NZ-1
          do j = 0, b%Hx%NY-1
@@ -404,10 +404,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Hx( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Hx( i, j, k), i = ini, b%Hx%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Hy%NZ-1
          do j = 0, b%Hy%NY-1
@@ -417,10 +417,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Hy( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Hy( i, j, k), i = ini, b%Hy%NX-1)
-         enddo
-      enddo
+         end do
+      end do
       !--->
       do k = 0, b%Hz%NZ-1
          do j = 0, b%Hz%NY-1
@@ -430,10 +430,10 @@ contains
                fin = ini-1 + BLOCK_SIZE
                write(14,err=634) ( Hz( i, j, k), i = ini, fin)
                ini = ini + BLOCK_SIZE
-            enddo
+            end do
             write(14,err=634) ( Hz( i, j, k), i = ini, b%Hz%NX-1)
-         enddo
-      enddo
+         end do
+      end do
 
       goto 635
 634   call print11(0,SEPARADOR//separador//separador)

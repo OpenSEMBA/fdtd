@@ -87,12 +87,12 @@ contains
                cycle barridoprobes
             else !creo que tengo toda la casuistica, por si se me escapa algo continuo, y ya debajo se manejara
                continue
-            endif
+            end if
          else 
                cycle barridoprobes
-         endif
-         endif
-         endif
+         end if
+         end if
+         end if
          !
          !sondas Volumic traducelas a xdfm
          if (sgg%observation(ii)%Volumic) then
@@ -133,7 +133,7 @@ contains
                                    trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
                       else
                           call stoponerror(layoutnumber,size,'Buggy error in mpidir. ')
-                      endif
+                      end if
                      !fin mpidir
                       
                      !! CORREGIDO PARA TRANCOS   AHORA DESPUES DE HABER PUESTO BIEN EXTPOINT
@@ -145,19 +145,19 @@ contains
                          if (mod(imdice,output(ii)%item(1)%Xtrancos)==0) then
                             minXabs_primero=imdice
                             exit im1
-                        endif
+                        end if
                      end do im1
                      im2: do imdice=minYabs,maxYabs
                          if (mod(imdice,output(ii)%item(1)%Ytrancos)==0) then
                             minYabs_primero=imdice
                             exit im2
-                        endif
+                        end if
                      end do im2
                      im3: do imdice=minZabs,maxZabs
                          if (mod(imdice,output(ii)%item(1)%Ztrancos)==0) then
                             minZabs_primero=imdice
                             exit im3
-                        endif
+                        end if
                      end do im3
 !pufff hay mucha reduncancia minxabs = minx, etc. 021219 limpiar algun dia 
                      minXabs = int(sgg%Observation(ii)%P(1)%XI/output(ii)%item(1)%Xtrancos)
@@ -216,7 +216,7 @@ contains
                        pasadastotales=2
                       allocate(valor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
                       allocate(valor3dCOMPLEX(1,1:3,minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs))
-                     endif
+                     end if
 
 #ifdef CompileWithMPI
                     allocate(newvalor3d(minXabs:maxXabs, minYabs:maxYabs, minZabs:maxZabs, 1))
@@ -233,7 +233,7 @@ contains
                                 write(myunit, '(a)') '!END'      
                                 close(myunit,status='delete')
                                 firsttimeenteringcreatexdmf=.false.
-                            endif        
+                            end if        
                             my_iostat=0
 9138                        if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9138,'.',layoutnumber,trim(adjustl(sgg%nEntradaRoot))//'_'//trim(adjustl(whoamishort))//'_h5bin.txt'
                             open(newunit=myunit,file=trim(adjustl(sgg%nEntradaRoot))//'_'//trim(adjustl(whoamishort))//'_h5bin.txt',form='formatted',position='append',err=9138,iostat=my_iostat,status='new',action='write') !lista de todos los .h5bin   
@@ -243,8 +243,8 @@ contains
                             !
                             open(newunit=myunit,file=trim(adjustl(pathroot))//'.h5bin',form='unformatted')
                             write (myunit) finalstep,minXabs, maxXabs, minYabs, maxYabs, minZabs, maxZabs,fieldob,SGG%Observation(ii)%TimeDomain,pasadastotales
-                         endif
-                     endif !del layoutnumber
+                         end if
+                     end if !del layoutnumber
                         
 #ifdef CompileWithMPI
                      call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
@@ -256,7 +256,7 @@ contains
                         elseif (SGG%Observation(ii)%FreqDomain) then
                           valor3d = 0.0_RKIND
                           valor3dCOMPLEX = 0.0_RKIND
-                        endif
+                        end if
                         
 #ifdef CompileWithMPI
                         newvalor3d = 0.0_RKIND
@@ -270,7 +270,7 @@ contains
                             else
                                 print *,'Buggy error in valor3d. '
                                 stop
-                            endif               
+                            end if               
                             continue !ya se ha leido valor3d
                         else 
                             if (pasadas==1) then   
@@ -280,8 +280,8 @@ contains
                             else
                                 print *,'Buggy error in valor3d. '
                                 stop
-                            endif
-                        endif
+                            end if
+                        end if
 #ifdef CompileWithHDF
 #ifdef CompileWithMPI
                         if (layoutnumber == output(ii)%item(1)%MPIRoot) then
@@ -291,8 +291,8 @@ contains
                            
                            if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase del modulo
                               call openh5file(filename,finalstep,minXabs,maxXabs, minYabs,maxYabs, minZabs,maxZabs)
-                           endif
-                        endif
+                           end if
+                        end if
 #endif               
                            
                         bucleindi: do indi = 1, finalstep
@@ -316,8 +316,8 @@ contains
                                            end do
                                         end do
                                      end do
-                                   endif
-                               endif !del if (pasadas==1
+                                   end if
+                               end if !del if (pasadas==1
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!                                                   
                                if (SGG%Observation(ii)%TimeDomain) then                     
                                     continue !ya se ha leido valor3d
@@ -334,7 +334,7 @@ contains
                                                                                   ABS(valor3dCOMPLEX(1,3,i1, j1, k1))**2. )  !sgg  301119 faltaba este cuadrado creo
                                                   else !phase
                                                       valor3d=0.0_RKIND !LA fase no tiene sentido para el modulo del vector
-                                                  endif
+                                                  end if
                                                end do
                                             end do
                                          end do
@@ -346,7 +346,7 @@ contains
                                                       valor3d(i1, j1, k1, 1)= ABS(valor3dCOMPLEX(1,1,i1, j1, k1)) 
                                                    else   !phase
                                                       valor3d(i1, j1, k1, 1)= ATAN2(AIMAG(valor3dCOMPLEX(1,1,i1, j1, k1)),real(valor3dCOMPLEX(1,1,i1, j1, k1)))
-                                                   endif
+                                                   end if
                                                end do
                                             end do
                                          end do
@@ -358,7 +358,7 @@ contains
                                                       valor3d(i1, j1, k1, 1)=ABS(valor3dCOMPLEX(1,2,i1, j1, k1))
                                                   else    !phase
                                                       valor3d(i1, j1, k1, 1)= ATAN2(AIMAG(valor3dCOMPLEX(1,2,i1, j1, k1)),real(valor3dCOMPLEX(1,2,i1, j1, k1)))
-                                                  endif
+                                                  end if
                                                end do
                                             end do
                                          end do
@@ -370,7 +370,7 @@ contains
                                                      valor3d(i1, j1, k1, 1)=ABS(valor3dCOMPLEX(1,3,i1, j1, k1))
                                                   else                 !phase
                                                      valor3d(i1, j1, k1, 1)= ATAN2(AIMAG(valor3dCOMPLEX(1,3,i1, j1, k1)),real(valor3dCOMPLEX(1,3,i1, j1, k1)))
-                                                  endif
+                                                  end if
                                                end do
                                             end do
                                          end do
@@ -378,7 +378,7 @@ contains
                                           print *,'Buggy error in valor3d. Not processing continuing. '
                                           continue
                                     end select                                                 
-                               endif   !del time domain
+                               end if   !del time domain
 !!!!!!!!!!!!!!!!sincroniza valor3d y aunalos en el root
 #ifdef CompileWithMPI
                                if (size>1) then
@@ -387,9 +387,9 @@ contains
                                      call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
                                      call MPI_AllReduce (valor3d, newvalor3d, sizeofvalores, REALSIZE, MPI_SUM, &
                                      &                     output(ii)%item(1)%MPISubComm, ierr)
-                                  endif
+                                  end if
                                   valor3d = newvalor3d
-                               endif
+                               end if
 #endif
                     
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -406,7 +406,7 @@ contains
                                                         linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                                                         dz_minZabs,dy_minYabs,dx_minXabs,&
                                                         minZabs_primero,minYabs_primero,minXabs_primero,finalstep,vtkindex)
-                                   endif
+                                   end if
 #endif                             
                                    if (createh5bin) then
                                        write (myunit) (minZabs_primero),(minYabs_primero), (minXabs_primero)      
@@ -418,8 +418,8 @@ contains
                                              write(myunit) (valor3d(i1, j1, k1, 1), i1=minxabs, maxxabs)
                                           end do
                                        end do
-                                   endif
-                              endif                  
+                                   end if
+                              end if                  
                           
                         end do bucleindi
                               
@@ -433,8 +433,8 @@ contains
                            if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase del modulo
                               call closeh5file(finalstep,att)
                               call print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(filename))//'.h5', .TRUE.) !enforces print
-                           endif
-                        endif                        
+                           end if
+                        end if                        
 #endif                 
                      end do buclepasadas
                    !
@@ -446,13 +446,13 @@ contains
                         if (createh5bin) then
                              close(myunit)
                              call print11 (layoutnumber, trim(adjustl(whoami))//' Written into '//trim(adjustl(sgg%nEntradaRoot))//'.h5bin', .TRUE.)
-                        endif
-                     endif                     
+                        end if
+                     end if                     
 
                      deallocate(valor3d)
                      if (SGG%Observation(ii)%FreqDomain) then
                         deallocate(valor3dCOMPLEX)
-                     ENDIF
+                     end if
 #ifdef CompileWithMPI
                      deallocate(newvalor3d)
 #endif
@@ -462,11 +462,11 @@ contains
                   else !del lexis
                      buff='NOT PROCESSING: Ignoring: Inexistent or void file '//trim(adjustl(output(ii)%item(1)%path))
                      call print11(layoutnumber, buff)
-                  ENDIF !DEL LEXIS
+                  end if !DEL LEXIS
                somethingdone=.true.
-               ENDIF
-            ENDIF
-         ENDIF
+               end if
+            end if
+         end if
       end do barridoprobes !barrido puntos de observacion
                      
       return
@@ -504,14 +504,14 @@ contains
                      algoescrito=.true.
                  end do
 9874            close (myunit2,status='delete')    
-             endif      
+             end if      
           end do
           if (algoescrito) then          
             close(myunit)
           else
             close(myunit,status='delete')
-          endif
-      endif
+          end if
+      end if
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif     
@@ -545,10 +545,10 @@ contains
                      return
                   ELSE
                      close (output(ii)%item(1)%unit)
-                  ENDIF !DEL LEXIS
-               ENDIF
-            ENDIF
-         ENDIF
+                  end if !DEL LEXIS
+               end if
+            end if
+         end if
 
       end do !barrido puntos de observacion
       call createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
@@ -565,10 +565,10 @@ contains
                      return
                   ELSE
                      open (output(ii)%item(1)%unit,file=trim(adjustl(output(ii)%item(1)%path)),FORM='unformatted',position='append')
-                  ENDIF !DEL LEXIS
-               ENDIF
-            ENDIF
-         ENDIF
+                  end if !DEL LEXIS
+               end if
+            end if
+         end if
 
       end do !barrido puntos de observacion
 

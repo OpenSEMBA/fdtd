@@ -1740,7 +1740,7 @@ contains
                                                  tag_numbers%getFaceTag(Hfield, iii, jjj, kkk))
                           end if
                         end do
-                        !   endif
+                        !   end if
                       end if
                       !
                     end do
@@ -2179,7 +2179,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
               !no es necesario hacer wipe out pq en DF se van machacando
             end select
           end do loop_ob
-            !!!!        endif !del time domain !NO ES PRECISO 25/02/14
+            !!!!        end if !del time domain !NO ES PRECISO 25/02/14
         end do !del ii=1,numberrequest
 
         write (19, '(a)') '!END '
@@ -4369,48 +4369,48 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
         !    if     (sgg%med(imed )%is%SGBC) then
         !        if (sgg%med(imed1)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed2)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed3)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed4)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !   elseif  (sgg%med(imed )%is%Multiport) then
         !        if (sgg%med(imed1)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed2)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed3)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed4)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !    elseif (sgg%med(imed )%is%AnisMultiport) then
         !        if (sgg%med(imed1)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed2)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed3)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed4)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !    else
         !        if (imed==imed1) contaborde=contaborde+1
         !        if (imed==imed2) contaborde=contaborde+1
         !        if (imed==imed3) contaborde=contaborde+1
         !        if (imed==imed4) contaborde=contaborde+1
-        !    endif
+        !    end if
         !    if (contaborde <=1) esborde=.true.
          !!!!alternativa
         if (sgg%med(imed)%is%SGBC) then

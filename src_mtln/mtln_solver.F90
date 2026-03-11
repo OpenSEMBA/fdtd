@@ -63,7 +63,7 @@ contains
             pre = preprocess(parsed, alloc)
         else  
             pre = preprocess(parsed)
-        endif
+        end if
         if (size(pre%bundles) == 0) then
             res%number_of_bundles = 0
             return

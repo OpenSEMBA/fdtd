@@ -338,7 +338,7 @@ contains
                 bundle_in_layer = .true.
                 layer_indices = findIndicesInLayer(cable_bundles(i)%levels(1)%cables(1)%ptr, alloc_z)
                 if (layer_indices(1,1) ==  layer_indices(1,2) ) bundle_in_layer = .false.
-            endif
+            end if
             nl = size(cable_bundles(i)%levels)
             allocate(res(i)%levels(nl))
             do j = 1, nl
@@ -349,7 +349,7 @@ contains
                         res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%ptr, dt, layer_indices, bundle_in_layer, alloc_z)
                     else
                         res(i)%levels(j)%lines(k) = buildLineFromCable(cable_bundles(i)%levels(j)%cables(k)%ptr, dt)
-                    endif
+                    end if
                 end do
             end do
         end do
