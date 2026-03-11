@@ -1,7 +1,7 @@
 integer function test_update_time_movie_observation() bind(C) result(err)
-    use FDETYPES
+    use FDETYPES_m
     use FDETYPES_TOOLS
-    use Observa
+    use Observa_m
     use observation_testingTools
 
     type(SGGFDTDINFO_t) :: sgg

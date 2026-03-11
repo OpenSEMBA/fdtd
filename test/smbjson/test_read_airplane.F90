@@ -1,5 +1,5 @@
 integer function test_read_airplane() bind (C) result(err)
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    implicit none

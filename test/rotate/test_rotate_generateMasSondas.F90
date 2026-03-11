@@ -1,5 +1,5 @@
 module test_rotate_generateMasSondas_m
-    use smbjson
+    use smbjson_m
     use nfde_rotate_m
     use rotate_testingTools
     implicit none

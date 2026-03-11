@@ -1,5 +1,5 @@
 module observation_testingTools
-   use FDETYPES
+   use FDETYPES_m
    type :: dummyFields_t
       real(kind=RKIND),allocatable, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=RKIND),allocatable, dimension(:) :: dxe, dye, dze, dxh, dyh, dzh
@@ -48,7 +48,7 @@ contains
    end subroutine create_dummy_fields
 
    subroutine check_shape_real(arr, n_expected, test_err, name)
-      use Observa
+      use Observa_m
       real(kind=RKIND), intent(in), dimension(:, :) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -74,7 +74,7 @@ contains
    end subroutine check_shape_real
 
    subroutine check_shape_complex(arr, n_expected, test_err, name)
-      use Observa
+      use Observa_m
       complex(kind=CKIND), intent(in), dimension(:, :) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -100,7 +100,7 @@ contains
    end subroutine check_shape_complex
 
    subroutine check_size(arr, n_expected, test_err, name)
-      use Observa
+      use Observa_m
       integer, intent(in), dimension(:) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err

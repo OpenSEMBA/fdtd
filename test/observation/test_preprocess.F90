@@ -1,7 +1,7 @@
 integer function test_initial_time_less_than_timestep() bind(C) result(err)
   use observation_testingTools
-  use FDETYPES
-  use OBSERVA
+  use FDETYPES_m
+  use Observa_m
 
   type(Obses_t) :: obs
   type(output_t) :: out
@@ -40,8 +40,8 @@ end function test_initial_time_less_than_timestep
 
 integer function test_timestep_greater_and_mapvtk() bind(C) result(err)
   use observation_testingTools
-  use FDETYPES
-  use OBSERVA
+  use FDETYPES_m
+  use Observa_m
   
   type(Obses_t) :: obs
   type(output_t) :: out
@@ -85,8 +85,8 @@ end function test_timestep_greater_and_mapvtk
 
 integer function test_timestep_greater_not_mapvtk() bind(C) result(err)
   use observation_testingTools
-  use FDETYPES
-  use OBSERVA
+  use FDETYPES_m
+  use Observa_m
   type(Obses_t) :: obs
   type(output_t) :: out
 
@@ -126,8 +126,8 @@ end function test_timestep_greater_not_mapvtk
 
 integer function test_freqstep_zero_or_large() bind(C) result(err)
   use observation_testingTools
-  use FDETYPES
-  use OBSERVA
+  use FDETYPES_m
+  use Observa_m
   type(Obses_t) :: obs
   type(output_t) :: out
 
@@ -177,8 +177,8 @@ end function test_freqstep_zero_or_large
 
 integer function test_volumic_false_true_and_saveall() bind(C) result(err)
   use observation_testingTools
-  use FDETYPES
-  use OBSERVA
+  use FDETYPES_m
+  use Observa_m
 
   type(Obses_t) :: obs
   type(output_t) :: out
@@ -228,8 +228,8 @@ end function test_volumic_false_true_and_saveall
 
 integer function test_saveall_branch() bind(C) result(err)
   use observation_testingTools
-  use FDETYPES
-  use OBSERVA
+  use FDETYPES_m
+  use Observa_m
   type(Obses_t) :: obs
   type(output_t) :: out
 
@@ -266,8 +266,8 @@ end function test_saveall_branch
 
 integer function test_final_less_than_initial() bind(C) result(err)
   use observation_testingTools
-  use FDETYPES
-  use OBSERVA
+  use FDETYPES_m
+  use Observa_m
   type(Obses_t) :: obs
   type(output_t) :: out
 
@@ -302,8 +302,8 @@ end function test_final_less_than_initial
 
 integer function test_huge_cap() bind(C) result(err)
   use observation_testingTools
-  use FDETYPES
-  use OBSERVA
+  use FDETYPES_m
+  use Observa_m
   type(Obses_t) :: obs
   type(output_t) :: out
 

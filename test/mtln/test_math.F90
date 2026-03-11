@@ -1,5 +1,5 @@
 integer function test_math_eigvals() bind(C) result(error_cnt)    
-    use utils_mod
+    use utils_m
     use mtln_testingTools_mod
 
     use iso_fortran_env, only: real64
