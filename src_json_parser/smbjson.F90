@@ -2591,7 +2591,7 @@ contains
 
       allocate (mtln_res%cables(size(cables)))
       do i = 1, size(cables)
-         read_cable => readMTLNCable(cables(i), this%readGrid())
+         read_cable => readMTLNCable(cables(i))
          call stopOnRepeteadName(read_cable, mtln_res%cables, i - 1)
          mtln_res%cables(i)%ptr => read_cable
          call addElemIdToCableMap(elemIdToCable, cables(i)%elementIds, i)
@@ -3509,9 +3509,9 @@ contains
       end function
 
 
-      function readMTLNCable(j_cable, despl) result(res)
+      function readMTLNCable(j_cable) result(res)
          type(materialAssociation_t), intent(in) :: j_cable
-         type(Desplazamiento_t), intent(in) :: despl
+         type(Desplazamiento_t) :: mtln_despl
          class(cable_t), pointer :: res
          type(json_value_ptr_t) :: material
          integer :: nConductors
@@ -3542,11 +3542,34 @@ contains
          res%initial_connector => findConnectorWithId(j_cable%initialConnectorId)
          res%end_connector => findConnectorWithId(j_cable%endConnectorId)
          res%name = j_cable%name
-         res%segments = buildSegments(j_cable, despl)
+         mtln_despl = buildMTLNDespl()
+         res%segments = buildSegments(j_cable, mtln_despl)
          res%n_segments = size(res%segments)
-         res%step_size = buildStepSize(res%segments, despl)
+         res%step_size = buildStepSize(res%segments, mtln_despl)
 
       end function
+
+      function buildMTLNDespl() result(res)
+         type(Desplazamiento_t) :: despl, res
+         despl = this%readGrid()
+         res%nx = despl%nx
+         res%ny = despl%ny
+         res%nz = despl%nz
+         call copyAndEnlargeDes(res%desX, despl%desX, despl%mX2)
+         call copyAndEnlargeDes(res%desY, despl%desY, despl%mY2)
+         call copyAndEnlargeDes(res%desZ, despl%desZ, despl%mZ2)
+      end function
+
+      subroutine copyAndEnlargeDes(copy, d, n) 
+         real(kind=RKIND), dimension(:), pointer :: copy, d
+         integer :: n
+         allocate(copy(0:n-1))
+         if (size(d) == 1) then 
+            copy(:) = d(1)
+         else
+            copy = d
+         end if
+      end subroutine
 
       function buildTransferImpedance(mat) result(res)
          type(json_value_ptr_t):: mat
