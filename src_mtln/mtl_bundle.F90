@@ -266,9 +266,10 @@ contains
         this%generators(size(aux_generators)+1) = new_generator
 
         if (gen_type == SOURCE_TYPE_VOLTAGE) then 
-            this%rpul(index, conductor, conductor) = resistance 
+            ! this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance 
         else if (new_generator%source_type == SOURCE_TYPE_CURRENT) then
-            this%gpul(index, conductor, conductor) = resistance 
+            ! this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance 
+            ! this%gpul(index, conductor, conductor) = this%gpul(index, conductor, conductor) + 1.0/resistance 
         end if
 
     end subroutine
@@ -378,10 +379,14 @@ contains
         integer :: i
         !TODO
         do i = 1, size(this%generators) 
-            val = this%generators(i)%interpolate(time)
+            val = this%generators(i)%interpolate(time+0.5*dt)
+            ! val = 0.5*(this%generators(i)%interpolate(time-0.5*dt)+this%generators(i)%interpolate(time+0.5*dt))
             if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
                 this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val
             else if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then 
+                ! this%v_source(this%generators(i)%conductor, this%generators(i)%index) = 0.5*val*this%generators(i)%resistance
+                ! this%v_source(this%generators(i)%conductor, this%generators(i)%index-1) = -0.5*val*this%generators(i)%resistance
+                ! this%i_source(this%generators(i)%conductor, this%generators(i)%index-1) = 0.5*val
                 this%i_source(this%generators(i)%conductor, this%generators(i)%index)   = val
             end if
         end do
@@ -393,8 +398,8 @@ contains
         integer :: i
         do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
-                           matmul(this%i_diff(i,:,:), this%i(:,i) - this%i(:,i-1)  )
-                        ! +i_source                           
+                           matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1)) + &
+                                                       this%i_source(:,i))
         end do
     end subroutine
 
@@ -418,10 +423,15 @@ contains
         do i = 1, this%number_of_divisions 
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
                           matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
-                                                      this%e_L(:,i) * this%step_size(i) - &
-                                                      this%v_source(:,i)) - &
+                                                      this%e_L(:,i) * this%step_size(i)) - &
+                                                    !   this%v_source(:,i)) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
+            ! this%i(:,i) = this%i_source(:,i)
         enddo
+        do i = 1, size(this%generators) 
+            this%i(this%generators(i)%conductor, this%generators(i)%index) = & 
+            this%i_source(this%generators(i)%conductor, this%generators(i)%index)
+        end do
         !TODO - revisar
         i_now = this%i
         call this%transfer_impedance%updatePhi(i_prev, i_now)

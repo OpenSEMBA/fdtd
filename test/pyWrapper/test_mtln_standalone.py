@@ -180,6 +180,14 @@ def test_spice_zener(tmp_path):
     assert np.allclose(p_expected.data.to_numpy()[
                        :-5, :], p_solved.data.to_numpy()[:-5, :], rtol=0.01, atol=0.05e-3)
     
+def test_current_source(tmp_path):
+    fn = CASES_FOLDER + 'sources/current_source.fdtd.json'
+    solver = FDTD(input_filename=fn,
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path,
+                  flags = ["-n", "1"])
+
+
 @no_mtln_skip
 @pytest.mark.mtln
 def test_mtln_sources(tmp_path):
