@@ -4,9 +4,9 @@
 !  Creation date Date :  October, 24, 2018
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module CALC_CONSTANTS
-   use fdetypes
-   use report
+module CALC_CONSTANTS_m
+   use FDETYPES_m
+   use Report_m
     implicit none
     private
     public calc_g1g2gm1gm2
@@ -130,7 +130,7 @@ module CALC_CONSTANTS
       End do
    end subroutine calc_g1g2gm1gm2
 
-end module CALC_CONSTANTS
+end module CALC_CONSTANTS_m
 
 !!!!!!INNECESARIO!      call InitOtherBorders    ()
 !!!!!!DONE       !      call InitCPMLBorders     ()

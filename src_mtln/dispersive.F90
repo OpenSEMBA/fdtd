@@ -1,6 +1,6 @@
-module dispersive_mod
-    use utils_mod
-    use rational_approximation_mod
+module dispersive_m
+    use utils_m
+    use rational_approximation_m
     implicit none
     
     type :: dispersive_t
@@ -280,6 +280,6 @@ contains
 
 
 
-end module dispersive_mod
+end module dispersive_m
 
 

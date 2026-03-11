@@ -1,11 +1,11 @@
-module mtln_solver_mod 
+module mtln_solver_m 
 
-    use mtl_bundle_mod
-    use network_manager_mod
-    use preprocess_mod
-    use FDETYPES, only: XYZlimit_t
+    use mtl_bundle_m
+    use network_manager_m
+    use mtln_preprocess_m
+    use FDETYPES_m, only: XYZlimit_t
 #ifdef CompileWithMPI
-    use FDETYPES, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
     implicit none
 
@@ -288,4 +288,4 @@ contains
 
     end subroutine
 
-end module mtln_solver_mod
+end module mtln_solver_m

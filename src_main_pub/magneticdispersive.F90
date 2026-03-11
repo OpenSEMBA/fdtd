@@ -9,12 +9,12 @@
 ! 5 poles (not 3) !UNTESTED SGG JUN'12
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Mdispersives
+module Mdispersives_m
 
    !mismo switch electrico y magnetico
 
-   use fdetypes
-   use REPORT
+   use FDETYPES_m
+   use Report_m
    implicit none
    private
 
@@ -413,4 +413,4 @@ contains
 
    end subroutine
 
-end module Mdispersives
+end module Mdispersives_m

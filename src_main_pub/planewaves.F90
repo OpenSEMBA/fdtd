@@ -1,6 +1,6 @@
-module ilumina
-   use fdetypes
-   use REPORT
+module ilumina_m
+   use FDETYPES_m
+   use Report_m
 
    implicit none
    private
@@ -1716,4 +1716,4 @@ contains
     end subroutine corrigeondaplanaH
     
 
-end module ILUMINA
+end module ilumina_m

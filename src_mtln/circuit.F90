@@ -1,7 +1,7 @@
-module circuit_mod
+module circuit_m
 
-    use ngspice_interface_mod
-    use mtln_types_mod, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use ngspice_interface_m
+    use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     implicit none
 
     type string_t

@@ -10,13 +10,13 @@
 module Preprocess_m
 #undef DetectAdj
    !
-   use Report
-   use NFDETypes
+   use Report_m
+   use NFDETypes_m
    !healer sgg10
-   use CreateMatrices
+   use CreateMatrices_m
    !typos que leo desde mi FDE
-   use FDEtypes
-   use DMMA
+   use FDETYPES_m
+   use DMMA_m
 #ifdef CompileWithConformal
    use CONFORMAL_INI_CLASS
    use CONFORMAL_TOOLS
@@ -24,7 +24,7 @@ module Preprocess_m
    use CONFORMAL_TYPES
    use Conformal_TimeSteps_m
 #endif
-   use conformal_mod, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
+   use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    implicit none
 !!!variables globales del modulo
    real(kind=RKIND), save           :: cluz,zvac

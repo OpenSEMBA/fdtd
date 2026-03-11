@@ -9,8 +9,8 @@
 ! ONLY 2 poles (not 3) and provide the real one and any one of the couple of conjugates)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Anisotropic
-   use fdetypes
+module Anisotropic_m
+   use FDETYPES_m
    implicit none
    private
 
@@ -1544,4 +1544,4 @@ contains
 
    end subroutine
 
-end module Anisotropic
+end module Anisotropic_m

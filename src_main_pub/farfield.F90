@@ -1,6 +1,6 @@
 module farfield_m
-   use fdetypes
-   use REPORT
+   use FDETYPES_m
+   use Report_m
 
    implicit none
    private

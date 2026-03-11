@@ -4,25 +4,25 @@
 !  Module to handle the resuming of a problem
 !  Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module resuming
+module resuming_m
 
-   Use Report
+   Use Report_m
 
-   use fdetypes
+   use FDETYPES_m
 #ifdef CompileWithStochastic
    use SGBC_stoch
 #else
-   use SGBC_NOstoch
+   use SGBC_nostoch_m
 #endif  
-   use PMLbodies
-   use Lumped
+   use PMLbodies_m
+   use Lumped_m
 #ifdef CompileWithNIBC
    use Multiports
 #endif
-   use EDispersives
-   use MDispersives
+   use EDispersives_m
+   use Mdispersives_m
    use farfield_m
-   use HollandWires
+   use HollandWires_m
 #ifdef CompileWithBerengerWires
    use WiresBerenger
 #ifdef CompileWithMPI
@@ -34,17 +34,17 @@ module resuming
 #endif
 
    !Plane Wave Module
-   use Ilumina
+   use ilumina_m
    !Observation Module
-   use Observa
+   use Observa_m
    !PMC and PML Module
-   use Borders_CPML
-   use Borders_MUR
+   use BORDERS_CPML_m
+   use BORDERS_MUR_m
 
 
 
 #ifdef CompileWithMPI
-   use MPIComm
+   use MPIcomm_m
 #endif
 #ifdef CompileWithStochastic
    use MPI_stochastic

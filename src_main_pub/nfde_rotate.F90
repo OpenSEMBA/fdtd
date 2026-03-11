@@ -1,6 +1,6 @@
 module nfde_rotate_m
     !       
-   use NFDETypes
+   use NFDETypes_m
 
    !
    implicit none

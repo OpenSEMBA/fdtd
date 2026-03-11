@@ -1,10 +1,10 @@
 
     
-module PostProcessing
+module PostProcessing_m
 
-   use fdetypes
-   use Report
-   use Observa
+   use FDETYPES_m
+   use Report_m
+   use Observa_m
 
 #ifdef CompileWithHDF
    use HDF5

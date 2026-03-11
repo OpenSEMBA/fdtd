@@ -1,12 +1,12 @@
-module MPIcomm
+module MPIcomm_m
 
 #ifdef CompileWithMPI
    !
-   Use Report
-   use fdetypes
+   Use Report_m
+   use FDETYPES_m
 
-   use wiresHolland_constants
-   use HollandWires
+   use wiresHolland_constants_m
+   use HollandWires_m
 
    implicit none
    private
@@ -1740,11 +1740,11 @@ contains
 
 end module
  
-module build_t_linea_mpi
+module build_t_linea_mpi_m
 
 #ifdef CompileWithMPI
    !
-   use NFDETypes
+   use NFDETypes_m
    
 contains
 
@@ -1798,4 +1798,4 @@ contains
 
 #endif
 !------------- end subroutine----------------------------
-end module build_t_linea_mpi
+end module build_t_linea_mpi_m

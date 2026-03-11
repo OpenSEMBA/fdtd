@@ -9,13 +9,13 @@
 !!!Mangento en el fichero PMLbody_pre170815_noupdateababienH.F90 la version antigua
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module PMLbodies
+module PMLbodies_m
 
 
 
-   use Report
+   use Report_m
 
-   use fdetypes
+   use FDETYPES_m
    implicit none
    private
    !structures needed by the PMLbody
@@ -593,4 +593,4 @@ contains
 
 
 
-end module PMLbodies
+end module PMLbodies_m

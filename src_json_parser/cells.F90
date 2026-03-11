@@ -1,4 +1,4 @@
-module cells_mod
+module cells_m
 
    integer, parameter :: DIR_NULL = 0
    integer, parameter :: DIR_X = 1

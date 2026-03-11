@@ -1,20 +1,20 @@
-module smbjson
+module smbjson_m
 
 #ifdef CompileWithSMBJSON
-   use NFDETypes
+   use NFDETypes_m
 
-   use NFDETypes_extension
-   use smbjson_labels_mod
-   use mesh_mod
-   use parser_tools_mod
-   use idchildtable_mod
+   use NFDETypes_extension_m
+   use smbjson_labels_m
+   use mesh_m
+   use parser_tools_m
+   use idchildtable_m
 
-   use Report
+   use Report_m
 
    use json_module
    use json_kinds
 
-   use conformal_types_mod
+   use conformal_types_m
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 

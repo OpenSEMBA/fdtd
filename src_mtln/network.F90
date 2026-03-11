@@ -1,8 +1,8 @@
-module network_mod
+module network_m
 
-    use mtl_bundle_mod
-    use mtln_types_mod, parsed_probe_t => probe_t, parsed_mtln_t => mtln_t
-    use circuit_mod, only: string_t
+    use mtl_bundle_m
+    use mtln_types_m, parsed_probe_t => probe_t, parsed_mtln_t => mtln_t
+    use circuit_m, only: string_t
     implicit none
 
     type nw_node_t

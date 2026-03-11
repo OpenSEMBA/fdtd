@@ -1,11 +1,11 @@
-module parser_tools_mod
+module parser_tools_m
 
 #ifdef CompileWithSMBJSON
-   use mesh_mod
-   use cells_mod
+   use mesh_m
+   use cells_m
    use json_module
    use json_kinds
-   use NFDETypes
+   use NFDETypes_m
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 

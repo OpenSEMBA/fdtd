@@ -1,14 +1,14 @@
-module SEMBA_FDTD_mod
+module SEMBA_FDTD_m
 
-   use version
-   use Report
-   use Getargs
+   use version_m
+   use Report_m
+   use Getargs_m
    !
-   use fdetypes
-   use Solver_mod         
-   use Resuming
+   use FDETYPES_m
+   use Solver_m         
+   use resuming_m
    !nfde parser stuff
-   use NFDETypes                
+   use NFDETypes_m                
    use nfde_rotate_m           
 
 
@@ -17,16 +17,16 @@ module SEMBA_FDTD_mod
 #endif
 
 #ifdef CompileWithSMBJSON
-   use smbjson, only: fdtdjson_parser_t => parser_t
+   use smbjson_m, only: fdtdjson_parser_t => parser_t
 #endif
 
    use Preprocess_m
-   use storeData
-   use xdmf_h5
+   use storeData_m
+   use xdmf_h5_m
    !
 #ifdef CompileWithMPI
-   use MPIcomm
-   use build_t_linea_mpi
+   use MPIcomm_m
+   use build_t_linea_mpi_m
 #ifdef CompileWithStochastic
    use MPI_stochastic
 #endif
@@ -1480,4 +1480,4 @@ contains
 
    end subroutine
 
-end module SEMBA_FDTD_mod
+end module SEMBA_FDTD_m

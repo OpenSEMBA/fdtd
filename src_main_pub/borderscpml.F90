@@ -4,9 +4,9 @@
 !  Borders :  PML  handling
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module BORDERS_CPML
-   use fdetypes
-   use report
+module BORDERS_CPML_m
+   use FDETYPES_m
+   use Report_m
    implicit none
    private
    !
@@ -2273,6 +2273,6 @@ end subroutine calc_cpmlconstants
    endsubroutine AdvanceMagneTicCPML_freespace
 
 
-end Module Borders_CPML
+end Module BORDERS_CPML_m
 
 

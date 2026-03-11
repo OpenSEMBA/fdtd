@@ -1,8 +1,8 @@
-module probes_mod
+module probes_m
 
-    use mtln_types_mod, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
+    use mtln_types_m, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
 #ifdef CompileWithMPI
-    use FDETYPES, only: SUBCOMM_MPI
+    use FDETYPES_m, only: SUBCOMM_MPI
 #endif
 
     implicit none
@@ -126,4 +126,4 @@ contains
     end subroutine
 
 
-end module probes_mod
+end module probes_m

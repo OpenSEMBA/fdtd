@@ -1,14 +1,14 @@
-module mtl_mod
+module mtl_m
 
     ! use NFDETypes
-    use utils_mod
-    use dispersive_mod, dispersive_lumped_t => lumped_t
-    use mtln_types_mod, only: segment_t, multipolar_expansion_t
-    use multipolar_expansion_mod, only: getCellCapacitanceOnBox, getCellInductanceOnBox
+    use utils_m
+    use dispersive_m, dispersive_lumped_t => lumped_t
+    use mtln_types_m, only: segment_t, multipolar_expansion_t
+    use multipolar_expansion_m, only: getCellCapacitanceOnBox, getCellInductanceOnBox
 #ifdef CompileWithMPI
-    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, c_vacuum, RKIND_wires
+    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, c_vacuum, RKIND_wires
 #else
-    use fdetypes, only: pi, mu_vacuum, c_vacuum, RKIND_wires
+    use FDETYPES_m, only: pi, mu_vacuum, c_vacuum, RKIND_wires
 #endif
     implicit none
 #ifdef CompileWithMPI

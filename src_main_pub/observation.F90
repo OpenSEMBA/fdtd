@@ -3,19 +3,19 @@
 !  Observation module to store the observed data
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module Observa
-  use FDETYPES
+module Observa_m
+  use FDETYPES_m
 
 #ifdef CompileWithMPI
-  use MPIcomm
+  use MPIcomm_m
 #endif
 
-  use wiresHolland_constants
-  use HollandWires
+  use wiresHolland_constants_m
+  use HollandWires_m
 
 #ifdef CompileWithMTLN
-  use Wire_bundles_mtln_mod
-  use mtln_solver_mod, mtln_solver_t => mtln_t
+  use Wire_bundles_mtln_m
+  use mtln_solver_m, mtln_solver_t => mtln_t
 #endif
 #ifdef CompileWithBerengerWires
   use WiresBerenger
@@ -25,9 +25,9 @@ module Observa
   use WiresSlanted_Types
   use WiresSlanted_Constants
 #endif
-  use report
+  use Report_m
   use farfield_m
-  use nodalsources
+  use nodalsources_m
 !
   implicit none
   private
@@ -3679,7 +3679,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!! Flushes the observed magnitudes to disk
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,size, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
-      use ILUMINA !is needed to also calculate the incident field in the observed points
+      use ilumina_m !is needed to also calculate the incident field in the observed points
       !solo lo precisa de entrada farfield
       type(bounds_t) :: b
       !
@@ -5368,5 +5368,5 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     end function interpolate_field_atwhere
 
-  end module Observa
+  end module Observa_m
 

@@ -1,7 +1,7 @@
-module Report
-   use FDETYPES
+module Report_m
+   use FDETYPES_m
 
-   use snapxdmf
+   use snapxdmf_m
 
    implicit none
    private

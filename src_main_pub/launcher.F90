@@ -1,6 +1,6 @@
 program SEMBA_FDTD_launcher
 
-   use SEMBA_FDTD_mod
+   use SEMBA_FDTD_m
 
    implicit none
 

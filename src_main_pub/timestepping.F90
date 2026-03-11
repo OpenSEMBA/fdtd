@@ -14,25 +14,25 @@
 !---> MinusCloneMagneticPMC
 !________________________________________________________________________________________
 
-module Solver_mod
+module Solver_m
 
-   use fdetypes
-   use report
-   use PostProcessing
-   use Ilumina
-   use Observa
-   use BORDERS_other
-   use Borders_CPML
-   use Borders_MUR
-   use Resuming
-   use nodalsources
-   use Lumped
-   use PMLbodies
-   use xdmf
-   use vtk
+   use FDETYPES_m
+   use Report_m
+   use PostProcessing_m
+   use ilumina_m
+   use Observa_m
+   use BORDERS_other_m
+   use BORDERS_CPML_m
+   use BORDERS_MUR_m
+   use resuming_m
+   use nodalsources_m
+   use Lumped_m
+   use PMLbodies_m
+   use xdmf_m
+   use VTK_m
    use interpreta_switches_m, only: entrada_t
 #ifdef CompileWithMPI
-   use MPIcomm
+   use MPIcomm_m
 #endif
 #ifdef CompileWithStochastic
    use MPI_stochastic
@@ -44,15 +44,15 @@ module Solver_mod
 #ifdef CompileWithStochastic
    use sgbc_stoch
 #else
-   use sgbc_NOstoch
+   use SGBC_nostoch_m
 #endif  
-   use EDispersives
-   use MDispersives
-   use Anisotropic
-   use HollandWires     
+   use EDispersives_m
+   use Mdispersives_m
+   use Anisotropic_m
+   use HollandWires_m     
 
 #ifdef CompileWithMTLN  
-   use Wire_bundles_mtln_mod             
+   use Wire_bundles_mtln_m             
 #endif       
 
 #ifdef CompileWithBerengerWires
@@ -73,14 +73,14 @@ module Solver_mod
    use CONFORMAL_MAPPED
 #endif
    use EpsMuTimeScale_m
-   use CALC_CONSTANTS
+   use CALC_CONSTANTS_m
 #ifdef CompileWithPrescale
    use P_rescale
 #endif              
 #ifdef CompileWithMTLN
    ! use mtln_solver_mod, mtln_solver_t => mtln_t
-   use mtln_types_mod, only: mtln_t
-   use Wire_bundles_mtln_mod
+   use mtln_types_m, only: mtln_t
+   use Wire_bundles_mtln_m
 #endif
 !!
 #ifdef CompileWithProfiling

@@ -9,11 +9,11 @@
 ! 5 poles (not 3) 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module EDispersives
+module EDispersives_m
 
 
-   use fdetypes
-   use REPORT
+   use FDETYPES_m
+   use Report_m
    implicit none
    private
 
@@ -413,4 +413,4 @@ contains
 
    end subroutine
 
-end module EDispersives
+end module EDispersives_m

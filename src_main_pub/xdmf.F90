@@ -1,9 +1,9 @@
-module xdmf
+module xdmf_m
    !
-   use fdetypes
-   use Observa
-   use report
-   use xdmf_h5
+   use FDETYPES_m
+   use Observa_m
+   use Report_m
+   use xdmf_h5_m
    !
    !
    !
@@ -574,6 +574,6 @@ contains
 
       return
    end subroutine createxdmfOnTheFly
-end module xdmf
+end module xdmf_m
 !
 !

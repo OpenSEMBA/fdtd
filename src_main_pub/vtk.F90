@@ -1,8 +1,8 @@
-module VTK
+module VTK_m
       !
-   use fdetypes
-   use Observa
-   use report
+   use FDETYPES_m
+   use Observa_m
+   use Report_m
    !
    !
    !
@@ -1416,6 +1416,6 @@ contains
    !
    !return
    !end subroutine
-end module VTK
+end module VTK_m
 !
 !

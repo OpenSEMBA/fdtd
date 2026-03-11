@@ -2,12 +2,12 @@
 ! Module thin wires from Wires paper
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module HollandWires
+module HollandWires_m
    !
 
-   use report
-   use fdetypes
-   use wiresHolland_constants
+   use Report_m
+   use FDETYPES_m
+   use wiresHolland_constants_m
 
 #ifdef CompileWithStochastic   
    use wiresHolland_devia
@@ -7003,4 +7003,4 @@ subroutine resume_casuistics
     end subroutine wiresconstantes
 
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-end module HollandWires
+end module HollandWires_m

@@ -4,9 +4,9 @@
 !  Borders :  MUR  handling
 !  Creation date Date :  January, 8, 2013
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module BORDERS_MUR
-   use fdetypes
-   use Report
+module BORDERS_MUR_m
+   use FDETYPES_m
+   use Report_m
    implicit none
    private
    !
@@ -1631,6 +1631,6 @@ contains
    endsubroutine AdvanceMagneTicMUR
 
 
-end Module Borders_Mur
+end Module BORDERS_MUR_m
 
 

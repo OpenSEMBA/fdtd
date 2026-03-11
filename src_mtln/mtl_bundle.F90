@@ -1,13 +1,13 @@
-module mtl_bundle_mod
+module mtl_bundle_m
 
-    use utils_mod
-    use probes_mod
-    use dispersive_mod
-    use mtl_mod
+    use utils_m
+    use probes_m
+    use dispersive_m
+    use mtl_m
 #ifdef CompileWithMPI
-    use fdetypes, only: RKIND, SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+    use FDETYPES_m, only: RKIND, SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #else
-    use fdetypes, only: RKIND
+    use FDETYPES_m, only: RKIND
 #endif
     implicit none
 
@@ -449,4 +449,4 @@ contains
     end subroutine
 
 #endif
-end module mtl_bundle_mod
+end module mtl_bundle_m

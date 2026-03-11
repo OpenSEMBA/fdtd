@@ -1,7 +1,7 @@
-module xdmf_h5
+module xdmf_h5_m
 #ifdef CompileWithHDF
 
-    use fdetypes
+    use FDETYPES_m
     use HDF5
     implicit none
  
@@ -278,4 +278,4 @@ contains
 
 #endif               
 
-end module xdmf_h5 
+end module xdmf_h5_m 

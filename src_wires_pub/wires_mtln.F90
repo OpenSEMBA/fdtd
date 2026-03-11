@@ -3,16 +3,16 @@
 ! Module thin wires from Wires paper
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Wire_bundles_mtln_mod             
+module Wire_bundles_mtln_m             
 #ifdef CompileWithMTLN
 
-   use report
-   use fdetypes
-   use mtln_solver_mod , mtln_solver_t => mtln_t 
-   use mtln_types_mod, only: mtln_t
-   use HollandWires
-   use wiresHolland_constants
-   use ilumina
+   use Report_m
+   use FDETYPES_m
+   use mtln_solver_m , mtln_solver_t => mtln_t 
+   use mtln_types_m, only: mtln_t
+   use HollandWires_m
+   use wiresHolland_constants_m
+   use ilumina_m
    implicit none
    
    real(kind=RKIND_wires) :: eps0,mu0
@@ -188,4 +188,4 @@ contains
 
 #endif
 
-end module Wire_bundles_mtln_mod
+end module Wire_bundles_mtln_m

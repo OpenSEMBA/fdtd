@@ -4,7 +4,7 @@
 ! This module contains the types and parameters shared by all the rest of the modules
 ! No public variables are defined. Only types and parameters
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module  FDETYPES
+module  FDETYPES_m
 
 
 #ifdef CompileWithOpenMP
@@ -868,7 +868,7 @@ contains
       direction_eq = direction_eq .and. (a%orientation == b%orientation)
 
    end function
-end module FDETYPES
+end module FDETYPES_m
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !         STRUCTURE OF SGG

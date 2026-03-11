@@ -1,7 +1,7 @@
-module nodalsources
+module nodalsources_m
 
-   use fdetypes
-   use REPORT
+   use FDETYPES_m
+   use Report_m
 
    implicit none
    private
@@ -731,5 +731,5 @@ contains
       return
    end subroutine
 
-end module nodalsources
+end module nodalsources_m
  

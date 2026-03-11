@@ -4,8 +4,8 @@
 !  Borders :  PML, PEC, PMC, Periodic handling.
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module BORDERS_other
-   use fdetypes
+module BORDERS_other_m
+   use FDETYPES_m
    implicit none
    private
    !

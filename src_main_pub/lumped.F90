@@ -5,11 +5,11 @@
 !!!solo teniendo en cuenta los parametros efectivos y sin actualizar los magneticos.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Lumped
+module Lumped_m
 
-   use Report
-   use fdetypes   
-   use lumped_vars
+   use Report_m
+   use FDETYPES_m   
+   use lumped_vars_m
 #ifdef CompileWithStochastic
    use lumped_devia
 #endif
@@ -461,4 +461,4 @@ contains
    
    
    
-end module Lumped
+end module Lumped_m

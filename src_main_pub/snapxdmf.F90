@@ -1,8 +1,8 @@
-module snapxdmf
+module snapxdmf_m
    !
 
 #ifdef CompileWithHDF
-   use fdetypes
+   use FDETYPES_m
    use HDF5
    !
    !
@@ -153,6 +153,6 @@ contains
 #endif
 
 
-end module snapxdmf
+end module snapxdmf_m
 !
 !

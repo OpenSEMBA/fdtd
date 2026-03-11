@@ -6,9 +6,9 @@
 !                        Also creates intermediate media for the boundaries
 !                        between different media.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module CreateMatrices
-   use Report
-   use fdetypes
+module CreateMatrices_m
+   use Report_m
+   use FDETYPES_m
    !
    implicit none
    private

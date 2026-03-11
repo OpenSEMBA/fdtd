@@ -14,11 +14,11 @@
 !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module SGBC_nostoch
+module SGBC_nostoch_m
 
-use Report
+use Report_m
 
-use fdetypes
+use FDETYPES_m
 implicit none
 private
 !structures needed by the SGBC
@@ -1592,5 +1592,5 @@ end subroutine solve_tridiag_distintos
    end subroutine solve_tridiag_iguales           
 
 
-end module SGBC_nostoch
+end module SGBC_nostoch_m
 
