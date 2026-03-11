@@ -191,8 +191,6 @@ contains
 #endif
       res%tSlots = this%readThinSlots()
 
-
-
    end function
 
    function readMesh(this) result(res)
@@ -380,6 +378,7 @@ contains
       class(parser_t) :: this
       type(Desplazamiento_t) :: res
       real, dimension(:), allocatable :: vec
+      
       character(len=*), parameter :: P = J_MESH//'.'//J_GRID
 
       res%nX = this%getIntAt(this%root, P//'.'//J_GRID_NUMBER_OF_CELLS//'(1)')
@@ -390,6 +389,10 @@ contains
       call assignDes(P//'.'//J_GRID_STEPS//'.y', res%desY, res%nY)
       call assignDes(P//'.'//J_GRID_STEPS//'.z', res%desZ, res%nZ)
 
+      res%originx = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(1)', default=0.0)
+      res%originy = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(2)', default=0.0)
+      res%originz = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(3)', default=0.0)
+      
       res%mx1 = 0
       res%my1 = 0
       res%mz1 = 0
@@ -406,7 +409,7 @@ contains
          integer(kind=4), intent(in) :: numberOfCells
          logical :: found = .false.
 
-         vec= this%getRealsAt(this%root, path, found)
+         vec = this%getRealsAt(this%root, path, found)
 
          if (.not. found) then
             call WarnErrReport('Error reading grid: steps not found.', .true.)
