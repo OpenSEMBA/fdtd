@@ -4,7 +4,7 @@ integer function test_read_shieldedpair() bind (C) result(err)
 
    implicit none
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'shieldedPair.fdtd.json'
-   type(Parseador) :: problem, expected
+   type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -15,7 +15,7 @@ integer function test_read_shieldedpair() bind (C) result(err)
    call expect_eq(err, expected, problem)
 contains
    function expectedProblemDescription() result (expected)
-      type(Parseador) :: expected
+      type(Parseador_t) :: expected
       class(cable_t), pointer :: ptr
       integer :: i
 

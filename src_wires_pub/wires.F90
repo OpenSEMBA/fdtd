@@ -47,7 +47,7 @@ contains
       real(kind=RKIND), intent(in) :: eps00,mu00
       real(kind=RKIND) :: eps000,mu000  !son dummies
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
-      type(SGGFDTDINFO), intent(INOUT) , target    :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) , target    :: sgg
       real(kind=RKIND) , pointer, dimension(:), intent(in) :: G2
       real(kind=RKIND_tiempo), intent(out) :: dtcritico
       real(kind=RKIND) , dimension(:)   , intent(in) :: &
@@ -88,7 +88,7 @@ contains
       type(sim_control_t), intent(in) :: control
       integer(kind=INTEGERSIZEOFMEDIAMATRICES) :: med(0:11)=-1
 
-      type(adyacc) :: adj
+      type(adyacc_t) :: adj
       integer(kind=4) :: conta,i1,j1,k1,i2,j2,k2,iwi,iwj,iwjjj,jmed,nn,nnn,i1libre,j1libre,k1libre, &
       whatfield,whatfield2,origIndex,OrigIndex2,LeftEnd_index,RightEnd_index,nm, &
       i,j,k,indexnode,kmenos1,kmasoffk,kmas1,tipofield,i22,j22,k22,i11,j11,k11,primernorabo,Jprimernorabo=-1
@@ -96,8 +96,8 @@ contains
       despT1,despT2,DenominatorFractionMinusDummy,  &
       DenominatorFractionPlusDummy,givenautoin,resist,givenautoin_devia,resist_devia, &
       mindt,maxA,dt0,sigt,totalLind,capaci,autoin,deltax,sigtPlus,sigtMinu
-      type(CurrentSegments), pointer  :: dummy , org  ,fin ,orgmenos1 ,orgmas1 ,finmenos1,finmas1 ,segmento
-      type(ChargeNodes), pointer  :: nodo
+      type(CurrentSegments_t), pointer  :: dummy , org  ,fin ,orgmenos1 ,orgmas1 ,finmenos1,finmas1 ,segmento
+      type(ChargeNodes_t), pointer  :: nodo
 
       !dama
       integer   (kind=4)                          :: NumMultilines, NumParallel
@@ -4077,7 +4077,7 @@ end subroutine deembed_segment
    logical embed
    integer :: ib,jb,kb,tipofieldb
    integer :: io,jo,ko,tipofieldo
-   type(CurrentSegments), pointer  :: dummy
+   type(CurrentSegments_t), pointer  :: dummy
   !!!!!!!!!!!!!!!!! embed=.true.; return !!!!ojoooo sgg tocado a mano para ver bug conformal 220323 
    
     embed=.false.
@@ -4162,7 +4162,7 @@ end subroutine deembed_segment
    logical embed
    integer :: ib,jb,kb,tipofieldb
    integer :: io,jo,ko,tipofieldo
-   type(CurrentSegments), pointer  :: dummy
+   type(CurrentSegments_t), pointer  :: dummy
         ib = dummy%i
         jb = dummy%j
         kb = dummy%k
@@ -4280,7 +4280,7 @@ subroutine resume_casuistics
     subroutine calc_wirehollandconstants(sgg,G2,fieldtotl,wiresflavor,mu00,eps00,simu_devia)
 
       logical :: simu_devia
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND) , pointer, dimension(:),intent(in) :: G2
       character(len=*), INTENT(in) :: wiresflavor
       logical, intent(in) :: fieldtotl
@@ -4291,9 +4291,9 @@ subroutine resume_casuistics
 
       real(kind=RKIND_wires) :: df1,df3,df2,Ddf1,Ddf3,Ddf2,vf1,vf3,vf2,runit
 
-      type(CurrentSegments), pointer  :: dummy
-      type(ChargeNodes), pointer  :: Nodo
-      type(TMultiline), pointer                      :: Multiline
+      type(CurrentSegments_t), pointer  :: dummy
+      type(ChargeNodes_t), pointer  :: Nodo
+      type(TMultiline_t), pointer                      :: Multiline
    
 
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
@@ -4398,9 +4398,9 @@ subroutine resume_casuistics
    !
 
    function TestAdjacency(first,numfirst,second,numsecond,connectendings,isolategroupgroups,strictOLD,ZI,ZE,NUMESEG,firstmenos1,FIRSTMAS1,secondmenos1,secondmas1,verbose) RESULT(adj)
-      type(CurrentSegments), pointer, intent(in) :: first ,second,firstmenos1 ,firstmas1 ,secondmenos1 ,secondmas1
-      type(CurrentSegments), pointer     :: firstprevio,secondprevio
-      type(adyacc) :: adj
+      type(CurrentSegments_t), pointer, intent(in) :: first ,second,firstmenos1 ,firstmas1 ,secondmenos1 ,secondmas1
+      type(CurrentSegments_t), pointer     :: firstprevio,secondprevio
+      type(adyacc_t) :: adj
       logical :: verbose
       logical :: conexionados,RRConnected,RLConnected,LLConnected,LRConnected,EndingsConnected,connectendings,isolategroupgroups,RequestedConnection,strictOLD,success,entro1,entro2,entro3
       integer(kind=4) :: numfirst,numsecond,ZI,ZE,void,offx,offy,offz,NUMESEG
@@ -5133,16 +5133,16 @@ subroutine resume_casuistics
       real(kind=RKIND), intent(in) :: eps0,mu0
       integer, intent(in) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
 
       integer(kind=4) :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer(kind=4), intent(in) :: timeinstant
       real(kind=RKIND_wires) :: Iplus,IMinus,Qplus,QMinus,timei
       real(kind=RKIND_wires) :: Vincid,Iincid
-      type(CurrentSegments), pointer  :: Segmento, Segmento2
-      type(ChargeNodes), pointer  :: Nodo
-      type(TMultiline), pointer                      :: Multiline
+      type(CurrentSegments_t), pointer  :: Segmento, Segmento2
+      type(ChargeNodes_t), pointer  :: Nodo
+      type(TMultiline_t), pointer                      :: Multiline
       character(len=*), INTENT(in) :: wiresflavor
       timei = sgg%tiempo(timeinstant) 
       !!!
@@ -5543,16 +5543,16 @@ subroutine resume_casuistics
       real(kind=RKIND), intent(in) :: eps0,mu0
       integer, intent(in) :: wirethickness
       logical :: simu_devia,stochastic,experimentalVideal
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
 
       integer(kind=4) :: n,jmed,layoutnumber,iw1,is1,is2
 
       integer(kind=4), intent(in) :: timeinstant
       real(kind=RKIND_wires) :: Iplus,IMinus,Qplus,QMinus,timei
       real(kind=RKIND_wires) :: Vincid,Iincid
-      type(CurrentSegments), pointer  :: Segmento, Segmento2
-      type(ChargeNodes), pointer  :: Nodo
-      type(TMultiline), pointer                      :: Multiline
+      type(CurrentSegments_t), pointer  :: Segmento, Segmento2
+      type(ChargeNodes_t), pointer  :: Nodo
+      type(TMultiline_t), pointer                      :: Multiline
       character(len=*), INTENT(in) :: wiresflavor
       timei = sgg%tiempo(timeinstant) 
    
@@ -5586,7 +5586,7 @@ subroutine resume_casuistics
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine AdvanceWiresEcrank(sgg,timeinstant,layoutnumber,wiresflavor,simu_devia,stochastic)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       logical :: simu_devia,stochastic
 
       !!!
@@ -5596,9 +5596,9 @@ subroutine resume_casuistics
       integer(kind=4), intent(in) :: timeinstant
       real(kind=RKIND_wires) :: Iplus,IMinus,IplusPast,IMinusPast,source,timei
       real(kind=RKIND_wires) :: Vincid,Iincid
-      type(CurrentSegments), pointer  :: Segmento , Segmento2
-      type(ChargeNodes), pointer  :: Nodo
-      type(TMultiline), pointer                      :: Multiline
+      type(CurrentSegments_t), pointer  :: Segmento , Segmento2
+      type(ChargeNodes_t), pointer  :: Nodo
+      type(TMultiline_t), pointer                      :: Multiline
       character(len=*), INTENT(in) :: wiresflavor
       real(kind=RKIND_wires) , dimension(1:HWires%NumCurrentSegments) :: a,b,c,d,x
       
@@ -5839,7 +5839,7 @@ subroutine resume_casuistics
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
    subroutine DestroyWires(sgg)
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=4) :: i
 
       !free up memory !ojo no se como hacerlo
@@ -5883,10 +5883,10 @@ subroutine resume_casuistics
       character(len=BUFSIZE) :: buff
       integer(kind=4) :: i1,j1,layoutnumber,zi,ze,ierr,size,indio
       integer(kind=4) :: mini=1000000000,minj=1000000000,mink=1000000000,maxi=-1000000000,maxj=-1000000000,maxk=-1000000000
-      type(CurrentSegments), pointer  :: org,fin
+      type(CurrentSegments_t), pointer  :: org,fin
       character(len=3), dimension(1:3) :: DIR
       character(len=BUFSIZE) :: ig
-      type(ChargeNodes), pointer :: nodo
+      type(ChargeNodes_t), pointer :: nodo
       type :: nodosopentoair_t 
         integer(kind=4) :: i,j,k,indexnode
       end type
@@ -6970,11 +6970,11 @@ subroutine resume_casuistics
 
       subroutine wiresconstantes(fieldtotl,dummy,G2,sgg)
       
-          type(SGGFDTDINFO), intent(in) , target    :: sgg
+          type(SGGFDTDINFO_t), intent(in) , target    :: sgg
           real(kind=RKIND) , pointer, dimension(:), intent(in) :: G2
           
           logical, intent(in) :: fieldtotl
-          type(CurrentSegments), pointer  :: dummy
+          type(CurrentSegments_t), pointer  :: dummy
 !!!ojooooo 110517 acumulo en %lind toda la autoinduccion para que los calculos de capacidad la tengan en cuenta completa    
          if (.not.fieldtotl) then
              dummy%cte5 = G2(dummy%indexmed)/(dummy%deltaTransv1*dummy%deltaTransv2)

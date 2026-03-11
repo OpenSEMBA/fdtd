@@ -7,7 +7,7 @@ module test_rotate_generateSONDAs_m
 contains
 
 integer function test_rotate_generate_sondas() bind(C) result(err)
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     
@@ -27,7 +27,7 @@ integer function test_rotate_generate_sondas() bind(C) result(err)
 end function test_rotate_generate_sondas
 
 subroutine setup_sonda_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     
     allocate(this%oldSONDA)
     allocate(this%oldSONDA%probes(1))
@@ -56,7 +56,7 @@ subroutine setup_sonda_test(this)
 end subroutine setup_sonda_test
 
 subroutine setup_basic_sonda(probe)
-    type(Sonda), intent(inout) :: probe
+    type(Sonda_t), intent(inout) :: probe
     allocate(probe%i(1), source = 1)
     allocate(probe%j(1), source = 2)
     allocate(probe%k(1), source = 3)
@@ -65,7 +65,7 @@ subroutine setup_basic_sonda(probe)
 end subroutine setup_basic_sonda
 
 subroutine assert_basic_sonda(test_err, mpidir, probe)
-    type(Sonda), intent(inout) :: probe
+    type(Sonda_t), intent(inout) :: probe
     integer :: mpidir, test_err
     if (mpidir==2) then
         call expect_eq_int(test_err, 3, probe%i(1), "Assertion failed for i mpidir 2")
@@ -81,7 +81,7 @@ end subroutine assert_basic_sonda
 
 subroutine verify_sonda_rotation(test_err, oldSonda, mpidir)
     integer, intent(inout) :: test_err, mpidir
-    type(Sondas), intent(in) :: oldSonda
+    type(Sondas_t), intent(in) :: oldSonda
     real(kind=RKIND) :: thetaStart, phiStart, thetaStop, phiStop
     real(kind=RKIND) :: rotatedThetaStart, rotetedPhiStart, rotatedThetaStop, rotatedPhiStop
 
@@ -119,7 +119,7 @@ subroutine verify_sonda_rotation(test_err, oldSonda, mpidir)
 end subroutine verify_sonda_rotation
 
 subroutine cleanup_sonda_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     deallocate(this%oldSONDA)
 
 end subroutine cleanup_sonda_test

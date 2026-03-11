@@ -13,20 +13,20 @@ module BORDERS_CPML
    !
    real(kind=RKIND), parameter  :: StaticFrequency=1.0e14_RKIND
    ! Limits of the PML region
-   type XYZlimit_tvar
+   type xyzlimit_var_t
       integer(kind=4), dimension(1:6) :: XI,XE,YI,YE,ZI,ZE
-   end type XYZlimit_tvar
-   type(XYZlimit_tvar), dimension(1:6) ::  PMLc
+   end type xyzlimit_var_t
+   type(xyzlimit_var_t), dimension(1:6) :: PMLc
 
-   type LR
+   type LR_t
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Exy,Psi_Ezy,Psi_Hxy,Psi_Hzy
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Exyvac,Psi_Ezyvac,Psi_Hxyvac,Psi_Hzyvac
    end type
-   type DU
+   type DU_t
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Eyz,Psi_Exz,Psi_Hyz,Psi_Hxz
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Eyzvac,Psi_Exzvac,Psi_Hyzvac,Psi_Hxzvac
    end type
-   type BF
+   type BF_t
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Ezx,Psi_Eyx,Psi_Hzx,Psi_Hyx
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Psi_Ezxvac,Psi_Eyxvac,Psi_Hzxvac,Psi_Hyxvac
    end type
@@ -34,9 +34,9 @@ module BORDERS_CPML
 
 
    !LOCAL VARIABLES
-   type(LR), dimension(left : right) , save :: regLR
-   type(DU), dimension(down : up)    , save :: regDU
-   type(BF), dimension(back : front) , save :: regBF
+   type(LR_t), dimension(left : right) , save :: regLR
+   type(DU_t), dimension(down : up)    , save :: regDU
+   type(BF_t), dimension(back : front) , save :: regBF
    real(kind=RKIND) , pointer, dimension( : , : ) , SAVE  :: sig_max
    real(kind=RKIND) , pointer, dimension( : , : ) , SAVE  :: aPar_max ,kPar_max
    real(kind=RKIND) , pointer, dimension( : ) , SAVE :: P_ce_x ,P_ce_y ,P_ce_z ,P_be_x ,P_be_y ,P_be_z,&
@@ -68,7 +68,7 @@ contains
    subroutine InitCPMLBorders(sgg,temp_SINPML_Fullsize,ThereArePMLBorders, control, &
    temp_dxe,temp_dye,temp_dze,temp_dxh,temp_dyh,temp_dzh,Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
       real(kind=RKIND) :: eps00,mu00
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND) , dimension(:)   ,  intent(in) :: &
       temp_dxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
       temp_dye(sgg%ALLOC(iHy)%YI : sgg%ALLOC(iHy)%YE), &
@@ -1405,7 +1405,7 @@ contains
 
 
 subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND), intent(in) :: eps00,mu00
       real(kind=RKIND) , dimension(:)   , intent(inout) :: &
       Idxe(sgg%ALLOC(iHx)%XI : sgg%ALLOC(iHx)%XE), &
@@ -1579,7 +1579,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             P_cm_x(i)=(sigmam*(P_bm_x(i)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dxe(i)
             Idxe(i)=1.0_RKIND / (kParm*dxe(i))
             !
-            WRITE (buff,'(a,i4,a,5e9.2e2)') 'back(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            write(buff,'(a,i4,a,5e9.2e2)') 'back(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             (sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
             !if ((sgg%Border%IsBackPML).and.(i>sgg%ALLOC(iHx)%XI)) call print11 (control%layoutnumber, buff)
          elseif (i >= SINPML_Fullsize(iHx)%XE )  then !front
@@ -1595,7 +1595,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             P_cm_x(i)=(sigmam*(P_bm_x(i)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dxe(i)
             Idxe(i)=1.0_RKIND / (kParm*dxe(i))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'front(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'front(',i,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
             !if ((sgg%Border%IsFrontPML).and.(i<sgg%ALLOC(iHx)%XE-1))  call print11 (control%layoutnumber, buff)
          endif
@@ -1614,7 +1614,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             P_cm_y     (j)=(sigmam*(P_bm_y(j)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dye(j)
             Idye(j)=1.0_RKIND / (kParm*dye(j))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'left(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'left(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
             !if ((sgg%Border%IsLeftPML).and.(j>sgg%ALLOC(iHy)%YI)) call print11 (control%layoutnumber, buff)
          elseif (j >= SINPML_Fullsize(iHy)%YE ) then  !Right
@@ -1630,7 +1630,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             P_cm_y     (j)=(sigmam*(P_bm_y(j)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dye(j)
             Idye(j)=1.0_RKIND / (kParm*dye(j))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'right(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'right(',j,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
             !if ((sgg%Border%IsRightPML).and.(j<sgg%ALLOC(iHy)%YE-1)) call print11 (control%layoutnumber, buff)
          endif
@@ -1649,7 +1649,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             P_cm_z     (k)=(sigmam*(P_bm_z(k)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dze(k)
             Idze(k)=1.0_RKIND / (kParm*dze(k))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'down(',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'down(',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
             !if ((sgg%Border%IsDownPML).and.(k>sgg%ALLOC(iHz)%ZI)) call print11 (control%layoutnumber, buff)
          elseif (k >= SINPML_Fullsize(iHz)%ZE ) then !Up
@@ -1665,7 +1665,7 @@ subroutine calc_cpmlconstants(sgg, Idxe,Idye,Idze,Idxh,Idyh,Idzh,eps00,mu00)
             P_cm_z     (k)=(sigmam*(P_bm_z(k)-1.0_RKIND)/(sigmam+kParm*aParm)/kparm)/dze(k)
             Idze(k)=1.0_RKIND / (kParm*dze(k))
             !
-            !WRITE (buff,'(a,i4,a,5e9.2e2)') 'up   (',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
+            !write(buff,'(a,i4,a,5e9.2e2)') 'up   (',k,'+d/2), A,S,FcS,FcA,refleLF=',aparm,sigmam,sigmam/(2.0_RKIND * pi*eps0),aparm/(2.0_RKIND * pi*eps0), &
             !(sqrt(kparm+sigmam/(aParm+1d-15))-1.0_RKIND)/(sqrt(kparm+sigmam/(aParm+1d-15))+1.0_RKIND)
             !if ((sgg%Border%IsUpPML).and.(k<sgg%ALLOC(iHz)%ZE-1)) call print11 (control%layoutnumber, buff)
          endif

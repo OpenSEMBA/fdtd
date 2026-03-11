@@ -12,14 +12,14 @@ module ilumina
    integer(kind=4), allocatable, dimension(:) :: numus
 
 
-   type ehxyz
+   type ehxyz_t
       integer(kind=4) :: Ex=-15,Ey=-15,Ez=-15,Hx=-15,Hy=-15,Hz=-15
    end type
-   type tfidaa
-      type(ehxyz) :: com,fin,tra,fro,izq,der,aba,arr
+   type tfidaa_t
+      type(ehxyz_t) :: com,fin,tra,fro,izq,der,aba,arr
    end type
-   type ijk
-      type(tfidaa) :: i,j,k
+   type ijk_t
+      type(tfidaa_t) :: i,j,k
    end type
 
    !!! global variables
@@ -27,8 +27,8 @@ module ilumina
    real(kind=RKIND) :: eps0,mu0
 
    !!! local variables
-   type(coorsxyzP) , save :: Punto
-   type(ijk), allocatable, dimension(:)       , SAVE  :: TrFr,IzDe,AbAr
+   type(coorsxyzP_t) , save :: Punto
+   type(ijk_t), allocatable, dimension(:)       , SAVE  :: TrFr,IzDe,AbAr
    logical  , allocatable, dimension(:)        , save  :: IluminaTr,IluminaFr,IluminaIz,IluminaDe,IluminaAr,IluminaAb
    public Incid,AdvancePlaneWaveE,AdvancePlaneWaveH,InitPlaneWave,DestroyIlumina,storeplanewaves,calc_planewaveconstants,corrigeondaplanaH
 
@@ -36,7 +36,7 @@ module ilumina
 
 contains
    subroutine InitPlaneWave(sgg,media,layoutnumber,size,SINPML_Fullsize,ThereArePlaneWaveBoxes,resume,eps00,mu00)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
       integer(kind=4), intent(in) :: layoutnumber,size
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize
@@ -735,7 +735,7 @@ contains
    !!! Calculate the incident field at a given time/space point
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    function Incid(sgg,jjj, nfield,time,i,j,k,still_planewave_time,calledfromobservation)    RESULT(EHI)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       logical :: still_planewave_time,calledfromobservation
       integer(kind=4) i,j,k,nfield,jjj,kkk,jdum
       real(kind=RKIND) :: EHI
@@ -815,7 +815,7 @@ contains
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine DestroyIlumina(sgg)
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=4) :: field
 
       do field=iEx,iHz
@@ -835,7 +835,7 @@ contains
 
    !**************************************************************************************************
    subroutine AdvancePlaneWaveE( sgg, timeinstant, b, g2, Idxh, Idyh, Idzh, Ex, Ey, Ez,still_planewave_time)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       logical :: still_planewave_time
       logical :: called_fromobservation
       !---------------------------> inputs <----------------------------------------------------------
@@ -1137,7 +1137,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !**************************************************************************************************
    subroutine AdvancePlaneWaveH(sgg, timeinstant,  b, gm2, Idxe, Idye, Idze, Hx, Hy, Hz,still_planewave_time)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       logical :: still_planewave_time
       logical :: called_fromobservation
       
@@ -1434,7 +1434,7 @@ contains
    endsubroutine AdvancePlaneWaveH
 
     subroutine storeplanewaves(sgg)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
        integer(kind=4) :: jjj,kkk
        do jjj=1,sgg%numplanewaves
          do kkk=1,sgg%PlaneWave(jjj)%nummodes
@@ -1451,7 +1451,7 @@ contains
     end subroutine storeplanewaves
 
     subroutine calc_planewaveconstants(sgg,eps00,mu00)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind = RKIND), intent(in) :: eps00,mu00
       integer :: jjj,kkk
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
@@ -1471,7 +1471,7 @@ contains
     
     subroutine corrigeondaplanaH(sgg,b,Hx,Hy,Hz,Hxvac, Hyvac, Hzvac)
       !!!
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type( bounds_t), intent( IN) :: b
       !---------------------------> inputs/outputs <--------------------------------------------------
       real(kind = RKIND), dimension( 0 :  b%Hx%NX-1, 0 :  b%Hx%NY-1, 0 :  b%Hx%NZ-1), intent( INOUT) :: Hx

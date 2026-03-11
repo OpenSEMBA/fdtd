@@ -6,7 +6,7 @@ integer function test_read_unshielded_multiwires_multipolar_expansion() bind (C)
 
    character(len=*),parameter :: filename = &
       PATH_TO_TEST_DATA//INPUT_EXAMPLES//'unshielded_multiwires_multipolar_expansion.fdtd.json'
-   type(Parseador) :: pr, ex
+   type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -21,7 +21,7 @@ integer function test_read_unshielded_multiwires_multipolar_expansion() bind (C)
    
 contains
    function expectedProblemDescription() result (ex)
-      type(Parseador) :: ex
+      type(Parseador_t) :: ex
       class(cable_t), pointer :: ptr
       integer :: i
 

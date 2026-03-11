@@ -12,7 +12,7 @@ module CALC_CONSTANTS
     public calc_g1g2gm1gm2
     contains
    subroutine calc_g1g2gm1gm2(sgg,g,eps0,mu0)
-        type(SGGFDTDINFO), intent(in) :: sgg
+        type(SGGFDTDINFO_t), intent(in) :: sgg
         type(constants_t), intent(inout) :: g
         real(kind=RKIND) , intent(inout) :: Eps0, Mu0
         integer :: r,i

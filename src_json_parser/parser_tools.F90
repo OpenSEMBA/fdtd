@@ -13,7 +13,7 @@ module parser_tools_mod
 
    integer, private, parameter :: J_ERROR_NUMBER = 1
 
-   type :: json_value_ptr
+   type :: json_value_ptr_t
       type(json_value), pointer :: p
    end type
 
@@ -63,10 +63,10 @@ contains
       type(cell_region_t), intent(in) :: cellRegion
       integer, intent(in), optional :: cellType
       character(len=BUFSIZE), optional, intent(in) :: tag
-      type(coords), dimension(:), allocatable :: res
+      type(coords_t), dimension(:), allocatable :: res
 
       type(cell_interval_t), dimension(:), allocatable :: intervals
-      type(coords), dimension(:), allocatable :: cs
+      type(coords_t), dimension(:), allocatable :: cs
 
       intervals = getIntervalsInCellRegions([cellRegion], cellType)
       if (present(tag)) then
@@ -78,8 +78,8 @@ contains
    end
 
    function coordsToScaledCoords(cs) result(res)
-      type(coords), intent(in), dimension(:) :: cs
-      type(coords_scaled), dimension(:), allocatable :: res
+      type(coords_t), intent(in), dimension(:) :: cs
+      type(coords_scaled_t), dimension(:), allocatable :: res
       integer :: i
 
       allocate(res(size(cs)))
@@ -114,11 +114,11 @@ contains
    end
 
    subroutine cellRegionsToScaledCoords(res, cellRegions, tag)
-      type(coords_scaled), dimension(:), pointer :: res
+      type(coords_scaled_t), dimension(:), pointer :: res
       type(cell_region_t), dimension(:), intent(in) :: cellRegions
       type(cell_interval_t), dimension(:), allocatable :: intervals
-      type(coords), dimension(:), allocatable :: cs
-      type(coords_scaled), dimension(:), allocatable :: scaledCoords
+      type(coords_t), dimension(:), allocatable :: cs
+      type(coords_scaled_t), dimension(:), allocatable :: scaledCoords
       character(len=BUFSIZE), optional, intent(in) :: tag
 
       intervals = getIntervalsInCellRegions(cellRegions, CELL_TYPE_LINEL)
@@ -133,7 +133,7 @@ contains
    end
 
    function cellIntervalsToCoords(ivls, tag) result(res)
-      type(coords), dimension(:), pointer :: res
+      type(coords_t), dimension(:), pointer :: res
       type(cell_interval_t), dimension(:), intent(in) :: ivls
       integer :: i
       character(len=BUFSIZE), optional, intent(in) :: tag

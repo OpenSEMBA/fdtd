@@ -5,7 +5,7 @@ integer function test_read_connectedwires() bind (C) result(err)
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'connectedWires.fdtd.json'
-   type(Parseador) :: problem, expected
+   type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -17,7 +17,7 @@ integer function test_read_connectedwires() bind (C) result(err)
 
 contains
    function expectedProblemDescription() result (expected)
-      type(Parseador) :: expected
+      type(Parseador_t) :: expected
 
       integer :: i
 

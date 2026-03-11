@@ -7,7 +7,7 @@ module test_rotate_generateSlantedWires_m
 contains
 
 integer function test_rotate_generate_slanted_wires() bind(C) result(err)
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     
@@ -31,7 +31,7 @@ integer function test_rotate_generate_slanted_wires() bind(C) result(err)
 end function test_rotate_generate_slanted_wires
 
 subroutine setup_slanted_wires_case(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer :: i
     integer :: n_swires = 1, n_swc = 2
     
@@ -56,7 +56,7 @@ subroutine setup_slanted_wires_case(this)
 end subroutine setup_slanted_wires_case
 
 subroutine init_slanted_wire_data(this, swidx, swcidx, x, y, z, nd, m, tag)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: swidx, swcidx, nd
     real(8), intent(in) :: x, y, z, m
     character(len=*), intent(in) :: tag
@@ -73,7 +73,7 @@ end subroutine init_slanted_wire_data
 
 subroutine verify_slanted_wire_rotation(test_err, this, mpidir)
     integer, intent(inout) :: test_err, mpidir
-    type(Parseador), intent(in) :: this
+    type(Parseador_t), intent(in) :: this
     
     if (mpidir==2) then
         call expect_eq_real(test_err, 3.0_RKIND, this%sWires%sw(1)%swc(1)%x, "rotate_generateSlantedWires: x(1) should be rotated with mpidir 2")
@@ -104,7 +104,7 @@ subroutine verify_slanted_wire_rotation(test_err, this, mpidir)
 end subroutine verify_slanted_wire_rotation
 
 subroutine cleanup_slanted_wires_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer :: i
     
     if (this%sWires%n_sw > 0) then

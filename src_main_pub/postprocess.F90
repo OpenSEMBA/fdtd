@@ -23,7 +23,7 @@ contains
    subroutine PostProcess(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
 
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4), intent(in) :: layoutnumber,size
       character(len=*), intent(in) :: nEntradaRoot
 
@@ -528,7 +528,7 @@ contains
    subroutine postprocessonthefly(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
 
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4), intent(in) :: layoutnumber,size
       character(len=*), intent(in) :: nEntradaRoot
 

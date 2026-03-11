@@ -2,7 +2,7 @@ integer function test_rotate_generate_box_sources() bind(C) result(err)
     use smbjson
     use nfde_rotate_m
     use rotate_testingTools
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     

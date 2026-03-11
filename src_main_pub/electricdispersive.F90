@@ -34,14 +34,14 @@ module EDispersives
       integer(kind=4) :: indexmed,numnodesEx,numnodesEy,numnodesEz,numpolres11
       complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
       type(field_t), pointer, dimension( : ) :: NodesEx,NodesEy,NodesEz
-   END type EDispersive_t
+   end type EDispersive_t
 
 
-   type  EDispersive_t2
+   type  EDispersive2_t
       integer(kind=4) :: NumEDispersives
       type(EDispersive_t), pointer, dimension( : ) :: Medium
    end type
-   type(EDispersive_t2) , save , target :: Dutton
+   type(EDispersive2_t) , save , target :: Dutton
 
 
    public AdvanceEDispersiveE,InitEDispersives,StoreFieldsEDispersives,DestroyEDispersives
@@ -52,7 +52,7 @@ contains
    ! subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitEDispersives(sgg,media,ThereAreEDispersives,resume,g1,g2,ex,ey,ez)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
       real(kind=RKIND)     , intent(inout) :: &
       G1(0 : sgg%NumMedia),G2(0 : sgg%NumMedia)
@@ -274,7 +274,7 @@ contains
 
    subroutine AdvanceEDispersiveE(sgg)
 
-      type(SGGFDTDINFO), intent(in)              :: sgg              ! Simulation data.
+      type(SGGFDTDINFO_t), intent(in)              :: sgg              ! Simulation data.
       !!!
 
       integer(kind=4) :: jmed,i1,k1,numpolres
@@ -372,7 +372,7 @@ contains
    end subroutine StoreFieldsEDispersives
 
    subroutine DestroyEDispersives(sgg)
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
 
       integer(kind=4) :: jmed,i1,i
 

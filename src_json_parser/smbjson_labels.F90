@@ -160,7 +160,7 @@ module smbjson_labels_mod
    character(len=*), parameter :: J_CONF_SUBTYPE_VOLUME  = "volume"
    character(len=*), parameter :: J_CONF_SUBTYPE_SURFACE = "surface"
 
-   ! type(NFDEGeneral)
+   ! type(NFDEGeneral_t)
    character(len=*), parameter :: J_GENERAL = "general"
    character(len=*), parameter :: J_GEN_TIME_STEP = "timeStep"
    character(len=*), parameter :: J_GEN_NUMBER_OF_STEPS = "numberOfSteps"
@@ -168,7 +168,7 @@ module smbjson_labels_mod
    character(len=*), parameter :: J_GEN_ADDITIONAL_ARGUMENTS = "additionalArguments"
 
 
-   ! type(Frontera)
+   ! type(Frontera_t)
    character(len=*), parameter :: J_BOUNDARY = "boundary"
    character(len=*), parameter :: J_BND_ALL = "all"
    character(len=*), parameter :: J_BND_XL = "xLower"
@@ -197,7 +197,7 @@ module smbjson_labels_mod
    character(len=*), parameter :: J_SRC_TYPE_GEN = "generator"
    character(len=*), parameter :: J_SRC_ATTACHED_ID = "attachedToLineId"
 
-   ! type(Planewave)
+   ! type(PlaneWave_t)
    character(len=*), parameter :: J_SRC_PW_DIRECTION = "direction"
    character(len=*), parameter :: J_SRC_PW_POLARIZATION = "polarization"
    character(len=*), parameter :: J_SRC_PW_THETA = "theta"

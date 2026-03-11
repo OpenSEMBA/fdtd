@@ -236,10 +236,10 @@ contains
         type(c_ptr) :: argv_c(size(input))
         integer :: i   
 
-        type string
+        type c_string_t
             character(len=:,kind=c_char), allocatable :: item
-        end type string
-        type(string), target :: tmp(size(input))
+        end type c_string_t
+        type(c_string_t), target :: tmp(size(input))
 
         if (present(printInput)) then
             if (printInput .eqv. .true.) then 
@@ -320,7 +320,7 @@ contains
     subroutine updateNodes(this) 
         class(circuit_t) :: this
         integer :: i
-        type(vectorInfo), pointer :: info
+        type(vectorInfo_t), pointer :: info
         real(kind=c_double), pointer :: values(:)
         do i = 1, size(this%nodes%names)
             call c_f_pointer(get_vector_info(trim(this%nodes%names(i)%name)//c_null_char), info)

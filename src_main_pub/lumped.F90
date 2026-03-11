@@ -37,7 +37,7 @@ contains
       real(kind=RKIND) :: eps00,mu00
       type(media_matrices_t), intent(in) :: media
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       real(kind=RKIND)   , intent(in) , target     :: &
       Ex(sgg%alloc(iEx)%XI : sgg%alloc(iEx)%XE,sgg%alloc(iEx)%YI : sgg%alloc(iEx)%YE,sgg%alloc(iEx)%ZI : sgg%alloc(iEx)%ZE),&
       Ey(sgg%alloc(iEy)%XI : sgg%alloc(iEy)%XE,sgg%alloc(iEy)%YI : sgg%alloc(iEy)%YE,sgg%alloc(iEy)%ZI : sgg%alloc(iEy)%ZE),&
@@ -217,7 +217,7 @@ contains
 
    subroutine AdvanceLumpedE(sgg,timestep,simu_devia,stochastic)
       logical :: simu_devia,stochastic 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: conta,timestep
       real(kind=RKIND) :: Enplus1, fieldC,A
       type(Nodes_t), pointer :: lumped_
@@ -262,7 +262,7 @@ contains
 
    subroutine calc_lumpedconstants(sgg,eps00,mu00)      
       real(kind=RKIND) :: eps00,mu00
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4) :: conta
       type(Nodes_t), pointer :: lumped_
 !!!variables locales
@@ -373,7 +373,7 @@ contains
                 lumped_%diodeB    = -lumped_%diodeB * alignedDeltaE / 2.0_RKIND
                 lumped_%diodepreA = -DiodIsat * G2 / ( transversalDeltaHa * transversalDeltaHb) 
             else
-                WRITE (buff, *)    'Buggy ERROR: In lumped orientations. '
+                write(buff, *)    'Buggy ERROR: In lumped orientations. '
                 call WarnErrReport (buff,.TRUE.)
             endif   
         
@@ -412,7 +412,7 @@ contains
 
    subroutine DestroyLumped(sgg)
 
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=4) :: i
 
       !free up memory
