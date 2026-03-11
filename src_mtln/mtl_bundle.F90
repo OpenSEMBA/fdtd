@@ -398,8 +398,8 @@ contains
         integer :: i
         do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
-                           matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1)) + &
-                                                       this%i_source(:,i))
+                           matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1)))
+                            ! + &                                                       this%i_source(:,i))
         end do
     end subroutine
 
