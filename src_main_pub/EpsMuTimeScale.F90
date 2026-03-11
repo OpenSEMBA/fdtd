@@ -1,6 +1,6 @@
 module EpsMuTimeScale_m
 
-use FDETYPES
+use FDETYPES_m
 private :: new_input_, checkError_
 
 type EpsMuTimeScale_input_parameters_t

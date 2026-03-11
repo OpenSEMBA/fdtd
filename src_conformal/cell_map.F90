@@ -1,8 +1,8 @@
-module cell_map_mod
+module cell_map_m
 
-    use geometry_mod, only: triangle_t, side_t, interval_t, FACE_X, FACE_Y, FACE_Z, isNewSide
+    use geometry_m, only: triangle_t, side_t, interval_t, FACE_X, FACE_Y, FACE_Z, isNewSide
     use fhash, only: fhash_tbl_t, key=>fhash_key
-    use NFDETypes, only: rkind, ConformalPECElements_t
+    use NFDETypes_m, only: rkind, ConformalPECElements_t
     implicit none
 
 

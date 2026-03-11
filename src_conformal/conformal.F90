@@ -1,8 +1,8 @@
-module conformal_mod
+module conformal_m
 
-   use geometry_mod
-   use cell_map_mod
-   use NFDETypes, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, & 
+   use geometry_m
+   use cell_map_m
+   use NFDETypes_m, only: ConformalPECRegions_t, ConformalPECElements_t, ConformalMedia_t, & 
                         edge_t, face_t, & 
                         conformal_face_media_t, conformal_edge_media_t, rkind
    

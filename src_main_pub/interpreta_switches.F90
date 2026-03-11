@@ -1,10 +1,10 @@
 module interpreta_switches_m
 
-   use FDETYPES
-   use Getargs
+   use FDETYPES_m
+   use Getargs_m
    use EpsMuTimeScale_m
-   use Report
-   use version
+   use Report_m
+   use version_m
 
    implicit none
    private

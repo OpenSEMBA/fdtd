@@ -10,7 +10,7 @@ integer function test_conformal_filling_off_face_triangle_x() bind(C) result(err
 !   |  /        ||//|  /
 !   |/__________1___|/
 
-    use conformal_mod
+    use conformal_m
     implicit none
 
     type(triangle_t) :: t
@@ -101,7 +101,7 @@ integer function test_conformal_filling_off_face_triangle_y() bind(C) result(err
 !   |  /           | /
 !   |/_____________|/
 
-    use conformal_mod
+    use conformal_m
     implicit none
 
     type(triangle_t) :: t
@@ -199,7 +199,7 @@ integer function test_conformal_filling_off_face_triangle_z() bind(C) result(err
 !   |  /           |  /
 !   |/_____________|/
 
-    use conformal_mod
+    use conformal_m
     implicit none
 
     type(triangle_t) :: t
@@ -292,7 +292,7 @@ integer function test_conformal_filling_open() bind(C) result(err)
 !   |  /           |  /
 !   |/________1____|/
 
-    use conformal_mod
+    use conformal_m
     implicit none
 
     type(triangle_t) :: t
@@ -353,7 +353,7 @@ integer function test_conformal_filling_closed() bind(C) result(err)
 !   |  /           |  /
 !   4/________1____|/
 
-    use conformal_mod
+    use conformal_m
     implicit none
 
     type(triangle_t) :: t
@@ -409,7 +409,7 @@ end function
        
 
 integer function  test_conformal_edge_next_cell() bind(C) result(err)
-    use conformal_mod
+    use conformal_m
     implicit none
 
     type(triangle_t) :: t
@@ -482,7 +482,7 @@ integer function test_conformal_filling_closed_corner() bind(C) result(err)
 !   |  /        \  |  /
 !   1/_____________2/
 
-    use conformal_mod
+    use conformal_m
     implicit none
 
     type(triangle_t) :: t
@@ -565,7 +565,7 @@ integer function test_conformal_filling_block_and_corner() bind(C) result(err)
 !   |    /         |    /
 !   |  /           |  /
 !   1/______2______ /
-    use conformal_mod
+    use conformal_m
     implicit none
 
     type(triangle_t) :: t
@@ -670,7 +670,7 @@ integer function test_conformal_filling_cylinder_base_on_grid_plane() bind(C) re
 !   |  /        \  |  /
 !   1/_____________2/
 
-    use conformal_mod
+    use conformal_m
     implicit none
 
     type(triangle_t) :: t

@@ -1,6 +1,6 @@
 integer function test_mtl_bundle_init() bind(C) result(error_cnt)
-    use mtl_mod
-    use mtl_bundle_mod
+    use mtl_m
+    use mtl_bundle_m
     implicit none
 
     type(mtl_t) :: mtl_out, mtl_in

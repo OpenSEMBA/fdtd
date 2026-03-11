@@ -1,5 +1,5 @@
 module smbjson_testingTools
-   use NFDETypes_extension
+   use NFDETypes_extension_m
    implicit none
 
    character(len=*), parameter :: PATH_TO_TEST_DATA = 'testData/'

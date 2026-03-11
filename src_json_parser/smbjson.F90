@@ -1,20 +1,20 @@
-module smbjson
+module smbjson_m
 
 #ifdef CompileWithSMBJSON
-   use NFDETypes
+   use NFDETypes_m
 
-   use NFDETypes_extension
-   use smbjson_labels_mod
-   use mesh_mod
-   use parser_tools_mod
-   use idchildtable_mod
+   use NFDETypes_extension_m
+   use smbjson_labels_m
+   use mesh_m
+   use parser_tools_m
+   use idchildtable_m
 
-   use Report
+   use Report_m
 
    use json_module
    use json_kinds
 
-   use conformal_types_mod
+   use conformal_types_m
 
    use, intrinsic :: iso_fortran_env , only: error_unit
 
@@ -418,7 +418,7 @@ contains
 
          if (.not. found) then
             call WarnErrReport('Error reading grid: steps not found.', .true.)
-         endif
+         end if
          if (size(vec) /= 1 .and. size(vec) /= n) then
             call WarnErrReport( 'Error reading grid: steps must be arrays of size 1 (for regular grids) or size equal to the number of cells.', .true.)
          end if
@@ -1736,7 +1736,7 @@ contains
          else 
             component = J_DIR_M
             res%cordinates(1)%Or  = buildVolProbeType(fieldType, component)
-         endif
+         end if
          res%len_cor = size(res%cordinates)
          
          res%outputrequest = trim(adjustl(this%getStrAt(p, J_NAME, default=" ")))
@@ -2195,7 +2195,7 @@ contains
       fn = this%getStrAt(domain, J_PR_DOMAIN_MAGNITUDE_FILE, transferFunctionFound, default=" ")
       if (transferFunctionFound) then
          res%filename = trim(adjustl(fn))
-      endif
+      end if
 
       res%type1 = NP_T1_PLAIN
 
@@ -2213,7 +2213,7 @@ contains
          res%fstep = 0.0
       else
          res%fstep = (res%fstop - res%fstart) / numberOfFrequencies
-      endif
+      end if
 
       freqSpacing = &
          this%getStrAt(domain, J_PR_DOMAIN_FREQ_SPACING, default=J_PR_DOMAIN_FREQ_SPACING_LINEAR)
@@ -2306,7 +2306,7 @@ contains
       if (this%matTable%checkId(res%materialId) /= 0) then
          write(errorMsg, *) errorMsgInit, "material with id ", res%materialId, " not found."
          call WarnErrReport(errorMsg, .true.)
-      endif
+      end if
       
       if (size(res%elementIds) == 0) then
          write(errorMsg, *) errorMsgInit, J_ELEMENTIDS, "must not be empty."
@@ -4002,7 +4002,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, present(default))
-      endif
+      end if
    end function
 
 
@@ -4020,7 +4020,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, present(default))
-      endif
+      end if
    end function
 
    function getIntsAt(this, place, path, found) result(res)
@@ -4036,7 +4036,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, .false.)
-      endif
+      end if
    end function
 
    function getRealAt(this, place, path, found, default) result(res)
@@ -4053,7 +4053,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, present(default))
-      endif
+      end if
    end function
 
    function getRealsAt(this, place, path, found) result(res)
@@ -4069,7 +4069,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, .false.)
-      endif
+      end if
    end function
 
    function getMatrixAt(this, place, path, found) result(res)
@@ -4087,7 +4087,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, .false.)
-      endif
+      end if
       call this%core%info(matrix, vartype, nr)
       allocate(res(nr,nr))
 
@@ -4114,7 +4114,7 @@ contains
          found = localFound
       else
          call handleFoundAndDefault(path, localFound, present(default))
-      endif
+      end if
    end function
 
    function existsAt(this, place, path) result(res)
