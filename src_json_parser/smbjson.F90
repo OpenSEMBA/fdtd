@@ -378,6 +378,8 @@ contains
       class(parser_t) :: this
       type(Desplazamiento_t) :: res
       real, dimension(:), allocatable :: vec
+
+      integer :: nX, nY, nZ
       
       character(len=*), parameter :: P = J_MESH//'.'//J_GRID
 

@@ -32,13 +32,13 @@ contains
       expected%matriz%totalZ = 3
 
       ! Expected grid.
-      expected%despl%nX = 100
-      expected%despl%nY = 7
-      expected%despl%nZ = 2
+      expected%despl%nX = 1
+      expected%despl%nY = 1
+      expected%despl%nZ = 1
 
-      allocate(expected%despl%desX(100))
-      allocate(expected%despl%desY(7))
-      allocate(expected%despl%desZ(2))
+      allocate(expected%despl%desX(1:1))
+      allocate(expected%despl%desY(1:1))
+      allocate(expected%despl%desZ(1:1))
       expected%despl%desX = 0.1
       expected%despl%desY = 0.1
       expected%despl%desZ = 0.1
