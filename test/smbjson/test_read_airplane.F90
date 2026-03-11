@@ -5,7 +5,7 @@ integer function test_read_airplane() bind (C) result(err)
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'airplane.fdtd.json'
-   type(Parseador) :: problem, expected
+   type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -18,7 +18,7 @@ integer function test_read_airplane() bind (C) result(err)
 
 contains
    function expectedProblemDescription() result (expected)
-      type(Parseador) :: expected
+      type(Parseador_t) :: expected
 
       integer :: i
 
@@ -44,12 +44,16 @@ contains
       expected%despl%desX = 0.32419496007084553
       expected%despl%desY = 0.12839303226115248
       expected%despl%desZ = 0.3621442456908099
+      expected%despl%originX = 1.0
+      expected%despl%originY = 2.0
+      expected%despl%originZ = 3.0
       expected%despl%mx1 = 0
       expected%despl%mx2 = 50
       expected%despl%my1 = 0
       expected%despl%my2 = 50
       expected%despl%mz1 = 0
       expected%despl%mz2 = 50
+      
 
       ! Expected boundaries.
       expected%front%tipoFrontera(:) = F_PML

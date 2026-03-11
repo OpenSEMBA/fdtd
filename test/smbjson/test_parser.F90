@@ -22,7 +22,7 @@ integer function test_parser_tools_interval_to_coords() result(err)
    implicit none
 
    type(cell_interval_t) :: interval
-   type(coords), dimension(:), allocatable :: cs
+   type(coords_t), dimension(:), allocatable :: cs
    err = 0
 
    ! +Y oriented linel interval.

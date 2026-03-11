@@ -91,7 +91,7 @@ module Solver_mod
 
    type, public :: solver_t
       type(sim_control_t) :: control
-      type(Logic_control) :: thereAre
+      type(logic_control_t) :: thereAre
       type(perform_t) :: perform, d_perform
 
       real(kind=rkind), pointer, dimension(:,:,:), contiguous :: Ex,Ey,Ez,Hx,Hy,Hz
@@ -108,7 +108,7 @@ module Solver_mod
       logical :: parar, everflushed = .false., still_planewave_time
 
       ! semba variables 
-      type(sggfdtdinfo) :: sgg
+      type(SGGFDTDINFO_t) :: sgg
       type(media_matrices_t) :: media
       type(taglist_t) :: tag_numbers
       type(limit_t), dimension(1:6) :: SINPML_fullsize,fullsize
@@ -170,7 +170,7 @@ module Solver_mod
 
    function solver_ctor(sgg,media,tag_numbers,SINPML_Fullsize,fullsize,finishedwithsuccess,Eps0,Mu0,tagtype, &
                         input, maxSourceValue, time_desdelanzamiento) result(res)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(taglist_t), intent(in) :: tag_numbers
       type(media_matrices_t), intent(in) :: media
       type(limit_t), dimension(1:6), intent(in) :: SINPML_fullsize,fullsize
@@ -1663,7 +1663,7 @@ contains
       subroutine fillMtag(sgg,sggMiEx, sggMiEy, sggMiEz, sggMiHx, sggMiHy, sggMiHz,sggMtag, b, tag_numbers)
 
          !------------------------>
-         type(SGGFDTDINFO), intent(in) :: sgg
+         type(SGGFDTDINFO_t), intent(in) :: sgg
          type(bounds_t), intent( IN) :: b
          integer(KIND = IKINDMTAG), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHy%NY-1 , 0 : b%sggMiHz%NZ-1 )  , intent( INOUT) :: sggMtag
          integer(kind = INTEGERSIZEOFMEDIAMATRICES), dimension( 0 : b%sggMiHx%NX-1 , 0 : b%sggMiHx%NY-1 , 0 : b%sggMiHx%NZ-1 )  , intent( IN   ) :: sggMiHx
@@ -1756,7 +1756,7 @@ contains
       subroutine crea_timevector(sgg,lastexecutedtimestep,finaltimestep,lastexecutedtime)
          integer(kind=4) :: lastexecutedtimestep,finaltimestep,i
          real(kind=RKIND_tiempo) :: lastexecutedtime
-         type(SGGFDTDINFO), intent(INOUT) :: sgg
+         type(SGGFDTDINFO_t), intent(INOUT) :: sgg
          allocate (sgg%tiempo(lastexecutedtimestep:finaltimestep+2))
          sgg%tiempo(lastexecutedtimestep)=lastexecutedtime
          do i=lastexecutedtimestep+1,finaltimestep+2
@@ -2884,8 +2884,8 @@ contains
    !las sggmixx se desctruyen el en main pq se alocatean alli
    subroutine Destroy_All_exceptSGGMxx(sgg,Ex, Ey, Ez, Hx, Hy, Hz,G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh,thereare,wiresflavor )
       character(len=*) , intent(in) :: wiresflavor
-      type(Logic_control), intent(in) :: thereare
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(logic_control_t), intent(in) :: thereare
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       real(kind=RKIND), intent(INOUT)     , pointer, dimension( : , : , : ) :: Ex,Ey,Ez,Hx,Hy,Hz
       real(kind=RKIND), intent(INOUT)     , pointer, dimension( : ) :: G1,G2,GM1,GM2,dxe  ,dye  ,dze  ,Idxe ,Idye ,Idze ,dxh  ,dyh  ,dzh  ,Idxh ,Idyh ,Idzh
 

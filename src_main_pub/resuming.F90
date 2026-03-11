@@ -172,7 +172,7 @@ contains
    subroutine flush_and_save_resume(sgg, b, layoutnumber, size, nentradaroot, nresumeable2, thereare, fin,eps00,mu00, everflushed,  &
    Ex, Ey, Ez, Hx, Hy, Hz,wiresflavor,simu_devia,stochastic)
       logical :: simu_devia,stochastic
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       !---------------------------> inputs <----------------------------------------------------------
       character(len=*), INTENT(in) :: wiresflavor
       integer(kind=4) :: ierr
@@ -180,7 +180,7 @@ contains
       integer( kind = 4), intent( IN) :: layoutnumber, size
       !--->
       character( LEN=*), intent( IN) :: nresumeable2, nEntradaRoot
-      type( logic_control), intent( IN) :: thereare
+      type( logic_control_t), intent( IN) :: thereare
       integer( kind=4), intent( IN) :: fin
       logical :: existe
       !--->
@@ -340,7 +340,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine StoreFields( sgg,finaltimestep,eps0,mu0, b, Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------------------> inputs <----------------------------------------------------------
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type( bounds_t), intent( IN) :: b
       integer( kind = 4), intent(in) :: finaltimestep
       !--->

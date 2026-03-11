@@ -43,24 +43,24 @@ module MPIcomm
 
 
    !jag bug Antares mas de 65295 steps
-   type, public :: t_databuf
+   type, public :: t_databuf_t
       integer :: ip_target
       integer :: sizex, sizey, sizez
       logical :: FlushExtraInfo
       real(kind = RKIND), dimension( :, :), pointer :: buf_x_rx, buf_y_rx, buf_z_rx
       real(kind = RKIND), dimension( :, :), pointer :: buf_x_tx, buf_y_tx, buf_z_tx
-   endtype t_databuf
+   endtype t_databuf_t
 
-   type :: t_databuf_Set
+   type :: t_databuf_Set_t
       logical :: syncUp, pbcUp
-      type( t_databuf) :: databuf_Up
+      type( t_databuf_t) :: databuf_Up
       !--->
       logical :: syncDown, pbcDown
-      type( t_databuf) :: databuf_Down
-   endtype t_databuf_Set
+      type( t_databuf_t) :: databuf_Down
+   endtype t_databuf_Set_t
    !
-   type(t_databuf_Set),save, target :: databuf_SetH
-   type(t_databuf_Set),save, target :: databuf_SetE
+   type(t_databuf_Set_t),save, target :: databuf_SetH
+   type(t_databuf_Set_t),save, target :: databuf_SetE
    public FlushMPI_E_Cray,FlushMPI_H_Cray,InitMPI_Cray
 
    public InitExtraFlushMPI_Cray
@@ -85,7 +85,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine MPIdivide(sgg,fullsize,SINPML_FULLSIZE,layoutnumber,size,forcing,forced,slicesoriginales,resume,fatalerror)
 
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       type(limit_t), dimension(1:6) :: fullsize,SINPML_fullsize
       integer(kind=4) size, layoutnumber,ilay,padding,index(1:1),j
       integer(kind=4) forced
@@ -106,7 +106,7 @@ contains
       sggPMLNumLayers_original(:)=sgg%PML%NumLayers(3,:) !bug 310124 slices justo en PML
       originalPML_up_or_down=sgg%Border%IsUpPML.or.sgg%Border%IsDownPML !bug 310124 slices justo en PML
       
-      WRITE (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
       cZE => null(); cZI=> null(); trancos=> null(); mpizcom=> null(); mpizfin=> null();
       !
       !clip the simulation region
@@ -607,7 +607,7 @@ contains
 
 
       integer(kind=4) :: ni,nj,nk,norigindex,idum
-      type(CurrentSegments), pointer  :: segmento
+      type(CurrentSegments_t), pointer  :: segmento
       character(len=BUFSIZE) :: whoami
       write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
 
@@ -1250,7 +1250,7 @@ contains
       integer( kind = 4), intent( IN) :: layoutnumber, size
       logical, intent( IN) :: PBCDown, PBCUp
       !---------------- variables locales ------------------------------------------------------------
-      type( t_databuf), pointer :: databufH, databufE
+      type( t_databuf_t), pointer :: databufH, databufE
       !---------------- empieza InitMPI_Cray ---------------------------------------------------------
       !not necessary at this moment since nothing is read at this mmoment
       ExXI=sggalloc(iEx)%XI
@@ -1424,7 +1424,7 @@ contains
    !**************************************************************************************************
    subroutine FlushMPI_H_Cray
       !---------------- variables locales ------------------------------------------------------------
-      type( t_databuf), pointer :: databuf_Up, databuf_Down
+      type( t_databuf_t), pointer :: databuf_Up, databuf_Down
       integer :: ierr
       integer, dimension( 4) :: req1, req2
       integer, dimension( 2) :: req1b, req2b
@@ -1465,7 +1465,7 @@ contains
    contains
       subroutine MPI_VAMOS_ALLA_Hup( databufH, req, reqb)
          !---------------- inputs --------------------------------------------------------------------
-         type( t_databuf), intent( IN) :: databufH
+         type( t_databuf_t), intent( IN) :: databufH
          !---------------- outputs -------------------------------------------------------------------
          integer, dimension( 4), intent( OUT) :: req
          integer, dimension( 2), intent( OUT) :: reqb
@@ -1486,7 +1486,7 @@ contains
       !***********************************************************************************************
       subroutine MPI_VAMOS_ALLA_Hdown( databufH, req, reqb)
          !---------------- inputs --------------------------------------------------------------------
-         type( t_databuf), intent( IN) :: databufH
+         type( t_databuf_t), intent( IN) :: databufH
          !---------------- outputs -------------------------------------------------------------------
          integer, dimension( 4), intent( OUT) :: req
          integer, dimension( 2), intent( OUT) :: reqb
@@ -1509,7 +1509,7 @@ contains
    !**************************************************************************************************
    subroutine FlushMPI_E_Cray
       !---------------- variables locales ------------------------------------------------------------
-      type( t_databuf), pointer :: databuf_Up, databuf_Down
+      type( t_databuf_t), pointer :: databuf_Up, databuf_Down
       integer :: ierr
       integer, dimension( 2) :: req1, req2
       integer, dimension( 4) :: req1b, req2b
@@ -1548,7 +1548,7 @@ contains
    contains
       subroutine MPI_VAMOS_ALLA_Eup( databufE, req, reqb)
          !---------------- inputs --------------------------------------------------------------------
-         type( t_databuf), intent( IN) :: databufE
+         type( t_databuf_t), intent( IN) :: databufE
          !---------------- outputs -------------------------------------------------------------------
          integer, dimension( 2), intent( OUT) :: req
          integer, dimension( 4), intent( OUT) :: reqb
@@ -1570,7 +1570,7 @@ contains
       !***********************************************************************************************
       subroutine MPI_VAMOS_ALLA_Edown( databufE, req, reqb)
          !---------------- inputs --------------------------------------------------------------------
-         type( t_databuf), intent( IN) :: databufE
+         type( t_databuf_t), intent( IN) :: databufE
          !---------------- outputs -------------------------------------------------------------------
          integer, dimension( 2), intent( OUT) :: req
          integer, dimension( 4), intent( OUT) :: reqb
@@ -1614,7 +1614,7 @@ contains
       type( MediaData_t), dimension( 0: NumMed), intent( IN) :: med
       !---------------- variables locales ------------------------------------------------------------
       integer( kind = 4) :: j1, i1, jmed
-      type( t_databuf), pointer :: databufH, databufE
+      type( t_databuf_t), pointer :: databufH, databufE
       !---------------- empieza InitExtraFlushMPI_Cray ----------------------------------------------
       !thanks to overlapping of media matrix to detect media
       !an anistropic boundary will be detected both by the upper and the lower layouts

@@ -7,7 +7,7 @@ module test_rotate_generateFDMs_m
 contains
 
 integer function test_rotate_generate_fdms() bind(C) result(err)
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     
@@ -28,7 +28,7 @@ integer function test_rotate_generate_fdms() bind(C) result(err)
 end function test_rotate_generate_fdms
 
 subroutine setup_fdm_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     allocate(this%frqDepMats)
     allocate(this%frqDepMats%Vols(1))
     allocate(this%frqDepMats%Vols(1)%a11(1), source=(11,0))
@@ -104,7 +104,7 @@ end subroutine setup_fdm_test
 
 subroutine verify_fdm_rotation(test_err, freqDepMat, mpidir)
     integer, intent(inout) :: test_err, mpidir
-    type(FreqDepenMaterials), intent(in) :: freqDepMat
+    type(FreqDepenMaterials_t), intent(in) :: freqDepMat
 
     if (mpidir==2) then
         call expect_eq_complx(test_err, (33,0), freqDepMat%Vols(1)%a11(1), "Error parsing a11")
@@ -252,7 +252,7 @@ subroutine verify_fdm_rotation(test_err, freqDepMat, mpidir)
 end subroutine verify_fdm_rotation
 
 subroutine cleanup_fdm_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     deallocate(this%frqDepMats%Vols)
 
 end subroutine cleanup_fdm_test

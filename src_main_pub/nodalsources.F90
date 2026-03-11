@@ -6,32 +6,32 @@ module nodalsources
    implicit none
    private
 
-   type XYZlimit_t_singlescaled
+   type xyzlimit_singlescaled_t
       integer(kind=4) :: XI,XE,YI,YE,ZI,ZE
       real(kind=RKIND) :: amplitude
    end type
 
 
-   type  :: NodalLocal_t
+   type :: NodalLocal_t
       real(kind=RKIND), pointer, dimension(:) :: evol
       real(kind=RKIND) :: deltaevol
       integer(kind=4) :: numus
-      type(XYZlimit_t_singlescaled) :: punto
+      type(xyzlimit_singlescaled_t) :: punto
       logical :: IsInitialValue
    end type NodalLocal_t
 
 
-   type :: nodsou
+   type, public :: nodsou_t
       integer(kind=4) :: NumHard = 0 , NumSoft = 0
       type(NodalLocal_t), pointer, dimension(:) :: nodHard,nodSoft
    end type
 
    !!!!!variables locales
 
-   type(nodsou), save, target :: Nodal_Ex,Nodal_Ey,Nodal_Ez
-   type(nodsou), save, target :: Nodal_Hx,Nodal_Hy,Nodal_Hz
+   type(nodsou_t), save, target :: Nodal_Ex,Nodal_Ey,Nodal_Ez
+   type(nodsou_t), save, target :: Nodal_Hx,Nodal_Hy,Nodal_Hz
 
-   public :: initNodalSources,AdvanceNodalE,AdvanceNodalH,DestroyNodal,nodsou,getnodal
+   public :: initNodalSources,AdvanceNodalE,AdvanceNodalH,DestroyNodal,getnodal
 
 
 
@@ -43,7 +43,7 @@ contains
    !!! Initializes Nodal Source data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitnodalSources(sgg,layoutnumber,NumNodalSources,sggNodalSource,sggSweep,ThereAreNodalE,ThereAreNodalH)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       !!!
       integer, intent(in) :: NumNodalSources
       type(NodalSource_t), dimension(1:NumNodalSources),intent(in) :: sggNodalSource
@@ -213,7 +213,7 @@ contains
 
       subroutine createnodal(layoutnumber,dummy,sggdummy,sggSweep,index,amplit)
 
-         type(nodsou), intent (inout) :: dummy
+         type(nodsou_t), intent (inout) :: dummy
          type(NodalSource_t), intent(in), target :: sggdummy
          real(kind=rkind), intent(in) :: amplit
          integer(kind=4), intent(in) :: index
@@ -331,7 +331,7 @@ contains
    !!!  Free-up memory
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine DestroyNodal(sgg)
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
 
 
       if (Nodal_Ex%NumSoft+Nodal_Ey%NumSoft+Nodal_Ez%NumSoft /= 0) then
@@ -364,7 +364,7 @@ contains
    !**************************************************************************************************
    subroutine AdvancenodalE(sgg,sggMiEx, sggMiEy, sggMiEz,NumMedia,timeinstant, b, g2,Idxh,Idyh,Idzh,Ex,Ey,Ez,simu_devia)
       !---------------------------> inputs <----------------------------------------------------------
-      type(SGGFDTDINFO), intent(in)     , target  :: sgg
+      type(SGGFDTDINFO_t), intent(in)     , target  :: sgg
       logical, intent(in) :: simu_devia
       integer, intent( IN) :: NumMedia, timeinstant
       !!!
@@ -552,7 +552,7 @@ contains
    !**************************************************************************************************
    subroutine AdvancenodalH(sgg,sggMiHx, sggMiHy, sggMiHz,NumMedia,timeinstant, b,gm2,Idxe,Idye,Idze,Hx,Hy,Hz,simu_devia)
       !---------------------------> inputs <----------------------------------------------------------
-      type(SGGFDTDINFO), intent(in)     , target  :: sgg
+      type(SGGFDTDINFO_t), intent(in)     , target  :: sgg
       logical , intent(in) :: simu_devia !ojo untested con simu_devia este tipo de fuentes
       integer, intent( IN) :: NumMedia, timeinstant
       !!!
@@ -717,8 +717,8 @@ contains
 
    subroutine getnodal(rNodal_Ex,rNodal_Ey,rNodal_Ez,rNodal_Hx,rNodal_Hy,rNodal_Hz)
 
-      type(nodsou), pointer :: rNodal_Ex ,rNodal_Ey ,rNodal_Ez
-      type(nodsou), pointer :: rNodal_Hx ,rNodal_Hy ,rNodal_Hz
+      type(nodsou_t), pointer :: rNodal_Ex ,rNodal_Ey ,rNodal_Ez
+      type(nodsou_t), pointer :: rNodal_Hx ,rNodal_Hy ,rNodal_Hz
 
       rNodal_Ex  => Nodal_Ex
       rNodal_Ey  => Nodal_Ey

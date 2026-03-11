@@ -26,7 +26,7 @@ contains
 
 
    subroutine InitWires_mtln(sgg,Ex,Ey,Ez, eps00, mu00, mtln_parsed,thereAreMTLNbundles, dtcritico)
-      type(SGGFDTDINFO), intent(in), target    :: sgg 
+      type(SGGFDTDINFO_t), intent(in), target    :: sgg 
       real(kind=RKIND), intent(inout), target :: &
          Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,  &
             sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,  &
@@ -96,7 +96,7 @@ contains
    endsubroutine InitWires_mtln
 
    subroutine AdvanceWiresE_mtln(sgg,Idxh, Idyh, Idzh, eps00,mu00)  
-      type(SGGFDTDINFO), intent(in), target    :: sgg      
+      type(SGGFDTDINFO_t), intent(in), target    :: sgg      
       real(kind=RKIND), dimension(:), intent(in) :: &
          Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
          Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&

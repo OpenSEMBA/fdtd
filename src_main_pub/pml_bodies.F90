@@ -24,7 +24,7 @@ module PMLbodies
       real(kind=RKIND), pointer :: field,Plus,Minu
       real(kind=RKIND) :: gx2,P_be,P_ce,Psi,transversalDelta,del,posi
       integer(kind=4) :: minTotal,maxTotal
-   END type BerPML__t
+   end type BerPML__t
 
 
    type  :: berpml_t
@@ -50,7 +50,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitPMLbodies(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh,g2,Gm2,ThereArePMLbodies,control, eps00,mu00)
       real(kind=RKIND) :: eps00,mu00
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
       real(kind=RKIND)     , pointer, dimension( : ) :: g2,gm2
       real(kind=RKIND)   , intent(in) , target     :: &
@@ -202,7 +202,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!
       ThereArePMLbodies=ThereArePMLbodies.and.(conta /=0)
       if (.not.therearePMLbodies) then
-         WRITE (buff, *)    'Buggy ERROR: In PMLbodies. fields exist withouth Hfields. '
+         write(buff, *)    'Buggy ERROR: In PMLbodies. fields exist withouth Hfields. '
         call WarnErrReport (buff,.TRUE.)
       endif
       berpmlH%NumNodes=conta
@@ -241,7 +241,7 @@ contains
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1
                   case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
@@ -282,7 +282,7 @@ contains
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1
                    case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
@@ -323,7 +323,7 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1
                    case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
@@ -369,7 +369,7 @@ contains
                      PML_%maxTotal=maxZ(jmed)
                      PML_%posi=k1+0.5
                   case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
@@ -410,7 +410,7 @@ contains
                      PML_%maxTotal=maxX(jmed)
                      PML_%posi=i1+0.5
                    case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
@@ -451,7 +451,7 @@ contains
                      PML_%maxTotal=maxY(jmed)
                      PML_%posi=j1+0.5
                    case DEFAULT
-                     WRITE (buff, *)    'Buggy ERROR: In PMLbodies. '
+                     write(buff, *)    'Buggy ERROR: In PMLbodies. '
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
@@ -486,7 +486,7 @@ contains
 
   subroutine calc_pmlbodypar(sgg,eps00,mu00)
 
-        type(SGGFDTDINFO), intent(in) :: sgg  
+        type(SGGFDTDINFO_t), intent(in) :: sgg  
         real(kind=RKIND) :: eps00,mu00
         integer(kind=4) :: conta
         type(BerPML__t), pointer :: PML_
@@ -574,7 +574,7 @@ contains
 
    subroutine DestroyPMLbodies(sgg)
 
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       integer(kind=4) :: i
 
       !free up memory

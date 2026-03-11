@@ -67,7 +67,7 @@ module NFDETypes_extension
 
 contains
    subroutine initializeProblemDescription(pD)
-      type(Parseador), intent(inout) :: pD
+      type(Parseador_t), intent(inout) :: pD
 
       allocate(pD%general)
       allocate(pD%matriz)
@@ -166,7 +166,7 @@ contains
    end subroutine
 
    elemental logical function parseador_eq(a, b)
-      type(Parseador), intent(in) :: a, b
+      type(Parseador_t), intent(in) :: a, b
       parseador_eq = &
          (a%switches == b%switches) .and. &
          (a%general        == b%general) .and. &
@@ -193,7 +193,7 @@ contains
    end function parseador_eq
 
    elemental logical function MatrizMedios_eq(a, b)
-      type(MatrizMedios), intent(in) :: a, b
+      type(MatrizMedios_t), intent(in) :: a, b
       MatrizMedios_eq = &
          a%totalX == b%totalX .and. &
          a%totalY == b%totalY .and. &
@@ -201,7 +201,7 @@ contains
    end function MatrizMedios_eq
 
    elemental logical function Material_eq(a, b)
-      type(Material), intent(in) :: a, b
+      type(Material_t), intent(in) :: a, b
       Material_eq = &
          a%eps == b%eps .and. &
          a%mu == b%mu .and. &
@@ -211,7 +211,7 @@ contains
    end function Material_eq
 
    elemental logical function Materials_eq(a, b)
-      type(Materials), intent(in) :: a, b
+      type(Materials_t), intent(in) :: a, b
 
       Materials_eq = &
          (a%n_Mats == b%n_Mats) .and. &
@@ -220,7 +220,7 @@ contains
    end function Materials_eq
 
    elemental logical function pecregions_eq(a, b)
-      type(PECRegions), intent(in) :: a, b
+      type(PECRegions_t), intent(in) :: a, b
       logical :: allAssociated
 
       allAssociated = &
@@ -285,7 +285,7 @@ contains
    end function dielectric_eq
 
    elemental logical function freqdepenmaterial_eq(a, b)
-      type(FreqDepenMaterial), intent(in) :: a, b
+      type(FreqDepenMaterial_t), intent(in) :: a, b
       freqdepenmaterial_eq = &
          all(a%a11 == b%a11) .and. &
          all(a%b11 == b%b11) .and. &
@@ -361,7 +361,7 @@ contains
    end function freqdepenmaterial_eq
 
    elemental logical function freqdepenmaterials_eq(a, b)
-      type(FreqDepenMaterials), intent(in) :: a, b
+      type(FreqDepenMaterials_t), intent(in) :: a, b
       freqdepenmaterials_eq = &
          (a%nVols == b%nVols) .and. &
          (a%nSurfs == b%nSurfs) .and. &
@@ -405,7 +405,7 @@ contains
    end function anisotropicelements_eq
 
    elemental logical function dielectricregions_eq(a, b)
-      type(DielectricRegions), intent(in) :: a, b
+      type(DielectricRegions_t), intent(in) :: a, b
       logical :: allAssociated
       
       allAssociated = &
@@ -433,7 +433,7 @@ contains
    end function dielectricregions_eq
 
    elemental logical function LossyThinSurface_eq(a, b)
-      type(LossyThinSurface), intent(in) :: a, b
+      type(LossyThinSurface_t), intent(in) :: a, b
       LossyThinSurface_eq = &
          all(a%c == b%c) .and. &
          all(a%sigma == b%sigma) .and. &
@@ -452,7 +452,7 @@ contains
    end function LossyThinSurface_eq
 
    elemental logical function LossyThinSurfaces_eq(a, b)
-      type(LossyThinSurfaces), intent(in) :: a, b
+      type(LossyThinSurfaces_t), intent(in) :: a, b
 
       LossyThinSurfaces_eq = all(a%cs == b%cs) .and. &
          (a%length == b%length) .and. &
@@ -461,7 +461,7 @@ contains
    end function LossyThinSurfaces_eq
 
    elemental logical function ThinWireComp_eq(a, b)
-      type(ThinWireComp), intent(in) :: a, b
+      type(ThinWireComp_t), intent(in) :: a, b
 
       ThinWireComp_eq = &
          (a%srctype == b%srctype) .and. &
@@ -476,7 +476,7 @@ contains
    end function ThinWireComp_eq
 
    elemental logical function ThinWire_eq(a, b)
-      type(ThinWire), intent(in) :: a, b
+      type(ThinWire_t), intent(in) :: a, b
 
       ThinWire_eq = (a%rad == b%rad) .and. &
          (a%disp .eqv. b%disp) .and. &
@@ -505,7 +505,7 @@ contains
    end function ThinWire_eq
 
    elemental logical function ThinWires_eq(a, b)
-      type(ThinWires), intent(in) :: a, b
+      type(ThinWires_t), intent(in) :: a, b
       logical :: allAssociated
       allAssociated = &
          associated(a%tw) .and. associated(b%tw)
@@ -520,7 +520,7 @@ contains
    end function ThinWires_eq
 
    elemental logical function SlantedWireComp_eq(a, b)
-      type(SlantedWireComp), intent(in) :: a, b
+      type(SlantedWireComp_t), intent(in) :: a, b
 
       SlantedWireComp_eq = &
          (a%srctype == b%srctype) .and. &
@@ -534,7 +534,7 @@ contains
    end function SlantedWireComp_eq
 
    elemental logical function SlantedWire_eq(a, b)
-      type(SlantedWire), intent(in) :: a, b
+      type(SlantedWire_t), intent(in) :: a, b
 
       SlantedWire_eq = &
          (a%rad == b%rad) .and. &
@@ -563,7 +563,7 @@ contains
    end function SlantedWire_eq
 
    elemental logical function SlantedWires_eq(a, b)
-      type(SlantedWires), intent(in) :: a, b
+      type(SlantedWiresInfo_t), intent(in) :: a, b
       logical :: allAssociated
       allAssociated = &
          associated(a%sw) .and. associated(b%sw)
@@ -578,7 +578,7 @@ contains
    end function SlantedWires_eq
 
    elemental logical function ThinSlotComp_eq(a, b)
-      type(ThinSlotComp), intent(in) :: a, b
+      type(ThinSlotComp_t), intent(in) :: a, b
 
       ThinSlotComp_eq = (a%i == b%i) .and. &
          (a%j == b%j) .and. &
@@ -590,7 +590,7 @@ contains
    end function ThinSlotComp_eq
 
    elemental logical function ThinSlot_eq(a, b)
-      type(ThinSlot), intent(in) :: a, b
+      type(ThinSlot_t), intent(in) :: a, b
       logical :: allAssociated
       allAssociated = associated(a%tgc) .and. associated(b%tgc)
       if (.not. allAssociated) then
@@ -605,7 +605,7 @@ contains
    end function ThinSlot_eq
 
    elemental logical function ThinSlots_eq(a, b)
-      type(ThinSlots), intent(in) :: a, b
+      type(ThinSlots_t), intent(in) :: a, b
       if (.not. associated(a%tg) .or. &
           .not. associated(b%tg)) then
          ThinSlots_eq = .false. 
@@ -618,7 +618,7 @@ contains
    end function ThinSlots_eq
 
    elemental logical function NFDEGeneral_eq(a, b) result (res)
-      type(NFDEGeneral), intent(in) :: a, b
+      type(NFDEGeneral_t), intent(in) :: a, b
       res = .false.
       if (a%dt /= b%dt) return
       if (a%nmax /= b%nmax) return
@@ -626,7 +626,7 @@ contains
    end function
 
    elemental logical function box_eq(a, b)
-      type(Box), intent(in) :: a, b
+      type(Box_t), intent(in) :: a, b
       box_eq = &
          (a%nombre_fichero == b%nombre_fichero) .and. &
          all(a%coor1 == b%coor1) .and. &
@@ -634,7 +634,7 @@ contains
    end function box_eq
 
    elemental logical function boxes_eq(a, b)
-      type(Boxes), intent(in) :: a, b
+      type(Boxes_t), intent(in) :: a, b
       boxes_eq = &
          (a%nVols == b%nVols) .and. &
          (a%nVols_max == b%nVols_max) .and. &
@@ -642,7 +642,7 @@ contains
    end function boxes_eq
 
    elemental logical function planewave_eq(a,b) result(res)
-      type(PlaneWave), intent(in) :: a, b
+      type(PlaneWave_t), intent(in) :: a, b
       res = .false.
       if (a%nombre_fichero /= b%nombre_fichero) return
       if (a%atributo /= b%atributo) return
@@ -659,7 +659,7 @@ contains
    end function
 
    elemental logical function planewaves_eq(a,b) result(res)
-      type(Planewaves), intent(in) :: a, b
+      type(PlaneWaves_t), intent(in) :: a, b
       res = .false.
       if (.not. associated(a%collection)) return
       if (.not. associated(b%collection)) return
@@ -670,7 +670,7 @@ contains
    end function
 
    elemental logical function curr_field_src_eq(a, b)
-      type(Curr_Field_Src), intent(in) :: a, b
+      type(Curr_Field_Src_t), intent(in) :: a, b
       curr_field_src_eq = &
          all(a%c1P == b%c1P) .and. &
          all(a%c2P == b%c2P) .and. &
@@ -683,7 +683,7 @@ contains
    end function curr_field_src_eq
 
    elemental logical function nodsource_eq(a, b)
-      type(NodSource), intent(in) :: a, b
+      type(NodSource_t), intent(in) :: a, b
       if (.not. associated(a%NodalSource) .or. &
          .not. associated(b%NodalSource)) then
          nodsource_eq = .false.
@@ -698,7 +698,7 @@ contains
    end function nodsource_eq
 
    elemental logical function fronteraPML_eq(a, b) result (res)
-      type(FronteraPML), intent(in) :: a, b
+      type(FronteraPML_t), intent(in) :: a, b
       res = .false.
       if (a%orden    /= b%orden) return
       if (a%refl     /= b%refl) return
@@ -707,7 +707,7 @@ contains
    end function
 
    elemental logical function frontera_eq(a, b) result (res)
-      type(Frontera), intent(in) :: a, b
+      type(Frontera_t), intent(in) :: a, b
       integer :: i
       res = .false.
       if (any(a%tipoFrontera /= b%tipoFrontera)) return
@@ -716,7 +716,7 @@ contains
    end function
 
    elemental logical function desplazamiento_eq(a, b) result (res)
-      type(Desplazamiento), intent(in) :: a, b
+      type(Desplazamiento_t), intent(in) :: a, b
 
       res = .false.
 
@@ -754,7 +754,7 @@ contains
    end function
 
    elemental logical function coords_eq(a, b) result(res)
-      type(coords), intent(in) :: a, b
+      type(coords_t), intent(in) :: a, b
       res = .false.
       if (a%xi /= b%xi) return
       if (a%xe /= b%xe) return
@@ -771,7 +771,7 @@ contains
    end function
 
    elemental logical function coords_scaled_eq(a, b)
-      type(coords_scaled), intent(in) :: a, b
+      type(coords_scaled_t), intent(in) :: a, b
       coords_scaled_eq = &
          (a%Xi == b%Xi) .and. &
          (a%Xe == b%Xe) .and. &
@@ -787,42 +787,42 @@ contains
    end function coords_scaled_eq
 
    elemental logical function FarField_Sonda_eq(a, b)
-      type(FarField_Sonda), intent(in) :: a, b
+      type(FarField_Sonda_t), intent(in) :: a, b
       FarField_Sonda_eq = a%probe == b%probe
    end function FarField_Sonda_eq
 
    elemental logical function Electric_Sonda_eq(a, b)
-      type(Electric_Sonda), intent(in) :: a, b
+      type(Electric_Sonda_t), intent(in) :: a, b
       Electric_Sonda_eq = a%probe == b%probe
    end function Electric_Sonda_eq
 
    elemental logical function Magnetic_Sonda_eq(a, b)
-      type(Magnetic_Sonda), intent(in) :: a, b
+      type(Magnetic_Sonda_t), intent(in) :: a, b
       Magnetic_Sonda_eq = a%probe == b%probe
    end function Magnetic_Sonda_eq
 
    elemental logical function NormalElectric_Sonda_eq(a, b)
-      type(NormalElectric_Sonda), intent(in) :: a, b
+      type(NormalElectric_Sonda_t), intent(in) :: a, b
       NormalElectric_Sonda_eq = a%probe == b%probe
    end function NormalElectric_Sonda_eq
 
    elemental logical function NormalMagnetic_Sonda_eq(a, b)
-      type(NormalMagnetic_Sonda), intent(in) :: a, b
+      type(NormalMagnetic_Sonda_t), intent(in) :: a, b
       NormalMagnetic_Sonda_eq = a%probe == b%probe
    end function NormalMagnetic_Sonda_eq
 
    elemental logical function SurfaceElectricCurrent_Sonda_eq(a, b)
-      type(SurfaceElectricCurrent_Sonda), intent(in) :: a, b
+      type(SurfaceElectricCurrent_Sonda_t), intent(in) :: a, b
       SurfaceElectricCurrent_Sonda_eq = a%probe == b%probe
    end function SurfaceElectricCurrent_Sonda_eq
 
    elemental logical function SurfaceMagneticCurrent_Sonda_eq(a, b)
-      type(SurfaceMagneticCurrent_Sonda), intent(in) :: a, b
+      type(SurfaceMagneticCurrent_Sonda_t), intent(in) :: a, b
       SurfaceMagneticCurrent_Sonda_eq = a%probe == b%probe
    end function SurfaceMagneticCurrent_Sonda_eq
 
    elemental logical function abstractSonda_eq(a, b) result(res)
-      type(abstractSonda), intent(in) :: a, b
+      type(abstractSonda_t), intent(in) :: a, b
       integer(kind=4) :: i
 
       res = .false.
@@ -837,7 +837,7 @@ contains
    end function abstractSonda_eq
 
    elemental logical function sondas_eq(a, b) result(res)
-      type(Sondas), intent(in) :: a, b
+      type(Sondas_t), intent(in) :: a, b
       integer :: i
 
       res = .false.
@@ -852,7 +852,7 @@ contains
    end function sondas_eq
 
    elemental logical function sonda_eq(a, b) result (res)
-      type(Sonda), intent(in) :: a, b
+      type(Sonda_t), intent(in) :: a, b
       res = .false.
 
       if (a%grname /= b%grname) return
@@ -887,7 +887,7 @@ contains
    end function
 
    elemental logical function masSonda_eq(a, b) result (res)
-      type(MasSonda), intent(in) :: a, b
+      type(MasSonda_t), intent(in) :: a, b
       integer :: i
       res = .false.
 
@@ -910,7 +910,7 @@ contains
    end function
 
    elemental logical function MasSondas_eq(a, b)
-      type(MasSondas), intent(in) :: a, b
+      type(MasSondas_t), intent(in) :: a, b
       integer(kind=4) :: i
 
       MasSondas_eq = .false.
@@ -926,7 +926,7 @@ contains
    end function MasSondas_eq
 
    elemental logical function bloqueprobe_eq(a, b)
-      type(BloqueProbe), intent(in) :: a, b
+      type(BloqueProbe_t), intent(in) :: a, b
       bloqueprobe_eq = (a%tstart == b%tstart) .and. &
          (a%tstop == b%tstop) .and. &
          (a%tstep == b%tstep) .and. &
@@ -946,7 +946,7 @@ contains
    end function bloqueprobe_eq
 
    elemental logical function bloqueprobes_eq(a, b)
-      type(BloqueProbes), intent(in) :: a, b
+      type(BloqueProbes_t), intent(in) :: a, b
       if (.not. associated(a%bp) .or. .not. associated(b%bp)) then
          bloqueprobes_eq = .false.
          return
@@ -958,7 +958,7 @@ contains
    end function bloqueprobes_eq
 
    elemental logical function volprobe_eq(a, b)
-      type(VolProbe), intent(in) :: a, b
+      type(VolProbe_t), intent(in) :: a, b
       volprobe_eq = all(a%cordinates == b%cordinates)
       volprobe_eq = volprobe_eq .and. &
          (a%tstart == b%tstart) .and. &
@@ -974,7 +974,7 @@ contains
    end function volprobe_eq
 
    elemental logical function volprobes_eq(a, b)
-      type(VolProbes), intent(in) :: a, b
+      type(VolProbes_t), intent(in) :: a, b
       if (.not. associated(a%collection) .or. .not. associated(b%collection)) then
          volprobes_eq = .false.
          return

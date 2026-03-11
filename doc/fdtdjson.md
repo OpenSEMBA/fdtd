@@ -97,6 +97,7 @@ All the geometrical information of the simulation case is exclusively stored by 
 The `grid` object represents a collection of rectangular cuboids or *cells* which tessellate the space to form a structured mesh. This object is defined with the following entries:
 - `<numberOfCells>` is an array of three positive integers which indicate the number of cells in each Cartesian direction.
 - `<steps>` is an object which contains three arrays, labeled with `<x>`, `<y>` and `<z>` which represent the cell sizes, expressed in meters, in that direction. Each array may contain a single real to define a [regular grid](https://en.wikipedia.org/wiki/Regular_grid); or, alternatively, a number of reals equal to the number of cells to define a [rectilinear grid](https://en.wikipedia.org/wiki/Regular_grid).
+- `[origin]` is an array of three reals marking the position of the lowest vertex of the $(0, 0, 0)$ cell. Defaults to `[0.0, 0.0, 0.0]`. 
 
 The following example describes a regular grid with $20$, $20$, and $22$ cells in the $x$, $y$, and  $z$ directions respectively.
 ```json
