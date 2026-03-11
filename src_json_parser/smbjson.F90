@@ -360,7 +360,7 @@ contains
    function readGeneral(this) result (res)
       class(parser_t) :: this
       type(NFDEGeneral) :: res
-      res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0)
+      res%dt = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default=0.0_RKIND)
       res%nmax = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
       res%mtlnProblem = this%getLogicalAt(this%root, J_GENERAL//'.'//J_GEN_MTLN_PROBLEM, default = .false.)
    end function
@@ -389,9 +389,9 @@ contains
       call assignDes(P//'.'//J_GRID_STEPS//'.y', res%desY, res%nY)
       call assignDes(P//'.'//J_GRID_STEPS//'.z', res%desZ, res%nZ)
 
-      res%originx = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(1)', default=0.0)
-      res%originy = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(2)', default=0.0)
-      res%originz = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(3)', default=0.0)
+      res%originx = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(1)', default=0.0_RKIND)
+      res%originy = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(2)', default=0.0_RKIND)
+      res%originz = this%getRealAt(this%root, P//'.'//J_GRID_ORIGIN//'(3)', default=0.0_RKIND)
       
       res%mx1 = 0
       res%my1 = 0
@@ -473,8 +473,8 @@ contains
          type(FronteraPML) :: res
          character(len=*), intent(in) :: p
          res%numCapas = this%getIntAt(this%root, p//'.'//J_BND_PML_LAYERS, default=8)
-         res%orden = this%getRealAt(this%root, p//'.'//J_BND_PML_ORDER, default=2.0)
-         res%refl = this%getRealAt(this%root, p//'.'//J_BND_PML_REFLECTION, default=0.001)
+         res%orden = this%getRealAt(this%root, p//'.'//J_BND_PML_ORDER, default=2.0_RKIND)
+         res%refl = this%getRealAt(this%root, p//'.'//J_BND_PML_REFLECTION, default=0.001_RKIND)
       end function
 
       function labelToBoundaryPlace(str) result (place)
@@ -743,10 +743,10 @@ contains
          
          matPtr = this%matTable%getId(mA%materialId)
          ! Fills rest of dielectric data.
-         res%sigma  = this%getRealAt(matPtr%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
-         res%sigmam = this%getRealAt(matPtr%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
-         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0)*EPSILON_VACUUM
-         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0)*MU_VACUUM
+         res%sigma  = this%getRealAt(matPtr%p, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
+         res%sigmam = this%getRealAt(matPtr%p, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
+         res%eps    = this%getRealAt(matPtr%p, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND*EPSILON_VACUUM)
+         res%mu     = this%getRealAt(matPtr%p, J_MAT_REL_PERMEABILITY, default=1.0_RKIND*MU_VACUUM)
 
       end function
 
@@ -795,8 +795,8 @@ contains
                write(errorMsg, '(A)') errorMsgInit, mA%materialId, " resistance not found."
                call WarnErrReport(errorMsg, .true.)
             end if
-            res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0)
-            res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0)
+            res%Rtime_on = this%getRealAt(matPtr%p, J_MAT_LUMPED_STARTING_TIME, default=0.0_RKIND)
+            res%Rtime_off = this%getRealAt(matPtr%p, J_MAT_LUMPED_END_TIME, default=1.0_RKIND)
           case (J_MAT_LUMPED_MODEL_INDUCTOR)
             res%inductor = .true.
             res%L = this%getRealAt(matPtr%p, J_MAT_LUMPED_INDUCTANCE, found)
@@ -804,7 +804,7 @@ contains
                write(errorMsg, '(A)') errorMsgInit, mA%materialId, " inductance not found."
                call WarnErrReport(errorMsg, .true.)
             end if
-            res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, default=0.0)
+            res%R = this%getRealAt(matPtr%p, J_MAT_LUMPED_RESISTANCE, default=0.0_RKIND)
           case (J_MAT_LUMPED_MODEL_CAPACITOR)
             res%capacitor = .true.
             res%C = this%getRealAt(matPtr%p, J_MAT_LUMPED_CAPACITANCE, found)
@@ -942,10 +942,10 @@ contains
          allocate(res%thk_devia(   res%numcapas))
          do i = 1, res%numcapas
             call this%core%get_child(layers, i, layer)
-            res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0)
-            res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0)
-            res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0) * EPSILON_VACUUM
-            res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0) * MU_VACUUM
+            res%sigma(i)  = this%getRealAt(layer, J_MAT_ELECTRIC_CONDUCTIVITY, default=0.0_RKIND)
+            res%sigmam(i) = this%getRealAt(layer, J_MAT_MAGNETIC_CONDUCTIVITY, default=0.0_RKIND)
+            res%eps(i)    = this%getRealAt(layer, J_MAT_REL_PERMITTIVITY, default=1.0_RKIND * EPSILON_VACUUM)
+            res%mu(i)     = this%getRealAt(layer, J_MAT_REL_PERMEABILITY, default=1.0_RKIND * MU_VACUUM)
             res%thk(i)    = this%getRealAt(layer, J_MAT_MULTILAYERED_SURF_THICKNESS, found)
             if (.not. found) then
                call WarnErrReport(errorMsgInit // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
@@ -1951,9 +1951,9 @@ contains
          block
             type(json_value_ptr) :: m
             m = this%matTable%getId(cable%materialId)
-            radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS, default = 0.0)
-            resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default = 0.0)
-            inductance = this%getRealAt(m%p, J_MAT_WIRE_INDUCTANCE, default = 0.0)
+            radius = this%getRealAt(m%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND)
+            resistance = this%getRealAt(m%p, J_MAT_WIRE_RESISTANCE, default=0.0_RKIND)
+            inductance = this%getRealAt(m%p, J_MAT_WIRE_INDUCTANCE, default=0.0_RKIND)
             res%rad = radius 
             res%res = resistance
             res%ind = inductance
@@ -2127,9 +2127,9 @@ contains
             res%l = 0.0
             res%c = 0.0
           case default
-            res%r = this%getRealAt(tm, J_MAT_TERM_RESISTANCE, default=0.0)
-            res%l = this%getRealAt(tm, J_MAT_TERM_INDUCTANCE, default=0.0)
-            res%c = this%getRealAt(tm, J_MAT_TERM_CAPACITANCE, default=1e22)
+            res%r = this%getRealAt(tm, J_MAT_TERM_RESISTANCE, default=0.0_RKIND)
+            res%l = this%getRealAt(tm, J_MAT_TERM_INDUCTANCE, default=0.0_RKIND)
+            res%c = this%getRealAt(tm, J_MAT_TERM_CAPACITANCE, default=1e22_RKIND)
          end select
 
       end function
@@ -2195,11 +2195,11 @@ contains
       domainType = this%getStrAt(domain, J_TYPE, default=J_PR_DOMAIN_TYPE_TIME)
       res%type2 = getNPDomainType(domainType, transferFunctionFound)
 
-      res%tstart = this%getRealAt(domain, J_PR_DOMAIN_TIME_START, default=0.0)
-      res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0)
-      res%tstep = this%getRealAt(domain, J_PR_DOMAIN_TIME_STEP, default=0.0)
-      res%fstart = this%getRealAt(domain, J_PR_DOMAIN_FREQ_START, default=0.0)
-      res%fstop = this%getRealAt(domain, J_PR_DOMAIN_FREQ_STOP, default=0.0)
+      res%tstart = this%getRealAt(domain, J_PR_DOMAIN_TIME_START, default=0.0_RKIND)
+      res%tstop = this%getRealAt(domain, J_PR_DOMAIN_TIME_STOP, default=0.0_RKIND)
+      res%tstep = this%getRealAt(domain, J_PR_DOMAIN_TIME_STEP, default=0.0_RKIND)
+      res%fstart = this%getRealAt(domain, J_PR_DOMAIN_FREQ_START, default=0.0_RKIND)
+      res%fstop = this%getRealAt(domain, J_PR_DOMAIN_FREQ_STOP, default=0.0_RKIND)
 
       numberOfFrequencies = this%getIntAt(domain, J_PR_DOMAIN_FREQ_NUMBER, default=0)
       if (numberOfFrequencies == 0) then
@@ -2579,7 +2579,7 @@ contains
       end block
 
 
-      mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default = 0.0)
+      mtln_res%time_step = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_TIME_STEP, default=0.0_RKIND)
       mtln_res%number_of_steps = this%getRealAt(this%root, J_GENERAL//'.'//J_GEN_NUMBER_OF_STEPS)
 
       allocate (mtln_res%cables(size(cables)))
@@ -3610,7 +3610,7 @@ contains
             this%existsAt(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION)
          hasRadius = &  
             this%existsAt(mat%p, J_MAT_WIRE_RADIUS) .and. &
-            this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default = 0.0) /= 0
+            this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND /= 0)
 
          if (.not. hasRadius) then 
             if ((areFixedInCell .and. areMultipolarInCell) .or. &
@@ -3635,7 +3635,7 @@ contains
             res%cell_inductance_per_meter = null_matrix
             res%cell_capacitance_per_meter = null_matrix
             allocate(res%multipolar_expansion(0))
-            res%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default = 0.0)
+            res%radius = this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND)
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_RESISTANCE)) then
@@ -4010,12 +4010,12 @@ contains
    end function
 
    function getRealAt(this, place, path, found, default) result(res)
-      real :: res
+      real(kind=RKIND) :: res
       class(parser_t) :: this
       type(json_value), pointer :: place
       character(len=*) :: path
       logical, intent(out), optional :: found
-      real, optional :: default
+      real(kind=RKIND), optional :: default
       logical :: localFound
 
       call this%core%get(place, path, res, localFound, default)
@@ -4027,7 +4027,7 @@ contains
    end function
 
    function getRealsAt(this, place, path, found) result(res)
-      real, dimension(:), allocatable :: res
+      real(kind=RKIND), dimension(:), allocatable :: res
       class(parser_t) :: this
       type(json_value), pointer :: place
       character(len=*) :: path
@@ -4043,13 +4043,13 @@ contains
    end function
 
    function getMatrixAt(this, place, path, found) result(res)
-      real, dimension(:,:), allocatable :: res
+      real(kind=RKIND), dimension(:,:), allocatable :: res
       class(parser_t) :: this
       type(json_value), pointer :: place, matrix, row
       character(len=*) :: path
       logical, intent(out), optional :: found
       integer :: i, vartype, nr
-      real, dimension(:), allocatable :: res_row
+      real(kind=RKIND), dimension(:), allocatable :: res_row
       logical :: localFound
 
       call this%core%get(place, path,  matrix, localfound)
