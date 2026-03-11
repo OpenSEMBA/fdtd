@@ -25,7 +25,7 @@ contains
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 1.2971876e-09
+      expected%general%dt = 1.2971876e-09_RKIND
       expected%general%nmax = 23
 
       ! Expected media matrix.
@@ -41,12 +41,12 @@ contains
       allocate(expected%despl%desX(1:1))
       allocate(expected%despl%desY(1:1))
       allocate(expected%despl%desZ(1:1))
-      expected%despl%desX = 0.32419496007084553
-      expected%despl%desY = 0.12839303226115248
-      expected%despl%desZ = 0.3621442456908099
-      expected%despl%originX = 1.0
-      expected%despl%originY = 2.0
-      expected%despl%originZ = 3.0
+      expected%despl%desX = 0.32419496007084553_RKIND
+      expected%despl%desY = 0.12839303226115248_RKIND
+      expected%despl%desZ = 0.3621442456908099_RKIND
+      expected%despl%originX = 1.0_RKIND
+      expected%despl%originY = 2.0_RKIND
+      expected%despl%originZ = 3.0_RKIND
       expected%despl%mx1 = 0
       expected%despl%mx2 = 50
       expected%despl%my1 = 0
@@ -58,8 +58,8 @@ contains
       ! Expected boundaries.
       expected%front%tipoFrontera(:) = F_PML
       expected%front%propiedadesPML(:)%numCapas = 10
-      expected%front%propiedadesPML(:)%orden = 2.0
-      expected%front%propiedadesPML(:)%refl = 0.001
+      expected%front%propiedadesPML(:)%orden = 2.0_RKIND
+      expected%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected sources.
       expected%nodSrc%n_nodSrc = 1
@@ -84,7 +84,7 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%tag = 'nodalSource'
       expected%nodSrc%NodalSource(1)%c2P(1)%xc = 0.0
       expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0.0
-      expected%nodSrc%NodalSource(1)%c2P(1)%zc = 1.0
+      expected%nodSrc%NodalSource(1)%c2P(1)%zc = 1.0_RKIND
    end function
 end function
 

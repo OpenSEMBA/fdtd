@@ -23,7 +23,7 @@ contains
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 10e-12
+      expected%general%dt = 10e-12_RKIND
       expected%general%nmax = 2000
 
       ! Excected media matrix.
@@ -39,9 +39,9 @@ contains
       allocate(expected%despl%desX(1:1))
       allocate(expected%despl%desY(1:1))
       allocate(expected%despl%desZ(1:1))
-      expected%despl%desX = 0.1
-      expected%despl%desY = 0.1
-      expected%despl%desZ = 0.1
+      expected%despl%desX = 0.1_RKIND
+      expected%despl%desY = 0.1_RKIND
+      expected%despl%desZ = 0.1_RKIND
       expected%despl%mx1 = 0
       expected%despl%mx2 = 4
       expected%despl%my1 = 0
@@ -63,13 +63,13 @@ contains
       expected%plnSrc%collection(1)%atributo = ""
       expected%plnSrc%collection(1)%coor1 = [0, 0, 2]
       expected%plnSrc%collection(1)%coor2 = [3, 3, 47]
-      expected%plnSrc%collection(1)%theta = 0.0
-      expected%plnSrc%collection(1)%phi = 0.0
-      expected%plnSrc%collection(1)%alpha = 1.5708
-      expected%plnSrc%collection(1)%beta = 0.0
+      expected%plnSrc%collection(1)%theta = 0.0_RKIND
+      expected%plnSrc%collection(1)%phi = 0.0_RKIND
+      expected%plnSrc%collection(1)%alpha = 1.5708_RKIND
+      expected%plnSrc%collection(1)%beta = 0.0_RKIND
       expected%plnSrc%collection(1)%isRC=.false.
       expected%plnSrc%collection(1)%nummodes=1
-      expected%plnSrc%collection(1)%INCERTMAX=0.0
+      expected%plnSrc%collection(1)%INCERTMAX=0.0_RKIND
       expected%plnSrc%nc = 1
       expected%plnSrc%nC_max = 1
 
@@ -96,7 +96,7 @@ contains
       !! thin slot
       expected%tSlots%n_tg = 1
       allocate(expected%tslots%tg(1))
-      expected%tSlots%tg(1)%width = 3e-3
+      expected%tSlots%tg(1)%width = 3e-3_RKIND
       expected%tSlots%tg(1)%n_tgc = 2
       allocate(expected%tSlots%tg(1)%tgc(2))
       expected%tSlots%tg(1)%tgc(1)%i = 1
@@ -120,12 +120,12 @@ contains
          expected%Sonda%collection(i)%type1 = NP_T1_PLAIN
          expected%Sonda%collection(i)%type2 = NP_T2_TIME
          expected%Sonda%collection(i)%filename = ' '
-         expected%Sonda%collection(i)%tstart = 0.0
-         expected%Sonda%collection(i)%tstop = 0.0
-         expected%Sonda%collection(i)%tstep = 0.0
-         expected%Sonda%collection(i)%fstart = 0.0
-         expected%Sonda%collection(i)%fstop = 0.0
-         expected%Sonda%collection(i)%fstep = 0.0
+         expected%Sonda%collection(i)%tstart = 0.0_RKIND
+         expected%Sonda%collection(i)%tstop = 0.0_RKIND
+         expected%Sonda%collection(i)%tstep = 0.0_RKIND
+         expected%Sonda%collection(i)%fstart = 0.0_RKIND
+         expected%Sonda%collection(i)%fstop = 0.0_RKIND
+         expected%Sonda%collection(i)%fstep = 0.0_RKIND
          allocate(expected%Sonda%collection(i)%cordinates(3))
          expected%Sonda%collection(i)%cordinates(1)%Or = NP_COR_EX
          expected%Sonda%collection(i)%cordinates(2)%Or = NP_COR_EY

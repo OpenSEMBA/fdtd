@@ -24,7 +24,7 @@ contains
       call initializeProblemDescription(expected)
 
       ! Expected general info
-      expected%general%dt = 7.7033e-12
+      expected%general%dt = 7.7033e-12_RKIND
       expected%general%nmax = 389
 
       ! Expected media matrix
@@ -40,9 +40,9 @@ contains
       allocate(expected%despl%desX(1:1))
       allocate(expected%despl%desY(1:1))
       allocate(expected%despl%desZ(1:1))
-      expected%despl%desX = 0.005
-      expected%despl%desY = 0.005
-      expected%despl%desZ = 0.005
+      expected%despl%desX = 0.005_RKIND
+      expected%despl%desY = 0.005_RKIND
+      expected%despl%desZ = 0.005_RKIND
       expected%despl%mx1 = 0
       expected%despl%my1 = 0
       expected%despl%mz1 = 0
@@ -149,14 +149,14 @@ contains
       expected%dielRegs%Lins(1)%c2P%Ze = 7
       expected%dielRegs%Lins(1)%c2P%tag = '100ohm_resistor@lumped_line'
 
-      expected%dielRegs%Lins(1)%sigma = 0.0
+      expected%dielRegs%Lins(1)%sigma = 0.0_RKIND
       expected%dielRegs%Lins(1)%eps = EPSILON_VACUUM
       expected%dielRegs%Lins(1)%mu = MU_VACUUM
-      expected%dielRegs%Lins(1)%sigmam = 0.0
+      expected%dielRegs%Lins(1)%sigmam = 0.0_RKIND
 
-      expected%dielRegs%Lins(1)%R = 100.0
-      expected%dielRegs%Lins(1)%Rtime_on = 0.0
-      expected%dielRegs%Lins(1)%Rtime_off = 1.0
+      expected%dielRegs%Lins(1)%R = 100.0_RKIND
+      expected%dielRegs%Lins(1)%Rtime_on = 0.0_RKIND
+      expected%dielRegs%Lins(1)%Rtime_off = 1.0_RKIND
 
       expected%dielRegs%Lins(1)%resistor = .true.
 
@@ -197,12 +197,12 @@ contains
       expected%Sonda%collection(1)%type1 = NP_T1_PLAIN
       expected%Sonda%collection(1)%type2 = NP_T2_TIME
       expected%Sonda%collection(1)%filename = ' '
-      expected%Sonda%collection(1)%tstart = 0.0
-      expected%Sonda%collection(1)%tstop = 0.0
-      expected%Sonda%collection(1)%tstep = 0.0
-      expected%Sonda%collection(1)%fstart = 0.0
-      expected%Sonda%collection(1)%fstop = 0.0
-      expected%Sonda%collection(1)%fstep = 0.0
+      expected%Sonda%collection(1)%tstart = 0.0_RKIND
+      expected%Sonda%collection(1)%tstop = 0.0_RKIND
+      expected%Sonda%collection(1)%tstep = 0.0_RKIND
+      expected%Sonda%collection(1)%fstart = 0.0_RKIND
+      expected%Sonda%collection(1)%fstop = 0.0_RKIND
+      expected%Sonda%collection(1)%fstep = 0.0_RKIND
       allocate(expected%Sonda%collection(1)%cordinates(3))
       expected%Sonda%collection(1)%len_cor = 3
       expected%Sonda%collection(1)%cordinates(1:3)%Xi = 10
@@ -221,12 +221,12 @@ contains
       expected%BloquePrb%bp(1)%outputrequest = "Bulk probe"
       expected%BloquePrb%bp(1)%FileNormalize = ' '
       expected%BloquePrb%bp(1)%type2 = NP_T2_TIME
-      expected%BloquePrb%bp(1)%tstart = 0.0
-      expected%BloquePrb%bp(1)%tstop = 0.0
-      expected%BloquePrb%bp(1)%tstep = 0.0
-      expected%BloquePrb%bp(1)%fstart = 0.0
-      expected%BloquePrb%bp(1)%fstop = 0.0
-      expected%BloquePrb%bp(1)%fstep = 0.0
+      expected%BloquePrb%bp(1)%tstart = 0.0_RKIND
+      expected%BloquePrb%bp(1)%tstop = 0.0_RKIND
+      expected%BloquePrb%bp(1)%tstep = 0.0_RKIND
+      expected%BloquePrb%bp(1)%fstart = 0.0_RKIND
+      expected%BloquePrb%bp(1)%fstop = 0.0_RKIND
+      expected%BloquePrb%bp(1)%fstep = 0.0_RKIND
       expected%BloquePrb%bp(1)%i1 = 6
       expected%BloquePrb%bp(1)%i2 = 6
       expected%BloquePrb%bp(1)%j1 = 1

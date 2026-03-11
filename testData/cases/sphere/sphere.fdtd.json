@@ -40959,7 +40959,7 @@
             "elementIds": [2],
             "domain": {
                 "type": "time",
-                "samplingPeriod": 1e-9
+                "samplingPeriod": 1.0e-9
             }
         }
     ]

@@ -23,7 +23,7 @@ contains
       call initializeProblemDescription(ex)
 
       ! Expected general info.
-      ex%general%dt = 30e-12
+      ex%general%dt = 30e-12_RKIND
       ex%general%nmax = 1000
 
       ! Excected media matrix.
@@ -39,9 +39,9 @@ contains
       allocate(ex%despl%desX(1:1))
       allocate(ex%despl%desY(1:1))
       allocate(ex%despl%desZ(1:1))
-      ex%despl%desX = 0.1
-      ex%despl%desY = 0.1
-      ex%despl%desZ = 0.1
+      ex%despl%desX = 0.1_RKIND
+      ex%despl%desY = 0.1_RKIND
+      ex%despl%desZ = 0.1_RKIND
       ex%despl%mx1 = 0
       ex%despl%mx2 = 20
       ex%despl%my1 = 0
@@ -53,7 +53,7 @@ contains
       ex%front%tipoFrontera(:) = F_PML
       ex%front%propiedadesPML(:)%numCapas = 6
       ex%front%propiedadesPML(:)%orden = 2.0
-      ex%front%propiedadesPML(:)%refl = 0.001
+      ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected sources.
       allocate(ex%plnSrc%collection(1))
@@ -61,13 +61,13 @@ contains
       ex%plnSrc%collection(1)%atributo = ""
       ex%plnSrc%collection(1)%coor1 = [1, 1, 1]
       ex%plnSrc%collection(1)%coor2 = [18, 18, 20]
-      ex%plnSrc%collection(1)%theta = 1.5708
-      ex%plnSrc%collection(1)%phi = 0.0
-      ex%plnSrc%collection(1)%alpha = 0.0
-      ex%plnSrc%collection(1)%beta = 0.0
+      ex%plnSrc%collection(1)%theta = 1.5708_RKIND
+      ex%plnSrc%collection(1)%phi = 0.0_RKIND
+      ex%plnSrc%collection(1)%alpha = 0.0_RKIND
+      ex%plnSrc%collection(1)%beta = 0.0_RKIND
       ex%plnSrc%collection(1)%isRC=.false.
       ex%plnSrc%collection(1)%nummodes=1
-      ex%plnSrc%collection(1)%INCERTMAX=0.0
+      ex%plnSrc%collection(1)%INCERTMAX=0.0_RKIND
       ex%plnSrc%nc = 1
       ex%plnSrc%nC_max = 1
 
@@ -80,12 +80,12 @@ contains
       ex%Sonda%collection(1)%type1 = NP_T1_PLAIN
       ex%Sonda%collection(1)%type2 = NP_T2_TIME
       ex%Sonda%collection(1)%filename = ' '
-      ex%Sonda%collection(1)%tstart = 0.0
-      ex%Sonda%collection(1)%tstop = 0.0
-      ex%Sonda%collection(1)%tstep = 0.0
-      ex%Sonda%collection(1)%fstart = 0.0
-      ex%Sonda%collection(1)%fstop = 0.0
-      ex%Sonda%collection(1)%fstep = 0.0
+      ex%Sonda%collection(1)%tstart = 0.0_RKIND
+      ex%Sonda%collection(1)%tstop = 0.0_RKIND
+      ex%Sonda%collection(1)%tstep = 0.0_RKIND
+      ex%Sonda%collection(1)%fstart = 0.0_RKIND
+      ex%Sonda%collection(1)%fstop = 0.0_RKIND
+      ex%Sonda%collection(1)%fstep = 0.0_RKIND
       allocate(ex%Sonda%collection(1)%cordinates(1))
       ex%Sonda%collection(1)%len_cor = 1
       ex%Sonda%collection(1)%cordinates(1)%tag = "mid_point"

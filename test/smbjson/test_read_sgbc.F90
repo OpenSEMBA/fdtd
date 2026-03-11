@@ -22,7 +22,7 @@ contains
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 10e-12
+      expected%general%dt = 10e-12_RKIND
       expected%general%nmax = 2000
 
       ! Excected media matrix.
@@ -38,9 +38,9 @@ contains
       allocate(expected%despl%desX(1:1))
       allocate(expected%despl%desY(1:1))
       allocate(expected%despl%desZ(1:1))
-      expected%despl%desX = 0.1
-      expected%despl%desY = 0.1
-      expected%despl%desZ = 0.1
+      expected%despl%desX = 0.1_RKIND
+      expected%despl%desY = 0.1_RKIND
+      expected%despl%desZ = 0.1_RKIND
       expected%despl%mx1 = 0
       expected%despl%mx2 = 10
       expected%despl%my1 = 0
@@ -104,11 +104,11 @@ contains
       allocate(expected%lossyThinSurfs%cs(1)%eps_devia(2))
       allocate(expected%lossyThinSurfs%cs(1)%mu_devia(2))
       allocate(expected%lossyThinSurfs%cs(1)%sigmam_devia(2))
-      expected%lossyThinSurfs%cs(1)%thk_devia(:) = 0.0
-      expected%lossyThinSurfs%cs(1)%sigma_devia(:) = 0.0
-      expected%lossyThinSurfs%cs(1)%eps_devia(:) = 0.0
-      expected%lossyThinSurfs%cs(1)%mu_devia(:) = 0.0
-      expected%lossyThinSurfs%cs(1)%sigmam_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(1)%thk_devia(:) = 0.0_RKIND
+      expected%lossyThinSurfs%cs(1)%sigma_devia(:) = 0.0_RKIND
+      expected%lossyThinSurfs%cs(1)%eps_devia(:) = 0.0_RKIND
+      expected%lossyThinSurfs%cs(1)%mu_devia(:) = 0.0_RKIND
+      expected%lossyThinSurfs%cs(1)%sigmam_devia(:) = 0.0_RKIND
       
       !!! 3-layer composite
       allocate(expected%lossyThinSurfs%cs(2)%c(1))
@@ -137,11 +137,11 @@ contains
       allocate(expected%lossyThinSurfs%cs(2)%eps_devia(3))
       allocate(expected%lossyThinSurfs%cs(2)%mu_devia(3))
       allocate(expected%lossyThinSurfs%cs(2)%sigmam_devia(3))
-      expected%lossyThinSurfs%cs(2)%thk_devia(:) = 0.0
-      expected%lossyThinSurfs%cs(2)%sigma_devia(:) = 0.0
-      expected%lossyThinSurfs%cs(2)%eps_devia(:) = 0.0
-      expected%lossyThinSurfs%cs(2)%mu_devia(:) = 0.0
-      expected%lossyThinSurfs%cs(2)%sigmam_devia(:) = 0.0
+      expected%lossyThinSurfs%cs(2)%thk_devia(:) = 0.0_RKIND
+      expected%lossyThinSurfs%cs(2)%sigma_devia(:) = 0.0_RKIND
+      expected%lossyThinSurfs%cs(2)%eps_devia(:) = 0.0_RKIND
+      expected%lossyThinSurfs%cs(2)%mu_devia(:) = 0.0_RKIND
+      expected%lossyThinSurfs%cs(2)%sigmam_devia(:) = 0.0_RKIND
    end function
 end function
 
