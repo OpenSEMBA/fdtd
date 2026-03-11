@@ -136,7 +136,7 @@ contains
 #endif
       call CloseReportingFiles
  
-      STOP "stop on error"
+      STOP 1
 
       return
 

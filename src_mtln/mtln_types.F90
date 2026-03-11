@@ -40,6 +40,17 @@ module mtln_types_mod
    integer, parameter :: DIRECTION_Z_NEG   =  -3
 
 
+   type parsed_generator_t
+      character(len=256) :: path_to_excitation = ""
+      integer :: generator_type = SOURCE_TYPE_UNDEFINED
+      type(cable_t), pointer :: attached_to_cable => null()
+      real :: resistance = 0.0
+      integer :: index = -1, conductor = -1
+   contains
+      private
+      procedure :: wire_source_eq
+      generic, public :: operator(==) => wire_source_eq
+   end type
 
    type node_source_t
       character(len=256) :: path_to_excitation = ""
@@ -239,6 +250,7 @@ module mtln_types_mod
       type(cable_abstract_t), dimension(:), allocatable :: cables
       type(terminal_network_t), dimension(:), allocatable :: networks
       type(probe_t), dimension(:), allocatable :: probes
+      type(parsed_generator_t), dimension(:), allocatable :: wireGenerators
       type(connector_t), dimension(:), pointer :: connectors
       real :: time_step = 0.0
       integer :: number_of_steps = 0
@@ -256,10 +268,6 @@ contains
       class(mtln_t), intent(in) :: a,b
       integer :: i
 
-      ! if (a%has_multiwires .neqv. b%has_multiwires) then 
-      !    mtln_eq = .false.
-      !    return
-      ! end if
       if (a%time_step /= b%time_step) then 
          mtln_eq = .false.
          return
@@ -420,11 +428,26 @@ contains
 
    elemental logical function connector_eq(a,b)
       class(connector_t), intent(in) :: a, b
-      logical :: l
       connector_eq = &
          (a%id == b%id) .and. &
          all((a%resistances == b%resistances)) .and. &
          all((a%transfer_impedances_per_meter == b%transfer_impedances_per_meter))
+   end function
+
+
+   logical function wire_source_eq(a,b)
+      class(parsed_generator_t), intent(in) :: a, b
+      wire_source_eq = &
+         (a%path_to_excitation == b%path_to_excitation) .and. &
+         (a%generator_type == b%generator_type) .and. &
+         (a%resistance == b%resistance) .and. &
+         (a%index == b%index)
+      if (.not. associated(a%attached_to_cable) .or. .not. associated(b%attached_to_cable)) then 
+         wire_source_eq = wire_source_eq .and. .false.
+      else 
+         wire_source_eq = wire_source_eq .and. (a%attached_to_cable == b%attached_to_cable)
+      end if
+
    end function
 
    elemental logical function termination_eq(a, b)

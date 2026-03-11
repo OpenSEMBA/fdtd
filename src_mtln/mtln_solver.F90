@@ -14,7 +14,7 @@ module mtln_solver_mod
         real :: time, dt, final_time
         type(mtl_bundle_t), allocatable, dimension(:) :: bundles
         type(network_manager_t) :: network_manager
-        type(probe_t), allocatable, dimension(:) :: probes
+        ! type(probe_t), allocatable, dimension(:) :: probes
         integer :: number_of_bundles
         integer :: number_of_steps
     contains
@@ -77,7 +77,7 @@ contains
         res%number_of_bundles = size(res%bundles)
         
         res%network_manager = pre%network_manager
-        res%probes = pre%probes
+        ! res%probes = pre%probes
         call res%updateBundlesTimeStep(res%dt)
         call res%initNodes()
 
@@ -139,7 +139,7 @@ contains
 
         do i = 1, this%number_of_bundles
             if (this%bundles(i)%bundle_in_layer) then 
-                call this%bundles(i)%updateSources(this%time, this%dt)
+                call this%bundles(i)%updateGenerators(this%time, this%dt)
                 call this%bundles(i)%advanceVoltage()
             end if
         end do

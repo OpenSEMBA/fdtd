@@ -30,9 +30,6 @@ module mtl_mod
         type(communicator_t), dimension(:), allocatable :: comms
         integer :: rank
     end type
-
-
-
 #endif
 
     type, public :: mtl_t
@@ -49,6 +46,9 @@ module mtl_mod
         type(transfer_impedance_per_meter_t) :: transfer_impedance
         type(transfer_impedance_per_meter_t), dimension(:), allocatable :: initial_connector_transfer_impedances, end_connector_transfer_impedances
         type(segment_t), dimension(:), allocatable :: segments
+
+        ! type(generator_t), dimension(:), allocatable :: sources
+
 
 #ifdef CompileWithMPI
         type(comm_t) :: mpi_comm

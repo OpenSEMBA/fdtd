@@ -54,7 +54,6 @@ module circuit_mod
         procedure :: updateCircuitSources
         procedure :: modifyLineCapacitorValue
 
-        procedure :: loadCodeModels
         procedure :: printCWD
 
     end type circuit_t
@@ -87,16 +86,6 @@ contains
         call command('getcwd' // c_null_char)
     end subroutine
 
-    subroutine loadCodeModels(this)
-        class(circuit_t) :: this
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/analog.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/digital.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/spice2poly.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/table.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/xtradev.cm' // c_null_char)
-        call command('codemodel /mnt/c/users/alberto/Work/ugr-fdtd/fdtd/testData/spinit/linux/xtraevt.cm' // c_null_char)
-    end subroutine
-
     subroutine init(this, names, sources, netlist)
         class(circuit_t) :: this
         type(string_t), intent(in), dimension(:), optional :: names
@@ -105,7 +94,6 @@ contains
         integer :: i
 
         call start()
-        ! call this%loadCodeModels()
         if (present(netlist)) then
             write(*,*) 'load netlist'
             call this%loadNetlist(netlist)

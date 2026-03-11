@@ -77,7 +77,6 @@ contains
       expected%pecRegs%Surfs(1)%tag =  "aluminum@ground_plane"
 
       ! expected mtln bundles
-      ! expected%mtln%has_multiwires = .true.
       expected%mtln%time_step = 1e-12
       expected%mtln%number_of_steps = 1000
 
