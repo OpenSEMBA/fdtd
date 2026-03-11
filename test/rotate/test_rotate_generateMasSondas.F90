@@ -7,7 +7,7 @@ module test_rotate_generateMasSondas_m
 contains
 
 integer function test_rotate_generate_mas_sondas() bind(C) result(err)
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
     integer :: test_err = 0
     
@@ -37,7 +37,7 @@ integer function test_rotate_generate_mas_sondas() bind(C) result(err)
 end function test_rotate_generate_mas_sondas
 
 subroutine setup_massonda_test(this, n_probes)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: n_probes
     integer :: i
     
@@ -67,7 +67,7 @@ subroutine setup_massonda_test(this, n_probes)
 end subroutine setup_massonda_test
 
 subroutine init_massonda_data(this, idx, xi, xe, yi, ye, zi, ze, xtrancos, ytrancos, ztrancos, type1, type2, tag)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer, intent(in) :: idx, xi, xe, yi, ye, zi, ze, xtrancos, ytrancos, ztrancos, type1, type2
     character(len=*), intent(in) :: tag
     
@@ -88,7 +88,7 @@ end subroutine init_massonda_data
 
 subroutine verify_massonda_rotation(test_err, this, mpidir)
     integer, intent(inout) :: test_err
-    type(Parseador), intent(in) :: this
+    type(Parseador_t), intent(in) :: this
     integer, intent(in) :: mpidir
     
     if (mpidir == 2) then
@@ -148,7 +148,7 @@ subroutine verify_massonda_rotation(test_err, this, mpidir)
 end subroutine verify_massonda_rotation
 
 subroutine cleanup_massonda_test(this)
-    type(Parseador), intent(inout) :: this
+    type(Parseador_t), intent(inout) :: this
     integer :: i
     
     if (this%Sonda%length > 0) then

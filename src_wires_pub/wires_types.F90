@@ -6,17 +6,17 @@ module wiresHolland_constants
    !Types definitions
    
    integer(kind=4), parameter             :: MaxNumCurrentMinusPlus=9
-   type, public  :: ChargeNodes
+   type, public  :: ChargeNodes_t
       integer(kind=4)                        :: IndexNode
-      type(CurrentSegments), pointer         :: CurrentPlus_1,CurrentMinus_1  !neighbours in the plus and Minus direction
-      type(CurrentSegments), pointer         :: CurrentPlus_2,CurrentMinus_2  !neighbours in the plus and Minus direction
-      type(CurrentSegments), pointer         :: CurrentPlus_3,CurrentMinus_3  !neighbours in the plus and Minus direction
-      type(CurrentSegments), pointer         :: CurrentPlus_4,CurrentMinus_4  !neighbours in the plus and Minus direction
-      type(CurrentSegments), pointer         :: CurrentPlus_5,CurrentMinus_5  !neighbours in the plus and Minus direction
-      type(CurrentSegments), pointer         :: CurrentPlus_6,CurrentMinus_6  !neighbours in the plus and Minus direction
-      type(CurrentSegments), pointer         :: CurrentPlus_7,CurrentMinus_7  !neighbours in the plus and Minus direction
-      type(CurrentSegments), pointer         :: CurrentPlus_8,CurrentMinus_8  !neighbours in the plus and Minus direction
-      type(CurrentSegments), pointer         :: CurrentPlus_9,CurrentMinus_9  !neighbours in the plus and Minus direction
+      type(CurrentSegments_t), pointer         :: CurrentPlus_1,CurrentMinus_1  !neighbours in the plus and Minus direction
+      type(CurrentSegments_t), pointer         :: CurrentPlus_2,CurrentMinus_2  !neighbours in the plus and Minus direction
+      type(CurrentSegments_t), pointer         :: CurrentPlus_3,CurrentMinus_3  !neighbours in the plus and Minus direction
+      type(CurrentSegments_t), pointer         :: CurrentPlus_4,CurrentMinus_4  !neighbours in the plus and Minus direction
+      type(CurrentSegments_t), pointer         :: CurrentPlus_5,CurrentMinus_5  !neighbours in the plus and Minus direction
+      type(CurrentSegments_t), pointer         :: CurrentPlus_6,CurrentMinus_6  !neighbours in the plus and Minus direction
+      type(CurrentSegments_t), pointer         :: CurrentPlus_7,CurrentMinus_7  !neighbours in the plus and Minus direction
+      type(CurrentSegments_t), pointer         :: CurrentPlus_8,CurrentMinus_8  !neighbours in the plus and Minus direction
+      type(CurrentSegments_t), pointer         :: CurrentPlus_9,CurrentMinus_9  !neighbours in the plus and Minus direction
       logical                                 :: IsMur,IsPeriodic,IsAttachedtoVoltage,IsPEC,HasIsource,Exists,&
                                                   Is_LeftEnd,Is_RightEnd,IsLossy
       logical                                 :: IsBackDownLeftMur,IsFrontUpRightMur
@@ -25,10 +25,10 @@ module wiresHolland_constants
       real(kind=RKIND_wires)                           :: cteMur,ctePlain,origctePlain,cteprop
       !to apply Mur. Needs extra storage everywhere but it is only 1D
       real(kind=RKIND_wires)                           :: ChargePresent,ChargePast
-      type(ChargeNodes), pointer             :: NodeInside
+      type(ChargeNodes_t), pointer             :: NodeInside
       integer(kind=4)                        :: NumCurrentMinus,NumCurrentPlus
       integer(kind=4)                        :: i,j,k
-      type(source), pointer                  :: Isource
+      type(source_t), pointer                  :: Isource
       integer(kind=4), dimension(1:2*MaxNumCurrentMinusPlus) :: YESsegment
       
       real(kind=RKIND) , pointer             :: already_YEEadvanced_byconformal_changedtoPECfield1 => null()
@@ -39,21 +39,21 @@ module wiresHolland_constants
       real(kind=RKIND) , pointer             :: already_YEEadvanced_byconformal_changedtoPECfield6 => null()
 #ifdef CompileWithMPI
       !For MPI purposes !only handled and initialized in MPIcomm
-      type(CurrentSegments), pointer         :: MPISharedCurrent
+      type(CurrentSegments_t), pointer         :: MPISharedCurrent
 #endif
 
-   end type ChargeNodes
+   end type ChargeNodes_t
 
 #ifdef CompileWithThickWires    
-   type container                
+   type container_t                
         real(kind=RKIND), pointer :: punt
         real(kind=RKIND) :: retardo      
         real(kind=RKIND), dimension(:), allocatable :: field_retard  
-   end type container
+   end type container_t
    type :: thick_t    
       integer(kind=4)                        :: Enumero,Hnumero
-      type(container), dimension(:), allocatable :: Efield_wire2main
-      type(container), dimension(:), allocatable :: Hfield_wire2main, H_Efield_wire2main
+      type(container_t), dimension(:), allocatable :: Efield_wire2main
+      type(container_t), dimension(:), allocatable :: Hfield_wire2main, H_Efield_wire2main
       real(kind=RKIND_wires), dimension(:), allocatable :: EArea,rEArea,HArea,rHArea,rEfractionArea,Hsigno,Hcte  
       integer, dimension(:), allocatable :: i, j, k, field     
       logical :: Hplus         
@@ -61,14 +61,14 @@ module wiresHolland_constants
       integer          :: maxretardo
    end type thick_t
 #endif       
-   type, public  :: CurrentSegments
+   type, public  :: CurrentSegments_t
       integer(kind=4)                        :: IndexSegment,NumParallel,OrigIndex
       type(wires_t), pointer              :: TipoWire
       real(kind=RKIND_wires)                    :: Lind,inv_Lind_acum,HEUR_safety,Lind_acum
       real(kind=RKIND_wires)                    :: delta,deltaTransv1,deltaTransv2
       real(kind=RKIND_wires)                    :: givenautoin, resist
       real(kind=RKIND_wires)                    :: givenautoin_devia, resist_devia
-      type(ChargeNodes), pointer          :: ChargePlus ,ChargeMinus !neighbours in the plus and Minus direction
+      type(ChargeNodes_t), pointer          :: ChargePlus ,ChargeMinus !neighbours in the plus and Minus direction
       logical                              :: IsPMC,HasVsource,IsShielded,HasParallel_RightEnd,HasParallel_LeftEnd, &
                                                HasSeries_RightEnd,HasSeries_LeftEnd,HasAbsorbing_RightEnd,HasAbsorbing_LeftEnd
       logical                              :: Is_LeftEnd, Is_RightEnd,IsEnd_norLeft_norRight,proc,IsConformal
@@ -93,7 +93,7 @@ module wiresHolland_constants
       !fin dama
       integer(kind=4) :: tipofield !iEx,iEy o iEz
       logical :: orientadoalreves
-      type(source), pointer                  :: Vsource
+      type(source_t), pointer                  :: Vsource
 #ifdef CompileWithMPI
       !only required by the new MPI wires routines march'12 2012 bug multiwires MPI
       integer(kind=4) :: equivalentIndex
@@ -105,38 +105,38 @@ module wiresHolland_constants
 !!!se aniade siempre aunque solo lo use stochastic
       real(kind=RKIND_wires) :: qplus_qminus_for_devia,current_for_devia,Efield_main2wire_for_devia ,Lind_devia
       real(kind=RKIND_wires)                           :: cte1_for_devia ,cte2_for_devia ,cte3_for_devia  
-   end type CurrentSegments
+   end type CurrentSegments_t
    !
 
    !dama
-   type, public    :: TSegmentPtr
-      type    (CurrentSegments)   , pointer                  :: ptr
-   end type            TSegmentPtr
+   type, public    :: TSegmentPtr_t
+      type    (CurrentSegments_t)   , pointer                  :: ptr
+   end type            TSegmentPtr_t
 
-   type, public    :: TMultiline
+   type, public    :: TMultiline_t
       integer(kind=4)                                :: NumParallel
-      type    (TSegmentPtr), pointer, dimension(:) :: Segments
+      type    (TSegmentPtr_t), pointer, dimension(:) :: Segments
       real    (kind=RKIND_wires) , pointer, dimension(:,:) :: R, L, C
       real    (kind=RKIND_wires) , pointer, dimension(:,:) :: b1I, b2I, b3I
-   end type            TMultiline
+   end type            TMultiline_t
    !!!!!!!!!!!!fin dama
 
    type, public   :: ThinWires_t
       integer(kind=4)                                :: NumMultilines !dama
-      type    (TMultiline) , pointer, dimension(:) :: Multilines    !dama
+      type    (TMultiline_t) , pointer, dimension(:) :: Multilines    !dama
       integer(kind=4) :: NumDifferentWires,NumCurrentSegments,NumChargeNodes
       integer(kind=4), pointer, dimension( : ) :: WireTipoMedio
-      type(CurrentSegments) :: NullSegment !contiene informacion nula precisada por segmentos voided pero observados en la rutina de observacion 12/09/13
-      type(ChargeNodes) :: NullNode
-      type(CurrentSegments), pointer, dimension( : ) :: CurrentSegment
-      type(ChargeNodes), pointer, dimension( : ) :: ChargeNode
+      type(CurrentSegments_t) :: NullSegment !contiene informacion nula precisada por segmentos voided pero observados en la rutina de observacion 12/09/13
+      type(ChargeNodes_t) :: NullNode
+      type(CurrentSegments_t), pointer, dimension( : ) :: CurrentSegment
+      type(ChargeNodes_t), pointer, dimension( : ) :: ChargeNode
 #ifdef CompileWithMPI
       !For MPI purposes !only handled and initialized in MPIcomm
-      type(CurrentSegments), pointer, dimension( : ) :: MPIUpNeededCurrentSegment,MPIDownNeededCurrentSegment
+      type(CurrentSegments_t), pointer, dimension( : ) :: MPIUpNeededCurrentSegment,MPIDownNeededCurrentSegment
       integer(kind=4)                                 :: NumNeededCurrentUpMPI,NumNeededCurrentDownMPI
-      type(ChargeNodes), pointer, dimension( : ) :: MPIUpChargeNode,MPIDownChargeNode
+      type(ChargeNodes_t), pointer, dimension( : ) :: MPIUpChargeNode,MPIDownChargeNode
       !only required by the new MPI wires routines march'12 2012 bug multiwires MPI
-      type(CurrentSegments), pointer, dimension( : ) :: MPIUpSharedCurrentSegment,MPIDownSharedCurrentSegment
+      type(CurrentSegments_t), pointer, dimension( : ) :: MPIUpSharedCurrentSegment,MPIDownSharedCurrentSegment
       integer(kind=4)                                 :: NumSharedCurrentUpMPI,NumSharedCurrentDownMPI
 #endif
       real(kind=RKIND)                   :: null_field !en los segmentos embeddeds y en los paralelos no hay acople entre thin-wire y medio
@@ -144,7 +144,7 @@ module wiresHolland_constants
       ! apunto  a null_field el pointer field anterior en vez de al campo fdtd y lo obligo a ser cero
    end type ThinWires_t
    !
-   type, public:: adyacc
+   type, public:: adyacc_t
       logical  :: Is, Parallel,IsHeterogeneousJunction,BothEndingsConnected
       integer(kind=4) :: i,j,k
       integer(kind=4), dimension(1:2) :: YESsegment

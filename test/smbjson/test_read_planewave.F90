@@ -5,7 +5,7 @@ integer function test_read_planewave() bind (C) result(err)
    implicit none
 
    character(len=*), parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'planewave.fdtd.json'
-   type(Parseador) :: pr, ex
+   type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -17,7 +17,7 @@ integer function test_read_planewave() bind (C) result(err)
 
 contains
    function expectedProblemDescription() result (expected)
-      type(Parseador) :: expected
+      type(Parseador_t) :: expected
 
       call initializeProblemDescription(expected)
 

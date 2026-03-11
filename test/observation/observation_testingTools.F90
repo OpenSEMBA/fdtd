@@ -199,7 +199,7 @@ contains
    end function create_control_flags
 
    function create_base_sgg() result(sgg)
-      type(SGGFDTDINFO) :: sgg
+      type(SGGFDTDINFO_t) :: sgg
       
       sgg%NumMedia = 3
       allocate(sgg%Med(0:sgg%NumMedia))

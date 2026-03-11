@@ -22,7 +22,7 @@ module lumped_vars
       real(kind=RKIND) :: g1_usual_devia
       real(kind=RKIND) :: g2a_usual_devia,g2b_usual_devia
 #endif 
-   END type Nodes_t
+   end type Nodes_t
 
 
    type, public  :: LumpedElem_t

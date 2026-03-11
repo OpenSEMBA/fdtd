@@ -12,27 +12,27 @@ module BORDERS_MUR
    !
    !
    ! Limits of the MUR region
-   type XYZlimit_tvar
+   type xyzlimit_var_t
       integer(kind=4), dimension(1:6) :: XI,XE,YI,YE,ZI,ZE
-   end type XYZlimit_tvar
-   type(XYZlimit_tvar), dimension(4:6) ::  MURc
+   end type xyzlimit_var_t
+   type(xyzlimit_var_t), dimension(4:6) :: MURc
 
 
 
-   type LR
+   type LR_t
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Past_Hx,Past_Hz,PastPast_Hx,PastPast_Hz
    end type
-   type DU
+   type DU_t
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Past_Hy,Past_Hx,PastPast_Hy,PastPast_Hx
    end type
-   type BF
+   type BF_t
       real(kind=RKIND) , pointer, dimension( : , : , : ) :: Past_Hz,Past_Hy,PastPast_Hz,PastPast_Hy
    end type
 
    !!!LOCAL VARIABLES
-   type(LR), dimension(left : right) , save :: regLR
-   type(DU), dimension(down : up)    , save :: regDU
-   type(BF), dimension(back : front) , save :: regBF
+   type(LR_t), dimension(left : right) , save :: regLR
+   type(DU_t), dimension(down : up)    , save :: regDU
+   type(BF_t), dimension(back : front) , save :: regBF
 
 
    real(kind = RKIND), dimension(  :), allocatable, SAVE :: back_CAB1, back_CAB3, back_cab4, &
@@ -57,7 +57,7 @@ contains
    subroutine InitMURBorders(sgg,ThereAreMURBorders,resume,Idxh,Idyh,Idzh,eps00,mu00)
       real(kind=RKIND) :: eps00,mu00
 
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
 
       real(kind=RKIND) , dimension(:)   , intent(in) :: &
       Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE), &
@@ -292,7 +292,7 @@ contains
    end subroutine InitMURBorders
 
    subroutine calc_murconstants(sgg,Idxh,Idyh,Idzh,eps00,mu00)
-        type(SGGFDTDINFO), intent(in) :: sgg
+        type(SGGFDTDINFO_t), intent(in) :: sgg
         real(kind=RKIND) :: eps00,mu00
         integer(kind=4) :: i,j,k,region,field,i1
         real(kind=RKIND) :: cnum
@@ -479,7 +479,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine AdvanceMagneticMUR(b, sgg,sggMiHx, sggMiHy, sggMiHz, Hx, Hy, Hz,mur_second)
       !---------------------------> inputs <----------------------------------------------------------
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type( bounds_t), intent( IN) :: b
       logical :: mur_second
       !--->

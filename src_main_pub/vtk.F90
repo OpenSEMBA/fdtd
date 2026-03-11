@@ -17,7 +17,7 @@ contains
    subroutine createVTK (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
    
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       integer(kind=4) :: mpidir
       logical :: vtkindex,yacreado,dontwritevtk
@@ -72,8 +72,8 @@ contains
       yacreado=.false.
       numNodes=0; numEdges=0;numQuads=0;
 
-      WRITE (whoamishort, '(i5)') layoutnumber + 1
-      WRITE (whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoamishort, '(i5)') layoutnumber + 1
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
       !
       output => GetOutput ()!get the output private info from observation
       !
@@ -103,7 +103,7 @@ contains
          if (sgg%observation(ii)%Volumic) then
             if (sgg%observation(ii)%nP == 1) then
                if (any(sgg%observation(ii)%P(1)%What == volumicCurrentFlags)) then
-                  INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
+                  inquire(FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if ((lexis).and.(output(ii)%TimesWritten/=0)) then
                      !
 
@@ -217,7 +217,7 @@ contains
                      endif
 #endif
                      !LEE INFO GEOMETRICA TENIENDO EN CUENTA POSICION MPI
-                     OPEN (output(ii)%item(1)%UNIT, FILE=trim(adjustl(output(ii)%item(1)%path)), FORM='unformatted')
+                     open(output(ii)%item(1)%UNIT, FILE=trim(adjustl(output(ii)%item(1)%path)), FORM='unformatted')
                      read(output(ii)%item(1)%unit) coldummy
                      if (coldummy/= output(ii)%item(1)%columnas) then
                            write (buff,'(a,2i9)') 'ERROR: Buggy error creating .vtk',coldummy, output(ii)%item(1)%columnas
@@ -656,7 +656,7 @@ contains
 #endif
                            !
                            time=att(indi)
-                           WRITE (charc, '(i10)') indi
+                           write(charc, '(i10)') indi
                            fichero=trim(adjustl(filename))//'_'//trim (adjustl(charc))//'.vtk'
 
 
@@ -879,7 +879,7 @@ contains
 
    subroutine createVTKOnTheFly (layoutnumber, size, sgg,vtkindex,somethingdone,mpidir,sggMtag,dontwritevtk)
    
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
    
       integer(kind=4) :: mpidir
@@ -906,7 +906,7 @@ contains
                (sgg%observation(ii)%P(1)%What == iCurY).or.(sgg%observation(ii)%P(1)%What == iCurZ).or. &
                (sgg%observation(ii)%P(1)%What == mapvtk)) then !solo corrientes volumicas
                   !
-                  INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
+                  inquire(FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
                      call print11(layoutnumber, buff,.true.)
@@ -927,7 +927,7 @@ contains
                if ((sgg%observation(ii)%P(1)%What == iCur).or.(sgg%observation(ii)%P(1)%What == iCurX).or.(sgg%observation(ii)%P(1)%What == iCurY).or.(sgg%observation(ii)%P(1)%What == iCurZ).or. &
                (sgg%observation(ii)%P(1)%What == mapvtk)) then !solo corrientes volumicas
                   !
-                  INQUIRE (FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
+                  inquire(FILE=trim(adjustl(output(ii)%item(1)%path)), EXIST=lexis)
                   if (.not.lexis) then
                      buff='NOT PROCESSING: Inexistent file '//trim(adjustl(output(ii)%item(1)%path))
                      call print11(layoutnumber, buff,.true.)
@@ -950,7 +950,7 @@ contains
    subroutine write_VTKfile(sgg,fichero,iroot2, Serialized,  numberOfSerialized,Nodes,Numnodes,Elems,NumEdges,NumQuads,time,  &
                               i_sub_time,total_sub_times,FreqDomain,what,sggMtag,que_saco)
    
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=IKINDMTAG), intent(in) :: sggMtag  (sgg%Alloc(iHx)%XI:sgg%Alloc(iHx)%XE, sgg%Alloc(iHy)%YI:sgg%Alloc(iHy)%YE, sgg%Alloc(iHz)%ZI:sgg%Alloc(iHz)%ZE)
       character(len=BUFSIZE), intent(in) :: fichero
 
@@ -1163,7 +1163,7 @@ contains
       integer(kind=4), allocatable, dimension(:,:), intent(out) :: Elems
       
       logical, intent(in) :: vtkindex
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       integer(kind=4), intent(in):: numberOfSerialized
       type(Serialized_t), intent(in) :: Serialized
       

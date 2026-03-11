@@ -15,7 +15,7 @@ contains
 
    subroutine expect_eq(err, ex, pr, ignoreRegions)
       integer, intent(inout) :: err
-      type(Parseador), intent(in) :: ex, pr
+      type(Parseador_t), intent(in) :: ex, pr
       logical, optional, intent(in) :: ignoreRegions
       logical :: checkRegions
 

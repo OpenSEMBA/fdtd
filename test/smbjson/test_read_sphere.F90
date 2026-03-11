@@ -5,7 +5,7 @@ integer function test_read_sphere() bind (C) result(err)
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'sphere.fdtd.json'
-   type(Parseador) :: pr, ex
+   type(Parseador_t) :: pr, ex
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -20,7 +20,7 @@ integer function test_read_sphere() bind (C) result(err)
    
 contains
    function expectedProblemDescription() result (ex)
-      type(Parseador) :: ex
+      type(Parseador_t) :: ex
 
       call initializeProblemDescription(ex)
 

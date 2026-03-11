@@ -16,8 +16,8 @@ contains
    !!! Initializes PEC and PML data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitOtherBorders(sgg,thereAre)
-      type(SGGFDTDINFO), intent(in) :: sgg
-      type(Logic_control), intent(inout) :: thereAre
+      type(SGGFDTDINFO_t), intent(in) :: sgg
+      type(logic_control_t), intent(inout) :: thereAre
 
       thereAre%PeriodicBorders=.false.
       if (sgg%Border%IsBackPeriodic.or.sgg%Border%IsFrontPeriodic.or.sgg%Border%IsLeftPeriodic.or.sgg%Border%IsRightPeriodic.or. &

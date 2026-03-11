@@ -4,7 +4,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
     use Observa
     use observation_testingTools
 
-    type(SGGFDTDINFO) :: sgg
+    type(SGGFDTDINFO_t) :: sgg
     type(media_matrices_t) :: media
     type(taglist_t) :: tag_numbers
     logical :: ThereAreObservation, ThereAreWires, ThereAreFarFields
@@ -77,7 +77,7 @@ integer function test_init_time_movie_observation() bind(C) result(err)
     !Extra func
     contains
         subroutine set_sgg_data(baseSGG)
-            type(SGGFDTDINFO), intent(inout) :: baseSGG
+            type(SGGFDTDINFO_t), intent(inout) :: baseSGG
             allocate(baseSGG%Observation(1))
             baseSGG%Observation(1) = define_time_movie_observation()
         end subroutine 

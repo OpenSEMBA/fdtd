@@ -2,10 +2,10 @@ integer function test_rotate_generate_space_steps() bind(C) result(err)
     use smbjson
     use nfde_rotate_m
     use rotate_testingTools
-    type(Parseador) :: this
+    type(Parseador_t) :: this
     integer(kind=4) :: mpidir
-    type(Desplazamiento), pointer :: old_despl => null()
-    type(MatrizMedios), pointer :: old_matriz => null()
+    type(Desplazamiento_t), pointer :: old_despl => null()
+    type(MatrizMedios_t), pointer :: old_matriz => null()
     integer :: test_err = 0
     
     mpidir = 2

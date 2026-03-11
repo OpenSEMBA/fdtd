@@ -5,7 +5,7 @@ integer function test_read_holland1981() bind (C) result(err)
    implicit none
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'holland1981.fdtd.json'
-   type(Parseador) :: problem, expected
+   type(Parseador_t) :: problem, expected
    type(parser_t) :: parser
    logical :: areSame
    err = 0
@@ -17,7 +17,7 @@ integer function test_read_holland1981() bind (C) result(err)
 
 contains
    function expectedProblemDescription() result (ex)
-      type(Parseador) :: ex
+      type(Parseador_t) :: ex
       integer :: i
 
       call initializeProblemDescription(ex)
