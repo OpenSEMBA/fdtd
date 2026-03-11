@@ -10,13 +10,13 @@
 module Preprocess_m
 #undef DetectAdj
    !
-   use Report
-   use NFDETypes
+   use Report_m
+   use NFDETypes_m
    !healer sgg10
-   use CreateMatrices
+   use CreateMatrices_m
    !typos que leo desde mi FDE
-   use FDEtypes
-   use DMMA
+   use FDETYPES_m
+   use DMMA_m
 #ifdef CompileWithConformal
    use CONFORMAL_INI_CLASS
    use CONFORMAL_TOOLS
@@ -24,7 +24,7 @@ module Preprocess_m
    use CONFORMAL_TYPES
    use Conformal_TimeSteps_m
 #endif
-   use conformal_mod, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
+   use conformal_m, F_X => FACE_X, F_Y => FACE_Y, F_Z => FACE_Z, E_X => EDGE_X, E_Y => EDGE_Y, E_Z => EDGE_Z
    implicit none
 !!!variables globales del modulo
    real(kind=RKIND), save           :: cluz,zvac
@@ -127,12 +127,12 @@ contains
             call print11(layoutnumber,'Preprocessing SGBC materials to include skin-depth effects....')
             call prepro_skindepth(this,fichin)
             call print11(layoutnumber,'Finished preprocessing for skin-depth.')
-         endif
+         end if
 #ifdef CompileWithMPI
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
          return
-      endif
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
@@ -202,14 +202,14 @@ contains
          do j = 1, this%tSlots%n_tg
             contamedia = contamedia + this%tSlots%Tg(j)%N_tgc
          end do
-      endif
+      end if
 
       !end thin Slots
       !PARA LA CAPA EXTRA 2013
       if (medioextra%exists) then
          CONTAMEDIA = CONTAMEDIA+1
          MEDIOEXTRA%index=CONTAMEDIA
-      endif
+      end if
       !para modulos que necesiten senialar con already_YEEadvanced_byconformal y split_and_useless (eg. conformal)
       !se crea siempre por defecto
       contamedia = contamedia+2 !para acomodar los no_use no_use_notouch
@@ -442,7 +442,7 @@ contains
             sgg%PlaneWave(i)%ey(1) = ey
             sgg%PlaneWave(i)%ez(1) = ez
             sgg%PlaneWave(i)%INCERT(1)=0.0_RKIND
-         endif
+         end if
          sgg%PlaneWave(i)%fichero%name = trim (adjustl(this%plnSrc%collection(i)%nombre_fichero))
          sgg%PlaneWave(i)%esqx1 = Min (punto%XI, punto%XE)
          sgg%PlaneWave(i)%esqy1 = Min (punto%YI, punto%YE)
@@ -538,9 +538,9 @@ contains
                      else
                         sig_max = max(sig_max,-((log( sgg%PML%CoeffReflPML(o,p) )*(sgg%PML%orden(o,p)+1))/ &
                            (2.0_RKIND *sqrt(Mu0/eps0)*sgg%PML%NumLayers(o,p)*del)))
-                     endif
-                  endif
-               endif
+                     end if
+                  end if
+               end if
             end do
          end do
          MEDIOEXTRA%sigma = MEDIOEXTRA%sigma * sig_max !la especificacion se da en terminos de tanto por uno en la linea de comandos
@@ -553,7 +553,7 @@ contains
          sgg%Med(MEDIOEXTRA%index)%Is%Dielectric = .TRUE.
          sgg%Med(MEDIOEXTRA%index)%Is%Volume = .TRUE.
          sgg%Med(MEDIOEXTRA%index)%Is%PML = .TRUE.
-      endif
+      end if
       !
       !barre los medios
       !Primero todos los pec
@@ -733,7 +733,7 @@ contains
             sgg%Med(contamedia)%Is%PMLbody = .true.
            allocate(sgg%Med(contamedia)%PMLbody(1))
             sgg%Med(contamedia)%PMLbody(1)%orient    = this%DielRegs%vols(i)%orient
-         endif
+         end if
 !!!!!
          tama2 = (this%DielRegs%vols(i)%n_c2P)
          do j = 1, tama2
@@ -917,8 +917,8 @@ contains
             if (.not. this%DielRegs%lins(i)%plain) then
                write(buff, '(a)')    'Buggy error 1 in preprocess lumped. .'
                call STOPONERROR(layoutnumber,size,buff)
-            endif
-         endif
+            end if
+         end if
 !!!fin lumped
          tama2 = (this%DielRegs%lins(i)%n_c2P)
          do j = 1, tama2
@@ -1245,7 +1245,7 @@ contains
             !!!comentado el 120219 pq no se lleva bien con Semba !no entiendo ahora el comentario de malonyedispersive!!!120219
             !!!     write(buff, '(a)')    'pre1_Error:  SGBC materials must have at least one layyer even in dummy for malonyedispersive'
             !!!     call WarnErrReport (buff,.true.)
-         ENDIF
+         end if
 
 
          if (abs(this%LossyThinSurfs%cs(j)%SigmaM(1)) <= 1.0e-2_RKIND ) then  !!!ojoooo a 210319 manda guevos que tengamos que estar con el flag de la conductidad magnetica para llamar a SGBC todavia en 2015!!!
@@ -1255,11 +1255,11 @@ contains
                !   write(buff, '(a)')    'pre1_Warning:  SGBC materials are just averaged for multilayered structures.'// &
                !   ' Use preferably -mibc instead.'
                !   call WarnErrReport (buff)
-               !endif
+               !end if
                SGBC=.true. !si la conductividad es 0.0_RKIND (o casi) utiliza directamente SGBC
                mibc=.false.
-            endif
-         endif
+            end if
+         end if
          if (this%LossyThinSurfs%cs(j)%SigmaM(1) >= 0.0_RKIND) then
             !SURFs (siempre son surfs)
             !
@@ -1293,7 +1293,7 @@ contains
                   if ((this%LossyThinSurfs%cs(j)%numcapas >1).and.SGBCDispersive) then
                      write(buff, *)    'ERROR in SGBCs Number of layers >1 still unsupported for SGBCDispersive. '
                      call StopOnError (0,0,buff)
-                  endif
+                  end if
                   !
                   allocate(sgg%Med(contamedia)%Multiport(1)%epr(1:this%LossyThinSurfs%cs(j)%numcapas), &
                      sgg%Med(contamedia)%Multiport(1)%mur(1:this%LossyThinSurfs%cs(j)%numcapas), &
@@ -1316,17 +1316,17 @@ contains
                      puntoXI= sgg%allocDxI
                      write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
-                  endif
+                  end if
                   if(.not.((puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE))) then
                      puntoYI= sgg%allocDyI
                      write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
-                  endif
+                  end if
                   if(.not.((puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE))) then
                      puntoZI= sgg%allocDzI
                      write(buff, *)    'ERROR: precompo 2: Readjusting composite init point. Only ignore if parts of the geometry fall out of the the domain deliberately (only if manual clipping)',puntoXI,puntoYI,puntoZI,sgg%allocDxI,sgg%allocDyI,sgg%allocDzI
                      call WarnErrReport (buff,.TRUE.)
-                  endif
+                  end if
                   dentro = (puntoXI>=sgg%allocDxI).and.(puntoXI<=sgg%allocDxE).and. &
                      (puntoYI>=sgg%allocDyI).and.(puntoYI<=sgg%allocDyE).and. &
                      (puntoZI>=sgg%allocDzI).and.(puntoZI<=sgg%allocDzE)
@@ -1346,7 +1346,7 @@ contains
                   ELSE
                      write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
                      call STOPONERROR(layoutnumber,size,buff)
-                  ENDIF
+                  end if
                   sgg%Med(contamedia)%Multiport(1)%numcapas = this%LossyThinSurfs%cs(j)%numcapas
                   !el especificado
                   sgg%Med(contamedia)%Multiport(1)%Multiportdir = this%LossyThinSurfs%cs(j)%C(i)%or
@@ -1355,7 +1355,7 @@ contains
                         j_=i_
                      else
                         j_=sgg%Med(contamedia)%Multiport(1)%numcapas-i_+1 !dale la vuelta (medios no simetricos) !0121
-                     endif
+                     end if
                      sgg%Med(contamedia)%Multiport(1)%epr         (j_) =  this%LossyThinSurfs%cs(j)%eps               (i_)    / Eps0
                      sgg%Med(contamedia)%Multiport(1)%mur         (j_) =  this%LossyThinSurfs%cs(j)%mu                (i_)    / mu0
                      sgg%Med(contamedia)%Multiport(1)%sigma       (j_) =  this%LossyThinSurfs%cs(j)%Sigma             (i_)
@@ -1374,7 +1374,7 @@ contains
                   if (rdummy>1.0e-15_RKIND) then
                      write(buff, '(a)')    'Non null deviations found in sigmam or mu in composites. Still unsupported.'
                      call STOPONERROR(layoutnumber,size,buff)
-                  endif
+                  end if
 
                   !!!
 
@@ -1396,7 +1396,7 @@ contains
                   else
                      write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Composites.'
                      call STOPONERROR(layoutnumber,size,buff)
-                  endif
+                  end if
                   sgg%Med(contamedia)%Is%Dielectric = .FALSE.
 
                   sgg%Med(contamedia)%multiport(1)%multiportFileZ11 =  trim &
@@ -1428,8 +1428,8 @@ contains
                      if (.not.(errnofile1.or.(errnofile2.and.errnofile3.and.errnofile4))) then
                         buff='Neither New nor Old style mibc FILE '//trim(adjustl(multiportfile2))//' EXISTS.'
                         call WarnErrReport (buff,.TRUE.)
-                     endif
-                  endif
+                     end if
+                  end if
 
                   !!!!!!!!end 09/07/13
                   !
@@ -1497,7 +1497,7 @@ contains
                   if (this%LossyThinSurfs%cs(j)%numcapas >1) then
                      write(buff, '(a)')    'pre1_ERROR:  Anisotropic multiport materials unsupported for multilayered structures.'
                      call WarnErrReport (buff,.TRUE.)
-                  endif
+                  end if
                   puntoXI = Max (punto%XI, Min(BoundingBox%XI, BoundingBox%XE)) !copiado de healer
                   puntoYI = Max (punto%YI, Min(BoundingBox%YI, BoundingBox%YE))
                   puntoZI = Max (punto%ZI, Min(BoundingBox%ZI, BoundingBox%ZE))
@@ -1529,7 +1529,7 @@ contains
                   ELSE
                      write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
                      call STOPONERROR(layoutnumber,size,buff)
-                  ENDIF
+                  end if
                   sgg%Med(contamedia)%AnisMultiport(1)%Multiportdir = this%LossyThinSurfs%cs(j)%C(i)%or
                   sgg%Med(contamedia)%AnisMultiport(1)%epr    = this%LossyThinSurfs%cs(j)%eps / Eps0
                   sgg%Med(contamedia)%AnisMultiport(1)%mur    =  this%LossyThinSurfs%cs(j)%mu / mu0
@@ -1548,7 +1548,7 @@ contains
                   else
                      write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Anisotropic Composites.'
                      call STOPONERROR(layoutnumber,size,buff)
-                  endif
+                  end if
 
                   sgg%Med(contamedia)%Is%Dielectric = .FALSE.
 
@@ -1732,7 +1732,7 @@ contains
                end select
             end do
          end do
-      endif
+      end if
       !
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !wires
@@ -1757,7 +1757,7 @@ contains
          sgg%Med(contamedia)%wire(1)%radius_devia = this%twires%TW(j)%RAD_devia
          if (boundwireradius) then
             if (sgg%Med(contamedia)%wire(1)%radius > maxwireradius) sgg%Med(contamedia)%wire(1)%radius=maxwireradius
-         endif
+         end if
          sgg%Med(contamedia)%wire(1)%R = this%twires%TW(j)%RES
          sgg%Med(contamedia)%wire(1)%l = this%twires%TW(j)%IND
          sgg%Med(contamedia)%wire(1)%C = this%twires%TW(j)%CAP
@@ -1882,7 +1882,7 @@ contains
          if (rdummy>1.0e-15_RKIND) then
             write(buff, '(a)')    'Non null deviations found in L, C or radius in wires stoch. Still unsupported.'
             call STOPONERROR(layoutnumber,size,buff)
-         endif
+         end if
 !fin stoch
          !
          !esto se soportaba desde versiones antiguas (hilos de un solo segmento. Por error se descomento en la R2417 cuando se trabajo en lo del strictnfde tras vuelta de madrid
@@ -1891,7 +1891,7 @@ contains
          !        tama2 = this%twires%TW(j)%N_TWC
          !        if (tama2 == 1) then
          !           call stoponerror(layoutnumber,size,'A WIRE must have at least two segments')
-         !        endif
+         !        end if
          !
          !esto no es ya necesario porque lo calculo yo luego en el wires
          !!record the LeftEnd and RightEnd coordinates (first and last points)
@@ -1918,19 +1918,19 @@ contains
          !                                                          (punto%ZI   == sgg%Med(contamedia)%wire(1)%LextremoK)) then
          !                    if ((orientacion /= orientacionL).and.(punto%XI   == sgg%Med(contamedia)%wire(1)%LextremoI)) numminus=numminus +1 !bug OLD 12/09/13  Model_unidos.nfde segmentos finales duplicados internamente
          !                    if                                    (punto%XI+1 == sgg%Med(contamedia)%wire(1)%LextremoI) numminus =numminus  +1
-         !                endif
+         !                end if
          !            case (iEy)
          !                if (                                      (punto%XI   == sgg%Med(contamedia)%wire(1)%LextremoI).and.  &
          !                                                          (punto%ZI   == sgg%Med(contamedia)%wire(1)%LextremoK)) then
          !                    if ((orientacion /= orientacionL).and.(punto%YI   == sgg%Med(contamedia)%wire(1)%LextremoJ)) numminus=numminus +1
          !                    if                                    (punto%YI+1 == sgg%Med(contamedia)%wire(1)%LextremoJ) numminus =numminus  +1
-         !                endif
+         !                end if
          !            case (iEz)
          !                if (                                      (punto%YI   == sgg%Med(contamedia)%wire(1)%LextremoJ).and.  &
          !                                                          (punto%XI   == sgg%Med(contamedia)%wire(1)%LextremoI)) then
          !                    if ((orientacion /= orientacionL).and.(punto%ZI   == sgg%Med(contamedia)%wire(1)%LextremoK)) numminus=numminus +1
          !                    if                                    (punto%ZI+1 == sgg%Med(contamedia)%wire(1)%LextremoK) numminus =numminus  +1
-         !                endif
+         !                end if
          !            end select
          !
          !        end do
@@ -1943,7 +1943,7 @@ contains
          !              case (iEz)
          !                  sgg%Med(contamedia)%wire(1)%LextremoK = sgg%Med(contamedia)%wire(1)%LextremoK + 1
          !              end select
-         !        endif
+         !        end if
          !        !
          !!correct each ending
          !        numminus=0
@@ -1958,19 +1958,19 @@ contains
          !                                                          (punto%ZI   == sgg%Med(contamedia)%wire(1)%RextremoK)) then
          !                    if ((orientacion /= orientacionR).and.(punto%XI   == sgg%Med(contamedia)%wire(1)%RextremoI)) numminus=numminus +1
          !                    if                                    (punto%XI+1 == sgg%Med(contamedia)%wire(1)%RextremoI) numminus =numminus  +1
-         !                endif
+         !                end if
          !            case (iEy)
          !                if (                                      (punto%XI   == sgg%Med(contamedia)%wire(1)%RextremoI).and.  &
          !                                                          (punto%ZI   == sgg%Med(contamedia)%wire(1)%RextremoK)) then
          !                    if ((orientacion /= orientacionR).and.(punto%YI   == sgg%Med(contamedia)%wire(1)%RextremoJ)) numminus=numminus +1
          !                    if                                    (punto%YI+1 == sgg%Med(contamedia)%wire(1)%RextremoJ) numminus =numminus  +1
-         !                endif
+         !                end if
          !            case (iEz)
          !                if (                                      (punto%YI   == sgg%Med(contamedia)%wire(1)%RextremoJ).and.  &
          !                                                          (punto%XI   == sgg%Med(contamedia)%wire(1)%RextremoI)) then
          !                    if ((orientacion /= orientacionR).and.(punto%ZI   == sgg%Med(contamedia)%wire(1)%RextremoK)) numminus=numminus +1
          !                    if                                    (punto%ZI+1 == sgg%Med(contamedia)%wire(1)%RextremoK) numminus =numminus  +1
-         !                endif
+         !                end if
          !            end select
          !        end do
          !        if ((numminus >= 1).or.(tama2 == 1)) then  !bug ca295 !bug OLD 12/09/13  Model_unidos.nfde segmentos finales duplicados internamente
@@ -1983,7 +1983,7 @@ contains
          !              case (iEz)
          !                  sgg%Med(contamedia)%wire(1)%RextremoK = sgg%Med(contamedia)%wire(1)%RextremoK  + 1
          !              end select
-         !        endif
+         !        end if
       end do !del tama
 
 
@@ -2006,17 +2006,17 @@ contains
                   imenos1=i-1
                else
                   imenos1=i
-               endif
+               end if
                if (j > BoundingBox%YI) then
                   jmenos1=j-1
                else
                   jmenos1=j
-               endif
+               end if
                if (k > BoundingBox%ZI) then
                   kmenos1=k-1
                else
                   kmenos1=k
-               endif
+               end if
                select case (orientacion)
                 case (iEx)
                   if ((media%sggMiEx(i,j,k) ==0).or.(sgg%med(media%sggMiEx(i,j,k) )%is%pec)) then
@@ -2033,9 +2033,9 @@ contains
                      else
                         write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
                            media%sggMiEx(i,j,k)
-                     endif
+                     end if
                      if (verbose) call WarnErrReport (buff)
-                  endif
+                  end if
                   if ((((media%sggMiEy(i  ,j,k) ==0).or.(sgg%med(media%sggMiEy(i  ,j,k) )%is%pec)).or. &
                      ((media%sggMiEz(i  ,j,k) ==0).or.(sgg%med(media%sggMiEz(i  ,j,k) )%is%pec)).or. &
                      ((media%sggMiEy(i  ,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i  ,jmenos1,k) )%is%pec)).or. &
@@ -2050,7 +2050,7 @@ contains
                         continue
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
-                     endif
+                     end if
                   elseif ((((media%sggMiEy(i+1,j,k) ==0).or.(sgg%med(media%sggMiEy(i+1,j,k) )%is%pec)).or.&
                      ((media%sggMiEz(i+1,j,k) ==0).or.(sgg%med(media%sggMiEz(i+1,j,k) )%is%pec)).or. &
                      ((media%sggMiEy(i+1,jmenos1,k) ==0).or.(sgg%med(media%sggMiEy(i+1,jmenos1,k) )%is%pec)).or. &
@@ -2065,7 +2065,7 @@ contains
                         continue
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i+1, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
-                     endif
+                     end if
                   elseif (((media%sggMiEy(i  ,j,k) /= 1)).and. &
                      (media%sggMiEx(i  ,j,k) == 1)) then
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
@@ -2086,7 +2086,7 @@ contains
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: x-WIRE at ',OrigIndex, i+1, j, k,' touching medium ', &
                      &                                  media%sggMiEz(i+1,j,k)
                      if (verbose) call WarnErrReport (buff)
-                  endif
+                  end if
                 case (iEy)
                   if ((media%sggMiEy(i,j,k) ==0).or.(sgg%med(media%sggMiEy(i,j,k) )%is%pec)) then
                      paraerrhilo=.true.
@@ -2101,9 +2101,9 @@ contains
                      else
                         write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
                            media%sggMiEy(i,j,k)
-                     ENDIF
+                     end if
                      if (verbose) call WarnErrReport (buff)
-                  endif
+                  end if
                   if ((((media%sggMiEx(i,j  ,k) ==0).or.(sgg%med(media%sggMiEx(i,j  ,k) )%is%pec)).or. &
                      ((media%sggMiEz(i,j,k  ) ==0).or.(sgg%med(media%sggMiEz(i,j,k  ) )%is%pec)).or. &
                      ((media%sggMiEx(imenos1,j  ,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j  ,k) )%is%pec)).or. &
@@ -2118,7 +2118,7 @@ contains
                         continue
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
-                     endif
+                     end if
                   elseif ((((media%sggMiEx(i,j+1,k) ==0).or.(sgg%med(media%sggMiEx(i,j+1,k) )%is%pec)).or. &
                      ((media%sggMiEz(i,j+1,k) ==0).or.(sgg%med(media%sggMiEz(i,j+1,k) )%is%pec)).or. &
                      ((media%sggMiEx(imenos1,j+1,k) ==0).or.(sgg%med(media%sggMiEx(imenos1,j+1,k) )%is%pec)).or. &
@@ -2133,7 +2133,7 @@ contains
                         continue
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j+1, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
-                     endif
+                     end if
                   elseif (((media%sggMiEx(i,j  ,k) /= 1)).and. &
                   &         (media%sggMiEy(i,j  ,k) == 1)) then
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
@@ -2154,7 +2154,7 @@ contains
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: y-WIRE at ',OrigIndex, i, j+1, k,' touching medium ', &
                      &                                  media%sggMiEz(i,j+1,k)
                      if (verbose) call WarnErrReport (buff)
-                  endif
+                  end if
                 case (iEz)
                   if ((media%sggMiEz(i,j,k) ==0).or.(sgg%med(media%sggMiEz(i,j,k) )%is%pec)) then
                      paraerrhilo=.true.
@@ -2170,9 +2170,9 @@ contains
                      else
                         write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' embedded within medium ', &
                            media%sggMiEz(i,j,k)
-                     ENDIF
+                     end if
                      if (verbose) call WarnErrReport (buff)
-                  endif
+                  end if
                   if ((((media%sggMiEx(i,j,k  ) ==0).or.(sgg%med(media%sggMiEx(i,j,k  ) )%is%pec)).or. &
                      ((media%sggMiEy(i,j,k  ) ==0).or.(sgg%med(media%sggMiEy(i,j,k  ) )%is%pec)).or. &
                      ((media%sggMiEx(imenos1,j,k  ) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k  ) )%is%pec)).or. &
@@ -2187,7 +2187,7 @@ contains
                         continue
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
-                     endif
+                     end if
                   elseif ((((media%sggMiEx(i,j  ,k+1) ==0).or.(sgg%med(media%sggMiEx(i,j  ,k+1) )%is%pec)).or. &
                      ((media%sggMiEy(i,j  ,k+1) ==0).or.(sgg%med(media%sggMiEy(i,j  ,k+1) )%is%pec)).or.   &
                   &         ((media%sggMiEx(imenos1,j,k+1) ==0).or.(sgg%med(media%sggMiEx(imenos1,j,k+1) )%is%pec)).or. &
@@ -2202,7 +2202,7 @@ contains
                         continue
                         !write(buff, '(a,i7,3i5,a)')    'A node of terminal x-WIRE at ',OrigIndex, i, j, k+1,' touching PEC'
                         !if (verbose) call WarnErrReport (buff)
-                     endif
+                     end if
                   elseif (((media%sggMiEx(i,j,k  ) /= 1)).and. &
                   &         (media%sggMiEz(i,j,k  ) == 1)) then
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
@@ -2223,16 +2223,16 @@ contains
                      write(buff, '(a,i7,3i5,a,i5)') 'pre1_WARNING: z-WIRE at ',OrigIndex, i, j, k,' touching medium ', &
                      &                                  media%sggMiEx(i,j,k+1)
                      if (verbose) call WarnErrReport (buff)
-                  endif
+                  end if
                end select
-            endif
+            end if
          end do
       end do
       !lo dejo que siga !luego el wires parara
       !if (paraerrhilo.and.(.not.groundwires)) then
       !    buff='Revise WIRE intersections!'
       !    call STOPONERROR(layoutnumber,size,buff)
-      !endif
+      !end if
       !end preanalisis
       !perform the assignments
       bboxwirxi=  2**20
@@ -2290,8 +2290,8 @@ contains
                   write(buff, '(a,1i7,a)')    'pre1_SEVEREWARNING: removing a repeteated segment from a 2-segment wire. Index= ',this%twires%TW(j)%TWC(i)%nd,'. Double check that no wire probes was attached to it'
                   call WarnErrReport (buff)
                   exit hilosbarre
-               endif
-            endif
+               end if
+            end if
 !!!fin 250418
 
             !!!!!!!!!los clipeo agresivamente si lo lanzo con -CLIPREGION para que no me den problema 06/07/15 (solo sirve para debugeo y con el -wiresflavor holland (old))
@@ -2419,7 +2419,7 @@ contains
          hay_slanted_wires=.true.
       else
          hay_slanted_wires=.false.
-      endif
+      end if
 
       !SLANTED WIRES
       do j = 1,this%swires%n_sw
@@ -2435,7 +2435,7 @@ contains
          sgg%Med(contamedia)%SlantedWire(1)%radius = this%swires%SW(j)%RAD
          if (boundwireradius) then
             if (sgg%Med(contamedia)%SlantedWire(1)%radius > maxwireradius) sgg%Med(contamedia)%SlantedWire(1)%radius=maxwireradius
-         endif
+         end if
          sgg%Med(contamedia)%SlantedWire(1)%R = this%swires%SW(j)%res
          sgg%Med(contamedia)%SlantedWire(1)%L = this%swires%SW(j)%ind
          sgg%Med(contamedia)%SlantedWire(1)%C = this%swires%SW(j)%cap
@@ -2517,7 +2517,7 @@ contains
                if ((this%swires%SW(j)%swc(i)%y <= SINPML_Fullsize(iHy)%YI+2)) this%swires%SW(j)%swc(i)%y=SINPML_Fullsize(iHy)%YI+2
                if ((this%swires%SW(j)%swc(i)%z >= SINPML_Fullsize(iHz)%ZE-2)) this%swires%SW(j)%swc(i)%z=SINPML_Fullsize(iHz)%ZE-2
                if ((this%swires%SW(j)%swc(i)%z <= SINPML_Fullsize(iHz)%ZI+2)) this%swires%SW(j)%swc(i)%z=SINPML_Fullsize(iHz)%ZI+2
-            endif
+            end if
 
             !fin clipeo
 
@@ -2657,7 +2657,7 @@ contains
       write(buff, '(a, 6I12)')    'pre1_INFO:  Bounding Box for WIREs min_x,min_y,min_z, MAX_x,MAX_y,MAX_z',bboxwirXI,bboxwirYI,bboxwirZI,bboxwirXE,bboxwirYE,bboxwirZE
       if (((bboxwirXI<2**20).or.(bboxwirYI<2**20).or.(bboxwirZI<2**20).or.(bboxwirXE>-(2**20)).or.(bboxwirYE>-(2**20)).or.(bboxwirZE>-(2**20))).or.(VERBOSE)) then
          call WarnErrReport (buff)
-      ENDIF
+      end if
       !FIN WIRES
 
       if (run_with_dmma) then
@@ -2802,21 +2802,21 @@ contains
                         medio2 = media%sggMiHx(i1-1,j1,k1)  !!!sggmcen (i1-1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      else
                         medio2=medio1
-                     endif
+                     end if
                    CASE (iEy)
                      medio1 = media%sggMiHy(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      if (j1 > BoundingBox%YI) then
                         medio2 = media%sggMiHy(i1,j1-1,k1) !!!sggmcen (i1, j1-1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      else
                         medio2=medio1
-                     endif
+                     end if
                    CASE (iEz)
                      medio1 = media%sggMiHz(i1,j1,k1) !!!sggmcen (i1, j1, k1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      if (k1 > BoundingBox%ZI) then
                         medio2 = media%sggMiHz(i1,j1,k1-1) !!! sggmcen (i1, j1, k1-1) !tocaco 03/07/15 para lo eliminar lo de los media matrix
                      else
                         medio2=medio1
-                     endif
+                     end if
                   end select
 
                   if ( ((sgg%Med(medio1)%Is%Dielectric).or.(sgg%Med(medio1)%Is%Thinslot).or.(sgg%Med(medio1)%Is%Pec).or.(medio1 ==1 )).and. &
@@ -2923,7 +2923,7 @@ contains
             !thin Slots
          end do
          !
-      endif !del run_with_dmma
+      end if !del run_with_dmma
 
       !debe ir al final para respetar el tipo de medio que haya SI SE TRATASE COMO A UN MEDIO
       !nodalsource
@@ -2991,7 +2991,7 @@ contains
                sgg%NodalSource(conta1)%punto(ii)%ZI = -1
                sgg%NodalSource(conta1)%punto(ii)%ZE = -1
             end do
-         endif
+         end if
       end do
       !asignacion
       conta1 = 0
@@ -3004,7 +3004,7 @@ contains
             sgg%NodalSource(conta1)%isElec = this%nodsrc%NodalSource(i)%isElec
             sgg%NodalSource(conta1)%IsHard = this%nodsrc%NodalSource(i)%isHard
             sgg%NodalSource(conta1)%IsInitialValue = this%nodsrc%NodalSource(i)%IsInitialValue 
-         endif
+         end if
          !
          tama2 = this%nodsrc%NodalSource(i)%n_c1P
          tama3 = this%nodsrc%NodalSource(i)%n_c2P
@@ -3025,7 +3025,7 @@ contains
                punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE-1))
             else
                punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c1P(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE  ))
-            endif
+            end if
             !
             !
             do k1 = punto_s%ZI, punto_s%ZE
@@ -3195,7 +3195,7 @@ contains
                punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE-1))
             else
                punto_s%ZE = Min (this%nodsrc%NodalSource(i)%c2p(ii)%ZE, Max(BoundingBox%ZI, BoundingBox%ZE  ))
-            endif
+            end if
             !
             punto_s%or = this%nodsrc%NodalSource(i)%c2p(ii)%or
             punto_s%xc = this%nodsrc%NodalSource(i)%c2p(ii)%xc
@@ -3455,7 +3455,7 @@ contains
                if (.not.nodo_cazado) then
                   write(buff,'(a,i9)') 'Current probe not found in WIRE segment ',this%Sonda%collection(i)%cordinates(j)%XI
                   call StopOnError(layoutnumber,size,buff)
-               endif
+               end if
             ELSE if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_DDP) then
                if (run_with_dmma) then
                   nodo_cazado=.false.
@@ -3479,11 +3479,11 @@ contains
                   if (.not.nodo_cazado) then
                      write(buff,'(a,i9)') 'Voltage probe not found ',this%Sonda%collection(i)%cordinates(j)%XI
                      call StopOnError(layoutnumber,size,buff)
-                  endif
+                  end if
                else
                   write(buff,'(a,i9)') 'ERROR: Voltage probe in gaps only available under -dmma flag '
                   call StopOnError(layoutnumber,size,buff)
-               endif !del run_with_dmma
+               end if !del run_with_dmma
             else if (abs(tipotemp) == NP_COR_LINE) then
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
             end if
@@ -3500,7 +3500,7 @@ contains
          if (tama2 > 1) then
             buff='Only one Far Field probe allowed'
             call STOPONERROR(layoutnumber,size,buff)
-         endif
+         end if
          if (tama2 > 0) sgg%observation(ii)%nP = 1 !un punto para todo el farfield (es simbolico)
          !electric FIELDS
          tama2 = (this%oldSONDA%probes(i)%n_Electric)
@@ -3601,7 +3601,7 @@ contains
                &   ((punto%ZE >= BoundingBox%ZI) .OR. (punto%ZE <= BoundingBox%ZE))) then
 !!!                   print *,'----Dentro->',layoutnumber,punto%XI,punto%YI,punto%ZI,punto%XE,punto%YE,punto%ZE
                   sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-               ENDIF
+               end if
             end do
          else
             tama2 = (this%VolPrb%collection(i)%len_cor)
@@ -3620,9 +3620,9 @@ contains
                &     (punto%YE <= BoundingBox%YE)) .AND. ((punto%ZE >= BoundingBox%ZI) .OR. (punto%ZE <= BoundingBox%ZE))) then
 
                   sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
-               ENDIF
+               end if
             end do
-         endif
+         end if
       end do
       ! si se lanza con -mapvtk se crea una slice probe para ver la estructura
 
@@ -3745,7 +3745,7 @@ contains
                (sgg%observation(ii)%FreqStep <= 1e-9)) then
                write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,size,buff)
-            ENDIF
+            end if
             !!!
             do j = 1, tama2
                punto%XI = this%Sonda%collection(i)%cordinates(j)%XI
@@ -4019,7 +4019,7 @@ contains
                   (sgg%observation(ii)%FreqStep <= 1e-9)) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,size,buff)
-               ENDIF
+               end if
                !
 
             end do
@@ -4194,7 +4194,7 @@ contains
                   (sgg%observation(ii)%FreqStep <= 1e-9) ) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
                   if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,size,buff)
-               ENDIF
+               end if
                !FIN COMPATIBILIDAD 15/07/15
                SELECT CASE (this%BloquePRB%BP(i)%NML)
                 CASE (iEx)
@@ -4313,7 +4313,7 @@ contains
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%YE = punto%YE
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%ZE = punto%ZE
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%what = tipotemp
-                  ENDIF
+                  end if
                end do
 !!!!210618 tambien se crrean extras dummy para los vtk
                sgg%observation(  tamaScrPrb/3+ii)%TimeDomain = .false.
@@ -4323,7 +4323,7 @@ contains
                   sgg%observation(  tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_df_'
                else
                   sgg%observation(  tamaScrPrb/3+ii)%outputrequest=' ' !es un dummy mapvtk sin nombre 280618
-               endif
+               end if
                sgg%observation(  tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
               allocate(sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP))
                sgg%observation(  tamaScrPrb/3+ii)%P(1:sgg%observation(  tamaScrPrb/3+ii)%nP)%what = nothing
@@ -4335,7 +4335,7 @@ contains
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=trim (adjustl( this%VolPrb%collection(i)%outputrequest))//'_tr_'
                else
                   sgg%observation(2*tamaScrPrb/3+ii)%outputrequest=' ' !es un dummy mapvtk sin nombre 280618
-               endif
+               end if
                sgg%observation(2*tamaScrPrb/3+ii)%nP= sgg%observation(               ii)%np
               allocate(sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP))
                sgg%observation(2*tamaScrPrb/3+ii)%P(1:sgg%observation(2*tamaScrPrb/3+ii)%nP)%what = nothing
@@ -4437,7 +4437,7 @@ contains
                      sgg%observation(ii)%P(sgg%observation(ii)%nP)%Ztrancos = this%VolPrb%collection(i)%cordinates(sgg%observation(ii)%nP)%Ztrancos
                      !fin trancos
 
-                  ENDIF
+                  end if
                end do
 !
                SELECT CASE (this%VolPrb%collection(i)%type2)
@@ -4639,7 +4639,7 @@ contains
 
 !!!210618
 !!!find 210618
-            endif
+            end if
             !DE LAS VolumicPROBLES
          end do
 !!!210618
@@ -4654,7 +4654,7 @@ contains
 !fin para debugear
                write(buff,*) 'Buggy error in Volumic probes. np/=1. , np=',sgg%observation(ii)%nP
                call STOPONERROR(layoutnumber,size,buff)
-            endif
+            end if
          end do
 !!!find 210618
 
@@ -4691,7 +4691,7 @@ contains
                         sgg%EShared%elem(j1)%j, sgg%EShared%elem(j1)%k
                      if ( ((.not.sgg%Med(sgg%EShared%elem(i1)%SharedMed)%is%thinwire).and.(.not.sgg%Med(sgg%EShared%elem(j1)%SharedMed)%is%thinwire)).and. &
                         ((.not.sgg%Med(sgg%EShared%elem(i1)%SharedMed)%is%SlantedWire).and.(.not.sgg%Med(sgg%EShared%elem(j1)%SharedMed)%is%SlantedWire)).or.verbose) call  WarnErrReport (buff)
-                  endif
+                  end if
                end if
             end do
          end do
@@ -4709,7 +4709,7 @@ contains
                         sgg%HShared%elem(j1)%j, sgg%HShared%elem(j1)%k
                      if ( ((.not.sgg%Med(sgg%EShared%elem(i1)%SharedMed)%is%thinwire).and.(.not.sgg%Med(sgg%EShared%elem(j1)%SharedMed)%is%thinwire)).and. &
                         ((.not.sgg%Med(sgg%EShared%elem(i1)%SharedMed)%is%SlantedWire).and.(.not.sgg%Med(sgg%EShared%elem(j1)%SharedMed)%is%SlantedWire)).or.verbose) call  WarnErrReport (buff)
-                  endif
+                  end if
                end if
             end do
          end do
@@ -4724,9 +4724,9 @@ contains
          CONTAMEDIA = CONTAMEDIA+1
          if  (MEDIOEXTRA%index /= contamedia) then !should be already done earlier
             call STOPONERROR(layoutnumber,size,'Bug in media count. ')
-         endif
+         end if
          MEDIOEXTRA%index=CONTAMEDIA
-      endif
+      end if
       !!!!!!!!!!!!!
       sgg%NumMedia = contamedia
       !el medio 0 no precisa compresion
@@ -4757,12 +4757,12 @@ contains
                          case (iHz)
                            media%sggMiHZ(I,J,K)=1
                         end select
-                     ENDIF
+                     end if
                   end do
                end do
             end do
          end do !del field
-      endif !del CLIPREGION
+      end if !del CLIPREGION
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!fin clipeado
@@ -4822,7 +4822,7 @@ contains
       !!!         sgg%med(i)%is%lossy = .true.
       !!!      else
       !!!         sgg%med(i)%is%lossy = .false.
-      !!!      endif
+      !!!      end if
       !!!end do
       !!!fin 120123
 !!!!!!
@@ -4850,13 +4850,13 @@ contains
       !                sgg%thereAreMagneticMedia=.true.
       !            else
       !                sgg%thereArePMLMagneticMedia=.true.
-      !            endif
-      !        endif
+      !            end if
+      !        end if
       !    end do
       !else
       sgg%thereAreMagneticMedia=.true.
       sgg%thereArePMLMagneticMedia=.true.
-      !endif
+      !end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       return
 
@@ -5245,7 +5245,7 @@ contains
             deviafactor_Multiplier=1.0_RKIND !correccion de 160619. gestiono la iluminacion o no con la variable simu_devia, para que postprocese bien los ficheros devia_ !deprecar deviafactor_Multiplier algun dia
          ELSE
             deviafactor_Multiplier=1.0_RKIND
-         ENDIF
+         end if
 !!!! SOURCES IN WIRES
          maxSourceValue=0.0_RKIND
          minSpaceStep=min(min(minval(sgg%dx),minval(sgg%dy)),minval(sgg%dz))
@@ -5292,10 +5292,10 @@ contains
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
                                     call STOPONERROR(layoutnumber,size,buff)
-                                 endif
-                              endif
-                           endif
-                        endif
+                                 end if
+                              end if
+                           end if
+                        end if
                      end do
                      CLOSE (15)
                      sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NumSamples = numus
@@ -5344,10 +5344,10 @@ contains
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
                                     call STOPONERROR(layoutnumber,size,buff)
-                                 endif
-                              endif
-                           endif
-                        endif
+                                 end if
+                              end if
+                           end if
+                        end if
                         !!
                      end do
                      CLOSE (15)
@@ -5398,10 +5398,10 @@ contains
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
                                     call STOPONERROR(layoutnumber,size,buff)
-                                 endif
-                              endif
-                           endif
-                        endif
+                                 end if
+                              end if
+                           end if
+                        end if
                         !!
                      end do
                      CLOSE (15)
@@ -5447,10 +5447,10 @@ contains
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
                                     call STOPONERROR(layoutnumber,size,buff)
-                                 endif
-                              endif
-                           endif
-                        endif
+                                 end if
+                              end if
+                           end if
+                        end if
                         !!
                      end do
                      CLOSE (15)
@@ -5481,7 +5481,7 @@ contains
                      if (field1 > maxSourceValue) maxSourceValue=field1
                   else
                      if (field1*zvac > maxSourceValue) maxSourceValue=field1*zvac
-                  endif
+                  end if
                   nsurfs = nsurfs + 1
                end do
 78             continue
@@ -5502,10 +5502,10 @@ contains
                            if (.not.ignoresamplingerrors) then
                               CLOSE(15)
                               call STOPONERROR(layoutnumber,size,buff)
-                           endif
-                        endif
-                     endif
-                  endif
+                           end if
+                        end if
+                     end if
+                  end if
                   !!
                end do
                CLOSE (15)
@@ -5518,7 +5518,7 @@ contains
                   sgg%NodalSource(j)%fichero%Samples(k) = 1.0_RKIND * deviafactor_Multiplier
                end do
                sgg%NodalSource(j)%fichero%NumSamples = numus
-            endif
+            end if
          end do
          !Plane wave sources
          do j = 1, sgg%NumPlaneWaves
@@ -5558,10 +5558,10 @@ contains
                         if (.not.ignoresamplingerrors) then
                            CLOSE(15)
                            call STOPONERROR(layoutnumber,size,buff)
-                        endif
-                     endif
-                  endif
-               endif
+                        end if
+                     end if
+                  end if
+               end if
                !!
             end do
             CLOSE (15)
@@ -5609,7 +5609,7 @@ contains
          if (fdgeom%l+fdgeom%LM /=0 ) then
             BUFF='ERROR: SECOND ORDER DISPERSIVE MEDIA UNSUPPORTED. TRANSLATE THEM TO FIRST ORDER ()'
             call WarnErrReport (buff,.TRUE.)
-         endif
+         end if
          !
         allocate(sgg%Med(contamedia)%EDispersive(1))
         allocate(sgg%Med(contamedia)%MDispersive(1))
@@ -5909,7 +5909,7 @@ contains
          if (tama /= this%despl%my2-this%despl%my1) then
             buff='Tamanio discretizacion distinto de la region'
             call STOPONERROR(layoutnumber,size,buff)
-         endif
+         end if
          do i = this%despl%my1, this%despl%my2 - 1
             lineasY (i+1) = this%despl%desY(i) + lineasY (i)
          end do
@@ -5926,7 +5926,7 @@ contains
          if (tama /= this%despl%mz2-this%despl%mz1) then
             buff='Tamanio discretizacion distinto de la region'
             call STOPONERROR(layoutnumber,size,buff)
-         endif
+         end if
          do i = this%despl%mz1, this%despl%mz2 - 1
             lineasZ (i+1) = this%despl%desZ(i) + lineasZ (i)
          end do
@@ -6325,7 +6325,7 @@ contains
             write(7533,*) 'fmin      ',10**4
             write(7533,*) 'fmax      ',10**9
             write(7533,*) 'order     ',24
-         ENDIF
+         end if
       end do
       close(7533)
       return
@@ -6392,7 +6392,7 @@ contains
                   islossy = .true.
                else
                   islossy = .false.
-               endif
+               end if
                !  CREAR NUEVO MEDIO y asignarle sus propiedades de acuerdo a sus adyacencias
                if (.not.(sgg%med(med(0))%is%PML.OR.sgg%med(med(1))%is%PML.OR.sgg%med(med(2))%is%PML.OR.sgg%med(med(3))%is%PML.OR.sgg%med(med(4))%is%PML.OR.sgg%med(med(5))%is%PML)) then
                   if ((MED(0)/=MED(1)).OR.(MED(1)/=MED(2)).OR.(MED(2)/=MED(3)).OR.(MED(3)/=MED(4)).OR.(MED(4)/=MED(5)).OR.(MED(5)/=MED(0))) then
@@ -6412,7 +6412,7 @@ contains
                      if (.NOT.NODALMENTEIGUALES) then
                         if (SGG%NUMMEDIA+1 > SGG%ALLOCmed) then
                            call READJUST(SGG%ALLOCmed,sgg%med,2*SGG%ALLOCmed) !LO HAgo REallocatando al doble. gENERO NUEVO PARAMETRO sgg%ALLOCmed. Pero esto es un guirigay.... 261115
-                        endif
+                        end if
                         SGG%NUMMEDIA=SGG%NUMMEDIA+1
                         media%sggMiNo(i,j,k)=SGG%NUMMEDIA
                         r=media%sggMiNo(i,j,k)
@@ -6428,11 +6428,11 @@ contains
                         media%sggMiNo(i,j,k)=i1  !PUEDE QUE NO SEAN IGUALES PERO NODALMENTE LO SON (SOLO A EFECTOS DE SIGMA,EPR,SIGMAM,MUR,ISLOSSY,ISPEC
                         !bug 060417 debo ponerlo al medio que ha encontrado igual (i1) y estaba a med(0)!!!!
 !write(114,*) '.YES.NODALMENTEIGUALES--> ',i,j,k,' - ',med(0),med(1),med(2),med(3),med(4),med(5),' - ',SGG%NUMMEDIA
-                     ENDIF
+                     end if
                   else
                      media%sggMiNo(i,j,k)=MED(0)  !todos iguales
-                  endif
-               endif !del no es pml
+                  end if
+               end if !del no es pml
                !!!!aqui habra luego que ir creando y almacenando lo nuevos tipos de medio nodales en funcion de los sigt y epst para que wires use directamente esa info
             end do
          end do
@@ -6449,7 +6449,7 @@ contains
             k=conf_busy_node(n)%k
             if (conf_busy_node(n)%ispec) then
                media%sggMiNo(i,j,k)=0
-            endif
+            end if
          end do
          !!!conf_busy_node(n)%i = 0
          !!!conf_busy_node(n)%j = 0
@@ -6474,14 +6474,14 @@ contains
 !!!                  mediois3= sgg%med(medio3)%is%already_YEEadvanced_byconformal .or. sgg%med(medio3)%is%split_and_useless
 !!!                  if (mediois1.or.mediois2.or.mediois3)  then
 !!!                      sggMiNo(i,j,k)=0 !ojo !esto no sirve para contactos conformal SGBC-wires, solo para conformal PEC-wires
-!!!                  endif
+!!!                  end if
 !!!               End do
 !!!            End do
 !!!         End do
 !!!!fin pedado de niapa
 
 
-      endif
+      end if
 #endif
 
       return
@@ -6496,7 +6496,7 @@ contains
       ELSE
          ERR=ABS(A-B)
          if (err <1e-20_RKIND) igual=.true. !en valor absoluto para valores casi nulos le pido que el error sea casi nulo
-      ENDIF
+      end if
       return
    end function IGUALES
 
@@ -6549,7 +6549,7 @@ contains
             goto 2
             ! write(buff,*) 'Error generando direcciones aleatorias para RC planewaves. '
             ! call STOPONERROR(0,0,buff)
-         endif
+         end if
          !!! beta1=atan2(-2.0*1.0/Tan(alpha)*1.0/Tan(theta)*Sin(phi) + Sqrt(2.0)*1.0/Tan(phi)*1.0/Sin(alpha)**2.0*1.0/Sin(theta)**2.0*Sqrt(-((Cos(2.0*alpha) + Cos(2.0*theta))*Sin(alpha)**2.0*Sin(phi)**2.0*Sin(theta)**2.0)), &
          !!!    -(1.0/Sin(alpha)*1.0/Sin(theta)*(2.0*Cos(alpha)*Cos(phi)*Cos(theta) + Sqrt(2.0)*1.0/Sin(alpha)*1.0/Sin(theta)*Sqrt(-((Cos(2.0*alpha) + Cos(2.0*theta))*Sin(alpha)**2.0*Sin(phi)**2.0*Sin(theta)**2.0)))))
          !!! beta2=atan2(-(1.0/Sin(alpha)*1.0/Sin(theta)*(2.0*Cos(alpha)*Cos(theta)*Sin(phi) + Sqrt(2.0)*1.0/Tan(phi)*1.0/Sin(alpha)*1.0/Sin(theta)*Sqrt(-((Cos(2.0*alpha) + Cos(2.0*theta))*Sin(alpha)**2.0*Sin(phi)**2.0*Sin(theta)**2.0)))), &
@@ -6604,7 +6604,7 @@ contains
                planewave%ex(kkk),planewave%ey(kkk),planewave%ez(kkk),planewave%INCERT(kkk)
          end do
          close(888)
-      endif
+      end if
 
    end subroutine populatePlaneWaveRC
 
@@ -6683,8 +6683,8 @@ contains
             if ((i>1)) then
                if ((this%pecregs%vols(i)%tag == this%pecregs%vols(i-1)%tag)) then !do not increase
                   numertag=numertag-1
-               endif
-            endif
+               end if
+            end if
             if (precounting==1) tagtype%tag(numertag) = this%pecregs%vols(i)%tag
          end do
          tama = (this%pecregs%nsurfs)
@@ -6693,8 +6693,8 @@ contains
             if ((i>1)) then
                if ((this%pecregs%surfs(i)%tag == this%pecregs%surfs(i-1)%tag)) then !do not increase
                   numertag=numertag-1
-               endif
-            endif
+               end if
+            end if
             if (precounting==1) tagtype%tag(numertag) = this%pecregs%surfs(i)%tag
          end do
          tama = (this%pecregs%nLINS)
@@ -6703,10 +6703,10 @@ contains
             if ((i>1)) then
                if ((this%pecregs%lins(i)%tag == this%pecregs%lins(i-1)%tag)) then !do not increase
                   numertag=numertag-1
-               endif
-            endif
+               end if
+            end if
             if (precounting==1) tagtype%tag(numertag) = this%pecregs%lins(i)%tag
-         enddo
+         end do
          !
          tama = (this%pmcregs%nvols)
          do i = 1, tama
@@ -6714,8 +6714,8 @@ contains
             if ((i>1)) then
                if ((this%pmcregs%vols(i)%tag == this%pmcregs%vols(i-1)%tag)) then !do not increase
                   numertag=numertag-1
-               endif
-            endif
+               end if
+            end if
             if (precounting==1) tagtype%tag(numertag) = this%pmcregs%vols(i)%tag
          end do
          tama = (this%pmcregs%nsurfs)
@@ -6724,8 +6724,8 @@ contains
             if ((i>1)) then
                if ((this%pmcregs%surfs(i)%tag == this%pmcregs%surfs(i-1)%tag)) then !do not increase
                   numertag=numertag-1
-               endif
-            endif
+               end if
+            end if
             if (precounting==1) tagtype%tag(numertag) = this%pmcregs%surfs(i)%tag
          end do
          tama = (this%pmcregs%nLINS)
@@ -6734,10 +6734,10 @@ contains
             if ((i>1)) then
                if ((this%pmcregs%lins(i)%tag == this%pmcregs%lins(i-1)%tag)) then !do not increase
                   numertag=numertag-1
-               endif
-            endif
+               end if
+            end if
             if (precounting==1) tagtype%tag(numertag) = this%pmcregs%lins(i)%tag
-         enddo
+         end do
          !
          !
          !
@@ -6880,23 +6880,23 @@ contains
                if ((i>1)) then
                   if ((this%frqdepmats%vols(i)%c(1)%tag == this%frqdepmats%vols(i-1)%c(1)%tag)) then !do not increase
                      numertag=numertag-1
-                  endif
-               endif
-            endif
+                  end if
+               end if
+            end if
             if (precounting==1) then
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%frqdepmats%vols(i)%c(1)%tag
                else
                   print *,'bug in tags. '
                   stop
-               endif
+               end if
                do j = 1, tama2
                   if (trim(adjustl(this%frqdepmats%vols(i)%c(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
                      print *,'bug in tags. '
                      stop
-                  endif
+                  end if
                end do
-            endif
+            end if
          end do
          !
          tama = (this%frqdepmats%nsurfs)
@@ -6907,23 +6907,23 @@ contains
                if ((i>1)) then
                   if ((this%frqdepmats%surfs(i)%c(1)%tag == this%frqdepmats%surfs(i-1)%c(1)%tag)) then !do not increase
                      numertag=numertag-1
-                  endif
-               endif
-            endif
+                  end if
+               end if
+            end if
             if (precounting==1) then
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%frqdepmats%surfs(i)%c(1)%tag
                else
                   print *,'bug in tags. '
                   stop
-               endif
+               end if
                do j = 1, tama2
                   if (trim(adjustl(this%frqdepmats%surfs(i)%c(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
                      print *,'bug in tags. '
                      stop
-                  endif
+                  end if
                end do
-            endif
+            end if
          end do
          !
          tama = (this%frqdepmats%nlins)
@@ -6934,23 +6934,23 @@ contains
                if ((i>1)) then
                   if ((this%frqdepmats%lins(i)%c(1)%tag == this%frqdepmats%lins(i-1)%c(1)%tag)) then !do not increase
                      numertag=numertag-1
-                  endif
-               endif
-            endif
+                  end if
+               end if
+            end if
             if (precounting==1) then
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%LossyThinSurfs%cs(i)%C(1)%tag
                else
                   print *,'bug in tags. '
                   stop
-               endif
+               end if
                do j = 1, tama2
                   if (trim(adjustl(this%frqdepmats%lins(i)%c(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
                      print *,'bug in tags. '
                      stop
-                  endif
+                  end if
                end do
-            endif
+            end if
          end do
 !!!
          tama = this%LossyThinSurfs%length
@@ -6968,23 +6968,23 @@ contains
                if ((i>1)) then
                   if ((this%twires%TW(i)%TWC(1)%tag   == this%twires%TW(i-1)%TWC(1)%tag  )) then !do not increase
                      numertag=numertag-1
-                  endif
-               endif
-            endif
+                  end if
+               end if
+            end if
             if (precounting==1) then
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%twires%TW(i)%TWC(1)%tag
                else
                   print *,'bug in tags. '
                   stop
-               endif
+               end if
                do j = 1, tama2
                   if (trim(adjustl(this%twires%TW(i)%TWC(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
                      print *,'bug in tags. '
                      stop
-                  endif
+                  end if
                end do
-            endif
+            end if
          end do
 #ifdef CompileWithMTLN
          block 
@@ -7013,23 +7013,23 @@ contains
                if ((i>1)) then
                   if ((this%swires%SW(i)%swc(1)%tag == this%swires%SW(i-1)%swc(1)%tag)) then !do not increase
                      numertag=numertag-1
-                  endif
-               endif
-            endif
+                  end if
+               end if
+            end if
             if (precounting==1) then
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%swires%SW(i)%swc(1)%tag
                else
                   print *,'bug in tags. '
                   stop
-               endif
+               end if
                do j = 1,tama2
                   if (trim(adjustl(this%swires%SW(i)%swc(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
                      print *,'bug in tags. '
                      stop
-                  endif
+                  end if
                end do
-            endif
+            end if
          end do
 
          tama = this%tSlots%n_tg
@@ -7040,23 +7040,23 @@ contains
                if ((i>1)) then
                   if ((this%tSlots%Tg(i)%TgC(1)%tag == this%tSlots%Tg(i-1)%TgC(1)%tag)) then !do not increase
                      numertag=numertag-1
-                  endif
-               endif
-            endif
+                  end if
+               end if
+            end if
             if (precounting==1) then
                if (tama2/=0) then
                   tagtype%tag(numertag) =  this%tSlots%Tg(i)%TgC(1)%tag
                else
                   print *,'bug in tags. '
                   stop
-               endif
+               end if
                do j = 1, tama2
                   if (trim(adjustl(this%tSlots%Tg(i)%TgC(j)%tag)) /= trim(adjustl(tagtype%tag(numertag)))) then
                      print *,'bug in tags. '
                      stop
-                  endif
+                  end if
                end do
-            endif
+            end if
          end do
 
          if (associated(this%conformalRegs%volumes)) then 
@@ -7079,7 +7079,7 @@ contains
                do j=i+1,numertag
                   if ((trim(adjustl(tagtype%tag(i)))==trim(adjustl(tagtype%tag(j))))) then
                      tagtype%tag(j)=''
-                  endif
+                  end if
                end do
             end do
             i=1
@@ -7090,11 +7090,11 @@ contains
                   acum=acum+1
                else
                   i=i+1
-               endif
+               end if
             end do
             numertag=i-1
             tagtype%numertags = numertag
-         endif
+         end if
       end do !del precounting
 
 
@@ -7120,7 +7120,7 @@ contains
          tama2 = component%n_c1P
       else
          tama2 = component%n_c2P
-      endif
+      end if
 
       check_tags: do j = 1, tama2
          numertag = numertag + 1
@@ -7131,7 +7131,7 @@ contains
             tagToCheck = trim(adjustl(component%c1P(j)%tag))
          else
             tagToCheck = trim(adjustl(component%c2P(j)%tag))
-         endif
+         end if
 
          ! Check current component up to j-1
          if (j > 1) then
@@ -7140,15 +7140,15 @@ contains
                   if (tagToCheck == trim(adjustl(component%c1P(k)%tag))) then
                      foundDuplicate = .true.
                      exit check_current
-                  endif
+                  end if
                else
                   if (tagToCheck == trim(adjustl(component%c2P(k)%tag))) then
                      foundDuplicate = .true.
                      exit check_current
-                  endif
-               endif
+                  end if
+               end if
             end do check_current
-         endif
+         end if
 
          ! If not found, check all previous components
          if (.not. foundDuplicate) then
@@ -7160,9 +7160,9 @@ contains
                         print *, error_msg
                         print *, 'Duplicate tag found:', tagToCheck
                         stop
-                     endif
+                     end if
                   end do
-               endif
+               end if
 
                ! Check c2P of previous component
                if (prev_components(m)%n_c2P > 0) then
@@ -7171,11 +7171,11 @@ contains
                         print *, error_msg
                         print *, 'Duplicate tag found:', tagToCheck
                         stop
-                     endif
+                     end if
                   end do
-               endif
+               end if
             end do check_previous
-         endif
+         end if
 
          if (foundDuplicate) then
             numertag = numertag - 1
@@ -7204,7 +7204,7 @@ contains
          tama2 = component%n_c1P
       else
          tama2 = component%n_c2P
-      endif
+      end if
 
       check_tags: do j = 1, tama2
          numertag = numertag + 1
@@ -7215,7 +7215,7 @@ contains
             tagToCheck = trim(adjustl(component%c1P(j)%tag))
          else
             tagToCheck = trim(adjustl(component%c2P(j)%tag))
-         endif
+         end if
 
          ! Check current component up to j-1
          if (j > 1) then
@@ -7224,15 +7224,15 @@ contains
                   if (tagToCheck == trim(adjustl(component%c1P(k)%tag))) then
                      foundDuplicate = .true.
                      exit check_current
-                  endif
+                  end if
                else
                   if (tagToCheck == trim(adjustl(component%c2P(k)%tag))) then
                      foundDuplicate = .true.
                      exit check_current
-                  endif
-               endif
+                  end if
+               end if
             end do check_current
-         endif
+         end if
 
          ! If not found, check all previous components
          if (.not. foundDuplicate) then
@@ -7244,9 +7244,9 @@ contains
                         print *, error_msg
                         print *, 'Duplicate tag found:', tagToCheck
                         stop
-                     endif
+                     end if
                   end do
-               endif
+               end if
 
                ! Check c2P of previous component
                if (prev_components(m)%n_c2P > 0) then
@@ -7255,11 +7255,11 @@ contains
                         print *, error_msg
                         print *, 'Duplicate tag found:', tagToCheck
                         stop
-                     endif
+                     end if
                   end do
-               endif
+               end if
             end do check_previous
-         endif
+         end if
 
          if (foundDuplicate) then
             numertag = numertag - 1
@@ -7285,7 +7285,7 @@ contains
       if (tama2 == 0) then
          print *, 'Bug in LossyThinSurf Tags. Missing coordinates'
          stop
-      endif
+      end if
 
       check_tags: do j = 1, tama2
          numertag = numertag + 1
@@ -7299,9 +7299,9 @@ contains
                if (tagToCheck == trim(adjustl(component%C(k)%tag))) then
                   foundDuplicate = .true.
                   exit check_current
-               endif
+               end if
             end do check_current
-         endif
+         end if
 
          ! If not found, check all previous components
          
@@ -7311,11 +7311,11 @@ contains
                   do k = 1, prev_components(m)%nc
                      if (tagToCheck == trim(adjustl(prev_components(m)%C(k)%tag))) then
                         foundDuplicate = .true.
-                     endif
+                     end if
                   end do
-               endif
+               end if
             end do check_previous
-         endif
+         end if
 
          if (foundDuplicate) then
             numertag = numertag - 1
@@ -7338,7 +7338,7 @@ contains
          if (trim(adjustl(tagtype%tag(i)))==trim(adjustl(tag))) then
             numertag=i
             exit busca
-         endif
+         end if
       end do busca
       return
    end function searchtag

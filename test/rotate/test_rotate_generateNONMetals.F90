@@ -1,5 +1,5 @@
 integer function test_rotate_generate_non_metals() bind(C) result(err)
-    use smbjson
+    use smbjson_m
     use nfde_rotate_m
     use rotate_testingTools
     type(Parseador_t) :: this

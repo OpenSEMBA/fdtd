@@ -1,6 +1,6 @@
 integer function test_spice_read_message() bind(C) result(error_cnt)    
 
-    use circuit_mod
+    use circuit_m
     use mtln_testingTools_mod
     implicit none
 
@@ -47,7 +47,7 @@ end function
 
 integer function test_spice_dc() bind(C) result(error_cnt)    
 
-    use circuit_mod
+    use circuit_m
     use mtln_testingTools_mod
     implicit none
 
@@ -82,7 +82,7 @@ end function
 
 integer function test_spice_tran() bind(C) result(error_cnt)    
 
-    use circuit_mod
+    use circuit_m
     use mtln_testingTools_mod
     implicit none
 
@@ -129,7 +129,7 @@ end function
 
 integer function test_spice_tran_2() bind(C) result(error_cnt)    
 
-    use circuit_mod
+    use circuit_m
     use mtln_testingTools_mod
     implicit none
 
@@ -175,7 +175,7 @@ end function
 
 integer function test_spice_current_source() bind(C) result(error_cnt)    
 
-    use circuit_mod
+    use circuit_m
     use mtln_testingTools_mod
     implicit none
 
@@ -212,7 +212,7 @@ end function
 
 integer function test_spice_multiple() bind(C) result(error_cnt)
 
-    use circuit_mod
+    use circuit_m
     use mtln_testingTools_mod
     implicit none
     
@@ -250,7 +250,7 @@ integer function test_spice_multiple() bind(C) result(error_cnt)
 end function
 
 integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
-    use circuit_mod
+    use circuit_m
     use mtln_testingTools_mod
     implicit none
 
@@ -297,7 +297,7 @@ end function
 
 
 integer function test_load_codemodels() bind(C) result(error_cnt)
-    use circuit_mod
+    use circuit_m
     use mtln_testingTools_mod
     implicit none
     type(circuit_t) :: circuit

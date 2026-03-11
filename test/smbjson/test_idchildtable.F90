@@ -21,9 +21,9 @@ end function
 
 
 integer function test_idchildtable() bind(C) result(err)
-   use idchildtable_mod
-   use smbjson_labels_mod
-   use parser_tools_mod, only: json_value_ptr_t
+   use idchildtable_m
+   use smbjson_labels_m
+   use parser_tools_m, only: json_value_ptr_t
    use smbjson_testingTools
    use json_module
 

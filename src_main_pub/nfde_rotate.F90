@@ -1,6 +1,6 @@
 module nfde_rotate_m
     !       
-   use NFDETypes
+   use NFDETypes_m
 
    !
    implicit none
@@ -148,7 +148,7 @@ contains
          this%despl%desY => pozi
          this%despl%desZ => poxi
 
-      ENDIF
+      end if
       !!!!!!!!! fin rotacion
       deallocate(old_despl,old_matriz)
       return
@@ -231,7 +231,7 @@ contains
              this%plnSrc%collection(i)%phi =   atan2(Cos(theta),Sin(phi)*Sin(theta))
              this%plnSrc%collection(i)%alpha = atan2(Sqrt(Cos(alpha)**2.0_RKIND+ Sin(beta)**2*Sin(alpha)**2),Cos(beta)*Sin(alpha))
              this%plnSrc%collection(i)%beta =  atan2(Cos(alpha),Sin(beta)*Sin(alpha))
-          ENDIF
+          end if
           !!!!!
           
         end do          
@@ -283,7 +283,7 @@ contains
              this%boxSrc%vols(i)%coor2 (2) =OZE
              this%boxSrc%vols(i)%coor1 (3) =OXI
              this%boxSrc%vols(i)%coor2 (3) =OXE
-          ENDIF 
+          end if 
       end do      
      deallocate(old_boxSrc)
       !!!!!
@@ -412,7 +412,7 @@ contains
          this%front%propiedadesPML(4)%numCapas = OPML_ZU%numCapas
          this%front%propiedadesPML(5)%numCapas = OPML_XL%numCapas
          this%front%propiedadesPML(6)%numCapas = OPML_XU%numCapas
-      ENDIF
+      end if
       !!!!!!!!! fin rotacion
 
       !END ROTATE FRONTERAS
@@ -533,7 +533,7 @@ contains
            print *,'Rotations in anisotropic unsupported'
            stop
            return
-      endif
+      end if
    !si algun dia lo hubiera es un cut and paste de rotate_generateNONMetals y a la que hay que aniadir la rotacion de la matriz de medios 
    return
    end subroutine rotate_generateANISOTROPICs
@@ -581,7 +581,7 @@ contains
                     CASE (iEZ)
                       this%twires%tw(i)%tWc(ii)%d = iEy
                    end select
-             ENDIF
+             end if
       !!!FIN  
          end do
       end do
@@ -618,7 +618,7 @@ contains
                       this%swires%sw(i)%swc(ii)%x = oldy
                       this%swires%sw(i)%swc(ii)%y = oldz
                       this%swires%sw(i)%swc(ii)%z = oldx
-             ENDIF
+             end if
          end do
          !!!FIN
       end do   
@@ -673,7 +673,7 @@ contains
                         CASE (iEZ)
                           this%tSlots%Tg(i)%TgC(ii)%dir = iEy
                        end select
-              ENDIF
+              end if
         end do
       end do      
       return
@@ -763,7 +763,7 @@ contains
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistart   = atan2(Cos(thetastart),Sin(phistart)*Sin(thetastart))    
                    this%oldSONDA%probes(i)%FarField(ii)%probe%thetastop = atan2(Sqrt(Cos(thetastop)**2.0_RKIND+ Sin(phistop)**2*Sin(thetastop)**2),Cos(phistop)*Sin(thetastop))
                    this%oldSONDA%probes(i)%FarField(ii)%probe%phistop   = atan2(Cos(thetastop),Sin(phistop)*Sin(thetastop))
-            ENDIF        
+            end if        
             tama3 = (this%oldSONDA%probes(i)%FarField(ii)%probe%n_cord)    
             do iii = 1, tama3
               !!!ROTATE MPI
@@ -783,7 +783,7 @@ contains
                  this%oldSONDA%probes(i)%FarField(ii)%probe%i(iii) = ioy
                  this%oldSONDA%probes(i)%FarField(ii)%probe%j(iii) = ioz
                  this%oldSONDA%probes(i)%FarField(ii)%probe%K(iii) = iox
-              ENDIF
+              end if
             end do             
             deallocate(old_FarField)
          end do
@@ -812,7 +812,7 @@ contains
                  this%oldSONDA%probes(i)%Electric(ii)%probe%i(iii) = ioy
                  this%oldSONDA%probes(i)%Electric(ii)%probe%j(iii) = ioz
                  this%oldSONDA%probes(i)%Electric(ii)%probe%K(iii) = iox
-              ENDIF
+              end if
             end do             
             deallocate(old_Electric)
          end do
@@ -841,7 +841,7 @@ contains
                  this%oldSONDA%probes(i)%Magnetic(ii)%probe%i(iii) = ioy
                  this%oldSONDA%probes(i)%Magnetic(ii)%probe%j(iii) = ioz
                  this%oldSONDA%probes(i)%Magnetic(ii)%probe%K(iii) = iox
-              ENDIF
+              end if
             end do             
             deallocate(old_Magnetic)
          end do
@@ -916,7 +916,7 @@ contains
                  if (OOR== NP_COR_HX) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_hZ
                  if (OOR== NP_COR_HY) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_hX
                  if (OOR== NP_COR_HZ) this%Sonda%collection(i)%cordinates(ii)%OR= NP_COR_hY
-              ENDIF                                              
+              end if                                              
               deallocate(old_MasSonda)
          end do
       end do
@@ -980,7 +980,7 @@ contains
                 this%BloquePRB%BP(i)%nml =  iEy
               CASE DEFAULT
              end select
-          ENDIF           
+          end if           
           deallocate(old_BloqueProbe)
       end do
       
@@ -1077,7 +1077,7 @@ contains
                  if (OOR== iCurX) this%VolPrb%collection(i)%cordinates(ii)%OR= iCurZ
                  if (OOR== iCurY) this%VolPrb%collection(i)%cordinates(ii)%OR= iCurX
                  if (OOR== iCurZ) this%VolPrb%collection(i)%cordinates(ii)%OR= iCurY
-              ENDIF                                                  
+              end if                                                  
               deallocate(old_Coordinates)
          end do
       end do
@@ -1136,7 +1136,7 @@ contains
          if (OOR==-iEy) COORDEN%OR=-iEx
          if (OOR== iEz) COORDEN%OR= iEy
          if (OOR==-iEz) COORDEN%OR=-iEy
-      ENDIF
+      end if
       return
    end subroutine ROTATEMPI
 
@@ -1189,7 +1189,7 @@ contains
          if (OOR== iEz) COORDEN%OR= iEy
          if (OOR==-iEz) COORDEN%OR=-iEy
 
-      ENDIF
+      end if
       return
    end subroutine ROTATEMPI_SCALED
      
@@ -1350,7 +1350,7 @@ contains
          freqDepMat%km22 = io11 
          freqDepMat%km23 = io13 
          freqDepMat%km33 = io22
-      endif 
+      end if 
       if (mpidir==1) then
          !Rotate a matrix
          po11 => freqDepMat%a11
@@ -1501,7 +1501,7 @@ contains
          freqDepMat%km22 = io33 
          freqDepMat%km23 = io12 
          freqDepMat%km33 = io11
-      endif 
+      end if 
    end subroutine
 
 

@@ -1,8 +1,8 @@
-module network_manager_mod
+module network_manager_m
 
-    use network_mod
-    use circuit_mod
-    use mtln_types_mod, only: node_source_t
+    use network_m
+    use circuit_m
+    use mtln_types_m, only: node_source_t
 
     implicit none 
 

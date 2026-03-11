@@ -1,4 +1,4 @@
-module smbjson_labels_mod
+module smbjson_labels_m
 
 #ifdef CompileWithSMBJSON    
    ! LABELS

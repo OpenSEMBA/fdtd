@@ -1,5 +1,5 @@
 integer function  test_conformal_pec_corner() bind(C) result(err)
-    use SEMBA_FDTD_mod
+    use SEMBA_FDTD_m
     implicit none
 
     type(semba_fdtd_t) :: semba
@@ -27,7 +27,7 @@ integer function  test_conformal_pec_corner() bind(C) result(err)
 end function
 
 integer function  test_conformal_pec_media() bind(C) result(err)
-    use SEMBA_FDTD_mod
+    use SEMBA_FDTD_m
     implicit none
 
     type(semba_fdtd_t) :: semba

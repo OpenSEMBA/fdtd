@@ -1,8 +1,8 @@
 module mtln_testingTools_mod
     use iso_c_binding
-    use mtl_mod, only: mtl_t
-    use network_mod
-    use mtln_types_mod, only: terminal_node_t, termination_t
+    use mtl_m, only: mtl_t
+    use network_m
+    use mtln_types_m, only: terminal_node_t, termination_t
     implicit none
     
     character(len=*, kind=c_char), parameter :: PATH_TO_TEST_DATA = c_char_'./testData/'

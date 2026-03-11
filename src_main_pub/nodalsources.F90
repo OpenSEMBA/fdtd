@@ -1,7 +1,7 @@
-module nodalsources
+module nodalsources_m
 
-   use fdetypes
-   use REPORT
+   use FDETYPES_m
+   use Report_m
 
    implicit none
    private
@@ -84,22 +84,22 @@ contains
                      numNodalHard_Ex = numNodalHard_Ex  +1
                   else
                      numNodalSoft_Ex = numNodalSoft_Ex  +1
-                  endif
-               endif
+                  end if
+               end if
                if (sggNodalSource(j)%punto(i)%yc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Ey = numNodalHard_Ey  +1
                   else
                      numNodalSoft_Ey = numNodalSoft_Ey  +1
-                  endif
-               endif
+                  end if
+               end if
                if (sggNodalSource(j)%punto(i)%zc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Ez = numNodalHard_Ez  +1
                   else
                      numNodalSoft_Ez = numNodalSoft_Ez  +1
-                  endif
-               endif
+                  end if
+               end if
             end do
          else
             do i=1,sggNodalSource(j)%numpuntos
@@ -108,24 +108,24 @@ contains
                      numNodalHard_Hx = numNodalHard_Hx  +1
                   else
                      numNodalSoft_Hx = numNodalSoft_Hx  +1
-                  endif
-               endif
+                  end if
+               end if
                if (sggNodalSource(j)%punto(i)%yc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Hy = numNodalHard_Hy  +1
                   else
                      numNodalSoft_Hy = numNodalSoft_Hy  +1
-                  endif
-               endif
+                  end if
+               end if
                if (sggNodalSource(j)%punto(i)%zc /= 0.0_RKIND) then
                   if (sggNodalSource(j)%IsHard) then
                      numNodalHard_Hz = numNodalHard_Hz  +1
                   else
                      numNodalSoft_Hz = numNodalSoft_Hz  +1
-                  endif
-               endif
+                  end if
+               end if
             end do
-         endif
+         end if
       end do
 
 
@@ -134,25 +134,25 @@ contains
         allocate(Nodal_Ex%nodSoft(1:numNodalSoft_Ex), &
          Nodal_Ey%nodSoft(1:numNodalSoft_Ey), &
          Nodal_Ez%nodSoft(1:numNodalSoft_Ez))
-      endif
+      end if
       if (NumNodalHard_Ex+NumNodalHard_Ey+NumNodalHard_Ez /= 0) then
          ThereArenodalE =.true.
         allocate(Nodal_Ex%nodHard(1:numNodalHard_Ex), &
          Nodal_Ey%nodHard(1:numNodalHard_Ey), &
          Nodal_Ez%nodHard(1:numNodalHard_Ez))
-      endif
+      end if
       if (NumNodalSoft_Hx+NumNodalSoft_Hy+NumNodalSoft_Hz /= 0) then
          ThereArenodalH =.true.
         allocate(Nodal_Hx%nodSoft(1:numNodalSoft_Hx), &
          Nodal_Hy%nodSoft(1:numNodalSoft_Hy), &
          Nodal_Hz%nodSoft(1:numNodalSoft_Hz))
-      endif
+      end if
       if (NumNodalHard_Hx+NumNodalHard_Hy+NumNodalHard_Hz /= 0) then
          ThereArenodalH =.true.
         allocate(Nodal_Hx%nodHard(1:numNodalHard_Hx), &
          Nodal_Hy%nodHard(1:numNodalHard_Hy), &
          Nodal_Hz%nodHard(1:numNodalHard_Hz))
-      endif
+      end if
 
 
       Nodal_Ex%numHard = 0
@@ -176,32 +176,32 @@ contains
                amplit = sggNodalSource(J)%punto(i)%xc
                if (amplit /= 0.0_RKIND) then
                   call CreateNodal(layoutnumber,Nodal_Ex,sggNodalSource(J),sggSweep(iEx),i,amplit)
-               endif
+               end if
                amplit = sggNodalSource(j)%punto(i)%yc
                if (amplit /= 0.0_RKIND) then
                   call CreateNodal(layoutnumber,Nodal_Ey,sggNodalSource(J),sggSweep(iEy),i,amplit)
-               endif
+               end if
                amplit = sggNodalSource(j)%punto(i)%zc
                if (amplit /= 0.0_RKIND) then
                   call CreateNodal(layoutnumber,Nodal_Ez,sggNodalSource(J),sggSweep(iEz),i,amplit)
-               endif
+               end if
             end do
          else !es magnetico
             do i=1,sggNodalSource(j)%numpuntos
                amplit = sggNodalSource(J)%punto(i)%xc
                if (amplit /= 0.0_RKIND) then
                   call CreateNodal(layoutnumber,Nodal_Hx,sggNodalSource(J),sggSweep(iHx),i,amplit)
-               endif
+               end if
                amplit = sggNodalSource(j)%punto(i)%yc
                if (amplit /= 0.0_RKIND) then
                   call CreateNodal(layoutnumber,Nodal_Hy,sggNodalSource(J),sggSweep(iHy),i,amplit)
-               endif
+               end if
                amplit = sggNodalSource(j)%punto(i)%zc
                if (amplit /= 0.0_RKIND) then
                   call CreateNodal(layoutnumber,Nodal_Hz,sggNodalSource(J),sggSweep(iHz),i,amplit)
-               endif
+               end if
             end do
-         endif
+         end if
       end do
 
       !print *,'tras nodal sources ',Nodal_Ex%numHard
@@ -241,7 +241,7 @@ contains
                write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%Fichero%Name))// &
                ' undersampled by a factor ',dummy%nodHard(dummy%numHard)%deltaevol/sgg%dt
                call WarnErrReport(buff)
-            endif
+            end if
             dummy%nodHard(dummy%numHard)%numus =  sggdummy%Fichero%NumSamples
             dummy%nodHard(dummy%numHard)%evol  => sggdummy%fichero%Samples
          else
@@ -262,10 +262,10 @@ contains
                write (buff,'(a,e12.2e3)')  'WARNING: '//trim(adjustl(sggdummy%Fichero%Name))// &
                ' undersampled by a factor ',dummy%nodSoft(dummy%numSoft)%deltaevol/sgg%dt
                call WarnErrReport(buff)
-            endif
+            end if
             dummy%nodSoft(dummy%numSoft)%numus =  sggdummy%Fichero%NumSamples
             dummy%nodSoft(dummy%numSoft)%evol  => sggdummy%fichero%Samples
-         endif
+         end if
 
          return
 
@@ -295,10 +295,10 @@ contains
         if (int(t/dummy%deltaevol)/=0) then
             print *,'error en initial values. '
             stop
-        endif
+        end if
         evolucion=dummy%evol(0) !should be 1 always
         return
-      endif
+      end if
       
       deltaevol = dummy%deltaevol
       evol => dummy%evol
@@ -312,7 +312,7 @@ contains
          evolucion=0.0_RKIND !se asume que el fichero de entrada contiene una excitacion que se anula despues
       else
          evolucion=(evol(nprev+1)-evol(nprev))/deltaevol*((t)-nprev*deltaevol)+evol(nprev) !interpolacion lineal
-      endif
+      end if
       !second order !no advantages over first order
       !  if (nprev+2 > numus) then
       !      evolucion=0.0_RKIND !se asume que el fichero de entrada contiene una excitacion que se anula despues
@@ -320,7 +320,7 @@ contains
       !      evolucion=evol(nprev+2) * ( ((t)-nprev    *deltaevol) * ((t)-(nprev+1)*deltaevol) ) /(2.0_RKIND * deltaevol**2.0_RKIND ) - &
       !                evol(nprev+1) * ( ((t)-nprev    *deltaevol) * ((t)-(nprev+2)*deltaevol) ) /(   deltaevol**2.0_RKIND ) + &
       !                evol(nprev  ) * ( ((t)-(nprev+2)*deltaevol) * ((t)-(nprev+1)*deltaevol) ) /(2.0_RKIND * deltaevol**2.0_RKIND )
-      !  endif
+      !  end if
 
 
       return
@@ -338,22 +338,22 @@ contains
          if (associated(Nodal_Ex%nodSoft)) deallocate(Nodal_Ex%nodSoft)
          if (associated(Nodal_Ey%nodSoft)) deallocate(Nodal_Ey%nodSoft)
          if (associated(Nodal_Ez%nodSoft)) deallocate(Nodal_Ez%nodSoft)
-      endif
+      end if
       if (Nodal_Ex%NumHard+Nodal_Ey%NumHard+Nodal_Ez%NumHard /= 0) then
          if (associated(Nodal_Ex%nodHard)) deallocate(Nodal_Ex%nodHard)
          if (associated(Nodal_Ey%nodHard)) deallocate(Nodal_Ey%nodHard)
          if (associated(Nodal_Ez%nodHard)) deallocate(Nodal_Ez%nodHard)
-      endif
+      end if
       if (Nodal_Hx%NumSoft+Nodal_Hy%NumSoft+Nodal_Hz%NumSoft /= 0) then
          if (associated(Nodal_Hx%nodSoft)) deallocate(Nodal_Hx%nodSoft)
          if (associated(Nodal_Hy%nodSoft)) deallocate(Nodal_Hy%nodSoft)
          if (associated(Nodal_Hz%nodSoft)) deallocate(Nodal_Hz%nodSoft)
-      endif
+      end if
       if (Nodal_Hx%NumHard+Nodal_Hy%NumHard+Nodal_Hz%NumHard /= 0) then
          if (associated(Nodal_Hx%nodHard)) deallocate(Nodal_Hx%nodHard)
          if (associated(Nodal_Hy%nodHard)) deallocate(Nodal_Hy%nodHard)
          if (associated(Nodal_Hz%nodHard)) deallocate(Nodal_Hz%nodHard)
-      endif
+      end if
 
 
       if (associated(sgg%NodalSource)) deallocate(sgg%NodalSource)
@@ -398,7 +398,7 @@ contains
       barridonodalhardEx: do ii=1,Nodal_Ex%numHard
          if (Nodal_Ex%nodHard(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalhardEx
-         endif
+         end if
          !     
          amp = Nodal_Ex%nodHard(ii)%punto%amplitude
          do k=Nodal_Ex%nodHard(ii)%punto%zi,Nodal_Ex%nodHard(ii)%punto%ze
@@ -412,7 +412,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ex%nodHard(ii))
                   else
                         if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = 0.0 !!!!!!
-                  endif
+                  end if
                end do
             End do
          end do
@@ -421,7 +421,7 @@ contains
       barridonodalsoftEx: do ii=1,Nodal_Ex%numSoft
          if (Nodal_Ex%nodSoft(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalsoftEx
-         endif
+         end if
          !     
          amp = Nodal_Ex%nodSoft(ii)%punto%amplitude
          do k=Nodal_Ex%nodSoft(ii)%punto%zi,Nodal_Ex%nodSoft(ii)%punto%ze
@@ -436,7 +436,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m)- G2(medio) * Idyh(j_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ex%nodSoft(ii)) 
                   else
                        if (.not.sgg%Med(medio)%Is%PEC)  Ex(i_m,j_m,k_m) = Ex(i_m,j_m,k_m) !!!!!!
-                  endif
+                  end if
                end do
             End do
          end do
@@ -446,7 +446,7 @@ contains
       barridonodalhardEy: do ii=1,Nodal_Ey%numHard
          if (Nodal_Ey%nodHard(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalhardEy
-         endif
+         end if
          !
          amp = Nodal_Ey%nodHard(ii)%punto%amplitude
          do k=Nodal_Ey%nodHard(ii)%punto%zi,Nodal_Ey%nodHard(ii)%punto%ze
@@ -461,7 +461,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ey%nodHard(ii))   
                   else
                         if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = 0.0 !!!!!!
-                  endif
+                  end if
                end do
             End do
          end do
@@ -470,7 +470,7 @@ contains
       barridonodalsoftEy: do ii=1,Nodal_Ey%numSoft
          if (Nodal_Ey%nodSoft(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalsoftEy
-         endif
+         end if
          !     
          amp = Nodal_Ey%nodSoft(ii)%punto%amplitude
          do k=Nodal_Ey%nodSoft(ii)%punto%zi,Nodal_Ey%nodSoft(ii)%punto%ze
@@ -485,7 +485,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m)- G2(medio) * Idxh(i_m) * Idzh(k_m) * amp * evolucion(timei,Nodal_Ey%nodSoft(ii))   
                   else
                        if (.not.sgg%Med(medio)%Is%PEC)  Ey(i_m,j_m,k_m) = Ey(i_m,j_m,k_m) !!!!!!
-                  endif
+                  end if
                end do
             End do
          end do
@@ -494,7 +494,7 @@ contains
       barridonodalhardEz: do ii=1,Nodal_Ez%numHard
          if (Nodal_Ez%nodHard(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalhardEz
-         endif
+         end if
          !
          amp = Nodal_Ez%nodHard(ii)%punto%amplitude
          do k=Nodal_Ez%nodHard(ii)%punto%zi,Nodal_Ez%nodHard(ii)%punto%ze
@@ -509,7 +509,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = amp * evolucion(timei,Nodal_Ez%nodHard(ii))  
                   else
                         if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = 0.0 !!!!!!
-                  endif
+                  end if
                end do
             End do
          end do
@@ -518,7 +518,7 @@ contains
       barridonodalsoftEz: do ii=1,Nodal_Ez%numSoft
          if (Nodal_Ez%nodSoft(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalsoftEz
-         endif
+         end if
          !     
          amp = Nodal_Ez%nodSoft(ii)%punto%amplitude
          do k=Nodal_Ez%nodSoft(ii)%punto%zi,Nodal_Ez%nodSoft(ii)%punto%ze
@@ -533,7 +533,7 @@ contains
                         if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m)- G2(medio) * Idyh(j_m) * Idxh(i_m) * amp * evolucion(timei,Nodal_Ez%nodSoft(ii))
                   else
                         if (.not.sgg%Med(medio)%Is%PEC) Ez(i_m,j_m,k_m) = Ez(i_m,j_m,k_m) !!!!!!
-                  endif
+                  end if
                end do
             End do
          end do
@@ -580,7 +580,7 @@ contains
       if (simu_devia) then
           print *,'Devia H nodal/field sources untested. Aborting'
           stop
-      endif
+      end if
       GM2_1=GM2(1)
       !---------------------------> empieza AdvancenodalH <---------------------------------------
       
@@ -592,7 +592,7 @@ contains
       barridonodalhardHx: do ii=1,Nodal_Hx%numHard
          if (Nodal_Hx%nodHard(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalhardHx
-         endif
+         end if
          !     
          amp = Nodal_Hx%nodHard(ii)%punto%amplitude
          do k=Nodal_Hx%nodHard(ii)%punto%zi,Nodal_Hx%nodHard(ii)%punto%ze
@@ -611,7 +611,7 @@ contains
       barridonodalsoftHx: do ii=1,Nodal_Hx%numSoft
          if (Nodal_Hx%nodSoft(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalsoftHx
-         endif
+         end if
          !     
          amp = Nodal_Hx%nodSoft(ii)%punto%amplitude
          do k=Nodal_Hx%nodSoft(ii)%punto%zi,Nodal_Hx%nodSoft(ii)%punto%ze
@@ -631,7 +631,7 @@ contains
       barridonodalhardHy: do ii=1,Nodal_Hy%numHard
          if (Nodal_Hy%nodHard(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalhardHy
-         endif
+         end if
          !
          amp = Nodal_Hy%nodHard(ii)%punto%amplitude
          do k=Nodal_Hy%nodHard(ii)%punto%zi,Nodal_Hy%nodHard(ii)%punto%ze
@@ -650,7 +650,7 @@ contains
       barridonodalsoftHy: do ii=1,Nodal_Hy%numSoft
          if (Nodal_Hy%nodSoft(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalsoftHy
-         endif
+         end if
          !     
          amp = Nodal_Hy%nodSoft(ii)%punto%amplitude
          do k=Nodal_Hy%nodSoft(ii)%punto%zi,Nodal_Hy%nodSoft(ii)%punto%ze
@@ -669,7 +669,7 @@ contains
       barridonodalhardHz: do ii=1,Nodal_Hz%numHard
          if (Nodal_Hz%nodHard(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalhardHz
-         endif
+         end if
          !
          amp = Nodal_Hz%nodHard(ii)%punto%amplitude
          do k=Nodal_Hz%nodHard(ii)%punto%zi,Nodal_Hz%nodHard(ii)%punto%ze
@@ -688,7 +688,7 @@ contains
       barridonodalsoftHz: do ii=1,Nodal_Hz%numSoft
          if (Nodal_Hz%nodSoft(ii)%IsInitialValue .and. (timeinstant /= 0)) then
               cycle barridonodalsoftHz
-         endif
+         end if
          !     
          amp = Nodal_Hz%nodSoft(ii)%punto%amplitude
          do k=Nodal_Hz%nodSoft(ii)%punto%zi,Nodal_Hz%nodSoft(ii)%punto%ze
@@ -731,5 +731,5 @@ contains
       return
    end subroutine
 
-end module nodalsources
+end module nodalsources_m
  

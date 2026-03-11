@@ -9,8 +9,8 @@
 ! ONLY 2 poles (not 3) and provide the real one and any one of the couple of conjugates)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Anisotropic
-   use fdetypes
+module Anisotropic_m
+   use FDETYPES_m
    implicit none
    private
 
@@ -83,7 +83,7 @@ contains
       do jmed=1,sgg%NumMedia
          if (sgg%Med(jmed)%Is%Anisotropic) then
             conta=conta+1
-         endif
+         end if
       end do
 
 
@@ -98,8 +98,8 @@ contains
                AniMed%info(conta)%IsOnlyThinSlot=.true.
             else
                AniMed%info(conta)%IsOnlyThinSlot=.false.
-            endif
-         endif
+            end if
+         end if
       end do
 
       do jmed=1,AniMed%NumMed
@@ -139,7 +139,7 @@ contains
                      AniMed%info(jmed)%Ex_i(conta)=i1
                      AniMed%info(jmed)%Ex_j(conta)=j1
                      AniMed%info(jmed)%Ex_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -171,7 +171,7 @@ contains
                      AniMed%info(jmed)%Ey_i(conta)=i1
                      AniMed%info(jmed)%Ey_j(conta)=j1
                      AniMed%info(jmed)%Ey_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -203,7 +203,7 @@ contains
                      AniMed%info(jmed)%Ez_i(conta)=i1
                      AniMed%info(jmed)%Ez_j(conta)=j1
                      AniMed%info(jmed)%Ez_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -236,7 +236,7 @@ contains
                      AniMed%info(jmed)%Hx_i(conta)=i1
                      AniMed%info(jmed)%Hx_j(conta)=j1
                      AniMed%info(jmed)%Hx_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -268,7 +268,7 @@ contains
                      AniMed%info(jmed)%Hy_i(conta)=i1
                      AniMed%info(jmed)%Hy_j(conta)=j1
                      AniMed%info(jmed)%Hy_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -300,7 +300,7 @@ contains
                      AniMed%info(jmed)%Hz_i(conta)=i1
                      AniMed%info(jmed)%Hz_j(conta)=j1
                      AniMed%info(jmed)%Hz_k(conta)=k1
-                  endif
+                  end if
                end do
             end do
          end do
@@ -319,9 +319,9 @@ contains
                   AniMed%info(jmed)%Ex_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))    
-                  endif
+                  end if
                   exit buscaEx
-               endif
+               end if
             end do
          end do BuscaEx
          !
@@ -334,9 +334,9 @@ contains
                   AniMed%info(jmed)%Ey_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))
-                  endif
+                  end if
                   exit buscaEy
-               endif
+               end if
             end do
          end do BuscaEy
          !
@@ -349,10 +349,10 @@ contains
                   AniMed%info(jmed)%Ez_Shared(i1)%times = sgg%Eshared%elem(j1)%Times
                   if (sgg%Eshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Ez_Shared(i1)%SharedMed(1:sgg%Eshared%elem(j1)%Times))
-                  endif
+                  end if
                   !PRINT *,'---> ez',sgg%Eshared%elem(j1)%i,sgg%Eshared%elem(j1)%J,sgg%Eshared%elem(j1)%k,sgg%Eshared%elem(j1)%times
                   exit buscaez
-               endif
+               end if
             end do
          end do BuscaEz
          !
@@ -367,10 +367,10 @@ contains
                   AniMed%info(jmed)%Hx_Shared(i1)%times = sgg%Hshared%elem(j1)%Times
                   if (sgg%Hshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Hx_Shared(i1)%SharedMed(1:sgg%Hshared%elem(j1)%Times))
-                  endif
+                  end if
                   !PRINT *,'---> Hx',sgg%Hshared%elem(j1)%i,sgg%Hshared%elem(j1)%J,sgg%Hshared%elem(j1)%k,sgg%Hshared%elem(j1)%times
                   Exit buscaHx
-               endif
+               end if
             end do
          end do BuscaHx
          !
@@ -383,10 +383,10 @@ contains
                   AniMed%info(jmed)%Hy_Shared(i1)%times = sgg%Hshared%elem(j1)%Times
                   if (sgg%Hshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Hy_Shared(i1)%SharedMed(1:sgg%Hshared%elem(j1)%Times))
-                  endif
+                  end if
                   !PRINT *,'---> Hy',sgg%Hshared%elem(j1)%i,sgg%Hshared%elem(j1)%J,sgg%Hshared%elem(j1)%k,sgg%Hshared%elem(j1)%times
                   Exit buscaHy
-               endif
+               end if
             end do
          end do BuscaHy
          !
@@ -399,10 +399,10 @@ contains
                   AniMed%info(jmed)%Hz_Shared(i1)%times = sgg%Hshared%elem(j1)%Times
                   if (sgg%Hshared%elem(j1)%Times > 1 ) then
                      allocate (AniMed%info(jmed)%Hz_Shared(i1)%SharedMed(1:sgg%Hshared%elem(j1)%Times))
-                  endif
+                  end if
                   !PRINT *,'---> Hz',sgg%Hshared%elem(j1)%i,sgg%Hshared%elem(j1)%J,sgg%Hshared%elem(j1)%k,sgg%Hshared%elem(j1)%times
                   Exit buscaHz
-               endif
+               end if
             end do
          end do BuscaHz
          !
@@ -419,7 +419,7 @@ contains
                (sgg%Eshared%elem(j1)%Field == iEx)) then
                   conta=conta+1
                   AniMed%info(jmed)%Ex_Shared(i1)%SharedMed(conta) =  sgg%Eshared%elem(j1)%SharedMed
-               endif
+               end if
             end do
          end do
       end do
@@ -435,7 +435,7 @@ contains
                   conta=conta+1
                   AniMed%info(jmed)%Ey_Shared(i1)%SharedMed(conta) =  sgg%Eshared%elem(j1)%SharedMed
                   continue
-               endif
+               end if
             end do
          end do
       end do
@@ -450,7 +450,7 @@ contains
                (sgg%Eshared%elem(j1)%Field == iEz)) then
                   conta=conta+1
                   AniMed%info(jmed)%Ez_Shared(i1)%SharedMed(conta) =  sgg%Eshared%elem(j1)%SharedMed
-               endif
+               end if
             end do
          end do
       end do
@@ -466,7 +466,7 @@ contains
                   conta=conta+1
                   AniMed%info(jmed)%Hx_Shared(i1)%SharedMed(conta) =  sgg%Hshared%elem(j1)%SharedMed
                   continue
-               endif
+               end if
             end do
          end do
       end do
@@ -481,7 +481,7 @@ contains
                (sgg%Hshared%elem(j1)%Field == iHy)) then
                   conta=conta+1
                   AniMed%info(jmed)%Hy_Shared(i1)%SharedMed(conta) =  sgg%Hshared%elem(j1)%SharedMed
-               endif
+               end if
             end do
          end do
       end do
@@ -495,7 +495,7 @@ contains
                (sgg%Hshared%elem(j1)%Field == iHz)) then
                   conta=conta+1
                   AniMed%info(jmed)%Hz_Shared(i1)%SharedMed(conta) =  sgg%Hshared%elem(j1)%SharedMed
-               endif
+               end if
             end do
          end do
       end do
@@ -520,7 +520,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -538,7 +538,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -557,7 +557,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -576,7 +576,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -595,7 +595,7 @@ contains
                   AniMed%info(jmed)%mur    = AniMed%info(jmed)%mur    + dummyAnisShared%mur    /conta
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
-            endif
+            end if
          end do
 
 
@@ -615,7 +615,7 @@ contains
                   AniMed%info(jmed)%epr    = AniMed%info(jmed)%epr    + dummyAnisShared%epr    /conta
                end do
                continue
-            endif
+            end if
          end do
       end do
 
@@ -662,7 +662,7 @@ contains
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Ex_Shared(i1)%Coeff
-            endif
+            end if
 
             i=dummy%Ex_i(i1)
             j=dummy%Ex_j(i1)
@@ -687,14 +687,14 @@ contains
                Coeff%ehxy * hx(i,j,k) + Coeff%ehxy * hx(1 + i,-1 + j,-1 + k) -                                &
                Coeff%ehxy * hx(1 + i,-1 + j,k) + Coeff%ehxy * hx(1 + i,j,-1 + k) - Coeff%ehxy * hx(1 + i,j,k) -  &
                4. * Coeff%ehxx * hy(i,j,-1 + k) + 4. * Coeff%ehxx * hy(i,j,k)) * Idzh(k))/4.0_RKIND
-            endif
+            end if
          end do
          do i1=1,dummy%NumNodesEy
             if (Dummy%Ey_Shared(i1)%times == 1) then
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Ey_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Ey_i(i1)
             j=dummy%Ey_j(i1)
             k=dummy%Ey_k(i1)
@@ -719,14 +719,14 @@ contains
                Coeff%ehyx * hy(-1 + i,j,k) - Coeff%ehyx * hy(-1 + i,1 + j,-1 + k) +                                   &
                Coeff%ehyx * hy(-1 + i,1 + j,k) - Coeff%ehyx * hy(i,j,-1 + k) + Coeff%ehyx * hy(i,j,k) -                  &
                Coeff%ehyx * hy(i,1 + j,-1 + k) + Coeff%ehyx * hy(i,1 + j,k)) * Idzh(k))/4.0_RKIND
-            endif
+            end if
          end do
          do i1=1,dummy%NumNodesEz
             if (Dummy%Ez_Shared(i1)%times == 1) then
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Ez_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Ez_i(i1)
             j=dummy%Ez_j(i1)
             k=dummy%Ez_k(i1)
@@ -751,7 +751,7 @@ contains
                Coeff%ehzy * hx(i,j,-1 + k) - Coeff%ehzy * hx(i,j,1 + k) - Coeff%ehzx * hy(-1 + i,j,-1 + k) +           &
                Coeff%ehzx * hy(-1 + i,j,1 + k) - Coeff%ehzx * hy(i,j,-1 + k) + Coeff%ehzx * hy(i,j,1 + k)) *             &
                Idze(k))/4.0_RKIND
-            endif
+            end if
          end do
       end do
 
@@ -826,7 +826,7 @@ contains
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Hx_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Hx_i(i1)
             j=dummy%Hx_j(i1)
             k=dummy%Hx_k(i1)
@@ -850,14 +850,14 @@ contains
                Coeff%hexy * ex(-1 + i,1 + j,1 + k) + Coeff%hexy * ex(i,j,k) - Coeff%hexy * ex(i,j,1 + k) +             &
                Coeff%hexy * ex(i,1 + j,k) - Coeff%hexy * ex(i,1 + j,1 + k) - 4. * Coeff%hexx * ey(i,j,k) +             &
                4. * Coeff%hexx * ey(i,j,1 + k)) * Idze(k))/4.0_RKIND
-            endif
+            end if
          end do
          do i1=1,dummy%NumNodesHy
             if (Dummy%Hy_Shared(i1)%times == 1) then
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Hy_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Hy_i(i1)
             j=dummy%Hy_j(i1)
             k=dummy%Hy_k(i1)
@@ -882,14 +882,14 @@ contains
                Coeff%heyx * ey(i,j,1 + k) - Coeff%heyx * ey(1 + i,-1 + j,k) +                                             &
                Coeff%heyx * ey(1 + i,-1 + j,1 + k) - Coeff%heyx * ey(1 + i,j,k) + Coeff%heyx * ey(1 + i,j,1 + k)          &
                ) * Idze(k))/4.0_RKIND
-            endif
+            end if
          end do
          do i1=1,dummy%NumNodesHz
             if (Dummy%Hz_Shared(i1)%times == 1) then
                Coeff => AniMed%info(jmed)%coeff
             else
                Coeff => AniMed%info(jmed)%Hz_Shared(i1)%Coeff
-            endif
+            end if
             i=dummy%Hz_i(i1)
             j=dummy%Hz_j(i1)
             k=dummy%Hz_k(i1)
@@ -913,7 +913,7 @@ contains
                ((Coeff%hezy * ex(i,j,-1 + k) - Coeff%hezy * ex(i,j,1 + k) + Coeff%hezy * ex(i,1 + j,-1 + k) -              &
                Coeff%hezy * ex(i,1 + j,1 + k) - Coeff%hezx * ey(i,j,-1 + k) + Coeff%hezx * ey(i,j,1 + k) -            &
                Coeff%hezx * ey(1 + i,j,-1 + k) + Coeff%hezx * ey(1 + i,j,1 + k)) * Idzh(k))/4.0_RKIND
-            endif
+            end if
          end do
       end do
 
@@ -973,7 +973,7 @@ contains
       do i=1,sgg%NumMedia
          if (sgg%Med(i)%Is%Anisotropic)  then
             deallocate(sgg%Med(i)%Anisotropic)
-         endif
+         end if
       end do
       deallocate(AniMed%info)
 
@@ -1544,4 +1544,4 @@ contains
 
    end subroutine
 
-end module Anisotropic
+end module Anisotropic_m

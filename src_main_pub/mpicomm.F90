@@ -1,12 +1,12 @@
-module MPIcomm
+module MPIcomm_m
 
 #ifdef CompileWithMPI
    !
-   Use Report
-   use fdetypes
+   Use Report_m
+   use FDETYPES_m
 
-   use wiresHolland_constants
-   use HollandWires
+   use wiresHolland_constants_m
+   use HollandWires_m
 
    implicit none
    private
@@ -149,14 +149,14 @@ contains
         else
             write(dubuf,*) 'Cannot force for more than 1 cut in a size=2 MPI'
             call print11(layoutnumber,dubuf,.true.)
-        endif
-     endif
+        end if
+     end if
       
       do ilay=0,size-1
          cZE(ilay)=nint(cZE(ilay))
          cZI(ilay+1)=cZE(ilay)
          trancos(ilay)=int(cZE(ilay)-cZI(0))
-      enddo
+      end do
       !end PML CPU overhead tunning
 
       allocate (mpiZcom(0:size-1),mpiZfin(0:size-1))
@@ -179,7 +179,7 @@ contains
       elseif ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==size-1)) then
          sgg%Sweep(1:6)%ZI=fullsize(1:6)%ZI+trancos(LAYOUTNUMBER-1)
          sgg%Sweep(1:6)%ZE=fullsize(1:6)%ZE
-      endif
+      end if
       !adjust THE ENDINGS OF THE INTERMDIATE computational limits
       if ((LAYOUTNUMBER>0).and.(LAYOUTNUMBER<size-1)) then
          !adjust computational limits
@@ -194,7 +194,7 @@ contains
       elseif ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==size-1)) then
          continue
          !adjustment not necessary since fullsize%ZE is already adjusted
-      endif
+      end if
 
 
       !set also the dimensions of the computational layout which will be different from those of the mediamatrix
@@ -210,7 +210,7 @@ contains
          if (associated(trancos)) deallocate(trancos)
          fatalerror=.true.
          return
-      endif
+      end if
       if ( minval(trancos) <= 2) then
          buff='Number of cells per processor less than 2. Decrease the number of MPI processors'
          call stoponerror(layoutnumber,size,buff,.true.)
@@ -219,7 +219,7 @@ contains
          if (associated(trancos)) deallocate(trancos)
          fatalerror=.true.
          return
-      endif
+      end if
       !must be in agreement with the timestepping padding stuff
       if ((layoutnumber>0).and.(layoutnumber<size-1)) then
          sgg%alloc(1:6)%ZI=sgg%Sweep(1:6)%ZI - padding !I read one more MM for routines (wires, e.g.) requiring it
@@ -230,7 +230,7 @@ contains
       elseif ((layoutnumber/=0).and.(layoutnumber==size-1)) then
          sgg%alloc(1:6)%ZI=sgg%Sweep(1:6)%ZI - padding
          sgg%alloc(1:6)%ZE=sgg%Sweep(1:6)%ZE+1   !I use this extra length in the global boundaries
-      endif
+      end if
 
       !ARRANGE PML BORDERS
       if (layoutnumber == 0) then
@@ -253,16 +253,16 @@ contains
             sgg%Border%IsDownPML=.true.
          else
             sgg%Border%IsDownPML=.false. !no PML layers DOWN
-         endif
+         end if
          !ojoo  en un futuro con este > a secas  cuando la PML esta justo en la division mpi 1310124
          if ((sgg%Sweep(iEx)%ZE>SINPML_fullsize(iEx)%ZE))   then 
             sgg%Border%IsUpPML=.true.
          else
             sgg%Border%IsUpPML=.false.  !no PML layers UP
-         endif
+         end if
          sgg%Border%IsUpMur=.false.
          sgg%Border%IsDownMur=.false.
-      endif
+      end if
 
       !I readjust this since mpicomm touches this variable.
       if (.not.(sgg%Border%IsUpPML  )) sgg%PML%NumLayers(3,2)=0 !no PML layers UP
@@ -279,7 +279,7 @@ contains
             buff='Different resumed/original MPI slices: ' &
             //trim(adjustl(Slices))//' '//trim(adjustl(SlicesOriginales))
             call StopOnError(layoutnumber,size,buff)
-         endif
+         end if
          call print11(layoutnumber,trim(adjustl(slices)))
          do ilay=0,size-1
             write(buff,'(a,i5,a,i5,a,i7,a,i7,a,i7)')  &
@@ -287,7 +287,7 @@ contains
             ' = ',mpiZfin(ilay)-mpiZcom(ilay)
             call print11(layoutnumber,buff)
          end do
-      endif
+      end if
       !end writing
 
       !bug 310124 cuando PML coincide con la primera celda de la ultima particion
@@ -297,7 +297,7 @@ contains
            write(buff,'(a,i3,i3)') trim(adjustl(whoami))//' Minimum slice sizes along MPI should be larger that PML number of layers ', &
               mpiZfin(layoutnumber)-mpiZcom(layoutnumber), minval(sggPMLNumLayers_original)
             call StopOnError(layoutnumber,size,buff)
-      endif
+      end if
       deallocate(cZE,cZI,trancos,mpizcom,mpizfin)
 
       return
@@ -407,7 +407,7 @@ contains
          if (newallranks(i)) then
             count=count+1
             NGroup(count)=i
-         endif
+         end if
       end do
       !all must create the same subcomm group though only some will synchronize
       if (count >= 0) then
@@ -418,7 +418,7 @@ contains
          SUBCOMM=-1
          group1=-1
          WGROUP=-1
-      endif
+      end if
       if (.not.newallranks(layoutnumber)) subcomm=-1 !override it since it will never synchronize
       !print *,'Init lay,count, subcomm',layoutnumber+1,count,subcomm
       deallocate(allranks,newallranks)
@@ -464,14 +464,14 @@ contains
             !print *,'---fluHextraup>',layoutnumber
             call MPI_IRECV (Hz(HzXI,HzYI,finZ+2), sizeHz, INTEGERSIZE, layoutnumber+1_4, 5_4, SUBCOMM_MPI, req1b(1), ierr11)
             call MPI_ISEND (Hz(HzXI,HzYI,finZ  ), sizeHz, INTEGERSIZE, layoutnumber+1_4, 6_4, SUBCOMM_MPI, req1b(2), ierr12)
-         endif
+         end if
       ELSE !only NEEDED BY THE PERIODIC BOUNDARY CONDITIONS !no real MPI burden since all layers communicate two sets
          !print *,'---fluHup>',layoutnumber
          call MPI_IRECV     (Hx(HxXI,HxYI,finZ+1), sizeHx, INTEGERSIZE, 0_4,  1_4, SUBCOMM_MPI, req1(1 ), ierr1 )
          call MPI_ISEND     (Hx(HxXI,HxYI,finZ  ), sizeHx, INTEGERSIZE, 0_4,  2_4, SUBCOMM_MPI, req1(2 ), ierr2 )
          call MPI_IRECV     (Hy(HyXI,HyYI,finZ+1), sizeHy, INTEGERSIZE, 0_4,  3_4, SUBCOMM_MPI, req1(3 ), ierr3 )
          call MPI_ISEND     (Hy(HyXI,HyYI,finZ  ), sizeHy, INTEGERSIZE, 0_4,  4_4, SUBCOMM_MPI, req1(4 ), ierr4 )
-      endif
+      end if
       if (layoutnumber/=0    ) then !syncDown
          !print *,'---fluHdown>',layoutnumber
          call MPI_ISEND     (Hx(HxXI,HxYI,comZ  ), sizeHx, INTEGERSIZE, layoutnumber-1_4,  1_4, SUBCOMM_MPI, req2(1 ), jerr1 )
@@ -482,26 +482,26 @@ contains
             !print *,'---fluHextradown>',layoutnumber
             call MPI_ISEND (Hz(HzXI,HzYI,comZ+1), sizeHz, INTEGERSIZE, layoutnumber-1_4, 5_4, SUBCOMM_MPI, req2b(1), jerr11)
             call MPI_IRECV (Hz(HzXI,HzYI,comZ-1), sizeHz, INTEGERSIZE, layoutnumber-1_4, 6_4, SUBCOMM_MPI, req2b(2), jerr12)
-         endif
+         end if
       ELSE !only NEEDED BY THE PERIODIC BOUNDARY CONDITIONS
          call MPI_ISEND     (Hx(HxXI,HxYI,comZ  ), sizeHx, INTEGERSIZE, size-1_4,  1_4, SUBCOMM_MPI, req2(1 ), jerr1 )
          call MPI_IRECV     (Hx(HxXI,HxYI,comZ-1), sizeHx, INTEGERSIZE, size-1_4,  2_4, SUBCOMM_MPI, req2(2 ), jerr2 )
          call MPI_ISEND     (Hy(HyXI,HyYI,comZ  ), sizeHy, INTEGERSIZE, size-1_4,  3_4, SUBCOMM_MPI, req2(3 ), jerr3 )
          call MPI_IRECV     (Hy(HyXI,HyYI,comZ-1), sizeHy, INTEGERSIZE, size-1_4,  4_4, SUBCOMM_MPI, req2(4 ), jerr4 )
-      endif
+      end if
       !
       if (layoutnumber/=0    )  then
          call MPI_WAITALL(4_4,req2,status2,ierr100)
          if (FlushExtraInfoDown) then
             call MPI_WAITALL(2_4,req2b,status2b,ierr100b)
-         endif
-      endif
+         end if
+      end if
       if (layoutnumber/=size-1) then
          call MPI_WAITALL(4_4,req1,status1,jerr100)
          if (FlushExtraInfoUp) then
             call MPI_WAITALL(2_4,req1b,status1b,jerr100b)
-         endif
-      endif
+         end if
+      end if
 
       !
       !call MPI_Barrier(SUBCOMM_MPI,ierr12)
@@ -547,8 +547,8 @@ contains
             call MPI_ISEND (Ex(ExXI,ExYI,finZ  ), sizeEx, INTEGERSIZE, layoutnumber+1_4,  4_4, SUBCOMM_MPI, req1b(2), ierr8 )
             call MPI_IRECV (Ey(EyXI,EyYI,finZ+2), sizeEy, INTEGERSIZE, layoutnumber+1_4,  5_4, SUBCOMM_MPI, req1b(3), ierr9 )
             call MPI_ISEND (Ey(EyXI,EyYI,finZ  ), sizeEy, INTEGERSIZE, layoutnumber+1_4,  6_4, SUBCOMM_MPI, req1b(4), ierr10)
-         endif
-      endif
+         end if
+      end if
       if (layoutnumber/=0    ) then !syncDown
          if (FlushExtraInfoDown) then
             !print *,'---fluEextradown>',layoutnumber
@@ -559,21 +559,21 @@ contains
             call MPI_IRECV (Ex(ExXI,ExYI,comZ-1), sizeEx, INTEGERSIZE, layoutnumber-1_4,  4_4, SUBCOMM_MPI, req2b(2), jerr8 )
             call MPI_ISEND (Ey(EyXI,EyYI,comZ+1), sizeEy, INTEGERSIZE, layoutnumber-1_4,  5_4, SUBCOMM_MPI, req2b(3), jerr9 )
             call MPI_IRECV (Ey(EyXI,EyYI,comZ-1), sizeEy, INTEGERSIZE, layoutnumber-1_4,  6_4, SUBCOMM_MPI, req2b(4), jerr10)
-         endif
-      endif
+         end if
+      end if
       !
       if (layoutnumber/=0    )  then
          if (FlushExtraInfoDown) then
             call MPI_WAITALL(2_4,req2,status2,ierr100)
             call MPI_WAITALL(4_4,req2b,status2b,ierr100b)
-         endif
-      endif
+         end if
+      end if
       if (layoutnumber/=size-1) then
          if (FlushExtraInfoUp) then
             call MPI_WAITALL(2_4,req1,status1,jerr100)
             call MPI_WAITALL(4_4,req1b,status1b,jerr100b)
-         endif
-      endif
+         end if
+      end if
 
       !
       !call MPI_Barrier(SUBCOMM_MPI,ierr12)
@@ -622,7 +622,7 @@ contains
          HwiresMPI%NumCurrentSegments=0
          HwiresMPI%NumNeededCurrentUpMPI=0
          HwiresMPI%NumNeededCurrentDownMPI=0
-      endif
+      end if
 
       !chequea los segmentos que estan en el padding de 1 celda
 
@@ -634,14 +634,14 @@ contains
             segmento =>HwiresMPI%CurrentSegment(i1)
             if ((segmento%k==C(iEz)%ZE+1).and.(segmento%tipofield==iEz)) NeedscontaMPIup = NeedscontaMPIup + 1
          end do
-      endif
+      end if
       !
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
             if ((segmento%k==C(iEz)%ZI-1).and.(segmento%tipofield==iEz)) NeedscontaMPIdown = NeedscontaMPIdown + 1
          end do
-      endif
+      end if
 
       !
       SharescontaMPIdown=0
@@ -651,14 +651,14 @@ contains
             segmento =>HwiresMPI%CurrentSegment(i1)
             if ((segmento%k==C(iEz)%ZE).and.(segmento%tipofield==iEz)) SharescontaMPIup = SharescontaMPIup + 1
          end do
-      endif
+      end if
       !
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
             if ((segmento%k==C(iEz)%ZI).and.(segmento%tipofield==iEz)) SharescontaMPIdown = SharescontaMPIdown + 1
          end do
-      endif
+      end if
 
 
       allocate (HwiresMPI%MPIUpSharedCurrentSegment(1 : SharescontaMPIup))
@@ -681,7 +681,7 @@ contains
          !but override the needed number
          NeedscontaMPIup  =HwiresMPI%NumNeededCurrentUpMPI
          NeedscontaMPIdown=HwiresMPI%NumNeededCurrentDownMPI
-      endif
+      end if
 
       NeedscontaMPIdown=0
       NeedscontaMPIup=0
@@ -692,9 +692,9 @@ contains
             if ((segmento%k==C(iEz)%ZE+1).and.(segmento%tipofield==iEz)) then
                NeedscontaMPIup = NeedscontaMPIup + 1
                HwiresMPI%MPIUpNeededCurrentSegment (NeedscontaMPIup)%equivalentIndex = i1
-            endif
+            end if
          end do
-      endif
+      end if
       !
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
@@ -702,9 +702,9 @@ contains
             if ((segmento%k==C(iEz)%ZI-1).and.(segmento%tipofield==iEz)) then
                NeedscontaMPIdown = NeedscontaMPIdown + 1
                HwiresMPI%MPIDownNeededCurrentSegment (NeedscontaMPIdown)%equivalentIndex = i1
-            endif
+            end if
          end do
-      endif
+      end if
 
       SharescontaMPIdown=0
       SharescontaMPIup=0
@@ -714,9 +714,9 @@ contains
             if ((segmento%k==C(iEz)%ZE).and.(segmento%tipofield==iEz)) then
                SharescontaMPIup = SharescontaMPIup + 1
                HwiresMPI%MPIUpSharedCurrentSegment(SharescontaMPIup)%equivalentIndex = i1
-            endif
+            end if
          end do
-      endif
+      end if
       !
       if (layoutnumber/=0) then
          do i1=1,HwiresMPI%NumCurrentSegments
@@ -724,9 +724,9 @@ contains
             if ((segmento%k==C(iEz)%ZI).and.(segmento%tipofield==iEz)) then
                SharescontaMPIdown = SharescontaMPIdown + 1
                HwiresMPI%MPIDownSharedCurrentSegment(SharescontaMPIdown)%equivalentIndex = i1
-            endif
+            end if
          end do
-      endif
+      end if
 
 
 
@@ -780,7 +780,7 @@ contains
                HwiresMPI%MPIDownNeededCurrentSegment(j)%EquivalentIndex=HwiresMPI%MPIDownNeededCurrentSegment(i)%EquivalentIndex
                HwiresMPI%MPIDownNeededCurrentSegment(i)%EquivalentIndex=idum
                exit busca
-            endif
+            end if
          end do busca
       end do
 
@@ -798,7 +798,7 @@ contains
                HwiresMPI%MPIUpNeededCurrentSegment(j)%EquivalentIndex=HwiresMPI%MPIUpNeededCurrentSegment(i)%EquivalentIndex
                HwiresMPI%MPIUpNeededCurrentSegment(i)%EquivalentIndex=idum
                exit busca2
-            endif
+            end if
          end do busca2
       end do
       deallocate(iBuffer%SendUp,ibuffer%SendDown,iBuffer%RecUp,ibuffer%RecDown)
@@ -851,15 +851,15 @@ contains
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
          call stoponerror (layoutnumber,size,buff)
-      endif
+      end if
       if ((layoutnumber/=size-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
          call stoponerror (layoutnumber,size,buff)
-      endif
+      end if
       if (ierr9+ierr10+ierr11+ierr12 /= 0) then
          write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
          call stoponerror (layoutnumber,size,buff)
-      endif
+      end if
       return
    end subroutine newFlushWiresMPIorigindexInfo
 
@@ -919,15 +919,15 @@ contains
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
          call stoponerror (layoutnumber,size,buff)
-      endif
+      end if
       if ((layoutnumber/=size-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
          call stoponerror (layoutnumber,size,buff)
-      endif
+      end if
       if (ierr9+ierr10+ierr11+ierr12 /= 0) then
          write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
          call stoponerror (layoutnumber,size,buff)
-      endif
+      end if
       return
    end subroutine newFlushWiresMPI
 
@@ -989,15 +989,15 @@ contains
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
          call stoponerror (layoutnumber,size,buff)
-      endif
+      end if
       if ((layoutnumber/=size-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
          call stoponerror (layoutnumber,size,buff)
-      endif
+      end if
       if (ierr9+ierr10+ierr11+ierr12 /= 0) then
          write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
          call stoponerror (layoutnumber,size,buff)
-      endif
+      end if
       return
    end subroutine
 
@@ -1129,15 +1129,15 @@ contains
    !!!   if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
    !!!      write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
    !!!      call stoponerror (layoutnumber,size,buff)
-   !!!   endif
+   !!!   end if
    !!!   if ((layoutnumber/=size-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
    !!!      write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
    !!!      call stoponerror (layoutnumber,size,buff)
-   !!!   endif
+   !!!   end if
    !!!   if (ierr9+ierr10+ierr11+ierr12 /= 0) then
    !!!      write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
    !!!      call stoponerror (layoutnumber,size,buff)
-   !!!   endif
+   !!!   end if
    !!!   return
    !!!end subroutine newFlushWiresMPIindexmedInfo
 
@@ -1168,16 +1168,16 @@ contains
                Do i1=sggsweep(iEz)%XI,sggsweep(iEz)%XE
                   if ((sggMiEz(i1,j1,   comZ)) == jmed)   then
                      FlushExtraInfoDown=.true.
-                  endif
+                  end if
                   if ((sggMiEz(i1,j1,-1+comZ)) == jmed)   then
                      FlushExtraInfoDown=.true.
-                  endif
+                  end if
                   if ((sggMiEz(i1,j1,   finZ)) == jmed)   then
                      FlushExtraInfoUp  =.true.
-                  endif
+                  end if
                   if ((sggMiEz(i1,j1, 1+finZ)) == jmed)   then
                      FlushExtraInfoUp  =.true.
-                  endif
+                  end if
                end do
             end do
             !!!Hz
@@ -1185,40 +1185,40 @@ contains
                Do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE
                   if ((sggMiHz(i1,j1,   comZ)) == jmed)   then
                      FlushExtraInfoDown=.true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 1+comZ)) == jmed)   then
                      FlushExtraInfoDown=.true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 1+finZ)) == jmed)  then
                       FlushExtraInfoUp  =.true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 2+finZ)) == jmed)  then
                       FlushExtraInfoUp  =.true.
-                  endif
+                  end if
                end do
             end do
-         endif
+         end if
          if(Med( jmed)%Is%SGBC .or. Med( jmed)%Is%Multiport .or. Med( jmed)%Is%AnisMultiport ) then
             !!!Hz
             Do j1=sggsweep(iHz)%YI,sggsweep(iHz)%YE
                Do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE
                   if ((sggMiHz(i1,j1,   comZ)) == jmed) then
                      FlushExtraInfoDown  = .true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 1+finZ)) == jmed) then
                        FlushExtraInfoUp    = .true.
-                  endif
+                  end if
                   !creo que esto no es necesario para multiports de ss pero no creo que cargue mucho y no se si Ian lo necesita
                   !lo dejo por precaucion
                   if ((sggMiHz(i1,j1, 1+comZ)) == jmed) then
                        FlushExtraInfoDown  = .true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 2+finZ)) == jmed) then
                        FlushExtraInfoUp    = .true.
-                  endif
+                  end if
                end do
             end do
-         endif
+         end if
       end do
 
 !      print *,'----> layout,FlushExtraInfoDown,FlushExtraInfoUp',layoutnumber,FlushExtraInfoDown,FlushExtraInfoUp
@@ -1327,7 +1327,7 @@ contains
          else
             databufH%ip_target = layoutnumber + 1
             databufE%ip_target = layoutnumber + 1
-         endif
+         end if
       else
          databufH%ip_target = -1
          !--->
@@ -1354,7 +1354,7 @@ contains
          databufE%buf_x_tx => null( )
          databufE%buf_y_rx => null( )
          databufE%buf_y_tx => null( )
-      endif
+      end if
       !-----------------------------------------------------> DW
       databuf_SetH%syncDown = layoutnumber/=0
       databuf_SetH%pbcDown = (layoutnumber==0).and. PBCDown
@@ -1390,7 +1390,7 @@ contains
          else
             databufH%ip_target = layoutnumber - 1
             databufE%ip_target = layoutnumber - 1
-         endif
+         end if
       else
          databufH%ip_target = -1
          !--->
@@ -1417,7 +1417,7 @@ contains
          databufE%buf_x_tx => null( )
          databufE%buf_y_rx => null( )
          databufE%buf_y_tx => null( )
-      endif
+      end if
       !---------------- acaba InitMPI_Cray -----------------------------------------------------------
       return
    endsubroutine InitMPI_Cray
@@ -1439,26 +1439,26 @@ contains
       !syncUp AND PBC !only NEEDED BY THE PERIODIC BOUNDARY CONDITIONS !no real MPI burden since all layers communicate two sets
       if( databuf_SetH%syncUp .OR. databuf_SetH%pbcUp) then
          call MPI_VAMOS_ALLA_Hup( databuf_Up, req1, req1b)
-      endif
+      end if
       !------------------------------------------->
       !syncDown AND PBC !only NEEDED BY THE PERIODIC BOUNDARY CONDITIONS !no real MPI burden since all layers communicate two sets
       if( databuf_SetH%syncDown .OR. databuf_SetH%pbcDown) then
          call MPI_VAMOS_ALLA_Hdown( databuf_Down, req2, req2b)
-      endif
+      end if
       ! jag: yo compruebo que ha habido Rx de todos mis recepciones con MPI_TEST
       ! si asi continuo. no creo que haya mucha diferencia
       if( databuf_SetH%syncDown .OR. databuf_SetH%pbcDown) then
          call MPI_WAITALL( 4_4, req2, status2, ierr)
          if( databuf_Down%FlushExtraInfo) then
             call MPI_WAITALL( 2_4, req2b, status2b, ierr)
-         endif
-      endif
+         end if
+      end if
       if( databuf_SetH%syncUp .OR. databuf_SetH%pbcUp) then
          call MPI_WAITALL( 4_4, req1, status1, ierr)
          if( databuf_Up%FlushExtraInfo) then
             call MPI_WAITALL( 2_4, req1b, status1b, ierr)
-         endif
-      endif
+         end if
+      end if
       !   call MPI_Barrier(SUBCOMM_MPI,ierr)
       !-----------------------------------------------------------------------------------------------
       return
@@ -1479,7 +1479,7 @@ contains
             !         print *,'---fluHextraup>',layoutnumber
             call MPI_IRECV( databufH%buf_z_rx, databufH%sizez, REALSIZE, databufH%ip_target, 5_4, SUBCOMM_MPI, reqb( 1), ierr)
             call MPI_ISEND( databufH%buf_z_tx, databufH%sizez, REALSIZE, databufH%ip_target, 6_4, SUBCOMM_MPI, reqb( 2), ierr)
-         endif
+         end if
          !---------------- acaba MPI_VAMOS_ALLA_Hup --------------------------------------------------
          return
       endsubroutine MPI_VAMOS_ALLA_Hup
@@ -1500,7 +1500,7 @@ contains
             !         print *,'---fluHextraup>',layoutnumber
             call MPI_ISEND( databufH%buf_z_tx, databufH%sizez, REALSIZE, databufH%ip_target, 5_4, SUBCOMM_MPI, reqb( 1), ierr)
             call MPI_IRECV( databufH%buf_z_rx, databufH%sizez, REALSIZE, databufH%ip_target, 6_4, SUBCOMM_MPI, reqb( 2), ierr)
-         endif
+         end if
          !---------------- acaba MPI_VAMOS_ALLA_Hdown ------------------------------------------------
          return
       endsubroutine MPI_VAMOS_ALLA_Hdown
@@ -1523,25 +1523,25 @@ contains
       if( databuf_SetE%syncUp .OR. databuf_SetE%pbcUp .or. databuf_up%FlushExtraInfo) then
          ! print *,'flush E antes up',databuf_Up%ip_target,databuf_Up%ip_target
          call MPI_VAMOS_ALLA_Eup( databuf_Up, req1, req1b)
-      endif
+      end if
       !------------------------------------------->
       if( databuf_SetE%syncDown .OR. databuf_SetE%pbcDown .or. databuf_down%FlushExtraInfo) then
          ! print *,'flush E antes down',databuf_Down%ip_target,databuf_Down%ip_target
          call MPI_VAMOS_ALLA_Edown( databuf_Down, req2, req2b)
-      endif
+      end if
       !------------------------------------------->
       if( databuf_SetE%syncDown .OR. databuf_SetE%pbcDown .or. databuf_down%FlushExtraInfo) then
          if( databuf_Down%FlushExtraInfo) then
             call MPI_WAITALL( 2_4, req2, status2, ierr)
             call MPI_WAITALL( 4_4, req2b, status2b, ierr)
-         endif
-      endif
+         end if
+      end if
       if( databuf_SetE%syncUp .OR. databuf_SetE%pbcUp .or. databuf_up%FlushExtraInfo) then
          if( databuf_Up%FlushExtraInfo) then
             call MPI_WAITALL( 2_4, req1, status1, ierr)
             call MPI_WAITALL( 4_4, req1b, status1b, ierr)
-         endif
-      endif
+         end if
+      end if
       !   call MPI_Barrier(SUBCOMM_MPI,ierr)
       !-----------------------------------------------------------------------------------------------
       return
@@ -1563,7 +1563,7 @@ contains
             call MPI_ISEND( databufE%buf_x_tx, databufE%sizex, REALSIZE, databufE%ip_target, 4_4, SUBCOMM_MPI, reqb( 2), ierr)
             call MPI_IRECV( databufE%buf_y_rx, databufE%sizey, REALSIZE, databufE%ip_target, 5_4, SUBCOMM_MPI, reqb( 3), ierr)
             call MPI_ISEND( databufE%buf_y_tx, databufE%sizey, REALSIZE, databufE%ip_target, 6_4, SUBCOMM_MPI, reqb( 4), ierr)
-         endif
+         end if
          !---------------- acaba MPI_VAMOS_ALLA_Eup --------------------------------------------------
          return
       endsubroutine MPI_VAMOS_ALLA_Eup
@@ -1585,7 +1585,7 @@ contains
             call MPI_IRECV( databufE%buf_x_rx, databufE%sizex, REALSIZE, databufE%ip_target, 4_4, SUBCOMM_MPI, reqb( 2), ierr)
             call MPI_ISEND( databufE%buf_y_tx, databufE%sizey, REALSIZE, databufE%ip_target, 5_4, SUBCOMM_MPI, reqb( 3), ierr)
             call MPI_IRECV( databufE%buf_y_rx, databufE%sizey, REALSIZE, databufE%ip_target, 6_4, SUBCOMM_MPI, reqb( 4), ierr)
-         endif
+         end if
          !---------------- acaba MPI_VAMOS_ALLA_Edown ------------------------------------------------
          return
       endsubroutine MPI_VAMOS_ALLA_Edown
@@ -1626,7 +1626,7 @@ contains
       if (therearemurborders) then
          FlushExtraInfoDown = .true.
          FlushExtraInfoUp = .true.
-      endif
+      end if
       !is enough to check Ez and Hz
       do jmed = 1, NumMed
          if( Med( jmed)%Is%Anisotropic) then
@@ -1635,58 +1635,58 @@ contains
                do i1=sggsweep(iEz)%XI,sggsweep(iEz)%XE
                   if( (sggMiEz(i1, j1, comZ)) == jmed) then
                           FlushExtraInfoDown =.true.
-                  endif
+                  end if
                   if( (sggMiEz(i1, j1, -1+comZ)) == jmed) then
                        FlushExtraInfoDown =.true.
-                  endif
+                  end if
                   if( (sggMiEz(i1, j1, finZ)) == jmed)  then
                          FlushExtraInfoUp   =.true.
-                  endif
+                  end if
                   if( (sggMiEz(i1, j1, 1+finZ)) == jmed) then
                         FlushExtraInfoUp   =.true.
-                  endif
-               enddo
-            enddo
+                  end if
+               end do
+            end do
             !!!Hz
             do j1=sggsweep(iHz)%YI,sggsweep(iHz)%YE
                do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE
                   if ((sggMiHz(i1,j1,   comZ)) == jmed) then
                        FlushExtraInfoDown  = .true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 1+comZ)) == jmed) then
                        FlushExtraInfoDown  = .true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 1+finZ)) == jmed) then
                        FlushExtraInfoUp    = .true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 2+finZ)) == jmed) then
                        FlushExtraInfoUp    = .true.
-                  endif
-               enddo
-            enddo
-         endif
+                  end if
+               end do
+            end do
+         end if
          if(Med( jmed)%Is%SGBC .or. Med( jmed)%Is%Multiport .or. Med( jmed)%Is%AnisMultiport) then
             !!!Hz
             do j1=sggsweep(iHz)%YI,sggsweep(iHz)%YE
                do i1=sggsweep(iHz)%XI,sggsweep(iHz)%XE
                   if ((sggMiHz(i1,j1,   comZ)) == jmed) then
                      FlushExtraInfoDown  = .true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 1+finZ)) == jmed) then
                        FlushExtraInfoUp    = .true.
-                  endif
+                  end if
                   !creo que esto no es necesario para multiports de ss pero no creo que cargue mucho y no se si Ian lo necesita
                   !lo dejo por precaucion
                   if ((sggMiHz(i1,j1, 1+comZ)) == jmed) then
                        FlushExtraInfoDown  = .true.
-                  endif
+                  end if
                   if ((sggMiHz(i1,j1, 2+finZ)) == jmed) then
                        FlushExtraInfoUp    = .true.
-                  endif
-               enddo
-            enddo
-         endif
-      enddo
+                  end if
+               end do
+            end do
+         end if
+      end do
       !jag bug Antares mas de 65295 steps
       !print *,'------',FlushExtraInfoDown,FlushExtraInfoUp,comZ,finZ,sggMiHz(4,4,21)
       databufH => databuf_SetH%databuf_Up
@@ -1707,8 +1707,8 @@ contains
             databufE%buf_x_tx => Ex( ExXI: ExXE, ExYI: ExYE, finZ)
             databufE%buf_y_rx => Ey( EyXI: EyXE, EyYI: EyYE, finZ+2)
             databufE%buf_y_tx => Ey( EyXI: EyXE, EyYI: EyYE, finZ)
-         endif
-      endif
+         end if
+      end if
       !-----------------------------------------------------> DW
       databufH => databuf_SetH%databuf_Down
       databufE => databuf_SetE%databuf_Down
@@ -1728,8 +1728,8 @@ contains
             databufE%buf_x_rx => Ex( ExXI: ExXE, ExYI: ExYE, comZ-1)
             databufE%buf_y_tx => Ey( EyXI: EyXE, EyYI: EyYE, comZ+1)
             databufE%buf_y_rx => Ey( EyXI: EyXE, EyYI: EyYI, comZ-1)
-         endif
-      endif
+         end if
+      end if
       !---------------- acaba InitExtraFlushMPI_Cray ------------------------------------------------
       return
    endsubroutine InitExtraFlushMPI_Cray
@@ -1740,11 +1740,11 @@ contains
 
 end module
  
-module build_t_linea_mpi
+module build_t_linea_mpi_m
 
 #ifdef CompileWithMPI
    !
-   use NFDETypes
+   use NFDETypes_m
    
 contains
 
@@ -1782,7 +1782,7 @@ contains
     if (ierr /= 0 ) then
         print *, 'got an error in type create: ', ierr
         call MPI_Abort(SUBCOMM_MPI, ierr, ierr)
-    endif
+    end if
 
     ! commit it to the system, so it knows we ll use it
     ! for communication
@@ -1790,7 +1790,7 @@ contains
     if (ierr /= 0 ) then
         print *, 'got an error in type commit: ', ierr
         call MPI_Abort(SUBCOMM_MPI, ierr, ierr)
-    endif
+    end if
 
     return
 
@@ -1798,4 +1798,4 @@ contains
 
 #endif
 !------------- end subroutine----------------------------
-end module build_t_linea_mpi
+end module build_t_linea_mpi_m

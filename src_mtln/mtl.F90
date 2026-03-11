@@ -1,14 +1,14 @@
-module mtl_mod
+module mtl_m
 
     ! use NFDETypes
-    use utils_mod
-    use dispersive_mod, dispersive_lumped_t => lumped_t
-    use mtln_types_mod, only: segment_t, multipolar_expansion_t
-    use multipolar_expansion_mod, only: getCellCapacitanceOnBox, getCellInductanceOnBox
+    use utils_m
+    use dispersive_m, dispersive_lumped_t => lumped_t
+    use mtln_types_m, only: segment_t, multipolar_expansion_t
+    use multipolar_expansion_m, only: getCellCapacitanceOnBox, getCellInductanceOnBox
 #ifdef CompileWithMPI
-    use fdetypes, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, c_vacuum, RKIND_wires
+    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, c_vacuum, RKIND_wires
 #else
-    use fdetypes, only: pi, mu_vacuum, c_vacuum, RKIND_wires
+    use FDETYPES_m, only: pi, mu_vacuum, c_vacuum, RKIND_wires
 #endif
     implicit none
 #ifdef CompileWithMPI
@@ -102,10 +102,10 @@ contains
         integer :: i
         do i = 1, size(this%lpul, 1)
             this%lpul(i,:,:) = lpul(:,:)
-        enddo
+        end do
         do i = 1, size(this%cpul, 1)
             this%cpul(i,:,:) = cpul(:,:)
-        enddo
+        end do
     end subroutine
 
     function mtl_shielded(lpul, cpul, rpul, gpul, &
@@ -283,14 +283,14 @@ contains
 
             if ((rad < 0.3_RKIND_wires  *d1).or.(rad < 0.3_RKIND_wires *d2)) then
                 this%lpul(i,:,:) = this%lpul(i,:,:) - 0.57_RKIND_wires/(4.0_RKIND_wires * pi*invMu)
-            endif
+            end if
 
             if ((rad > 0.3_RKIND_wires  *d1).or.(rad > 0.3_RKIND_wires *d2)) then
                 this%lpul(i,:,:) =  this%lpul(i,:,:) &
                 /(1.0_RKIND_wires-pi*rad**2.0_RKIND_wires /(d1*d2))
-            endif
+            end if
             this%cpul(i,:,:) = 1.0/(this%lpul(i,:,:)*c_vacuum**2)
-        enddo
+        end do
         this%cpul(size(this%segments)+1, :,:) = this%cpul(size(this%segments), :,:)
 
     end subroutine
@@ -313,13 +313,13 @@ contains
             (size(rpul, 1) /= size(rpul, dim = 2)).or.&
             (size(gpul, 1) /= size(gpul, dim = 2))) then
             error stop 'PUL matrices are not square'
-        endif
+        end if
 
         if ((size(lpul, 1) /= size(cpul, 1)).or.&
             (size(lpul, 1) /= size(rpul, 1)).or.&
             (size(lpul, 1) /= size(gpul, 1))) then
             error stop 'PUL matrices do not have the same dimensions'
-        endif
+        end if
 
     end subroutine
 
@@ -333,7 +333,7 @@ contains
         do k = 1, size(this%step_size, 1)
             ev = getEigenValues(dble(matmul(this%lpul(k,:,:), this%cpul(k+1,:,:))))
             res(k,:) = 1.0/sqrt(ev(1:this%number_of_conductors))
-        enddo
+        end do
 
     end function
 
@@ -349,10 +349,10 @@ contains
         integer :: i
         do i = 1, size(this%rpul, 1)
             this%rpul(i,:,:) = rpul(:,:)
-        enddo
+        end do
         do i = 1, size(this%gpul, 1)
             this%gpul(i,:,:) = gpul(:,:)
-        enddo
+        end do
     end subroutine
 
 

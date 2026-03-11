@@ -4,8 +4,8 @@
 !  Borders :  PML, PEC, PMC, Periodic handling.
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module BORDERS_other
-   use fdetypes
+module BORDERS_other_m
+   use FDETYPES_m
    implicit none
    private
    !
@@ -51,52 +51,52 @@ contains
       !Hx Down
       if (sggBorder%IsDownPMC) then
          if (layoutnumber == 0)      Hx( : , : ,C(iHx)%ZI-1)=-Hx( : , : ,C(iHx)%ZI)
-      endif
+      end if
       !Hx Up
       if (sggBorder%IsUpPMC) then
          if (layoutnumber == size-1) Hx( : , : ,C(iHx)%ZE+1)=-Hx( : , : ,C(iHx)%ZE)
-      endif
+      end if
       !Hx Left
       if (sggBorder%IsLeftPMC) then
          Hx( : ,C(iHx)%YI-1, : )=-Hx( : ,C(iHx)%YI, : )
-      endif
+      end if
       !Hx Right
       if (sggBorder%IsRightPMC) then
          Hx( : ,C(iHx)%YE+1, : )=-Hx( : ,C(iHx)%YE, : )
-      endif
+      end if
       !Hy Back
       if (sggBorder%IsBackPMC) then
          Hy(C(iHy)%XI-1, : , : )=-Hy(C(iHy)%XI, : , : )
-      endif
+      end if
       !Hy Front
       if (sggBorder%IsFrontPMC) then
          Hy(C(iHy)%XE+1, : , : )=-Hy(C(iHy)%XE, : , : )
-      endif
+      end if
       !Hy Down
       if (sggBorder%IsDownPMC) then
          if (layoutnumber == 0)      Hy( : , : ,C(iHy)%ZI-1)=-Hy( : , : ,C(iHy)%ZI)
-      endif
+      end if
       !Hy Up
       if (sggBorder%IsUpPMC) then
          if (layoutnumber == size-1) Hy( : , : ,C(iHy)%ZE+1)=-Hy( : , : ,C(iHy)%ZE)
-      endif
+      end if
       !
       !Hz Down
       if (sggBorder%IsBackPMC) then
          Hz(C(iHz)%XI-1, : , : )=-Hz(C(iHz)%XI, : , : )
-      endif
+      end if
       !Hz Front
       if (sggBorder%IsFrontPMC) then
          Hz(C(iHz)%XE+1, : , : )=-Hz(C(iHz)%XE, : , : )
-      endif
+      end if
       !Hz Left
       if (sggBorder%IsLeftPMC) then
          Hz( : ,C(iHz)%YI-1, : )=-Hz( : ,C(iHz)%YI, : )
-      endif
+      end if
       !Hz Right
       if (sggBorder%IsRightPMC) then
          Hz( : ,C(iHz)%YE+1, : )=-Hz( : ,C(iHz)%YE, : )
-      endif
+      end if
       return
    end subroutine MinusCloneMagneticPMC
 
@@ -121,52 +121,52 @@ contains
       !Hx Down
       if (sggBorder%IsDownPeriodic) then
          if (layoutnumber == 0)      Hx( : , : ,C(iHx)%ZI-1) = Hx( : , : ,C(iHx)%ZE)
-      endif
+      end if
       !Hx Up
       if (sggBorder%IsUpPeriodic) then
          if (layoutnumber == size-1) Hx( : , : ,C(iHx)%ZE+1) = Hx( : , : ,C(iHx)%ZI)
-      endif
+      end if
       !Hx Left
       if (sggBorder%IsLeftPeriodic) then
          Hx( : ,C(iHx)%YI-1, : ) = Hx( : ,C(iHx)%YE, : )
-      endif
+      end if
       !Hx Right
       if (sggBorder%IsRightPeriodic) then
          Hx( : ,C(iHx)%YE+1, : ) = Hx( : ,C(iHx)%YI, : )
-      endif
+      end if
       !Hy Back
       if (sggBorder%IsBackPeriodic) then
          Hy(C(iHy)%XI-1, : , : ) = Hy(C(iHy)%XE, : , : )
-      endif
+      end if
       !Hy Front
       if (sggBorder%IsFrontPeriodic) then
          Hy(C(iHy)%XE+1, : , : ) = Hy(C(iHy)%XI, : , : )
-      endif
+      end if
       !Hy Down
       if (sggBorder%IsDownPeriodic) then
          if (layoutnumber == 0)      Hy( : , : ,C(iHy)%ZI-1) = Hy( : , : ,C(iHy)%ZE)
-      endif
+      end if
       !Hy Up
       if (sggBorder%IsUpPeriodic) then
          if (layoutnumber == size-1) Hy( : , : ,C(iHy)%ZE+1) = Hy( : , : ,C(iHy)%ZI)
-      endif
+      end if
       !
       !Hz Back
       if (sggBorder%IsBackPeriodic) then
          Hz(C(iHz)%XI-1, : , : ) = Hz(C(iHz)%XE, : , : )
-      endif
+      end if
       !Hz Front
       if (sggBorder%IsFrontPeriodic) then
          Hz(C(iHz)%XE+1, : , : ) = Hz(C(iHz)%XI, : , : )
-      endif
+      end if
       !Hz Left
       if (sggBorder%IsLeftPeriodic) then
          Hz( : ,C(iHz)%YI-1, : ) = Hz( : ,C(iHz)%YE, : )
-      endif
+      end if
       !Hz Right
       if (sggBorder%IsRightPeriodic) then
          Hz( : ,C(iHz)%YE+1, : ) = Hz( : ,C(iHz)%YI, : )
-      endif
+      end if
       return
    end subroutine CloneMagneticPeriodic
 

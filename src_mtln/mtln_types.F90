@@ -1,5 +1,5 @@
-module mtln_types_mod
-   use fdetypes, ONLY: direction_t, BUFSIZE
+module mtln_types_m
+   use FDETYPES_m, ONLY: direction_t, BUFSIZE
    implicit none
 
    integer, parameter :: TERMINATION_UNDEFINED  = -1

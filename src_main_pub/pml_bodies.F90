@@ -9,13 +9,13 @@
 !!!Mangento en el fichero PMLbody_pre170815_noupdateababienH.F90 la version antigua
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module PMLbodies
+module PMLbodies_m
 
 
 
-   use Report
+   use Report_m
 
-   use fdetypes
+   use FDETYPES_m
    implicit none
    private
    !structures needed by the PMLbody
@@ -104,8 +104,8 @@ contains
                        if (j1 > maxy(jmed)) maxy(jmed)=j1
                        if (k1 > maxz(jmed)) maxz(jmed)=k1
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -123,8 +123,8 @@ contains
                        if (j1 > maxy(jmed)) maxy(jmed)=j1
                        if (k1 > maxz(jmed)) maxz(jmed)=k1
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -143,8 +143,8 @@ contains
                        if (j1 > maxy(jmed)) maxy(jmed)=j1
                        if (k1 > maxz(jmed)) maxz(jmed)=k1
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -153,7 +153,7 @@ contains
       ThereArePMLbodies=(conta /=0)
       if (.not.therearePMLbodies) then
          return
-      endif
+      end if
 !!!!!
       berpmlE%NumNodes=conta
       allocate (berpmlE%Nodes(1 : berpmlE%NumNodes))
@@ -167,8 +167,8 @@ contains
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEx) then
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -180,8 +180,8 @@ contains
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEy) then
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -194,8 +194,8 @@ contains
                    orient=abs(SGG%Med(jmed)%PMLbody(1)%orient)
                    if (orient/=iEz) then
                        conta=conta+1
-                   endif
-               endif
+                   end if
+               end if
             end do
          end do
       end do
@@ -204,7 +204,7 @@ contains
       if (.not.therearePMLbodies) then
          write(buff, *)    'Buggy ERROR: In PMLbodies. fields exist withouth Hfields. '
         call WarnErrReport (buff,.TRUE.)
-      endif
+      end if
       berpmlH%NumNodes=conta
       allocate (berpmlH%Nodes(1 : berpmlH%NumNodes))
 !!!!
@@ -245,8 +245,8 @@ contains
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -286,8 +286,8 @@ contains
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -327,8 +327,8 @@ contains
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -373,8 +373,8 @@ contains
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -414,8 +414,8 @@ contains
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -455,8 +455,8 @@ contains
                      call WarnErrReport (buff,.TRUE.)
                   end select
                   !call calc_pmlbodypar
-                endif
-               endif  
+                end if
+               end if  
             end do
          end do
       end do
@@ -477,7 +477,7 @@ contains
       else  
             READ (14) (berpmlE%Nodes(conta)%Psi,conta=1,berpmlE%numnodes)
             READ (14) (berpmlH%Nodes(conta)%Psi,conta=1,berpmlH%numnodes)
-      endif
+      end if
       return
 
    end subroutine InitPMLbodies
@@ -503,7 +503,7 @@ contains
                 sigma=Sigmamax * (abs(PML_%posi-1.0*PML_%minTotal) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden 
                 else
                 sigma=Sigmamax * (abs(1.0*PML_%maxTotal-PML_%posi) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden
-                endif
+                end if
                 PML_%P_be=Exp(-(sigma)*sgg%dt/Eps0)
                 PML_%P_ce=  (PML_%P_be-1.0_RKIND)/PML_%transversalDelta
                 !!!  write(30,*) jmed,orient,i1,j1,k1,sigma,PML_%P_be,PML_%P_ce
@@ -516,7 +516,7 @@ contains
                 sigma=Sigmamax * (abs(PML_%posi-1.0*PML_%minTotal) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden 
                 else
                 sigma=Sigmamax * (abs(1.0*PML_%maxTotal-PML_%posi) /((1.0*PML_%maxTotal-1.0*PML_%minTotal)/2.0_RKIND))**PMLorden
-                endif
+                end if
                 PML_%P_be=Exp(-(sigma)*sgg%dt/Eps0)
                 PML_%P_ce=  (PML_%P_be-1.0_RKIND)/PML_%transversalDelta
                 !!!  write(30,*) jmed,orient,i1,j1,k1,sigma,PML_%P_be,PML_%P_ce
@@ -581,7 +581,7 @@ contains
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%PMLbody).and.(.not.sgg%Med(i)%Is%PML)) then
              if (associated (sgg%Med(i)%PMLbody)) deallocate(sgg%Med(i)%PMLbody)
-         endif
+         end if
       end do
 
 
@@ -593,4 +593,4 @@ contains
 
 
 
-end module PMLbodies
+end module PMLbodies_m

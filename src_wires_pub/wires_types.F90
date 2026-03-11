@@ -1,7 +1,7 @@
 
  
-module wiresHolland_constants
-   use fdetypes
+module wiresHolland_constants_m
+   use FDETYPES_m
    
    !Types definitions
    
@@ -151,4 +151,4 @@ module wiresHolland_constants
    end type
    !end type definitions
 
-end module wiresHolland_constants
+end module wiresHolland_constants_m

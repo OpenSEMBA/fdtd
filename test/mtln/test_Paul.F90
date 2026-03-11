@@ -1,7 +1,7 @@
 integer function test_termination_resistive() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
@@ -101,9 +101,9 @@ integer function test_termination_resistive() bind(C) result(error_cnt)
 end function
 
 integer function test_termination_resistive_inductive() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
@@ -204,9 +204,9 @@ integer function test_termination_resistive_inductive() bind(C) result(error_cnt
 end function
 
 integer function test_termination_resistive_capacitive_parallel() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = &
@@ -308,9 +308,9 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
 end function
 
 integer function test_termination_rls_cp() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = &
@@ -412,9 +412,9 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
 end function
 
 integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_gauss.exc'
@@ -521,9 +521,9 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
 end function
 
 integer function test_termination_rcp() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = &
@@ -625,9 +625,9 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
 end function
 
 integer function test_termination_resistive_capacitive() bind(C) result(error_cnt)
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     ! character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/termination_resistive_pulse.exc'
@@ -729,9 +729,9 @@ integer function test_termination_resistive_capacitive() bind(C) result(error_cn
 end function
 
 integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     ! character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.5_square.smb.json'
@@ -854,9 +854,9 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
 end function
 
 integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: square_excitation = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_0.05_triangle.exc'
@@ -977,9 +977,9 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
 end function
 
 integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     ! character(len=*), parameter :: filename = PATH_TO_TEST_DATA//'excitations/coaxial_line_paul_8_6_square.smb.json'
@@ -1107,9 +1107,9 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
 end function 
 
 integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_6_pulse.exc'
@@ -1283,9 +1283,9 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
 end function 
 
 integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_20ns.exc'
@@ -1399,9 +1399,9 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
 end function 
 
 integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)    
-    use mtln_solver_mod
+    use mtln_solver_m
     use mtln_testingTools_mod
-    use preprocess_mod
+    use mtln_preprocess_m
     implicit none
 
     character(len=*), parameter :: pulse_excitation = PATH_TO_TEST_DATA//'excitations/2_conductor_line_paul_9_11_1ns.exc'

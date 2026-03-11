@@ -1,7 +1,7 @@
-module xdmf_h5
+module xdmf_h5_m
 #ifdef CompileWithHDF
 
-    use fdetypes
+    use FDETYPES_m
     use HDF5
     implicit none
  
@@ -117,7 +117,7 @@ contains
            write(18, *)  minZabs_primero,minYabs_primero,minXabs_primero !ojo solo funciona bien el escalado en mallados uniformes salva'oct14
         else
            write(18, *) linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero !ojo solo funciona bien el escalado en mallados uniformes salva'oct14
-        endif
+        end if
         write(18, '(a)') '</DataItem>'
         write(18, '(a)') '<DataItem Format="XML" Dimensions="3">'
         write(18, *) dz_minZabs,dy_minYabs,dx_minXabs
@@ -222,7 +222,7 @@ contains
                 else
                     print *,'Buggy error in valor3d. '
                     stop
-                endif  
+                end if  
             else 
                 if (pasadas==1) then   
                     fichin = trim (adjustl(filename))//'_mod'
@@ -231,13 +231,13 @@ contains
                 else
                     print *,'Buggy error in valor3d. '
                     stop
-                endif
-            endif
+                end if
+            end if
             
             
             if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase
                 call openh5file(fichin,finalstep,minXabs,maxXabs, minYabs,maxYabs, minZabs,maxZabs)
-            endif
+            end if
  
             valor3d = 0.0_RKIND
             att=0.0_RKIND
@@ -259,12 +259,12 @@ contains
                                     linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                                     dz_minZabs,dy_minYabs,dx_minXabs,&
                                     minZabs_primero,minYabs_primero,minXabs_primero,finalstep,vtkindex)
-                endif
+                end if
             end do
             
             if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase
                 call closeh5file(finalstep,att)
-            endif
+            end if
         end do buclepasadas
     
         close(myunit)
@@ -278,4 +278,4 @@ contains
 
 #endif               
 
-end module xdmf_h5 
+end module xdmf_h5_m 

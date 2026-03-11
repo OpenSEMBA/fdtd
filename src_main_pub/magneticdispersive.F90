@@ -9,12 +9,12 @@
 ! 5 poles (not 3) !UNTESTED SGG JUN'12
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Mdispersives
+module Mdispersives_m
 
    !mismo switch electrico y magnetico
 
-   use fdetypes
-   use REPORT
+   use FDETYPES_m
+   use Report_m
    implicit none
    private
 
@@ -76,7 +76,7 @@ contains
       do jmed=1,sgg%NumMedia
          if ((sgg%Med(jmed)%Is%Mdispersive).and.(.not.sgg%Med(jmed)%Is%MdispersiveANIS)) then
             conta=conta+1
-         endif
+         end if
       end do
 
 
@@ -100,7 +100,7 @@ contains
                MDutton%Medium(conta)%Beta(i1)=  (   sgg%Med(jmed)%Mdispersive(1)%c11(i1)*sgg%dt) /&
                (1.0_RKIND-sgg%Med(jmed)%Mdispersive(1)%a11(i1)*sgg%dt/2.0_RKIND)
             end do
-         endif
+         end if
       end do
 
       !calculate the coefficients
@@ -148,7 +148,7 @@ contains
                      MDutton%Medium(jmed)%NodesHx(conta)%k=k1
                      MDutton%Medium(jmed)%NodesHx(conta)%WhatField=iHx
                      MDutton%Medium(jmed)%NodesHx(conta)%FieldPresent=>Hx(i1,j1,k1)
-                  endif
+                  end if
                end do
             end do
          end do
@@ -179,7 +179,7 @@ contains
                      MDutton%Medium(jmed)%NodesHy(conta)%k=k1
                      MDutton%Medium(jmed)%NodesHy(conta)%WhatField=iHy
                      MDutton%Medium(jmed)%NodesHy(conta)%FieldPresent=>Hy(i1,j1,k1)
-                  endif
+                  end if
                end do
             end do
          end do
@@ -211,7 +211,7 @@ contains
                      MDutton%Medium(jmed)%NodesHz(conta)%k=k1
                      MDutton%Medium(jmed)%NodesHz(conta)%WhatField=iHz
                      MDutton%Medium(jmed)%NodesHz(conta)%FieldPresent=>Hz(i1,j1,k1)
-                  endif
+                  end if
                end do
             end do
          end do
@@ -226,14 +226,14 @@ contains
                MDutton%Medium(jmed)%NodesHx(i1)%fieldPrevious=0.0_RKIND
                Do k1=1,NumPolRes
                   MDutton%Medium(jmed)%NodesHx(i1)%current(k1)=0.0_RKIND
-               enddo
+               end do
             end do
             !Hy,Jy
             do i1=1,MDutton%Medium(jmed)%NumNodesHy
                MDutton%Medium(jmed)%NodesHy(i1)%fieldPrevious=0.0_RKIND
                Do k1=1,NumPolRes
                   MDutton%Medium(jmed)%NodesHy(i1)%current(k1)=0.0_RKIND
-               enddo
+               end do
             end do
 
             !Hz,Jz
@@ -241,7 +241,7 @@ contains
                MDutton%Medium(jmed)%NodesHz(i1)%fieldPrevious=0.0_RKIND
                Do k1=1,NumPolRes
                   MDutton%Medium(jmed)%NodesHz(i1)%current(k1)=0.0_RKIND
-               enddo
+               end do
             end do
          else
             !Hx,Jx
@@ -249,14 +249,14 @@ contains
                READ (14) MDutton%Medium(jmed)%NodesHx(i1)%fieldPrevious
                Do k1=1,NumPolRes
                   READ (14) MDutton%Medium(jmed)%NodesHx(i1)%current(k1)
-               enddo
+               end do
             end do
             !Hy,Jy
             do i1=1,MDutton%Medium(jmed)%NumNodesHy
                READ (14) MDutton%Medium(jmed)%NodesHy(i1)%fieldPrevious
                Do k1=1,NumPolRes
                   READ (14) MDutton%Medium(jmed)%NodesHy(i1)%current(k1)
-               enddo
+               end do
             end do
 
             !Hz,Jz
@@ -264,9 +264,9 @@ contains
                READ (14) MDutton%Medium(jmed)%NodesHz(i1)%fieldPrevious
                Do k1=1,NumPolRes
                   READ (14) MDutton%Medium(jmed)%NodesHz(i1)%current(k1)
-               enddo
+               end do
             end do
-         endif
+         end if
       end do
       return
    end subroutine InitMdispersives
@@ -291,11 +291,11 @@ contains
             tempnode=>MDutton%Medium(jmed)%NodesHx(i1)
             Do k1=1,NumPolRes
                tempnode%fieldPresent=tempnode%FieldPresent-real(MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
-            enddo
+            end do
             Do k1=1,NumPolRes
                tempnode%current(k1)=MDutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1) + &
                MDutton%Medium(jmed)%Beta(k1)/sgg%dt*(tempnode%fieldPresent-tempnode%fieldPrevious)
-            enddo
+            end do
             tempnode%fieldPrevious=tempnode%fieldPresent
             !stores previous field (cuidado no es un apuntamiento sino una igualdad de valores)
             !antes de que re-empiHze a calcularlo el algoritmo del background
@@ -305,11 +305,11 @@ contains
             tempnode=>MDutton%Medium(jmed)%NodesHy(i1)
             Do k1=1,NumPolRes
                tempnode%FieldPresent=tempnode%FieldPresent-real(MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
-            enddo
+            end do
             Do k1=1,NumPolRes
                tempnode%current(k1)=MDutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1)+ &
                MDutton%Medium(jmed)%Beta(k1)/sgg%dt*(tempnode%fieldPresent-tempnode%fieldPrevious)
-            enddo
+            end do
             tempnode%fieldPrevious=tempnode%fieldPresent
          end do
 
@@ -318,11 +318,11 @@ contains
             tempnode=>MDutton%Medium(jmed)%NodesHz(i1)
             Do k1=1,NumPolRes
                tempnode%FieldPresent=tempnode%FieldPresent-real(MDutton%Medium(jmed)%GM3(k1)*tempnode%current(k1))
-            enddo
+            end do
             Do k1=1,NumPolRes
                tempnode%current(k1)=MDutton%Medium(jmed)%Kappa(k1)   *tempnode%current(k1)+ &
                MDutton%Medium(jmed)%Beta(k1)/sgg%dt*(tempnode%fieldPresent-tempnode%fieldPrevious)
-            enddo
+            end do
             tempnode%fieldPrevious=tempnode%fieldPresent
          end do
 
@@ -345,14 +345,14 @@ contains
             write(14,err=634) MDutton%Medium(jmed)%NodesHx(i1)%fieldPrevious
             Do k1=1,NumPolRes
                write(14,err=634) MDutton%Medium(jmed)%NodesHx(i1)%current(k1)
-            enddo
+            end do
          end do
          !Hy,Jy
          do i1=1,MDutton%Medium(jmed)%NumNodesHy
             write(14,err=634) MDutton%Medium(jmed)%NodesHy(i1)%fieldPrevious
             Do k1=1,NumPolRes
                write(14,err=634) MDutton%Medium(jmed)%NodesHy(i1)%current(k1)
-            enddo
+            end do
          end do
 
          !Hz,Jz
@@ -360,7 +360,7 @@ contains
             write(14,err=634) MDutton%Medium(jmed)%NodesHz(i1)%fieldPrevious
             Do k1=1,NumPolRes
                write(14,err=634) MDutton%Medium(jmed)%NodesHz(i1)%current(k1)
-            enddo
+            end do
          end do
       end do
 
@@ -381,12 +381,12 @@ contains
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%Mdispersive).and.(.not.sgg%Med(i)%Is%PML).and.(.not.sgg%Med(i)%Is%MdispersiveANIS)) then
             deallocate(sgg%Med(i)%Mdispersive(1)%c11,sgg%Med(i)%Mdispersive(1)%a11)
-         endif
+         end if
       end do
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%Mdispersive).and.(.not.sgg%Med(i)%Is%PML).and.(.not.sgg%Med(i)%Is%MdispersiveANIS)) then
             deallocate(sgg%Med(i)%Mdispersive)
-         endif
+         end if
       end do
 
       do jmed=1,MDutton%NumMdispersives
@@ -413,4 +413,4 @@ contains
 
    end subroutine
 
-end module Mdispersives
+end module Mdispersives_m
