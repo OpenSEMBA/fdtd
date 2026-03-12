@@ -266,7 +266,7 @@ contains
         this%generators(size(aux_generators)+1) = new_generator
 
         if (gen_type == SOURCE_TYPE_VOLTAGE) then 
-            ! this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance 
+            this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance/0.01
         else if (new_generator%source_type == SOURCE_TYPE_CURRENT) then
             ! this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance 
             ! this%gpul(index, conductor, conductor) = this%gpul(index, conductor, conductor) + 1.0/resistance 

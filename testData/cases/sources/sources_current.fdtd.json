@@ -2,8 +2,8 @@
     "format": "FDTD Input file",
     "__comments": "",
     "general": {
-        "timeStep": 5e-10,
-        "numberOfSteps": 2500
+        "timeStep": 1e-11,
+        "numberOfSteps": 7500
     },
     "boundary": {
         "all": {
@@ -175,7 +175,7 @@
                 "id": 4,
                 "type": "node",
                 "coordinateIds": [
-                    7
+                    8
                 ]
             },
             {
@@ -200,7 +200,7 @@
                 "id": 6,
                 "type": "node",
                 "coordinateIds": [
-                    8
+                    4
                 ]
             },
             {
@@ -209,6 +209,13 @@
                 "coordinateIds": [
                     1,
                     4
+                ]
+            },
+            {
+                "id": 8,
+                "type": "node",
+                "coordinateIds": [
+                    7
                 ]
             }
         ]
@@ -234,28 +241,17 @@
         {
             "name": "terminal_source",
             "type": "generator",
-            "magnitudeFile": "current_source_1A.exc",
+            "magnitudeFile": "voltage_source_50V.exc",
             "elementIds": [
                 1
             ],
-            "field": "current",
+            "field": "voltage",
             "resistance": 50.0
         }
     ],
     "probes": [
         {
-            "name": "probe_c7",
-            "type": "wire",
-            "field": "current",
-            "elementIds": [
-                4
-            ],
-            "domain": {
-                "type": "time"
-            }
-        },
-        {
-            "name": "probe_c7",
+            "name": "probe_c8",
             "type": "wire",
             "field": "voltage",
             "elementIds": [
@@ -266,9 +262,9 @@
             }
         },
         {
-            "name": "probe_c8",
+            "name": "probe_end",
             "type": "wire",
-            "field": "current",
+            "field": "voltage",
             "elementIds": [
                 6
             ],
@@ -277,11 +273,11 @@
             }
         },
         {
-            "name": "probe_c8",
+            "name": "probe_c7",
             "type": "wire",
-            "field": "voltage",
+            "field": "current",
             "elementIds": [
-                6
+                8
             ],
             "domain": {
                 "type": "time"
