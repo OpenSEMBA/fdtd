@@ -3787,16 +3787,16 @@ contains
                select case(abs(res(i)%orientation))
                case(DIR_X)
                   res(i)%dualBox = getdualBoxYZ(res(i), despl)
-                  res(i)%d1 = despl%desY(res(i)%y)
-                  res(i)%d2 = despl%desZ(res(i)%z)
+                  res(i)%d1 = despl%desY(res(i)%y-1)
+                  res(i)%d2 = despl%desZ(res(i)%z-1)
                case(DIR_Y)
                   res(i)%dualBox = getdualBoxZX(res(i), despl)
-                  res(i)%d1 = despl%desZ(res(i)%z)
-                  res(i)%d1 = despl%desX(res(i)%x)
+                  res(i)%d1 = despl%desZ(res(i)%z-1)
+                  res(i)%d1 = despl%desX(res(i)%x-1)
                case(DIR_Z)
                   res(i)%dualBox = getdualBoxXY(res(i), despl)
-                  res(i)%d1 = despl%desX(res(i)%x)
-                  res(i)%d2 = despl%desY(res(i)%y)
+                  res(i)%d1 = despl%desX(res(i)%x-1)
+                  res(i)%d2 = despl%desY(res(i)%y-1)
 
                end select
             end if
