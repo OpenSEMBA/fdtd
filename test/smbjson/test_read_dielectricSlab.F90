@@ -63,10 +63,10 @@ contains
       expected%plnSrc%collection(1)%atributo = ""
       expected%plnSrc%collection(1)%coor1 = [0, 0, 2]
       expected%plnSrc%collection(1)%coor2 = [3, 3, 47]
-      expected%plnSrc%collection(1)%theta = 0.0
-      expected%plnSrc%collection(1)%phi = 0.0
+      expected%plnSrc%collection(1)%theta = 0.0_RKIND
+      expected%plnSrc%collection(1)%phi = 0.0_RKIND
       expected%plnSrc%collection(1)%alpha = 1.5708_RKIND
-      expected%plnSrc%collection(1)%beta = 0.0
+      expected%plnSrc%collection(1)%beta = 0.0_RKIND
       expected%plnSrc%collection(1)%isRC=.false.
       expected%plnSrc%collection(1)%nummodes=1
       expected%plnSrc%collection(1)%INCERTMAX=0.0_RKIND
@@ -88,7 +88,7 @@ contains
       expected%dielRegs%vols(1)%n_C1P = 0
       expected%dielRegs%vols(1)%n_C2P = 1
       expected%dielRegs%vols(1)%sigma = 0.0_RKIND
-      expected%dielRegs%vols(1)%eps = 1.3*EPSILON_VACUUM
+      expected%dielRegs%vols(1)%eps = 1.3_RKIND*EPSILON_VACUUM
       expected%dielRegs%vols(1)%mu = MU_VACUUM
       expected%dielRegs%vols(1)%sigmam = 0.0_RKIND
       expected%dielRegs%vols(1)%c2P%Or = 0

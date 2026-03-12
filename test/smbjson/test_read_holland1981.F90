@@ -52,7 +52,7 @@ contains
       ! Expected boundaries.
       ex%front%tipoFrontera(:) = F_PML
       ex%front%propiedadesPML(:)%numCapas = 6
-      ex%front%propiedadesPML(:)%orden = 2.0
+      ex%front%propiedadesPML(:)%orden = 2.0_RKIND
       ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected sources.
@@ -97,7 +97,7 @@ contains
       
       ! Expected thin wires
       allocate(ex%tWires%tw(1))
-      ex%tWires%tw(1)%rad=0.02
+      ex%tWires%tw(1)%rad=0.02_RKIND
       ex%tWires%tw(1)%dispfile = trim(adjustl(" "))
       ex%tWires%tw(1)%dispfile_LeftEnd = trim(adjustl(" "))
       ex%tWires%tw(1)%dispfile_RightEnd = trim(adjustl(" "))

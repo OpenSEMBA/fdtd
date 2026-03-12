@@ -182,9 +182,9 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%Zi = 2
       expected%nodSrc%NodalSource(1)%c2P(1)%Ze = 2
       expected%nodSrc%NodalSource(1)%c2P(1)%tag = 'nodal_source'
-      expected%nodSrc%NodalSource(1)%c2P(1)%xc = 1.0
-      expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0.0
-      expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0
+      expected%nodSrc%NodalSource(1)%c2P(1)%xc = 1.0_RKIND
+      expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0.0_RKIND
+      expected%nodSrc%NodalSource(1)%c2P(1)%zc = 0.0_RKIND
 
       ! Expected probes
       

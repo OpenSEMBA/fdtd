@@ -111,9 +111,9 @@ module smbjson_m
    end type
 
    type, private :: domain_t
-      real :: tstart = 0.0, tstop = 0.0, tstep = 0.0
-      real :: fstart = 0.0, fstop = 0.0
-      real :: fstep = 0.0
+      real(kind=RKIND) :: tstart = 0.0, tstop = 0.0, tstep = 0.0
+      real(kind=RKIND) :: fstart = 0.0, fstop = 0.0
+      real(kind=RKIND) :: fstep = 0.0
       ! integer :: fstep = 0
       character(len=:), allocatable :: filename
       integer :: type1 = NP_T1_PLAIN, type2 = NP_T2_TIME

@@ -57,10 +57,10 @@ contains
       expected%plnSrc%collection(1)%atributo = ""
       expected%plnSrc%collection(1)%coor1 = [1, 1, 1]
       expected%plnSrc%collection(1)%coor2 = [8, 8, 8]
-      expected%plnSrc%collection(1)%theta = 0.0
-      expected%plnSrc%collection(1)%phi = 0.0
+      expected%plnSrc%collection(1)%theta = 0.0_RKIND
+      expected%plnSrc%collection(1)%phi = 0.0_RKIND
       expected%plnSrc%collection(1)%alpha = 1.5708_RKIND
-      expected%plnSrc%collection(1)%beta = 0.0
+      expected%plnSrc%collection(1)%beta = 0.0_RKIND
       expected%plnSrc%collection(1)%isRC=.false.
       expected%plnSrc%collection(1)%nummodes=1
       expected%plnSrc%collection(1)%INCERTMAX=0.0_RKIND

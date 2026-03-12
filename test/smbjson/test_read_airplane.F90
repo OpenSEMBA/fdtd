@@ -82,8 +82,8 @@ contains
       expected%nodSrc%NodalSource(1)%c2P(1)%Zi = 39
       expected%nodSrc%NodalSource(1)%c2P(1)%Ze = 46
       expected%nodSrc%NodalSource(1)%c2P(1)%tag = 'nodalSource'
-      expected%nodSrc%NodalSource(1)%c2P(1)%xc = 0.0
-      expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0.0
+      expected%nodSrc%NodalSource(1)%c2P(1)%xc = 0.0_RKIND
+      expected%nodSrc%NodalSource(1)%c2P(1)%yc = 0.0_RKIND
       expected%nodSrc%NodalSource(1)%c2P(1)%zc = 1.0_RKIND
    end function
 end function
