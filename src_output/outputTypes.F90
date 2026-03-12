@@ -211,6 +211,9 @@ module outputTypes
       type(bounds_t), pointer :: simulationBounds
       type(MediaData_t), pointer :: materialList(:)
       type(taglist_t), pointer :: materialTag
+      real(RKIND), pointer, dimension(:) :: xSteps
+      real(RKIND), pointer, dimension(:) :: ySteps
+      real(RKIND), pointer, dimension(:) :: zSteps
    end type problem_info_t
 
 contains

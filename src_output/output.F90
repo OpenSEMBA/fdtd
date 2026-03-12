@@ -106,6 +106,7 @@ contains
    end function
 
    subroutine init_outputs(sgg, media, sinpml_fullsize, materialTags, bounds, control, observationsExists, wiresExists)
+      
       type(SGGFDTDINFO), intent(in) ::  sgg
       type(media_matrices_t), target, intent(in) :: media
       type(limit_t), dimension(:), target, intent(in)  ::  SINPML_fullsize
@@ -135,6 +136,9 @@ contains
       problemInfo%simulationBounds => bounds
       problemInfo%problemDimension => SINPML_fullsize
       problemInfo%materialTag => materialTags
+      problemInfo%xSteps => sgg%LineX
+      problemInfo%ySteps => sgg%LineY
+      problemInfo%zSteps => sgg%LineZ
 
       outputs => NULL()
       allocate (outputs(requestedOutputs))

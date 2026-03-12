@@ -113,7 +113,7 @@ contains
          if (component(n:n) == get_path_separator()) component = component(:n - 1)
       end if
 
-      last_slash = scan(component, get_path_separator())
+      last_slash = scan(component, get_path_separator(),.TRUE.)
 
       if (last_slash > 0) then
          component = component(last_slash + 1:)

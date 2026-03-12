@@ -177,7 +177,7 @@ integer function test_xdmf_file_creation() bind(c) result(err)
 
    
    open(newunit=unit, file=trim(file), position='append')
-   call xdmf_write_header_file(unit)
+   call xdmf_write_header_file(unit, 'movieProbe')
 
    call xdmf_create_grid_step_info(unit,"step0",0.0,"data.h5",dims(1)*dims(2)*dims(3))
 

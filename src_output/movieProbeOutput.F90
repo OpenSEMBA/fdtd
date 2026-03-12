@@ -41,11 +41,16 @@ contains
 
       integer :: error
       character(len=BUFSIZE) :: filename
+      real(RKIND), pointer :: xsteps(:), ysteps(:), zsteps(:)
 
       this%mainCoords = lowerBound
       this%auxCoords = upperBound
       this%component = field
       this%domain = domain
+
+      xsteps => problemInfo%xSteps(lowerBound%x:upperBound%x)
+      ysteps => problemInfo%ySteps(lowerBound%y:upperBound%y)
+      zsteps => problemInfo%zSteps(lowerBound%z:upperBound%z)
 
       call find_and_store_important_coords(this%mainCoords, this%auxCoords, this%component, problemInfo, this%nPoints, this%coords)
       call alloc_and_init(this%timeStep, BUFSIZE, 0.0_RKIND_tiempo)
@@ -61,7 +66,8 @@ contains
 
       call create_folder(this%path, error)
       call create_bin_file(this%filesPath, error)
-      call create_movie_files(this%filesPath, this%coords ,this%nPoints, error)
+      call create_movie_files(this, error, xsteps, ysteps, zsteps)
+      if (error/=0) print *, 'error en creacion'
    end subroutine init_movie_probe_output
 
    subroutine create_bin_file(filePath, error)
@@ -70,32 +76,59 @@ contains
       call create_file_with_path(add_extension(filePath, binaryExtension), error)
    end subroutine 
 
-   subroutine create_movie_files(filePath, coords, nPoints, error)
-      character(len=*), intent(in) :: filePath
-      integer(kind=SINGLE), dimension(:, :), intent(in) :: coords
-      integer, intent(in) :: nPoints
+   subroutine create_movie_files(this, error, xsteps, ysteps, zsteps)
+      type(movie_probe_output_t), intent(in) :: this
+      real(RKIND), pointer, intent(in) :: xsteps(:), ysteps(:), zsteps(:)
       integer, intent(out) :: error
-      real(dp), allocatable, dimension(:, :) :: coordsReal
 
+      real(dp), allocatable, dimension(:, :) :: coordsReal
       integer(HID_T) :: file_id
       character(len=BUFSIZE) :: h5_filename
+      character(len=BUFSIZE) :: attributeBaseName
+      integer(SINGLE), dimension(3) :: topology_size
 
-      h5_filename = add_extension(filePath, ".h5")
+      h5_filename = add_extension(this%filesPath, ".h5")
+      topology_size(1) = this%auxCoords%x - this%mainCoords%x + 1
+      topology_size(2) = this%auxCoords%y - this%mainCoords%y + 1
+      topology_size(3) = this%auxCoords%z - this%mainCoords%z + 1
 
       call H5open_f(error)
       call create_h5_file(trim(h5_filename), file_id)
 
-      allocate (coordsReal(3, nPoints))
-      coordsReal = real(coords, dp)
-      call write_dataset(file_id, "coords", coordsReal)
-      deallocate(coordsReal)
+      call h5_create_rectilinear_coords_dataset(file_id, real(xsteps,dp), real(ysteps,dp), real(zsteps,dp))
+      call h5_create_times_dataset(file_id, BUFSIZE)
+      call create_h5_data_dataset(file_id, this%component, topology_size)
 
-      call init_extendable_2d_dataset(file_id, 'xVal', nPoints, BUFSIZE)
-      call init_extendable_2d_dataset(file_id, 'yVal', nPoints, BUFSIZE)
-      call init_extendable_2d_dataset(file_id, 'zVal', nPoints, BUFSIZE)
       call H5Fclose_f(file_id, error)
       call H5close_f(error)
    end subroutine 
+
+   subroutine create_h5_data_dataset(file_id, requestedComponent, topology_size)
+      integer(HID_T), intent(in) :: file_id
+      integer(SINGLE), intent(in) :: requestedComponent
+      integer(SINGLE), dimension(3), intent(in) :: topology_size
+
+      character(len=BUFSIZE) :: attributeBaseName
+
+      select case(requestedComponent)
+      case(iCur, iCurX, iCurY, iCurZ); attributeBaseName = 'CurrenDensity'
+      case(iMEC, iExC, iEyC, iEzC); attributeBaseName = 'ElectricField'
+      case(iMHC, iHxC, iHyC, iHzC); attributeBaseName = 'MagneticField'
+      end select
+
+      select case(requestedComponent)
+      case(iCur, iMEC, iMHC)
+         call h5_init_extendable_dataset(file_id, trim(attributeBaseName)//'X', topology_size,  BUFSIZE)  
+         call h5_init_extendable_dataset(file_id, trim(attributeBaseName)//'Y', topology_size,  BUFSIZE)  
+         call h5_init_extendable_dataset(file_id, trim(attributeBaseName)//'Z', topology_size,  BUFSIZE)  
+      case(iCurX, iEXC, iHXC)
+         call h5_init_extendable_dataset(file_id, trim(attributeBaseName)//'X', topology_size, BUFSIZE)  
+      case(iCurY, iEyC, iHyC) 
+         call h5_init_extendable_dataset(file_id, trim(attributeBaseName)//'Y', topology_size, BUFSIZE)  
+      case(iCurZ, iEZC, iHzC) 
+         call h5_init_extendable_dataset(file_id, trim(attributeBaseName)//'Z', topology_size, BUFSIZE)  
+      end select
+   end subroutine
 
    subroutine update_movie_probe_output(this, step, fieldsReference, control, problemInfo)
       type(movie_probe_output_t), intent(inout) :: this
@@ -159,10 +192,11 @@ contains
    subroutine flush_movie_probe_output(this)
       type(movie_probe_output_t), intent(inout) :: this
       integer :: i
-
-      call write_bin_file(this)
-      call write_to_xdmf_h5(this)
-
+      if (this%nTime /= 0) then
+         call write_bin_file(this)
+         call write_to_h5_file(this)
+         call write_to_xdmf_file(this)
+      end if
       call clear_memory_data(this)
    end subroutine flush_movie_probe_output
 
@@ -186,78 +220,123 @@ contains
       close (unit)
    end subroutine
 
-   subroutine write_to_xdmf_h5(this)
+   subroutine write_to_xdmf_file(this)
+      type(movie_probe_output_t), intent(inout) :: this
 
+      character(len=256) :: xdmf_filename
+      character(len=256) :: h5_filename
+      character(len=256) :: attributeBaseName
+      integer :: xdmfunit, error
+      integer, dimension(3) :: topologyDimensions
+      integer, dimension(4) :: h5_dimensions
+      xdmf_filename = add_extension(this%filesPath, ".xdmf")
+      h5_filename = add_extension(get_last_component(this%filesPath), ".h5")
+
+      topologyDimensions(1) = this%auxCoords%x - this%mainCoords%x + 1
+      topologyDimensions(2) = this%auxCoords%y - this%mainCoords%y + 1
+      topologyDimensions(3) = this%auxCoords%z - this%mainCoords%z + 1
+
+      h5_dimensions(1) = this%nTime + this%nTimesFlushed
+      h5_dimensions(2) = topologyDimensions(3)
+      h5_dimensions(3) = topologyDimensions(2)
+      h5_dimensions(4) = topologyDimensions(1)
+
+      select case(this%component)
+      case(iCur, iCurX, iCurY, iCurZ); attributeBaseName = 'CurrenDensity'
+      case(iMEC, iExC, iEyC, iEzC); attributeBaseName = 'ElectricField'
+      case(iMHC, iHxC, iHyC, iHzC); attributeBaseName = 'MagneticField'
+      end select
+      
+      open(newunit=xdmfunit, file=trim(xdmf_filename), status='replace', position='append', iostat=error)
+      call xdmf_write_header_file(xdmfunit, 'movieProbe')
+
+      call xdmf_write_topology(xdmfunit, topologyDimensions)
+      call xdmf_write_geometry(xdmfunit, topologyDimensions, h5_filename)
+      call xdmf_write_time_array(xdmfunit, this%nTime + this%nTimesFlushed, h5_filename)
+      
+      select case(this%component)
+      case(iCur, iMEC, iMHC)
+         call xdmf_write_scalar_attribute(xdmfunit, h5_dimensions, h5_filename, trim(attributeBaseName)//'X')  
+         call xdmf_write_scalar_attribute(xdmfunit, h5_dimensions, h5_filename, trim(attributeBaseName)//'Y')  
+         call xdmf_write_scalar_attribute(xdmfunit, h5_dimensions, h5_filename, trim(attributeBaseName)//'Z')  
+      case(iCurX, iEXC, iHXC)
+         call xdmf_write_scalar_attribute(xdmfunit, h5_dimensions, h5_filename, trim(attributeBaseName)//'X')  
+      case(iCurY, iEyC, iHyC) 
+         call xdmf_write_scalar_attribute(xdmfunit, h5_dimensions, h5_filename, trim(attributeBaseName)//'Y')  
+      case(iCurZ, iEZC, iHzC) 
+         call xdmf_write_scalar_attribute(xdmfunit, h5_dimensions, h5_filename, trim(attributeBaseName)//'Z')  
+      end select
+
+      call xdmf_write_footer_file(xdmfunit)
+
+      close(xdmfunit)
+   end subroutine
+
+   subroutine write_to_h5_file(this)
       type(movie_probe_output_t), intent(inout) :: this
 
       integer(HID_T) :: file_id
-      integer :: t, error, xdmfunit
-      real(dp), allocatable, dimension(:, :) :: coordsReal
+      integer :: i, error, probeDimensions(3)
+      real(dp), allocatable, dimension(:,:,:,:) :: h5Table
       character(len=256) :: h5_filename, h5_filepath
-      character(len=256) :: xdmf_filename
-      character(len=10) :: dimension_string
-      character(len=10) :: nCoordsString
-      character(len=14) :: stepName
+      character(len=256) :: attributeBaseName
       h5_filepath = add_extension(this%filesPath, ".h5")
       h5_filename = get_last_component(h5_filepath)
+
+      !Only stores the volume associated to that probe
+
+      probeDimensions(1) = this%auxCoords%x - this%mainCoords%x + 1
+      probeDimensions(2) = this%auxCoords%y - this%mainCoords%y + 1
+      probeDimensions(3) = this%auxCoords%z - this%mainCoords%z + 1
+
+      select case(this%component)
+      case(iCur, iCurX, iCurY, iCurZ); attributeBaseName = 'CurrenDensity'
+      case(iMEC, iExC, iEyC, iEzC); attributeBaseName = 'ElectricField'
+      case(iMHC, iHxC, iHyC, iHzC); attributeBaseName = 'MagneticField'
+      end select
 
       call H5open_f(error)
       call H5Fopen_f(trim(h5_filepath), H5F_ACC_RDWR_F, file_id, error)
 
-      
-      write(dimension_string, '(I0,1X,I0)') this%nPoints, this%nTimesFlushed + this%nTime
-      write(nCoordsString, '(I0, I0)') this%nPoints, 1
-      do t = 1, this%nTime
-         write(stepName, '((I5.5))') this%nTimesFlushed + t
-         call append_rows_dataset(file_id, "xVal", reshape(this%xValueForTime(t, :), [1, this%nPoints]))
-         call append_rows_dataset(file_id, "yVal", reshape(this%yValueForTime(t, :), [1, this%nPoints]))
-         call append_rows_dataset(file_id, "zVal", reshape(this%zValueForTime(t, :), [1, this%nPoints]))
-         if (mod(this%nTimesFlushed + t, 10) == 0) then
-            
-            xdmf_filename = add_extension(add_extension(this%filesPath, ".ts_"//stepName), ".xdmf")
-            open(newunit=xdmfunit, file=trim(xdmf_filename), status='replace', position='append', iostat=error)
+      call h5_append_rows_to_dataset(file_id, 'times', this%timeStep(:this%nTime))
 
-            call xdmf_write_header_file(xdmfunit)
-
-            call xdmf_create_grid_step_info(xdmfunit, stepName, real(this%timeStep(t)), trim(h5_filename), this%nPoints)
-            
-            call xdmf_write_attribute(xdmfunit, 'xVal')
-            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
-            call xdmf_write_h5_acces_data_item(xdmfunit, 0, this%nTimesFlushed + t - 1,  this%nPoints, this%nTimesFlushed + this%nTime)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/xVal', dimension_string)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_attribute(xdmfunit)
-
-            call xdmf_write_attribute(xdmfunit, 'yVal')
-            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
-            call xdmf_write_h5_acces_data_item(xdmfunit, 0, this%nTimesFlushed + t - 1,  this%nPoints, this%nTimesFlushed + this%nTime)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/yVal', dimension_string)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_attribute(xdmfunit)
-
-            call xdmf_write_attribute(xdmfunit, 'zVal')
-            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
-            call xdmf_write_h5_acces_data_item(xdmfunit, 0, this%nTimesFlushed + t - 1,  this%nPoints, this%nTimesFlushed + this%nTime)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/zVal', dimension_string)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_attribute(xdmfunit)
-
-            call xdmf_close_grid(xdmfunit)
-         
-            call xdmf_write_footer_file(xdmfunit)
-            close(xdmfunit)
-         endif
-      end do
-
+      allocate(h5Table(probeDimensions(1), probeDimensions(2), probeDimensions(3), this%nTime)) !(x,y,z,t)
+      if (any([iCur, iMEC, iMHC, iCurX, iExC, iHxC]==this%component)) then
+         h5Table = 0_dp
+         do i=1, this%nPoints !Readjust idx into hyperslab (x,y,z,t)
+            h5Table(this%coords(1,i) - this%mainCoords%x + 1, &
+                    this%coords(2,i) - this%mainCoords%y + 1, &
+                    this%coords(3,i) - this%mainCoords%z + 1, &
+                    : ) = this%xValueForTime(:this%nTime, i) 
+         end do
+         call h5_append_rows_to_dataset(file_id, trim(attributeBaseName)//'X', h5Table)
+      end if
+      if (any([iCur, iMEC, iMHC, iCurY, iEyC, iHyC]==this%component)) then
+         h5Table = 0_dp
+         do i=1, this%nPoints !Readjust idx into hyperslab (x,y,z,t)
+            h5Table(this%coords(1,i) - this%mainCoords%x + 1, &
+                    this%coords(2,i) - this%mainCoords%y + 1, &
+                    this%coords(3,i) - this%mainCoords%z + 1, &
+                    : ) = this%yValueForTime(:this%nTime, i) 
+         end do
+         call h5_append_rows_to_dataset(file_id, trim(attributeBaseName)//'Y', h5Table)
+      end if
+      if (any([iCur, iMEC, iMHC, iCurZ, iEzC, iHzC]==this%component)) then
+         h5Table = 0_dp
+         do i=1, this%nPoints !Readjust idx into hyperslab (x,y,z,t)
+            h5Table(this%coords(1,i) - this%mainCoords%x + 1, &
+                    this%coords(2,i) - this%mainCoords%y + 1, &
+                    this%coords(3,i) - this%mainCoords%z + 1, &
+                    : ) = this%zValueForTime(:this%nTime, i) 
+         end do
+         call h5_append_rows_to_dataset(file_id, trim(attributeBaseName)//'Z', h5Table)
+      end if
+      deallocate(h5Table)
+   
       call H5Fclose_f(file_id, error)
       call H5close_f(error)
-   end subroutine write_to_xdmf_h5
+      if (error/=0) stop
+   end subroutine write_to_h5_file
 
    function get_output_path(this, outputTypeExtension, field, mpidir) result(path)
       type(movie_probe_output_t), intent(in) :: this

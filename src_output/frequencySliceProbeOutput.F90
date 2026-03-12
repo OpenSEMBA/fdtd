@@ -126,48 +126,9 @@ contains
       write(nCoordsString, '(I0, I0)') this%nPoints, 1
       do f = 1, this%nFreq
          write(stepName, '((I5.5))') f
-         call append_rows_dataset(file_id, "xVal", reshape(real(abs(this%xValueForFreq(f, :)), dp), [1, this%nPoints]))
-         call append_rows_dataset(file_id, "yVal", reshape(real(abs(this%yValueForFreq(f, :)), dp), [1, this%nPoints]))
-         call append_rows_dataset(file_id, "zVal", reshape(real(abs(this%zValueForFreq(f, :)), dp), [1, this%nPoints]))
-
-         xdmf_filename = add_extension(add_extension(this%filesPath, ".fs_"//stepName), ".xdmf")
-            open(newunit=xdmfunit, file=trim(xdmf_filename), status='replace', position='append', iostat=error)
-
-            call xdmf_write_header_file(xdmfunit)
-
-            call xdmf_create_grid_step_info(xdmfunit, stepName, real(this%frequencySlice(f)), trim(h5_filename), this%nPoints)
-            
-            call xdmf_write_attribute(xdmfunit, 'xVal')
-            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
-            call xdmf_write_h5_acces_data_item(xdmfunit, 0, f - 1,  this%nPoints, this%nFreq)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/xVal', dimension_string)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_attribute(xdmfunit)
-
-            call xdmf_write_attribute(xdmfunit, 'yVal')
-            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
-            call xdmf_write_h5_acces_data_item(xdmfunit, 0, f - 1,  this%nPoints, this%nFreq)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/yVal', dimension_string)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_attribute(xdmfunit)
-
-            call xdmf_write_attribute(xdmfunit, 'zVal')
-            call xdmf_write_hyperslab_data_item(xdmfunit, nCoordsString)
-            call xdmf_write_h5_acces_data_item(xdmfunit, 0, f - 1,  this%nPoints, this%nFreq)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_write_h5_data_item(xdmfunit, trim(h5_filename), '/zVal', dimension_string)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_data_item(xdmfunit)
-            call xdmf_close_attribute(xdmfunit)
-
-            call xdmf_close_grid(xdmfunit)
-         
-            call xdmf_write_footer_file(xdmfunit)
-            close(xdmfunit)
+         call h5_append_rows_to_dataset(file_id, "xVal", reshape(real(abs(this%xValueForFreq(f, :)), dp), [1, this%nPoints]))
+         call h5_append_rows_to_dataset(file_id, "yVal", reshape(real(abs(this%yValueForFreq(f, :)), dp), [1, this%nPoints]))
+         call h5_append_rows_to_dataset(file_id, "zVal", reshape(real(abs(this%zValueForFreq(f, :)), dp), [1, this%nPoints]))
       end do
       call H5Fclose_f(file_id, error)
       call H5close_f(error)
