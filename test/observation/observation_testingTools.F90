@@ -217,4 +217,17 @@ contains
    function create_basic_media () result(media)
       type(MediaData_t) :: media
    end function create_basic_media
+
+   function get_temp_dir() result(tmpdir)
+      character(len=BUFSIZE) :: tmpdir
+      integer :: status
+      call GET_ENVIRONMENT_VARIABLE("TMPDIR", tmpdir, status=status)
+      if (status /= 0 .or. len_trim(tmpdir) == 0) &
+         call GET_ENVIRONMENT_VARIABLE("TEMP", tmpdir, status=status)
+      if (status /= 0 .or. len_trim(tmpdir) == 0) &
+         call GET_ENVIRONMENT_VARIABLE("TMP", tmpdir, status=status)
+      if (status /= 0 .or. len_trim(tmpdir) == 0) &
+         tmpdir = "/tmp"
+   end function get_temp_dir
+
 end module

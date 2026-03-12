@@ -37,7 +37,7 @@ integer function test_update_time_movie_observation() bind(C) result(err)
     SINPML_fullsize = create_limit_t(0,4,0,4,0,4,3,3,3)
 
     facesNF2FF = create_facesNF2FF(.false., .false., .false., .false., .false., .false.)
-    control = create_control_flags(0, 0, 3, 10, "/tmp/entryRoot", "wireflavour",&
+    control = create_control_flags(0, 0, 3, 10, trim(get_temp_dir())//'/entryRoot', "wireflavour",&
                                     .false., .false., .false., .false., .false.,&
                                     facesNF2FF)
 
