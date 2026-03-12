@@ -111,9 +111,9 @@ module smbjson_m
    end type
 
    type, private :: domain_t
-      real(kind=RKIND) :: tstart = 0.0, tstop = 0.0, tstep = 0.0
-      real(kind=RKIND) :: fstart = 0.0, fstop = 0.0
-      real(kind=RKIND) :: fstep = 0.0
+      real(kind=RKIND) :: tstart = 0.0_RKIND, tstop = 0.0_RKIND, tstep = 0.0_RKIND
+      real(kind=RKIND) :: fstart = 0.0_RKIND, fstop = 0.0_RKIND
+      real(kind=RKIND) :: fstep = 0.0_RKIND
       ! integer :: fstep = 0
       character(len=:), allocatable :: filename
       integer :: type1 = NP_T1_PLAIN, type2 = NP_T2_TIME
@@ -957,11 +957,11 @@ contains
             if (.not. found) then
                call WarnErrReport(errorMsgInit // J_MAT_MULTILAYERED_SURF_THICKNESS // " in layer not found.", .true.)
             end if
-            res%sigma_devia(i) = 0.0
-            res%eps_devia(i) = 0.0
-            res%mu_devia(i) = 0.0
-            res%sigmam_devia(i) = 0.0
-            res%thk_devia(i) = 0.0
+            res%sigma_devia(i) = 0.0_RKIND
+            res%eps_devia(i) = 0.0_RKIND
+            res%mu_devia(i) = 0.0_RKIND
+            res%sigmam_devia(i) = 0.0_RKIND
+            res%thk_devia(i) = 0.0_RKIND
          end do
       end function
 
@@ -1027,7 +1027,7 @@ contains
 
          res%isRC = .false.
          res%nummodes = 1
-         res%incertmax = 0.0
+         res%incertmax = 0.0_RKIND
       end function
    end function
 
@@ -1151,9 +1151,9 @@ contains
          if (domain%type2 /= NP_T2_FREQ) then
             call WarnErrReport("Only frequency domain is accepted for far field probes.", .true.)
          end if
-         ff%tstart = 0.0
-         ff%tstop = 0.0
-         ff%tstep = 0.0
+         ff%tstart = 0.0_RKIND
+         ff%tstop = 0.0_RKIND
+         ff%tstep = 0.0_RKIND
          ff%fstart = domain%fstart
          ff%fstop = domain%fstop
          ff%fstep = domain%fstep
@@ -1954,7 +1954,7 @@ contains
          type(json_value), pointer :: je, je2
          integer :: i
          logical :: found
-         real :: radius, resistance, inductance
+         real(kind=RKIND) :: radius, resistance, inductance
          block
             type(json_value_ptr_t) :: m
             m = this%matTable%getId(cable%materialId)
@@ -2036,7 +2036,7 @@ contains
          do i = 1, size(linels)
             res(i)%srcfile = 'None'
             res(i)%srctype = 'None'
-            res(i)%multiplier = 0.0
+            res(i)%multiplier = 0.0_RKIND
          end do
 
          call this%core%get(this%root, J_SOURCES, sources, found)
@@ -2072,11 +2072,11 @@ contains
                 case (J_FIELD_VOLTAGE)
                   res(position)%srctype = "VOLT"
                   res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
-                  res(position)%multiplier = 1.0
+                  res(position)%multiplier = 1.0_RKIND
                 case (J_FIELD_CURRENT)
                   res(position)%srctype = "CURR"
                   res(position)%srcfile = this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE)
-                  res(position)%multiplier = 1.0
+                  res(position)%multiplier = 1.0_RKIND
                 case default
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
@@ -2130,9 +2130,9 @@ contains
 
          select case(label)
           case(J_MAT_TERM_TYPE_OPEN)
-            res%r = 0.0
-            res%l = 0.0
-            res%c = 0.0
+            res%r = 0.0_RKIND
+            res%l = 0.0_RKIND
+            res%c = 0.0_RKIND
           case default
             res%r = this%getRealAt(tm, J_MAT_TERM_RESISTANCE, default=0.0_RKIND)
             res%l = this%getRealAt(tm, J_MAT_TERM_INDUCTANCE, default=0.0_RKIND)
@@ -2210,7 +2210,7 @@ contains
 
       numberOfFrequencies = this%getIntAt(domain, J_PR_DOMAIN_FREQ_NUMBER, default=0)
       if (numberOfFrequencies == 0) then
-         res%fstep = 0.0
+         res%fstep = 0.0_RKIND
       else
          res%fstep = (res%fstop - res%fstart) / numberOfFrequencies
       end if
@@ -2982,9 +2982,9 @@ contains
          call this%core%get_child(termination_list, index, termination)
          
          res%node%termination%termination_type = readTerminationType(termination)
-         res%node%termination%capacitance = readTerminationRLC(termination,J_MAT_TERM_CAPACITANCE, default = 1e22)
-         res%node%termination%resistance = readTerminationRLC(termination, J_MAT_TERM_RESISTANCE, default = 0.0)
-         res%node%termination%inductance = readTerminationRLC(termination, J_MAT_TERM_INDUCTANCE, default=0.0)
+         res%node%termination%capacitance = readTerminationRLC(termination,J_MAT_TERM_CAPACITANCE, default = 1e22_RKIND)
+         res%node%termination%resistance = readTerminationRLC(termination, J_MAT_TERM_RESISTANCE, default = 0.0_RKIND)
+         res%node%termination%inductance = readTerminationRLC(termination, J_MAT_TERM_INDUCTANCE, default=0.0_RKIND)
          res%node%termination%source = readGeneratorOnTermination(id,label)
          res%node%termination%model = readTerminationModel(termination)
          res%node%termination%subcircuitPort = readTerminationSubcircuitPort(termination, default = -1)
@@ -3167,8 +3167,8 @@ contains
       function readTerminationRLC(termination, label, default) result(res)
          type(json_value), pointer :: termination
          character(*), intent(in) :: label
-         real, intent(in) :: default
-         real :: res
+         real(kind=RKIND), intent(in) :: default
+         real(kind=RKIND) :: res
          if (this%existsAt(termination, label)) then
             res = this%getRealAt(termination, label)
          else
@@ -3587,10 +3587,10 @@ contains
          type(shielded_multiwire_t), intent(inout) :: res
          type(json_value_ptr_t) :: mat
          integer, intent(in) :: n
-         real, dimension(:,:), allocatable :: null_matrix
+         real(kind=RKIND), dimension(:,:), allocatable :: null_matrix
          logical :: found
 
-         allocate(null_matrix(n,n), source = 0.0)
+         allocate(null_matrix(n,n), source = 0.0_RKIND)
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
          else
