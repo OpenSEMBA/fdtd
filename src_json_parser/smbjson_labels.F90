@@ -69,10 +69,10 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_TERM_TYPE_CsLRp = "CsLRp"
    character(len=*), parameter :: J_MAT_TERM_TYPE_RCsLp = "RCsLp"
    character(len=*), parameter :: J_MAT_TERM_TYPE_LCsRp = "LCsRp"
-
    character(len=*), parameter :: J_MAT_TERM_TYPE_RsLCp = "RsLCp"
    character(len=*), parameter :: J_MAT_TERM_TYPE_RLsCp = "RLsCp"
    character(len=*), parameter :: J_MAT_TERM_TYPE_CIRCUIT = "circuit"
+   character(len=*), parameter :: J_MAT_TERM_TYPE_SUBCIRCUIT = "subcircuit"
 
    character(len=*), parameter :: J_MAT_TERM_RESISTANCE = "resistance"
    character(len=*), parameter :: J_MAT_TERM_INDUCTANCE = "inductance"

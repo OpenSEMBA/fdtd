@@ -2820,17 +2820,17 @@ contains
          end do
       end function
 
-      function countSubcircuitsInNetwork(network_coordinate,subcircuits) result (res)
-         type(coordinate_t) :: network_coordinate
-         type(subcircuit_t), dimension(:), intent(in) :: subcircuits
-         integer :: i, res
-         res = 0
-         do i = 1, size(subcircuits)
-            if (network_coordinate == this%mesh%getCoordinate(subcircuits(i)%nodeId)) then 
-               res = res + 1
-            end if
-         end do
-      end function
+      ! function countSubcircuitsInNetwork(network_coordinate,subcircuits) result (res)
+      !    type(coordinate_t) :: network_coordinate
+      !    type(subcircuit_t), dimension(:), intent(in) :: subcircuits
+      !    integer :: i, res
+      !    res = 0
+      !    do i = 1, size(subcircuits)
+      !       if (network_coordinate == this%mesh%getCoordinate(subcircuits(i)%nodeId)) then 
+      !          res = res + 1
+      !       end if
+      !    end do
+      ! end function
 
       function buildNetwork(network_coordinate, aux_nodes, subcircuits) result(res)
          type(coordinate_t) :: network_coordinate
@@ -2843,12 +2843,45 @@ contains
          type(terminal_network_t) :: res
          type(node_t) :: node
          
-         network_nodes = filterNetworkNodes(network_coordinate, aux_nodes)
+         network_nodes = filterNetworkNodesByCoordinate(aux_nodes, network_coordinate)
          node_ids = buildListOfNodeIds(network_nodes)
+
+         subcircuits = buildNetworkSubcircuits(network_nodes)
 
          do i = 1, size(node_ids)
             call res%add_connection(buildConnection(node_ids(i), network_nodes, subcircuits))
          end do
+
+
+      end function
+
+      function buildNetworkSubcircuits(nodes, ids) result(res)
+         type(aux_node_t), dimension(:), intent(in) :: nodes
+         integer, dimension(:), intent(in) :: node_ids
+         type(aux_node_t), dimension(:), allocatable :: subckt_nodes
+         type(subcircuit_t), dimension(:), allocatable :: res
+         integer :: j
+         ! do i = 1, size(node_ids)
+         !    do j = 1, size(nodes)
+         !       if (nodes(j)%cId == node_ids(i)) then 
+                  
+         !       end if
+         !    end do
+         ! end do
+         
+         ! filtra todos los nodos que sea subckt
+         ! luego filtra por id
+         ! cada conjunto es un subckt
+         ! de ahí crea el subckt
+         subckt_id_nodes = filterNetworkNodesById(subckt_nodes)
+         subckt_nodes = filterNetworkNodesBySubcircuit(nodes)
+
+         ! do i = 1, size(nodes)
+         !    if (nodes(i)%termination%termination_type == TERMINATION_SUBCIRCUIT) then 
+         !       ! si un nodo es subckt
+         !    end if
+         ! end do
+
 
 
       end function
@@ -2863,7 +2896,7 @@ contains
          end do
       end function
 
-      function filterNetworkNodes(network_coordinate, aux_nodes) result(res)
+      function filterNetworkNodesByCoordinate(aux_nodes, network_coordinate) result(res)
          type(coordinate_t), intent(in) :: network_coordinate
          type(aux_node_t), dimension(:), intent(in) :: aux_nodes
          type(aux_node_t), dimension(:), allocatable :: res
@@ -3123,6 +3156,8 @@ contains
             res = TERMINATION_RLsCp
          else if (type == J_MAT_TERM_TYPE_CIRCUIT) then 
             res = TERMINATION_CIRCUIT
+         else if (type == J_MAT_TERM_TYPE_SUBCIRCUIT) then 
+            res = TERMINATION_SUBCIRCUIT
          else
             res = TERMINATION_UNDEFINED
          end if
@@ -3740,8 +3775,10 @@ contains
          type(linel_t), dimension(:), allocatable :: linels
          type(coordinate_t) :: coord
          integer :: i,j, prevOr
+         type(polyline_t) :: temp
          elemIds = j_cable%elementIds
-         linels = this%mesh%polylineToLinels(this%mesh%getPolyline(elemIds(1)))
+         temp = this%mesh%getPolyline(elemIds(1))
+         linels = this%mesh%polylineToLinels(temp)
          prevOr = 0
          allocate(res(size(linels)))
          do i = 1, size(linels)

@@ -14,6 +14,7 @@ module mtln_types_m
    integer, parameter :: TERMINATION_RCsLp      =  9
    integer, parameter :: TERMINATION_LCsRp      =  10
    integer, parameter :: TERMINATION_CIRCUIT    =  11
+   integer, parameter :: TERMINATION_SUBCIRCUIT    =  12
 
    integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
@@ -59,6 +60,7 @@ module mtln_types_m
       type(node_source_t) :: source
       type(terminal_circuit_t) :: model
       integer :: subcircuitPort = -1
+      ! subckt info?
    contains
       private
       procedure :: termination_eq
