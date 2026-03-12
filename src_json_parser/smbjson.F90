@@ -3629,7 +3629,7 @@ contains
          logical :: areFixedInCell
          logical :: areMultipolarInCell
          logical :: hasRadius
-         real, dimension(:), allocatable :: r, c
+         real(kind=RKIND), dimension(:), allocatable :: r, c
 
          allocate(null_matrix(n,n), source = 0.0)
 
