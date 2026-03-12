@@ -94,11 +94,11 @@ contains
       allocate(expected%lossyThinSurfs%cs(1)%eps(2))
       allocate(expected%lossyThinSurfs%cs(1)%mu(2))
       allocate(expected%lossyThinSurfs%cs(1)%sigmam(2))
-      expected%lossyThinSurfs%cs(1)%thk    = [              1e-3,               5e-3]
-      expected%lossyThinSurfs%cs(1)%sigma  = [              2e-4,                0.0]
-      expected%lossyThinSurfs%cs(1)%eps    = [1.3*EPSILON_VACUUM, 1.3*EPSILON_VACUUM]
-      expected%lossyThinSurfs%cs(1)%mu     = [         MU_VACUUM,          MU_VACUUM]
-      expected%lossyThinSurfs%cs(1)%sigmam = [               0.0,                0.0]
+      expected%lossyThinSurfs%cs(1)%thk = [1e-3_RKIND, 5e-3_RKIND]
+      expected%lossyThinSurfs%cs(1)%sigma = [2e-4_RKIND, 0.0_RKIND]
+      expected%lossyThinSurfs%cs(1)%eps = [1.3_RKIND*EPSILON_VACUUM, 1.3_RKIND*EPSILON_VACUUM]
+      expected%lossyThinSurfs%cs(1)%mu = [MU_VACUUM, MU_VACUUM]
+      expected%lossyThinSurfs%cs(1)%sigmam = [0.0_RKIND, 0.0_RKIND]
       allocate(expected%lossyThinSurfs%cs(1)%thk_devia(2))
       allocate(expected%lossyThinSurfs%cs(1)%sigma_devia(2))
       allocate(expected%lossyThinSurfs%cs(1)%eps_devia(2))
@@ -127,11 +127,11 @@ contains
       allocate(expected%lossyThinSurfs%cs(2)%eps(3))
       allocate(expected%lossyThinSurfs%cs(2)%mu(3))
       allocate(expected%lossyThinSurfs%cs(2)%sigmam(3))
-      expected%lossyThinSurfs%cs(2)%thk    = [          1e-3,           5e-3,           1e-3]
-      expected%lossyThinSurfs%cs(2)%sigma  = [          2e-4,            0.0,            0.0]
+      expected%lossyThinSurfs%cs(2)%thk    = [    1e-3_RKIND,     5e-3_RKIND,     1e-3_RKIND]
+      expected%lossyThinSurfs%cs(2)%sigma  = [    2e-4_RKIND,     0.0_RKIND,      0.0_RKIND]
       expected%lossyThinSurfs%cs(2)%eps    = [EPSILON_VACUUM, EPSILON_VACUUM, EPSILON_VACUUM]
-      expected%lossyThinSurfs%cs(2)%mu     = [     MU_VACUUM,  1.3*MU_VACUUM,      MU_VACUUM]
-      expected%lossyThinSurfs%cs(2)%sigmam = [           0.0,            0.0,           1e-4]
+      expected%lossyThinSurfs%cs(2)%mu     = [     MU_VACUUM,  1.3_RKIND*MU_VACUUM,  MU_VACUUM]
+      expected%lossyThinSurfs%cs(2)%sigmam = [     0.0_RKIND,     0.0_RKIND,      1e-4_RKIND]
       allocate(expected%lossyThinSurfs%cs(2)%thk_devia(3))
       allocate(expected%lossyThinSurfs%cs(2)%sigma_devia(3))
       allocate(expected%lossyThinSurfs%cs(2)%eps_devia(3))
