@@ -30,7 +30,7 @@ module mtln_preprocess_m
         procedure :: buildNetwork
         procedure :: connectNodeToGround
         procedure :: connectNodes
-        procedure :: connectNodesToSubcircuit
+        procedure :: connectNodesToNetwork_circuit
         procedure :: addNodeWithId
         procedure :: addProbesWithId
     end type preprocess_t
@@ -626,7 +626,7 @@ contains
 
     end function
 
-    function writeSubcircuitNode(node, termination, end_node) result(res)
+    function writeNetwork_circuitNode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
         character(len=*), intent(in) :: end_node
@@ -877,8 +877,8 @@ contains
             res = writeOpenNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_CIRCUIT) then 
             res = writeModelNode(node, termination , end_node)
-        else if (termination%termination_type == TERMINATION_SUBCIRCUIT) then 
-            res = writeSubcircuitNode(node, termination , end_node)
+        else if (termination%termination_type == TERMINATION_NETWORK) then 
+            res = writeNetwork_circuitNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_UNDEFINED) then            
             call WarnErrReport('writeNodeDescription: undefined termination at '// node%name, .true.) 
         end if
@@ -1096,14 +1096,14 @@ contains
         description((size(old_description)+1):size(description)) = node_description(:)
     end subroutine
 
-    subroutine connectNodesToSubcircuit(this, terminal_connection, nodes, description)
+    subroutine connectNodesToNetwork_circuit(this, terminal_connection, nodes, description)
         class(preprocess_t) :: this
         type(terminal_connection_t), intent(in) :: terminal_connection
         type(nw_node_t),  dimension(:), allocatable, intent(inout) :: nodes
         type(nw_node_t),  dimension(:), allocatable :: aux_nodes
         character(256), dimension(:), allocatable, intent(inout) :: description
         character(256), dimension(:), allocatable :: node_description, old_description
-        character(len=256) :: subcircuit_node, str_term
+        character(len=256) :: network_circuit_node, str_term
         
         type(nw_node_t) :: new_node
         integer :: i
@@ -1117,9 +1117,9 @@ contains
             nodes(size(aux_nodes) + i) = new_node
             
             write(str_term, '(I0)') terminal_connection%nodes(i)%termination%circuitTerminal
-            subcircuit_node = trim(terminal_connection%subcircuit%subcircuit_name)//"_"//trim(str_term)
+            network_circuit_node = trim(terminal_connection%network_circuit%circuit_name)//"_"//trim(str_term)
 
-            node_description = writeNodeDescription(new_node, terminal_connection%nodes(i)%termination, trim(subcircuit_node))
+            node_description = writeNodeDescription(new_node, terminal_connection%nodes(i)%termination, trim(network_circuit_node))
 
             if (allocated(old_description)) then 
                 deallocate(old_description)
@@ -1186,16 +1186,16 @@ contains
         character(256), dimension(:), allocatable :: listOfModels
         type(network_t) :: res
         integer :: i
-        type(terminal_connection_t), dimension(:), allocatable :: subcircuit_connections, node2node_connections
+        type(terminal_connection_t), dimension(:), allocatable :: network_circuit_connections, node2node_connections
         
-        call filterConnections(terminal_network%connections, subcircuit_connections, node2node_connections)
+        call filterConnections(terminal_network%connections, network_circuit_connections, node2node_connections)
 
         allocate(listOfModels(0))
         allocate(description(0))
-        do i = 1, size(subcircuit_connections) 
-            if (subcircuit_connections(i)%has_subcircuit) then 
-                call addCircuitModel(description, subcircuit_connections(i)%subcircuit, listOfModels)
-                call addCircuitInstance(description, subcircuit_connections(i)%subcircuit)
+        do i = 1, size(network_circuit_connections) 
+            if (network_circuit_connections(i)%has_circuit) then 
+                call addCircuitModel(description, network_circuit_connections(i)%network_circuit, listOfModels)
+                call addCircuitInstance(description, network_circuit_connections(i)%network_circuit)
             end if
         end do
 
@@ -1208,8 +1208,8 @@ contains
             end if
         end do
         
-        do i = 1, size(subcircuit_connections) 
-            call this%connectNodesToSubcircuit(subcircuit_connections(i), nodes, description)
+        do i = 1, size(network_circuit_connections) 
+            call this%connectNodesToNetwork_circuit(network_circuit_connections(i), nodes, description)
         end do
 
         res = networkCtor(nodes, description)
@@ -1233,9 +1233,9 @@ contains
 
     end function
 
-    subroutine addCircuitInstance(description, subcircuit)
+    subroutine addCircuitInstance(description, network_circuit)
         character(256), dimension(:), allocatable, intent(inout) :: description
-        type(subcircuit_t), intent(in) :: subcircuit
+        type(network_circuit_t), intent(in) :: network_circuit
         character(256) :: buff
 
         character(:), allocatable :: ports
@@ -1243,32 +1243,32 @@ contains
         integer :: i
 
         ports = " "
-        do i = 1, subcircuit%numberOfPorts
+        do i = 1, network_circuit%number_of_nodes
             write(str_term, '(I0)') i
-            ports = ports//trim(subcircuit%subcircuit_name)//"_"//trim(str_term)//" "
+            ports = ports//trim(network_circuit%circuit_name)//"_"//trim(str_term)//" "
         end do
 
-        buff = trim("x"//trim(subcircuit%subcircuit_name)//" "//trim(ports)//" "//trim(subcircuit%model_name))
+        buff = trim("x"//trim(network_circuit%circuit_name)//" "//trim(ports)//" "//trim(network_circuit%model_name))
         call appendToStringArray(description, buff)    
 
     end subroutine
 
-    subroutine addCircuitModel(description, subcircuit, listOfModels)
+    subroutine addCircuitModel(description, network_circuit, listOfModels)
         character(256), dimension(:), allocatable, intent(inout) :: description
         character(256), dimension(:), allocatable, intent(inout) :: listOfModels
-        type(subcircuit_t), intent(in) :: subcircuit
+        type(network_circuit_t), intent(in) :: network_circuit
         character(256) :: buff
 
         character(:), allocatable :: ports
         character(10) :: str_term
         integer :: i
 
-        buff = trim(subcircuit%model_file)
+        buff = trim(network_circuit%model_file)
         if (isModelIncluded(buff, listOfModels)) return
 
         call appendToStringArray(listOfModels, buff)    
 
-        buff = trim(".include "//subcircuit%model_file)
+        buff = trim(".include "//network_circuit%model_file)
         call appendToStringArray(description, buff)    
 
     end subroutine
@@ -1283,7 +1283,7 @@ contains
         node_size = 0
 
         do i = 1, size(all_conn)
-            if (all_conn(i)%has_subcircuit) then 
+            if (all_conn(i)%has_circuit) then 
                 subckt_size = subckt_size + 1
             else
                 node_size = node_size + 1
@@ -1299,7 +1299,7 @@ contains
         is_ckt = .true.
 
         do i = 1, size(all_conn)
-            if (all_conn(i)%has_subcircuit) then 
+            if (all_conn(i)%has_circuit) then 
                 subckt_conn(subckt_size) = all_conn(i)
                 subckt_size = subckt_size + 1
             else 

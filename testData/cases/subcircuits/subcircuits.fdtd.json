@@ -79,20 +79,20 @@
             "id": 5,
             "type": "terminal",
             "name": "junction_left_1",
-            "terminations": [{"type": "subcircuit","name": "rcjunction", "file" : "junction.model", "subcircuitPort": 1}]
+            "terminations": [{"type": "network","name": "rcjunction", "file" : "junction.model", "node": 1}]
         },
         {
             "id": 6,
             "type": "terminal",
             "name": "junction_left_2",
-            "terminations": [{"type": "subcircuit","name": "rcjunction", "file" : "junction.model", "subcircuitPort": 2}]
+            "terminations": [{"type": "network","name": "rcjunction", "file" : "junction.model", "node": 2}]
         },
         {
             "id": 7,
             "type": "terminal",
             "name": "junction_right",
-            "terminations": [{"type": "subcircuit", "name": "rcjunction", "file" : "junction.model", "subcircuitPort": 3},
-                             {"type": "subcircuit", "name": "rcjunction", "file" : "junction.model", "subcircuitPort": 4}]
+            "terminations": [{"type": "network", "name": "rcjunction", "file" : "junction.model", "node": 3},
+                             {"type": "network", "name": "rcjunction", "file" : "junction.model", "node": 4}]
         }
 	],
 

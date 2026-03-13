@@ -2783,7 +2783,7 @@ contains
          type(coordinate_t) :: network_coordinate
          type(aux_node_t), dimension(:), intent(in) :: aux_nodes
          integer, intent(in) :: network_index
-         type(subcircuit_t), dimension(:), allocatable :: subcircuits
+         type(network_circuit_t), dimension(:), allocatable :: network_circuits
 
          type(aux_node_t), dimension(:), allocatable :: network_nodes
          integer, dimension(:), allocatable :: node_ids
@@ -2794,26 +2794,26 @@ contains
          network_nodes = filterNetworkNodesByCoordinate(aux_nodes, network_coordinate)
          node_ids = buildListOfNodeIds(network_nodes)
 
-         subcircuits = buildNetworkSubcircuits(network_nodes, node_ids, network_index)
+         network_circuits = buildNetworkCircuits(network_nodes, node_ids, network_index)
 
          do i = 1, size(node_ids)
-            call res%add_connection(buildConnection(node_ids(i), network_nodes, subcircuits))
+            call res%add_connection(buildConnection(node_ids(i), network_nodes, network_circuits))
          end do
 
 
       end function
 
-      function buildNetworkSubcircuits(nodes, node_ids, network_index) result(res)
+      function buildNetworkCircuits(nodes, node_ids, network_index) result(res)
          type(aux_node_t), dimension(:), intent(in) :: nodes
          integer, dimension(:), intent(in) :: node_ids
          integer, intent(in) :: network_index
          type(aux_node_t), dimension(:), allocatable :: subckt_filtered_nodes, id_filtered_nodes
-         type(subcircuit_t), dimension(:), allocatable :: res
+         type(network_circuit_t), dimension(:), allocatable :: res
          character(20) :: index
-         character(BUFSIZE) :: subcircuit_name
+         character(BUFSIZE) :: circuit_name
          integer :: i, j, n
          n = 0
-         subckt_filtered_nodes = filterNetworkNodesBySubcircuit(nodes)
+         subckt_filtered_nodes = filterNetworkNodesByNetworkCircuit(nodes)
          do i = 1, size(node_ids)
             id_filtered_nodes = filterNetworkNodesById(subckt_filtered_nodes, node_ids(i))
             if (size(id_filtered_nodes) /= 0) n = n + 1
@@ -2828,15 +2828,15 @@ contains
                res(n)%nodeId = id_filtered_nodes(1)%cId
                res(n)%model_name = trim(id_filtered_nodes(1)%node%termination%model%name)
                res(n)%model_file = trim(id_filtered_nodes(1)%node%termination%model%file)
-               res(n)%subcircuit_name =  'subckt_' // trim(res(n)%model_file)//'_'// trim(adjustl(index))
-               res(n)%numberOfPorts = readNumberOfPorts(res(n)%model_file,res(n)%model_name)
-               if (res(n)%numberOfPorts == 0) call WarnErrReport('Problem in subcircuit model. No ports detected', .true.)
+               res(n)%circuit_name =  'subckt_' // trim(res(n)%model_file)//'_'// trim(adjustl(index))
+               res(n)%number_of_nodes = readNumberOfNodes(res(n)%model_file,res(n)%model_name)
+               if (res(n)%number_of_nodes == 0) call WarnErrReport('Problem in network model. No ports detected', .true.)
                n = n + 1
             end if
          end do
       end function
 
-      function readNumberOfPorts(model_file, model_name) result(res)
+      function readNumberOfNodes(model_file, model_name) result(res)
          character(len=*), intent(in) :: model_file
          character(len=*), intent(in) :: model_name
          integer :: res
@@ -2918,20 +2918,20 @@ contains
          end do
       end function
 
-      function filterNetworkNodesBySubcircuit(aux_nodes) result(res)
+      function filterNetworkNodesByNetworkCircuit(aux_nodes) result(res)
          type(aux_node_t), dimension(:), intent(in) :: aux_nodes
          type(aux_node_t), dimension(:), allocatable :: res
          integer :: i, n
          n = 0
          do i = 1, size(aux_nodes)
-            if (aux_nodes(i)%node%termination%termination_type == TERMINATION_SUBCIRCUIT) then
+            if (aux_nodes(i)%node%termination%termination_type == TERMINATION_NETWORK) then
                n = n + 1
             end if
          end do
          allocate(res(n))
          n = 1
          do i = 1, size(aux_nodes)
-            if (aux_nodes(i)%node%termination%termination_type == TERMINATION_SUBCIRCUIT) then
+            if (aux_nodes(i)%node%termination%termination_type == TERMINATION_NETWORK) then
                res = aux_nodes(i)
                n = n + 1
             end if
@@ -2940,10 +2940,10 @@ contains
 
 
 
-      function buildConnection(node_id, network_nodes, subcircuits) result (res)
+      function buildConnection(node_id, network_nodes, network_circuits) result (res)
          integer, intent(in) :: node_id
          type(aux_node_t), dimension(:), intent(in) :: network_nodes
-         type(subcircuit_t), dimension(:), intent(in) :: subcircuits
+         type(network_circuit_t), dimension(:), intent(in) :: network_circuits
          type(terminal_connection_t) :: res
          integer :: i
          do i = 1, size(network_nodes)
@@ -2951,10 +2951,10 @@ contains
                call res%add_node(network_nodes(i)%node)
             end if
          end do
-         do i = 1, size(subcircuits)
-            if (subcircuits(i)%nodeId == node_id) then
-               res%subcircuit = subcircuits(i)
-               res%has_subcircuit = .true.
+         do i = 1, size(network_circuits)
+            if (network_circuits(i)%nodeId == node_id) then
+               res%network_circuit = network_circuits(i)
+               res%has_circuit = .true.
             end if
          end do
 
@@ -3187,8 +3187,8 @@ contains
             res = TERMINATION_RLsCp
          else if (type == J_MAT_TERM_TYPE_CIRCUIT) then 
             res = TERMINATION_CIRCUIT
-         else if (type == J_MAT_TERM_TYPE_SUBCIRCUIT) then 
-            res = TERMINATION_SUBCIRCUIT
+         else if (type == J_MAT_TERM_TYPE_NETWORK) then 
+            res = TERMINATION_NETWORK
          else
             res = TERMINATION_UNDEFINED
          end if
@@ -3215,8 +3215,8 @@ contains
          type(json_value), pointer :: termination
          integer, intent(in) :: default
          integer :: res
-         if (this%existsAt(termination, J_MAT_TERM_MODEL_TERM)) then
-            res = this%getIntAt(termination, J_MAT_TERM_MODEL_TERM)
+         if (this%existsAt(termination, J_MAT_TERM_MODEL_NODE)) then
+            res = this%getIntAt(termination, J_MAT_TERM_MODEL_NODE)
          else
             res = default
          end if

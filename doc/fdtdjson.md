@@ -461,8 +461,13 @@ The values are defined defined as follows:
 + 2-port SPICE models can used in a termination. In this case the `type` is `circuit`, and is defined with:
   + `[file]` which is the name of the file where the SPICE model is defined 
   + `[name]` which is the name of the subcircuit as defined inside `file`
+  + `[terminal]` which is the number of the subcircuit terminals the termination is connected to. It can be equal to 1 or 2, depending on the side of the SPICE model the termination is connected to. By default it equals 1, meaning that the termination is connected to the first external node in the netlist definition 
++ N-port SPICE models can be used to connect a series of terminations. The `type` is `network`, and is defined with:
+  + `[file]` which is the name of the file where the SPICE model is defined 
+  + `[name]` which is the name of the subcircuit as defined inside `file`
+  + `[terminal]` which is the subcircuit terminal the termination is connected to. Internally, subcircuits will have their terminals (the circuit external nodes) named in non-numerical way. `[terminal]` is an integer that refers to the position of the terminal in the netlist 
 
-There is an optional key which is needed in case the termination is attached to a N-port circuit, `circuitPort`. This must be an integer which indicates which port in the circuit defined in the [subcircuits](#subcircuits) model is attached to.
+<!-- There is an optional key which is needed in case the termination is attached to a N-port circuit, `circuitPort`. This must be an integer which indicates which port in the circuit defined in the [subcircuits](#subcircuits) model is attached to. -->
 
 **Example:**
 
@@ -555,7 +560,7 @@ Associations with cables can contain the following inputs:
 }
 ```
 
-## `[subCircuits]`
+<!-- ## `[subCircuits]`
 
 A series of terminals connected together (belonging to the same junction) can be connected to a N-port SPICE circuit. In that case, each of these *junction circuits* have to described separately in the `subCircuits` section.
 This section stores associations between `materials` of type `circuit` and `elements` using their respective `id`s as follows:
@@ -564,7 +569,7 @@ This section stores associations between `materials` of type `circuit` and `elem
 + `<elementIds>`: A list of with a single `id`. This id must correspond to an element of type `node`, associated to the `coordinateId` shared by all the polylines connected to the subcircuit.
 + `<name>`: A **unique** name that will be used to identify the ports of the subcircuit.
 
-If a terminal represents a connection to a subcircuit described in this sections, the key `circuitPort` has to be present in the description of the terminal.
+If a terminal represents a connection to a subcircuit described in this sections, the key `circuitPort` has to be present in the description of the terminal. -->
 
 ## `[probes]`
 
