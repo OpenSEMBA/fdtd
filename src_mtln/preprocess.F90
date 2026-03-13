@@ -632,7 +632,6 @@ contains
         character(len=*), intent(in) :: end_node
         character(len=256), allocatable :: res(:)
         character(len=256) :: buff
-        character(len=:), allocatable :: model_name, model_file
         character(20) :: line_c, line_g, short_r
         write(short_r, *) 1e-10
         write(line_c, *) node%line_c_per_meter * node%step/2
@@ -677,7 +676,7 @@ contains
         write(line_c, *) node%line_c_per_meter * node%step/2
         allocate(res(0))
 
-        model_name = trim(termination%model%model_name)
+        model_name = trim(termination%model%name)
         model_file = trim(termination%model%file)
 
         buff = trim(".include "//model_file)

@@ -2826,7 +2826,7 @@ contains
             id_filtered_nodes = filterNetworkNodesById(subckt_filtered_nodes, node_ids(i))
             if (size(id_filtered_nodes) /= 0) then 
                res(n)%nodeId = id_filtered_nodes(1)%cId
-               res(n)%model_name = trim(id_filtered_nodes(1)%node%termination%model%model_name)
+               res(n)%model_name = trim(id_filtered_nodes(1)%node%termination%model%name)
                res(n)%model_file = trim(id_filtered_nodes(1)%node%termination%model%file)
                res(n)%subcircuit_name =  'subckt_' // trim(res(n)%model_file)//'_'// trim(adjustl(index))
                res(n)%numberOfPorts = readNumberOfPorts(res(n)%model_file,res(n)%model_name)
@@ -3204,9 +3204,9 @@ contains
          end if
 
          if (this%existsAt(termination, J_MAT_TERM_MODEL_NAME)) then
-            res%model_name = this%getStrAt(termination, J_MAT_TERM_MODEL_NAME)
+            res%name = this%getStrAt(termination, J_MAT_TERM_MODEL_NAME)
          else
-            res%model_name = ""
+            res%name = ""
          end if
 
       end function

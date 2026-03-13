@@ -49,7 +49,7 @@ module mtln_types_m
 
    type terminal_circuit_t
       character(len=256) :: file = ""
-      character(len=256) :: model_name = ""
+      character(len=256) :: name = ""
    end type
 
    type, public :: termination_t
