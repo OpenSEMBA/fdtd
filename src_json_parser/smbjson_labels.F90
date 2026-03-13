@@ -80,7 +80,7 @@ module smbjson_labels_m
    character(len=*), parameter :: J_MAT_TERM_EXCITATION = "path_to_excitation"
    character(len=*), parameter :: J_MAT_TERM_MODEL_FILE = "file"
    character(len=*), parameter :: J_MAT_TERM_MODEL_NAME = "name"
-   character(len=*), parameter :: J_MAT_TERM_MODEL_PORT = "subcircuitPort"
+   character(len=*), parameter :: J_MAT_TERM_MODEL_TERM = "circuitTerminal"
 
    character(len=*), parameter :: J_MAT_MULTIWIRE_TRANSFER_IMPEDANCE = "transferImpedancePerMeter"
    character(len=*), parameter :: J_MAT_MULTIWIRE_CAPACITANCE = "capacitancePerMeter"

@@ -59,7 +59,7 @@ module mtln_types_m
       real :: capacitance = 1e22
       type(node_source_t) :: source
       type(terminal_circuit_t) :: model
-      integer :: subcircuitPort = -1
+      integer :: circuitTerminal = -1
       ! subckt info?
    contains
       private

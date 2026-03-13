@@ -3044,7 +3044,7 @@ contains
          res%node%termination%inductance = readTerminationRLC(termination, J_MAT_TERM_INDUCTANCE, default=0.0)
          res%node%termination%source = readGeneratorOnTermination(id,label)
          res%node%termination%model = readTerminationModel(termination)
-         res%node%termination%subcircuitPort = readTerminationSubcircuitPort(termination, default = -1)
+         res%node%termination%circuitTerminal = readTerminationcircuitTerminal(termination, default = -1)
          
          res%node%side = label
          res%node%conductor_in_cable = index
@@ -3211,12 +3211,12 @@ contains
 
       end function
 
-      function readTerminationSubcircuitPort(termination, default) result(res)
+      function readTerminationcircuitTerminal(termination, default) result(res)
          type(json_value), pointer :: termination
          integer, intent(in) :: default
          integer :: res
-         if (this%existsAt(termination, J_MAT_TERM_MODEL_PORT)) then
-            res = this%getIntAt(termination, J_MAT_TERM_MODEL_PORT)
+         if (this%existsAt(termination, J_MAT_TERM_MODEL_TERM)) then
+            res = this%getIntAt(termination, J_MAT_TERM_MODEL_TERM)
          else
             res = default
          end if

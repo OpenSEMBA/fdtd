@@ -1103,7 +1103,7 @@ contains
         type(nw_node_t),  dimension(:), allocatable :: aux_nodes
         character(256), dimension(:), allocatable, intent(inout) :: description
         character(256), dimension(:), allocatable :: node_description, old_description
-        character(len=256) :: subcircuit_node, str_port
+        character(len=256) :: subcircuit_node, str_term
         
         type(nw_node_t) :: new_node
         integer :: i
@@ -1116,8 +1116,8 @@ contains
             new_node = this%addNodeWithId(terminal_connection%nodes(i))
             nodes(size(aux_nodes) + i) = new_node
             
-            write(str_port, '(I0)') terminal_connection%nodes(i)%termination%subcircuitPort
-            subcircuit_node = trim(terminal_connection%subcircuit%subcircuit_name)//"_"//trim(str_port)
+            write(str_term, '(I0)') terminal_connection%nodes(i)%termination%circuitTerminal
+            subcircuit_node = trim(terminal_connection%subcircuit%subcircuit_name)//"_"//trim(str_term)
 
             node_description = writeNodeDescription(new_node, terminal_connection%nodes(i)%termination, trim(subcircuit_node))
 
@@ -1239,13 +1239,13 @@ contains
         character(256) :: buff
 
         character(:), allocatable :: ports
-        character(10) :: str_port
+        character(10) :: str_term
         integer :: i
 
         ports = " "
         do i = 1, subcircuit%numberOfPorts
-            write(str_port, '(I0)') i
-            ports = ports//trim(subcircuit%subcircuit_name)//"_"//trim(str_port)//" "
+            write(str_term, '(I0)') i
+            ports = ports//trim(subcircuit%subcircuit_name)//"_"//trim(str_term)//" "
         end do
 
         buff = trim("x"//trim(subcircuit%subcircuit_name)//" "//trim(ports)//" "//trim(subcircuit%model_name))
@@ -1260,7 +1260,7 @@ contains
         character(256) :: buff
 
         character(:), allocatable :: ports
-        character(10) :: str_port
+        character(10) :: str_term
         integer :: i
 
         buff = trim(subcircuit%model_file)
