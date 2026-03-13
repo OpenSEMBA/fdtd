@@ -156,7 +156,14 @@ contains
         end if
         do
             read(1, *, iostat = io) time, value
-            if (io /= 0) exit
+            if (io < 0) exit
+            if (io > 0) then
+                close(1)
+                call WarnErrReport('Error reading excitation file: ' // trim(source_path), .true.)
+                allocate(res%time(0), res%value(0))
+                res%has_source = .false.
+                return
+            end if
             line_count = line_count + 1
         end do
         close(1)
@@ -165,25 +172,10 @@ contains
         allocate(res%time(line_count))
         allocate(res%value(line_count))
         
-        ! Second pass: fill the arrays
-        open(unit = 1, file = source_path, iostat = io)
-        if (io /= 0) then
-            call WarnErrReport('Cannot open excitation file: ' // trim(source_path), .true.)
-            deallocate(res%time, res%value)
-            allocate(res%time(0), res%value(0))
-            res%has_source = .false.
-            return
-        end if
+        ! Second pass: fill the arrays (file was verified readable in first pass)
+        open(unit = 1, file = source_path)
         do i = 1, line_count
-            read(1, *, iostat = io) res%time(i), res%value(i)
-            if (io /= 0) then
-                close(1)
-                call WarnErrReport('Error reading excitation file: ' // trim(source_path), .true.)
-                deallocate(res%time, res%value)
-                allocate(res%time(0), res%value(0))
-                res%has_source = .false.
-                return
-            end if
+            read(1, *) res%time(i), res%value(i)
         end do
         close(1)
     end function    
