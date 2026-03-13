@@ -221,27 +221,24 @@ contains
 
    elemental logical function pecregions_eq(a, b)
       type(PECRegions_t), intent(in) :: a, b
-      logical :: allAssociated
+      logical :: lins_ok, surfs_ok, vols_ok
 
-      allAssociated = &
-         associated(a%Lins) .and. associated(b%Lins) .and. &
-         associated(a%Surfs) .and. associated(b%Surfs) .and. &
-         associated(a%Vols) .and. associated(b%Vols)
-      if (.not. allAssociated) then
+      ! Two pointers are compatible if both are associated, both are unassociated,
+      ! or one is unassociated while the other is associated with zero size.
+      lins_ok  = (associated(a%Lins)  .eqv. associated(b%Lins))  .or. &
+                 (associated(a%Lins)  .and. size(a%Lins)  == 0)  .or. &
+                 (associated(b%Lins)  .and. size(b%Lins)  == 0)
+      surfs_ok = (associated(a%Surfs) .eqv. associated(b%Surfs)) .or. &
+                 (associated(a%Surfs) .and. size(a%Surfs) == 0)  .or. &
+                 (associated(b%Surfs) .and. size(b%Surfs) == 0)
+      vols_ok  = (associated(a%Vols)  .eqv. associated(b%Vols))  .or. &
+                 (associated(a%Vols)  .and. size(a%Vols)  == 0)  .or. &
+                 (associated(b%Vols)  .and. size(b%Vols)  == 0)
+
+      if (.not. (lins_ok .and. surfs_ok .and. vols_ok)) then
          pecregions_eq = .false.
          return
       end if
-
-      pecregions_eq = &
-         (a%nVols == b%nVols) .and. &
-         (a%nSurfs == b%nSurfs) .and. &
-         (a%nLins_max == b%nLins_max) .and. &
-         (a%nVols_max == b%nVols_max) .and. &
-         (a%nSurfs_max == b%nSurfs_max) .and. &
-         (a%nLins == b%nLins)
-      pecregions_eq = pecregions_eq .and. all(a%Lins == b%Lins) 
-      pecregions_eq = pecregions_eq .and. all(a%surfs == b%surfs) 
-      pecregions_eq = pecregions_eq .and. all(a%vols == b%vols) 
 
    end function pecregions_eq
 
