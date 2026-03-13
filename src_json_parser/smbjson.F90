@@ -2742,13 +2742,10 @@ contains
          integer, dimension(:), allocatable :: elemIds
          type(json_value), pointer :: terminations_ini, terminations_end
          type(coordinate_t), dimension(:), allocatable :: networks_coordinates
-         type(subcircuit_t), dimension(:), allocatable :: subcircuits
          type(materialAssociation_t), dimension(:), allocatable :: cables
-         subcircuits = readSubcircuits()
          
          allocate(aux_nodes(0))
          allocate(networks_coordinates(0))
-         ! cables = [ this%getMaterialAssociations([J_MAT_TYPE_WIRE]), &
          cables  = [this%getMaterialAssociations([J_MAT_TYPE_UNSHIELDED_MULTIWIRE]), &
                     this%getMaterialAssociations([J_MAT_TYPE_SHIELDED_MULTIWIRE]) ,&
                     this%getMaterialAssociations([J_MAT_TYPE_WIRE]) ]
@@ -2767,46 +2764,8 @@ contains
 
 
          do i = 1, size(networks_coordinates)
-            res(i) = buildNetwork(networks_coordinates(i), aux_nodes, subcircuits)
+            res(i) = buildNetwork(networks_coordinates(i), aux_nodes)
          end do
-
-      end function
-
-      function readSubcircuits() result(res_ckt)
-         type(subcircuit_t), dimension(:), allocatable :: res_ckt
-         type(json_value), pointer :: subCkt, ckt
-         type(json_value_ptr_t) :: m
-         integer :: i, j, id
-         logical :: found
-         type(coordinate_t) :: ports_coordinate
-         type(node_t) :: node
-         integer, dimension(:), allocatable :: elemIds
-
-         if (this%existsAt(this%root,  J_SUBCIRCUITS)) then
-            call this%core%get(this%root, J_SUBCIRCUITS, subCkt)
-            allocate(res_ckt(this%core%count(subCkt)))
-            do i = 1, this%core%count(subCkt)
-               call this%core%get_child(subCkt, i, ckt)
-               res_ckt(i)%subcircuit_name = trim(adjustl(this%getStrAt(ckt,J_SUBCKT_NAME)))
-               
-               elemIds = this%getIntsAt(ckt, J_ELEMENTIDS)
-               node = this%mesh%getNode(elemIds(1))
-               res_ckt(i)%nodeId = node%coordIds(1)
-
-               id = this%getIntAt(ckt,J_MATERIAL_ID)
-               m = this%matTable%getId(this%getIntAt(ckt, J_MATERIAL_ID, found))
-               if (.not. found) then
-                  call WarnErrReport("Error reading material region: materialId label not found.", .true.)
-               end if
-               res_ckt(i)%model_file = this%getStrAt(m%p, J_SUBCKT_FILE)
-               res_ckt(i)%model_name = this%getStrAt(m%p, J_SUBCKT_NAME)
-               res_ckt(i)%numberOfPorts = this%getIntAt(m%p, J_SUBCKT_PORTS)
-            end do
-            
-         else
-            allocate(res_ckt(0))
-         end if
-
 
       end function
 
@@ -2820,22 +2779,10 @@ contains
          end do
       end function
 
-      ! function countSubcircuitsInNetwork(network_coordinate,subcircuits) result (res)
-      !    type(coordinate_t) :: network_coordinate
-      !    type(subcircuit_t), dimension(:), intent(in) :: subcircuits
-      !    integer :: i, res
-      !    res = 0
-      !    do i = 1, size(subcircuits)
-      !       if (network_coordinate == this%mesh%getCoordinate(subcircuits(i)%nodeId)) then 
-      !          res = res + 1
-      !       end if
-      !    end do
-      ! end function
-
-      function buildNetwork(network_coordinate, aux_nodes, subcircuits) result(res)
+      function buildNetwork(network_coordinate, aux_nodes) result(res)
          type(coordinate_t) :: network_coordinate
          type(aux_node_t), dimension(:), intent(in) :: aux_nodes
-         type(subcircuit_t), dimension(:), intent(in) :: subcircuits
+         type(subcircuit_t), dimension(:), allocatable :: subcircuits
 
          type(aux_node_t), dimension(:), allocatable :: network_nodes
          integer, dimension(:), allocatable :: node_ids
@@ -2846,7 +2793,7 @@ contains
          network_nodes = filterNetworkNodesByCoordinate(aux_nodes, network_coordinate)
          node_ids = buildListOfNodeIds(network_nodes)
 
-         subcircuits = buildNetworkSubcircuits(network_nodes)
+         subcircuits = buildNetworkSubcircuits(network_nodes, node_ids)
 
          do i = 1, size(node_ids)
             call res%add_connection(buildConnection(node_ids(i), network_nodes, subcircuits))
@@ -2855,35 +2802,62 @@ contains
 
       end function
 
-      function buildNetworkSubcircuits(nodes, ids) result(res)
+      function buildNetworkSubcircuits(nodes, node_ids) result(res)
          type(aux_node_t), dimension(:), intent(in) :: nodes
          integer, dimension(:), intent(in) :: node_ids
-         type(aux_node_t), dimension(:), allocatable :: subckt_nodes
+         type(aux_node_t), dimension(:), allocatable :: subckt_filtered_nodes, id_filtered_nodes
          type(subcircuit_t), dimension(:), allocatable :: res
-         integer :: j
-         ! do i = 1, size(node_ids)
-         !    do j = 1, size(nodes)
-         !       if (nodes(j)%cId == node_ids(i)) then 
-                  
-         !       end if
-         !    end do
-         ! end do
-         
-         ! filtra todos los nodos que sea subckt
-         ! luego filtra por id
-         ! cada conjunto es un subckt
-         ! de ahí crea el subckt
-         subckt_id_nodes = filterNetworkNodesById(subckt_nodes)
-         subckt_nodes = filterNetworkNodesBySubcircuit(nodes)
+         integer :: i, j, n
+         n = 0
+         subckt_filtered_nodes = filterNetworkNodesBySubcircuit(nodes)
+         do i = 1, size(node_ids)
+            id_filtered_nodes = filterNetworkNodesById(subckt_filtered_nodes, node_ids(i))
+            if (size(id_filtered_nodes) /= 0) n = n + 1
+         end do
+         allocate(res(n))      
+         n = 1
+         do i = 1, size(node_ids)
+            id_filtered_nodes = filterNetworkNodesById(subckt_filtered_nodes, node_ids(i))
+            if (size(id_filtered_nodes) /= 0) then 
+               res(n)%nodeId = id_filtered_nodes(1)%cId
+               res(n)%model_name = id_filtered_nodes(1)%node%termination%model%model_name
+               res(n)%model_file = id_filtered_nodes(1)%node%termination%model%file
+               res(n)%subcircuit_name =  'subckt_' // res(n)%model_name
+               res(n)%numberOfPorts = readNumberOfPorts(res(n)%model_file,res(n)%model_name)
+               if (res(n)%numberOfPorts == 0) call WarnErrReport('Problem in subcircuit model. No ports detected', .true.)
+               n = n + 1
+            end if
+         end do
+      end function
 
-         ! do i = 1, size(nodes)
-         !    if (nodes(i)%termination%termination_type == TERMINATION_SUBCIRCUIT) then 
-         !       ! si un nodo es subckt
-         !    end if
-         ! end do
+      function readNumberOfPorts(model_file, model_name) result(res)
+         character(len=*), intent(in) :: model_file
+         character(len=*), intent(in) :: model_name
+         integer :: res
 
-
-
+         character(len=BUFSIZE) :: line
+         character(len=:), allocatable :: line_trim
+         character(len=BUFSIZE), allocatable, dimension(:) :: words
+         integer :: io
+         res = 0
+         open(unit=1, file = model_file, status='old', action='read', iostat=io)
+         if (io /= 0) return
+         do
+            read(1, '(A)', iostat=io) line 
+            if (io /= 0) exit
+            line_trim = adjustl(line)
+            if (len_trim(line_trim) == 0) cycle
+            if (line_trim(1:1) == '*') cycle
+            call splitLineIntoWords(line_trim, words)
+            if (size(words) >= 2) then 
+               if (to_upper(words(1)) == '.SUBCKT' .and. &
+                   trim(words(2)) == trim(model_name)) then
+                     res = size(words) -2
+                     exit 
+               end if
+            end if 
+         end do
+         close(1)
       end function
 
       function buildListOfNodeIds(network_nodes) result(res)
@@ -2897,17 +2871,68 @@ contains
       end function
 
       function filterNetworkNodesByCoordinate(aux_nodes, network_coordinate) result(res)
-         type(coordinate_t), intent(in) :: network_coordinate
          type(aux_node_t), dimension(:), intent(in) :: aux_nodes
+         type(coordinate_t), intent(in) :: network_coordinate
          type(aux_node_t), dimension(:), allocatable :: res
-         integer :: i
-         allocate(res(0))
+         integer :: i, n
+         n = 0
          do i = 1, size(aux_nodes)
             if (aux_nodes(i)%relPos == network_coordinate) then
-               res = [res, aux_nodes(i)]
+               n = n + 1
+            end if
+         end do
+         allocate(res(n))
+         n = 1
+         do i = 1, size(aux_nodes)
+            if (aux_nodes(i)%relPos == network_coordinate) then
+               res(n) = aux_nodes(i)
+               n = n + 1
             end if
          end do
       end function
+
+      function filterNetworkNodesById(aux_nodes, cId) result(res)
+         type(aux_node_t), dimension(:), intent(in) :: aux_nodes
+         integer, intent(in) :: cId
+         type(aux_node_t), dimension(:), allocatable :: res
+         integer :: i, n
+         n = 0
+         do i = 1, size(aux_nodes)
+            if (aux_nodes(i)%cId == cId) then
+               n = n + 1
+            end if
+         end do
+         allocate(res(n))
+         n = 1
+         do i = 1, size(aux_nodes)
+            if (aux_nodes(i)%cId == cId) then
+               res = aux_nodes(i)
+               n = n + 1
+            end if
+         end do
+      end function
+
+      function filterNetworkNodesBySubcircuit(aux_nodes) result(res)
+         type(aux_node_t), dimension(:), intent(in) :: aux_nodes
+         type(aux_node_t), dimension(:), allocatable :: res
+         integer :: i, n
+         n = 0
+         do i = 1, size(aux_nodes)
+            if (aux_nodes(i)%node%termination%termination_type == TERMINATION_SUBCIRCUIT) then
+               n = n + 1
+            end if
+         end do
+         allocate(res(n))
+         n = 1
+         do i = 1, size(aux_nodes)
+            if (aux_nodes(i)%node%termination%termination_type == TERMINATION_SUBCIRCUIT) then
+               res = aux_nodes(i)
+               n = n + 1
+            end if
+         end do
+      end function
+
+
 
       function buildConnection(node_id, network_nodes, subcircuits) result (res)
          integer, intent(in) :: node_id
