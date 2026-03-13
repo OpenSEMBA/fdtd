@@ -1,0 +1,7 @@
+.SUBCKT rcjunction yplus yminus twowire1 twowire2
+R5 yplus yminus R
+R4 yminus twowire1 5e-3
+R3 yplus twowire1 R
+C1 yplus twowire1 C
+* twowire2 ?
+.ENDS rcjunction

@@ -209,5 +209,63 @@ contains
       allocate(res(1,1), source = 0.0)
       res(1,1) = scalar
    end function
+
+   subroutine splitLineIntoWords(line, words)
+      character(len=*), intent(in) :: line
+      character(len=BUFSIZE), allocatable, dimension(:), intent(out) :: words
+
+      integer :: lenstr, i, start, nwords, wlen
+
+      lenstr = len_trim(line)
+      nwords = 0
+      i = 1
+      ! First pass: count words
+      do while (i <= lenstr)
+         do while (i <= lenstr .and. (line(i:i) == ' ' .or. line(i:i) == achar(9)))
+            i = i + 1
+         end do
+         if (i > lenstr) exit
+         nwords = nwords + 1
+         do while (i <= lenstr .and. (line(i:i) /= ' ' .and. line(i:i) /= achar(9)))
+            i = i + 1
+         end do
+      end do
+
+      if (nwords == 0) then
+         allocate(words(0))
+         return
+      end if
+
+      allocate(words(nwords))
+      i = 1
+      start = 1
+      nwords = 0
+      do while (i <= lenstr)
+         do while (i <= lenstr .and. (line(i:i) == ' ' .or. line(i:i) == achar(9)))
+            i = i + 1
+         end do
+         if (i > lenstr) exit
+         start = i
+         do while (i <= lenstr .and. (line(i:i) /= ' ' .and. line(i:i) /= achar(9)))
+            i = i + 1
+         end do
+         wlen = i - start
+         nwords = nwords + 1
+         words(nwords) = line(start:start+wlen-1)
+      end do
+   end subroutine
+
+   pure function to_upper(str) result(res)
+      character(len=*), intent(in) :: str
+      character(len=len(str)) :: res
+      integer :: i
+      res = str
+      do i = 1, len(str)
+         if (res(i:i) >= 'a' .and. res(i:i) <= 'z') then
+            res(i:i) = achar(iachar(res(i:i)) - 32)
+         end if
+      end do
+   end function
+
 #endif
 end module

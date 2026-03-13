@@ -14,6 +14,7 @@ module mtln_types_m
    integer, parameter :: TERMINATION_RCsLp      =  9
    integer, parameter :: TERMINATION_LCsRp      =  10
    integer, parameter :: TERMINATION_CIRCUIT    =  11
+   integer, parameter :: TERMINATION_NETWORK    =  12
 
    integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
@@ -48,7 +49,7 @@ module mtln_types_m
 
    type terminal_circuit_t
       character(len=256) :: file = ""
-      character(len=256) :: model_name = ""
+      character(len=256) :: name = ""
    end type
 
    type, public :: termination_t
@@ -58,7 +59,8 @@ module mtln_types_m
       real :: capacitance = 1e22
       type(node_source_t) :: source
       type(terminal_circuit_t) :: model
-      integer :: subcircuitPort = -1
+      integer :: circuitTerminal = -1
+      ! subckt info?
    contains
       private
       procedure :: termination_eq
@@ -77,18 +79,18 @@ module mtln_types_m
    end type
 
 
-   type :: subcircuit_t
+   type :: network_circuit_t
       character(len=256) :: model_file = ""
       character(len=256) :: model_name = ""
-      character(len=256) :: subcircuit_name = ""
-      integer :: numberOfPorts
+      character(len=256) :: circuit_name = ""
+      integer :: number_of_nodes
       integer :: nodeId
    end type
 
    type :: terminal_connection_t
       type(terminal_node_t), dimension(:), allocatable :: nodes
-      type(subcircuit_t) :: subcircuit
-      logical :: has_subcircuit = .false.
+      type(network_circuit_t) :: network_circuit
+      logical :: has_circuit = .false.
    contains
       private
       procedure :: terminal_connection_eq
