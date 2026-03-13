@@ -223,22 +223,53 @@ contains
       type(PECRegions_t), intent(in) :: a, b
       logical :: lins_ok, surfs_ok, vols_ok
 
-      ! Two pointers are compatible if both are associated, both are unassociated,
-      ! or one is unassociated while the other is associated with zero size.
-      lins_ok  = (associated(a%Lins)  .eqv. associated(b%Lins))  .or. &
-                 (associated(a%Lins)  .and. size(a%Lins)  == 0)  .or. &
-                 (associated(b%Lins)  .and. size(b%Lins)  == 0)
-      surfs_ok = (associated(a%Surfs) .eqv. associated(b%Surfs)) .or. &
-                 (associated(a%Surfs) .and. size(a%Surfs) == 0)  .or. &
-                 (associated(b%Surfs) .and. size(b%Surfs) == 0)
-      vols_ok  = (associated(a%Vols)  .eqv. associated(b%Vols))  .or. &
-                 (associated(a%Vols)  .and. size(a%Vols)  == 0)  .or. &
-                 (associated(b%Vols)  .and. size(b%Vols)  == 0)
-
-      if (.not. (lins_ok .and. surfs_ok .and. vols_ok)) then
+      if (a%nLins /= b%nLins .or. a%nLins_max /= b%nLins_max .or. &
+          a%nSurfs /= b%nSurfs .or. a%nSurfs_max /= b%nSurfs_max .or. &
+          a%nVols /= b%nVols .or. a%nVols_max /= b%nVols_max) then
          pecregions_eq = .false.
          return
       end if
+
+      lins_ok = .false.
+      if (associated(a%Lins) .eqv. associated(b%Lins)) then
+         if (associated(a%Lins)) then
+            lins_ok = all(a%Lins == b%Lins)
+         else
+            lins_ok = .true.
+         end if
+      else if (associated(a%Lins)) then
+         if (size(a%Lins) == 0) lins_ok = .true.
+      else
+         if (size(b%Lins) == 0) lins_ok = .true.
+      end if
+
+      surfs_ok = .false.
+      if (associated(a%Surfs) .eqv. associated(b%Surfs)) then
+         if (associated(a%Surfs)) then
+            surfs_ok = all(a%Surfs == b%Surfs)
+         else
+            surfs_ok = .true.
+         end if
+      else if (associated(a%Surfs)) then
+         if (size(a%Surfs) == 0) surfs_ok = .true.
+      else
+         if (size(b%Surfs) == 0) surfs_ok = .true.
+      end if
+
+      vols_ok = .false.
+      if (associated(a%Vols) .eqv. associated(b%Vols)) then
+         if (associated(a%Vols)) then
+            vols_ok = all(a%Vols == b%Vols)
+         else
+            vols_ok = .true.
+         end if
+      else if (associated(a%Vols)) then
+         if (size(a%Vols) == 0) vols_ok = .true.
+      else
+         if (size(b%Vols) == 0) vols_ok = .true.
+      end if
+
+      pecregions_eq = lins_ok .and. surfs_ok .and. vols_ok
 
    end function pecregions_eq
 
