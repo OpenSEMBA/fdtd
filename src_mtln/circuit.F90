@@ -2,6 +2,7 @@ module circuit_m
 
     use ngspice_interface_m
     use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use Report_m, only: WarnErrReport
     implicit none
 
     type string_t
@@ -146,7 +147,13 @@ contains
         
         ! First pass: count the number of lines
         line_count = 0
-        open(unit = 1, file = source_path)
+        open(unit = 1, file = source_path, iostat = io)
+        if (io /= 0) then
+            call WarnErrReport('Cannot open excitation file: ' // trim(source_path), .true.)
+            allocate(res%time(0), res%value(0))
+            res%has_source = .false.
+            return
+        end if
         do
             read(1, *, iostat = io) time, value
             if (io /= 0) exit
@@ -159,13 +166,23 @@ contains
         allocate(res%value(line_count))
         
         ! Second pass: fill the arrays
-        open(unit = 1, file = source_path)
+        open(unit = 1, file = source_path, iostat = io)
+        if (io /= 0) then
+            call WarnErrReport('Cannot open excitation file: ' // trim(source_path), .true.)
+            deallocate(res%time, res%value)
+            allocate(res%time(0), res%value(0))
+            res%has_source = .false.
+            return
+        end if
         do i = 1, line_count
             read(1, *, iostat = io) res%time(i), res%value(i)
             if (io /= 0) then
-                ! Handle unexpected read error
                 close(1)
-                error stop "Error reading excitation file"
+                call WarnErrReport('Error reading excitation file: ' // trim(source_path), .true.)
+                deallocate(res%time, res%value)
+                allocate(res%time(0), res%value(0))
+                res%has_source = .false.
+                return
             end if
         end do
         close(1)
