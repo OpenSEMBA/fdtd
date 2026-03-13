@@ -47,6 +47,7 @@ module smbjson_m
       procedure, private :: readGeneral
       procedure, private :: readGrid
       procedure, private :: readMediaMatrix
+      procedure, private :: readBackgroundMaterial
       procedure, private :: readPECRegions
       procedure, private :: readPMCRegions
       procedure, private :: readDielectricRegions
@@ -165,6 +166,7 @@ contains
       res%front = this%readBoundary()
       
       ! Materials
+      call this%readBackgroundMaterial(res%mats)
       res%pecRegs = this%readPECRegions()
       res%pmcRegs = this%readPMCRegions()
       res%dielRegs = this%readDielectricRegions()
@@ -513,6 +515,19 @@ contains
          end select
       end function
    end function
+
+   subroutine readBackgroundMaterial(this, mats)
+      class(parser_t) :: this
+      type(Materials_t), intent(inout) :: mats
+      logical :: found
+      real :: val
+
+      val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMITTIVITY, found=found)
+      if (found) mats%mats(1)%eps = val
+
+      val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMEABILITY, found=found)
+      if (found) mats%mats(1)%mu = val
+   end subroutine
 
    function readPECRegions(this) result (res)
       class(parser_t), intent(in) :: this
