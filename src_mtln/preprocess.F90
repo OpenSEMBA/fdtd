@@ -878,11 +878,10 @@ contains
             res = writeOpenNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_CIRCUIT) then 
             res = writeModelNode(node, termination , end_node)
-        ! else if (termination%termination_type == TERMINATION_SUBCIRCUIT) then 
-        !     res = writeSubcircuitNode(node, termination , end_node)
+        else if (termination%termination_type == TERMINATION_SUBCIRCUIT) then 
+            res = writeSubcircuitNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_UNDEFINED) then            
-            error stop 'writeNodeDescription: undefined termination at '!// node%name 
-            ! node%name has been commented out for compatibility with NVHPC
+            call WarnErrReport('writeNodeDescription: undefined termination at '// node%name, .true.) 
         end if
 
     end function    
