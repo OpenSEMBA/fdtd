@@ -237,7 +237,7 @@ module  FDETYPES_m
    end type coorsxyzP_t
 
    type MedioExtra_t
-      integer(kind=4) :: size,index
+      integer(kind=4) :: pml_size,index
       real(kind=rkind) :: sigma,sigmam
       logical :: exists
    end type
@@ -698,7 +698,7 @@ module  FDETYPES_m
       character(len=BUFSIZE) :: opcionestotales
       
       integer(kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
-                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, size
+                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, num_procs
       
       type(MedioExtra_t) :: MEDIOEXTRA
       type(nf2ff_T) :: facesNF2FF

@@ -20,11 +20,11 @@ contains
    !
    !Subrutine to parse the .h5 file in search for outputrequest sections and wrap the ASCII data into .h5
    !
-   subroutine PostProcess(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
+   subroutine PostProcess(layoutnumber,num_procs,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
 
 
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       character(len=*), intent(in) :: nEntradaRoot
 
       type(output_t), pointer, dimension( : ) :: output
@@ -57,7 +57,7 @@ contains
       end if
       
       write(whoamishort,'(i5)') layoutnumber+1
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
       Output => GetOutput() !get the output private info from observation
 
@@ -525,11 +525,11 @@ contains
 
 
 
-   subroutine postprocessonthefly(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
+   subroutine postprocessonthefly(layoutnumber,num_procs,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
 
 
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       character(len=*), intent(in) :: nEntradaRoot
 
       type(output_t), pointer, dimension( : ) :: output
@@ -571,7 +571,7 @@ contains
          !
       end do !barrido puntos de observacion
       !
-      call postprocess(layoutnumber,size,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
+      call postprocess(layoutnumber,num_procs,sgg,nEntradaRoot,rinstant,somethingdone,niapapostprocess,forceresampled)
       !
       do ii=1,sgg%NumberRequest
          do i=1,sgg%Observation(ii)%nP
