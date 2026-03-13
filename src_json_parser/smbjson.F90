@@ -2009,7 +2009,7 @@ contains
             polyline = this%mesh%getPolyline(cable%elementIds(1))
             linels = this%mesh%polylineToLinels(polyline)
 
-            write(tagLabel, '(i10)') cable%elementIds(1)
+            tagLabel = this%buildTagName(cable%materialId, cable%elementIds(1))
 
             genDesc = readGeneratorOnThinWire(linels, cable%elementIds)
 
