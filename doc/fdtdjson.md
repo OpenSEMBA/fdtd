@@ -462,7 +462,7 @@ The values are defined defined as follows:
   + `[file]` which is the name of the file where the SPICE model is defined 
   + `[name]` which is the name of the subcircuit as defined inside `file`
 
-There is an optional key which is needed in case the termination is attached to a N-port circuit, `circuitPort`. This must be an integer which indicates to which port in the circuit defined in the [subcircuits](#subcircuits) is attached.
+There is an optional key which is needed in case the termination is attached to a N-port circuit, `circuitPort`. This must be an integer which indicates which port in the circuit defined in the [subcircuits](#subcircuits) model is attached to.
 
 **Example:**
 

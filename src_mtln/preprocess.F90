@@ -626,6 +626,46 @@ contains
 
     end function
 
+    function writeSubcircuitNode(node, termination, end_node) result(res)
+        type(nw_node_t), intent(in) :: node
+        type(termination_t), intent(in) :: termination
+        character(len=*), intent(in) :: end_node
+        character(len=256), allocatable :: res(:)
+        character(len=256) :: buff
+        character(len=:), allocatable :: model_name, model_file
+        character(20) :: line_c, line_g, short_r
+        write(short_r, *) 1e-10
+        write(line_c, *) node%line_c_per_meter * node%step/2
+        allocate(res(0))
+
+        if (termination%source%path_to_excitation /= "") then
+            buff = trim("R" // node%name // " " // node%name // " " // node%name //"_S")//" "//trim(short_R)
+            call appendToStringArray(res, buff)
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_S " // node%name // "_S " // trim(end_node) //" dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_S " // trim(end_node) // " " // node%name // "_S  dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
+        else
+            buff = trim("R" // node%name // " " // node%name // " " // trim(end_node))//" "//trim(short_R)
+            call appendToStringArray(res, buff)
+        end if
+
+        buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
+        call appendToStringArray(res, buff)
+        buff = trim("CL" // node%name // " " // node%name // " 0 " // line_c)
+        call appendToStringArray(res, buff)
+
+        if (node%line_g_per_meter /= 0) then
+            write(line_g, *) 1.0/(node%line_g_per_meter * node%step/2)
+            buff = trim(trim("GL" // node%name) // " " // trim(node%name) // " 0 " // trim(line_g))
+            call appendToStringArray(res, buff)
+        end if    
+
+    end function
+
     function writeModelNode(node, termination, end_node) result(res)
         type(nw_node_t), intent(in) :: node
         type(termination_t), intent(in) :: termination
@@ -639,12 +679,24 @@ contains
 
         model_name = trim(termination%model%model_name)
         model_file = trim(termination%model%file)
-        
+
         buff = trim(".include "//model_file)
         call appendToStringArray(res, buff)
-        buff = trim("x" // node%name // " " // node%name // " " // end_node //" ")//" "//trim(model_name)
-
-        call appendToStringArray(res, buff)
+        
+        if (termination%source%path_to_excitation /= "") then
+            if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
+                buff = trim("V" // node%name // "_S " // node%name // " " // node_name //"_S dc 0" )
+                call appendToStringArray(res, buff) 
+            else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
+                buff = trim("I" // node%name // "_S " // node_node // "_S " // node%name // " dc 0" )
+                call appendToStringArray(res, buff) 
+            end if
+            buff = trim("x" // node%name // " " // node%name // "_S " // end_node //" ")//" "//trim(model_name)
+            call appendToStringArray(res, buff)
+        else
+            buff = trim("x" // node%name // " " // node%name // " " // end_node //" ")//" "//trim(model_name)
+            call appendToStringArray(res, buff)
+        end if
 
         buff = trim("I" // node%name // " " // node%name// " 0 " // " dc 0")
         call appendToStringArray(res, buff)
@@ -826,6 +878,8 @@ contains
             res = writeOpenNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_CIRCUIT) then 
             res = writeModelNode(node, termination , end_node)
+        ! else if (termination%termination_type == TERMINATION_SUBCIRCUIT) then 
+        !     res = writeSubcircuitNode(node, termination , end_node)
         else if (termination%termination_type == TERMINATION_UNDEFINED) then            
             error stop 'writeNodeDescription: undefined termination at '!// node%name 
             ! node%name has been commented out for compatibility with NVHPC
@@ -1064,7 +1118,8 @@ contains
             new_node = this%addNodeWithId(terminal_connection%nodes(i))
             nodes(size(aux_nodes) + i) = new_node
             
-            write(str_port, '(I0)') i
+            !!
+            write(str_port, '(I0)') terminal_connection%nodes(i)%termination%subcircuitPort
             subcircuit_node = trim(terminal_connection%subcircuit%subcircuit_name)//"_"//trim(str_port)
 
             node_description = writeNodeDescription(new_node, terminal_connection%nodes(i)%termination, trim(subcircuit_node))
