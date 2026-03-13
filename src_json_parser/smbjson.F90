@@ -527,7 +527,7 @@ contains
       class(parser_t) :: this
       type(Materials_t), intent(inout) :: mats
       logical :: found
-      real :: val
+      real(kind=RKIND) :: val
 
       val = this%getRealAt(this%root, J_BACKGROUND//'.'//J_BKG_ABS_PERMITTIVITY, found=found)
       if (found) mats%mats(1)%eps = val
