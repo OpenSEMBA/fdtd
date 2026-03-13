@@ -5,7 +5,7 @@ module mtln_preprocess_m
     use mtl_bundle_m
     use network_manager_m
     use mtl_m
-
+    use Report_m, only: WarnErrReport
     use fhash, only: fhash_tbl_t, key=>fhash_key, fhash_key_t
     implicit none
 
@@ -685,10 +685,10 @@ contains
         
         if (termination%source%path_to_excitation /= "") then
             if (termination%source%source_type == SOURCE_TYPE_VOLTAGE) then 
-                buff = trim("V" // node%name // "_S " // node%name // " " // node_name //"_S dc 0" )
+                buff = trim("V" // node%name // "_S " // node%name // " " // node%name //"_S dc 0" )
                 call appendToStringArray(res, buff) 
             else if (termination%source%source_type == SOURCE_TYPE_CURRENT) then 
-                buff = trim("I" // node%name // "_S " // node_node // "_S " // node%name // " dc 0" )
+                buff = trim("I" // node%name // "_S " // node%name // "_S " // node%name // " dc 0" )
                 call appendToStringArray(res, buff) 
             end if
             buff = trim("x" // node%name // " " // node%name // "_S " // end_node //" ")//" "//trim(model_name)
@@ -1117,7 +1117,6 @@ contains
             new_node = this%addNodeWithId(terminal_connection%nodes(i))
             nodes(size(aux_nodes) + i) = new_node
             
-            !!
             write(str_port, '(I0)') terminal_connection%nodes(i)%termination%subcircuitPort
             subcircuit_node = trim(terminal_connection%subcircuit%subcircuit_name)//"_"//trim(str_port)
 

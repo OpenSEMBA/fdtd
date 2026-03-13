@@ -2764,7 +2764,7 @@ contains
 
 
          do i = 1, size(networks_coordinates)
-            res(i) = buildNetwork(networks_coordinates(i), aux_nodes)
+            res(i) = buildNetwork(networks_coordinates(i), aux_nodes, i)
          end do
 
       end function
@@ -2779,9 +2779,10 @@ contains
          end do
       end function
 
-      function buildNetwork(network_coordinate, aux_nodes) result(res)
+      function buildNetwork(network_coordinate, aux_nodes, network_index) result(res)
          type(coordinate_t) :: network_coordinate
          type(aux_node_t), dimension(:), intent(in) :: aux_nodes
+         integer, intent(in) :: network_index
          type(subcircuit_t), dimension(:), allocatable :: subcircuits
 
          type(aux_node_t), dimension(:), allocatable :: network_nodes
@@ -2793,7 +2794,7 @@ contains
          network_nodes = filterNetworkNodesByCoordinate(aux_nodes, network_coordinate)
          node_ids = buildListOfNodeIds(network_nodes)
 
-         subcircuits = buildNetworkSubcircuits(network_nodes, node_ids)
+         subcircuits = buildNetworkSubcircuits(network_nodes, node_ids, network_index)
 
          do i = 1, size(node_ids)
             call res%add_connection(buildConnection(node_ids(i), network_nodes, subcircuits))
@@ -2802,11 +2803,14 @@ contains
 
       end function
 
-      function buildNetworkSubcircuits(nodes, node_ids) result(res)
+      function buildNetworkSubcircuits(nodes, node_ids, network_index) result(res)
          type(aux_node_t), dimension(:), intent(in) :: nodes
          integer, dimension(:), intent(in) :: node_ids
+         integer, intent(in) :: network_index
          type(aux_node_t), dimension(:), allocatable :: subckt_filtered_nodes, id_filtered_nodes
          type(subcircuit_t), dimension(:), allocatable :: res
+         character(20) :: index
+         character(BUFSIZE) :: subcircuit_name
          integer :: i, j, n
          n = 0
          subckt_filtered_nodes = filterNetworkNodesBySubcircuit(nodes)
@@ -2814,15 +2818,17 @@ contains
             id_filtered_nodes = filterNetworkNodesById(subckt_filtered_nodes, node_ids(i))
             if (size(id_filtered_nodes) /= 0) n = n + 1
          end do
-         allocate(res(n))      
+         write(index, '(I0)') network_index
+
+         allocate(res(n))
          n = 1
          do i = 1, size(node_ids)
             id_filtered_nodes = filterNetworkNodesById(subckt_filtered_nodes, node_ids(i))
             if (size(id_filtered_nodes) /= 0) then 
                res(n)%nodeId = id_filtered_nodes(1)%cId
-               res(n)%model_name = id_filtered_nodes(1)%node%termination%model%model_name
-               res(n)%model_file = id_filtered_nodes(1)%node%termination%model%file
-               res(n)%subcircuit_name =  'subckt_' // res(n)%model_name
+               res(n)%model_name = trim(id_filtered_nodes(1)%node%termination%model%model_name)
+               res(n)%model_file = trim(id_filtered_nodes(1)%node%termination%model%file)
+               res(n)%subcircuit_name =  'subckt_' // trim(res(n)%model_file)//'_'// trim(adjustl(index))
                res(n)%numberOfPorts = readNumberOfPorts(res(n)%model_file,res(n)%model_name)
                if (res(n)%numberOfPorts == 0) call WarnErrReport('Problem in subcircuit model. No ports detected', .true.)
                n = n + 1
