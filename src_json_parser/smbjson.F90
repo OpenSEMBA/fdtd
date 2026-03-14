@@ -3602,10 +3602,10 @@ contains
          type(shielded_multiwire_t), intent(inout) :: res
          type(json_value_ptr_t) :: mat
          integer, intent(in) :: n
-         real(kind=RKIND), dimension(:,:), allocatable :: null_matrix
+         real, dimension(:,:), allocatable :: null_matrix
          logical :: found
 
-         allocate(null_matrix(n,n), source = 0.0_RKIND)
+         allocate(null_matrix(n,n), source = 0.0)
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
          else
@@ -3639,14 +3639,14 @@ contains
          type(json_value), pointer :: multipolarExpansionPtr
          integer, intent(in) :: n
          integer :: m
-         real(kind=RKIND), dimension(:,:), allocatable :: null_matrix
+         real, dimension(:,:), allocatable :: null_matrix
          logical :: found
          logical :: areFixedInCell
          logical :: areMultipolarInCell
          logical :: hasRadius
-         real(kind=RKIND), dimension(:), allocatable :: r, c
+         real, dimension(:), allocatable :: r, c
 
-         allocate(null_matrix(n,n), source = 0.0_RKIND)
+         allocate(null_matrix(n,n), source = 0.0)
 
          areFixedInCell = &
             this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE) .and. &
@@ -3655,7 +3655,7 @@ contains
             this%existsAt(mat%p, J_MAT_MULTIWIRE_MULTIPOLAR_EXPANSION)
          hasRadius = &  
             this%existsAt(mat%p, J_MAT_WIRE_RADIUS) .and. &
-            this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND) /= 0_RKIND
+            this%getRealAt(mat%p, J_MAT_WIRE_RADIUS, default=0.0_RKIND) /= 0.0_RKIND
 
          if (.not. hasRadius) then 
             if ((areFixedInCell .and. areMultipolarInCell) .or. &
