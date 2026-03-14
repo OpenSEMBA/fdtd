@@ -194,10 +194,10 @@ contains
 
    function vectorToDiagonalMatrix(vector) result(res)
       real(kind=RKIND), dimension(:), intent(in) :: vector
-      real(kind=RKIND), dimension(:, :), allocatable :: res
+      real, dimension(:, :), allocatable :: res
       integer :: i, n
       n = size(vector, 1)
-      allocate(res(n,n), source = 0.0_RKIND)
+      allocate(res(n,n), source = 0.0)
       do i = 1, n
          res(i,i) = vector(i)
       end do
@@ -205,8 +205,8 @@ contains
 
    function scalarToMatrix(scalar) result(res)
       real(kind=RKIND), intent(in) :: scalar
-      real(kind=RKIND), dimension(:, :), allocatable :: res
-      allocate(res(1,1), source = 0.0_RKIND)
+      real, dimension(:, :), allocatable :: res
+      allocate(res(1,1), source = 0.0)
       res(1,1) = scalar
    end function
 #endif

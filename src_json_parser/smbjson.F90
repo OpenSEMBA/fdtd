@@ -3602,19 +3602,19 @@ contains
          type(shielded_multiwire_t), intent(inout) :: res
          type(json_value_ptr_t) :: mat
          integer, intent(in) :: n
-         real(kind=RKIND), dimension(:,:), allocatable :: null_matrix
+         real, dimension(:,:), allocatable :: null_matrix
          logical :: found
 
-         allocate(null_matrix(n,n), source = 0.0_RKIND)
+         allocate(null_matrix(n,n), source = 0.0)
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
-            res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
+            res%inductance_per_meter = real(this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found), 4)
          else
             call WarnErrReport("Error reading material region: inductancePerMeter label not found.", .true.)
             res%inductance_per_meter = null_matrix
          end if
 
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE)) then
-            res%capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
+            res%capacitance_per_meter = real(this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found), 4)
          else
             call WarnErrReport("Error reading material region: capacitancePerMeter label not found.", .true.)
             res%capacitance_per_meter = null_matrix
@@ -3639,14 +3639,14 @@ contains
          type(json_value), pointer :: multipolarExpansionPtr
          integer, intent(in) :: n
          integer :: m
-         real(kind=RKIND), dimension(:,:), allocatable :: null_matrix
+         real, dimension(:,:), allocatable :: null_matrix
          logical :: found
          logical :: areFixedInCell
          logical :: areMultipolarInCell
          logical :: hasRadius
          real(kind=RKIND), dimension(:), allocatable :: r, c
 
-         allocate(null_matrix(n,n), source = 0.0_RKIND)
+         allocate(null_matrix(n,n), source = 0.0)
 
          areFixedInCell = &
             this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE) .and. &
@@ -3666,8 +3666,8 @@ contains
          end if
 
          if (areFixedInCell) then
-            res%cell_inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
-            res%cell_capacitance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found)
+            res%cell_inductance_per_meter = real(this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found), 4)
+            res%cell_capacitance_per_meter = real(this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_CAPACITANCE,found), 4)
             allocate(res%multipolar_expansion(0))
          else if (areMultipolarInCell) then
             res%cell_inductance_per_meter = null_matrix
