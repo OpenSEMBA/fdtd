@@ -193,21 +193,21 @@ contains
 
 
    function vectorToDiagonalMatrix(vector) result(res)
-      real, dimension(:), intent(in) :: vector
+      real(kind=RKIND), dimension(:), intent(in) :: vector
       real, dimension(:, :), allocatable :: res
       integer :: i, n
       n = size(vector, 1)
       allocate(res(n,n), source = 0.0)
       do i = 1, n
-         res(i,i) = vector(i)
+         res(i,i) = real(vector(i))
       end do
    end function
 
    function scalarToMatrix(scalar) result(res)
-      real, intent(in) :: scalar
+      real(kind=RKIND), intent(in) :: scalar
       real, dimension(:, :), allocatable :: res
       allocate(res(1,1), source = 0.0)
-      res(1,1) = scalar
+      res(1,1) = real(scalar)
    end function
 #endif
 end module
