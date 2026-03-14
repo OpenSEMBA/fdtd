@@ -36,7 +36,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Mirrorizes the Magnetic fields one cell outside to be used by PMC conditions
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine MinusCloneMagneticPMC(sggalloc,sggBorder,Hx,Hy,Hz,c,layoutnumber,size)
+   subroutine MinusCloneMagneticPMC(sggalloc,sggBorder,Hx,Hy,Hz,c,layoutnumber,num_procs)
 
       type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
       real(kind=RKIND)   , intent(inout) :: &
@@ -45,7 +45,7 @@ contains
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
 
       type(XYZlimit_t), dimension(1:6) :: c
-      integer , intent(in) :: layoutnumber,size
+      integer , intent(in) :: layoutnumber,num_procs
       type(Border_t), intent(in)                                         :: sggBorder
 
       !Hx Down
@@ -54,7 +54,7 @@ contains
       end if
       !Hx Up
       if (sggBorder%IsUpPMC) then
-         if (layoutnumber == size-1) Hx( : , : ,C(iHx)%ZE+1)=-Hx( : , : ,C(iHx)%ZE)
+         if (layoutnumber == num_procs-1) Hx( : , : ,C(iHx)%ZE+1)=-Hx( : , : ,C(iHx)%ZE)
       end if
       !Hx Left
       if (sggBorder%IsLeftPMC) then
@@ -78,7 +78,7 @@ contains
       end if
       !Hy Up
       if (sggBorder%IsUpPMC) then
-         if (layoutnumber == size-1) Hy( : , : ,C(iHy)%ZE+1)=-Hy( : , : ,C(iHy)%ZE)
+         if (layoutnumber == num_procs-1) Hy( : , : ,C(iHy)%ZE+1)=-Hy( : , : ,C(iHy)%ZE)
       end if
       !
       !Hz Down
@@ -106,7 +106,7 @@ contains
    !!! Mirrorizes the Magnetic fields for Periodic
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine CloneMagneticPeriodic(sggalloc,sggBorder,Hx,Hy,Hz,c,layoutnumber,size)
+   subroutine CloneMagneticPeriodic(sggalloc,sggBorder,Hx,Hy,Hz,c,layoutnumber,num_procs)
 
       type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
       real(kind=RKIND)   , intent(inout) :: &
@@ -115,7 +115,7 @@ contains
       Hz(sggalloc(iHz)%XI : sggalloc(iHz)%XE,sggalloc(iHz)%YI : sggalloc(iHz)%YE,sggalloc(iHz)%ZI : sggalloc(iHz)%ZE)
 
       type(XYZlimit_t), dimension(1:6) :: c
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       type(Border_t), intent(in)                                         :: sggBorder
 
       !Hx Down
@@ -124,7 +124,7 @@ contains
       end if
       !Hx Up
       if (sggBorder%IsUpPeriodic) then
-         if (layoutnumber == size-1) Hx( : , : ,C(iHx)%ZE+1) = Hx( : , : ,C(iHx)%ZI)
+         if (layoutnumber == num_procs-1) Hx( : , : ,C(iHx)%ZE+1) = Hx( : , : ,C(iHx)%ZI)
       end if
       !Hx Left
       if (sggBorder%IsLeftPeriodic) then
@@ -148,7 +148,7 @@ contains
       end if
       !Hy Up
       if (sggBorder%IsUpPeriodic) then
-         if (layoutnumber == size-1) Hy( : , : ,C(iHy)%ZE+1) = Hy( : , : ,C(iHy)%ZI)
+         if (layoutnumber == num_procs-1) Hy( : , : ,C(iHy)%ZE+1) = Hy( : , : ,C(iHy)%ZI)
       end if
       !
       !Hz Back

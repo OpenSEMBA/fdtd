@@ -173,18 +173,18 @@ contains
       faces%ar = ar
    end function create_facesNF2FF
 
-   function create_control_flags(layoutnumber, size, mpidir, finaltimestep, &
+   function create_control_flags(layoutnumber, num_procs, mpidir, finaltimestep, &
                                        nEntradaRoot, wiresflavor, &
                                        resume, saveall, NF2FFDecim, simu_devia, singlefilewrite, &
                                        facesNF2FF) result(control)
       type(sim_control_t) :: control
-      integer(kind=4), intent(in) :: layoutnumber, size, mpidir, finaltimestep
+      integer(kind=4), intent(in) :: layoutnumber, num_procs, mpidir, finaltimestep
       character(len=*), intent(in) :: nEntradaRoot, wiresflavor
       logical, intent(in) :: resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
       type(nf2ff_t), intent(in) :: facesNF2FF
 
       control%layoutnumber  = layoutnumber
-      control%size = size
+      control%num_procs = num_procs
       control%mpidir  = mpidir
       control%finaltimestep = finaltimestep
       control%nEntradaRoot  = nEntradaRoot

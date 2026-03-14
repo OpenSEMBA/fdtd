@@ -94,7 +94,7 @@ contains
 ! subroutine to initialize the parameters
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
-                     layoutnumber,size,g,ThereAreSGBCs,resume, &
+                     layoutnumber,num_procs,g,ThereAreSGBCs,resume, &
                      temp_SGBCcrank,temp_SGBCFreq,temp_SGBCresol,temp_SGBCDepth,temp_SGBCDispersive, &
                      eps00,mu00,simu_devia,stochastic)
    type(media_matrices_t), intent(in) :: media
@@ -122,7 +122,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    real(kind=RKIND) :: factor
    real(kind=RKIND) , allocatable, dimension(:,:) :: derivcte
 
-   integer(kind=4), intent(in) :: layoutnumber,size,temp_SGBCdepth
+   integer(kind=4), intent(in) :: layoutnumber,num_procs,temp_SGBCdepth
    logical, intent(in) :: resume
    logical, intent(out) :: ThereAreSGBCs
    integer(kind=4) :: jmed,j1,conta,k1,i1,SGBCdir,i,filo_placas,idummy,numpolres,ient,incert,maxnumcapas,ii
@@ -141,7 +141,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
    SGBCdepth        = temp_SGBCdepth     
 !
 !!!
-   write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+   write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
    unstable=.false.
 
 !
@@ -223,7 +223,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
 !!!solo una capa de dispersivo
               if (sgg%Med(jmed)%multiport(1)%numcapas>1) then
                  buff='No more than 1 layer of dispersive SGBC currently supported'
-                 call StopOnError(layoutnumber,size,buff)
+                 call StopOnError(layoutnumber,num_procs,buff)
               end if
 !!!!!!!!
               ficheropolos=SGG%Med(jmed)%multiport(1)%multiportFileZ11 !aunque le llamo Z tiene la sintaxis de un Edispersive ISOTROPO CON EL NUEVO STANDARD (VER LINEAS 6749 DE NFDEPARSER). 
@@ -236,7 +236,7 @@ subroutine InitSGBCs(sgg,media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, 
               inquire(FILE=trim(adjustl(ficheropolos)), EXIST=errnofile)
               if (.not.errnofile) then
                  buff='FILE '//trim(adjustl(ficheropolos))//' DOES NOT EXIST'
-                 call StopOnError(layoutnumber,size,buff)
+                 call StopOnError(layoutnumber,num_procs,buff)
               end if
               open (7345,file=trim(adjustl(ficheropolos)),form='formatted')
               READ (7345,*) rra,rrb,rrc,rrd 

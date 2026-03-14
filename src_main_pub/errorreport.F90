@@ -69,17 +69,17 @@ contains
       return
    end subroutine
    !!!!!!!!!!!!!!!!!
-   subroutine StopOnError(layoutnumber,size,message,calledfrommain)
+   subroutine StopOnError(layoutnumber,num_procs,message,calledfrommain)
       character(len=BUFSIZE) :: ficherito
       logical , optional  :: calledfrommain
       character(len=*), intent( IN) :: message
-      integer(kind=4), optional  :: layoutnumber,size
+      integer(kind=4), optional  :: layoutnumber,num_procs
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
       character(len=BUFSIZE) :: whoami
 
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
 
       call print11(layoutnumber,trim(adjustl(whoami))//' ERROR: '//trim(adjustl(message)),.true.)
@@ -88,8 +88,8 @@ contains
 
       !hay que revisar los stoponerror y hacerlos mas elegantes. De momento aborto a lo bestia comentanod sin cerrar ni warning ni dxf (To do)
 
-      !call CLOSEWARNINGFILE(layoutnumber,size)
-      !!!!call CLOSEdxfFILE(layoutnumber,size)
+      !call CLOSEWARNINGFILE(layoutnumber,num_procs)
+      !!!!call CLOSEdxfFILE(layoutnumber,num_procs)
 
 
 
@@ -170,7 +170,7 @@ contains
       Logical  :: errnofile
       character(len=BUFSIZE) :: buff, whoami
 
-      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%num_procs,') '
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
@@ -214,10 +214,10 @@ contains
          if (.not.errnofile) then
             if (c%resume_fromold) then
                buff='FILE '//trim(adjustl(c%nresumeable2))//'.old DOES NOT EXIST'
-               call StopOnError(c%layoutnumber,c%size,buff)
+               call StopOnError(c%layoutnumber,c%num_procs,buff)
             else
                buff='FILE '//trim(adjustl(c%nresumeable2))//' DOES NOT EXIST'
-               call StopOnError(c%layoutnumber,c%size,buff)
+               call StopOnError(c%layoutnumber,c%num_procs,buff)
             end if
          end if
          call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
@@ -242,19 +242,19 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine ReportExistence(sgg,layoutnumber,size,thereare,mur_second,MurAfterPML)
+   subroutine ReportExistence(sgg,layoutnumber,num_procs,thereare,mur_second,MurAfterPML)
       logical :: mur_second,MurAfterPML
       type(SGGFDTDINFO_t), intent(in) :: sgg
       !
       type(logic_control_t), intent(in) :: thereare
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: buff
 
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -269,7 +269,7 @@ contains
          continue
 #else
          buff=trim(adjustl(whoami))//' MIBC unsupported. Recompile'
-         call stoponerror(layoutnumber,size,buff)
+         call stoponerror(layoutnumber,num_procs,buff)
 #endif
       end if
       !!!!!!!!!!!!!
@@ -398,7 +398,7 @@ contains
 #endif
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: dubuf
-      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',c%layoutnumber+1,'/',c%num_procs,') '
       
       time_desdelanzamiento=t
       snapLevel=1.0e25_RKIND !*maxSourceValue
@@ -541,10 +541,10 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !**************************************************************************************************
-   subroutine Timing(sgg, b, n, n_info, layoutnumber, size, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
+   subroutine Timing(sgg, b, n, n_info, layoutnumber, num_procs, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
    finaltimestep, perform, &
    parar, forcetiming,Ex,Ey,Ez,everflushed, nentradaroot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
-   ! subroutine Timing(sgg, b, n, n_info, layoutnumber, size, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
+   ! subroutine Timing(sgg, b, n, n_info, layoutnumber, num_procs, maxCPUtime,flushsecondsFields, flushsecondsData, initialtimestep, &
    ! finaltimestep, &
    ! parar, forcetiming,Ex,Ey,Ez,everflushed, nentradaroot,maxSourceValue,opcionestotales,simu_devia,dontwritevtk,permitscaling)
    
@@ -553,7 +553,7 @@ contains
       type(SGGFDTDINFO_t), intent(in)              :: sgg              ! Simulation data.
       type( bounds_t), intent( IN) :: b
       character(len=BUFSIZE), intent(in) :: opcionestotales
-      integer( kind = 4), intent( IN) :: layoutnumber, size, n,maxCPUtime
+      integer( kind = 4), intent( IN) :: layoutnumber, num_procs, n,maxCPUtime
       integer( kind = 4), intent( IN) :: flushsecondsFields, flushsecondsData, initialtimestep, finaltimestep
       !--->
       real(kind = RKIND), dimension( 0: b%Ex%NX-1, 0: b%Ex%NY-1, 0: b%Ex%NZ-1), intent( IN) :: Ex
@@ -584,16 +584,16 @@ contains
       character( LEN=BUFSIZE) :: whoamishort,whoami,chinstant
       character(len=BUFSIZE) :: dubuf
       character(len=BUFSIZE) :: dondex,dondey,dondez
-      real(kind=rKIND), dimension(1:size) :: NEWlmaxval,NEWlmaxval_x,NEWlmaxval_y,NEWlmaxval_z
-      integer( kind = 4), dimension(1:size) :: NEWlmaxval_i,NEWlmaxval_j,NEWlmaxval_k
-      real(kind=rKIND), dimension(1:size) :: lmaxval,lmaxval_x,lmaxval_y,lmaxval_z
-      integer( kind = 4), dimension(1:size) :: lmaxval_i,lmaxval_j,lmaxval_k
+      real(kind=rKIND), dimension(1:num_procs) :: NEWlmaxval,NEWlmaxval_x,NEWlmaxval_y,NEWlmaxval_z
+      integer( kind = 4), dimension(1:num_procs) :: NEWlmaxval_i,NEWlmaxval_j,NEWlmaxval_k
+      real(kind=rKIND), dimension(1:num_procs) :: lmaxval,lmaxval_x,lmaxval_y,lmaxval_z
+      integer( kind = 4), dimension(1:num_procs) :: lmaxval_i,lmaxval_j,lmaxval_k
       real(kind=rKIND) :: qmaxval , qmaxval_x,qmaxval_y,qmaxval_z
       integer( kind = 4) :: qmaxval_i,qmaxval_j,qmaxval_k,thefilenoflu
-      real(kind=rKIND), dimension(1:size) :: NEWlminval,NEWlminval_x,NEWlminval_y,NEWlminval_z
-      integer( kind = 4), dimension(1:size) :: NEWlminval_i,NEWlminval_j,NEWlminval_k
-      real(kind=rKIND), dimension(1:size) :: lminval,lminval_x,lminval_y,lminval_z
-      integer( kind = 4), dimension(1:size) :: lminval_i,lminval_j,lminval_k
+      real(kind=rKIND), dimension(1:num_procs) :: NEWlminval,NEWlminval_x,NEWlminval_y,NEWlminval_z
+      integer( kind = 4), dimension(1:num_procs) :: NEWlminval_i,NEWlminval_j,NEWlminval_k
+      real(kind=rKIND), dimension(1:num_procs) :: lminval,lminval_x,lminval_y,lminval_z
+      integer( kind = 4), dimension(1:num_procs) :: lminval_i,lminval_j,lminval_k
       real(kind=rKIND) :: qminval , qminval_x,qminval_y,qminval_z
       integer( kind = 4) :: qminval_i,qminval_j,qminval_k,dimxsnap,dimysnap,dimzsnap,veces,i1,j1,k1
       integer( kind = 4) :: ini_ibox,fin_ibox,ini_jbox,fin_jbox,ini_kbox,fin_kbox
@@ -617,7 +617,7 @@ contains
       integer(kind=4) :: ierr
 #endif
       !!!
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
       write(whoamishort,'(i5)') layoutnumber+1
 
       !---------------------------> empieza Timing <--------------------------------------------------
@@ -822,20 +822,20 @@ contains
          !
          !to prevent duplicate writes on resuming
          !--->
-         lmaxval  (1:size) =  0.0_RKIND
-         lmaxval_i(1:size) =  0
-         lmaxval_j(1:size) =  0
-         lmaxval_k(1:size) =  0
-         lmaxval_x(1:size) =  0.0_RKIND
-         lmaxval_y(1:size) =  0.0_RKIND
-         lmaxval_z(1:size) =  0.0_RKIND
-         lminval  (1:size) =  0.0_RKIND
-         lminval_i(1:size) =  0
-         lminval_j(1:size) =  0
-         lminval_k(1:size) =  0
-         lminval_x(1:size) =  1e+20
-         lminval_y(1:size) =  1e+20
-         lminval_z(1:size) =  1e+20
+         lmaxval  (1:num_procs) =  0.0_RKIND
+         lmaxval_i(1:num_procs) =  0
+         lmaxval_j(1:num_procs) =  0
+         lmaxval_k(1:num_procs) =  0
+         lmaxval_x(1:num_procs) =  0.0_RKIND
+         lmaxval_y(1:num_procs) =  0.0_RKIND
+         lmaxval_z(1:num_procs) =  0.0_RKIND
+         lminval  (1:num_procs) =  0.0_RKIND
+         lminval_i(1:num_procs) =  0
+         lminval_j(1:num_procs) =  0
+         lminval_k(1:num_procs) =  0
+         lminval_x(1:num_procs) =  1e+20
+         lminval_y(1:num_procs) =  1e+20
+         lminval_z(1:num_procs) =  1e+20
          !
 
          valor = 0.0_RKIND
@@ -934,18 +934,18 @@ contains
          end do
 
          !
-         NEWlmaxval  (1:size) =0.0_RKIND
-         NEWlmaxval_i(1:size) =0
-         NEWlmaxval_j(1:size) =0
-         NEWlmaxval_k(1:size) =0
+         NEWlmaxval  (1:num_procs) =0.0_RKIND
+         NEWlmaxval_i(1:num_procs) =0
+         NEWlmaxval_j(1:num_procs) =0
+         NEWlmaxval_k(1:num_procs) =0
 #ifdef CompileWithMPI
-         call MPI_AllReduce( LMAXVAL, NEWlmaxval  , size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_i, NEWlmaxval_I, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_j, NEWlmaxval_J, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_k, NEWlmaxval_K, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_x, NEWlmaxval_x, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_y, NEWlmaxval_y, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LMAXVAL_z, NEWlmaxval_z, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL, NEWlmaxval  , num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_i, NEWlmaxval_I, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_j, NEWlmaxval_J, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_k, NEWlmaxval_K, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_x, NEWlmaxval_x, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_y, NEWlmaxval_y, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LMAXVAL_z, NEWlmaxval_z, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
 #else
          NEWlmaxval   = LMAXVAL
          NEWlmaxval_i = LMAXVAL_I
@@ -962,7 +962,7 @@ contains
          qmaxval_x = 0.0_RKIND
          qmaxval_y = 0.0_RKIND
          qmaxval_z = 0.0_RKIND
-         do i=1,size
+         do i=1,num_procs
             if (abs(NEWlmaxval(i)) > qmaxval) then
                qmaxval   = abs(NEWlmaxval(i))
                qmaxval_i = newlmaxval_i(i)
@@ -978,18 +978,18 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          !
-         NEWlminval  (1:size) =0.0_RKIND
-         NEWlminval_i(1:size) =0
-         NEWlminval_j(1:size) =0
-         NEWlminval_k(1:size) =0
+         NEWlminval  (1:num_procs) =0.0_RKIND
+         NEWlminval_i(1:num_procs) =0
+         NEWlminval_j(1:num_procs) =0
+         NEWlminval_k(1:num_procs) =0
 #ifdef CompileWithMPI
-         call MPI_AllReduce( LminVAL, NEWlminval  , size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_i, NEWlminval_I, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_j, NEWlminval_J, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_k, NEWlminval_K, size, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_x, NEWlminval_x, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_y, NEWlminval_y, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
-         call MPI_AllReduce( LminVAL_z, NEWlminval_z, size, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL, NEWlminval  , num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_i, NEWlminval_I, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_j, NEWlminval_J, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_k, NEWlminval_K, num_procs, MPI_INTEGER, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_x, NEWlminval_x, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_y, NEWlminval_y, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
+         call MPI_AllReduce( LminVAL_z, NEWlminval_z, num_procs, REALSIZE, MPI_SUM, SUBCOMM_MPI, ierr)
 #else
          NEWlminval   = LminVAL
          NEWlminval_i = LminVAL_I
@@ -1006,7 +1006,7 @@ contains
          qminval_x = 0.0_RKIND
          qminval_y = 0.0_RKIND
          qminval_z = 0.0_RKIND
-         do i=1,size
+         do i=1,num_procs
             if (abs(NEWlminval(i)) > qminval) then
                qminval   = abs(NEWlminval(i))
                qminval_i = newlminval_i(i)
@@ -1163,8 +1163,8 @@ contains
             call print11(layoutnumber,dubuf)
             write(dubuf,*) 'Switches: '//trim(adjustl(opcionestotales))
             call print11(layoutnumber,dubuf)
-            !if (size/=1) then
-                write(dubuf,*) 'MPI Processes: ',size
+            !if (num_procs/=1) then
+                write(dubuf,*) 'MPI Processes: ',num_procs
                 call print11(layoutnumber,dubuf)
             !end if
             !
@@ -1217,7 +1217,7 @@ contains
 
             if (simu_devia) dubuf=trim(adjustl(dubuf))//' (Stoch)'
             call print11(layoutnumber,dubuf)
-            do i=1,size
+            do i=1,num_procs
                if (newlmaxval_x(i)<-1e19) then
                   write (dondex,'(a)') ' PML '
                else
@@ -1345,7 +1345,7 @@ contains
          call MPI_Barrier(MPI_COMM_WORLD,ierr)
 #endif
          parar=.true.
-         !            call StopOnError(layoutnumber,size,' Aborting')
+         !            call StopOnError(layoutnumber,num_procs,' Aborting')
       end if
       !
       l_aux = ( ((time_end-time_begin2) > flushsecondsFIELDS).AND. &
@@ -1438,9 +1438,9 @@ contains
 
 
 
-   subroutine INITWARNINGFILE(layoutnumber,size,nEntradaRoot,verbosete,ignoreErrors1)
+   subroutine INITWARNINGFILE(layoutnumber,num_procs,nEntradaRoot,verbosete,ignoreErrors1)
       character(len=*) :: nEntradaRoot
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       !file management
       character(len=BUFSIZE) :: whoamishort
 #ifdef CompileWithMPI
@@ -1454,7 +1454,7 @@ contains
 
       ignoreerrors=ignoreerrors1
 
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
       write(whoamishort,'(i5)') layoutnumber+1
 
       if (layoutnumber == 0) then          
@@ -1531,8 +1531,8 @@ contains
 
 
 
-   subroutine CLOSEWARNINGFILE(layoutnumber,size,fatalerror_final,stoch_undivided,simu_devia)
-      integer(kind=4), intent(in) :: layoutnumber,size
+   subroutine CLOSEWARNINGFILE(layoutnumber,num_procs,fatalerror_final,stoch_undivided,simu_devia)
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       integer(kind=4) :: ierr,posic,i
       character(len=BUFSIZE) :: buf2
       character(len=BUFSIZE) :: dubuf
@@ -1559,15 +1559,15 @@ contains
 #endif
 
       !arregla los NUL
-      if ((layoutnumber==0).or.((layoutnumber == size/2).and.stoch_undivided)) then
+      if ((layoutnumber==0).or.((layoutnumber == num_procs/2).and.stoch_undivided)) then
          open (88,file=trim(adjustl(WarningFile))//'_Warnings.txt',form='formatted')
          posic=0
-         do i=0,size-1
+         do i=0,num_procs-1
             if (stoch_undivided) then
                 write(whoamishort,'(i5)') i+1
             else
                if (simu_devia) then
-                   write(whoamishort,'(i5)') size+i+1
+                   write(whoamishort,'(i5)') num_procs+i+1
                else
                    write(whoamishort,'(i5)') i+1
                end if
@@ -1691,9 +1691,9 @@ contains
 
 
 
-   !!!subroutine INITdxfFILE(layoutnumber,size,nEntradaRoot)
+   !!!subroutine INITdxfFILE(layoutnumber,num_procs,nEntradaRoot)
    !!!character(len=*) :: nEntradaRoot
-   !!!integer(kind=4) :: layoutnumber,size
+   !!!integer(kind=4) :: layoutnumber,num_procs
    !!!!file management
    !!!character(len=BUFSIZE) whoamishort
    !!!#ifdef CompileWithMPI
@@ -1794,8 +1794,8 @@ contains
    !!!
    !!!
    !!!
-   !!!subroutine CLOSEdxfFILE(layoutnumber,size)
-   !!!integer(kind=4), intent(in) :: layoutnumber,size
+   !!!subroutine CLOSEdxfFILE(layoutnumber,num_procs)
+   !!!integer(kind=4), intent(in) :: layoutnumber,num_procs
    !!!integer(kind=4) :: ierr,i
    !!!integer(kind=8) :: posic
    !!!character(len=dxflinesize) :: buf2
@@ -1821,7 +1821,7 @@ contains
    !!!if (layoutnumber == 0) then
    !!!    open (988,file=trim(adjustl(mynEntradaRoot))//'.dxf',form='formatted')
    !!!    posic=0
-   !!!    do i=0,size-1
+   !!!    do i=0,num_procs-1
    !!!        write(whoamishort,'(i5)') i+1
    !!!        inquire(file=trim(adjustl(mynEntradaRoot))//trim(adjustl(whoamishort))//'.tmpdxf',exist=lexis)
    !!!        if (lexis) then
@@ -2159,13 +2159,13 @@ end function openfile_mpi
 
    end subroutine writefile_mpi
 
-   subroutine closefile_mpi(layoutnumber,size,nombrefich,thefile8)
+   subroutine closefile_mpi(layoutnumber,num_procs,nombrefich,thefile8)
 
       integer(kind=4) :: thefile8,thefile19
 #ifdef CompileWithMPI
       integer(kind=4) :: ierr
 #endif
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       character(len=BUFSIZE) :: buff2
       character(len=BUFSIZE) :: nombrefich
       integer(kind=4) :: conta,i
@@ -2189,7 +2189,7 @@ end function openfile_mpi
       !arregla los NUL
       if (layoutnumber == 0) then
          open (newunit=thefile8,file=trim(adjustl(nombrefich)),form='formatted' )
-         do i=0,size-1
+         do i=0,num_procs-1
             write(whoamishort,'(i5)') i+1
             inquire(file=trim(adjustl(nombrefich))//trim(adjustl(whoamishort))//'_tmp',exist=lexis)
             if (lexis) then
