@@ -36,57 +36,31 @@ sudo apt install -y \
     python3-dev \
     python3-pip
 
-echo "=== Installing math/numeric libraries ==="
-sudo apt install -y \
-    libgmp-dev \
-    libmpfr-dev \
-    libexpat1-dev \
-    libreadline-dev \
-    libncurses-dev \
-    libcurl4-openssl-dev
-
-echo "=== Installing SLURM / job scheduler ==="
-sudo apt install -y \
-    slurm-client \
-    slurmd \
-    munge \
-    libmunge-dev
-
-echo "=== Installing system utilities ==="
-sudo apt install -y \
-    vim \
-    htop \
-    iotop \
-    screen \
-    nload \
-    net-tools \
-    ncat \
-    traceroute \
-    wget \
-    curl \
-    rsync \
-    zsh \
-    byobu \
-    openssh-server \
-    jq
 
 echo "=== Installing Python packages ==="
 pip3 install --break-system-packages fortls
 
-echo ""
-echo "=== Intel oneAPI (MPI + Fortran compiler) ==="
-echo "Intel oneAPI is not installed via apt in this script."
-echo "To install it, follow the official guide:"
-echo "  https://www.intel.com/content/www/us/en/developer/tools/oneapi/base-toolkit-download.html"
-echo ""
-echo "Packages needed:"
-echo "  intel-oneapi-compiler-fortran"
-echo "  intel-oneapi-compiler-dpcpp-cpp"
-echo "  intel-oneapi-mpi"
-echo "  intel-oneapi-mpi-devel"
-echo ""
-echo "After installing, source the environment with:"
-echo "  source /opt/intel/oneapi/setvars.sh"
+COMPILER_VERSION="2025.1"
+
+echo "=== Adding Intel oneAPI apt repository ==="
+KEY="GPG-PUB-KEY-INTEL-SW-PRODUCTS.PUB"
+curl -fsSL "https://apt.repos.intel.com/intel-gpg-keys/$KEY" \
+    | sudo apt-key add -
+echo "deb https://apt.repos.intel.com/oneapi all main" \
+    | sudo tee /etc/apt/sources.list.d/oneAPI.list
+sudo apt-get update -q
+
+echo "=== Installing Intel Fortran + C/C++ compilers (${COMPILER_VERSION}) ==="
+sudo apt-get install -y \
+    intel-oneapi-compiler-fortran-${COMPILER_VERSION} \
+    intel-oneapi-compiler-dpcpp-cpp-${COMPILER_VERSION}
+
+echo "=== Installing Intel MPI ==="
+sudo apt-get install -y \
+    intel-oneapi-mpi \
+    intel-oneapi-mpi-devel
 
 echo ""
 echo "=== All packages installed successfully ==="
+echo "Source the Intel environment before building:"
+echo "  source /opt/intel/oneapi/setvars.sh"
