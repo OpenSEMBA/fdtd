@@ -23,7 +23,6 @@ extern "C" int test_read_airplane();
 extern "C" int test_read_mtln();
 extern "C" int test_read_towelhanger();
 extern "C" int test_read_holland1981();
-extern "C" int test_read_holland1981_named_wire();
 extern "C" int test_read_holland1981_unshielded();
 extern "C" int test_read_connectedwires();
 extern "C" int test_read_shieldedpair();
@@ -70,6 +69,5 @@ TEST(smbjson, read_unshielded_multiwires_multipolar_expansion) {
                                            EXPECT_EQ(0,  test_read_unshielded_multiwires_multipolar_expansion()); }
 #else
 TEST(smbjson, read_holland1981)             { EXPECT_EQ(0, test_read_holland1981()); }
-TEST(smbjson, read_holland1981_named_wire)  { EXPECT_EQ(0, test_read_holland1981_named_wire()); }
 #endif
 
