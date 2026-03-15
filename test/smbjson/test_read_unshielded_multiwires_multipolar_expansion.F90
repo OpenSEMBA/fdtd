@@ -28,25 +28,25 @@ contains
       call initializeProblemDescription(ex)
 
       ! Expected general info.
-      ex%general%dt = 3e-11
+      ex%general%dt = 3e-11_RKIND
       ex%general%nmax = 1100
 
       ! Expected media matrix.
-      ex%matriz%totalX = 30
-      ex%matriz%totalY = 30
-      ex%matriz%totalZ = 30
+      ex%matriz%totalX = 31
+      ex%matriz%totalY = 31
+      ex%matriz%totalZ = 31
 
       ! Expected grid.
-      ex%despl%nX = 30
-      ex%despl%nY = 30
-      ex%despl%nZ = 30
+      ex%despl%nX = 1
+      ex%despl%nY = 1
+      ex%despl%nZ = 1
 
-      allocate(ex%despl%desX(30))
-      allocate(ex%despl%desY(30))
-      allocate(ex%despl%desZ(30))
-      ex%despl%desX = 0.2
-      ex%despl%desY = 0.2
-      ex%despl%desZ = 0.2
+      allocate(ex%despl%desX(1:1))
+      allocate(ex%despl%desY(1:1))
+      allocate(ex%despl%desZ(1:1))
+      ex%despl%desX = 0.2_RKIND
+      ex%despl%desY = 0.2_RKIND
+      ex%despl%desZ = 0.2_RKIND
       ex%despl%mx1 = 0
       ex%despl%mx2 = 30
       ex%despl%my1 = 0
@@ -58,7 +58,7 @@ contains
       ex%front%tipoFrontera(:) = F_PML
       ex%front%propiedadesPML(:)%numCapas = 8
       ex%front%propiedadesPML(:)%orden = 2
-      ex%front%propiedadesPML(:)%refl = 0.001
+      ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected material regions.
       ex%pecRegs%nSurfs = 1
@@ -72,19 +72,19 @@ contains
       ex%plnSrc%collection(1)%atributo = ""
       ex%plnSrc%collection(1)%coor1 = [1, 1, 1]
       ex%plnSrc%collection(1)%coor2 = [28, 28, 28]
-      ex%plnSrc%collection(1)%theta = 1.5708
-      ex%plnSrc%collection(1)%phi = 0.0
-      ex%plnSrc%collection(1)%alpha = 0.0
-      ex%plnSrc%collection(1)%beta = 0.0
+      ex%plnSrc%collection(1)%theta = 1.5708_RKIND
+      ex%plnSrc%collection(1)%phi = 0.0_RKIND
+      ex%plnSrc%collection(1)%alpha = 0.0_RKIND
+      ex%plnSrc%collection(1)%beta = 0.0_RKIND
       ex%plnSrc%collection(1)%isRC=.false.
       ex%plnSrc%collection(1)%nummodes=1
-      ex%plnSrc%collection(1)%INCERTMAX=0.0
+      ex%plnSrc%collection(1)%INCERTMAX=0.0_RKIND
       ex%plnSrc%nc = 1
       ex%plnSrc%nC_max = 1
 
       ! ex mtln type
       ! ex%mtln%has_multiwires = .true.
-      ex%mtln%time_step = 3e-11
+      ex%mtln%time_step = 3e-11_RKIND
       ex%mtln%number_of_steps = 1100
       deallocate(ex%mtln%cables)
       allocate(ex%mtln%cables(1))
@@ -100,33 +100,33 @@ contains
          deallocate(ptr%multipolar_expansion)
          allocate(ptr%multipolar_expansion(1))
          ptr%multipolar_expansion(1)%inner_region%min = &
-            [-0.0265000002, -0.0310000002] 
+            [-0.0265000002_RKIND, -0.0310000002_RKIND] 
          ptr%multipolar_expansion(1)%inner_region%max =  &
-            [ 0.03550000020000001, 0.0310000002] 
+            [ 0.03550000020000001_RKIND, 0.0310000002_RKIND] 
          allocate(ptr%multipolar_expansion(1)%electric(2))
          ! First conductor.
          allocate(ptr%multipolar_expansion(1)%electric(1)%conductor_potentials(2))
-         ptr%multipolar_expansion(1)%electric(1)%conductor_potentials = [ 1.0, 0.5909272203987278 ]
-         ptr%multipolar_expansion(1)%electric(1)%expansion_center = [ -0.004970886788455953, 6.610694092023349e-07 ]
-         ptr%multipolar_expansion(1)%electric(1)%inner_region_average_potential = 0.5608636261599323
+         ptr%multipolar_expansion(1)%electric(1)%conductor_potentials = [ 1.0_RKIND, 0.5909272203987278_RKIND ]
+         ptr%multipolar_expansion(1)%electric(1)%expansion_center = [ -0.004970886788455953_RKIND, 6.610694092023349e-07_RKIND ]
+         ptr%multipolar_expansion(1)%electric(1)%inner_region_average_potential = 0.5608636261599323_RKIND
          allocate(ptr%multipolar_expansion(1)%electric(1)%ab(1))
-         ptr%multipolar_expansion(1)%electric(1)%ab(1)%a = 0.9488836986256424
-         ptr%multipolar_expansion(1)%electric(1)%ab(1)%b = 0.0
+         ptr%multipolar_expansion(1)%electric(1)%ab(1)%a = 0.9488836986256424_RKIND
+         ptr%multipolar_expansion(1)%electric(1)%ab(1)%b = 0.0_RKIND
          ! Second conductor
          allocate(ptr%multipolar_expansion(1)%electric(2)%conductor_potentials(2))
-         ptr%multipolar_expansion(1)%electric(2)%conductor_potentials = [  0.8497110567446987, 1.0 ]
-         ptr%multipolar_expansion(1)%electric(2)%expansion_center = [ 0.009920513440028656, 6.949869591535922e-07 ]
-         ptr%multipolar_expansion(1)%electric(2)%inner_region_average_potential = 0.8070848243572611
+         ptr%multipolar_expansion(1)%electric(2)%conductor_potentials = [  0.8497110567446987_RKIND, 1.0_RKIND ]
+         ptr%multipolar_expansion(1)%electric(2)%expansion_center = [ 0.009920513440028656_RKIND, 6.949869591535922e-07_RKIND ]
+         ptr%multipolar_expansion(1)%electric(2)%inner_region_average_potential = 0.8070848243572611_RKIND
          allocate(ptr%multipolar_expansion(1)%electric(2)%ab(1))
-         ptr%multipolar_expansion(1)%electric(2)%ab(1)%a = 1.3644011168458479
-         ptr%multipolar_expansion(1)%electric(2)%ab(1)%b = 0.0
+         ptr%multipolar_expansion(1)%electric(2)%ab(1)%a = 1.3644011168458479_RKIND
+         ptr%multipolar_expansion(1)%electric(2)%ab(1)%b = 0.0_RKIND
          
          allocate(ptr%multipolar_expansion(1)%magnetic(2))
          ptr%multipolar_expansion(1)%magnetic = &
             ptr%multipolar_expansion(1)%electric
 
          allocate(ptr%step_size(15))
-         ptr%step_size(:) =  0.2
+         ptr%step_size(:) =  0.2_RKIND
 
          allocate(ptr%segments(15))
          ptr%segments(:)%x = 2
