@@ -22,7 +22,7 @@ module mtln_preprocess_m
         type(probe_t), dimension(:), allocatable :: probes
         type(fhash_tbl_t) :: conductors_before_cable
         type(fhash_tbl_t) :: cable_name_to_bundle_id
-        real :: final_time, dt
+        real(kind=rkind) :: final_time, dt
     
     contains
         procedure :: buildMTLBundles
@@ -242,7 +242,7 @@ contains
 
     function buildLineFromCable(cable, dt, layer_indices, bundle_in_layer, alloc_z) result(res)
         class(cable_t), pointer, intent(in) :: cable
-        real, intent(in) :: dt
+        real(kind=rkind), intent(in) :: dt
         integer(kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
         integer(kind=4), dimension(2), intent(in), optional :: alloc_z
@@ -320,13 +320,13 @@ contains
     function buildLineBundles(cable_bundles, dt, alloc) result(res)
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
         type(transmission_line_bundle_t), dimension(:), allocatable :: res
-        real, intent(in) :: dt
+        real(kind=rkind), intent(in) :: dt
         type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
         integer(kind=4), allocatable, dimension(:,:) :: layer_indices
-        logical :: bundle_in_layer = .true.
         integer(kind=4), dimension(2) :: alloc_z
+        logical :: bundle_in_layer = .true.
         if (present(alloc)) then
             alloc_z(1) = alloc(3)%zi
             alloc_z(2) = alloc(3)%ze
@@ -977,7 +977,7 @@ contains
         
         block
             integer :: v_index, i_index
-            real :: line_c_per_meter, line_g_per_meter, step
+            real(kind=rkind) :: line_c_per_meter, line_g_per_meter, step
             if (node%side == TERMINAL_NODE_SIDE_INI) then 
                 v_index = lbound(this%bundles(d)%v,2)
                 i_index = lbound(this%bundles(d)%i,2)
@@ -1285,7 +1285,7 @@ contains
     subroutine addAnalysis(description, final_time, dt, print_step)
         character(256), dimension(:), allocatable, intent(inout) :: description
         character(256) :: buff
-        real, intent(in) :: final_time, dt
+        real(kind=rkind), intent(in) :: final_time, dt
         character(20) :: sTime, sdt, sDelta, sPrint
         integer, intent(in) :: print_step        
 

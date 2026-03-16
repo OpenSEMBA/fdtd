@@ -2,16 +2,18 @@ module probes_m
 
     use mtln_types_m, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
 #ifdef CompileWithMPI
-    use FDETYPES_m, only: SUBCOMM_MPI
+    use FDETYPES_m, only: SUBCOMM_MPI, RKIND
+#else
+    use FDETYPES_m, only: RKIND
 #endif
 
     implicit none
 
     type, public :: probe_t
         integer :: type
-        real, allocatable, dimension(:) :: t
-        real, allocatable, dimension(:,:) :: val
-        real :: dt
+        real(kind=rkind), allocatable, dimension(:) :: t
+        real(kind=rkind), allocatable, dimension(:,:) :: val
+        real(kind=rkind) :: dt
         integer :: index, current_frame
         character(len=:), allocatable :: name
         logical :: in_layer = .true.
@@ -34,8 +36,8 @@ contains
         type(probe_t) :: res
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        real, intent(in) :: dt
-        real, dimension(3) :: position
+        real(kind=rkind), intent(in) :: dt
+        real(kind=rkind), dimension(3) :: position
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
         integer :: i, slice
@@ -99,9 +101,9 @@ contains
 
     subroutine update(this, t, v, i)
         class(probe_t) :: this
-        real, intent(in) :: t
-        real, dimension(:,:), intent(in) :: v
-        real, dimension(:,:), intent(in) :: i
+        real(kind=rkind), intent(in) :: t
+        real(kind=rkind), dimension(:,:), intent(in) :: v
+        real(kind=rkind), dimension(:,:), intent(in) :: i
         
         if (this%type == PROBE_TYPE_VOLTAGE) then
             call this%saveFrame(t, v(:,this%index))
@@ -117,8 +119,8 @@ contains
 
     subroutine saveFrame(this, time, values)
         class(probe_t) :: this
-        real, intent(in) :: time
-        real, intent(in), dimension(:) :: values
+        real(kind=rkind), intent(in) :: time
+        real(kind=rkind), intent(in), dimension(:) :: values
         this%t(this%current_frame) = time
         this%val(this%current_frame,:) = values
         this%current_frame = this%current_frame + 1

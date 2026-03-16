@@ -3,7 +3,7 @@ module mtln_solver_m
     use mtl_bundle_m
     use network_manager_m
     use mtln_preprocess_m
-    use FDETYPES_m, only: XYZlimit_t
+    use FDETYPES_m, only: XYZlimit_t, RKIND
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
@@ -11,7 +11,7 @@ module mtln_solver_m
 
 
     type, public :: mtln_t
-        real :: time, dt, final_time
+        real(kind=rkind) :: time, dt, final_time
         type(mtl_bundle_t), allocatable, dimension(:) :: bundles
         type(network_manager_t) :: network_manager
         type(probe_t), allocatable, dimension(:) :: probes
@@ -221,7 +221,7 @@ contains
 
     function getTimeRange(this, time) result(res)
         class(mtln_t) :: this
-        real, intent(in), optional :: time
+        real(kind=rkind), intent(in), optional :: time
         integer :: res
         if (present(time)) then 
             res =  floor(time / this%dt)
@@ -232,7 +232,7 @@ contains
 
     subroutine updateBundlesTimeStep(this, dt)
         class(mtln_t) :: this
-        real :: dt
+        real(kind=rkind) :: dt
         integer :: i
         do i = 1, this%number_of_bundles
             this%bundles(i)%dt = dt
@@ -258,8 +258,8 @@ contains
 
     subroutine runUntil(this, final_time)
         class(mtln_t) :: this
-        real, intent(in):: final_time
-        real :: time
+        real(kind=rkind), intent(in):: final_time
+        real(kind=rkind) :: time
         integer :: i
 
         do i = 1, this%getTimeRange(final_time)
@@ -274,7 +274,7 @@ contains
 
     subroutine mtln_run(this)
         class(mtln_t) :: this
-        real :: time
+        real(kind=rkind) :: time
         integer :: i
 
         call this%updatePULTerms()

@@ -3,6 +3,7 @@ module circuit_m
     use ngspice_interface_m
     use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     use Report_m, only: WarnErrReport
+    use FDETYPES_m, only: RKIND
     implicit none
 
     type string_t
@@ -12,17 +13,17 @@ module circuit_m
 
     type source_t
         logical :: has_source = .false.
-        real, dimension(:), allocatable :: time
-        real, dimension(:), allocatable :: value
+        real(kind=rkind), dimension(:), allocatable :: time
+        real(kind=rkind), dimension(:), allocatable :: value
         integer :: source_type
     contains 
         procedure :: interpolate
     end type
 
     type VI_t
-        real :: voltage
-        real :: current
-        real :: time
+        real(kind=rkind) :: voltage
+        real(kind=rkind) :: current
+        real(kind=rkind) :: time
     end type
 
     type nodes_t
@@ -33,7 +34,7 @@ module circuit_m
 
     type, public :: circuit_t
         character(len=:), allocatable :: name
-        real :: time = 0.0, dt = 0.0
+        real(kind=rkind) :: time = 0.0_rkind, dt = 0.0_rkind
         logical :: errorFlag = .false.
         type(nodes_t) :: nodes, saved_nodes   
 
@@ -62,11 +63,11 @@ module circuit_m
 
 contains
 
-    real function interpolate(this, time, dt) result(res)
+    real(kind=rkind) function interpolate(this, time, dt) result(res)
         class(source_t) :: this
-        real :: time, dt, x1,x2, y1, y2
+        real(kind=rkind) :: time, dt, x1,x2, y1, y2
         integer :: index
-        real, dimension(:), allocatable :: timediff
+        real(kind=rkind), dimension(:), allocatable :: timediff
         timediff = this%time - time + dt
         index = maxloc(timediff, 1, (timediff) <= 0)
         if (index == 0) index = 1
@@ -134,7 +135,7 @@ contains
 
     type(source_t) function setSource(source_path) result(res)
         character(*), intent(in) :: source_path
-        real :: time, value
+        real(kind=rkind) :: time, value
         integer :: io, line_count, i
         
         if (source_path == "" ) then 
@@ -207,11 +208,11 @@ contains
 
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
-        real, intent(in) :: finalTime, dt
+        real(kind=rkind), intent(in) :: finalTime, dt
         character(20) :: charTime
-        real :: time
+        real(kind=rkind) :: time
 
-        time = 0.0
+        time = 0.0_rkind
         do while (time < finalTime)
             time = time + dt
             write(charTime, *) time
@@ -221,9 +222,9 @@ contains
 
     subroutine setModStopTimes(this, dt)
         class(circuit_t) :: this
-        real, intent(in) :: dt
+        real(kind=rkind), intent(in) :: dt
         character(20) :: charTime
-        real :: time
+        real(kind=rkind) :: time
         write(charTime, *) dt
         call command('stop when time mod '//charTime // c_null_char)
     end subroutine
@@ -283,18 +284,18 @@ contains
 
     subroutine updateCircuitSources(this, time)
         class(circuit_t) :: this
-        real, intent(in) :: time
-        real :: interp
+        real(kind=rkind), intent(in) :: time
+        real(kind=rkind) :: interp
         character(20) :: source_value
         integer :: i, index
         do i = 1, size(this%nodes%sources)
             if (this%nodes%sources(i)%has_source) then
                 if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_rkind) 
                     write(source_value, *) interp
                     call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_rkind) 
                     write(source_value, *) interp
                     call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 end if
@@ -305,7 +306,7 @@ contains
     subroutine modifyLineCapacitorValue(this, name, c)
         class(circuit_t) :: this
         character(*), intent(in) :: name
-        real, intent(in) :: c
+        real(kind=rkind), intent(in) :: c
         character(20) :: sC
 
         write(sC, *) c
@@ -315,7 +316,7 @@ contains
 
     subroutine updateNodeCurrent(this, node_name, current)
         class(circuit_t) :: this
-        real :: current
+        real(kind=rkind) :: current
         character(20) :: sCurrent
         character(*) :: node_name
         if (index(node_name, "initial") /= 0) then
@@ -345,20 +346,20 @@ contains
     function getNodeVoltage(this, name) result(res)
         class(circuit_t) :: this
         character(len=*), intent(in) :: name
-        real :: res
+        real(kind=rkind) :: res
         res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%voltage
     end function
 
     function getNodeCurrent(this, name) result(res)
         class(circuit_t) :: this
         character(len=*), intent(in) :: name
-        real :: res
+        real(kind=rkind) :: res
         res = this%nodes%values(findVoltageIndexByName(this%nodes%names, name))%current
     end function
 
     function getTime(this) result(res)
         class(circuit_t) :: this
-        real :: res
+        real(kind=rkind) :: res
         res = this%nodes%values(findIndexByName(this%nodes%names, "time"))%time
     end function
 

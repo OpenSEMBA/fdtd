@@ -13,19 +13,19 @@ module mtl_bundle_m
 
     type, public :: mtl_bundle_t
         character(len=:), allocatable :: name
-        real, allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
+        real(kind=rkind), allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
         integer  :: number_of_conductors = 0, number_of_divisions = 0
-        real, dimension(:), allocatable :: step_size
-        real, allocatable, dimension(:,:) :: v, i, e_L
-        real, allocatable, dimension(:,:,:) :: du(:,:,:)
-        real :: time = 0.0, dt = 1e10
+        real(kind=rkind), dimension(:), allocatable :: step_size
+        real(kind=rkind), allocatable, dimension(:,:) :: v, i, e_L
+        real(kind=rkind), allocatable, dimension(:,:,:) :: du(:,:,:)
+        real(kind=rkind) :: time = 0.0_rkind, dt = 1e10_rkind
 
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
         integer, dimension(:), allocatable :: conductors_in_level
         
-        real, dimension(:,:,:), allocatable :: v_term, i_term
-        real, dimension(:,:,:), allocatable :: v_diff, i_diff
+        real(kind=rkind), dimension(:,:,:), allocatable :: v_term, i_term
+        real(kind=rkind), dimension(:,:,:), allocatable :: v_diff, i_diff
 
         type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
         logical :: bundle_in_layer = .true.
@@ -217,7 +217,7 @@ contains
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        real, dimension(3) :: position
+        real(kind=rkind), dimension(3) :: position
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
         type(probe_t), allocatable, dimension(:) :: aux_probes
@@ -258,7 +258,7 @@ contains
 
     subroutine updateLRTerms(this)
         class(mtl_bundle_t) ::this
-        real, dimension(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors) :: F1, F2, IF1
+        real(kind=rkind), dimension(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors) :: F1, F2, IF1
         integer :: i
 
         F1 = reshape(source=[(matmul( &
@@ -298,8 +298,8 @@ contains
 
     subroutine updateCGTerms(this)
         class(mtl_bundle_t) ::this
-        real, dimension(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors) :: F1, F2, IF1
-        real, dimension(this%number_of_divisions + 1, this%number_of_conductors,this%number_of_conductors) :: extended_du
+        real(kind=rkind), dimension(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors) :: F1, F2, IF1
+        real(kind=rkind), dimension(this%number_of_divisions + 1, this%number_of_conductors,this%number_of_conductors) :: extended_du
         integer :: i
         
         extended_du(1,:,:) = this%du(1,:,:)
@@ -335,7 +335,7 @@ contains
 
     subroutine bundle_updateSources(this, time, dt)
         class(mtl_bundle_t) ::this
-        real, intent(in) :: time, dt
+        real(kind=rkind), intent(in) :: time, dt
         !TODO
     end subroutine
 
@@ -351,9 +351,9 @@ contains
 
     subroutine bundle_advanceCurrent(this)
         class(mtl_bundle_t) ::this
-        real, dimension(:,:), allocatable :: i_prev, i_now
+        real(kind=rkind), dimension(:,:), allocatable :: i_prev, i_now
         integer :: i
-        real :: eps_r
+        real(kind=rkind) :: eps_r
 #ifdef CompileWithMPI
         integer(kind=4) :: sizeof, ierr
 

@@ -1,10 +1,11 @@
 module utils_m
 
    use iso_fortran_env, only: real64
+   use FDETYPES_m, only: RKIND
    implicit none
    
    type :: entry_t
-      real, dimension(:), allocatable :: x
+      real(kind=rkind), dimension(:), allocatable :: x
    end type entry_t
 
 contains
@@ -37,12 +38,12 @@ contains
 
    function eye(dim) result(res)
       integer, intent(in) :: dim
-      real, dimension(dim, dim) :: res
+      real(kind=rkind), dimension(dim, dim) :: res
       integer :: i
 
       res = 0
       do i = 1, dim
-         res(i,i) = 1.0
+         res(i,i) = 1.0_rkind
       end do
    end function eye
 
@@ -76,30 +77,38 @@ contains
    end function getEigenValues
 
    function inv(A) result(Ainv)
-      real,intent(in) :: A(:,:)
-      real            :: Ainv(size(A,1),size(A,2))
-      real            :: work(size(A,1))            ! work array for LAPACK
+      real(kind=rkind),intent(in) :: A(:,:)
+      real(kind=rkind)            :: Ainv(size(A,1),size(A,2))
+      real(kind=rkind)            :: work(size(A,1))            ! work array for LAPACK
       integer         :: n,info,ipiv(size(A,1))     ! pivot indices
 
       ! Store A in Ainv to prevent it from being overwritten by LAPACK
       Ainv = A
       n = size(A,1)
-      ! SGETRF computes an LU factorization of a general M-by-N matrix A
+      ! xGETRF computes an LU factorization of a general M-by-N matrix A
       ! using partial pivoting with row interchanges.
+#ifdef CompileWithReal8
+      call DGETRF(n,n,Ainv,n,ipiv,info)
+#else
       call SGETRF(n,n,Ainv,n,ipiv,info)
+#endif
       if (info.ne.0) then 
          stop 'Matrix is numerically singular!'
       end if
-      ! SGETRI computes the inverse of a matrix using the LU factorization
-      ! computed by SGETRF.
+      ! xGETRI computes the inverse of a matrix using the LU factorization
+      ! computed by xGETRF.
+#ifdef CompileWithReal8
+      call DGETRI(n,Ainv,n,ipiv,work,n,info)
+#else
       call SGETRI(n,Ainv,n,ipiv,work,n,info)
+#endif
       if (info.ne.0) stop 'Matrix inversion failed!'
    end function inv
 
    function element_wise_invert(n, x) result(y)
       integer :: n 
-      real, intent(in) :: x(n,n)
-      real :: y(n,n)
+      real(kind=rkind), intent(in) :: x(n,n)
+      real(kind=rkind) :: y(n,n)
       y = 1/x
    end function
 
