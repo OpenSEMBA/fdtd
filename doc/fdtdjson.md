@@ -7,11 +7,11 @@ This document assumes that you are familiar with the basic JSON notation, a brie
 
 The following are examples of valid inputs:
 
- 1. An empty space illuminated by a plane wave: [planewave.fdtd.json](testData/cases/planewave.fdtd.json). The field at a point close to the center is recorded.
- 2. A thin straight wire illuminated by a plane wave: [holland1981.fdtd.json](testData/cases/holland1981.fdtd.json) which aims to replicate the case described in https://doi.org/10.1109/TEMC.1981.303899. It contains a probe which records the wire at the middle of the wire.
- 3. A current injection which mimics a lightning strike on a square metallic surface: [currentinjection.fdtd.json](testData/cases/currentInjection.fdtd.json). It contains two bulk current probes to measure the current at the entry and exit lines.
- 4. A shielded pair of wires fed by a voltage source in one of its ends: [shieldedPair.fdtd.json](testData/cases/shieldedPair.fdtd.json). The interior of the shield uses a multiconductor transmission line (MTL) algorithm to evolve the common mode currents which are induced in the shield and propagated inside using a transfer impedance.
- 5. A multiconductor transmission line network (MTLN) case which includes three cable bundles with a shared junction: [mtln.fdtd.json](testData/cases/mtln.fdtd.json).
+ 1. An empty space illuminated by a plane wave: [planewave.fdtd.json](testData/input_examples/planewave.fdtd.json). The field at a point close to the center is recorded.
+ 2. A thin straight wire illuminated by a plane wave: [holland1981.fdtd.json](testData/input_examples/holland1981.fdtd.json) which aims to replicate the case described in https://doi.org/10.1109/TEMC.1981.303899. It contains a probe which records the wire at the middle of the wire.
+ 3. A current injection which mimics a lightning strike on a square metallic surface: [currentinjection.fdtd.json](testData/input_examples/currentInjection.fdtd.json). It contains two bulk current probes to measure the current at the entry and exit lines.
+ 4. A shielded pair of wires fed by a voltage source in one of its ends: [shieldedPair.fdtd.json](testData/input_examples/shieldedPair.fdtd.json). The interior of the shield uses a multiconductor transmission line (MTL) algorithm to evolve the common mode currents which are induced in the shield and propagated inside using a transfer impedance.
+ 5. A multiconductor transmission line network (MTLN) case which includes three cable bundles with a shared junction: [mtln.fdtd.json](testData/input_examples/mtln.fdtd.json).
 
 ## FDTD-JSON objects description
 All units are assumed to be SI-MKS, except when specified otherwise.
@@ -748,7 +748,7 @@ Additionally, a `domain` can contain a `[magnitudeFile]` as specified in [source
 
 This entry is an array which stores all the electromagnetic sources of the simulation case. Each source is a JSON object which must contain the following entries:
 
-+ `<magnitudeFile>` contains a relative path to the plain text file which will be used as a magnitude for this source. This file must contain two columns, with the first stating the time and the second one the magnitude value; an example magnitude file can be found at [gauss.exc](testData/cases/gauss.exc).
++ `<magnitudeFile>` contains a relative path to the plain text file which will be used as a magnitude for this source. This file must contain two columns, with the first stating the time and the second one the magnitude value; an example magnitude file can be found at [gauss.exc](testData/excitations/gauss.exc).
 + `<type>` must be a label of the ones defined below. Some examples of source `type` are `planewave` or `nodalSource`.
 + `<elementIds>` is an array of integers which must exist within the `mesh` `elements` list. These indicate the geometrical place where this source is located. The `type` and number of the allowed elements depends on the source `type` and can be check in the descriptions of each source object, below.
 
