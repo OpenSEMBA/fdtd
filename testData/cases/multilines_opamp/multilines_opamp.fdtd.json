@@ -45,8 +45,8 @@
             "type": "terminal",
             "name": "circuit_left",
             "terminations": [
-                {"type": "network", "file": "opamp_nw.model", "name": "opamp", "node": 1},
-                {"type": "network", "file": "opamp_nw.model", "name": "opamp", "node": 2}
+                {"type": "network", "file": "opamp.model", "name": "opamp", "node": 1},
+                {"type": "network", "file": "opamp.model", "name": "opamp", "node": 2}
             ]
         },
         {
@@ -54,7 +54,7 @@
             "type": "terminal",
             "name": "circuit_right",
             "terminations": [
-                {"type": "network",  "file": "opamp_nw.model", "name": "opamp", "node": 3},
+                {"type": "network",  "file": "opamp.model", "name": "opamp", "node": 3},
                 {"type": "series", "resistance": 40}
             ]
         },
