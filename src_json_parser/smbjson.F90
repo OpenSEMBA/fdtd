@@ -20,7 +20,7 @@ module smbjson_m
 
    implicit none
 
-   integer, private, parameter  :: MAX_LINE = BUFSIZE
+   integer, private, parameter :: MAX_LINE = BUFSIZE
    character(len=*), parameter :: TAG_MATERIAL = 'material'
    character(len=*), parameter :: TAG_LAYER = 'layer'
 

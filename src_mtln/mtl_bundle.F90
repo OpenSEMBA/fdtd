@@ -5,10 +5,9 @@ module mtl_bundle_m
     use dispersive_m
     use mtl_m
 #ifdef CompileWithMPI
-    use FDETYPES_m, only: RKIND, SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
-#else
-    use FDETYPES_m, only: RKIND
+    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none
 
     type, public :: mtl_bundle_t
@@ -335,7 +334,7 @@ contains
 
     subroutine bundle_updateSources(this, time, dt)
         class(mtl_bundle_t) ::this
-        real, intent(in) :: time, dt
+        real(kind=RKIND_TIEMPO), intent(in) :: time, dt
         !TODO
     end subroutine
 

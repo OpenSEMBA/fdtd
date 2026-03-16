@@ -1248,7 +1248,7 @@ contains
 
       !!!sincroniza el dtcritico
 #ifdef CompileWithMPI
-         newdtcritico = 0.0
+         newdtcritico = 0.0_RKIND_tiempo
          call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_tiempo, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
