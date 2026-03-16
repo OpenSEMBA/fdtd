@@ -189,7 +189,7 @@ contains
 #ifdef CompileWithMTLN 
       res%mtln = this%readMTLN()
 #else
-      res%tWires = this%readThinWires()
+      call this%readThinWires(res%tWires, res%sonda)
 #endif
       res%tSlots = this%readThinSlots()
 
@@ -1244,15 +1244,10 @@ contains
       type(json_value_ptr_t), dimension(:), allocatable :: ps
 
       integer :: i
-#ifdef CompileWithMTLN
       character(len=*), dimension(2), parameter :: validTypes = &
          [J_PR_TYPE_POINT, J_PR_TYPE_LINE]
-#else
-      character(len=*), dimension(3), parameter :: validTypes = &
-         [J_PR_TYPE_POINT, J_PR_TYPE_WIRE, J_PR_TYPE_LINE]
-#endif
       logical :: found
-      character(len=:), allocatable :: fieldLbl, probeLbl
+      character(len=:), allocatable :: probeLbl
       integer :: filtered_size, n
 
       call this%core%get(this%root, J_PROBES, allProbes, found)
@@ -1268,7 +1263,6 @@ contains
       
       filtered_size = 0
       do i=1, size(ps)
-         fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
          if (isMoreProbe(ps(i)%p)) then 
             filtered_size = filtered_size + 1
          end if
@@ -1277,10 +1271,9 @@ contains
       n = 1
       allocate(res%collection(filtered_size))
       do i=1, size(ps)
-         fieldLbl = this%getStrAt(ps(i)%p, J_FIELD, default=J_FIELD_ELECTRIC)
          if (isMoreProbe(ps(i)%p)) then 
             probeLbl = this%getStrAt(ps(i)%p, J_TYPE, default=J_FIELD_ELECTRIC)
-            if (probeLbl == J_PR_TYPE_WIRE .or. probeLbl == J_PR_TYPE_POINT) then 
+            if (probeLbl == J_PR_TYPE_POINT) then 
                res%collection(n) = readPointProbe(ps(i)%p)
                n = n + 1
             else if (probeLbl == J_PR_TYPE_LINE) then
@@ -1297,50 +1290,12 @@ contains
       logical function isMoreProbe(p)
          type(json_value), pointer :: p
          isMoreProbe = isPointProbe(p) &
-            .or. isCurrentProbeDefinedOnWire(p) &
             .or. isLineProbe(p)
       end function
 
       logical function isLineProbe(p)
          type(json_value), pointer :: p
          isLineProbe = this%getStrAt(p, J_TYPE) == J_PR_TYPE_LINE
-      end function
-
-      logical function isCurrentProbeDefinedOnWire(p)
-         type(json_value), pointer :: p
-         character(len=:), allocatable :: fieldLabel
-         logical :: found
-         type(materialAssociation_t), dimension(:), allocatable :: mAs
-         integer :: i, j
-         integer :: cId
-         type(polyline_t) :: polyline
-         
-         fieldLabel = this%getStrAt(p, J_FIELD, found=found)
-         if (.not. found .or. fieldLabel /= J_FIELD_CURRENT) then
-            isCurrentProbeDefinedOnWire = .false.
-            return
-         end if
-         
-         block
-            type(pixel_t) :: pixel
-            integer, dimension(:), allocatable :: eIds
-            eIds = this%getIntsAt(p, J_ELEMENTIDS)
-            pixel = getPixelFromElementId(this%mesh, eIds(1))
-            cId = pixel%tag
-         end block
-
-         mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
-         do i = 1, size(mAs)
-            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
-            do j = 1, size(polyline%coordIds)
-               if (polyline%coordIds(j) == cId) then
-                  isCurrentProbeDefinedOnWire = .true.
-                  return
-               end if
-            end do
-         end do
-
-         isCurrentProbeDefinedOnWire = .false.
       end function
 
       logical function isPointProbe(p)
@@ -1450,14 +1405,6 @@ contains
             call WarnErrReport("Point probe type label not found.", .true.)
          end if
          select case (typeLabel)
-          case (J_PR_TYPE_WIRE)
-            allocate(res%cordinates(1))
-            fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_VOLTAGE)
-            res%cordinates(1)%tag = outputName
-            res%cordinates(1)%Xi = getSegmentIndexWhichMatchesTag(pixel%tag)
-            res%cordinates(1)%Yi = 0
-            res%cordinates(1)%Zi = 0
-            res%cordinates(1)%Or = strToFieldType(fieldLabel)            
           case (J_PR_TYPE_POINT)
             call this%core%get(p, J_PR_POINT_DIRECTIONS, dirLabelPtr, found=dirLabelsFound)
             if(dirLabelsFound) then
@@ -1558,28 +1505,6 @@ contains
           case default
             call WarnErrReport("Invalid field label for point/wire probe.", .true.)
          end select
-      end function
-
-      function getSegmentIndexWhichMatchesTag(tagId) result(res)
-         integer :: res
-         integer, intent(in) :: tagId
-         type(materialAssociation_t), dimension(:), allocatable :: mAs
-         type(linel_t), dimension(:), allocatable :: linels
-         type(polyline_t) :: polyline
-         integer :: i, j
-
-         res = 0
-         mAs = this%getMaterialAssociations([J_MAT_TYPE_WIRE])
-         do i = 1, size(mAs)
-            polyline = this%mesh%getPolyline(mAs(i)%elementIds(1))
-            linels = this%mesh%polylineToLinels(polyline)
-            do j = 1, size(linels)
-               if (linels(j)%tag == tagId) then
-                  res = j
-                  return
-               end if
-            end do
-         end do
       end function
    end function
 
@@ -1912,9 +1837,10 @@ contains
       end function
    end function
 
-   function readThinWires(this) result (res)
+   subroutine readThinWires(this, res, sonda)
       class(parser_t) :: this
-      type(ThinWires_t) :: res
+      type(ThinWires_t), intent(out) :: res
+      type(MasSondas_t), intent(inout) :: sonda
       type(materialAssociation_t), dimension(:), allocatable :: mAs, mwires
       integer :: i, j
       logical :: found
@@ -1952,6 +1878,31 @@ contains
             end if
          end do
       end if
+
+      ! Read wire probes and append to sonda.
+      block
+         type(json_value), pointer :: allProbes
+         type(json_value_ptr_t), dimension(:), allocatable :: wireProbePs
+         type(MasSonda_t), dimension(:), pointer :: newCollection
+         integer :: nWireProbes, nExisting, k
+         call this%core%get(this%root, J_PROBES, allProbes, found)
+         if (found) then
+            wireProbePs = [this%jsonValueFilterByKeyValue(allProbes, J_TYPE, J_PR_TYPE_WIRE)]
+            nWireProbes = size(wireProbePs)
+            if (nWireProbes > 0) then
+               nExisting = sonda%length
+               allocate(newCollection(nExisting + nWireProbes))
+               newCollection(1:nExisting) = sonda%collection(1:nExisting)
+               do k = 1, nWireProbes
+                  newCollection(nExisting + k) = readWireProbe(wireProbePs(k)%p)
+               end do
+               deallocate(sonda%collection)
+               sonda%collection => newCollection
+               sonda%length = nExisting + nWireProbes
+               sonda%length_max = nExisting + nWireProbes
+            end if
+         end if
+      end block
 
    contains
       function readThinWire(cable) result(res)
@@ -2180,7 +2131,94 @@ contains
       
          isThinWire = .true.
       end function
-   end function
+
+      function readWireProbe(p) result(res)
+         type(MasSonda_t) :: res
+         type(json_value), pointer :: p
+         character(len=:), allocatable :: outputName, fieldLabel
+         type(pixel_t) :: pixel
+         integer, dimension(:), allocatable :: elemIds
+         logical :: nameFound, elementIdsFound
+
+         outputName = this%getStrAt(p, J_NAME, found=nameFound)
+         if (.not. nameFound) then
+            call WarnErrReport("Wire probes must define a name.", .true.)
+         end if
+         res%outputrequest = trim(adjustl(outputName))
+
+         call setDomainOfWireProbe(res, this%getDomain(p, J_PR_DOMAIN))
+
+         elemIds = this%getIntsAt(p, J_ELEMENTIDS, found=elementIdsFound)
+         if (.not. elementIdsFound) then
+            call WarnErrReport("Element ids entry not found for wire probe.", .true.)
+         end if
+         if (size(elemIds) /= 1) then
+            call WarnErrReport("Wire probe must contain a single element id.", .true.)
+         end if
+
+         pixel = getPixelFromElementId(this%mesh, elemIds(1))
+         fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_VOLTAGE)
+
+         allocate(res%cordinates(1))
+         res%cordinates(1)%tag = outputName
+         res%cordinates(1)%Xi = getSegmentIndexWhichMatchesTag(pixel%tag)
+         res%cordinates(1)%Yi = 0
+         res%cordinates(1)%Zi = 0
+         select case (fieldLabel)
+          case (J_FIELD_CURRENT)
+            res%cordinates(1)%Or = NP_COR_WIRECURRENT
+          case (J_FIELD_VOLTAGE)
+            res%cordinates(1)%Or = NP_COR_DDP
+          case default
+            call WarnErrReport("Invalid field label for wire probe.", .true.)
+         end select
+
+         res%len_cor = 1
+      end function
+
+      subroutine setDomainOfWireProbe(res, domain)
+         type(MasSonda_t), intent(inout) :: res
+         type(domain_t), intent(in) :: domain
+
+         res%tstart = domain%tstart
+         res%tstep  = domain%tstep
+         res%tstop  = domain%tstop
+         res%fstart = domain%fstart
+         res%fstep  = domain%fstep
+         res%fstop  = domain%fstop
+         if (allocated(domain%filename)) then
+            res%filename = domain%filename
+         else
+            res%filename = " "
+         end if
+         res%type1  = domain%type1
+         res%type2  = domain%type2
+
+         if (domain%isLogarithmicFrequencySpacing) then
+            call appendLogSufix(res%outputrequest)
+         end if
+      end subroutine
+
+      function getSegmentIndexWhichMatchesTag(tagId) result(res)
+         integer :: res
+         integer, intent(in) :: tagId
+         type(linel_t), dimension(:), allocatable :: linels
+         type(polyline_t) :: polyline
+         integer :: k, l
+
+         res = 0
+         do k = 1, size(mAs)
+            polyline = this%mesh%getPolyline(mAs(k)%elementIds(1))
+            linels = this%mesh%polylineToLinels(polyline)
+            do l = 1, size(linels)
+               if (linels(l)%tag == tagId) then
+                  res = l
+                  return
+               end if
+            end do
+         end do
+      end function
+   end subroutine
 
    function getDomain(this, place, path) result(res)
       class(parser_t) :: this
