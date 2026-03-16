@@ -1192,14 +1192,8 @@ contains
 
         allocate(listOfModels(0))
         allocate(description(0))
-        do i = 1, size(network_circuit_connections) 
-            if (network_circuit_connections(i)%has_network_circuit) then 
-                call addCircuitModel(description, network_circuit_connections(i)%network_circuit, listOfModels)
-                call addCircuitInstance(description, network_circuit_connections(i)%network_circuit)
-            end if
-        end do
-
         allocate(nodes(0))
+        
         do i = 1, size(node2node_connections)
             if (size(node2node_connections(i)%nodes) == 1) then 
                 call this%connectNodeToGround(node2node_connections(i), nodes, description)
@@ -1207,7 +1201,12 @@ contains
                 call this%connectNodes(node2node_connections(i), nodes, description)
             end if
         end do
-        
+
+        do i = 1, size(network_circuit_connections) 
+            call addCircuitModel(description, network_circuit_connections(i)%network_circuit, listOfModels)
+            call addCircuitInstance(description, network_circuit_connections(i)%network_circuit)
+        end do
+
         do i = 1, size(network_circuit_connections) 
             call this%connectNodesToNetworkCircuit(network_circuit_connections(i), nodes, description)
         end do
@@ -1283,7 +1282,7 @@ contains
         node_size = 0
 
         do i = 1, size(all_conn)
-            if (all_conn(i)%has_network_circuit) then 
+            if (all_conn(i)%network_circuit%number_of_nodes /= -1) then 
                 subckt_size = subckt_size + 1
             else
                 node_size = node_size + 1
@@ -1299,7 +1298,7 @@ contains
         is_ckt = .true.
 
         do i = 1, size(all_conn)
-            if (all_conn(i)%has_network_circuit) then 
+            if (all_conn(i)%network_circuit%number_of_nodes /= -1) then 
                 subckt_conn(subckt_size) = all_conn(i)
                 subckt_size = subckt_size + 1
             else 

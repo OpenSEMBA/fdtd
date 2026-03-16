@@ -60,8 +60,6 @@ module mtln_types_m
       type(node_source_t) :: source
       type(terminal_circuit_t) :: model
       integer :: networkCircuitNode = -1
-      ! integer :: networkCircuitIndex = -1
-      ! subckt info?
    contains
       private
       procedure :: termination_eq
@@ -84,14 +82,13 @@ module mtln_types_m
       character(len=256) :: model_file = ""
       character(len=256) :: model_name = ""
       character(len=256) :: circuit_name = ""
-      integer :: number_of_nodes
-      integer :: nodeId
+      integer :: number_of_nodes = -1
+      integer :: nodeId = -1
    end type
 
    type :: terminal_connection_t
       type(terminal_node_t), dimension(:), allocatable :: nodes
-      ! type(network_circuit_t) :: network_circuit
-      ! logical :: has_network_circuit = .false.
+      type(network_circuit_t) :: network_circuit
    contains
       private
       procedure :: terminal_connection_eq
@@ -101,8 +98,6 @@ module mtln_types_m
 
    type :: terminal_network_t
       type(terminal_connection_t), dimension(:), allocatable :: connections
-      type(network_circuit_t), dimension(:), allocatable :: network_circuit
-      logical :: has_network_circuit = .false.
    contains
       private
       procedure :: terminal_network_eq

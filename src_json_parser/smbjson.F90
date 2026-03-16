@@ -2969,11 +2969,8 @@ contains
          do i = 1, size(network_circuits)
             if (network_circuits(i)%nodeId == node_id) then
                res%network_circuit = network_circuits(i)
-               res%has_network_circuit = .true.
             end if
          end do
-
-
       end function
 
       subroutine updateListOfConnectionIds(ids, id)
