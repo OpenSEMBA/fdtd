@@ -470,9 +470,7 @@ The values are defined defined as follows:
 + N-port SPICE models can be used to connect a series of terminations. The `type` is `network`, and is defined with:
   + `[file]` which is the name of the file where the SPICE model is defined 
   + `[name]` which is the name of the subcircuit as defined inside `file`
-  + `[terminal]` which is the subcircuit terminal the termination is connected to. Internally, subcircuits will have their terminals (the circuit external nodes) named in non-numerical way. `[terminal]` is an integer that refers to the position of the terminal in the netlist 
-
-<!-- There is an optional key which is needed in case the termination is attached to a N-port circuit, `circuitPort`. This must be an integer which indicates which port in the circuit defined in the [subcircuits](#subcircuits) model is attached to. -->
+  + `[node]` which is the subcircuit node the termination is connected to. Generally, subcircuits will have their terminals external nodes named in non-numerical way. `[node]` is an integer that refers to the position of the node in the netlist 
 
 **Example:**
 
@@ -486,7 +484,7 @@ The values are defined defined as follows:
 ```
 #### `SPICE terminations`
 
-As with the rest of terminations, SPICE terminations have to be equivalents to 2-port networks, i.e, the model in `file` can be composed of an arbitrary number of components, but it must have only two external nodes. 
+There are two types of SPICE terminations, `circuit` and `network`. `circuit` terminations are equivalent to 2-port networks. The netlist representing the connection can be composed of an arbitrary number of components, but it must have only two external nodes. 
 
 **Example:**
 
@@ -499,7 +497,22 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
 }
 ```
 
-`ListOfComponents.lib` is a file where one or more SPICE subcircuits are defined. The file does not need to contain only the subcircuit that is going to be used in the termination. The particular subcircuit among those defined in the file is selected using the key `name`.
+`ListOfComponents.lib` is a file where one or more SPICE subcircuits (definitions beggining with `.subckt`) are defined. The file does not need to contain only the subcircuit that is going to be used in the termination. The particular subcircuit among those defined in the file is selected using the key `name`.
+
+`network` represent a series of wires connected to the same circuit. The subcircuit node that the wire is connected to is defined with the keyword `node`:
+
+```json
+{
+    "name" : "NetworkTerminal",
+    "id" : 5,
+    "type" : "terminal", 
+    "terminations" : [ {"type": "network", "file": "ListOfComponents.lib", "name": "Component_2", "node" : 1},
+                       {"type": "network", "file": "ListOfComponents.lib", "name": "Component_2", "node" : 2},
+                       {"type": "network", "file": "ListOfComponents.lib", "name": "Component_2", "node" : 3} ]
+}
+```
+
+In this case, the three wires of a e-conductor cable are connected to the nodes of a subcircuit. This circuit might have more external nodes, connected to wires in another cable.
 
 ### `connector`
 
