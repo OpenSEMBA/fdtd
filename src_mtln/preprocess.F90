@@ -30,7 +30,7 @@ module mtln_preprocess_m
         procedure :: buildNetwork
         procedure :: connectNodeToGround
         procedure :: connectNodes
-        procedure :: connectNodesToNetwork_circuit
+        procedure :: connectNodesToNetworkCircuit
         procedure :: addNodeWithId
         procedure :: addProbesWithId
     end type preprocess_t
@@ -1096,7 +1096,7 @@ contains
         description((size(old_description)+1):size(description)) = node_description(:)
     end subroutine
 
-    subroutine connectNodesToNetwork_circuit(this, terminal_connection, nodes, description)
+    subroutine connectNodesToNetworkCircuit(this, terminal_connection, nodes, description)
         class(preprocess_t) :: this
         type(terminal_connection_t), intent(in) :: terminal_connection
         type(nw_node_t),  dimension(:), allocatable, intent(inout) :: nodes
@@ -1116,7 +1116,7 @@ contains
             new_node = this%addNodeWithId(terminal_connection%nodes(i))
             nodes(size(aux_nodes) + i) = new_node
             
-            write(str_term, '(I0)') terminal_connection%nodes(i)%termination%circuitTerminal
+            write(str_term, '(I0)') terminal_connection%nodes(i)%termination%networkCircuitNode
             network_circuit_node = trim(terminal_connection%network_circuit%circuit_name)//"_"//trim(str_term)
 
             node_description = writeNodeDescription(new_node, terminal_connection%nodes(i)%termination, trim(network_circuit_node))
@@ -1193,7 +1193,7 @@ contains
         allocate(listOfModels(0))
         allocate(description(0))
         do i = 1, size(network_circuit_connections) 
-            if (network_circuit_connections(i)%has_circuit) then 
+            if (network_circuit_connections(i)%has_network_circuit) then 
                 call addCircuitModel(description, network_circuit_connections(i)%network_circuit, listOfModels)
                 call addCircuitInstance(description, network_circuit_connections(i)%network_circuit)
             end if
@@ -1209,7 +1209,7 @@ contains
         end do
         
         do i = 1, size(network_circuit_connections) 
-            call this%connectNodesToNetwork_circuit(network_circuit_connections(i), nodes, description)
+            call this%connectNodesToNetworkCircuit(network_circuit_connections(i), nodes, description)
         end do
 
         res = networkCtor(nodes, description)
@@ -1283,7 +1283,7 @@ contains
         node_size = 0
 
         do i = 1, size(all_conn)
-            if (all_conn(i)%has_circuit) then 
+            if (all_conn(i)%has_network_circuit) then 
                 subckt_size = subckt_size + 1
             else
                 node_size = node_size + 1
@@ -1299,7 +1299,7 @@ contains
         is_ckt = .true.
 
         do i = 1, size(all_conn)
-            if (all_conn(i)%has_circuit) then 
+            if (all_conn(i)%has_network_circuit) then 
                 subckt_conn(subckt_size) = all_conn(i)
                 subckt_size = subckt_size + 1
             else 

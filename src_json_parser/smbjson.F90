@@ -2969,7 +2969,7 @@ contains
          do i = 1, size(network_circuits)
             if (network_circuits(i)%nodeId == node_id) then
                res%network_circuit = network_circuits(i)
-               res%has_circuit = .true.
+               res%has_network_circuit = .true.
             end if
          end do
 
@@ -3059,7 +3059,7 @@ contains
          res%node%termination%inductance = readTerminationRLC(termination, J_MAT_TERM_INDUCTANCE, default=0.0)
          res%node%termination%source = readGeneratorOnTermination(id,label)
          res%node%termination%model = readTerminationModel(termination)
-         res%node%termination%circuitTerminal = readTerminationcircuitTerminal(termination, default = -1)
+         res%node%termination%networkCircuitNode = readTerminationnetworkCircuitNode(termination, default = -1)
          
          res%node%side = label
          res%node%conductor_in_cable = index
@@ -3226,7 +3226,7 @@ contains
 
       end function
 
-      function readTerminationcircuitTerminal(termination, default) result(res)
+      function readTerminationnetworkCircuitNode(termination, default) result(res)
          type(json_value), pointer :: termination
          integer, intent(in) :: default
          integer :: res

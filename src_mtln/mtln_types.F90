@@ -59,7 +59,8 @@ module mtln_types_m
       real :: capacitance = 1e22
       type(node_source_t) :: source
       type(terminal_circuit_t) :: model
-      integer :: circuitTerminal = -1
+      integer :: networkCircuitNode = -1
+      ! integer :: networkCircuitIndex = -1
       ! subckt info?
    contains
       private
@@ -89,8 +90,8 @@ module mtln_types_m
 
    type :: terminal_connection_t
       type(terminal_node_t), dimension(:), allocatable :: nodes
-      type(network_circuit_t) :: network_circuit
-      logical :: has_circuit = .false.
+      ! type(network_circuit_t) :: network_circuit
+      ! logical :: has_network_circuit = .false.
    contains
       private
       procedure :: terminal_connection_eq
@@ -100,6 +101,8 @@ module mtln_types_m
 
    type :: terminal_network_t
       type(terminal_connection_t), dimension(:), allocatable :: connections
+      type(network_circuit_t), dimension(:), allocatable :: network_circuit
+      logical :: has_network_circuit = .false.
    contains
       private
       procedure :: terminal_network_eq
