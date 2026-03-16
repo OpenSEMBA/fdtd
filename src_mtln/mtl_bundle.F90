@@ -1,16 +1,16 @@
 module mtl_bundle_m
 
-    use utils_mod
-    use probes_mod
+    use utils_m
+    use probes_m
     use generators_m
-    use dispersive_mod
-    use mtl_mod
+    use dispersive_m
+    use mtl_m
 #ifdef CompileWithMPI
     use FDETYPES_m, only: RKIND, SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #else
     use FDETYPES_m, only: RKIND
 #endif
-    use mtln_types_mod, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     implicit none
 
     type, public :: mtl_bundle_t
@@ -29,13 +29,13 @@ module mtl_bundle_m
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
         integer, dimension(:), allocatable :: conductors_in_level
-        
+
         real, dimension(:,:,:), allocatable :: v_term, i_term
         real, dimension(:,:,:), allocatable :: v_diff, i_diff
 
         type(external_field_segment_t), dimension(:), allocatable :: external_field_segments
         logical :: bundle_in_layer = .true.
-        
+
 #ifdef CompileWithMPI
         integer(kind=4), allocatable, dimension(:,:) :: layer_indices
         type(comm_t) :: mpi_comm
@@ -70,7 +70,7 @@ module mtl_bundle_m
     type :: external_field_segment_t
         integer, dimension(3) ::position
         integer :: direction = 0
-        real(kind=rkind) , pointer  :: field => null()      
+        real(kind=rkind) , pointer  :: field => null()
     end type
 
 contains
@@ -79,11 +79,11 @@ contains
         type(mtl_bundle_t) :: res
         type(transmission_line_level_t), dimension(:), intent(in) :: levels
         character(len=*), intent(in), optional :: name
-       
+
         res%name = ""
         if (present(name)) then
             res%name = name
-        end if   
+        end if
         allocate(res%probes(0))
         allocate(res%generators(0))
 
@@ -113,14 +113,14 @@ contains
         allocate(this%gpul(this%number_of_divisions + 1, this%number_of_conductors, this%number_of_conductors), source = 0.0)
         allocate(this%rpul(this%number_of_divisions, this%number_of_conductors, this%number_of_conductors), source = 0.0)
         allocate(this%du(this%number_of_divisions, this%number_of_conductors, this%number_of_conductors), source = 0.0)
-        
+
         allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
         allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0)
 
         allocate(this%v_source(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
         allocate(this%i_source(this%number_of_conductors, this%number_of_divisions), source = 0.0)
-        
+
         allocate(this%i_term(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
         allocate(this%v_diff(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
 
@@ -137,7 +137,7 @@ contains
             do j = 1, size(levels(i)%lines)
                 res = res + levels(i)%lines(j)%number_of_conductors
             end do
-        end do  
+        end do
     end function
 
     subroutine mergePULMatrices(this, levels)
@@ -177,29 +177,29 @@ contains
 
                 this%transfer_impedance%q1(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n,:) = &
                     levels(i)%lines(j)%lumped_elements%q1(:,:,:,:)
-                
+
                 this%transfer_impedance%q2(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n,:) = &
                     levels(i)%lines(j)%lumped_elements%q2(:,:,:,:)
-                
+
                 this%transfer_impedance%q3(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n,:) = &
                     levels(i)%lines(j)%lumped_elements%q3(:,:,:,:)
-                
-                this%transfer_impedance%q1_sum(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n) = & 
+
+                this%transfer_impedance%q1_sum(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n) = &
                     levels(i)%lines(j)%lumped_elements%q1_sum(:,:,:)
-                
-                this%transfer_impedance%q2_sum(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n) = & 
+
+                this%transfer_impedance%q2_sum(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n) = &
                     levels(i)%lines(j)%lumped_elements%q2_sum(:,:,:)
-                
-                this%transfer_impedance%q3_phi(:,n_sum+1:n_sum+n) = & 
+
+                this%transfer_impedance%q3_phi(:,n_sum+1:n_sum+n) = &
                     levels(i)%lines(j)%lumped_elements%q3_phi(:,:)
-                
-                this%transfer_impedance%phi(:,n_sum+1:n_sum+n,:)  = & 
+
+                this%transfer_impedance%phi(:,n_sum+1:n_sum+n,:)  = &
                     levels(i)%lines(j)%lumped_elements%phi(:,:,:)
-                
-                this%transfer_impedance%d(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n) = & 
+
+                this%transfer_impedance%d(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n) = &
                     levels(i)%lines(j)%lumped_elements%d(:,:,:)
-                
-                this%transfer_impedance%e(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n) = & 
+
+                this%transfer_impedance%e(:,n_sum+1:n_sum+n,n_sum +1:n_sum+n) = &
                     levels(i)%lines(j)%lumped_elements%e(:,:,:)
 
                 n_sum = n_sum + n
@@ -265,11 +265,11 @@ contains
         this%generators(1:size(this%generators)-1) = aux_generators
         this%generators(size(aux_generators)+1) = new_generator
 
-        if (gen_type == SOURCE_TYPE_VOLTAGE) then 
-            this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance/0.01
+        if (gen_type == SOURCE_TYPE_VOLTAGE) then
+            this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance/this%du(index, conductor, conductor)
         else if (new_generator%source_type == SOURCE_TYPE_CURRENT) then
-            ! this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance 
-            ! this%gpul(index, conductor, conductor) = this%gpul(index, conductor, conductor) + 1.0/resistance 
+            ! this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance/this%du(index, conductor, conductor)
+            this%gpul(index, conductor, conductor) = this%gpul(index, conductor, conductor) + resistance/this%du(index, conductor, conductor)
         end if
 
     end subroutine
@@ -307,7 +307,7 @@ contains
                 this%transfer_impedance%e(i,:,:)/this%dt + &
                 0.5*this%rpul(i,:,:) + &
                 this%transfer_impedance%q1_sum(i,:,:)), &
-            i = 1,this%number_of_divisions)], & 
+            i = 1,this%number_of_divisions)], &
             shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
             order=[2,3,1])
 
@@ -318,7 +318,7 @@ contains
             this%transfer_impedance%e(i,:,:)/this%dt - &
             0.5*this%rpul(i,:,:) - &
             this%transfer_impedance%q1_sum(i,:,:)), &
-            i = 1,this%number_of_divisions)], & 
+            i = 1,this%number_of_divisions)], &
             shape=[this%number_of_divisions,this%number_of_conductors, this%number_of_conductors], &
             order=[2,3,1])
 
@@ -340,7 +340,7 @@ contains
         real, dimension(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors) :: F1, F2, IF1
         real, dimension(this%number_of_divisions + 1, this%number_of_conductors,this%number_of_conductors) :: extended_du
         integer :: i
-        
+
         extended_du(1,:,:) = this%du(1,:,:)
         do i = 2, this%number_of_divisions
             extended_du(i,:,:)= 0.5*(this%du(i,:,:)+this%du(i-1,:,:))
@@ -369,7 +369,7 @@ contains
             order=[2,3,1])
         this%i_diff = IF1
 
-       
+
     end subroutine
 
     subroutine bundle_updateGenerators(this, time, dt)
@@ -377,20 +377,20 @@ contains
         real, intent(in) :: time, dt
         real :: val
         integer :: i
-        !TODO
-        do i = 1, size(this%generators) 
-            val = this%generators(i)%interpolate(time+0.5*dt)
-            ! val = 0.5*(this%generators(i)%interpolate(time-0.5*dt)+this%generators(i)%interpolate(time+0.5*dt))
-            if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
+        do i = 1, size(this%generators)
+            if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then
+                val = 0.5*(this%generators(i)%interpolate(time+dt)+this%generators(i)%interpolate(time))
                 this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val
-            else if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                ! this%v_source(this%generators(i)%conductor, this%generators(i)%index) = 0.5*val*this%generators(i)%resistance
+            else if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then
+                val = 0.5*(this%generators(i)%interpolate(time+0.5*dt)+this%generators(i)%interpolate(time-0.5*dt))
+                ! this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val*this%generators(i)%resistance
                 ! this%v_source(this%generators(i)%conductor, this%generators(i)%index-1) = -0.5*val*this%generators(i)%resistance
-                ! this%i_source(this%generators(i)%conductor, this%generators(i)%index-1) = 0.5*val
+                ! this%i_source(this%generators(i)%conductor, this%generators(i)%index)   =  0.5*val
+                ! this%i_source(this%generators(i)%conductor, this%generators(i)%index-1) =- 0.5*val
                 this%i_source(this%generators(i)%conductor, this%generators(i)%index)   = val
             end if
         end do
-    
+
     end subroutine
 
     subroutine bundle_advanceVoltage(this)
@@ -398,9 +398,11 @@ contains
         integer :: i
         do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
-                           matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1)))
-                            ! + &                                                       this%i_source(:,i))
+                           matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1))- &
+                                                    !soft I source?
+                                                      this%i_source(:,i))
         end do
+
     end subroutine
 
 
@@ -420,18 +422,21 @@ contains
         call this%transfer_impedance%updateQ3Phi()
         i_prev = this%i
 
-        do i = 1, this%number_of_divisions 
+        do i = 1, this%number_of_divisions
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
                           matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
-                                                      this%e_L(:,i) * this%step_size(i)) - &
-                                                    !   this%v_source(:,i)) - &
+                                                      this%e_L(:,i) * this%step_size(i) - &
+                                                      !soft V source
+                                                      this%v_source(:,i)) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
-            ! this%i(:,i) = this%i_source(:,i)
         enddo
-        do i = 1, size(this%generators) 
-            this%i(this%generators(i)%conductor, this%generators(i)%index) = & 
-            this%i_source(this%generators(i)%conductor, this%generators(i)%index)
-        end do
+        !hard I source
+        ! do i = 1, size(this%generators)
+        !     if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then
+        !         this%i(this%generators(i)%conductor, this%generators(i)%index) = &
+        !         this%i_source(this%generators(i)%conductor, this%generators(i)%index)
+        !     end if
+        ! end do
         !TODO - revisar
         i_now = this%i
         call this%transfer_impedance%updatePhi(i_prev, i_now)
@@ -464,20 +469,20 @@ contains
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         number_of_conductors = size(this%v,1)
         do i = 1, size(this%mpi_comm%comms)
-            if (this%mpi_comm%comms(i)%comm_type == COMM_V .or. this%mpi_comm%comms(i)%comm_type == COMM_BOTH) then 
-                if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then 
+            if (this%mpi_comm%comms(i)%comm_type == COMM_V .or. this%mpi_comm%comms(i)%comm_type == COMM_BOTH) then
+                if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then
                     do c = 1, number_of_conductors
-                        call MPI_send(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, & 
-                                      rank+this%mpi_comm%comms(i)%delta_rank, & 
-                                      200*(rank+this%mpi_comm%comms(i)%delta_rank+1)+c, & 
+                        call MPI_send(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, &
+                                      rank+this%mpi_comm%comms(i)%delta_rank, &
+                                      200*(rank+this%mpi_comm%comms(i)%delta_rank+1)+c, &
                                       SUBCOMM_MPI, ierr)
                     end do
                 end if
-                if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then 
+                if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then
                     do c = 1, number_of_conductors
-                        call MPI_recv(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, & 
-                                      rank+this%mpi_comm%comms(i)%delta_rank, & 
-                                      200*(rank+1)+c, & 
+                        call MPI_recv(this%v(c, this%mpi_comm%comms(i)%v_index),1, REALSIZE, &
+                                      rank+this%mpi_comm%comms(i)%delta_rank, &
+                                      200*(rank+1)+c, &
                                       SUBCOMM_MPI, status, ierr)
                     end do
                 end if
@@ -492,15 +497,15 @@ contains
         integer :: i, ierr, rank, status(MPI_STATUS_SIZE)
         call MPI_COMM_RANK(SUBCOMM_MPI, rank, ierr)
         do i = 1, size(this%mpi_comm%comms)
-            if (this%mpi_comm%comms(i)%comm_type == COMM_FIELD .or. this%mpi_comm%comms(i)%comm_type == COMM_BOTH) then 
-                if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then 
-                    call MPI_send(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field, 1, REALSIZE, & 
-                                    rank+this%mpi_comm%comms(i)%delta_rank, & 
-                                    100*(rank+this%mpi_comm%comms(i)%delta_rank+1), & 
+            if (this%mpi_comm%comms(i)%comm_type == COMM_FIELD .or. this%mpi_comm%comms(i)%comm_type == COMM_BOTH) then
+                if (this%mpi_comm%comms(i)%comm_task == COMM_SEND) then
+                    call MPI_send(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field, 1, REALSIZE, &
+                                    rank+this%mpi_comm%comms(i)%delta_rank, &
+                                    100*(rank+this%mpi_comm%comms(i)%delta_rank+1), &
                                     SUBCOMM_MPI, ierr)
                 end if
-                if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then 
-                    call MPI_recv(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field,1, REALSIZE, & 
+                if (this%mpi_comm%comms(i)%comm_task == COMM_RECV) then
+                    call MPI_recv(this%external_field_segments(this%mpi_comm%comms(i)%field_index)%field,1, REALSIZE, &
                                     rank+this%mpi_comm%comms(i)%delta_rank, &
                                     100*(rank+1), &
                                     SUBCOMM_MPI, status, ierr)

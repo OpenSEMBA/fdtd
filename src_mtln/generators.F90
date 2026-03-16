@@ -1,7 +1,7 @@
 module generators_m
 
     
-    use mtln_types_mod, only: SOURCE_TYPE_UNDEFINED, SOURCE_TYPE_VOLTAGE, SOURCE_TYPE_CURRENT   
+    use mtln_types_m, only: SOURCE_TYPE_UNDEFINED, SOURCE_TYPE_VOLTAGE, SOURCE_TYPE_CURRENT   
 
     implicit none
 

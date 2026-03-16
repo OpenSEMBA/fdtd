@@ -3,7 +3,7 @@
     "__comments": "",
     "general": {
         "timeStep": 1e-11,
-        "numberOfSteps": 5000
+        "numberOfSteps": 7500
     },
     "boundary": {
         "all": {
@@ -44,16 +44,6 @@
             "name": "copper",
             "id": 4,
             "type": "pec"
-        },
-        {
-            "id": 5,
-            "type": "terminal",
-            "terminations": [
-                {
-                    "type": "series",
-                    "resistance": 25.0
-                }
-            ]
         }
     ],
     "mesh": {
@@ -210,7 +200,7 @@
                 "id": 6,
                 "type": "node",
                 "coordinateIds": [
-                    7
+                    4
                 ]
             },
             {
@@ -227,13 +217,6 @@
                 "coordinateIds": [
                     7
                 ]
-            },
-            {
-                "id": 9,
-                "type": "node",
-                "coordinateIds": [
-                    4
-                ]
             }
         ]
     },
@@ -241,7 +224,7 @@
         {
             "name": "wire",
             "materialId": 1,
-            "initialTerminalId": 5,
+            "initialTerminalId": 3,
             "endTerminalId": 2,
             "elementIds": [
                 2
@@ -258,11 +241,11 @@
         {
             "name": "terminal_source",
             "type": "generator",
-            "magnitudeFile": "current_source_1A.exc",
+            "magnitudeFile": "voltage_source_50V.exc",
             "elementIds": [
                 1
             ],
-            "field": "current",
+            "field": "voltage",
             "resistance": 50.0
         }
     ],
@@ -279,9 +262,9 @@
             }
         },
         {
-            "name": "probe_c7",
+            "name": "probe_end",
             "type": "wire",
-            "field": "current",
+            "field": "voltage",
             "elementIds": [
                 6
             ],
@@ -305,7 +288,7 @@
             "type": "wire",
             "field": "current",
             "elementIds": [
-                9
+                6
             ],
             "domain": {
                 "type": "time"
