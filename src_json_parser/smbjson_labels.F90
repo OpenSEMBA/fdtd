@@ -161,6 +161,10 @@ module smbjson_labels_m
    character(len=*), parameter :: J_GEN_MTLN_PROBLEM = "mtlnProblem"
    character(len=*), parameter :: J_GEN_ADDITIONAL_ARGUMENTS = "additionalArguments"
 
+   ! background
+   character(len=*), parameter :: J_BACKGROUND = "background"
+   character(len=*), parameter :: J_BKG_ABS_PERMITTIVITY = "absolutePermittivity"
+   character(len=*), parameter :: J_BKG_ABS_PERMEABILITY = "absolutePermeability"
 
    ! type(Frontera_t)
    character(len=*), parameter :: J_BOUNDARY = "boundary"
