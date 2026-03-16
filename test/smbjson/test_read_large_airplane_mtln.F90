@@ -1,5 +1,5 @@
 integer function test_read_large_airplane_mtln() bind (C) result(err)
-   use smbjson
+   use smbjson_m
    use smbjson_testingTools
 
    character(len=*),parameter :: filename = PATH_TO_TEST_DATA//INPUT_EXAMPLES//'large_airplane_mtln.fdtd.json'

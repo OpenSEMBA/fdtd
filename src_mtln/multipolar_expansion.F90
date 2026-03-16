@@ -1,8 +1,8 @@
-module multipolar_expansion_mod
+module multipolar_expansion_m
 
-   use mtln_types_mod
-   use Report
-   use FDETypes, only: pi, EPSILON_VACUUM, MU_VACUUM
+   use mtln_types_m
+   use Report_m
+   use FDETYPES_m, only: pi, EPSILON_VACUUM, MU_VACUUM
 
    type, private :: integration_grid_t
       real, dimension(:), allocatable :: x, y
@@ -208,4 +208,4 @@ contains
 
    end function
 
-end module multipolar_expansion_mod
+end module multipolar_expansion_m

@@ -1,8 +1,8 @@
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 !  Module to handle the storing of the geometry in ascii files
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module storeData
-   use fdetypes
+module storeData_m
+   use FDETYPES_m
    !
    implicit none
    private
@@ -129,5 +129,5 @@ contains
       !
    end subroutine store_geomData
    !
-end module storeData
+end module storeData_m
 !

@@ -1,10 +1,10 @@
-module NFDETypes
+module NFDETypes_m
    !
-   use FDETYPES
+   use FDETYPES_m
 #ifdef CompileWithMTLN   
-   use mtln_types_mod
+   use mtln_types_m
 #endif
-   use conformal_types_mod
+   use conformal_types_m
    !
    implicit none
    integer(kind=4), parameter :: RK = RKIND
@@ -835,6 +835,6 @@ module NFDETypes
 contains
 
 
-end module NFDETypes
+end module NFDETypes_m
 
     

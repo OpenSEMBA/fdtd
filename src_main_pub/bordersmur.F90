@@ -4,9 +4,9 @@
 !  Borders :  MUR  handling
 !  Creation date Date :  January, 8, 2013
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module BORDERS_MUR
-   use fdetypes
-   use Report
+module BORDERS_MUR_m
+   use FDETYPES_m
+   use Report_m
    implicit none
    private
    !
@@ -168,7 +168,7 @@ contains
                   READ (14) ( regLR(region)%Past_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
                End do
             End do
-         endif
+         end if
       end do
       do REGION =down,up
          allocate (regDU(region)%Past_Hy(MURc(iHy)%XI(region) : MURc(iHy)%XE(region), &
@@ -190,7 +190,7 @@ contains
                   READ (14) ( regDU(region)%Past_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
                End do
             End do
-         endif
+         end if
       end do
       do REGION =back,front
          allocate (regBF(region)%Past_Hz(MURc(iHz)%XI(region) : MURc(iHz)%XE(region), &
@@ -212,7 +212,7 @@ contains
                   READ (14) ( regBF(region)%Past_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
                End do
             End do
-         endif
+         end if
       end do
 
       !past past
@@ -238,7 +238,7 @@ contains
                   READ (14) ( regLR(region)%PastPast_Hz(i,j,k),i=MURc(iHz)%XI(region),MURc(iHz)%XE(region))
                End do
             End do
-         endif
+         end if
       end do
       do REGION =down,up
          allocate (regDU(region)%PastPast_Hy(MURc(iHy)%XI(region) : MURc(iHy)%XE(region), &
@@ -260,7 +260,7 @@ contains
                   READ (14) ( regDU(region)%PastPast_Hx(i,j,k),i=MURc(iHx)%XI(region),MURc(iHx)%XE(region))
                End do
             End do
-         endif
+         end if
       end do
       do REGION =back,front
          allocate (regBF(region)%PastPast_Hz(MURc(iHz)%XI(region) : MURc(iHz)%XE(region), &
@@ -282,7 +282,7 @@ contains
                   READ (14) ( regBF(region)%PastPast_Hy(i,j,k),i=MURc(iHy)%XI(region),MURc(iHy)%XE(region))
                End do
             End do
-         endif
+         end if
       end do
 
 !!incializa constantes
@@ -523,8 +523,8 @@ contains
                   medio = sggMiHx( i_m    , j_m + 1, k_m    )
                   Hx( i_m, j_m, k_m)=                                           + regLR( REGION)%Past_Hx(i    ,j + 1,k)          &
                   +  left_CAB1(medio)*(                    Hx(i_m  ,j_m + 1,k_m) - regLR( REGION)%Past_Hx(i    ,j    ,k))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -541,12 +541,12 @@ contains
                   medio = sggMiHz( i_m    , j_m + 1, k_m    )
                   Hz( i_m, j_m, k_m) =                                             + regLR( REGION)%Past_Hz(i    ,j + 1,k)          &
                   + left_CAB1(medio)*(                   Hz(i_m  ,j_m + 1,k_m) - regLR( REGION)%Past_Hz(i    ,j    ,k))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -566,8 +566,8 @@ contains
                   medio = sggMiHx( i_m    , j_m - 1, k_m    )
                   Hx( i_m, j_m, k_m)=                                            + regLR( REGION)%Past_Hx(i    ,j - 1,k)          &
                   + right_CAB1(medio)*(                   Hx(i_m  ,j_m - 1,k_m) - regLR( REGION)%Past_Hx(i    ,j    ,k))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -584,12 +584,12 @@ contains
                   medio = sggMiHz( i_m    , j_m - 1, k_m    )
                   Hz( i_m, j_m, k_m) =                                              + regLR( REGION)%Past_Hz(i    ,j - 1,k    )      &
                   + right_CAB1(medio)*(                   Hz(i_m  ,j_m - 1,k_m) - regLR( REGION)%Past_Hz(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -609,8 +609,8 @@ contains
                   medio = sggMiHy( i_m    , j_m    , k_m + 1)
                   Hy( i_m, j_m, k_m) =                                             + regDU( REGION)%Past_Hy(i    ,j    ,k + 1)      &
                   + down_CAB1(medio)*(                   Hy(i_m  ,j_m,k_m + 1) - regDU( REGION)%Past_Hy(i    ,j    ,k    ))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -627,12 +627,12 @@ contains
                   medio = sggMiHx( i_m    , j_m    , k_m + 1)
                   Hx( i_m, j_m, k_m) =                                             + regDU( REGION)%Past_Hx(i    ,j    ,k + 1)      &
                   + down_CAB1(medio)*(                   Hx(i_m  ,j_m,k_m + 1) - regDU( REGION)%Past_Hx(i    ,j    ,k    ))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -652,8 +652,8 @@ contains
                   medio = sggMiHy( i_m    , j_m    , k_m - 1)
                   Hy( i_m, j_m, k_m) =                                            + regDU( REGION)%Past_Hy(i    ,j    ,k - 1)      &
                   + up_CAB1(medio)*(                     Hy(i_m  ,j_m    ,k_m - 1) - regDU( REGION)%Past_Hy(i    ,j    ,k    ))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -670,12 +670,12 @@ contains
                   medio = sggMiHx( i_m    , j_m    , k_m - 1)
                   Hx( i_m, j_m, k_m) =                                               + regDU( REGION)%Past_Hx(i    ,j    ,k - 1)      &
                   + up_CAB1(medio)*(                   Hx(i_m  ,j_m  ,k_m - 1)   - regDU( REGION)%Past_Hx(i    ,j    ,k    ))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -695,8 +695,8 @@ contains
                   medio = sggMiHz( i_m + 1, j_m    , k_m    )
                   Hz( i_m, j_m, k_m) =                                              + regBF( REGION)%Past_Hz(i + 1,j    ,k    )      &
                   + back_CAB1(medio)*(                     Hz(i_m + 1,j_m  ,k_m    ) - regBF( REGION)%Past_Hz(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -713,12 +713,12 @@ contains
                   medio = sggMiHy( i_m + 1, j_m    , k_m    )
                   Hy( i_m, j_m, k_m) =                                              + regBF( REGION)%Past_Hy(i + 1,j    ,k    )      &
                   + back_CAB1(medio)*(                   Hy(i_m + 1,j_m  ,k_m    ) - regBF( REGION)%Past_Hy(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -738,8 +738,8 @@ contains
                   medio = sggMiHz( i_m - 1, j_m    , k_m    )
                   Hz( i_m, j_m, k_m) =                                               + regBF( REGION)%Past_Hz(i - 1,j    ,k    )      &
                   + front_CAB1(medio)*(                   Hz(i_m - 1,j_m  ,k_m    ) - regBF( REGION)%Past_Hz(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -756,12 +756,12 @@ contains
                   medio = sggMiHy( i_m - 1, j_m    , k_m    )
                   Hy( i_m, j_m, k_m) =                                               + regBF( REGION)%Past_Hy(i - 1,j    ,k    )      &
                   + front_CAB1(medio)*(                   Hy(i_m - 1,j_m  ,k_m    ) - regBF( REGION)%Past_Hy(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !
 
          !!!!!!!!
@@ -795,8 +795,8 @@ contains
                   +                    regLR( REGION)%Past_Hx(i + 1,j + 1,k    ) +     regLR( REGION)%Past_Hx(i - 1,j + 1,k    )      &
                   +                    regLR( REGION)%Past_Hx(i    ,j    ,k +1 ) +     regLR( REGION)%Past_Hx(i    ,j    ,k - 1)      &
                   +                    regLR( REGION)%Past_Hx(i    ,j + 1,k +1 ) +     regLR( REGION)%Past_Hx(i    ,j + 1,k - 1))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -818,12 +818,12 @@ contains
                   +                    regLR( REGION)%Past_Hz(i + 1,j + 1,k    ) +     regLR( REGION)%Past_Hz(i - 1,j + 1,k    )      &
                   +                    regLR( REGION)%Past_Hz(i    ,j    ,k +1 ) +     regLR( REGION)%Past_Hz(i    ,j    ,k - 1)      &
                   +                    regLR( REGION)%Past_Hz(i    ,j + 1,k +1 ) +     regLR( REGION)%Past_Hz(i    ,j + 1,k - 1))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -848,8 +848,8 @@ contains
                   +                     regLR( REGION)%Past_Hx(i + 1,j - 1,k    ) +     regLR( REGION)%Past_Hx(i - 1,j - 1,k    )      &
                   +                     regLR( REGION)%Past_Hx(i    ,j    ,k +1 ) +     regLR( REGION)%Past_Hx(i    ,j    ,k - 1)      &
                   +                     regLR( REGION)%Past_Hx(i    ,j - 1,k +1 ) +     regLR( REGION)%Past_Hx(i    ,j - 1,k - 1))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -871,12 +871,12 @@ contains
                   +                     regLR( REGION)%Past_Hz(i + 1,j - 1,k    ) +     regLR( REGION)%Past_Hz(i - 1,j - 1,k    )      &
                   +                     regLR( REGION)%Past_Hz(i    ,j    ,k +1 ) +     regLR( REGION)%Past_Hz(i    ,j    ,k - 1)      &
                   +                     regLR( REGION)%Past_Hz(i    ,j - 1,k +1 ) +     regLR( REGION)%Past_Hz(i    ,j - 1,k - 1))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -901,8 +901,8 @@ contains
                   +                    regDU( REGION)%Past_Hy(i + 1,j    ,k + 1) +     regDU( REGION)%Past_Hy(i - 1,j    ,k + 1)      &
                   +                    regDU( REGION)%Past_Hy(i    ,j +1 ,k    ) +     regDU( REGION)%Past_Hy(i    ,j - 1,k    )      &
                   +                    regDU( REGION)%Past_Hy(i    ,j +1 ,k + 1) +     regDU( REGION)%Past_Hy(i    ,j - 1,k + 1))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -924,12 +924,12 @@ contains
                   +                    regDU( REGION)%Past_Hx(i + 1,j    ,k + 1) +     regDU( REGION)%Past_Hx(i - 1,j    ,k + 1)      &
                   +                    regDU( REGION)%Past_Hx(i    ,j +1 ,k    ) +     regDU( REGION)%Past_Hx(i    ,j - 1,k    )      &
                   +                    regDU( REGION)%Past_Hx(i    ,j +1 ,k + 1) +     regDU( REGION)%Past_Hx(i    ,j - 1,k + 1))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -954,8 +954,8 @@ contains
                   +                  regDU( REGION)%Past_Hy(i + 1,j     ,k - 1) +     regDU( REGION)%Past_Hy(i - 1,j    ,k - 1)      &
                   +                  regDU( REGION)%Past_Hy(i    ,j +1  ,k    ) +     regDU( REGION)%Past_Hy(i    ,j - 1,k    )      &
                   +                  regDU( REGION)%Past_Hy(i    ,j +1  ,k - 1) +     regDU( REGION)%Past_Hy(i    ,j - 1,k - 1))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -977,12 +977,12 @@ contains
                   +                  regDU( REGION)%Past_Hx(i + 1,j    ,k - 1  )   +     regDU( REGION)%Past_Hx(i - 1,j    ,k - 1)      &
                   +                  regDU( REGION)%Past_Hx(i    ,j +1 ,k      )   +     regDU( REGION)%Past_Hx(i    ,j - 1,k    )      &
                   +                  regDU( REGION)%Past_Hx(i    ,j +1 ,k - 1  )   +     regDU( REGION)%Past_Hx(i    ,j - 1,k - 1))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1007,8 +1007,8 @@ contains
                   +                    regBF( REGION)%Past_Hz(i + 1  ,j + 1,k   ) +     regBF( REGION)%Past_Hz(i + 1,j - 1,k    )      &
                   +                    regBF( REGION)%Past_Hz(i      ,j    ,k +1) +     regBF( REGION)%Past_Hz(i    ,j    ,k - 1)      &
                   +                    regBF( REGION)%Past_Hz(i + 1  ,j    ,k +1) +     regBF( REGION)%Past_Hz(i + 1,j    ,k - 1))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1030,12 +1030,12 @@ contains
                   +                    regBF( REGION)%Past_Hy(i + 1  ,j + 1,k   ) +     regBF( REGION)%Past_Hy(i + 1,j - 1,k    )      &
                   +                    regBF( REGION)%Past_Hy(i      ,j    ,k +1) +     regBF( REGION)%Past_Hy(i    ,j    ,k - 1)      &
                   +                    regBF( REGION)%Past_Hy(i + 1  ,j    ,k +1) +     regBF( REGION)%Past_Hy(i + 1,j    ,k - 1))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1060,8 +1060,8 @@ contains
                   +                     regBF( REGION)%Past_Hz(i - 1  ,j + 1,k   ) +     regBF( REGION)%Past_Hz(i - 1,j - 1,k    )      &
                   +                     regBF( REGION)%Past_Hz(i      ,j    ,k +1) +     regBF( REGION)%Past_Hz(i    ,j    ,k - 1)      &
                   +                     regBF( REGION)%Past_Hz(i - 1  ,j    ,k +1) +     regBF( REGION)%Past_Hz(i - 1,j    ,k - 1))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1083,12 +1083,12 @@ contains
                   +                     regBF( REGION)%Past_Hy(i - 1  ,j + 1,k   ) +     regBF( REGION)%Past_Hy(i - 1,j - 1,k    )      &
                   +                     regBF( REGION)%Past_Hy(i      ,j    ,k +1) +     regBF( REGION)%Past_Hy(i    ,j    ,k - 1)      &
                   +                     regBF( REGION)%Past_Hy(i - 1  ,j    ,k +1) +     regBF( REGION)%Past_Hy(i - 1,j    ,k - 1))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1120,8 +1120,8 @@ contains
                   medio = sggMiHx( i_m    , j_m + 1, k_m    )
                   Hx( i_m, j_m, k_m)=                                           + regLR( REGION)%Past_Hx(i    ,j + 1,k)          &
                   +  left_CAB1(medio)*(                    Hx(i_m  ,j_m + 1,k_m) - regLR( REGION)%Past_Hx(i    ,j    ,k))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1138,12 +1138,12 @@ contains
                   medio = sggMiHz( i_m    , j_m + 1, k_m    )
                   Hz( i_m, j_m, k_m) =                                             + regLR( REGION)%Past_Hz(i    ,j + 1,k)          &
                   + left_CAB1(medio)*(                   Hz(i_m  ,j_m + 1,k_m) - regLR( REGION)%Past_Hz(i    ,j    ,k))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1163,8 +1163,8 @@ contains
                   medio = sggMiHx( i_m    , j_m - 1, k_m    )
                   Hx( i_m, j_m, k_m)=                                            + regLR( REGION)%Past_Hx(i    ,j - 1,k)          &
                   + right_CAB1(medio)*(                   Hx(i_m  ,j_m - 1,k_m) - regLR( REGION)%Past_Hx(i    ,j    ,k))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1181,12 +1181,12 @@ contains
                   medio = sggMiHz( i_m    , j_m - 1, k_m    )
                   Hz( i_m, j_m, k_m) =                                              + regLR( REGION)%Past_Hz(i    ,j - 1,k    )      &
                   + right_CAB1(medio)*(                   Hz(i_m  ,j_m - 1,k_m) - regLR( REGION)%Past_Hz(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1206,8 +1206,8 @@ contains
                   medio = sggMiHy( i_m    , j_m    , k_m + 1)
                   Hy( i_m, j_m, k_m) =                                             + regDU( REGION)%Past_Hy(i    ,j    ,k + 1)      &
                   + down_CAB1(medio)*(                   Hy(i_m  ,j_m,k_m + 1) - regDU( REGION)%Past_Hy(i    ,j    ,k    ))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1224,12 +1224,12 @@ contains
                   medio = sggMiHx( i_m    , j_m    , k_m + 1)
                   Hx( i_m, j_m, k_m) =                                             + regDU( REGION)%Past_Hx(i    ,j    ,k + 1)      &
                   + down_CAB1(medio)*(                   Hx(i_m  ,j_m,k_m + 1) - regDU( REGION)%Past_Hx(i    ,j    ,k    ))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1249,8 +1249,8 @@ contains
                   medio = sggMiHy( i_m    , j_m    , k_m - 1)
                   Hy( i_m, j_m, k_m) =                                            + regDU( REGION)%Past_Hy(i    ,j    ,k - 1)      &
                   + up_CAB1(medio)*(                     Hy(i_m  ,j_m    ,k_m - 1) - regDU( REGION)%Past_Hy(i    ,j    ,k    ))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1267,12 +1267,12 @@ contains
                   medio = sggMiHx( i_m    , j_m    , k_m - 1)
                   Hx( i_m, j_m, k_m) =                                               + regDU( REGION)%Past_Hx(i    ,j    ,k - 1)      &
                   + up_CAB1(medio)*(                   Hx(i_m  ,j_m  ,k_m - 1)   - regDU( REGION)%Past_Hx(i    ,j    ,k    ))
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1292,8 +1292,8 @@ contains
                   medio = sggMiHz( i_m + 1, j_m    , k_m    )
                   Hz( i_m, j_m, k_m) =                                              + regBF( REGION)%Past_Hz(i + 1,j    ,k    )      &
                   + back_CAB1(medio)*(                     Hz(i_m + 1,j_m  ,k_m    ) - regBF( REGION)%Past_Hz(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1310,12 +1310,12 @@ contains
                   medio = sggMiHy( i_m + 1, j_m    , k_m    )
                   Hy( i_m, j_m, k_m) =                                              + regBF( REGION)%Past_Hy(i + 1,j    ,k    )      &
                   + back_CAB1(medio)*(                   Hy(i_m + 1,j_m  ,k_m    ) - regBF( REGION)%Past_Hy(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
          !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1335,8 +1335,8 @@ contains
                   medio = sggMiHz( i_m - 1, j_m    , k_m    )
                   Hz( i_m, j_m, k_m) =                                               + regBF( REGION)%Past_Hz(i - 1,j    ,k    )      &
                   + front_CAB1(medio)*(                   Hz(i_m - 1,j_m  ,k_m    ) - regBF( REGION)%Past_Hz(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1353,14 +1353,14 @@ contains
                   medio = sggMiHy( i_m - 1, j_m    , k_m    )
                   Hy( i_m, j_m, k_m) =                                               + regBF( REGION)%Past_Hy(i - 1,j    ,k    )      &
                   + front_CAB1(medio)*(                   Hy(i_m - 1,j_m  ,k_m    ) - regBF( REGION)%Past_Hy(i    ,j    ,k    ))
-               enddo
-            enddo
+               end do
+            end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-         endif
+         end if
          !
-      endif !del if mur_second_order
+      end if !del if mur_second_order
 
 
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1385,9 +1385,9 @@ contains
                   !--->
                   regLR( REGION)%PastPast_Hx(i,j,k) = regLR( REGION)%Past_Hx(i  ,j   ,k   )
                   regLR( REGION)%Past_Hx    (i,j,k) =                     Hx(i_m, j_m, k_m)
-               enddo
+               end do
             end do
-         enddo
+         end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1403,13 +1403,13 @@ contains
                   !--->
                   regLR( REGION)%PastPast_Hz(i,j,k) = regLR( REGION)%Past_Hz(i  ,j   ,k   )
                   regLR( REGION)%Past_Hz    (i,j,k) =                     Hz( i_m, j_m, k_m)
-               enddo
+               end do
             end do
-         enddo
+         end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-      endif
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1428,9 +1428,9 @@ contains
                   !--->
                   regLR( REGION)%PastPast_Hx(i,j,k) = regLR( REGION)%Past_Hx(i  ,j   ,k   )
                   regLR( REGION)%Past_Hx    (i,j,k) =                     Hx( i_m, j_m, k_m)
-               enddo
+               end do
             end do
-         enddo
+         end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1446,13 +1446,13 @@ contains
                   !--->
                   regLR( REGION)%PastPast_Hz(i,j,k) = regLR( REGION)%Past_Hz(i  ,j   ,k   )
                   regLR( REGION)%Past_Hz    (i,j,k) =                     Hz( i_m, j_m, k_m)
-               enddo
+               end do
             end do
-         enddo
+         end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-      endif
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1471,8 +1471,8 @@ contains
                   !--->
                   regDU( REGION)%PastPast_Hy(i,j,k) = regDU( REGION)%Past_Hy(i  ,j   ,k   )
                   regDU( REGION)%Past_Hy    (i,j,k) =                     Hy( i_m, j_m, k_m)
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
          end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -1489,13 +1489,13 @@ contains
                   !--->
                   regDU( REGION)%PastPast_Hx(i,j,k) = regDU( REGION)%Past_Hx(i  ,j   ,k   )
                   regDU( REGION)%Past_Hx    (i,j,k) =                     Hx( i_m, j_m, k_m)
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
          end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-      endif
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1514,8 +1514,8 @@ contains
                   !--->
                   regDU( REGION)%PastPast_Hy(i,j,k) = regDU( REGION)%Past_Hy(i  ,j   ,k   )
                   regDU( REGION)%Past_Hy    (i,j,k) =                     Hy( i_m, j_m, k_m)
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
          end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
@@ -1532,13 +1532,13 @@ contains
                   !--->
                   regDU( REGION)%PastPast_Hx(i,j,k) = regDU( REGION)%Past_Hx(i  ,j   ,k   )
                   regDU( REGION)%Past_Hx    (i,j,k) =                     Hx( i_m, j_m, k_m)
-               enddo !bucle i
-            enddo
+               end do !bucle i
+            end do
          end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-      endif
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1558,8 +1558,8 @@ contains
                   regBF( REGION)%PastPast_Hz(i,j,k) = regBF( REGION)%Past_Hz(i  ,j   ,k   )
                   regBF( REGION)%Past_Hz    (i,j,k) =                     Hz( i_m, j_m, k_m)
                end do
-            enddo
-         enddo
+            end do
+         end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1576,12 +1576,12 @@ contains
                   regBF( REGION)%PastPast_Hy(i,j,k) = regBF( REGION)%Past_Hy(i  ,j   ,k   )
                   regBF( REGION)%Past_Hy    (i,j,k) =                     Hy( i_m, j_m, k_m)
                end do
-            enddo
-         enddo
+            end do
+         end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-      endif
+      end if
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1601,8 +1601,8 @@ contains
                   regBF( REGION)%PastPast_Hz(i,j,k) = regBF( REGION)%Past_Hz(i  ,j   ,k   )
                   regBF( REGION)%Past_Hz    (i,j,k) =                     Hz( i_m, j_m, k_m)
                end do
-            enddo
-         enddo
+            end do
+         end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
@@ -1619,18 +1619,18 @@ contains
                   regBF( REGION)%PastPast_Hy(i,j,k) = regBF( REGION)%Past_Hy(i  ,j   ,k   )
                   regBF( REGION)%Past_Hy    (i,j,k) =                     Hy( i_m, j_m, k_m)
                end do
-            enddo
-         enddo
+            end do
+         end do
 #ifdef CompileWithOpenMP
 !$OMP END PARALLEL DO
 #endif
-      endif
+      end if
 
       !---------------------------> acaba AdvanceMagneTicMUR <---------------------------------------
       return
    endsubroutine AdvanceMagneTicMUR
 
 
-end Module Borders_Mur
+end Module BORDERS_MUR_m
 
 

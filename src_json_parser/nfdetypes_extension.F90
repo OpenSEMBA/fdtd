@@ -1,6 +1,6 @@
-module NFDETypes_extension      
+module NFDETypes_extension_m      
 #ifdef CompileWithSMBJSON
-   use NFDETypes
+   use NFDETypes_m
 
    implicit none
 

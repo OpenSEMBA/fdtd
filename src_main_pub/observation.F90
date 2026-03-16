@@ -3,19 +3,19 @@
 !  Observation module to store the observed data
 !  Creation date Date :  April, 8, 2010
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module Observa
-  use FDETYPES
+module Observa_m
+  use FDETYPES_m
 
 #ifdef CompileWithMPI
-  use MPIcomm
+  use MPIcomm_m
 #endif
 
-  use wiresHolland_constants
-  use HollandWires
+  use wiresHolland_constants_m
+  use HollandWires_m
 
 #ifdef CompileWithMTLN
-  use Wire_bundles_mtln_mod
-  use mtln_solver_mod, mtln_solver_t => mtln_t
+  use Wire_bundles_mtln_m
+  use mtln_solver_m, mtln_solver_t => mtln_t
 #endif
 #ifdef CompileWithBerengerWires
   use WiresBerenger
@@ -25,9 +25,9 @@ module Observa
   use WiresSlanted_Types
   use WiresSlanted_Constants
 #endif
-  use report
+  use Report_m
   use farfield_m
-  use nodalsources
+  use nodalsources_m
 !
   implicit none
   private
@@ -1740,7 +1740,7 @@ contains
                                                  tag_numbers%getFaceTag(Hfield, iii, jjj, kkk))
                           end if
                         end do
-                        !   endif
+                        !   end if
                       end if
                       !
                     end do
@@ -2179,7 +2179,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
               !no es necesario hacer wipe out pq en DF se van machacando
             end select
           end do loop_ob
-            !!!!        endif !del time domain !NO ES PRECISO 25/02/14
+            !!!!        end if !del time domain !NO ES PRECISO 25/02/14
         end do !del ii=1,numberrequest
 
         write (19, '(a)') '!END '
@@ -3679,7 +3679,7 @@ if (sgg%Observation(ii)%Transfer) output(ii)%item(i)%valor3DComplex = output(ii)
    !!! Flushes the observed magnitudes to disk
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine FlushObservationFiles(sgg,nInit,FinalInstant,layoutnumber,size, dxe,dye,dze,dxh,dyh,dzh,b,singlefilewrite,facesNF2FF,flushff)
-      use ILUMINA !is needed to also calculate the incident field in the observed points
+      use ilumina_m !is needed to also calculate the incident field in the observed points
       !solo lo precisa de entrada farfield
       type(bounds_t) :: b
       !
@@ -4369,48 +4369,48 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
         !    if     (sgg%med(imed )%is%SGBC) then
         !        if (sgg%med(imed1)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed2)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed3)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed4)%is%SGBC) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !   elseif  (sgg%med(imed )%is%Multiport) then
         !        if (sgg%med(imed1)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed2)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed3)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed4)%is%Multiport) then
         !            if (trim(adjustl(sgg%Med(imed )%Multiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%Multiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !    elseif (sgg%med(imed )%is%AnisMultiport) then
         !        if (sgg%med(imed1)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed1)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed2)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed2)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed3)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed3)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !        if (sgg%med(imed4)%is%AnisMultiport) then
         !            if (trim(adjustl(sgg%Med(imed )%AnisMultiport(1)%MultiportFileZ11))==trim(adjustl(sgg%Med(imed4)%AnisMultiport(1)%MultiportFileZ11)) ) contaborde=contaborde+1
-        !        endif
+        !        end if
         !    else
         !        if (imed==imed1) contaborde=contaborde+1
         !        if (imed==imed2) contaborde=contaborde+1
         !        if (imed==imed3) contaborde=contaborde+1
         !        if (imed==imed4) contaborde=contaborde+1
-        !    endif
+        !    end if
         !    if (contaborde <=1) esborde=.true.
          !!!!alternativa
         if (sgg%med(imed)%is%SGBC) then
@@ -5368,5 +5368,5 @@ Incid(sgg, dummy_jjj, field, real(at + 0.0_RKIND*sgg%dt, RKIND), i1, j1, k1, dum
 
     end function interpolate_field_atwhere
 
-  end module Observa
+  end module Observa_m
 

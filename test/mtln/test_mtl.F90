@@ -1,6 +1,6 @@
 integer function test_mtl_wrong_dt() bind(C) result(error_cnt)
 
-    use mtl_mod
+    use mtl_m
     use mtln_testingTools_mod
     implicit none
 
@@ -16,7 +16,7 @@ integer function test_mtl_wrong_dt() bind(C) result(error_cnt)
 end function
 
 integer function test_mtl_init_homogeneous() bind(C) result(error_cnt) 
-    use mtl_mod
+    use mtl_m
     use mtln_testingTools_mod
     implicit none
 
@@ -68,7 +68,7 @@ end function
 
 integer function test_mtl_time_step() bind(C) result(error_cnt)    
 
-    use mtl_mod
+    use mtl_m
     use mtln_testingTools_mod
 
     implicit none

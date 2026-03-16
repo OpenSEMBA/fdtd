@@ -1,4 +1,4 @@
-module mtl_bundle_mod
+module mtl_bundle_m
 
     use utils_mod
     use probes_mod
@@ -6,9 +6,9 @@ module mtl_bundle_mod
     use dispersive_mod
     use mtl_mod
 #ifdef CompileWithMPI
-    use fdetypes, only: RKIND, SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
+    use FDETYPES_m, only: RKIND, SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #else
-    use fdetypes, only: RKIND
+    use FDETYPES_m, only: RKIND
 #endif
     use mtln_types_mod, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     implicit none
@@ -83,7 +83,7 @@ contains
         res%name = ""
         if (present(name)) then
             res%name = name
-        endif   
+        end if   
         allocate(res%probes(0))
         allocate(res%generators(0))
 
@@ -510,4 +510,4 @@ contains
     end subroutine
 
 #endif
-end module mtl_bundle_mod
+end module mtl_bundle_m

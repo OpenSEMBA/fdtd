@@ -1,4 +1,4 @@
-module utils_mod
+module utils_m
 
    use iso_fortran_env, only: real64
    implicit none
@@ -104,4 +104,4 @@ contains
    end function
 
 
-end module utils_mod
+end module utils_m

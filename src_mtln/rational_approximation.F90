@@ -1,5 +1,5 @@
-module rational_approximation_mod
-    use mtln_types_mod, only: &
+module rational_approximation_m
+    use mtln_types_m, only: &
         transfer_impedance_per_meter_t, &
         TRANSFER_IMPEDANCE_DIRECTION_BOTH, &
         TRANSFER_IMPEDANCE_DIRECTION_INWARDS, &

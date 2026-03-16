@@ -1,4 +1,4 @@
-module ngspice_interface_mod
+module ngspice_interface_m
 
     use iso_c_binding
     implicit none

@@ -14,8 +14,7 @@ The following are examples of valid inputs:
  5. A multiconductor transmission line network (MTLN) case which includes three cable bundles with a shared junction: [mtln.fdtd.json](testData/cases/mtln.fdtd.json).
 
 ## FDTD-JSON objects description
-
-All units are assumed to be SI-MKS.
+All units are assumed to be SI-MKS, except when specified otherwise.
 
 Angle brackets surrounding an entry, as in `<entry>`, indicate that that entry is mandatory.
 Square brackets, as in `[entry]`, are optional entries.
@@ -47,6 +46,12 @@ Additionally, it may contain the following optional entry:
     "additionalArguments": "-mapvtk -sgbc"
 }
 ```
+
+### `[background]`
+This object sets the background electromagnetic media properties to an specified value it can contain the following objects entries:
+
++ `[absolutePermittivity]`: a real number indicating the value of background permittivity. Defaults to the value specified in EPSILON_VACUUM at [fdtypes.F90](../src_main_pub/fdetypes.F90).
++ `[absolutePermeability]`: a real number indicating the value of background permeability. Defaults to the value specified in MU_VACUUM at [fdtypes.F90](../src_main_pub/fdetypes.F90).
 
 ### `[boundary]`
 This specifies the boundaries which will be used to terminate the computational domain. 

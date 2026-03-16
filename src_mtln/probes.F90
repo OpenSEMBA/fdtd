@@ -1,8 +1,8 @@
-module probes_mod
+module probes_m
 
-    use mtln_types_mod, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
+    use mtln_types_m, only: PROBE_TYPE_CURRENT, PROBE_TYPE_VOLTAGE
 #ifdef CompileWithMPI
-    use FDETYPES, only: SUBCOMM_MPI
+    use FDETYPES_m, only: SUBCOMM_MPI
 #endif
 
     implicit none
@@ -67,7 +67,7 @@ contains
                 layer_index = layer_index + res%index - layer_indices(i,1) + 1
             end if
             res%index = layer_index
-        endif
+        end if
 #endif
         res%name = res%name//name//"_"
         if (probe_type == PROBE_TYPE_VOLTAGE) then
@@ -110,7 +110,7 @@ contains
                 call this%saveFrame(t + 0.5*this%dt, i(:,this%index - 1))
             else 
                 call this%saveFrame( t+ 0.5*this%dt, i(:,this%index))
-            endif
+            end if
         end if  
 
     end subroutine
@@ -126,4 +126,4 @@ contains
     end subroutine
 
 
-end module probes_mod
+end module probes_m

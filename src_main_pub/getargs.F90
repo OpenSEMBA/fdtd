@@ -1,7 +1,7 @@
 
 
-Module Getargs
-   use NFDETYPES , ONLY: BUFSIZE
+Module Getargs_m
+   use NFDETypes_m , ONLY: BUFSIZE
    implicit none
    private
 
@@ -46,14 +46,14 @@ contains
                if (chain2(j : j)/=' ') argumentStart=j
                exit findStart
             end do
-         endif
+         end if
       end do findStart
 
       findEnd :  do i=argumentStart + 1 ,len(trim(adjustl(chain2)))+2
          if (chain2(i : i)==' ') then
             argumentEnd=i-1
             exit findEnd
-         endif
+         end if
       end do findEnd
 
       if (argumentStart+argumentEnd==0) status=1
@@ -63,7 +63,7 @@ contains
       if ( (argum(1:1) ==char(10)) .or. (argum(1:1) ==char(13)) .or. (argum(1:1)==char( 0)) ) then
          argum=''
          return
-      endif
+      end if
 
       return
    end subroutine
@@ -78,9 +78,9 @@ contains
                if (chain2(j : j)/=' ') then
                   chain2(i+1 :)=chain2(j :)
                   exit rebus
-               endif
+               end if
             end do rebus
-         endif
+         end if
       end do
 
    end subroutine
@@ -105,7 +105,7 @@ contains
       do i=binaryPathLenght  ,len(trim(adjustl(chain2)))
          if (chain2(i : i)==' ') then
             n=n+1
-         endif
+         end if
       end do
 
       status=0

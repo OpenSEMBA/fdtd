@@ -1,7 +1,8 @@
-module circuit_mod
+module circuit_m
 
-    use ngspice_interface_mod
-    use mtln_types_mod, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use ngspice_interface_m
+    use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use Report_m, only: WarnErrReport
     implicit none
 
     type string_t
@@ -134,10 +135,23 @@ contains
         
         ! First pass: count the number of lines
         line_count = 0
-        open(unit = 1, file = source_path)
+        open(unit = 1, file = source_path, iostat = io)
+        if (io /= 0) then
+            call WarnErrReport('Cannot open excitation file: ' // trim(source_path), .true.)
+            allocate(res%time(0), res%value(0))
+            res%has_source = .false.
+            return
+        end if
         do
             read(1, *, iostat = io) time, value
-            if (io /= 0) exit
+            if (io < 0) exit
+            if (io > 0) then
+                close(1)
+                call WarnErrReport('Error reading excitation file: ' // trim(source_path), .true.)
+                allocate(res%time(0), res%value(0))
+                res%has_source = .false.
+                return
+            end if
             line_count = line_count + 1
         end do
         close(1)
@@ -146,15 +160,10 @@ contains
         allocate(res%time(line_count))
         allocate(res%value(line_count))
         
-        ! Second pass: fill the arrays
+        ! Second pass: fill the arrays (file was verified readable in first pass)
         open(unit = 1, file = source_path)
         do i = 1, line_count
-            read(1, *, iostat = io) res%time(i), res%value(i)
-            if (io /= 0) then
-                ! Handle unexpected read error
-                close(1)
-                error stop "Error reading excitation file"
-            end if
+            read(1, *) res%time(i), res%value(i)
         end do
         close(1)
     end function    
@@ -255,7 +264,7 @@ contains
         do i = 1,100
             if (f_output(i) == c_null_char) exit
             res%name(i:i) = f_output(i)
-        enddo
+        end do
         res%length = i-1
 
     end function

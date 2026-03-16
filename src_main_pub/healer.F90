@@ -6,9 +6,9 @@
 !                        Also creates intermediate media for the boundaries
 !                        between different media.
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-module CreateMatrices
-   use Report
-   use fdetypes
+module CreateMatrices_m
+   use Report_m
+   use FDETYPES_m
    !
    implicit none
    private
@@ -42,17 +42,17 @@ module CreateMatrices
             aux = p%XI
             p%XI = p%XE
             p%XE = aux
-        endif
+        end if
         if (p%YI > p%YE) then
             aux = p%YI
             p%YI = p%YE
             p%YE = aux
-        endif
+        end if
         if (p%ZI > p%ZE) then
             aux = p%ZI
             p%ZI = p%ZE
             p%ZE = aux
-        endif
+        end if
    end subroutine
    
    subroutine CreateConformalPECVolume (layoutnumber, Mtag, tags, numertag, MMiEx, MMiEy, MMiEz, MMiHx, &
@@ -784,12 +784,12 @@ module CreateMatrices
                          MMiHx (i, j, k) = indicemedio; 
                          Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,3);
                          tags%face%x(i,j,k) = 64*numertag
-                     endif
+                     end if
 !                  end if
                end do
             end do
          end do
-         !    endif
+         !    end if
        CASE (iEy)
          !    j=punto%YI
          !    if ((j <= max(BoundingBox%YI,BoundingBox%YE)).and.(j >= min(BoundingBox%YI,BoundingBox%YE))) then
@@ -826,12 +826,12 @@ module CreateMatrices
                          MMiHy (i, j, k) = indicemedio; 
                          Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);;
                          tags%face%y(i,j,k) = 64*numertag
-                     endif
+                     end if
 !                  end if
                end do
             end do
          end do
-         !    endif
+         !    end if
        CASE (iEz)
          !    k=punto%ZI
          !    if ((k <= max(BoundingBox%ZI,BoundingBox%ZE)).and.(k >= min(BoundingBox%ZI,BoundingBox%ZE))) then
@@ -868,12 +868,12 @@ module CreateMatrices
                          Mtag(i,j,k)=64*numertag ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
                          tags%face%z(i,j,k) = 64*numertag
 
-                     endif
+                     end if
 !                  end if
                end do
             end do
          end do
-         !    endif
+         !    end if
       end select
       !
       return
@@ -962,20 +962,20 @@ module CreateMatrices
                                 Mtag(i,j,k)=64*numertag 
                                 tags%edge%x(i,j,k) = 64*numertag
                                 ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);;
-                            endif
+                            end if
                         else
                             MMiEx (i, j, k) = indicemedio; 
                             Mtag(i,j,k)=64*numertag 
                             tags%edge%x(i,j,k) = 64*numertag
                             ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
-                        endif
+                        end if
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
                         call AddToShared (iEx, i, j, k, indicemedio, medio, Eshared)
                      end if
                end do
             end do
          end do
-         !    endif
+         !    end if
        CASE (iEy)
          !    i=punto%XI
          !    k=punto%ZI
@@ -999,13 +999,13 @@ module CreateMatrices
                                 Mtag(i,j,k)=64*numertag 
                                 tags%edge%y(i,j,k) = 64*numertag
                                 ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
-                            endif
+                            end if
                         else
                             MMiEy (i, j, k) = indicemedio
                             Mtag(i,j,k)=64*numertag
                             tags%edge%y(i,j,k) = 64*numertag
                             ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
-                        endif
+                        end if
                         
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
                         call AddToShared (iEy, i, j, k, indicemedio, medio, Eshared)
@@ -1013,7 +1013,7 @@ module CreateMatrices
                end do
             end do
          end do
-         !    endif
+         !    end if
        CASE (iEz)
          !    i=punto%XI
          !    j=punto%YI
@@ -1037,13 +1037,13 @@ module CreateMatrices
                                 Mtag(i,j,k)=64*numertag
                                 tags%edge%z(i,j,k) = 64*numertag
                                 ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);;
-                            endif
+                            end if
                         else
                             MMiEz (i, j, k) = indicemedio
                             Mtag(i,j,k)=64*numertag
                             tags%edge%z(i,j,k) = 64*numertag
                             ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
-                        endif
+                        end if
                         
                      ELSE if ((med(indicemedio)%Priority == med(medio)%Priority) .AND. (medio /= indicemedio)) then
                         call AddToShared (iEz, i, j, k, indicemedio, medio, Eshared)
@@ -1052,7 +1052,7 @@ module CreateMatrices
                end do
             end do
          end do
-         !    endif
+         !    end if
       end select
       !
       return
@@ -1375,7 +1375,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag
                      tags%face%y(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,4);
-                  endif
+                  end if
                end do
             end do
             do j = punto%YI, punto%YE
@@ -1386,7 +1386,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag
                      tags%face%z(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
-                  endif
+                  end if
                end do
             end do
             do j = punto%YI, puntoPlus1%YE
@@ -1397,7 +1397,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag
                      tags%edge%x(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,0);
-                  endif
+                  end if
                end do
             end do
          end do
@@ -1411,7 +1411,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag
                      tags%face%z(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,5);
-                  endif
+                  end if
                end do
             end do
             do i = punto%XI, puntoPlus1%XE
@@ -1433,7 +1433,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag
                      tags%edge%y(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,1);
-                  endif
+                  end if
                end do
             end do
          end do
@@ -1470,7 +1470,7 @@ module CreateMatrices
                      Mtag(i,j,k)=64*numertag
                      tags%edge%z(i,j,k) = 64*numertag
                      ! if (.true..or.(Mtag(i,j,k)==0).or.(int(Mtag(i,j,k)/64) == numertag)) Mtag(i,j,k) = IBSET(64*numertag,2);
-                  endif
+                  end if
                end do
             end do
          end do
@@ -2196,17 +2196,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2232,17 +2232,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2268,17 +2268,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2304,17 +2304,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2342,17 +2342,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2378,17 +2378,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2414,17 +2414,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2450,17 +2450,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2488,17 +2488,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2524,17 +2524,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2560,17 +2560,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2596,17 +2596,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiEz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2638,17 +2638,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2674,17 +2674,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2710,17 +2710,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2746,17 +2746,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHx (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2784,17 +2784,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2820,17 +2820,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2856,17 +2856,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2892,17 +2892,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHy (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2930,17 +2930,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -2966,17 +2966,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -3002,17 +3002,17 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
@@ -3038,23 +3038,23 @@ module CreateMatrices
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
                               call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
-                           endif
+                           end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
                            sgg%Med(MEDIOEXTRA%index)%mur    = oldmur
                            sgg%Med(MEDIOEXTRA%index)%sigma  = oldsigma + MEDIOEXTRA%sigma
                            sgg%Med(MEDIOEXTRA%index)%sigmam = oldsigmam + MEDIOEXTRA%sigmam
-                        endif
+                        end if
                         !
                         sggmiHz (i, j, k) = MEDIOEXTRA%index
                         yapuesto=.true.
-                     endif
+                     end if
                   end do
                end do
             end do
          end if
          !
-      endif !del medioextra%exists
+      end if !del medioextra%exists
       return
    end subroutine
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!

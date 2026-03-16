@@ -1,6 +1,6 @@
 integer function test_multipolar_expansion_for_dipole() bind(C) result(error_cnt)    
-    use mtln_types_mod
-    use multipolar_expansion_mod
+    use mtln_types_m
+    use multipolar_expansion_m
     use mtln_testingTools_mod
     
     real, dimension(2) :: expansionCenter = [0.0, 0.0]
@@ -43,8 +43,8 @@ integer function test_multipolar_expansion_for_lansink_two_wires() bind(C) resul
 	! Numerical Computation of In - cell Parameters for Multiwire Formalism in FDTD.
 	! In 2024 International Symposium on Electromagnetic Compatibility
 	! EMC Europe(pp. 334 - 339). IEEE.
-    use mtln_types_mod
-    use multipolar_expansion_mod
+    use mtln_types_m
+    use multipolar_expansion_m
     use mtln_testingTools_mod
 
     type(multipolar_expansion_t) :: mE
@@ -123,8 +123,8 @@ integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bi
 	! Numerical Computation of In - cell Parameters for Multiwire Formalism in FDTD.
 	! In 2024 International Symposium on Electromagnetic Compatibility
 	! EMC Europe(pp. 334 - 339). IEEE.
-    use mtln_types_mod
-    use multipolar_expansion_mod
+    use mtln_types_m
+    use multipolar_expansion_m
     use mtln_testingTools_mod
 
     type(multipolar_expansion_t) :: mE
