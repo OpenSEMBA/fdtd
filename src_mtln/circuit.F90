@@ -3,7 +3,7 @@ module circuit_m
     use ngspice_interface_m
     use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     use Report_m, only: WarnErrReport
-    use nfdetypes_m, only: RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none
 
     type string_t

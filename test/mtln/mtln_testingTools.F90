@@ -9,6 +9,11 @@ module mtln_testingTools_mod
     character(len=*), parameter :: MTL_TYPE_SHIELDED = "shielded"
     character(len=*), parameter :: MTL_TYPE_UNSHIELDED = "unshielded"
 
+    interface checkNear
+        module procedure checkNear_real4
+        module procedure checkNear_real8
+    end interface checkNear
+
 contains
     
     
@@ -130,26 +135,11 @@ contains
         
     end subroutine 
 
-    function checkNear_dp(target, number, rel_tol) result(is_near)
-        double precision, intent(in) :: target, number
+    function checkNear_real4(target, number, rel_tol) result(is_near)
+        real, intent(in) :: target, number
         real :: rel_tol
         logical :: is_near
-        double precision :: abs_diff
-
-        abs_diff = abs(target-number)
-        if (abs_diff == 0.0) then
-            is_near = .true.
-        else 
-            is_near = abs(target-number)/target < rel_tol
-        endif
-
-    end function 
-
-    function checkNear(target, number, rel_tol) result(is_near)
-        real(kind=RKIND), intent(in) :: target, number
-        real(kind=RKIND) :: rel_tol
-        logical :: is_near
-        real(kind=RKIND) :: abs_diff
+        real :: abs_diff
 
         abs_diff = abs(target-number)
         if (abs_diff == 0.0) then
@@ -165,6 +155,21 @@ contains
         real(kind=8) :: rel_tol
         logical :: is_near
         real(kind=8) :: abs_diff
+
+        abs_diff = abs(target-number)
+        if (abs_diff == 0.0) then
+            is_near = .true.
+        else 
+            is_near = abs(target-number)/target < rel_tol
+        endif
+
+    end function 
+
+    function checkNear_dp(target, number, rel_tol) result(is_near)
+        double precision, intent(in) :: target, number
+        real :: rel_tol
+        logical :: is_near
+        double precision :: abs_diff
 
         abs_diff = abs(target-number)
         if (abs_diff == 0.0) then

@@ -109,7 +109,7 @@ integer function test_spice_tran() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         circuit%time = circuit%time + circuit%dt
-        if (checkNear(circuit%getTime(), circuit%time, 0.01) .eqv. .false. ) then 
+        if (checkNear(circuit%getTime(), real(circuit%time), 0.01) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -135,7 +135,7 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
 
     type(circuit_t) :: circuit
     character(len=*, kind=c_char), parameter :: netlist= PATH_TO_TEST_DATA//c_char_'netlists/netlist_tran_2.cir'
-    real :: finalTime
+    real(kind=RKIND_TIEMPO) :: finalTime
     integer :: i
     real :: result(3)
     type(string_t), dimension(4) :: names
@@ -156,7 +156,7 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         circuit%time = circuit%time + circuit%dt
-        if (checkNear(circuit%getTime(), circuit%time, 0.01) .eqv. .false. ) then 
+        if (checkNear(circuit%getTime(), real(circuit%time), 0.01) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -241,7 +241,7 @@ integer function test_spice_multiple() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         circuit%time = circuit%time + circuit%dt
-        if (checkNear(circuit%getTime(), circuit%time, 0.01) .eqv. .false. ) then 
+        if (checkNear(circuit%getTime(), real(circuit%time), 0.01) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -278,7 +278,7 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         circuit%time = circuit%time + circuit%dt
-        if (checkNear(circuit%getTime(), circuit%time, 0.01) .eqv. .false. ) then 
+        if (checkNear(circuit%getTime(), real(circuit%time), 0.01) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
