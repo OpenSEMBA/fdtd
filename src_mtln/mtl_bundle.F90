@@ -17,7 +17,7 @@ module mtl_bundle_m
         real, dimension(:), allocatable :: step_size
         real, allocatable, dimension(:,:) :: v, i, e_L
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
-        real :: time = 0.0, dt = 1e10
+        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 1e10
 
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance

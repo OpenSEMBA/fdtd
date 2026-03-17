@@ -35,7 +35,7 @@ contains
         type(probe_t) :: res
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        real, intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         real, dimension(3) :: position
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices

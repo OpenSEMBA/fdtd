@@ -41,7 +41,7 @@ module mtl_m
         real, allocatable, dimension(:) :: step_size
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         type(dispersive_lumped_t) :: lumped_elements
-        real :: time = 0.0, dt = 0.0
+        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 0.0
 
         character(len=:), allocatable :: parent_name
         integer :: conductor_in_parent

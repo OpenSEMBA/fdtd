@@ -3,7 +3,7 @@ module circuit_m
     use ngspice_interface_m
     use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     use Report_m, only: WarnErrReport
-    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO, SINGLE
     implicit none
 
     type string_t
@@ -227,7 +227,7 @@ contains
         real(kind=RKIND_TIEMPO), intent(in) :: dt
         character(20) :: charTime
         real :: time
-        write(charTime, *) dt
+        write(charTime, *) real(dt, SINGLE)
         call command('stop when time mod '//charTime // c_null_char)
     end subroutine
 
