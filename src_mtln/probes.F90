@@ -12,7 +12,7 @@ module probes_m
         integer :: type
         real, allocatable, dimension(:) :: t
         real, allocatable, dimension(:,:) :: val
-        real :: dt
+        real(kind=RKIND_TIEMPO) :: dt
         integer :: index, current_frame
         character(len=:), allocatable :: name
         logical :: in_layer = .true.
