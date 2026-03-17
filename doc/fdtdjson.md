@@ -463,11 +463,11 @@ The values are defined defined as follows:
   + `[resistance]` which defaults to `0.0`,
   + `[inductance]` which defaults to `0.0`,
   + `[capacitance]` which defaults to `1e22`.
-+ 2-port SPICE models can used in a termination. In this case the `type` is `circuit`, and is defined with:
++ 2-terminals SPICE models can used in a termination. In this case the `type` is `circuit`, and is defined with:
   + `[file]` which is the name of the file where the SPICE model is defined 
   + `[name]` which is the name of the subcircuit as defined inside `file`
   + `[terminal]` which is the number of the subcircuit terminals the termination is connected to. It can be equal to 1 or 2, depending on the side of the SPICE model the termination is connected to. By default it equals 1, meaning that the termination is connected to the first external node in the netlist definition 
-+ N-port SPICE models can be used to connect a series of terminations. The `type` is `network`, and is defined with:
++ N-terminals SPICE models can be used to connect a series of terminations to a subcircuit. The `type` is `network`, and is defined with:
   + `[file]` which is the name of the file where the SPICE model is defined 
   + `[name]` which is the name of the subcircuit as defined inside `file`
   + `[node]` which is the subcircuit node the termination is connected to. Generally, subcircuits will have their terminals external nodes named in non-numerical way. `[node]` is an integer that refers to the position of the node in the netlist 
@@ -484,7 +484,7 @@ The values are defined defined as follows:
 ```
 #### `SPICE terminations`
 
-There are two types of SPICE terminations, `circuit` and `network`. `circuit` terminations are equivalent to 2-port networks. The netlist representing the connection can be composed of an arbitrary number of components, but it must have only two external nodes. 
+There are two types of SPICE terminations, `circuit` and `network`. `circuit` terminations are equivalent to 2-terminal networks. The netlist representing the connection can be composed of an arbitrary number of components, but it must have only two external nodes. 
 
 **Example:**
 
@@ -577,17 +577,6 @@ Associations with cables can contain the following inputs:
     "initialConnectorId": 24
 }
 ```
-
-<!-- ## `[subCircuits]`
-
-A series of terminals connected together (belonging to the same junction) can be connected to a N-port SPICE circuit. In that case, each of these *junction circuits* have to described separately in the `subCircuits` section.
-This section stores associations between `materials` of type `circuit` and `elements` using their respective `id`s as follows:
-
-+ `<materialId>`: A single integer indicating the `id` of a material of type `circuit` which must be present in the `materials` list.
-+ `<elementIds>`: A list of with a single `id`. This id must correspond to an element of type `node`, associated to the `coordinateId` shared by all the polylines connected to the subcircuit.
-+ `<name>`: A **unique** name that will be used to identify the ports of the subcircuit.
-
-If a terminal represents a connection to a subcircuit described in this sections, the key `circuitPort` has to be present in the description of the terminal. -->
 
 ## `[probes]`
 
