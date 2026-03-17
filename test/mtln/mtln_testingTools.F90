@@ -26,7 +26,7 @@ contains
         type(segment_t), allocatable, dimension(:) :: segments
         integer :: i,j
         
-        real :: time_step
+        real(kind=RKIND_TIEMPO) :: time_step
         integer :: conductor
         character(len=:), allocatable :: parent
 
@@ -64,7 +64,7 @@ contains
             end do
         end do
         if (.not. present(dt)) then 
-            time_step = 1e-12
+            time_step = 1e-12_RKIND_TIEMPO
         else 
             time_step = dt
         end if
@@ -146,10 +146,10 @@ contains
     end function 
 
     function checkNear(target, number, rel_tol) result(is_near)
-        real, intent(in) :: target, number
-        real :: rel_tol
+        real(kind=RKIND), intent(in) :: target, number
+        real(kind=RKIND) :: rel_tol
         logical :: is_near
-        real :: abs_diff
+        real(kind=RKIND) :: abs_diff
 
         abs_diff = abs(target-number)
         if (abs_diff == 0.0) then

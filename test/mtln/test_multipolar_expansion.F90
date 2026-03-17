@@ -164,7 +164,7 @@ integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bi
     end if
 
     computedL = getCellInductanceOnBox(mE, fdtdCell)
-    if (.not. checkNear(320e-9, computedL(1,1), 6e-2)) then
+    if (.not. checkNear(320e-9_RKIND, computedL(1,1), 6e-2_RKIND)) then
         error_cnt = error_cnt + 1
     end if
 

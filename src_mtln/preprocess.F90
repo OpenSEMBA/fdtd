@@ -22,7 +22,7 @@ module mtln_preprocess_m
         type(probe_t), dimension(:), allocatable :: probes
         type(fhash_tbl_t) :: conductors_before_cable
         type(fhash_tbl_t) :: cable_name_to_bundle_id
-        real :: final_time, dt
+        real(kind=RKIND_TIEMPO) :: final_time, dt
     
     contains
         procedure :: buildMTLBundles
@@ -242,7 +242,7 @@ contains
 
     function buildLineFromCable(cable, dt, layer_indices, bundle_in_layer, alloc_z) result(res)
         class(cable_t), pointer, intent(in) :: cable
-        real, intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         integer(kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
         logical, optional :: bundle_in_layer
         integer(kind=4), dimension(2), intent(in), optional :: alloc_z
@@ -320,7 +320,7 @@ contains
     function buildLineBundles(cable_bundles, dt, alloc) result(res)
         type(cable_bundle_t), dimension(:), allocatable :: cable_bundles
         type(transmission_line_bundle_t), dimension(:), allocatable :: res
-        real, intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         type(XYZlimit_t), dimension(1:6), intent(in), optional :: alloc
         integer :: i, j, k
         integer :: nb, nl, nc
@@ -1133,6 +1133,199 @@ contains
         character(256), dimension(:), allocatable :: description
         character(256), dimension(:), allocatable :: listOfModels
         type(network_t) :: res
+        integer :: i
+        type(terminal_connection_t), dimension(:), allocatable :: subcircuit_connections, node2node_connections
+        
+        call filterConnections(terminal_network%connections, subcircuit_connections, node2node_connections)
+
+        allocate(listOfModels(0))
+        allocate(description(0))
+        do i = 1, size(subcircuit_connections) 
+            if (subcircuit_connections(i)%has_subcircuit) then 
+                call addCircuitModel(description, subcircuit_connections(i)%subcircuit, listOfModels)
+                call addCircuitInstance(description, subcircuit_connections(i)%subcircuit)
+            end if
+        end do
+
+        allocate(nodes(0))
+        do i = 1, size(node2node_connections)
+            if (size(node2node_connections(i)%nodes) == 1) then 
+                call this%connectNodeToGround(node2node_connections(i), nodes, description)
+            else if (size(node2node_connections(i)%nodes) > 1) then 
+                call this%connectNodes(node2node_connections(i), nodes, description)
+            end if
+        end do
+        
+        do i = 1, size(subcircuit_connections) 
+            call this%connectNodesToSubcircuit(subcircuit_connections(i), nodes, description)
+        end do
+
+        res = networkCtor(nodes, description)
+    end function
+
+    function isModelIncluded(model, listOfModels) result (res)
+        character(256), dimension(:), intent(in) :: listOfModels
+        character(*) :: model
+        logical :: res
+        integer :: i
+        if (size(listOfModels) == 0) then 
+            res = .false.
+            return
+        end if
+        do i = 1, size(listOfModels)
+            if (model == listOfModels(i)) then
+                res = .true.
+            end if
+        end do
+        res = .false.
+
+    end function
+
+    subroutine addCircuitInstance(description, subcircuit)
+        character(256), dimension(:), allocatable, intent(inout) :: description
+        type(subcircuit_t), intent(in) :: subcircuit
+        character(256) :: buff
+
+        character(:), allocatable :: ports
+        character(10) :: str_port
+        integer :: i
+
+        ports = " "
+        do i = 1, subcircuit%numberOfPorts
+            write(str_port, '(I0)') i
+            ports = ports//trim(subcircuit%subcircuit_name)//"_"//trim(str_port)//" "
+        end do
+
+        buff = trim("x"//trim(subcircuit%subcircuit_name)//" "//trim(ports)//" "//trim(subcircuit%model_name))
+        call appendToStringArray(description, buff)    
+
+    end subroutine
+
+    subroutine addCircuitModel(description, subcircuit, listOfModels)
+        character(256), dimension(:), allocatable, intent(inout) :: description
+        character(256), dimension(:), allocatable, intent(inout) :: listOfModels
+        type(subcircuit_t), intent(in) :: subcircuit
+        character(256) :: buff
+
+        character(:), allocatable :: ports
+        character(10) :: str_port
+        integer :: i
+
+        buff = trim(subcircuit%model_file)
+        if (isModelIncluded(buff, listOfModels)) return
+
+        call appendToStringArray(listOfModels, buff)    
+
+        buff = trim(".include "//subcircuit%model_file)
+        call appendToStringArray(description, buff)    
+
+    end subroutine
+
+    subroutine filterConnections(all_conn, subckt_conn, node_conn)
+        type(terminal_connection_t), dimension(:), intent(in) :: all_conn
+        type(terminal_connection_t), dimension(:), allocatable, intent(inout) :: subckt_conn, node_conn
+        integer :: i, j, subckt_size, node_size, numberOfNodes, numberOfCktNodes
+        logical :: is_ckt
+
+        subckt_size = 0
+        node_size = 0
+
+        do i = 1, size(all_conn)
+            if (all_conn(i)%has_subcircuit) then 
+                subckt_size = subckt_size + 1
+            else
+                node_size = node_size + 1
+            end if
+        end do
+
+
+        allocate(subckt_conn(subckt_size))
+        allocate(node_conn(node_size))
+        subckt_size = 1
+        node_size = 1
+
+        is_ckt = .true.
+
+        do i = 1, size(all_conn)
+            if (all_conn(i)%has_subcircuit) then 
+                subckt_conn(subckt_size) = all_conn(i)
+                subckt_size = subckt_size + 1
+            else 
+                node_conn(node_size) = all_conn(i)
+                node_size = node_size + 1
+            end if
+        end do
+    end subroutine
+
+    subroutine endDescription(description)
+        character(256), dimension(:), allocatable, intent(inout) :: description
+        character(256) :: buff
+
+        buff = ".end"
+        call appendToStringArray(description, buff)
+        
+        buff = "NULL"
+        call appendToStringArray(description, buff)
+        
+    end subroutine
+
+    subroutine addNetworksDescription(description, networks)
+        character(256), dimension(:), allocatable, intent(inout) :: description
+        type(network_t), dimension(:), intent(in) :: networks
+        integer :: i,j 
+        character(256) :: buff
+        do i = 1, size(networks)
+            do j = 1, size(networks(i)%description)
+                buff = networks(i)%description(j)
+                call appendToStringArray(description, buff)
+            end do
+        end do
+    end subroutine
+
+    subroutine addAnalysis(description, final_time, dt, print_step)
+        character(256), dimension(:), allocatable, intent(inout) :: description
+        character(256) :: buff
+        real(kind=RKIND_TIEMPO), intent(in) :: final_time, dt
+        character(20) :: sTime, sdt, sDelta, sPrint
+        integer, intent(in) :: print_step        
+
+        write(sTime, '(E10.2)') final_time
+        write(sdt, '(E10.2)') dt
+        write(sDelta, '(E10.2)') dt/200
+        write(sPrint, '(E10.2)') final_time/print_step
+
+        buff = trim(".option reltol = 0.005 gmin=1e-50")
+        call appendToStringArray(description, buff)       
+        buff = trim(".tran "//sdt//" "//sTime//" 0 "//sDelta)
+        call appendToStringArray(description, buff)       
+    end subroutine
+
+    subroutine addSavedNodes(description, networks)
+        character(256), dimension(:), allocatable, intent(inout) :: description
+        character(256) :: buff
+        type(network_t), dimension(:), intent(in) :: networks
+        character(len=:), allocatable :: saved_nodes
+        integer :: i,j
+        do j = 1, size(networks)
+            do i = 1, size(networks(j)%nodes)
+                saved_nodes = ".save  V1"//trim(networks(j)%nodes(i)%name)//"#branch "
+                saved_nodes = saved_nodes // trim(networks(j)%nodes(i)%name) // " "
+                buff = trim(saved_nodes)
+                call appendToStringArray(description, buff)
+            end do
+        end do
+        
+
+    end subroutine
+
+
+    function buildNetworkManager(this, terminal_networks) result(res)
+        class(preprocess_t) :: this
+        type(terminal_network_t), dimension(:), intent(in) :: terminal_networks
+        type(network_t), dimension(:), allocatable :: networks
+        type(network_manager_t) :: res
+        character(256), dimension(:), allocatable :: description
+        character(256) :: buff
         integer :: i, n
         logical, dimension(:), allocatable :: network_in_MPIslice
 

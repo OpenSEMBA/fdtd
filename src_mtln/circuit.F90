@@ -13,7 +13,7 @@ module circuit_m
 
     type source_t
         logical :: has_source = .false.
-        real, dimension(:), allocatable :: time
+        real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
         real, dimension(:), allocatable :: value
         integer :: source_type
     contains 
@@ -23,7 +23,7 @@ module circuit_m
     type VI_t
         real :: voltage
         real :: current
-        real :: time
+        real(kind=RKIND_TIEMPO) :: time
     end type
 
     type nodes_t
@@ -34,7 +34,7 @@ module circuit_m
 
     type, public :: circuit_t
         character(len=:), allocatable :: name
-        real :: time = 0.0, dt = 0.0
+        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 0.0
         logical :: errorFlag = .false.
         type(nodes_t) :: nodes, saved_nodes   
 
@@ -65,7 +65,8 @@ contains
 
     real function interpolate(this, time, dt) result(res)
         class(source_t) :: this
-        real :: time, dt, x1,x2, y1, y2
+        real(kind=RKIND_TIEMPO) :: time, dt
+        real :: x1,x2, y1, y2
         integer :: index
         real, dimension(:), allocatable :: timediff
         timediff = this%time - time + dt
@@ -135,7 +136,8 @@ contains
 
     type(source_t) function setSource(source_path) result(res)
         character(*), intent(in) :: source_path
-        real :: time, value
+        real(kind=RKIND_TIEMPO) :: time
+        real ::value
         integer :: io, line_count, i
         
         if (source_path == "" ) then 
@@ -208,7 +210,7 @@ contains
 
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
-        real, intent(in) :: finalTime, dt
+        real(kind=RKIND_TIEMPO), intent(in) :: finalTime, dt
         character(20) :: charTime
         real :: time
 
@@ -284,18 +286,18 @@ contains
 
     subroutine updateCircuitSources(this, time)
         class(circuit_t) :: this
-        real, intent(in) :: time
+        real(kind=RKIND_TIEMPO), intent(in) :: time
         real :: interp
         character(20) :: source_value
         integer :: i, index
         do i = 1, size(this%nodes%sources)
             if (this%nodes%sources(i)%has_source) then
                 if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
                     write(source_value, *) interp
                     call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
                     write(source_value, *) interp
                     call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 end if

@@ -5,10 +5,9 @@ module mtl_m
     use dispersive_m, dispersive_lumped_t => lumped_t
     use mtln_types_m, only: segment_t, multipolar_expansion_t
     use multipolar_expansion_m, only: getCellCapacitanceOnBox, getCellInductanceOnBox
-#ifdef CompileWithMPI
-    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, c_vacuum, RKIND_wires
-#else
-    use FDETYPES_m, only: pi, mu_vacuum, c_vacuum, RKIND_wires
+    use FDETYPES_m, only: pi, mu_vacuum, c_vacuum, RKIND_wires, RKIND_TIEMPO
+#ifdef CompileWithMPI 
+    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
 #endif
     implicit none
 #ifdef CompileWithMPI
@@ -117,7 +116,7 @@ contains
         real, intent(in), dimension(:) :: step_size
         character(len=*), intent(in) :: name
         type(segment_t), dimension(:), allocatable, intent(in) :: segments
-        real, intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         character(len=*), intent(in) :: parent_name
         integer, intent(in) :: conductor_in_parent
         type(transfer_impedance_per_meter_t), intent(in) :: transfer_impedance
@@ -172,7 +171,7 @@ contains
         real, intent(in), dimension(:) :: step_size
         character(len=*), intent(in) :: name
         type(segment_t), dimension(:), allocatable, intent(in) :: segments
-        real, intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
         real, intent(in) :: radius
         integer(kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
@@ -219,7 +218,7 @@ contains
     subroutine checkTimeStep(this, getMax, dt)
         class(mtl_t) :: this
         logical, intent(in) :: getMax
-        real, intent(in), optional :: dt
+        real(kind=RKIND_TIEMPO), intent(in), optional :: dt
         
         real :: max_dt
         if (present(dt)) then 
