@@ -34,7 +34,7 @@ def test_holland_case_checking_number_of_outputs_wire(tmp_path):
 
     assert len(probe_files) == 1
     assert outfile == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
+    assert countLinesInFile(probe_files[0]) == number_of_steps + 1
 
 @no_mtln_skip
 def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
@@ -51,7 +51,7 @@ def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
 
     assert len(probe_files) == 1
     assert outfile == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
+    assert countLinesInFile(probe_files[0]) == number_of_steps + 1
 
 
 @mtln_skip

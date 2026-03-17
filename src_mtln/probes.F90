@@ -49,6 +49,7 @@ contains
         res%current_frame = 1
         
 #ifdef CompileWithMPI
+        if (present(layer_indices)) then
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
         if (sizeof > 1) then
             res%in_layer = .false.
@@ -67,6 +68,7 @@ contains
                 layer_index = layer_index + res%index - layer_indices(i,1) + 1
             end if
             res%index = layer_index
+        end if
         end if
 #endif
         res%name = res%name//name//"_"
@@ -90,8 +92,8 @@ contains
         class(probe_t) :: this
         integer, intent(in) :: num_frames, number_of_conductors
 
-        allocate(this%t(num_frames + 1))
-        allocate(this%val(num_frames + 1, number_of_conductors))
+        allocate(this%t(num_frames))
+        allocate(this%val(num_frames, number_of_conductors))
         this%t = 0.0
         this%val = 0.0
 
@@ -119,6 +121,7 @@ contains
         class(probe_t) :: this
         real, intent(in) :: time
         real, intent(in), dimension(:) :: values
+        if (this%current_frame > size(this%t)) return
         this%t(this%current_frame) = time
         this%val(this%current_frame,:) = values
         this%current_frame = this%current_frame + 1
