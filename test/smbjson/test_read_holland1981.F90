@@ -112,7 +112,7 @@ contains
       ex%tWires%tw(1)%twc(1:10)%d = DIR_Z
       ex%tWires%tw(1)%twc(1:10)%nd = [(i, i=1, 10)]
       
-      ex%tWires%tw(1)%twc(1:10)%tag = "single_wire"
+      ex%tWires%tw(1)%twc(1:10)%tag = "material1@layer2"
       
       ex%tWires%tw(1)%tl = MATERIAL_CONS
       ex%tWires%tw(1)%tr = MATERIAL_CONS

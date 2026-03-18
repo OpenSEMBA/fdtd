@@ -2003,13 +2003,13 @@ contains
          block
             type(linel_t), dimension(:), allocatable :: linels
             type(polyline_t) :: polyline
-            character(len=MAX_LINE) :: tagLabel
+            character(len=BUFSIZE) :: tagLabel
             type(generator_description_t), dimension(:), allocatable :: genDesc
             
             polyline = this%mesh%getPolyline(cable%elementIds(1))
             linels = this%mesh%polylineToLinels(polyline)
 
-            tagLabel = trim(adjustl(cable%name))
+            tagLabel = this%buildTagName(cable%materialId, cable%elementIds(1))
 
             genDesc = readGeneratorOnThinWire(linels, cable%elementIds)
 
