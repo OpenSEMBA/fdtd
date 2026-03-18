@@ -506,45 +506,49 @@ contains
    elemental logical function ThinWire_eq(a, b)
       type(ThinWire_t), intent(in) :: a, b
 
-      ThinWire_eq = (a%rad == b%rad) .and. &
-         (a%disp .eqv. b%disp) .and. &
-         (a%dispfile == b%dispfile) .and. &
-         (a%res == b%res) .and. &
-         (a%ind == b%ind) .and. &
-         (a%cap == b%cap) .and. &
-         (a%P_res == b%P_res) .and. &
-         (a%P_ind == b%P_ind) .and. &
-         (a%P_cap == b%P_cap) .and. &
-         (a%dispfile_LeftEnd == b%dispfile_LeftEnd) .and. &
-         (a%R_LeftEnd == b%R_LeftEnd) .and. &
-         (a%L_LeftEnd == b%L_LeftEnd) .and. &
-         (a%C_LeftEnd == b%C_LeftEnd) .and. &
-         (a%dispfile_RightEnd == b%dispfile_RightEnd) .and. &
-         (a%R_RightEnd == b%R_RightEnd) .and. &
-         (a%L_RightEnd == b%L_RightEnd) .and. &
-         (a%C_RightEnd == b%C_RightEnd) .and. &
-         (a%LeftEnd == b%LeftEnd) .and. &
-         (a%RightEnd == b%RightEnd) .and. &
-         (a%tl == b%tl) .and. &
-         (a%tr == b%tr) .and. &
-         (all(a%twc == b%twc)) .and. &
-         (a%n_twc == b%n_twc) .and. &
-         (a%n_twc_max == b%n_twc_max)
+      ThinWire_eq = .false.
+      if (a%rad /= b%rad) return
+      if (a%disp .neqv. b%disp) return
+      if (a%dispfile /= b%dispfile) return
+      if (a%res /= b%res) return
+      if (a%ind /= b%ind) return
+      if (a%cap /= b%cap) return
+      if (a%P_res /= b%P_res) return
+      if (a%P_ind /= b%P_ind) return
+      if (a%P_cap /= b%P_cap) return
+      if (a%dispfile_LeftEnd /= b%dispfile_LeftEnd) return
+      if (a%R_LeftEnd /= b%R_LeftEnd) return
+      if (a%L_LeftEnd /= b%L_LeftEnd) return
+      if (a%C_LeftEnd /= b%C_LeftEnd) return
+      if (a%dispfile_RightEnd /= b%dispfile_RightEnd) return
+      if (a%R_RightEnd /= b%R_RightEnd) return
+      if (a%L_RightEnd /= b%L_RightEnd) return
+      if (a%C_RightEnd /= b%C_RightEnd) return
+      if (a%LeftEnd /= b%LeftEnd) return
+      if (a%RightEnd /= b%RightEnd) return
+      if (a%tl /= b%tl) return
+      if (a%tr /= b%tr) return
+      if (.not. all(a%twc == b%twc)) return
+      if (a%n_twc /= b%n_twc) return
+      if (a%n_twc_max /= b%n_twc_max) return
+      ThinWire_eq = .true.
    end function ThinWire_eq
 
    elemental logical function ThinWires_eq(a, b)
       type(ThinWires_t), intent(in) :: a, b
-      logical :: allAssociated
-      allAssociated = &
-         associated(a%tw) .and. associated(b%tw)
-      if (.not. allAssociated) then
-         ThinWires_eq = .false.
-         return
+      ThinWires_eq = .false.
+      if (a%n_tw /= b%n_tw) return
+      if (a%n_tw_max /= b%n_tw_max) return
+      if (associated(a%tw) .eqv. associated(b%tw)) then
+         if (associated(a%tw)) then
+            if (.not. all(a%tw == b%tw)) return
+         end if
+      else if (associated(a%tw)) then
+         if (size(a%tw) /= 0) return
+      else
+         if (size(b%tw) /= 0) return
       end if
-
-      ThinWires_eq = all(a%tw == b%tw) .and. &
-         (a%n_tw == b%n_tw) .and. &
-         (a%n_tw_max == b%n_tw_max)
+      ThinWires_eq = .true.
    end function ThinWires_eq
 
    elemental logical function SlantedWireComp_eq(a, b)
