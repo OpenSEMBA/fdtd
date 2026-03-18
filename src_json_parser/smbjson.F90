@@ -89,7 +89,7 @@ module smbjson_m
 
    type, private :: thinwiretermination_t
       integer :: terminationType
-      real :: r, l, c
+      real(kind=RKIND) :: r, l, c
    end type
 
    type, private :: generator_description_t
@@ -1941,6 +1941,8 @@ contains
             res%res = resistance
             res%ind = inductance
             res%dispfile = trim(adjustl(" "))
+            res%dispfile_LeftEnd = trim(adjustl(" "))
+            res%dispfile_RightEnd = trim(adjustl(" "))
          end block
 
          block
@@ -2109,10 +2111,16 @@ contains
             res%r = 0.0_RKIND
             res%l = 0.0_RKIND
             res%c = 0.0_RKIND
-          case default
+          case(J_MAT_TERM_TYPE_SHORT)
+            res%r = 0.0_RKIND
+            res%l = 0.0_RKIND
+            res%c = 0.0_RKIND
+          case(J_MAT_TERM_TYPE_SERIES)
             res%r = this%getRealAt(tm, J_MAT_TERM_RESISTANCE, default=0.0_RKIND)
             res%l = this%getRealAt(tm, J_MAT_TERM_INDUCTANCE, default=0.0_RKIND)
             res%c = this%getRealAt(tm, J_MAT_TERM_CAPACITANCE, default=1e22_RKIND)
+          case default
+            call WarnErrReport("Error reading wire terminal. Holland wires only support open, short, and series terminations", .true.)
          end select
 
       end function
