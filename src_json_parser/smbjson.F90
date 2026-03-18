@@ -1292,7 +1292,11 @@ contains
 
       res%length = size(res%collection)
       res%length_max = size(res%collection)
-      res%len_cor_max = 0
+      do i=1, size(ps)
+          if (size(res%collection(i)%cordinates) > res%len_cor_max) then
+              res%len_cor_max = size(res%collection(i)%cordinates)
+          end if
+      end do
    contains
       logical function isMoreProbe(p)
          type(json_value), pointer :: p
@@ -1910,6 +1914,12 @@ contains
             end if
          end if
       end block
+      
+      do i=1, size(sonda%collection)
+         if (size(sonda%collection(i)%cordinates) > sonda%len_cor_max) then
+            sonda%len_cor_max = size(sonda%collection(i)%cordinates)
+         end if
+      end do
 
    contains
       function readThinWire(cable) result(res)
