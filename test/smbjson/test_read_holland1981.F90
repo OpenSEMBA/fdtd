@@ -110,7 +110,7 @@ contains
       ex%tWires%tw(1)%twc(1:10)%j = 11
       ex%tWires%tw(1)%twc(1:10)%k = [(i, i=7, 16)]
       ex%tWires%tw(1)%twc(1:10)%d = DIR_Z
-      ex%tWires%tw(1)%twc(1:10)%nd = [(i, i=1, 10)]
+      ex%tWires%tw(1)%twc(1:10)%nd = [(i, i=3, 12)]
       
       ex%tWires%tw(1)%twc(1:10)%tag = "material1@layer2"
       

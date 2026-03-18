@@ -1853,8 +1853,8 @@ contains
       type(ThinWires_t), intent(out) :: res
       type(MasSondas_t), intent(inout) :: sonda
       type(materialAssociation_t), dimension(:), allocatable :: mAs, mwires
-      integer :: i, j, ndGlobal, nNodes
-      integer, dimension(:), allocatable :: nodeCoordIds
+      integer :: i, j, nGlobal, nNodes
+      integer, dimension(:), allocatable :: nodeCoordIds, nodeNodeIdx
       logical :: found
 
       mwires = this%getMaterialAssociations([ &
@@ -1881,9 +1881,10 @@ contains
          res%n_tw_max = size(res%tw)
       end block
 
-      ndGlobal = 0
+      nGlobal = 0
       nNodes = 0
       allocate(nodeCoordIds(2 * res%n_tw))
+      allocate(nodeNodeIdx(2 * res%n_tw))
       j = 1
       if (size(mAs) /=0 ) then
          do i = 1, size(mAs)
@@ -1991,6 +1992,7 @@ contains
             res%n_twc_max = size(linels)
             allocate(res%twc(size(linels)))
             res%LeftEnd = getOrAssignNodeIndex(polyline%coordIds(1))
+            res%RightEnd = getOrAssignNodeIndex(polyline%coordIds(size(polyline%coordIds)))
             do i = 1, size(linels)
                res%twc(i)%srcfile = genDesc(i)%srcfile
                res%twc(i)%srctype = genDesc(i)%srctype
@@ -1999,11 +2001,10 @@ contains
                res%twc(i)%j = linels(i)%cell(2)
                res%twc(i)%k = linels(i)%cell(3)
                res%twc(i)%d = abs(linels(i)%orientation)
-               res%twc(i)%nd = ndGlobal + i
+               res%twc(i)%nd = nGlobal + i
                res%twc(i)%tag = trim(adjustl(tagLabel))
             end do
-            res%RightEnd = getOrAssignNodeIndex(polyline%coordIds(size(polyline%coordIds)))
-            ndGlobal = ndGlobal + size(linels)
+            nGlobal = nGlobal + size(linels)
          end block
 
       end function
@@ -2013,13 +2014,15 @@ contains
          integer :: nodeIdx, k
          do k = 1, nNodes
             if (nodeCoordIds(k) == coordId) then
-               nodeIdx = k
+               nodeIdx = nodeNodeIdx(k)
                return
             end if
          end do
+         nGlobal = nGlobal + 1
          nNodes = nNodes + 1
          nodeCoordIds(nNodes) = coordId
-         nodeIdx = nNodes
+         nodeNodeIdx(nNodes) = nGlobal
+         nodeIdx = nGlobal
       end function
 
       function readGeneratorOnThinWire(linels, plineElemIds) result(res)
