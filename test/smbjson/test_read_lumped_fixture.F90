@@ -159,6 +159,8 @@ contains
       expected%dielRegs%Lins(1)%Rtime_off = 1.0_RKIND
 
       expected%dielRegs%Lins(1)%resistor = .true.
+      expected%dielRegs%Lins(1)%orient = 1
+      expected%dielRegs%Lins(1)%DiodOri = 1
 
       
       ! Expected sources
@@ -191,6 +193,7 @@ contains
       ! Electric field point probe
       expected%Sonda%length = 1
       expected%Sonda%length_max = 1
+      expected%Sonda%len_cor_max = 3
       allocate(expected%Sonda%collection(1))
 
       expected%Sonda%collection(1)%outputrequest = "e_probe"
