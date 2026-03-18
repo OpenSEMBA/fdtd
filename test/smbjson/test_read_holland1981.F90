@@ -116,6 +116,8 @@ contains
       
       ex%tWires%tw(1)%tl = MATERIAL_CONS
       ex%tWires%tw(1)%tr = MATERIAL_CONS
+      ex%tWires%tw(1)%LeftEnd = 1
+      ex%tWires%tw(1)%RightEnd = 2
       
       ex%tWires%n_tw = 1
       ex%tWires%n_tw_max = 1
