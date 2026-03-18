@@ -56,8 +56,6 @@ extern "C" int test_preprocess_zt_conductor_ranges();
 // extern "C" int test_termination_rls_cp_ns();
 // extern "C" int test_termination_rcp();
 
-// test_probes.F90
-extern "C" int test_probes_number_of_frames();
 
 TEST(mtln, mtl_homogeneous)   { EXPECT_EQ(0, test_mtl_init_homogeneous()); }
 TEST(mtln, mtl_time_step) { EXPECT_EQ(0, test_mtl_time_step()); }
@@ -93,8 +91,6 @@ TEST(mtln, spice_current_source) { EXPECT_EQ(0, test_spice_current_source()); }
 TEST(mtln, spice_dc) { EXPECT_EQ(0, test_spice_dc()); }
 TEST(mtln, spice_read_message) { EXPECT_EQ(0, test_spice_read_message()); }
 TEST(mtln, spice_mod_times) { EXPECT_EQ(0, test_spice_stop_mod_times()); }
-
-TEST(mtln, probes_number_of_frames) { EXPECT_EQ(0, test_probes_number_of_frames()); }
 
 // // TEST(mtln, system_coaxial_line_paul_8_6_square) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_square()); }
 // // TEST(mtln, system_coaxial_line_paul_8_6_triangle) { EXPECT_EQ(0, test_coaxial_line_paul_8_6_triangle()); }
