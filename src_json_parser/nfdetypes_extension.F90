@@ -1076,6 +1076,7 @@ contains
 
    elemental logical function MasSondas_eq(a, b)
       type(MasSondas_t), intent(in) :: a, b
+      integer :: i
 
       MasSondas_eq = .false.
       if (a%length /= b%length) return
@@ -1083,7 +1084,9 @@ contains
       if (a%len_cor_max /= b%len_cor_max) return
       if (associated(a%collection) .eqv. associated(b%collection)) then
          if (associated(a%collection)) then
-            if (any(.not. a%collection == b%collection)) return
+            do i = 1, size(a%collection)
+               if (.not. a%collection(i) == b%collection(i)) return
+            end do
          end if
       else if (associated(a%collection)) then
          if (size(a%collection) /= 0) return
