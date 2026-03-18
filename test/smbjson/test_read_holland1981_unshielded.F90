@@ -71,59 +71,6 @@ contains
       ex%plnSrc%nc = 1
       ex%plnSrc%nC_max = 1
 
-      ! ! Expected probes
-      ! ! sonda
-      ! ex%Sonda%length = 1
-      ! ex%Sonda%length_max = 1
-      ! allocate(ex%Sonda%collection(1))
-      ! ex%Sonda%collection(1)%outputrequest = "mid_point"
-      ! ex%Sonda%collection(1)%type1 = NP_T1_PLAIN
-      ! ex%Sonda%collection(1)%type2 = NP_T2_TIME
-      ! ex%Sonda%collection(1)%filename = ' '
-      ! ex%Sonda%collection(1)%tstart = 0.0
-      ! ex%Sonda%collection(1)%tstop = 0.0
-      ! ex%Sonda%collection(1)%tstep = 0.0
-      ! ex%Sonda%collection(1)%fstart = 0.0
-      ! ex%Sonda%collection(1)%fstop = 0.0
-      ! ex%Sonda%collection(1)%fstep = 0.0
-      ! allocate(ex%Sonda%collection(1)%cordinates(1))
-      ! ex%Sonda%collection(1)%len_cor = 1
-      ! ex%Sonda%collection(1)%cordinates(1)%tag = "mid_point"
-      ! ex%Sonda%collection(1)%cordinates(1)%Xi = 2 ! Coord id as tag.
-      ! ex%Sonda%collection(1)%cordinates(1)%Yi = 0
-      ! ex%Sonda%collection(1)%cordinates(1)%Zi = 0
-      ! ex%Sonda%collection(1)%cordinates(1)%Or = NP_COR_WIRECURRENT
-      
-      
-      ! ! Expected thin wires
-      ! allocate(ex%tWires%tw(1))
-      ! ex%tWires%tw(1)%rad=0.02
-      ! ex%tWires%tw(1)%dispfile = trim(adjustl(" "))
-      ! ex%tWires%tw(1)%dispfile_LeftEnd = trim(adjustl(" "))
-      ! ex%tWires%tw(1)%dispfile_RightEnd = trim(adjustl(" "))
-      ! ex%tWires%tw(1)%n_twc=10
-      ! ex%tWires%tw(1)%n_twc_max=10
-      ! allocate(ex%tWires%tw(1)%twc(10))
-      ! ex%tWires%tw(1)%twc(1:10)%srcfile = 'None'
-      ! ex%tWires%tw(1)%twc(1:10)%srctype = 'None'
-      ! ex%tWires%tw(1)%twc(1:10)%i = 11
-      ! ex%tWires%tw(1)%twc(1:10)%j = 11
-      ! ex%tWires%tw(1)%twc(1:10)%k = [(i, i=7, 16)]
-      ! ex%tWires%tw(1)%twc(1:10)%d = DIR_Z
-      ! ex%tWires%tw(1)%twc(1:10)%nd = -1
-      ! ex%tWires%tw(1)%twc(1)%nd  = 1
-      ! ex%tWires%tw(1)%twc(6)%nd  = 2
-      ! ex%tWires%tw(1)%twc(10)%nd = 3
-      
-      ! ex%tWires%tw(1)%twc(1:10)%tag = trim(adjustl("2"))   ! The polyline id is used as tag.
-      
-      ! ex%tWires%tw(1)%tl = MATERIAL_CONS
-      ! ex%tWires%tw(1)%tr = MATERIAL_CONS
-      
-      ! ex%tWires%n_tw = 1
-      ! ex%tWires%n_tw_max = 1
-  
-
       ! ex%mtln%has_multiwires = .true.
       ex%mtln%time_step = 30e-12
       ex%mtln%number_of_steps = 1000
