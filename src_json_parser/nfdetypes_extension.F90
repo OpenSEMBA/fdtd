@@ -1094,22 +1094,27 @@ contains
 
    elemental logical function bloqueprobe_eq(a, b)
       type(BloqueProbe_t), intent(in) :: a, b
-      bloqueprobe_eq = (a%tstart == b%tstart) .and. &
-         (a%tstop == b%tstop) .and. &
-         (a%tstep == b%tstep) .and. &
-         (a%fstart == b%fstart) .and. &
-         (a%fstop == b%fstop) .and. &
-         (a%fstep == b%fstep) .and. &
-         (trim(a%FileNormalize) == trim(b%FileNormalize)) .and. &
-         (a%type2 == b%type2) .and. &
-         (a%i1 == b%i1) .and. (a%i2 == b%i2) .and. &
-         (a%j1 == b%j1) .and. (a%j2 == b%j2) .and. &
-         (a%k1 == b%k1) .and. (a%k2 == b%k2) .and. &
-         (a%skip == b%skip) .and. &
-         (a%nml == b%nml) .and. &
-         (a%t .eqv. b%t) .and. &
-         (a%outputrequest == b%outputrequest) .and. &
-         (a%tag == b%tag)
+      bloqueprobe_eq = .false.
+      if (a%tstart /= b%tstart) return
+      if (a%tstop /= b%tstop) return
+      if (a%tstep /= b%tstep) return
+      if (a%fstart /= b%fstart) return
+      if (a%fstop /= b%fstop) return
+      if (a%fstep /= b%fstep) return
+      if (trim(a%FileNormalize) /= trim(b%FileNormalize)) return
+      if (a%type2 /= b%type2) return
+      if (a%i1 /= b%i1) return
+      if (a%i2 /= b%i2) return
+      if (a%j1 /= b%j1) return
+      if (a%j2 /= b%j2) return
+      if (a%k1 /= b%k1) return
+      if (a%k2 /= b%k2) return
+      if (a%skip /= b%skip) return
+      if (a%nml /= b%nml) return
+      if (a%t .neqv. b%t) return
+      if (a%outputrequest /= b%outputrequest) return
+      if (a%tag /= b%tag) return
+      bloqueprobe_eq = .true.
    end function bloqueprobe_eq
 
    elemental logical function bloqueprobes_eq(a, b)
