@@ -1292,7 +1292,7 @@ contains
 
       res%length = size(res%collection)
       res%length_max = size(res%collection)
-      do i=1, size(ps)
+      do i=1, size(res%collection)
           if (size(res%collection(i)%cordinates) > res%len_cor_max) then
               res%len_cor_max = size(res%collection(i)%cordinates)
           end if

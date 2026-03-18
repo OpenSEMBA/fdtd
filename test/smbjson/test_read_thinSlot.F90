@@ -111,7 +111,7 @@ contains
 
       ! Expected probes
       ! sonda
-      expected%Sonda%len_cor_max = 0
+      expected%Sonda%len_cor_max = 3
       expected%Sonda%length = 2
       expected%Sonda%length_max = 2
       allocate(expected%Sonda%collection(2))
