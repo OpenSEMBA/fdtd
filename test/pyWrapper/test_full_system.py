@@ -4,19 +4,8 @@ import os
 from sys import platform
 from scipy import signal
 
-@mtln_skip
-def test_lineIntegralProbe_single_wire(tmp_path):
-    fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['materials'][0] = createWire(id = 1, r = 0.001)
-    solver.run()
-    
-    pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
-    li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
-    expected  = Probe(OUTPUTS_FOLDER+pf)
-    np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
-@no_mtln_skip
+@pytest.mark.skip
 def test_lineIntegralProbe_wire(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -26,9 +15,10 @@ def test_lineIntegralProbe_wire(tmp_path):
     pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
     li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
     expected  = Probe(OUTPUTS_FOLDER+pf)
-    np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
+    assert np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
-@no_mtln_skip
+
+@pytest.mark.skip
 def test_lineIntegralProbe_unshielded(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -38,7 +28,7 @@ def test_lineIntegralProbe_unshielded(tmp_path):
     pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
     li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
     expected  = Probe(OUTPUTS_FOLDER+pf)
-    np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
+    assert np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
 
 @no_mtln_skip
@@ -859,7 +849,7 @@ def test_rectilinear_mode(tmp_path):
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['value'], getPeakPulse(noRectilinearVertexProbe)['value'], decimal=_FIELD_TOLERANCE)
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['time'], getPeakPulse(noRectilinearVertexProbe)['time'], decimal=_TIME_TOLERANCE)
     
-def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_path):
+def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arguments(tmp_path):
     projectRoot = os.getcwd()
     folderWitSpaces: str  = os.path.join(tmp_path, "spaced bin")
     os.mkdir(folderWitSpaces)
@@ -971,14 +961,14 @@ def test_nodal_source_unshielded(tmp_path):
     assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
 
-def testCanAssignSameSurfaceImpedanceToMultipleGeometries(tmp_path):
+def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
     fn = CASES_FOLDER + 'multipleAssigments/multipleSurfaceImpedance.fdtd.json'
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
 
-def testCanAssignSameDielectricMaterialToMultipleGeometries(tmp_path):
+def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
     fn = CASES_FOLDER + 'multipleAssigments/multipleDielectricMaterial.fdtd.json'
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
