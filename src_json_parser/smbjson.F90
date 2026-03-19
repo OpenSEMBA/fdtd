@@ -3177,6 +3177,7 @@ contains
                   else if (this%getStrAt(genSrcs(i)%p, J_FIELD) == J_FIELD_CURRENT) then 
                      res%source_type = SOURCE_TYPE_CURRENT
                   end if
+                  res%resistance = this%getRealAt(genSrcs(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0)
                   res%path_to_excitation = trim(this%getStrAt(genSrcs(i)%p, J_SRC_MAGNITUDE_FILE))
                   return
                end if
@@ -3320,21 +3321,24 @@ contains
                if (.not. this%existsAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)) then
                   call WarnErrReport('magnitudeFile of source missing', .true.)
                end if
+
+               res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0)
+
                select case(this%getStrAt(gens(i)%p, J_FIELD))
                 case (J_FIELD_VOLTAGE)
                   res(n)%generator_type = SOURCE_TYPE_VOLTAGE
                 case (J_FIELD_CURRENT)
                   res(n)%generator_type = SOURCE_TYPE_CURRENT
+                  if (res(n)%resistance == 0.0) call WarnErrReport('The resistance of a current generator on an interior node cannot be equal to 0', .true.)
                case default
                   call WarnErrReport('Field block of source of type generator must be current or voltage', .true.)
                end select
+
                res(n)%path_to_excitation = this%getStrAt(gens(i)%p, J_SRC_MAGNITUDE_FILE)
 
                if (.not. this%existsAt(gens(i)%p, J_SRC_RESISTANCE_GEN)) then
                   call WarnErrReport('Generator resistance missing', .true.)
                end if
-               res(n)%resistance = this%getRealAt(gens(i)%p, J_SRC_RESISTANCE_GEN, default = 0.0)
-               if (res(n)%resistance == 0.0) call WarnErrReport('Generator resistance equal to 0', .false.)
                
                idAndPos = getPolylineElemIdAndConductorOfGenerator(gens(i)%p)
                call elemIdToCable%get(key(idAndPos(1)), value=index)
@@ -3387,10 +3391,12 @@ contains
                polyline = this%mesh%getPolyline(mAs(i)%elementIds(l))
                do j = 2, size(polyline%coordIds)-1
                   if (polyline%coordIds(j) == cId) then
-                     if (fieldLabel == J_FIELD_VOLTAGE .and. &
-                           (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. &
-                           mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
-                        ! call WarnErrReport('Voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
+                     if (fieldLabel == J_FIELD_VOLTAGE .and. (mAs(i)%matAssType == J_MAT_TYPE_WIRE .or. mAs(i)%matAssType == J_MAT_TYPE_UNSHIELDED_MULTIWIRE)) then 
+                        call WarnErrReport('Voltage generators cannot be defined on wire/unshieldedMultiwire interior points', .true.)
+                        return
+                     else if (fieldLabel == J_FIELD_CURRENT .and. mAs(i)%matAssType == J_MAT_TYPE_SHIELDED_MULTIWIRE) then 
+                        call WarnErrReport('Current generators cannot be defined on shieldedMultiwire interior points', .true.)
+                        return
                      end if
                      IsGeneratorOnWire = .true.
                      return

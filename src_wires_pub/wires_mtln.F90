@@ -110,7 +110,6 @@ contains
       do m = 1, mtln_solver%number_of_bundles
          if (mtln_solver%bundles(m)%bundle_in_layer) then 
             do n = 1, ubound(mtln_solver%bundles(m)%external_field_segments,1)
-               mtln_solver%bundles(m)%external_field_segments(n)%field_from_current = computeFieldFromCurrent(m,n)
                punt => mtln_solver%bundles(m)%external_field_segments(n)%field
                punt = real(punt, kind=rkind_wires) - computeFieldFromCurrent(m,n)
             end do

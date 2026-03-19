@@ -153,7 +153,7 @@
                 "id": 1,
                 "type": "node",
                 "coordinateIds": [
-                    1
+                    5
                 ]
             },
             {
@@ -239,14 +239,14 @@
                 "id": 9,
                 "type": "node",
                 "coordinateIds": [
-                    4
+                    1
                 ]
             },
             {
                 "id": 10,
                 "type": "node",
                 "coordinateIds": [
-                    1
+                    4
                 ]
             }
         ]
@@ -272,11 +272,11 @@
         {
             "name": "terminal_source",
             "type": "generator",
-            "magnitudeFile": "voltage_source_50V.exc",
+            "magnitudeFile": "current_source_1A.exc",
             "elementIds": [
                 1
             ],
-            "field": "voltage",
+            "field": "current",
             "resistance": 50.0
         }
     ],
@@ -286,29 +286,29 @@
             "type": "wire",
             "field": "current",
             "elementIds": [
-                4
+                9
             ],
             "domain": {
                 "type": "time"
             }
         },
         {
-            "name": "probe_c7",
+            "name": "probe_start",
             "type": "wire",
-            "field": "current",
+            "field": "voltage",
             "elementIds": [
-                6
+                9
             ],
             "domain": {
                 "type": "time"
             }
         },
         {
-            "name": "probe_c8",
+            "name": "probe_end",
             "type": "wire",
-            "field": "current",
+            "field": "voltage",
             "elementIds": [
-                4
+                10
             ],
             "domain": {
                 "type": "time"

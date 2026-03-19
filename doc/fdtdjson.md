@@ -807,7 +807,18 @@ This object represents a time-varying vector field applied along an oriented lin
 
 ### `generator`
 
-A `generator` source must be located on a single `node` whose `coordinateId` is used by a single `polyline`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`.
+A `generator` source must be located on a single `node` whose `coordinateId` is used by a single `polyline`. The entry `[field]` can be `voltage` or `current`; defaults to `voltage`. `resistance` refers to a series resistance for voltage generators and a resistance in parallel for current generators. 
+
+Allowed positions according to material associations:
+
+* Voltage generators:
+    * On `wire` and `unshieldedMultiwre` materials, voltage generators are only allowed on terminal positions. 
+    * On `shieldedMultiwre` materials, voltage generators are allowed on terminal and interior positions. 
+* Current generators:
+    * On `wire` and `unshieldedMultiwre` materials, current generators are allowed on terminal and interior positions.
+    * On `shieldedMultiwre` materials, current generators are only allowed on terminal positions. 
+
+For terminal positions a series resistance is optional. For interior positions it is mandatory. As the resistance of the voltage generator approaches 0 (or the resistance of the current generator tends to arbitrarily large value), the generator becomes a **hard** source, in which the value of the generator is imposed at the current position of the wire.
 
 **Example:**
 
@@ -816,10 +827,12 @@ A `generator` source must be located on a single `node` whose `coordinateId` is 
     "name": "voltage_source",
     "type": "generator",
     "field": "current",
-    "magnitudeFile": "gauss.exc", 
+    "magnitudeFile": "gauss.exc",
+    "resistance" : 50.0, 
     "elementIds": [1]
 }
 ```
+If the generator is located at the termination of a wire, the series or parallel `resistance`  is added to the connection defined in the corresponding `terminal`. If a generator is located on a wire intermediate position, the per-unit-length properties of the corresponding segment are modified according to the `resistance` of the generator.
 
 In case the generator is located at the junction (connection point) of two of more lines, the  `node` shared by the lines will share the same  `coordinateId`. If more than two lines are connected together, it is necessary to know to which of the lines the generator is connected to. The entry `[attachedToLineId]` is an integer which refers to the `elementId` of the `polyline` the source is connected to. 
 

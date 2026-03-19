@@ -56,6 +56,7 @@ module mtln_types_m
    type node_source_t
       character(len=256) :: path_to_excitation = ""
       integer :: source_type = SOURCE_TYPE_UNDEFINED
+      real :: resistance
    end type
 
    type terminal_circuit_t
