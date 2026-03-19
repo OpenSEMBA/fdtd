@@ -3,11 +3,11 @@
     "__comments": "",
     "general": {
         "timeStep": 1e-11,
-        "numberOfSteps": 5000
+        "numberOfSteps": 6000
     },
     "boundary": {
         "all": {
-            "type": "pml",
+            "type": "mur",
             "layers": 6,
             "order": 2.0,
             "reflection": 0.001
@@ -16,10 +16,17 @@
     "materials": [
         {
             "id": 1,
-            "type": "wire",
-            "radius": 0.0001,
-            "resistancePerMeter": 0.0,
-            "inductancePerMeter": 0.0
+            "type": "unshieldedMultiwire",
+            "inductancePerMeter": [
+                [
+                    6.5138e-07
+                ]
+            ],
+            "capacitancePerMeter": [
+                [
+                    1.7069e-11
+                ]
+            ]
         },
         {
             "id": 2,
@@ -51,7 +58,7 @@
             "terminations": [
                 {
                     "type": "series",
-                    "resistance": 25.0
+                    "resistance": 50.0
                 }
             ]
         }
@@ -146,7 +153,7 @@
                 "id": 1,
                 "type": "node",
                 "coordinateIds": [
-                    5
+                    1
                 ]
             },
             {
@@ -234,6 +241,13 @@
                 "coordinateIds": [
                     4
                 ]
+            },
+            {
+                "id": 10,
+                "type": "node",
+                "coordinateIds": [
+                    1
+                ]
             }
         ]
     },
@@ -258,19 +272,19 @@
         {
             "name": "terminal_source",
             "type": "generator",
-            "magnitudeFile": "current_source_1A.exc",
+            "magnitudeFile": "voltage_source_50V.exc",
             "elementIds": [
                 1
             ],
-            "field": "current",
+            "field": "voltage",
             "resistance": 50.0
         }
     ],
     "probes": [
         {
-            "name": "probe_c8",
+            "name": "probe_start",
             "type": "wire",
-            "field": "voltage",
+            "field": "current",
             "elementIds": [
                 4
             ],
@@ -305,7 +319,7 @@
             "type": "wire",
             "field": "current",
             "elementIds": [
-                9
+                10
             ],
             "domain": {
                 "type": "time"

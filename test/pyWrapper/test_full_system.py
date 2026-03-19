@@ -14,7 +14,7 @@ def test_lineIntegralProbe_single_wire(tmp_path):
     pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
     li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
     expected  = Probe(OUTPUTS_FOLDER+pf)
-    np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
+    assert np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
 @no_mtln_skip
 def test_lineIntegralProbe_wire(tmp_path):
@@ -26,7 +26,7 @@ def test_lineIntegralProbe_wire(tmp_path):
     pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
     li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
     expected  = Probe(OUTPUTS_FOLDER+pf)
-    np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
+    assert np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
 @no_mtln_skip
 def test_lineIntegralProbe_unshielded(tmp_path):
@@ -38,7 +38,7 @@ def test_lineIntegralProbe_unshielded(tmp_path):
     pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
     li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
     expected  = Probe(OUTPUTS_FOLDER+pf)
-    np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
+    assert np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
 
 @no_mtln_skip

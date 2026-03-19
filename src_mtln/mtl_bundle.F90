@@ -19,7 +19,7 @@ module mtl_bundle_m
         integer  :: number_of_conductors = 0, number_of_divisions = 0
         real, dimension(:), allocatable :: step_size
         real, allocatable, dimension(:,:) :: v, i
-        real, allocatable, dimension(:,:) :: v_source, i_source, e_L
+        real, allocatable, dimension(:,:) :: v_source, i_source, e_L, field_from_current
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
         real :: time = 0.0, dt = 1e10
 
@@ -71,6 +71,7 @@ module mtl_bundle_m
         integer, dimension(3) ::position
         integer :: direction = 0
         real(kind=rkind) , pointer  :: field => null()
+        real(kind=rkind) :: field_from_current = 0.0
     end type
 
 contains
@@ -117,6 +118,7 @@ contains
         allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
         allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0)
         allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0)
+        allocate(this%field_from_current(this%number_of_conductors, this%number_of_divisions), source = 0.0)
 
         allocate(this%v_source(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
         allocate(this%i_source(this%number_of_conductors, this%number_of_divisions), source = 0.0)
@@ -269,7 +271,7 @@ contains
             this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance/this%du(index, conductor, conductor)
         else if (new_generator%source_type == SOURCE_TYPE_CURRENT) then
             ! this%rpul(index, conductor, conductor) = this%rpul(index, conductor, conductor) + resistance/this%du(index, conductor, conductor)
-            this%gpul(index, conductor, conductor) = this%gpul(index, conductor, conductor) + resistance/this%du(index, conductor, conductor)
+            ! this%gpul(index, conductor, conductor) = this%gpul(index, conductor, conductor) + (1.0/resistance)/this%du(index, conductor, conductor)
         end if
 
     end subroutine
@@ -380,14 +382,16 @@ contains
         do i = 1, size(this%generators)
             if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then
                 val = 0.5*(this%generators(i)%interpolate(time+dt)+this%generators(i)%interpolate(time))
-                this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val
+                this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val/this%du(this%generators(i)%index, this%generators(i)%conductor, this%generators(i)%conductor)
             else if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then
-                val = 0.5*(this%generators(i)%interpolate(time+0.5*dt)+this%generators(i)%interpolate(time-0.5*dt))
+                ! val = this%generators(i)%interpolate(time)
+                val = 0.5*(this%generators(i)%interpolate(time+dt)+this%generators(i)%interpolate(time))
                 ! this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val*this%generators(i)%resistance
                 ! this%v_source(this%generators(i)%conductor, this%generators(i)%index-1) = -0.5*val*this%generators(i)%resistance
                 ! this%i_source(this%generators(i)%conductor, this%generators(i)%index)   =  0.5*val
                 ! this%i_source(this%generators(i)%conductor, this%generators(i)%index-1) =- 0.5*val
-                this%i_source(this%generators(i)%conductor, this%generators(i)%index)   = val
+                ! this%i_source(this%generators(i)%conductor, this%generators(i)%index)   = val
+                this%i_source(this%generators(i)%conductor, this%generators(i)%index)   = val/this%du(this%generators(i)%index, this%generators(i)%conductor, this%generators(i)%conductor)
             end if
         end do
 
@@ -398,9 +402,10 @@ contains
         integer :: i
         do i = 2,this%number_of_divisions
             this%v(:, i) = matmul(this%v_term(i,:,:), this%v(:,i)) - &
-                           matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1))- &
+                        !    matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1)))
+                           matmul(this%i_diff(i,:,:), (this%i(:,i) - this%i(:,i-1)) + matmul(this%du(i,:,:), this%i_source(:,i)))
                                                     !soft I source?
-                                                      this%i_source(:,i))
+                                                    !   this%i_source(:,i))
         end do
 
     end subroutine
@@ -425,16 +430,16 @@ contains
         do i = 1, this%number_of_divisions
             this%i(:,i) = matmul(this%i_term(i,:,:), this%i(:,i)) - &
                           matmul(this%v_diff(i,:,:), (this%v(:,i+1) - this%v(:,i)) - &
-                                                      this%e_L(:,i) * this%step_size(i) - &
+                                                      this%e_L(:,i) * this%step_size(i) + &
                                                       !soft V source
-                                                      this%v_source(:,i)) - &
+                                                      matmul(this%du(i,:,:),this%v_source(:,i))) - &
                           matmul(this%v_diff(i,:,:), matmul(this%du(i,:,:), this%transfer_impedance%q3_phi(i,:)))
         enddo
         !hard I source
         ! do i = 1, size(this%generators)
         !     if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then
         !         this%i(this%generators(i)%conductor, this%generators(i)%index) = &
-        !         this%i_source(this%generators(i)%conductor, this%generators(i)%index)
+        !         this%i_source(this%generators(i)%conductor, this%generators(i)%index)*this%du(this%generators(i)%index, this%generators(i)%conductor, this%generators(i)%conductor)
         !     end if
         ! end do
         !TODO - revisar
@@ -456,6 +461,7 @@ contains
             do i = 1, size(this%e_L,2)
                     this%e_L(j,i) = this%external_field_segments(i)%field * &
                                     this%external_field_segments(i)%direction/abs(this%external_field_segments(i)%direction)
+                                    
             end do
         end do
 
