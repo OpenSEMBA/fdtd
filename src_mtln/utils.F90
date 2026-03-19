@@ -1,11 +1,11 @@
-module utils_mod
+module utils_m
 
    use iso_fortran_env, only: real64
    implicit none
    
-   type :: entry
+   type :: entry_t
       real, dimension(:), allocatable :: x
-   end type entry
+   end type entry_t
 
 contains
 
@@ -104,4 +104,4 @@ contains
    end function
 
 
-end module utils_mod
+end module utils_m

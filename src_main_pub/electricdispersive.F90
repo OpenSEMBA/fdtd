@@ -9,11 +9,11 @@
 ! 5 poles (not 3) 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module EDispersives
+module EDispersives_m
 
 
-   use fdetypes
-   use REPORT
+   use FDETYPES_m
+   use Report_m
    implicit none
    private
 
@@ -34,14 +34,14 @@ module EDispersives
       integer(kind=4) :: indexmed,numnodesEx,numnodesEy,numnodesEz,numpolres11
       complex(Kind=CKIND), pointer, dimension( : ) :: Beta,Kappa,G3
       type(field_t), pointer, dimension( : ) :: NodesEx,NodesEy,NodesEz
-   END type EDispersive_t
+   end type EDispersive_t
 
 
-   type  EDispersive_t2
+   type  EDispersive2_t
       integer(kind=4) :: NumEDispersives
       type(EDispersive_t), pointer, dimension( : ) :: Medium
    end type
-   type(EDispersive_t2) , save , target :: Dutton
+   type(EDispersive2_t) , save , target :: Dutton
 
 
    public AdvanceEDispersiveE,InitEDispersives,StoreFieldsEDispersives,DestroyEDispersives
@@ -52,7 +52,7 @@ contains
    ! subroutine to initialize the parameters
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    subroutine InitEDispersives(sgg,media,ThereAreEDispersives,resume,g1,g2,ex,ey,ez)
-      type(SGGFDTDINFO), intent(in) :: sgg
+      type(SGGFDTDINFO_t), intent(in) :: sgg
       type(media_matrices_t), intent(in) :: media
       real(kind=RKIND)     , intent(inout) :: &
       G1(0 : sgg%NumMedia),G2(0 : sgg%NumMedia)
@@ -73,7 +73,7 @@ contains
       do jmed=1,sgg%NumMedia
          if ((sgg%Med(jmed)%Is%EDispersive).and.(.not.sgg%Med(jmed)%Is%EDispersiveAnis)) then
             conta=conta+1
-         endif
+         end if
       end do
 
 
@@ -97,7 +97,7 @@ contains
                Dutton%Medium(conta)%Beta(i1)=  (   sgg%Med(jmed)%EDispersive(1)%C11(i1)*sgg%dt) /&
                (1.0_RKIND-sgg%Med(jmed)%EDispersive(1)%a11(i1)*sgg%dt/2.0_RKIND)
             end do
-         endif
+         end if
       end do
 
       !calculate the coefficients
@@ -145,7 +145,7 @@ contains
                      Dutton%Medium(jmed)%NodesEx(conta)%k=k1
                      Dutton%Medium(jmed)%NodesEx(conta)%WhatField=iEx
                      Dutton%Medium(jmed)%NodesEx(conta)%FieldPresent=>Ex(i1,j1,k1)
-                  endif
+                  end if
                end do
             end do
          end do
@@ -176,7 +176,7 @@ contains
                      Dutton%Medium(jmed)%NodesEy(conta)%k=k1
                      Dutton%Medium(jmed)%NodesEy(conta)%WhatField=iEy
                      Dutton%Medium(jmed)%NodesEy(conta)%FieldPresent=>Ey(i1,j1,k1)
-                  endif
+                  end if
                end do
             end do
          end do
@@ -208,7 +208,7 @@ contains
                      Dutton%Medium(jmed)%NodesEz(conta)%k=k1
                      Dutton%Medium(jmed)%NodesEz(conta)%WhatField=iEz
                      Dutton%Medium(jmed)%NodesEz(conta)%FieldPresent=>Ez(i1,j1,k1)
-                  endif
+                  end if
                end do
             end do
          end do
@@ -223,14 +223,14 @@ contains
                Dutton%Medium(jmed)%NodesEx(i1)%fieldPrevious=0.0_RKIND
                Do k1=1,NumPolRes
                   Dutton%Medium(jmed)%NodesEx(i1)%current(k1)=0.0_RKIND
-               enddo
+               end do
             end do
             !Ey,Jy
             do i1=1,Dutton%Medium(jmed)%NumNodesEy
                Dutton%Medium(jmed)%NodesEy(i1)%fieldPrevious=0.0_RKIND
                Do k1=1,NumPolRes
                   Dutton%Medium(jmed)%NodesEy(i1)%current(k1)=0.0_RKIND
-               enddo
+               end do
             end do
 
             !Ez,Jz
@@ -238,7 +238,7 @@ contains
                Dutton%Medium(jmed)%NodesEz(i1)%fieldPrevious=0.0_RKIND
                Do k1=1,NumPolRes
                   Dutton%Medium(jmed)%NodesEz(i1)%current(k1)=0.0_RKIND
-               enddo
+               end do
             end do
          else
             !Ex,Jx
@@ -246,14 +246,14 @@ contains
                READ (14) Dutton%Medium(jmed)%NodesEx(i1)%fieldPrevious
                Do k1=1,NumPolRes
                   READ (14) Dutton%Medium(jmed)%NodesEx(i1)%current(k1)
-               enddo
+               end do
             end do
             !Ey,Jy
             do i1=1,Dutton%Medium(jmed)%NumNodesEy
                READ (14) Dutton%Medium(jmed)%NodesEy(i1)%fieldPrevious
                Do k1=1,NumPolRes
                   READ (14) Dutton%Medium(jmed)%NodesEy(i1)%current(k1)
-               enddo
+               end do
             end do
 
             !Ez,Jz
@@ -261,9 +261,9 @@ contains
                READ (14) Dutton%Medium(jmed)%NodesEz(i1)%fieldPrevious
                Do k1=1,NumPolRes
                   READ (14) Dutton%Medium(jmed)%NodesEz(i1)%current(k1)
-               enddo
+               end do
             end do
-         endif
+         end if
       end do
       return
    end subroutine InitEDispersives
@@ -274,7 +274,7 @@ contains
 
    subroutine AdvanceEDispersiveE(sgg)
 
-      type(SGGFDTDINFO), intent(in)              :: sgg              ! Simulation data.
+      type(SGGFDTDINFO_t), intent(in)              :: sgg              ! Simulation data.
       !!!
 
       integer(kind=4) :: jmed,i1,k1,numpolres
@@ -289,11 +289,11 @@ contains
             tempnode=>Dutton%Medium(jmed)%NodesEx(i1)
             Do k1=1,NumPolRes
                tempnode%fieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1) )
-            enddo
+            end do
             Do k1=1,NumPolRes
                tempnode%current(k1)=Dutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1) + &
                Dutton%Medium(jmed)%Beta(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious) /sgg%dt
-            enddo
+            end do
             tempnode%fieldPrevious=tempnode%fieldPresent
             !stores previous field (cuidado no es un apuntamiento sino una igualdad de valores)
             !antes de que re-empieze a calcularlo el algoritmo del background
@@ -303,13 +303,13 @@ contains
             tempnode=>Dutton%Medium(jmed)%NodesEy(i1)
             Do k1=1,NumPolRes
                tempnode%FieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
-            enddo
+            end do
 
 
             Do k1=1,NumPolRes
                tempnode%current(k1)=Dutton%Medium(jmed)%Kappa(k1)  *tempnode%current(k1)+ &
                Dutton%Medium(jmed)%Beta(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious) /sgg%dt
-            enddo
+            end do
             tempnode%fieldPrevious=tempnode%fieldPresent
          end do
 
@@ -318,11 +318,11 @@ contains
             tempnode=>Dutton%Medium(jmed)%NodesEz(i1)
             Do k1=1,NumPolRes
                tempnode%FieldPresent=tempnode%FieldPresent-real(Dutton%Medium(jmed)%G3(k1)*tempnode%current(k1))
-            enddo
+            end do
             Do k1=1,NumPolRes
                tempnode%current(k1)=Dutton%Medium(jmed)%Kappa(k1)   *tempnode%current(k1)+ &
                Dutton%Medium(jmed)%Beta(k1)*(tempnode%fieldPresent-tempnode%fieldPrevious)  /sgg%dt
-            enddo
+            end do
             tempnode%fieldPrevious=tempnode%fieldPresent
          end do
 
@@ -345,14 +345,14 @@ contains
             write(14,err=634) Dutton%Medium(jmed)%NodesEx(i1)%fieldPrevious
             Do k1=1,NumPolRes
                write(14,err=634) Dutton%Medium(jmed)%NodesEx(i1)%current(k1)
-            enddo
+            end do
          end do
          !Ey,Jy
          do i1=1,Dutton%Medium(jmed)%NumNodesEy
             write(14,err=634) Dutton%Medium(jmed)%NodesEy(i1)%fieldPrevious
             Do k1=1,NumPolRes
                write(14,err=634) Dutton%Medium(jmed)%NodesEy(i1)%current(k1)
-            enddo
+            end do
          end do
 
          !Ez,Jz
@@ -360,7 +360,7 @@ contains
             write(14,err=634) Dutton%Medium(jmed)%NodesEz(i1)%fieldPrevious
             Do k1=1,NumPolRes
                write(14,err=634) Dutton%Medium(jmed)%NodesEz(i1)%current(k1)
-            enddo
+            end do
          end do
       end do
     
@@ -372,7 +372,7 @@ contains
    end subroutine StoreFieldsEDispersives
 
    subroutine DestroyEDispersives(sgg)
-      type(SGGFDTDINFO), intent(INOUT) :: sgg
+      type(SGGFDTDINFO_t), intent(INOUT) :: sgg
 
       integer(kind=4) :: jmed,i1,i
 
@@ -381,12 +381,12 @@ contains
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%EDispersive).and.(.not.sgg%Med(i)%Is%PML).and.(.not.sgg%Med(i)%Is%EDispersiveAnis))  then
             deallocate(sgg%Med(i)%EDispersive(1)%C11,sgg%Med(i)%EDispersive(1)%a11)
-         endif
+         end if
       end do
       do i=1,sgg%NumMedia
          if ((sgg%Med(i)%Is%EDispersive).and.(.not.sgg%Med(i)%Is%PML).and.(.not.sgg%Med(i)%Is%EDispersiveAnis))  then
             deallocate(sgg%Med(i)%EDispersive)
-         endif
+         end if
       end do
 
       do jmed=1,Dutton%NumEDispersives
@@ -413,4 +413,4 @@ contains
 
    end subroutine
 
-end module EDispersives
+end module EDispersives_m

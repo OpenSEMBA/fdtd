@@ -3,16 +3,16 @@
 ! Module thin wires from Wires paper
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-module Wire_bundles_mtln_mod             
+module Wire_bundles_mtln_m             
 #ifdef CompileWithMTLN
 
-   use report
-   use fdetypes
-   use mtln_solver_mod , mtln_solver_t => mtln_t 
-   use mtln_types_mod, only: mtln_t
-   use HollandWires
-   use wiresHolland_constants
-   use ilumina
+   use Report_m
+   use FDETYPES_m
+   use mtln_solver_m , mtln_solver_t => mtln_t 
+   use mtln_types_m, only: mtln_t
+   use HollandWires_m
+   use wiresHolland_constants_m
+   use ilumina_m
    implicit none
    
    real(kind=RKIND_wires) :: eps0,mu0
@@ -26,7 +26,7 @@ contains
 
 
    subroutine InitWires_mtln(sgg,Ex,Ey,Ez, eps00, mu00, mtln_parsed,thereAreMTLNbundles, dtcritico)
-      type(SGGFDTDINFO), intent(in), target    :: sgg 
+      type(SGGFDTDINFO_t), intent(in), target    :: sgg 
       real(kind=RKIND), intent(inout), target :: &
          Ex(sgg%Alloc(iEx)%XI : sgg%Alloc(iEx)%XE,  &
             sgg%Alloc(iEx)%YI : sgg%Alloc(iEx)%YE,  &
@@ -61,7 +61,7 @@ contains
         else    
            thereAreMTLNbundles=.false.
            return
-      endif
+      end if
       if (mtln_solver%dt < dtcritico) dtcritico = mtln_solver%dt
       call pointSegmentsToFields()
       call mtln_solver%updatePULTerms()
@@ -96,7 +96,7 @@ contains
    endsubroutine InitWires_mtln
 
    subroutine AdvanceWiresE_mtln(sgg,Idxh, Idyh, Idzh, eps00,mu00)  
-      type(SGGFDTDINFO), intent(in), target    :: sgg      
+      type(SGGFDTDINFO_t), intent(in), target    :: sgg      
       real(kind=RKIND), dimension(:), intent(in) :: &
          Idxh(sgg%ALLOC(iEx)%XI : sgg%ALLOC(iEx)%XE),&
          Idyh(sgg%ALLOC(iEy)%YI : sgg%ALLOC(iEy)%YE),&
@@ -188,4 +188,4 @@ contains
 
 #endif
 
-end module Wire_bundles_mtln_mod
+end module Wire_bundles_mtln_m

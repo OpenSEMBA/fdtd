@@ -1,7 +1,9 @@
-module circuit_mod
+module circuit_m
 
-    use ngspice_interface_mod
-    use mtln_types_mod, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use ngspice_interface_m
+    use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use Report_m, only: WarnErrReport
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO, SINGLE
     implicit none
 
     type string_t
@@ -11,7 +13,7 @@ module circuit_mod
 
     type source_t
         logical :: has_source = .false.
-        real, dimension(:), allocatable :: time
+        real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
         real, dimension(:), allocatable :: value
         integer :: source_type
     contains 
@@ -21,7 +23,7 @@ module circuit_mod
     type VI_t
         real :: voltage
         real :: current
-        real :: time
+        real(kind=RKIND_TIEMPO) :: time
     end type
 
     type nodes_t
@@ -32,7 +34,7 @@ module circuit_mod
 
     type, public :: circuit_t
         character(len=:), allocatable :: name
-        real :: time = 0.0, dt = 0.0
+        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 0.0
         logical :: errorFlag = .false.
         type(nodes_t) :: nodes, saved_nodes   
 
@@ -63,7 +65,8 @@ contains
 
     real function interpolate(this, time, dt) result(res)
         class(source_t) :: this
-        real :: time, dt, x1,x2, y1, y2
+        real(kind=RKIND_TIEMPO) :: time, dt
+        real :: x1,x2, y1, y2
         integer :: index
         real, dimension(:), allocatable :: timediff
         timediff = this%time - time + dt
@@ -133,7 +136,8 @@ contains
 
     type(source_t) function setSource(source_path) result(res)
         character(*), intent(in) :: source_path
-        real :: time, value
+        real(kind=RKIND_TIEMPO) :: time
+        real ::value
         integer :: io, line_count, i
         
         if (source_path == "" ) then 
@@ -146,10 +150,23 @@ contains
         
         ! First pass: count the number of lines
         line_count = 0
-        open(unit = 1, file = source_path)
+        open(unit = 1, file = source_path, iostat = io)
+        if (io /= 0) then
+            call WarnErrReport('Cannot open excitation file: ' // trim(source_path), .true.)
+            allocate(res%time(0), res%value(0))
+            res%has_source = .false.
+            return
+        end if
         do
             read(1, *, iostat = io) time, value
-            if (io /= 0) exit
+            if (io < 0) exit
+            if (io > 0) then
+                close(1)
+                call WarnErrReport('Error reading excitation file: ' // trim(source_path), .true.)
+                allocate(res%time(0), res%value(0))
+                res%has_source = .false.
+                return
+            end if
             line_count = line_count + 1
         end do
         close(1)
@@ -158,15 +175,10 @@ contains
         allocate(res%time(line_count))
         allocate(res%value(line_count))
         
-        ! Second pass: fill the arrays
+        ! Second pass: fill the arrays (file was verified readable in first pass)
         open(unit = 1, file = source_path)
         do i = 1, line_count
-            read(1, *, iostat = io) res%time(i), res%value(i)
-            if (io /= 0) then
-                ! Handle unexpected read error
-                close(1)
-                error stop "Error reading excitation file"
-            end if
+            read(1, *) res%time(i), res%value(i)
         end do
         close(1)
     end function    
@@ -198,7 +210,7 @@ contains
 
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
-        real, intent(in) :: finalTime, dt
+        real(kind=RKIND_TIEMPO), intent(in) :: finalTime, dt
         character(20) :: charTime
         real :: time
 
@@ -212,10 +224,10 @@ contains
 
     subroutine setModStopTimes(this, dt)
         class(circuit_t) :: this
-        real, intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         character(20) :: charTime
         real :: time
-        write(charTime, *) dt
+        write(charTime, *) real(dt, SINGLE)
         call command('stop when time mod '//charTime // c_null_char)
     end subroutine
 
@@ -236,10 +248,10 @@ contains
         type(c_ptr) :: argv_c(size(input))
         integer :: i   
 
-        type string
+        type c_string_t
             character(len=:,kind=c_char), allocatable :: item
-        end type string
-        type(string), target :: tmp(size(input))
+        end type c_string_t
+        type(c_string_t), target :: tmp(size(input))
 
         if (present(printInput)) then
             if (printInput .eqv. .true.) then 
@@ -267,25 +279,25 @@ contains
         do i = 1,100
             if (f_output(i) == c_null_char) exit
             res%name(i:i) = f_output(i)
-        enddo
+        end do
         res%length = i-1
 
     end function
 
     subroutine updateCircuitSources(this, time)
         class(circuit_t) :: this
-        real, intent(in) :: time
+        real(kind=RKIND_TIEMPO), intent(in) :: time
         real :: interp
         character(20) :: source_value
         integer :: i, index
         do i = 1, size(this%nodes%sources)
             if (this%nodes%sources(i)%has_source) then
                 if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
                     write(source_value, *) interp
                     call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
                     write(source_value, *) interp
                     call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 end if
@@ -320,7 +332,7 @@ contains
     subroutine updateNodes(this) 
         class(circuit_t) :: this
         integer :: i
-        type(vectorInfo), pointer :: info
+        type(vectorInfo_t), pointer :: info
         real(kind=c_double), pointer :: values(:)
         do i = 1, size(this%nodes%names)
             call c_f_pointer(get_vector_info(trim(this%nodes%names(i)%name)//c_null_char), info)

@@ -1,6 +1,6 @@
 integer function test_mtl_wrong_dt() bind(C) result(error_cnt)
 
-    use mtl_mod
+    use mtl_m
     use mtln_testingTools_mod
     implicit none
 
@@ -16,7 +16,7 @@ integer function test_mtl_wrong_dt() bind(C) result(error_cnt)
 end function
 
 integer function test_mtl_init_homogeneous() bind(C) result(error_cnt) 
-    use mtl_mod
+    use mtl_m
     use mtln_testingTools_mod
     implicit none
 
@@ -53,12 +53,12 @@ integer function test_mtl_init_homogeneous() bind(C) result(error_cnt)
     end do
 
     error_cnt = 0
-    line = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12, parent_name ="p", conductor_in_parent = 1, transfer_impedance = Zt)
+    line = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12_RKIND_TIEMPO, parent_name ="p", conductor_in_parent = 1, transfer_impedance = Zt)
     call comparePULMatrices(error_cnt, line%lpul, lpul)
     call comparePULMatrices(error_cnt, line%cpul, cpul)
     call comparePULMatrices(error_cnt, line%rpul, rpul)
     call comparePULMatrices(error_cnt, line%gpul, gpul)
-    line = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12, multipolar_expansion = mE, radius = 0.0)
+    line = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments=segments, dt = 1e-12_RKIND_TIEMPO, multipolar_expansion = mE, radius = 0.0)
     call comparePULMatrices(error_cnt, line%lpul, lpul)
     call comparePULMatrices(error_cnt, line%cpul, cpul)
     call comparePULMatrices(error_cnt, line%rpul, rpul)
@@ -68,7 +68,7 @@ end function
 
 integer function test_mtl_time_step() bind(C) result(error_cnt)    
 
-    use mtl_mod
+    use mtl_m
     use mtln_testingTools_mod
 
     implicit none

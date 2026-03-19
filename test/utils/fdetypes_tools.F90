@@ -1,5 +1,5 @@
 module FDETYPES_TOOLS
-    use FDETYPES
+    use FDETYPES_m
     contains
     function create_limit_t(XI,XE,YI,YE,ZI,ZE,NX,NY,NZ) result(r)
         type(limit_t) :: r

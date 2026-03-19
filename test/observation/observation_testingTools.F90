@@ -1,5 +1,5 @@
 module observation_testingTools
-   use FDETYPES
+   use FDETYPES_m
    type :: dummyFields_t
       real(kind=RKIND),allocatable, dimension(:,:,:) :: Ex, Ey, Ez, Hx, Hy, Hz
       real(kind=RKIND),allocatable, dimension(:) :: dxe, dye, dze, dxh, dyh, dzh
@@ -48,7 +48,7 @@ contains
    end subroutine create_dummy_fields
 
    subroutine check_shape_real(arr, n_expected, test_err, name)
-      use Observa
+      use Observa_m
       real(kind=RKIND), intent(in), dimension(:, :) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -74,7 +74,7 @@ contains
    end subroutine check_shape_real
 
    subroutine check_shape_complex(arr, n_expected, test_err, name)
-      use Observa
+      use Observa_m
       complex(kind=CKIND), intent(in), dimension(:, :) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -100,7 +100,7 @@ contains
    end subroutine check_shape_complex
 
    subroutine check_size(arr, n_expected, test_err, name)
-      use Observa
+      use Observa_m
       integer, intent(in), dimension(:) :: arr
       integer, intent(in) :: n_expected
       integer, intent(inout) :: test_err
@@ -141,10 +141,6 @@ contains
          arr(i) = (i - 1)*interval
       end do
    end function create_time_array
-
-   function create_limit_type() result(r)
-      type(limit_t) :: r
-   end function
 
    function create_xyz_limit_array(XI,YI,ZI,XE,YE,ZE) result(arr)
       type(XYZlimit_t), dimension(1:6) :: arr
@@ -199,11 +195,12 @@ contains
    end function create_control_flags
 
    function create_base_sgg() result(sgg)
-      type(SGGFDTDINFO) :: sgg
+      type(SGGFDTDINFO_t) :: sgg
+      type(MediaData_t) :: basic_media
       
       sgg%NumMedia = 3
       allocate(sgg%Med(0:sgg%NumMedia))
-      sgg%Med = create_basic_media()
+      sgg%Med = basic_media
       sgg%NumberRequest = 1
       sgg%dt = 0.1_RKIND_tiempo
       sgg%tiempo => create_time_array(100, sgg%dt)
@@ -214,7 +211,16 @@ contains
  
    end function create_base_sgg
 
-   function create_basic_media () result(media)
-      type(MediaData_t) :: media
-   end function create_basic_media
+   function get_temp_dir() result(tmpdir)
+      character(len=BUFSIZE) :: tmpdir
+      integer :: status
+      call GET_ENVIRONMENT_VARIABLE("TMPDIR", tmpdir, status=status)
+      if (status /= 0 .or. len_trim(tmpdir) == 0) &
+         call GET_ENVIRONMENT_VARIABLE("TEMP", tmpdir, status=status)
+      if (status /= 0 .or. len_trim(tmpdir) == 0) &
+         call GET_ENVIRONMENT_VARIABLE("TMP", tmpdir, status=status)
+      if (status /= 0 .or. len_trim(tmpdir) == 0) &
+         tmpdir = "/tmp"
+   end function get_temp_dir
+
 end module

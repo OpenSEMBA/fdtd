@@ -1,10 +1,10 @@
 module interpreta_switches_m
 
-   use FDETYPES
-   use Getargs
+   use FDETYPES_m
+   use Getargs_m
    use EpsMuTimeScale_m
-   use Report
-   use version
+   use Report_m
+   use version_m
 
    implicit none
    private
@@ -129,10 +129,10 @@ module interpreta_switches_m
          factorradius, &
          factordelta
 
-      type(nf2ff_T) ::                         facesNF2FF
-      type(MedioExtra_t) ::                    MEDIOEXTRA
+      type(nf2ff_T) :: facesNF2FF
+      type(MedioExtra_t) :: MEDIOEXTRA
       type(EpsMuTimeScale_input_parameters_t) :: EpsMuTimeScale_input_parameters
-      type(tiempo_t) ::                       time_out2
+      type(tiempo_t) :: time_out2
 
 !pgi        character(len=BUFSIZE_LONG) :: &
       character(len=BUFSIZE) :: &
@@ -258,7 +258,7 @@ contains
 #endif
                call get_secnds(l%time_out2)
                l%time_begin = l%time_out2%segundos
-               WRITE (dubuf, *) 'Paused for (secs) ', pausetime
+               write(dubuf, *) 'Paused for (secs) ', pausetime
                call print11(l%layoutnumber, dubuf)
                do while (l%pausar)
 #ifdef CompileWithMPI
@@ -309,7 +309,7 @@ contains
                GO TO 312
 412            call stoponerror(l%layoutnumber, l%size, 'Invalid cut', .true.)
                statuse = -1
-312            CONTINUE
+312            continue
                l%opcionespararesumeo = trim(adjustl(l%opcionespararesumeo))//' '//trim(adjustl(l%chain))//' '//trim(adjustl(f))
             CASE ('-singlefile')
                l%singlefilewrite = .TRUE.
@@ -426,7 +426,7 @@ contains
                l%conformal_file_input_name = char(0); 
                call getcommandargument(l%chaininput, i, f, l%length, statuse, binaryPath)
                l%conformal_file_input_name = trim(adjustl(f)); 
-               INQUIRE (file=trim(adjustl(f)), EXIST=l%existeNFDE)
+               inquire(file=trim(adjustl(f)), EXIST=l%existeNFDE)
                if (.NOT. l%existeNFDE) then
                   l%input_conformal_flag = .FALSE.; 
                   buff = 'The conformal input file was not found '//trim(adjustl(l%fichin)); 
@@ -1037,7 +1037,7 @@ contains
 !!!fin l%stochastic
 !!!   sgg%nEntradaRoot=trim (adjustl(l%nEntradaRoot))
       !
-      WRITE (chari, '(i5)') l%layoutnumber + 1
+      write(chari, '(i5)') l%layoutnumber + 1
       l%nresumeable2 = trim(adjustl(l%nEntradaRoot))//'_'//trim(adjustl(chari))//'.fields'
       !
 
@@ -1055,15 +1055,15 @@ contains
       !
       !
       if (l%resume_fromold) then
-         INQUIRE (file=trim(adjustl(l%nresumeable2))//'.old', EXIST=resume3)
+         inquire(file=trim(adjustl(l%nresumeable2))//'.old', EXIST=resume3)
       ELSE
-         INQUIRE (file=trim(adjustl(l%nresumeable2)), EXIST=resume3)
+         inquire(file=trim(adjustl(l%nresumeable2)), EXIST=resume3)
       end if
       if (l%resume) then
          if (.NOT. resume3) then
             call stoponerror(l%layoutnumber, l%size, 'l%resume fields not present', .true.); statuse = -1; !goto 668
          end if
-         WRITE (dubuf, *) 'RESUMING simulation ', trim(adjustl(l%nEntradaRoot)), ' until n= ', l%finaltimestep
+         write(dubuf, *) 'RESUMING simulation ', trim(adjustl(l%nEntradaRoot)), ' until n= ', l%finaltimestep
          call print11(l%layoutnumber, dubuf)
       ELSE
          if (resume3 .AND. (.NOT. l%freshstart) .and. (.not. l%run)) then
@@ -1071,11 +1071,11 @@ contains
          ELSEIF (resume3 .and. (l%run)) then
             l%resume = .true.
          ELSE
-            OPEN (35, file=trim(adjustl(l%nresumeable2)))
-            WRITE (35, '(a)') '!END'
+            open(35, file=trim(adjustl(l%nresumeable2)))
+            write(35, '(a)') '!END'
             CLOSE (35, status='DELETE')
-            OPEN (35, file=trim(adjustl(l%nresumeable2))//'.old')
-            WRITE (35, '(a)') '!END'
+            open(35, file=trim(adjustl(l%nresumeable2))//'.old')
+            write(35, '(a)') '!END'
             CLOSE (35, status='DELETE')
          end if
       end if
@@ -1109,16 +1109,16 @@ contains
          !in case of option -n withouth the l%freshstart option -s, it will l%resume or do a fresh start
          !depending on wether the resuming files are present or not
          if (l%resume_fromold) then
-            INQUIRE (file=trim(adjustl(l%nresumeable2))//'.old', EXIST=l%resume)
+            inquire(file=trim(adjustl(l%nresumeable2))//'.old', EXIST=l%resume)
          ELSE
-            INQUIRE (file=trim(adjustl(l%nresumeable2)), EXIST=l%resume)
+            inquire(file=trim(adjustl(l%nresumeable2)), EXIST=l%resume)
          end if
          if (l%resume) then
             if ((l%layoutnumber == 0) .or. ((l%layoutnumber == l%size/2) .and. l%stochastic)) then
                !the temporary
                CLOSE (11)
                l%file11isopen = .false.
-               OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted', POSITION='append')
+               open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted', POSITION='append')
                l%file11isopen = .true.
  !!!           if (l%layoutnumber==0) call insertalogtmp !ojo lo quito aqui porque borra el _log con la info de credits
                if (l%resume_fromold) then
@@ -1132,7 +1132,7 @@ contains
          !!!   !the temporary
          !!!   CLOSE (11)
          !!!   l%file11isopen=.false.
-         !!!   OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+         !!!   open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
          !!!   l%file11isopen=.true.
          !!!   if (l%layoutnumber==0) call insertalogtmp
          !!!   call print11 (l%layoutnumber, 'Doing a new simulation from n=1')
@@ -1149,12 +1149,12 @@ contains
       if ((l%run)) then
 #ifdef keeppause
           !!!solo para el cluster
-         INQUIRE (file='running', EXIST=hayinput)
+         inquire(file='running', EXIST=hayinput)
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
          if (hayinput) then
-            OPEN (9, file='running', FORM='formatted', action='read')
+            open(9, file='running', FORM='formatted', action='read')
             READ (9, '(a)') chain4
             chain4 = trim(adjustl(chain4))
             CLOSE (9)
@@ -1173,8 +1173,8 @@ contains
          call MPI_Barrier(SUBCOMM_MPI, l%ierr)
 #endif
          if (l%layoutnumber == 0) then
-            OPEN (38, file='running')
-            WRITE (38, '(a)') trim(adjustl(l%opcionespararesumeo))
+            open(38, file='running')
+            write(38, '(a)') trim(adjustl(l%opcionespararesumeo))
             CLOSE (38)
          end if
       end if
@@ -1190,7 +1190,7 @@ contains
             !the temporary
             CLOSE (11)
             l%file11isopen = .false.
-            OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             donde = 0
             do while (donde == 0)
@@ -1211,7 +1211,7 @@ contains
             !
          !!!!!!!!!        CLOSE (11, status='delete')
          !!!!!!!!!        l%file11isopen=.false.
-            OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             donde = 0
             do while (donde == 0)
@@ -1222,13 +1222,13 @@ contains
             l%slicesoriginales = trim(adjustl(l%chdummy))
             CLOSE (11)
             l%file11isopen = .false.
-            OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted', POSITION='append')
+            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted', POSITION='append')
             l%file11isopen = .true.
             if (l%layoutnumber == 0) call insertalogtmp(l)
          ELSE
             CLOSE (11)
             l%file11isopen = .false.
-            OPEN (11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
+            open(11, file=trim(adjustl(l%nEntradaRoot))//'_Report.txt', FORM='formatted')
             l%file11isopen = .true.
             if (l%layoutnumber == 0) call insertalogtmp(l)
          end if
@@ -1236,40 +1236,40 @@ contains
          call get_secnds(l%time_out2)
          call print_credits(l)
 #ifdef CompileWithReal8
-         WRITE (dubuf, *) 'Compiled with Double precision (real*8)'
+         write(dubuf, *) 'Compiled with Double precision (real*8)'
          call print11(l%layoutnumber, dubuf)
 #endif
 #ifdef CompileWithReal4
-         WRITE (dubuf, *) 'Compiled with Single precision (real*4)'
+         write(dubuf, *) 'Compiled with Single precision (real*4)'
          call print11(l%layoutnumber, dubuf)
 #endif
 #ifdef CompileWithReal16
-         WRITE (dubuf, *) 'Compiled with Quadruple precision (real*16)'
+         write(dubuf, *) 'Compiled with Quadruple precision (real*16)'
          call print11(l%layoutnumber, dubuf)
 #endif
-         WRITE (dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
+         write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       !!!call print11 (l%layoutnumber, dubuf,.true.)
          write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
-         WRITE (dubuf, *) 'Launched on              ', l%time_out2%fecha(7:8), '/', l%time_out2%fecha(5:6), '/', &
+         write(dubuf, *) 'Launched on              ', l%time_out2%fecha(7:8), '/', l%time_out2%fecha(5:6), '/', &
          &                l%time_out2%fecha(1:4), ' ', l%time_out2%hora(1:2), ':', l%time_out2%hora(3:4)
       !!!call print11 (l%layoutnumber, dubuf,.true.)
          write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
-         WRITE (dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
+         write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       !!!call print11 (l%layoutnumber, dubuf,.true.)
          write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
-         WRITE (dubuf, '(a)') 'Launched with total options '
+         write(dubuf, '(a)') 'Launched with total options '
       !!!call print11 (l%layoutnumber, dubuf,.true.)
          write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
-         WRITE (dubuf, *) trim(adjustl(l%opcionestotales))
+         write(dubuf, *) trim(adjustl(l%opcionestotales))
       !!!call print11 (l%layoutnumber, dubuf,.true.)
          write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
-         WRITE (dubuf, '(a)') 'If later resuming use compulsory options '
+         write(dubuf, '(a)') 'If later resuming use compulsory options '
       !!!call print11 (l%layoutnumber, dubuf,.true.)
          write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
-         WRITE (dubuf, *) trim(adjustl(l%opcionespararesumeo))
+         write(dubuf, *) trim(adjustl(l%opcionespararesumeo))
       !!!call print11 (l%layoutnumber, dubuf,.true.)
          write (11, '(a)') trim(adjustl(dubuf)) !a capon para que el l%stochastic pueda resumear
-         WRITE (dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
+         write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
          call print11(l%layoutnumber, dubuf)
       end if
       !
@@ -1303,7 +1303,7 @@ contains
       character(len=BUFSIZE) :: dubuf
       integer(kind=4) :: MYUNIT11
       call OffPrint !no reimprimas, esto ya estaba por pantalla
-      OPEN (newunit=myunit11, file='SEMBA_FDTD_temp.log')
+      open(newunit=myunit11, file='SEMBA_FDTD_temp.log')
       do
          read (myunit11, '(1024a)', end=7211) dubuf
          dubuf = '&'//dubuf !para respetar los espacios
@@ -1336,7 +1336,7 @@ contains
       call print11(l%layoutnumber, program_name)
       call print11(l%layoutnumber, '=========================')
 
-      WRITE (dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
+      write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       call print11(l%layoutnumber, dubuf)
       call print11(l%layoutnumber, 'Compilation date: '//compilation_date)
       call print11(l%layoutnumber, 'Compiler Id: '//compiler_id)
@@ -1350,14 +1350,14 @@ contains
          call print11(l%layoutnumber, 'cmake compilation flags: '//compilation_flags)
       end if
       call print11(l%layoutnumber, dubuf)
-      WRITE (dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
+      write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       call print11(l%layoutnumber, dubuf)
       call print11(l%layoutnumber, 'All rights reserved by the University of Granada (Spain)')
       call print11(l%layoutnumber, '       Contact person: Luis D. Angulo <lmdiazangulo@ugr.es>')
       call print11(l%layoutnumber, ' ')
       !*******************************************************************************
 
-      WRITE (dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
+      write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       call print11(l%layoutnumber, dubuf)
 #ifdef CompileWithMPI
       call print11(l%layoutnumber, 'Compiled WITH MPI support')
@@ -1374,10 +1374,10 @@ contains
 #ifdef CompileWithSMBJSON
       call print11(l%layoutnumber, 'Compiled WITH SMBJSON support')
 #endif
-      WRITE (dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
+      write(dubuf, *) SEPARADOR//SEPARADOR//SEPARADOR
       call print11(l%layoutnumber, dubuf)
       call get_secnds(l%time_out2)
-      WRITE (dubuf, *) 'Launched on              ', l%time_out2%fecha(7:8), '/', l%time_out2%fecha(5:6), '/', &
+      write(dubuf, *) 'Launched on              ', l%time_out2%fecha(7:8), '/', l%time_out2%fecha(5:6), '/', &
       &                l%time_out2%fecha(1:4), ' ', l%time_out2%hora(1:2), ':', l%time_out2%hora(3:4)
       call print11(l%layoutnumber, dubuf)
       if (l%layoutnumber == 0) print *, 'Highest integer ', huge(1_4)
@@ -1743,7 +1743,7 @@ contains
 1762           call stoponerror(l%layoutnumber, l%size, 'Invalid -l%mpidir option', .true.)
                statuse = -1
                goto 667
-2762           CONTINUE
+2762           continue
             CASE ('-h')
                call print_credits(l)
                call print_help(l)
@@ -1790,7 +1790,7 @@ contains
                      statuse = -1
                      goto 667
                   end if
-                  INQUIRE (file=trim(adjustl(l%fichin))//NFDEEXTENSION, EXIST=l%existeNFDE)
+                  inquire(file=trim(adjustl(l%fichin))//NFDEEXTENSION, EXIST=l%existeNFDE)
                   if (.NOT. l%existeNFDE) then
                      buff = 'The input file was not found '//trim(adjustl(l%fichin))//NFDEEXTENSION
                      call stoponerror(l%layoutnumber, l%size, buff, .true.)
@@ -1798,14 +1798,14 @@ contains
                      goto 667
                   end if
 !aniadido para chequear que no haya .conf sin haber invocado el -conf 15/12/16 sgg
-                  INQUIRE (file=trim(adjustl(l%fichin))//CONFEXTENSION, EXIST=l%existeconf)
+                  inquire(file=trim(adjustl(l%fichin))//CONFEXTENSION, EXIST=l%existeconf)
                   if ((l%existeconf) .AND. (.not. (l%input_conformal_flag))) then
  buff = 'No -conf issued but existing file '//trim(adjustl(l%fichin))//confEXTENSION//' . Either remove file or relaunch with -conf'
                      call stoponerror(l%layoutnumber, l%size, buff, .true.)
                      statuse = -1
                      goto 667
                   end if
-                  INQUIRE (file=trim(adjustl(l%fichin))//CMSHEXTENSION, EXIST=l%existecmsh)
+                  inquire(file=trim(adjustl(l%fichin))//CMSHEXTENSION, EXIST=l%existecmsh)
                   if ((l%existecmsh) .AND. (.not. (l%input_conformal_flag))) then
  buff = 'No -conf issued but existing file '//trim(adjustl(l%fichin))//CMSHEXTENSION//' . Either remove file or relaunch with -conf'
                      call stoponerror(l%layoutnumber, l%size, buff, .true.)
@@ -1885,9 +1885,9 @@ contains
                   block
                      character(len=255) :: cwd
                      call getcwd(cwd)
-                     WRITE (*, *) TRIM(cwd)
+                     write(*, *) TRIM(cwd)
                   end block
-                  INQUIRE (file=trim(adjustl(l%fichin))//NFDEEXTENSION, EXIST=l%existeNFDE)
+                  inquire(file=trim(adjustl(l%fichin))//NFDEEXTENSION, EXIST=l%existeNFDE)
                   if (.NOT. l%existeNFDE) then
                      buff = 'The input file was not found '//trim(adjustl(l%fichin))//NFDEEXTENSION
                      call stoponerror(l%layoutnumber, l%size, buff, .true.)

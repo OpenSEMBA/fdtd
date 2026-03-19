@@ -1,6 +1,6 @@
-module geometry_mod
+module geometry_m
 
-    use conformal_types_mod
+    use conformal_types_m
 
 contains
 

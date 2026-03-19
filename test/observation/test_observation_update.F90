@@ -1,10 +1,10 @@
 integer function test_update_time_movie_observation() bind(C) result(err)
-    use FDETYPES
+    use FDETYPES_m
     use FDETYPES_TOOLS
-    use Observa
+    use Observa_m
     use observation_testingTools
 
-    type(SGGFDTDINFO) :: sgg
+    type(SGGFDTDINFO_t) :: sgg
     type(media_matrices_t) :: media
     type(taglist_t) :: tag_numbers
     logical :: ThereAreObservation, ThereAreWires, ThereAreFarFields
@@ -37,7 +37,7 @@ integer function test_update_time_movie_observation() bind(C) result(err)
     SINPML_fullsize = create_limit_t(0,4,0,4,0,4,3,3,3)
 
     facesNF2FF = create_facesNF2FF(.false., .false., .false., .false., .false., .false.)
-    control = create_control_flags(0, 0, 3, 10, "entryRoot", "wireflavour",&
+    control = create_control_flags(0, 0, 3, 10, trim(get_temp_dir())//'/entryRoot', "wireflavour",&
                                     .false., .false., .false., .false., .false.,&
                                     facesNF2FF)
 
@@ -61,7 +61,7 @@ integer function test_update_time_movie_observation() bind(C) result(err)
 
     contains
     subroutine set_sgg_data(baseSGG)
-        type(SGGFDTDINFO), intent(inout) :: baseSGG
+        type(SGGFDTDINFO_t), intent(inout) :: baseSGG
         allocate(baseSGG%Observation(1))
         baseSGG%Observation(1) = define_time_movie_observation()
     end subroutine

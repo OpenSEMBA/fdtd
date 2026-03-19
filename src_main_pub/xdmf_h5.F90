@@ -1,7 +1,7 @@
-module xdmf_h5
+module xdmf_h5_m
 #ifdef CompileWithHDF
 
-    use fdetypes
+    use FDETYPES_m
     use HDF5
     implicit none
  
@@ -55,10 +55,10 @@ contains
 #endif
 
 !xdmf part
-        OPEN (18, FILE=trim(adjustl(filename))//'.xdmf', FORM='formatted')
-        WRITE (18,*) '<Xdmf>'
-        WRITE (18,*) '<Domain>'
-        WRITE (18,*) '<Grid Name="GridTime" GridType="Collection" CollectionType="Temporal">'
+        open(18, FILE=trim(adjustl(filename))//'.xdmf', FORM='formatted')
+        write(18,*) '<Xdmf>'
+        write(18,*) '<Domain>'
+        write(18,*) '<Grid Name="GridTime" GridType="Collection" CollectionType="Temporal">'
 
 
    end subroutine openh5file
@@ -101,43 +101,43 @@ contains
 
         !el .xdmf como usualmente
         !HDF5 transposes matrices
-        WRITE (charc,'(e19.9e3)') attindi  !'(i9)') indi !
+        write(charc,'(e19.9e3)') attindi  !'(i9)') indi !
         dsetname = 'data'         
         DATA_dims(1) = maxXabs - minXabs + 1
         DATA_dims(2) = maxYabs - minYabs + 1
         DATA_dims(3) = maxZabs - minZabs + 1
-        WRITE (18, '(a)') '<Grid Name="IntGrid" GridType="Uniform"  CollectionType="Spatial">>'
-        WRITE (18, '(a)') '<Time Value="' // trim (adjustl(charc)) // '" />'
-        WRITE (18, '(a,3i5,a)') '<Topology TopologyType="3DCoRectMesh" Dimensions="', DATA_dims(3), &
+        write(18, '(a)') '<Grid Name="IntGrid" GridType="Uniform"  CollectionType="Spatial">>'
+        write(18, '(a)') '<Time Value="' // trim (adjustl(charc)) // '" />'
+        write(18, '(a,3i5,a)') '<Topology TopologyType="3DCoRectMesh" Dimensions="', DATA_dims(3), &
         & DATA_dims(2), DATA_dims(1), '">'
-        WRITE (18, '(a)') '</Topology>'
-        WRITE (18, '(a)') '<Geometry Type="ORIGIN_DXDYDZ">'
-        WRITE (18, '(a)') '<DataItem Format="XML" Dimensions="3">'
+        write(18, '(a)') '</Topology>'
+        write(18, '(a)') '<Geometry Type="ORIGIN_DXDYDZ">'
+        write(18, '(a)') '<DataItem Format="XML" Dimensions="3">'
         if (vtkindex) then
-           WRITE (18, *)  minZabs_primero,minYabs_primero,minXabs_primero !ojo solo funciona bien el escalado en mallados uniformes salva'oct14
+           write(18, *)  minZabs_primero,minYabs_primero,minXabs_primero !ojo solo funciona bien el escalado en mallados uniformes salva'oct14
         else
-           WRITE (18, *) linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero !ojo solo funciona bien el escalado en mallados uniformes salva'oct14
-        endif
-        WRITE (18, '(a)') '</DataItem>'
-        WRITE (18, '(a)') '<DataItem Format="XML" Dimensions="3">'
-        WRITE (18, *) dz_minZabs,dy_minYabs,dx_minXabs
-        WRITE (18, '(a)') '</DataItem>'
-        WRITE (18, '(a)') '</Geometry>'
-        WRITE (18, '(a)') '<Attribute Name="IntValues" Center="Node">'
-        WRITE (18, '(a,4i5,a)') '<DataItem ItemType="HyperSlab" Dimensions="', 1, DATA_dims(3), &
+           write(18, *) linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero !ojo solo funciona bien el escalado en mallados uniformes salva'oct14
+        end if
+        write(18, '(a)') '</DataItem>'
+        write(18, '(a)') '<DataItem Format="XML" Dimensions="3">'
+        write(18, *) dz_minZabs,dy_minYabs,dx_minXabs
+        write(18, '(a)') '</DataItem>'
+        write(18, '(a)') '</Geometry>'
+        write(18, '(a)') '<Attribute Name="IntValues" Center="Node">'
+        write(18, '(a,4i5,a)') '<DataItem ItemType="HyperSlab" Dimensions="', 1, DATA_dims(3), &
         & DATA_dims(2), DATA_dims(1), '" Format="XML">'
-        WRITE (18, '(a)') '<DataItem Dimensions="3 4" Format="XML">'
-        WRITE (18, '(4i5)') offset(4), 0, 0, 0
-        WRITE (18, '(4i5)') 1, 1, 1, 1
-        WRITE (18, '(4i5)') 1, DATA_dims(3), DATA_dims(2), DATA_dims(1)
-        WRITE (18, '(a)') '</DataItem>'
-        WRITE (18, '(a,4i5,a)') '<DataItem Format="HDF" NumberType="Float" Precision="4" Dimensions="',&
+        write(18, '(a)') '<DataItem Dimensions="3 4" Format="XML">'
+        write(18, '(4i5)') offset(4), 0, 0, 0
+        write(18, '(4i5)') 1, 1, 1, 1
+        write(18, '(4i5)') 1, DATA_dims(3), DATA_dims(2), DATA_dims(1)
+        write(18, '(a)') '</DataItem>'
+        write(18, '(a,4i5,a)') '<DataItem Format="HDF" NumberType="Float" Precision="4" Dimensions="',&
         &  finalstep, DATA_dims(3), DATA_dims(2), DATA_dims(1), '">'
-        WRITE (18, '(a)') trim (adjustl(filename)) // '.h5:/' // trim (adjustl(dsetname))
-        WRITE (18, '(a)') '</DataItem>'
-        WRITE (18, '(a)') '</DataItem>'
-        WRITE (18, '(a)') '</Attribute>'
-        WRITE (18, '(a)') '</Grid>'
+        write(18, '(a)') trim (adjustl(filename)) // '.h5:/' // trim (adjustl(dsetname))
+        write(18, '(a)') '</DataItem>'
+        write(18, '(a)') '</DataItem>'
+        write(18, '(a)') '</Attribute>'
+        write(18, '(a)') '</Grid>'
 
                  
    end subroutine writeh5file
@@ -184,9 +184,9 @@ contains
         call h5close_f (error)
         !
                         !
-        WRITE (18, '(a)') '</Grid>'
-        WRITE (18, '(a)') '</Domain>'
-        WRITE (18, '(a)') '</Xdmf>'
+        write(18, '(a)') '</Grid>'
+        write(18, '(a)') '</Domain>'
+        write(18, '(a)') '</Xdmf>'
         CLOSE (18)
         !
         DEALLOCATE(DATA_dims)
@@ -222,7 +222,7 @@ contains
                 else
                     print *,'Buggy error in valor3d. '
                     stop
-                endif  
+                end if  
             else 
                 if (pasadas==1) then   
                     fichin = trim (adjustl(filename))//'_mod'
@@ -231,13 +231,13 @@ contains
                 else
                     print *,'Buggy error in valor3d. '
                     stop
-                endif
-            endif
+                end if
+            end if
             
             
             if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase
                 call openh5file(fichin,finalstep,minXabs,maxXabs, minYabs,maxYabs, minZabs,maxZabs)
-            endif
+            end if
  
             valor3d = 0.0_RKIND
             att=0.0_RKIND
@@ -259,12 +259,12 @@ contains
                                     linez_minZabs_primero,liney_minYabs_primero,linex_minXabs_primero, &
                                     dz_minZabs,dy_minYabs,dx_minXabs,&
                                     minZabs_primero,minYabs_primero,minXabs_primero,finalstep,vtkindex)
-                endif
+                end if
             end do
             
             if (.not.(((fieldob == iMEC).or.(fieldob ==iMHC)).and.(pasadas ==2))) then ! no tiene sentido esccribir la fase
                 call closeh5file(finalstep,att)
-            endif
+            end if
         end do buclepasadas
     
         close(myunit)
@@ -278,4 +278,4 @@ contains
 
 #endif               
 
-end module xdmf_h5 
+end module xdmf_h5_m 

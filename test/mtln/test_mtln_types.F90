@@ -1,6 +1,6 @@
 integer function test_derived_type_submodule() bind(C) result(err)
 
-   use mtln_solver_mod
+   use mtln_solver_m
    
    implicit none
    
@@ -40,7 +40,7 @@ end function
 
 integer function test_mtln_types() bind(C) result(err)
 
-   use mtln_types_mod
+   use mtln_types_m
    implicit none
 
    

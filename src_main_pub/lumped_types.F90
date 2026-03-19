@@ -1,8 +1,8 @@
 
     
-module lumped_vars
+module lumped_vars_m
     !structures needed by the Lumped
-   use fdetypes   
+   use FDETYPES_m   
    
    type, public  :: Nodes_t
       real(kind=RKIND) :: EfieldPrev,EfieldPrevPrev,Jcur,sigmaEffResistInduct,alignedDeltaE ,transversalDeltaHa ,transversalDeltaHb, currentCoeff 
@@ -22,7 +22,7 @@ module lumped_vars
       real(kind=RKIND) :: g1_usual_devia
       real(kind=RKIND) :: g2a_usual_devia,g2b_usual_devia
 #endif 
-   END type Nodes_t
+   end type Nodes_t
 
 
    type, public  :: LumpedElem_t
@@ -32,4 +32,4 @@ module lumped_vars
 
    
 
-end module lumped_vars
+end module lumped_vars_m
