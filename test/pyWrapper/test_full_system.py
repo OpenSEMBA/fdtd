@@ -18,7 +18,7 @@ def test_lineIntegralProbe_wire(tmp_path):
     assert np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
 
-@no_mtln_skip
+@pytest.mark.skip
 def test_lineIntegralProbe_unshielded(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)

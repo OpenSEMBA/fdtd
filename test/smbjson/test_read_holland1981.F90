@@ -90,7 +90,7 @@ contains
       allocate(ex%Sonda%collection(1)%cordinates(1))
       ex%Sonda%collection(1)%len_cor = 1
       ex%Sonda%collection(1)%cordinates(1)%tag = "mid_point"
-      ex%Sonda%collection(1)%cordinates(1)%Xi = 6 ! Segment id as tag.
+      ex%Sonda%collection(1)%cordinates(1)%Xi = 8 ! nd value of mid-point wire segment (nGlobal_offset=2, local_idx=6, nd = 2+6 = 8).
       ex%Sonda%collection(1)%cordinates(1)%Yi = 0
       ex%Sonda%collection(1)%cordinates(1)%Zi = 0
       ex%Sonda%collection(1)%cordinates(1)%Or = NP_COR_WIRECURRENT
