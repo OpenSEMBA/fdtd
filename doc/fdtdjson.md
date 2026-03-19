@@ -7,11 +7,11 @@ This document assumes that you are familiar with the basic JSON notation, a brie
 
 The following are examples of valid inputs:
 
- 1. An empty space illuminated by a plane wave: [planewave.fdtd.json](testData/cases/planewave.fdtd.json). The field at a point close to the center is recorded.
- 2. A thin straight wire illuminated by a plane wave: [holland1981.fdtd.json](testData/cases/holland1981.fdtd.json) which aims to replicate the case described in https://doi.org/10.1109/TEMC.1981.303899. It contains a probe which records the wire at the middle of the wire.
- 3. A current injection which mimics a lightning strike on a square metallic surface: [currentinjection.fdtd.json](testData/cases/currentInjection.fdtd.json). It contains two bulk current probes to measure the current at the entry and exit lines.
- 4. A shielded pair of wires fed by a voltage source in one of its ends: [shieldedPair.fdtd.json](testData/cases/shieldedPair.fdtd.json). The interior of the shield uses a multiconductor transmission line (MTL) algorithm to evolve the common mode currents which are induced in the shield and propagated inside using a transfer impedance.
- 5. A multiconductor transmission line network (MTLN) case which includes three cable bundles with a shared junction: [mtln.fdtd.json](testData/cases/mtln.fdtd.json).
+ 1. An empty space illuminated by a plane wave: [planewave.fdtd.json](testData/input_examples/planewave.fdtd.json). The field at a point close to the center is recorded.
+ 2. A thin straight wire illuminated by a plane wave: [holland1981.fdtd.json](testData/input_examples/holland1981.fdtd.json) which aims to replicate the case described in https://doi.org/10.1109/TEMC.1981.303899. It contains a probe which records the wire at the middle of the wire.
+ 3. A current injection which mimics a lightning strike on a square metallic surface: [currentinjection.fdtd.json](testData/input_examples/currentInjection.fdtd.json). It contains two bulk current probes to measure the current at the entry and exit lines.
+ 4. A shielded pair of wires fed by a voltage source in one of its ends: [shieldedPair.fdtd.json](testData/input_examples/shieldedPair.fdtd.json). The interior of the shield uses a multiconductor transmission line (MTL) algorithm to evolve the common mode currents which are induced in the shield and propagated inside using a transfer impedance.
+ 5. A multiconductor transmission line network (MTLN) case which includes three cable bundles with a shared junction: [mtln.fdtd.json](testData/input_examples/mtln.fdtd.json).
 
 ## FDTD-JSON objects description
 All units are assumed to be SI-MKS, except when specified otherwise.
@@ -463,11 +463,14 @@ The values are defined defined as follows:
   + `[resistance]` which defaults to `0.0`,
   + `[inductance]` which defaults to `0.0`,
   + `[capacitance]` which defaults to `1e22`.
-+ 2-port SPICE models can used in a termination. In this case the `type` is `circuit`, and is defined with:
++ 2-terminals SPICE models can used in a termination. In this case the `type` is `circuit`, and is defined with:
   + `[file]` which is the name of the file where the SPICE model is defined 
   + `[name]` which is the name of the subcircuit as defined inside `file`
-
-There is an optional key which is needed in case the termination is attached to a N-port circuit, `circuitPort`. This must be an integer which indicates to which port in the circuit defined in the [subcircuits](#subcircuits) is attached.
+  + `[terminal]` which is the number of the subcircuit terminals the termination is connected to. It can be equal to 1 or 2, depending on the side of the SPICE model the termination is connected to. By default it equals 1, meaning that the termination is connected to the first external node in the netlist definition 
++ N-terminals SPICE models can be used to connect a series of terminations to a subcircuit. The `type` is `network`, and is defined with:
+  + `[file]` which is the name of the file where the SPICE model is defined 
+  + `[name]` which is the name of the subcircuit as defined inside `file`
+  + `[node]` which is the subcircuit node the termination is connected to. Generally, subcircuits will have their terminals external nodes named in non-numerical way. `[node]` is an integer that refers to the position of the node in the netlist 
 
 **Example:**
 
@@ -481,7 +484,7 @@ There is an optional key which is needed in case the termination is attached to 
 ```
 #### `SPICE terminations`
 
-As with the rest of terminations, SPICE terminations have to be equivalents to 2-port networks, i.e, the model in `file` can be composed of an arbitrary number of components, but it must have only two external nodes. 
+There are two types of SPICE terminations, `circuit` and `network`. `circuit` terminations are equivalent to 2-terminal networks. The netlist representing the connection can be composed of an arbitrary number of components, but it must have only two external nodes. 
 
 **Example:**
 
@@ -494,7 +497,22 @@ As with the rest of terminations, SPICE terminations have to be equivalents to 2
 }
 ```
 
-`ListOfComponents.lib` is a file where one or more SPICE subcircuits are defined. The file does not need to contain only the subcircuit that is going to be used in the termination. The particular subcircuit among those defined in the file is selected using the key `name`.
+`ListOfComponents.lib` is a file where one or more SPICE subcircuits (definitions beggining with `.subckt`) are defined. The file does not need to contain only the subcircuit that is going to be used in the termination. The particular subcircuit among those defined in the file is selected using the key `name`.
+
+`network` represent a series of wires connected to the same circuit. The subcircuit node that the wire is connected to is defined with the keyword `node`:
+
+```json
+{
+    "name" : "NetworkTerminal",
+    "id" : 5,
+    "type" : "terminal", 
+    "terminations" : [ {"type": "network", "file": "ListOfComponents.lib", "name": "Component_2", "node" : 1},
+                       {"type": "network", "file": "ListOfComponents.lib", "name": "Component_2", "node" : 2},
+                       {"type": "network", "file": "ListOfComponents.lib", "name": "Component_2", "node" : 3} ]
+}
+```
+
+In this case, the three wires of a e-conductor cable are connected to the nodes of a subcircuit. This circuit might have more external nodes, connected to wires in another cable.
 
 ### `connector`
 
@@ -559,17 +577,6 @@ Associations with cables can contain the following inputs:
     "initialConnectorId": 24
 }
 ```
-
-## `[subCircuits]`
-
-A series of terminals connected together (belonging to the same junction) can be connected to a N-port SPICE circuit. In that case, each of these *junction circuits* have to described separately in the `subCircuits` section.
-This section stores associations between `materials` of type `circuit` and `elements` using their respective `id`s as follows:
-
-+ `<materialId>`: A single integer indicating the `id` of a material of type `circuit` which must be present in the `materials` list.
-+ `<elementIds>`: A list of with a single `id`. This id must correspond to an element of type `node`, associated to the `coordinateId` shared by all the polylines connected to the subcircuit.
-+ `<name>`: A **unique** name that will be used to identify the ports of the subcircuit.
-
-If a terminal represents a connection to a subcircuit described in this sections, the key `circuitPort` has to be present in the description of the terminal.
 
 ## `[probes]`
 
@@ -748,7 +755,7 @@ Additionally, a `domain` can contain a `[magnitudeFile]` as specified in [source
 
 This entry is an array which stores all the electromagnetic sources of the simulation case. Each source is a JSON object which must contain the following entries:
 
-+ `<magnitudeFile>` contains a relative path to the plain text file which will be used as a magnitude for this source. This file must contain two columns, with the first stating the time and the second one the magnitude value; an example magnitude file can be found at [gauss.exc](testData/cases/gauss.exc).
++ `<magnitudeFile>` contains a relative path to the plain text file which will be used as a magnitude for this source. This file must contain two columns, with the first stating the time and the second one the magnitude value; an example magnitude file can be found at [gauss.exc](testData/excitations/gauss.exc).
 + `<type>` must be a label of the ones defined below. Some examples of source `type` are `planewave` or `nodalSource`.
 + `<elementIds>` is an array of integers which must exist within the `mesh` `elements` list. These indicate the geometrical place where this source is located. The `type` and number of the allowed elements depends on the source `type` and can be check in the descriptions of each source object, below.
 

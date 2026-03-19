@@ -295,18 +295,12 @@ class FDTD():
                 if 'magnitudeFile' in p:
                     res.append(p['magnitudeFile'])
 
-        # .model files in circuit type materials.
-        if 'materials' in self._input:
-            for p in self._input['materials']:
-                if 'file' in p:
-                    res.append(p['file'])
-
         # .model files in terminations.
         if 'materials' in self._input:
             for p in self._input['materials']:
                 if 'terminations' in p:
                     for t in p['terminations']:
-                        if 'file' in t:
+                        if 'file' in t and not t['file'] in res:
                             res.append(t['file'])
 
         return res
