@@ -75,6 +75,7 @@ contains
       ! sonda
       ex%Sonda%length = 1
       ex%Sonda%length_max = 1
+      ex%Sonda%len_cor_max = 1
       allocate(ex%Sonda%collection(1))
       ex%Sonda%collection(1)%outputrequest = "mid_point"
       ex%Sonda%collection(1)%type1 = NP_T1_PLAIN

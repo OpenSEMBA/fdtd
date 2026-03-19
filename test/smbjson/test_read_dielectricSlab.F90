@@ -88,7 +88,7 @@ contains
       expected%dielRegs%vols(1)%n_C1P = 0
       expected%dielRegs%vols(1)%n_C2P = 1
       expected%dielRegs%vols(1)%sigma = 0.0_RKIND
-      expected%dielRegs%vols(1)%eps = 1.3_RKIND*EPSILON_VACUUM
+      expected%dielRegs%vols(1)%eps = 2.1_RKIND*EPSILON_VACUUM
       expected%dielRegs%vols(1)%mu = MU_VACUUM
       expected%dielRegs%vols(1)%sigmam = 0.0_RKIND
       expected%dielRegs%vols(1)%c2P%Or = 0
@@ -102,7 +102,7 @@ contains
 
       ! Expected probes
       ! sonda
-      expected%Sonda%len_cor_max = 0
+      expected%Sonda%len_cor_max = 3
       expected%Sonda%length = 3
       expected%Sonda%length_max = 3
       allocate(expected%Sonda%collection(3))
