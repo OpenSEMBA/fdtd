@@ -1384,7 +1384,69 @@ def test_bulk_current_negative_offset_in_x(tmp_path):
     assert np.corrcoef(probeTotal['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.corrcoef(probeL['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
-    
+
+def _run_four_probes(tmp_path, json_filename):
+    """Helper: run a four-probe bulk-current case and return the four Probe objects
+    together with the interpolated excitation evaluated at the BC_LL time grid."""
+    solver = FDTD(
+        input_filename=CASES_FOLDER + 'bulk_current_four_probes/' + json_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path
+    )
+    solver.run()
+
+    exc_time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    exc_val  = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
+
+    probe_LL = Probe(solver.getSolvedProbeFilenames("BC_LL")[0])
+    probe_LU = Probe(solver.getSolvedProbeFilenames("BC_LU")[0])
+    probe_UU = Probe(solver.getSolvedProbeFilenames("BC_UU")[0])
+    probe_UL = Probe(solver.getSolvedProbeFilenames("BC_UL")[0])
+
+    probe_time = probe_LL["time"].to_numpy()
+    exc_interp = np.interp(probe_time, exc_time, exc_val)
+
+    return probe_LL, probe_LU, probe_UU, probe_UL, exc_interp
+
+def test_bulk_current_four_probes_X_oriented(tmp_path):
+    # A nodal current source runs along X through cell (23,23).
+    # Four bulk-current probes are arranged in the YZ plane at x=4:
+    #   BC_LL and BC_LU and BC_UL lie outside the wire path -> near zero.
+    #   BC_UU contains the wire -> correlates with the excitation.
+    probe_LL, probe_LU, probe_UU, probe_UL, exc_interp = \
+        _run_four_probes(tmp_path, 'bulk_currents_X_oriented.fdtd.json')
+
+    assert np.corrcoef(exc_interp, probe_UU["current"].to_numpy())[0, 1] > 0.9999
+    assert np.allclose(probe_LL["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
+
+def test_bulk_current_four_probes_Y_oriented(tmp_path):
+    # A nodal current source runs along Y through cell (23,23).
+    # Four bulk-current probes are arranged in the XZ plane at y=4:
+    #   BC_LL and BC_LU and BC_UL lie outside the wire path -> near zero.
+    #   BC_UU contains the wire -> correlates with the excitation.
+    probe_LL, probe_LU, probe_UU, probe_UL, exc_interp = \
+        _run_four_probes(tmp_path, 'bulk_currents_Y_oriented.fdtd.json')
+
+    assert np.corrcoef(exc_interp, probe_UU["current"].to_numpy())[0, 1] > 0.9999
+    assert np.allclose(probe_LL["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
+
+def test_bulk_current_four_probes_Z_oriented(tmp_path):
+    # A nodal current source runs along Z through cell (23,23).
+    # Four bulk-current probes are arranged in the XY plane at z=4:
+    #   BC_LL and BC_LU and BC_UL lie outside the wire path -> near zero.
+    #   BC_UU contains the wire -> correlates with the excitation.
+    probe_LL, probe_LU, probe_UU, probe_UL, exc_interp = \
+        _run_four_probes(tmp_path, 'bulk_currents_Z_oriented.fdtd.json')
+
+    assert np.corrcoef(exc_interp, probe_UU["current"].to_numpy())[0, 1] > 0.9999
+    assert np.allclose(probe_LL["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
+
 @mtln_skip
 def test_conformal_impedance_cylinder_single_wire(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'
