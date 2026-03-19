@@ -3,7 +3,7 @@ module circuit_m
     use ngspice_interface_m
     use mtln_types_m, only: node_source_t, SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
     use Report_m, only: WarnErrReport
-    use FDETYPES_m, only: RKIND
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO, SINGLE
     implicit none
 
     type string_t
@@ -13,17 +13,17 @@ module circuit_m
 
     type source_t
         logical :: has_source = .false.
-        real(kind=rkind), dimension(:), allocatable :: time
-        real(kind=rkind), dimension(:), allocatable :: value
+        real(kind=RKIND_TIEMPO), dimension(:), allocatable :: time
+        real(kind=RKIND), dimension(:), allocatable :: value
         integer :: source_type
     contains 
         procedure :: interpolate
     end type
 
     type VI_t
-        real(kind=rkind) :: voltage
-        real(kind=rkind) :: current
-        real(kind=rkind) :: time
+        real(kind=RKIND) :: voltage
+        real(kind=RKIND) :: current
+        real(kind=RKIND_TIEMPO) :: time
     end type
 
     type nodes_t
@@ -34,7 +34,7 @@ module circuit_m
 
     type, public :: circuit_t
         character(len=:), allocatable :: name
-        real(kind=rkind) :: time = 0.0_rkind, dt = 0.0_rkind
+        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 0.0
         logical :: errorFlag = .false.
         type(nodes_t) :: nodes, saved_nodes   
 
@@ -65,7 +65,8 @@ contains
 
     real(kind=rkind) function interpolate(this, time, dt) result(res)
         class(source_t) :: this
-        real(kind=rkind) :: time, dt, x1,x2, y1, y2
+        real(kind=RKIND_TIEMPO) :: time, dt
+        real(kind=RKIND) :: x1,x2, y1, y2
         integer :: index
         real(kind=rkind), dimension(:), allocatable :: timediff
         timediff = this%time - time + dt
@@ -135,7 +136,8 @@ contains
 
     type(source_t) function setSource(source_path) result(res)
         character(*), intent(in) :: source_path
-        real(kind=rkind) :: time, value
+        real(kind=RKIND_TIEMPO) :: time
+        real(kind=RKIND) ::value
         integer :: io, line_count, i
         
         if (source_path == "" ) then 
@@ -208,7 +210,7 @@ contains
 
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
-        real(kind=rkind), intent(in) :: finalTime, dt
+        real(kind=RKIND_TIEMPO), intent(in) :: finalTime, dt
         character(20) :: charTime
         real(kind=rkind) :: time
 
@@ -222,10 +224,10 @@ contains
 
     subroutine setModStopTimes(this, dt)
         class(circuit_t) :: this
-        real(kind=rkind), intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         character(20) :: charTime
-        real(kind=rkind) :: time
-        write(charTime, *) dt
+        real(kind=RKIND) :: time
+        write(charTime, *) real(dt, SINGLE)
         call command('stop when time mod '//charTime // c_null_char)
     end subroutine
 
@@ -284,18 +286,18 @@ contains
 
     subroutine updateCircuitSources(this, time)
         class(circuit_t) :: this
-        real(kind=rkind), intent(in) :: time
-        real(kind=rkind) :: interp
+        real(kind=RKIND_TIEMPO), intent(in) :: time
+        real(kind=RKIND) :: interp
         character(20) :: source_value
         integer :: i, index
         do i = 1, size(this%nodes%sources)
             if (this%nodes%sources(i)%has_source) then
                 if (this%nodes%sources(i)%source_type == SOURCE_TYPE_VOLTAGE) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0_rkind) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
                     write(source_value, *) interp
                     call command("alter @V"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 else if (this%nodes%sources(i)%source_type == SOURCE_TYPE_CURRENT) then 
-                    interp = this%nodes%sources(i)%interpolate(time, 0.0_rkind) 
+                    interp = this%nodes%sources(i)%interpolate(time, 0.0_RKIND_TIEMPO) 
                     write(source_value, *) interp
                     call command("alter @I"//trim(this%nodes%names(i)%name)//"_s[dc] = "//trim(source_value) // c_null_char)
                 end if

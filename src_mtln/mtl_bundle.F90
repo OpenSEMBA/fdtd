@@ -5,20 +5,19 @@ module mtl_bundle_m
     use dispersive_m
     use mtl_m
 #ifdef CompileWithMPI
-    use FDETYPES_m, only: RKIND, SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
-#else
-    use FDETYPES_m, only: RKIND
+    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none
 
     type, public :: mtl_bundle_t
         character(len=:), allocatable :: name
         real(kind=rkind), allocatable, dimension(:,:,:) :: lpul, cpul, rpul, gpul
         integer  :: number_of_conductors = 0, number_of_divisions = 0
-        real(kind=rkind), dimension(:), allocatable :: step_size
-        real(kind=rkind), allocatable, dimension(:,:) :: v, i, e_L
-        real(kind=rkind), allocatable, dimension(:,:,:) :: du(:,:,:)
-        real(kind=rkind) :: time = 0.0_rkind, dt = 1e10_rkind
+        real(kind=RKIND), dimension(:), allocatable :: step_size
+        real(kind=RKIND), allocatable, dimension(:,:) :: v, i, e_L
+        real(kind=RKIND), allocatable, dimension(:,:,:) :: du(:,:,:)
+        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 1e10
 
         type(probe_t), allocatable, dimension(:) :: probes
         type(transfer_impedance_t) :: transfer_impedance
@@ -335,7 +334,7 @@ contains
 
     subroutine bundle_updateSources(this, time, dt)
         class(mtl_bundle_t) ::this
-        real(kind=rkind), intent(in) :: time, dt
+        real(kind=RKIND_TIEMPO), intent(in) :: time, dt
         !TODO
     end subroutine
 

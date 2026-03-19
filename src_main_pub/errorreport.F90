@@ -227,7 +227,7 @@ contains
          else
             call print11(c%layoutnumber,'Reading resuming data from '//trim(adjustl(c%nresumeable2))//' etc.')
          end if
-         call print11(c%layoutnumber,SEPARADOR//sEPARADOR//SEPARADOR)
+         call print11(c%layoutnumber,SEPARADOR//SEPARADOR//SEPARADOR)
       end if
 
 

@@ -151,7 +151,7 @@ contains
    end function
   
    function getCellCapacitanceOnBox(multipolarExpansionParameters, cellBox) result (res)
-      real(kind=rkind), dimension(:,:), allocatable :: res
+      real(kind=RKIND), dimension(:,:), allocatable :: res
 
       type(multipolar_expansion_t), intent(in) :: multipolarExpansionParameters
       type(box_2d_t), intent(in) :: cellBox
@@ -180,7 +180,7 @@ contains
    end function
   
    function getCellInductanceOnBox(multipolarExpansionParameters, cellBox) result (res)
-      real(kind=rkind), dimension(:,:), allocatable :: res
+      real(kind=RKIND), dimension(:,:), allocatable :: res
 
       type(multipolar_expansion_t), intent(in) :: multipolarExpansionParameters
       type(box_2d_t), intent(in) :: cellBox

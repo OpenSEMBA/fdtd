@@ -5,10 +5,9 @@ module mtl_m
     use dispersive_m, dispersive_lumped_t => lumped_t
     use mtln_types_m, only: segment_t, multipolar_expansion_t
     use multipolar_expansion_m, only: getCellCapacitanceOnBox, getCellInductanceOnBox
-#ifdef CompileWithMPI
-    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, pi, mu_vacuum, c_vacuum, RKIND_wires, RKIND
-#else
-    use FDETYPES_m, only: pi, mu_vacuum, c_vacuum, RKIND_wires, RKIND
+    use FDETYPES_m, only: pi, mu_vacuum, c_vacuum, RKIND_wires, RKIND, RKIND_TIEMPO
+#ifdef CompileWithMPI 
+    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE
 #endif
     implicit none
 #ifdef CompileWithMPI
@@ -42,7 +41,7 @@ module mtl_m
         real(kind=rkind), allocatable, dimension(:) :: step_size
         real(kind=rkind), allocatable, dimension(:,:,:) :: du(:,:,:)
         type(dispersive_lumped_t) :: lumped_elements
-        real(kind=rkind) :: time = 0.0_rkind, dt = 0.0_rkind
+        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 0.0
 
         character(len=:), allocatable :: parent_name
         integer :: conductor_in_parent
@@ -117,7 +116,7 @@ contains
         real(kind=rkind), intent(in), dimension(:) :: step_size
         character(len=*), intent(in) :: name
         type(segment_t), dimension(:), allocatable, intent(in) :: segments
-        real(kind=rkind), intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         character(len=*), intent(in) :: parent_name
         integer, intent(in) :: conductor_in_parent
         type(transfer_impedance_per_meter_t), intent(in) :: transfer_impedance
@@ -172,7 +171,7 @@ contains
         real(kind=rkind), intent(in), dimension(:) :: step_size
         character(len=*), intent(in) :: name
         type(segment_t), dimension(:), allocatable, intent(in) :: segments
-        real(kind=rkind), intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
         real(kind=rkind), intent(in) :: radius
         integer(kind=4), allocatable, dimension(:,:), intent(in), optional :: layer_indices
@@ -219,7 +218,7 @@ contains
     subroutine checkTimeStep(this, getMax, dt)
         class(mtl_t) :: this
         logical, intent(in) :: getMax
-        real(kind=rkind), intent(in), optional :: dt
+        real(kind=RKIND_TIEMPO), intent(in), optional :: dt
         
         real(kind=rkind) :: max_dt
         if (present(dt)) then 

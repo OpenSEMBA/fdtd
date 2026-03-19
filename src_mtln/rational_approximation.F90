@@ -1,4 +1,5 @@
 module rational_approximation_m
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     use mtln_types_m, only: &
         transfer_impedance_per_meter_t, &
         TRANSFER_IMPEDANCE_DIRECTION_BOTH, &
@@ -22,7 +23,7 @@ contains
 
     function pol_resCtor(model, dt) result(res)
         type(transfer_impedance_per_meter_t), intent(in) :: model
-        real(kind=rkind), intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         type(pol_res_t) :: res
         
         res%r = model%resistive_term

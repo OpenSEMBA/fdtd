@@ -130,7 +130,7 @@ integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bi
     type(multipolar_expansion_t) :: mE
     type(box_2d_t) :: fdtdCell
 
-    real, dimension(:,:), allocatable :: computedL, computedC
+    real(kind=RKIND), dimension(:,:), allocatable :: computedL, computedC
 
     error_cnt = 0
 
@@ -159,12 +159,12 @@ integer function test_multipolar_expansion_for_lansink_wire_with_dielectric() bi
     fdtdCell%max = [ 0.0075,  0.0075]
 
     computedC = getCellCapacitanceOnBox(mE, fdtdCell)
-    if (.not. checkNear(49e-12, computedC(1,1), 6e-2)) then
+    if (.not. checkNear(49e-12_RKIND, computedC(1,1), 6e-2_RKIND)) then
         error_cnt = error_cnt + 1
     end if
 
     computedL = getCellInductanceOnBox(mE, fdtdCell)
-    if (.not. checkNear(320e-9, computedL(1,1), 6e-2)) then
+    if (.not. checkNear(320e-9_RKIND, computedL(1,1), 6e-2_RKIND)) then
         error_cnt = error_cnt + 1
     end if
 

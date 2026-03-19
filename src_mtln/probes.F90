@@ -6,14 +6,15 @@ module probes_m
 #else
     use FDETYPES_m, only: RKIND
 #endif
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
 
     implicit none
 
     type, public :: probe_t
         integer :: type
-        real(kind=rkind), allocatable, dimension(:) :: t
-        real(kind=rkind), allocatable, dimension(:,:) :: val
-        real(kind=rkind) :: dt
+        real(kind=RKIND), allocatable, dimension(:) :: t
+        real(kind=RKIND), allocatable, dimension(:,:) :: val
+        real(kind=RKIND_TIEMPO) :: dt
         integer :: index, current_frame
         character(len=:), allocatable :: name
         logical :: in_layer = .true.
@@ -36,8 +37,8 @@ contains
         type(probe_t) :: res
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        real(kind=rkind), intent(in) :: dt
-        real(kind=rkind), dimension(3) :: position
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
+        real(kind=RKIND), dimension(3) :: position
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
         integer :: i, slice
@@ -51,6 +52,7 @@ contains
         res%current_frame = 1
         
 #ifdef CompileWithMPI
+        if (present(layer_indices)) then
         call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
         if (sizeof > 1) then
             res%in_layer = .false.
@@ -69,6 +71,7 @@ contains
                 layer_index = layer_index + res%index - layer_indices(i,1) + 1
             end if
             res%index = layer_index
+        end if
         end if
 #endif
         res%name = res%name//name//"_"
@@ -92,8 +95,8 @@ contains
         class(probe_t) :: this
         integer, intent(in) :: num_frames, number_of_conductors
 
-        allocate(this%t(num_frames + 1))
-        allocate(this%val(num_frames + 1, number_of_conductors))
+        allocate(this%t(num_frames))
+        allocate(this%val(num_frames, number_of_conductors))
         this%t = 0.0
         this%val = 0.0
 
@@ -101,9 +104,9 @@ contains
 
     subroutine update(this, t, v, i)
         class(probe_t) :: this
-        real(kind=rkind), intent(in) :: t
-        real(kind=rkind), dimension(:,:), intent(in) :: v
-        real(kind=rkind), dimension(:,:), intent(in) :: i
+        real(kind=RKIND_TIEMPO), intent(in) :: t
+        real(kind=RKIND), dimension(:,:), intent(in) :: v
+        real(kind=RKIND), dimension(:,:), intent(in) :: i
         
         if (this%type == PROBE_TYPE_VOLTAGE) then
             call this%saveFrame(t, v(:,this%index))
@@ -119,8 +122,9 @@ contains
 
     subroutine saveFrame(this, time, values)
         class(probe_t) :: this
-        real(kind=rkind), intent(in) :: time
-        real(kind=rkind), intent(in), dimension(:) :: values
+        real(kind=RKIND_TIEMPO), intent(in) :: time
+        real(kind=RKIND), intent(in), dimension(:) :: values
+        if (this%current_frame > size(this%t)) return
         this%t(this%current_frame) = time
         this%val(this%current_frame,:) = values
         this%current_frame = this%current_frame + 1

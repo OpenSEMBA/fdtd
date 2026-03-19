@@ -49,12 +49,12 @@ contains
 
    function getEigenValues(matrix) result(eigvals)
       integer, parameter :: DP = real64
-      real(DP), intent(in) :: matrix(:,:)
-      real(DP), allocatable, dimension(:,:) :: m1, m2, vl, vr
-      real(DP), allocatable, dimension(:) :: eigvals_real, eigvals_imag
-      real(DP), allocatable, dimension(:) :: eigvals      
-      real(DP) :: dummy(1,1)
-      real(DP), allocatable, dimension(:) :: work
+      real(kind=DP), intent(in) :: matrix(:,:)
+      real(kind=DP), allocatable, dimension(:,:) :: m1, m2, vl, vr
+      real(kind=DP), allocatable, dimension(:) :: eigvals_real, eigvals_imag
+      real(kind=DP), allocatable, dimension(:) :: eigvals      
+      real(kind=DP) :: dummy(1,1)
+      real(kind=DP), allocatable, dimension(:) :: work
       integer :: info, n, lwork, nb = 64
       n = size(matrix,1)
       allocate(m1(n,n), m2(n,n),eigvals_real(n), eigvals_imag(n), eigvals(2*n), vl(n,n), vr(n,n))
