@@ -2185,7 +2185,8 @@ contains
          type(MasSonda_t) :: res
          type(json_value), pointer :: p
          character(len=:), allocatable :: outputName, fieldLabel
-         type(pixel_t) :: pixel
+         type(node_t) :: node
+         type(coordinate_t) :: probe_coord
          integer, dimension(:), allocatable :: elemIds
          logical :: nameFound, elementIdsFound
 
@@ -2205,12 +2206,13 @@ contains
             call WarnErrReport("Wire probe must contain a single element id.", .true.)
          end if
 
-         pixel = getPixelFromElementId(this%mesh, elemIds(1))
+         node = this%mesh%getNode(elemIds(1))
+         probe_coord = this%mesh%getCoordinate(node%coordIds(1))
          fieldLabel = this%getStrAt(p, J_FIELD, default=J_FIELD_VOLTAGE)
 
          allocate(res%cordinates(1))
          res%cordinates(1)%tag = outputName
-         res%cordinates(1)%Xi = getSegmentIndexWhichMatchesTag(pixel%tag)
+         res%cordinates(1)%Xi = getSegmentNdWhichMatchesCoord(node%coordIds(1), probe_coord)
          res%cordinates(1)%Yi = 0
          res%cordinates(1)%Zi = 0
          select case (fieldLabel)
@@ -2248,20 +2250,44 @@ contains
          end if
       end subroutine
 
-      function getSegmentIndexWhichMatchesTag(tagId) result(res)
-         integer :: res
-         integer, intent(in) :: tagId
+      function getSegmentNdWhichMatchesCoord(coordId, probe_coord) result(nd_index)
+         integer :: nd_index
+         integer, intent(in) :: coordId
+         type(coordinate_t), intent(in) :: probe_coord
          type(linel_t), dimension(:), allocatable :: linels
          type(polyline_t) :: polyline
-         integer :: k, l
+         type(coordinate_t), dimension(:), allocatable :: linelCoords
+         real, dimension(:), allocatable :: distance_to_linel_cell
+         integer :: k, j, i, m(1), or, n_linels, local_idx
 
-         res = 0
+         nd_index = 0
          do k = 1, size(mAs)
             polyline = this%mesh%getPolyline(mAs(k)%elementIds(1))
-            linels = this%mesh%polylineToLinels(polyline)
-            do l = 1, size(linels)
-               if (linels(l)%tag == tagId) then
-                  res = l
+            do j = 1, size(polyline%coordIds)
+               if (polyline%coordIds(j) == coordId) then
+                  linels = this%mesh%polylineToLinels(polyline)
+                  n_linels = size(linels)
+                  allocate(linelCoords(n_linels+1))
+                  do i = 1, n_linels
+                     linelCoords(i)%position(1) = linels(i)%cell(1)
+                     linelCoords(i)%position(2) = linels(i)%cell(2)
+                     linelCoords(i)%position(3) = linels(i)%cell(3)
+                     if (linels(i)%orientation < 0) then
+                        or = abs(linels(i)%orientation)
+                        linelCoords(i)%position(or) = linelCoords(i)%position(or) + 1
+                     end if
+                  end do
+                  or = linels(n_linels)%orientation
+                  linelCoords(n_linels+1)%position = linelCoords(n_linels)%position
+                  linelCoords(n_linels+1)%position(abs(or)) = &
+                     linelCoords(n_linels+1)%position(abs(or)) + merge(1,-1,or>0)
+                  allocate(distance_to_linel_cell(n_linels+1))
+                  do i = 1, n_linels+1
+                     distance_to_linel_cell(i) = norm2(linelCoords(i)%position - probe_coord%position)
+                  end do
+                  m = minloc(distance_to_linel_cell)
+                  local_idx = min(m(1), n_linels)
+                  nd_index = res%tw(k)%twc(local_idx)%nd
                   return
                end if
             end do
