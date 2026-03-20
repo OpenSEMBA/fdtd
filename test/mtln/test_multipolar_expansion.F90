@@ -50,7 +50,7 @@ integer function test_multipolar_expansion_for_lansink_two_wires() bind(C) resul
     type(multipolar_expansion_t) :: mE
     type(box_2d_t) :: fdtdCell
 
-    real, dimension(:,:), allocatable :: computedL, computedC
+    real(kind=rkind), dimension(:,:), allocatable :: computedL, computedC
 
     error_cnt = 0
 
@@ -87,30 +87,30 @@ integer function test_multipolar_expansion_for_lansink_two_wires() bind(C) resul
     fdtdCell%max = [ 0.100,  0.100]
 
     computedC = getCellCapacitanceOnBox(mE, fdtdCell)
-    if (.not. checkNear(14.08e-12, computedC(1,1), 6e-2)) then
+    if (.not. checkNear(14.08e-12_rkind, computedC(1,1), 6e-2_rkind)) then
         error_cnt = error_cnt + 1
     end if
-    if (.not. checkNear(43.99e-12, computedC(1,2), 6e-2)) then
+    if (.not. checkNear(43.99e-12_rkind, computedC(1,2), 6e-2_rkind)) then
         error_cnt = error_cnt + 1
     end if
-    if (.not. checkNear(44.31e-12, computedC(2,1), 6e-2)) then
+    if (.not. checkNear(44.31e-12_rkind, computedC(2,1), 6e-2_rkind)) then
         error_cnt = error_cnt + 1
     end if
-    if (.not. checkNear(28.79e-12, computedC(2,2), 6e-2)) then
+    if (.not. checkNear(28.79e-12_rkind, computedC(2,2), 6e-2_rkind)) then
         error_cnt = error_cnt + 1
     end if
 
     computedL = getCellInductanceOnBox(mE, fdtdCell)
-    if (.not. checkNear(791e-9, computedL(1,1), 6e-2)) then
+    if (.not. checkNear(791e-9_rkind, computedL(1,1), 6e-2_rkind)) then
         error_cnt = error_cnt + 1
     end if
-    if (.not. checkNear(253e-9, computedL(1,2), 6e-2)) then
+    if (.not. checkNear(253e-9_rkind, computedL(1,2), 6e-2_rkind)) then
         error_cnt = error_cnt + 1
     end if
-    if (.not. checkNear(251e-9, computedL(2,1), 6e-2)) then
+    if (.not. checkNear(251e-9_rkind, computedL(2,1), 6e-2_rkind)) then
         error_cnt = error_cnt + 1
     end if
-    if (.not. checkNear(387e-9, computedL(2,2), 6e-2)) then
+    if (.not. checkNear(387e-9_rkind, computedL(2,2), 6e-2_rkind)) then
         error_cnt = error_cnt + 1
     end if
 

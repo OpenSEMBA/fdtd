@@ -73,8 +73,8 @@ integer function test_mtl_time_step() bind(C) result(error_cnt)
 
     implicit none
 
-    real, dimension(5,2) :: phase_velocities
-    real :: time_step, max_vel
+    real(kind=rkind), dimension(5,2) :: phase_velocities
+    real(kind=rkind) :: time_step, max_vel
 
 
     type(mtl_t) :: line 
@@ -86,13 +86,13 @@ integer function test_mtl_time_step() bind(C) result(error_cnt)
     max_vel = maxval(phase_velocities)
     time_step = line%getMaxTimeStep()
     !expected
-    if (.not.(checkNear(phase_velocities(1,1),1.05900008e+08, 0.01))) then
+    if (.not.(checkNear(phase_velocities(1,1),1.05900008e+08_rkind, 0.01_rkind))) then
         error_cnt = error_cnt +1
     end if
-    if (.not.(checkNear(phase_velocities(1,2), 1.05900010e+08, 0.01))) then
+    if (.not.(checkNear(phase_velocities(1,2), 1.05900010e+08_rkind, 0.01_rkind))) then
         error_cnt = error_cnt +1
     end if
-    if (.not.(checkNear(time_step, 1.888573951383424e-07, 0.01))) then
+    if (.not.(checkNear(time_step, 1.888573951383424e-07_rkind, 0.01_rkind))) then
         error_cnt = error_cnt +1
     end if
 
