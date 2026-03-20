@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/libngspice_interface.a CMakeFiles/ngspice_interface.dir/ngspice_interface.c.o
-/usr/bin/ranlib ../../lib/libngspice_interface.a

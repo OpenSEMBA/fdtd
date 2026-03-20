@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/libngspice.a CMakeFiles/ngspice.dir/src/conf.c.o CMakeFiles/ngspice.dir/src/sharedspice.c.o
-/usr/bin/ranlib ../../lib/libngspice.a
