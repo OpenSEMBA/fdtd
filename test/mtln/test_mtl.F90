@@ -25,14 +25,14 @@ integer function test_mtl_init_homogeneous() bind(C) result(error_cnt)
 
     
     real(kind=rkind),dimension(2,2) :: lpul = reshape( &
-        source = [ 4.4712610E-07, 1.4863653E-07, 1.4863653E-07, 4.4712610E-07 ], shape = [ 2,2 ] )
+        source = [ 4.4712610E-07_rkind, 1.4863653E-07_rkind, 1.4863653E-07_rkind, 4.4712610E-07_rkind ], shape = [ 2,2 ] )
     real(kind=rkind),dimension(2,2) :: cpul = reshape( &
-        source = [ 2.242e-10, -7.453e-11,-7.453e-11, 2.242e-10 ], shape = [ 2,2 ] )
+        source = [ 2.242e-10_rkind, -7.453e-11_rkind,-7.453e-11_rkind, 2.242e-10_rkind ], shape = [ 2,2 ] )
     real(kind=rkind),dimension(2,2) :: rpul = reshape( &
-        source = [ 0.0, 0.0, 0.0, 0.0 ], shape = [ 2,2 ] )
+        source = [ 0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind ], shape = [ 2,2 ] )
     real(kind=rkind),dimension(2,2) :: gpul = reshape( &
-        source = [ 0.0, 0.0, 0.0, 0.0 ], shape = [ 2,2 ] )
-    real(kind=rkind), dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
+        source = [ 0.0_rkind, 0.0_rkind, 0.0_rkind, 0.0_rkind ], shape = [ 2,2 ] )
+    real(kind=rkind), dimension(5) :: step_size = [20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind]
     type(segment_t), dimension(:), allocatable :: segments
 
     type(mtl_t) :: line 

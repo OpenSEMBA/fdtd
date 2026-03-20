@@ -144,7 +144,7 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
     names(3) = string_t("out", 3)
     names(4) = string_t("time", 4)
     
-    result = [5.0,0.0039656539400000001,0.00069279532199999997]
+    result = [5.0_rkind,0.0039656539400000001_rkind,0.00069279532199999997_rkind]
     
     circuit%time = 0.0
     circuit%dt = 50e-6

@@ -27,7 +27,7 @@ contains
         character(len=*), intent(in) :: type
         
         real(kind=rkind), allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
-        real(kind=rkind), dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
+        real(kind=rkind), dimension(5) :: step_size = [20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind, 20.0_rkind]
         type(segment_t), allocatable, dimension(:) :: segments
         integer :: i,j
         

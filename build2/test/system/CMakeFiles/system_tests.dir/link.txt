@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libsystem_tests.a CMakeFiles/system_tests.dir/system_tests.cpp.o
+/usr/bin/ranlib ../../lib/libsystem_tests.a
