@@ -6,11 +6,10 @@ module mtl_bundle_m
     use dispersive_m
     use mtl_m
 #ifdef CompileWithMPI
-    use FDETYPES_m, only: RKIND, SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
-#else
-    use FDETYPES_m, only: RKIND
+    use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
     use mtln_types_m, only: SOURCE_TYPE_CURRENT, SOURCE_TYPE_VOLTAGE
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none
 
     type, public :: mtl_bundle_t
@@ -21,7 +20,7 @@ module mtl_bundle_m
         real, allocatable, dimension(:,:) :: v, i
         real, allocatable, dimension(:,:) :: v_source, i_source, e_L
         real, allocatable, dimension(:,:,:) :: du(:,:,:)
-        real :: time = 0.0, dt = 1e10
+        real(kind=RKIND_TIEMPO) :: time = 0.0, dt = 1e10
 
         ! type homogen
         type(generator_t), allocatable, dimension(:) :: generators
@@ -375,7 +374,7 @@ contains
 
     subroutine bundle_updateGenerators(this, time, dt)
         class(mtl_bundle_t) ::this
-        real, intent(in) :: time, dt
+        real(kind=RKIND_TIEMPO), intent(in) :: time, dt
         real :: val
         integer :: i
         do i = 1, size(this%generators)

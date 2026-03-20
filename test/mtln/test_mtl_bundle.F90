@@ -32,11 +32,23 @@ integer function test_mtl_bundle_init() bind(C) result(error_cnt)
         segments(i)%orientation = 1
     end do
 
-    mtl_in   =  mtl_shielded(l1, c1, r1, g1, step_size, name = "line_in", segments = segments, dt = 1e-11, & 
-                            parent_name = "line_out", conductor_in_parent = 1, &
-                            transfer_impedance = Zt)
-    mtl_out   = mtl_unshielded(l1, c1, r1, g1, step_size, name = "line_out", segments = segments, dt = 1e-11, &
-                            multipolar_expansion = mE, radius = 0.0 )
+    mtl_in   =  mtl_shielded(&
+                    l1, c1, r1, g1, &
+                    step_size, &
+                    name = "line_in", &
+                    segments = segments, &
+                    dt = 1e-11_RKIND_TIEMPO, & 
+                    parent_name = "line_out", &
+                    conductor_in_parent = 1, &
+                    transfer_impedance = Zt)
+    mtl_out   = mtl_unshielded(&
+                    l1, c1, r1, g1, &
+                    step_size, &
+                    name = "line_out", &
+                    segments = segments, &
+                    dt = 1e-11_RKIND_TIEMPO, &
+                    multipolar_expansion = mE, &
+                    radius = 0.0 )
 
     allocate(levels(1)%lines(1))
     allocate(levels(2)%lines(1))

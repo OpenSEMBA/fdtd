@@ -3,7 +3,7 @@ module mtln_solver_m
     use mtl_bundle_m
     use network_manager_m
     use mtln_preprocess_m
-    use FDETYPES_m, only: XYZlimit_t
+    use FDETYPES_m, only: XYZlimit_t, RKIND_TIEMPO
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI, REALSIZE, INTEGERSIZE, MPI_STATUS_SIZE
 #endif
@@ -11,7 +11,7 @@ module mtln_solver_m
 
 
     type, public :: mtln_t
-        real :: time, dt, final_time
+        real(kind=RKIND_TIEMPO) :: time, dt, final_time
         type(mtl_bundle_t), allocatable, dimension(:) :: bundles
         type(network_manager_t) :: network_manager
         ! type(probe_t), allocatable, dimension(:) :: probes
@@ -213,7 +213,9 @@ contains
         do i = 1, this%number_of_bundles
             if (size(this%bundles(i)%probes) /= 0 .and. this%bundles(i)%bundle_in_layer) then 
                 do j = 1, size(this%bundles(i)%probes)
-                    if (this%bundles(i)%probes(j)%in_layer) call this%bundles(i)%probes(j)%update(this%time, this%bundles(i)%v, this%bundles(i)%i)
+                    if (this%bundles(i)%probes(j)%in_layer) then
+                        call this%bundles(i)%probes(j)%update(this%time, this%bundles(i)%v, this%bundles(i)%i)
+                    end if
                 end do 
             end if
         end do
@@ -221,7 +223,7 @@ contains
 
     function getTimeRange(this, time) result(res)
         class(mtln_t) :: this
-        real, intent(in), optional :: time
+        real(kind=RKIND_TIEMPO), intent(in), optional :: time
         integer :: res
         if (present(time)) then 
             res =  floor(time / this%dt)
@@ -232,7 +234,7 @@ contains
 
     subroutine updateBundlesTimeStep(this, dt)
         class(mtln_t) :: this
-        real :: dt
+        real(kind=RKIND_TIEMPO) :: dt
         integer :: i
         do i = 1, this%number_of_bundles
             this%bundles(i)%dt = dt
@@ -258,7 +260,7 @@ contains
 
     subroutine runUntil(this, final_time)
         class(mtln_t) :: this
-        real, intent(in):: final_time
+        real(kind=RKIND_TIEMPO), intent(in):: final_time
         real :: time
         integer :: i
 
@@ -274,7 +276,7 @@ contains
 
     subroutine mtln_run(this)
         class(mtln_t) :: this
-        real :: time
+        real(kind=RKIND_TIEMPO) :: time
         integer :: i
 
         call this%updatePULTerms()

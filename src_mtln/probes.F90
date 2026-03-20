@@ -4,6 +4,7 @@ module probes_m
 #ifdef CompileWithMPI
     use FDETYPES_m, only: SUBCOMM_MPI
 #endif
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
 
     implicit none
 
@@ -11,7 +12,7 @@ module probes_m
         integer :: type
         real, allocatable, dimension(:) :: t
         real, allocatable, dimension(:,:) :: val
-        real :: dt
+        real(kind=RKIND_TIEMPO) :: dt
         integer :: index, current_frame
         character(len=:), allocatable :: name
         logical :: in_layer = .true.
@@ -34,7 +35,7 @@ contains
         type(probe_t) :: res
         integer, intent(in) :: index
         integer, intent(in) :: probe_type
-        real, intent(in) :: dt
+        real(kind=RKIND_TIEMPO), intent(in) :: dt
         real, dimension(3) :: position
         character(len=:), allocatable :: name
         integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
@@ -101,7 +102,7 @@ contains
 
     subroutine update(this, t, v, i)
         class(probe_t) :: this
-        real, intent(in) :: t
+        real(kind=RKIND_TIEMPO), intent(in) :: t
         real, dimension(:,:), intent(in) :: v
         real, dimension(:,:), intent(in) :: i
         
@@ -119,7 +120,7 @@ contains
 
     subroutine saveFrame(this, time, values)
         class(probe_t) :: this
-        real, intent(in) :: time
+        real(kind=RKIND_TIEMPO), intent(in) :: time
         real, intent(in), dimension(:) :: values
         if (this%current_frame > size(this%t)) return
         this%t(this%current_frame) = time

@@ -22,25 +22,25 @@ contains
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 0.43e-10
+      expected%general%dt = 0.43e-10_RKIND
       expected%general%nmax = 700
 
       ! Excected media matrix.
-      expected%matriz%totalX = 150
-      expected%matriz%totalY = 150
-      expected%matriz%totalZ = 150
+      expected%matriz%totalX = 151
+      expected%matriz%totalY = 151
+      expected%matriz%totalZ = 151
 
       ! Expected grid.
-      expected%despl%nX = 150
-      expected%despl%nY = 150
-      expected%despl%nZ = 150
+      expected%despl%nX = 1
+      expected%despl%nY = 1
+      expected%despl%nZ = 1
 
-      allocate(expected%despl%desX(150))
-      allocate(expected%despl%desY(150))
-      allocate(expected%despl%desZ(150))
-      expected%despl%desX = 0.180
-      expected%despl%desY = 0.180
-      expected%despl%desZ = 0.0504
+      allocate(expected%despl%desX(1:1))
+      allocate(expected%despl%desY(1:1))
+      allocate(expected%despl%desZ(1:1))
+      expected%despl%desX = 0.180_RKIND
+      expected%despl%desY = 0.180_RKIND
+      expected%despl%desZ = 0.0504_RKIND
       expected%despl%mx1 = 0
       expected%despl%mx2 = 150
       expected%despl%my1 = 0
@@ -51,8 +51,8 @@ contains
       ! Expected boundaries.
       expected%front%tipoFrontera(:) = F_PML
       expected%front%propiedadesPML(:)%numCapas = 6
-      expected%front%propiedadesPML(:)%orden = 2.0
-      expected%front%propiedadesPML(:)%refl = 0.0001
+      expected%front%propiedadesPML(:)%orden = 2.0_RKIND
+      expected%front%propiedadesPML(:)%refl = 0.0001_RKIND
 
       ! Expected PEC regions.
       expected%pecRegs%nLins = 0
@@ -80,19 +80,20 @@ contains
       expected%plnSrc%collection(1)%atributo = ""
       expected%plnSrc%collection(1)%coor1 = [10, 10, 10]
       expected%plnSrc%collection(1)%coor2 = [139, 139, 139]
-      expected%plnSrc%collection(1)%theta = 3.1416
-      expected%plnSrc%collection(1)%phi = 0.0
-      expected%plnSrc%collection(1)%alpha = 1.5708
-      expected%plnSrc%collection(1)%beta = -1.5708
+      expected%plnSrc%collection(1)%theta = 3.1416_RKIND
+      expected%plnSrc%collection(1)%phi = 0.0_RKIND
+      expected%plnSrc%collection(1)%alpha = 1.5708_RKIND
+      expected%plnSrc%collection(1)%beta = -1.5708_RKIND
       expected%plnSrc%collection(1)%isRC=.false.
       expected%plnSrc%collection(1)%nummodes=1
-      expected%plnSrc%collection(1)%INCERTMAX=0.0
+      expected%plnSrc%collection(1)%INCERTMAX=0.0_RKIND
       expected%plnSrc%nc = 1
       expected%plnSrc%nC_max = 1
 
       
       ! Expected mtln type
-      expected%mtln%time_step = 0.43e-10
+      ! expected%mtln%has_multiwires = .true.
+      expected%mtln%time_step = 0.43e-10_RKIND
       expected%mtln%number_of_steps = 700
 
       
@@ -105,12 +106,12 @@ contains
       select type(ptr)
       type is(unshielded_multiwire_t)
          expected%mtln%cables(1)%ptr%name = "line_0"
-         ptr%resistance_per_meter = reshape(source=[22.9e-3], shape=[1,1])
+         ptr%resistance_per_meter = reshape(source=[22.9e-3_RKIND], shape=[1,1])
 
          allocate(ptr%step_size(5))
-         ptr%step_size(1) =  0.0504
-         ptr%step_size(2:4) =  [(0.180, i = 2, 4)]
-         ptr%step_size(5) =  0.0504
+         ptr%step_size(1) =  0.0504_RKIND
+         ptr%step_size(2:4) =  [(0.180_RKIND, i = 2, 4)]
+         ptr%step_size(5) =  0.0504_RKIND
 
          allocate(ptr%segments(5))
          ptr%segments(1)%x = 75
@@ -140,14 +141,14 @@ contains
          ptr%name = "line_1"
 
          ptr%inductance_per_meter = & 
-            reshape( source = [ 3.13182309e-07, 7.45674981e-08, 7.45674981e-08, 3.13182309e-07 ], shape = [ 2,2 ] )
+            reshape( source = [ 3.13182309e-07_RKIND, 7.45674981e-08_RKIND, 7.45674981e-08_RKIND, 3.13182309e-07_RKIND ], shape = [ 2,2 ] )
          ptr%capacitance_per_meter = &
-            reshape( source = [85.0e-12, -20.5e-12, -20.5e-12, 85.0e-12 ], shape = [ 2,2 ] )
+            reshape( source = [85.0e-12_RKIND, -20.5e-12_RKIND, -20.5e-12_RKIND, 85.0e-12_RKIND ], shape = [ 2,2 ] )
          
          allocate(ptr%step_size(5))
-         ptr%step_size(1) =  0.0504
-         ptr%step_size(2:4) =  [(0.180, i = 2, 4)]
-         ptr%step_size(5) =  0.0504
+         ptr%step_size(1) =  0.0504_RKIND
+         ptr%step_size(2:4) =  [(0.180_RKIND, i = 2, 4)]
+         ptr%step_size(5) =  0.0504_RKIND
 
          allocate(ptr%segments(5))
          ptr%segments(1)%x = 75
@@ -166,8 +167,8 @@ contains
          ptr%segments(5)%orientation = DIRECTION_Z_NEG
 
          ptr%transfer_impedance%direction = TRANSFER_IMPEDANCE_DIRECTION_BOTH
-         ptr%transfer_impedance%resistive_term = 0.0
-         ptr%transfer_impedance%inductive_term = 4.0e-9
+         ptr%transfer_impedance%resistive_term = 0.0_RKIND
+         ptr%transfer_impedance%inductive_term = 4.0e-9_RKIND
          allocate(ptr%transfer_impedance%poles(0))
          allocate(ptr%transfer_impedance%residues(0))
 
@@ -213,21 +214,21 @@ contains
       expected%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
       expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)%ptr
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 50.0
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 50.0_RKIND
 
       allocate(expected%mtln%networks(1)%connections(2)%nodes(1))
       expected%mtln%networks(1)%connections(2)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(1)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
       expected%mtln%networks(1)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(2)%ptr
       expected%mtln%networks(1)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(2)%nodes(1)%termination%resistance = 50.0
+      expected%mtln%networks(1)%connections(2)%nodes(1)%termination%resistance = 50.0_RKIND
 
       allocate(expected%mtln%networks(1)%connections(3)%nodes(1))
       expected%mtln%networks(1)%connections(3)%nodes(1)%conductor_in_cable = 2
       expected%mtln%networks(1)%connections(3)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
       expected%mtln%networks(1)%connections(3)%nodes(1)%belongs_to_cable => expected%mtln%cables(2)%ptr
       expected%mtln%networks(1)%connections(3)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%resistance = 50.0
+      expected%mtln%networks(1)%connections(3)%nodes(1)%termination%resistance = 50.0_RKIND
 
       allocate(expected%mtln%networks(2)%connections(3))
 
@@ -236,21 +237,21 @@ contains
       expected%mtln%networks(2)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_END
       expected%mtln%networks(2)%connections(1)%nodes(1)%belongs_to_cable => expected%mtln%cables(1)%ptr
       expected%mtln%networks(2)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(2)%connections(1)%nodes(1)%termination%resistance = 50.0
+      expected%mtln%networks(2)%connections(1)%nodes(1)%termination%resistance = 50.0_RKIND
 
       allocate(expected%mtln%networks(2)%connections(2)%nodes(1))
       expected%mtln%networks(2)%connections(2)%nodes(1)%conductor_in_cable = 1
       expected%mtln%networks(2)%connections(2)%nodes(1)%side = TERMINAL_NODE_SIDE_END
       expected%mtln%networks(2)%connections(2)%nodes(1)%belongs_to_cable => expected%mtln%cables(2)%ptr
       expected%mtln%networks(2)%connections(2)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(2)%connections(2)%nodes(1)%termination%resistance = 50.0
+      expected%mtln%networks(2)%connections(2)%nodes(1)%termination%resistance = 50.0_RKIND
 
       allocate(expected%mtln%networks(2)%connections(3)%nodes(1))
       expected%mtln%networks(2)%connections(3)%nodes(1)%conductor_in_cable = 2
       expected%mtln%networks(2)%connections(3)%nodes(1)%side = TERMINAL_NODE_SIDE_END
       expected%mtln%networks(2)%connections(3)%nodes(1)%belongs_to_cable => expected%mtln%cables(2)%ptr
       expected%mtln%networks(2)%connections(3)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(2)%connections(3)%nodes(1)%termination%resistance = 50.0
+      expected%mtln%networks(2)%connections(3)%nodes(1)%termination%resistance = 50.0_RKIND
 
       !connectors
       allocate(expected%mtln%connectors(0))

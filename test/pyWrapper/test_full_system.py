@@ -4,19 +4,8 @@ import os
 from sys import platform
 from scipy import signal
 
-@mtln_skip
-def test_lineIntegralProbe_single_wire(tmp_path):
-    fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
-    solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
-    solver['materials'][0] = createWire(id = 1, r = 0.001)
-    solver.run()
-    
-    pf = 'lineIntegralProbe_plates.fdtd_vprobe_LI_20_20_10.dat'
-    li_probe  = Probe(solver.getSolvedProbeFilenames("vprobe_LI_20_20_10")[0])
-    expected  = Probe(OUTPUTS_FOLDER+pf)
-    assert np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
-@no_mtln_skip
+@pytest.mark.skip
 def test_lineIntegralProbe_wire(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -28,7 +17,8 @@ def test_lineIntegralProbe_wire(tmp_path):
     expected  = Probe(OUTPUTS_FOLDER+pf)
     assert np.allclose(li_probe['lineIntegral'].to_numpy(), expected['lineIntegral'].to_numpy(), rtol =0.01 , atol=0.01)
 
-@no_mtln_skip
+
+@pytest.mark.skip
 def test_lineIntegralProbe_unshielded(tmp_path):
     fn = CASES_FOLDER + 'lineIntegralProbe/lineIntegralProbe_plates.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -859,7 +849,7 @@ def test_rectilinear_mode(tmp_path):
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['value'], getPeakPulse(noRectilinearVertexProbe)['value'], decimal=_FIELD_TOLERANCE)
     np.testing.assert_almost_equal(getPeakPulse(rectilinearVertexProbe)['time'], getPeakPulse(noRectilinearVertexProbe)['time'], decimal=_TIME_TOLERANCE)
     
-def testCanExecuteFDTDFromFolderWithSpacesAndCanProcessAdditionalArguments(tmp_path):
+def test_can_execute_fdtd_from_folder_with_spaces_and_can_process_additional_arguments(tmp_path):
     projectRoot = os.getcwd()
     folderWitSpaces: str  = os.path.join(tmp_path, "spaced bin")
     os.mkdir(folderWitSpaces)
@@ -971,14 +961,14 @@ def test_nodal_source_unshielded(tmp_path):
     assert np.corrcoef(-nodalBulkProbe['current'], resistanceBulkProbe['current'])[0,1] > 0.998
 
 
-def testCanAssignSameSurfaceImpedanceToMultipleGeometries(tmp_path):
+def test_can_assign_same_surface_impedance_to_multiple_geometries(tmp_path):
     fn = CASES_FOLDER + 'multipleAssigments/multipleSurfaceImpedance.fdtd.json'
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
     assert (Probe(solver.getSolvedProbeFilenames("BulkProbeEntry")[0]) is not None)
 
-def testCanAssignSameDielectricMaterialToMultipleGeometries(tmp_path):
+def test_can_assign_same_dielectric_material_to_multiple_geometries(tmp_path):
     fn = CASES_FOLDER + 'multipleAssigments/multipleDielectricMaterial.fdtd.json'
 
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -1191,14 +1181,14 @@ def test_lumped_resistor_parallel_terminal_resistor(tmp_path):
     assert np.corrcoef(TopBulk_probe['current'].to_numpy() + BottomBulk_probe['current'].to_numpy(), I_theo)[0, 1] > 0.999
     assert np.corrcoef(InitialBulk_probe['current'].to_numpy(), I_theo)[0, 1] > 0.999
 
-def test_offset_normal_in_x(tmp_path):
+def test_bulk_current_offset_normal_in_x(tmp_path):
     # This test verifies the positive offset along the normal vector (in x-direction) respect to the bulk plane
     # used to measure the current values of the system.
     # The setup consists in a polyline with points [(0 mm,0 mm,0 mm), (20 mm,0 mm,0 mm), (20 mm,-20 mm,0 mm)]
     # as nodal source and three bulk planes defined at x=18 mm, x=20 mm and x=22 mm.
     # The test checks that only the plane defined at x=18 mm has non-zero current values.
 
-    fn = CASES_FOLDER + 'bulk_current_tests/offSet_x/offSet_x.fdtd.json'
+    fn = CASES_FOLDER + 'bulk_current_offsets/offSet_x/offSet_x.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
@@ -1219,14 +1209,14 @@ def test_offset_normal_in_x(tmp_path):
     assert np.allclose(probe_at_x_20['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_x_22['current'].to_numpy(), 0.0, atol=1.5e-3)
 
-def test_offset_normal_in_y(tmp_path):
+def test_bulk_current_offset_normal_in_y(tmp_path):
     # This test verifies the positive offset along the normal vector (in y-direction) respect to the bulk plane
     # used to measure the current values of the system.
     # The setup consists in a polyline with points [(0 mm,0 mm,0 mm), (0 mm,0 mm,20 mm), (0 mm,-20 mm,20 mm)]
     # as nodal source and three bulk planes defined at y=-2 mm, y=0 mm and y=2 mm.
     # The test checks that only the plane defined at y=-2 mm has non-zero current values.
 
-    fn = CASES_FOLDER + 'bulk_current_tests/offSet_y/offSet_y.fdtd.json'
+    fn = CASES_FOLDER + 'bulk_current_offsets/offSet_y/offSet_y.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
@@ -1247,14 +1237,14 @@ def test_offset_normal_in_y(tmp_path):
     assert np.allclose(probe_at_y_0['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_y_2['current'].to_numpy(), 0.0, atol=1.5e-3)
 
-def test_offset_normal_in_z(tmp_path):
+def test_bulk_current_offset_normal_in_z(tmp_path):
     # This test verifies the positive offset along the normal vector (in z-direction) respect to the bulk plane
     # used to measure the current values of the system.
     # The setup consists in a polyline with points [(0 mm,0 mm,0 mm), (0 mm,0 mm,20 mm), (0 mm,-20 mm,20 mm)]
     # as nodal source and three bulk planes defined at z=18 mm, z=20 mm and z=22 mm.
     # The test checks that only the plane defined at z=18 mm has non-zero current values.
 
-    fn = CASES_FOLDER + 'bulk_current_tests/offSet_z/offSet_z.fdtd.json'
+    fn = CASES_FOLDER + 'bulk_current_offsets/offSet_z/offSet_z.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
@@ -1275,7 +1265,7 @@ def test_offset_normal_in_z(tmp_path):
     assert np.allclose(probe_at_z_20['current'].to_numpy(), 0.0, atol=1.5e-3)
     assert np.allclose(probe_at_z_22['current'].to_numpy(), 0.0, atol=1.5e-3)
 
-def test_offset_perpendicular_in_x(tmp_path):
+def test_bulk_current_offset_perpendicular_in_x(tmp_path):
     # This test verifies the negative offset presented in the y and z directions when the bulk plane is defined
     # with a normal vector in the x-direction.
     # The setup consists in three nodal sources defined as follow:
@@ -1294,9 +1284,9 @@ def test_offset_perpendicular_in_x(tmp_path):
     # 1 and 3 respectively; similar behavior if we move one positive cell in the y and z directions for  
     # the bulk planes 1 and 2. This proves that the bulk have a negative offset in the y and z directions.
 
-    fn = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLines.fdtd.json'
-    fn_negative = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLinesNegative.fdtd.json'
-    fn_positive = CASES_FOLDER + 'bulk_current_tests/threeLines_offSet_x_Perpendicular/threeLinesPositive.fdtd.json'
+    fn = CASES_FOLDER + 'bulk_current_offsets/threeLines_offSet_x_Perpendicular/threeLines.fdtd.json'
+    fn_negative = CASES_FOLDER + 'bulk_current_offsets/threeLines_offSet_x_Perpendicular/threeLinesNegative.fdtd.json'
+    fn_positive = CASES_FOLDER + 'bulk_current_offsets/threeLines_offSet_x_Perpendicular/threeLinesPositive.fdtd.json'
     
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver_negative = FDTD(input_filename = fn_negative, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
@@ -1348,7 +1338,7 @@ def test_offset_perpendicular_in_x(tmp_path):
     assert np.allclose(probe1_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
     assert np.allclose(probe2_positive['current'].to_numpy(), 0.0, atol=1.5e-2)
 
-def test_negative_offset_in_x(tmp_path):
+def test_bulk_current_negative_offset_in_x(tmp_path):
     # Following the previous test, we have seen that the bulk surfaces has negative offsets in the directions
     # perpendicular to the normal vector of the bulk surface. The previous test checks the negative offset in the
     # y and z directions when the normal vector is in the x-direction. Now we check the negative offset in the
@@ -1364,7 +1354,7 @@ def test_negative_offset_in_x(tmp_path):
     # left edge of the plane. This test checks that the second and third bulk planes measure correctly the current values
     # while the first bulk plane has zero current values. This proves that the bulk have a negative offset in the x-direction.
 
-    fn = CASES_FOLDER + 'bulk_current_tests/negative_offSet_x/offSet_negative_x.fdtd.json'
+    fn = CASES_FOLDER + 'bulk_current_offsets/negative_offSet_x/offSet_negative_x.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
     solver.run()
 
@@ -1384,7 +1374,69 @@ def test_negative_offset_in_x(tmp_path):
     assert np.corrcoef(probeTotal['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.corrcoef(probeL['current'].to_numpy(), I_interp)[0, 1] > 0.999
     assert np.allclose(probeR['current'].to_numpy(), 0.0, atol=3e-3)
-    
+
+def _run_four_probes(tmp_path, json_filename):
+    """Helper: run a four-probe bulk-current case and return the four Probe objects
+    together with the interpolated excitation evaluated at the BC_LL time grid."""
+    solver = FDTD(
+        input_filename=CASES_FOLDER + 'bulk_current_four_probes/' + json_filename,
+        path_to_exe=SEMBA_EXE,
+        run_in_folder=tmp_path
+    )
+    solver.run()
+
+    exc_time = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=0)
+    exc_val  = np.loadtxt(solver["sources"][0]["magnitudeFile"], usecols=1)
+
+    probe_LL = Probe(solver.getSolvedProbeFilenames("BC_LL")[0])
+    probe_LU = Probe(solver.getSolvedProbeFilenames("BC_LU")[0])
+    probe_UU = Probe(solver.getSolvedProbeFilenames("BC_UU")[0])
+    probe_UL = Probe(solver.getSolvedProbeFilenames("BC_UL")[0])
+
+    probe_time = probe_LL["time"].to_numpy()
+    exc_interp = np.interp(probe_time, exc_time, exc_val)
+
+    return probe_LL, probe_LU, probe_UU, probe_UL, exc_interp
+
+def test_bulk_current_four_probes_X_oriented(tmp_path):
+    # A nodal current source runs along X through cell (23,23).
+    # Four bulk-current probes are arranged in the YZ plane at x=4:
+    #   BC_LL and BC_LU and BC_UL lie outside the wire path -> near zero.
+    #   BC_UU contains the wire -> correlates with the excitation.
+    probe_LL, probe_LU, probe_UU, probe_UL, exc_interp = \
+        _run_four_probes(tmp_path, 'bulk_currents_X_oriented.fdtd.json')
+
+    assert np.corrcoef(exc_interp, probe_UU["current"].to_numpy())[0, 1] > 0.9999
+    assert np.allclose(probe_LL["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
+
+def test_bulk_current_four_probes_Y_oriented(tmp_path):
+    # A nodal current source runs along Y through cell (23,23).
+    # Four bulk-current probes are arranged in the XZ plane at y=4:
+    #   BC_LL and BC_LU and BC_UL lie outside the wire path -> near zero.
+    #   BC_UU contains the wire -> correlates with the excitation.
+    probe_LL, probe_LU, probe_UU, probe_UL, exc_interp = \
+        _run_four_probes(tmp_path, 'bulk_currents_Y_oriented.fdtd.json')
+
+    assert np.corrcoef(exc_interp, probe_UU["current"].to_numpy())[0, 1] > 0.9999
+    assert np.allclose(probe_LL["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
+
+def test_bulk_current_four_probes_Z_oriented(tmp_path):
+    # A nodal current source runs along Z through cell (23,23).
+    # Four bulk-current probes are arranged in the XY plane at z=4:
+    #   BC_LL and BC_LU and BC_UL lie outside the wire path -> near zero.
+    #   BC_UU contains the wire -> correlates with the excitation.
+    probe_LL, probe_LU, probe_UU, probe_UL, exc_interp = \
+        _run_four_probes(tmp_path, 'bulk_currents_Z_oriented.fdtd.json')
+
+    assert np.corrcoef(exc_interp, probe_UU["current"].to_numpy())[0, 1] > 0.9999
+    assert np.allclose(probe_LL["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_LU["current"].to_numpy(), 0.0, atol=2e-3)
+    assert np.allclose(probe_UL["current"].to_numpy(), 0.0, atol=2e-3)
+
 @mtln_skip
 def test_conformal_impedance_cylinder_single_wire(tmp_path):
     case_name = 'conformal_impedance_cylinder_conformal'

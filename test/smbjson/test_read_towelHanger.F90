@@ -24,25 +24,25 @@ contains
       call initializeProblemDescription(expected)
 
       ! Expected general info.
-      expected%general%dt = 1e-12
+      expected%general%dt = 1e-12_RKIND
       expected%general%nmax = 2000
 
       ! Excected media matrix.
-      expected%matriz%totalX = 60
-      expected%matriz%totalY = 60
-      expected%matriz%totalZ = 60
+      expected%matriz%totalX = 61
+      expected%matriz%totalY = 61
+      expected%matriz%totalZ = 61
 
       ! Expected grid.
-      expected%despl%nX = 60
-      expected%despl%nY = 60
-      expected%despl%nZ = 60
+      expected%despl%nX = 1
+      expected%despl%nY = 1
+      expected%despl%nZ = 1
 
-      allocate(expected%despl%desX(60))
-      allocate(expected%despl%desY(60))
-      allocate(expected%despl%desZ(60))
-      expected%despl%desX = 0.01
-      expected%despl%desY = 0.01
-      expected%despl%desZ = 0.01
+      allocate(expected%despl%desX(1:1))
+      allocate(expected%despl%desY(1:1))
+      allocate(expected%despl%desZ(1:1))
+      expected%despl%desX = 0.01_RKIND
+      expected%despl%desY = 0.01_RKIND
+      expected%despl%desZ = 0.01_RKIND
       expected%despl%mx1 = 0
       expected%despl%mx2 = 60
       expected%despl%my1 = 0
@@ -53,8 +53,8 @@ contains
       ! Expected boundaries.
       expected%front%tipoFrontera(:) = F_PML
       expected%front%propiedadesPML(:)%numCapas = 6
-      expected%front%propiedadesPML(:)%orden = 2.0
-      expected%front%propiedadesPML(:)%refl = 0.001
+      expected%front%propiedadesPML(:)%orden = 2.0_RKIND
+      expected%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected PEC regions.
       expected%pecRegs%nLins = 0
@@ -77,7 +77,8 @@ contains
       expected%pecRegs%Surfs(1)%tag =  "copper@ground_plane"
 
       ! expected mtln bundles
-      expected%mtln%time_step = 1e-12
+      ! expected%mtln%has_multiwires = .true.
+      expected%mtln%time_step = 1e-12_RKIND
       expected%mtln%number_of_steps = 2000
       deallocate(expected%mtln%cables)
       allocate(expected%mtln%cables(1))
@@ -86,7 +87,7 @@ contains
       expected%mtln%cables(1)%ptr%name = "wire"
       call initializeCablePulParameters(expected%mtln%cables(1)%ptr)
       allocate(expected%mtln%cables(1)%ptr%step_size(20))
-      expected%mtln%cables(1)%ptr%step_size =  [(0.01, i = 1, 20)]
+      expected%mtln%cables(1)%ptr%step_size =  [(0.01_RKIND, i = 1, 20)]
       allocate(expected%mtln%cables(1)%ptr%segments(20))
       
       do i = 1,2
@@ -153,7 +154,7 @@ contains
       expected%mtln%networks(1)%connections(1)%nodes(1)%side = TERMINAL_NODE_SIDE_INI
       expected%mtln%networks(1)%connections(1)%nodes(1)%belongs_to_cable =>  expected%mtln%cables(1)%ptr
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%termination_type = TERMINATION_SERIES
-      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 50.0
+      expected%mtln%networks(1)%connections(1)%nodes(1)%termination%resistance = 50.0_RKIND
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%source%path_to_excitation = "towelHanger.exc"
       expected%mtln%networks(1)%connections(1)%nodes(1)%termination%source%source_type = SOURCE_TYPE_VOLTAGE
 

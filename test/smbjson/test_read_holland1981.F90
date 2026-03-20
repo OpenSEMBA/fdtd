@@ -23,25 +23,25 @@ contains
       call initializeProblemDescription(ex)
 
       ! Expected general info.
-      ex%general%dt = 30e-12
+      ex%general%dt = 30e-12_RKIND
       ex%general%nmax = 1000
 
       ! Excected media matrix.
-      ex%matriz%totalX = 20
-      ex%matriz%totalY = 20
-      ex%matriz%totalZ = 22
+      ex%matriz%totalX = 21
+      ex%matriz%totalY = 21
+      ex%matriz%totalZ = 23
 
       ! Expected grid.
-      ex%despl%nX = 20
-      ex%despl%nY = 20
-      ex%despl%nZ = 22
+      ex%despl%nX = 1
+      ex%despl%nY = 1
+      ex%despl%nZ = 1
 
-      allocate(ex%despl%desX(20))
-      allocate(ex%despl%desY(20))
-      allocate(ex%despl%desZ(22))
-      ex%despl%desX = 0.1
-      ex%despl%desY = 0.1
-      ex%despl%desZ = 0.1
+      allocate(ex%despl%desX(1:1))
+      allocate(ex%despl%desY(1:1))
+      allocate(ex%despl%desZ(1:1))
+      ex%despl%desX = 0.1_RKIND
+      ex%despl%desY = 0.1_RKIND
+      ex%despl%desZ = 0.1_RKIND
       ex%despl%mx1 = 0
       ex%despl%mx2 = 20
       ex%despl%my1 = 0
@@ -52,8 +52,8 @@ contains
       ! Expected boundaries.
       ex%front%tipoFrontera(:) = F_PML
       ex%front%propiedadesPML(:)%numCapas = 6
-      ex%front%propiedadesPML(:)%orden = 2.0
-      ex%front%propiedadesPML(:)%refl = 0.001
+      ex%front%propiedadesPML(:)%orden = 2.0_RKIND
+      ex%front%propiedadesPML(:)%refl = 0.001_RKIND
 
       ! Expected sources.
       allocate(ex%plnSrc%collection(1))
@@ -61,13 +61,13 @@ contains
       ex%plnSrc%collection(1)%atributo = ""
       ex%plnSrc%collection(1)%coor1 = [1, 1, 1]
       ex%plnSrc%collection(1)%coor2 = [18, 18, 20]
-      ex%plnSrc%collection(1)%theta = 1.5708
-      ex%plnSrc%collection(1)%phi = 0.0
-      ex%plnSrc%collection(1)%alpha = 0.0
-      ex%plnSrc%collection(1)%beta = 0.0
+      ex%plnSrc%collection(1)%theta = 1.5708_RKIND
+      ex%plnSrc%collection(1)%phi = 0.0_RKIND
+      ex%plnSrc%collection(1)%alpha = 0.0_RKIND
+      ex%plnSrc%collection(1)%beta = 0.0_RKIND
       ex%plnSrc%collection(1)%isRC=.false.
       ex%plnSrc%collection(1)%nummodes=1
-      ex%plnSrc%collection(1)%INCERTMAX=0.0
+      ex%plnSrc%collection(1)%INCERTMAX=0.0_RKIND
       ex%plnSrc%nc = 1
       ex%plnSrc%nC_max = 1
 
@@ -75,21 +75,22 @@ contains
       ! sonda
       ex%Sonda%length = 1
       ex%Sonda%length_max = 1
+      ex%Sonda%len_cor_max = 1
       allocate(ex%Sonda%collection(1))
       ex%Sonda%collection(1)%outputrequest = "mid_point"
       ex%Sonda%collection(1)%type1 = NP_T1_PLAIN
       ex%Sonda%collection(1)%type2 = NP_T2_TIME
       ex%Sonda%collection(1)%filename = ' '
-      ex%Sonda%collection(1)%tstart = 0.0
-      ex%Sonda%collection(1)%tstop = 0.0
-      ex%Sonda%collection(1)%tstep = 0.0
-      ex%Sonda%collection(1)%fstart = 0.0
-      ex%Sonda%collection(1)%fstop = 0.0
-      ex%Sonda%collection(1)%fstep = 0.0
+      ex%Sonda%collection(1)%tstart = 0.0_RKIND
+      ex%Sonda%collection(1)%tstop = 0.0_RKIND
+      ex%Sonda%collection(1)%tstep = 0.0_RKIND
+      ex%Sonda%collection(1)%fstart = 0.0_RKIND
+      ex%Sonda%collection(1)%fstop = 0.0_RKIND
+      ex%Sonda%collection(1)%fstep = 0.0_RKIND
       allocate(ex%Sonda%collection(1)%cordinates(1))
       ex%Sonda%collection(1)%len_cor = 1
       ex%Sonda%collection(1)%cordinates(1)%tag = "mid_point"
-      ex%Sonda%collection(1)%cordinates(1)%Xi = 6 ! Segment id as tag.
+      ex%Sonda%collection(1)%cordinates(1)%Xi = 8 ! nd value of mid-point wire segment (nGlobal_offset=2, local_idx=6, nd = 2+6 = 8).
       ex%Sonda%collection(1)%cordinates(1)%Yi = 0
       ex%Sonda%collection(1)%cordinates(1)%Zi = 0
       ex%Sonda%collection(1)%cordinates(1)%Or = NP_COR_WIRECURRENT
@@ -97,7 +98,7 @@ contains
       
       ! Expected thin wires
       allocate(ex%tWires%tw(1))
-      ex%tWires%tw(1)%rad=0.02
+      ex%tWires%tw(1)%rad=0.02_RKIND
       ex%tWires%tw(1)%dispfile = trim(adjustl(" "))
       ex%tWires%tw(1)%dispfile_LeftEnd = trim(adjustl(" "))
       ex%tWires%tw(1)%dispfile_RightEnd = trim(adjustl(" "))
@@ -110,12 +111,14 @@ contains
       ex%tWires%tw(1)%twc(1:10)%j = 11
       ex%tWires%tw(1)%twc(1:10)%k = [(i, i=7, 16)]
       ex%tWires%tw(1)%twc(1:10)%d = DIR_Z
-      ex%tWires%tw(1)%twc(1:10)%nd = [(i, i=1, 10)]
+      ex%tWires%tw(1)%twc(1:10)%nd = [(i, i=3, 12)]
       
       ex%tWires%tw(1)%twc(1:10)%tag = "material1@layer2"
       
       ex%tWires%tw(1)%tl = MATERIAL_CONS
       ex%tWires%tw(1)%tr = MATERIAL_CONS
+      ex%tWires%tw(1)%LeftEnd = 1
+      ex%tWires%tw(1)%RightEnd = 2
       
       ex%tWires%n_tw = 1
       ex%tWires%n_tw_max = 1

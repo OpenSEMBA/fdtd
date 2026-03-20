@@ -1,0 +1,191 @@
+{
+    "_format": "FDTD Input file",
+    "general": {
+        "timeStep": 3.0813e-12,
+        "numberOfSteps": 1298
+    },
+    "boundary": {
+        "all": {
+            "type": "mur"
+        }
+    },
+    "mesh": {
+        "grid": {
+            "numberOfCells": [
+                20,
+                20,
+                20
+            ],
+            "steps": {
+                "x": [
+                    0.002
+                ],
+                "y": [
+                    0.002
+                ],
+                "z": [
+                    0.002
+                ]
+            }
+        },
+        "coordinates": [
+            {
+                "id": 1,
+                "relativePosition": [
+                    10.0,
+                    10.0,
+                    0.0
+                ]
+            },
+            {
+                "id": 2,
+                "relativePosition": [
+                    10.0,
+                    10.0,
+                    10.0
+                ]
+            },
+            {
+                "id": 3,
+                "relativePosition": [
+                    10.0,
+                    0.0,
+                    10.0
+                ]
+            }
+        ],
+        "elements": [
+            {
+                "id": 1,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            10.0,
+                            10.0,
+                            0.0
+                        ],
+                        [
+                            10.0,
+                            10.0,
+                            10.0
+                        ]
+                    ],
+                    [
+                        [
+                            10.0,
+                            10.0,
+                            10.0
+                        ],
+                        [
+                            10.0,
+                            0.0,
+                            10.0
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 2,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            9,
+                            9,
+                            9
+                        ],
+                        [
+                            11,
+                            9,
+                            11
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 3,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            9,
+                            10,
+                            9
+                        ],
+                        [
+                            11,
+                            10,
+                            11
+                        ]
+                    ]
+                ]
+            },
+            {
+                "id": 4,
+                "type": "cell",
+                "intervals": [
+                    [
+                        [
+                            9,
+                            11,
+                            9
+                        ],
+                        [
+                            11,
+                            11,
+                            11
+                        ]
+                    ]
+                ]
+            }
+        ]
+    },
+    "materials": [],
+    "materialAssociations": [],
+    "sources": [
+        {
+            "name": "nodalSource",
+            "type": "nodalSource",
+            "magnitudeFile": "predefinedExcitation.1.exc",
+            "elementIds": [
+                1
+            ]
+        }
+    ],
+    "probes": [
+        {
+            "name": "BulkCurrent1",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                2
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "BulkCurrent2",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                3
+            ],
+            "domain": {
+                "type": "time"
+            }
+        },
+        {
+            "name": "BulkCurrent3",
+            "type": "bulkCurrent",
+            "field": "electric",
+            "elementIds": [
+                4
+            ],
+            "domain": {
+                "type": "time"
+            }
+        }
+    ]
+}

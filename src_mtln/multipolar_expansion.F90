@@ -2,7 +2,7 @@ module multipolar_expansion_m
 
    use mtln_types_m
    use Report_m
-   use FDETYPES_m, only: pi, EPSILON_VACUUM, MU_VACUUM
+   use FDETYPES_m, only: pi, EPSILON_VACUUM, MU_VACUUM, RKIND
 
    type, private :: integration_grid_t
       real, dimension(:), allocatable :: x, y
@@ -151,7 +151,7 @@ contains
    end function
   
    function getCellCapacitanceOnBox(multipolarExpansionParameters, cellBox) result (res)
-      real, dimension(:,:), allocatable :: res
+      real(kind=RKIND), dimension(:,:), allocatable :: res
 
       type(multipolar_expansion_t), intent(in) :: multipolarExpansionParameters
       type(box_2d_t), intent(in) :: cellBox
@@ -180,7 +180,7 @@ contains
    end function
   
    function getCellInductanceOnBox(multipolarExpansionParameters, cellBox) result (res)
-      real, dimension(:,:), allocatable :: res
+      real(kind=RKIND), dimension(:,:), allocatable :: res
 
       type(multipolar_expansion_t), intent(in) :: multipolarExpansionParameters
       type(box_2d_t), intent(in) :: cellBox
