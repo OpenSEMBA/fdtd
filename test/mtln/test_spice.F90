@@ -109,7 +109,7 @@ integer function test_spice_tran() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         circuit%time = circuit%time + circuit%dt
-        if (checkNear(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -156,7 +156,7 @@ integer function test_spice_tran_2() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         circuit%time = circuit%time + circuit%dt
-        if (checkNear(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -241,7 +241,7 @@ integer function test_spice_multiple() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         circuit%time = circuit%time + circuit%dt
-        if (checkNear(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do
@@ -278,7 +278,7 @@ integer function test_spice_stop_mod_times() bind(C) result(error_cnt)
     do while (circuit%time < finalTime)
         call circuit%step()
         circuit%time = circuit%time + circuit%dt
-        if (checkNear(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
+        if (checkNear_time(circuit%getTime(), circuit%time, 0.01_rkind_tiempo) .eqv. .false. ) then 
             error_cnt = error_cnt + 1
         end if
     end do

@@ -10,8 +10,9 @@ module mtln_testingTools_mod
     character(len=*), parameter :: MTL_TYPE_UNSHIELDED = "unshielded"
 
     interface checkNear
-        module procedure checkNear_realkind
-        module procedure checkNear_timekind
+        module procedure checkNear_real
+        module procedure checkNear_time
+        module procedure checkNear_dp
     end interface checkNear
 
 contains
@@ -135,9 +136,9 @@ contains
         
     end subroutine 
 
-    function checkNear_realkind(target, number, rel_tol) result(is_near)
+    function checkNear_real(target, number, rel_tol) result(is_near)
         real(kind=rkind), intent(in) :: target, number
-        real :: rel_tol
+        real(kind=rkind) :: rel_tol
         logical :: is_near
         real :: abs_diff
 
@@ -150,9 +151,9 @@ contains
 
     end function 
 
-    function checkNear_timekind(target, number, rel_tol) result(is_near)
+    function checkNear_time(target, number, rel_tol) result(is_near)
         real(kind=rkind_tiempo), intent(in) :: target, number
-        real :: rel_tol
+        real(kind=rkind_tiempo) :: rel_tol
         logical :: is_near
         real :: abs_diff
 
