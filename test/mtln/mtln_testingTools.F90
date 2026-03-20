@@ -21,13 +21,13 @@ contains
     
         integer, intent(in) :: n
         character(len=*), intent(in) :: name
-        real, intent(in), optional :: dt
+        real(kind=rkind_tiempo), intent(in), optional :: dt
         character(len=*), intent(in), optional :: parent_name
         integer, intent(in), optional :: conductor_in_parent
         character(len=*), intent(in) :: type
         
-        real, allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
-        real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
+        real(kind=rkind), allocatable, dimension(:,:) :: lpul, cpul, rpul, gpul
+        real(kind=rkind), dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
         type(segment_t), allocatable, dimension(:) :: segments
         integer :: i,j
         
@@ -96,8 +96,8 @@ contains
 
     subroutine comparePULMatrices(error_cnt, m_line, m_input)
         integer, intent(inout) :: error_cnt
-        real, intent(in), dimension(:,:,:) :: m_line
-        real, intent(in), dimension(:,:) :: m_input
+        real(kind=rkind), intent(in), dimension(:,:,:) :: m_line
+        real(kind=rkind), intent(in), dimension(:,:) :: m_input
         integer :: i
 
         if (size(m_input, dim = 1) .ne. size(m_input, dim = 2)) then
@@ -115,8 +115,8 @@ contains
 
     subroutine comparePULMatricesIH(error_cnt, m_line, m_input)
         integer, intent(inout) :: error_cnt
-        real, intent(in), dimension(:,:,:) :: m_line
-        real, intent(in), dimension(:,:,:) :: m_input
+        real(kind=rkind), intent(in), dimension(:,:,:) :: m_line
+        real(kind=rkind), intent(in), dimension(:,:,:) :: m_input
         integer :: i
 
         if (size(m_input, dim = 2) .ne. size(m_input, dim = 2)) then
