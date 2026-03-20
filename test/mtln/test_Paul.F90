@@ -17,10 +17,10 @@ integer function test_termination_resistive() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind),dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind),dimension(1,1) :: gpul = 0.0
+    real(kind=rkind),dimension(1,1) :: rpul = 0.0
+    real(kind=rkind),dimension(1,1) :: cpul = 100.0e-12
     error_cnt = 0
 
     cable%name = "wire0"
@@ -119,10 +119,10 @@ integer function test_termination_resistive_inductive() bind(C) result(error_cnt
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind),dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind),dimension(1,1) :: gpul = 0.0
+    real(kind=rkind),dimension(1,1) :: rpul = 0.0
+    real(kind=rkind),dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -223,10 +223,10 @@ integer function test_termination_resistive_capacitive_parallel() bind(C) result
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind),dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind),dimension(1,1) :: gpul = 0.0
+    real(kind=rkind),dimension(1,1) :: rpul = 0.0
+    real(kind=rkind),dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -327,10 +327,10 @@ integer function test_termination_rls_cp() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -430,10 +430,10 @@ integer function test_termination_rls_cp_ns() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     real :: final_time
 
@@ -540,10 +540,10 @@ integer function test_termination_rcp() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -644,10 +644,10 @@ integer function test_termination_resistive_capacitive() bind(C) result(error_cn
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     error_cnt = 0
 
@@ -748,10 +748,10 @@ integer function test_coaxial_line_paul_8_6_square() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     character(20) :: charR, charL, charC, lineC
     integer :: i
@@ -872,10 +872,10 @@ integer function test_coaxial_line_paul_8_6_triangle() bind(C) result(error_cnt)
 
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.25e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 100.0e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.25e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 100.0e-12
 
     character(20) :: charR, charL, charC, lineC
     integer :: i 
@@ -996,10 +996,10 @@ integer function test_2_conductor_line_paul_9_6_1c() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_left, probe_v_right, probe_v_mid, probe_i_left, probe_i_right, probe_i_mid
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(1,1) :: lpul = 0.805756e-6
-    real,dimension(1,1) :: gpul = 0.0
-    real,dimension(1,1) :: rpul = 0.0
-    real,dimension(1,1) :: cpul = 117.791e-12
+    real(kind=rkind), dimension(1,1) :: lpul = 0.805756e-6
+    real(kind=rkind), dimension(1,1) :: gpul = 0.0
+    real(kind=rkind), dimension(1,1) :: rpul = 0.0
+    real(kind=rkind), dimension(1,1) :: cpul = 117.791e-12
 
 
     character(20) :: charR, charL, charC, lineC
@@ -1124,10 +1124,10 @@ integer function test_2_conductor_line_paul_9_6() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_left, probe_v_right, probe_v_mid, probe_i_left, probe_i_right, probe_i_mid
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(2,2) :: lpul = reshape( source = [0.805756e-6, 0.538771e-6, 0.538771e-6, 1.07754e-6], shape = [2,2])
-    real,dimension(2,2) :: gpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: rpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: cpul = reshape( source = [117.791e-12, -58.8956e-12, -58.8956e-12, 71.8544e-12], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.805756e-6, 0.538771e-6, 0.538771e-6, 1.07754e-6], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [117.791e-12, -58.8956e-12, -58.8956e-12, 71.8544e-12], shape = [2,2])
 
 
     character(20) :: charR, charL, charC, lineC
@@ -1300,10 +1300,10 @@ integer function test_2_conductor_line_paul_9_11_20ns() bind(C) result(error_cnt
     type(parsed_probe_t) :: probe_v_101, probe_v_201
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(2,2) :: lpul = reshape( source = [0.7485e-6, 0.5077e-6, 0.5077e-6, 1.0154e-6], shape = [2,2])
-    real,dimension(2,2) :: gpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: rpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: cpul = reshape( source = [37.432e-12, -18.716e-12, -18.716e-12, 24.982e-12], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.7485e-6, 0.5077e-6, 0.5077e-6, 1.0154e-6], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [37.432e-12, -18.716e-12, -18.716e-12, 24.982e-12], shape = [2,2])
 
     real :: final_time
 
@@ -1416,10 +1416,10 @@ integer function test_2_conductor_line_paul_9_11_1ns() bind(C) result(error_cnt)
     type(parsed_probe_t) :: probe_v_101, probe_v_201
     type(preprocess_t) :: pre
     type(mtln_t) :: solver
-    real,dimension(2,2) :: lpul = reshape( source = [0.7485e-6, 0.5077e-6, 0.5077e-6, 1.0154e-6], shape = [2,2])
-    real,dimension(2,2) :: gpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: rpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
-    real,dimension(2,2) :: cpul = reshape( source = [37.432e-12, -18.716e-12, -18.716e-12, 24.982e-12], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: lpul = reshape( source = [0.7485e-6, 0.5077e-6, 0.5077e-6, 1.0154e-6], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: gpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: rpul = reshape( source = [0.0, 0.0,0.0,0.0], shape = [2,2])
+    real(kind=rkind), dimension(2,2) :: cpul = reshape( source = [37.432e-12, -18.716e-12, -18.716e-12, 24.982e-12], shape = [2,2])
 
     real :: final_time
 

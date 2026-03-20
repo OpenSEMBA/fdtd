@@ -3,10 +3,10 @@ integer function test_multipolar_expansion_for_dipole() bind(C) result(error_cnt
     use multipolar_expansion_m
     use mtln_testingTools_mod
     
-    real, dimension(2) :: expansionCenter = [0.0, 0.0]
-    real :: d=0.1, r=1.0 
-    real :: vComputed, vExpected
-    real, dimension(2) :: pos
+    real(kind=rkind), dimension(2) :: expansionCenter = [0.0, 0.0]
+    real(kind=rkind) :: d=0.1, r=1.0 
+    real(kind=rkind) :: vComputed, vExpected
+    real(kind=rkind), dimension(2) :: pos
     type(multipolar_coefficient_t), dimension(2) :: ab
 
     error_cnt = 0
