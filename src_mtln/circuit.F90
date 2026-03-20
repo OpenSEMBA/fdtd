@@ -226,7 +226,6 @@ contains
         class(circuit_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: dt
         character(20) :: charTime
-        real(kind=RKIND) :: time
         write(charTime, *) real(dt, SINGLE)
         call command('stop when time mod '//charTime // c_null_char)
     end subroutine
@@ -361,7 +360,7 @@ contains
 
     function getTime(this) result(res)
         class(circuit_t) :: this
-        real(kind=rkind) :: res
+        real(kind=rkind_tiempo) :: res
         res = this%nodes%values(findIndexByName(this%nodes%names, "time"))%time
     end function
 
