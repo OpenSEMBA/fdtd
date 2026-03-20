@@ -100,21 +100,21 @@ contains
 
     subroutine initialAllocation(this)
         class(mtl_bundle_t) :: this
-        allocate(this%lpul(this%number_of_divisions, this%number_of_conductors, this%number_of_conductors), source = 0.0)
-        allocate(this%cpul(this%number_of_divisions + 1, this%number_of_conductors, this%number_of_conductors), source = 0.0)
-        allocate(this%gpul(this%number_of_divisions + 1, this%number_of_conductors, this%number_of_conductors), source = 0.0)
-        allocate(this%rpul(this%number_of_divisions, this%number_of_conductors, this%number_of_conductors), source = 0.0)
-        allocate(this%du(this%number_of_divisions, this%number_of_conductors, this%number_of_conductors), source = 0.0)
+        allocate(this%lpul(this%number_of_divisions, this%number_of_conductors, this%number_of_conductors), source = 0.0_rkind)
+        allocate(this%cpul(this%number_of_divisions + 1, this%number_of_conductors, this%number_of_conductors), source = 0.0_rkind)
+        allocate(this%gpul(this%number_of_divisions + 1, this%number_of_conductors, this%number_of_conductors), source = 0.0_rkind)
+        allocate(this%rpul(this%number_of_divisions, this%number_of_conductors, this%number_of_conductors), source = 0.0_rkind)
+        allocate(this%du(this%number_of_divisions, this%number_of_conductors, this%number_of_conductors), source = 0.0_rkind)
         
-        allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0)
-        allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0)
-        allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0)
+        allocate(this%v(this%number_of_conductors, this%number_of_divisions + 1), source = 0.0_rkind)
+        allocate(this%i(this%number_of_conductors, this%number_of_divisions), source = 0.0_rkind)
+        allocate(this%e_L(this%number_of_conductors, this%number_of_divisions), source = 0.0_rkind)
         
-        allocate(this%i_term(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
-        allocate(this%v_diff(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0)
+        allocate(this%i_term(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0_rkind)
+        allocate(this%v_diff(this%number_of_divisions,this%number_of_conductors,this%number_of_conductors), source = 0.0_rkind)
 
-        allocate(this%v_term(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors), source = 0.0)
-        allocate(this%i_diff(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors), source = 0.0)
+        allocate(this%v_term(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors), source = 0.0_rkind)
+        allocate(this%i_diff(this%number_of_divisions + 1,this%number_of_conductors,this%number_of_conductors), source = 0.0_rkind)
 
     end subroutine
 
