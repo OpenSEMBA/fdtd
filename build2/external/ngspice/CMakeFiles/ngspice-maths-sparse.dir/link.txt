@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libngspice-maths-sparse.a "CMakeFiles/ngspice-maths-sparse.dir/src/maths/sparse/spextra.c.o" "CMakeFiles/ngspice-maths-sparse.dir/src/maths/sparse/spbuild.c.o" "CMakeFiles/ngspice-maths-sparse.dir/src/maths/sparse/spfactor.c.o" "CMakeFiles/ngspice-maths-sparse.dir/src/maths/sparse/sputils.c.o" "CMakeFiles/ngspice-maths-sparse.dir/src/maths/sparse/spsolve.c.o" "CMakeFiles/ngspice-maths-sparse.dir/src/maths/sparse/spalloc.c.o" "CMakeFiles/ngspice-maths-sparse.dir/src/maths/sparse/spoutput.c.o"
+/usr/bin/ranlib ../../lib/libngspice-maths-sparse.a

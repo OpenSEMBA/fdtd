@@ -1,0 +1,14 @@
+# The fortran modules provided by this target.
+provides
+ fhash.mod
+ fhash_data_container.mod
+ fhash_fnv.mod
+ fhash_key_base.mod
+ fhash_key_char.mod
+ fhash_key_int32.mod
+ fhash_key_int32_1d.mod
+ fhash_key_int64.mod
+ fhash_key_int64_1d.mod
+ fhash_sll.mod
+ fhash_tbl.mod
+ fhash_tbl_iter.mod

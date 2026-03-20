@@ -1,0 +1,2 @@
+/usr/bin/ar qc lib/libsemba-outputs.a "CMakeFiles/semba-outputs.dir/src_main_pub/mpicomm.F90.o" "CMakeFiles/semba-outputs.dir/src_main_pub/observation.F90.o" "CMakeFiles/semba-outputs.dir/src_main_pub/vtk.F90.o" "CMakeFiles/semba-outputs.dir/src_main_pub/xdmf.F90.o" "CMakeFiles/semba-outputs.dir/src_main_pub/xdmf_h5.F90.o"
+/usr/bin/ranlib lib/libsemba-outputs.a

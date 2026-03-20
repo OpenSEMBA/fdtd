@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libvtk_tests.a CMakeFiles/vtk_tests.dir/vtk_tests.cpp.o
+/usr/bin/ranlib ../../lib/libvtk_tests.a

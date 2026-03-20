@@ -1,0 +1,15 @@
+# The fortran modules provided by this target.
+provides
+ calc_constants_m.mod
+ creatematrices_m.mod
+ epsmutimescale_m.mod
+ getargs_m.mod
+ interpreta_switches_m.mod
+ nfde_rotate_m.mod
+ postprocessing_m.mod
+ preprocess_m.mod
+ resuming_m.mod
+ semba_fdtd_m.mod
+ solver_m.mod
+ storedata_m.mod
+ version_m.mod

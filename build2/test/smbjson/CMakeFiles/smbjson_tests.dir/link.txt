@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libsmbjson_tests.a CMakeFiles/smbjson_tests.dir/smbjson_tests.cpp.o
+/usr/bin/ranlib ../../lib/libsmbjson_tests.a

@@ -1,0 +1,2 @@
+/usr/bin/ar qc ../../lib/libngspice-maths-klu.a "CMakeFiles/ngspice-maths-klu.dir/src/maths/KLU/klusmp.c.o"
+/usr/bin/ranlib ../../lib/libngspice-maths-klu.a

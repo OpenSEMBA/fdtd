@@ -1,0 +1,9 @@
+# The fortran modules provided by this target.
+provides
+ cells_m.mod
+ idchildtable_m.mod
+ mesh_m.mod
+ nfdetypes_extension_m.mod
+ parser_tools_m.mod
+ smbjson_labels_m.mod
+ smbjson_m.mod
