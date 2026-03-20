@@ -1,2 +1,0 @@
-/usr/bin/ar qc ../../lib/libconformal_test_fortran.a CMakeFiles/conformal_test_fortran.dir/test_geometry.F90.o CMakeFiles/conformal_test_fortran.dir/test_cell_map.F90.o CMakeFiles/conformal_test_fortran.dir/test_filling.F90.o
-/usr/bin/ranlib ../../lib/libconformal_test_fortran.a
