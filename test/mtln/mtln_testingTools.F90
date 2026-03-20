@@ -11,7 +11,7 @@ module mtln_testingTools_mod
 
     interface checkNear
         module procedure checkNear_realkind
-        module procedure checkNear_realtimekind
+        module procedure checkNear_timekind
     end interface checkNear
 
 contains
@@ -137,7 +137,7 @@ contains
 
     function checkNear_realkind(target, number, rel_tol) result(is_near)
         real(kind=rkind), intent(in) :: target, number
-        real(kind=rkind) :: rel_tol
+        real :: rel_tol
         logical :: is_near
         real :: abs_diff
 
@@ -150,9 +150,9 @@ contains
 
     end function 
 
-    function checkNear_realtimekind(target, number, rel_tol) result(is_near)
+    function checkNear_timekind(target, number, rel_tol) result(is_near)
         real(kind=rkind_tiempo), intent(in) :: target, number
-        real(kind=rkind_tiempo) :: rel_tol
+        real :: rel_tol
         logical :: is_near
         real :: abs_diff
 
