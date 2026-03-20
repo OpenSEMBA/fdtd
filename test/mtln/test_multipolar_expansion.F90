@@ -16,7 +16,7 @@ integer function test_multipolar_expansion_for_dipole() bind(C) result(error_cnt
     
     ! First test
     block
-        pos = [r, 0.0]
+        pos = [r, 0.0_rkind]
         vComputed = multipolarExpansion2D(pos, ab, expansionCenter)
         vExpected = 1.0 / (2.0 * pi) * log((r + d / 2.0) / (r - d / 2.0))
         if (abs(vExpected - vComputed) > 1e-4) then
@@ -26,7 +26,7 @@ integer function test_multipolar_expansion_for_dipole() bind(C) result(error_cnt
 
     ! Second test
     block
-        pos = [0.0, r]
+        pos = [0.0_rkind, r]
         vComputed = multipolarExpansion2D(pos, ab, expansionCenter)
         vExpected = 0.0
         if (abs(vExpected - vComputed) > 1e-4) then
