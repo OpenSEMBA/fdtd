@@ -150,7 +150,7 @@ contains
 
     end function 
 
-    function checkNear_realkind(target, number, rel_tol) result(is_near)
+    function checkNear_realtimekind(target, number, rel_tol) result(is_near)
         real(kind=rkind_tiempo), intent(in) :: target, number
         real(kind=rkind_tiempo) :: rel_tol
         logical :: is_near
