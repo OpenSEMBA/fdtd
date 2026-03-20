@@ -6,7 +6,7 @@ integer function test_mtl_wrong_dt() bind(C) result(error_cnt)
 
 
     type(mtl_t) :: line
-    real :: dt = 1.0 
+    real(kind=RKIND_tiempo) :: dt = 1.0 
     line = buildLineWithNConductors(2,'line0', dt = dt, type = "shielded")
     error_cnt = 0
     if (line%dt == dt) then 
@@ -24,15 +24,15 @@ integer function test_mtl_init_homogeneous() bind(C) result(error_cnt)
     integer :: i,j
 
     
-    real,dimension(2,2) :: lpul = reshape( &
+    real(kind=rkind),dimension(2,2) :: lpul = reshape( &
         source = [ 4.4712610E-07, 1.4863653E-07, 1.4863653E-07, 4.4712610E-07 ], shape = [ 2,2 ] )
-    real,dimension(2,2) :: cpul = reshape( &
+    real(kind=rkind),dimension(2,2) :: cpul = reshape( &
         source = [ 2.242e-10, -7.453e-11,-7.453e-11, 2.242e-10 ], shape = [ 2,2 ] )
-    real,dimension(2,2) :: rpul = reshape( &
+    real(kind=rkind),dimension(2,2) :: rpul = reshape( &
         source = [ 0.0, 0.0, 0.0, 0.0 ], shape = [ 2,2 ] )
-    real,dimension(2,2) :: gpul = reshape( &
+    real(kind=rkind),dimension(2,2) :: gpul = reshape( &
         source = [ 0.0, 0.0, 0.0, 0.0 ], shape = [ 2,2 ] )
-    real, dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
+    real(kind=rkind), dimension(5) :: step_size = [20.0, 20.0, 20.0, 20.0, 20.0]
     type(segment_t), dimension(:), allocatable :: segments
 
     type(mtl_t) :: line 
@@ -78,7 +78,7 @@ integer function test_mtl_time_step() bind(C) result(error_cnt)
 
 
     type(mtl_t) :: line 
-    line = buildLineWithNConductors(2, "line0", dt = 1e-6, type = "unshielded")
+    line = buildLineWithNConductors(2, "line0", dt = 1e-6_rkind_tiempo, type = "unshielded")
 
     error_cnt = 0
 
