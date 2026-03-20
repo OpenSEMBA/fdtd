@@ -10,7 +10,6 @@ module mtln_testingTools_mod
     character(len=*), parameter :: MTL_TYPE_UNSHIELDED = "unshielded"
 
     interface checkNear
-        module procedure checkNear_time
         module procedure checkNear_real
         module procedure checkNear_dp
     end interface checkNear
