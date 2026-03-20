@@ -1495,7 +1495,12 @@ contains
                                               conductor = n + parsed_generators(i)%conductor, &
                                               gen_type = parsed_generators(i)%generator_type, &
                                               resistance = parsed_generators(i)%resistance, &
-                                              path = parsed_generators(i)%path_to_excitation)
+                                              path = parsed_generators(i)%path_to_excitation &
+#ifdef CompileWithMPI                                               
+                                             ,layer_indices = this%bundles(d)%layer_indices & 
+#endif                        
+                                          )
+
         end do
     end subroutine
 

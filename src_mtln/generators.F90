@@ -2,6 +2,9 @@ module generators_m
 
     
     use mtln_types_m, only: SOURCE_TYPE_UNDEFINED, SOURCE_TYPE_VOLTAGE, SOURCE_TYPE_CURRENT   
+#ifdef CompileWithMPI
+    use FDETYPES_m, only: SUBCOMM_MPI
+#endif
 
     implicit none
 
@@ -10,6 +13,7 @@ module generators_m
         real, dimension(:), allocatable :: time, value
         real :: resistance
         integer :: source_type = SOURCE_TYPE_UNDEFINED
+        logical :: in_layer = .true.
     contains
         procedure :: initGenerator
         procedure :: interpolate
@@ -22,17 +26,44 @@ module generators_m
 
 contains
 
-    function generatorCtor(index, conductor, gen_type, resistance, path) result(res)
+    function generatorCtor(index, conductor, gen_type, resistance, path, layer_indices) result(res)
         type(generator_t) :: res
         integer, intent(in) :: index, conductor, gen_type
         real :: resistance
         character(*), intent(in) :: path
+        integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
+#ifdef CompileWithMPI
+        integer :: layer_index, ierr, sizeof, i, slice
+#endif
 
         res%index = index
         res%conductor = conductor
         res%resistance = resistance
         res%source_type = gen_type
-        call res%initGenerator(path)
+#ifdef CompileWithMPI
+        if (present(layer_indices)) then
+            call MPI_COMM_SIZE(SUBCOMM_MPI, sizeof, ierr)
+            if (sizeof > 1) then
+                res%in_layer = .false.
+                do i = 1, size(layer_indices,1) 
+                    if (index >= layer_indices(i, 1) .and. index <= layer_indices(i,2)+1) then 
+                        res%in_layer = .true.
+                        slice = i
+                    end if
+                end do
+
+                layer_index = 0
+                if (res%in_layer) then 
+                    do i = 1, slice - 1
+                        layer_index = layer_index + layer_indices(i,2) + 1 - (layer_indices(i,1) - 1)
+                    end do
+                    layer_index = layer_index + res%index - layer_indices(i,1) + 1
+                end if
+                res%index = layer_index
+            end if
+        end if
+#endif
+        if (res%in_layer) call res%initGenerator(path)
     end function
 
     subroutine initGenerator(this, path)

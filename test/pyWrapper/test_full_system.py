@@ -1586,6 +1586,9 @@ def test_conformal_delay(tmp_path):
         
 
 def test_current_generators(tmp_path):
+    # Checks current and voltage of probes at the extremes of a wire
+    # with a current generator in the middle of the wire
+    
     fn = CASES_FOLDER + 'sources/sources_current.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
@@ -1609,11 +1612,9 @@ def test_current_generators(tmp_path):
     assert np.allclose(Vend['voltage_0'][-100:-1], 16.666, rtol=0.005)
     assert np.allclose(Vstart['voltage_0'][-100:-1], -16.666, rtol=0.005)
 
-    # solver["sources"][0]["elementIds"] = [1]
-    # solver.cleanUp()
-    # solver.run()
-
 def test_voltage_generators(tmp_path):
+    # Checks current and voltage of probes at the extremes of bundle (1 conductor + 1 shield)
+    # with a voltage generator in the middle of the inner conductor
     fn = CASES_FOLDER + 'sources/sources_voltage.fdtd.json'
     solver = FDTD(input_filename=fn, path_to_exe=SEMBA_EXE,
                   run_in_folder=tmp_path, flags=['-mapvtk'])
@@ -1642,10 +1643,6 @@ def test_voltage_generators(tmp_path):
     assert np.allclose(Istart['current_1'][-100:-1], 1.0/3.0, rtol=0.005)
     assert np.allclose(Vend['voltage_1'][-100:-1],   -16.666, rtol=0.005)
     assert np.allclose(Vstart['voltage_1'][-100:-1], -16.666, rtol=0.005)
-
-    # solver["sources"][0]["elementIds"] = [1]
-    # solver.cleanUp()
-    # solver.run()
 
 
 def test_bulk_current_outputs(tmp_path):

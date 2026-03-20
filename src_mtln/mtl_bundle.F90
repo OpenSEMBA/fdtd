@@ -246,11 +246,12 @@ contains
         this%probes(size(aux_probes)+1) = new_probe
     end subroutine
 
-    subroutine addGenerator(this, index, conductor, gen_type, resistance, path)
+    subroutine addGenerator(this, index, conductor, gen_type, resistance, path, layer_indices)
         class(mtl_bundle_t) :: this
         integer, intent(in) :: index, conductor, gen_type
         real :: resistance
         character(*), intent(in) :: path
+        integer(kind=4), dimension(:,:), intent(in), optional :: layer_indices
 
         type(generator_t), allocatable, dimension(:) :: aux_generators
         type(generator_t) :: new_generator
@@ -258,7 +259,7 @@ contains
         deallocate(this%generators)
         allocate(this%generators(size(aux_generators)+1))
 #ifdef CompileWithMPI
-        ! new_generator = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
+        new_generator = probeCtor(index, probe_type, this%dt, name, position, layer_indices = layer_indices)
 #else
         new_generator = generatorCtor(index, conductor, gen_type, resistance, path)
 #endif
@@ -378,12 +379,16 @@ contains
         real :: val
         integer :: i
         do i = 1, size(this%generators)
-            if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then
-                val = 0.5*(this%generators(i)%interpolate(time+dt)+this%generators(i)%interpolate(time))
-                this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val/this%du(this%generators(i)%index, this%generators(i)%conductor, this%generators(i)%conductor)
-            else if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then
-                val = 0.5*(this%generators(i)%interpolate(time+dt)+this%generators(i)%interpolate(time))
-                this%v_source(this%generators(i)%conductor, this%generators(i)%index) = val*this%generators(i)%resistance/this%du(this%generators(i)%index, this%generators(i)%conductor, this%generators(i)%conductor)
+            if (this%generators(i)%in_layer) then 
+                if (this%generators(i)%source_type == SOURCE_TYPE_VOLTAGE) then
+                    val = 0.5*(this%generators(i)%interpolate(time+dt)+this%generators(i)%interpolate(time))
+                    this%v_source(this%generators(i)%conductor, this%generators(i)%index) = & 
+                        val/this%du(this%generators(i)%index, this%generators(i)%conductor, this%generators(i)%conductor)
+                else if (this%generators(i)%source_type == SOURCE_TYPE_CURRENT) then
+                    val = 0.5*(this%generators(i)%interpolate(time+dt)+this%generators(i)%interpolate(time))
+                    this%v_source(this%generators(i)%conductor, this%generators(i)%index) = & 
+                        val*this%generators(i)%resistance/this%du(this%generators(i)%index, this%generators(i)%conductor, this%generators(i)%conductor)
+                end if
             end if
         end do
 
