@@ -102,7 +102,7 @@ module  FDETYPES_m
    integer(kind=4), parameter  :: INTEGERSIZE=MPI_INTEGER4
 #endif
 #endif
-    integer(kind=4), parameter  :: IKINDMTAG=4 !PARA SGGMTAG 151020 !dejarlo en 4 bytes. No tocar
+   integer(kind=4), parameter  :: IKINDMTAG=4 !PARA SGGMTAG 151020 !dejarlo en 4 bytes. No tocar
 
    integer(kind=2), parameter  :: SINGLE=4
    integer(kind=2), parameter  :: DOUBLE=8

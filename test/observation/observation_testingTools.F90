@@ -142,10 +142,6 @@ contains
       end do
    end function create_time_array
 
-   function create_limit_type() result(r)
-      type(limit_t) :: r
-   end function
-
    function create_xyz_limit_array(XI,YI,ZI,XE,YE,ZE) result(arr)
       type(XYZlimit_t), dimension(1:6) :: arr
       integer(kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
@@ -200,10 +196,11 @@ contains
 
    function create_base_sgg() result(sgg)
       type(SGGFDTDINFO_t) :: sgg
+      type(MediaData_t) :: basic_media
       
       sgg%NumMedia = 3
       allocate(sgg%Med(0:sgg%NumMedia))
-      sgg%Med = create_basic_media()
+      sgg%Med = basic_media
       sgg%NumberRequest = 1
       sgg%dt = 0.1_RKIND_tiempo
       sgg%tiempo => create_time_array(100, sgg%dt)
@@ -213,10 +210,6 @@ contains
       sgg%alloc = create_xyz_limit_array(0,0,0,6,6,6)
  
    end function create_base_sgg
-
-   function create_basic_media () result(media)
-      type(MediaData_t) :: media
-   end function create_basic_media
 
    function get_temp_dir() result(tmpdir)
       character(len=BUFSIZE) :: tmpdir

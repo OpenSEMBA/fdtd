@@ -1,5 +1,5 @@
 module mtln_types_m
-   use FDETYPES_m, ONLY: direction_t, BUFSIZE
+   use FDETYPES_m, ONLY: direction_t, BUFSIZE, RKIND, RKIND_TIEMPO
    implicit none
 
    integer, parameter :: TERMINATION_UNDEFINED  = -1
@@ -14,6 +14,7 @@ module mtln_types_m
    integer, parameter :: TERMINATION_RCsLp      =  9
    integer, parameter :: TERMINATION_LCsRp      =  10
    integer, parameter :: TERMINATION_CIRCUIT    =  11
+   integer, parameter :: TERMINATION_NETWORK    =  12
 
    integer, parameter :: TERMINAL_NODE_SIDE_UNDEFINED = -1
    integer, parameter :: TERMINAL_NODE_SIDE_INI       =  1
@@ -48,7 +49,7 @@ module mtln_types_m
 
    type terminal_circuit_t
       character(len=256) :: file = ""
-      character(len=256) :: model_name = ""
+      character(len=256) :: name = ""
    end type
 
    type, public :: termination_t
@@ -58,7 +59,7 @@ module mtln_types_m
       real :: capacitance = 1e22
       type(node_source_t) :: source
       type(terminal_circuit_t) :: model
-      integer :: subcircuitPort = -1
+      integer :: networkCircuitNode = -1
    contains
       private
       procedure :: termination_eq
@@ -77,18 +78,17 @@ module mtln_types_m
    end type
 
 
-   type :: subcircuit_t
+   type :: network_circuit_t
       character(len=256) :: model_file = ""
       character(len=256) :: model_name = ""
-      character(len=256) :: subcircuit_name = ""
-      integer :: numberOfPorts
-      integer :: nodeId
+      character(len=256) :: circuit_name = ""
+      integer :: number_of_nodes = -1
+      integer :: nodeId = -1
    end type
 
    type :: terminal_connection_t
       type(terminal_node_t), dimension(:), allocatable :: nodes
-      type(subcircuit_t) :: subcircuit
-      logical :: has_subcircuit = .false.
+      type(network_circuit_t) :: network_circuit
    contains
       private
       procedure :: terminal_connection_eq
@@ -240,7 +240,7 @@ module mtln_types_m
       type(terminal_network_t), dimension(:), allocatable :: networks
       type(probe_t), dimension(:), allocatable :: probes
       type(connector_t), dimension(:), pointer :: connectors
-      real :: time_step = 0.0
+      real(kind=RKIND_TIEMPO) :: time_step = 0.0
       integer :: number_of_steps = 0
       integer :: n_sh = 0, n_unsh = 0
    contains

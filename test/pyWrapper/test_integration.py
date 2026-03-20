@@ -9,7 +9,7 @@ def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
     solver['general']['numberOfSteps'] = number_of_steps
 
     solver['materials'][0] = createWire(id = 1, r = 0.02)
-    outfile = 'holland1981.fdtd_mid_point_Wz_11_11_12_s6.dat'
+    outfile = 'holland1981.fdtd_mid_point_Wz_11_11_12_s8.dat'
     solver.run()
 
     probe_files = solver.getSolvedProbeFilenames("mid_point")
@@ -34,7 +34,7 @@ def test_holland_case_checking_number_of_outputs_wire(tmp_path):
 
     assert len(probe_files) == 1
     assert outfile == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
+    assert countLinesInFile(probe_files[0]) == number_of_steps + 1
 
 @no_mtln_skip
 def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
@@ -51,7 +51,7 @@ def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
 
     assert len(probe_files) == 1
     assert outfile == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == number_of_steps + 2
+    assert countLinesInFile(probe_files[0]) == number_of_steps + 1
 
 
 @mtln_skip
@@ -70,9 +70,9 @@ def test_towel_hanger_case_creates_output_probes(tmp_path):
     assert len(probe_mid) == 1
     assert len(probe_end) == 1
 
-    assert 'towelHanger.fdtd_wire_start_Wz_27_25_30_s1.dat' == probe_start[0]
-    assert 'towelHanger.fdtd_wire_mid_Wx_35_25_32_s11.dat' == probe_mid[0]
-    assert 'towelHanger.fdtd_wire_end_Wz_43_25_30_s20.dat' == probe_end[0]
+    assert 'towelHanger.fdtd_wire_start_Wz_27_25_30_s3.dat' == probe_start[0]
+    assert 'towelHanger.fdtd_wire_mid_Wx_35_25_32_s13.dat' == probe_mid[0]
+    assert 'towelHanger.fdtd_wire_end_Wz_43_25_30_s22.dat' == probe_end[0]
     assert countLinesInFile(probe_start[0]) == 3
     assert countLinesInFile(probe_mid[0]) == 3
     assert countLinesInFile(probe_end[0]) == 3
