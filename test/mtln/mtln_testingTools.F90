@@ -43,10 +43,10 @@ contains
         allocate(Zt%poles(0), Zt%residues(0))
         allocate(mE(0))
 
-        allocate(lpul(n,n), source = 0.0)
-        allocate(cpul(n,n), source = 0.0)
-        allocate(gpul(n,n), source = 0.0)
-        allocate(rpul(n,n), source = 0.0)
+        allocate(lpul(n,n), source = 0.0_rkind)
+        allocate(cpul(n,n), source = 0.0_rkind)
+        allocate(gpul(n,n), source = 0.0_rkind)
+        allocate(rpul(n,n), source = 0.0_rkind)
         allocate(segments(5))
         do i = 1, 5
             segments(i)%x = 1
@@ -87,7 +87,7 @@ contains
             end if
             res = mtl_shielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, parent, conductor, Zt)
         else if (type == MTL_TYPE_UNSHIELDED) then 
-            res = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, mE, radius = 0.0)
+            res = mtl_unshielded(lpul, cpul, rpul, gpul, step_size, name, segments, time_step, mE, radius = 0.0_rkind)
         else
             write(*,*) 'Unrecognized line type'
         end if
