@@ -80,7 +80,7 @@ contains
       eps0=eps00; mu0=mu00; !chapuz para convertir la variables de paso en globales
 !         
 !!!
-      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%num_procs,') '
       unstable=.false.
 !
       ThereArePMLbodies=.FALSE.

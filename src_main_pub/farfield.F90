@@ -81,7 +81,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!! Initializes Plane Wave data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitFarField(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,size, &
+   subroutine InitFarField(sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz,layoutnumber,num_procs, &
    b,resume, unitfarfield,filefarfield, &
    esqx1,esqx2,esqy1,esqy2,esqz1,esqz2, &
    InitialFreq,FinalFreq,FreqStep,phiStart ,phiStop,phiStep,thetaStart,thetaStop ,thetaStep,FileNormalize, &
@@ -116,7 +116,7 @@ contains
       sggMiHy(sgg%alloc(iHy)%XI : sgg%alloc(iHy)%XE,sgg%alloc(iHy)%YI : sgg%alloc(iHy)%YE,sgg%alloc(iHy)%ZI : sgg%alloc(iHy)%ZE), &
       sggMiHz(sgg%alloc(iHz)%XI : sgg%alloc(iHz)%XE,sgg%alloc(iHz)%YI : sgg%alloc(iHz)%YE,sgg%alloc(iHz)%ZI : sgg%alloc(iHz)%ZE)
       real(kind=RKIND) ::tiempo1,tiempo2,field1,field2,dtevol
-      integer j,k,field,i,layoutnumber,size,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
+      integer j,k,field,i,layoutnumber,num_procs,ii,esqx1,esqx2,esqy1,esqy2,esqz1,esqz2,pozi
       character(len=BUFSIZE) :: buFF
       logical :: errnofile,error
 
@@ -468,7 +468,7 @@ contains
       FF%farfieldAr_clonePEC_Down.OR.FF%farfieldAr_clonePMC_Down
       if (error) then
          buff='NF2FF STILL UNSUPPORTED'
-         call stoponerror(layoutnumber,size,Buff)
+         call stoponerror(layoutnumber,num_procs,Buff)
       end if
       !!!fin casuistica de clonados periodicos
 
@@ -573,7 +573,7 @@ contains
                   if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -586,7 +586,7 @@ contains
                   if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             End do
          end do
@@ -602,7 +602,7 @@ contains
                   if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -615,7 +615,7 @@ contains
                   if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -631,7 +631,7 @@ contains
                   if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -644,7 +644,7 @@ contains
                   if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -660,7 +660,7 @@ contains
                   if (((sggMiEz(i,j,k) ==0).or.(sgg%med(sggMiEz(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -673,7 +673,7 @@ contains
                   if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             End do
          end do
@@ -689,7 +689,7 @@ contains
                   if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -702,7 +702,7 @@ contains
                   if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -718,7 +718,7 @@ contains
                   if (((sggMiEx(i,j,k) ==0).or.(sgg%med(sggMiEx(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -731,7 +731,7 @@ contains
                   if (((sggMiEy(i,j,k) ==0).or.(sgg%med(sggMiEy(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -747,7 +747,7 @@ contains
                   if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -760,7 +760,7 @@ contains
                   if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -775,7 +775,7 @@ contains
                   if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -788,7 +788,7 @@ contains
                   if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -804,7 +804,7 @@ contains
                   if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -817,7 +817,7 @@ contains
                   if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -832,7 +832,7 @@ contains
                   if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -845,7 +845,7 @@ contains
                   if (((sggMiHz(i,j,k) ==0).or.(sgg%med(sggMiHz(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -860,7 +860,7 @@ contains
                   if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -873,7 +873,7 @@ contains
                   if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -889,7 +889,7 @@ contains
                   if (((sggMiHx(i,j,k) ==0).or.(sgg%med(sggMiHx(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -902,7 +902,7 @@ contains
                   if (((sggMiHy(i,j,k) ==0).or.(sgg%med(sggMiHy(i,j,k) )%is%pec)).and. .not. &
                   ((i == sgg%SINPMLSweep(iHx)%XI).or.(j == sgg%SINPMLSweep(iHy)%YI).or.(k == sgg%SINPMLSweep(iHz)%ZI).or. &
                   (i == sgg%SINPMLSweep(iHx)%XE).or.(j == sgg%SINPMLSweep(iHy)%YE).or.(k == sgg%SINPMLSweep(iHz)%ZE))) &
-                  call stoponerror(layoutnumber,size,Buff)
+                  call stoponerror(layoutnumber,num_procs,Buff)
                end if
             end do
          end do
@@ -919,11 +919,11 @@ contains
 
       if ((FF%NumFreqs < 0)) then
          write(Buff,*) 'Freq. range for NF/FF invalid',FF%NumFreqs,FF%InitialFreq,FF%FinalFreq,FF%FreqStep
-         call stoponerror(layoutnumber,size,Buff)
+         call stoponerror(layoutnumber,num_procs,Buff)
       end if
       if ((FF%NumFreqs > 100000)) then
          Buff='Too many NF/FF frequencies requested (>100000)'
-         call stoponerror(layoutnumber,size,Buff)
+         call stoponerror(layoutnumber,num_procs,Buff)
       end if
 
      allocate(FF%expIwdt(1:FF%NumFreqs),FF%auxExp_E(1:FF%NumFreqs),FF%auxExp_H(1:FF%NumFreqs),FF%dftEntrada(1:FF%NumFreqs))
@@ -984,7 +984,7 @@ contains
       inquire(FILE=trim(adjustl(FF%FileNormalize)), EXIST=errnofile)
       if ( .NOT. errnofile) then
          Buff=trim(adjustl(FF%FileNormalize))//' DOES NOT EXIST'
-         call STOPONERROR (layoutnumber,size,Buff)
+         call STOPONERROR (layoutnumber,num_procs,Buff)
       end if
       open(15, FILE=trim(adjustl(FF%FileNormalize)))
       READ (15,*) tiempo1, field1
@@ -2371,7 +2371,7 @@ contains
 
    !!!!!!!!!!!!!!!!!!!!!!!calculo del far field propiamente dicho y volcado en fichero
 
-   subroutine FlushFarfield(layoutnumber,size, b, dxe, dye, dze, dxh, dyh, dzh,facesNF2FF,rinstant)
+   subroutine FlushFarfield(layoutnumber,num_procs, b, dxe, dye, dze, dxh, dyh, dzh,facesNF2FF,rinstant)
       type(co_t) :: co,new_co
       type(nf2ff_t) :: facesNF2FF
       type( bounds_t), intent( IN) :: b
@@ -2383,7 +2383,7 @@ contains
       real(kind = RKIND), dimension( 0 :  b%dyh%NY-1), intent( IN) :: dyh
       real(kind = RKIND), dimension( 0 :  b%dzh%NZ-1), intent( IN) :: dzh
 
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
 
       integer(kind=4) :: ntheta,nphi,ithe,iphi,ii,i,j,k,i_m,j_m,k_m,pasadas
       real(kind = RKIND) :: theta,phi,sintheta_sinphi,sintheta_cosphi, &
