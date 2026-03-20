@@ -142,7 +142,7 @@ contains
       thereAreIsources=.false.
       thereAreMurConditions=.false.
 
-      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',control%layoutnumber+1,'/',control%num_procs,') '
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1353,8 +1353,8 @@ contains
          (k > SINPML_fullsize(whatfield)%ZI).and. &
          (k < SINPML_fullsize(whatfield)%ZE)) then
             if (control%makeholes.and.(.not.IsEnd_norLeft_norRight).and.(.not.Is_LeftEnd).and.(.not.Is_RightEnd)) then
-                if (control%size==0) then 
-                    call stoponerror(control%layoutnumber,control%size,'Makeholes not available for MPI. Stoppping. ')
+                if (control%num_procs==0) then 
+                    call stoponerror(control%layoutnumber,control%num_procs,'Makeholes not available for MPI. Stoppping. ')
                 end if
                select case (whatfield)
                 case (iEx)
@@ -5877,11 +5877,11 @@ subroutine resume_casuistics
 
    !!!!!!!!!!!!!!!!!!!!Just for reporting
    !!! It also set the IsHeterogeneousJunction flag correctly (not needed for anything else than reporting)
-   subroutine ReportWireJunctions(layoutnumber,size,therearewires,ZI,ZE,groundwires,strictOLD,verbose)
+   subroutine ReportWireJunctions(layoutnumber,num_procs,therearewires,ZI,ZE,groundwires,strictOLD,verbose)
 
       logical :: paralelos,groundwires,therearewires,Terminal,IsHeterogeneousJunction,paraErr,strictOLD,verbose
       character(len=BUFSIZE) :: buff
-      integer(kind=4) :: i1,j1,layoutnumber,zi,ze,ierr,size,indio
+      integer(kind=4) :: i1,j1,layoutnumber,zi,ze,ierr,num_procs,indio
       integer(kind=4) :: mini=1000000000,minj=1000000000,mink=1000000000,maxi=-1000000000,maxj=-1000000000,maxk=-1000000000
       type(CurrentSegments_t), pointer  :: org,fin
       character(len=3), dimension(1:3) :: DIR

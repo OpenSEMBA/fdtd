@@ -68,12 +68,12 @@ module MPIcomm_m
 contains
 
 
-   subroutine InitGeneralMPI(layoutnumber,size)
-      integer(kind=4) :: layoutnumber,size  !ojo he quitado el , intent(in) pq ambas son de salida 031218
+   subroutine InitGeneralMPI(layoutnumber,num_procs)
+      integer(kind=4) :: layoutnumber,num_procs  !ojo he quitado el , intent(in) pq ambas son de salida 031218
       character(len=MPI_MAX_PROCESSOR_NAME) :: name
       integer(kind=4) namelen, ierr
       call MPI_INIT (ierr)
-      call MPI_COMM_SIZE (MPI_COMM_WORLD, size, ierr)
+      call MPI_COMM_SIZE (MPI_COMM_WORLD, num_procs, ierr)
       call MPI_COMM_RANK (MPI_COMM_WORLD, layoutnumber, ierr)
       call MPI_GET_PROCESSOR_NAME (name, namelen, ierr)
       call MPI_Barrier(MPI_COMM_WORLD,ierr)
@@ -83,11 +83,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! DIVIDES COMPUTATIONAL REGION INTO LAYOUTS AND READS GEOM DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine MPIdivide(sgg,fullsize,SINPML_FULLSIZE,layoutnumber,size,forcing,forced,slicesoriginales,resume,fatalerror)
+   subroutine MPIdivide(sgg,fullsize,SINPML_FULLSIZE,layoutnumber,num_procs,forcing,forced,slicesoriginales,resume,fatalerror)
 
       type(SGGFDTDINFO_t), intent(INOUT) :: sgg
       type(limit_t), dimension(1:6) :: fullsize,SINPML_fullsize
-      integer(kind=4) size, layoutnumber,ilay,padding,index(1:1),j
+      integer(kind=4) num_procs, layoutnumber,ilay,padding,index(1:1),j
       integer(kind=4) forced
       logical :: forcing
       integer(kind=4), dimension( : ), pointer :: trancos
@@ -106,17 +106,17 @@ contains
       sggPMLNumLayers_original(:)=sgg%PML%NumLayers(3,:) !bug 310124 slices justo en PML
       originalPML_up_or_down=sgg%Border%IsUpPML.or.sgg%Border%IsDownPML !bug 310124 slices justo en PML
       
-      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
       cZE => null(); cZI=> null(); trancos=> null(); mpizcom=> null(); mpizfin=> null();
       !
       !clip the simulation region
       !Take into account the PML overhead factor plusCPU_PML (2= double overhead, 1=no overhead)
-      allocate(trancos(0 : size-1),cZI(0 : size),cZE(0 : size-1))
-      carga= 1.0_RKIND *(fullsize(iHz)%ZE        - fullsize(iHz)%ZI)/(1.0_RKIND * size) + &
+      allocate(trancos(0 : num_procs-1),cZI(0 : num_procs),cZE(0 : num_procs-1))
+      carga= 1.0_RKIND *(fullsize(iHz)%ZE        - fullsize(iHz)%ZI)/(1.0_RKIND * num_procs) + &
       (plusCPU_PML-1.0_RKIND)*((SINPML_fullsize(iHz)%ZI - fullsize(iHz)%ZI)   + &
-      (fullsize(iHz)%ZE - SINPML_fullsize(iHz)%ZE))/(1.0_RKIND * size)
+      (fullsize(iHz)%ZE - SINPML_fullsize(iHz)%ZE))/(1.0_RKIND * num_procs)
       cZI(0)=fullsize(iHz)%ZI
-      do ilay=0,size-1
+      do ilay=0,num_procs-1
          guess=carga+cZI(ilay)+(plusCPU_PML-1.0_RKIND)*(min(cZI(ilay),1.0_RKIND * sinpml_fullsize(iHz)%ZI) + &
          max(cZI(ilay),1.0_RKIND * sinpml_fullsize(iHz)%ZE))
          ZE(1)=(guess-(plusCPU_PML-1.0_RKIND)*(sinpml_fullsize(iHz)%ZI))/(1.0_RKIND+(plusCPU_PML-1.0_RKIND))
@@ -134,7 +134,7 @@ contains
       end do
  
      if (forcing) then
-        if (size==2) then
+        if (num_procs==2) then
             write(dubuf,*) 'Forcing MPI cut at ',forced
             call print11(layoutnumber,dubuf)
             cZI=-1;cZE=-1; !voided
@@ -147,51 +147,51 @@ contains
             cZI(ilay)=cZE(ilay-1)
             cZE(ilay)= fullsize(iHz)%ZE  !14
         else
-            write(dubuf,*) 'Cannot force for more than 1 cut in a size=2 MPI'
+            write(dubuf,*) 'Cannot force for more than 1 cut in a num_procs=2 MPI'
             call print11(layoutnumber,dubuf,.true.)
         end if
      end if
       
-      do ilay=0,size-1
+      do ilay=0,num_procs-1
          cZE(ilay)=nint(cZE(ilay))
          cZI(ilay+1)=cZE(ilay)
          trancos(ilay)=int(cZE(ilay)-cZI(0))
       end do
       !end PML CPU overhead tunning
 
-      allocate (mpiZcom(0:size-1),mpiZfin(0:size-1))
+      allocate (mpiZcom(0:num_procs-1),mpiZfin(0:num_procs-1))
       mpiZcom(0)=fullsize(iHz)%ZI
       mpiZfin(0)=fullsize(iHz)%ZI+trancos(0)
-      do ilay=1,size-2
+      do ilay=1,num_procs-2
          mpiZcom(ilay)=fullsize(iHz)%ZI+trancos(ilay-1)
          mpiZfin(ilay)=fullsize(iHz)%ZI+trancos(ilay)
       end do
-      mpiZcom(size-1)=fullsize(iHz)%ZI+trancos(size-2)
-      mpiZfin(size-1)=fullsize(iHz)%ZE
+      mpiZcom(num_procs-1)=fullsize(iHz)%ZI+trancos(num_procs-2)
+      mpiZfin(num_procs-1)=fullsize(iHz)%ZE
 
       !asign the  limits
-      if ((LAYOUTNUMBER>0).and.(LAYOUTNUMBER<size-1)) then
+      if ((LAYOUTNUMBER>0).and.(LAYOUTNUMBER<num_procs-1)) then
          sgg%Sweep(1:6)%ZI=fullsize(1:6)%ZI+trancos(LAYOUTNUMBER-1)
          sgg%Sweep(1:6)%ZE=fullsize(1:6)%ZI+trancos(LAYOUTNUMBER  )
-      elseif ((layoutnumber == 0).and.(LAYOUTNUMBER/=size-1))  then
+      elseif ((layoutnumber == 0).and.(LAYOUTNUMBER/=num_procs-1))  then
          sgg%Sweep(1:6)%ZI=fullsize(1:6)%ZI
          sgg%Sweep(1:6)%ZE=fullsize(1:6)%ZI+trancos(LAYOUTNUMBER)
-      elseif ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==size-1)) then
+      elseif ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==num_procs-1)) then
          sgg%Sweep(1:6)%ZI=fullsize(1:6)%ZI+trancos(LAYOUTNUMBER-1)
          sgg%Sweep(1:6)%ZE=fullsize(1:6)%ZE
       end if
       !adjust THE ENDINGS OF THE INTERMDIATE computational limits
-      if ((LAYOUTNUMBER>0).and.(LAYOUTNUMBER<size-1)) then
+      if ((LAYOUTNUMBER>0).and.(LAYOUTNUMBER<num_procs-1)) then
          !adjust computational limits
          sgg%Sweep(iEz)%ZE=sgg%Sweep(iEz)%ZE-1
          sgg%Sweep(iHx)%ZE=sgg%Sweep(iHx)%ZE-1
          sgg%Sweep(iHy)%ZE=sgg%Sweep(iHy)%ZE-1
-      elseif ((layoutnumber == 0).and.(LAYOUTNUMBER/=size-1))  then
+      elseif ((layoutnumber == 0).and.(LAYOUTNUMBER/=num_procs-1))  then
          !adjust computational limits
          sgg%Sweep(iEz)%ZE=sgg%Sweep(iEz)%ZE-1
          sgg%Sweep(iHx)%ZE=sgg%Sweep(iHx)%ZE-1
          sgg%Sweep(iHy)%ZE=sgg%Sweep(iHy)%ZE-1
-      elseif ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==size-1)) then
+      elseif ((LAYOUTNUMBER/=0).and.(LAYOUTNUMBER==num_procs-1)) then
          continue
          !adjustment not necessary since fullsize%ZE is already adjusted
       end if
@@ -204,7 +204,7 @@ contains
       if (padding >= minval(trancos)) then
          buff='Number of cells per processor less than 2. Decrease the number of MPI processors'
 !intento recuperarme de este error
-         call stoponerror(layoutnumber,size,buff,.true.); 
+         call stoponerror(layoutnumber,num_procs,buff,.true.); 
          if (associated(cZe)) deallocate(cZe,cZi)
          if (associated(mpizcom)) deallocate(mpizcom,mpizfin)
          if (associated(trancos)) deallocate(trancos)
@@ -213,7 +213,7 @@ contains
       end if
       if ( minval(trancos) <= 2) then
          buff='Number of cells per processor less than 2. Decrease the number of MPI processors'
-         call stoponerror(layoutnumber,size,buff,.true.)
+         call stoponerror(layoutnumber,num_procs,buff,.true.)
          if (associated(cZe)) deallocate(cZe,cZi)
          if (associated(mpizcom)) deallocate(mpizcom,mpizfin)
          if (associated(trancos)) deallocate(trancos)
@@ -221,13 +221,13 @@ contains
          return
       end if
       !must be in agreement with the timestepping padding stuff
-      if ((layoutnumber>0).and.(layoutnumber<size-1)) then
+      if ((layoutnumber>0).and.(layoutnumber<num_procs-1)) then
          sgg%alloc(1:6)%ZI=sgg%Sweep(1:6)%ZI - padding !I read one more MM for routines (wires, e.g.) requiring it
          sgg%alloc(1:6)%ZE=sgg%Sweep(1:6)%ZE + padding !I read one more MM for routines (wires, e.g.) requiring it
-      elseif ((layoutnumber == 0).and.(layoutnumber/=size-1)) then
+      elseif ((layoutnumber == 0).and.(layoutnumber/=num_procs-1)) then
          sgg%alloc(1:6)%ZI=sgg%Sweep(1:6)%ZI-1  !I use this extra length in the global boundaries
          sgg%alloc(1:6)%ZE=sgg%Sweep(1:6)%ZE + padding !I read one more MM for routines (wires, e.g.) requiring it
-      elseif ((layoutnumber/=0).and.(layoutnumber==size-1)) then
+      elseif ((layoutnumber/=0).and.(layoutnumber==num_procs-1)) then
          sgg%alloc(1:6)%ZI=sgg%Sweep(1:6)%ZI - padding
          sgg%alloc(1:6)%ZE=sgg%Sweep(1:6)%ZE+1   !I use this extra length in the global boundaries
       end if
@@ -238,7 +238,7 @@ contains
          sgg%Border%IsUpmur=.false.
          sgg%Border%IsUpPMC=.false.
          sgg%Border%IsUpPEC=.false.   !no PML layers UP
-      elseif (layoutnumber==size-1) then
+      elseif (layoutnumber==num_procs-1) then
          sgg%Border%IsDownPML=.false.
          sgg%Border%IsDownmur=.false.
          sgg%Border%IsDownPMC=.false.
@@ -271,19 +271,19 @@ contains
       !writing
       if (layoutnumber==0) then
          slices='!SLICES'
-         do ilay=0,size-1
+         do ilay=0,num_procs-1
             write(buff,'(i7)') mpiZfin(ilay)-mpiZcom(ilay)
             Slices=trim(adjustl(slices))//'_'//trim(adjustl(buff))
          end do
          if (resume.and.(Slices /= SlicesOriginales)) then
             buff='Different resumed/original MPI slices: ' &
             //trim(adjustl(Slices))//' '//trim(adjustl(SlicesOriginales))
-            call StopOnError(layoutnumber,size,buff)
+            call StopOnError(layoutnumber,num_procs,buff)
          end if
          call print11(layoutnumber,trim(adjustl(slices)))
-         do ilay=0,size-1
+         do ilay=0,num_procs-1
             write(buff,'(a,i5,a,i5,a,i7,a,i7,a,i7)')  &
-            '(',ilay+1,'/',size,') Spanning from z=',mpiZcom(ilay),' to ',mpiZfin(ilay), &
+            '(',ilay+1,'/',num_procs,') Spanning from z=',mpiZcom(ilay),' to ',mpiZfin(ilay), &
             ' = ',mpiZfin(ilay)-mpiZcom(ilay)
             call print11(layoutnumber,buff)
          end do
@@ -291,12 +291,12 @@ contains
       !end writing
 
       !bug 310124 cuando PML coincide con la primera celda de la ultima particion
-      !no me complico y fuerzo menos MPI size
+      !no me complico y fuerzo menos MPI num_procs
       if ((originalPML_up_or_down).and. &
              (mpiZfin(layoutnumber)-mpiZcom(layoutnumber)<=minval(sggPMLNumLayers_original))) then
            write(buff,'(a,i3,i3)') trim(adjustl(whoami))//' Minimum slice sizes along MPI should be larger that PML number of layers ', &
               mpiZfin(layoutnumber)-mpiZcom(layoutnumber), minval(sggPMLNumLayers_original)
-            call StopOnError(layoutnumber,size,buff)
+            call StopOnError(layoutnumber,num_procs,buff)
       end if
       deallocate(cZE,cZI,trancos,mpizcom,mpizfin)
 
@@ -382,28 +382,28 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! Init the sync the Bloque current data
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine MPIinitSubcomm(layoutnumber,size,SubComm,Root,group1)
-      integer(kind=4), intent(in) :: layoutnumber,size
+   subroutine MPIinitSubcomm(layoutnumber,num_procs,SubComm,Root,group1)
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       integer(kind=4) :: count,i
       integer(kind=4) :: ierr,wgroup,GROUP1,SubComm,Root,NewRoot
       logical, pointer, dimension( : ) :: newallranks ,allranks
       integer(kind=4), pointer, dimension( : ) :: NGroup
-      allocate (allranks(0 : size-1),newallranks(0 : size-1))
+      allocate (allranks(0 : num_procs-1),newallranks(0 : num_procs-1))
       !         
       allranks=.false.
       !print *,'---layoutnumber, subcomm',layoutnumber,subcomm
       if (Subcomm == 1) allranks(layoutnumber)=.true.
-      call MPI_AllReduce(allranks, newallranks, size, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
+      call MPI_AllReduce(allranks, newallranks, num_procs, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
       !choose the maximum layer to be root !ojo no poner el minimo pq es -1 (voided de entrada)
       call MPI_AllReduce(Root, newRoot, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
       Root=newRoot
       count=-1
-      do i=0,size-1
+      do i=0,num_procs-1
          if (newallranks(i)) count=count+1
       end do
       allocate (NGroup(0 : count))
       count=-1
-      do i=0,size-1
+      do i=0,num_procs-1
          if (newallranks(i)) then
             count=count+1
             NGroup(count)=i
@@ -431,7 +431,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! TRANSFERS THE FIELDS AMONG LAYERS
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine FlushMPI_H(sggalloc,layoutnumber,size, Hx,Hy,Hz)
+   subroutine FlushMPI_H(sggalloc,layoutnumber,num_procs, Hx,Hy,Hz)
       type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
 !!!! reutilizo esta subroutina para sincronizar matrices de medios. Las de campo las hacen los _Cray 210815
 !!!! ojo hay que cambiar tambien si algun dia se vuelve a esta rutina para comunicar reales INTEGERSIZE por REALSIZE
@@ -446,7 +446,7 @@ contains
 
       integer(kind=4) :: ierr1,ierr2,ierr3,ierr4,ierr5,ierr6,ierr7,ierr8,ierr9,ierr10,ierr11,ierr12,ierr100,ierr100b
       integer(kind=4) :: jerr1,jerr2,jerr3,jerr4,jerr5,jerr6,jerr7,jerr8,jerr9,jerr10,jerr11,jerr12,jerr100,jerr100b
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       integer(kind=4) :: req1 (1 : 4),req2 (1 : 4),status1 (MPI_STATUS_SIZE,1 : 4),status2 (MPI_STATUS_SIZE,1 : 4)
       integer(kind=4) :: req1b(1 : 2),req2b(1 : 2),status1b(MPI_STATUS_SIZE,1 : 2),status2b(MPI_STATUS_SIZE,1 : 2)
 
@@ -454,7 +454,7 @@ contains
 
       ierr1=0;ierr2=0;ierr3=0;ierr4=0;ierr5=0;ierr6=0;ierr7=0;ierr8=0;ierr9=0;ierr10=0;ierr11=0;ierr12=0;ierr100=0;ierr100b=0;
       jerr1=0;jerr2=0;jerr3=0;jerr4=0;jerr5=0;jerr6=0;jerr7=0;jerr8=0;jerr9=0;jerr10=0;jerr11=0;jerr12=0;jerr100=0;jerr100b=0;
-      if (layoutnumber/=size-1) then !syncUp
+      if (layoutnumber/=num_procs-1) then !syncUp
          !print *,'---fluHup>',layoutnumber
          call MPI_IRECV     (Hx(HxXI,HxYI,finZ+1), sizeHx, INTEGERSIZE, layoutnumber+1_4,  1_4, SUBCOMM_MPI, req1(1 ), ierr1 )
          call MPI_ISEND     (Hx(HxXI,HxYI,finZ  ), sizeHx, INTEGERSIZE, layoutnumber+1_4,  2_4, SUBCOMM_MPI, req1(2 ), ierr2 )
@@ -484,10 +484,10 @@ contains
             call MPI_IRECV (Hz(HzXI,HzYI,comZ-1), sizeHz, INTEGERSIZE, layoutnumber-1_4, 6_4, SUBCOMM_MPI, req2b(2), jerr12)
          end if
       ELSE !only NEEDED BY THE PERIODIC BOUNDARY CONDITIONS
-         call MPI_ISEND     (Hx(HxXI,HxYI,comZ  ), sizeHx, INTEGERSIZE, size-1_4,  1_4, SUBCOMM_MPI, req2(1 ), jerr1 )
-         call MPI_IRECV     (Hx(HxXI,HxYI,comZ-1), sizeHx, INTEGERSIZE, size-1_4,  2_4, SUBCOMM_MPI, req2(2 ), jerr2 )
-         call MPI_ISEND     (Hy(HyXI,HyYI,comZ  ), sizeHy, INTEGERSIZE, size-1_4,  3_4, SUBCOMM_MPI, req2(3 ), jerr3 )
-         call MPI_IRECV     (Hy(HyXI,HyYI,comZ-1), sizeHy, INTEGERSIZE, size-1_4,  4_4, SUBCOMM_MPI, req2(4 ), jerr4 )
+         call MPI_ISEND     (Hx(HxXI,HxYI,comZ  ), sizeHx, INTEGERSIZE, num_procs-1_4,  1_4, SUBCOMM_MPI, req2(1 ), jerr1 )
+         call MPI_IRECV     (Hx(HxXI,HxYI,comZ-1), sizeHx, INTEGERSIZE, num_procs-1_4,  2_4, SUBCOMM_MPI, req2(2 ), jerr2 )
+         call MPI_ISEND     (Hy(HyXI,HyYI,comZ  ), sizeHy, INTEGERSIZE, num_procs-1_4,  3_4, SUBCOMM_MPI, req2(3 ), jerr3 )
+         call MPI_IRECV     (Hy(HyXI,HyYI,comZ-1), sizeHy, INTEGERSIZE, num_procs-1_4,  4_4, SUBCOMM_MPI, req2(4 ), jerr4 )
       end if
       !
       if (layoutnumber/=0    )  then
@@ -496,7 +496,7 @@ contains
             call MPI_WAITALL(2_4,req2b,status2b,ierr100b)
          end if
       end if
-      if (layoutnumber/=size-1) then
+      if (layoutnumber/=num_procs-1) then
          call MPI_WAITALL(4_4,req1,status1,jerr100)
          if (FlushExtraInfoUp) then
             call MPI_WAITALL(2_4,req1b,status1b,jerr100b)
@@ -509,14 +509,14 @@ contains
 
       if (ierr1+ierr2+ierr3+ierr4+ierr5+ierr6+ierr7+ierr8+ierr9+ierr10+ierr11+ierr12+ierr100+ierr100b+ &
       jerr1+jerr2+jerr3+jerr4+jerr5+jerr6+jerr7+jerr8+jerr9+jerr10+jerr11+jerr12+jerr100+jerr100b /= 0) &
-      call StopOnError(layoutnumber,size,'FLUSHMPI')
+      call StopOnError(layoutnumber,num_procs,'FLUSHMPI')
 
       return
    end subroutine
    !
    !
 
-   subroutine FlushMPI_E(sggalloc,layoutnumber,size, Ex,Ey,Ez)
+   subroutine FlushMPI_E(sggalloc,layoutnumber,num_procs, Ex,Ey,Ez)
       type(XYZlimit_t), dimension(1:6), intent(in)                      :: sggAlloc
 !!!! reutilizo esta subroutina para sincronizar matrices de medios. Las de campo las hacen los _Cray 210815
 !!!! ojo hay que cambiar tambien si algun dia se vuelve a esta rutina para comunicar reales INTEGERSIZE por REALSIZE
@@ -531,13 +531,13 @@ contains
 
       integer(kind=4) :: ierr1,ierr2,ierr3,ierr4,ierr5,ierr6,ierr7,ierr8,ierr9,ierr10,ierr11,ierr12,ierr100,ierr100b
       integer(kind=4) :: jerr1,jerr2,jerr3,jerr4,jerr5,jerr6,jerr7,jerr8,jerr9,jerr10,jerr11,jerr12,jerr100,jerr100b
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       integer(kind=4) :: req1 (1 : 2),req2 (1 : 2),status1 (MPI_STATUS_SIZE,1 : 2),status2 (MPI_STATUS_SIZE,1 : 2)
       integer(kind=4) :: req1b(1 : 4),req2b(1 : 4),status1b(MPI_STATUS_SIZE,1 : 4),status2b(MPI_STATUS_SIZE,1 : 4)
 
       ierr1=0;ierr2=0;ierr3=0;ierr4=0;ierr5=0;ierr6=0;ierr7=0;ierr8=0;ierr9=0;ierr10=0;ierr11=0;ierr12=0;ierr100=0;ierr100b=0;
       jerr1=0;jerr2=0;jerr3=0;jerr4=0;jerr5=0;jerr6=0;jerr7=0;jerr8=0;jerr9=0;jerr10=0;jerr11=0;jerr12=0;jerr100=0;jerr100b=0;
-      if (layoutnumber/=size-1) then !syncUp
+      if (layoutnumber/=num_procs-1) then !syncUp
          if (FlushExtraInfoUp) then
             !print *,'---fluEextraup>',layoutnumber
             call MPI_IRECV (Ez(EzXI,EzYI,finZ+1), sizeEz, INTEGERSIZE, layoutnumber+1_4,  1_4, SUBCOMM_MPI, req1(1 ), ierr5 )
@@ -568,7 +568,7 @@ contains
             call MPI_WAITALL(4_4,req2b,status2b,ierr100b)
          end if
       end if
-      if (layoutnumber/=size-1) then
+      if (layoutnumber/=num_procs-1) then
          if (FlushExtraInfoUp) then
             call MPI_WAITALL(2_4,req1,status1,jerr100)
             call MPI_WAITALL(4_4,req1b,status1b,jerr100b)
@@ -581,7 +581,7 @@ contains
 
       if (ierr1+ierr2+ierr3+ierr4+ierr5+ierr6+ierr7+ierr8+ierr9+ierr10+ierr11+ierr12+ierr100+ierr100b+ &
       jerr1+jerr2+jerr3+jerr4+jerr5+jerr6+jerr7+jerr8+jerr9+jerr10+jerr11+jerr12+jerr100+jerr100b /= 0) &
-      call StopOnError(layoutnumber,size,'FLUSHMPI')
+      call StopOnError(layoutnumber,num_procs,'FLUSHMPI')
 
       return
    end subroutine
@@ -597,11 +597,11 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-   subroutine newInitWiresMPI(layoutnumber,therearewires,size,resume,c)
+   subroutine newInitWiresMPI(layoutnumber,therearewires,num_procs,resume,c)
       type(XYZlimit_t), dimension(1:6), intent(in) :: c
       !
       logical, intent(in) :: resume,therearewires  !controls wether to read something for resuming
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       integer(kind=4) :: i1,i,j
       integer(kind=4) :: SharescontaMPIdown,SharescontaMPIup,NeedscontaMPIdown,NeedscontaMPIup
 
@@ -609,7 +609,7 @@ contains
       integer(kind=4) :: ni,nj,nk,norigindex,idum
       type(CurrentSegments_t), pointer  :: segmento
       character(len=BUFSIZE) :: whoami
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
 
 
@@ -629,7 +629,7 @@ contains
       NeedscontaMPIdown=0
       NeedscontaMPIup=0
       !
-      if (layoutnumber/=size-1) then
+      if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
             if ((segmento%k==C(iEz)%ZE+1).and.(segmento%tipofield==iEz)) NeedscontaMPIup = NeedscontaMPIup + 1
@@ -646,7 +646,7 @@ contains
       !
       SharescontaMPIdown=0
       SharescontaMPIup=0
-      if (layoutnumber/=size-1) then
+      if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
             if ((segmento%k==C(iEz)%ZE).and.(segmento%tipofield==iEz)) SharescontaMPIup = SharescontaMPIup + 1
@@ -686,7 +686,7 @@ contains
       NeedscontaMPIdown=0
       NeedscontaMPIup=0
       !
-      if (layoutnumber/=size-1) then
+      if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
             if ((segmento%k==C(iEz)%ZE+1).and.(segmento%tipofield==iEz)) then
@@ -708,7 +708,7 @@ contains
 
       SharescontaMPIdown=0
       SharescontaMPIup=0
-      if (layoutnumber/=size-1) then
+      if (layoutnumber/=num_procs-1) then
          do i1=1,HwiresMPI%NumCurrentSegments
             segmento =>HwiresMPI%CurrentSegment(i1)
             if ((segmento%k==C(iEz)%ZE).and.(segmento%tipofield==iEz)) then
@@ -764,7 +764,7 @@ contains
          iBuffer%SendDown(4*i  )  =HwiresMPI%CurrentSegment(HwiresMPI%MPIDownSharedCurrentSegment(i)%EquivalentIndex)%origindex
       end do
 
-      call newFlushWiresMPIorigindexInfo(layoutnumber,size)
+      call newFlushWiresMPIorigindexInfo(layoutnumber,num_procs)
 
       do j=1,NeedscontaMPIdown
          ni       =IBuffer%RecDown(4*j-3)
@@ -811,23 +811,23 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! FLUSH WIRE DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine newFlushWiresMPIorigindexInfo(layoutnumber,size)
-      integer(kind=4), intent(in) :: layoutnumber,size
+   subroutine newFlushWiresMPIorigindexInfo(layoutnumber,num_procs)
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
       integer  :: status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
       integer  :: req1,req2,req11,req21
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: buff
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
 
       ierr1=0;ierr2=0;ierr3=0;ierr4=0;ierr5=0;ierr6=0;ierr7=0;ierr8=0;ierr9=0;ierr10=0;ierr11=0;ierr12=0;
 
       !
-      if ((layoutnumber/=size-1).and.(ibuffer%RecSizeUp/=0)) & !syncUp
+      if ((layoutnumber/=num_procs-1).and.(ibuffer%RecSizeUp/=0)) & !syncUp
       call MPI_IRECV (ibuffer%RecUp(1),  &
       ibuffer%RecSizeUp,  MPI_INTEGER, layoutnumber+1_4, 1_4, SUBCOMM_MPI, req1,  ierr5)
-      if ((layoutnumber/=size-1).and.(ibuffer%SendSizeUp/=0)) & !syncUp
+      if ((layoutnumber/=num_procs-1).and.(ibuffer%SendSizeUp/=0)) & !syncUp
       call MPI_ISEND (ibuffer%SendUp(1), &
       ibuffer%SendSizeUp, MPI_INTEGER, layoutnumber+1_4, 2_4, SUBCOMM_MPI, req11,  ierr6)
       if ((layoutnumber/=0    ).and.(ibuffer%SendSizeDown/=0)) & !syncDown
@@ -838,8 +838,8 @@ contains
       ibuffer%RecSizeDown, MPI_INTEGER, layoutnumber-1_4, 2_4, SUBCOMM_MPI, req21,  ierr8)
 
       !
-      if ((layoutnumber/=size-1).and.(ibuffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
-      if ((layoutnumber/=size-1).and.(ibuffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
+      if ((layoutnumber/=num_procs-1).and.(ibuffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
+      if ((layoutnumber/=num_procs-1).and.(ibuffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
       if ((layoutnumber/=0     ).and.(ibuffer%SendSizeDown/=0)) call MPI_WAIT(req2 ,status2,ierr10)
       if ((layoutnumber/=0     ).and.(ibuffer%RecSizeDown/=0))  call MPI_WAIT(req21,status2,ierr10)
       !
@@ -850,15 +850,15 @@ contains
       !
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
-         call stoponerror (layoutnumber,size,buff)
+         call stoponerror (layoutnumber,num_procs,buff)
       end if
-      if ((layoutnumber/=size-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
+      if ((layoutnumber/=num_procs-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
-         call stoponerror (layoutnumber,size,buff)
+         call stoponerror (layoutnumber,num_procs,buff)
       end if
       if (ierr9+ierr10+ierr11+ierr12 /= 0) then
          write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
-         call stoponerror (layoutnumber,size,buff)
+         call stoponerror (layoutnumber,num_procs,buff)
       end if
       return
    end subroutine newFlushWiresMPIorigindexInfo
@@ -866,14 +866,14 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! FLUSH WIRE DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine newFlushWiresMPI(layoutnumber,size)
-      integer(kind=4), intent(in) :: layoutnumber,size
+   subroutine newFlushWiresMPI(layoutnumber,num_procs)
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0,i
       integer :: status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
       integer :: req1,req2,req11,req21
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: buff
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
 
       ierr1=0;ierr2=0;ierr3=0;ierr4=0;ierr5=0;ierr6=0;ierr7=0;ierr8=0;ierr9=0;ierr10=0;ierr11=0;ierr12=0;
@@ -886,10 +886,10 @@ contains
       end do
 
       !
-      if ((layoutnumber/=size-1).and.(Buffer%RecSizeUp/=0)) & !syncUp
+      if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0)) & !syncUp
       call MPI_IRECV (Buffer%RecUp(1),  &
       Buffer%RecSizeUp, REALSIZE_wires, layoutnumber+1_4, 1_4, SUBCOMM_MPI, req1,  ierr5)
-      if ((layoutnumber/=size-1).and.(Buffer%SendSizeUp/=0)) & !syncUp
+      if ((layoutnumber/=num_procs-1).and.(Buffer%SendSizeUp/=0)) & !syncUp
       call MPI_ISEND (Buffer%SendUp(1), &
       Buffer%SendSizeUp, REALSIZE_wires, layoutnumber+1_4, 2_4, SUBCOMM_MPI, req11,  ierr6)
       if ((layoutnumber/=0    ).and.(Buffer%SendSizeDown/=0)) & !syncDown
@@ -900,8 +900,8 @@ contains
       Buffer%RecSizeDown, REALSIZE_wires, layoutnumber-1_4, 2_4, SUBCOMM_MPI, req21,  ierr8)
 
       !
-      if ((layoutnumber/=size-1).and.(Buffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
-      if ((layoutnumber/=size-1).and.(Buffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
+      if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
+      if ((layoutnumber/=num_procs-1).and.(Buffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
       if ((layoutnumber/=0     ).and.(Buffer%SendSizeDown/=0)) call MPI_WAIT(req2 ,status2,ierr10)
       if ((layoutnumber/=0     ).and.(Buffer%RecSizeDown/=0))  call MPI_WAIT(req21,status2,ierr10)
       !
@@ -918,15 +918,15 @@ contains
       !
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
-         call stoponerror (layoutnumber,size,buff)
+         call stoponerror (layoutnumber,num_procs,buff)
       end if
-      if ((layoutnumber/=size-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
+      if ((layoutnumber/=num_procs-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
-         call stoponerror (layoutnumber,size,buff)
+         call stoponerror (layoutnumber,num_procs,buff)
       end if
       if (ierr9+ierr10+ierr11+ierr12 /= 0) then
          write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
-         call stoponerror (layoutnumber,size,buff)
+         call stoponerror (layoutnumber,num_procs,buff)
       end if
       return
    end subroutine newFlushWiresMPI
@@ -936,14 +936,14 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! FLUSH WIRE additional info DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine FlushWiresMPIorigindexInfo(layoutnumber,size)
-      integer(kind=4), intent(in) :: layoutnumber,size
+   subroutine FlushWiresMPIorigindexInfo(layoutnumber,num_procs)
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0,i
       integer :: status1(MPI_STATUS_SIZE),status2(MPI_STATUS_SIZE)
       integer :: req1,req2,req11,req21
       character(len=BUFSIZE) :: whoami
       character(len=BUFSIZE) :: buff
-      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
 
 
       ierr1=0;ierr2=0;ierr3=0;ierr4=0;ierr5=0;ierr6=0;ierr7=0;ierr8=0;ierr9=0;ierr10=0;ierr11=0;ierr12=0;
@@ -956,10 +956,10 @@ contains
       end do
 
       !
-      if ((layoutnumber/=size-1).and.(Buffer%RecSizeUp/=0)) & !syncUp
+      if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0)) & !syncUp
       call MPI_IRECV (Buffer%RecUp(1),  &
       Buffer%RecSizeUp, REALSIZE_wires, layoutnumber+1_4, 1_4, SUBCOMM_MPI, req1,  ierr5)
-      if ((layoutnumber/=size-1).and.(Buffer%SendSizeUp/=0)) & !syncUp
+      if ((layoutnumber/=num_procs-1).and.(Buffer%SendSizeUp/=0)) & !syncUp
       call MPI_ISEND (Buffer%SendUp(1), &
       Buffer%SendSizeUp, REALSIZE_wires, layoutnumber+1_4, 2_4, SUBCOMM_MPI, req11,  ierr6)
       if ((layoutnumber/=0    ).and.(Buffer%SendSizeDown/=0)) & !syncDown
@@ -970,8 +970,8 @@ contains
       Buffer%RecSizeDown, REALSIZE_wires, layoutnumber-1_4, 2_4, SUBCOMM_MPI, req21,  ierr8)
 
       !
-      if ((layoutnumber/=size-1).and.(Buffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
-      if ((layoutnumber/=size-1).and.(Buffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
+      if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
+      if ((layoutnumber/=num_procs-1).and.(Buffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
       if ((layoutnumber/=0     ).and.(Buffer%SendSizeDown/=0)) call MPI_WAIT(req2 ,status2,ierr10)
       if ((layoutnumber/=0     ).and.(Buffer%RecSizeDown/=0))  call MPI_WAIT(req21,status2,ierr10)
       !
@@ -988,15 +988,15 @@ contains
       !
       if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
-         call stoponerror (layoutnumber,size,buff)
+         call stoponerror (layoutnumber,num_procs,buff)
       end if
-      if ((layoutnumber/=size-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
+      if ((layoutnumber/=num_procs-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
          write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
-         call stoponerror (layoutnumber,size,buff)
+         call stoponerror (layoutnumber,num_procs,buff)
       end if
       if (ierr9+ierr10+ierr11+ierr12 /= 0) then
          write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
-         call stoponerror (layoutnumber,size,buff)
+         call stoponerror (layoutnumber,num_procs,buff)
       end if
       return
    end subroutine
@@ -1008,13 +1008,13 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!! FLUSH WIRE DATA
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!!subroutine FlushWiresMPI(layoutnumber,size)
-   !!!integer(kind=4), intent(in) :: layoutnumber,size
+   !!!subroutine FlushWiresMPI(layoutnumber,num_procs)
+   !!!integer(kind=4), intent(in) :: layoutnumber,num_procs
    !!!integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
    !!!integer(kind=4) :: status1(MPI_STATUS_SIZE,1 : 2),status2(MPI_STATUS_SIZE,1 : 2),i
    !!!integer(kind=4) :: req1,req2,req11,req21
    !!!character(len=BUFSIZE) :: whoami
-   !!!write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+   !!!write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
    !!!
    !!!
    !!!ierr1=0;ierr2=0;ierr3=0;ierr4=0;ierr5=0;ierr6=0;ierr7=0;ierr8=0;ierr9=0;ierr10=0;ierr11=0;ierr12=0;
@@ -1027,10 +1027,10 @@ contains
    !!!end do
    !!!
    !!!!
-   !!!if ((layoutnumber/=size-1).and.(Buffer%RecSizeUp/=0)) & !syncUp
+   !!!if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0)) & !syncUp
    !!!    call MPI_IRECV (Buffer%RecUp(1),  &
    !!!                    Buffer%RecSizeUp, REALSIZE_wires, layoutnumber+1_4, 1_4, SUBCOMM_MPI, req1,  ierr5)
-   !!!if ((layoutnumber/=size-1).and.(Buffer%SendSizeUp/=0)) & !syncUp
+   !!!if ((layoutnumber/=num_procs-1).and.(Buffer%SendSizeUp/=0)) & !syncUp
    !!!    call MPI_ISEND (Buffer%SendUp(1), &
    !!!                    Buffer%SendSizeUp, REALSIZE_wires, layoutnumber+1_4, 2_4, SUBCOMM_MPI, req11,  ierr6)
    !!!if ((layoutnumber/=0    ).and.(Buffer%SendSizeDown/=0)) & !syncDown
@@ -1041,8 +1041,8 @@ contains
    !!!                    Buffer%RecSizeDown, REALSIZE_wires, layoutnumber-1_4, 2_4, SUBCOMM_MPI, req21,  ierr8)
    !!!
    !!!!
-   !!!if ((layoutnumber/=size-1).and.(Buffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
-   !!!if ((layoutnumber/=size-1).and.(Buffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
+   !!!if ((layoutnumber/=num_procs-1).and.(Buffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
+   !!!if ((layoutnumber/=num_procs-1).and.(Buffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
    !!!if ((layoutnumber/=0     ).and.(Buffer%SendSizeDown/=0)) call MPI_WAIT(req2 ,status2,ierr10)
    !!!if ((layoutnumber/=0     ).and.(Buffer%RecSizeDown/=0))  call MPI_WAIT(req21,status2,ierr10)
    !!!!
@@ -1068,11 +1068,11 @@ contains
    !!!!ojo que aqui no entran todos y por tanto la barrera crea un deadlock
    !!!!
    !!!if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) &
-   !!!      call StopOnError(layoutnumber,size,'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4)
-   !!!if ((layoutnumber/=size-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) &
-   !!!      call StopOnError(layoutnumber,size,'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8)
+   !!!      call StopOnError(layoutnumber,num_procs,'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4)
+   !!!if ((layoutnumber/=num_procs-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) &
+   !!!      call StopOnError(layoutnumber,num_procs,'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8)
    !!!if (ierr9+ierr10+ierr11+ierr12 /= 0) &
-   !!!      call StopOnError(layoutnumber,size,'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12)
+   !!!      call StopOnError(layoutnumber,num_procs,'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12)
    !!!return
    !!!end subroutine FlushWiresMPI
    !!!!
@@ -1089,23 +1089,23 @@ contains
    ! FLUSH WIRE DATA
    !! no se usa. detectado y comentado 260815 bug gra_simple.nfde en sync mpi de hilos que se doblan sobre si mismos y comparten tramos coincidentes
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   !!!subroutine newFlushWiresMPIindexmedInfo(layoutnumber,size)
+   !!!subroutine newFlushWiresMPIindexmedInfo(layoutnumber,num_procs)
    !!!   integer(kind=4) :: ierr1=0,ierr2=0,ierr3=0,ierr4=0,ierr5=0,ierr6=0,ierr7=0,ierr8=0,ierr9=0,ierr10=0,ierr11=0,ierr12=0
    !!!   integer(kind=4) :: status1(MPI_STATUS_SIZE,1 : 2),status2(MPI_STATUS_SIZE,1 : 2)
-   !!!   integer(kind=4), intent(in) :: layoutnumber,size
+   !!!   integer(kind=4), intent(in) :: layoutnumber,num_procs
    !!!   integer(kind=4) :: req1,req2,req11,req21
    !!!   character(len=BUFSIZE) :: whoami
    !!!   character(len=BUFSIZE) :: buff
-   !!!   write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',size,') '
+   !!!   write(whoami,'(a,i5,a,i5,a)') '(',layoutnumber+1,'/',num_procs,') '
    !!!
    !!!
    !!!   ierr1=0;ierr2=0;ierr3=0;ierr4=0;ierr5=0;ierr6=0;ierr7=0;ierr8=0;ierr9=0;ierr10=0;ierr11=0;ierr12=0;
    !!!
    !!!   !
-   !!!   if ((layoutnumber/=size-1).and.(ibuffer%RecSizeUp/=0)) & !syncUp
+   !!!   if ((layoutnumber/=num_procs-1).and.(ibuffer%RecSizeUp/=0)) & !syncUp
    !!!   call MPI_IRECV (ibuffer%RecUp(1),  &
    !!!   ibuffer%RecSizeUp,  MPI_INTEGER, layoutnumber+1_4, 1_4, SUBCOMM_MPI, req1,  ierr5)
-   !!!   if ((layoutnumber/=size-1).and.(ibuffer%SendSizeUp/=0)) & !syncUp
+   !!!   if ((layoutnumber/=num_procs-1).and.(ibuffer%SendSizeUp/=0)) & !syncUp
    !!!   call MPI_ISEND (ibuffer%SendUp(1), &
    !!!   ibuffer%SendSizeUp, MPI_INTEGER, layoutnumber+1_4, 2_4, SUBCOMM_MPI, req11,  ierr6)
    !!!   if ((layoutnumber/=0    ).and.(ibuffer%SendSizeDown/=0)) & !syncDown
@@ -1116,8 +1116,8 @@ contains
    !!!   ibuffer%RecSizeDown, MPI_INTEGER, layoutnumber-1_4, 2_4, SUBCOMM_MPI, req21,  ierr8)
    !!!
    !!!   !
-   !!!   if ((layoutnumber/=size-1).and.(ibuffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
-   !!!   if ((layoutnumber/=size-1).and.(ibuffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
+   !!!   if ((layoutnumber/=num_procs-1).and.(ibuffer%RecSizeUp/=0))    call MPI_WAIT(req1 ,status1,ierr9)
+   !!!   if ((layoutnumber/=num_procs-1).and.(ibuffer%SendSizeUp/=0))   call MPI_WAIT(req11,status1,ierr10)
    !!!   if ((layoutnumber/=0     ).and.(ibuffer%SendSizeDown/=0)) call MPI_WAIT(req2 ,status2,ierr10)
    !!!   if ((layoutnumber/=0     ).and.(ibuffer%RecSizeDown/=0))  call MPI_WAIT(req21,status2,ierr10)
    !!!   !
@@ -1128,15 +1128,15 @@ contains
    !!!   !
    !!!   if ((layoutnumber/=0    ).and.(ierr1+ierr2+ierr3+ierr4 /= 0)) then
    !!!      write(buff,*) 'FLUSHMPI ierr1,ierr2,ierr3,ierr4',LAYOUTNUMBER+1_4,ierr1,ierr2,ierr3,ierr4
-   !!!      call stoponerror (layoutnumber,size,buff)
+   !!!      call stoponerror (layoutnumber,num_procs,buff)
    !!!   end if
-   !!!   if ((layoutnumber/=size-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
+   !!!   if ((layoutnumber/=num_procs-1).and.(ierr5+ierr6+ierr7+ierr8 /= 0)) then
    !!!      write(buff,*) 'FLUSHMPI ierr5,ierr6,ierr7,ierr8',LAYOUTNUMBER+1_4,ierr5,ierr6,ierr7,ierr8
-   !!!      call stoponerror (layoutnumber,size,buff)
+   !!!      call stoponerror (layoutnumber,num_procs,buff)
    !!!   end if
    !!!   if (ierr9+ierr10+ierr11+ierr12 /= 0) then
    !!!      write(buff,*) 'FLUSHMPI ierr9,ierr10,ierr11,ierr12',LAYOUTNUMBER+1_4,ierr9,ierr10,ierr11,ierr12
-   !!!      call stoponerror (layoutnumber,size,buff)
+   !!!      call stoponerror (layoutnumber,num_procs,buff)
    !!!   end if
    !!!   return
    !!!end subroutine newFlushWiresMPIindexmedInfo
@@ -1235,7 +1235,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    ! INITIALIZES THE BOUNDS AND SIZES TO COMMUNICATE
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine InitMPI_Cray( layoutnumber, size, sggsweep, sggalloc, PBCDown, PBCUp, &
+   subroutine InitMPI_Cray( layoutnumber, num_procs, sggsweep, sggalloc, PBCDown, PBCUp, &
    Ex, Ey, Ez, Hx, Hy, Hz)
       !---------------- inputs -----------------------------------------------------------------------
       type( XYZlimit_t), dimension( 1: 6), intent( IN) :: sggalloc, sggsweep
@@ -1247,7 +1247,7 @@ contains
       Ex( sggalloc( iEx)%XI: sggalloc( iEx)%XE, sggalloc( iEx)%YI: sggalloc( iEx)%YE, sggalloc( iEx)%ZI: sggalloc( iEx)%ZE), &
       Ey( sggalloc( iEy)%XI: sggalloc( iEy)%XE, sggalloc( iEy)%YI: sggalloc( iEy)%YE, sggalloc( iEy)%ZI: sggalloc( iEy)%ZE), &
       Ez( sggalloc( iEz)%XI: sggalloc( iEz)%XE, sggalloc( iEz)%YI: sggalloc( iEz)%YE, sggalloc( iEz)%ZI: sggalloc( iEz)%ZE)
-      integer( kind = 4), intent( IN) :: layoutnumber, size
+      integer( kind = 4), intent( IN) :: layoutnumber, num_procs
       logical, intent( IN) :: PBCDown, PBCUp
       !---------------- variables locales ------------------------------------------------------------
       type( t_databuf_t), pointer :: databufH, databufE
@@ -1293,8 +1293,8 @@ contains
       FinZ=sggsweep(iHx)%ZE
       !--->
       !jag: bug Antares mas de 65295 steps
-      databuf_SetH%syncUp = layoutnumber /= (size-1)
-      databuf_SetH%pbcUp = (layoutnumber == (size-1)) .and. PBCUp
+      databuf_SetH%syncUp = layoutnumber /= (num_procs-1)
+      databuf_SetH%pbcUp = (layoutnumber == (num_procs-1)) .and. PBCUp
       databufH => databuf_SetH%databuf_Up
       databufE => databuf_SetE%databuf_Up
       databufH%FlushExtraInfo = .FALSE. !later overriden by the anisotropic MPI init
@@ -1385,8 +1385,8 @@ contains
          databufE%buf_y_tx => null( )
          !--->
          if( databuf_SetH%pbcDown) then
-            databufH%ip_target = size-1
-            databufE%ip_target = size-1
+            databufH%ip_target = num_procs-1
+            databufE%ip_target = num_procs-1
          else
             databufH%ip_target = layoutnumber - 1
             databufE%ip_target = layoutnumber - 1
