@@ -211,7 +211,7 @@ contains
     subroutine setStopTimes(this, finalTime, dt)
         class(circuit_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: finalTime, dt
-        character(20) :: charTime
+        character(50) :: charTime
         real(kind=rkind) :: time
 
         time = 0.0_rkind
@@ -225,7 +225,7 @@ contains
     subroutine setModStopTimes(this, dt)
         class(circuit_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: dt
-        character(20) :: charTime
+        character(50) :: charTime
         write(charTime, *) real(dt, SINGLE)
         call command('stop when time mod '//charTime // c_null_char)
     end subroutine
@@ -287,7 +287,7 @@ contains
         class(circuit_t) :: this
         real(kind=RKIND_TIEMPO), intent(in) :: time
         real(kind=RKIND) :: interp
-        character(20) :: source_value
+        character(50) :: source_value
         integer :: i, index
         do i = 1, size(this%nodes%sources)
             if (this%nodes%sources(i)%has_source) then
@@ -308,7 +308,7 @@ contains
         class(circuit_t) :: this
         character(*), intent(in) :: name
         real(kind=rkind), intent(in) :: c
-        character(20) :: sC
+        character(50) :: sC
 
         write(sC, *) c
         call command("alter @CL"//trim(name)//" = "//trim(sC) // c_null_char)
@@ -318,7 +318,7 @@ contains
     subroutine updateNodeCurrent(this, node_name, current)
         class(circuit_t) :: this
         real(kind=rkind) :: current
-        character(20) :: sCurrent
+        character(50) :: sCurrent
         character(*) :: node_name
         if (index(node_name, "initial") /= 0) then
             write(sCurrent, *) current

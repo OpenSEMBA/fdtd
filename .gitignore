@@ -74,3 +74,4 @@ src_main_pub/version.F90
 git_info.txt
 
 .venv/build2/
+build2/
