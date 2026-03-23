@@ -2,7 +2,7 @@
     "_format": "FDTD Input file",
     "general": {
         "timeStep": 3e-11,
-        "numberOfSteps": 100000,
+        "numberOfSteps": 100,
         "additionalArguments": ""
     },
     "boundary": {
@@ -9703,7 +9703,7 @@
             }
         },
         {
-            "name": "Bulk probe",
+            "name": "BC",
             "type": "bulkCurrent",
             "field": "electric",
             "elementIds": [

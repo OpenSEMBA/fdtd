@@ -46,10 +46,10 @@ plt.legend()
 plt.show()
 
 # %% Read bulk current probe
-probe_bulk = Probe(solver.getSolvedProbeFilenames("Bulk probe")[0])
+probe_bulk = Probe(solver.getSolvedProbeFilenames("BC")[0])
 
 plt.figure()
-plt.plot(probe_bulk["time"].to_numpy(), probe_bulk["current"].to_numpy(), label='Bulk probe')
+plt.plot(probe_bulk["time"].to_numpy(), probe_bulk["current"].to_numpy(), label='BC')
 plt.xlabel('Time (s)')
 plt.ylabel('Current (A)')
 plt.title('Bulk current')
