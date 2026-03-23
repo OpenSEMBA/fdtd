@@ -549,7 +549,6 @@ This entry stores associations between `materials` and `elements` using their re
 + `<materialId>`: A single integer indicating the `id` of a material which must be present in the `materials` list.
 + `<elementIds>`: A list of `id`s of the elements to which this material will be associated.
 
-
 Material associations with bulk or surface materials such as `pec`, `pmc` or `isotropic` can be assigned to one or many elements of type `cell`. If the `cell` contains `intervals` representing points, these will be ignored.
 
 ```json
@@ -564,8 +563,9 @@ Associations with cables can contain the following inputs:
 + `<initialTerminalId>` and `<endTerminalId>` which must be present within the `materials` list of type. These entries indicate the lumped circuits connected at the ends of the cable.
 + `[initialConnectorId]` and `[endConnectorId]` entries which must point to materials of type `connector` and are assigned to the last segments of the corresponding ends of the cable.
 + Its `materialId` must point to a [`wire`](#wire), a [`shieldedMultiwire`](#shieldedMultiwire) or an [`unshieldedMultiwire`](#unshieldedMultiwire) material. If it points to a `shieldedMultiwire`, it must also contain an entry named `<containedWithinElementId>` which indicates the `polyline` in which this `shieldedMultiwire` is embedded.
++ For the case of `shieldedMultiwire` and `unshieldedMultiwire`, the size of `elementIds` must match the number of conductors in the multiwire. The element pointed by these ids must be of type `polyline`. These polylines must use coordinates which are in the same places and in the same order but have different ids; this is necessary to specify the different joints.
 
-**Example:**
+**Example of an `unshieldedMultiwire` composed by a single wire:**
 
 ```json
 {
