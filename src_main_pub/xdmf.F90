@@ -20,7 +20,7 @@ contains
    !
    !Subrutine to parse the volumic probes to create .xdmf and .h5 files
    !
-   subroutine createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
+   subroutine createxdmf (sgg,layoutnumber, num_procs,vtkindex,createh5bin,somethingdone,mpidir)
       logical, save :: firsttimeenteringcreatexdmf=.true.
       integer(kind=4) :: mpidir
       logical :: vtkindex,createh5bin
@@ -28,7 +28,7 @@ contains
       character(len=BUFSIZE) :: filename ! File name
       !
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
       integer(kind=4) :: ierr,  sizeofvalores,COMPO
       complex( kind = CKIND), dimension( :, :, :, :,: ), allocatable  :: valor3DComplex !freqdomain probes
       !
@@ -65,7 +65,7 @@ contains
       integer :: my_iostat
       
       write(whoamishort, '(i5)') layoutnumber + 1
-      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
       !
       output => GetOutput ()!get the output private info from observation
 
@@ -132,7 +132,7 @@ contains
                           extpoint=trim(adjustl(chark)) //'_'//trim(adjustl(chari)) //'_'//trim(adjustl(charj))//'__'// &
                                    trim(adjustl(chark2))//'_'//trim(adjustl(chari2))//'_'//trim(adjustl(charj2))
                       else
-                          call stoponerror(layoutnumber,size,'Buggy error in mpidir. ')
+                          call stoponerror(layoutnumber,num_procs,'Buggy error in mpidir. ')
                       end if
                      !fin mpidir
                       
@@ -381,7 +381,7 @@ contains
                                end if   !del time domain
 !!!!!!!!!!!!!!!!sincroniza valor3d y aunalos en el root
 #ifdef CompileWithMPI
-                               if (size>1) then
+                               if (num_procs>1) then
                                   if (output(ii)%item(1)%MPISubComm /= -1) then
                                      sizeofvalores = (maxXabs-minXabs+1) * (maxYabs-minYabs+1) * (maxZabs-minZabs+1)
                                      call MPI_Barrier(output(ii)%item(1)%MPISubComm,ierr)
@@ -473,9 +473,9 @@ contains
    end subroutine createxdmf
 
 
-   subroutine createh5bintxt(sgg,layoutnumber,size)
+   subroutine createh5bintxt(sgg,layoutnumber,num_procs)
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
       logical :: lexis,algoescrito
       integer(kind=4) :: ii,ierr
       integer(kind=4) :: myunit,myunit2
@@ -493,7 +493,7 @@ contains
 9138      if(my_iostat /= 0) write(*,fmt='(a)',advance='no'), '.' !!if(my_iostat /= 0) print '(i5,a1,i4,2x,a)',9138,'.',layoutnumber,trim(adjustl(sgg%nEntradaRoot))//'_h5bin.txt'
           open(newunit=myunit,file=trim(adjustl(sgg%nEntradaRoot))//'_h5bin.txt',form='formatted',err=9138,iostat=my_iostat,status='new',action='write') !lista de todos los .h5bin   
           algoescrito=.false.
-          do ii=0,size-1 !auna todos los _h5bin.txt 
+          do ii=0,num_procs-1 !auna todos los _h5bin.txt 
              write(whoamishort, '(i5)') ii + 1
              inquire(FILE=trim(adjustl(trim(adjustl(sgg%nEntradaRoot))//'_'//trim(adjustl(whoamishort))//'_h5bin.txt')), EXIST=lexis)
              if (lexis) then
@@ -517,13 +517,13 @@ contains
 #endif     
    end subroutine createh5bintxt
 
-   subroutine createxdmfOnTheFly (sgg,layoutnumber,size,vtkindex,createh5bin,somethingdone,mpidir)
+   subroutine createxdmfOnTheFly (sgg,layoutnumber,num_procs,vtkindex,createh5bin,somethingdone,mpidir)
       integer(kind=4) :: mpidir
       logical :: vtkindex,createh5bin
       !------------------------>
 
       type(SGGFDTDINFO_t), intent(in) :: sgg
-      integer(kind=4), intent(in) :: layoutnumber, size
+      integer(kind=4), intent(in) :: layoutnumber, num_procs
       type(output_t), pointer, dimension(:) :: output
       integer(kind=4) :: ii
       logical :: lexis,somethingdone
@@ -551,7 +551,7 @@ contains
          end if
 
       end do !barrido puntos de observacion
-      call createxdmf (sgg,layoutnumber, size,vtkindex,createh5bin,somethingdone,mpidir)
+      call createxdmf (sgg,layoutnumber, num_procs,vtkindex,createh5bin,somethingdone,mpidir)
       do ii = 1, sgg%NumberRequest
          !sondas Volumic traducelas a xdfm
          if (sgg%observation(ii)%Volumic) then
