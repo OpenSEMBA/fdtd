@@ -9024,7 +9024,7 @@
                 "id": 7,
                 "type": "node",
                 "coordinateIds": [
-                    34
+                    50
                 ]
             },
             {
@@ -9181,19 +9181,11 @@
             "type": "pec"
         },
         {
-            "name": "wire_1mm",
-            "id": 2,
-            "type": "wire",
-            "radius": 0.001,
-            "resistancePerMeter": 0.0,
-            "inductancePerMeter": 0.0
-        },
-        {
             "name": "InnerMaterial_Cable_y_plus",
             "id": 3,
             "type": "unshieldedMultiwire",
-            "multipoarExpansion": {
-                "innerRegion": {
+            "multipolarExpansion": {
+                "innerRegionBox": {
                     "min": [
                         -0.0006842501149999999,
                         -0.0006842501149999999
@@ -9288,22 +9280,13 @@
             ]
         },
         {
-            "name": "InnerStartTerminal_Cable_y_plus",
+            "name": "wire_terminal_50_ohm",
             "id": 4,
             "type": "terminal",
             "terminations": [
                 {
-                    "type": "short"
-                }
-            ]
-        },
-        {
-            "name": "InnerEndTerminal_Cable_y_plus",
-            "id": 5,
-            "type": "terminal",
-            "terminations": [
-                {
-                    "type": "short"
+                    "type": "series",
+                    "resistance": 50
                 }
             ]
         },
@@ -9311,8 +9294,8 @@
             "name": "InnerMaterial_Cable_y_minus",
             "id": 6,
             "type": "unshieldedMultiwire",
-            "multipoarExpansion": {
-                "innerRegion": {
+            "multipolarExpansion": {
+                "innerRegionBox": {
                     "min": [
                         -0.0006842501149999999,
                         -0.0006842501149999999
@@ -9407,31 +9390,11 @@
             ]
         },
         {
-            "name": "InnerStartTerminal_Cable_y_minus",
-            "id": 7,
-            "type": "terminal",
-            "terminations": [
-                {
-                    "type": "short"
-                }
-            ]
-        },
-        {
-            "name": "InnerEndTerminal_Cable_y_minus",
-            "id": 8,
-            "type": "terminal",
-            "terminations": [
-                {
-                    "type": "short"
-                }
-            ]
-        },
-        {
             "name": "InnerMaterial_Cable_joined",
             "id": 9,
             "type": "unshieldedMultiwire",
-            "multipoarExpansion": {
-                "innerRegion": {
+            "multipolarExpansion": {
+                "innerRegionBox": {
                     "min": [
                         -0.00119,
                         -0.0005938259034148217
@@ -9622,10 +9585,12 @@
             "type": "terminal",
             "terminations": [
                 {
-                    "type": "short"
+                    "type": "series",
+                    "resistance": 50
                 },
                 {
-                    "type": "short"
+                    "type": "series",
+                    "resistance": 50
                 }
             ]
         },
@@ -9648,36 +9613,6 @@
             ]
         },
         {
-            "name": "Cable_y_plus",
-            "type": "cable",
-            "elementIds": [
-                2
-            ],
-            "materialId": 2,
-            "initialTerminalId": 12,
-            "endTerminalId": 12
-        },
-        {
-            "name": "Cable_y_minus",
-            "type": "cable",
-            "elementIds": [
-                3
-            ],
-            "materialId": 2,
-            "initialTerminalId": 12,
-            "endTerminalId": 12
-        },
-        {
-            "name": "Cable_joined",
-            "type": "cable",
-            "elementIds": [
-                4
-            ],
-            "materialId": 2,
-            "initialTerminalId": 12,
-            "endTerminalId": 12
-        },
-        {
             "name": "InnerBundle_Cable_joined",
             "type": "cable",
             "elementIds": [
@@ -9696,8 +9631,8 @@
                 12
             ],
             "materialId": 6,
-            "initialTerminalId": 7,
-            "endTerminalId": 8,
+            "initialTerminalId": 4,
+            "endTerminalId": 12,
             "containedWithinElementId": 3
         },
         {
@@ -9708,7 +9643,7 @@
             ],
             "materialId": 3,
             "initialTerminalId": 4,
-            "endTerminalId": 5,
+            "endTerminalId": 12,
             "containedWithinElementId": 2
         }
     ],
