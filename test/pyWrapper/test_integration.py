@@ -91,6 +91,16 @@ def test_airplane_case_with_mpi(tmp_path):
     assert os.path.isfile(vtkmapfile)
 
 
+def test_simple_cabin_initialization(tmp_path):
+    fn = CASES_FOLDER + 'simple_cabin/simple_cabin.fdtd.json'
+    solver = FDTD(input_filename=fn, 
+                  path_to_exe=SEMBA_EXE,
+                  run_in_folder=tmp_path)
+    solver.run()
+    
+    assert solver.hasFinishedSuccessfully()
+
+
 def test_sphere_case_with_far_field_probe_launches(tmp_path):
     fn = CASES_FOLDER + 'sphere/sphere.fdtd.json'
     solver = FDTD(fn, path_to_exe=SEMBA_EXE, run_in_folder=tmp_path)
