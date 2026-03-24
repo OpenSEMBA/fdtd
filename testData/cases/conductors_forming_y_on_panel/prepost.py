@@ -21,34 +21,13 @@ exc_data = np.loadtxt(exc_file)
 exc_time = exc_data[:, 0]
 exc_signal = exc_data[:, 1]
 
-plt.figure()
-plt.plot(exc_time * 1e9, exc_signal)
-plt.xlabel('Time (ns)')
-plt.ylabel('Amplitude')
-plt.title('Excitation waveform')
-plt.grid(which='both')
-plt.show()
-
-# %% Read wire current probes
-probe_yplus  = Probe(solver.getSolvedProbeFilenames("curr_yplus_unc")[0])
-probe_yminus = Probe(solver.getSolvedProbeFilenames("curr_yminus_unc")[0])
-probe_joined = Probe(solver.getSolvedProbeFilenames("curr_joined")[0])
-
-plt.figure()
-plt.plot(probe_yplus["time"].to_numpy(),  probe_yplus["current"].to_numpy(),  label='curr_yplus_unc')
-plt.plot(probe_yminus["time"].to_numpy(), probe_yminus["current"].to_numpy(), label='curr_yminus_unc')
-plt.plot(probe_joined["time"].to_numpy(), probe_joined["current"].to_numpy(), label='curr_joined')
-plt.xlabel('Time (s)')
-plt.ylabel('Current (A)')
-plt.title('Wire currents')
-plt.grid(which='both')
-plt.legend()
-plt.show()
 
 # %% Read bulk current probe
 probe_bulk = Probe(solver.getSolvedProbeFilenames("BC")[0])
+assert not probe_bulk["current"].isnull().any(), "probe_bulk current contains NaN values"
 
 plt.figure()
+plt.plot(exc_time, exc_signal, label='Source')
 plt.plot(probe_bulk["time"].to_numpy(), probe_bulk["current"].to_numpy(), label='BC')
 plt.xlabel('Time (s)')
 plt.ylabel('Current (A)')
@@ -56,5 +35,7 @@ plt.title('Bulk current')
 plt.grid(which='both')
 plt.legend()
 plt.show()
+
+
 
 # %%

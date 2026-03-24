@@ -1668,3 +1668,15 @@ def test_bulk_current_outputs(tmp_path):
     assert probeBulkZPlane.direction == 'z'
     assert probeBulkYPoint.direction == 'y'
     assert probeBulkZVolume.direction == 'z'
+
+def test_conductors_forming_y_on_panel_bulk_current_is_not_nan(tmp_path):
+    fn = CASES_FOLDER + 'conductors_forming_y_on_panel/Conductors_50ohm_terminals.fdtd.json'
+    solver = FDTD(
+        input_filename=fn, 
+        path_to_exe=SEMBA_EXE, 
+        run_in_folder=tmp_path
+    )
+    solver.run()
+
+    probe_bulk = Probe(solver.getSolvedProbeFilenames("BC")[0])
+    assert not probe_bulk["current"].isnull().any()
