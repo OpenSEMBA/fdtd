@@ -102,8 +102,8 @@ contains
         call this%advanceBundlesVoltage()
         call this%advanceNWVoltage()
         call this%advanceBundlesCurrent()
-        call this%advanceTime()
         call this%updateProbes()
+        call this%advanceTime()
 
     end subroutine
 
@@ -115,8 +115,8 @@ contains
         call this%advanceNWVoltage()
         call this%advanceBundlesCurrent()
 
-        call this%advanceTime()
         call this%updateProbes()
+        call this%advanceTime()
 
     end subroutine
 
