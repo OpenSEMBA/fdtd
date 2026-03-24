@@ -1495,7 +1495,7 @@ module CreateMatrices_m
    !          Med%Epr,Med%Mur,Med%Sigma,Med%SigmaM = New Matrices with average and PML constitutive parameters of new media
    !          Med%Wire,Med%multiport = Same as input but resized accordingly to take into account the increment in NumMedia
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine CreatePMLmatrix (layoutnumber, SIZE, sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, SINPML_fullsize, fullsize, BBox, med, NumMedia, Border, MEDIOEXTRA)
+   subroutine CreatePMLmatrix (layoutnumber, num_procs, sgg,sggMiEx,sggMiEy,sggMiEz,sggMiHx,sggMiHy,sggMiHz, SINPML_fullsize, fullsize, BBox, med, NumMedia, Border, MEDIOEXTRA)
       !
       type(limit_t), dimension(1:6) :: SINPML_fullsize, fullsize
       !Inputs and Outputs
@@ -1515,7 +1515,7 @@ module CreateMatrices_m
       ! Local stuff
       integer(kind=4), pointer, dimension(:) :: tempo
       type(MediaData_t), pointer, dimension(:) :: NewMed
-      integer(kind=4) :: layoutnumber, SIZE, field, medium, i, j, k, NuevoNumeroMediosConPML
+      integer(kind=4) :: layoutnumber, num_procs, field, medium, i, j, k, NuevoNumeroMediosConPML
       integer(kind=4) :: oldNumMedia,oldmed
       integer(kind=4), dimension(1:6) :: XIPML, XEPML, YIPML, YEPML, ZIPML, ZEPML
       real(kind=RKIND) :: oldepr,oldmur,oldsigma,oldsigmam,newepr,newmur,newsigma,newsigmam
@@ -2177,7 +2177,7 @@ module CreateMatrices_m
          field = iEx
          !izda y dcha
          if ((Border%IsLeftPML)) then
-            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%pml_size
                do i = XIPML (field), XEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2195,7 +2195,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2213,7 +2213,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsRightPML)) then
-            do j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+            do j = YEPML (field)- MEDIOEXTRA%pml_size,YEPML (field)
                do i = XIPML (field), XEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2231,7 +2231,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2249,7 +2249,7 @@ module CreateMatrices_m
          end if
          !  !Up y Down
          if ((Border%IsDownPML)) then
-            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%pml_size
                do j = YIPML (field), YEPML (field)
                   do i = XIPML (field), XEPML (field)
                      !
@@ -2267,7 +2267,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2285,7 +2285,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsUpPML)) then
-            do k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+            do k = ZEPML (field)- MEDIOEXTRA%pml_size,ZEPML (field)
                do j = YIPML (field), YEPML (field)
                   do i = XIPML (field), XEPML (field)
                      !
@@ -2303,7 +2303,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2323,7 +2323,7 @@ module CreateMatrices_m
          field = iEy
          !front y back
          if ((Border%IsBackPML)) then
-            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%pml_size
                do j = YIPML (field), YEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2341,7 +2341,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2359,7 +2359,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsFrontPML)) then
-            do i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+            do i = XEPML (field)- MEDIOEXTRA%pml_size,XEPML (field)
                do j = YIPML (field), YEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2377,7 +2377,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2395,7 +2395,7 @@ module CreateMatrices_m
          end if
          !  !Up y Down
          if ((Border%IsDownPML)) then
-            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%pml_size
                do j = YIPML (field), YEPML (field)
                   do i = XIPML (field), XEPML (field)
                      !
@@ -2413,7 +2413,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2431,7 +2431,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsUpPML)) then
-            do k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+            do k = ZEPML (field)- MEDIOEXTRA%pml_size,ZEPML (field)
                do j = YIPML (field), YEPML (field)
                   do i = XIPML (field), XEPML (field)
                      !
@@ -2449,7 +2449,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2469,7 +2469,7 @@ module CreateMatrices_m
          field = iEz
          !front y back
          if ((Border%IsBackPML)) then
-            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%pml_size
                do j = YIPML (field), YEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2487,7 +2487,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2505,7 +2505,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsFrontPML)) then
-            do i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+            do i = XEPML (field)- MEDIOEXTRA%pml_size,XEPML (field)
                do j = YIPML (field), YEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2523,7 +2523,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2541,7 +2541,7 @@ module CreateMatrices_m
          end if
          !izda y dcha
          if ((Border%IsLeftPML)) then
-            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%pml_size
                do i = XIPML (field), XEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2559,7 +2559,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2577,7 +2577,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsRightPML)) then
-            do j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+            do j = YEPML (field)- MEDIOEXTRA%pml_size,YEPML (field)
                do i = XIPML (field), XEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2595,7 +2595,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2619,7 +2619,7 @@ module CreateMatrices_m
          field = iHx
          !izda y dcha
          if ((Border%IsLeftPML)) then
-            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%pml_size
                do i = XIPML (field), XEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2637,7 +2637,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2655,7 +2655,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsRightPML)) then
-            do j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+            do j = YEPML (field)- MEDIOEXTRA%pml_size,YEPML (field)
                do i = XIPML (field), XEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2673,7 +2673,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2691,7 +2691,7 @@ module CreateMatrices_m
          end if
          !  !Up y Down
          if ((Border%IsDownPML)) then
-            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%pml_size
                do j = YIPML (field), YEPML (field)
                   do i = XIPML (field), XEPML (field)
                      !
@@ -2709,7 +2709,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2727,7 +2727,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsUpPML)) then
-            do k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+            do k = ZEPML (field)- MEDIOEXTRA%pml_size,ZEPML (field)
                do j = YIPML (field), YEPML (field)
                   do i = XIPML (field), XEPML (field)
                      !
@@ -2745,7 +2745,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2765,7 +2765,7 @@ module CreateMatrices_m
          field = iHy
          !front y back
          if ((Border%IsBackPML)) then
-            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%pml_size
                do j = YIPML (field), YEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2783,7 +2783,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2801,7 +2801,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsFrontPML)) then
-            do i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+            do i = XEPML (field)- MEDIOEXTRA%pml_size,XEPML (field)
                do j = YIPML (field), YEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2819,7 +2819,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2837,7 +2837,7 @@ module CreateMatrices_m
          end if
          !  !Up y Down
          if ((Border%IsDownPML)) then
-            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%size
+            do k = ZIPML (field),ZIPML (field)+ MEDIOEXTRA%pml_size
                do j = YIPML (field), YEPML (field)
                   do i = XIPML (field), XEPML (field)
                      !
@@ -2855,7 +2855,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2873,7 +2873,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsUpPML)) then
-            do k = ZEPML (field)- MEDIOEXTRA%size,ZEPML (field)
+            do k = ZEPML (field)- MEDIOEXTRA%pml_size,ZEPML (field)
                do j = YIPML (field), YEPML (field)
                   do i = XIPML (field), XEPML (field)
                      !
@@ -2891,7 +2891,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2911,7 +2911,7 @@ module CreateMatrices_m
          field = iHz
          !front y back
          if ((Border%IsBackPML)) then
-            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%size
+            do i = XIPML (field),XIPML (field)+ MEDIOEXTRA%pml_size
                do j = YIPML (field), YEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2929,7 +2929,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2947,7 +2947,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsFrontPML)) then
-            do i = XEPML (field)- MEDIOEXTRA%size,XEPML (field)
+            do i = XEPML (field)- MEDIOEXTRA%pml_size,XEPML (field)
                do j = YIPML (field), YEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -2965,7 +2965,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -2983,7 +2983,7 @@ module CreateMatrices_m
          end if
          !izda y dcha
          if ((Border%IsLeftPML)) then
-            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%size
+            do j = YIPML (field),YIPML (field)+ MEDIOEXTRA%pml_size
                do i = XIPML (field), XEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -3001,7 +3001,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr
@@ -3019,7 +3019,7 @@ module CreateMatrices_m
          end if
          !
          if ((Border%IsRightPML)) then
-            do j = YEPML (field)- MEDIOEXTRA%size,YEPML (field)
+            do j = YEPML (field)- MEDIOEXTRA%pml_size,YEPML (field)
                do i = XIPML (field), XEPML (field)
                   do k = ZIPML (field), ZEPML (field)
                      !
@@ -3037,7 +3037,7 @@ module CreateMatrices_m
                         if (yapuesto) then
                            if ((oldmed /= MEDIOEXTRA%index).and.((newepr /= oldepr).or.(newmur /= oldmur).or. &
                            (newsigma /= oldsigma  + MEDIOEXTRA%sigma ).or.(newsigmam /= oldsigmam + MEDIOEXTRA%sigmam))) then
-                              call STOPONERROR (layoutnumber,size,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
+                              call STOPONERROR (layoutnumber,num_procs,'Multilayer corrected PML unsupported. Relaunch without -pmlcorr')
                            end if
                         else
                            sgg%Med(MEDIOEXTRA%index)%epr    = oldepr

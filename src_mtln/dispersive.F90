@@ -1,10 +1,11 @@
 module dispersive_m
     use utils_m
     use rational_approximation_m
+    use FDETYPES_m, only: RKIND, RKIND_TIEMPO
     implicit none
     
     type :: dispersive_t
-        real :: dt
+        real(kind=RKIND_TIEMPO) :: dt
         integer :: number_of_divisions, number_of_conductors, number_of_poles
         real, allocatable :: u(:,:)
         real, allocatable, dimension(:,:,:) :: d, e
@@ -52,7 +53,7 @@ contains
     function dispersiveCtor(number_of_conductors, number_of_poles, number_of_divisions, dt) result(res)
         type(dispersive_t) :: res
         integer :: number_of_conductors, number_of_poles
-        real :: dt
+        real(kind=RKIND_TIEMPO) :: dt
         integer, intent(in) :: number_of_divisions
         complex :: zero 
         res%dt = dt
@@ -119,7 +120,7 @@ contains
     function lumpedCtor(number_of_conductors, number_of_poles, number_of_divisions, dt) result(res)
         type(lumped_t) :: res
         integer :: number_of_conductors, number_of_poles
-        real :: dt
+        real(kind=RKIND_TIEMPO) :: dt
         integer, intent(in) :: number_of_divisions
         res%dispersive_t = dispersiveCtor(number_of_conductors, number_of_poles, number_of_divisions, dt)
     end function 
@@ -176,7 +177,7 @@ contains
     function transferImpendaceCtor(number_of_conductors, number_of_poles, number_of_divisions, dt) result(res)
         type(transfer_impedance_t) :: res
         integer :: number_of_conductors, number_of_poles
-        real :: dt
+        real(kind=RKIND_TIEMPO) :: dt
         integer :: number_of_divisions
         res%dispersive_t = dispersiveCtor(number_of_conductors, number_of_poles, number_of_divisions, dt)
     end function 

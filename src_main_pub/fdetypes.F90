@@ -102,7 +102,7 @@ module  FDETYPES_m
    integer(kind=4), parameter  :: INTEGERSIZE=MPI_INTEGER4
 #endif
 #endif
-    integer(kind=4), parameter  :: IKINDMTAG=4 !PARA SGGMTAG 151020 !dejarlo en 4 bytes. No tocar
+   integer(kind=4), parameter  :: IKINDMTAG=4 !PARA SGGMTAG 151020 !dejarlo en 4 bytes. No tocar
 
    integer(kind=2), parameter  :: SINGLE=4
    integer(kind=2), parameter  :: DOUBLE=8
@@ -237,7 +237,7 @@ module  FDETYPES_m
    end type coorsxyzP_t
 
    type MedioExtra_t
-      integer(kind=4) :: size,index
+      integer(kind=4) :: pml_size,index
       real(kind=rkind) :: sigma,sigmam
       logical :: exists
    end type
@@ -698,7 +698,7 @@ module  FDETYPES_m
       character(len=BUFSIZE) :: opcionestotales
       
       integer(kind=4) :: finaltimestep, flushsecondsFields,flushsecondsData, layoutnumber,& 
-                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, size
+                          mpidir, inductance_order, wirethickness, maxCPUtime, SGBCDepth, precision, num_procs
       
       type(MedioExtra_t) :: MEDIOEXTRA
       type(nf2ff_T) :: facesNF2FF

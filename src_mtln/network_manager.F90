@@ -81,7 +81,7 @@ contains
     function network_managerCtor(networks, description, final_time, dt) result(res)
         type(network_t), dimension(:), intent(in) :: networks
         character(*), dimension(:), intent(in) :: description
-        real, intent(in) :: final_time, dt
+        real(kind=RKIND_TIEMPO), intent(in) :: final_time, dt
         type(network_manager_t) :: res
         logical :: printInput = .true.
         res%dt = dt

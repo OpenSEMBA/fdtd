@@ -105,6 +105,24 @@ Before opening a pull request:
 - Be responsive to review comments and keep the discussion technical
   and respectful.
 
+## AI-assisted contributions
+
+AI coding agents (such as GitHub Copilot, ChatGPT, or similar tools) may
+be used to assist with contributions. However, PRs that include **significant
+contributions from AI agents** — meaning AI-generated code, logic, or content
+that has not been thoroughly reviewed and understood by the human author —
+must be reviewed and approved by **at least two human reviewers** before
+merging.
+
+When submitting such a PR, please:
+
+- Clearly state in the pull request description that AI assistance was used
+  and describe the extent of that assistance.
+- Ensure you (the human author) have reviewed, understood, and taken
+  responsibility for all AI-generated content in the PR.
+
+This policy exists to maintain code quality and accountability in the project.
+
 ## Reporting bugs and requesting features
 
 If you are not yet ready to contribute code, you can still help by:

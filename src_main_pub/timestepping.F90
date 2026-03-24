@@ -269,7 +269,7 @@ module Solver_m
       this%control%maxCPUtime = input%maxCPUtime
       this%control%SGBCDepth = input%SGBCDepth
       this%control%precision = input%precision
-      this%control%size = input%size
+      this%control%num_procs = input%num_procs
       this%control%MEDIOEXTRA = input%MEDIOEXTRA
       this%control%facesNF2FF = input%facesNF2FF
       this%EpsMuTimeScale_input_parameters = input%EpsMuTimeScale_input_parameters
@@ -452,12 +452,12 @@ module Solver_m
       J=this%sgg%Alloc(iEx)%YI
       K=this%sgg%Alloc(iEx)%ZI
       do field=iEy,6
-         if (this%sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (this%sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
-         if (this%sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%size,'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%XI /= I) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%YI /= J) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
+         if (this%sgg%Alloc(field)%ZI /= K) call stoponerror(this%control%layoutnumber,this%control%num_procs,'OFFSETS IN INITIAL COORD NOT ALLOWED')
       end do
 
-      write(whoami,'(a,i5,a,i5,a)') '(',this%control%layoutnumber+1,'/',this%control%size,') '
+      write(whoami,'(a,i5,a,i5,a)') '(',this%control%layoutnumber+1,'/',this%control%num_procs,') '
       !file names
       write(chari,*) this%control%layoutnumber+1
       if ((this%control%layoutnumber == 0).and.this%control%verbose) call reportmedia(this%sgg)
@@ -514,7 +514,7 @@ module Solver_m
             if (this%control%resume_fromold) then
                close (14)
                write(dubuf,*) 'Incoherence between MPI saved steps for resuming.', dummyMin,dummyMax,this%lastexecutedtimesteP
-               call stoponerror (this%control%layoutnumber,this%control%size,BUFF,.true.) !para que retorne
+               call stoponerror (this%control%layoutnumber,this%control%num_procs,BUFF,.true.) !para que retorne
                call this%destroy_and_deallocate()
                return
             else
@@ -529,7 +529,7 @@ module Solver_m
                call MPI_AllReduce( this%lastexecutedtimestep, dummyMax, 1_4, MPI_INTEGER, MPI_MAX, SUBCOMM_MPI, ierr)
                if ((dummyMax /= this%lastexecutedtimestep).or.(dummyMin /= this%lastexecutedtimestep)) then
                   write(DUbuf,*) 'NO success. fields.old MPI are also incoherent for resuming.', dummyMin,dummyMax,this%lastexecutedtimestep
-                  call stoponerror (this%control%layoutnumber,this%control%size,DUBUF,.true.) !para que retorne
+                  call stoponerror (this%control%layoutnumber,this%control%num_procs,DUBUF,.true.) !para que retorne
                   call this%destroy_and_deallocate()
                   return
                else
@@ -541,7 +541,7 @@ module Solver_m
             close (14)
 
             write(dubuf,*) 'Incoherence between MPI saved steps for resuming.',dummyMin,dummyMax,this%lastexecutedtimestep
-            call stoponerror (this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
+            call stoponerror (this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !para que retorne
             call this%destroy_and_deallocate()
             return
 #endif
@@ -553,7 +553,7 @@ module Solver_m
       end if
 
       if (this%initialtimestep>this%control%finaltimestep) then
-          call stoponerror (this%control%layoutnumber,this%control%size,'Initial time step greater than final one',.true.) !para que retorne
+          call stoponerror (this%control%layoutnumber,this%control%num_procs,'Initial time step greater than final one',.true.) !para que retorne
           call this%destroy_and_deallocate()
           return
       end if
@@ -621,11 +621,11 @@ module Solver_m
       call InitTiming(this%sgg, this%control, this%control%time_desdelanzamiento, this%initialtimestep, this%control%maxSourceValue)
 
 
-      call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%size,this%control%fatalerror,.false.,this%control%simu_devia) !aqui ya esta dividido el stochastic y hay dos this%control%layoutnumber=0
+      call CLOSEWARNINGFILE(this%control%layoutnumber,this%control%num_procs,this%control%fatalerror,.false.,this%control%simu_devia) !aqui ya esta dividido el stochastic y hay dos this%control%layoutnumber=0
 
       if (this%control%fatalerror) then
          dubuf='FATAL ERRORS. Revise *Warnings.txt file. ABORTING...'
-         call stoponerror(this%control%layoutnumber,this%control%size,dubuf,.true.) !para que retorne
+         call stoponerror(this%control%layoutnumber,this%control%num_procs,dubuf,.true.) !para que retorne
          call this%destroy_and_deallocate()
          return
       end if
@@ -637,8 +637,8 @@ module Solver_m
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
       if (this%control%stochastic)  then
-         call syncstoch_mpi_sgbcs(this%control%simu_devia,this%control%layoutnumber,this%control%size)
-         call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%size)
+         call syncstoch_mpi_sgbcs(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
+         call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
       end if
 #endif    
 #endif    
@@ -1017,7 +1017,7 @@ contains
             call WarnErrReport(buff)
             if (this%control%medioextra%exists) then
                write(buff,'(a,i5,e9.2e2)') 'CPML correction size,factor to scale sigmamax = ', &
-               this%control%medioextra%size,this%control%medioextra%sigma
+               this%control%medioextra%pml_size,this%control%medioextra%sigma
                call WarnErrReport(buff)
             end if
             write(buff,*) 'saveall=',this%control%saveall,', flushsecondsFields=',this%control%flushsecondsFields,', flushsecondsData=',this%control%flushsecondsData,', maxCPUtime=',this%control%maxCPUtime,', singlefilewrite=',this%control%singlefilewrite
@@ -1177,7 +1177,7 @@ contains
 #endif
             write(dubuf,*) 'Init Multi-Wires...';  call print11(this%control%layoutnumber,dubuf)
             call InitWires_Berenger(&
-               this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
+               this%sgg,this%media%sggMiNo,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,this%control%layoutnumber,this%control%num_procs,this%thereAre%Wires,this%control%resume,this%control%makeholes, &
                this%control%isolategroupgroups,this%control%mtlnberenger,this%control%mindistwires, &
                this%control%groundwires,this%control%taparrabos,Ex,Ey,Ez, &
                Idxe,Idye,Idze,Idxh,Idyh,Idzh,this%control%inductance_model,this%g%g2,this%sinPML_fullsize,this%fullsize,dtcritico,this%eps0,this%mu0,this%control%verbose)
@@ -1208,7 +1208,7 @@ contains
             else
                continue
             end if
-            call InitWires_Slanted(this%sgg, this%control%layoutnumber,this%control%size, Ex, Ey, Ez,   & 
+            call InitWires_Slanted(this%sgg, this%control%layoutnumber,this%control%num_procs, Ex, Ey, Ez,   & 
                                     Idxe, Idye, Idze, Idxh, Idyh, Idzh,   &
                                     this%media%sggMiNo,                              &
                                     this%media%sggMiEx, this%media%sggMiEy, this%media%sggMiEz,            &
@@ -1248,7 +1248,7 @@ contains
 
       !!!sincroniza el dtcritico
 #ifdef CompileWithMPI
-         newdtcritico = 0.0
+         newdtcritico = 0.0_RKIND_tiempo
          call MPI_AllReduce( dtcritico, newdtcritico, 1_4, REALSIZE_tiempo, MPI_MIN, SUBCOMM_MPI, ierr)
          dtcritico=newdtcritico
 #endif
@@ -1313,7 +1313,7 @@ contains
 #endif
                write(dubuf,*) 'Init Multi sgbc...';  call print11(this%control%layoutnumber,dubuf)
                call Initsgbcs(this%sgg,this%media,Ex,Ey,Ez,Hx,Hy,Hz,IDxe,IDye,IDze,IDxh,IDyh,IDzh, &
-                              this%control%layoutnumber,this%control%size, this%g, this%thereAre%sgbcs,this%control%resume, &
+                              this%control%layoutnumber,this%control%num_procs, this%g, this%thereAre%sgbcs,this%control%resume, &
                               this%control%sgbccrank,this%control%sgbcFreq,this%control%sgbcresol,this%control%sgbcdepth,this%control%sgbcDispersive, &
                               this%eps0,this%mu0,this%control%simu_devia,this%control%stochastic)
 
@@ -1341,7 +1341,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
             write(dubuf,*) 'Init Multiports...';  call print11(this%control%layoutnumber,dubuf)
-            call InitMultiports        (this%sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx ,this%media%sggMiHy ,this%media%sggMiHz,this%control%layoutnumber,this%control%size,this%thereAre%Multiports,this%control%resume, &
+            call InitMultiports        (this%sgg,this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx ,this%media%sggMiHy ,this%media%sggMiHz,this%control%layoutnumber,this%control%num_procs,this%thereAre%Multiports,this%control%resume, &
             Idxe,Idye,Idze,this%control%NOcompomur,this%control%ADE,this%control%cfl,this%eps0,this%mu0)
          l_auxinput= this%thereAre%Multiports
          l_auxoutput=l_auxinput
@@ -1372,7 +1372,7 @@ contains
 !DEBUG
             call initialize_memory_FDTD_conf_fields (this%sgg,this%media%sggMiEx, &
             & this%media%sggMiEy,this%media%sggMiEz,this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz,Ex,Ey,Ez,Hx,Hy,Hz,&
-            & this%control%layoutnumber,this%control%size, this%control%verbose);
+            & this%control%layoutnumber,this%control%num_procs, this%control%verbose);
             l_auxinput=input_conformal_flag
             l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1454,7 +1454,7 @@ contains
          call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
          write(dubuf,*) 'Init Multi Plane-Waves...';  call print11(this%control%layoutnumber,dubuf)
-         call InitPlaneWave   (this%sgg,this%media,this%control%layoutnumber,this%control%size,this%sinPML_fullsize,this%thereAre%PlaneWaveBoxes,this%control%resume,this%eps0,this%mu0)
+         call InitPlaneWave   (this%sgg,this%media,this%control%layoutnumber,this%control%num_procs,this%sinPML_fullsize,this%thereAre%PlaneWaveBoxes,this%control%resume,this%eps0,this%mu0)
          l_auxinput=this%thereAre%PlaneWaveBoxes
          l_auxoutput=l_auxinput
 #ifdef CompileWithMPI
@@ -1527,16 +1527,16 @@ contains
       subroutine initializeMPI()
          character(len=bufsize) :: dubuf      
          integer(kind=4) :: ierr
-         if (this%control%size>1) then
+         if (this%control%num_procs>1) then
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) 'Init MPI MediaMatrix flush...';  call print11(this%control%layoutnumber,dubuf)
             call InitMPI(this%sgg%sweep,this%sgg%alloc)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call InitExtraFlushMPI(this %control%layoutnumber,this%sgg%sweep,this%sgg%alloc,this%sgg%med,this%sgg%nummedia,this%media%sggMiEz,this%media%sggMiHz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call FlushMPI_H(this%sgg%alloc,this%control%layoutnumber,this%control%size, this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz)
+            call FlushMPI_H(this%sgg%alloc,this%control%layoutnumber,this%control%num_procs, this%media%sggMiHx,this%media%sggMiHy,this%media%sggMiHz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
-            call FlushMPI_E(this%sgg%alloc,this%control%layoutnumber,this%control%size, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz)
+            call FlushMPI_E(this%sgg%alloc,this%control%layoutnumber,this%control%num_procs, this%media%sggMiEx,this%media%sggMiEy,this%media%sggMiEz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
          end if
@@ -1544,9 +1544,9 @@ contains
 !!!!!!!!!!!!!!!!!!!!!fin juego con fuego 210815
 
       !MPI initialization
-         if (this%control%size>1) then
+         if (this%control%num_procs>1) then
             write(dubuf,*) 'Init MPI Cray...';  call print11(this%control%layoutnumber,dubuf)
-            call InitMPI_Cray(this%control%layoutnumber,this%control%size,this%sgg%sweep,this%sgg%alloc, &
+            call InitMPI_Cray(this%control%layoutnumber,this%control%num_procs,this%sgg%sweep,this%sgg%alloc, &
             this%sgg%Border%IsDownPeriodic,this%sgg%Border%IsUpPeriodic, &
             Ex,Ey,Ez,Hx,Hy,Hz)
             call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1557,7 +1557,7 @@ contains
             if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
                (trim(adjustl(this%control%wiresflavor))=='transition')) then 
                write(dubuf,*) 'Init MPI Holland Wires...';  call print11(this%control%layoutnumber,dubuf)
-               call newInitWiresMPI(this%control%layoutnumber,this%thereAre%wires,this%control%size,this%control%resume,this%sgg%sweep)
+               call newInitWiresMPI(this%control%layoutnumber,this%thereAre%wires,this%control%num_procs,this%control%resume,this%sgg%sweep)
                call MPI_Barrier(SUBCOMM_MPI,ierr)
                write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
             end if
@@ -1565,7 +1565,7 @@ contains
 #ifdef CompileWithBerengerWires
             if (trim(adjustl(this%control%wiresflavor))=='berenger') then
                write(dubuf,*) 'Init MPI Multi-Wires...';  call print11(this%control%layoutnumber,dubuf)
-               call InitWiresMPI_Berenger(this%control%layoutnumber,this%thereAre%wires,this%control%size,this%control%resume,this%sgg%sweep)
+               call InitWiresMPI_Berenger(this%control%layoutnumber,this%thereAre%wires,this%control%num_procs,this%control%resume,this%sgg%sweep)
                call MPI_Barrier(SUBCOMM_MPI,ierr)
                write(dubuf,*) '[OK]';  call print11(this%control%layoutnumber,dubuf)
             end if
@@ -1582,12 +1582,12 @@ contains
       !must be called now in case the MPI has changed the connectivity info
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-            call ReportWireJunctions(this%control%layoutnumber,this%control%size,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
+            call ReportWireJunctions(this%control%layoutnumber,this%control%num_procs,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
          end if
 
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-               call ReportWireJunctionsBerenger(this%control%layoutnumber,this%control%size,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
+               call ReportWireJunctionsBerenger(this%control%layoutnumber,this%control%num_procs,this%thereAre%wires,this%sgg%Sweep(iHz)%ZI, this%sgg%Sweep(iHz)%ZE,this%control%groundwires,this%control%strictOLD,this%control%verbose)
                   !dama no tenia el equivalente 050416
       end if
 #endif
@@ -1605,25 +1605,25 @@ contains
          integer(kind=4) :: ierr
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          !!Flush all the MPI data (needed a initial flush for correct resuming)
-         if (this%control%size>1) then
+         if (this%control%num_procs>1) then
             call MPI_Barrier(SUBCOMM_MPI,ierr)
             call   FlushMPI_H_Cray
          end if
          if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-            if ((this%control%size>1).and.(this%thereAre%wires))   then
-               call newFlushWiresMPI(this%control%layoutnumber,this%control%size)
+            if ((this%control%num_procs>1).and.(this%thereAre%wires))   then
+               call newFlushWiresMPI(this%control%layoutnumber,this%control%num_procs)
             end if
 #ifdef CompileWithStochastic
             if (this%control%stochastic) then
-               call syncstoch_mpi_wires(this%control%simu_devia,this%control%layoutnumber,this%control%size)
+               call syncstoch_mpi_wires(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
             end if
 #endif
          end if
 
 #ifdef CompileWithBerengerWires
          if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-            if ((this%control%size>1).and.(this%thereAre%wires))   call FlushWiresMPI_Berenger(this%control%layoutnumber,this%control%size)
+            if ((this%control%num_procs>1).and.(this%thereAre%wires))   call FlushWiresMPI_Berenger(this%control%layoutnumber,this%control%num_procs)
          end if
 #endif
       end subroutine flushMPIdata
@@ -1816,7 +1816,7 @@ contains
 #endif
          
          if (call_timing) then
-            call Timing(this%sgg,this%bounds,this%n,this%n_info,this%control%layoutnumber,this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
+            call Timing(this%sgg,this%bounds,this%n,this%n_info,this%control%layoutnumber,this%control%num_procs, this%control%maxCPUtime,this%control%flushsecondsFields,this%control%flushsecondsData,this%initialtimestep, &
             this%control%finaltimestep,this%perform,this%parar,.FALSE., &
             Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales,this%control%simu_devia,this%control%dontwritevtk,this%control%permitscaling)
 
@@ -1850,7 +1850,7 @@ contains
                    call print11(this%control%layoutnumber,dubuf)
                    write(dubuf,*)  'INIT FLUSHING OF RESTARTING FIELDS n=',this%n
                    call print11(this%control%layoutnumber,dubuf)
-                   call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
+                   call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
                    Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
 #ifdef CompileWithMPI
                    call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1874,7 +1874,7 @@ contains
                       call print11(this%control%layoutnumber,dubuf)
                       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
     !!
-                      if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
+                      if (this%thereAre%Observation) call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,flushFF)
                       !!
 #ifdef CompileWithMPI
                       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -1895,7 +1895,7 @@ contains
                          call print11(this%control%layoutnumber,dubuf)
                          somethingdone=.false.
                          at=this%n*this%sgg%dt
-                         if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%size,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
+                         if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
 #ifdef CompileWithMPI
                          call MPI_Barrier(SUBCOMM_MPI,ierr)
                          call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -1920,7 +1920,7 @@ contains
                          call print11(this%control%layoutnumber,dubuf)
                          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                          somethingdone=.false.
-                         if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
+                         if (this%thereAre%Observation) call createvtkOnTheFly(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
 #ifdef CompileWithMPI
                          call MPI_Barrier(SUBCOMM_MPI,ierr)
                          call MPI_AllReduce( somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -1945,8 +1945,8 @@ contains
                             call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
                             somethingdone=.false.
 
-                            if (this%thereAre%Observation) call createxdmfOnTheFly(this%sgg,this%control%layoutnumber,this%control%size,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)                          
-                            if (this%control%createh5bin) call createh5bintxt(this%sgg,this%control%layoutnumber,this%control%size) !lo deben llamar todos haya on on this%thereAre%observation
+                            if (this%thereAre%Observation) call createxdmfOnTheFly(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)                          
+                            if (this%control%createh5bin) call createh5bintxt(this%sgg,this%control%layoutnumber,this%control%num_procs) !lo deben llamar todos haya on on this%thereAre%observation
 
 #ifdef CompileWithMPI
                         call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2005,7 +2005,7 @@ contains
                                this%control%simu_devia, &
                                this%EpsMuTimeScale_input_parameters,pscale_alpha,this%still_planewave_time &
 #ifdef CompileWithMPI
-                               ,this%control%layoutnumber,this%control%size &
+                               ,this%control%layoutnumber,this%control%num_procs &
 #endif
                                ,this%control%stochastic,this%control%verbose)
 #ifndef miguelPscaleStandAlone
@@ -2027,7 +2027,7 @@ contains
             call UpdateObservation(this%sgg,this%media,this%tag_numbers, this%n,this%ini_save, Ex, Ey, Ez, Hx, Hy, Hz, dxe, dye, dze, dxh, dyh, dzh,this%control%wiresflavor,this%sinPML_fullsize,this%control%wirecrank, this%control%noconformalmapvtk,this%bounds)
             if (this%n>=this%ini_save+BuffObse)  then
                mindum=min(this%control%finaltimestep,this%ini_save+BuffObse)
-               call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
+               call FlushObservationFiles(this%sgg,this%ini_save,mindum,this%control%layoutnumber,this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.FALSE.) !no se flushean los farfields ahora
             end if
          end if
       end subroutine
@@ -2043,11 +2043,11 @@ contains
          write(dubuf,'(a,i9)')  ' Unpacking .bin files and prostprocessing them at n= ',this%n
          call print11(this%control%layoutnumber,dubuf)
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-         if (this%thereAre%Observation) call unpacksinglefiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%control%resume) !dump the remaining to disk
+         if (this%thereAre%Observation) call unpacksinglefiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%control%resume) !dump the remaining to disk
          somethingdone=.false.
          if (this%control%singlefilewrite.and.this%perform%Unpack) then
             at=this%n*this%sgg%dt
-            if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%size,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
+            if (this%thereAre%Observation) call PostProcessOnthefly(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
          end if
 #ifdef CompileWithMPI
          call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2093,7 +2093,7 @@ contains
       call this%advanceNodalE()
 
 #ifdef CompileWithMPI
-      if (this%control%size>1) then
+      if (this%control%num_procs>1) then
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call FlushMPI_E_Cray
       end if
@@ -2130,20 +2130,20 @@ contains
       !lo he movido aqui a 16/10/2012 porque el farfield necesita tener los campos magneticos correctos
       !e intuyo que el Bloque current tambien a tenor del comentario siguiente
       !Incluyo un flush inicial antes de entrar al bucle para que el resuming sea correcto
-      if (this%control%size>1) then
+      if (this%control%num_procs>1) then
          call MPI_Barrier(SUBCOMM_MPI,ierr)
          call FlushMPI_H_Cray
       end if
       if ((trim(adjustl(this%control%wiresflavor))=='holland') .or. &
             (trim(adjustl(this%control%wiresflavor))=='transition')) then
-         if ((this%control%size>1).and.(this%thereAre%wires)) call newFlushWiresMPI(this%control%layoutnumber,this%control%size)
+         if ((this%control%num_procs>1).and.(this%thereAre%wires)) call newFlushWiresMPI(this%control%layoutnumber,this%control%num_procs)
 #ifdef CompileWithStochastic
-         if (this%control%stochastic) call syncstoch_mpi_wires(this%control%simu_devia,this%control%layoutnumber,this%control%size)
+         if (this%control%stochastic) call syncstoch_mpi_wires(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
 #endif
       end if
 #ifdef CompileWithBerengerWires
       if (trim(adjustl(this%control%wiresflavor))=='berenger') then
-         if ((this%control%size>1).and.(this%thereAre%wires))   call FlushWiresMPI_Berenger(this%control%layoutnumber,this%control%size)
+         if ((this%control%num_procs>1).and.(this%thereAre%wires))   call FlushWiresMPI_Berenger(this%control%layoutnumber,this%control%num_procs)
       end if
 #endif
 #endif
@@ -2151,13 +2151,13 @@ contains
 !!!no se si el orden wires - sgbcs del sync importa 150519
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
-         if (this%control%stochastic) call syncstoch_mpi_sgbcs(this%control%simu_devia,this%control%layoutnumber,this%control%size)
+         if (this%control%stochastic) call syncstoch_mpi_sgbcs(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
 #endif    
 #endif
 
 #ifdef CompileWithMPI
 #ifdef CompileWithStochastic
-         if (this%control%stochastic) call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%size)
+         if (this%control%stochastic) call syncstoch_mpi_lumped(this%control%simu_devia,this%control%layoutnumber,this%control%num_procs)
 #endif    
 #endif 
       call this%advanceMagneticMUR()
@@ -2172,7 +2172,7 @@ contains
          pw_still_time = pw_still_time.and.this%thereAre%PlaneWaveBoxes
          pw_thereAre = this%thereAre%PlaneWaveBoxes
 #ifdef CompileWithMPI
-         if (this%control%size>1) then
+         if (this%control%num_procs>1) then
             pw_still_time_aux = pw_still_time
             call MPI_AllReduce(pw_still_time_aux, pw_still_time, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
             pw_thereAre_aux = pw_thereAre
@@ -2206,7 +2206,7 @@ contains
          SUBCOMM_MPI_conformal_probes=0 
          MPI_conformal_probes_root=-1
       end if
-      call MPIinitSubcomm(this%control%layoutnumber,this%control%size,SUBCOMM_MPI_conformal_probes,&
+      call MPIinitSubcomm(this%control%layoutnumber,this%control%num_procs,SUBCOMM_MPI_conformal_probes,&
                            MPI_conformal_probes_root,group_conformalprobes_dummy)
       ! print *,'-----creating--->',this%control%layoutnumber,SIZE,SUBCOMM_MPI_conformal_probes,MPI_conformal_probes_root
       call MPI_BARRIER(SUBCOMM_MPI, ierr)
@@ -2604,13 +2604,13 @@ contains
    subroutine solver_MinusCloneMagneticPMC(this)
       class(solver_t) :: this
       If (this%thereAre%PMCBorders) call MinusCloneMagneticPMC(this%sgg%alloc,this%sgg%border,this%Hx,this%Hy,this%Hz,this%sgg%sweep, & 
-                                                               this%control%layoutnumber,this%control%size)
+                                                               this%control%layoutnumber,this%control%num_procs)
    end subroutine
 
    subroutine solver_CloneMagneticPeriodic(this)
       class(solver_t) :: this
       If (this%thereAre%PeriodicBorders) call CloneMagneticPeriodic(this%sgg%alloc,this%sgg%border,this%Hx,this%Hy,this%Hz,this%sgg%sweep,& 
-                                                                    this%control%layoutnumber,this%control%size)
+                                                                    this%control%layoutnumber,this%control%num_procs)
    end subroutine
 
 
@@ -2699,7 +2699,7 @@ contains
                                  this%control%mur_second)
 #ifdef CompileWithMPI
          if (this%control%mur_second) then
-            if (this%control%size>1) then
+            if (this%control%num_procs>1) then
                call MPI_Barrier(SUBCOMM_MPI,ierr)
                call FlushMPI_H_Cray
             end if
@@ -2741,7 +2741,7 @@ contains
       this%control%finaltimestep = this%n
       this%lastexecutedtime=this%sgg%tiempo(this%control%finaltimestep)
       !se llama con dummylog para no perder los flags de parada
-      call Timing(this%sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, this%control%size, & 
+      call Timing(this%sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, this%control%num_procs, & 
                   this%control%maxCPUtime,this%control%flushsecondsFields, this%control%flushsecondsData, &
                   this%initialtimestep, this%control%finaltimestep,this%d_perform,dummylog,.FALSE., &
                   Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue, & 
@@ -2753,7 +2753,7 @@ contains
       if ((this%control%flushsecondsFields/=0).or.this%perform%flushFIELDS) then
          write(dubuf,'(a,i9)')  ' INIT FINAL FLUSHING OF RESTARTING FIELDS n= ',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
-         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%size, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
+         call flush_and_save_resume(this%sgg, this%bounds, this%control%layoutnumber, this%control%num_procs, this%control%nentradaroot, this%control%nresumeable2, this%thereare, this%n,this%eps0,this%mu0, this%everflushed,  &
          Ex, Ey, Ez, Hx, Hy, Hz,this%control%wiresflavor,this%control%simu_devia,this%control%stochastic)
          write(dubuf,'(a,i9)')  ' DONE FINAL FLUSHING OF RESTARTING FIELDS N=',this%n
          call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
@@ -2770,8 +2770,8 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       call print11(this%control%layoutnumber,SEPARADOR//separador//separador)
       if (this%thereAre%Observation) then
-         call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%size, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
-         call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%size,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
+         call FlushObservationFiles(this%sgg,this%ini_save, this%n,this%control%layoutnumber, this%control%num_procs, dxe, dye, dze, dxh, dyh, dzh,this%bounds,this%control%singlefilewrite,this%control%facesNF2FF,.TRUE.)
+         call CloseObservationFiles(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%singlefilewrite,this%initialtimestep,this%lastexecutedtime,this%control%resume) !dump the remaining to disk
 #ifdef CompileWithMTLN      
          call FlushMTLNObservationFiles(this%control%nentradaroot, mtlnProblem = .false.)
 #endif
@@ -2796,7 +2796,7 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       somethingdone=.false.
       at=this%n*this%sgg%dt
-      if (this%thereAre%Observation) call PostProcess(this%control%layoutnumber,this%control%size,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
+      if (this%thereAre%Observation) call PostProcess(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%nentradaroot,at,somethingdone,this%control%niapapostprocess,this%control%forceresampled)
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
       call MPI_AllReduce(somethingdone, newsomethingdone, 1_4, MPI_LOGICAL, MPI_LOR, SUBCOMM_MPI, ierr)
@@ -2821,7 +2821,7 @@ contains
       call print11(this%control%layoutnumber,dubuf)
       somethingdone=.false.
 
-      if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%size,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
+      if (this%thereAre%Observation) call createvtk(this%control%layoutnumber,this%control%num_procs,this%sgg,this%control%vtkindex,somethingdone,this%control%mpidir,this%media%sggMtag,this%control%dontwritevtk)
 
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2845,8 +2845,8 @@ contains
       write(dubuf,*) SEPARADOR//separador//separador
       call print11(this%control%layoutnumber,dubuf)
       somethingdone=.false.
-      if (this%thereAre%Observation) call createxdmf(this%sgg,this%control%layoutnumber,this%control%size,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)
-      if (this%control%createh5bin) call createh5bintxt(this%sgg,this%control%layoutnumber,this%control%size) !lo deben llamar todos haya o no this%thereAre%observation
+      if (this%thereAre%Observation) call createxdmf(this%sgg,this%control%layoutnumber,this%control%num_procs,this%control%vtkindex,this%control%createh5bin,somethingdone,this%control%mpidir)
+      if (this%control%createh5bin) call createh5bintxt(this%sgg,this%control%layoutnumber,this%control%num_procs) !lo deben llamar todos haya o no this%thereAre%observation
 !        call create_interpreted_mesh(sgg)
 #ifdef CompileWithMPI
       call MPI_Barrier(SUBCOMM_MPI,ierr)
@@ -2869,7 +2869,7 @@ contains
       call MPI_Barrier(SUBCOMM_MPI,ierr)
 #endif
       call Timing(this%sgg,this%bounds,this%n,ndummy,this%control%layoutnumber, &
-                  this%control%size, this%control%maxCPUtime,this%control%flushsecondsFields, &
+                  this%control%num_procs, this%control%maxCPUtime,this%control%flushsecondsFields, &
                   this%control%flushsecondsData,this%initialtimestep, &
                   this%control%finaltimestep,this%perform,this%parar,.FALSE., &
                   Ex,Ey,Ez,this%everflushed,this%control%nentradaroot,this%control%maxSourceValue,this%control%opcionestotales, & 

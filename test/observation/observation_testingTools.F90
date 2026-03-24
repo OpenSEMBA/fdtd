@@ -142,10 +142,6 @@ contains
       end do
    end function create_time_array
 
-   function create_limit_type() result(r)
-      type(limit_t) :: r
-   end function
-
    function create_xyz_limit_array(XI,YI,ZI,XE,YE,ZE) result(arr)
       type(XYZlimit_t), dimension(1:6) :: arr
       integer(kind=4), intent(in) :: XI,YI,ZI,XE,YE,ZE
@@ -173,18 +169,18 @@ contains
       faces%ar = ar
    end function create_facesNF2FF
 
-   function create_control_flags(layoutnumber, size, mpidir, finaltimestep, &
+   function create_control_flags(layoutnumber, num_procs, mpidir, finaltimestep, &
                                        nEntradaRoot, wiresflavor, &
                                        resume, saveall, NF2FFDecim, simu_devia, singlefilewrite, &
                                        facesNF2FF) result(control)
       type(sim_control_t) :: control
-      integer(kind=4), intent(in) :: layoutnumber, size, mpidir, finaltimestep
+      integer(kind=4), intent(in) :: layoutnumber, num_procs, mpidir, finaltimestep
       character(len=*), intent(in) :: nEntradaRoot, wiresflavor
       logical, intent(in) :: resume, saveall, NF2FFDecim, simu_devia, singlefilewrite
       type(nf2ff_t), intent(in) :: facesNF2FF
 
       control%layoutnumber  = layoutnumber
-      control%size = size
+      control%num_procs = num_procs
       control%mpidir  = mpidir
       control%finaltimestep = finaltimestep
       control%nEntradaRoot  = nEntradaRoot
@@ -200,10 +196,11 @@ contains
 
    function create_base_sgg() result(sgg)
       type(SGGFDTDINFO_t) :: sgg
+      type(MediaData_t) :: basic_media
       
       sgg%NumMedia = 3
       allocate(sgg%Med(0:sgg%NumMedia))
-      sgg%Med = create_basic_media()
+      sgg%Med = basic_media
       sgg%NumberRequest = 1
       sgg%dt = 0.1_RKIND_tiempo
       sgg%tiempo => create_time_array(100, sgg%dt)
@@ -213,10 +210,6 @@ contains
       sgg%alloc = create_xyz_limit_array(0,0,0,6,6,6)
  
    end function create_base_sgg
-
-   function create_basic_media () result(media)
-      type(MediaData_t) :: media
-   end function create_basic_media
 
    function get_temp_dir() result(tmpdir)
       character(len=BUFSIZE) :: tmpdir

@@ -36,7 +36,7 @@ module Preprocess_m
    !
 contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-   subroutine read_geomData (sgg,media,tag_numbers, fichin, layoutnumber, size, SINPML_fullsize, fullsize, this, &
+   subroutine read_geomData (sgg,media,tag_numbers, fichin, layoutnumber, num_procs, SINPML_fullsize, fullsize, this, &
       groundwires,attfactor,mibc,SGBC,SGBCDispersive,MEDIOEXTRA,maxSourceValue,skindepthpre,createmapvtk,input_conformal_flag,CLIPREGION,boundwireradius,maxwireradius,updateshared,run_with_dmma, &
       eps00,mu00,simu_devia,hay_slanted_wires,verbose,ignoresamplingerrors,tagtype,wiresflavor)
       type(media_matrices_t), intent(inout) :: media
@@ -72,7 +72,7 @@ contains
       LOGICAL :: isathinwire, VALIDO, existia,medioespecial,input_conformal_flag,nodo_cazado
       LOGICAL :: errnofile,errnofile1,errnofile2,errnofile3,errnofile4
       real(kind=RKIND) :: tiempo1, tiempo2, field1, field2,rdummy
-      integer(kind=4) :: nsurfs, numus, layoutnumber, size,OrigIndex,numminus
+      integer(kind=4) :: nsurfs, numus, layoutnumber, num_procs,OrigIndex,numminus
       real(kind=RKIND) :: delta,del,sig_max
       integer(kind=4), dimension(:), ALLOCATABLE :: contapuntos
       integer(kind=4) :: conta1, conta2, MEDIO,imenos1,jmenos1,kmenos1,o,p,puntoxi,puntoyi,puntozi, &
@@ -136,7 +136,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
 
-      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', size, ') '
+      write(whoami, '(a,i5,a,i5,a)') '(', layoutnumber + 1, '/', num_procs, ') '
       write(whoamishort,'(i5)') layoutnumber+1
       !create space for the etangential shared info
       sgg%EShared%Conta = 0
@@ -322,7 +322,7 @@ contains
       !
       tama = (this%plnSrc%nc)
 !!!      write(buff,*) 'More than 1 Huygens box unsupported'
-!!!      if (tama > 1) call STOPONERROR(layoutnumber,size,buff)
+!!!      if (tama > 1) call STOPONERROR(layoutnumber,num_procs,buff)
       !LO PONGO A MANO ojo
       amplitud = 1.0_RKIND
       sgg%NumPlaneWaves = tama
@@ -432,7 +432,7 @@ contains
             if (Abs(px*ex+py*ey+pz*ez) >= 1e-4) then
                write(buff,*) 'NO TEM PLANEWAVE',ex,ey,ez,px,py,pz,(px*ex+py*ey+pz*ez),this%plnSrc%collection(i)%alpha,  &
                   this%plnSrc%collection(i)%beta,this%plnSrc%collection(i)%theta,this%plnSrc%collection(i)%phi
-               call STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             !
             sgg%PlaneWave(i)%px(1) = px
@@ -895,7 +895,7 @@ contains
          elseif (this%DielRegs%lins(i)%diodo) then
 !!!27/08/15 diodos aun no soportados
             write(buff, '(a)')    'Lumped Diodes currently unsupported. .'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
 !!!
             sgg%Med(contamedia)%Is%Lumped = .true.
             sgg%Med(contamedia)%Is%lossy = .true. !importante que si es lumped esto se ponga a lossy para que thin-wires haga bien el bonding !bug agb 120123 test_GGGbugresis_wire_stoch_foragasconbug
@@ -916,7 +916,7 @@ contains
             sgg%Med(contamedia)%Is%Lumped = .false.
             if (.not. this%DielRegs%lins(i)%plain) then
                write(buff, '(a)')    'Buggy error 1 in preprocess lumped. .'
-               call STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
          end if
 !!!fin lumped
@@ -1341,11 +1341,11 @@ contains
                         delta=(sgg%DZ(puntoZI)+sgg%Dz(puntoZI-1))/2.0_RKIND
                       case default
                         write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
-                        call STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end select
                   ELSE
                      write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
-                     call STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
                   sgg%Med(contamedia)%Multiport(1)%numcapas = this%LossyThinSurfs%cs(j)%numcapas
                   !el especificado
@@ -1373,7 +1373,7 @@ contains
                   rdummy=maxval(abs(this%LossyThinSurfs%cs(j)%MU_devia))+maxval(abs(this%LossyThinSurfs%cs(j)%SigmaM_devia))
                   if (rdummy>1.0e-15_RKIND) then
                      write(buff, '(a)')    'Non null deviations found in sigmam or mu in composites. Still unsupported.'
-                     call STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
 
                   !!!
@@ -1395,7 +1395,7 @@ contains
                      if (SGBCDispersive)   sgg%Med(contamedia)%Is%SGBCDispersive = .TRUE.
                   else
                      write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Composites.'
-                     call STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
                   sgg%Med(contamedia)%Is%Dielectric = .FALSE.
 
@@ -1524,11 +1524,11 @@ contains
                         delta=(sgg%DZ(puntoZI)+sgg%Dz(puntoZI-1))/2.0_RKIND
                       case default
                         write(buff, '(a)')    'Buggy error 1 in preprocess composites. .'
-                        call STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end select
                   ELSE
                      write(buff, '(a)')    'Buggy error 2 in preprocess composites. .'
-                     call STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
                   sgg%Med(contamedia)%AnisMultiport(1)%Multiportdir = this%LossyThinSurfs%cs(j)%C(i)%or
                   sgg%Med(contamedia)%AnisMultiport(1)%epr    = this%LossyThinSurfs%cs(j)%eps / Eps0
@@ -1547,7 +1547,7 @@ contains
                      sgg%Med(contamedia)%Is%Lossy = .TRUE.
                   else
                      write(buff, '(a)')    'Some -mibc -sgbc switch should be used for Anisotropic Composites.'
-                     call STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
 
                   sgg%Med(contamedia)%Is%Dielectric = .FALSE.
@@ -1881,7 +1881,7 @@ contains
             +abs(sgg%Med(contamedia)%wire(1)%Series_C_LeftEnd_devia)
          if (rdummy>1.0e-15_RKIND) then
             write(buff, '(a)')    'Non null deviations found in L, C or radius in wires stoch. Still unsupported.'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
 !fin stoch
          !
@@ -1890,7 +1890,7 @@ contains
          !
          !        tama2 = this%twires%TW(j)%N_TWC
          !        if (tama2 == 1) then
-         !           call stoponerror(layoutnumber,size,'A WIRE must have at least two segments')
+         !           call stoponerror(layoutnumber,num_procs,'A WIRE must have at least two segments')
          !        end if
          !
          !esto no es ya necesario porque lo calculo yo luego en el wires
@@ -2231,7 +2231,7 @@ contains
       !lo dejo que siga !luego el wires parara
       !if (paraerrhilo.and.(.not.groundwires)) then
       !    buff='Revise WIRE intersections!'
-      !    call STOPONERROR(layoutnumber,size,buff)
+      !    call STOPONERROR(layoutnumber,num_procs,buff)
       !end if
       !end preanalisis
       !perform the assignments
@@ -2363,7 +2363,7 @@ contains
                   (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'HARDCURR')) then
                   CONTAVOLT=CONTAVOLT+1
                   call WarnErrReport (buff)
-                  !             call STOPONERROR(layoutnumber,size,buff)
+                  !             call STOPONERROR(layoutnumber,num_procs,buff)
                   sgg%Med(contamedia)%wire(1)%VsourceExists = .TRUE.
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%SOFT=.FALSE. !230323 FUENTES DURAS Y FALSAS SGG
                   sgg%Med(contamedia)%wire(1)%VSource(CONTAVOLT)%Multiplier = this%twires%TW(j)%TWC(i)%m
@@ -2390,7 +2390,7 @@ contains
                ELSE if ((trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) == 'SOFTCURR')) then
                   CONTACURR=CONTACURR+1
                   call WarnErrReport (buff)
-                  !             call STOPONERROR(layoutnumber,size,buff)
+                  !             call STOPONERROR(layoutnumber,num_procs,buff)
                   sgg%Med(contamedia)%wire(1)%IsourceExists = .TRUE.
                   sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%SOFT=.true. !230323 FUENTES DURAS Y FALSAS SGG
                   sgg%Med(contamedia)%wire(1)%ISource(CONTACURR)%Multiplier = this%twires%TW(j)%TWC(i)%m
@@ -2405,7 +2405,7 @@ contains
                end if
             ELSEIF (trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE)) /= 'None') then
                write(buff,*) 'WRONG type of wire source '//trim(adjustl(this%twires%TW(j)%TWC(i)%SRCTYPE))
-               call stoponerror (layoutnumber,size,buff)
+               call stoponerror (layoutnumber,num_procs,buff)
             end if
          end do hilosbarre
          sgg%Med(contamedia)%wire(1)%NUMVOLTAGESOURCES=CONTAVOLT
@@ -2572,7 +2572,7 @@ contains
                sgg%Med(contamedia)%SlantedWire(1)%nodes(i)%Isource%fichero%name = trim (adjustl(this%swires%SW(j)%swc(i)%SRCFILE))
             elseIF (trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE)) /= 'None') then
                write(buff,*) 'WRONG type of wire source '//trim(adjustl(this%swires%SW(j)%swc(i)%SRCTYPE))
-               call stoponerror (layoutnumber,size,buff)
+               call stoponerror (layoutnumber,num_procs,buff)
             end if
          end do
       end do
@@ -2787,7 +2787,7 @@ contains
                      i1 = i1-1
                   ELSE
                      write(buff,*) 'Cannot determine ortientation of the PEC plane with the Slot',i1, j1, k1, direccion
-                     call stoponerror (layoutnumber,size,buff)
+                     call stoponerror (layoutnumber,num_procs,buff)
                      !ojo con el nfde no se puede hacer Slots en escalera porque no se puede determinar la orientacion de los planos
                      !en los tramos comunes. Por tanto No he podido testear los shared electricos anisotropos. solo los magneticos
                   end if
@@ -2827,7 +2827,7 @@ contains
                      mur1 = 0.5_RKIND  * (sgg%Med(medio1)%Mur+sgg%Med(medio2)%Mur)
                   ELSE
                      write(buff,*) 'Media around the Slot are not plain media: ', medio1, medio2
-                     call STOPONERROR(layoutnumber,size,buff)
+                     call STOPONERROR(layoutnumber,num_procs,buff)
                   end if
                   width = this%tSlots%Tg(j)%width
                   if (sgg%NumPlaneWaves == 1) then
@@ -3454,7 +3454,7 @@ contains
                !si no lo ha cazado
                if (.not.nodo_cazado) then
                   write(buff,'(a,i9)') 'Current probe not found in WIRE segment ',this%Sonda%collection(i)%cordinates(j)%XI
-                  call StopOnError(layoutnumber,size,buff)
+                  call StopOnError(layoutnumber,num_procs,buff)
                end if
             ELSE if (this%Sonda%collection(i)%cordinates(j)%or == NP_COR_DDP) then
                if (run_with_dmma) then
@@ -3478,11 +3478,11 @@ contains
                   !si no lo ha cazado
                   if (.not.nodo_cazado) then
                      write(buff,'(a,i9)') 'Voltage probe not found ',this%Sonda%collection(i)%cordinates(j)%XI
-                     call StopOnError(layoutnumber,size,buff)
+                     call StopOnError(layoutnumber,num_procs,buff)
                   end if
                else
                   write(buff,'(a,i9)') 'ERROR: Voltage probe in gaps only available under -dmma flag '
-                  call StopOnError(layoutnumber,size,buff)
+                  call StopOnError(layoutnumber,num_procs,buff)
                end if !del run_with_dmma
             else if (abs(tipotemp) == NP_COR_LINE) then
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
@@ -3499,7 +3499,7 @@ contains
          tama2 = (this%oldSONDA%probes(i)%n_FarField)
          if (tama2 > 1) then
             buff='Only one Far Field probe allowed'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          if (tama2 > 0) sgg%observation(ii)%nP = 1 !un punto para todo el farfield (es simbolico)
          !electric FIELDS
@@ -3511,7 +3511,7 @@ contains
             tama6 = (this%oldSONDA%probes(i)%Electric(j)%probe%n_cord)
             buff='TAMANIOS DE PROBES EH RAROS'
             if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6)) &
-            &                call STOPONERROR(layoutnumber,size,buff)
+            &                call STOPONERROR(layoutnumber,num_procs,buff)
             do k = 1, tama3
                punto%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
                punto%YI = this%oldSONDA%probes(i)%Electric(j)%probe%j(k)
@@ -3531,7 +3531,7 @@ contains
             tama6 = (this%oldSONDA%probes(i)%Magnetic(j)%probe%n_cord)
             buff='pre1_ERROR: TAMANIOS DE PROBES EH RAROS'
             if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6)) &
-            &           call STOPONERROR(layoutnumber,size,buff)
+            &           call STOPONERROR(layoutnumber,num_procs,buff)
             do k = 1, tama3
                punto%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
                punto%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
@@ -3636,7 +3636,7 @@ contains
       if (sondas > Maxprobes) then
          write(buff,*) 'Too many probes= ', sondas, 'Either  or reduce the number of probes below ', &
          & Maxprobes
-         call STOPONERROR(layoutnumber,size,buff)
+         call STOPONERROR(layoutnumber,num_procs,buff)
       end if
       if (sondas > 1024) then
          write(buff,*) 'Number of probes ', &
@@ -3650,7 +3650,7 @@ contains
       !        write(buff,*) 'Too much memory for the probes= ', sondas * BuffObse * 4, 'Probes= ', sondas,   &
       !         &     'Either reduce the number o&
       !       &f probes or recompile decreasing BuffObse ', BuffObse, 'or increasing ', MaxMemoryProbes
-      !        call STOPONERROR(layoutnumber,size,buff)
+      !        call STOPONERROR(layoutnumber,num_procs,buff)
       !      end if
       !
       if (sgg%NumberRequest /= 0) then
@@ -3687,28 +3687,28 @@ contains
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .FALSE.
-               !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+               !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              CASE (NP_T2_TRANSFER)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .TRUE.
                buff='Transfer function only in Frequency Domain'
-               !!           call STOPONERROR(layoutnumber,size,buff)
+               !!           call STOPONERROR(layoutnumber,num_procs,buff)
              CASE (NP_T2_TIMEFREQ )
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .FALSE.
-               !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+               !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              CASE (NP_T2_TIMETRANSF)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .TRUE.
-               !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+               !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              CASE (NP_T2_FREQTRANSF)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
                sgg%observation(ii)%TRANSFER = .TRUE.
-               !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+               !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
              CASE (NP_T2_TIMEFRECTRANSF)
                sgg%observation(ii)%TimeDomain = .TRUE.
                sgg%observation(ii)%FreqDomain = .TRUE.
@@ -3744,7 +3744,7 @@ contains
                (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                (sgg%observation(ii)%FreqStep <= 1e-9)) then
                write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-               if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,size,buff)
+               if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             !!!
             do j = 1, tama2
@@ -3937,7 +3937,7 @@ contains
                else if (abs(this%Sonda%collection(i)%cordinates(j)%or) == NP_COR_LINE) then 
                   block
                      integer(kind=4) :: line_size, obs_size, idx
-                     !intrinsic size function coopted by size global variable...
+                     !intrinsic num_procs function coopted by num_procs global variable...
                      line_size = ubound(this%Sonda%collection(i)%cordinates,1)-lbound(this%Sonda%collection(i)%cordinates,1)+1
                      sgg%observation(i)%nP = sgg%observation(i)%nP + 1
                      obs_size =  sgg%observation(i)%nP
@@ -3974,12 +3974,12 @@ contains
             !farfields (no es time domain pero una forma especial de ellos)
             tama2 = (this%oldSONDA%probes(i)%n_FarField)
             write(buff,*) 'More than 1 Far Field box unsupported'
-            if (tama2 > 1) call STOPONERROR(layoutnumber,size,buff)
+            if (tama2 > 1) call STOPONERROR(layoutnumber,num_procs,buff)
             !
             do j = 1, tama2
                tama3 = (this%oldSONDA%probes(i)%FarField(j)%probe%n_cord)
                buff='FAR FIELD PROBE REQUIRES TWO COORDINATES FOR THE BOX'
-               if (tama3 /= 2)  call STOPONERROR(layoutnumber,size,buff)
+               if (tama3 /= 2)  call STOPONERROR(layoutnumber,num_procs,buff)
                !
                sgg%observation(ii)%nP = sgg%observation(ii)%nP + 1
                punto%XI = this%oldSONDA%probes(i)%FarField(j)%probe%i(1)
@@ -4018,7 +4018,7 @@ contains
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep <= 1e-9)) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,size,buff)
+                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                !
 
@@ -4032,7 +4032,7 @@ contains
                tama6 = (this%oldSONDA%probes(i)%Electric(j)%probe%n_cord)
                buff='TAMANIOS DE PROBES EH RAROS'
                if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6))  &
-               &                call STOPONERROR(layoutnumber,size,buff)
+               &                call STOPONERROR(layoutnumber,num_procs,buff)
                write(probenumber, '(i7)') ii
                do k = 1, tama3
                   punto%XI = this%oldSONDA%probes(i)%Electric(j)%probe%i(k)
@@ -4077,7 +4077,7 @@ contains
                tama6 = (this%oldSONDA%probes(i)%Magnetic(j)%probe%n_cord)
                buff='TAMANIOS DE PROBES EH RAROS'
                if ((tama3 /= tama4) .OR. (tama3 /= tama5) .OR. (tama3 /= tama6))  &
-               &                call STOPONERROR(layoutnumber,size,buff)
+               &                call STOPONERROR(layoutnumber,num_procs,buff)
                do k = 1, tama3
                   punto%XI = this%oldSONDA%probes(i)%Magnetic(j)%probe%i(k)
                   punto%YI = this%oldSONDA%probes(i)%Magnetic(j)%probe%j(k)
@@ -4141,28 +4141,28 @@ contains
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .FALSE.
-                  !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+                  !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 CASE (NP_T2_TRANSFER)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .TRUE.
                   buff='Transfer function only in Frequency Domain'
-                  !!           call STOPONERROR(layoutnumber,size,buff)
+                  !!           call STOPONERROR(layoutnumber,num_procs,buff)
                 CASE (NP_T2_TIMEFREQ )
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .FALSE.
-                  !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+                  !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 CASE (NP_T2_TIMETRANSF)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .TRUE.
-                  !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+                  !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 CASE (NP_T2_FREQTRANSF)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
                   sgg%observation(ii)%TRANSFER = .TRUE.
-                  !                call STOPONERROR(layoutnumber,size,'ONLY TIME DOMAIN DATA IN NEW PROBE')
+                  !                call STOPONERROR(layoutnumber,num_procs,'ONLY TIME DOMAIN DATA IN NEW PROBE')
                 CASE (NP_T2_TIMEFRECTRANSF)
                   sgg%observation(ii)%TimeDomain = .TRUE.
                   sgg%observation(ii)%FreqDomain = .TRUE.
@@ -4193,7 +4193,7 @@ contains
                   (sgg%observation(ii)%FinalFreq <= 1e-9).or. &
                   (sgg%observation(ii)%FreqStep <= 1e-9) ) then
                   write(buff,*) 'ERROR: Some incorrect frequency domain parameters (initial,final,step) ',sgg%observation(ii)%InitialFreq,sgg%observation(ii)%FinalFreq,sgg%observation(ii)%FreqStep
-                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,size,buff)
+                  if (sgg%observation(ii)%FreqDomain) call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                !FIN COMPATIBILIDAD 15/07/15
                SELECT CASE (this%BloquePRB%BP(i)%NML)
@@ -4279,7 +4279,7 @@ contains
                tama2 = 1
                if (tama2 >1 ) then
                   write(buff,*) 'Only 1 Volumic probe allown per section'
-                  call STOPONERROR(layoutnumber,size,buff)
+                  call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                do j = 1, tama2
                   !I clip these probes to allow out-of-the box snapshot probes !ojo si se cambia aqui tambien mas arriba
@@ -4399,7 +4399,7 @@ contains
                tama2 = (this%VolPrb%collection(i)%len_cor)
                if (tama2 >1 ) then
                   write(buff,*) 'Only 1 Volumic probe allown per section'
-                  call STOPONERROR(layoutnumber,size,buff)
+                  call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                do j = 1, tama2
                   !I clip these probes to allow out-of-the box snapshot probes
@@ -4653,7 +4653,7 @@ contains
                call print11 (layoutnumber, buff)
 !fin para debugear
                write(buff,*) 'Buggy error in Volumic probes. np/=1. , np=',sgg%observation(ii)%nP
-               call STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
          end do
 !!!find 210618
@@ -4662,7 +4662,7 @@ contains
          !        if ((memo+sondas)*BuffObse*4 > MaxMemoryProbes) then
          !          write(buff,*) 'Too much memory for the probes= ', (memo+sondas)*BuffObse*4, 'Probes= ', (memo+sondas), &
          !         & 'Either reduce the number of probes or recompile decreasing BuffObse ', BuffObse, 'or increasing ', MaxMemoryProbes
-         !          call STOPONERROR(layoutnumber,size,buff)
+         !          call STOPONERROR(layoutnumber,num_procs,buff)
          !        end if
 
          !del if sgg%numberrequest
@@ -4723,7 +4723,7 @@ contains
       if (medioextra%exists) then
          CONTAMEDIA = CONTAMEDIA+1
          if  (MEDIOEXTRA%index /= contamedia) then !should be already done earlier
-            call STOPONERROR(layoutnumber,size,'Bug in media count. ')
+            call STOPONERROR(layoutnumber,num_procs,'Bug in media count. ')
          end if
          MEDIOEXTRA%index=CONTAMEDIA
       end if
@@ -4767,7 +4767,7 @@ contains
       !!!!!!!!!!!!!!!!!!!!!!!!!!
       !!!!!!fin clipeado
       !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-      call CreatePMLmatrix (layoutnumber, SIZE,sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz, SINPML_fullsize, fullsize, BoundingBox, sgg%Med, sgg%NumMedia, sgg%Border,MEDIOEXTRA)
+      call CreatePMLmatrix (layoutnumber, num_procs,sgg,media%sggMiEx,media%sggMiEy,media%sggMiEz,media%sggMiHx,media%sggMiHy,media%sggMiHz, SINPML_fullsize, fullsize, BoundingBox, sgg%Med, sgg%NumMedia, sgg%Border,MEDIOEXTRA)
       sgg%EndPMLMedia = sgg%NumMedia
 
       !
@@ -4776,10 +4776,10 @@ contains
          CLOSE (14)
          if (sgg%NumMedia > 32767) then
             buff='Number of media>32767. Recompile with #define CompileWithInt4'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          ELSE
             buff='Number of media>127. Recompile with #define CompileWithInt2'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
       end if
 #endif
@@ -4787,14 +4787,14 @@ contains
       if (sgg%NumMedia > 32767) then
          CLOSE (14)
          buff='Number of media>32767. Recompile with #define CompileWithInt4'
-         call STOPONERROR(layoutnumber,size,buff)
+         call STOPONERROR(layoutnumber,num_procs,buff)
       end if
 #endif
 #ifdef CompileWithInt4
       if (sgg%NumMedia > 2.0e9) then
          CLOSE (14)
          buff='Number of media>2^31-1. Cannot continue. '
-         call STOPONERROR(layoutnumber,size,buff)
+         call STOPONERROR(layoutnumber,num_procs,buff)
       end if
 #endif
       !read the source files
@@ -4809,7 +4809,7 @@ contains
             inquire(file=trim(adjustl(sgg%observation(ii)%FileNormalize)), EXIST=errnofile)
             if ( .NOT. errnofile) then
                buff=trim(adjustl(sgg%observation(ii)%FileNormalize))//' DOES NOT EXIST'
-               call STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
          end if
          !
@@ -4833,7 +4833,7 @@ contains
       !medioespecial = .false.
       !do ii=1,sgg%NumMedia
       !    buff='PEC media can only have index 0'
-      !    if (sgg%Med(ii)%Is%PEC.or.sgg%Med(ii)%Is%Lumped) call STOPONERROR(layoutnumber,size,buff)
+      !    if (sgg%Med(ii)%Is%PEC.or.sgg%Med(ii)%Is%Lumped) call STOPONERROR(layoutnumber,num_procs,buff)
       !    medioespecial =medioespecial .or. &
       !                   sgg%Med(ii)%Is%EDispersive   .or. &
       !                   sgg%Med(ii)%Is%multiport     .or. &
@@ -5024,7 +5024,7 @@ contains
             else
                face_media = 0
             end if
-            do k = 1, conformal_media%face_media(j)%size
+            do k = 1, conformal_media%face_media(j)%n_elements
                cell(:) = conformal_media%face_media(j)%faces(k)%cell(:)
                if (cell(1) < bbox%xi) bbox%xi = cell(1)
                if (cell(1) > bbox%xe) bbox%xe = cell(1)
@@ -5086,7 +5086,7 @@ contains
             else
                edge_media = 0
             end if
-            do k = 1, conformal_media%edge_media(j)%size
+            do k = 1, conformal_media%edge_media(j)%n_elements
                cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
 
                if (cell(1) < bbox%xi) bbox%xi = cell(1)
@@ -5127,7 +5127,7 @@ contains
          do j = 1, conformal_media%n_edges_media
             if (conformal_media%edge_media(j)%ratio == 0) then 
                edge_media = 0
-               do k = 1, conformal_media%edge_media(j)%size
+               do k = 1, conformal_media%edge_media(j)%n_elements
                   cell(:) = conformal_media%edge_media(j)%edges(k)%cell(:)
                   key(1:3) = cell
 
@@ -5257,7 +5257,7 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%name))//' DOES NOT EXIST'
-                        call STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
@@ -5291,7 +5291,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%VSource(CONTAVOLT)%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
-                                    call STOPONERROR(layoutnumber,size,buff)
+                                    call STOPONERROR(layoutnumber,num_procs,buff)
                                  end if
                               end if
                            end if
@@ -5309,7 +5309,7 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%name))//' DOES NOT EXIST'
-                        call STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
@@ -5343,7 +5343,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%wire(1)%ISource(CONTACURR)%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
-                                    call STOPONERROR(layoutnumber,size,buff)
+                                    call STOPONERROR(layoutnumber,num_procs,buff)
                                  end if
                               end if
                            end if
@@ -5363,7 +5363,7 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%name))//' DOES NOT EXIST'
-                        call STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
@@ -5397,7 +5397,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Vsource%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
-                                    call STOPONERROR(layoutnumber,size,buff)
+                                    call STOPONERROR(layoutnumber,num_procs,buff)
                                  end if
                               end if
                            end if
@@ -5412,7 +5412,7 @@ contains
                      inquire(file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)), EXIST=errnofile)
                      if ( .NOT. errnofile) then
                         buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%name))//' DOES NOT EXIST'
-                        call STOPONERROR(layoutnumber,size,buff)
+                        call STOPONERROR(layoutnumber,num_procs,buff)
                      end if
                      open(15, file=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME)),action='read')
                      READ (15,*) tiempo1, field1
@@ -5446,7 +5446,7 @@ contains
                                  buff=trim(adjustl(sgg%Med(i)%SlantedWire(1)%nodes(j)%Isource%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                                  if (.not.ignoresamplingerrors) then
                                     CLOSE(15)
-                                    call STOPONERROR(layoutnumber,size,buff)
+                                    call STOPONERROR(layoutnumber,num_procs,buff)
                                  end if
                               end if
                            end if
@@ -5468,7 +5468,7 @@ contains
                inquire(file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)), EXIST=errnofile)
                if ( .NOT. errnofile) then
                   buff=trim(adjustl(sgg%NodalSource(j)%fichero%name))//' DOES NOT EXIST'
-                  call STOPONERROR(layoutnumber,size,buff)
+                  call STOPONERROR(layoutnumber,num_procs,buff)
                end if
                open(15, file=trim(adjustl(sgg%NodalSource(j)%fichero%NAME)),action='read')
                READ (15,*) tiempo1, field1
@@ -5501,7 +5501,7 @@ contains
                            buff=trim(adjustl(sgg%NodalSource(j)%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                            if (.not.ignoresamplingerrors) then
                               CLOSE(15)
-                              call STOPONERROR(layoutnumber,size,buff)
+                              call STOPONERROR(layoutnumber,num_procs,buff)
                            end if
                         end if
                      end if
@@ -5528,7 +5528,7 @@ contains
             inquire(file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)), EXIST=errnofile)
             if ( .NOT. errnofile) then
                buff=trim(adjustl(sgg%PlaneWave(j)%fichero%name))//' DOES NOT EXIST'
-               call STOPONERROR(layoutnumber,size,buff)
+               call STOPONERROR(layoutnumber,num_procs,buff)
             end if
             open(15, file=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME)),action='read')
             READ (15,*) tiempo1, field1
@@ -5557,7 +5557,7 @@ contains
                         buff=trim(adjustl(sgg%PlaneWave(j)%fichero%NAME))//' not uniformly sampled. Relaunch with -ignoresamplingerrors to ignore it.'
                         if (.not.ignoresamplingerrors) then
                            CLOSE(15)
-                           call STOPONERROR(layoutnumber,size,buff)
+                           call STOPONERROR(layoutnumber,num_procs,buff)
                         end if
                      end if
                   end if
@@ -5814,7 +5814,7 @@ contains
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
    !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 
-   subroutine read_limits_nogeom (layoutnumber,size, sgg, fullsize, SINPML_fullsize, this,MurAfterPML,mur_exist)
+   subroutine read_limits_nogeom (layoutnumber,num_procs, sgg, fullsize, SINPML_fullsize, this,MurAfterPML,mur_exist)
       type(limit_t), dimension(1:6) :: fullsize, SINPML_fullsize
       type(SGGFDTDINFO_t), intent(INOUT) :: sgg
 
@@ -5822,7 +5822,7 @@ contains
       integer(kind=4) :: tama, i, field,j,k
       character(len=BUFSIZE) :: buff
       logical MurAfterPML,mur_exist
-      integer(kind=4), intent(in) :: layoutnumber,size
+      integer(kind=4), intent(in) :: layoutnumber,num_procs
       real(kind=RKIND), pointer, dimension(:) :: DummyD
       real(kind=RKIND) :: delta
       !
@@ -5840,7 +5840,7 @@ contains
       ELSE
          if (tama /= this%despl%mx2-this%despl%mx1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%mx1, this%despl%mx2 - 1
             sgg%dx (i) = this%despl%desx(i)
@@ -5856,7 +5856,7 @@ contains
       ELSE
          if (tama /= this%despl%my2-this%despl%my1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%my1, this%despl%my2 - 1
             sgg%dy (i) = this%despl%desY(i)
@@ -5872,7 +5872,7 @@ contains
       ELSE
          if (tama /= this%despl%mz2-this%despl%mz1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%mz1, this%despl%mz2 - 1
             sgg%dz (i) = this%despl%desZ(i)
@@ -5891,7 +5891,7 @@ contains
       ELSE
          if (tama /= this%despl%mx2-this%despl%mx1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%mx1, this%despl%mx2 - 1
             lineasX (i+1) = this%despl%desx(i) + lineasX (i)
@@ -5908,7 +5908,7 @@ contains
       ELSE
          if (tama /= this%despl%my2-this%despl%my1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%my1, this%despl%my2 - 1
             lineasY (i+1) = this%despl%desY(i) + lineasY (i)
@@ -5925,7 +5925,7 @@ contains
       ELSE
          if (tama /= this%despl%mz2-this%despl%mz1) then
             buff='Tamanio discretizacion distinto de la region'
-            call STOPONERROR(layoutnumber,size,buff)
+            call STOPONERROR(layoutnumber,num_procs,buff)
          end if
          do i = this%despl%mz1, this%despl%mz2 - 1
             lineasZ (i+1) = this%despl%desZ(i) + lineasZ (i)
@@ -6512,7 +6512,7 @@ contains
 !integer, dimension(:), allocatable :: seed
 !real(8) :: r
 !call date_and_time(values=values)
-!call random_seed(size=k)
+!call random_seed(num_procs=k)
 !allocate(seed(1:k))
 !seed(:) = values(8)
 !call random_seed(put=seed)
@@ -6615,7 +6615,7 @@ contains
 !!!!           integer :: i, n, un, istat, dt(8), pid
 !!!!           integer(int64) :: t
 !!!!
-!!!!           call random_seed(size = n)
+!!!!           call random_seed(num_procs = n)
 !!!!           allocate(seed(n))
 !!!!           ! First try if the OS provides a random number generator
 !!!!           open(newunit=un, file="/dev/urandom", access="stream", &
