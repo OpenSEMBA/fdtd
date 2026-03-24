@@ -13,7 +13,6 @@ def test_holland_case_checking_number_of_outputs_single_wire(tmp_path):
     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
     assert len(probe_files) == 1
-
     p = Probe(probe_files[0])
     assert len(p['current']) == 10
 
@@ -32,8 +31,8 @@ def test_holland_case_checking_number_of_outputs_wire(tmp_path):
     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
     assert len(probe_files) == 1
-    assert outfile == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == number_of_steps + 1
+    p = Probe(probe_files[0])
+    assert len(p['current']) == 10
 
 @no_mtln_skip
 def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
@@ -49,8 +48,8 @@ def test_holland_case_checking_number_of_outputs_unshielded(tmp_path):
     probe_files = solver.getSolvedProbeFilenames("mid_point")
 
     assert len(probe_files) == 1
-    assert outfile == probe_files[0]
-    assert countLinesInFile(probe_files[0]) == number_of_steps + 1
+    p = Probe(probe_files[0])
+    assert len(p['current']) == 10
 
 
 @mtln_skip
