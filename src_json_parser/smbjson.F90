@@ -3773,10 +3773,10 @@ contains
          type(shielded_multiwire_t), intent(inout) :: res
          type(json_value_ptr_t) :: mat
          integer, intent(in) :: n
-         real, dimension(:,:), allocatable :: null_matrix
+         real(kind=rkind), dimension(:,:), allocatable :: null_matrix
          logical :: found
 
-         allocate(null_matrix(n,n), source = 0.0)
+         allocate(null_matrix(n,n), source = 0.0_rkind)
          if (this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE)) then
             res%inductance_per_meter = this%getMatrixAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE,found)
          else
@@ -3810,14 +3810,14 @@ contains
          type(json_value), pointer :: multipolarExpansionPtr
          integer, intent(in) :: n
          integer :: m
-         real, dimension(:,:), allocatable :: null_matrix
+         real(kind=rkind), dimension(:,:), allocatable :: null_matrix
          logical :: found
          logical :: areFixedInCell
          logical :: areMultipolarInCell
          logical :: hasRadius
          real(kind=RKIND), dimension(:), allocatable :: r, c
 
-         allocate(null_matrix(n,n), source = 0.0)
+         allocate(null_matrix(n,n), source = 0.0_rkind)
 
          areFixedInCell = &
             this%existsAt(mat%p, J_MAT_MULTIWIRE_INDUCTANCE) .and. &
@@ -4045,7 +4045,7 @@ contains
       function buildStepSize(segments, despl) result(res)
          type(segment_t), dimension(:), allocatable :: segments
          type(Desplazamiento_t), intent(in) :: despl
-         real, allocatable, dimension(:) :: res
+         real(kind=rkind), allocatable, dimension(:) :: res
          integer :: i, or
          allocate(res(size(segments)))
          do i = 1, size(segments)

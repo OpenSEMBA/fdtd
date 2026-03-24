@@ -54,9 +54,9 @@ module mtln_types_m
 
    type, public :: termination_t
       integer :: termination_type = TERMINATION_UNDEFINED
-      real :: resistance = 0.0
-      real :: inductance = 0.0
-      real :: capacitance = 1e22
+      real(kind=rkind) :: resistance = 0.0_rkind
+      real(kind=rkind) :: inductance = 0.0_rkind
+      real(kind=rkind) :: capacitance = 1e22_rkind
       type(node_source_t) :: source
       type(terminal_circuit_t) :: model
       integer :: networkCircuitNode = -1
@@ -106,8 +106,8 @@ module mtln_types_m
    end type
 
    type, public :: transfer_impedance_per_meter_t
-      real :: inductive_term = 0.0
-      real :: resistive_term = 0.0
+      real(kind=rkind) :: inductive_term = 0.0_rkind
+      real(kind=rkind) :: resistive_term = 0.0_rkind
       complex, dimension(:), allocatable :: poles, residues ! poles and residues
       integer :: direction = TRANSFER_IMPEDANCE_DIRECTION_UNDEFINED
    contains
@@ -119,7 +119,7 @@ module mtln_types_m
 
    type :: connector_t
       integer :: id
-      real, dimension(:), allocatable :: resistances
+      real(kind=rkind), dimension(:), allocatable :: resistances
       type(transfer_impedance_per_meter_t), dimension(:), allocatable :: transfer_impedances_per_meter
    contains
       private
@@ -131,7 +131,7 @@ module mtln_types_m
       ! Coefficients are assumed to be provided in natural units.
       ! To use them as a charge they must be multiplied by epsilon_0.
       ! To use them as a current they must be divided by mu_0.
-      real :: a, b
+      real(kind=rkind) :: a, b
    contains
       private
       procedure :: multipolar_coefficient_eq
@@ -143,13 +143,13 @@ module mtln_types_m
       ! in which each conductor has a different potential.
 
       ! Average potential within the inner region.
-      real :: inner_region_average_potential
+      real(kind=rkind) :: inner_region_average_potential
       ! Expansion center for the field reconstruction using the multipolar expansion
-      real, dimension(2) :: expansion_center
+      real(kind=rkind), dimension(2) :: expansion_center
       ! Multipolar expansion coefficients. Size of the multipolar expansion order.
       type(multipolar_coefficient_t), dimension(:), allocatable :: ab
       ! Potentials on each conductor. size of the number of conductors.
-      real, dimension(:), allocatable :: conductor_potentials
+      real(kind=rkind), dimension(:), allocatable :: conductor_potentials
    contains
       private
       procedure :: field_reconstruction_eq
@@ -157,7 +157,7 @@ module mtln_types_m
    end type
 
    type, public :: box_2d_t
-      real, dimension(2) :: min, max
+      real(kind=rkind), dimension(2) :: min, max
    contains
       private
       procedure :: box_2d_eq
@@ -180,13 +180,13 @@ module mtln_types_m
 
    type, extends(direction_t) :: segment_t
       type(box_2d_t) :: dualBox
-      real :: d1, d2
+      real(kind=rkind) :: d1, d2
    end type
 
 
    type, public :: cable_t
       character(len=:), allocatable :: name
-      real, allocatable, dimension(:) :: step_size
+      real(kind=rkind), allocatable, dimension(:) :: step_size
       type(segment_t), dimension(:), allocatable :: segments
       type(connector_t), pointer :: initial_connector => null()
       type(connector_t), pointer :: end_connector => null()
@@ -199,21 +199,21 @@ module mtln_types_m
    end type
 
    type, extends(cable_t), public :: unshielded_multiwire_t 
-      real, allocatable, dimension(:,:) :: cell_inductance_per_meter
-      real, allocatable, dimension(:,:) :: cell_capacitance_per_meter
-      real, allocatable, dimension(:,:) :: resistance_per_meter
-      real, allocatable, dimension(:,:) :: conductance_per_meter
-      real :: radius = 0.0
+      real(kind=rkind), allocatable, dimension(:,:) :: cell_inductance_per_meter
+      real(kind=rkind), allocatable, dimension(:,:) :: cell_capacitance_per_meter
+      real(kind=rkind), allocatable, dimension(:,:) :: resistance_per_meter
+      real(kind=rkind), allocatable, dimension(:,:) :: conductance_per_meter
+      real(kind=rkind) :: radius = 0.0_rkind
       ! should multipolar expansion be always present, instead of allocatable,  
       ! but check if it is being used using the size of the field_reconstruction?
       type(multipolar_expansion_t), dimension(:), allocatable :: multipolar_expansion
    end type
 
    type, extends(cable_t), public :: shielded_multiwire_t 
-      real, allocatable, dimension(:,:) :: resistance_per_meter
-      real, allocatable, dimension(:,:) :: conductance_per_meter
-      real, allocatable, dimension(:,:) :: inductance_per_meter
-      real, allocatable, dimension(:,:) :: capacitance_per_meter
+      real(kind=rkind), allocatable, dimension(:,:) :: resistance_per_meter
+      real(kind=rkind), allocatable, dimension(:,:) :: conductance_per_meter
+      real(kind=rkind), allocatable, dimension(:,:) :: inductance_per_meter
+      real(kind=rkind), allocatable, dimension(:,:) :: capacitance_per_meter
       type(transfer_impedance_per_meter_t) :: transfer_impedance
       class(cable_t), pointer :: parent_cable => null()
       integer :: conductor_in_parent = -1
@@ -224,7 +224,7 @@ module mtln_types_m
       integer :: index
       integer :: probe_type = PROBE_TYPE_UNDEFINED
       character(len=:), allocatable :: probe_name
-      real, dimension(3) :: probe_position
+      real(kind=rkind), dimension(3) :: probe_position
    contains
       private
       procedure :: probe_eq
